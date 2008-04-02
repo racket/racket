@@ -51,19 +51,21 @@
                      (pair? number))
             (when (part-style? d 'index)
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
-            (printf "\\~a~a~a{"
-                    (case (length number)
-                      [(0 1) "sectionNewpage\n\n\\section"]
-                      [(2) "subsection"]
-                      [(3) "subsubsection"]
-                      [else "subsubsection*"])
-                    (if (part-style? d 'hidden)
-                        "hidden"
-                        "")
-                    (if (and (pair? number)
-                             (not (car number)))
-                        "*"
-                        ""))
+            (let ([no-number? (and (pair? number)
+                                   (not (car number)))])
+              (printf "\\~a~a~a{"
+                      (case (length number)
+                        [(0 1) "sectionNewpage\n\n\\section"]
+                        [(2) "subsection"]
+                        [(3) "subsubsection"]
+                        [else "subsubsection*"])
+                      (if (and (part-style? d 'hidden)
+                               (not no-number?))
+                          "hidden"
+                          "")
+                      (if no-number?
+                          "*"
+                          "")))
             (render-content (part-title-content d) d ri)
             (printf "}")
             (when (part-style? d 'index)
@@ -193,16 +195,16 @@
                                  (= 1 (length (car (table-flowss t)))))
                              (let ([m (current-table-mode)])
                                (and m
-                                    (equal? "supertabular" (car m))
+                                    (equal? "bigtabular" (car m))
                                     (= 1 (length (car (table-flowss (cadr m))))))))]
                [tableform (cond
                            [index? "list"]
                            [(and (not (current-table-mode))
                                  (not inline-table?))
-                            "supertabular"]
+                            "bigtabular"]
                            [else "tabular"])]
                [opt (cond
-                     [(equal? tableform "supertabular") "[l]"]
+                     [(equal? tableform "bigtabular") "[l]"]
                      [(equal? tableform "tabular") "[t]"]
                      [else ""])]
                [flowss (if index?
@@ -223,8 +225,8 @@
                         (if boxed? 
                             (format "{~a\\begin{picture}(1,0)\\put(0,0){\\line(1,0){1}}\\end{picture}}~a\n\\nopagebreak\n" 
                                     "\\setlength{\\unitlength}{\\linewidth}"
-                                    (if (equal? tableform "supertabular")
-                                        "\\supertabline"
+                                    (if (equal? tableform "bigtabular")
+                                        "\\bigtabline"
                                         "\n\n"))
                             "")
                         tableform
@@ -274,7 +276,7 @@
                     (loop (cdr flowss) (cdr row-styles)))))
               (unless inline?
                 (printf "~a\n\n\\end{~a}\n" 
-                        (if (equal? tableform "supertabular")
+                        (if (equal? tableform "bigtabular")
                             "\n\\\\"
                             "")
                         tableform)))))
