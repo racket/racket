@@ -1,9 +1,8 @@
-(module sort "pre-base.ss"
+(module sort '#%kernel
 
-(provide sort)
+(#%require "small-scheme.ss" "define.ss" (for-syntax "stxcase-scheme.ss"))
 
-(#%require (for-syntax "stxcase-scheme.ss")
-           (for-syntax "pre-base.ss"))
+(#%provide sort)
 
 ;; This is a destructive stable merge-sort, adapted from slib and improved by
 ;; Eli Barzilay.
@@ -24,6 +23,11 @@
 ;; doing these checks.
 
 (define sort (let ()
+
+(define-syntax define-syntax-rule
+  (syntax-rules ()
+    [(dr (foo . pattern) template)
+     (define-syntax foo (syntax-rules () [(_ . pattern) template]))]))
 
 (define-syntax-rule (sort-internal-body lst *less? n has-getkey? getkey)
   (begin
@@ -95,13 +99,11 @@
 
 (define sort-internals (make-hash-table))
 (define _
-  (let-syntax ([precomp
-                (syntax-rules ()
-                  [(_ less? more ...)
-                   (let ([proc (lambda (lst n)
-                                 (sort-internal-body lst less? n #f #f))])
-                     (hash-table-put! sort-internals less? proc)
-                     (hash-table-put! sort-internals more proc) ...)])])
+  (let ()
+    (define-syntax-rule (precomp less? more ...)
+      (let ([proc (lambda (lst n) (sort-internal-body lst less? n #f #f))])
+        (hash-table-put! sort-internals less? proc)
+        (hash-table-put! sort-internals more proc) ...))
     (precomp < <=)
     (precomp > >=)
     (precomp string<? string<=?)

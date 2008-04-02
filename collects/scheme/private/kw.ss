@@ -1,6 +1,6 @@
 (module kw '#%kernel
-  (#%require "define.ss" 
-             "small-scheme.ss" 
+  (#%require "define.ss"
+             "small-scheme.ss"
              "more-scheme.ss"
              (for-syntax '#%kernel
                          "stx.ss"
@@ -8,7 +8,8 @@
                          "stxcase-scheme.ss"
                          "name.ss"
                          "norm-define.ss"
-                         "qqstx.ss"))
+                         "qqstx.ss"
+                         "sort.ss"))
 
   (#%provide new-lambda new-λ
              new-define
@@ -128,7 +129,7 @@
           [(null? (cdr ks)) (void)]
           [(or (not (pair? (cdr ks)))
                (not (keyword? (cadr ks))))
-           (loop (cdr ks))]        
+           (loop (cdr ks))]
           [(keyword<? (car ks) (cadr ks))
            (loop (cdr ks))]
           [else (type-error "sorted list of keywords" 1)]))
@@ -171,31 +172,6 @@
      [else (raise-type-error 'procedure-keywords
                              "procedure"
                              p)]))
-  
-  ;; ----------------------------------------
-  ;; Sorting keywords.
-  
-  ;; The sort in "list.ss" should be moved into it's own library, 
-  ;; so we can use it here without requiring lots of other stuff.)
-  
-  (define-for-syntax (sort l <?)
-    (cond
-      [(null? l) null]
-      [(null? (cdr l)) l]
-      [else (let loop ([l l]
-                       [a null]
-                       [b null])
-              (cond
-                [(null? l) (let loop ([a (sort a <?)]
-                                      [b (sort b <?)])
-                             (cond
-                               [(null? a) b]
-                               [(null? b) a]
-                               [(<? (car a) (car b))
-                                (cons (car a) (loop (cdr a) b))]
-                               [else
-                                (cons (car b) (loop a (cdr b)))]))]
-                [else (loop (cdr l) (cons (car l) b) a)]))]))
 
   ;; ----------------------------------------
   ;; `lambda' with optional and keyword arguments
