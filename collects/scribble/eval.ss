@@ -132,22 +132,32 @@
        [else (loop ((car ops) s) (cdr ops))])))
 
   (define ((do-eval ev) s)
-    (syntax-case s (code:comment eval:alts)
-     [(code:line v (code:comment . rest))
-      ((do-eval ev) (extract s cdr car))]
-     [(code:comment . rest)
-      (list (list (void)) "" "")]
-     [(eval:alts p e)
-      ((do-eval ev) (extract s cdr cdr car))]
-     [else
-      (with-handlers ([exn:fail? (lambda (e)
-                                   (list (exn-message e)
-                                         (get-output ev)
-                                         (get-error-output ev)))])
-        (list (let ([v (do-plain-eval ev s #t)])
-                (make-reader-graph (copy-value v (make-hash-table))))
-              (get-output ev)
-              (get-error-output ev)))]))
+    (let loop ([s s][expect #f])
+      (syntax-case s (code:comment eval:alts eval:check)
+        [(code:line v (code:comment . rest))
+         (loop (extract s cdr car) expect)]
+        [(code:comment . rest)
+         (list (list (void)) "" "")]
+        [(eval:alts p e)
+         (loop (extract s cdr cdr car) expect)]
+        [(eval:check e expect)
+         (loop (extract s cdr car)
+               (list (syntax->datum (datum->syntax #f (extract s cdr cdr car)))))]
+        [else
+         (let ([r (with-handlers ([exn:fail? (lambda (e)
+                                               (list (exn-message e)
+                                                     (get-output ev)
+                                                     (get-error-output ev)))])
+                    (list (let ([v (do-plain-eval ev s #t)])
+                            (make-reader-graph (copy-value v (make-hash-table))))
+                          (get-output ev)
+                          (get-error-output ev)))])
+           (when expect
+             (let ([expect (do-plain-eval ev (car expect) #t)])
+               (unless (equal? (car r) expect)
+                 (raise-syntax-error 'eval "example result check failed" s))))
+           r)])))
+                   
 
   (define (install ht v v2)
     (hash-table-put! ht v v2)
