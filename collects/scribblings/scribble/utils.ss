@@ -41,7 +41,7 @@
               strs)))))
 
   (define (as-flow e)
-    (make-flow (list (if (flow-element? e)
+    (make-flow (list (if (block? e)
                          e
                          (make-paragraph (list e))))))
 

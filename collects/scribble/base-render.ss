@@ -150,14 +150,14 @@
 
     (define/public (collect-flow p ci)
       (for ([p (flow-paragraphs p)])
-        (collect-flow-element p ci)))
+        (collect-block p ci)))
 
-    (define/public (collect-flow-element p ci)
+    (define/public (collect-block p ci)
       (cond
         [(table? p) (collect-table p ci)]
         [(itemization? p) (collect-itemization p ci)]
         [(blockquote? p) (collect-blockquote p ci)]
-        [(delayed-flow-element? p) (void)]
+        [(delayed-block? p) (void)]
         [else (collect-paragraph p ci)]))
 
     (define/public (collect-table i ci)
@@ -170,7 +170,7 @@
 
     (define/public (collect-blockquote i ci)
       (for ([d (blockquote-paragraphs i)])
-        (collect-flow-element d ci)))
+        (collect-block d ci)))
 
     (define/public (collect-element i ci)
       (if (part-relative-element? i)
@@ -230,17 +230,17 @@
 
     (define/public (resolve-flow p d ri)
       (for ([p (flow-paragraphs p)])
-        (resolve-flow-element p d ri)))
+        (resolve-block p d ri)))
 
-    (define/public (resolve-flow-element p d ri)
+    (define/public (resolve-block p d ri)
       (cond
         [(table? p) (resolve-table p d ri)]
         [(itemization? p) (resolve-itemization p d ri)]
         [(blockquote? p) (resolve-blockquote p d ri)]
-        [(delayed-flow-element? p) 
-         (let ([v ((delayed-flow-element-resolve p) this d ri)])
+        [(delayed-block? p) 
+         (let ([v ((delayed-block-resolve p) this d ri)])
            (hash-table-put! (resolve-info-delays ri) p v)
-           (resolve-flow-element v d ri))]
+           (resolve-block v d ri))]
         [else (resolve-paragraph p d ri)]))
 
     (define/public (resolve-table i d ri)
@@ -253,7 +253,7 @@
 
     (define/public (resolve-blockquote i d ri)
       (for ([f (blockquote-paragraphs i)])
-        (resolve-flow-element f d ri)))
+        (resolve-block f d ri)))
 
     (define/public (resolve-element i d ri)
       (cond
@@ -315,22 +315,22 @@
       (if (null? (flow-paragraphs p))
           null
           (append
-           (render-flow-element (car (flow-paragraphs p))
+           (render-block (car (flow-paragraphs p))
                                 part ri start-inline?)
            (apply append
                   (map (lambda (p)
-                         (render-flow-element p part ri #f))
+                         (render-block p part ri #f))
                        (cdr (flow-paragraphs p)))))))
 
-    (define/public (render-flow-element p part ri inline?)
+    (define/public (render-block p part ri inline?)
       (cond
         [(table? p) (if (auxiliary-table? p)
                       (render-auxiliary-table p part ri)
                       (render-table p part ri inline?))]
         [(itemization? p) (render-itemization p part ri)]
         [(blockquote? p) (render-blockquote p part ri)]
-        [(delayed-flow-element? p) 
-         (render-flow-element (delayed-flow-element-flow-elements p ri) part ri inline?)]
+        [(delayed-block? p) 
+         (render-block (delayed-block-blocks p ri) part ri inline?)]
         [else (render-paragraph p part ri)]))
 
     (define/public (render-auxiliary-table i part ri)
@@ -345,7 +345,7 @@
            (itemization-flows i)))
 
     (define/public (render-blockquote i part ri)
-      (map (lambda (d) (render-flow-element d part ri #f))
+      (map (lambda (d) (render-block d part ri #f))
            (blockquote-paragraphs i)))
 
     (define/public (render-element i part ri)

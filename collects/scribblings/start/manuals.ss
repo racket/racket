@@ -113,7 +113,7 @@
                         (other-manual doc #:underline? #f)))])
     (make-splice
      (list
-      (make-delayed-flow-element
+      (make-delayed-block
        (lambda (renderer part resolve-info)
          (make-table
           #f

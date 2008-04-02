@@ -162,7 +162,7 @@
 
 ;; ----------------------------------------
 
-(provide section-index index index* as-index index-section index-flow-elements)
+(provide section-index index index* as-index index-section index-blocks)
 
 (define (section-index . elems)
   (make-part-index-decl (map element->string elems) elems))
@@ -199,10 +199,10 @@
                         (list title)
                         'index
                         null
-                        (make-flow (index-flow-elements))
+                        (make-flow (index-blocks))
                         null))
 
-(define (index-flow-elements)
+(define (index-blocks)
   (define (commas l)
     (if (or (null? l) (null? (cdr l)))
       l
@@ -277,7 +277,7 @@
                                          (list e)))]
                      [else e]))
              l)))))
-  (list (make-delayed-flow-element contents)))
+  (list (make-delayed-block contents)))
 
 ;; ----------------------------------------
 
@@ -285,11 +285,11 @@
          local-table-of-contents)
 
 (define (table-of-contents)
-  (make-delayed-flow-element
+  (make-delayed-block
    (lambda (renderer part ri)
      (send renderer table-of-contents part ri))))
 
 (define (local-table-of-contents)
-  (make-delayed-flow-element
+  (make-delayed-block
    (lambda (renderer part ri)
      (send renderer local-table-of-contents part ri))))

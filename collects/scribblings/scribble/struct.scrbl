@@ -37,11 +37,11 @@ A @deftech{part} is an instance of @scheme[part]; among other things,
  subsection (incorporated via @scheme[include-section]) as a document.
 
 A @deftech{flow} is an instance of @scheme[flow]; it has a list of
- @techlink{flow elements}.
+ @techlink{blocks}.
 
-A @deftech{flow element} is either a @techlink{table}, an
+A @deftech{block} is either a @techlink{table}, an
  @techlink{itemization}, @techlink{blockquote}, @techlink{paragraph},
- or a @techlink{delayed flow element}.
+ or a @techlink{delayed block}.
 
 @itemize{
 
@@ -54,7 +54,7 @@ A @deftech{flow element} is either a @techlink{table}, an
              it has a list of @techlink{flows}.}
 
        @item{A @deftech{blockquote} is an instance of
-             @scheme[blockquote]; it has list of @tech{flow elements}
+             @scheme[blockquote]; it has list of @tech{blocks}
              that are indented according to a specified style.}
 
        @item{A @deftech{paragraph} is an instance of
@@ -144,10 +144,10 @@ A @deftech{flow element} is either a @techlink{table}, an
 
              }}}}
 
-       @item{A @deftech{delayed flow element} is an instance of
-             @scheme[delayed-flow-element], which has a procedure that
+       @item{A @deftech{delayed block} is an instance of
+             @scheme[delayed-block], which has a procedure that
              is called in the @techlink{resolve pass} of document
-             processing to obtain a @defterm{flow element}.}
+             processing to obtain a @defterm{block}.}
 
 }
 
@@ -212,7 +212,7 @@ can be extracted with @scheme[part-collected-info], which includes a
 part's number and its parent part (or @scheme[#f]). More generally,
 the @scheme[resolve-get] method looks up information previously
 collected. This resolve-time information is normally obtained by the
-procedure associated with a @techlink{delayed flow element} or
+procedure associated with a @techlink{delayed block} or
 @techlink{delayed element}.
 
 The @scheme[resolve-get] information accepts both a @scheme[part] and
@@ -292,7 +292,7 @@ representing the whole document. The default version for a document is
 
 @defstruct[flow ([paragraphs (listof flow-element?)])]{
 
-A @techlink{flow} has a list of @tech{flow elements}.
+A @techlink{flow} has a list of @tech{blocks}.
 
 }
 
@@ -330,16 +330,16 @@ A @techlink{itemization} has a list of flows.
 @defstruct[blockquote ([style any/c]
                        [paragraphs (listof flow-element?)])]{
 
-A @techlink{blockquote} has a style and a list of @tech{flow
-elements}.  The @scheme[style] field is normally a string that
-corresponds to a CSS class for HTML output.
+A @techlink{blockquote} has a style and a list of @tech{blocks}.  The
+@scheme[style] field is normally a string that corresponds to a CSS
+class for HTML output.
 
 }
 
-@defstruct[delayed-flow-element ([resolve (any/c part? resolve-info? . -> . flow-element?)])]{
+@defstruct[delayed-block ([resolve (any/c part? resolve-info? . -> . flow-element?)])]{
 
 The @scheme[resolve] procedure is called during the @techlink{resolve
-pass} to obtain a normal @tech{flow element}. The first argument to
+pass} to obtain a normal @tech{block}. The first argument to
 @scheme[resolve] is the renderer.
 
 }
@@ -448,8 +448,8 @@ Instances of this structure type are intended for use in titles, where
                             [plain (-> any/c)])]{
 
 The @scheme[render] procedure's arguments are the same as for
-@scheme[delayed-flow-element], but the result is @techlink{content} (i.e.,
-a list of @techlink{elements}). Unlike @scheme[delayed-flow-element], the
+@scheme[delayed-block], but the result is @techlink{content} (i.e.,
+a list of @techlink{elements}). Unlike @scheme[delayed-block], the
 result of the @scheme[render] procedure's argument is remembered on
 the first call for re-use for a particular resolve pass.
 
@@ -469,7 +469,7 @@ pass}.
                                   [sizer (-> any/c)]
                                   [plain (-> any/c)])]{
 
-Similar to @scheme[delayed-flow-element], but the replacement
+Similar to @scheme[delayed-block], but the replacement
 @techlink{content} is obtained in the @techlink{collect pass} by
 calling the function in the @scheme[resolve] field.
 
@@ -512,16 +512,17 @@ Used as a style for an @scheme[element]. The @scheme[style] at this
 layer is a style for the hyperlink.}
 
 
-@defstruct[image-file ([path path-string?])]{
+@defstruct[image-file ([path path-string?]
+                       [scale real?])]{
 
 Used as a style for an @scheme[element].}
 
 
-@defproc[(flow-element? [v any/c]) boolean?]{
+@defproc[(block? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a @scheme[paragraph],
 @scheme[table], @scheme[itemization], @scheme[blockquote], or
-@scheme[delayed-flow-element], @scheme[#f] otherwise.
+@scheme[delayed-block], @scheme[#f] otherwise.
 
 }
 
@@ -569,9 +570,9 @@ Returns the width in characters of the given @tech{element}.
 }
 
 
-@defproc[(flow-element-width (e flow-element?)) nonnegative-exact-integer?]{
+@defproc[(block-width (e block?)) nonnegative-exact-integer?]{
 
-Returns the width in characters of the given @tech{flow element}.}
+Returns the width in characters of the given @tech{block}.}
 
 
 @defstruct[collect-info ([ht any/c] [ext-ht any/c] [parts any/c] 

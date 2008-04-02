@@ -17,7 +17,7 @@
 
       (inherit render-content
                render-paragraph
-               render-flow-element)
+               render-block)
 
       (define/override (render-part d ht)
         (let ([number (collected-info-number (part-collected-info d ht))])
@@ -50,10 +50,10 @@
               null
               (apply
                append
-               (render-flow-element (car f) part ht start-inline?)
+               (render-block (car f) part ht start-inline?)
                (map (lambda (p)
                       (newline) (newline)
-                      (render-flow-element p part ht #f))
+                      (render-block p part ht #f))
                     (cdr f))))))
 
       (define/override (render-table i part ht inline?)

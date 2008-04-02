@@ -123,13 +123,13 @@
                                  (list? (cadr s))))
                         (null? (cddr s))))
 
-  (provide flow-element?)
-  (define (flow-element? p)
+  (provide block?)
+  (define (block? p)
     (or (paragraph? p)
         (table? p)
         (itemization? p)
         (blockquote? p)
-        (delayed-flow-element? p)))
+        (delayed-block? p)))
 
   (provide-structs 
    [part ([tag-prefix (or/c false/c string?)]
@@ -141,17 +141,17 @@
           [parts (listof part?)])]
    [(unnumbered-part part) ()]
    [(versioned-part part) ([version (or/c string? false/c)])]
-   [flow ([paragraphs (listof flow-element?)])]
+   [flow ([paragraphs (listof block?)])]
    [paragraph ([content list?])]
    [(styled-paragraph paragraph) ([style any/c])]
    [table ([style any/c]
            [flowss (listof (listof (or/c flow? (one-of/c 'cont))))])]
    [(auxiliary-table table) ()]
-   [delayed-flow-element ([resolve (any/c part? resolve-info? . -> . flow-element?)])]
+   [delayed-block ([resolve (any/c part? resolve-info? . -> . block?)])]
    [itemization ([flows (listof flow?)])]
    [(styled-itemization itemization) ([style any/c])]
    [blockquote ([style any/c]
-                [paragraphs (listof flow-element?)])]
+                [paragraphs (listof block?)])]
    ;; content = list of elements
    [element ([style any/c]
              [content list?])]
@@ -213,8 +213,8 @@
   (define (delayed-element-content e ri)
     (hash-table-get (resolve-info-delays ri) e))
 
-  (provide delayed-flow-element-flow-elements)
-  (define (delayed-flow-element-flow-elements p ri)
+  (provide delayed-block-blocks)
+  (define (delayed-block-blocks p ri)
     (hash-table-get (resolve-info-delays ri) p))
 
   (provide current-serialize-resolve-info)
@@ -429,7 +429,7 @@
 
   ;; ----------------------------------------
   
-  (provide flow-element-width
+  (provide block-width
            element-width)
 
   (define (element-width s)
@@ -444,15 +444,15 @@
     (apply + (map element-width (paragraph-content s))))
 
   (define (flow-width f)
-    (apply max 0 (map flow-element-width (flow-paragraphs f))))
+    (apply max 0 (map block-width (flow-paragraphs f))))
 
-  (define (flow-element-width p)
+  (define (block-width p)
     (cond
      [(paragraph? p) (paragraph-width p)]
      [(table? p) (table-width p)]
      [(itemization? p) (itemization-width p)]
      [(blockquote? p) (blockquote-width p)]
-     [(delayed-flow-element? p) 1]))
+     [(delayed-block? p) 1]))
 
   (define (table-width p)
     (let ([flowss (table-flowss p)])

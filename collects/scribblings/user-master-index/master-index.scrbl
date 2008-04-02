@@ -4,5 +4,5 @@
 
 @title{Master Index (user)}
 
-@(make-splice (index-flow-elements))
+@(make-splice (index-blocks))
 

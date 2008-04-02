@@ -1243,7 +1243,7 @@
                                             ;; multiple results
                                             (if (null? res)
                                                 'nbsp
-                                                (let ([w (apply max 0 (map flow-element-width res))])
+                                                (let ([w (apply max 0 (map block-width res))])
                                                   (if (or (ormap table? res)
                                                           (w . > . 30))
                                                       (make-table
@@ -1266,7 +1266,7 @@
                                                             (+ (prototype-size args max max)
                                                                (prototype-depth prototype)
                                                                (element-width tagged)))
-                                                        (flow-element-width res))
+                                                        (block-width res))
                                                      . >= . (- max-proto-width 7))]
                                [(end) (list (to-flow spacer)
                                             (to-flow 'rarr)
@@ -1365,10 +1365,10 @@
                                    [(not (arg-special? arg))
                                     (let* ([arg-cont (arg-contract)]
                                            [base-len (+ 5 (string-length (symbol->string (arg-id arg)))
-                                                        (flow-element-width arg-cont))]
+                                                        (block-width arg-cont))]
                                            [arg-val (and arg-val (arg-val))]
                                            [def-len (if (arg-optional? arg)
-                                                        (flow-element-width arg-val)
+                                                        (block-width arg-val)
                                                         0)]
                                            [base-list
                                             (list
@@ -1675,7 +1675,7 @@
                                  spacer ":" spacer))))
                         (make-flow
                          (list
-                          (if (flow-element? result-contract)
+                          (if (block? result-contract)
                               result-contract
                               (make-paragraph (list result-contract)))))))))))
             stx-ids names result-contracts))
@@ -2174,7 +2174,7 @@
              [else i]))
           body)
      (list
-      (make-delayed-flow-element
+      (make-delayed-block
        (lambda (r d ri)
          (make-inherited-table r d ri decl))))))
 

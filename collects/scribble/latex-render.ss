@@ -22,7 +22,7 @@
       (define/override (get-suffix) #".tex")
 
       (inherit render-flow
-               render-flow-element
+               render-block
                render-content
                install-file
                format-number)
@@ -297,7 +297,7 @@
           (printf "\n\n\\begin{~a}\n" kind)
           (parameterize ([current-table-mode (list "blockquote" t)])
             (for-each (lambda (e)
-                        (render-flow-element e part ri #f))
+                        (render-block e part ri #f))
                       (blockquote-paragraphs t)))
           (printf "\n\n\\end{~a}\n" kind)
           null))

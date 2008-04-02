@@ -181,7 +181,7 @@
   (define (render-mixin %)
     (class %
       (inherit render-content
-               render-flow-element
+               render-block
                collect-part
                install-file
                get-dest-directory
@@ -337,13 +337,13 @@
                                    (let loop ([t t])
                                      (if (table? t)
                                          (render-table t d ri #f)
-                                         (loop (delayed-flow-element-flow-elements t ri)))))
+                                         (loop (delayed-block-blocks t ri)))))
                                  (filter (lambda (e)
                                            (let loop ([e e])
                                              (or (and (auxiliary-table? e)
                                                       (pair? (table-flowss e)))
-                                                 (and (delayed-flow-element? e)
-                                                      (loop (delayed-flow-element-flow-elements e ri))))))
+                                                 (and (delayed-block? e)
+                                                      (loop (delayed-block-blocks e ri))))))
                                          (flow-paragraphs (part-flow d))))))))))
 
       (define/public (get-onthispage-label)
@@ -368,8 +368,8 @@
                            ;; get internal targets:
                            (letrec ([flow-targets
                                      (lambda (flow)
-                                       (apply append (map flow-element-targets (flow-paragraphs flow))))]
-                                    [flow-element-targets
+                                       (apply append (map block-targets (flow-paragraphs flow))))]
+                                    [block-targets
                                      (lambda (e)
                                        (cond
                                         [(table? e) (table-targets e)]
@@ -377,8 +377,8 @@
                                         [(itemization? e)
                                          (apply append (map flow-targets (itemization-flows e)))]
                                         [(blockquote? e)
-                                         (apply append (map flow-element-targets (blockquote-paragraphs e)))]
-                                        [(delayed-flow-element? e)
+                                         (apply append (map block-targets (blockquote-paragraphs e)))]
+                                        [(delayed-block? e)
                                          null]))]
                                     [para-targets
                                      (lambda (para)
@@ -412,7 +412,7 @@
                                                                               (flow-targets f)))
                                                                         flows)))
                                                    (table-flowss table))))])
-                             (apply append (map flow-element-targets (flow-paragraphs (part-flow d)))))
+                             (apply append (map block-targets (flow-paragraphs (part-flow d)))))
                            (map flatten (part-parts d)))))]
                    [any-parts? (ormap part? ps)])
               (if (null? ps)
@@ -647,10 +647,10 @@
            [(and (table? (car f)) 
                  (or (not special-last?)
                      (not (null? (cdr f)))))
-            (cons `(p ,@(render-flow-element (car f) part ri inline?))
+            (cons `(p ,@(render-block (car f) part ri inline?))
                   (loop (cdr f) #f))]
            [else
-            (append (render-flow-element (car f) part ri inline?)
+            (append (render-block (car f) part ri inline?)
                     (loop (cdr f) #f))])))
 
       (define/override (render-flow p part ri start-inline?)
@@ -757,7 +757,26 @@
            [(url-anchor? style)
             `((a ((name ,(url-anchor-name style)))
                  ,@(super render-element e part ri)))]
-           [(image-file? style) `((img ((src ,(install-file (image-file-path style))))))]
+           [(image-file? style) 
+            (let* ([src (image-file-path style)]
+                   [scale (image-file-scale style)]
+                   [sz (if (= 1.0 scale)
+                           null
+                           ;; Try to extract file size:
+                           (call-with-input-file* 
+                            src
+                            (lambda (in)
+                              (if (regexp-try-match #px#"^\211PNG.{12}" in)
+                                  (let ([w (read-bytes 4 in)]
+                                        [h (read-bytes 4 in)]
+                                        [to-num (lambda (s)
+                                                  (number->string
+                                                   (inexact->exact
+                                                    (floor (* scale (integer-bytes->integer s #f #t))))))])
+                                    `((width ,(to-num w))
+                                      (height ,(to-num h))))
+                                  null))))])
+              `((img ((src ,(install-file src)) ,@sz))))]
            [else (super render-element e part ri)])))
 
       (define/override (render-table t part ri need-inline?)
@@ -835,7 +854,7 @@
                             null)
                       ,@(apply append
                                (map (lambda (i)
-                                      (render-flow-element i part ri #f))
+                                      (render-block i part ri #f))
                                     (blockquote-paragraphs t))))))
 
       (define/override (render-itemization t part ri)

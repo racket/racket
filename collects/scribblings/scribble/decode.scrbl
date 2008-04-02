@@ -93,6 +93,11 @@ Decodes a sequence of elements.
 
 }
 
+@defproc[(decode-elements [lst list?]) list?]{
+
+An alias for @scheme[decode-content].
+}
+
 @defproc[(decode-string [s string?]) list?]{
 
 Decodes a single string to produce a list of elements.

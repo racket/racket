@@ -13,7 +13,7 @@
            metavar
            cilitchar)
 
-  (define (as-flow i) (make-flow (list (if (flow-element? i)
+  (define (as-flow i) (make-flow (list (if (block? i)
                                            i
                                            (make-paragraph (if (list? i)
                                                                i
@@ -94,7 +94,7 @@
                                                                        '('equal)
                                                                        '()))]
                                                      [else v]))])
-                                           (if (flow-element? e)
+                                           (if (block? e)
                                                e
                                                (to-element (syntax-ize e 0))))])))))
                     strs))))))))

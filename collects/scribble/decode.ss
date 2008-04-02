@@ -10,6 +10,7 @@
            decode-flow
            decode-paragraph
            decode-content
+           (rename decode-content decode-elements)
            decode-string
            whitespace?)
 
@@ -105,7 +106,7 @@
                           (title-decl-tags (car l))
                           (title-decl-version (car l))
                           (title-decl-style (car l)))])]
-       [(flow-element? (car l))
+       [(block? (car l))
         (let ([para (decode-accum-para accum)]
               [part (decode-flow* (cdr l) keys colls tag-prefix tags vers style
                                   title part-depth)])

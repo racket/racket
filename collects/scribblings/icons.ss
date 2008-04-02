@@ -9,7 +9,8 @@
     (make-element "imageleft"
                   (list
                    (make-element (make-image-file (build-path (collection-path "scribblings")
-                                                              name))
+                                                              name)
+                                                  1.0)
                                  (list "+")))))
   (define magnify (mk "magnify.png"))
   (define finger (mk "finger.png")))

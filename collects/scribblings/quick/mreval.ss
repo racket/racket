@@ -115,7 +115,7 @@
           (send dc clear)
           (((mr-eval 'make-pict-drawer) v) dc 0 0)
           (send bm save-file fn 'png)
-          (make-element #f (list (make-element (make-image-file fn) (list "[image]"))))))]
+          (make-element #f (list (make-element (make-image-file fn 1.0) (list "[image]"))))))]
      [(pair? v) (cons (fixup-picts (car v))
                       (fixup-picts (cdr v)))]
      [(serializable? v) v]
