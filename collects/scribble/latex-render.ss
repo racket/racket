@@ -317,6 +317,8 @@
                          [(rarr) "$\\rightarrow$"]
                          [(alpha) "$\\alpha$"]
                          [(infin) "$\\infty$"]
+                         [(lsaquo) "$\\langle$"]
+                         [(rsaquo) "$\\rangle$"]
                          [else (error 'render "unknown symbol element: ~e" i)]))]
          [else (display-protected (format "~s" i))])
         null)
