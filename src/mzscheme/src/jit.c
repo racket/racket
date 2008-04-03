@@ -2563,7 +2563,7 @@ static jit_insn *generate_arith_slow_path(mz_jit_state *jitter, Scheme_Object *r
 }
 
 #ifdef SIXTY_FOUR_BIT_INTEGERS
-# define SCHEME_INT_SMALL_ENOUGH(rand2) ((((long)rand2 & 0xFFFFFFFF) == (long)rand2) || (((long)rand2 & 0xFFFFFFFFF0000000) == 0xFFFFFFFFF0000000))
+# define SCHEME_INT_SMALL_ENOUGH(rand2) ((((long)rand2 & 0x7FFFFFFF) == (long)rand2) || (((long)rand2 & 0xFFFFFFFFF8000000) == 0xFFFFFFFFF8000000))
 #else
 # define SCHEME_INT_SMALL_ENOUGH(rand2) 1
 #endif
