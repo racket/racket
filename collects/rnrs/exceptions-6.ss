@@ -56,15 +56,24 @@
       (exn:continuable-continuation exn)))
 
 (define-syntax-rule (guard (id cond-clause ...) body0 body ...)
-  (with-handlers ([(lambda (x) #t)
-                   (lambda (id)
-                     (let ([id (if (exn:continuable? id)
-                                   (exn:continuable-base id)
-                                   id)])
-                       (cond
-                        cond-clause ...
-                        [else (raise id)])))])
+  (with-handlers* ([(lambda (x) #t)
+                    (lambda (id)
+                      (let ([id (if (exn:continuable? id)
+                                    (exn:continuable-base id)
+                                    id)])
+                        (exn-cond id
+                         cond-clause ...)))])
     body0 body ...))
+
+(define-syntax exn-cond
+  (syntax-rules (else)
+    [(_ id [else . rhs])
+     (cond [else . rhs])]
+    [(_ id clause . more)
+     (cond clause
+           [else (exn-cond id . more)])]
+    [(_ id)
+     (raise id)]))
 
 (define (r6rs:raise exn)
   ;; No barrier
