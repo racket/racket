@@ -42,26 +42,23 @@ single-precision numbers.
 The precision and size of exact numbers is limited only by available
 memory (and the precision of operations that can produce irrational
 numbers). In particular, adding, multiplying, subtracting, and
-dividing exact numbers always produces an extract result.
+dividing exact numbers always produces an exact result.
 
 Inexact numbers can be coerced to exact form, except for the inexact
 numbers @scheme[+inf.0], @scheme[-inf.0], and @scheme[+nan.0], which
 have no exact form. @index["division by inexact zero"]{Dividing} a
 number by exact zero raises an exception; dividing a non-zero number
 other than @scheme[+nan.0] by an inexact zero returns @scheme[+inf.0]
-or @scheme[-inf.0], depending on the sign of the dividend.  The
-infinities @scheme[+inf.0] and @scheme[-inf.0] are integers, and they
-answer @scheme[#t] for both @scheme[even?] and @scheme[odd?]. The
-@scheme[+nan.0] value is not an integer and is not @scheme[=] to
-itself, but @scheme[+nan.0] is @scheme[eqv?] to itself. Conversely,
-@scheme[(= 0.0 -0.0)] is @scheme[#t], but @scheme[(eqv? 0.0 -0.0)] is
-@scheme[#f]. The datum @scheme[-nan.0] refers to the same constant as
-@scheme[+nan.0].
+or @scheme[-inf.0], depending on the sign of the dividend. The
+@scheme[+nan.0] value is not @scheme[=] to itself, but @scheme[+nan.0]
+is @scheme[eqv?] to itself. Conversely, @scheme[(= 0.0 -0.0)] is
+@scheme[#t], but @scheme[(eqv? 0.0 -0.0)] is @scheme[#f]. The datum
+@schemevalfont{-nan.0} refers to the same constant as @scheme[+nan.0].
 
 Calculations with infinites produce results consistent with IEEE
 double-precision floating point where IEEE specifies the result; in
 cases where IEEE provides no specification (e.g., @scheme[(angle
-+inf.0+inf.0)]), the result corresponds to the limit approaching
++inf.0+inf.0i)]), the result corresponds to the limit approaching
 infinity, or @scheme[+nan.0] if no such limit exists.
 
 A @deftech{fixnum} is an exact integer whose two's complement
@@ -481,11 +478,20 @@ used.
 
 
 @defproc*[([(atan [z number?]) number?]
-           [(atan [y real?] [x real?]) number?])]{Returns the arctangent of
- @scheme[z] or of @scheme[(make-rectangular #, @scheme[x] #, @scheme[y])].}
+           [(atan [y real?] [x real?]) number?])]{
 
-@examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i)]
+In the one-argument case, returns the arctangent of the inexact
+approximation of @scheme[z], except that the result is an exact
+@scheme[0] for an exact @scheme[0] argument.
 
+In the two-argument case, the result is roughly the same as @scheme[(/
+(exact->inexact y) (exact->inexact x))], but the signs of @scheme[y]
+and @scheme[x] determine the quadrant of the result. Moreover, a
+suitable angle is returned when @scheme[y] divided by @scheme[x]
+produces @scheme[+nan.0] in the case that neither @scheme[y] nor
+@scheme[x] is @scheme[+nan.0].
+
+@examples[(atan 0.5) (atan 2 1) (atan -2 -1) (atan 1+05.i) (atan +inf.0 -inf.0)]}
 
 @; ------------------------------------------------------------------------
 @section{Complex Numbers}
