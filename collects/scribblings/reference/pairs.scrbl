@@ -134,8 +134,8 @@ must merely start with a chain of at least @scheme[pos] pairs.}
          any/c]{
 
 Returns the list after the first @scheme[pos] elements of
-@scheme[lst]. If the list has @scheme[pos] or fewer elements, then the
-@exnraise[exn:fail:contract].
+@scheme[lst]. If the list has fewer than @scheme[pos] elements, then
+the @exnraise[exn:fail:contract].
 
 The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely start with a chain of at least @scheme[pos] pairs.}
