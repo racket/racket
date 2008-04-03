@@ -348,11 +348,15 @@
                            (pair? (car v))
                            (integer? (caar v))))
                v
-               (deserialize v)))
+               (with-my-namespace
+                (lambda ()
+                  (deserialize v)))))
            (let ([v (list-ref v-in 3)])  ; searches
              (if (hash-table? v) ; temporary compatibility; used to be not serialized
                v
-               (deserialize v)))
+               (with-my-namespace
+                (lambda ()
+                  (deserialize v)))))
            (map rel->path (list-ref v-in 2)) ; deps, in case we don't need to build...
            can-run?
            my-time info-out-time
@@ -435,7 +439,9 @@
          (render-time
           "deserialize"
           (for ([i (info-deps info)])
-            (send renderer deserialize-info (info-sci i) ci)))
+            (with-my-namespace
+             (lambda ()
+               (send renderer deserialize-info (info-sci i) ci)))))
          (let* ([ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
                 [sci (render-time "serialize" (send renderer serialize-info ri))]
                 [defs (render-time "defined" (send renderer get-defined ci))]
@@ -484,6 +490,10 @@
   (collect-garbage))
 
 (define-namespace-anchor anchor)
+
+(define (with-my-namespace thunk)
+  (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
+    (thunk)))
 
 (define (dynamic-require-doc path)
   ;; Use a separate namespace so that we don't end up with all the
