@@ -298,31 +298,30 @@
          (lambda ()
            (begin0
              (let/ec esc
-               (with-handlers ([exn:fail? (lambda (exn) #f)])
+               (begin0
+                 ;;(with-handlers ([exn:fail? (lambda (exn) #f)])
                  (proc (lambda (obj)
                          (if (behavior? obj)
                              (begin
                                (case (hash-table-get deps obj 'absent)
                                  [(absent) (hash-table-put! deps obj 'new)
-                                           (register rtn obj)
-                                           (iq-enqueue rtn)
-                                           (esc #f)]
+                                           (let ([o-depth (signal-depth rtn)])
+                                             (register rtn obj)
+                                             (when (> (signal-depth rtn) o-depth)
+                                               (iq-enqueue rtn)
+                                               (esc #f)))]
                                  [(old)    (hash-table-put! deps obj 'alive)]
                                  [(new)    (void)])
                                (value-now obj))
-                             obj))))
-               (hash-table-for-each
-                deps
-                (lambda (k v)
-                  (case v
-                    [(new)   (hash-table-put! deps k 'old)
-                             #;(printf "reg~n")
-                             (register rtn k)]
-                    [(alive) (hash-table-put! deps k 'old)]
-                    [(old)   (hash-table-remove! deps k)
-                             #;(printf "unreg~n")
-                             (unregister rtn k)])))
-               #;(printf "count = ~a~n" (hash-table-count deps)))))))
+                             obj)));)
+                 (hash-table-for-each
+                  deps
+                  (lambda (k v)
+                    (case v
+                      [(new alive) (hash-table-put! deps k 'old)]
+                      [(old)   (hash-table-remove! deps k)
+                               (unregister rtn k)])))
+                 #;(printf "count = ~a~n" (hash-table-count deps))))))))
       (iq-enqueue rtn)
       rtn))
   
@@ -389,7 +388,7 @@
          [(undefined? lst) undefined]
          [(pair? lst) (cf (first lst) (rest lst))]
          [(empty? lst) (ef)]
-         [else (error "list-match: expected a list but got" lst)]))
+         [else (error "list-match: expected a list, got ~a" lst)]))
      lst))
   
   #;(define (frp:append . args)

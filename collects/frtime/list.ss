@@ -149,10 +149,15 @@
 
   
   (define (filter f l)
-    (cond
-      [(empty? l) empty]
-      [(f (first l)) (cons (first l) (filter f (rest l)))]
-      [else (filter f (rest l))]))
+    (list-match
+     l
+     (lambda (a d) (if (f a)
+                       (cons a (filter f d))
+                       (filter f d)))
+     (lambda () empty)))
+;      [(empty? l) empty]
+;      [(f (first l)) (cons (first l) (filter f (rest l)))]
+;      [else (filter f (rest l))]))
   
   
   (define (cons? x) (pair? x))

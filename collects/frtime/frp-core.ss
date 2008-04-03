@@ -166,8 +166,9 @@
     (event-producer2
      (lambda (emit)
        (lambda the-args
-         (when (cons? the-args)
-           (emit (first the-args)))))))
+         (if (cons? the-args)
+             (emit (first the-args))
+             (make-events-now empty))))))
   
   (define (event-producer2 proc . deps)
     (let* ([result (apply proc->signal (lambda args (make-events-now empty)) deps)]
@@ -175,7 +176,8 @@
                        (lambda (val)
                          (let ([old-value (signal-value result)])
                            (make-events-now
-                            (if (= (current-logical-time) (event-set-time old-value))
+                            (if (and (event-set? old-value)
+                                     (= (current-logical-time) (event-set-time old-value)))
                                 (append (event-set-events old-value) (list val))
                                 (list val))))))])
       (set-signal-thunk! result proc/emit)
@@ -327,7 +329,9 @@
 
   ; set-cell! : cell[a] a -> void
   (define (set-cell! ref beh)
-    (! man (make-external-event (list (list ((signal-thunk ref) #t) beh)))))
+    (if (man?)
+        (iq-enqueue (list ((signal-thunk ref) #t) beh))
+        (! man (make-external-event (list (list ((signal-thunk ref) #t) beh))))))
   
   
   (define-values (undefined undefined?)
@@ -641,7 +645,6 @@
          b
          (filter weak-box-value dependents)))))
   
-
   (define (update0 b)
     (match b
       [(and (? signal?)
@@ -652,27 +655,13 @@
        (let ([new-value (call-with-parameterization
                          params
                          thunk)])
-         (if (or (signal:unchanged? b)
-                 (not (or (boolean? new-value)
-                          (symbol? new-value)
-                          (number? new-value)
-                          (string? new-value)))
-                 (not (eq? value new-value)))
+         (when (or (signal:unchanged? b)
+                   (and (not (eq? value new-value))
+                        (or (not (event-set? new-value)) (cons? (event-set-events new-value))
+                            (not (event-set? value)))))
            (begin
-             #;(if (signal? new-value)
-                 (raise (make-exn:fail
-                         "signal from update thunk!!!"
-                         (signal-continuation-marks b))))
-             #;(printf "~n[~a]: ~a --> ~a~n" (cond
-                                         [(signal:switching? b) 'signal:switching]
-                                         [(signal:compound? b) 'signal:compound]
-                                         [(signal:unchanged? b) 'signal:unchanged]
-                                         [else 'signal])
-                     value new-value)
              (set-signal-value! b new-value)
-             (propagate b))
-           #;(parameterize ([print-struct #f])
-             (printf "~a ... ~a (~a)~n" value new-value b))))]
+             (propagate b))))]
       [_ (void)]))
   
   (define (update1 b a)
