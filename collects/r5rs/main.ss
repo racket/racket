@@ -334,7 +334,7 @@
 	   ;; but they're not legal R5RS names, anyway.
            (rename-out [#%plain-module-begin #%module-begin])
 	   #%app #%datum #%top #%top-interaction 
-           #%require #%provide)
+           #%require #%provide #%expression)
   
   ;; --------------------------------------------------
 
