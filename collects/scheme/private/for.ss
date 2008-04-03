@@ -43,6 +43,7 @@
              
              sequence?
              sequence-generate
+             prop:sequence
              
              define-sequence-syntax
              make-do-sequence
@@ -268,6 +269,14 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  sequences
   
+  (define-values (struct:do-sequence
+                  make-do-sequence
+                  do-sequence?
+                  do-sequence-ref
+                  do-sequence-set!)
+    (make-struct-type 'sequence #f
+                      1 0 #f))
+
   (define-values (prop:sequence :sequence? :sequence-ref)
     (make-struct-type-property 'sequence
                                (lambda (v sinfo)
@@ -277,17 +286,14 @@
                                     'sequence-property-guard
                                     "procedure (arity 1)"
                                     v))
-                                 v)))
-  
-  (define-values (struct:do-sequence
-                  make-do-sequence
-                  do-sequence?
-                  do-sequence-ref
-                  do-sequence-set!)
-    (make-struct-type 'sequence #f
-                      1 0 #f
-                      (list (cons prop:sequence (lambda (v)
-                                                   ((do-sequence-ref v 0)))))))
+                                 (lambda (self)
+                                   (let ([s (v self)])
+                                     (unless (sequence? s)
+                                       (raise-mismatch-error
+                                        'sequence-generate
+                                        "procedure (value of prop:sequence) produced a non-sequence: "
+                                        s))
+                                     s)))))
 
   (define-syntax define-sequence-syntax
     (syntax-rules ()
@@ -298,23 +304,26 @@
                           (syntax-local-certifier #f)))]))
 
   (define (sequence? v)
-    (or (:sequence? v)
+    (or (do-sequence? v)
         (list? v)
         (vector? v)
         (string? v)
         (bytes? v)
         (input-port? v)
-        (hash-table? v)))
+        (hash-table? v)
+        (and (:sequence? v)
+             (not (struct-type? v)))))
   
   (define (make-sequence who v)
     (cond
-      [(:sequence? v) ((:sequence-ref v) v)]
+      [(do-sequence? v) ((do-sequence-ref v 0))]
       [(list? v) (:list-gen v)]
       [(vector? v) (:vector-gen v)]
       [(string? v) (:string-gen v)]
       [(bytes? v) (:bytes-gen v)]
       [(input-port? v) (:input-port-gen v)]
       [(hash-table? v) (:hash-table-gen v cons (lambda (p) (values (car p) (cdr p))))]
+      [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [else (raise
              (make-exn:fail:contract
               (format "for: expected a sequence for ~a, got something else: ~v"

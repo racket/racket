@@ -89,7 +89,7 @@ static void print_vector(Scheme_Object *vec, int notdisplay, int compact,
 			 Scheme_Hash_Table *ht, 
                          Scheme_Marshal_Tables *mt,
 			 PrintParams *pp,
-                         int as_struct);
+                         int as_prefab);
 static void print_char(Scheme_Object *chobj, int notdisplay, PrintParams *pp);
 static char *print_to_string(Scheme_Object *obj, long * volatile len, int write,
 			     Scheme_Object *port, long maxl, int check_honu);
@@ -115,6 +115,7 @@ static Scheme_Hash_Table *global_constants_ht;
 #define print_compact(pp, v) print_this_string(pp, &compacts[v], 0, 1)
 
 #define PRINTABLE_STRUCT(obj, pp) (scheme_inspector_sees_part(obj, pp->inspector, -1))
+#define SCHEME_PREFABP(obj) (((Scheme_Structure *)(obj))->stype->prefab_key)
 
 #define HAS_SUBSTRUCT(obj, qk) \
    (SCHEME_PAIRP(obj) \
@@ -1859,9 +1860,16 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_STRUCTP(obj))
     {
-      if (compact || !pp->print_unreadable)
-	cannot_print(pp, notdisplay, obj, ht, compact);
-      else if (scheme_is_writable_struct(obj)) {
+      if (compact && SCHEME_PREFABP(obj)) {
+        Scheme_Object *vec, *prefab;
+        print_compact(pp, CPT_PREFAB);
+        prefab = ((Scheme_Structure *)obj)->stype->prefab_key;
+        vec = scheme_struct_to_vector(obj, NULL, pp->inspector);
+        SCHEME_VEC_ELS(vec)[0] = SCHEME_CDR(prefab);
+        print_vector(vec, notdisplay, compact, ht, mt, pp, 1);
+      } else if (compact || !pp->print_unreadable) {
+        cannot_print(pp, notdisplay, obj, ht, compact);
+      } else if (scheme_is_writable_struct(obj)) {
 	custom_write_struct(obj, ht, mt, pp, notdisplay);
       } else {
 	int pb;
@@ -2976,7 +2984,7 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
 	     Scheme_Hash_Table *ht, 
              Scheme_Marshal_Tables *mt,
 	     PrintParams *pp,
-             int as_struct)
+             int as_prefab)
 {
   int i, size, common = 0;
   Scheme_Object **elems;
@@ -2994,7 +3002,7 @@ print_vector(Scheme_Object *vec, int notdisplay, int compact,
     }
     elems = NULL; /* Precise GC: because VEC_ELS is not aligned */
     
-    if (as_struct) {
+    if (as_prefab) {
       print_utf8_string(pp, "#s(", 0, 3);
     } else if (notdisplay && pp->print_vec_shorthand) {
       if (size == 0) {

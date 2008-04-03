@@ -38,7 +38,9 @@ built-in datatypes, the sequence datatype includes the following:
 }
 
 In addition, @scheme[make-do-sequence] creates a sequence given a
-thunk that returns procedures to implement a generator.
+thunk that returns procedures to implement a generator, and the
+@scheme[prop:sequence] property can be associated with a structure
+type.
 
 For most sequence types, extracting elements from a sequence has no
 side-effect on the original sequence value; for example, extracting the
@@ -189,6 +191,31 @@ Among the last three procedures, as soon as one of the procedures
 returns @scheme[#f], the sequence ends, and none are called
 again. Typically, one of the functions determines the end condition,
 and the other two functions always return @scheme[#t].}
+
+@defthing[prop:sequence struct-type-property?]{
+
+Associates a procedure to a structure type that takes an instance of
+the structure and returns a sequence. If @scheme[v] is an instance of
+a structure type with this property, then @scheme[(sequence? v)]
+produces @scheme[#t].
+
+@examples[
+(define-struct train (car next)
+  #:property prop:sequence (lambda (t)
+                             (make-do-sequence 
+                              (lambda ()
+                                (values train-car
+                                        train-next
+                                        t
+                                        (lambda (t) t)
+                                        (lambda (v) #t)
+                                        (lambda (t v) #t))))))
+(for/list ([c (make-train 'engine
+                          (make-train 'boxcar
+                                      (make-train 'caboose
+                                                  #f)))])
+  c)
+]}
 
 @section{Sequence Generators}
 

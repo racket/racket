@@ -4864,6 +4864,22 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         }
         break;
       }
+    case CPT_PREFAB:
+      {
+        Scheme_Struct_Type *st;
+        v = read_compact(port, 0);
+        if (!SCHEME_VECTORP(v) || !SCHEME_VEC_SIZE(v))
+          v = NULL;
+        else {
+          st = scheme_lookup_prefab_type(SCHEME_VEC_ELS(v)[0], SCHEME_VEC_SIZE(v) - 1);
+          if (!st || (st->num_slots != (SCHEME_VEC_SIZE(v) - 1)))
+            v = NULL;
+          else {
+            v = scheme_make_prefab_struct_instance(st, v);
+          }
+        }
+        break;
+      }
     case CPT_SMALL_LOCAL_START:
     case CPT_SMALL_LOCAL_UNBOX_START:
       {
