@@ -400,7 +400,7 @@ static Scheme_Object *do_load_extension(const char *filename,
 		       filename);
 #endif
 #ifdef NO_DYNAMIC_LOAD
-    scheme_raise_exn(MZEXN_MISC_UNSUPPORTED,
+    scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
 		     "load-extension: not supported on this platform");
     return NULL;
 #else
