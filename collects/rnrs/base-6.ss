@@ -361,7 +361,7 @@
 ;; quasiquote generalization
 
 (define-generalized-qq r6rs:quasiquote 
-  r5rs:quasiquote unquote unquote-splicing)
+  r5rs:quasiquote unquote unquote-splicing values)
 
 ;; ----------------------------------------
 ;; let[*]-values

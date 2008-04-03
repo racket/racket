@@ -7,7 +7,7 @@
 (provide define-generalized-qq)
 
 (define-syntax-rule (define-generalized-qq r6rs:quasiquote 
-                      quasiquote unquote unquote-splicing)
+                      quasiquote unquote unquote-splicing uq-wrap)
   (...
    (define-syntax (r6rs:quasiquote stx)
      ;; Replace (unquote expr ...) with (unquote expr) ...
@@ -23,7 +23,8 @@
                     (let ([new-rest (loop #'rest level)])
                       (if (zero? level)
                           (if (and (eq? new-rest #'rest)
-                                   (= 1 (length (syntax->list #'(expr ...)))))
+                                   (= 1 (length (syntax->list #'(expr ...))))
+                                   (free-identifier=? #'uq-wrap #'values))
                               tmpl
                               (datum->syntax
                                tmpl
@@ -32,7 +33,8 @@
                                                 (datum->syntax
                                                  a
                                                  (list (car (syntax-e a))
-                                                       expr)
+                                                       (list (syntax uq-wrap)
+                                                             expr))
                                                  a a a))
                                               (syntax->list #'(expr ...))))
                                        new-rest)

@@ -275,4 +275,4 @@
        [(p ...) (let () e1 e2 ...)])]))
 
 (define-generalized-qq r6rs:quasisyntax
-  quasisyntax unsyntax unyntaxquote-splicing)
+  quasisyntax unsyntax unsyntax-splicing convert-mpairs)
