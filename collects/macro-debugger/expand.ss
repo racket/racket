@@ -20,5 +20,5 @@
   (let-values ([(result deriv) (trace/result stx)])
     (when (exn? result)
       (raise result))
-    (let-values ([(_d estx) (hide/policy deriv show?)])
+    (let-values ([(_d estx) (hide*/policy deriv show?)])
       estx)))

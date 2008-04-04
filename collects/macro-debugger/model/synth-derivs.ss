@@ -106,6 +106,10 @@
        (recv [(next e2) (head-loop next)]
              (values (make mrule e1 e2 tx next)
                      e2))]
+      [(Wrap tagrule (e1 e2 tagged-stx next))
+       (recv [(next e2) (head-loop next)]
+             (values (make tagrule e1 e2 tagged-stx next)
+                     e2))]
       [(Wrap p:variable (e1 e2 rs ?1))
        (adjust-tail e2 rs)]
       ;; FIXME: appropriate?
@@ -312,13 +316,17 @@
   ;; FIXME: Need extra +1 in case of improper list?
   (loop (stx-improper-length suffix)))
 
-;; module-begin->lderiv : p:#%module-begin -> ??? ListDerivation
+;; module-begin->lderiv : p:#%module-begin -> ListDerivation
 ;; Only use when ?1 is #f.
 (define (module-begin->lderiv pr)
-  (let-values ([(forms pass1 pass2)
+  (let-values ([(init-forms forms pass1 pass2)
                 (match pr
-                       [(Wrap p:#%module-begin (e1 _ _ #f pass1 pass2 ?2))
-                        (values (stx-cdr e1) pass1 pass2)])])
+                       [(Wrap p:#%module-begin (e1 _ _ #f me pass1 pass2 ?2))
+                        ;; FIXME: use 'me'???
+                        (values (stx->list (stx-cdr e1))
+                                (stx->list (stx-cdr me))
+                                pass1
+                                pass2)])])
     
     ;; eat-skip : -> void
     (define (eat-skip)
@@ -343,7 +351,7 @@
     ;; loop-nz : number -> (list-of WDeriv)
     (define (loop-nz count)
       (match pass1
-        [(cons (Wrap mod:prim (head prim)) next)
+        [(cons (Wrap mod:prim (head rename prim)) next)
          (let ([form0 (stx-car forms)]
                [pass1-part (car pass1)])
            (set! forms (stx-cdr forms))
@@ -352,20 +360,22 @@
              (cons (wrap/rename-from form0
                                      (combine-prim pass1-part pass2-part))
                    (loop (sub1 count)))))]
-        [(cons (Wrap mod:splice (head ?1 tail)) next)
+        [(cons (Wrap mod:splice (head rename ?1 tail)) next)
          (let ([form0 (stx-car forms)]
                [pass1-part (car pass1)])
            (set! forms tail)
            (set! pass1 next)
            (if (not ?1)
-               (let ([inner-n (- (length (stx->list tail))
-                                 (length (stx->list (stx-cdr forms))))])
+               (let ([inner-n (length (stx->list (stx-cdr rename)))])
                  (let ([inners (loop inner-n)])
-                   (cons (wrap/rename-from form0 (combine-begin head inners))
+                   (cons (wrap/rename-from form0
+                                           (combine-begin head rename inners))
                          (loop (sub1 count)))))
                (combine-derivs head
+                               ;; FIXME: use rename!
                                (make p:begin (wderiv-e2 head) #f null ?1 #f))))]
-        [(cons (Wrap mod:lift (head tail)) next)
+        [(cons (Wrap mod:lift (head renames tail)) next)
+         ;; FIXME: use renames
          (let ([form0 (stx-car forms)]
                [inner-n (length (stx->list tail))])
            (set! forms (stx-cdr forms))
@@ -399,7 +409,7 @@
             [(cons (Wrap mod:cons (deriv)) next)
              (set! pass2 next)
              (cons deriv (loop2 (sub1 count)))]
-            [(cons (Wrap mod:lift (deriv tail)) next)
+            [(cons (Wrap mod:lift (deriv #f tail)) next)
              (set! pass2 next)
              (let* ([head-e1 (wderiv-e1 deriv)]
                     [head-e2 (wderiv-e2 deriv)]
@@ -434,14 +444,16 @@
              #;(printf "module-body->lderiv:loop2: unexpected null~n")
              (cons #f (loop2 (sub1 count)))])
           null))
-    
+
     (define (outer-loop)
       (if (pair? pass1)
           (append (loop 1) (outer-loop))
           null))
-    
-    (let* ([derivs (outer-loop)]
-           [es1 forms]
+
+    (let* ([inner-derivs (outer-loop)]
+           [used-forms (take-if-possible init-forms (length inner-derivs))]
+           [derivs (map wrap/rename-from used-forms inner-derivs)]
+           [es1 init-forms]
            [es2 (wderivlist-es2 derivs)])
       (make lderiv es1 es2 #f derivs))))
 
@@ -449,24 +461,30 @@
 ;; The MRule is always a mod:prim rule.
 ;; Need to insert a rename step in between...
 (define (combine-prim mr deriv)
-  (let ([head (mod:prim-head mr)]
-        [pr (mod:prim-prim mr)])
+  (match-let ([(Wrap mod:prim (head rename pr)) mr])
+    (define (adapt d)
+      (wrap/rename-from rename
+                        (or d (make p:stop rename rename null #f))))
     (match pr
       [(Wrap p:define-syntaxes (e1 e2 rs ?1 rhs ?2))
        ;; deriv is #f or trivial
-       (combine-derivs head pr)]
+       (unless (eq? deriv #f)
+         (error 'combine-prim "deriv not expected to be present: ~s" deriv))
+       (combine-derivs head (adapt pr))]
       [(Wrap p:define-values (e1 e2 '() ?1 #f))
        ;; deriv is a pderiv for the entire define-values form
-       (combine-derivs head deriv)]
+       (combine-derivs head (adapt deriv))]
       [#f
        ;; deriv is a complete derivation of the rest of the form
-       (combine-derivs head deriv)]
+       (combine-derivs head (adapt deriv))]
       [(Wrap p::STOP (e1 e2 rs ?1))
        ;; deriv is #f
-       (combine-derivs head pr)])))
+       (unless (eq? deriv #f)
+         (error 'combine-prim "deriv not expected to be present: ~s" deriv))
+       (combine-derivs head (adapt pr))])))
 
 ;; combine-begin : OkDeriv (list-of (W Deriv)) -> WDeriv
-(define (combine-begin head inners)
+(define (combine-begin head rename inners)
   (let* ([inners-es1 (map wderiv-e1 inners)]
          [inners-es2 (wderivlist-es2 inners)]
          [begin-e1 (wderiv-e2 head)]
@@ -477,7 +495,8 @@
     (combine-derivs
      head
      (let ([ld (make lderiv inners-es1 inners-es2 #f inners)])
-       (make p:begin begin-e1 begin-e2 null #f ld)))))
+       (wrap/rename-from rename
+                         (make p:begin begin-e1 begin-e2 null #f ld))))))
 
 ;; combine-lifts : OkDeriv WDeriv (list-of WDeriv) -> WDeriv
 (define (combine-lifts head finish inners)
@@ -509,11 +528,20 @@
      (with-syntax ([(?module-begin . _) e1]
                    [inners-es1* inners-es1]
                    [inners-es2* inners-es2])
+       #;
+       (unless (= (length inners) (length (stx->list inners-es1)))
+         (printf "~s\n" ld)
+         (error 'lderiv->module-begin "inners-es1 wrong length"))
+       #;
+       (unless (= (length inners) (length (stx->list inners-es2)))
+         (printf "~s\n" ld)
+         (error 'lderiv->module-begin "inners-es2 wrong length"))
        (make p:#%module-begin
          (syntax/skeleton e1 (?module-begin . inners-es1*))
          (syntax/skeleton e1 (?module-begin . inners-es2*))
          rs
          #f
+         (syntax/skeleton e1 (?module-begin . inners-es1*))
          (map (lambda (d) (make mod:cons d)) inners)
          (map (lambda (x) (make mod:skip)) inners)
          #f))]))
@@ -545,3 +573,20 @@
                   derivs]
                  [#f
                   null])))]))
+
+
+;; normalize-module : Deriv -> Deriv
+(define (normalize-module d)
+  (match d
+    [(Wrap p:module (e1 e2 rs #f #f tag rename check tag2 #f body shift))
+     (let* ([check* #f]
+            [post-check-stx (if check (wderiv-e2 check) rename)]
+            [tag2* #f]
+            [body* (if tag2
+                       (make tagrule post-check-stx (wderiv-e2 body) tag2 body)
+                       body)]
+            [body** (if check
+                        (combine-derivs check body*)
+                        body*)])
+       (make p:module e1 e2 rs #f #f tag rename check* tag2* #f body** shift))]
+    [_ d]))

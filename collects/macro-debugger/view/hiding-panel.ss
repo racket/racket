@@ -4,53 +4,14 @@
          scheme/gui
          scheme/list
          syntax/boundmap
-         "../model/synth-engine.ss"
-         "../syntax-browser/util.ss"
-         "../util/notify.ss"
-         "../util/hiding.ss")
+         "../model/hiding-policies.ss"
+         "../util/mpi.ss"
+         "../util/notify.ss")
 (provide macro-hiding-prefs-widget%)
 
 (define mode:disable "Disable")
 (define mode:standard "Standard")
 (define mode:custom "Custom ...")
-
-(define (make-policy hide-mzscheme?
-                     hide-libs?
-                     hide-contracts?
-                     hide-transformers?
-                     specialized-policies)
-  (lambda (id)
-    (define now (phase))
-    (define binding
-      (cond [(= now 0) (identifier-binding id)]
-            [(= now 1) (identifier-transformer-binding id)]
-            [else #f]))
-    (define-values (def-mod def-name nom-mod nom-name)
-      (if (pair? binding)
-          (values (car binding)
-                  (cadr binding)
-                  (caddr binding)
-                  (cadddr binding))
-          (values #f #f #f #f)))
-    (let/ec return
-      (let loop ([policies specialized-policies])
-        (when (pair? policies)
-          ((car policies) id binding return)
-          (loop (cdr policies))))
-      (cond [(and hide-mzscheme? def-mod (scheme-module? def-mod))
-             #f]
-            [(and hide-libs? def-mod (lib-module? def-mod))
-             #f]
-            [(and hide-contracts? def-name
-                  (regexp-match #rx"^provide/contract-id-"
-                                (symbol->string def-name)))
-             #f]
-            [(and hide-transformers? (positive? now))
-             #f]
-            [else #t]))))
-
-(define standard-policy
-  (make-policy #t #t #t #t null))
 
 ;; macro-hiding-prefs-widget%
 (define macro-hiding-prefs-widget%

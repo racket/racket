@@ -5413,7 +5413,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       return f(form, env, rec, drec);
     } else {
       form = scheme_datum_to_syntax(scheme_make_pair(stx, form), form, form, 0, 2);
-      
+      SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, form);
+
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_syntax_compiler_type)) {
 	if (rec[drec].comp) {
 	  Scheme_Syntax *f;
@@ -8952,11 +8953,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   observer = scheme_get_expand_observe();
   if (observer) {
-    if (for_expr) {
-      SCHEME_EXPAND_OBSERVE_ENTER_LOCAL_EXPR(observer, l);
-    } else {
-      SCHEME_EXPAND_OBSERVE_ENTER_LOCAL(observer, l);
-    }
+    SCHEME_EXPAND_OBSERVE_ENTER_LOCAL(observer, l);
     if (for_stx) {
       SCHEME_EXPAND_OBSERVE_PHASE_UP(observer);
     }
@@ -8987,14 +8984,20 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     drec[0].value_name = scheme_false; /* or scheme_current_thread->current_local_name ? */
     drec[0].certs = scheme_current_thread->current_local_certs;
     drec[0].depth = -2;
+    drec[0].observer = observer;
 
     xl = scheme_check_immediate_macro(l, env, drec, 0, 0, &gval, NULL, NULL);
 
-    if (SAME_OBJ(xl, l))
+    if (SAME_OBJ(xl, l)) {
+      SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, xl);
+      SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, orig_l);
       return orig_l;
+    }
 
-    if (catch_lifts_key)
+    if (catch_lifts_key) {
       xl = add_lifts_as_begin(xl, scheme_frame_get_lifts(env), env);
+      SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer,xl);
+    }
 
     l = xl;
   } else {
@@ -9034,7 +9037,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   if (for_expr) {
     Scheme_Object *a[2];
-    SCHEME_EXPAND_OBSERVE_EXIT_LOCAL_EXPR(observer, l, exp_expr);
+    SCHEME_EXPAND_OBSERVE_OPAQUE_EXPR(observer, exp_expr);
+    SCHEME_EXPAND_OBSERVE_EXIT_LOCAL(observer, l);
     a[0] = l;
     a[1] = exp_expr;
     return scheme_values(2, a);
@@ -9293,9 +9297,12 @@ static Scheme_Object *
 local_eval(int argc, Scheme_Object **argv)
 {
   Scheme_Comp_Env *env, *stx_env, *old_stx_env;
-  Scheme_Object *l, *a, *rib, *expr, *certs, *names;
+  Scheme_Object *l, *a, *rib, *expr, *certs, *names, *observer;
   int cnt = 0, pos;
-  
+
+  observer = scheme_get_expand_observe();
+  SCHEME_EXPAND_OBSERVE_LOCAL_BIND(observer, argv[0]);
+
   names = argv[0];
   for (l = names; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
     a = SCHEME_CAR(l);
@@ -9347,7 +9354,7 @@ local_eval(int argc, Scheme_Object **argv)
     rec.depth = -1;
     rec.value_name = scheme_false;
     rec.certs = certs;
-    rec.observer = scheme_get_expand_observe();
+    rec.observer = observer;
     
     /* Evaluate and bind syntaxes */
     expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);

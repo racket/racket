@@ -14,7 +14,7 @@
       (write (map serialize-context-frame
                   (continuation-mark-set->context
                    (exn-continuation-marks exn)))))
-    'replace))
+    #:exists 'replace))
 
 (define (serialize-datum d)
   (cond [(number? d) `(quote ,d)]

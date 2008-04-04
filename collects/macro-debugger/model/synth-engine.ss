@@ -20,11 +20,21 @@
          current-hiding-warning-handler
          warn
 
+         handle-hiding-failure
+         
          (struct-out hiding-failure)
          (struct-out nonlinearity)
          (struct-out localactions)
          (struct-out hidden-lift-site)
+
+         DEBUG-LIFTS
+         current-unvisited-lifts
+         current-unhidden-lifts
+         add-unhidden-lift
+         extract/remove-unvisited-lift
          
+         (struct-out SKtuple)
+         SKlet
          SKunit
          SKzero
          SKseq
@@ -61,6 +71,85 @@
 (define-struct (localactions hiding-failure) ())
 (define-struct (hidden-lift-site hiding-failure) ())
 
+;; Warnings
+
+(define (handle-hiding-failure d failure)
+  (match failure
+    [(struct nonlinearity (term paths))
+     (warn 'nonlinearity term paths d)]
+    [(struct localactions ())
+     (warn 'localactions d)]
+    [(struct hidden-lift-site ())
+     (warn 'hidden-lift-site d)]))
+
+
+;; Lift management
+
+(define-syntax DEBUG-LIFTS
+  (syntax-rules ()
+    [(DEBUG-LIFTS . b)
+     (void)]
+    #;
+    [(DEBUG-LIFTS . b)
+     (begin . b)]))
+
+;; current-unvisited-lifts : (paramter-of Derivation)
+;; The derivs for the lifts yet to be seen in the processing 
+;; of the first part of the current lift-deriv.
+(define current-unvisited-lifts (make-parameter null))
+
+;; current-unhidden-lifts : (parameter-of Derivation)
+;; The derivs for those lifts that occur within unhidden macros.
+;; Derivs are moved from the current-unvisited-lifts to this list.
+(define current-unhidden-lifts (make-parameter null))
+
+;; add-unhidden-lift : Derivation -> void
+(define (add-unhidden-lift d)
+  (when d
+    (current-unhidden-lifts
+     (cons d (current-unhidden-lifts)))))
+
+;; extract/remove-unvisted-lift : identifier -> Derivation
+(define (extract/remove-unvisited-lift id)
+  (define (get-defined-id d)
+    (match d
+      [(Wrap deriv (e1 e2))
+       (with-syntax ([(?define-values (?id) ?expr) e1])
+         #'?id)]))
+  ;; The Wrong Way
+  (let ([unvisited (current-unvisited-lifts)])
+    (if (null? unvisited)
+        (begin (DEBUG-LIFTS
+                (printf "hide:extract/remove-unvisited-lift: out of lifts!"))
+               #f)
+        (let ([lift (car unvisited)])
+          (DEBUG-LIFTS
+           (printf "extracting lift: ~s left\n" (length (cdr unvisited))))
+          (current-unvisited-lifts (cdr unvisited))
+          lift)))
+  ;; The Right Way
+  ;; FIXME: Doesn't work inside of modules. Why not?
+  #;
+  (let loop ([lifts (current-unvisited-lifts)]
+             [prefix null])
+    (cond [(null? lifts)
+           (DEBUG-LIFTS
+            (fprintf (current-error-port)
+                     "hide:extract/remove-unvisited-lift: can't find lift for ~s~n"
+                     id))
+           (raise (make localactions))]
+          [(bound-identifier=? id (get-defined-id (car lifts)))
+           (let ([lift (car lifts)])
+             (current-unvisited-lifts
+              (let loop ([prefix prefix] [lifts (cdr lifts)])
+                (if (null? prefix)
+                    lifts
+                    (loop (cdr prefix) (cons (car prefix) lifts)))))
+             lift)]
+          [else
+           (loop (cdr lifts) (cons (car lifts) prefix))])))
+
+
 
 ;; Macros
 
@@ -70,6 +159,8 @@
      (begin body)]
     [(recv [(var ...) expr] . more)
      (let-values ([(var ...) expr]) (recv . more))]))
+
+;; H data
 
 (define (Hunit d s)
   (values d s #f))
@@ -160,48 +251,52 @@
 
 ;; Seek
 
-;; SK = (values (list-of SubItem) ?exn)
+;; OLD SK = (values (list-of SubItem) ?exn)
+
+(define-struct SKtuple (subs exn))
 
 (define subitem/c (or/c s:subterm? s:rename?))
-(define-syntax ->SK/c
-  (syntax-rules ()
-    [(->SK/c domain ...)
-     (-> domain ... (values (listof subitem/c) (or/c exn? false/c)))]))
+(define SK/c (struct/c SKtuple (listof subitem/c) (or/c exn? false/c)))
+
+(define-syntax-rule (SKlet ([x y] c) . body)
+  (match-let ([(struct SKtuple (x y)) c]) . body))
 
 (define/contract SKunit
-  (->SK/c (listof subitem/c))
-  (lambda (x)
-    (values x #f)))
+  ((listof subitem/c) . -> . SK/c)
+  (lambda (x) (make SKtuple x #f)))
 
 (define/contract SKzero
-  (->SK/c)
-  (lambda () (values null #f)))
+  (-> SK/c)
+  (lambda () (make SKtuple null #f)))
 
 (define/contract SKfail
-  (->SK/c exn?)
-  (lambda (exn)
-    (values null exn)))
-  
+  (exn? . -> . SK/c)
+  (lambda (exn) (make SKtuple null exn)))
+
 (define/contract SKseq
-  (->SK/c (->SK/c) (->SK/c))
+  (SK/c SK/c . -> . SK/c)
   (lambda (c1 c2)
-    (recv [(si1 exn1) (c1)]
-          (if (not exn1)
-              (recv [(si2 exn2) (c2)]
-                    (values (append si1 si2) exn2))
-              (values si1 exn1)))))
+    (SKlet ((si1 exn1) c1)
+           (if (not exn1)
+               (SKlet ((si2 exn2) c2)
+                      (make SKtuple (append si1 si2) exn2))
+               (make SKtuple si1 exn1)))))
 
-(define (SKmap f xs)
-  (if (pair? xs)
-      (SKseq (lambda () (f (car xs)))
-             (lambda () (SKmap f (cdr xs))))
-      (SKzero)))
+(define/contract SKmap
+  ((any/c . -> . SK/c) (listof any/c) . -> . SK/c)
+  (lambda (f xs)
+    (if (pair? xs)
+        (SKseq (f (car xs))
+               (SKmap f (cdr xs)))
+        (SKzero))))
 
-(define (SKmap2 f xs ys)
-  (if (pair? xs)
-      (SKseq (lambda () (f (car xs) (car ys)))
-             (lambda () (SKmap f (cdr xs) (cdr ys))))
-      (SKzero)))
+(define/contract SKmap2
+  ((any/c any/c . -> . SK/c) (listof any/c) (listof any/c) . -> . SK/c)
+  (lambda (f xs ys)
+    (if (pair? xs)
+        (SKseq (f (car xs) (car ys))
+               (SKmap2 f (cdr xs) (cdr ys)))
+        (SKzero))))
 
 (define-syntax >>Seek
   (syntax-rules (! =>)
@@ -220,8 +315,8 @@
     [(>>Seek [#:rename expr] . more)
      (let-values ([(subterms new-table) expr])
        (parameterize ((subterms-table new-table))
-         (SKseq (lambda () (SKunit subterms))
-                (lambda () (>>Seek . more)))))]
+         (SKseq (SKunit subterms)
+                (>>Seek . more))))]
     [(>>Seek expr . more)
-     (SKseq (lambda () expr)
-            (lambda () (>>Seek . more)))]))
+     (SKseq expr
+            (>>Seek . more))]))

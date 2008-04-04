@@ -6,7 +6,6 @@
          "model/reductions.ss"
          "model/steps.ss"
          "model/hide.ss"
-         "model/hiding-policies.ss"
          "syntax-browser/partition.ss"
          "syntax-browser/pretty-helper.ss")
 (provide expand/step-text
@@ -125,8 +124,6 @@
          (lambda (id)
            (ormap (lambda (x) (free-identifier=? x id))
                   show))]
-        [(hiding-policy? show)
-         (lambda (x) (policy-show-macro? show x))]
         [(eq? show #f)
          #f]
         [else

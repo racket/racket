@@ -5511,7 +5511,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   /* First expand for expansion-observation */
   if (!rec[drec].comp) {
     scheme_init_expand_recs(rec, drec, &mrec, 1);
-    SCHEME_EXPAND_OBSERVE_PHASE_UP(mrec.observer);
+    SCHEME_EXPAND_OBSERVE_ENTER_BIND(rec[drec].observer);
     a = scheme_expand_expr_lift_to_let(a, eenv, &mrec, 0);
   }
 
@@ -5543,6 +5543,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
        if (ri->use_jit) a = scheme_jit_expr(a);
      but it's not likely that a let-syntax-bound macro is going
      to run lots of times, so JITting is probably not worth it. */
+
+  SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
   a = eval_letmacro_rhs(a, rhs_env, ri->max_let_depth, rp, eenv->genv->phase, certs);
 
@@ -5596,6 +5598,8 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     scheme_set_local_syntax(i++, name, macro, stx_env);
   }
   *_pos = i;
+
+  SCHEME_EXPAND_OBSERVE_EXIT_BIND(rec[drec].observer);
 }
 
 static Scheme_Object *

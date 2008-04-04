@@ -44,7 +44,16 @@
    enter-local/expr     ; syntax
    exit-local/expr      ; (cons syntax expanded-expression)
 
-   variable            ; (cons identifier identifier)
+   local-bind           ; (list-of identifier)
+   enter-bind           ; .
+   exit-bind            ; .
+   opaque               ; opaque-syntax
+
+   variable             ; (cons identifier identifier)
+   tag                  ; syntax
+
+   rename-one           ; syntax
+   rename-list          ; (list-of syntax)
 
    IMPOSSIBLE           ; useful for error-handling clauses that have no NoError counterpart
    ))
@@ -142,6 +151,13 @@
     (139 . ,token-enter-local/expr)
     (140 . ,token-exit-local/expr)
     (141 . ,token-start)
+    (142 . ,token-tag)
+    (143 . ,token-local-bind)
+    (144 . ,token-enter-bind)
+    (145 . ,token-exit-bind)
+    (146 . ,token-opaque)
+    (147 . ,token-rename-list)
+    (148 . ,token-rename-one)
     ))
 
 (define (tokenize sig-n val pos)

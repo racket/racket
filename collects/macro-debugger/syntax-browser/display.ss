@@ -176,11 +176,6 @@
     (let ([end (get-end-position)])
       ;; Pretty printer always inserts final newline; we remove it here.
       (send text delete (sub1 end) end))
-    ;; Set font to standard
-    (send text change-style
-          (code-style text)
-          (get-start-position)
-          (get-end-position))
     (let ([offset (get-start-position)])
       (fixup-parentheses text range offset)
       (for-each
@@ -191,8 +186,13 @@
            (send text set-clickback (+ offset start) (+ offset end)
                  (lambda (_1 _2 _3)
                    (send controller set-selected-syntax stx)))))
-       (send range all-ranges))
-      range)))
+       (send range all-ranges)))
+    ;; Set font to standard
+    (send text change-style
+          (code-style text)
+          (get-start-position)
+          (get-end-position))
+    range))
 
 ;; fixup-parentheses : text range -> void
 (define (fixup-parentheses text range offset)

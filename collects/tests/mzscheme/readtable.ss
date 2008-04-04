@@ -62,6 +62,12 @@
 	[(ch port src line col pos)
 	 (test #\_ values ch)
 	 (read-char port) (read-char port) (read-char port)
+	 (make-special-comment #f)])]
+      [comment3.2
+       (case-lambda
+	[(ch port src line col pos)
+	 (test #\? values ch)
+	 (read-char port) (read-char port) (read-char port)
 	 (make-special-comment #f)])])
   (let ([t (make-readtable #f 
 			   #\$ 'terminating-macro plain-dollar
@@ -71,7 +77,8 @@
 			   #\= #\\ #f
 			   #\~ #\space #f
 			   #\_ 'terminating-macro comment3
-			   #\$ 'dispatch-macro  hash-dollar)])
+			   #\$ 'dispatch-macro  hash-dollar
+                           #\? 'dispatch-macro comment3.2)])
     (test-values '(#\a #f #f) (lambda () (readtable-mapping t #\a)))
     (test-values '(#\| #f #f) (lambda () (readtable-mapping t #\^)))
     (test-values '(#\( #f #f) (lambda () (readtable-mapping t #\<)))
@@ -131,7 +138,9 @@
 		   (test-read "a _xxx b" '(a b))
 		   (test-read "(a _xxx b)" '((a b)))
 		   (test-read "(a _xxx . b)" '((a . b)))
+		   (test-read "(a #?xxx . b)" '((a . b)))
 		   (test-read "(a . _xxx b)" '((a . b)))
+		   (test-read "(a . #?xxx b)" '((a . b)))
 		   (if old-caret?
 		       (test-read "(a ^_xxx^ b)" '((a ^ ^ b)))
 		       (test-read "(a ^_xxx^ b)" '((a _xxx b))))

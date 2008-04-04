@@ -234,6 +234,11 @@
        (define wrap?
          (let ([wrap? (assq '#:wrap options)]
                [no-wrap? (assq '#:no-wrap options)])
+           (when (and wrap? no-wrap?)
+             (raise-syntax-error 'split
+                                 "cannot specify both #:wrap and #:no-wrap"
+                                 stx))
+           #;
            (unless (and (or wrap? no-wrap?) (not (and wrap? no-wrap?)))
              (raise-syntax-error 'split
                                  "must specify exactly one of #:wrap, #:no-wrap"

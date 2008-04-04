@@ -7,9 +7,11 @@
          "synth-engine.ss"
          "synth-derivs.ss"
          "stx-util.ss"
-         "context.ss")
+         "context.ss"
+         "seek.ss")
 
 (provide hide/policy
+         hide*/policy
          macro-policy
          force-letrec-transformation
          current-hiding-warning-handler
@@ -18,81 +20,17 @@
          (struct-out localactions)
          (struct-out hidden-lift-site))
 
-;; hide/policy : WDeriv (identifier -> boolean) -> (values WDeriv syntax)
+;; hide/policy : WDeriv (identifier -> boolean) -> WDeriv
 (define (hide/policy deriv show-macro?)
-  (parameterize ((macro-policy show-macro?))
+  (let-values ([(d s) (hide*/policy deriv show-macro?)])
+    d))
+
+;; hide*/policy : WDeriv (identifier -> boolean) -> (values WDeriv syntax)
+(define (hide*/policy deriv show-macro?)
+  (parameterize ((macro-policy show-macro?)
+                 (current-seek-processor hide/deriv))
     (hide deriv)))
 
-;; Warnings
-
-(define (handle-hiding-failure d failure)
-  (match failure
-    [(struct nonlinearity (term paths))
-     (warn 'nonlinearity term paths d)]
-    [(struct localactions ())
-     (warn 'localactions d)]
-    [(struct hidden-lift-site ())
-     (warn 'hidden-lift-site d)]))
-
-(define-syntax DEBUG-LIFTS
-  (syntax-rules ()
-    [(DEBUG-LIFTS . b)
-     (begin . b)]))
-
-;; current-unvisited-lifts : (paramter-of Derivation)
-;; The derivs for the lifts yet to be seen in the processing 
-;; of the first part of the current lift-deriv.
-(define current-unvisited-lifts (make-parameter null))
-
-;; current-unhidden-lifts : (parameter-of Derivation)
-;; The derivs for those lifts that occur within unhidden macros.
-;; Derivs are moved from the current-unvisited-lifts to this list.
-(define current-unhidden-lifts (make-parameter null))
-
-;; add-unhidden-lift : Derivation -> void
-(define (add-unhidden-lift d)
-  (when d
-    (current-unhidden-lifts
-     (cons d (current-unhidden-lifts)))))
-
-;; extract/remove-unvisted-lift : identifier -> Derivation
-(define (extract/remove-unvisited-lift id)
-  (define (get-defined-id d)
-    (match d
-      [(Wrap deriv (e1 e2))
-       (with-syntax ([(?define-values (?id) ?expr) e1])
-         #'?id)]))
-  ;; The Wrong Way
-  (let ([unvisited (current-unvisited-lifts)])
-    (if (null? unvisited)
-        (begin (printf "hide:extract/remove-unvisited-lift: out of lifts!")
-               #f)
-        (let ([lift (car unvisited)])
-          (DEBUG-LIFTS
-           (printf "extracting lift: ~s left\n" (length (cdr unvisited))))
-          (current-unvisited-lifts (cdr unvisited))
-          lift)))
-  ;; The Right Way
-  ;; FIXME: Doesn't work inside of modules. Why not?
-  #;
-  (let loop ([lifts (current-unvisited-lifts)]
-             [prefix null])
-    (cond [(null? lifts)
-           (DEBUG-LIFTS
-            (fprintf (current-error-port)
-                     "hide:extract/remove-unvisited-lift: can't find lift for ~s~n"
-                     id))
-           (raise (make localactions))]
-          [(bound-identifier=? id (get-defined-id (car lifts)))
-           (let ([lift (car lifts)])
-             (current-unvisited-lifts
-              (let loop ([prefix prefix] [lifts (cdr lifts)])
-                (if (null? prefix)
-                    lifts
-                    (loop (cdr prefix) (cons (car prefix) lifts)))))
-             lift)]
-          [else
-           (loop (cdr lifts) (cons (car lifts) prefix))])))
 
 ;                                               
 ;                                               
@@ -162,6 +100,11 @@
 ;; The derivation is "visible" or "active" by default, 
 ;; but pieces of it may need to be hidden.
 
+;; hide/deriv : WDeriv -> WDeriv
+(define (hide/deriv d)
+  (let-values ([(d s) (hide d)])
+    d))
+
 ;; hide : WDeriv -> (values WDeriv syntax)
 (define (hide deriv)
   (for-deriv deriv))
@@ -172,6 +115,21 @@
     ;; Primitives
     [(Wrap p:variable (e1 e2 rs ?1))
      (values d e2)]
+    [(Wrap p:module (e1 e2 rs ?1 ?2 tag rename check tag2 ?3 body shift))
+     (let ([show-k
+            (lambda ()
+              (>>Prim d e1 #t (p:module ?2 tag rename check tag2 ?3 body shift)
+                      (module name lang . _BODY)
+                      (module name lang BODY)
+                      ([for-deriv BODY body])))])
+       (if (or (show-macro? #'module))
+           (show-k)
+           (with-handlers ([hiding-failure?
+                            (lambda (failure)
+                              (handle-hiding-failure d failure)
+                              (show-k))])
+             (seek/deriv d))))]
+    #; ;; OLD CODE
     [(Wrap p:module (e1 e2 rs ?1 #f #f #f body))
      (let ([show-k
             (lambda ()
@@ -186,6 +144,7 @@
                               (handle-hiding-failure d failure)
                               (show-k))])
              (seek/deriv d))))]
+    #; ;; OLD CODE
     [(Wrap p:module (e1 e2 rs ?1 #t mb ?2 body))
      (let ([show-k
             (lambda ()
@@ -201,7 +160,7 @@
                               (handle-hiding-failure d failure)
                               (show-k))])
              (seek/deriv d))))]
-    [(Wrap p:#%module-begin (e1 e2 rs ?1 pass1 pass2 ?2))
+    [(Wrap p:#%module-begin (e1 e2 rs ?1 me pass1 pass2 ?2))
      (let ([lderiv (module-begin->lderiv d)])
        (recv [(lderiv es2) (for-lderiv lderiv)]
              [(d) (lderiv->module-begin lderiv e1 rs)]
@@ -218,17 +177,12 @@
      (>>P d (p:#%expression inner)
           (#%expression INNER)
           ([for-deriv INNER inner]))]
-    [(Wrap p:if (e1 e2 rs ?1 full? test then else))
-     (if full?
-         (>>P d (p:if full? test then else)
-              (if TEST THEN ELSE)
-              ([for-deriv TEST test]
-               [for-deriv THEN then]
-               [for-deriv ELSE else]))
-         (>>P d (p:if full? test then else)
-              (if TEST THEN)
-              ([for-deriv TEST test]
-               [for-deriv THEN then])))]
+    [(Wrap p:if (e1 e2 rs ?1 test then else))
+     (>>P d (p:if test then else)
+          (if TEST THEN ELSE)
+          ([for-deriv TEST test]
+           [for-deriv THEN then]
+           [for-deriv ELSE else]))]
     [(Wrap p:wcm (e1 e2 rs ?1 key mark body))
      (>>P d (p:wcm key mark body)
           (wcm KEY MARK BODY)
@@ -252,14 +206,10 @@
           (begin0 FIRST . LDERIV)
           ([for-deriv FIRST first]
            [for-lderiv LDERIV lderiv]))]
-    [(Wrap p:#%app (e1 e2 rs ?1 tagged-stx ld))
-     (if (or (eq? e1 tagged-stx) (show-macro? #'#%app))
-         ;; If explicitly tagged, simple
-         (>>Prim d tagged-stx #t (p:#%app tagged-stx ld)
-                 (#%app . LDERIV) (#%app . LDERIV)
-                 ([for-lderiv LDERIV ld]))
-         ;; If implicitly tagged:
-         (seek/deriv d))]
+    [(Wrap p:#%app (e1 e2 rs ?1 ld))
+     (>>P d (p:#%app ld)
+          (#%app . LDERIV)
+          ([for-lderiv LDERIV ld]))]
     [(Wrap p:lambda (e1 e2 rs ?1 renames body))
      (>>P d (p:lambda renames body)
           (lambda FORMALS . BODY)
@@ -297,26 +247,22 @@
               [for-bind-syntaxess (SRHS ...) srhss]
               [for-derivs (VRHS ...) vrhss]
               [for-bderiv BODY body])))]
-    [(Wrap p:#%datum (e1 e2 rs ?1 tagged-stx))
-     (cond [(or (eq? tagged-stx e1) (show-macro? #'#%datum))
-            (values d e2)]
-           [else
-            (seek/deriv d)])]
-    [(Wrap p:#%top (e1 e2 rs ?1 tagged-stx))
-     (cond [(or (eq? tagged-stx e1) (show-macro? #'#%top))
-            (values d e2)]
-           [else
-            (seek/deriv d)])]
+    [(Wrap p:#%datum (e1 e2 rs ?1))
+     (let ([show-k (lambda () (values d e2))])
+       (if (ormap show-macro? rs)
+           (show-k)
+           (seek/deriv/on-fail d show-k)))]
+    [(Wrap p:#%top (e1 e2 rs ?1))
+     (values d e2)]
     [(Wrap p::STOP (e1 e2 rs ?1))
      (values d e2)]
-    
     [(Wrap p:rename (e1 e2 rs ?1 rename inner))
      (>>P d (p:rename rename inner)
           INNER
           ([for-deriv INNER inner]))]
-    
+
     ;; Macros
-    
+
     [(Wrap mrule (e1 e2 tx next))
      (let ([show-k
             (lambda ()
@@ -326,12 +272,18 @@
                             e2)))])
        (if (show-transformation? tx)
            (show-k)
-           (with-handlers ([hiding-failure?
-                            (lambda (failure)
-                              (handle-hiding-failure d failure)
-                              (show-k))])
-             (seek/deriv d))))]
-    
+           (seek/deriv/on-fail d show-k)))]
+
+    [(Wrap tagrule (e1 e2 tagged-stx next))
+     (let ([show-k
+            (lambda ()
+              (recv [(next e2) (for-deriv next)]
+                    (values (make tagrule e1 e2 tagged-stx next)
+                            e2)))])
+       (if (show-macro? (stx-car tagged-stx))
+           (show-k)
+           (seek/deriv/on-fail d show-k)))]
+
     ;; Lift
     ;; Shaky invariant:
     ;; Only lift-exprs occur in first... no lift-end-module-decls
@@ -421,18 +373,20 @@
 ;; for-transformation : Transformation -> Transformation
 (define (for-transformation tx)
   (match tx
-    [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 _seq))
+    [(Wrap transformation (e1 e2 rs ?1 me1 locals me2 ?2 _seq))
      (let ([locals (and locals (map for-local-action locals))])
-       (make transformation e1 e2 rs ?1 me1 locals ?2 me2 _seq))]))
+       (make transformation e1 e2 rs ?1 me1 locals me2 ?2 _seq))]))
 
 ;; for-local-action : LocalAction -> LocalAction
 (define (for-local-action la)
   (match la
-    [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
-     (let-values ([(deriv e2) (for-deriv deriv)])
-       (make local-expansion e1 e2 me1 me2 for-stx? deriv))]
-    [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
-     (error 'hide:for-local-action "not implemented for local-expand-expr")]
+    [(struct local-expansion (e1 e2 me1 me2 deriv for-stx? lifted opaque))
+     (parameterize ((phase (if for-stx? (add1 (phase)) (phase))))
+       (when (or lifted opaque)
+         (fprintf (current-error-port)
+                  "for-local-action: warning: losing information\n"))
+       (let-values ([(deriv e2) (for-deriv deriv)])
+         (make local-expansion e1 e2 me1 me2 deriv for-stx? lifted opaque)))]
     [(struct local-lift (expr id))
      (add-unhidden-lift (extract/remove-unvisited-lift id))
      la]
@@ -440,9 +394,9 @@
      (DEBUG-LIFTS
       (printf "hide:for-local-action: local-lift-end unimplemented~n"))
      la]
-    [(struct local-bind (bindrhs))
+    [(struct local-bind (names bindrhs))
      (let-values ([(bindrhs e2) (for-bind-syntaxes bindrhs)])
-       (make local-bind bindrhs))]))
+       (make local-bind names bindrhs))]))
 
 ;; for-case-lambda-clauses : (list-of CaseLambdaClause) -> (list-of CaseLambdaClause) Stxs
 (define (for-case-lambda-clauses clauses)
@@ -546,277 +500,6 @@
                          es2)))]
         [#f (values #f #f)])))
 
-
-
-;                                      
-;                              ;;      
-;                              ;;      
-;                               ;      
-;                               ;      
-;    ;;;;;     ;;;;     ;;;;    ;  ;;; 
-;   ;;   ;    ;   ;    ;   ;    ;  ;   
-;   ;;       ;;   ;;  ;;   ;;   ; ;    
-;    ;;;     ;;;;;;;  ;;;;;;;   ;;;    
-;      ;;;;  ;        ;         ;;;    
-;   ;    ;;  ;;       ;;        ; ;;   
-;   ;    ;;   ;;       ;;       ;  ;;  
-;   ;;;;;;     ;;;;     ;;;;   ;;;  ;;;
-;                                      
-
-
-;; Seek:
-;; The derivation is "inactive" or "hidden" by default,
-;; but pieces of it can become visible if they correspond to subterms
-;; of the hidden syntax.
-
-;; seek/deriv : WDeriv -> (values WDeriv syntax)
-;; Seeks for derivations of all proper subterms of the derivation's
-;; initial syntax.
-(define (seek/deriv d)
-  (match d
-    [(Wrap deriv (e1 e2))
-     (let ([subterms (gather-proper-subterms e1)])
-       (parameterize ((subterms-table subterms))
-         (let ([sd (seek d)])
-           (values sd (wderiv-e2 sd)))))]))
-
-;; seek : WDeriv -> WDeriv
-;; Expects macro-policy, subterms-table to be set up already
-(define (seek d)
-  (match d
-    [(Wrap deriv (e1 e2))
-     (recv [(subterms hidden-exn) (subterm-derivations d)]
-           (begin (check-nonlinear-subterms subterms)
-                  ;; Now subterm substitution is safe, because they don't overlap
-                  (create-synth-deriv e1 subterms hidden-exn)))]))
-
-;; create-synth-deriv : syntax (list-of Subterm) ?exn -> WDeriv
-(define (create-synth-deriv e1 subterms hidden-exn)
-  (let ([e2 (if hidden-exn #f (substitute-subterms e1 subterms))])
-    (make p:synth e1 e2 null #f subterms hidden-exn)))
-
-;; subterm-derivations : Derivation -> (list-of Subterm) ?exn
-(define (subterm-derivations d)
-  (subterms-of-deriv d))
-
-;; subterms-of-deriv : Derivation -> (list-of Subterm) ?exn
-(define (subterms-of-deriv d)
-  (let ([path (check-visible d)])
-    (if path
-        (let-values ([(d _) (hide d)])
-          (SKunit (list (make s:subterm path d))))
-        (subterms-of-unlucky-deriv d))))
-
-;; subterms-of-deriv/phase-up : Derivation -> (list-of Subterm) ?exn
-(define (subterms-of-deriv/phase-up d)
-  (parameterize ((phase (add1 (phase))))
-    (subterms-of-deriv d)))
-
-;; check-visible : Derivation -> Path/#f
-(define (check-visible d)
-  (match d
-    [(Wrap deriv (e1 e2))
-     (let ([paths (table-get (subterms-table) e1)])
-       (cond [(null? paths) #f]
-             [(null? (cdr paths))
-              (car paths)]
-             [else
-              ;; More than one path to the same(eq?) syntax object
-              ;; Not good.
-              ;; FIXME: Better to delay check to here, or check whole table first?
-              ;; FIXME
-              (raise
-               (make nonlinearity e1 paths))]))]
-    [#f #f]))
-
-;; subterms-of-unlucky-deriv : Derivation -> (list-of Subterm) ?exn
-;; Guarantee: (wderiv-e1 deriv) is not in subterms table
-(define (subterms-of-unlucky-deriv d)
-  (match d
-    ;; Primitives
-    [(Wrap p:module (e1 e2 rs ?1 one-body-form? mb ?2 body))
-     (cond [one-body-form?
-            ;; FIXME: tricky... how to do renaming?
-            (>>Seek [! ?1]
-                    (subterms-of-deriv mb)
-                    [! ?1]
-                    (subterms-of-deriv body))]
-           [else
-            (with-syntax ([(?module ?name ?lang . ?body) e1]
-                          [(?module-begin . ?body*) (wderiv-e1 body)])
-              (>>Seek [! ?1]
-                      [#:rename (do-rename #'?body #'?body*)]
-                      [! ?2]
-                      (subterms-of-deriv body)))])]
-    [(Wrap p:#%module-begin (e1 e2 rs ?1 pass1 pass2 ?2))
-     (>>Seek [! ?1]
-             (subterms-of-lderiv (module-begin->lderiv d))
-             [! ?2])]
-    [(Wrap p:variable (e1 e2 rs ?1))
-     (>>Seek)]
-    [(Wrap p:define-syntaxes (e1 e2 rs ?1 rhs ?2))
-     (>>Seek [! ?1]
-             (subterms-of-deriv/phase-up rhs)
-             [! ?2])]
-    [(Wrap p:define-values (e1 e2 rs ?1 rhs))
-     (>>Seek [! ?1]
-             (subterms-of-deriv rhs))]
-    [(Wrap p:#%expression (e1 e2 rs ?1 inner))
-     (>>Seek [! ?1]
-             (subterms-of-deriv inner))]
-    [(Wrap p:if (e1 e2 rs ?1 full? test then else))
-     (>>Seek [! ?1]
-             (subterms-of-deriv test)
-             (subterms-of-deriv then)
-             (if full?
-                 (subterms-of-deriv else)
-                 (SKzero)))]
-    [(Wrap p:wcm (e1 e2 rs ?1 key value body))
-     (>>Seek [! ?1]
-             (subterms-of-deriv key)
-             (subterms-of-deriv value)
-             (subterms-of-deriv body))]
-    [(Wrap p:set! (e1 e2 rs ?1 id-resolves rhs))
-     (>>Seek [! ?1]
-             (subterms-of-deriv rhs))]
-    [(Wrap p:set!-macro (e1 e2 rs ?1 deriv))
-     (>>Seek [! ?1]
-             (subterms-of-deriv deriv))]
-    [(Wrap p:begin (e1 e2 rs ?1 lderiv))
-     (>>Seek [! ?1]
-             (subterms-of-lderiv lderiv))]
-    [(Wrap p:begin0 (e1 e2 rs ?1 head lderiv))
-     (>>Seek [! ?1]
-             (subterms-of-deriv head)
-             (subterms-of-lderiv lderiv))]
-    [(Wrap p:#%app (e1 e2 rs ?1 tagges-stx lderiv))
-     (>>Seek [! ?1]
-             (subterms-of-lderiv lderiv))]
-    [(Wrap p:lambda (e1 e2 rs ?1 renames body))
-     (>>Seek [! ?1]
-             [#:rename (do-rename/lambda e1 renames)]
-             (subterms-of-bderiv body))]
-    [(Wrap p:case-lambda (e1 e2 rs ?1 clauses))
-     (>>Seek [! ?1]
-             (SKmap2 subterms-of-case-lambda-clause
-                     clauses
-                     (stx->list (stx-cdr e1))))]
-    [(Wrap p:let-values (e1 e2 rs ?1 renames rhss body))
-     (>>Seek [! ?1]
-             [#:rename (do-rename/let e1 renames)]
-             (SKmap subterms-of-deriv rhss)
-             (subterms-of-bderiv body))]
-    [(Wrap p:letrec-values (e1 e2 rs ?1 renames rhss body))
-     (>>Seek [! ?1]
-             [#:rename (do-rename/let e1 renames)]
-             (SKmap subterms-of-deriv rhss)
-             (subterms-of-bderiv body))]
-    [(Wrap p:letrec-syntaxes+values (e1 e2 rs ?1 srenames srhss vrenames vrhss body))
-     (>>Seek [! ?1]
-             [#:rename (do-rename/lsv1 e1 srenames)]
-             (SKmap subterms-of-bind-syntaxes srhss)
-             [#:rename (do-rename/lsv2 srenames vrenames)]
-             (SKmap subterms-of-deriv vrhss)
-             (subterms-of-bderiv body))]
-    [(Wrap p::STOP (e1 e2 rs ?1))
-     (>>Seek)]
-    ;; synth (should synth be idempotent?... heh, no point for now)
-    [(Wrap p:rename (e1 e2 rs ?1 rename inner))
-     (>>Seek [! ?1]
-             [#:rename (do-rename (car rename) (cdr rename))]
-             (subterms-of-deriv inner))]
-    
-    ;; Macros
-    
-    [(Wrap mrule (e1 e2 tx next))
-     (recv [(subterms exn table) (subterms-of-transformation tx)]
-           (parameterize ((subterms-table table))
-             (SKseq (lambda () (values subterms exn))
-                    (lambda () (subterms-of-deriv next)))))]
-    
-    [(Wrap lift-deriv (e1 e2 first lifted-stx next))
-     (raise (make hidden-lift-site))]
-    
-    [(Wrap lift/let-deriv (e1 e2 first lifted-stx next))
-     (raise (make hidden-lift-site))]
-    
-    ;; Errors
-    
-    [#f (SKzero)]
-    ))
-
-;; subterms-of-transformation : Transformation -> (list-of Subterm) ?exn Table
-(define (subterms-of-transformation tx)
-  (match tx
-    [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 _seq))
-     ;; FIXME: We'll need to use e1/e2/me1/me2 to synth locals, perhaps
-     ;; FIXME: and we'll also need to account for *that* marking, too...
-     (let ([end-table #f])
-       (recv [(ss exn)
-              (>>Seek [! ?1]
-                      [#:rename/no (do-rename e1 me1)]
-                      (SKmap subterms-of-local-action locals)
-                      [! ?2]
-                      [#:rename/no (do-rename me2 e2)]
-                      (begin (set! end-table (subterms-table))
-                             (SKzero)))]
-             (values ss exn end-table)))]))
-
-;; subterms-of-local-action : LocalAction -> (list-of Subterm) ?exn
-(define (subterms-of-local-action local)
-  (match local
-    [(struct local-expansion (e1 e2 me1 me2 subterms-of-stx? deriv))
-     (>>Seek [#:rename/no (do-rename me1 e1)]  ;; FIXME: right order?
-             (recv [(subterms exn) (subterms-of-deriv deriv)]
-                   (if (pair? (filter s:subterm? subterms))
-                       (raise (make localactions))
-                       (values subterms exn))))]
-    [(struct local-expansion/expr (e1 e2 me1 me2 subterms-of-stx? opaque deriv))
-     (>>Seek [#:rename/no (do-rename me1 e1)]  ;; FIXME: right order?
-             (recv [(subterms exn) (subterms-of-deriv deriv)]
-                   (if (pair? (filter s:subterm? subterms))
-                       (raise (make localactions))
-                       (values subterms exn))))]
-    [(struct local-lift (expr id))
-     ;; FIXME: seek in the lifted deriv, transplant subterm expansions *here*
-     (extract/remove-unvisited-lift id)]
-    [(struct local-lift-end (decl))
-     ;; FIXME
-     (>>Seek)]
-    [(struct local-bind (bindrhs))
-     (recv [(subterms exn) (subterms-of-bind-syntaxes bindrhs)]
-           (if (pair? (filter s:subterm? subterms))
-               (raise (make localactions))
-               (values subterms exn)))]))
-
-;; subterms-of-lderiv : ListDerivation -> (list-of Subterm)
-(define (subterms-of-lderiv ld)
-  (match ld
-    [(Wrap lderiv (es1 es2 ?1 derivs))
-     (>>Seek [! ?1]
-             (SKmap subterms-of-deriv derivs))]
-    [#f (SKzero)]))
-
-;; subterms-of-bderiv : BlockDerivation -> (list-of Subterm)
-(define (subterms-of-bderiv bd)
-  (subterms-of-lderiv (bderiv->lderiv bd)))
-
-;; subterms-of-case-lambda-clause : Syntax CaseLambdaClause -> (list-of Subterm) ?exn
-(define (subterms-of-case-lambda-clause stx clause)
-  (match clause
-    [(Wrap clc (?1 renames body))
-     (>>Seek [! ?1]
-             [#:rename (do-rename/case-lambda stx renames)]
-             (subterms-of-bderiv body))]))
-
-;; subterms-of-bind-syntaxes : BindSyntaxes -> (list-of Subterm) ?exn
-(define (subterms-of-bind-syntaxes bindrhs)
-  (match bindrhs
-    [(Wrap bind-syntaxes (rhs ?1))
-     (>>Seek (subterms-of-deriv rhs)
-             [! ?1])]))
-
-
 ;                                                                 
 ;                     ;;;;                                        
 ;   ;;                   ;                                        
@@ -835,6 +518,7 @@
 ;                              ;;;;                               
 ;                                                                 
 
+
 ;; show-macro? : identifier -> boolean
 (define (show-macro? id)
   ((macro-policy) id))
@@ -842,138 +526,6 @@
 ;; show-mrule? : MRule -> boolean
 (define (show-transformation? tx)
   (match tx
-    [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 _seq))
+    [(Wrap transformation (e1 e2 rs ?1 me1 locals me2 ?2 _seq))
      (ormap show-macro? rs)]))
 
-;; gather-one-subterm : syntax syntax -> SubtermTable
-(define (gather-one-subterm whole part)
-  (let ([table (make-hash-table)])
-    (let ([paths (find-subterm-paths part whole)])
-      (for-each (lambda (p) (table-add! table part p)) paths))
-    table))
-
-;; gather-proper-subterms : Syntax -> SubtermTable
-;; FIXME: Eventually, need to descend into vectors, boxes, etc.
-(define (gather-proper-subterms stx0)
-  (let ([table (make-hash-table)])
-    ;; loop : Syntax Path -> void
-    (define (loop stx rpath)
-      (unless (eq? stx0 stx)
-        (table-add! table stx (reverse rpath)))
-      (let ([p (syntax-e stx)])
-        (when (pair? p)
-          (loop-cons p rpath 0))))
-    ;; loop-cons : (cons Syntax ?) Path number -> void
-    (define (loop-cons p rpath pos)
-      (loop (car p) (cons (make ref pos) rpath))
-      (let ([t (cdr p)])
-        (cond [(syntax? t)
-               (let ([te (syntax-e t)])
-                 (if (pair? te)
-                     (begin
-                       (table-add! table t (reverse (cons (make tail pos) rpath)))
-                       (loop-cons te rpath (add1 pos)))
-                     (loop t (cons (make tail pos) rpath))))]
-              [(pair? t)
-               (loop-cons t rpath (add1 pos))]
-              [(null? t)
-               (void)])))
-    (loop stx0 null)
-    table))
-
-(define (map/2values f items)
-  (if (null? items)
-      (values null null)
-      (let*-values ([(a0 b0) (f (car items))]
-                    [(as bs) (map/2values f (cdr items))])
-        (values (cons a0 as) (cons b0 bs)))))
-
-
-
-;                                               
-;                              ;;;;             
-;                     ;;          ;             
-;     ;                ;          ;             
-;     ;                ;          ;             
-;   ;;;;;;    ;;;;;    ; ;;;      ;       ;;;;  
-;     ;       ;   ;    ;;  ;;     ;      ;   ;  
-;     ;           ;    ;   ;;     ;     ;;   ;; 
-;     ;        ;;;;    ;   ;;     ;     ;;;;;;; 
-;     ;      ;;   ;    ;   ;;     ;     ;       
-;     ;      ;;   ;    ;   ;;     ;     ;;      
-;     ;;     ;;  ;;    ;   ;      ;      ;;     
-;      ;;;    ;;; ;;   ;;;;    ;;;;;;;    ;;;;  
-;                                               
-;                                               
-;                                               
-
-
-;; A Table is a hashtable[syntax => (list-of Path)
-(define (table-add! table stx v)
-  (hash-table-put! table stx (cons v (table-get table stx))))
-(define (table-add-if-absent! table stx v)
-  (unless (memq v (table-get table stx))
-    (table-add! table stx v)))
-(define (table-get table stx)
-  (hash-table-get table stx (lambda () null)))
-
-;; do-rename : syntax syntax -> (values (list-of Subterm) Table)
-(define (do-rename stx rename)
-  (let ([t (make-hash-table)]
-        [old (subterms-table)])
-    ;; loop : syntax syntax -> (list-of Subterm)
-    ;; Puts things into the new table, too
-    ;; If active? is #f, always returns null
-    (define (loop stx rename active?)
-      (cond [(and (syntax? stx) (syntax? rename))
-             (let ([paths (table-get old stx)])
-               (if (pair? paths)
-                   (begin (hash-table-put! t rename paths)
-                          (loop (syntax-e stx) (syntax-e rename) #f)
-                          (if active?
-                              (map (lambda (p) (make s:rename p stx rename))
-                                   paths)
-                              null))
-                   (loop (syntax-e stx) (syntax-e rename) active?)))]
-            [(syntax? rename)
-             (loop stx (syntax-e rename) active?)]
-            [(syntax? stx)
-             (loop (syntax-e stx) rename active?)]
-            [(and (pair? stx) (pair? rename))
-             (append
-              (loop (car stx) (car rename) active?)
-              (loop (cdr stx) (cdr rename) active?))]
-            [else
-             null]))
-    (let ([subterms (loop stx rename #t)])
-      (values subterms t))))
-
-(define (do-rename/lambda stx rename)
-  (if rename
-      (with-syntax ([(?lambda ?formals . ?body) stx])
-        (do-rename (cons #'?formals #'?body) rename))
-      (values null (subterms-table))))
-
-(define (do-rename/let stx rename)
-  (if rename 
-      (with-syntax ([(?let ?bindings . ?body) stx])
-        (do-rename (cons #'?bindings #'?body) rename))
-      (values null (subterms-table))))
-
-(define (do-rename/case-lambda stx rename)
-  (if rename
-      (with-syntax ([(?formals . ?body) stx])
-        (do-rename (cons #'?formals #'?body) rename))
-      (values null (subterms-table))))
-
-(define (do-rename/lsv1 stx rename) 
-  (if rename
-      (with-syntax ([(?lsv ?sbindings ?vbindings . ?body) stx])
-        (do-rename (cons #'?sbindings (cons #'?vbindings #'?body)) rename))
-      (values null (subterms-table))))
-
-(define (do-rename/lsv2 old-rename rename)
-  (if rename
-      (with-syntax ([(?sbindings ?vbindings . ?body) old-rename])
-        (do-rename (cons #'?vbindings #'?body) rename))
-      (values null (subterms-table))))

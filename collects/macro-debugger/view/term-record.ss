@@ -173,7 +173,7 @@
                                                     synth-warnings))))
                                      (force-letrec-transformation
                                       force-letrec?))
-                        (hide/policy deriv show-macro?))
+                        (hide*/policy deriv show-macro?))
                       (values deriv (wderiv-e2 deriv))))
                 (set! synth-deriv synth-deriv*)
                 (set! synth-estx estx*)))))))
@@ -390,7 +390,7 @@
     (define/public (add-syntax stx binders definites)
       (send sbview add-syntax stx
             '#:alpha-table binders
-            '#:definites definites))
+            '#:definites (or definites null)))
 
     (define/private (add-final stx error binders definites)
       (when stx
@@ -483,9 +483,10 @@
       (send sbview add-error-text (exn-message (misstep-exn step)))
       (send sbview add-text "\n")
       (when (exn:fail:syntax? (misstep-exn step))
-        (for-each (lambda (e) (send sbview add-syntax e
-                                    '#:alpha-table binders
-                                    '#:definites (protostep-definites step)))
+        (for-each (lambda (e)
+                    (send sbview add-syntax e
+                          '#:alpha-table binders
+                          '#:definites (or (protostep-definites step) null)))
                   (exn:fail:syntax-exprs (misstep-exn step))))
       (show-lctx step binders))
 
@@ -493,7 +494,7 @@
     ;; insert-syntax/color : syntax syntaxes identifiers syntaxes string -> void
     (define/private (insert-syntax/color stx foci binders definites frontier hi-color)
       (send sbview add-syntax stx
-            '#:definites definites
+            '#:definites (or definites null)
             '#:alpha-table binders
             '#:hi-color hi-color
             '#:hi-stxs (if (send config get-highlight-foci?) foci null)

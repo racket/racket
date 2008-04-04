@@ -2,9 +2,7 @@
 #lang scheme/base
 (require scheme/class)
 (provide with-unlock
-         make-text-port
-         mpi->string
-         mpi->list)
+         make-text-port)
 
 ;; with-unlock SYNTAX (expression)
 ;; (with-unlock text-expression . body)
@@ -31,29 +29,3 @@
                     (lambda (special buffer? enable-break?)
                       (send text insert special (end-position))
                       #t)))
-
-;; mpi->string : module-path-index -> string
-(define (mpi->string mpi)
-  (if (module-path-index? mpi)
-      (let ([mps (mpi->list mpi)])
-        (cond [(and (pair? mps) (pair? (cdr mps)))
-               (apply string-append
-                      (format "~s" (car mps))
-                      (map (lambda (x) (format " <= ~s" x)) (cdr mps)))]
-              [(and (pair? mps) (null? (cdr mps)))
-               (format "~s" (car mps))]
-              [(null? mps) "this module"]))
-      (format "~s" mpi)))
-
-;; mpi->list : module-path-index -> (list-of module-spec)
-(define (mpi->list mpi)
-  (cond [(module-path-index? mpi)
-         (let-values ([(path rel) (module-path-index-split mpi)])
-           (cond [(and (pair? path) (memq (car path) '(file lib planet)))
-                  (cons path null)]
-                 [path
-                  (cons path (mpi->list rel))]
-                 [else '()]))]
-        [(not mpi)
-         '()]
-        [else (list mpi)]))

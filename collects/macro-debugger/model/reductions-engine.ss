@@ -158,16 +158,19 @@
     [(CC HOLE expr pattern)
      #'(syntax-copier HOLE expr pattern)]))
 
-;; (R stx R-clause ...)
+;; R
+;; the threaded reductions engine
+
+;; (R stx R-clause ...) : (values (list-of Step) ?stx ?exn)
 ;; An R-clause is one of
 ;;   [! expr]
 ;;   [#:pattern pattern]
 ;;   [#:bind pattern stx-expr]
 ;;   [#:let-values (var ...) expr]
-;;   [#:set-syntax stx-expr]
-;;   [#:walk term2 foci1 foci2 description]
 ;;   [#:walk term2 description]
-;;   [#:rename form2 foci1 foci2 description]
+;;   [#:walk/ctx pattern term2 description]
+;;   [#:walk/foci term2 foci1 foci2 description]
+;;   [#:rename* pattern rename [description]]
 ;;   [#:rename/no-step pattern stx stx]
 ;;   [#:reductions expr]
 ;;   [#:learn ids]
@@ -176,26 +179,22 @@
 ;;   [#:if/np test R-clause ...]
 ;;   [generator hole fill]
 
-;; R
-;; the threaded reductions engine
-
-;; (R form . clauses) : (values (list-of Step) ?stx ?exn)
-
 (define-syntax R
   (syntax-rules ()
     [(R form . clauses)
-     (R** #f _ [#:set-syntax form] . clauses)]))
+     (let ([form-var form])
+       (R** form-var _ . clauses))]))
 
 (define-syntax R**
   (syntax-rules (! =>)
     ;; Base: done
     [(R** form-var pattern)
      (RSunit form-var)]
-    
+
     ;; Base: explicit continuation
     [(R** f p => k)
      (k f)]
-    
+
     ;; Error-point case
     [(R** f p [! maybe-exn] . more)
      (let ([x maybe-exn])
@@ -204,34 +203,26 @@
        (if x
            (values (list (stumble f x)) #f x)
            (R** f p . more)))]
-    
+
     ;; Change patterns
     [(R** f p [#:pattern p2] . more)
      (R** f p2 . more)]
-    
+
     ;; Bind pattern variables
     [(R** f p [#:bind pattern rhs] . more)
      (with-syntax ([pattern (with-syntax ([p f]) rhs)])
        (R** f p . more))]
-    
+
     ;; Bind variables
     [(R** f p [#:let-values (var ...) rhs] . more)
      (let-values ([(var ...) (with-syntax ([p f]) rhs)])
        (R** f p . more))]
-    
+
     ;; Change syntax
     [(R** f p [#:set-syntax form] . more)
      (let ([form-variable form])
        (R** form-variable p . more))]
-    
-    ;; Change syntax and Step (explicit foci)
-    [(R** f p [#:walk form2 foci1 foci2 description] . more)
-     (let-values ([(form2-var foci1-var foci2-var description-var)
-                   (with-syntax ([p f])
-                     (values form2 foci1 foci2 description))])
-       (RSadd (list (walk/foci foci1-var foci2-var f form2-var description-var))
-              (lambda () (R** form2-var p . more))))]
-    
+
     ;; Change syntax and Step (infer foci)
     [(R** f p [#:walk form2 description] . more)
      (let-values ([(form2-var description-var)
@@ -239,8 +230,52 @@
                      (values form2 description))])
        (RSadd (list (walk f form2-var description-var))
               (lambda () (R** form2-var p . more))))]
-    
+
+    ;; Change syntax and Step (explicit foci)
+    [(R** f p [#:walk/foci form2 foci1 foci2 description] . more)
+     (let-values ([(form2-var foci1-var foci2-var description-var)
+                   (with-syntax ([p f])
+                     (values form2 foci1 foci2 description))])
+       (RSadd (list (walk/foci foci1-var foci2-var f form2-var description-var))
+              (lambda () (R** form2-var p . more))))]
+
+    [(R** f p [#:walk/ctx hole form2 desc] . more)
+     (let-values ([(form2-var desc-var)
+                   (with-syntax ([p f])
+                     (values form2 desc))])
+       (let ([k (lambda (f2) (R** f2 p . more))]
+             [generator
+              (lambda ()
+                (lambda (d init-e1)
+                  (R init-e1
+                     [#:walk form2-var desc-var])))])
+         (Run f p generator hole form2 k)))]
+
+    ;; Rename
+    [(R** f p [#:rename* pattern renames] . more)
+     (R** f p [#:rename* pattern renames #f] . more)]
+
+    [(R** f p [#:rename* pattern renames description] . more)
+     (let-values ([(renames-var description-var)
+                   (with-syntax ([p f])
+                     (values renames description))])
+       (let ([pre-renames-var
+              (with-syntax ([p f]) (syntax pattern))]
+             [f2
+              (with-syntax ([p f])
+                (with-syntax ([pattern renames])
+                  (syntax p)))])
+         (rename-frontier pre-renames-var renames-var)
+         (with-context (make-renames pre-renames-var renames-var)
+           (RSadd (if description-var
+                      (list (walk/foci pre-renames-var renames-var
+                                       f f2
+                                       description-var))
+                      null)
+                  (lambda () (R** f2 p . more))))))]
+
     ;; Change syntax with rename
+    #;
     [(R** f p [#:rename form2 foci1 foci2 description] . more)
      (let-values ([(form2-var foci1-var foci2-var description-var)
                    (with-syntax ([p f])
@@ -251,7 +286,7 @@
                                  f form2-var
                                  description-var))
                 (lambda () (R** form2-var p . more)))))]
-    
+
     ;; Change syntax with rename (but no step)
     [(R** f p [#:rename/no-step pvar from to] . more)
      (let-values ([(from-var to-var)
@@ -262,42 +297,42 @@
          (rename-frontier from-var to-var)
          (with-context (make-renames from-var to-var)
            (R** f2 p . more))))]
-    
+
     ;; Add in arbitrary other steps
     [(R** f p [#:reductions steps] . more)
      (RSseq (lambda () steps)
             (lambda () (R** f p . more)))]
-    
+
     ;; Add to definites
     [(R** f p [#:learn ids] . more)
      (begin (learn-definites (with-syntax ([p f]) ids))
             (R** f p . more))]
-    
+
     ;; Add to frontier
     [(R** f p [#:frontier stxs] . more)
      (begin (add-frontier (with-syntax ([p f]) stxs))
             (R** f p . more))]
-    
+
     ;; Conditional (pattern changes lost afterwards ...)
     [(R** f p [#:if/np test [consequent ...] [alternate ...]] . more)
      (let ([continue (lambda (f2) (R** f2 p . more))])
        (if (with-syntax ([p f]) test)
            (R** f p consequent ... => continue)
            (R** f p alternate ... => continue)))]
-    
+
     ;; Conditional (pattern changes lost afterwards ...)
     [(R** f p [#:when/np test consequent ...] . more)
      (let ([continue (lambda (f2) (R** f2 p . more))])
        (if (with-syntax ([p f]) test)
            (R** f p consequent ... => continue)
            (continue f)))]
-    
+
     ;; Conditional
     [(R** f p [#:when test consequent ...] . more)
      (if (with-syntax ([p f]) test)
          (R** f p consequent ... . more)
          (R** f p . more))]
-    
+
     ;; Subterm handling
     [(R** f p [generator hole fill] . more)
      (let ([k (lambda (f2) (R** f2 p . more))])
@@ -307,22 +342,28 @@
 (define-syntax Run 
   (syntax-rules ()
     [(Run f p generator hole fill k)
-     (let ([reducer (with-syntax ([p f]) (generator))])
+     (let ([reducer (generator)])
        (Run* reducer f p hole fill k))]))
 
 (define-syntax (Run* stx)
   (syntax-case stx ()
     ;; Implementation of subterm handling for (hole ...) sequences
-    [(Run* f form-var pattern (hole :::) fills k)
+    [(Run* reducer f p (hole :::) fills k)
      (and (identifier? #':::)
           (free-identifier=? #'::: (quote-syntax ...)))
-     #'(let ([ctx (CC (hole :::) form-var pattern)])
-         (let ([e1s (with-syntax ([pattern form-var]) (syntax->list #'(hole :::)))])
-           (run-multiple f ctx fills e1s k)))]
+     #'(let ([ctx (CC (hole :::) f p)])
+         (let ([e1s (with-syntax ([p f]) (syntax->list #'(hole :::)))])
+           (run-multiple reducer ctx fills e1s k)))]
     ;; Implementation of subterm handling
-    [(Run* f form-var pattern hole fill k)
-     #'(let ([ctx (CC hole form-var pattern)])
-         (run-one f ctx fill k))]))
+    [(Run* reducer f p hole fill k)
+     #'(let ([init-e (with-syntax ([p f]) #'hole)]
+             [ctx (CC hole f p)])
+         (run-one reducer init-e ctx fill k))]))
+
+;; run-one : (a stx -> RS(b)) stx (b -> c) (c -> RS(d)) -> RS(d)
+(define (run-one f init-e ctx fill k)
+  (RSbind (lambda () (with-context ctx (f fill init-e)))
+          (lambda (final) (k (ctx final)))))
 
 ;; run-multiple : (a -> RS(b)) ((list-of b) -> c) (list-of a) (list-of b) (c -> RS(d))
 ;;             -> RS(d)
@@ -334,20 +375,14 @@
       (RSbind (lambda ()
                 (with-context ctx
                   (with-context (lambda (x) (revappend prefix (cons x (cdr suffix))))
-                    (f (car fills)))))
-             (lambda (final)
-               (loop (cdr fills)
-                     (cons final prefix)
-                     (cdr suffix))))]
+                    (f (car fills) (car suffix)))))
+              (lambda (final)
+                (loop (cdr fills)
+                      (cons final prefix)
+                      (cdr suffix))))]
      [(null? fills)
       (let ([form (ctx (reverse prefix))])
         (k form))])))
-
-;; run-one : (a -> RS(b)) (b -> c) (c -> RS(d)) -> RS(d)
-(define (run-one f ctx fill k)
-  (RSbind (lambda () (with-context ctx (f fill)))
-          (lambda (final)
-            (k (ctx final)))))
 
 ;; Rename mapping
 
@@ -367,7 +402,8 @@
           [(syntax? to)
            (loop from (syntax-e to))]
           [(pair? from)
-           #;(unless (pair? to)
+           #;
+           (unless (pair? to)
              (fprintf (current-error-port)
                       "from:\n~s\n\n" (syntax->datum from0))
              (fprintf (current-error-port)

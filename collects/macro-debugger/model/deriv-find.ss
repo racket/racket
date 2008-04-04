@@ -20,7 +20,8 @@
 ;; find-deriv : (deriv -> boolean) (deriv -> boolean) deriv -> deriv/#f
 ;; Finds the first deriv that matches; throws the rest away
 (define (find-deriv pred stop-short d)
-  (let ([stop (lambda (x) (or (pred x) (stop-short x)))])
+  (let* ([stop-short (or stop-short (lambda (x) #f))]
+         [stop (lambda (x) (or (pred x) (stop-short x)))])
     (let/ec return (find-deriv/unit+join+zero pred stop d return (lambda _ #f) #f))))
 
 ;; find-deriv/unit+join+zero
@@ -36,15 +37,15 @@
       [(? stop-short d) zero]
       [(Wrap mrule (_ _ tx next))
        (join (loop tx) (loop next))]
+      [(Wrap tagrule (_ _ _ next))
+       (loop next)]
       [(Wrap lift-deriv (_ _ first lift second))
        (join (loop first) (loop second))]
       [(Wrap transformation (_ _ _ _ _ locals _ _ _))
        (loops locals)]
-      [(struct local-expansion (_ _ _ _ _ deriv))
+      [(struct local-expansion (_ _ _ _ deriv _ _ _))
        (loop deriv)]
-      [(struct local-expansion/expr (_ _ _ _ _ _ deriv))
-       (loop deriv)]
-      [(struct local-bind (bindrhs))
+      [(struct local-bind (_ bindrhs))
        (loop bindrhs)]
       [(Wrap p:define-syntaxes (_ _ _ _ rhs _))
        (loop rhs)]
@@ -52,7 +53,7 @@
        (loop rhs)]
       [(Wrap p:#%expression (_ _ _ _ inner))
        (loop inner)]
-      [(Wrap p:if (_ _ _ _ _ test then else))
+      [(Wrap p:if (_ _ _ _ test then else))
        (join (loop test) (loop then) (loop else))]
       [(Wrap p:wcm (_ _ _ _ key value body))
        (join (loop key) (loop value) (loop body))]
@@ -64,7 +65,7 @@
        (loop lderiv)]
       [(Wrap p:begin0 (_ _ _ _ first lderiv))
        (join (loop first) (loop lderiv))]
-      [(Wrap p:#%app (_ _ _ _ _ lderiv))
+      [(Wrap p:#%app (_ _ _ _ lderiv))
        (loop lderiv)]
       [(Wrap p:lambda (_ _ _ _ _ body))
        (loop body)]
@@ -76,9 +77,9 @@
        (join (loops rhss) (loop body))]
       [(Wrap p:letrec-syntaxes+values (_ _ _ _ _ srhss _ vrhss body))
        (join (loops srhss) (loops vrhss) (loop body))]
-      [(Wrap p:module (_ _ _ _ _ _ _ body ))
-       (loop body)]
-      [(Wrap p:#%module-begin (_ _ _ _ pass1 pass2 _))
+      [(Wrap p:module (_ _ _ _ _ _ _ check _ _ body _))
+       (join (loop check) (loop body))]
+      [(Wrap p:#%module-begin (_ _ _ _ _ pass1 pass2 _))
        (join (loops pass1) (loops pass2))]
       [(Wrap p:rename (_ _ _ _ _ inner))
        (loop inner)]
@@ -102,11 +103,11 @@
       ;; (join (loop head) (loop inner))]
       [(Wrap mod:cons (head))
        (loop head)]
-      [(Wrap mod:prim (head prim))
+      [(Wrap mod:prim (head _ prim))
        (join (loop head) (loop prim))]
-      [(Wrap mod:splice (head _ _))
+      [(Wrap mod:splice (head _ _ _))
        (loop head)]
-      [(Wrap mod:lift (head tail))
+      [(Wrap mod:lift (head _ tail))
        (join (loop head) (loop tail))]
       [(Wrap mod:lift-end (tail))
        (loop tail)]
@@ -128,10 +129,7 @@
                 [(Wrap deriv (e1 e2))
                  (pred e1)]
                 [_ #f])
-               (match-lambda
-                ;; FIXME: Why?
-                [(Wrap p:module (_ _ _ _ _ _ _ _)) #t]
-                [_ #f])
+               (lambda _ #f)
                d))
 
 ;; extract-all-fresh-names : Derivation -> syntaxlike

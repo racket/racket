@@ -293,7 +293,7 @@ character and the @scheme[#f] readtable.}
                  (object-name port)))]
    [(ch port src line col pos)
     ;; `read-syntax' mode
-    (datum->syntax-object
+    (datum->syntax
      #f
      (wrap (parse port 
                   (lambda () 
@@ -343,12 +343,12 @@ no other location information is available).
 When a reader-extension procedure is called in syntax-reading mode
 (via @scheme[read-syntax], @|etc|), it should generally return a syntax
 object that has no lexical context (e.g., a syntax object created
-using @scheme[datum->syntax-object] with @scheme[#f] as the first
+using @scheme[datum->syntax] with @scheme[#f] as the first
 argument and with the given location information as the third
 argument). Another possible result is a special-comment value (see
 @secref["special-comments"]). If the procedure's result is not a
 syntax object and not a special-comment value, it is converted to one
-using @scheme[datum->syntax-object].
+using @scheme[datum->syntax].
 
 When a reader-extension procedure is called in non-syntax-reading
 modes, it should generally not return a syntax object. If a syntax
@@ -361,13 +361,13 @@ is a special-comment value (see @secref["special-comments"]), then
 delimiting comment and otherwise ignore it.
 
 Also, in either context, the result may be copied to prevent mutation
-to pairs, vectors, or boxes before the read result is completed, and
-to support the construction of graphs with cycles. Mutable pairs,
-boxes, and vectors are copied, along with any pairs, boxes, or vectors
-that lead to such mutable values, to placeholders produced by a
-recursive read (see @scheme[read/recursive]), or to references of a
-shared value. Graph structure (including cycles) is preserved in the
-copy.
+to vectors or boxes before the read result is completed, and to
+support the construction of graphs with cycles. Mutable boxes,
+vectors, and @tech{prefab} structures are copied, along with any
+pairs, boxes, vectors, pre prefab structures that lead to such mutable
+values, to placeholders produced by a recursive read (see
+@scheme[read/recursive]), or to references of a shared value. Graph
+structure (including cycles) is preserved in the copy.
 
 @;------------------------------------------------------------------------
 @section[#:tag "special-comments"]{Special Comments}

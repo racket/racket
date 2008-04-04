@@ -147,4 +147,23 @@ extern Scheme_Object *scheme_get_expand_observe();
 #define SCHEME_EXPAND_OBSERVE_START_EXPAND(obs) \
         _SCHEME_EXPOBS(obs,141,scheme_false)
 
+#define SCHEME_EXPAND_OBSERVE_TAG(obs,stx) \
+        _SCHEME_EXPOBS(obs,142,stx)
+
+#define SCHEME_EXPAND_OBSERVE_LOCAL_BIND(obs,ids) \
+        _SCHEME_EXPOBS(obs,143,ids)
+#define SCHEME_EXPAND_OBSERVE_ENTER_BIND(obs) \
+        _SCHEME_EXPOBS(obs,144,scheme_false)
+#define SCHEME_EXPAND_OBSERVE_EXIT_BIND(obs) \
+        _SCHEME_EXPOBS(obs,145,scheme_false)
+
+#define SCHEME_EXPAND_OBSERVE_OPAQUE_EXPR(obs,val) \
+        _SCHEME_EXPOBS(obs,146,val)
+
+#define SCHEME_EXPAND_OBSERVE_RENAME_LIST(obs,vals) \
+        _SCHEME_EXPOBS(obs,147,vals)
+
+#define SCHEME_EXPAND_OBSERVE_RENAME_ONE(obs,val) \
+        _SCHEME_EXPOBS(obs,148,val)
+
 #endif

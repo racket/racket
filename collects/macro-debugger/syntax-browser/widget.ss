@@ -16,9 +16,7 @@
          "properties.ss"
          "text.ss"
          "util.ss")
-(provide widget%
-         widget-keymap%
-         widget-context-menu%)
+(provide widget%)
 
 ;; widget%
 ;; A syntax widget creates its own syntax-controller.
@@ -27,7 +25,7 @@
     (init parent)
     (init-field config)
 
-    (define controller (new controller%))
+    (field [controller (new controller%)])
 
     (define -main-panel
       (new vertical-panel% (parent parent)))
@@ -41,18 +39,14 @@
       (new properties-view%
            (parent -props-panel)
            (controller controller)))
-    (define props-percentage (send config pref:props-percentage))
 
     (define/public (setup-keymap)
-      (new widget-keymap% 
+      (new syntax-keymap% 
            (editor -text)
-           (widget this)))
+           (config config)))
 
     (send -text set-styles-sticky #f)
     (send -text lock #t)
-
-    (send -split-panel set-percentages 
-          (list (- 1 props-percentage) props-percentage))
 
     ;; syntax-properties-controller<%> methods
 
@@ -65,15 +59,24 @@
     (define/public (show-props show?)
       (if show?
           (unless (send -props-panel is-shown?)
-            (send -split-panel add-child -props-panel)
-            (send -split-panel set-percentages
-                  (list (- 1 props-percentage) props-percentage))
+            (let ([p (send config get-props-percentage)])
+              (send -split-panel add-child -props-panel)
+              (update-props-percentage p))
             (send -props-panel show #t))
           (when (send -props-panel is-shown?)
-            (set! props-percentage
-                  (cadr (send -split-panel get-percentages)))
             (send -split-panel delete-child -props-panel)
             (send -props-panel show #f))))
+
+    (send config listen-props-percentage
+          (lambda (p)
+            (update-props-percentage p)))
+    (send config listen-props-shown?
+          (lambda (show?)
+            (show-props show?)))
+
+    (define/private (update-props-percentage p)
+      (send -split-panel set-percentages
+            (list (- 1 p) p)))
 
     ;;
 
@@ -84,8 +87,9 @@
     (define/public (get-main-panel) -main-panel)
 
     (define/public (shutdown)
-      (unless (= props-percentage (send config pref:props-percentage))
-        (send config pref:props-percentage props-percentage)))
+      (when (props-shown?)
+        (send config set-props-percentage
+              (cadr (send -split-panel get-percentages)))))
 
     ;; syntax-browser<%> Methods
 
@@ -99,7 +103,7 @@
           (send -text insert text)
           (let ([b (send -text last-position)])
             (send -text change-style error-text-style a b)))))
-    
+
     (define/public (add-clickback text handler)
       (with-unlock -text
         (let ([a (send -text last-position)])
@@ -214,35 +218,6 @@
     sd))
 
 ;; Specialized classes for widget
-
-(define widget-keymap%
-  (class syntax-keymap%
-    (init-field widget)
-    (super-new (controller (send widget get-controller)))
-    (inherit add-function)
-    (inherit-field controller)
-
-    (define/override (get-context-menu%)
-      widget-context-menu%)
-
-    (add-function "show-syntax-properties"
-                  (lambda (i e)
-                    (send widget toggle-props)))
-
-    (define/public (get-widget) widget)))
-
-(define widget-context-menu%
-  (class context-menu%
-    (inherit-field keymap)
-    (inherit-field props-menu)
-
-    (define/override (on-demand)
-      (send props-menu set-label
-            (if (send (send keymap get-widget) props-shown?)
-                "Hide syntax properties"
-                "Show syntax properties"))
-      (super on-demand))
-    (super-new)))
 
 (define browser-text%
   (class (text:arrows-mixin

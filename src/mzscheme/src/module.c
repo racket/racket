@@ -4818,6 +4818,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 			    self_modidx,
 			    scheme_false);
 
+  SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+
   /* load the module for the initial require */
   iim = module_load(_module_resolve(iidx, m->ii_src, 1), menv, NULL); 
   start_module(iim, menv, 0, iidx, 1, 0, scheme_null);
@@ -4870,6 +4872,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
+
+  if (check_mb) {
+    SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
+  }
+
   fm = scheme_stx_property(fm, module_name_symbol, SCHEME_PTR_VAL(m->modname));
 
   if (!empty_self_modidx) {
@@ -4885,13 +4892,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   fm = scheme_add_rename(fm, rn_set);
 
+  SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
+
   if (!check_mb) {
-    
-    SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
     fm = scheme_check_immediate_macro(fm, benv, rec, drec, 0, &mbval, NULL, NULL);
-
-    SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
     /* If expansion is not the primitive `#%module-begin', add local one: */
     if (!SAME_OBJ(mbval, modbeg_syntax)) {
@@ -4902,6 +4907,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_stx_property(fm, module_name_symbol, SCHEME_PTR_VAL(m->modname));
       /* Since fm is a newly-created syntax object, we need to re-add renamings: */
       fm = scheme_add_rename(fm, rn_set);
+      
+      SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, fm);
+
       check_mb = 1;
     }
   }
@@ -4990,7 +4998,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     /* rename tables no longer needed; NULL them out */
     menv->rename_set = NULL;
   }
-  
+
+  SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer, fm);
   return fm;
 }
 
@@ -5382,16 +5391,17 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 
   scheme_rec_add_certs(rec, drec, form);
 
+  observer = rec[drec].observer;
+
   /* It's possible that #%module-begin expansion introduces
      marked identifiers for definitions. */
   form = scheme_add_rename(form, post_ex_rn_set);
+  SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, form);
 
   maybe_has_lifts = 0;
   lift_ctx = scheme_generate_lifts_key();
 
   /* Pass 1 */
-
-  observer = rec[drec].observer;
 
   /* Partially expand all expressions, and process definitions, requires,
      and provides. Also, flatten top-level `begin' expressions: */
@@ -5430,7 +5440,9 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	fm = SCHEME_STX_CDR(fm);
         e = scheme_add_rename(e, post_ex_rn_set);
         fm = scheme_named_map_1(NULL, add_a_rename, fm, post_ex_rn_set);
-	fm = scheme_append(fst, scheme_make_pair(e, fm));
+        fm = scheme_make_pair(e, fm);
+        SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer, fm);
+	fm = scheme_append(fst, fm);
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, fst);
       } else {
 	/* No definition lifts added... */
@@ -5442,6 +5454,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	if (fst && SCHEME_STX_SYMBOLP(fst) && scheme_stx_module_eq(scheme_begin_stx, fst, 0)) {
 	  fm = SCHEME_STX_CDR(fm);
 	  e = scheme_add_rename(e, post_ex_rn_set);
+          SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
 	  fm = scheme_flatten_begin(e, fm);
 	  SCHEME_EXPAND_OBSERVE_SPLICE(observer, fm);
 	  if (SCHEME_STX_NULLP(fm)) {
@@ -5461,6 +5474,8 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     if (!e) break; /* (begin) expansion at end */
 
     e = scheme_add_rename(e, post_ex_rn_set);
+
+    SCHEME_EXPAND_OBSERVE_RENAME_ONE(observer, e);
     
     if (SCHEME_STX_PAIRP(e)) {
       Scheme_Object *fst;

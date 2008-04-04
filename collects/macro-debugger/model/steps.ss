@@ -87,6 +87,7 @@
     (tag-datum        . "Tag datum")
     (tag-top          . "Tag top-level variable")
     (capture-lifts    . "Capture lifts")
+    (provide          . "Expand provide-specs")
 
     (local-lift       . "Macro lifted expression to top-level")
     (module-lift      . "Macro lifted declaration to end of module")

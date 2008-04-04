@@ -10,6 +10,7 @@
 
 (preferences:set-default 'MacroStepper:Frame:Width 700 number?)
 (preferences:set-default 'MacroStepper:Frame:Height 600 number?)
+(preferences:set-default 'MacroStepper:PropertiesShown? #f boolean?)
 (preferences:set-default 'MacroStepper:PropertiesPanelPercentage 1/3 number?)
 (preferences:set-default 'MacroStepper:MacroHidingMode "Standard" string?)
 (preferences:set-default 'MacroStepper:ShowSyntaxProperties? #f boolean?)
@@ -26,6 +27,7 @@
 
 (pref:get/set pref:width MacroStepper:Frame:Width)
 (pref:get/set pref:height MacroStepper:Frame:Height)
+(pref:get/set pref:props-shown? MacroStepper:PropertiesShown?)
 (pref:get/set pref:props-percentage MacroStepper:PropertiesPanelPercentage)
 (pref:get/set pref:macro-hiding-mode MacroStepper:MacroHidingMode)
 (pref:get/set pref:show-syntax-properties? MacroStepper:ShowSyntaxProperties?)
@@ -44,8 +46,9 @@
   (class object%
     (notify-methods width)
     (notify-methods height)
-    (notify-methods macro-hiding-mode)
+    (notify-methods props-shown?)
     (notify-methods props-percentage)
+    (notify-methods macro-hiding-mode)
     (notify-methods show-syntax-properties?)
     (notify-methods show-hiding-panel?)
     (notify-methods identifier=?)
@@ -63,8 +66,9 @@
   (class macro-stepper-config-base%
     (connect-to-pref width pref:width)
     (connect-to-pref height pref:height)
-    (connect-to-pref macro-hiding-mode pref:macro-hiding-mode)
+    (connect-to-pref props-shown? pref:props-shown?)
     (connect-to-pref props-percentage pref:props-percentage)
+    (connect-to-pref macro-hiding-mode pref:macro-hiding-mode)
     (connect-to-pref show-syntax-properties? pref:show-syntax-properties?)
     (connect-to-pref show-hiding-panel? pref:show-hiding-panel?)
     (connect-to-pref identifier=? pref:identifier=?)

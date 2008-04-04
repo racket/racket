@@ -85,6 +85,8 @@
         [else #f]))
 
 (define (pp-better-style-table)
+  (basic-style-list)
+  #; ;; Messes up formatting too much :(
   (let* ([pref (pref:tabify)]
          [table (car pref)]
          [begin-rx (cadr pref)]

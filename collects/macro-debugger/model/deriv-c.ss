@@ -16,6 +16,7 @@
 (define-struct (deriv node) () #:transparent)
 (define-struct (lift-deriv deriv) (first lift-stx second) #:transparent)
 (define-struct (mrule deriv) (transformation next) #:transparent)
+(define-struct (tagrule deriv) (tagged-stx next) #:transparent)
 
 ;; A DerivLL is one of
 ;;   (make-lift/let-deriv <Node(Stx)> Deriv Stx Deriv)
@@ -24,7 +25,7 @@
 
 ;; A Transformation is
 ;;   (make-transformation <Node(Stx)> Rs ?exn ?Stx (list-of LocalAction) ?exn ?Stx Number)
-(define-struct (transformation node) (resolves ?1 me1 locals ?2 me2 seq) #:transparent)
+(define-struct (transformation node) (resolves ?1 me1 locals me2 ?2 seq) #:transparent)
 
 ;; A LocalAction is one of
 ;;   (make-local-expansion <Node(Stx)> Stx ?Stx Boolean Deriv)
@@ -32,11 +33,11 @@
 ;;   (make-local-lift Stx Identifier)
 ;;   (make-local-lift-end Stx)
 ;;   (make-local-bind BindSyntaxes)
-(define-struct (local-expansion node) (me1 me2 for-stx? inner) #:transparent)
-(define-struct (local-expansion/expr node) (me1 me2 for-stx? opaque inner) #:transparent)
+(define-struct (local-expansion node) (me1 me2 inner for-stx? lifted opaque)
+  #:transparent)
 (define-struct local-lift (expr id) #:transparent)
 (define-struct local-lift-end (decl) #:transparent)
-(define-struct local-bind (bindrhs) #:transparent)
+(define-struct local-bind (names bindrhs) #:transparent)
 
 ;; Base = << Node(Stx) Rs ?exn >>
 (define-struct (base deriv) (resolves ?1) #:transparent)
@@ -45,10 +46,11 @@
 (define-struct (prule base) () #:transparent)
 (define-struct (p:variable prule) () #:transparent)
 
-;;   (make-p:module <Base> Boolean ?Deriv ?exn Deriv)
-;;   (make-p:#%module-begin <Base> ModulePass1 ModulePass2 ?exn)
-(define-struct (p:module prule) (one-body-form? mb ?2 body) #:transparent)
-(define-struct (p:#%module-begin prule) (pass1 pass2 ?2) #:transparent)
+;;   (make-p:module <Base> ?exn ?stx stx ?Deriv ?stx ?exn Deriv ?stx)
+;;   (make-p:#%module-begin <Base> Stx ModulePass1 ModulePass2 ?exn)
+(define-struct (p:module prule) (?2 tag rename check tag2 ?3 body shift)
+  #:transparent)
+(define-struct (p:#%module-begin prule) (me pass1 pass2 ?2) #:transparent)
 
 ;;   (make-p:define-syntaxes <Base> DerivLL)
 ;;   (make-p:define-values <Base> Deriv)
@@ -61,7 +63,7 @@
 ;;   (make-p:set! <Base> Rs Deriv)
 ;;   (make-p:set!-macro <Base> Rs Deriv)
 (define-struct (p:#%expression prule) (inner) #:transparent)
-(define-struct (p:if prule) (full? test then else) #:transparent)
+(define-struct (p:if prule) (test then else) #:transparent)
 (define-struct (p:wcm prule) (key mark body) #:transparent)
 (define-struct (p:set! prule) (id-resolves rhs) #:transparent)
 (define-struct (p:set!-macro prule) (deriv) #:transparent)
@@ -69,7 +71,7 @@
 ;;   (make-p:#%app <Base> Stx LDeriv)
 ;;   (make-p:begin <Base> LDeriv)
 ;;   (make-p:begin0 <Base> Deriv LDeriv)
-(define-struct (p:#%app prule) (tagged-stx lderiv) #:transparent)
+(define-struct (p:#%app prule) (lderiv) #:transparent)
 (define-struct (p:begin prule) (lderiv) #:transparent)
 (define-struct (p:begin0 prule) (first lderiv) #:transparent)
 
@@ -97,8 +99,8 @@
 (define-struct (p::STOP prule) () #:transparent)
 (define-struct (p:stop p::STOP) () #:transparent)
 (define-struct (p:unknown p::STOP) () #:transparent)
-(define-struct (p:#%top p::STOP) (tagged-stx) #:transparent)
-(define-struct (p:#%datum p::STOP) (tagged-stx) #:transparent)
+(define-struct (p:#%top p::STOP) () #:transparent)
+(define-struct (p:#%datum p::STOP) () #:transparent)
 (define-struct (p:quote p::STOP) () #:transparent)
 (define-struct (p:quote-syntax p::STOP) () #:transparent)
 (define-struct (p:require p::STOP) () #:transparent)
@@ -151,21 +153,21 @@
 ;; A ModPass2 is (list-of ModRule2)
 
 ;; A ModRule1 is one of 
-;;   (make-mod:prim Deriv ModPrim)
-;;   (make-mod:splice Deriv ?exn Stxs)
-;;   (make-mod:lift Deriv Stxs)
+;;   (make-mod:prim Deriv Stx ModPrim)
+;;   (make-mod:splice Deriv Stx ?exn Stxs)
+;;   (make-mod:lift Deriv ?Stxs Stxs)
 ;;   (make-mod:lift-end Stxs)
 ;; A ModRule2 is one of
 ;;   (make-mod:skip)
 ;;   (make-mod:cons Deriv)
 ;;   (make-mod:lift Deriv Stxs)
 (define-struct modrule () #:transparent)
-(define-struct (mod:cons modrule) (head) #:transparent)
-(define-struct (mod:prim modrule) (head prim) #:transparent)
-(define-struct (mod:skip modrule) () #:transparent)
-(define-struct (mod:splice modrule) (head ?1 tail) #:transparent)
-(define-struct (mod:lift modrule) (head tail) #:transparent)
+(define-struct (mod:prim modrule) (head rename prim) #:transparent)
+(define-struct (mod:splice modrule) (head rename ?1 tail) #:transparent)
+(define-struct (mod:lift modrule) (head renames tail) #:transparent)
 (define-struct (mod:lift-end modrule) (tail) #:transparent)
+(define-struct (mod:cons modrule) (head) #:transparent)
+(define-struct (mod:skip modrule) () #:transparent)
 
 ;; A ModPrim is a PRule in:
 ;;   (make-p:define-values <Base> #:transparent)

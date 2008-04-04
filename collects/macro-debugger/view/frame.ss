@@ -92,8 +92,10 @@
       (new (get-macro-stepper-widget%)
            (parent (get-area-container))
            (config config)))
+    (define controller (send widget get-controller))
 
     (define/public (get-widget) widget)
+    (define/public (get-controller) controller)
 
     (define/public (add-obsoleted-warning)
       (unless obsoleted?
@@ -116,7 +118,6 @@
                             "Show syntax properties"
                             (get-field show-syntax-properties? config))
 
-    ;; FIXME: rewrite with notify-box
     (let ([id-menu
            (new (get-menu%)
                 (label "Identifier=?")
@@ -128,24 +129,24 @@
                               (parent id-menu)
                               (callback
                                (lambda _ 
-                                 (send (send widget get-controller)
-                                       set-identifier=? p))))])
-                    (send (send widget get-controller)
-                          listen-identifier=?
+                                 (send controller set-identifier=? p))))])
+                    (send controller listen-identifier=?
                           (lambda (name+func)
                             (send this-choice check
                                   (eq? (car name+func) (car p)))))))
                 (sb:identifier=-choices)))
+
     (let ([identifier=? (send config get-identifier=?)])
       (when identifier=?
         (let ([p (assoc identifier=? (sb:identifier=-choices))])
-          (send (send widget get-controller) set-identifier=? p))))
+          (send controller set-identifier=? p))))
 
     (new (get-menu-item%)
          (label "Clear selection")
          (parent stepper-menu)
          (callback
-          (lambda _ (send (send widget get-controller) select-syntax #f))))
+          (lambda _ (send controller set-selected-syntax #f))))
+
     (new separator-menu-item% (parent stepper-menu))
 
     (menu-option/notify-box stepper-menu

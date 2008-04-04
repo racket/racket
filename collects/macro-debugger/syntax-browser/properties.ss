@@ -3,7 +3,8 @@
 (require scheme/class
          scheme/gui
          "interfaces.ss"
-         "util.ss")
+         "util.ss"
+         "../util/mpi.ss")
 (provide properties-view%
          properties-snip%)
 

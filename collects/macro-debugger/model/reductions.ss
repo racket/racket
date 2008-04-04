@@ -19,14 +19,14 @@
   transformation-reductions)
 (define (BindSyntaxes)
   bind-syntaxes-reductions)
-(define ((CaseLambdaClauses e1))
-  (mk-case-lambda-clauses-reductions e1))
-(define ((SynthItems e1))
-  (mk-synth-items-reductions e1))
-(define ((BRules es1))
-  (mk-brules-reductions es1))
-(define ((ModulePass es1))
-  (mk-mbrules-reductions es1))
+(define (CaseLambdaClauses)
+  case-lambda-clauses-reductions)
+(define (SynthItems)
+  synth-items-reductions)
+(define (BRules)
+  brules-reductions)
+(define (ModulePass)
+  mbrules-reductions)
 
 ;; Syntax
 
@@ -41,24 +41,28 @@
 
 ;; reductions : WDeriv -> ReductionSequence
 (define (reductions d)
-  (parameterize ((current-definites null)
-                 (current-frontier null))
-    (when d (add-frontier (list (wderiv-e1 d))))
-    (RS-steps (reductions* d))))
+  (let-values ([(steps definites estx exn) (reductions+ d)])
+    steps))
 
 ;; reductions+ : WDeriv -> (list-of step) (list-of identifier) ?stx ?exn
 (define (reductions+ d)
   (parameterize ((current-definites null)
                  (current-frontier null))
     (when d (add-frontier (list (wderiv-e1 d))))
-    (let-values ([(rs stx exn) (reductions* d)])
-      (values rs (current-definites) stx exn))))
+    (let-values ([(steps stx exn) (reductions* d (wderiv-e1 d))])
+      (values steps (current-definites) stx exn))))
 
-;; reductions* : WDeriv -> RS(stx)
-(define (reductions* d)
+;; reductions* : WDeriv Syntax -> RS(stx)
+(define (reductions* d init-e1)
   (match d
     [(Wrap deriv (e1 e2))
-     (blaze-frontier e1)]
+     (begin (blaze-frontier e1)
+            (unless (eq? init-e1 e1)
+              (void)
+              #;(fprintf (current-error-port)
+                       "starting points don't match:\n~s\n~s\n"
+                       init-e1 e1)
+              #;(error 'reductions* "starting points don't match for: ~s" d)))]
     [_ (void)])
   (match d
     [(Wrap prule (e1 e2 rs ?1))
@@ -70,38 +74,41 @@
      (R e1
         [#:learn (list e2)]
         [#:when/np (not (bound-identifier=? e1 e2))
-                   [#:walk e2 e1 e2 'resolve-variable]])]
-    [(Wrap p:module (e1 e2 rs ?1 #f #f #f body))
+                   [#:walk e2 'resolve-variable]])]
+    [(Wrap p:module (e1 e2 rs ?1 ?2 tag rename check tag2 ?3 body shift))
      (R e1
         [! ?1]
-        [#:pattern (?module ?name ?language . ?_body)]
-        [#:walk (d->so e1 `(,#'?module ,#'?name ,#'?language ,(wderiv-e1 body)))
-                'tag-module-begin]
-        [#:pattern (?module ?name ?language ?body)]
-        [#:frontier (list #'?body)]
-        [Expr ?body body])]
-    [(Wrap p:module (e1 e2 rs ?1 #t mb ?2 body))
-     (R e1
-        [! ?1]
-        [#:pattern (?module ?name ?language ?body)]
-        [#:frontier (list #'?body)]
-        [Expr ?body mb]
+        [#:pattern (?module ?name ?language . ?body-parts)]
+        #;[#:frontier null (list #'?language #'?body-parts)]
         [! ?2]
-        [#:when/np (not (eq? (wderiv-e2 mb) (wderiv-e1 body)))
-                   [#:walk
-                    (d->so e1 `(,#'?module ,#'?name ,#'?language
-                                           ,(wderiv-e1 body)))
-                    'tag-module-begin]]
-        [Expr ?body body])]
-    [(Wrap p:#%module-begin (e1 e2 rs ?1 pass1 pass2 ?2))
+        #;[#:frontier (list #'?language) null]
+        [#:when/np tag
+                   [#:walk/ctx ?body-parts
+                               (list tag)
+                               'tag-module-begin]]
+        [#:pattern (?module ?name ?language ?body)]
+        [#:rename* ?body rename]
+        [#:when/np check
+                   [Expr ?body check]]
+        [#:when/np tag2
+                   [#:walk/ctx ?body
+                               tag2
+                               'tag-module-begin]]
+        [! ?3]
+        [Expr ?body body]
+        [#:pattern ?form]
+        [#:rename* ?form shift])]
+    [(Wrap p:#%module-begin (e1 e2 rs ?1 me pass1 pass2 ?2))
      (R e1
         [! ?1]
+        #;[#:let-values (_) (printf "#%module-begin:\n~s\n" me)]
+        [#:pattern ?form]
+        [#:rename* ?form me]
         [#:pattern (?module-begin . ?forms)]
-        [#:frontier (stx->list* #'?forms)]
-        [(ModulePass #'?forms)
-         ?forms pass1]
-        [(ModulePass #'?forms)
-         ?forms pass2]
+        #;[#:frontier (syntax->list #'?forms)]
+        #;[#:let-values (_) (printf "#%module-begin ?forms:\n~s\n" #'?forms)]
+        [ModulePass ?forms pass1]
+        [ModulePass ?forms pass2]
         [! ?1])]
     [(Wrap p:define-syntaxes (e1 e2 rs ?1 rhs ?2))
      (R e1
@@ -124,21 +131,14 @@
         [#:pattern (?expr ?inner)]
         [#:frontier (list #'?inner)]
         [Expr ?inner inner])]
-    [(Wrap p:if (e1 e2 rs ?1 full? test then else))
-     (if full?
-         (R e1
-            [! ?1]
-            [#:pattern (?if TEST THEN ELSE)]
-            [#:frontier (list #'TEST #'THEN #'ELSE)]
-            [Expr TEST test]
-            [Expr THEN then]
-            [Expr ELSE else])
-         (R e1
-            [! ?1]
-            [#:pattern (?if TEST THEN)]
-            [#:frontier (list #'TEST #'THEN)]
-            [Expr TEST test]
-            [Expr THEN then]))]
+    [(Wrap p:if (e1 e2 rs ?1 test then else))
+     (R e1
+        [! ?1]
+        [#:pattern (?if TEST THEN ELSE)]
+        [#:frontier (list #'TEST #'THEN #'ELSE)]
+        [Expr TEST test]
+        [Expr THEN then]
+        [Expr ELSE else])]
     [(Wrap p:wcm (e1 e2 rs ?1 key mark body))
      (R e1
         [! ?1]
@@ -160,42 +160,31 @@
         [#:frontier (cons #'FIRST (stx->list* #'LDERIV))]
         [Expr FIRST first]
         [List LDERIV lderiv])]
-    [(Wrap p:#%app (e1 e2 rs ?1 tagged-stx lderiv))
+    [(Wrap p:#%app (e1 e2 rs ?1 lderiv))
      (R e1
         [! ?1]
-        [#:when/np (not (eq? tagged-stx e1))
-                   [#:walk tagged-stx 'tag-app]]
         [#:pattern (?app . LDERIV)]
         [#:frontier (stx->list* #'LDERIV)]
         [List LDERIV lderiv])]
     [(Wrap p:lambda (e1 e2 rs ?1 renames body))
      (R e1
         [! ?1]
-        [#:bind (?formals* . ?body*) renames]
         [#:pattern (?lambda ?formals . ?body)]
         [#:frontier (stx->list* #'?body)]
-        [#:rename (syntax/skeleton e1 (?lambda ?formals* . ?body*))
-                  #'?formals #'?formals*
-                  'rename-lambda]
+        [#:rename* (?formals . ?body) renames 'rename-lambda]
         [Block ?body body])]
     [(Wrap p:case-lambda (e1 e2 rs ?1 clauses))
      (R e1
         [! ?1]
         [#:pattern (?case-lambda . ?clauses)]
         [#:frontier (stx->list* #'?clauses)]
-        [(CaseLambdaClauses (stx->list* #'?clauses))
-         ?clauses clauses])]
+        [CaseLambdaClauses ?clauses clauses])]
     [(Wrap p:let-values (e1 e2 rs ?1 renames rhss body))
      (R e1
         [! ?1]
         [#:pattern (?let-values ([?vars ?rhs] ...) . ?body)]
         [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list* #'?body))]
-        [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
-        [#:rename
-         (syntax/skeleton e1 (?let-values ([?vars* ?rhs*] ...) . ?body*))
-         (syntax->list #'(?vars ...))
-         (syntax->list #'(?vars* ...))
-         'rename-let-values]
+        [#:rename* (((?vars ?rhs) ...) . ?body) renames 'rename-let-values]
         [Expr (?rhs ...) rhss]
         [Block ?body body])]
     [(Wrap p:letrec-values (e1 e2 rs ?1 renames rhss body))
@@ -203,12 +192,7 @@
         [! ?1]
         [#:pattern (?letrec-values ([?vars ?rhs] ...) . ?body)]
         [#:frontier (append (syntax->list #'(?rhs ...)) (stx->list* #'?body))]
-        [#:bind (([?vars* ?rhs*] ...) . ?body*) renames]
-        [#:rename
-         (syntax/skeleton e1 (?letrec-values ([?vars* ?rhs*] ...) . ?body*))
-         (syntax->list #'(?vars ...))
-         (syntax->list #'(?vars* ...))
-         'rename-letrec-values]
+        [#:rename* (((?vars ?rhs) ...) . ?body) renames 'rename-letrec-values]
         [Expr (?rhs ...) rhss]
         [Block ?body body])]
     [(Wrap p:letrec-syntaxes+values
@@ -219,49 +203,39 @@
         [#:frontier (append (syntax->list #'(?srhs ...))
                             (syntax->list #'(?vrhs ...))
                             (stx->list* #'?body))]
-        [#:bind (([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...) . ?body*) srenames]
-        [#:rename
-         (syntax/skeleton e1
-                          (?lsv ([?svars* ?srhs*] ...) ([?vvars* ?vrhs*] ...)
-                            . ?body*))
-         (syntax->list #'(?svars ...))
-         (syntax->list #'(?svars* ...))
-         'rename-lsv]
+        [#:rename* (((?svars ?srhs) ...) ((?vvars ?vrhs) ...) . ?body) srenames
+                   'rename-lsv]
         [BindSyntaxes (?srhs ...) srhss]
         ;; If vrenames is #f, no var bindings to rename
         [#:when/np vrenames
                    [#:bind (([?vvars** ?vrhs**] ...) . ?body**) vrenames]
-                   [#:rename
-                    (syntax/skeleton e1 (?lsv ([?svars* ?srhs*] ...)
-                                              ([?vvars** ?vrhs**] ...)
-                                              . ?body**))
-                    (syntax->list #'(?vvars* ...))
-                    (syntax->list #'(?vvars** ...))
-                    'rename-lsv]]
+                   [#:rename* (((?vars ?vrhs) ...) . ?body) vrenames 'rename-lsv]]
         [Expr (?vrhs ...) vrhss]
         [Block ?body body]
         [#:pattern ?form]
         [#:when/np (not (eq? #'?form e2)) ;; FIXME: correct comparison?
                    [#:walk e2 'lsv-remove-syntax]])]
-    ;; The auto-tagged atomic primitives
-    [(Wrap p:#%datum (e1 e2 rs ?1 tagged-stx))
+
+    [(Wrap p:#%datum (e1 e2 rs ?1))
      (R e1
-        [#:when/np (not (eq? e1 tagged-stx))
-                   [#:walk tagged-stx 'tag-datum]]
-        [! ?1])]
-    [(Wrap p:#%top (e1 e2 rs ?1 tagged-stx))
+        [! ?1]
+        [#:walk e2 'macro])]
+    [(Wrap p:#%top (e1 e2 rs ?1))
      (R e1
-        [#:when/np (not (eq? e1 tagged-stx))
-                   [#:walk tagged-stx 'tag-top]]
         [#:pattern (?top . ?var)]
         [#:learn (list #'?var)]
         [! ?1])]
-    
+
+    [(Wrap p:provide (e1 e2 rs ?1))
+     (R e1
+        [! ?1]
+        [#:walk e2 'provide])]
+
     ;; The rest of the automatic primitives
     [(Wrap p::STOP (e1 e2 rs ?1))
      (R e1
         [! ?1])]
-    
+
     [(Wrap p:set!-macro (e1 e2 rs ?1 deriv))
      (R e1
         [! ?1]
@@ -275,7 +249,7 @@
         [#:frontier (list #'?rhs)]
         [#:learn id-rs]
         [Expr ?rhs rhs])]
-    
+
     ;; Synthetic primitives
     ;; These have their own subterm replacement mechanisms
     [(Wrap p:synth (e1 e2 rs ?1 subterms ?2))
@@ -299,17 +273,18 @@
                     (rename-frontier (s:rename-after (car subterms))
                                      (s:rename-before (car subterms)))]))
            (current-frontier))]
-        [(SynthItems e1) ?form subterms]
+        [SynthItems ?form subterms]
         [! ?2])]
 
     ;; FIXME: elimiate => ??
     [(Wrap p:rename (e1 e2 rs ?1 rename inner))
      (R e1
         [! ?1]
+        [#:pattern ?form]
         =>
         (lambda (e)
           (rename-frontier (car rename) (cdr rename))
-          (reductions* inner)))]
+          (reductions* inner (wderiv-e1 inner))))]
     
     ;; Macros
     [(Wrap mrule (e1 e2 transformation next))
@@ -318,9 +293,21 @@
         [Transformation ?form transformation]
         [#:frontier (list (wderiv-e1 next))]
         [Expr ?form next])]
-    
+
+    [(Wrap tagrule (e1 e2 tagged-stx next))
+     (R e1
+        [#:pattern ?form]
+        [#:walk tagged-stx
+                (case (syntax-e (stx-car tagged-stx))
+                  ((#%app) 'tag-app)
+                  ((#%datum) 'tag-datum)
+                  ((#%top) 'tag-top)
+                  (else
+                   (error 'reductions "unknown tagged syntax: ~s" tagged-stx)))]
+        [Expr ?form next])]
+
     ;; Lifts
-    
+
     [(Wrap lift-deriv (e1 e2 first lifted-stx second))
      (R e1
         [#:pattern ?form]
@@ -328,7 +315,7 @@
         [#:frontier (list lifted-stx)]
         [#:walk lifted-stx 'capture-lifts]
         [Expr ?form second])]
-    
+
     [(Wrap lift/let-deriv (e1 e2 first lifted-stx second))
      (R e1
         [#:pattern ?form]
@@ -336,13 +323,13 @@
         [#:frontier (list lifted-stx)]
         [#:walk lifted-stx 'capture-lifts]
         [Expr ?form second])]
-    
-    ;; Skipped
-    [#f (RSzero)]))
 
-;; mk-case-lambda-clauses-reductions : stxs ->
-;;   (list-of (W (list ?exn rename (W BDeriv)))) -> (RS stxs)
-(define ((mk-case-lambda-clauses-reductions es1) clauses)
+    ;; Skipped
+    [#f (RSunit init-e1)]))
+
+;; case-lambda-clauses-reductions : 
+;;   (list-of (W (list ?exn rename (W BDeriv)))) stxs -> (RS stxs)
+(define (case-lambda-clauses-reductions clauses es1)
   (blaze-frontier es1)
   (match clauses
     ['()
@@ -352,16 +339,12 @@
         [! ?1]
         [#:pattern ((?formals . ?body) . ?rest)]
         [#:frontier (list #'?body #'?rest)]
-        [#:bind (?formals* . ?body*) rename]
-        [#:rename (syntax/skeleton es1 ((?formals* . ?body*) . ?rest))
-                  #'?formals #'?formals*
-                  'rename-case-lambda]
+        [#:rename* (?formals . ?body) rename 'rename-case-lambda]
         [Block ?body body]
-        [(CaseLambdaClauses (cdr es1))
-         ?rest rest])]))
+        [CaseLambdaClauses ?rest rest])]))
 
-;; mk-synth-items-reductions : syntax -> (list-of SynthItem) -> (RS syntax)
-(define ((mk-synth-items-reductions e1) subterms)
+;; synth-items-reductions : (list-of SynthItem) syntax -> (RS syntax)
+(define (synth-items-reductions subterms e1)
   (let loop ([term e1] [subterms subterms])
     (cond [(null? subterms)
            (RSunit e1)]
@@ -369,9 +352,12 @@
            (let* ([subterm0 (car subterms)]
                   [path0 (s:subterm-path subterm0)]
                   [deriv0 (s:subterm-deriv subterm0)])
-             (let ([ctx (lambda (x) (path-replace term path0 x))])
+             (let ([ctx (lambda (x) (path-replace term path0 x))]
+                   ;; unused: may not be the same, due to mark/unmark???
+                   [init-e (path-get term path0)])
                (RSseq (lambda ()
-                        (with-context ctx (reductions* deriv0)))
+                        (with-context ctx
+                          (reductions* deriv0 (wderiv-e1 deriv0))))
                       (lambda ()
                         (loop (path-replace term path0 (wderiv-e2 deriv0))
                               (cdr subterms))))))]
@@ -386,20 +372,17 @@
                                  (s:rename-after subterm0))
                    (cdr subterms)))])))
 
-;; transformation-reductions : Transformation -> (RS Stx)
-(define (transformation-reductions tx)
+;; transformation-reductions : Transformation stx -> (RS Stx)
+(define (transformation-reductions tx init-e1)
   (match tx
-    [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 seq))
+    [(Wrap transformation (e1 e2 rs ?1 me1 locals me2 ?2 seq))
      (R e1
         [! ?1]
         [#:pattern ?form]
         [#:learn rs]
         [#:reductions (reductions-locals e1 locals)]
         [! ?2]
-        [#:walk e2
-                (list #'?form)
-                (list e2)
-                'macro])]))
+        [#:walk e2 'macro])]))
 
 ;; reductions-locals : syntax (list-of LocalAction) -> (RS void)
 (define (reductions-locals stx locals)
@@ -409,23 +392,24 @@
 ;; reductions-local : LocalAction -> (RS void)
 (define (reductions-local local)
   (match/with-derivation local
-    [(struct local-expansion (e1 e2 me1 me2 for-stx? deriv))
-     (reductions* deriv)]
-    [(struct local-expansion/expr (e1 e2 me1 me2 for-stx? opaque deriv))
-     (fprintf (current-error-port)
-              "reductions: local-expand-expr not fully implemented")
-     (reductions* deriv)]
+    [(struct local-expansion (e1 e2 me1 me2 deriv for-stx? lifted opaque))
+     ;; FIXME
+     ;; When lifted is present, need to locally rearrange lifts!
+     (when (or lifted opaque)
+       (fprintf (current-error-port)
+                "reductions: local-expand-expr not fully implemented"))
+     (reductions* deriv me1)]
     [(struct local-lift (expr id))
      (RSadd (list (walk expr id 'local-lift))
             RSzero)]
     [(struct local-lift-end (decl))
      (RSadd (list (walk/mono decl 'module-lift))
             RSzero)]
-    [(struct local-bind (bindrhs))
+    [(struct local-bind (names bindrhs))
      (bind-syntaxes-reductions bindrhs)]))
 
-;; list-reductions : ListDerivation -> (RS Stxs)
-(define (list-reductions ld)
+;; list-reductions : ListDerivation stxs -> (RS Stxs)
+(define (list-reductions ld init-es1)
   (match/with-derivation ld
     [(Wrap lderiv (es1 es2 ?1 derivs))
      (R es1
@@ -434,13 +418,13 @@
         [Expr (?form ...) derivs])]
     [#f (RSunit null)]))
 
-;; block-reductions : BlockDerivation -> (RS Stxs)
-(define (block-reductions bd)
+;; block-reductions : BlockDerivation stxs -> (RS Stxs)
+(define (block-reductions bd init-es1)
   (match/with-derivation bd
     [(Wrap bderiv (es1 es2 pass1 trans pass2))
      (R es1
         [#:pattern ?form]
-        [(BRules es1) ?form pass1]
+        [BRules ?form pass1]
         [#:when/np (eq? trans 'letrec)
                    [#:walk (wlderiv-es1 pass2) 'block->letrec]]
         [#:frontier (stx->list* (wlderiv-es1 pass2))]
@@ -448,8 +432,8 @@
         [List ?form pass2])]
     [#f (RSunit null)]))
 
-;; mk-brules-reductions : stxs -> (list-of BRule) -> (RS Stxs)
-(define ((mk-brules-reductions es1) brules)
+;; brules-reductions : (list-of BRule) stxs -> (RS Stxs)
+(define (brules-reductions brules es1)
   (match brules
     ['()
      (RSunit null)]
@@ -459,7 +443,7 @@
         [#:bind ?first* (cdr renames)]
         [#:rename/no-step ?first (car renames) (cdr renames)]
         [Expr ?first head]
-        [(BRules (stx-cdr es1)) ?rest rest])]
+        [BRules ?rest rest])]
     [(cons (Wrap b:defvals (renames head ?1)) rest)
      (R es1
         [#:pattern (?first . ?rest)]
@@ -469,7 +453,7 @@
         [! ?1]
         [#:pattern ((?define-values ?vars ?rhs) . ?rest)]
         [#:learn (syntax->list #'?vars)]
-        [(BRules (stx-cdr es1)) ?rest rest])]
+        [BRules ?rest rest])]
     [(cons (Wrap b:defstx (renames head ?1 bindrhs)) rest)
      (R es1
         [#:pattern (?first . ?rest)]
@@ -480,7 +464,7 @@
         [#:pattern ((?define-syntaxes ?vars ?rhs) . ?rest)]
         [#:learn (syntax->list #'?vars)]
         [BindSyntaxes ?rhs bindrhs]
-        [(BRules (stx-cdr es1)) ?rest rest])]
+        [BRules ?rest rest])]
     [(cons (Wrap b:splice (renames head ?1 tail ?2)) rest)
      (R es1
         [#:pattern (?first . ?rest)]
@@ -488,20 +472,20 @@
         [#:rename/no-step ?first (car renames) (cdr renames)]
         [Expr ?first head]
         [! ?1]
-        [#:walk tail
-                (list #'?first)
-                (stx-take tail (- (stx-improper-length tail)
-                                  (stx-improper-length #'?rest)))
-                'splice-block]
+        [#:walk/foci tail
+                     (list #'?first)
+                     (stx-take tail (- (stx-improper-length tail)
+                                       (stx-improper-length #'?rest)))
+                     'splice-block]
         [! ?2]
         [#:pattern ?forms]
-        [(BRules (stx->list* #'?forms)) ?forms rest])]
+        [BRules ?forms rest])]
     [(cons (Wrap b:error (exn)) rest)
      (R es1
         [! exn])]))
 
-;; bind-syntaxes-reductions : BindSyntaxes -> (RS stx)
-(define (bind-syntaxes-reductions bindrhs)
+;; bind-syntaxes-reductions : BindSyntaxes stx -> (RS stx)
+(define (bind-syntaxes-reductions bindrhs init-e1)
   (match bindrhs
     [(Wrap bind-syntaxes (rhs ?1))
      (R (wderiv-e1 rhs)
@@ -509,54 +493,58 @@
         [Expr ?form rhs]
         [! ?1])]))
 
-;; mk-mbrules-reductions : stx -> (list-of MBRule) -> (RS stxs)
-(define ((mk-mbrules-reductions es1) mbrules)
+;; mbrules-reductions : -> (list-of MBRule) stxs -> (RS stxs)
+(define (mbrules-reductions mbrules es1)
   (match mbrules
     ['()
      (RSunit null)]
-    [(cons (Wrap mod:skip ()) rest)
+    [(cons (Wrap mod:prim (head rename prim)) rest)
      (R es1
-        [#:pattern (?first . ?rest)]
-        [(ModulePass (stx-cdr es1)) ?rest rest])]
-    [(cons (Wrap mod:cons (head)) rest)
+        [#:pattern (?firstP . ?rest)]
+        [Expr ?firstP head]
+        [#:rename* ?firstP rename]
+        [Expr ?firstP prim]
+        [ModulePass ?rest rest])]
+    [(cons (Wrap mod:splice (head rename ?1 tail)) rest)
      (R es1
-        [#:pattern (?first . ?rest)]
-        [Expr ?first head]
-        [(ModulePass (stx-cdr es1)) ?rest rest])]
-    [(cons (Wrap mod:prim (head prim)) rest)
-     (R es1
-        [#:pattern (?first . ?rest)]
-        [Expr ?first head]
-        [Expr ?first prim]
-        [(ModulePass (stx-cdr es1)) ?rest rest])]
-    [(cons (Wrap mod:splice (head ?1 tail)) rest)
-     (R es1
-        [#:pattern (?first . ?rest)]
-        [Expr ?first head]
+        [#:pattern (?firstB . ?rest)]
+        [Expr ?firstB head]
+        [#:rename* ?firstB rename]
         [! ?1]
-        [#:walk tail
-                (list #'?first)
-                (stx-take tail (- (stx-improper-length tail)
-                                  (stx-improper-length #'?rest)))
-                'splice-module]
+        [#:walk/foci tail
+                     (list #'?firstB)
+                     (stx-take tail (- (stx-improper-length tail)
+                                       (stx-improper-length #'?rest)))
+                     'splice-module]
         [#:pattern ?forms]
-        [(ModulePass #'?forms) ?forms rest])]
-    [(cons (Wrap mod:lift (head stxs)) rest)
+        [ModulePass ?forms rest])]
+    [(cons (Wrap mod:lift (head renames stxs)) rest)
      (R es1
-        [#:pattern (?first . ?rest)]
-        [Expr ?first head]
+        [#:pattern (?firstL . ?rest)]
+        [Expr ?firstL head]
         [#:pattern ?forms]
-        [#:walk (append stxs #'?forms)
-                null
-                stxs
-                'splice-lifts]
-        [(ModulePass #'?forms) ?forms rest])]
+        [#:when/np renames
+                   [#:rename* ?forms renames]]
+        [#:walk/foci (append stxs #'?forms)
+                     null
+                     stxs
+                     'splice-lifts]
+        [ModulePass ?forms rest])]
     [(cons (Wrap mod:lift-end (stxs)) rest)
      (R es1
         [#:pattern ?forms]
         [#:when/np (pair? stxs)
-                   [#:walk (append stxs #'?forms)
-                           null
-                           stxs
-                           'splice-module-lifts]]
-        [(ModulePass #'?forms) ?forms rest])]))
+                   [#:walk/foci (append stxs #'?forms)
+                                null
+                                stxs
+                                'splice-module-lifts]]
+        [ModulePass ?forms rest])]
+    [(cons (Wrap mod:skip ()) rest)
+     (R es1
+        [#:pattern (?firstS . ?rest)]
+        [ModulePass ?rest rest])]
+    [(cons (Wrap mod:cons (head)) rest)
+     (R es1
+        [#:pattern (?firstC . ?rest)]
+        [Expr ?firstC head]
+        [ModulePass ?rest rest])]))

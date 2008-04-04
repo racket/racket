@@ -59,8 +59,8 @@
           [?1 (?? exn?)]
           [me1 (?? syntax?)]
           [locals (?? (listof localaction/c))]
-          [?2 (?? exn?)]
           [me2 (?? syntax?)]
+          [?2 (?? exn?)]
           [seq number?]))
  (struct (local-expansion node)
          ([z1 syntax?]
