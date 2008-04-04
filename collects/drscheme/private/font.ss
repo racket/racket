@@ -65,29 +65,34 @@
                 [size-add1 (mk-size-button "+1" add1)]
                 
                 [mono-list 'mono-list-not-yet-computed]
-                [choice-panel (new (class vertical-panel%
-                                     (define/private (force-cache receiver)
-                                       (when (eq? receiver font-name-control)
-                                         (when (symbol? mono-list)
-                                           (begin-busy-cursor)
-                                           (set! mono-list (get-face-list 'mono))
-                                           (send font-name-control clear)
-                                           (for-each
-                                            (λ (x) (send font-name-control append x))
-                                            (append mono-list (list (string-constant other...))))
-                                           (send font-name-control set-string-selection
-                                                 (preferences:get 'framework:standard-style-list:font-name))
-                                           (end-busy-cursor))))
-                                     (define/override (on-subwindow-event receiver evt)
-                                       (unless (or (send evt moving?)
-                                                   (send evt entering?)
-                                                   (send evt leaving?))
-                                         (force-cache receiver))
-                                       (super on-subwindow-event receiver evt))
-                                     (define/override (on-subwindow-char receiver evt)
-                                       (force-cache receiver)
-                                       (super on-subwindow-char receiver evt))
-                                     (super-new [parent options-panel])))]
+                [choice-panel 
+                 (new (class vertical-panel%
+                        (define/private (force-cache receiver)
+                          (when (eq? receiver font-name-control)
+                            (when (symbol? mono-list)
+                              (begin-busy-cursor)
+                              (set! mono-list (get-face-list 'mono))
+                              (send font-name-control clear)
+                              (for-each
+                               (λ (x) (send font-name-control append x))
+                               (append mono-list (list (string-constant other...))))
+                              (let ([pref (preferences:get 'framework:standard-style-list:font-name)])
+                                (cond 
+                                  [(member pref mono-list)
+                                   (send font-name-control set-string-selection pref)]
+                                  [else
+                                   (send font-name-control set-selection (length mono-list))]))
+                              (end-busy-cursor))))
+                        (define/override (on-subwindow-event receiver evt)
+                          (unless (or (send evt moving?)
+                                      (send evt entering?)
+                                      (send evt leaving?))
+                            (force-cache receiver))
+                          (super on-subwindow-event receiver evt))
+                        (define/override (on-subwindow-char receiver evt)
+                          (force-cache receiver)
+                          (super on-subwindow-char receiver evt))
+                        (super-new [parent options-panel])))]
                 [font-name-control
                  (let* ([choice
                          (new choice%
