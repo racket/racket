@@ -445,7 +445,12 @@
                               ;; esc
                               [c (compile-one vars (car blocks) esc)])
                   ;; then compile the rest, with our name as the esc
-                  (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])
+                  (loop (cdr blocks) 
+                        #'f 
+                        (cons #`[f #,(syntax-property
+                                      #'(lambda () c)
+                                      'typechecker:called-in-tail-position #t)]
+                              acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
         (let/wrap #'(fns ...) #'body)))))
 
