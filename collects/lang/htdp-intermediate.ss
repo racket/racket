@@ -5,7 +5,8 @@
 	   "private/contract-forms.ss"
 	   mzlib/etc
 	   mzlib/list
-	   syntax/docprovide)
+	   syntax/docprovide
+           test-engine/scheme-tests)
 
   ;; syntax:
   (provide (rename-out 
@@ -46,4 +47,6 @@
   ;; procedures:
   (provide-and-document
    procedures
-   (all-from beginner: lang/private/intermediate-funs procedures)))
+   (all-from beginner: lang/private/intermediate-funs procedures))
+  (provide (all-from-out test-engine/scheme-tests))
+  )

@@ -14,11 +14,13 @@
            (lib "ArithmeticException.ss" "profj" "libs" "java" "lang")
            (lib "ClassCastException.ss" "profj" "libs" "java" "lang")
            (lib "NullPointerException.ss" "profj" "libs" "java" "lang")
+           (prefix ast: (lib "ast.ss" "profj"))
            )
   
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
-           check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by)
+           check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by
+           compare-rand)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -210,9 +212,50 @@
   ;(make-exn-thrown exn boolean string)
   (define-struct exn-thrown (exception expected? cause))
   
+  (define (java-equal? v1 v2 visited-v1 visited-v2 range use-range?)
+    (or (eq? v1 v2)
+        (already-seen? v1 v2 visited-v1 visited-v2)
+        (cond 
+          ((and (number? v1) (number? v2))
+           (if (or (inexact? v1) (inexact? v2) use-range?)
+               (<= (abs (- v1 v2)) range)
+               (= v1 v2)))
+          ((and (object? v1) (object? v2))
+           (cond
+             ((equal? "String" (send v1 my-name))
+              (and (equal? "String" (send v2 my-name))
+                   (equal? (send v1 get-mzscheme-string) (send v2 get-mzscheme-string))))
+             ((equal? "array" (send v1 my-name))
+              (and (equal? "array" (send v2 my-name))
+                   (= (send v1 length) (send v2 length))
+                   (let ((v1-vals (array->list v1))
+                         (v2-vals (array->list v2)))
+                     (andmap (lambda (x) x)
+                             (map (lambda (v1i v2i v1-valsi v2-valsi)
+                                    (java-equal? v1i v2i v1-valsi v2-valsi range use-range?))
+                                  v1-vals v2-vals 
+                                  (map (lambda (v) (cons v1 visited-v1)) v1-vals)
+                                  (map (lambda (v) (cons v2 visited-v2)) v2-vals)
+                                  )))))
+             (else
+              (and (equal? (send v1 my-name) (send v2 my-name))
+                   (let ((v1-fields (send v1 field-values))
+                         (v2-fields (send v2 field-values)))
+                     (and (= (length v1-fields) (length v2-fields))
+                          (andmap (lambda (x) x) 
+                                  (map 
+                                   (lambda (v1-f v2-f v1-fvs v2-fvs)
+                                     (java-equal? v1-f v2-f v1-fvs v2-fvs range use-range?))
+                                   v1-fields v2-fields 
+                                   (map (lambda (v) (cons v1 visited-v1)) v1-fields)
+                                   (map (lambda (v) (cons v2 visited-v2)) v2-fields)))))))))
+          ((and (not (object? v1)) (not (object? v2))) (equal? v1 v2))
+          (else #f))))
+
+  
   ;compare-within: (-> val) val val (list symbol string) (U #f object) boolean . boolean -> boolean
   (define (compare-within test act range info src test-obj catch? . within?)
-    (letrec ((java-equal?
+    (letrec (#;(java-equal?
               (lambda (v1 v2 visited-v1 visited-v2)
                 (or (eq? v1 v2)
                     (already-seen? v1 v2 visited-v1 visited-v2)
@@ -253,7 +296,7 @@
                                (set! fail? #t)
                                (list exception catch? e "eval"))])
               (test)))
-      (let ([res (if fail? #f (java-equal? test act null null))]
+      (let ([res (if fail? #f (java-equal? test act null null range (not (null? within?))))]
             [values-list (append (list act test) (if (null? within?) (list range) null))])
         (if (in-check-mutate?)
             (stored-checks (cons (list res 'check-expect info values-list src) (stored-checks)))
@@ -296,6 +339,27 @@
       (if (in-check-mutate?)
           (stored-checks (cons (list (and (not fail?) result) 'check-by info values-list src) (stored-checks)))
           (report-check-result (and (not fail?) result) 'check-by info values-list src test-obj))
+      (and (not fail?) result)))
+  
+  ;compare-rand: (-> val) value [list string] src object -> boolean
+  (define (compare-rand test range info src test-obj)
+    (let* ([fail? #f]
+           [test-val (with-handlers ((exn?
+                                      (lambda (e)
+                                        (set! fail? #t)
+                                        (list exception e))))
+                       (test))]
+           [expected-vals (array->list range)]
+           [result
+            (and (not fail?)
+                 (ormap (lambda (e-v) (java-equal? test-val e-v null null 0.001 #t))
+                        expected-vals))]
+           [res-list (list range test-val)])
+      (if
+       (in-check-mutate?)
+       (stored-checks (cons (list (and (not fail?) result) 'check-rand info res-list src test-obj)
+                            (stored-checks)))
+       (report-check-result (and (not fail?) result) 'check-rand info res-list src test-obj))
       (and (not fail?) result)))
 
   ;check-mutate: (-> val) (-> boolean) (list string) src object -> boolean
@@ -348,6 +412,7 @@
              (expected-format
               (case check-kind
                 ((check-expect check-by) "to produce ")
+                ((check-rand) "to produce one of ")
                 ((check-catch) "to throw an instance of "))))
       (cond 
         [(not (eq? 'check-by check-kind))
@@ -367,6 +432,14 @@
                                (list", instead an error occurred")]
                               [else
                                (list ", instead found " (second formatted-values))])))
+                   ((check-rand)
+                    (cond
+                      [(and eval-exception-raised? (not exception-not-error?))
+                       (list ", instead a " (second formatted-values) " exception occurred")]
+                      [(and eval-exception-raised? exception-not-error?)
+                       (list", instead an error occurred")]
+                      [else
+                       (list ", instead found " (second formatted-values))]))
                    ((check-catch)
                     (if (= (length formatted-values) 1)
                         (list ", instead no exceptions occurred")

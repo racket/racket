@@ -56,7 +56,8 @@
                 #f
                 `(,#'module ,module-name ,language-module 
                             ,@(map (λ (x) `(require ,x)) teachpacks)
-                            ,@body-exps)))
+                            ,@body-exps
+                            ,@(if (null? body-exps) '() '((run-tests) (display-results))))))
               rep)))]
         [(require)
          (set! state 'done-or-exn)
@@ -121,14 +122,16 @@
            [(#%provide specs ...)
             (loop (cdr bodies))]
            [else 
-            (let ([new-exp
-                   (with-syntax ([body body]
-                                 [print-results
-                                  (lambda results
-                                    (when rep
-                                      (send rep display-results/void results)))])
-                     (syntax 
-                      (call-with-values
-                       (lambda () body)
-                       print-results)))])
-              (cons new-exp (loop (cdr bodies))))]))])))
+            (if (syntax-property body 'test-call)
+                (cons body (loop (cdr bodies)))
+                (let ([new-exp
+                       (with-syntax ([body body]
+                                     [print-results
+                                      (lambda results
+                                        (when rep
+                                          (send rep display-results/void results)))])
+                         (syntax 
+                          (call-with-values
+                           (lambda () body)
+                           print-results)))])
+                  (cons new-exp (loop (cdr bodies)))))]))])))

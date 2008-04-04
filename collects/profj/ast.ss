@@ -15,6 +15,9 @@
   
   ;(make-src int int int int loc)
   (p-define-struct src (line col pos span file))
+  (provide src->list)
+  (define (src->list src)
+    (list (src-file src) (src-line src) (src-col src) (src-pos src) (src-span src)))
   
   ;;(make-package (U #f name) (list import) (list (U class-def interface-def)))
   (p-define-struct package (name imports defs))
@@ -294,6 +297,9 @@
   
   ;(make-check-expect (U #f type) src Expression Expression (U #f Expression) src)
   (p-define-struct (check-expect check) (test actual range ta-src))
+  
+  ;(make-check-rand (U #f type) src Expression Expression src)
+  (p-define-struct (check-rand check) (test range ta-src))
   
   ;(make-check-catch (U #f type) src Expression type-spec)
   (p-define-struct (check-catch check) (test exn))

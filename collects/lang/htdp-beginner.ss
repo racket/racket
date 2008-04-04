@@ -11,7 +11,8 @@
 
   ;; Implements the forms:
   (require "private/teach.ss"
-	   "private/contract-forms.ss")
+	   "private/contract-forms.ss"
+           test-engine/scheme-tests)
 
   ;; syntax:
   (provide (rename-out
@@ -89,4 +90,8 @@
   (provide-and-document/wrap
    procedures
    in-rator-position-only
-   (all-from beginner: lang/private/beginner-funs procedures)))
+   (all-from beginner: lang/private/beginner-funs procedures))
+  
+  (provide (all-from-out test-engine/scheme-tests))
+  
+  )

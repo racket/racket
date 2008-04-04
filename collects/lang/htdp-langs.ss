@@ -36,7 +36,10 @@
            "stepper-language-interface.ss"           
            "debugger-language-interface.ss"
            "run-teaching-program.ss"
-           stepper/private/shared)
+           stepper/private/shared
+           
+           (lib "scheme-gui.scm" "test-engine")
+           )
   
   
   (provide tool@)
@@ -154,18 +157,24 @@
           (define/override (on-execute settings run-in-user-thread)
             (let ([drs-namespace (current-namespace)]
                   [set-result-module-name 
-                   ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)])
+                   ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)]
+                  [scheme-test-module-name
+                   ((current-module-name-resolver) '(lib "test-engine/scheme-gui.scm") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
                  (namespace-attach-module drs-namespace ''drscheme-secrets)
-                 (namespace-attach-module drs-namespace set-result-module-name)
+                 (namespace-attach-module drs-namespace set-result-module-name)                 
                  (error-display-handler teaching-languages-error-display-handler)
                  (error-value->string-handler (λ (x y) (teaching-languages-error-value->string settings x y)))
                  (current-eval (add-annotation (htdp-lang-settings-tracing? settings) (current-eval)))
                  (error-print-source-location #f)
                  (read-decimal-as-inexact #f)
-                 (read-accept-dot (get-read-accept-dot)))))
+                 (read-accept-dot (get-read-accept-dot))
+                 (namespace-attach-module drs-namespace scheme-test-module-name)
+                 (namespace-require scheme-test-module-name)
+                 (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace))
+                 )))
             (super on-execute settings run-in-user-thread))
           
           (define/private (teaching-languages-error-value->string settings v len)
@@ -888,10 +897,9 @@
       ;; this inspector should be powerful enough to see
       ;; any structure defined in the user's namespace
       (define drscheme-inspector (current-inspector))
-      
       (eval `(,#'module drscheme-secrets mzscheme
-               (provide drscheme-inspector)
-               (define drscheme-inspector ,drscheme-inspector)))
+                        (provide drscheme-inspector)
+                        (define drscheme-inspector ,drscheme-inspector)))
       (namespace-require ''drscheme-secrets)
       
       

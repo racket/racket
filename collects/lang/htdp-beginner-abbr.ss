@@ -3,7 +3,8 @@
   (require mzlib/etc
 	   mzlib/list
 	   mzlib/math
-	   syntax/docprovide)
+	   syntax/docprovide
+           test-engine/scheme-tests)
 
   ;; Implements the forms:
   (require "private/teach.ss"
@@ -42,4 +43,7 @@
   ;; procedures:
   (provide-and-document
    procedures
-   (all-from beginner: lang/htdp-beginner procedures)))
+   (all-from beginner: lang/htdp-beginner procedures))
+  
+  (provide (all-from-out test-engine/scheme-tests))
+  )

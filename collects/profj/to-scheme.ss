@@ -6,7 +6,9 @@
            "parameters.ss"
            mzlib/class
            mzlib/list
-           mzlib/etc)
+           mzlib/etc
+           (prefix int-set: (lib "integer-set.ss"))
+           )
   
   (provide translate-program translate-interactions (struct compilation-unit (contains code locations depends)))
   
@@ -736,14 +738,28 @@
                                                              (filter (lambda (m)
                                                                        (and (method? m) (method-src m))) (def-members d))))
                                                      class-defs))
-                                               (class/lookup-funcs
+                                               (tested-methods
+                                                (map (lambda (c/m)
+                                                       (cons (car c/m)
+                                                             (map (lambda (m) (id-string (method-name m))) (cdr c/m))))
+                                                     class/methods-list))
+                                               (tested-methods-expr-srcs
+                                                (map (lambda (c/m)
+                                                       (cons (car c/m)
+                                                             (map 
+                                                              (lambda (m)
+                                                                (let ([srcs (get-srcs (method-body m))])
+                                                                  (srcs->spans srcs)))
+                                                              (cdr c/m))))
+                                                     class/methods-list))
+                                               #;(class/lookup-funcs
                                                 (map (lambda (c)
                                                        (let* ((m-name (lambda (m) (id-string (method-name m))))
                                                               (m-start (lambda (m) (src-pos (method-src m))))
                                                               (m-stop (lambda (m)
                                                                         (+ (m-start m) (src-span (method-src m))))))                                                       
                                                          `(let ((methods-covered ',(map (lambda (m) `(,(m-name m) #f))
-                                                                                 (cdr c)))                                                              
+                                                                                        (cdr c)))                                                              
                                                                 (srcs ',(map (lambda (m)
                                                                                `(,(m-name m) ,(get-srcs (method-body m))))
                                                                              (cdr c))))
@@ -761,7 +777,16 @@
                                                                                    (set-cdr! (assq ,(m-name m) methods-covered) (list #t)))))))
                                                                          (cdr c))))))))
                                                      class/methods-list)))
-                                          (list `(define/override (testCoverage-boolean-int report? src)
+                                          (list 
+                                           `(define/override (testedClasses)
+                                              (append (list ,@test-classes) (super testedClasses)))
+                                           `(define/override (testedMethods-dynamic class-name)
+                                              (or (assq class-name (list ,@tested-methods))
+                                                  (super testedMethods-dynamic class-name)))
+                                           `(define/override (testMethodsSrcs-dynamic class-name)
+                                              (or (assq class-name (list ,@tested-methods-expr-srcs))
+                                                  (super testedMethodsSrcs-dynamic class-name)))
+                                           #;`(define/override (testCoverage-boolean-int report? src)
                                                    (let ((class/lookups (list ,@class/lookup-funcs)))
                                                      (if report?
                                                          (append (map (lambda (c) (list (car c) (cadr c)))
@@ -1308,32 +1333,32 @@
          extends))
   
   (define (get-srcs stmt) 
-  (cond
-    [(ifS? stmt)
-     (append (get-expr-srcs (ifS-cond stmt))
-             (get-srcs (ifS-then stmt))
-             (get-srcs (ifS-else stmt)))]
-    [(throw? stmt)
-     (get-expr-srcs (throw-expr stmt))]
-    [(return? stmt)
-     (get-expr-srcs (return-expr stmt))]
-    [(while? stmt)
-     (append (get-expr-srcs (while-cond stmt))
-             (get-srcs (while-loop stmt)))]
-    [(doS? stmt)
-     (append (get-srcs (doS-loop stmt))
-             (get-expr-srcs (doS-cond stmt)))]
-    [(for? stmt)
-     (get-srcs (for-loop stmt))]
-    [(try? stmt)
-     (append (get-srcs (try-body stmt))
-             (apply append
-                    (map (compose get-srcs catch-body) (try-catches stmt))))
-     ]
-    [(block? stmt)
-     (apply append (map get-srcs (block-stmts stmt)))]
-    [(statement-expression? stmt) (get-expr-srcs stmt)]
-    [else null]))
+    (cond
+      [(ifS? stmt)
+       (append (get-expr-srcs (ifS-cond stmt))
+               (get-srcs (ifS-then stmt))
+               (get-srcs (ifS-else stmt)))]
+      [(throw? stmt)
+       (get-expr-srcs (throw-expr stmt))]
+      [(return? stmt)
+       (get-expr-srcs (return-expr stmt))]
+      [(while? stmt)
+       (append (get-expr-srcs (while-cond stmt))
+               (get-srcs (while-loop stmt)))]
+      [(doS? stmt)
+       (append (get-srcs (doS-loop stmt))
+               (get-expr-srcs (doS-cond stmt)))]
+      [(for? stmt)
+       (get-srcs (for-loop stmt))]
+      [(try? stmt)
+       (append (get-srcs (try-body stmt))
+               (apply append
+                      (map (compose get-srcs catch-body) (try-catches stmt))))
+       ]
+      [(block? stmt)
+       (apply append (map get-srcs (block-stmts stmt)))]
+      [(statement-expression? stmt) (get-expr-srcs stmt)]
+      [else null]))
   
   (define (get-expr-srcs expr)
     (cond
@@ -1390,6 +1415,13 @@
        (cons (src-pos (expr-src expr))
              (get-expr-srcs (assignment-right expr))))
       (else (list (src-pos (expr-src expr))))))
+  
+  (define (srcs->spans srcs)
+    (cond
+      [(null? srcs) (int-set:make-range)]
+      [else (int-set:union (int-set:make-range (src-pos (car srcs))
+                                               (+ (src-pos (car srcs)) (src-span (car srcs))))
+                           (srcs->spans (cdr srcs)))]))
   
   ;translate-interface: interface-def type-records-> (list syntax)
   (define (translate-interface iface type-recs)
@@ -2200,12 +2232,12 @@
   
   (define (translate-expression expr)
     (let ((translated-expr (translate-expression-unannotated expr)))
-      (if (and (not (to-file)) (coverage?) (expr-src expr))
+      (if (and (not (to-file)) (coverage?) (not (check? expr)) (expr-src expr))
           (make-syntax #f `(begin0 ,translated-expr
                                    (cond 
                                      ((namespace-variable-value 'current~test~object% #f (lambda () #f))
                                       => (lambda (test)
-                                           (send test covered-position ,(expr-src expr))))))
+                                           (send test analyze-position (quote ,(src->list (expr-src expr))))))))
                        #f)
           translated-expr)))
   
@@ -2999,6 +3031,9 @@
                                                     (check-expect-actual expr)
                                                     (check-expect-range expr)
                                                     (expr-src expr)))
+      ((check-rand? expr) (translate-check-rand (check-rand-test expr)
+                                                (check-rand-range expr)
+                                                (expr-src expr)))
       ((check-catch? expr) (translate-check-catch (check-catch-test expr)
                                                   (check-catch-exn expr)
                                                   (expr-src expr)))
@@ -3020,10 +3055,22 @@
       (make-syntax #f 
                    `(,(if (not range) 'javaRuntime:compare 'javaRuntime:compare-within)
                       ,@(if range (list t a r) (list t a))
-                      ,extracted-info ,src
+                      ,extracted-info (quote ,(src->list src))
                       (namespace-variable-value 'current~test~object% #f 
                                                 (lambda () #f))
                       ,(testcase-ext?))
+                   (build-src src))))
+  
+  ;translate-check-rand: expression expression src -> syntax
+  (define (translate-check-rand test range src)
+    (let ([t (make-syntax #f `(lambda () ,(translate-expression test)) #f)]
+          [r (translate-expression range)]
+          [extracted-info (checked-info test)])
+      (make-syntax #f
+                   `(javaRuntime:compare-rand ,t ,r ,extracted-info (quote ,(src->list src))
+                                              (namespace-variable-value 'current~test~object% #f
+                                                                        (lambda () #f))
+                                              )
                    (build-src src))))
   
   ;translate-check-catch: expression type-spec src -> syntax
@@ -3031,7 +3078,8 @@
     (let ((t (create-syntax #f `(lambda () ,(translate-expression test)) #f))
           (n (get-class-name catch)))
       (make-syntax #f
-                   `(javaRuntime:check-catch ,t ,(symbol->string (syntax-object->datum n)) ,n ,(checked-info test) ,src
+                   `(javaRuntime:check-catch ,t ,(symbol->string (syntax-object->datum n)) ,n ,(checked-info test) 
+                                             (quote ,(src->list src))
                                              (namespace-variable-value 'current~test~object% #f
                                                                        (lambda () #f)))
                    (build-src src))))
@@ -3055,7 +3103,7 @@
                                                  'eq?)
                                             ,info
                                             ,(if (method-record? comp) (method-record-name comp) "==")
-                                            ,src
+                                            (quote ,(src->list src))
                                             (namespace-variable-value 'current~test~object% #f (lambda () #f)))
                    (build-src src))))
   
@@ -3064,7 +3112,7 @@
     (let ((t (create-syntax #f `(lambda () ,(translate-expression mutatee)) #f))
           (c (create-syntax #f `(lambda () ,(translate-expression check)) #f)))
       (make-syntax #f
-                   `(javaRuntime:check-mutate ,t ,c ,(checked-info mutatee) ,src
+                   `(javaRuntime:check-mutate ,t ,c ,(checked-info mutatee) (quote ,(src->list src))
                                               (namespace-variable-value 'current~test~object% #f
                                                                         (lambda () #f)))
                    (build-src src))))

@@ -11,7 +11,9 @@
            profj/libs/java/lang/Object profj/libs/java/lang/array
            profj/libs/java/lang/String)
   (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss"
-           (except-in "ast.ss" for) "tester.scm"
+           (lib "java-tests.scm" "test-engine")
+           (lib "test-coverage.scm" "test-engine")
+           (except-in "ast.ss" for) #;"tester.scm"
            "display-java.ss")
 
   (require (for-syntax scheme/base
@@ -758,6 +760,21 @@
           (define/private (syntax-as-top s)
 	    (if (syntax? s) (namespace-syntax-introduce s) s))
           
+          (define/private (get-program-windows rep source)
+            (let* ([dr-frame (send rep get-top-level-window)]
+                   [tabs (and dr-frame 
+                              (send dr-frame get-tabs))]
+                   [tab/defs (if dr-frame
+                                 (map (lambda (t) (cons (send t get-defs) t)) tabs)
+                                 null)]
+                   [tab/def (filter (lambda (t/d)
+                                      (and (is-a? (car t/d) drscheme:unit:definitions-text<%>)
+                                           (send (car t/d) port-name-matches? source)))
+                                    tab/defs)])
+              (and dr-frame 
+                   (= 1 (length tab/def))
+                   (list dr-frame (car (car tab/def)) (cdr (car tab/def))))))               
+          
           (define/public (on-execute settings run-in-user-thread)
             (dynamic-require 'profj/libs/java/lang/Object #f)
             (let ([obj-path ((current-module-name-resolver) 'profj/libs/java/lang/Object #f #f)]
@@ -769,7 +786,6 @@
               (test-ext? (profj-settings-allow-check? settings))
               (testcase-ext? (profj-settings-allow-test? settings))
               (let ((execute-types (create-type-record)))
-                (read-case-sensitive #t)
                 (run-in-user-thread
                  (lambda ()
                    (test-ext? (profj-settings-allow-check? settings))
@@ -803,14 +819,28 @@
                                      ((and (not require?) (null? mods) tests-run? (null? extras)) (void))
                                      ((and (not require?) (null? mods) (not tests-run?))
                                       (when (tests?)
-                                        (let ((tc (make-object test-info%)))
-                                          (namespace-set-variable-value! 'current~test~object% tc)
-                                          (let ((objs (send tc run-tests 
-                                                            (map (lambda (c)
-                                                                   (list c (old-current-eval (string->symbol c))))
-                                                                 (car examples))
-                                                            (cadr examples))))
-                                            (let inner-loop ((os objs))
+                                        (let* ([test-engine-obj 
+                                                (make-object (if (testcase-ext?) java-test-base% java-examples-engine%))]
+                                               [tc-info (send test-engine-obj get-info)])
+                                          (namespace-set-variable-value! 'current~test~object% tc-info)
+                                          (send test-engine-obj install-tests 
+                                                (map (lambda (c)
+                                                       (list c (old-current-eval (string->symbol c)) c))
+                                                     (car examples)))
+                                          (when (coverage?)
+                                            (send (send test-engine-obj get-info) add-analysis 
+                                                  (make-object coverage-analysis%)))
+                                          (send test-engine-obj refine-display-class 
+                                                (cond
+                                                  [(and (testcase-ext?) (coverage?)) java-test-coverage-graphics%]
+                                                  [(coverage?) java-examples-coverage-graphics%]
+                                                  [(testcase-ext?) java-test-graphics%]
+                                                  [else java-examples-graphics%]))
+                                          (send test-engine-obj run)
+                                          (send test-engine-obj setup-display (drscheme:rep:current-rep) e)
+                                          (send test-engine-obj summarize-results (current-output-port))
+                                          (let ([test-objs (send test-engine-obj test-objects)])
+                                            (let inner-loop ((os test-objs))
                                               (unless (null? os)
                                                 (let ((formatted 
                                                        (format-java-value (car os) (make-format-style #t 'field #f))))
@@ -822,16 +852,7 @@
                                                       (write-special (car out))
                                                       (loop (cdr out))))
                                                   (newline))
-                                                (inner-loop (cdr os))))
-                                            (parameterize ([current-eventspace e])
-                                              (queue-callback 
-                                               (lambda ()
-                                                 (let* ((tab (and (is-a? src drscheme:unit:definitions-text<%>)
-                                                                  (send src get-tab)))
-                                                        (frame (and tab (send tab get-frame)))
-                                                        (test-window 
-                                                         (make-object test-display% frame tab)))
-                                                   (send test-window pop-up-window tc))))))))
+                                                (inner-loop (cdr os)))))))
                                       (set! tests-run? #t)
                                       (loop mods extras require?))
                                      ((and (not require?) (null? mods) tests-run?)

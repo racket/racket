@@ -2780,6 +2780,14 @@
                       level
                       (expr-src exp)
                       type-recs))
+      ((check-rand? exp)
+       (check-test-rand (check-rand-test exp)
+                        (check-rand-range exp)
+                        check-sub-expr
+                        env
+                        level
+                        (check-rand-ta-src exp)
+                        type-recs))
       ((check-mutate? exp)
        (check-test-mutate (check-mutate-mutate exp)
                           (check-mutate-check exp)
@@ -2904,7 +2912,47 @@
                     (unless (eq? (method-record-rtype meth) 'boolean)
                       (check-by-error 'not-boolean test-type actual-type by src))
                     (set-check-by-compare! exp meth)))])
-             (make-type/env 'boolean new-env)))])))             
+             (make-type/env 'boolean new-env)))])))
+  
+  ;check-test-rand: exp exp (exp env -> type/env) env symbol src type-records -> type/env
+  (define (check-test-rand actual expt-range check-e env level src type-recs)
+    (let* ([actual-te (check-e actual env)]
+           [actual-t (type/env-t actual-te)]
+           [expt-range-te (check-e expt-range (type/env-e actual-te))]
+           [er-t (type/env-t expt-range-te)]
+           [res (make-type/env 'boolean (type/env-e expt-range-te))])
+      (when (eq? actual-t 'void)
+        (check-rand-type-error 'void level actual-t er-t (expr-src actual)))
+      (when (eq? er-t 'void)
+        (check-rand-type-error 'void level actual-t er-t (expr-src expt-range)))
+      (when (not (array-type? er-t))
+        (check-rand-type-error 'not-array level actual-t er-t (expr-src expt-range)))
+      (let ([er-a-t
+             (cond
+               [(eq? (array-type-dim er-t) 1) (array-type-type er-t)]
+               [else (make-array-type (array-type-type er-t) (sub1 (array-type-dim er-t)))])])
+        (cond
+          ((and (eq? 'boolean actual-t)
+                (eq? 'boolean er-a-t)) res)
+          ((and (prim-numeric-type? actual-t)
+                (prim-numeric-type? er-a-t))
+           res)
+          ((and (memq level '(advanced full))
+                (reference-type? actual-t) (reference-type? er-a-t))
+           (cond
+             ((castable? er-a-t actual-t type-recs) res)
+             (else (check-rand-type-error 'cast level actual-t er-a-t src))))
+          ((and (memq level '(advanced full))
+                (or (array-type? actual-t) (array-type? er-a-t)))
+           (cond
+             ((castable? er-a-t actual-t type-recs) res)
+             (else
+              (check-rand-type-error 'cast level actual-t er-a-t src))))
+          (else
+           (check-rand-type-error (if (memq level '(advanced full)) 'cast 'subtype)
+                                  level
+                                  actual-t er-a-t src))))))
+ 
   
   ;check-test-mutate: exp exp (exp env -> type/env) env src type-records -> type/env
   (define (check-test-mutate mutatee check check-sub-expr env src type-recs)
@@ -3673,6 +3721,24 @@
                    ))))
      'check ta-src
      ))
+  
+  (define (check-rand-type-error kind level actual-type expt-type src)
+    (raise-error
+     'check
+     (cond
+       [(and (eq? kind 'void) (eq? actual-type 'void))
+        "The test of a 'check' expression must produce a value. Current expression does not."]
+       [(and (eq? kind 'void) (eq? expt-type 'void))
+        "The expected result of a 'check' 'within' expression must be an array of values. Current expression is not a value."]
+       [(eq? kind 'not-array)
+        (string-append "The expected result of a 'check' 'within' expression must be an array of possible values.\n"
+                       (format "Found ~a, which is not appropriate in this expression." (type->ext-name expt-type)))]
+       [else
+        (string-append "A 'check' 'within' expession compares the test expression with an array of possible answers.\n"
+                       (format "Found an array of ~a which is not comparable to ~a."
+                               (type->ext-name expt-type)
+                               (type->ext-name actual-type)))])
+     'within src))
 
   (define (check-by-==-error t-type a-type src)
     (raise-error

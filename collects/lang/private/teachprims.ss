@@ -11,8 +11,8 @@ namespace.
 (module teachprims mzscheme
 
   (require "../imageeq.ss" 
-    mzlib/list
-    mzlib/etc)
+           mzlib/list
+           mzlib/etc)
   
   (define-syntax (define-teach stx)
     (syntax-case stx ()

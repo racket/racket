@@ -8,6 +8,7 @@
 	   mzlib/pretty
 	   syntax/docprovide
            scheme/promise
+           test-engine/scheme-tests
 	   "posn.ss")
 
   ;; syntax:
@@ -60,4 +61,7 @@
 
    (all-from-except intermediate: lang/htdp-intermediate-lambda procedures
 		    cons list* append)
-   (all-from advanced: lang/private/advanced-funs procedures)))
+   (all-from advanced: lang/private/advanced-funs procedures))
+   
+  (provide (all-from-out test-engine/scheme-tests))
+  )

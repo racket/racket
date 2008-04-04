@@ -13,8 +13,19 @@ public final class TestBase {
   }
 
   // void || (listof (list string (listof string (listof int))))
-  dynamic testCoverage( boolean getResult, int src) {
+//  dynamic testCoverage( boolean getResult, int src) {
+//    return null;
+//  }
+  
+  dynamic testedClasses() {
     return null;
+  }
+  
+  dynamic testedMethods( dynamic cl ) {
+    return false;
+  }
+  dynamic testedMethodsSrcs( dynamic cl ) {
+    return false;
   }
 
 }
