@@ -10,10 +10,12 @@
 @declare-exporting[lang/htdp-beginner]
 
 @schemegrammar*+library[
-#:literals (define define-struct lambda cond else if and or empty true false require lib planet)
+#:literals (define define-struct lambda cond else if and or empty true false require lib planet
+            check-expect check-within check-error)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
+             
              library-require]
 [definition (define (id id id ...) expr)
             (define id expr)
@@ -26,6 +28,7 @@
       (if expr expr expr)
       (and expr expr expr ...)
       (or expr expr expr ...)
+      test-case
       empty
       id
       (code:line id (code:comment #, @seclink["beginner-id"]{identifier}))
@@ -216,6 +219,29 @@ evaluates to @scheme[false], the next expression is considered. If all
 @scheme[expr]s evaluate to @scheme[false], the @scheme[or] expression
 evaluates to @scheme[false]. If any of the expressions evaluate to a
 value other than @scheme[true] or @scheme[false], it is an error.}
+
+@; ----------------------------------------------------------------------
+
+@section{Test Cases}
+
+@defform[(check-expect expr expr)]{
+
+A test case to check that the first @scheme[expr] produces the same
+value as the second @scheme[expr], where the latter is normally an
+immediate value.}
+
+@defform[(check-within expr expr expr)]{
+
+Like @scheme[check-expect], but with an extra expression that produces
+a number @scheme[_delta]. The test case checks that each number in the
+result of the first @scheme[expr] is within @scheme[_delta] of each
+corresponding number from the second @scheme[expr].}
+
+@defform[(check-error expr expr)]{
+
+A test case to check that the first @scheme[expr] signals an error,
+where the error messages matches the string produced by the second
+@scheme[expr].}
 
 @; ----------------------------------------------------------------------
 

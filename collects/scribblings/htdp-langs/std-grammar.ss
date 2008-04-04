@@ -13,6 +13,9 @@
 (define-syntax-rule (schemegrammar*+library form ...)
   (schemegrammar*
    form ...
+   [test-case #, @scheme[(check-expect expr expr)]
+              #, @scheme[(check-within expr expr expr)]
+              #, @scheme[(check-error expr expr)]]
    (...
     [libray-require #, @scheme[(require string)]
                     #, @scheme[(require (lib string string ...))]

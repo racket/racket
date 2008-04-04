@@ -4,7 +4,7 @@
           "prim-ops.ss"
           (for-label lang/htdp-beginner-abbr))
 
-@(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+@(define-syntax-rule (bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
    (begin
     (require (for-label lang/htdp-beginner))
     (define beg-define (scheme define))
@@ -13,8 +13,9 @@
     (define beg-if (scheme if))
     (define beg-and (scheme and))
     (define beg-or (scheme or))
+    (define beg-check-expect (scheme check-expect))
     (define beg-require (scheme require))))
-@(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+@(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
 @title[#:style 'toc]{Beginning Student with List Abbreviations}
@@ -22,7 +23,8 @@
 @declare-exporting[lang/htdp-beginner-abbr]
 
 @schemegrammar*+qq[
-#:literals (define define-struct lambda cond else if and or empty true false require lib planet)
+#:literals (define define-struct lambda cond else if and or empty true false require lib planet
+            check-expect check-within check-error)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
@@ -38,6 +40,7 @@
       (if expr expr expr)
       (and expr expr expr ...)
       (or expr expr expr ...)
+      test-case
       empty
       id
       (code:line #, @elem{@schemevalfont{'}@scheme[quoted]} (code:comment #, @seclink["beginner-abbr-quote"]{quoted value}))
@@ -163,6 +166,14 @@ The same as Beginning's @|beg-if|.}
 )]{
 
 The same as Beginning's @|beg-and| and @|beg-or|.}
+
+@deftogether[(
+@defform[(check-expect expr expr)]
+@defform[(check-within expr expr expr)]
+@defform[(check-error expr expr)]
+)]{
+
+The same as Beginning's @|beg-check-expect|, etc.}
 
 @deftogether[(
 @defthing[empty empty?]

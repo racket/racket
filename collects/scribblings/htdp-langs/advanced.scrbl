@@ -17,7 +17,7 @@
     (define intm-time (scheme time))))
 @(bd intm-define intm-define-struct intm-lambda intm-local intm-letrec intm-let intm-let* intm-time)
 
-@(define-syntax-rule (bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+@(define-syntax-rule (bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
    (begin
     (require (for-label lang/htdp-beginner))
     (define beg-define (scheme define))
@@ -26,8 +26,9 @@
     (define beg-if (scheme if))
     (define beg-and (scheme and))
     (define beg-or (scheme or))
+    (define beg-check-expect (scheme check-expect))
     (define beg-require (scheme require))))
-@(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-require)
+@(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
 @title[#:style 'toc]{Advanced Student}
@@ -36,7 +37,8 @@
 
 @schemegrammar*+qq[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
-            local let let* letrec time begin begin0 set! delay shared recur when case unless)
+            local let let* letrec time begin begin0 set! delay shared recur when case unless
+            check-expect check-within check-error)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
@@ -69,6 +71,7 @@
       (and expr expr expr ...)
       (or expr expr expr ...)
       (time expr)
+      test-case
       empty
       (code:line id (code:comment #, @seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment #, @seclink["intermediate-lambda-prim-op"]{primitive operation}))
@@ -314,6 +317,16 @@ The same as Beginning's @|beg-and| and @|beg-or|.}
 @defform[(time expr)]{
 
 The same as Intermediate's @|intm-time|.}
+
+
+@deftogether[(
+@defform[(check-expect expr expr)]
+@defform[(check-within expr expr expr)]
+@defform[(check-error expr expr)]
+)]{
+
+The same as Beginning's @|beg-check-expect|, etc.}
+
 
 
 @deftogether[(
