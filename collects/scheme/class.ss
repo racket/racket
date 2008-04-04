@@ -7,5 +7,5 @@
   ;;  which provides extra (private) functionality to contract.ss.
   (require "private/class-internal.ss")
   
-  (provide-public-names))
-
+  (provide-public-names)
+  (provide generic?))

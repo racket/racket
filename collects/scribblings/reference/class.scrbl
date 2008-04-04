@@ -1136,6 +1136,13 @@ If @scheme[obj-expr] does not produce a object, or if
 not an instance of the class or interface encapsulated by the result
 of @scheme[generic-expr], the @exnraise[exn:fail:object].}
 
+@defproc[(make-generic [type (or/c class? interface?)]
+                       [method-name symbol?])
+         generic?]{
+
+Like the @scheme[generic] form, but as a procedure that accepts a
+symbolic method name.}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "mixins"]{Mixins}
@@ -1542,6 +1549,11 @@ Returns @scheme[#t] if @scheme[v] is a class, @scheme[#f] otherwise.}
 @defproc[(interface? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is an interface, @scheme[#f] otherwise.}
+
+
+@defproc[(generic? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a @tech{generic}, @scheme[#f] otherwise.}
 
 
 @defproc[(object=? [a object?][b object?]) eq?]{
