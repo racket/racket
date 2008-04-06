@@ -102,6 +102,9 @@ static MZ_INLINE long SPAN(Scheme_Object *port, long pos) {
   return cpos - pos + 1;
 }
 
+/* For cases where we'd rather report the location as just the relevant prefix: */
+#define MINSPAN(port, pos, span) (span)
+
 #define SRCLOC_TMPL " in %q[%L%ld]"
 
 #define mz_shape_cons 0
@@ -241,7 +244,7 @@ static int skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
 
 static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, ReadParams *params,
 				     Scheme_Object *port, Scheme_Object *src, long line, long col, long pos,
-				     Scheme_Hash_Table **ht);
+				     Scheme_Hash_Table **ht, Scheme_Object *modpath_stx);
 
 #define READTABLE_WHITESPACE 0x1
 #define READTABLE_CONTINUING 0x2
@@ -1097,7 +1100,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    Scheme_Object *skipped;
 	    skipped = read_inner(port, stxsrc, ht, indentation, params, 0);
 	    if (SCHEME_EOFP(skipped))
-	      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+	      scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, 2), EOF, indentation,
 			      "read: expected a commented-out element for `#;' (found end-of-file)");
 	    /* For resolving graphs introduced in #; : */
 	    if (*ht) {
@@ -1376,7 +1379,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      ch = scheme_getc_special_ok(port);
 
 	      if (ch == EOF)
-		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+		scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, 2), EOF, indentation,
 				"read: end of file in #| comment");
 	      else if (ch == SCHEME_SPECIAL)
 		scheme_get_ready_read_special(port, stxsrc, ht);
@@ -1809,6 +1812,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	    if (ch == '=' && (vector_length != -1)) {
 	      /* Not a vector after all: a graph definition */
 	      Scheme_Object *v, *ph;
+              long in_pos;
 
 	      if (stxsrc)
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
@@ -1840,9 +1844,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      scheme_hash_set(*ht, scheme_make_integer(vector_length), (void *)ph);
 
+              scheme_tell_all(port, NULL, NULL, &in_pos);
+
 	      v = read_inner(port, stxsrc, ht, indentation, params, 0);
 	      if (SCHEME_EOFP(v))
-		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+		scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, in_pos-pos), EOF, indentation,
 				"read: expected an element for graph (found end-of-file)");
 	      SCHEME_PTR_VAL(ph) = v;
 
@@ -2574,9 +2580,10 @@ read_list(Scheme_Object *port,
   int ch = 0, got_ch_already = 0, effective_ch;
   int brackets = params->square_brackets_are_parens;
   int braces = params->curly_braces_are_parens;
-  long start, startcol, startline, dotpos, dotcol, dotline, dot2pos, dot2line, dot2col;
+  long start, startcol, startline, dotpos, dotcol, dotline, dot2pos, dot2line, dot2col, init_span;
 
   scheme_tell_all(port, &startline, &startcol, &start);
+  init_span = 1;
 
   if (stxsrc) {
     /* Push onto the indentation stack: */
@@ -2618,7 +2625,7 @@ read_list(Scheme_Object *port,
 	}
       }
 
-      scheme_read_err(port, stxsrc, startline, startcol, start, SPAN(port, start), EOF, indentation,
+      scheme_read_err(port, stxsrc, startline, startcol, start, MINSPAN(port, start, init_span), EOF, indentation,
 		      "read: expected a %s%s", closer_name(params, closer), suggestion);
       return NULL;
     }
@@ -2971,15 +2978,18 @@ read_string(int is_byte, int is_honu_char, Scheme_Object *port,
 {
   mzchar *buf, *oldbuf, onstack[32];
   int i, j, n, n1, ch, closer = (is_honu_char ? '\'' : '"');
-  long size = 31, oldsize;
+  long size = 31, oldsize, in_pos, init_span;
   Scheme_Object *result;
+
+  scheme_tell_all(port, NULL, NULL, &in_pos);
+  init_span = in_pos - pos + 1;
 
   i = 0;
   buf = onstack;
   while ((ch = scheme_getc_special_ok(port)) != closer) {
     if ((ch == EOF) || (is_honu_char && (i > 0))) {
       if (err_ok)
-	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
+	scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, init_span), ch, indentation,
 			"read: expected a closing %s%s",
 			is_honu_char ? "'" : "'\"'",
 			(ch == EOF) ? "" : " after one character");
@@ -2998,7 +3008,7 @@ read_string(int is_byte, int is_honu_char, Scheme_Object *port,
       ch = scheme_getc_special_ok(port);
       if (ch == EOF) {
 	if (err_ok)
-	  scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+	  scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, init_span), EOF, indentation,
 			  "read: expected a closing %s",
 			  is_honu_char ? "'" : "'\"'");
 	return NULL;
@@ -3196,7 +3206,11 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
 {
   int tlen = 0, len = 0, size = 12;
   mzchar *tag, *naya, *s, buf[12], c;
+  long in_pos, init_span;
   Scheme_Object *str;
+
+  scheme_tell_all(port, NULL, NULL, &in_pos);
+  init_span = in_pos - pos + 1;
 
   tag = buf;
   while (1) {
@@ -3228,7 +3242,7 @@ read_here_string(Scheme_Object *port, Scheme_Object *stxsrc,
   while (1) {
     c = scheme_getc(port);
     if (c == EOF) {
-      scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+      scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, init_span), EOF, indentation,
 		      "read: found end-of-file before terminating %u%s",
 		      tag, 
 		      (tlen > 50) ? 50 : tlen,
@@ -3407,7 +3421,7 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
     /* If the readtable provides a "symbol" reader, then use it: */
     if (table->symbol_parser) {
       return readtable_call(1, init_ch, table->symbol_parser, params, 
-			    port, stxsrc, line, col, pos, ht);
+			    port, stxsrc, line, col, pos, ht, NULL);
       /* Special-comment result is handled in main loop. */
     }
   }
@@ -4099,7 +4113,7 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
       ch = scheme_getc_special_ok(port);
 
       if (ch == EOF)
-	scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), EOF, indentation,
+	scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, 2), EOF, indentation,
 			"read: end of file in #| comment");
       else if (ch == SCHEME_SPECIAL)
 	scheme_get_ready_read_special(port, stxsrc, ht);
@@ -4129,7 +4143,7 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
 
     skipped = read_inner(port, stxsrc, ht, indentation, params, 0);
     if (SCHEME_EOFP(skipped))
-      scheme_read_err(port, stxsrc, line, col, pos,  SPAN(port, pos), EOF, indentation,
+      scheme_read_err(port, stxsrc, line, col, pos,  MINSPAN(port, pos, 2), EOF, indentation,
 		      "read: expected a commented-out element for `#;' (found end-of-file)");
 
     /* For resolving graphs introduced in #; : */
@@ -5614,9 +5628,9 @@ static int readtable_kind(Readtable *t, int ch, ReadParams *params)
 
 static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, ReadParams *params,
 				     Scheme_Object *port, Scheme_Object *src, long line, long col, long pos,
-				     Scheme_Hash_Table **ht)
+				     Scheme_Hash_Table **ht, Scheme_Object *modpath_stx)
 {
-  int cnt;
+  int cnt, add_srcloc = 0;
   Scheme_Object *a[6], *v;
   Scheme_Cont_Frame_Data cframe;
   
@@ -5629,19 +5643,33 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
     } else {
       cnt = 6;
       a[2] = (src ? src : scheme_false);
-      a[3] = (line > 0) ? scheme_make_integer(line) : scheme_false;
-      a[4] = (col > 0) ? scheme_make_integer(col-1) : scheme_false;
-      a[5] = (pos > 0) ? scheme_make_integer(pos) : scheme_false;
+      add_srcloc = 3;
     }
   } else {
     if (src) {
-      cnt = 2;
       a[0] = src;
       a[1] = port;
+      if (modpath_stx) {
+        a[2] = modpath_stx;
+        add_srcloc = 3;
+        cnt = 6;
+      } else
+        cnt = 2;
     } else {
-      cnt = 1;
       a[0] = port;
+      if (modpath_stx) {
+        a[1] = modpath_stx;
+        add_srcloc = 2;
+        cnt = 5;
+      } else
+        cnt = 1;
     }
+  }
+
+  if (add_srcloc) {
+    a[add_srcloc + 0] = (line > 0) ? scheme_make_integer(line) : scheme_false;
+    a[add_srcloc + 1] = (col > 0) ? scheme_make_integer(col-1) : scheme_false;
+    a[add_srcloc + 2] = (pos > 0) ? scheme_make_integer(pos) : scheme_false;
   }
 
   if (src) {
@@ -5719,7 +5747,7 @@ static Scheme_Object *readtable_handle(Readtable *t, int *_ch, int *_use_default
 
   v = SCHEME_CDR(v);
 
-  v = readtable_call(1, ch, v, params, port, src, line, col, pos, ht);
+  v = readtable_call(1, ch, v, params, port, src, line, col, pos, ht, NULL);
   
   return v;
 }
@@ -5755,7 +5783,7 @@ static Scheme_Object *readtable_handle_hash(Readtable *t, int ch, int *_use_defa
 
   *_use_default = 0;
 
-  v = readtable_call(1, ch, v, params, port, src, line, col, pos, ht);
+  v = readtable_call(1, ch, v, params, port, src, line, col, pos, ht, NULL);
 
   if (scheme_special_comment_value(v))
     return NULL;
@@ -5995,13 +6023,18 @@ static Scheme_Object *current_reader_guard(int argc, Scheme_Object **argv)
 			     1, NULL, NULL, 0);
 }
 
-static Scheme_Object *do_reader(Scheme_Object *modpath,
+static Scheme_Object *do_reader(Scheme_Object *modpath_stx,
                                 Scheme_Object *port,
                                 Scheme_Object *stxsrc, long line, long col, long pos,
                                 Scheme_Hash_Table **ht,
                                 Scheme_Object *indentation, ReadParams *params)
 {
-  Scheme_Object *name, *a[2], *proc, *v;
+  Scheme_Object *modpath, *name, *a[2], *proc, *v;
+
+  if (stxsrc)
+    modpath = scheme_syntax_to_datum(modpath_stx, 0, NULL);
+  else
+    modpath = modpath_stx;
 
   proc = scheme_get_param(scheme_current_config(), MZCONFIG_READER_GUARD);
 
@@ -6018,16 +6051,21 @@ static Scheme_Object *do_reader(Scheme_Object *modpath,
   proc = scheme_dynamic_require(2, a);
 
   a[0] = proc;
-  if (!scheme_check_proc_arity(NULL, stxsrc ? 2 : 1, 0, 1, a)) {
+  if (scheme_check_proc_arity(NULL, stxsrc ? 6 : 5, 0, 1, a)) {
+    /* provide modpath_stx to reader */
+  } else if (scheme_check_proc_arity(NULL, stxsrc ? 2 : 1, 0, 1, a)) {
+    /* don't provide modpath_stx to reader */
+    modpath_stx = NULL;
+  } else {
     scheme_wrong_type("#reader",
-		      (stxsrc ? "procedure (arity 2)" : "procedure (arity 1)"),
+		      (stxsrc ? "procedure (arity 2 or 6)" : "procedure (arity 1 or 5)"),
 		      -1, -1, a);
     return NULL;
   }
 
   v = readtable_call(0, 0, proc, params,
 		     port, stxsrc, line, col, pos,
-		     ht);
+		     ht, modpath_stx);
 
   if (scheme_special_comment_value(v))
     return NULL;
@@ -6043,7 +6081,10 @@ static Scheme_Object *read_reader(Scheme_Object *port,
 {
   Scheme_Object *modpath;
 
-  modpath = scheme_read(port);
+  if (stxsrc)
+    modpath = scheme_read_syntax(port, stxsrc);
+  else
+    modpath = scheme_read(port);
 
   if (SCHEME_EOFP(modpath)) {
     scheme_read_err(port, stxsrc, line, col, pos, 1, EOF, indentation, 
@@ -6066,6 +6107,7 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   char *buf, *naya;
   int ch = 0;
   Scheme_Object *modpath;
+  long name_line = -1, name_col = -1, name_pos = -1;
 
   size = 32;
   buf = MALLOC_N_ATOMIC(char, size);
@@ -6076,6 +6118,8 @@ static Scheme_Object *read_lang(Scheme_Object *port,
       ch = init_ch;
     } else
       ch = scheme_getc_special_ok(port);
+    if (!len)
+      scheme_tell_all(port, &name_line, &name_col, &name_pos);
     if (ch == EOF) {
       break;
     } else if (ch == SCHEME_SPECIAL) {
@@ -6138,6 +6182,10 @@ static Scheme_Object *read_lang(Scheme_Object *port,
   buf[len] = 0;
 
   modpath = scheme_intern_symbol(buf);
+  if (stxsrc) {
+    modpath = scheme_make_stx_w_offset(modpath, name_line, name_col, name_pos, 
+                                       SPAN(port, name_pos) - 1, stxsrc, STX_SRCTAG);
+  }
 
   return do_reader(modpath, port, stxsrc, line, col, pos, ht, indentation, params);
 }

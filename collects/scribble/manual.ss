@@ -175,7 +175,7 @@
     (unless (andmap string? strs)
       (raise-type-error 'litchar "strings" strs))
     (let ([s (apply string-append
-                    (map (lambda (s) (if (string=? s "\n") " " s))
+                    (map (lambda (s) (regexp-replace* "\n" s " "))
                          strs))])
       (if (regexp-match? #rx"^ *$" s)
           (make-element "schemeinputbg" (list (hspace (string-length s))))

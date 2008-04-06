@@ -549,7 +549,7 @@ earlier fields.}
 As an example, consider the following module:
 
 @(begin
-#readerscribble/comment-reader
+#reader scribble/comment-reader
 [schemeblock
 (module product mzscheme
   (require mzlib/contract)

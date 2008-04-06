@@ -4754,7 +4754,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Env *menv;
   Scheme_Comp_Env *benv;
   Scheme_Module *m;
-  Scheme_Object *mbval;
+  Scheme_Object *mbval, *orig_ii;
   int saw_mb, check_mb = 0;
   int restore_confusing_name = 0;
 
@@ -4810,6 +4810,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   m->ii_src = ii;
 
+  orig_ii = ii;
   ii = scheme_syntax_to_datum(ii, 0, NULL);
 
   if (!scheme_is_module_path(ii)) {
@@ -4954,7 +4955,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     formname = SCHEME_STX_CAR(form);
     fm = cons(formname,
 	      cons(nm,
-		   cons(ii, cons(fm, scheme_null))));
+		   cons(orig_ii, cons(fm, scheme_null))));
 
     fm = scheme_datum_to_syntax(fm, form, form, 0, 2);
     

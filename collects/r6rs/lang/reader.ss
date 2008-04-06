@@ -6,13 +6,14 @@
                      [*read-syntax read-syntax]))
 
 (define (*read in)
-  (wrap in read))
+  (wrap in read #f #f #f #f #f))
 
-(define (*read-syntax src in)
+(define (*read-syntax src in modpath line col pos)
   (wrap in (lambda (in)
-             (read-syntax src in))))
+             (read-syntax src in))
+        modpath src line col pos))
 
-(define (wrap in read)
+(define (wrap in read modpath src line col pos)
   (with-r6rs-reader-parameters
    (lambda ()
-     (wrap-read-all 'r6rs in read))))
+     (wrap-read-all 'r6rs in read modpath src line col pos))))

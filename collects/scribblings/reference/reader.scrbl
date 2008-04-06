@@ -771,15 +771,25 @@ with either @scheme['read] or @scheme['read-syntax] (depending on
 whether the reader is in @scheme[read] or @scheme[read-syntax]
 mode).
 
-The resulting procedure should accept the same arguments as
-@scheme[read] or @scheme[read-syntax] in the case that all optional
-arguments are provided. The procedure is given the port whose stream
-contained @litchar{#reader}, and it should produce a datum result. If
-the result is a syntax object in @scheme[read] mode, then it is
-converted to a datum using @scheme[syntax->datum]; if the
-result is not a syntax object in @scheme[read-syntax] mode, then it is
-converted to one using @scheme[datum->syntax]. See also
-@secref["reader-procs"] for information on the procedure's results.
+The arity of the resulting procedure determines whether it accepts
+extra source-location information: a @schemeidfont{read} procedure
+accepts either one argument (an input port) or five, and a
+@schemeidfont{read-syntax} procedure accepts either two arguments (a
+name value and an input port) or six. In either case, the four
+optional arguments are the module path (as a syntax object in
+@scheme[read-syntax] mode) followed by the line (positive exact
+integer or @scheme[#f]), column (non-negative exact integer or
+@scheme[#f]), and position (positive exact integer or @scheme[#f]) of
+the start of the @litchar{#reader} form. The input port is the one
+whose stream contained @litchar{#reader}, where the stream position is
+immediately after the recursively-read module path.
+
+The procedure should produce a datum result.  If the result is a
+syntax object in @scheme[read] mode, then it is converted to a datum
+using @scheme[syntax->datum]; if the result is not a syntax object in
+@scheme[read-syntax] mode, then it is converted to one using
+@scheme[datum->syntax]. See also @secref["reader-procs"] for
+information on the procedure's results.
 
 If the @scheme[read-accept-reader] @tech{parameter} is set to
 @scheme[#f], then if the reader encounters @litchar{#reader}, the
@@ -794,8 +804,10 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @litchar{/} characters terminated by
 @schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
-@litchar{#lang }@nonterm{name} is equivalent to @litchar{#reader
-}@nonterm{name}@litchar{/lang/reader}.
+@litchar{#lang }@nonterm{name} is equivalent to @litchar["#reader
+"]@nonterm{name}@litchar{/lang/reader}, except that the terminating
+whitespace (if any) is consumed before the external reading procedure
+is called.
 
 Finally, @as-index{@litchar{#!}} followed by alphanumeric ASCII,
 @litchar{+}, @litchar{-}, or @litchar{_} is a synonym for
