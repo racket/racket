@@ -489,8 +489,8 @@ subdirectory.
    pkg))
 
 (define (current-time)
-  (let ((date (seconds->date (current-seconds))))
-    (parameterize ((date-display-format 'rfc2822))
+  (let ([date (seconds->date (current-seconds))])
+    (parameterize ([date-display-format 'rfc2822])
       (format "~a ~a:~a:~a"
               (date->string date)
               (date-hour date)
@@ -537,7 +537,7 @@ subdirectory.
                    (pkg-spec-name pkg)
                    (current-time))
            ;; oh man is this a bad hack!
-           (parameterize ((current-namespace (make-namespace)))
+           (parameterize ([current-namespace (make-namespace)])
              (let ([ipp (dynamic-require '(lib "setup/plt-single-installer.ss")
                                          'install-planet-package)])
                (ipp path the-dir (list owner (pkg-spec-name pkg)
@@ -691,7 +691,7 @@ subdirectory.
              (abort (format "Server internal error: ~a"
                             (apply string-append
                                    (let loop ()
-                                     (let ((line (read-line ip)))
+                                     (let ([line (read-line ip)])
                                        (if (eof-object? line)
                                          '()
                                          (list* line "\n" (loop))))))))]
@@ -707,7 +707,7 @@ subdirectory.
 ;; do-require : path path symbol syntax -> symbol
 ;; requires the given filename, which must be a module, in the given path.
 (define (do-require file-path package-path module-path stx load?)
-  (parameterize ((current-load-relative-directory package-path))
+  (parameterize ([current-load-relative-directory package-path])
     ((current-module-name-resolver) file-path module-path stx load?)))
 
 (define *package-search-chain*
@@ -727,7 +727,7 @@ subdirectory.
 ;; make-directory*/paths : path -> (listof path)
 ;; like make-directory*, but returns what directories it actually created
 (define (make-directory*/paths dir)
-  (let ((dir (if (string? dir) (string->path dir) dir)))
+  (let ([dir (if (string? dir) (string->path dir) dir)])
     (let-values ([(base name dir?) (split-path dir)])
       (cond [(directory-exists? dir) '()]
             [(directory-exists? base) (make-directory dir) (list dir)]
