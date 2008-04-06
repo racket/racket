@@ -24,8 +24,8 @@
      (make-request (pkg-spec->full-pkg-spec pkg-spec stx)
                    file-name
                    path)]
-    [((? symbol? s))
-     (let ([str (symbol->string s)])
+    [((? (lambda (x) (or (symbol? x) (string? x))) s))
+     (let ([str (if (symbol? s) (symbol->string s) s)])
        (define (yell msg) (λ (str) (raise-syntax-error #f (format msg str) stx)))
        (try-parsing str
                     ([owner   (get-next-slash #:on-error (yell "Illegal syntax; expected an owner, received ~e"))]

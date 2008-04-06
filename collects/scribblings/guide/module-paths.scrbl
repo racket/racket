@@ -111,7 +111,7 @@ The @scheme[id] encodes several pieces of information separated by a
 version information, and an optional path to a specific library with
 the package. Like @scheme[id] as shorthand for a @scheme[lib] path, a
 @filepath{.ss} suffix is added automatically, and @schemeidfont{/main}
-is used as the path if none is supplied.
+is used as the path if no sub-path element is supplied.
 
 @examples[
 (eval:alts
@@ -124,6 +124,15 @@ is used as the path if none is supplied.
  (require 'm)
  (display 0.9050686838895684))
 ]
+}
+
+@; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+@specsubform[#:literals (planet)
+             (planet package-string)]{
+
+Like the symbol form of a @scheme[planet], but using a string instead
+of an identifier. Also, the @scheme[package-string] can end with a
+file suffix, in case the relevant suffix is not @filepath{.ss}.
 }
 
 @; - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

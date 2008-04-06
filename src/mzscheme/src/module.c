@@ -1876,11 +1876,11 @@ int scheme_is_module_path(Scheme_Object *obj)
     } else if (SAME_OBJ(SCHEME_CAR(obj), planet_symbol)) {
       Scheme_Object *a, *subs;
       int len;
-      
+
       len = scheme_proper_list_length(obj);
 
       if (len == 2) {
-        /* Symbolic shorthand? */
+        /* Symbolic or string shorthand? */
         obj = SCHEME_CDR(obj);
         a = SCHEME_CAR(obj);
         if (SCHEME_SYMBOLP(a)) {
@@ -1888,6 +1888,8 @@ int scheme_is_module_path(Scheme_Object *obj)
                                                      SCHEME_SYMSTR_OFFSET(a),
                                                      SCHEME_SYM_LEN(a));
           return ok_path_string(obj, 0, 0, 0, 1);
+        } else if (SCHEME_CHAR_STRINGP(a)) {
+          return ok_path_string(a, 0, 0, 1, 1);
         }
       }
 

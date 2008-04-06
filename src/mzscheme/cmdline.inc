@@ -126,32 +126,6 @@ static char *protect_quote_backslash(const char *file)
     return (char *)file;
 }
 
-static char *make_require_planet(const char *file, const char *file_sfx, 
-                                 const char *user, 
-                                 const char *pkg, char *pkg_sfx)
-{
-  char *s;
-  
-  pkg = protect_quote_backslash(pkg);
-  user = protect_quote_backslash(user);
-  
-  s = (char *)malloc(strlen(file) 
-                     + strlen(file_sfx) 
-                     + strlen(user) 
-                     + strlen(pkg) 
-                     + strlen(pkg_sfx) + 46);
-  strcpy(s, "(require (planet \"");
-  strcat(s, file);
-  strcat(s, file_sfx);
-  strcat(s, "\" (\"");
-  strcat(s, user);
-  strcat(s, "\" \"");
-  strcat(s, pkg);
-  strcat(s, pkg_sfx);
-  strcat(s, "\")))");
-  return s;
-}
-
 static char *make_embedded_load(const char *start, const char *end)
 {
   char *s;
@@ -171,9 +145,10 @@ static char *make_embedded_load(const char *start, const char *end)
 #define mzcmd_EVAL 0
 #define mzcmd_LOAD 1
 #define mzcmd_MAIN 2
-#define mzcmd_REQUIRE 3
+#define mzcmd_REQUIRE_FILE 3
 #define mzcmd_REQUIRE_LIB 4
-#define mzcmd_EMBEDDED 5
+#define mzcmd_REQUIRE_PLANET 5
+#define mzcmd_EMBEDDED 6
 
 /* To avoid having to create a specific mark procedure for
    prcise GC, split argument information into purely atomic
@@ -250,8 +225,9 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 	  break;
 	}
       } else if ((fa->eval_kind[i] == mzcmd_EVAL)
-                 || (fa->eval_kind[i] == mzcmd_REQUIRE)
+                 || (fa->eval_kind[i] == mzcmd_REQUIRE_FILE)
                  || (fa->eval_kind[i] == mzcmd_REQUIRE_LIB)
+                 || (fa->eval_kind[i] == mzcmd_REQUIRE_PLANET)
                  || (fa->eval_kind[i] == mzcmd_EMBEDDED)) {
 	Scheme_Thread * volatile p;
 	p = scheme_get_current_thread();
@@ -272,16 +248,18 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
             scheme_apply(eload, 3, a);
           } else {
             Scheme_Object *a[1], *nsreq;
+            char *name;
             nsreq = scheme_builtin_value("namespace-require");
             if (fa->eval_kind[i] == mzcmd_REQUIRE_LIB) {
-              a[0] = scheme_make_pair(scheme_intern_symbol("lib"),
-                                      scheme_make_pair(scheme_make_utf8_string(fa->evals_and_loads[i]),
-                                                       scheme_make_null()));
+              name = "lib";
+            } else if (fa->eval_kind[i] == mzcmd_REQUIRE_PLANET) {
+              name = "planet";
             } else {
-              a[0] = scheme_make_pair(scheme_intern_symbol("file"),
-                                      scheme_make_pair(scheme_make_utf8_string(fa->evals_and_loads[i]),
-                                                       scheme_make_null()));
+              name = "file";
             }
+            a[0] = scheme_make_pair(scheme_intern_symbol(name),
+                                    scheme_make_pair(scheme_make_utf8_string(fa->evals_and_loads[i]),
+                                                     scheme_make_null()));
             scheme_apply(nsreq, 1, a);
           }
         } else {
@@ -795,13 +773,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  argv++;
 	  --argc;
 	  evals_and_loads[num_enl] = argv[0];
-	  eval_kind[num_enl++] = mzcmd_REQUIRE;
+	  eval_kind[num_enl++] = mzcmd_REQUIRE_FILE;
           if (!init_ns)
             no_init_ns = 1;
 	  break;
 	case 'l':
 	  if (argc < 2) {
-	    PRINTF("%s: missing file after %s switch\n", 
+	    PRINTF("%s: missing library name after %s switch\n", 
 		   prog, real_switch);
 	    goto show_need_help;
 	  }
@@ -813,24 +791,15 @@ static int run_from_cmd_line(int argc, char *_argv[],
             no_init_ns = 1;
 	  break;
 	case 'p':
-	  if (argc < 4) {
-	    PRINTF("%s: missing %s after %s switch\n", 
-		   prog, 
-		   ((argc > 2) 
-                    ? "package"
-                    : ((argc > 1) 
-                       ? "user and package" 
-                       : "file, user, and package")),
-		   real_switch);
+	  if (argc < 2) {
+	    PRINTF("%s: missing package name after %s switch\n", 
+		   prog, real_switch);
 	    goto show_need_help;
 	  }
 	  argv++;
 	  --argc;
-	  se = make_require_planet(argv[0], "", argv[1], argv[2], "");
-	  evals_and_loads[num_enl] = se;
-	  argv += 2;
-	  argc -= 2;
-	  eval_kind[num_enl++] = mzcmd_EVAL;
+	  evals_and_loads[num_enl] = argv[0];
+	  eval_kind[num_enl++] = mzcmd_REQUIRE_PLANET;
           if (!init_ns)
             no_init_ns = 1;
 	  break;
@@ -940,7 +909,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
       no_more_switches = 1;
       sprog = argv[0];
       evals_and_loads[num_enl] = argv[0];
-      eval_kind[num_enl++] = mzcmd_REQUIRE;
+      eval_kind[num_enl++] = mzcmd_REQUIRE_FILE;
       argv++;
       --argc;
     }
@@ -1094,7 +1063,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	 "  -f <file>, --load <file> : Like -e '(load \"<file>\")' without printing\n"
 	 "  -t <file>, --require <file> : Like -e '(require (file \"<file>\"))'\n"
 	 "  -l <path>, --lib <path> : Like -e '(require (lib \"<path>\"))'\n"
-	 "  -p <fl> <u> <pkg> : Like -e '(require (planet \"<fl>\" (\"<u>\" \"<pkg>\"))'\n"
+	 "  -p <package> : Like -e '(require (planet \"<package>\")'\n"
 	 "  -r <file>, --script <file> : Same as -f <file> -N <file> --\n" 
 	 "  -u <file>, --require-script <file> : Same as -t <file> -N <file> --\n" 
 	 "  -k <n> <m> : Load executable-embedded code from file offset <n> to <m>\n"
