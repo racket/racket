@@ -1,4 +1,3 @@
-(module reader mzscheme
-  (require (prefix doc: scribble/doc/reader))
-  (provide (rename doc:read read)
-           (rename doc:read-syntax read-syntax)))
+#lang scheme/base
+(require (prefix-in doc: scribble/doc/reader))
+(provide (rename-out [doc:read read] [doc:read-syntax read-syntax]))

@@ -1,63 +1,62 @@
+#lang scheme/base
 
-(module doclang scheme/base
-  (require "struct.ss"
-           "decode.ss"
-           (for-syntax scheme/base
-                       syntax/kerncase))
+(require "struct.ss"
+         "decode.ss"
+         (for-syntax scheme/base
+                     syntax/kerncase))
 
-  (provide (except-out (all-from-out scheme/base) #%module-begin)
-           (rename-out [*module-begin #%module-begin]))
+(provide (except-out (all-from-out scheme/base) #%module-begin)
+         (rename-out [*module-begin #%module-begin]))
 
-  ;; Module wrapper ----------------------------------------
+;; Module wrapper ----------------------------------------
 
-  (define-syntax (*module-begin stx)
-    (syntax-case stx ()
-      [(_ id exprs . body)
-       #'(#%module-begin
-          (doc-begin id exprs . body))]))
+(define-syntax (*module-begin stx)
+  (syntax-case stx ()
+    [(_ id exprs . body)
+     #'(#%module-begin
+        (doc-begin id exprs . body))]))
 
-  (define-syntax (doc-begin stx)
-    (syntax-case stx ()
-      [(_ m-id (expr ...))
-       #`(begin
-           (define m-id (decode (list . #,(reverse (syntax->list #'(expr ...))))))
-           (provide m-id))]
-      [(_ m-id exprs . body)
-       ;; `body' probably starts with lots of string constants;
-       ;; it's slow to trampoline on every string, so do them
-       ;; in a batch here:
-       (let loop ([body #'body]
-                  [accum null])
-         (syntax-case body ()
-           [(s . rest)
-            (string? (syntax-e #'s))
-            (loop #'rest (cons #'s accum))]
-           [()
-            (with-syntax ([(accum ...) accum])
-              #`(doc-begin m-id (accum ... . exprs)))]
-           [(body1 . body)
-            (with-syntax ([exprs (append accum #'exprs)])
-              (let ([expanded (local-expand #'body1
-                                            'module
-                                            (append
-                                             (kernel-form-identifier-list)
-                                             (syntax->list #'(provide
-                                                              require
-                                                              #%provide
-                                                              #%require))))])
-                (syntax-case expanded (begin)
-                  [(begin body1 ...)
-                   #`(doc-begin m-id exprs body1 ... . body)]
-                  [(id . rest)
-                   (and (identifier? #'id)
-                        (ormap (lambda (kw) (free-identifier=? #'id kw))
-                               (syntax->list #'(require 
-                                                provide 
-                                                define-values
-                                                define-syntaxes
-                                                define-for-syntaxes
-                                                #%require
-                                                #%provide))))
-                   #`(begin #,expanded (doc-begin m-id exprs . body))]
-                  [_else
-                   #`(doc-begin m-id (#,expanded . exprs) . body)])))]))])))
+(define-syntax (doc-begin stx)
+  (syntax-case stx ()
+    [(_ m-id (expr ...))
+     #`(begin
+         (define m-id (decode (list . #,(reverse (syntax->list #'(expr ...))))))
+         (provide m-id))]
+    [(_ m-id exprs . body)
+     ;; `body' probably starts with lots of string constants; it's
+     ;; slow to trampoline on every string, so do them in a batch
+     ;; here:
+     (let loop ([body #'body]
+                [accum null])
+       (syntax-case body ()
+         [(s . rest)
+          (string? (syntax-e #'s))
+          (loop #'rest (cons #'s accum))]
+         [()
+          (with-syntax ([(accum ...) accum])
+            #`(doc-begin m-id (accum ... . exprs)))]
+         [(body1 . body)
+          (with-syntax ([exprs (append accum #'exprs)])
+            (let ([expanded (local-expand
+                             #'body1 'module
+                             (append (kernel-form-identifier-list)
+                                     (syntax->list #'(provide
+                                                      require
+                                                      #%provide
+                                                      #%require))))])
+              (syntax-case expanded (begin)
+                [(begin body1 ...)
+                 #`(doc-begin m-id exprs body1 ... . body)]
+                [(id . rest)
+                 (and (identifier? #'id)
+                      (ormap (lambda (kw) (free-identifier=? #'id kw))
+                             (syntax->list #'(require
+                                              provide
+                                              define-values
+                                              define-syntaxes
+                                              define-for-syntaxes
+                                              #%require
+                                              #%provide))))
+                 #`(begin #,expanded (doc-begin m-id exprs . body))]
+                [_else
+                 #`(doc-begin m-id (#,expanded . exprs) . body)])))]))]))
