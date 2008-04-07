@@ -262,39 +262,47 @@
 
 (define-syntax (this-expression-source-directory stx)
   (syntax-case stx ()
-    [(_)
-     (let ([source-path
-            (let* ([source (syntax-source stx)]
-                   [source (and (path? source) source)]
-                   [local (or (current-load-relative-directory) (current-directory))]
-                   [dir (path->main-collects-relative
-                         (or (and source (file-exists? source)
-                                  (let-values ([(base file dir?)
-                                                (split-path source)])
-                                    (and (path? base)
-                                         (path->complete-path base local))))
-                             local))])
-              (if (and (pair? dir) (eq? 'collects (car dir)))
-                (with-syntax ([d dir])
-                  (syntax/loc stx (main-collects-relative->path 'd)))
-                (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
-                  (syntax/loc stx (bytes->path d)))))])
-       (let ([mpi (syntax-source-module stx)])
-         (if mpi
-           (quasisyntax/loc stx
-             (or (extract-module-directory (quote-syntax #,stx))
-                 #,source-path))
-           source-path)))]))
+    [(_ sub)
+     (let ([stx (syntax sub)])
+       (let ([source-path
+              (let* ([source (syntax-source stx)]
+                     [source (and (path? source) source)]
+                     [local (or (current-load-relative-directory) (current-directory))]
+                     [dir (path->main-collects-relative
+                           (or (and source (file-exists? source)
+                                    (let-values ([(base file dir?)
+                                                  (split-path source)])
+                                      (and (path? base)
+                                           (path->complete-path base local))))
+                               local))])
+                (if (and (pair? dir) (eq? 'collects (car dir)))
+                    (with-syntax ([d dir])
+                      (syntax/loc stx (main-collects-relative->path 'd)))
+                    (with-syntax ([d (if (bytes? dir) dir (path->bytes dir))])
+                      (syntax/loc stx (bytes->path d)))))])
+         (let ([mpi (syntax-source-module stx)])
+           (if mpi
+               (quasisyntax/loc stx
+                 (or (extract-module-directory (quote-syntax #,(datum->syntax-object
+                                                                stx
+                                                                'context
+                                                                stx
+                                                                stx)))
+                     #,source-path))
+               source-path))))]
+    [(_) #`(this-expression-source-directory #,stx)]))
 
 (define-syntax (this-expression-file-name stx)
   (syntax-case stx ()
-    [(_)
-     (let* ([f (syntax-source stx)]
-            [f (and f (path? f) (file-exists? f)
-                    (let-values ([(base file dir?) (split-path f)]) file))])
-       (if f
-         (with-syntax ([f (path->bytes f)]) #'(bytes->path f))
-         #'#f))]))
+    [(_ sub)
+     (let ([stx #'sub])
+       (let* ([f (syntax-source stx)]
+              [f (and f (path? f) (file-exists? f)
+                      (let-values ([(base file dir?) (split-path f)]) file))])
+         (if f
+             (with-syntax ([f (path->bytes f)]) #'(bytes->path f))
+             #'#f)))]
+    [(_) #`(this-expression-file-name #,stx)]))
 
 ;; This is a macro-generating macro that wants to expand
 ;; expressions used in the generated macro. So it's weird,

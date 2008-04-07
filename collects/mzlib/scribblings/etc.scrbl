@@ -227,45 +227,48 @@ Equivalent, respectively, to
 ]}
 
 
-@deftogether[(
-@defform[(this-expression-source-directory)]
-@defform[(this-expression-file-name)]
-)]{
+@defform*[[(this-expression-source-directory)
+           (this-expression-source-directory datum)]]{
 
 @margin-note{See @schememodname[scheme/runtime-path] for a definition form
 that works better when creating executables.}
 
-Expands to an expression that evaluates to the name of the directory
-of the file containing the source expression, or the name of the file
-containing the source expression.
+Expands to an expression that evaluates to the directory of the file
+containing the source @scheme[datum]. If @scheme[datum] is not
+supplied, then the entire @scheme[(this-expression-source-directory)]
+expression is used as @scheme[datum].
 
-If the expression has a source module, then the expansion attempts to
+If @scheme[datum] has a source module, then the expansion attempts to
 determine the module's run-time location. This location is determined
-by preserving the original expression as a syntax object, extracting
-its source module path at run time, and then resolving the module
-path.
+by preserving the lexical context of @scheme[datum] in a syntax
+object, extracting its source module path at run time, and then
+resolving the module path.
 
-Otherwise, the source expression's file is determined through source
-location information associated with the syntax, if it is present. If
-the expression has no source, or if no directory can be determined at
-run time, the expansion falls back to using source-location
-information associated with the expression.
+Otherwise, @scheme[datum]'s source file is determined through source
+location information associated with @scheme[datum], if it is
+present. As a last resort, @scheme[current-load-relative-directory] is
+used if it is not @scheme[#f], and @scheme[current-directory] is used
+if all else fails.
 
-As a last resort, @scheme[#f] is used for the file name; for the
-directory name, @scheme[current-load-relative-directory] is used if it
-is not @scheme[#f], and @scheme[current-directory] is used if all else
-fails.
+A directory path derived from source location is always stored in
+bytes in the expanded code, unless the file is within the result of
+@scheme[find-collects-dir], in which case the expansion records the
+path relative to @scheme[(find-collects-dir)] and then reconstructs it
+using @scheme[(find-collects-dir)] at run time.}
 
-A directory path is stored in bytes in the expanded code, unless the
-file is within the result of @scheme[find-collects-dir], in which case
-the expansion records the path relative to
-@scheme[(find-collects-dir)] and then reconstructs it using
-@scheme[(find-collects-dir)] at run time.}
+
+@defform*[[(this-expression-file-name)
+           (this-expression-file-name datum)]]{
+
+Similar to @scheme[this-expression-source-directory], except that only
+source information associated with @scheme[datum] or
+@scheme[(this-expression-file-name)] is used to extract a filename. If
+no filename is available, the result is @scheme[#f].}
 
 
 @defform[#:literals (quote unsyntax scheme)
          (hash-table (#,(scheme quote) flag) ... (key-expr val-expr) ...)]{
 
 Creates a new hash-table providing the quoted flags (if any) to
-@scheme[make-hash-table], and them mapping each key to the
+@scheme[make-hash-table], and then mapping each key to the
 corresponding values.}
