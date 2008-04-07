@@ -1,6 +1,6 @@
 (module other-plt-tests mzscheme
   
-  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 1)))
+  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
   (require (lib "uri-codec.ss" "net"))
   (require (lib "pregexp.ss"))
   

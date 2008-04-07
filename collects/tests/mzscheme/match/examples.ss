@@ -3,7 +3,7 @@
 (require scheme/match 
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match))
-(require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 1)))
+(require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
 
 
 

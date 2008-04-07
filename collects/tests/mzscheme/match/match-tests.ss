@@ -1,7 +1,7 @@
 (module match-tests mzscheme
   (require mzlib/match)
   
-  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 1)))
+  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
 
   (provide match-tests)
   

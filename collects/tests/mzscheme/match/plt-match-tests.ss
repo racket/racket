@@ -1,6 +1,6 @@
 (module plt-match-tests mzscheme
-  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 1)))
-  (require (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 1)))
+  (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
+  (require (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2 10)))
 
   (require mzlib/plt-match)
     
