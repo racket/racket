@@ -86,11 +86,13 @@
   ;; * does not deal with multiple values, since they're not used by the lazy
   ;;   language (but see below)
 
+  (define handle-results
+    (case-lambda [(single) (values #f single)]
+                 [multi (values #t multi)]))
+
   (define (force-proc p root)
     (let loop1 ([p p])
-      (let-values ([(multi? v) (call-with-values p
-                                   (case-lambda [(single) (values #f single)]
-                                                [multi (values #t multi)]))])
+      (let-values ([(multi? v) (call-with-values p handle-results)])
         (if multi?
           (begin ; error here for "library approach" (see above URL)
             (set-promise-val! root v)
