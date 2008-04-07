@@ -86,45 +86,46 @@
   ;; * does not deal with multiple values, since they're not used by the lazy
   ;;   language (but see below)
 
-  (define handle-results
-    (case-lambda
-     [(single) (values #f single)]
-     [multi (values #t multi)]))
-
   (define (force-proc p root)
-    (define (return-vals vals)
-      ;; error here for "library approach" (see above URL)
-      (set-promise-val! root vals)
-      (apply values vals))
     (let loop1 ([p p])
-      (let-values ([(multi? v) (call-with-values p handle-results)])
+      (let-values ([(multi? v) (call-with-values p
+                                   (case-lambda [(single) (values #f single)]
+                                                [multi (values #t multi)]))])
         (if multi?
-            (return-vals v)
-            (if (promise? v)
-                (let loop2 ([promise* v])
-                  (let ([p* (promise-val promise*)])
-                    (set-promise-val! promise* root) ; share with root
-                    (cond [(procedure? p*) (loop1 p*)]
-                          [(or (pair? p*) (null? p*)) (return-vals p*)]
-                          [(promise? p*) (loop2 p*)]
-                          [else p*])))
-                (return-vals
-                 (if (or (null? v) (pair? v) (procedure? v)) (list v) v)))))))
+          (begin ; error here for "library approach" (see above URL)
+            (set-promise-val! root v)
+            (apply values v))
+          (if (promise? v)
+            (let loop2 ([promise* v])
+              (let ([p* (promise-val promise*)])
+                (set-promise-val! promise* root) ; share with root
+                (cond [(procedure? p*) (loop1 p*)]
+                      [(promise? p*) (loop2 p*)]
+                      [else (set-promise-val! root p*)
+                            (cond [(null? p*) (values)]
+                                  [(not (pair? p*)) p*] ; is this needed?
+                                  [(null? (cdr p*)) (car p*)]
+                                  [else (apply values p*)])])))
+            (begin ; error here for "library approach" (see above URL)
+              (set-promise-val! root (list v))
+              v))))))
 
   (define (force promise)
     (if (promise? promise)
-        (let loop ([p (promise-val promise)])
-          (cond
-           [(procedure? p)
-            ;; mark root for cycle detection:
-            (set-promise-val! promise running)
-            (with-handlers*
-                ([void (lambda (e)
-                         (set-promise-val! promise (lambda () (raise e)))
-                         (raise e))])
-              (force-proc p promise))]
-           [(or (pair? p) (null? p)) (apply values p)]
-           [(promise? p) (loop (promise-val p))]
-           [else p]))
-        ;; different from srfi-45: identity for non-promises
-        promise)))
+      (let loop ([p (promise-val promise)])
+        (cond
+          [(procedure? p)
+           ;; mark root for cycle detection:
+           (set-promise-val! promise running)
+           (with-handlers* ([void (lambda (e)
+                                    (set-promise-val! promise
+                                                      (lambda () (raise e)))
+                                    (raise e))])
+             (force-proc p promise))]
+          [(promise? p) (loop (promise-val p))]
+          [else (cond [(null? p) (values)]
+                      [(not (pair? p)) p] ; is this needed?
+                      [(null? (cdr p)) (car p)]
+                      [else (apply values p)])]))
+      ;; different from srfi-45: identity for non-promises
+      promise)))
