@@ -52,7 +52,6 @@
          (list #'id)
          null)]
     [(#%top . id) null]
-    [(#%expression e) (free-vars #'e)]
     [(quote q) null]
     [(quote-syntax q) null]
     [(#%plain-lambda formals expr ...)
@@ -71,7 +70,11 @@
      (free-vars #'(#%plain-lambda (id ... ...) rhs ... expr ...))]
     [(letrec-syntaxes+values stx-bindings ([(id ...) rhs] ...) expr ...)
      (free-vars #'(#%plain-lambda (id ... ...) rhs ... expr ...))]
-    [(_ expr ...)
-     ;; if, begin, begin0, set!, #%app, #%variable-reference, with-continuation-mark
-     (merge (map free-vars (syntax->list #'(expr ...))))]))
+    [(kw expr ...)
+     (ormap (lambda (k) (free-identifier=? k #'kw))
+	    (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%expression
+		  #'#%variable-reference #'with-continuation-mark))
+     (merge (map free-vars (syntax->list #'(expr ...))))]
+    [(kw . _)
+     (error 'free-vars "unknown core form: ~a" (syntax->datum #'kw))]))
 
