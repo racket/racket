@@ -46,11 +46,11 @@
   (filter values (map get-game (directory-list gamedir))))
 
 (define game-sets
-  (let ([ht (make-hash-table 'equal)])
+  (let ([ht (make-hash)])
     (for ([g games])
       (let ([set (game-set g)])
-        (hash-table-put! ht set (cons g (hash-table-get ht set '())))))
-    (sort (hash-table-map ht cons)
+        (hash-set! ht set (cons g (hash-ref ht set '())))))
+    (sort (hash-map ht cons)
           (lambda (x y)
             (let ([xlen (length x)] [ylen (length y)])
               (cond [(> xlen ylen) #t]

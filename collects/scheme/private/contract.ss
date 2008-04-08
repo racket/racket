@@ -91,14 +91,14 @@ improve method arity mismatch contract violation error messages?
 
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
-   (let ([saved-id-table (make-hash-table)])
+   (let ([saved-id-table (make-hasheq)])
      (λ (stx)
        (if (eq? 'expression (syntax-local-context))
            ;; In an expression context:
            (let ([key (syntax-local-lift-context)])
              ;; Already lifted in this lifting context?
              (let ([lifted-id
-                    (or (hash-table-get saved-id-table key #f)
+                    (or (hash-ref saved-id-table key #f)
                         ;; No: lift the contract creation:
                         (with-syntax ([contract-id contract-id]
                                       [id id]
@@ -112,7 +112,7 @@ improve method arity mismatch contract violation error messages?
                                          (module-source-as-symbol #'name)
                                          (quote-syntax name))))))])
                (when key
-                 (hash-table-put! saved-id-table key lifted-id))
+                 (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
                (with-syntax ([saved-id (syntax-local-introduce lifted-id)])
                  (syntax-case stx (set!)

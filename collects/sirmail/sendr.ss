@@ -25,7 +25,7 @@
 
   (require (lib "hierlist-sig.ss" "hierlist"))
 
-  (define smtp-passwords (make-hash-table 'equal))
+  (define smtp-passwords (make-hash))
 
   (provide send@)
   (define-unit send@
@@ -412,8 +412,8 @@
           (define-values (smtp-ssl? smtp-auth-user smtp-server-to-use smtp-port-to-use)
             (parse-server-name+user+type (SMTP-SERVER) 25))
 	  (define smtp-auth-passwd (and smtp-auth-user
-					(or (hash-table-get smtp-passwords (cons smtp-auth-user smtp-server-to-use)
-							    (lambda () #f))
+					(or (hash-ref smtp-passwords (cons smtp-auth-user smtp-server-to-use)
+                                                      (lambda () #f))
 					    (let ([p (get-pw-from-user smtp-auth-user mailer-frame)])
 					      (unless p (raise-user-error 'send "send canceled"))
 					      p))))
@@ -442,8 +442,8 @@
                        (loop))))))
            message-count)
 	  (when smtp-auth-passwd
-	    (hash-table-put! smtp-passwords (cons smtp-auth-user smtp-server-to-use) 
-			     smtp-auth-passwd)))
+	    (hash-set! smtp-passwords (cons smtp-auth-user smtp-server-to-use) 
+                       smtp-auth-passwd)))
         
         ;; enq-msg : -> void
         ;; enqueues a message for a later send

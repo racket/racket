@@ -200,7 +200,7 @@
   (ptr-ref ffi-obj type))
 (define (ffi-set! ffi-obj type new)
   (let-values ([(new type) (get-lowlevel-object new type)])
-    (hash-table-put! ffi-objects-ref-table ffi-obj new)
+    (hash-set! ffi-objects-ref-table ffi-obj new)
     (ptr-set! ffi-obj type new)))
 
 ;; This is better handled with `make-c-parameter'
@@ -282,7 +282,7 @@
 
 ;; This table keeps references to values that are set in foreign libraries, to
 ;; avoid them being GCed.  See set-ffi-obj! above.
-(define ffi-objects-ref-table (make-hash-table))
+(define ffi-objects-ref-table (make-hasheq))
 
 ;; ----------------------------------------------------------------------------
 ;; Compile-time support for fun-expanders
@@ -709,14 +709,14 @@
 
 ;; `string/eof' type: converts an output #f (NULL) to an eof-object.
 (define string-type->string/eof-type
-  (let ([table (make-hash-table)])
+  (let ([table (make-hasheq)])
     (lambda (string-type)
-      (hash-table-get table string-type
+      (hash-ref table string-type
         (lambda ()
           (let ([new-type (make-ctype string-type
                             (lambda (x) (and (not (eof-object? x)) x))
                             (lambda (x) (or x eof)))])
-            (hash-table-put! table string-type new-type)
+            (hash-set! table string-type new-type)
             new-type))))))
 (provide _string/eof _bytes/eof)
 (define _bytes/eof
@@ -1457,12 +1457,12 @@
 
 ;; helper for the above: keep runtime information on structs
 (define cstruct-info
-  (let ([table (make-hash-table 'weak)])
+  (let ([table (make-weak-hasheq)])
     (lambda (cstruct msg/fail-thunk . args)
       (cond [(eq? 'set! msg/fail-thunk) 
-             (hash-table-put! table cstruct (make-ephemeron cstruct args))]
+             (hash-set! table cstruct (make-ephemeron cstruct args))]
             [(and cstruct ; might get a #f if there were no slots
-                  (hash-table-get table cstruct (lambda () #f)))
+                  (hash-ref table cstruct (lambda () #f)))
              => (lambda (xs) 
                   (let ([v (ephemeron-value xs)])
                     (if v 

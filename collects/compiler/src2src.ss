@@ -221,7 +221,7 @@
   (define-struct bucket (mutated? inited-before-use?) #:mutable)
 
   (define (global-bucket table stx)
-    (let ([l (hash-table-get table (syntax-e stx) (lambda () null))])
+    (let ([l (hash-ref table (syntax-e stx) (lambda () null))])
       (let ([s (ormap (lambda (b)
 			(and (free-identifier=? stx (car b))
 			     (cdr b)))
@@ -229,7 +229,7 @@
 	(if s
 	    s
 	    (let ([s (make-bucket #f #f)])
-	      (hash-table-put! table (syntax-e stx) (cons (cons stx s) l))
+	      (hash-set! table (syntax-e stx) (cons (cons stx s) l))
 	      s)))))
 
   (define-struct tables (global-ht et-global-ht))
@@ -1820,7 +1820,7 @@
   (define parse-top (make-parse #t))
 
   (define (create-tables)
-    (make-tables (make-hash-table) (make-hash-table)))
+    (make-tables (make-hasheq) (make-hasheq)))
 
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

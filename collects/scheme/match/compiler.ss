@@ -17,13 +17,13 @@
 (define vars-seen (make-parameter null))
 
 (define (hash-on f elems #:equal? [eql #t])
-  (define ht (apply make-hash-table (if eql (list 'equal) null)))
+  (define ht (if eql (make-hash) (make-hasheq)))
   ;; put all the elements e in the ht, indexed by (f e)
   (for ([r
          ;; they need to be in the original order when they come out
          (reverse elems)])
     (define k (f r))
-    (hash-table-put! ht k (cons r (hash-table-get ht k (lambda () null)))))
+    (hash-set! ht k (cons r (hash-ref ht k (lambda () null)))))
   ht)
 
 ;; generate a clause of kind k
@@ -85,7 +85,7 @@
                              (length (Vector-ps (Row-first-pat r)))) rows)])]
         [with-syntax
             ([(clauses ...)
-              (hash-table-map
+              (hash-map
                ht
                (lambda (arity rows)
                  (define ns (build-list arity values))
@@ -128,7 +128,7 @@
     [(Exact? first)
      (let ([ht (hash-on (compose Exact-v Row-first-pat) block #:equal? #t)])
        (with-syntax ([(clauses ...)
-                      (hash-table-map
+                      (hash-map
                        ht
                        (lambda (k v)
                          #`[(equal? #,x '#,k)
@@ -181,10 +181,10 @@
        (compile* xs (map transform block) esc))]
     ;; the Constructor rule
     [(CPat? first)
-     (let ;; put all the rows in the hash-table, indexed by their constructor
+     (let ;; put all the rows in the hash, indexed by their constructor
          ([ht (hash-on (lambda (r) (pat-key (Row-first-pat r))) block)])
        (with-syntax ([(clauses ...)
-                      (hash-table-map
+                      (hash-map
                        ht (lambda (k v) (gen-clause k v x xs esc)))])
          #`(cond clauses ... [else (#,esc)])))]
     ;; the Or rule

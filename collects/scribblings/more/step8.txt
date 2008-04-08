@@ -51,7 +51,7 @@
   ;; Extract the path part:
   (define path (map path/param-path (url-path url)))
   ;; Find a handler based on the path's first element:
-  (define h (hash-table-get dispatch-table (car path) #f))
+  (define h (hash-ref dispatch-table (car path) #f))
   (if h
       ;; Call a handler:
       (h (url-query url))
@@ -62,11 +62,11 @@
                     "Unknown page: "
                     ,str-path)))))
 
-(define dispatch-table (make-hash-table 'equal))
+(define dispatch-table (make-hash))
 
-(hash-table-put! dispatch-table "hello"
-                 (lambda (query)
-                   `(html (body "Hello, World!"))))
+(hash-set! dispatch-table "hello"
+           (lambda (query)
+             `(html (body "Hello, World!"))))
 
 ;; ----------------------------------------
 
@@ -93,8 +93,8 @@
   `(html (body ,@(for/list ([i (in-range n)])
                    " hello"))))
 
-(hash-table-put! dispatch-table "many" many)
-(hash-table-put! dispatch-table "reply" reply)
+(hash-set! dispatch-table "many" many)
+(hash-set! dispatch-table "reply" reply)
 
 ;; ----------------------------------------
 
@@ -111,6 +111,6 @@
         [m (string->number (cdr (assq 'number query)))])
     `(html (body "The sum is " ,(number->string (+ m n))))))
 
-(hash-table-put! dispatch-table "sum" sum)
-(hash-table-put! dispatch-table "one" one)
-(hash-table-put! dispatch-table "two" two)
+(hash-set! dispatch-table "sum" sum)
+(hash-set! dispatch-table "one" one)
+(hash-set! dispatch-table "two" two)

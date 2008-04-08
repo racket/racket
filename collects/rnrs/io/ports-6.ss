@@ -504,17 +504,17 @@
                               (lambda () (file-position p)) 
                               (lambda (pos) (file-position p pos))))))
 
-(define input-ports (make-hash-table 'weak))
+(define input-ports (make-weak-hasheq))
 
 (define (r6rs:current-input-port)
   (let ([p (current-input-port)])
     (cond
      [(textual-port? p) p]
-     [(hash-table-get input-ports p #f)
+     [(hash-ref input-ports p #f)
       => ephemeron-value]
      [else
       (let ([p2 (transcoded-port p utf8-transcoder)])
-        (hash-table-put! input-ports p (make-ephemeron p p2))
+        (hash-set! input-ports p (make-ephemeron p p2))
         p2)])))
 
 (define (make-custom-binary-input-port id read! get-position set-position! close)
@@ -740,7 +740,7 @@
                                (lambda () (file-position p)) 
                                (lambda (pos) (file-position p pos))))))
 
-(define output-ports (make-hash-table 'weak))
+(define output-ports (make-weak-hasheq))
 
 (define (r6rs:current-output-port)
   (convert-output-port (current-output-port)))
@@ -751,11 +751,11 @@
 (define (convert-output-port p)
   (cond
    [(textual-port? p) p]
-   [(hash-table-get output-ports p #f)
+   [(hash-ref output-ports p #f)
     => ephemeron-value]
    [else
     (let ([p2 (transcoded-port p utf8-transcoder)])
-      (hash-table-put! output-ports p (make-ephemeron p p2))
+      (hash-set! output-ports p (make-ephemeron p p2))
       p2)]))
 
 (define (make-custom-binary-output-port id write! get-position set-position! close)

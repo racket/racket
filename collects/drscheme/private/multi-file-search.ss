@@ -613,17 +613,17 @@
   ;; build-recursive-file-list : string (union regexp #f) -> (-> (union string #f))
   ;; thread: search thread
   (define (build-recursive-file-list dir filter)
-    (letrec ([touched (make-hash-table 'equal)]
+    (letrec ([touched (make-hash)]
              [next-thunk (λ () (process-dir dir (λ () #f)))]
              [process-dir
               ; string[dirname] (listof string[filename]) -> (listof string[filename])
               (λ (dir k)
                 (let* ([key (normalize-path dir)]
-                       [traversed? (hash-table-get touched key (λ () #f))])
+                       [traversed? (hash-ref touched key (λ () #f))])
                   (if traversed? 
                       (k)
                       (begin
-                        (hash-table-put! touched key #t)
+                        (hash-set! touched key #t)
                         (process-dir-contents 
                          (map (λ (x) (build-path dir x))
                               (directory-list dir))

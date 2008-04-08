@@ -74,7 +74,7 @@
                     [vtable (extract-vtable val)]
                     [method-ht (extract-method-ht val)])
                 (for-each (λ (m proj)
-                            (let ([index (hash-table-get method-ht m #f)])
+                            (let ([index (hash-ref method-ht m #f)])
                               (unless index
                                 (raise-contract-error val src-info pos-blame orig-str
                                                       "expected an object with method ~s"

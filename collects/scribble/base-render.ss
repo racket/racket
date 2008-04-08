@@ -53,28 +53,28 @@
       (let ([ht (deserialize v)]
             [in-ht (collect-info-ext-ht ci)])
         (for ([(k v) ht])
-          (hash-table-put! in-ht k v))))
+          (hash-set! in-ht k v))))
     (define/public (get-defined ci)
-      (hash-table-map (collect-info-ht ci) (lambda (k v) k)))
+      (hash-map (collect-info-ht ci) (lambda (k v) k)))
 
     (define/public (get-undefined ri)
-      (hash-table-map (resolve-info-undef ri) (lambda (k v) k)))
+      (hash-map (resolve-info-undef ri) (lambda (k v) k)))
 
     (define/public (transfer-info ci src-ci)
       (let ([in-ht (collect-info-ext-ht ci)])
         (for ([(k v) (collect-info-ext-ht src-ci)])
-          (hash-table-put! in-ht k v))))
+          (hash-set! in-ht k v))))
 
     ;; ----------------------------------------
     ;; global-info collection
 
     (define/public (collect ds fns)
-      (let ([ci (make-collect-info (make-hash-table 'equal)
-                                   (make-hash-table 'equal)
-                                   (make-hash-table)
-                                   (make-hash-table)
+      (let ([ci (make-collect-info (make-hash)
+                                   (make-hash)
+                                   (make-hasheq)
+                                   (make-hasheq)
                                    null
-                                   (make-hash-table)
+                                   (make-hasheq)
                                    null)])
         (start-collect ds fns ci)
         ci))
@@ -85,7 +85,7 @@
 
     (define/public (collect-part d parent ci number)
       (let ([p-ci (make-collect-info
-                   (make-hash-table 'equal)
+                   (make-hash)
                    (collect-info-ext-ht ci)
                    (collect-info-parts ci)
                    (collect-info-tags ci)
@@ -95,11 +95,11 @@
                        (collect-info-gen-prefix ci))
                    (collect-info-relatives ci)
                    (cons d (collect-info-parents ci)))])
-        (hash-table-put! (collect-info-parts ci)
-                         d
-                         (make-collected-info number
-                                              parent
-                                              (collect-info-ht p-ci)))
+        (hash-set! (collect-info-parts ci)
+                   d
+                   (make-collected-info number
+                                        parent
+                                        (collect-info-ht p-ci)))
         (when (part-title-content d)
           (collect-content (part-title-content d) p-ci))
         (collect-part-tags d p-ci number)
@@ -138,7 +138,7 @@
 
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])
-        (hash-table-put! (collect-info-ht ci)
+        (hash-set! (collect-info-ht ci)
                          (generate-tag t ci)
                          (list (or (part-title-content d) '("???")) number))))
 
@@ -175,9 +175,9 @@
     (define/public (collect-element i ci)
       (if (part-relative-element? i)
         (let ([content
-               (or (hash-table-get (collect-info-relatives ci) i #f)
+               (or (hash-ref (collect-info-relatives ci) i #f)
                    (let ([v ((part-relative-element-collect i) ci)])
-                     (hash-table-put! (collect-info-relatives ci) i v)
+                     (hash-set! (collect-info-relatives ci) i v)
                      v))])
           (collect-content content ci))
         (begin
@@ -205,9 +205,9 @@
 
     (define/public (resolve ds fns ci)
       (let ([ri (make-resolve-info ci
-                                   (make-hash-table)
-                                   (make-hash-table 'equal)
-                                   (make-hash-table 'equal))])
+                                   (make-hasheq)
+                                   (make-hash)
+                                   (make-hash))])
         (start-resolve ds fns ri)
         ri))
 
@@ -239,7 +239,7 @@
         [(blockquote? p) (resolve-blockquote p d ri)]
         [(delayed-block? p) 
          (let ([v ((delayed-block-resolve p) this d ri)])
-           (hash-table-put! (resolve-info-delays ri) p v)
+           (hash-set! (resolve-info-delays ri) p v)
            (resolve-block v d ri))]
         [else (resolve-paragraph p d ri)]))
 
@@ -260,9 +260,9 @@
         [(part-relative-element? i)
          (resolve-content (part-relative-element-content i ri) d ri)]
         [(delayed-element? i)
-         (resolve-content (or (hash-table-get (resolve-info-delays ri) i #f)
+         (resolve-content (or (hash-ref (resolve-info-delays ri) i #f)
                               (let ([v ((delayed-element-resolve i) this d ri)])
-                                (hash-table-put! (resolve-info-delays ri) i v)
+                                (hash-set! (resolve-info-delays ri) i v)
                                 v))
                           d ri)]
         [(element? i)
@@ -271,7 +271,7 @@
             (let ([e (index-element-desc i)])
               (when (delayed-index-desc? e)
                 (let ([v ((delayed-index-desc-resolve e) this d ri)])
-                  (hash-table-put! (resolve-info-delays ri) e v))))]
+                  (hash-set! (resolve-info-delays ri) e v))))]
            [(link-element? i)
             (resolve-get d ri (link-element-tag i))])
          (for ([e (element-content i)])

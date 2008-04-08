@@ -90,14 +90,14 @@
                                 (if star?
                                     (void)
                                     (if ((length new-bindings) . > . 5)
-                                        (let-values ([(ht) (make-hash-table)])
+                                        (let-values ([(ht) (make-hasheq)])
                                           (letrec-values ([(check) (lambda (l)
                                                                      (if (null? l)
                                                                          (void)
                                                                          (let*-values ([(id) (if name
                                                                                                  (caar l)
                                                                                                  (stx-car (stx-car (car l))))]
-                                                                                       [(idl) (hash-table-get ht (syntax-e id) null)])
+                                                                                       [(idl) (hash-ref ht (syntax-e id) null)])
                                                                            (if (id-in-list? id idl)
                                                                                (raise-syntax-error
                                                                                 #f
@@ -105,7 +105,7 @@
                                                                                 stx
                                                                                 id)
                                                                                (begin
-                                                                                 (hash-table-put! ht (syntax-e id) (cons id idl))
+                                                                                 (hash-set! ht (syntax-e id) (cons id idl))
                                                                                  (check (cdr l)))))))])
                                             (check new-bindings)))
                                         (letrec-values ([(check) (lambda (l accum)

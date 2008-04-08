@@ -249,7 +249,7 @@ which are then called when the contract's fields are explored
                 [(synth-names ...) synth-names]
                 [(synth-procs ...) synth-procs]
                 [exp (car clauses)])
-    (syntax ((maker-args ... (list (λ (ht) (let ([synth-names (hash-table-get ht 'synth-names)] ...) exp))
+    (syntax ((maker-args ... (list (λ (ht) (let ([synth-names (hash-ref ht 'synth-names)] ...) exp))
                                    (cons 'synth-names synth-procs) ...))
              (synth-names ...)))))
 
@@ -319,20 +319,20 @@ which are then called when the contract's fields are explored
 
 (define (sort-wrt name stx ids current-order-field-names desired-order-field-names)
   (let ([id/user-specs (map cons ids current-order-field-names)]
-        [ht (make-hash-table)])
+        [ht (make-hasheq)])
     (let loop ([i 0]
                [orig-field-names desired-order-field-names])
       (unless (null? orig-field-names) 
-        (hash-table-put! ht (syntax-e (car orig-field-names)) i)
+        (hash-set! ht (syntax-e (car orig-field-names)) i)
         (loop (+ i 1) (cdr orig-field-names))))
     (let* ([lookup
             (λ (id-pr)
               (let ([id (car id-pr)]
                     [use-field-name (cdr id-pr)])
-                (hash-table-get ht
-                                (syntax-e use-field-name) 
-                                (λ () 
-                                  (raise-syntax-error name "unknown field name" stx use-field-name)))))]
+                (hash-ref ht
+                          (syntax-e use-field-name) 
+                          (λ () 
+                             (raise-syntax-error name "unknown field name" stx use-field-name)))))]
            [cmp (λ (x y) (<= (lookup x) (lookup y)))]
            [sorted-id/user-specs (sort id/user-specs cmp)])
       (map car sorted-id/user-specs))))

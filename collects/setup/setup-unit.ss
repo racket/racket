@@ -266,16 +266,16 @@
       null))
 
   (define all-collections
-    (let ([ht (make-hash-table 'equal)])
+    (let ([ht (make-hash)])
       (for ([cp (current-library-collection-paths)]
             #:when (directory-exists? cp)
             [collection (directory-list cp)]
             #:when (directory-exists? (build-path cp collection)))
-        (hash-table-get ht collection
+        (hash-ref ht collection
           (lambda ()
             (let ([cc (collection->cc (list collection))])
-              (when cc (hash-table-put! ht collection cc))))))
-      (hash-table-map ht (lambda (k v) v))))
+              (when cc (hash-set! ht collection cc))))))
+      (hash-map ht (lambda (k v) v))))
 
   ;; Close over sub-collections
   (define (collection-closure collections-to-compile make-subs)
@@ -409,7 +409,7 @@
       (let* ([oop (current-output-port)]
              [printed? #f]
              [on? #f]
-             [dir-table (make-hash-table 'equal)]
+             [dir-table (make-hash)]
              [line-accum #""]
              [op (if (verbose)
                    (current-output-port)
@@ -420,8 +420,8 @@
                              (print-doing oop))
                            (unless (verbose)
                              (let ([path (normal-case-path (path-only path))])
-                               (unless (hash-table-get dir-table path (lambda () #f))
-                                 (hash-table-put! dir-table path #t)
+                               (unless (hash-ref dir-table path (lambda () #f))
+                                 (hash-set! dir-table path #t)
                                  (print-doing oop path)))))])
         (parameterize ([current-output-port op]
                        [compile-notify-handler doing-path])
@@ -442,7 +442,7 @@
                          (eq? 'ext (car s)))
               (let ([s (main-collects-relative->path s)])
                 (when (path-string? s)
-                  (hash-table-put! dependencies s #t))))))))
+                  (hash-set! dependencies s #t))))))))
     (delete-file path))
 
   (define (delete-files-in-directory path printout dependencies)
@@ -509,7 +509,7 @@
                     [else (void)])))))))
 
   (when (clean)
-    (let ([dependencies (make-hash-table 'equal)])
+    (let ([dependencies (make-hash)])
       ;; Main deletion:
       (for ([cc ccs-to-compile]) (clean-collection cc dependencies))
       ;; Unless specific collections were named, also
@@ -518,9 +518,9 @@
       (when no-specific-collections?
         (setup-printf "Checking dependencies")
         (let loop ([old-dependencies dependencies])
-          (let ([dependencies (make-hash-table 'equal)]
+          (let ([dependencies (make-hash)]
                 [did-something? #f])
-            (hash-table-for-each
+            (hash-for-each
              old-dependencies
              (lambda (file _)
                (let-values ([(dir name dir?) (split-path file)])
@@ -652,15 +652,14 @@
                   (unless (info 'assume-virtual-sources (lambda () #f))
                     (let ([c (build-path dir "compiled")])
                       (when (directory-exists? c)
-                        (let ([ok-zo-files (make-immutable-hash-table
+                        (let ([ok-zo-files (make-immutable-hash
                                             (map (lambda (p)
                                                    (cons (path-add-suffix p #".zo") #t))
                                                  (append (directory-list dir)
-                                                         (info 'virtual-sources (lambda () null))))
-                                            'equal)])
+                                                         (info 'virtual-sources (lambda () null)))))])
                           (for ([p (directory-list c)])
                             (when (and (regexp-match #rx#".zo$" (path-element->bytes p))
-                                       (not (hash-table-get ok-zo-files p #f)))
+                                       (not (hash-ref ok-zo-files p #f)))
                               (setup-fprintf (current-error-port) " deleting ~a" (build-path c p))
                               (delete-file (build-path c p))))))))
                   ;; Make .zos
@@ -676,15 +675,15 @@
     ;; `collections-to-compile' is a subset of all collections, we only care
     ;; about those collections that exist in the same root as the ones in
     ;; `collections-to-compile'.
-    (let ([ht (make-hash-table 'equal)]
-          [ht-orig (make-hash-table 'equal)])
+    (let ([ht (make-hash)]
+          [ht-orig (make-hash)])
       (for ([cc ccs-to-compile])
         (let* ([domain (with-handlers ([exn:fail? (lambda (x) (lambda () null))])
                          (dynamic-require
                           (build-path (cc-path cc) "info.ss")
                           '#%info-domain))]
                ;; Check whether we have a table for this cc's info-domain cache:
-               [t (hash-table-get ht (cc-info-path cc)
+               [t (hash-ref ht (cc-info-path cc)
                     (lambda ()
                       ;; No table for this root, yet. Build one.
                       (let ([l (let ([p (cc-info-path cc)])
@@ -696,7 +695,7 @@
                         ;; Convert list to hash table. Incluse only well-formed
                         ;; list elements, and only elements whose corresponding
                         ;; collection exists.
-                        (let ([t (make-hash-table 'equal)]
+                        (let ([t (make-hash)]
                               [all-ok? #f])
                           (when (list? l)
                             (set! all-ok? #t)
@@ -724,30 +723,30 @@
                                   c
                                   (? integer? d)
                                   (? integer? e))
-                                 (hash-table-put! t a (list b c d e))]
+                                 (hash-set! t a (list b c d e))]
                                 [_ (set! all-ok? #f)])))
                           ;; Record the table loaded for this collection root
                           ;; in the all-roots table:
-                          (hash-table-put! ht (cc-info-path cc) t)
+                          (hash-set! ht (cc-info-path cc) t)
                           ;; If anything in the "cache.ss" file was bad, then
                           ;; claim that the old table was empty, so that we
                           ;; definitely write the new table.
-                          (hash-table-put! ht-orig (cc-info-path cc)
-                                           (and all-ok? (hash-table-copy t)))
+                          (hash-set! ht-orig (cc-info-path cc)
+                                     (and all-ok? (hash-copy t)))
                           t))))])
           ;; Add this collection's info to the table, replacing any information
           ;; already there.
-          (hash-table-put! t
-                           (path->bytes (if (cc-root-dir cc)
-                                          ;; Use relative path:
-                                          (apply build-path (cc-collection cc))
-                                          ;; Use absolute path:
-                                          (cc-path cc)))
-                           (cons (domain) (cc-shadowing-policy cc)))))
+          (hash-set! t
+                     (path->bytes (if (cc-root-dir cc)
+                                      ;; Use relative path:
+                                      (apply build-path (cc-collection cc))
+                                      ;; Use absolute path:
+                                      (cc-path cc)))
+                     (cons (domain) (cc-shadowing-policy cc)))))
       ;; Write out each collection-root-specific table to a "cache.ss" file:
-      (hash-table-for-each ht
+      (hash-for-each ht
         (lambda (info-path ht)
-          (unless (equal? ht (hash-table-get ht-orig info-path))
+          (unless (equal? ht (hash-ref ht-orig info-path))
             (let-values ([(base name must-be-dir?) (split-path info-path)])
               (unless (path? base)
                 (error 'make-info-domain
@@ -760,7 +759,7 @@
                   (with-output-to-file p
                     #:exists 'truncate/replace
                     (lambda ()
-                      (write (hash-table-map ht cons))
+                      (write (hash-map ht cons))
                       (newline)))))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

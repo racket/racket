@@ -8,18 +8,18 @@
 (define-syntax defintern
   (syntax-rules ()
     [(_ name+args make-name key) 
-     (defintern name+args (lambda () (make-hash-table #;'weak 'equal)) make-name key)]
+     (defintern name+args (lambda () (make-hash #;'weak)) make-name key)]
     [(_ (*name arg ...) make-ht make-name key-expr)
      (define *name
        (let ([table (make-ht)])
          (lambda (arg ...)
            #;(all-count!)
            (let ([key key-expr])
-             (hash-table-get table key
-                             (lambda ()
-                               (let ([new (make-name (count!) arg ...)])
-                                 (hash-table-put! table key new)
-                                 new)))))))]))
+             (hash-ref table key
+                       (lambda ()
+                         (let ([new (make-name (count!) arg ...)])
+                           (hash-set! table key new)
+                           new)))))))]))
 
 (define (make-count!)
   

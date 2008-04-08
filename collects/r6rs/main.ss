@@ -242,17 +242,17 @@ FIXME:
    (lambda (stx mode)
      (syntax-case stx ()
        [(_ orig (local-id ext-id) ...)
-        (let* ([table (make-hash-table)]
+        (let* ([table (make-hasheq)]
                [map-id (lambda (phase)
                          (lambda (id)
-                           (let ([l (hash-table-get table (syntax-e id) null)])
+                           (let ([l (hash-ref table (syntax-e id) null)])
                              (unless (ormap (lambda (e)
                                               (and (equal? (cdr e) phase)
                                                    (free-identifier=? (car e) id phase)))
                                             l)
-                               (hash-table-put! table
-                                                (syntax-e id)
-                                                (cons (cons id phase) l))))))])
+                               (hash-set! table
+                                          (syntax-e id)
+                                          (cons (cons id phase) l))))))])
           (let-values ([(ids for-syntax-ids) (syntax-local-module-defined-identifiers)])
             (for-each (map-id 0) ids)
             (for-each (map-id 1) for-syntax-ids))
@@ -262,13 +262,13 @@ FIXME:
           (apply
            append
            (map (lambda (local-id ext-id)
-                  (let* ([l (hash-table-get table (syntax-e local-id)
-                                            (lambda ()
-                                              (raise-syntax-error
-                                               #f
-                                               "no binding for exported identifier"
-                                               #'orig
-                                               local-id)))]
+                  (let* ([l (hash-ref table (syntax-e local-id)
+                                      (lambda ()
+                                        (raise-syntax-error
+                                         #f
+                                         "no binding for exported identifier"
+                                         #'orig
+                                         local-id)))]
                          [l (filter (lambda (e)
                                       (free-identifier=? (car e) local-id (cdr e)))
                                     l)])

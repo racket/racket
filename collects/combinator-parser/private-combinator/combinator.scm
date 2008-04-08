@@ -16,14 +16,14 @@
     
     (define return-name "dummy")
     
-    (define (make-weak-map) (make-hash-table 'weak))
+    (define (make-weak-map) (make-weak-hasheq))
  
     (define (weak-map-put! m k v)
-      (hash-table-put! m k (make-ephemeron k (box v))))
+      (hash-set! m k (make-ephemeron k (box v))))
  
     (define weak-map-get 
       (opt-lambda (m k [def-v (lambda () (error 'weak-map-get "value unset"))])
-        (let ([v (hash-table-get m k #f)])
+        (let ([v (hash-ref m k #f)])
           (if v 
               (let ([v (ephemeron-value v)])
                 (if v 

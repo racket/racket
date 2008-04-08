@@ -476,7 +476,7 @@ path element, like @scheme["foo"], to a handler function:
   (code:comment #, @t{Extract the path part:})
   (define path (map path/param-path (url-path url)))
   (code:comment #, @t{Find a handler based on the path's first element:})
-  (define h (hash-table-get dispatch-table (car path) #f))
+  (define h (hash-ref dispatch-table (car path) #f))
   (if h
       (code:comment #, @t{Call a handler:})
       (h (url-query url))
@@ -487,7 +487,7 @@ path element, like @scheme["foo"], to a handler function:
                    "Unknown page: " 
                    ,str-path)))))
 
-(define dispatch-table (make-hash-table 'equal))
+(define dispatch-table (make-hash))
 ]
 
 With the new @scheme[require] import and new @scheme[handle],
@@ -501,9 +501,9 @@ try again to connect to the server. The web browser should show an
 We can register a handler for the @scheme["hello"] path like this:
 
 @schemeblock[
-(hash-table-put! dispatch-table "hello"
-                 (lambda (query) 
-                   `(html (body "Hello, World!"))))
+(hash-set! dispatch-table "hello"
+           (lambda (query) 
+             `(html (body "Hello, World!"))))
 ]
 
 @whole-prog["5"]
@@ -553,8 +553,8 @@ many ``hello''s as a user wants:
   `(html (body ,@(for/list ([i (in-range n)])
                    " hello"))))
 
-(hash-table-put! dispatch-table "many" many)
-(hash-table-put! dispatch-table "reply" reply)
+(hash-set! dispatch-table "many" many)
+(hash-set! dispatch-table "reply" reply)
 ]
 
 @whole-prog["6"]
@@ -637,9 +637,9 @@ using the hidden field in the form to remember the first number:
         [m (string->number (cdr (assq 'number query)))])
     `(html (body "The sum is " ,(number->string (+ m n))))))
 
-(hash-table-put! dispatch-table "sum" sum)
-(hash-table-put! dispatch-table "one" one)
-(hash-table-put! dispatch-table "two" two)
+(hash-set! dispatch-table "sum" sum)
+(hash-set! dispatch-table "one" one)
+(hash-set! dispatch-table "two" two)
 ]
 
 @whole-prog["8"]
@@ -653,7 +653,7 @@ a direct style:
   (define n (get-number "Second number:"))
   `(html (body "The sum is " ,(number->string (+ m n)))))
 
-(hash-table-put! dispatch-table "sum2" sum2)
+(hash-set! dispatch-table "sum2" sum2)
 ]
 
 The problem is that @scheme[get-number] needs to send an HTML response
@@ -732,7 +732,7 @@ the tag to @scheme[k]:
 (define (send/suspend mk-page)
   (let/cc k
     (define tag (format "k~a" (current-inexact-milliseconds)))
-    (hash-table-put! dispatch-table tag k)
+    (hash-set! dispatch-table tag k)
     ...))
 ]
 
@@ -744,7 +744,7 @@ generated tag:
 (define (send/suspend mk-page)
   (let/cc k
     (define tag (format "k~a" (current-inexact-milliseconds)))
-    (hash-table-put! dispatch-table tag k)
+    (hash-set! dispatch-table tag k)
     (abort (mk-page (string-append "/" tag)))))
 ]
 
@@ -759,7 +759,7 @@ computation.
 In summary, the new pieces are: @scheme[(require scheme/control)],
 adding @scheme[prompt] inside @scheme[handle], the definitions of
 @scheme[send/suspend], @scheme[get-number], and @scheme[sum2], and
-@scheme[(hash-table-put! dispatch-table "sum2" sum2)]. Once you have
+@scheme[(hash-set! dispatch-table "sum2" sum2)]. Once you have
 the server updated, visit @tt{http://localhost:8081/sum2}.
 
 @; ----------------------------------------------------------------------

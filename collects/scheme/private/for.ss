@@ -19,6 +19,8 @@
              for/or for*/or
              for/first for*/first
              for/last for*/last
+             for/hash for*/hash
+             for/hasheq for*/hasheq
 
              for/fold/derived for*/fold/derived
              
@@ -31,10 +33,10 @@
              in-input-port-bytes
              in-input-port-chars
              in-lines
-             in-hash-table
-             in-hash-table-keys
-             in-hash-table-values
-             in-hash-table-pairs
+             in-hash
+             in-hash-keys
+             in-hash-values
+             in-hash-pairs
              
              in-parallel
              stop-before
@@ -310,7 +312,7 @@
         (string? v)
         (bytes? v)
         (input-port? v)
-        (hash-table? v)
+        (hash? v)
         (and (:sequence? v)
              (not (struct-type? v)))))
   
@@ -322,7 +324,7 @@
       [(string? v) (:string-gen v)]
       [(bytes? v) (:bytes-gen v)]
       [(input-port? v) (:input-port-gen v)]
-      [(hash-table? v) (:hash-table-gen v cons (lambda (p) (values (car p) (cdr p))))]
+      [(hash? v) (:hash-key+val-gen v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [else (raise
              (make-exn:fail:contract
@@ -457,22 +459,44 @@
                                   (lambda (x) (not (eof-object? x)))
                                   (lambda (x v) #t))))]))
   
-  (define (in-hash-table ht)
-    (unless (hash-table? ht) (raise-type-error 'in-hash-table "hash-table" ht))
-    (make-do-sequence (lambda () (:hash-table-gen ht cons (lambda (p) (values (car p) (cdr p)))))))
-  (define (in-hash-table-keys ht)
-    (unless (hash-table? ht) (raise-type-error 'in-hash-table-keys "hash-table" ht))
-    (make-do-sequence (lambda () (:hash-table-gen ht (lambda (k v) k) values))))
-  (define (in-hash-table-values ht)
-    (unless (hash-table? ht) (raise-type-error 'in-hash-table-values "hash-table" ht))
-    (make-do-sequence (lambda () (:hash-table-gen ht (lambda (k v) v) values))))
-  (define (in-hash-table-pairs ht)
-    (unless (hash-table? ht) (raise-type-error 'in-hash-table-values "hash-table" ht))
-    (make-do-sequence (lambda () (:hash-table-gen ht cons values))))
+  (define (in-hash ht)
+    (unless (hash? ht) (raise-type-error 'in-hash "hash" ht))
+    (make-do-sequence (lambda () (:hash-key+val-gen ht))))
 
-  (define (:hash-table-gen ht sel f)
-    (let ([l (hash-table-map ht sel)])
-      (values (lambda (l) (f (car l))) cdr l pair? (lambda args #t) (lambda args #t))))
+  (define (:hash-key+val-gen ht)
+    (:hash-gen ht (lambda (ht pos)
+                    (values
+                     (hash-iterate-key ht pos)
+                     (hash-iterate-value ht pos)))
+               (lambda (k v) #t)
+               (lambda (p k v) #t)))
+
+  (define (in-hash-keys ht)
+    (unless (hash? ht) (raise-type-error 'in-hash-keys "hash" ht))
+    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key
+                                            (lambda (k) #t)
+                                            (lambda (p k) #t)))))
+  (define (in-hash-values ht)
+    (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
+    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value
+                                            (lambda (v) #t)
+                                            (lambda (p v) #t)))))
+  (define (in-hash-pairs ht)
+    (unless (hash? ht) (raise-type-error 'in-hash-values "hash" ht))
+    (make-do-sequence (lambda () (:hash-gen ht (lambda (ht pos)
+                                                 (cons
+                                                  (hash-iterate-key ht pos)
+                                                  (hash-iterate-value ht pos)))
+                                            (lambda (k+v) #t)
+                                            (lambda (p k+v) #t)))))
+
+  (define (:hash-gen ht sel val-true pos+val-true)
+    (values (lambda (pos) (sel ht pos))
+            (lambda (pos) (hash-iterate-next ht pos))
+            (hash-iterate-first ht)
+            (lambda (pos) pos) ; #f position means stop
+            val-true
+            pos+val-true))
 
   (define (stop-before g pred)
     (unless (sequence? g) (raise-type-error 'stop-before "sequence" g))
@@ -817,6 +841,22 @@
     (lambda (x) x)
     (lambda (rhs) rhs)
     (lambda (x) x))
+
+  (define-for-variants (for/hash for*/hash)
+    ([table #hash()])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(let-values ([(key val) #,x])
+          (hash-set table key val))))
+
+  (define-for-variants (for/hasheq for*/hasheq)
+    ([table #hasheq()])
+    (lambda (x) x)
+    (lambda (rhs) rhs)
+    (lambda (x)
+      #`(let-values ([(key val) #,x])
+          (hash-set table key val))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  specific sequences

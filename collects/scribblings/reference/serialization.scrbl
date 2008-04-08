@@ -134,8 +134,15 @@ elements:
                   for a vector of length @scheme[_s]; or}
 
             @item{a list whose first element is @scheme['h] and whose
-                  remaining elements are flags for
-                  @scheme[make-hash-table] for a hash table.}
+                  remaining elements are symbols that determine the
+                  hash-table type:
+
+                  @itemize[
+                    @item{@scheme['equal] --- @scheme[(make-hash)]}
+                    @item{@scheme['equal 'weak] --- @scheme[(make-weak-hash)]}
+                    @item{@scheme['weak] --- @scheme[(make-weak-hasheq)]}
+                    @item{no symbols --- @scheme[(make-hasheq)]}
+                  ]}
 
             @item{@scheme['date] for a @scheme[date] structure, which
                   fails on deserialization (since dates are immutable;
@@ -243,8 +250,9 @@ elements:
             @item{a pair whose @scheme[car] is @scheme['h], whose
                   @scheme[cadr] is either @scheme['!] or @scheme['-]
                   (mutable or immutable, respectively), whose
-                  @scheme[caddr] is a list of symbols to be used as
-                  flags for @scheme[make-hash-table], and whose
+                  @scheme[caddr] is a list of symbols (containing
+                  @scheme['equal], @scheme['weak], both, or neither)
+                  that determines the hash table type, and whose
                   @scheme[cdddr] is a list of pairs, where the
                   @scheme[car] of each pair is a serial for a
                   hash-table key and the @scheme[cdr] is a serial for

@@ -167,8 +167,9 @@ scheme_init_type (Scheme_Env *env)
   set_name(scheme_sema_type, "<semaphore>");
   set_name(scheme_channel_type, "<channel>");
   set_name(scheme_channel_put_type, "<channel-put>");
-  set_name(scheme_hash_table_type, "<hash-table>");
-  set_name(scheme_bucket_table_type, "<hash-table>");
+  set_name(scheme_hash_table_type, "<hash>");
+  set_name(scheme_hash_tree_type, "<hash>");
+  set_name(scheme_bucket_table_type, "<hash>");
   set_name(scheme_module_registry_type, "<module-registry>");
   set_name(scheme_case_closure_type, "<procedure>");
   set_name(scheme_placeholder_type, "<placeholder>");

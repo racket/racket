@@ -234,6 +234,13 @@
   scheme_extension_table->scheme_hash_table_equal = scheme_hash_table_equal;
   scheme_extension_table->scheme_is_hash_table_equal = scheme_is_hash_table_equal;
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
+  scheme_extension_table->scheme_make_hash_tree = scheme_make_hash_tree;
+  scheme_extension_table->scheme_hash_tree_set = scheme_hash_tree_set;
+  scheme_extension_table->scheme_hash_tree_get = scheme_hash_tree_get;
+  scheme_extension_table->scheme_hash_tree_next = scheme_hash_tree_next;
+  scheme_extension_table->scheme_hash_tree_index = scheme_hash_tree_index;
+  scheme_extension_table->scheme_hash_tree_equal = scheme_hash_tree_equal;
+  scheme_extension_table->scheme_is_hash_tree_equal = scheme_is_hash_tree_equal;
   scheme_extension_table->scheme_make_prim = scheme_make_prim;
   scheme_extension_table->scheme_make_noneternal_prim = scheme_make_noneternal_prim;
   scheme_extension_table->scheme_make_prim_w_arity = scheme_make_prim_w_arity;

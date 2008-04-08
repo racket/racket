@@ -146,7 +146,7 @@
       ;; digit and new divisor pairs. Use this
       ;; to read off the decimal expansion.
       (field
-       [ht (make-hash-table 'equal)]
+       [ht (make-hash)]
        [expansions 0])
       
       ;; this field holds the state of the current computation
@@ -223,11 +223,11 @@
                (let-values ([(dig next-num) (one-step-division num)])
                  (if (zero? next-num)
                      (begin
-                       (hash-table-put! ht num (cons dig #t))
+                       (hash-set! ht num (cons dig #t))
                        (set! state #f)
                        (set! repeat #f))
                      (begin
-                       (hash-table-put! ht num (cons dig next-num))
+                       (hash-set! ht num (cons dig next-num))
                        (loop next-num (- counter 1)))))]))))
       
       ;; update-drawing-fields : -> void
@@ -266,7 +266,7 @@
       ;; extract-cycle : -> (listof digit)
       ;; pre: (number? repeat)
       (define/private (extract-cycle)
-        (let ([pr (hash-table-get ht repeat)])
+        (let ([pr (hash-ref ht repeat)])
           (cons (car pr)
                 (extract-helper (cdr pr)))))
       
@@ -278,7 +278,7 @@
           (cond
             [(equal? ind repeat) null]
             [else
-             (let* ([iter (hash-table-get ht ind)]
+             (let* ([iter (hash-ref ht ind)]
                     [dig (car iter)]
                     [next-num (cdr iter)])
                (cons dig
@@ -515,5 +515,5 @@
   ;; hash-table-bound? : hash-table TST -> boolean
   (define (hash-table-bound? ht key)
     (let/ec k
-      (hash-table-get ht key (λ () (k #f)))
+      (hash-ref ht key (λ () (k #f)))
       #t))

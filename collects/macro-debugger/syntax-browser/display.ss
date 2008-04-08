@@ -26,7 +26,7 @@
     (define start-anchor (new anchor-snip%))
     (define end-anchor (new anchor-snip%))
     (define range #f)
-    (define extra-styles (make-hash-table))
+    (define extra-styles (make-hasheq))
 
     ;; render-syntax : syntax -> void
     (define/public (render-syntax stx)
@@ -79,14 +79,14 @@
     ;; highlight-syntaxes : (list-of syntax) string -> void
     (define/public (highlight-syntaxes stxs hi-color)
       (let ([style-delta (highlight-style-delta hi-color #f)])
-        (for-each (lambda (stx) (hash-table-put! extra-styles stx style-delta))
+        (for-each (lambda (stx) (hash-set! extra-styles stx style-delta))
                   stxs))
       (refresh))
 
     ;; apply-extra-styles : -> void
     ;; Applies externally-added styles (such as highlighting)
     (define/private (apply-extra-styles)
-      (hash-table-for-each
+      (hash-for-each
        extra-styles
        (lambda (hi-stx style-delta)
          (let ([rs (send range get-ranges hi-stx)])

@@ -255,7 +255,7 @@ file.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../inclu
 fun.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c $(srcdir)/schmap.inc
 hash.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
-        $(srcdir)/../src/stypes.h  
+        $(srcdir)/../src/stypes.h $(srcdir)/mzmark.c
 jit.@LTO@: $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
         $(srcdir)/../src/stypes.h $(srcdir)/codetab.inc $(srcdir)/mzmark.c \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \

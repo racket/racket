@@ -117,12 +117,12 @@
 
 (define (pref-cache-install! fn-key fn-date f)
   (let ([table (or (weak-box-value pref-cache)
-                   (make-hash-table))])
-    (hash-table-put! table 
-                     (path->key fn-key)
-                     (cons
-                      (file-or-directory-modify-seconds fn-date #f (lambda () -inf.0))
-                      f))
+                   (make-hasheq))])
+    (hash-set! table 
+               (path->key fn-key)
+               (cons
+                (file-or-directory-modify-seconds fn-date #f (lambda () -inf.0))
+                f))
     (unless (eq? table (weak-box-value pref-cache))
       (set! pref-cache (make-weak-box table)))))
 
@@ -154,7 +154,7 @@
               (or filename
                   (find-system-path 'pref-file)))]
          [cache (let ([table (weak-box-value pref-cache)])
-                  (and table (hash-table-get table (path->key fn) #f)))])
+                  (and table (hash-ref table (path->key fn) #f)))])
     (if (and cache
              (or (not flush-mode)
                  (and (eq? flush-mode 'timestamp)

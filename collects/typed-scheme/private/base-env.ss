@@ -372,19 +372,18 @@
      [directory-list (cl-> [() (-lst -Path)]
                            [(-Path) (-lst -Path)])]
      
-     [make-hash-table (let ([ht-opt (*Un (-val 'weak) (-val 'equal))])
-                        (-poly (a b) 
-                               (cl-> [() (-HT a b)]
-                                     [(ht-opt) (-HT a b)]
-                                     [(ht-opt ht-opt) (-HT a b)])))]
+     [make-hash (-poly (a b) (-> (-HT a b)))]
+     [make-hasheq (-poly (a b) (-> (-HT a b)))]
+     [make-weak-hash (-poly (a b) (-> (-HT a b)))]
+     [make-weak-hasheq (-poly (a b) (-> (-HT a b)))]
      
-     [hash-table-put! (-poly (a b) ((-HT a b) a b . -> . -Void))]
-     [hash-table-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
-     [hash-table-get (-poly (a b c)
-                            (cl->
-                             (((-HT a b) a) b)
-                             (((-HT a b) a (-> c)) (*Un b c))
-                             (((-HT a b) a c) (*Un b c))))]
+     [hash-set! (-poly (a b) ((-HT a b) a b . -> . -Void))]
+     [hash-map (-poly (a b c) ((-HT a b) (a b . -> . c) . -> . (-lst c)))]
+     [hash-ref (-poly (a b c)
+                      (cl->
+                       (((-HT a b) a) b)
+                       (((-HT a b) a (-> c)) (*Un b c))
+                       (((-HT a b) a c) (*Un b c))))]
      #;[hash-table-index (-poly (a b) ((-HT a b) a b . -> . -Void))]
      
      [bytes (->* (list) N -Bytes)]

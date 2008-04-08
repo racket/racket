@@ -353,26 +353,26 @@
           (annote-exporting-library
            (to-element (make-just-context name stx-id))))))
 
-  (define checkers (make-hash-table 'equal))
+  (define checkers (make-hash))
 
   (define (libs->taglet id libs source-libs)
     (let ([lib 
            (or (ormap (lambda (lib)
-                        (let ([checker (hash-table-get checkers lib
-                                                       (lambda ()
-                                                         (let ([ns (make-base-empty-namespace)])
-                                                           (parameterize ([current-namespace ns])
-                                                             (namespace-require `(for-label ,lib)))
-                                                           (let ([checker
-                                                                  (lambda (id)
-                                                                    (parameterize ([current-namespace ns])
-                                                                      (let ([new-id (namespace-syntax-introduce
-                                                                                     (datum->syntax
-                                                                                      #f
-                                                                                      (syntax-e id)))])
-                                                                        (free-label-identifier=? new-id id))))])
-                                                             (hash-table-put! checkers lib checker)
-                                                             checker))))])
+                        (let ([checker (hash-ref checkers lib
+                                                 (lambda ()
+                                                   (let ([ns (make-base-empty-namespace)])
+                                                     (parameterize ([current-namespace ns])
+                                                       (namespace-require `(for-label ,lib)))
+                                                     (let ([checker
+                                                            (lambda (id)
+                                                              (parameterize ([current-namespace ns])
+                                                                (let ([new-id (namespace-syntax-introduce
+                                                                               (datum->syntax
+                                                                                #f
+                                                                                (syntax-e id)))])
+                                                                  (free-label-identifier=? new-id id))))])
+                                                       (hash-set! checkers lib checker)
+                                                       checker))))])
                           (and (checker id)
                                lib)))
                       (or source-libs
@@ -2100,10 +2100,10 @@
                                                           (reverse (cls/intf-app-mixins (cdr super))))))
                                             (cdr supers))
                                     (cons super accum)))]))))]
-           [ht (let ([ht (make-hash-table)])
+           [ht (let ([ht (make-hasheq)])
                  (for-each (lambda (i)
                              (when (meth? i) 
-                               (hash-table-put! ht (meth-name i) #t)))
+                               (hash-set! ht (meth-name i) #t)))
                            (decl-body decl))
                  ht)]
            [inh (apply
@@ -2113,10 +2113,10 @@
                                     values
                                     (map
                                      (lambda (k)
-                                       (if (hash-table-get ht k #f)
+                                       (if (hash-ref ht k #f)
                                            #f
                                            (begin
-                                             (hash-table-put! ht k #t)
+                                             (hash-set! ht k #t)
                                              (cons (symbol->string k)
                                                    (**method k (car super))))))
                                      (cls/intf-methods (cdr super))))])

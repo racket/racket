@@ -538,8 +538,8 @@
   (define-values (default-reader-guard)
     (lambda (path) path))
 
-  (define-values (-module-hash-table-table) (make-hash-table 'weak)) ; weak map from namespace to module ht
-  (define-values (-path-cache) (make-hash-table 'weak 'equal)) ; weak map from `lib' path + corrent-library-paths to symbols
+  (define-values (-module-hash-table-table) (make-weak-hasheq)) ; weak map from namespace to module ht
+  (define-values (-path-cache) (make-weak-hash)) ; weak map from `lib' path + corrent-library-paths to symbols
   
   (define-values (-loading-filename) (gensym))
   (define-values (-loading-prompt-tag) (make-continuation-prompt-tag 'module-loading))
@@ -576,15 +576,15 @@
           (when planet-resolver
             ;; Let planet resolver register, too:
             (planet-resolver s))
-          (let ([ht (or (hash-table-get -module-hash-table-table
-                                        (namespace-module-registry (current-namespace))
-                                        #f)
-                        (let ([ht (make-hash-table)])
-                          (hash-table-put! -module-hash-table-table
-                                           (namespace-module-registry (current-namespace))
-                                           ht)
+          (let ([ht (or (hash-ref -module-hash-table-table
+                                  (namespace-module-registry (current-namespace))
+                                  #f)
+                        (let ([ht (make-hasheq)])
+                          (hash-set! -module-hash-table-table
+                                     (namespace-module-registry (current-namespace))
+                                     ht)
                           ht))])
-            (hash-table-put! ht s 'attach))]
+            (hash-set! ht s 'attach))]
          [(s relto stx) (standard-module-name-resolver s relto stx #t)]
          [(s relto stx load?)
           ;; If stx is not #f, raise syntax error for ill-formed paths
@@ -630,9 +630,9 @@
                      ;; Non-string result represents an error
                      (cond
                       [(symbol? s)
-                       (or (hash-table-get -path-cache
-                                           (cons s (current-library-collection-paths))
-                                           #f)
+                       (or (hash-ref -path-cache
+                                     (cons s (current-library-collection-paths))
+                                     #f)
                            (let-values ([(cols file) (split-relative-string (symbol->string s) #f)])
                              (let ([p (-find-col 'standard-module-name-resolver
                                                  show-collection-err
@@ -643,7 +643,7 @@
                                                  (string-append file ".ss"))))))]
                       [(string? s)
                        (let* ([dir (get-dir)])
-                         (or (hash-table-get -path-cache (cons s dir) #f)
+                         (or (hash-ref -path-cache (cons s dir) #f)
                              (let-values ([(cols file) (split-relative-string s #f)])
                                (apply build-path 
                                       dir
@@ -660,9 +660,9 @@
                            s
                            (list " (a path must be absolute)"))]
                       [(eq? (car s) 'lib)
-                       (or (hash-table-get -path-cache
-                                           (cons s (current-library-collection-paths))
-                                           #f)
+                       (or (hash-ref -path-cache
+                                     (cons s (current-library-collection-paths))
+                                     #f)
                            (let*-values ([(cols file) (split-relative-string (cadr s) #f)]
                                          [(old-style?) (if (null? (cddr s))
                                                            (and (null? cols)
@@ -724,17 +724,17 @@
                       (let ([modname (if (vector? s-parsed)
                                          (vector-ref s-parsed 4)
                                          (make-resolved-module-path filename))]
-                            [ht (or (hash-table-get -module-hash-table-table
-                                                    (namespace-module-registry (current-namespace))
-                                                    #f)
-                                    (let ([ht (make-hash-table)])
-                                      (hash-table-put! -module-hash-table-table
-                                                       (namespace-module-registry (current-namespace))
-                                                       ht)
+                            [ht (or (hash-ref -module-hash-table-table
+                                              (namespace-module-registry (current-namespace))
+                                              #f)
+                                    (let ([ht (make-hasheq)])
+                                      (hash-set! -module-hash-table-table
+                                                 (namespace-module-registry (current-namespace))
+                                                 ht)
                                       ht))])
                         ;; Loaded already?
                         (when load?
-                          (let ([got (hash-table-get ht modname #f)])
+                          (let ([got (hash-ref ht modname #f)])
                             (unless got
                               ;; Currently loading?
                               (let ([l (let ([tag (if (continuation-prompt-available? -loading-prompt-tag)
@@ -764,21 +764,21 @@
                                      ((current-load/use-compiled) 
                                       filename 
                                       (string->symbol (path->string no-sfx)))))))
-                              (hash-table-put! ht modname #t))))
+                              (hash-set! ht modname #t))))
                         ;; If a `lib' path, cache pathname manipulations
                         (when (and (not (vector? s-parsed))
                                    (or (string? s)
                                        (and (pair? s)
                                             (eq? (car s) 'lib))))
-                          (hash-table-put! -path-cache
-                                           (if (string? s)
-                                               (cons s (get-dir))
-                                               (cons s (current-library-collection-paths)))
-                                           (vector filename
-                                                   normal-filename
-                                                   name
-                                                   no-sfx
-                                                   modname)))
+                          (hash-set! -path-cache
+                                     (if (string? s)
+                                         (cons s (get-dir))
+                                         (cons s (current-library-collection-paths)))
+                                     (vector filename
+                                             normal-filename
+                                             name
+                                             no-sfx
+                                             modname)))
                         ;; Result is the module name:
                         modname))))))])]))
       standard-module-name-resolver))

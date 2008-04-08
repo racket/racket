@@ -200,8 +200,8 @@
 
 (let ([result #f]
       [mk (lambda (v)
-	    `(,v ,(vector v) ,(box v) ,(let ([ht (make-hash-table)])
-					 (hash-table-put! ht v v)
+	    `(,v ,(vector v) ,(box v) ,(let ([ht (make-hasheq)])
+					 (hash-set! ht v v)
 					 ht)))])
   (let ([get-zero
 	 (case-lambda
@@ -216,23 +216,23 @@
     (let ([t (make-readtable #f 
 			     #\$ 'terminating-macro get-zero)])
       (let ([go
-	     (lambda (read car cadr caddr cadddr unbox vector-ref hash-table-map
-			   list? vector? box? hash-table?)
+	     (lambda (read car cadr caddr cadddr unbox vector-ref hash-map
+			   list? vector? box? hash?)
 	       (let ([v (parameterize ([current-readtable t])
 			  (read (open-input-string "#0=$")))])
 		 (test #t list? v)
 		 (test #t list? (car v))
 		 (test #t vector? (cadr v))
 		 (test #t box? (caddr v))
-		 (test #t hash-table? (cadddr v))
+		 (test #t hash? (cadddr v))
 		 (test #t eq? v (car v))
 		 (test #t eq? v (vector-ref (cadr v) 0))
 		 (test #t eq? v (unbox (caddr v)))
-		 (test #t pair? (memq v (hash-table-map (cadddr v) (lambda (k v) k))))
-		 (test #t pair? (memq v (hash-table-map (cadddr v) (lambda (k v) v))))
+		 (test #t pair? (memq v (hash-map (cadddr v) (lambda (k v) k))))
+		 (test #t pair? (memq v (hash-map (cadddr v) (lambda (k v) v))))
 		 (test #f eq? v result)))])
-	(go read car cadr caddr cadddr unbox vector-ref hash-table-map
-	    list? vector? box? hash-table?)
+	(go read car cadr caddr cadddr unbox vector-ref hash-map
+	    list? vector? box? hash?)
         #;
 	(go (lambda (p) (read-syntax 'string p))
 	    (lambda (stx) (car (syntax->list stx))) 
@@ -241,11 +241,11 @@
 	    (lambda (stx) (cadddr (syntax->list stx))) 
 	    (lambda (stx) (unbox (syntax-e stx)))
 	    (lambda (stx p) (vector-ref  (syntax-e stx) p))
-	    (lambda (stx f) (hash-table-map (syntax-e stx) f))
+	    (lambda (stx f) (hash-map (syntax-e stx) f))
 	    (lambda (stx) (and (syntax->list stx) #t))
 	    (lambda (stx) (vector? (syntax-e stx)))
 	    (lambda (stx) (box? (syntax-e stx)))
-	    (lambda (stx) (hash-table? (syntax-e stx))))))))
+	    (lambda (stx) (hash? (syntax-e stx))))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that sharing is preserved

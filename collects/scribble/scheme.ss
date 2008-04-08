@@ -41,7 +41,7 @@
   (define current-meta-list 
     (make-parameter null))
 
-  (define defined-names (make-hash-table))
+  (define defined-names (make-hasheq))
 
   (define-struct (sized-element element) (length))
 
@@ -66,8 +66,8 @@
   ;; That way, when the value is no longer used, the key
   ;; goes away, and the entry is gone.
 
-  (define id-element-cache (make-hash-table 'equal 'weak))
-  (define element-cache (make-hash-table 'equal 'weak))
+  (define id-element-cache (make-weak-hash))
+  (define element-cache (make-weak-hash))
 
   (define-struct (cached-delayed-element delayed-element) (cache-key))
   (define-struct (cached-element element) (cache-key))
@@ -80,7 +80,7 @@
                                (cadddr b)
                                (list-ref b 5))))])
       (or (and key
-               (let ([b (hash-table-get id-element-cache key #f)])
+               (let ([b (hash-ref id-element-cache key #f)])
                  (and b
                       (weak-box-value b))))
           (let ([e (make-cached-delayed-element
@@ -100,7 +100,7 @@
                     (lambda () s)
                     key)])
             (when key
-              (hash-table-put! id-element-cache key (make-weak-box e)))
+              (hash-set! id-element-cache key (make-weak-box e)))
             e))))
 
   (define (make-element/cache style content)
@@ -109,10 +109,10 @@
              (string? (car content))
              (null? (cdr content)))
         (let ([key (vector style (car content))])
-          (let ([b (hash-table-get element-cache key #f)])
+          (let ([b (hash-ref element-cache key #f)])
             (or (and b (weak-box-value b))
                 (let ([e (make-cached-element style content key)])
-                  (hash-table-put! element-cache key (make-weak-box e))
+                  (hash-set! element-cache key (make-weak-box e))
                   e))))
         (make-element style content)))
 
@@ -178,8 +178,8 @@
            [src-col init-col]
            [dest-col 0]
            [highlight? #f]
-           [col-map (make-hash-table 'equal)]
-           [next-col-map (make-hash-table 'equal)]
+           [col-map (make-hash)]
+           [next-col-map (make-hash)]
            [line (or (syntax-line first) 0)])
       (define (finish-line!)
         (when multi-line?
@@ -241,11 +241,11 @@
                   (out "\n" no-color))
                 (set! line l)
                 (set! col-map next-col-map)
-                (set! next-col-map (make-hash-table 'equal))
+                (set! next-col-map (make-hash))
                 (init-line!))
               (let ([d-col (let ([def-val (+ dest-col (- c src-col))])
                              (if new-line?
-                                 (hash-table-get col-map c def-val)
+                                 (hash-ref col-map c def-val)
                                  def-val))])
                 (let ([amt (- d-col dest-col)])
                   (when (positive? amt)
@@ -256,7 +256,7 @@
                            #f)
                       (set! dest-col (+ old-dest-col amt))))))
               (set! src-col c)
-              (hash-table-put! next-col-map src-col dest-col)))]
+              (hash-set! next-col-map src-col dest-col)))]
          [(c init-line!) (advance c init-line! 0)]))
       (define (convert-infix c quote-depth)
         (let ([l (syntax->list c)])
@@ -346,7 +346,7 @@
                 (error "bad code:redex: ~e" (syntax->datum c)))
               (advance c init-line!)
               (set! src-col (syntax-column (cadr l)))
-              (hash-table-put! next-col-map src-col dest-col)
+              (hash-set! next-col-map src-col dest-col)
               (set! highlight? #t)
               ((loop init-line! quote-depth) (cadr l))
               (set! highlight? h?)
@@ -356,7 +356,7 @@
             (advance c init-line!)
             (out "(" (if (positive? quote-depth) value-color paren-color))
             (set! src-col (+ src-col 1))
-            (hash-table-put! next-col-map src-col dest-col)
+            (hash-set! next-col-map src-col dest-col)
             ((loop init-line! quote-depth) 
              (datum->syntax #'here 'quote (car (syntax-e c))))
             (for-each (loop init-line! (add1 quote-depth))
@@ -364,7 +364,7 @@
             (out ")" (if (positive? quote-depth) value-color paren-color))
             (set! src-col (+ src-col 1))
             #;
-            (hash-table-put! next-col-map src-col dest-col)]
+            (hash-set! next-col-map src-col dest-col)]
            [(and (pair? (syntax-e c))
                  (memq (syntax-e (car (syntax-e c))) 
                        '(quote quasiquote unquote unquote-splicing
@@ -385,7 +385,7 @@
                            reader-color))
               (let ([i (cadr (syntax->list c))])
                 (set! src-col (or (syntax-column i) src-col))
-                (hash-table-put! next-col-map src-col dest-col)
+                (hash-set! next-col-map src-col dest-col)
                 ((loop init-line! (+ quote-depth quote-delta)) i)))]
            [(and (pair? (syntax-e c))
                  (convert-infix c quote-depth))
@@ -426,7 +426,7 @@
                      [else "("])
                    p-color)
               (set! src-col (+ src-col 1))
-              (hash-table-put! next-col-map src-col dest-col)
+              (hash-set! next-col-map src-col dest-col)
               (let lloop ([l (cond
                               [(vector? (syntax-e c))
                                (vector->short-list (syntax-e c) syntax-e)]
@@ -469,7 +469,7 @@
                   (advance l init-line! -2)
                   (out ". " (if (positive? quote-depth) value-color paren-color))
                   (set! src-col (+ src-col 3))
-                  (hash-table-put! next-col-map src-col dest-col)
+                  (hash-set! next-col-map src-col dest-col)
                   ((loop init-line! quote-depth) l)]))
               (out (case sh
                      [(#\[ #\?) "]"]
@@ -478,16 +478,16 @@
                    p-color)
               (set! src-col (+ src-col 1))
               #;
-              (hash-table-put! next-col-map src-col dest-col))]
+              (hash-set! next-col-map src-col dest-col))]
            [(box? (syntax-e c))
             (advance c init-line!)
             (out "#&" value-color)
             (set! src-col (+ src-col 2))
-            (hash-table-put! next-col-map src-col dest-col)
+            (hash-set! next-col-map src-col dest-col)
             ((loop init-line! +inf.0) (unbox (syntax-e c)))]
-           [(hash-table? (syntax-e c))
+           [(hash? (syntax-e c))
             (advance c init-line!)
-            (let ([equal-table? (hash-table? (syntax-e c) 'equal)])
+            (let ([equal-table? (not (hash-eq? (syntax-e c)))])
               (out (if equal-table?
                        "#hash"
                        "#hasheq")
@@ -495,9 +495,9 @@
               (let ([delta (+ 5 (if equal-table? 2 0))]
                     [orig-col src-col])
                 (set! src-col (+ src-col delta))
-                (hash-table-put! next-col-map src-col dest-col)
+                (hash-set! next-col-map src-col dest-col)
                 ((loop init-line! +inf.0)
-                 (syntax-ize (hash-table-map (syntax-e c) cons)
+                 (syntax-ize (hash-map (syntax-e c) cons)
                              (+ (syntax-column c) delta)))
                 (set! src-col (+ orig-col (syntax-span c)))))]
            [(graph-reference? (syntax-e c))
@@ -519,10 +519,10 @@
             (typeset-atom c out color? quote-depth)
             (set! src-col (+ src-col (or (syntax-span c) 1)))
             #;
-            (hash-table-put! next-col-map src-col dest-col)])))
+            (hash-set! next-col-map src-col dest-col)])))
       (out prefix1 #f)
       (set! dest-col 0)
-      (hash-table-put! next-col-map init-col dest-col)
+      (hash-set! next-col-map init-col dest-col)
       ((loop (lambda () (set! src-col init-col) (set! dest-col 0)) 0) c)
       (if (list? suffix)
           (map (lambda (sfx)
@@ -548,7 +548,7 @@
               (struct? s)
               (box? s)
               (null? s)
-              (hash-table? s)
+              (hash? s)
               (graph-defn? s)
               (graph-reference? s))
           (gen-typeset c multi-line? prefix1 prefix suffix color?)
@@ -659,12 +659,12 @@
   (define-struct graph-defn (r bx))
 
   (define (syntax-ize v col [line 1])
-    (do-syntax-ize v col line (make-hash-table) #f))
+    (do-syntax-ize v col line (make-hasheq) #f))
 
   (define (graph-count ht graph?)
     (and graph?
-         (let ([n (hash-table-get ht '#%graph-count 0)])
-           (hash-table-put! ht '#%graph-count (add1 n))
+         (let ([n (hash-ref ht '#%graph-count 0)])
+           (hash-set! ht '#%graph-count (add1 n))
            n)))
 
   (define (do-syntax-ize v col line ht graph?)
@@ -682,7 +682,7 @@
                        s
                        s
                        (just-context-ctx v)))]
-     [(hash-table-get ht v #f)
+     [(hash-ref ht v #f)
       => (lambda (m)
            (unless (unbox m)
              (set-box! m #t))
@@ -707,7 +707,7 @@
           (and (struct? v)
                (prefab-struct-key v)))
       (let ([graph-box (box (graph-count ht graph?))])
-        (hash-table-put! ht v graph-box)
+        (hash-set! ht v graph-box)
         (let ([r (let* ([vec-sz (+ (if graph? 
                                        (+ 2 (string-length (format "~a" (unbox graph-box)))) 
                                        0)
@@ -743,7 +743,7 @@
                                                    (sub1 (length l)))
                                                (apply + (map syntax-span l)))))))])
           (unless graph?
-            (hash-table-put! ht v #f))
+            (hash-set! ht v #f))
           (cond
            [graph? (datum->syntax #f
                                   (make-graph-defn r graph-box)
@@ -754,14 +754,14 @@
            [else r])))]
      [(pair? v)
       (let ([graph-box (box (graph-count ht graph?))])
-        (hash-table-put! ht v graph-box)
+        (hash-set! ht v graph-box)
         (let* ([inc (if graph? 
                         (+ 2 (string-length (format "~a" (unbox graph-box)))) 
                         0)]
                [a (do-syntax-ize (car v) (+ col 1 inc) line ht #f)]
                [sep (if (and (pair? (cdr v))
                              ;; FIXME: what if it turns out to be a graph reference?
-                             (not (hash-table-get ht (cdr v) #f)))
+                             (not (hash-ref ht (cdr v) #f)))
                         0 
                         3)]
                [b (do-syntax-ize (cdr v) (+ col 1 inc (syntax-span a) sep) line ht #f)])
@@ -770,7 +770,7 @@
                                   (vector #f line (+ col inc) (+ 1 col inc)
                                           (+ 2 sep (syntax-span a) (syntax-span b))))])
             (unless graph?
-              (hash-table-put! ht v #f))
+              (hash-set! ht v #f))
             (cond
              [graph? (datum->syntax #f
                                     (make-graph-defn r graph-box)

@@ -318,11 +318,11 @@
 (err/rt-test (readstr "#hash([1 . 2))") exn:fail:read?)
 
 (define (test-ht t size eq? key val)
-  (test #t hash-table? t)
-  (test (not eq?) hash-table? t 'equal)
-  (test size length (hash-table-map t cons))
-  (test 'nope hash-table-get t 'not-there (lambda () 'nope))
-  (test val hash-table-get t key (lambda () #f)))
+  (test #t hash? t)
+  (test eq? hash-eq? t)
+  (test size length (hash-map t cons))
+  (test 'nope hash-ref t 'not-there (lambda () 'nope))
+  (test val hash-ref t key (lambda () #f)))
 (test-ht (readstr "#hash()") 0 #f 'none #f)
 (test-ht (readstr "#hash((1 . 2))") 1 #f 1 2)
 (test-ht (readstr "#hash([1 . 2])") 1 #f 1 2)
@@ -355,7 +355,7 @@
     (writer t o)
     (test #t (car strings) (and (member (get-output-string o) strings) #t))))
 (parameterize ([print-hash-table #f])
-  (test-write-ht write #hash((1 . 2)) "#<hash-table>"))
+  (test-write-ht write #hash((1 . 2)) "#<hash>"))
 
 (parameterize ([print-hash-table #t])
   (test-write-ht write #hash((1 . 2)) "#hash((1 . 2))")
@@ -989,7 +989,7 @@
         (read (open-input-string
                "!#hash((apple . (red round)) * (banana . (yellow long)))"))))
 
-(test #t hash-table?
+(test #t hash?
       (parameterize ([current-readtable
                       (make-readtable #f
                                       #\% 'terminating-macro
@@ -997,7 +997,7 @@
                                         (let ([v (read/recursive port)])
                                           v)))])
         (let ([ht (read (open-input-string "#0=' % % #hash((a . #0#) (b . \"banana\"))"))])
-          (cadr (hash-table-get (cadr ht) 'a)))))
+          (cadr (hash-ref (cadr ht) 'a)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1017,7 +1017,7 @@
         "~s"
         (make-reader-graph (let ([p (make-placeholder #f)]) 
                              (placeholder-set! p (list* 1
-                                                        (make-immutable-hash-table (list (list p 1))) 
+                                                        (make-immutable-hasheq (list (list p 1))) 
                                                         2 
                                                         (box (list 3 (vector p))))) 
                              p)))

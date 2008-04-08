@@ -621,7 +621,7 @@ In either case, the table is constructed by adding each mapping to the
  mappings if the keys are equivalent.
 
 @reader-examples[
-#:example-note @elem{, where @scheme[make-...] stands for @scheme[make-immutable-hash-table]}
+#:example-note @elem{, where @scheme[make-...] stands for @scheme[make-immutable-hash]}
 "#hash()"
 "#hasheq()"
 "#hash((\"a\" . 5))"

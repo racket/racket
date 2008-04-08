@@ -97,13 +97,13 @@
                        p)]
             [else '()]))))
 
-(define sort-internals (make-hash-table))
+(define sort-internals (make-hasheq))
 (define _
   (let ()
     (define-syntax-rule (precomp less? more ...)
       (let ([proc (lambda (lst n) (sort-internal-body lst less? n #f #f))])
-        (hash-table-put! sort-internals less? proc)
-        (hash-table-put! sort-internals more proc) ...))
+        (hash-set! sort-internals less? proc)
+        (hash-set! sort-internals more proc) ...))
     (precomp < <=)
     (precomp > >=)
     (precomp string<? string<=?)
@@ -113,7 +113,7 @@
 (define sort-internal
   (case-lambda
     [(less? lst n)
-     (let ([si (hash-table-get sort-internals less? #f)])
+     (let ([si (hash-ref sort-internals less? #f)])
        (if si
          ;; use a precompiled function if found
          (si lst n)

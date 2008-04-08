@@ -271,15 +271,15 @@
 
 ;; ensure-no-duplicates : syntax (listof syntax[identifier]) -> void
 (define (ensure-no-duplicates stx form-name names)
-  (let ([ht (make-hash-table)])
+  (let ([ht (make-hasheq)])
     (for-each (lambda (name)
                 (let ([key (syntax-e name)])
-                  (when (hash-table-get ht key (lambda () #f))
+                  (when (hash-ref ht key (lambda () #f))
                     (raise-syntax-error form-name
                                         "duplicate method name"
                                         stx
                                         name))
-                  (hash-table-put! ht key #t)))
+                  (hash-set! ht key #t)))
               names)))
 
 ;; method-specifier? : syntax -> boolean

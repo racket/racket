@@ -68,10 +68,10 @@ needed to really make this work:
       (define info-port (make-text-port info-text))
       
       ;; range-start-ht : hash-table[obj -o> number]
-      (define range-start-ht (make-hash-table))
+      (define range-start-ht (make-hasheq))
 
       ;; range-ht : hash-table[obj -o> (listof (cons number number))]
-      (define range-ht (make-hash-table))
+      (define range-ht (make-hasheq))
       
       (define/private (make-modern text)
         (send text change-style
@@ -91,10 +91,10 @@ needed to really make this work:
       (define/private (syntax-object->datum/record-paths val)
         (set! path '())
         (set! next-push 0)
-        (let* ([ht (make-hash-table 'equal)]
+        (let* ([ht (make-hash)]
                [record
                 (λ (val enclosing-stx)
-                  (hash-table-put! ht path enclosing-stx))])
+                  (hash-set! ht path enclosing-stx))])
           (values
            (let loop ([val val]
                       [enclosing-stx #f])
@@ -136,21 +136,21 @@ needed to really make this work:
       (let* ([range-pretty-print-pre-hook 
               (λ (x port)
                 (push!)
-                (let ([stx-object (hash-table-get paths-ht path (λ () #f))])
-                  (hash-table-put! range-start-ht stx-object (send output-text last-position))))]
+                (let ([stx-object (hash-ref paths-ht path (λ () #f))])
+                  (hash-set! range-start-ht stx-object (send output-text last-position))))]
              [range-pretty-print-post-hook 
               (λ (x port)
-                (let ([stx-object (hash-table-get paths-ht path (λ () #f))])
+                (let ([stx-object (hash-ref paths-ht path (λ () #f))])
                   (when stx-object
-                    (let ([range-start (hash-table-get range-start-ht stx-object (λ () #f))])
+                    (let ([range-start (hash-ref range-start-ht stx-object (λ () #f))])
                       (when range-start
-                        (hash-table-put! range-ht 
-                                         stx-object 
-                                         (cons
-                                          (cons
-                                           range-start
-                                           (send output-text last-position))
-                                          (hash-table-get range-ht stx-object (λ () null))))))))
+                        (hash-set! range-ht 
+                                   stx-object 
+                                   (cons
+                                    (cons
+                                     range-start
+                                     (send output-text last-position))
+                                    (hash-ref range-ht stx-object (λ () null))))))))
                 (pop!))])
                   
         ;; reset `path' and `next-push' for use in pp hooks.
@@ -338,7 +338,7 @@ needed to really make this work:
       (let ([ranges
              (sort
               (apply append
-                     (hash-table-map
+                     (hash-map
                       range-ht
                       (λ (k vs)
                         (map (λ (v) (make-range k (car v) (cdr v)))

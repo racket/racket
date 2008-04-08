@@ -124,4 +124,26 @@
 
 (test-generator [(a b c) (0 1 2)] (in-indexed '(a b c)))
 
+(test #hash((a . 1) (b . 2) (c . 3)) 'mk-hash
+      (for/hash ([v (in-naturals)]
+                 [k '(a b c)])
+                (values k (add1 v))))
+(test #hasheq((a . 1) (b . 2) (c . 3)) 'mk-hasheq
+      (for/hasheq ([v (in-naturals)]
+                   [k '(a b c)])
+                  (values k (add1 v))))
+(test #hash((a . 1) (b . 2) (c . 3)) 'cp-hash
+      (for/hash ([(k v) #hash((a . 1) (b . 2) (c . 3))])
+                (values k v)))
+(test #hash((a . 1) (b . 2) (c . 3)) 'cp-hash
+      (for/hash ([(k v) (in-hash #hash((a . 1) (b . 2) (c . 3)))])
+                (values k v)))
+(test #hash((a . a) (b . b) (c . c)) 'cp-hash
+      (for/hash ([k (in-hash-keys #hash((a . 1) (b . 2) (c . 3)))])
+                (values k k)))
+(test #hash((1 . 1) (2 . 2) (3 . 3)) 'cp-hash
+      (for/hash ([v (in-hash-values #hash((a . 1) (b . 2) (c . 3)))])
+                (values v v)))
+
+
 (report-errs)

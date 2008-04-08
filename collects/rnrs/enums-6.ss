@@ -31,17 +31,17 @@
   (unless (mlist? enum) (bad))
   (let ([enum (mlist->list enum)])
     (unless (andmap symbol? enum) (bad))
-    (let ([ht (make-hash-table)])
+    (let ([ht (make-hasheq)])
       (make-universe
        ht
        (for/list ([s (in-list enum)]
-                  #:when (not (hash-table-get ht s #f)))
-         (hash-table-put! ht s (arithmetic-shift 1 (hash-table-count ht)))
+                  #:when (not (hash-ref ht s #f)))
+         (hash-set! ht s (arithmetic-shift 1 (hash-count ht)))
          s))))))
 
 (define (make-enumeration enum)
   (let ([uni (make-enumeration-universe enum)])
-    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count (universe-ht uni))))
+    (make-enum-set (sub1 (arithmetic-shift 1 (hash-count (universe-ht uni))))
                    uni)))
 
 (define (enum-set-universe enum)
@@ -50,7 +50,7 @@
                       "enumeration set"
                       enum))
   (let ([uni (enum-set-uni enum)])
-    (make-enum-set (sub1 (arithmetic-shift 1 (hash-table-count 
+    (make-enum-set (sub1 (arithmetic-shift 1 (hash-count 
                                               (universe-ht uni))))
                    uni)))
 
@@ -61,7 +61,7 @@
                       enum))
   (let ([ht (universe-ht (enum-set-uni enum))])
     (lambda (sym)
-      (let ([v (hash-table-get ht sym #f)])
+      (let ([v (hash-ref ht sym #f)])
         (if v
             (bitwise-first-bit-set v)
             (if (symbol? sym)
@@ -85,7 +85,7 @@
           (raise-type-error 'make-enum-set
                             "list of symbols"
                             orig-syms)]
-         [(hash-table-get ht (mcar syms) #f)
+         [(hash-ref ht (mcar syms) #f)
           => (lambda (n)
                (loop (mcdr syms) (bitwise-ior val n)))]
          [else
@@ -116,7 +116,7 @@
     (raise-type-error 'enum-set-member?
                       "enumeration set"
                       enum))
-  (let ([v (hash-table-get (universe-ht (enum-set-uni enum)) sym #f)])
+  (let ([v (hash-ref (universe-ht (enum-set-uni enum)) sym #f)])
     (and v
          (not (zero? (bitwise-and v (enum-set-val enum)))))))
 
@@ -139,9 +139,9 @@
             [v2 (enum-set-val enum2)])
         (for/fold ([sub? #t])
             (#:when sub?
-                    [(key1 val1) (in-hash-table (universe-ht (enum-set-uni enum1)))])
+                    [(key1 val1) (in-hash (universe-ht (enum-set-uni enum1)))])
           (or (zero? (bitwise-and v1 val1))
-              (let ([val2 (hash-table-get ht2 key1 #f)])
+              (let ([val2 (hash-ref ht2 key1 #f)])
                 (and val2
                      (not (zero? (bitwise-and v2 val2))))))))))
 
@@ -186,7 +186,7 @@
                       enum1))
   (make-enum-set (bitwise-xor (sub1 (arithmetic-shift 
                                      1 
-                                     (hash-table-count 
+                                     (hash-count 
                                       (universe-ht (enum-set-uni enum1)))))
                               (enum-set-val enum1))
                  (enum-set-uni enum1)))
@@ -199,10 +199,10 @@
          [v2 (enum-set-val enum2)])
     (make-enum-set
      (for/fold ([val 0])
-         ([(key1 val1) (in-hash-table (universe-ht (enum-set-uni enum1)))])
+         ([(key1 val1) (in-hash (universe-ht (enum-set-uni enum1)))])
        (if (zero? (bitwise-and v1 val1))
            val
-           (let ([val2 (hash-table-get ht2 key1 #f)])
+           (let ([val2 (hash-ref ht2 key1 #f)])
              (if val2
                  (bitwise-ior val val2)
                  val))))
@@ -212,7 +212,7 @@
   (syntax-case stx ()
     [(_ type-name (sym ...) constructor)
      (let ([syms (syntax->list #'(sym ...))]
-           [ht (make-hash-table)])
+           [ht (make-hasheq)])
        (unless (identifier? #'type-name)
          (raise-syntax-error #f
                              "not an identifier for type name"
@@ -231,11 +231,11 @@
                              stx
                              #'constructor))
        (for ([s (in-list syms)])
-         (unless (hash-table-get ht (syntax-e s) #f)
-           (hash-table-put! ht (syntax-e s)
-                            (arithmetic-shift 1 (hash-table-count ht)))))
+         (unless (hash-ref ht (syntax-e s) #f)
+           (hash-set! ht (syntax-e s)
+                      (arithmetic-shift 1 (hash-count ht)))))
        (with-syntax ([(val ...)
-                      (map (lambda (s) (hash-table-get ht (syntax-e s))) syms)])
+                      (map (lambda (s) (hash-ref ht (syntax-e s))) syms)])
        #'(begin
            (define enum-universe (make-enumeration-universe (mlist 'sym ...)))
            (define-syntax (type-name stx)

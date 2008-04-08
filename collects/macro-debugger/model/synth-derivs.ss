@@ -49,14 +49,14 @@
 
 ;; partition&cdr-ref-paths : (list-of Path) -> (list-of (list-of Path))
 (define (partition&cdr-ref-paths paths)
-  (let ([t (make-hash-table 'equal)]
+  (let ([t (make-hash)]
         [/null (lambda () null)])
     (for-each (lambda (p)
-                (hash-table-put! t (ref-n (car p))
-                                 (cons (cdr p)
-                                       (hash-table-get t (ref-n (car p)) /null))))
+                (hash-set! t (ref-n (car p))
+                           (cons (cdr p)
+                                 (hash-ref t (ref-n (car p)) /null))))
               paths)
-    (hash-table-map t (lambda (k v) v))))
+    (hash-map t (lambda (k v) v))))
 
 ;; substitute-subterms : Syntax (list-of Subterm) -> Syntax
 ;; - s:subterm contexts guaranteed to be disjoint.

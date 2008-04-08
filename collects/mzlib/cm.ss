@@ -217,7 +217,7 @@
   (define (compile-root mode path up-to-date read-src-syntax)
     (let ([path (simplify-path (cleanse-path path))])
       (let ((stamp (and up-to-date
-			(hash-table-get up-to-date path #f))))
+			(hash-ref up-to-date path #f))))
 	(cond
           (stamp stamp)
           (else
@@ -272,21 +272,21 @@
                                     (cdr deps)))
                         (compile-zo mode path read-src-syntax))))))
                 (let ((stamp (get-compiled-time mode path #t)))
-                  (hash-table-put! up-to-date path stamp)
+                  (hash-set! up-to-date path stamp)
                   stamp)))))))))
   
   (define (managed-compile-zo zo [read-src-syntax read-syntax])
     ((make-caching-managed-compile-zo read-src-syntax) zo))
   
   (define (make-caching-managed-compile-zo [read-src-syntax read-syntax])
-    (let ([cache (make-hash-table 'equal)])
+    (let ([cache (make-hash)])
       (lambda (zo)
 	(parameterize ([current-load/use-compiled (make-compilation-manager-load/use-compiled-handler/table cache)])
 	  (compile-root (car (use-compiled-file-paths)) (path->complete-path zo) cache read-src-syntax)
           (void)))))
 
   (define (make-compilation-manager-load/use-compiled-handler)
-    (make-compilation-manager-load/use-compiled-handler/table (make-hash-table 'equal)))
+    (make-compilation-manager-load/use-compiled-handler/table (make-hash)))
 
   (define (make-compilation-manager-load/use-compiled-handler/table cache)
     (let ([orig-eval (current-eval)]

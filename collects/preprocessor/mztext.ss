@@ -91,16 +91,16 @@
   (port->adder-op (stdin) 'add args))
 
 (define port->adder-op
-  (let ([table (make-hash-table 'weak)])
+  (let ([table (make-weak-hasheq)])
     (lambda (port msg . args)
       (case msg
-        [(add) (apply (hash-table-get table port
+        [(add) (apply (hash-ref table port
                         (lambda ()
                           (error 'add-to-input
                                  "current input is not a composite port")))
                       args)]
-        [(set!) (hash-table-put! table port (car args))]
-        [(get?) (hash-table-get table port (lambda () #f))]
+        [(set!) (hash-set! table port (car args))]
+        [(get?) (hash-ref table port (lambda () #f))]
         [else (error 'port->adder-op "unknown message: ~e" msg)]))))
 
 ;;=============================================================================

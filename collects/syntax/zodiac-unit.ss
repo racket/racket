@@ -106,7 +106,7 @@
 (define (mk-back) (make-empty-back-box))
 
 (define (get-slot stx table)
-  (let ([l (hash-table-get table (syntax-e stx) (lambda () null))])
+  (let ([l (hash-ref table (syntax-e stx) (lambda () null))])
     (let ([s (ormap (lambda (b)
                       (and (free-identifier=? stx (car b))
                            (cdr b)))
@@ -114,7 +114,7 @@
       (if s
           s
           (let ([s (box #f)])
-            (hash-table-put! table (syntax-e stx) (cons (cons stx s) l))
+            (hash-set! table (syntax-e stx) (cons (cons stx s) l))
             s)))))
 
 (define (let-s->z mk-let rec? stx env loop)
@@ -181,9 +181,9 @@
        (maker bindings)))))
 
 (define (syntax->zodiac stx)
-  (define slot-table (make-hash-table))
-  (define trans-slot-table (make-hash-table))
-  (define syntax-slot-table (make-hash-table))
+  (define slot-table (make-hasheq))
+  (define trans-slot-table (make-hasheq))
+  (define syntax-slot-table (make-hasheq))
 
   (if (eof-object? stx)
       stx

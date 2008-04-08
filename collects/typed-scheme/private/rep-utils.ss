@@ -20,7 +20,7 @@
 
 ;; hash table for defining folds over types
 (define-values-for-syntax (type-name-ht effect-name-ht)
-  (values (make-hash-table) (make-hash-table)))
+  (values (make-hasheq) (make-hasheq)))
 
 (provide (for-syntax type-name-ht effect-name-ht))
 
@@ -106,8 +106,8 @@
                                 #;(printf  "~a entered in #f case~n" '*maker)
                                 (unless-in-table 
                                  var-table v
-                                 (hash-table-put! var-table v empty-hash-table)
-                                 (hash-table-put! index-table v empty-hash-table))
+                                 (hash-set! var-table v empty-hash-table)
+                                 (hash-set! index-table v empty-hash-table))
                                 v))]
                            ;; we provided an expression each for calculating the free vars and free idxs
                            ;; this should really be 2 expressions, one for each kind
@@ -121,8 +121,8 @@
                                 (quasisyntax/loc (car frees)
                                   (unless-in-table 
                                    var-table v
-                                   (hash-table-put! var-table v #,(car frees))
-                                   (hash-table-put! index-table v #,(cadr frees))))
+                                   (hash-set! var-table v #,(car frees))
+                                   (hash-set! index-table v #,(cadr frees))))
                                 #;(printf  "~a exited in expr case~n" '*maker)
                                 v))]                                       
                            [else 
@@ -141,8 +141,8 @@
                                    var-table v
                                    (define fvs #,(combiner #'free-vars* #'flds))
                                    (define fis #,(combiner #'free-idxs* #'flds))
-                                   (hash-table-put! var-table v fvs)
-                                   (hash-table-put! index-table v fis))
+                                   (hash-set! var-table v fvs)
+                                   (hash-set! index-table v fis))
                                   v)))])])
                #'(begin
                    (define-struct (nm parent) flds #:inspector #f)
@@ -152,7 +152,7 @@
                         (syntax-case s ()
                           [(__ fs ...) (syntax/loc s (struct nm (_ fs ...)))]))))
                    (begin-for-syntax
-                     (hash-table-put! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs)))
+                     (hash-set! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs)))
                    intern
                    provides
                    frees)))])))

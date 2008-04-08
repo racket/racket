@@ -418,20 +418,20 @@ Various common pieces of code that both the client and server need to access
   ; build-hash-table : listof (list X Y) -> equal-hash-table[X -> Y]
   ; builds a new hash-table mapping all given X's to their appropriate Y values
   (define (build-hash-table asl)
-    (let ((ht (make-hash-table 'equal)))
-      (for-each (lambda (item) (hash-table-put! ht (car item) (cadr item))) asl)
+    (let ((ht (make-hash)))
+      (for-each (lambda (item) (hash-set! ht (car item) (cadr item))) asl)
       ht))
   
   ; categorize : (X -> Y) (listof X) -> (listof (cons Y (listof X)))
   ; sorts the l into categories given by f
   (define (categorize f l)
-    (let ((ht (make-hash-table 'equal)))
+    (let ((ht (make-hash)))
       (for-each 
        (lambda (i)
          (let ((key (f i)))
-           (hash-table-put! ht key (cons i (hash-table-get ht key (lambda () '()))))))
+           (hash-set! ht key (cons i (hash-ref ht key (lambda () '()))))))
        l)
-      (hash-table-map ht cons)))
+      (hash-map ht cons)))
   
   (define (drop-last l) (reverse (cdr (reverse l))))
   

@@ -149,7 +149,7 @@
                                                      (get-output ev)
                                                      (get-error-output ev)))])
                     (list (let ([v (do-plain-eval ev s #t)])
-                            (make-reader-graph (copy-value v (make-hash-table))))
+                            (make-reader-graph (copy-value v (make-hasheq))))
                           (get-output ev)
                           (get-error-output ev)))])
            (when expect
@@ -160,31 +160,31 @@
                    
 
   (define (install ht v v2)
-    (hash-table-put! ht v v2)
+    (hash-set! ht v v2)
     v2)
 
   ;; Since we evaluate everything in an interaction before we typeset,
   ;;  copy each value to avoid side-effects.
   (define (copy-value v ht)
     (cond
-     [(and v (hash-table-get ht v #f))
+     [(and v (hash-ref ht v #f))
       => (lambda (v) v)]
      [(string? v) (install ht v (string-copy v))]
      [(bytes? v) (install ht v (bytes-copy v))]
      [(pair? v) 
       (let ([ph (make-placeholder #f)])
-        (hash-table-put! ht v ph)
+        (hash-set! ht v ph)
         (placeholder-set! ph
                           (cons (copy-value (car v) ht)
                                 (copy-value (cdr v) ht)))
         ph)]
      [(mpair? v) (let ([p (mcons #f #f)])
-                   (hash-table-put! ht v p)
+                   (hash-set! ht v p)
                    (set-mcar! p (copy-value (mcar v) ht))
                    (set-mcdr! p (copy-value (mcdr v) ht))
                    p)]
      [(vector? v) (let ([v2 (make-vector (vector-length v))])
-                    (hash-table-put! ht v v2)
+                    (hash-set! ht v v2)
                     (let loop ([i (vector-length v2)])
                       (unless (zero? i)
                         (let ([i (sub1 i)])
@@ -192,7 +192,7 @@
                           (loop i))))
                     v2)]
      [(box? v) (let ([v2 (box #f)])
-                 (hash-table-put! ht v v2)
+                 (hash-set! ht v v2)
                  (set-box! v2 (copy-value (unbox v) ht))
                  v2)]
      [else v]))

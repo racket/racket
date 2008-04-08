@@ -519,10 +519,10 @@
                                   import)))
                         orig-ids bind-ids)])
               (let ([leftover-imports 
-                     (let ([ht (make-immutable-hash-table
+                     (let ([ht (make-immutable-hash
                                 (map (lambda (v) (cons (cdr v) #f))
                                      new+olds))])
-                       (filter (lambda (i) (hash-table-get ht i #t)) imports))])
+                       (filter (lambda (i) (hash-ref ht i #t)) imports))])
                 ;; Make sure no new name is in the leftover set:
                 (for-each (lambda (bind-id)
                             (when (ormap (lambda (import)

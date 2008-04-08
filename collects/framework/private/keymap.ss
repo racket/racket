@@ -19,10 +19,10 @@
                   [-get-file get-file]))
   (init-depend mred^)
   
-  (define user-keybindings-files (make-hash-table 'equal))
+  (define user-keybindings-files (make-hash))
   
   (define (add-user-keybindings-file spec)
-    (hash-table-get 
+    (hash-ref
      user-keybindings-files
      spec
      (λ ()
@@ -32,7 +32,7 @@
          (match sexp
            [`(module ,name (lib "keybinding-lang.ss" "framework") ,@(x ...)) 
             (let ([km (dynamic-require spec '#%keymap)])
-              (hash-table-put! user-keybindings-files spec km)
+              (hash-set! user-keybindings-files spec km)
               (send global chain-to-keymap km #t))]
            [else (error 'add-user-keybindings-file 
                         (string-constant user-defined-keybinding-malformed-file)
@@ -62,9 +62,9 @@
   
   (define (remove-user-keybindings-file spec)
     (let/ec k
-      (let ([km (hash-table-get user-keybindings-files spec (λ () (k (void))))])
+      (let ([km (hash-ref user-keybindings-files spec (λ () (k (void))))])
         (send global remove-chained-keymap km)
-        (hash-table-remove! user-keybindings-files spec))))
+        (hash-remove! user-keybindings-files spec))))
   
   (define (remove-chained-keymap ed keymap-to-remove)
     (let ([ed-keymap (send ed get-keymap)])
@@ -116,23 +116,23 @@
         (super remove-chained-keymap keymap)
         (set! chained-keymaps (remq keymap chained-keymaps)))
       
-      (define function-table (make-hash-table))
+      (define function-table (make-hasheq))
       (define/public (get-function-table) function-table)
       (define/override (map-function keyname fname)
         (super map-function (canonicalize-keybinding-string keyname) fname)
-        (hash-table-put! function-table (string->symbol keyname) fname))
+        (hash-set! function-table (string->symbol keyname) fname))
       
       (define/public (get-map-function-table)
-        (get-map-function-table/ht (make-hash-table)))
+        (get-map-function-table/ht (make-hasheq)))
       
       (define/public (get-map-function-table/ht table)
-        (hash-table-for-each
+        (hash-for-each
          function-table
          (λ (keyname fname)
-           (unless (hash-table-get table keyname (λ () #f))
+           (unless (hash-ref table keyname (λ () #f))
              (let ([cs (canonicalize-keybinding-string (format "~a" keyname))])
                (when (on-this-platform? cs)
-                 (hash-table-put! table keyname fname))))))
+                 (hash-set! table keyname fname))))))
         (for-each
          (λ (chained-keymap)
            (when (is-a? chained-keymap aug-keymap<%>)

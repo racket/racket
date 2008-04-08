@@ -756,7 +756,7 @@ print_vec_shorthand(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 print_hash_table(int argc, Scheme_Object *argv[])
 {
-  DO_CHAR_PARAM("print-vector-length", MZCONFIG_PRINT_HASH_TABLE);
+  DO_CHAR_PARAM("print-hash-table", MZCONFIG_PRINT_HASH_TABLE);
 }
 
 static Scheme_Object *
@@ -2127,31 +2127,46 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       result = obj;
       scheme_hash_set(dht, obj, result);
     }
-  } else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_table_placeholder_type)) {
-    Scheme_Hash_Table *t;
-    Scheme_Object *a, *key, *val;
+  } else if (SAME_TYPE(SCHEME_TYPE(obj), scheme_table_placeholder_type)
+             || SCHEME_HASHTRP(obj)) {
+    Scheme_Hash_Tree *t, *base;
+    Scheme_Object *a, *key, *val, *lst;
+    int eq;
 
-    if (SCHEME_PINT_VAL(obj))
-      t = scheme_make_hash_table(SCHEME_hash_ptr);
-    else
-      t = scheme_make_hash_table_equal();
+    if (SCHEME_HASHTRP(obj)) {
+      int i;
+      eq = !scheme_is_hash_tree_equal(obj);
+      t = (Scheme_Hash_Tree *)obj;
+      lst = scheme_null;
+      for (i = t->count; i--; ) {
+        scheme_hash_tree_index(t, i, &key, &val);
+        lst = scheme_make_pair(scheme_make_pair(key, val), lst);
+      }
+    } else {
+      eq = SCHEME_PINT_VAL(obj);
+      lst = SCHEME_IPTR_VAL(obj);
+    }
+
+    /* Create `t' to be overwritten, and create `base' to extend. */
+    t = scheme_make_hash_tree(!eq);
+    base = scheme_make_hash_tree(!eq);
 
     result = (Scheme_Object *)t;
     scheme_hash_set(dht, obj, result);
 
-    /* Make it immutable before we might hash on it */
-    SCHEME_SET_IMMUTABLE(t);
+    lst = resolve_references(lst, port, top, dht, tht, clone, tail_depth + 1);
 
-    obj = SCHEME_IPTR_VAL(obj);
-    obj = resolve_references(obj, port, top, dht, tht, clone, tail_depth + 1);
-
-    for (; SCHEME_PAIRP(obj); obj = SCHEME_CDR(obj)) {
-      a = SCHEME_CAR(obj);
+    for (; SCHEME_PAIRP(lst); lst = SCHEME_CDR(lst)) {
+      a = SCHEME_CAR(lst);
       key = SCHEME_CAR(a);
       val = SCHEME_CDR(a);
-      
-      scheme_hash_set(t, key, val);
+     
+      base = scheme_hash_tree_set(base, key, val);
     }
+    
+    t->count = base->count;
+    t->root = base->root;
+    t->elems_box = base->elems_box;
   } else if (SCHEME_HASHTP(obj)) {
     int i;
     Scheme_Object *key, *val, *l = scheme_null, *orig_l;
@@ -4019,12 +4034,9 @@ static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 
   if (stxsrc) {
     Scheme_Object *key, *val;
-    Scheme_Hash_Table *t;
+    Scheme_Hash_Tree *t;
 
-    if (eq)
-      t = scheme_make_hash_table(SCHEME_hash_ptr);
-    else
-      t = scheme_make_hash_table_equal();
+    t = scheme_make_hash_tree(!eq);
 
     l = scheme_syntax_to_datum(l, 0, NULL);
 
@@ -4033,9 +4045,8 @@ static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
       key = SCHEME_CAR(val);
       val = SCHEME_CDR(val);
       
-      scheme_hash_set(t, key, val);
+      t = scheme_hash_tree_set(t, key, val);
     }
-    SCHEME_SET_IMMUTABLE(t);    
     
     return scheme_make_stx_w_offset((Scheme_Object *)t, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG);
   } else {
@@ -4654,8 +4665,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  *(port->ht) = tht;
 	}
 
-	/* Map an uninterned sym to l so that resolve_references
-	   completes the table construction. */
+	/* Let resolve_references complete the table construction: */
         v = scheme_alloc_object();
         v->type = scheme_table_placeholder_type;
         SCHEME_PINT_VAL(v) = eq;

@@ -29,8 +29,8 @@
     (init relation)
 
     (define related? (or relation (lambda (a b) #f)))
-    (field (rep=>num (make-hash-table)))
-    (field (obj=>rep (make-hash-table 'weak)))
+    (field (rep=>num (make-hasheq)))
+    (field (obj=>rep (make-weak-hasheq)))
     (field (reps null))
     (field (next-num 0))
     
@@ -41,7 +41,7 @@
       (= (get-partition A) (get-partition B)))
     
     (define/private (obj->rep obj)
-      (hash-table-get obj=>rep obj (lambda () (obj->rep* obj))))
+      (hash-ref obj=>rep obj (lambda () (obj->rep* obj))))
     
     (define/public (count)
       next-num)
@@ -51,23 +51,23 @@
         (cond [(null? reps)
                (new-rep obj)]
               [(related? obj (car reps))
-               (hash-table-put! obj=>rep obj (car reps))
+               (hash-set! obj=>rep obj (car reps))
                (car reps)]
               [else
                (loop (cdr reps))])))
 
     (define/private (new-rep rep)
-      (hash-table-put! rep=>num rep next-num)
+      (hash-set! rep=>num rep next-num)
       (set! next-num (add1 next-num))
       (set! reps (cons rep reps))
       rep)
     
     (define/private (rep->partition rep)
-      (hash-table-get rep=>num rep))
+      (hash-ref rep=>num rep))
 
     ;; Nearly useless as it stands
     (define/public (dump)
-      (hash-table-for-each 
+      (hash-for-each 
        rep=>num
        (lambda (k v)
          (printf "~s => ~s~n" k v))))

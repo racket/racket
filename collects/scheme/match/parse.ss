@@ -73,8 +73,8 @@
     [(hash-table p ... dd)
      (ddk? #'dd)
      (trans-match
-      #'hash-table?
-      #'(lambda (e) (hash-table-map e list))
+      #'hash?
+      #'(lambda (e) (hash-map e list))
       (with-syntax ([(elems ...)
                      (map ht-pat-transform (syntax->list #'(p ...)))])
         (parse (syntax/loc stx (list-no-order elems ... dd)))))]
@@ -84,8 +84,8 @@
       'match "dot dot k can only appear at the end of hash-table patterns" stx
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
     [(hash-table p ...)
-     (trans-match #'hash-table?
-                  #'(lambda (e) (hash-table-map e list))
+     (trans-match #'hash?
+                  #'(lambda (e) (hash-map e list))
                   (with-syntax ([(elems ...)
                                  (map ht-pat-transform
                                       (syntax->list #'(p ...)))])

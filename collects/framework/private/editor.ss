@@ -204,7 +204,7 @@
               [else #f]))))
       
       [define edit-sequence-queue null]
-      [define edit-sequence-ht (make-hash-table)]
+      [define edit-sequence-ht (make-hasheq)]
       [define in-local-edit-sequence? #f]
       [define/public local-edit-sequence? (λ () in-local-edit-sequence?)]
       [define/public run-after-edit-sequence
@@ -223,7 +223,7 @@
                (if in-local-edit-sequence?
                    (cond
                      [(symbol? sym)
-                      (hash-table-put! edit-sequence-ht sym t)]
+                      (hash-set! edit-sequence-ht sym t)]
                      [else (set! edit-sequence-queue
                                  (cons t edit-sequence-queue))])
                    (let ([snip-admin (get-admin)])
@@ -243,10 +243,7 @@
            (void)])]
       [define/public extend-edit-sequence-queue
         (λ (l ht)
-          (hash-table-for-each ht (λ (k t)
-                                    (hash-table-put! 
-                                     edit-sequence-ht
-                                     k t)))
+          (hash-for-each ht (λ (k t) (hash-set! edit-sequence-ht k t)))
           (set! edit-sequence-queue (append l edit-sequence-queue)))]
       (define/augment (on-edit-sequence)
         (set! in-local-edit-sequence? #t)
@@ -263,7 +260,7 @@
                       (send (send (send admin get-snip) get-admin) get-editor)]
                      [else #f])))])
           (set! edit-sequence-queue null)
-          (set! edit-sequence-ht (make-hash-table))
+          (set! edit-sequence-ht (make-hash))
           (let loop ([editor (find-enclosing-editor this)])
             (cond
               [(and editor 
@@ -274,7 +271,7 @@
                     (is-a? editor basic<%>))
                (send editor extend-edit-sequence-queue queue ht)]
               [else
-               (hash-table-for-each ht (λ (k t) (t)))
+               (hash-for-each ht (λ (k t) (t)))
                (for-each (λ (t) (t)) queue)])))
         (inner (void) after-edit-sequence))
       

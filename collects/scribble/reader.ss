@@ -92,13 +92,13 @@
 
 ;; Utility for readtable-based caches
 (define (readtable-cached fun)
-  (let ([cache (make-hash-table 'weak)])
+  (let ([cache (make-weak-hasheq)])
     (letrec ([readtable-cached
               (case-lambda
-                [(rt) (hash-table-get cache rt
+                [(rt) (hash-ref cache rt
                         (lambda ()
                           (let ([r (fun rt)])
-                            (hash-table-put! cache rt r)
+                            (hash-set! cache rt r)
                             r)))]
                 [() (readtable-cached (current-readtable))])])
       readtable-cached)))
@@ -106,7 +106,7 @@
 ;; Skips whitespace characters, sensitive to the current readtable's
 ;; definition of whitespace; optimizes common spaces when possible
 (define skip-whitespace
-  (let* ([plain-readtables  (make-hash-table 'weak)]
+  (let* ([plain-readtables  (make-weak-hasheq)]
          [plain-spaces      " \t\n\r\f"]
          [plain-spaces-list (string->list " \t\n\r\f")]
          [plain-spaces-re   (^px "[" plain-spaces "]*")])
@@ -136,12 +136,12 @@
 
 ;; make n spaces, cached for n
 (define make-spaces
-  (let ([t (make-hash-table)])
+  (let ([t (make-hasheq)])
     (lambda (n)
-      (hash-table-get t n
+      (hash-ref t n
         (lambda ()
           (let ([s (make-string n #\space)])
-            (hash-table-put! t n s) s))))))
+            (hash-set! t n s) s))))))
 
 (define (bytes-width bs start)
   (let ([len (bytes-length bs)])

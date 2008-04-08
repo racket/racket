@@ -12,16 +12,16 @@
     (unless (and (list? names) (andmap identifier? names))
       (raise-type-error 'check-duplicate-identifier "list of identifiers" names))
     (let/ec escape
-      (let ([ht (make-hash-table)])
+      (let ([ht (make-hasheq)])
 	(for-each
 	 (lambda (defined-name)
 	   (unless (identifier? defined-name)
 	     (raise-type-error 'check-duplicate-identifier
 			       "list of identifiers" names))
-	   (let ([l (hash-table-get ht (syntax-e defined-name) null)])
+	   (let ([l (hash-ref ht (syntax-e defined-name) null)])
 	     (when (ormap (lambda (i) (bound-identifier=? i defined-name)) l)
 	       (escape defined-name))
-	     (hash-table-put! ht (syntax-e defined-name) (cons defined-name l))))
+	     (hash-set! ht (syntax-e defined-name) (cons defined-name l))))
 	 names)
 	#f)))
   

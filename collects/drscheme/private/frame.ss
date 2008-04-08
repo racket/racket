@@ -30,7 +30,7 @@
     (mixin (frame:standard-menus<%>) (basics<%>)
       (inherit get-edit-target-window get-edit-target-object get-menu-bar)
       (define/private (get-menu-bindings)
-        (let ([name-ht (make-hash-table)])
+        (let ([name-ht (make-hasheq)])
           (let loop ([menu-container (get-menu-bar)])
             (for-each
              (λ (item)
@@ -47,7 +47,7 @@
                                  [(#\:) "colon"]
                                  [(#\space) "space"]
                                  [else (string short-cut)]))))])
-                       (hash-table-put! name-ht keyname (send item get-plain-label))))))
+                       (hash-set! name-ht keyname (send item get-plain-label))))))
                (when (is-a? item menu-item-container<%>)
                  (loop item)))
              (send menu-container get-items)))
@@ -69,12 +69,12 @@
                                              (string-downcase this-amp)])))]
                                      [else #f]))])
                             (when amp-key
-                              (hash-table-put! name-ht 
-                                               (format "m:~a" amp-key)
-                                               (format "~a menu" (send top-level-menu get-plain-label)))
-                              (hash-table-put! name-ht 
-                                               (format "m:s:~a" amp-key)
-                                               (format "~a menu" (send top-level-menu get-plain-label)))))))
+                              (hash-set! name-ht 
+                                         (format "m:~a" amp-key)
+                                         (format "~a menu" (send top-level-menu get-plain-label)))
+                              (hash-set! name-ht 
+                                         (format "m:s:~a" amp-key)
+                                         (format "~a menu" (send top-level-menu get-plain-label)))))))
                       (send (get-menu-bar) get-items)))
           name-ht))
       
@@ -95,10 +95,10 @@
       
       [define/private copy-hash-table
         (λ (ht)
-          (let ([res (make-hash-table)])
-            (hash-table-for-each
+          (let ([res (make-hasheq)])
+            (hash-for-each
              ht
-             (λ (x y) (hash-table-put! res x y)))
+             (λ (x y) (hash-set! res x y)))
             res))]
       [define/private can-show-keybindings?
         (λ ()
@@ -114,9 +114,9 @@
                    [keymap (send edit-object get-keymap)]
                    [menu-names (get-menu-bindings)]
                    [table (send keymap get-map-function-table)]
-                   [bindings (hash-table-map table list)]
+                   [bindings (hash-map table list)]
                    [w/menus 
-                    (append (hash-table-map menu-names list)
+                    (append (hash-map menu-names list)
                             (filter (λ (binding) (not (bound-by-menu? binding menu-names)))
                                     bindings))]
                    [structured-list
@@ -128,7 +128,7 @@
       
       (define/private (bound-by-menu? binding menu-table)
         (ormap (λ (constituent)
-                 (hash-table-get menu-table (string->symbol constituent) (λ () #f)))
+                 (hash-ref menu-table (string->symbol constituent) (λ () #f)))
                (regexp-split #rx";" (symbol->string (car binding)))))
       
       (define/override (help-menu:before-about help-menu)

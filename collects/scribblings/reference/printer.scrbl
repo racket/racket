@@ -218,7 +218,7 @@ After all key-value pairs, the printed form completes with
 @litchar{)}.
 
 When the @scheme[print-hash-table] parameter is set to @scheme[#f], a
-hash table prints (un@scheme[read]ably) as @litchar{#<hash-table>}.
+hash table prints (un@scheme[read]ably) as @litchar{#<hash>}.
 
 @section[#:tag "print-box"]{Printing Boxes}
 

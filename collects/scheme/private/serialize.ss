@@ -37,7 +37,7 @@
 	(vector? v)
 	(pair? v)
 	(mpair? v)
-	(hash-table? v)
+	(hash? v)
 	(box? v)
 	(void? v)
 	(date? v)
@@ -58,7 +58,7 @@
   
   (define (mod-to-id info mod-map cache)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
-      (hash-table-get 
+      (hash-ref 
        cache deserialize-id
        (lambda ()
 	 (let ([id
@@ -88,20 +88,20 @@
 				(build-path (serialize-info-dir info)
 					    "here.ss"))))
 			  (car deserialize-id))])])
-		  (hash-table-get 
+		  (hash-ref 
 		   mod-map path+name
 		   (lambda ()
-		     (let ([id (hash-table-count mod-map)])
-		       (hash-table-put! mod-map path+name id)
+		     (let ([id (hash-count mod-map)])
+		       (hash-set! mod-map path+name id)
 		       id))))])
-	   (hash-table-put! cache deserialize-id id)
+	   (hash-set! cache deserialize-id id)
 	   id)))))
 
   (define (is-mutable? o)
     (or (and (or (mpair? o)
 		 (box? o)
 		 (vector? o)
-		 (hash-table? o))
+		 (hash? o))
 	     (not (immutable? o)))
 	(serializable-struct? o)))
 
@@ -122,8 +122,8 @@
 
 
   (define (share-id share cycle)
-    (+ (hash-table-count share)
-       (hash-table-count cycle)))
+    (+ (hash-count share)
+       (hash-count cycle)))
 
   ;; Traverses v to find cycles and charing. Shared
   ;;  object go in the `shared' table, and cycle-breakers go in
@@ -132,9 +132,9 @@
   ;;  when the objects are deserialized, build them in reverse
   ;;  order.
   (define (find-cycles-and-sharing v cycle share)
-    (let ([tmp-cycle (make-hash-table)]  ;; candidates for sharing
-	  [tmp-share (make-hash-table)]  ;; candidates for cycles
-	  [cycle-stack null])            ;; same as in tmpcycle, but for finding mutable
+    (let ([tmp-cycle (make-hasheq)]  ;; candidates for sharing
+	  [tmp-share (make-hasheq)]  ;; candidates for cycles
+	  [cycle-stack null])      ;; same as in tmpcycle, but for finding mutable
       (let loop ([v v])
 	(cond
 	 [(or (boolean? v)
@@ -144,30 +144,30 @@
 	      (null? v)
 	      (void? v))
 	  (void)]
-	 [(hash-table-get cycle v #f)
+	 [(hash-ref cycle v #f)
 	  ;; We already know that this value is
 	  ;;  part of a cycle
 	  (void)]
-	 [(hash-table-get tmp-cycle v #f)
+	 [(hash-ref tmp-cycle v #f)
 	  ;; We've just learned that this value is
 	  ;;  part of a cycle.
 	  (let ([mut-v (if (is-mutable? v)
 			   v
 			   (find-mutable v cycle-stack))])
-	    (hash-table-put! cycle mut-v (share-id share cycle))
+	    (hash-set! cycle mut-v (share-id share cycle))
 	    (unless (eq? mut-v v)
 	      ;; This value is potentially shared
-	      (hash-table-put! share v (share-id share cycle))))]
-	 [(hash-table-get share v #f)
+	      (hash-set! share v (share-id share cycle))))]
+	 [(hash-ref share v #f)
 	  ;; We already know that this value is shared
 	  (void)]
-	 [(hash-table-get tmp-share v #f)
+	 [(hash-ref tmp-share v #f)
 	  ;; We've just learned that this value is
 	  ;;  shared
-	  (hash-table-put! share v (share-id share cycle))]
+	  (hash-set! share v (share-id share cycle))]
 	 [else
-	  (hash-table-put! tmp-share v #t)
-	  (hash-table-put! tmp-cycle v #t)
+	  (hash-set! tmp-share v #t)
+	  (hash-set! tmp-cycle v #t)
 	  (set! cycle-stack (cons v cycle-stack))
 	  (cond
 	   [(serializable-struct? v)
@@ -193,10 +193,10 @@
 	    (loop (unbox v))]
 	   [(date? v)
 	    (for-each loop (cdr (vector->list (struct->vector v))))]
-	   [(hash-table? v)
-	    (hash-table-for-each v (lambda (k v)
-				     (loop k)
-				     (loop v)))]
+	   [(hash? v)
+	    (hash-for-each v (lambda (k v)
+                               (loop k)
+                               (loop v)))]
 	   [(arity-at-least? v)
 	    (loop (arity-at-least-value v))]
 	   [(module-path-index? v)
@@ -209,7 +209,7 @@
 		  v)])
 	  ;; No more possibility for this object in
 	  ;;  a cycle:
-	  (hash-table-remove! tmp-cycle v)
+	  (hash-remove! tmp-cycle v)
 	  (set! cycle-stack (cdr cycle-stack))]))))
 
   (define (serialize-one v share check-share? mod-map mod-map-cache)
@@ -224,7 +224,7 @@
        [(void? v)
 	'(void)]
        [(and check-share?
-	     (hash-table-get share v #f))
+	     (hash-ref share v #f))
 	=> (lambda (v) (cons '? v))]
        [(and (or (string? v)
 		 (bytes? v))
@@ -264,16 +264,16 @@
        [(box? v)
 	(cons (if (immutable? v) 'b 'b!)
 	      ((serial #t) (unbox v)))]
-       [(hash-table? v)
+       [(hash? v)
 	(list* 'h
 	       (if (immutable? v) '- '!)
 	       (append
-		(if (hash-table? v 'equal) '(equal) null)
-		(if (hash-table? v 'weak) '(weak) null))
+		(if (not (hash-eq? v)) '(equal) null)
+		(if (hash-weak? v) '(weak) null))
 	       (let ([loop (serial #t)])
-		 (hash-table-map v (lambda (k v)
-				     (cons (loop k)
-					   (loop v))))))]
+		 (hash-map v (lambda (k v)
+                               (cons (loop k)
+                                     (loop v))))))]
        [(date? v)
 	(cons 'date
 	      (map (serial #t) (cdr (vector->list (struct->vector v)))))]
@@ -299,43 +299,43 @@
       'm]
      [(box? v)
       'b]
-     [(hash-table? v)
+     [(hash? v)
       (cons 'h (append
-		(if (hash-table? v 'equal) '(equal) null)
-		(if (hash-table? v 'weak) '(weak) null)))]))
+		(if (not (hash-eq? v)) '(equal) null)
+		(if (hash-weak? v) '(weak) null)))]))
 
   (define (serialize v)
-    (let ([mod-map (make-hash-table)]
-	  [mod-map-cache (make-hash-table 'equal)]
-	  [share (make-hash-table)]
-	  [cycle (make-hash-table)])
+    (let ([mod-map (make-hasheq)]
+	  [mod-map-cache (make-hash)]
+	  [share (make-hasheq)]
+	  [cycle (make-hasheq)])
       ;; First, traverse V to find cycles and sharing
       (find-cycles-and-sharing v cycle share)
       ;; To simplify, all add the cycle records to shared.
       ;;  (but keep cycle info, too).
-      (hash-table-for-each cycle
-			   (lambda (k v)
-			     (hash-table-put! share k v)))
-      (let ([ordered (map car (sort (hash-table-map share cons)
+      (hash-for-each cycle
+                     (lambda (k v)
+                       (hash-set! share k v)))
+      (let ([ordered (map car (sort (hash-map share cons)
                                     (lambda (a b) (< (cdr a) (cdr b)))))])
 	(let ([serializeds (map (lambda (v)
-				  (if (hash-table-get cycle v #f)
+				  (if (hash-ref cycle v #f)
 				      ;; Box indicates cycle record allocation
 				      ;;  followed by normal serialization
 				      (box (serial-shell v mod-map mod-map-cache))
 				      ;; Otherwise, normal serialization
 				      (serialize-one v share #f mod-map mod-map-cache)))
 				ordered)]
-	      [fixups (hash-table-map 
+	      [fixups (hash-map 
 		       cycle
 		       (lambda (v n)
 			 (cons n
 			       (serialize-one v share #f mod-map mod-map-cache))))]
 	      [main-serialized (serialize-one v share #t mod-map mod-map-cache)]
-	      [mod-map-l (map car (sort (hash-table-map mod-map cons)
+	      [mod-map-l (map car (sort (hash-map mod-map cons)
                                         (lambda (a b) (< (cdr a) (cdr b)))))])
 	  (list '(1) ;; serialization-format version
-                (hash-table-count mod-map)
+                (hash-count mod-map)
 		mod-map-l
 		(length serializeds)
 		serializeds
@@ -345,6 +345,15 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; deserialize
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define (make-hash/flags v)
+    (cond
+     [(null? v) (make-hasheq)]
+     [(eq? (car v) 'equal)
+      (if (null? (cdr v))
+          (make-hash)
+          (make-weak-hash))]
+     [else (make-weak-hasheq)]))
 
   (define-struct not-ready (shares fixup))
 
@@ -405,12 +414,14 @@
 				      (loop (cdr p))))
 			      (cdddr v))])
 		 (if (eq? '! (cadr v))
-		     (let ([ht (apply make-hash-table (caddr v))])
+		     (let ([ht (make-hash/flags (caddr v))])
 		       (for-each (lambda (p)
-				   (hash-table-put! ht (car p) (cdr p)))
+				   (hash-set! ht (car p) (cdr p)))
 				 al)
 		       ht)
-		     (apply make-immutable-hash-table al (caddr v))))]
+                     (if (null? (caddr v))
+                         (make-immutable-hasheq al)
+                         (make-immutable-hash al))))]
 	  [(date) (apply make-date (map loop (cdr v)))]
 	  [(arity-at-least) (make-arity-at-least (loop (cdr v)))]
 	  [(mpi) (module-path-index-join (loop (cadr v))
@@ -440,12 +451,12 @@
 	   v0)]
 	[(h)
 	 ;; Hash table
-	 (let ([ht0 (apply make-hash-table (cdr v))])
+	 (let ([ht0 (make-hash/flags (cdr v))])
 	   (vector-set! fixup n (lambda (ht)
-				  (hash-table-for-each 
+				  (hash-for-each 
 				   ht
 				   (lambda (k v)
-				     (hash-table-put! ht0 k v)))))
+				     (hash-set! ht0 k v)))))
 	   ht0)])]
      [else
       (case v

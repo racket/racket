@@ -478,6 +478,16 @@ scheme_get_primitive_global(Scheme_Object *var, Scheme_Env *env,
 void scheme_add_bucket_to_table(Scheme_Bucket_Table *table, Scheme_Bucket *b);
 Scheme_Bucket *scheme_bucket_or_null_from_table(Scheme_Bucket_Table *table, const char *key, int add);
 
+struct Scheme_Hash_Tree
+{
+  Scheme_Inclhash_Object iso; /* 0x1 flag => equal?-based hashing */
+  int count;
+  struct RBNode *root;
+  Scheme_Object *elems_box; /* vector in a weak box */
+};
+
+#define SCHEME_HASHTR_FLAGS(tr) MZ_OPT_HASH_KEY(&(tr)->iso)
+
 /*========================================================================*/
 /*                              structs                                   */
 /*========================================================================*/
@@ -2925,6 +2935,7 @@ Scheme_Bucket_Table *scheme_make_weak_equal_table(void);
 
 int scheme_hash_table_equal_rec(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2, void *eql);
 int scheme_bucket_table_equal_rec(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2, void *eql);
+int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void *eql);
 
 void scheme_set_root_param(int p, Scheme_Object *v);
 

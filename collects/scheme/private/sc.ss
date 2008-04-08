@@ -384,18 +384,18 @@
            (let-values ([(r did-var? <false>) (m&e p p #t #t #f)])
              (if just-vars?
                  ;; Look for duplicate uses of variable names:
-                 (let ([ht (make-hash-table)])
+                 (let ([ht (make-hasheq)])
                    (let loop ([r r])
                      (cond
                       [(syntax? r)
-                       (let ([l (hash-table-get ht (syntax-e r) null)])
+                       (let ([l (hash-ref ht (syntax-e r) null)])
                          (when (ormap (lambda (i) (bound-identifier=? i r)) l)
                            (raise-syntax-error 
                             (syntax-e who)
                             "variable used twice in pattern"
                             top
                             r))
-                         (hash-table-put! ht (syntax-e r) (cons r l)))]
+                         (hash-set! ht (syntax-e r) (cons r l)))]
                       [(pair? r)
                        (loop (car r))
                        (loop (cdr r))]
@@ -676,20 +676,20 @@
                                (void))]))
            (let* ([ht (if proto-r
                           #f
-                          (make-hash-table))]
+                          (make-hasheq))]
                   [l (expander p proto-r p #t
                                (and proto-r (sub1 (length proto-r)))
                                (if proto-r
                                    #f
                                    (lambda (r)
-                                     (let ([l (hash-table-get ht (syntax-e r) null)])
+                                     (let ([l (hash-ref ht (syntax-e r) null)])
                                        (let ([pr (and (pair? l)
                                                       (ormap (lambda (i) 
                                                                (and (bound-identifier=? (mcar i) r) i))
                                                              l))])
                                          (if pr
                                              (set-mcdr! pr (cons r (mcdr pr)))
-                                             (hash-table-put! ht (syntax-e r) (cons (mcons r (list r)) l))))))))])
+                                             (hash-set! ht (syntax-e r) (cons (mcons r (list r)) l))))))))])
              (if proto-r
                  `(lambda (r)
                     ,(let ([main (let ([build (apply-to-r l)])
@@ -711,7 +711,7 @@
                              ;; This is a trick to minimize the syntax structure we keep:
                              (quote-syntax ,(datum->syntax #f '... p)))
                            main)))
-                 (let ([l (apply append (hash-table-map ht (lambda (k v) v)))])
+                 (let ([l (apply append (hash-map ht (lambda (k v) v)))])
                    (values
                     ;; Get list of unique vars:
                     (map mcar l)

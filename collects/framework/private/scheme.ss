@@ -303,14 +303,14 @@
 (define (xlate-sym-style sym) (case sym
                                 [(sexp-comment) 'comment]
                                 [else sym]))
-(define sn-hash (make-hash-table))
+(define sn-hash (make-hasheq))
 (define (short-sym->style-name sym)
-  (hash-table-get sn-hash sym
-                  (λ ()
-                    (let ([s (format "framework:syntax-color:scheme:~a"
-                                     (xlate-sym-style sym))])
-                      (hash-table-put! sn-hash sym s)
-                      s))))
+  (hash-ref sn-hash sym
+            (λ ()
+               (let ([s (format "framework:syntax-color:scheme:~a"
+                                (xlate-sym-style sym))])
+                 (hash-set! sn-hash sym s)
+                 s))))
 
 (define (add-coloring-preferences-panel)
   (color-prefs:add-to-preferences-panel
@@ -1171,7 +1171,7 @@
          [beg-reg (cadr pref)]
          [def-reg (caddr pref)]
          [lam-reg (cadddr pref)])
-    (hash-table-get 
+    (hash-ref
      ht
      (with-handlers ((exn:fail:read? (λ (x) #f)))
        (read (open-input-string text)))
@@ -1670,7 +1670,7 @@
 (define (make-indenting-prefs-panel p)
   (define get-keywords
     (λ (hash-table)
-      (letrec ([all-keywords (hash-table-map hash-table list)]
+      (letrec ([all-keywords (hash-map hash-table list)]
                [pick-out (λ (wanted in out)
                            (cond
                              [(null? in) (sort out string<=?)]
@@ -1696,15 +1696,15 @@
                             (read (open-input-string new-one)))])
               (cond
                 [(and (symbol? parsed)
-                      (hash-table-get (car (preferences:get 'framework:tabify))
-                                      parsed
-                                      (λ () #f)))
+                      (hash-ref (car (preferences:get 'framework:tabify))
+                                parsed
+                                (λ () #f)))
                  (message-box (string-constant error)
                               (format (string-constant already-used-keyword) parsed))]
                 [(symbol? parsed)
                  (let* ([pref (preferences:get 'framework:tabify)]
                         [ht (car pref)])
-                   (hash-table-put! ht parsed keyword-symbol)
+                   (hash-set! ht parsed keyword-symbol)
                    (preferences:set 'framework:tabify pref)
                    (update-list-boxes ht))]
                 [else (message-box 
@@ -1718,7 +1718,7 @@
           (for-each (λ (x) (send list-box delete x)) (reverse selections))
           (let* ([pref (preferences:get 'framework:tabify)]
                  [ht (car pref)])
-            (for-each (λ (x) (hash-table-remove! ht x)) symbols)
+            (for-each (λ (x) (hash-remove! ht x)) symbols)
             (preferences:set 'framework:tabify pref))))))
   (define main-panel (make-object horizontal-panel% p))
   (define make-column

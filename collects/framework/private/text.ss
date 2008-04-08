@@ -667,7 +667,7 @@ WARNING: printf is rebound in the body of the unit to always
                 (let ([new-snip
                        (instantiate small-version-of-snip% ()
                          (big-snip snip))])
-                  (hash-table-put! linked-snips snip new-snip)
+                  (hash-set! linked-snips snip new-snip)
                   new-snip)])])
         (send new-snip set-flags (send snip get-flags))
         (send new-snip set-style (send snip get-style))
@@ -679,7 +679,7 @@ WARNING: printf is rebound in the body of the unit to always
     (define/public-final (set-delegate _d)
       (set! delegate _d)
       (set! linked-snips (if _d
-                             (make-hash-table)
+                             (make-hasheq)
                              #f))
       (refresh-delegate))
     
@@ -758,7 +758,7 @@ WARNING: printf is rebound in the body of the unit to always
       (when (and delegate
                  linked-snips
                  (not (is-a? snip string-snip%)))
-        (let ([delegate-copy (hash-table-get linked-snips snip (λ () #f))])
+        (let ([delegate-copy (hash-ref linked-snips snip (λ () #f))])
           (when delegate-copy
             (send delegate resized delegate-copy redraw-now?)))))
     
@@ -2815,7 +2815,7 @@ designates the character that triggers autocompletion
     (unless xref 
       (set! xref (load-collections-xref)))
     
-    (let ([ht (make-hash-table 'equal)])
+    (let ([ht (make-hash)])
       (for-each
        (λ (entry)
          (let ([desc (entry-desc entry)])
@@ -2825,9 +2825,9 @@ designates the character that triggers autocompletion
                  (when (or (not manual-mpis)
                            (ormap (λ (from-lib) (memq from-lib manual-mpis))
                                   (map sym->mpi (exported-index-desc-from-libs desc))))
-                   (hash-table-put! ht (symbol->string name) #t)))))))
+                   (hash-set! ht (symbol->string name) #t)))))))
        (xref-index xref))
-      (sort (hash-table-map ht (λ (x y) x)) string<=?))))
+      (sort (hash-map ht (λ (x y) x)) string<=?))))
 
 ;; ============================================================
 ;; auto complete example code

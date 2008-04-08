@@ -211,14 +211,14 @@
               (values (positive? (bitwise-and #x4 v0))
                       qds ans nss ars reply)))))))
 
-  (define cache (make-hash-table))
+  (define cache (make-hasheq))
   (define (dns-query/cache nameserver addr type class)
     (let ([key (string->symbol (format "~a;~a;~a;~a" nameserver addr type class))])
-      (let ([v (hash-table-get cache key (lambda () #f))])
+      (let ([v (hash-ref cache key (lambda () #f))])
         (if v
           (apply values v)
           (let-values ([(auth? qds ans nss ars reply) (dns-query nameserver addr type class)])
-            (hash-table-put! cache key (list auth? qds ans nss ars reply))
+            (hash-set! cache key (list auth? qds ans nss ars reply))
             (values auth? qds ans nss ars reply))))))
 
   (define (ip->string s)

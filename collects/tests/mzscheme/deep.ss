@@ -191,24 +191,24 @@
 (define (init-hash-table ht)
   (let loop ([n 25])
     (unless (zero? n)
-      (hash-table-put! ht (gensym) (gensym))
+      (hash-set! ht (gensym) (gensym))
       (loop (sub1 n)))))
 
 (define hash-depth 
-  (let ([ht (make-hash-table 'equal)])
+  (let ([ht (make-hash)])
     (init-hash-table ht)
     (find-depth 
      (lambda (n) 
        (nontail-loop (quotient proc-depth 3) 
 		     (lambda (x)
-		       (hash-table-put! ht
-					(hash-deep n)
-					#t)
+		       (hash-set! ht
+                                  (hash-deep n)
+                                  #t)
 		       x))))))
 (printf "hashing overflows at ~a\n" hash-depth)
 
 (define (try-deep-hash hash-depth put-depth get-depth)
-  (let* ([ht (make-hash-table 'equal)]
+  (let* ([ht (make-hash)]
 	 [val (gensym)]
 	 [key (hash-deep hash-depth)]
 	 [code (equal-hash-code key)])
@@ -217,12 +217,12 @@
     (nontail-loop put-depth
 		  (lambda (x) 
 		    (test code 'code (equal-hash-code key))
-		    (hash-table-put! ht key val) 
+		    (hash-set! ht key val) 
 		    x))
     (nontail-loop get-depth
 		  (lambda (x)
 		    (test code 'code (equal-hash-code key))
-		    (test val 'deep-hash (hash-table-get ht key))
+		    (test val 'deep-hash (hash-ref ht key))
 		    x))))
 
 (for-each (lambda (hash-depth)

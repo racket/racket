@@ -90,6 +90,7 @@ static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_to_vector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *prefab_struct_key(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[]);
+static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *struct_setter_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *struct_getter_p(int argc, Scheme_Object *argv[]);
@@ -464,6 +465,11 @@ scheme_init_struct (Scheme_Env *env)
 			     scheme_make_prim_w_arity(make_prefab_struct,
 						      "make-prefab-struct",
 						      1, -1),
+			     env);
+  scheme_add_global_constant("prefab-key->struct-type",
+			     scheme_make_prim_w_arity(prefab_key_struct_type,
+						      "prefab-key->struct-type",
+						      2, 2),
 			     env);
 
   /*** Predicates ****/
@@ -1776,6 +1782,27 @@ static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[])
   }
 
   return scheme_make_prefab_struct_instance(stype, vec);
+}
+
+static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
+{
+  Scheme_Struct_Type *stype;
+  int v;
+
+  if (!SCHEME_INTP(argv[1]))
+    v = SCHEME_INT_VAL(argv[1]);
+  else
+    v = -1;
+
+  stype = scheme_lookup_prefab_type(argv[0], (v >= 0) ? v : -1);
+
+  if (!stype)
+    scheme_wrong_type("make-prefab-struct", "prefab key", 0, argc, argv);
+
+  if (v < 0)
+    scheme_wrong_type("make-prefab-struct", "non-negative fixnum", 1, argc, argv);
+
+  return (Scheme_Object *)stype;
 }
 
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos)

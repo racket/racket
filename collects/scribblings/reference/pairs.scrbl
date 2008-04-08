@@ -561,7 +561,7 @@ traversal.
 
 Returns a value like @scheme[v], with placeholders created by
 @scheme[make-placeholder] replaced with the values that they contain,
-and with placeholders created by @scheme[make-hash-table-placeholder]
+and with placeholders created by @scheme[make-hash-placeholder]
 with an immutable hash table. No part of @scheme[v] is mutated;
 instead, parts of @scheme[v] are copied as necessary to construct
 the resulting graph, where at most one copy is created for any given
@@ -589,7 +589,7 @@ placeholders:
  @item{instances of a @techlink{prefab} structure type}
 
  @item{placeholders created by @scheme[make-placeholder] and
-       @scheme[make-hash-table-placeholder]}
+       @scheme[make-hash-placeholder]}
 
 }
 
@@ -624,16 +624,20 @@ Changes the value of @scheme[ph] to @scheme[v].}
 Returns the value of @scheme[ph].}
 
 
-@defproc[(hash-table-placeholder? [v any/c]) boolean?]{
+@defproc[(hash-placeholder? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a placeholder created by
-@scheme[make-hash-table-placeholder], @scheme[#f] otherwise.}
+@scheme[make-hash-placeholder], @scheme[#f] otherwise.}
 
 
-@defproc[(make-hash-table-placeholder [assocs (listof pair?)]
-                                      [flag (one-of/c 'equal)]
-                                      ...)
-         hash-table-placeholder?]{
+@defproc[(make-hash-placeholder [assocs (listof pair?)])
+         hash-placeholder?]{
 
-Like @scheme[make-immutable-hash-table], but produces a table
-placeholder for use with @scheme[make-reader-graph].}
+Like @scheme[make-immutable-hash], but produces a table placeholder
+for use with @scheme[make-reader-graph].}
+
+@defproc[(make-hasheq-placeholder [assocs (listof pair?)])
+         hash-placeholder?]{
+
+Like @scheme[make-immutable-hasheq], but produces a table placeholder
+for use with @scheme[make-reader-graph].}

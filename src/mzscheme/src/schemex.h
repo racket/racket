@@ -337,6 +337,13 @@ Scheme_Object *(*scheme_hash_get_atomic)(Scheme_Hash_Table *table, Scheme_Object
 int (*scheme_hash_table_equal)(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
 int (*scheme_is_hash_table_equal)(Scheme_Object *o);
 Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *bt);
+Scheme_Hash_Tree *(*scheme_make_hash_tree)(int eql);
+Scheme_Hash_Tree *(*scheme_hash_tree_set)(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
+Scheme_Object *(*scheme_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);
+long (*scheme_hash_tree_next)(Scheme_Hash_Tree *tree, long pos);
+int (*scheme_hash_tree_index)(Scheme_Hash_Tree *tree, long pos, Scheme_Object **_key, Scheme_Object **_val);
+int (*scheme_hash_tree_equal)(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
+int (*scheme_is_hash_tree_equal)(Scheme_Object *o);
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
 /*========================================================================*/

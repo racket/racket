@@ -78,7 +78,7 @@
   (define-values (datum flat=>stx stx=>flat)
     (table stx partition 0 'always))
   (define identifier-list 
-    (filter identifier? (hash-table-map stx=>flat (lambda (k v) k))))
+    (filter identifier? (hash-map stx=>flat (lambda (k v) k))))
   (define (pp-size-hook obj display-like? port)
     (cond [(syntax-dummy? obj)
            (let ((ostring (open-output-string)))
@@ -94,7 +94,7 @@
            (error 'pretty-print-hook "unexpected special value: ~e" obj)]))
   (define (pp-extend-style-table)
     (let* ([ids identifier-list]
-           [syms (map (lambda (x) (hash-table-get stx=>flat x)) ids)]
+           [syms (map (lambda (x) (hash-ref stx=>flat x)) ids)]
            [like-syms (map syntax-e ids)])
       (pretty-print-extend-style-table (pp-better-style-table)
                                        syms

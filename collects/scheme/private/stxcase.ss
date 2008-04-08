@@ -40,8 +40,8 @@
     (lambda (stx)
       (let ([pat (stx-car (stx-cdr stx))]
 	    [subs (stx->list (stx-cdr (stx-cdr stx)))])
-	(let ([ht-common (make-hash-table 'equal)]
-	      [ht-map (make-hash-table)])
+	(let ([ht-common (make-hash)]
+	      [ht-map (make-hasheq)])
 	  ;; Determine merges:
 	  (let loop ([subs subs])
 	    (unless (null? subs)
@@ -56,13 +56,13 @@
 			       (stx-pair? (stx-cdr expr))
 			       (identifier? (stx-car (stx-cdr expr)))))
 		  (let ([s-expr (syntax->datum expr)])
-		    (let ([new-id (hash-table-get ht-common s-expr #f)])
+		    (let ([new-id (hash-ref ht-common s-expr #f)])
 		      (if new-id
-			  (hash-table-put! ht-map id new-id)
-			  (hash-table-put! ht-common s-expr id))))))
+			  (hash-set! ht-map id new-id)
+			  (hash-set! ht-common s-expr id))))))
 	      (loop (cddr subs))))
 	  ;; Merge:
-	  (let ([new-pattern (if (zero? (hash-table-count ht-map))
+	  (let ([new-pattern (if (zero? (hash-count ht-map))
 				 pat
 				 (let loop ([stx pat])
 				   (cond
@@ -74,7 +74,7 @@
 					   stx
 					   (cons a b)))]
 				    [(symbol? stx)
-				     (let ([new-id (hash-table-get ht-map stx #f)])
+				     (let ([new-id (hash-ref ht-map stx #f)])
 				       (or new-id stx))]
 				    [(syntax? stx) 
 				     (let ([new-e (loop (syntax-e stx))])
@@ -91,7 +91,7 @@
 				    (quote ,(let loop ([subs subs])
 					      (cond
 					       [(null? subs) null]
-					       [(hash-table-get ht-map (syntax-e (car subs)) #f)
+					       [(hash-ref ht-map (syntax-e (car subs)) #f)
 						;; Drop mapped id
 						(loop (cddr subs))]
 					       [else
@@ -99,7 +99,7 @@
 				    . ,(let loop ([subs subs])
 					 (cond
 					  [(null? subs) null]
-					  [(hash-table-get ht-map (syntax-e (car subs)) #f)
+					  [(hash-ref ht-map (syntax-e (car subs)) #f)
 					   ;; Drop mapped id
 					   (loop (cddr subs))]
 					  [else

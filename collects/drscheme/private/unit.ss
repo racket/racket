@@ -2777,15 +2777,15 @@ module browser threading seems wrong.
           (add-modes-submenu edit-menu))
         
         ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))
-        (define capability-menu-items (make-hash-table))
+        (define capability-menu-items (make-hasheq))
         (define/public (register-capability-menu-item key menu)
           (let ([items (send menu get-items)])
             (when (null? items)
               (error 'register-capability-menu-item "menu ~e has no items" menu))
             (let* ([menu-item (last items)]
                    [this-one (list menu-item (- (length items) 1) key)]
-                   [old-ones (hash-table-get capability-menu-items menu (λ () '()))])
-              (hash-table-put! capability-menu-items menu (cons this-one old-ones)))))
+                   [old-ones (hash-ref capability-menu-items menu (λ () '()))])
+              (hash-set! capability-menu-items menu (cons this-one old-ones)))))
         
         (define/private (update-items/capability menu)
           (let ([new-items (get-items/capability menu)])
@@ -2794,7 +2794,7 @@ module browser threading seems wrong.
         (define/private (get-items/capability menu)
           (let loop ([capability-items 
                       (reverse
-                       (hash-table-get capability-menu-items menu (λ () '())))]
+                       (hash-ref capability-menu-items menu (λ () '())))]
                      [all-items (send menu get-items)]
                      [i 0])
             (cond

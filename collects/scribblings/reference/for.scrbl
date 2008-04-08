@@ -70,7 +70,7 @@ using the remaining @scheme[for-clauses].
 ]}
 
 @defform[(for/list (for-clause ...) body ...+)]{ Iterates like
-@scheme[for], but that the last expression of @scheme[body] must
+@scheme[for], but that the last expression in the @scheme[body]s must
 produce a single value, and the result of the @scheme[for/list]
 expression is a list of the results in order.
 
@@ -84,6 +84,24 @@ expression is a list of the results in order.
 (for/list ([i '()])
   (error "doesn't get here"))
 ]}
+
+@deftogether[(
+@defform[(for/hash (for-clause ...) body ...+)]
+@defform[(for/hasheq (for-clause ...) body ...+)]
+)]{
+
+Like @scheme[for/list], but the result is an immutable @tech{hash
+table}; @scheme[for/hash] creates a table using @scheme[equal?] to
+distinguish keys, and @scheme[for/hasheq] produces a table using
+@scheme[eq?]. The last expression in the @scheme[body]s must return
+two values: a key and a value to extend the hash table accumulated by
+the iteration.
+
+@examples[
+(for/hash ([i '(1 2 3)])
+  (values i (number->string i)))
+]}
+
 
 @defform[(for/and (for-clause ...) body ...+)]{ Iterates like
 @scheme[for], but when last expression of @scheme[body] produces
@@ -191,6 +209,8 @@ nested.
 @deftogether[(
 @defform[(for*/list (for-clause ...) body ...+)]
 @defform[(for*/lists (id ...) (for-clause ...) body ...+)]
+@defform[(for*/hash (for-clause ...) body ...+)]
+@defform[(for*/hasheq (for-clause ...) body ...+)]
 @defform[(for*/and (for-clause ...) body ...+)]
 @defform[(for*/or (for-clause ...) body ...+)]
 @defform[(for*/first (for-clause ...) body ...+)]

@@ -39,12 +39,12 @@
 (define (make-eq-hashtable [k 0])
   (unless (exact-nonnegative-integer? k)
     (raise-type-error 'make-eq-hashtable "exact, nonnegative integer" k))
-  (make-hashtable (make-hash-table) values values #t eq? #f))
+  (make-hashtable (make-hasheq) values values #t eq? #f))
 
 (define (make-eqv-hashtable [k 0])
   (unless (exact-nonnegative-integer? k)
     (raise-type-error 'make-eqv-hashtable "exact, nonnegative integer" k))
-  (make-hashtable (make-hash-table 'equal) make-eqv-box eqv-box-val #t eqv? #f))
+  (make-hashtable (make-hash) make-eqv-box eqv-box-val #t eqv? #f))
 
 (define r6rs:make-hashtable
   (let ([make-hashtable
@@ -64,39 +64,39 @@
                                                                    (hash-box-val b)))
                                            (lambda (v recur) (hash (hash-box-val v)))
                                            (lambda (v recur) 10001)))
-             (make-hashtable (make-hash-table 'equal) make-hash-box hash-box-val #t =? hash)))])
+             (make-hashtable (make-hash) make-hash-box hash-box-val #t =? hash)))])
     make-hashtable))
 
 (define (hashtable-size ht)
-  (hash-table-count (hashtable-ht ht)))
+  (hash-count (hashtable-ht ht)))
 
 (define tag (gensym))
 
 (define (hashtable-ref ht key default)
-  (let ([v (hash-table-get (hashtable-ht ht) ((hashtable-wrap ht) key) tag)])
+  (let ([v (hash-ref (hashtable-ht ht) ((hashtable-wrap ht) key) tag)])
     (if (eq? v tag)
         default
         v)))
 
 (define (hashtable-set! ht key val)
   (if (hashtable-mutable? ht)
-      (hash-table-put! (hashtable-ht ht) ((hashtable-wrap ht) key) val)
+      (hash-set! (hashtable-ht ht) ((hashtable-wrap ht) key) val)
       (raise-type-error 'hashtable-set! "mutable hashtable" ht)))
 
 (define (hashtable-delete! ht key)
   (if (hashtable-mutable? ht)
-      (hash-table-remove! (hashtable-ht ht) ((hashtable-wrap ht) key))
+      (hash-remove! (hashtable-ht ht) ((hashtable-wrap ht) key))
       (raise-type-error 'hashtable-delete! "mutable hashtable" ht)))
 
 (define (hashtable-contains? ht key)
-  (not (eq? (hash-table-get (hashtable-ht ht) ((hashtable-wrap ht) key) tag)
+  (not (eq? (hash-ref (hashtable-ht ht) ((hashtable-wrap ht) key) tag)
             tag)))
 
 (define (hashtable-update! ht key proc default)
   (hashtable-set! ht key (proc (hashtable-ref ht key default))))
 
 (define (hashtable-copy ht [mutable? #f])
-  (make-hashtable (hash-table-copy (hashtable-ht ht))
+  (make-hashtable (hash-copy (hashtable-ht ht))
                   (hashtable-wrap ht)
                   (hashtable-unwrap ht)
                   mutable?
@@ -107,16 +107,16 @@
     (raise-type-error 'hashtable-clear! "exact, nonnegative integer" k))
   (if (hashtable-mutable? ht)
       (set-hashtable-ht! (if (eq? values (hashtable-wrap ht))
-                             (make-hash-table)
-                             (make-hash-table 'equal)))
+                             (make-hasheq)
+                             (make-hash)))
       (raise-type-error 'hashtable-clear! "mutable hashtable" ht)))
 
 (define (hashtable-keys ht)
   (let ([unwrap (hashtable-unwrap ht)])
-    (hash-table-map (hashtable-ht ht) (lambda (a b) (unwrap a)))))
+    (hash-map (hashtable-ht ht) (lambda (a b) (unwrap a)))))
 
 (define (hashtable-entries ht)
-  (let ([ps (hash-table-map (hashtable-ht ht) cons)]
+  (let ([ps (hash-map (hashtable-ht ht) cons)]
         [unwrap (hashtable-unwrap ht)])
     (values (list->vector (map (lambda (p) (unwrap (car p))) ps))
             (list->vector (map cdr ps)))))

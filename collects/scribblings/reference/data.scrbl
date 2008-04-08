@@ -177,7 +177,7 @@ Regular (interned) symbols are only weakly held by the internal symbol
 table. This weakness can never affect the result of an @scheme[eq?],
 @scheme[eqv?], or @scheme[equal?] test, but a symbol may disappear
 when placed into a weak box (see @secref["weakbox"]) used as the key
-in a weak hash table (see @secref["hashtables"]), or used as an
+in a weak @tech{hash table} (see @secref["hashtables"]), or used as an
 ephemeron key (see @secref["ephemerons"]).
 
 @defproc[(symbol? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v] is
@@ -435,115 +435,142 @@ Sets the content of @scheme[box] to @scheme[v].}
 @; ----------------------------------------------------------------------
 @section[#:tag "hashtables"]{Hash Tables}
 
-A hash table can be used as a two-valued sequence (see
-@secref["sequences"]). The keys and values of the hash table serve
-as elements of the sequence (i.e., each element is a key and its
+A @deftech{hash table} (or simply @deftech{hash}) maps each of its
+keys to a single value. For a given hash table, keys are equivalent
+via @scheme[equal?] or @scheme[eq?], and keys are retained either
+strongly or weakly (see @secref["weakbox"]). A hash table is also
+either mutable or immutable; immutable tables support constant-time
+functional update.
+
+A hash table can be used as a two-valued @tech{sequence} (see
+@secref["sequences"]). The keys and values of the hash table serve as
+elements of the sequence (i.e., each element is a key and its
 associated value). If a mapping is added to or removed from the hash
 table during iteration, then an iteration step may fail with
 @scheme[exn:fail:contract], or the iteration may skip or duplicate
-keys and values.  See also @scheme[in-hash-table],
-@scheme[in-hash-table-keys], @scheme[in-hash-table-values], and
-@scheme[in-hash-table-pairs].
+keys and values.  See also @scheme[in-hash], @scheme[in-hash-keys],
+@scheme[in-hash-values], and @scheme[in-hash-pairs].
 
-Two hash tables are @scheme[equal?] if they are created with the same
-flags, and if they map the same keys to @scheme[equal?] values (where
-``same key'' means either @scheme[eq?] or @scheme[equal?], depending
-on the way the hash table compares keys).
+Two hash tables are @scheme[equal?] if they use the same
+key-comparison procedure (@scheme[equal?] or @scheme[eq?]), if they
+both hold keys strongly or weakly, and if they have the same
+mutability.
 
-@bold{Caveats concerning concurrent modification:} A hash table can be
-manipulated with @scheme[hash-table-get], @scheme[hash-table-put!],
-and @scheme[hash-table-remove!]  concurrently by multiple threads, and
-the operations are protected by a table-specific semaphore as
-needed. Two caveats apply, however:
+@bold{Caveats concerning concurrent modification:} A mutable hash
+table can be manipulated with @scheme[hash-ref], @scheme[hash-set!],
+and @scheme[hash-remove!] concurrently by multiple threads, and the
+operations are protected by a table-specific semaphore as needed. Two
+caveats apply, however:
 
  @itemize{
 
-  @item{If a thread is terminated while applying
-  @scheme[hash-table-get], @scheme[hash-table-put!], or
-  @scheme[hash-table-remove!] to a hash table that uses
-  @scheme[equal?]  comparisons, all current and future operations on
-  the hash table block indefinitely.}
+  @item{If a thread is terminated while applying @scheme[hash-ref],
+  @scheme[hash-set!], or @scheme[hash-remove!] to a hash table that
+  uses @scheme[equal?] key comparisons, all current and future
+  operations on the hash table block indefinitely.}
 
-  @item{The @scheme[hash-table-map], @scheme[hash-table-for-each], and
-  @scheme[hash-table-count] procedures do not use the table's
-  semaphore. Consequently, if a hash table is extended with new keys
-  by another thread while a map, for-each, or count is in process,
-  arbitrary key--value pairs can be dropped or duplicated in the map
-  or for-each. Similarly, if a map or for-each procedure itself
-  extends the table, arbitrary key--value pairs can be dropped or
-  duplicated. However, key mappings can be deleted or remapped by any
-  thread with no adverse affects (i.e., the change does not affect a
-  traversal if the key has been seen already, otherwise the traversal
-  skips a deleted key or uses the remapped key's new value).}
+  @item{The @scheme[hash-map] and @scheme[hash-for-each] procedures do
+  not use the table's semaphore. Consequently, if a hash table is
+  extended with new keys by another thread while a map or for-each
+  traversal is in process, arbitrary key--value pairs can be dropped
+  or duplicated in the traversal. Similarly, if a map or for-each
+  procedure itself extends the table, arbitrary key--value pairs can
+  be dropped or duplicated. However, key mappings can be deleted or
+  remapped by any thread with no adverse affects (i.e., the change
+  does not affect a traversal if the key has been seen already,
+  otherwise the traversal skips a deleted key or uses the remapped
+  key's new value).}
 
  }
 
 @bold{Caveat concerning mutable keys:} If a key into an
 @scheme[equal?]-based hash table is mutated (e.g., a key string is
 modified with @scheme[string-set!]), then the hash table's behavior
-for put and get operations becomes unpredictable.
+for insertion and lookup operations becomes unpredictable.
 
 
-@defproc[(hash-table? [v any/c] [flag (one-of/c 'weak 'equal)] ...) 
-         hash-table?]{
+@defproc[(hash? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] was created by
-@scheme[make-hash-table] or @scheme[make-immutable-hash-table] with
-the given @scheme[flag]s (or more), @scheme[#f] otherwise. Each
-provided @scheme[flag] must be distinct; if the second @scheme[flag]
-is redundant, the @exnraise[exn:fail:contract].}
+Returns @scheme[#t] if @scheme[v] is a @tech{hash table}, @scheme[#f]
+otherwise.}
 
+@defproc[(hash-eq? [hash hash?]) boolean?]{
 
-@defproc[(make-hash-table [flag (one-of/c 'weak 'equal)] ...) 
-         hash-table?]{
-
-Creates and returns a new hash table. If provided, each @scheme[flag]
-must one of the following:
-
- @itemize{
-
-  @item{@indexed-scheme['weak] --- creates a hash table with weakly-held
-   keys (see @secref["weakbox"]).}
-
-  @item{@indexed-scheme['equal] --- creates a hash table that compares
-   keys using @scheme[equal?] instead of @scheme[eq?] (needed, for
-   example, when using strings as keys).}
-
- }
-
-By default, key comparisons use @scheme[eq?]. If the second
-@scheme[flag] is redundant, the @exnraise[exn:fail:contract].}
+Returns @scheme[#t] if @scheme[hash] compares keys with @scheme[eq?],
+@scheme[#f] if it compares with @scheme[equal?].}
 
 
-@defproc[(make-immutable-hash-table [assocs (listof pair?)]
-                                    [flag (one-of/c 'equal)]
-                                    ...)
-         (and/c hash-table? immutable?)]{
+@defproc[(hash-weak? [hash hash?]) boolean?]{
 
-Creates an immutable hash table. In each element of @scheme[assocs],
-the @scheme[car] of each pair is a key, and the @scheme[cdr] is the
-corresponding value. The mappings are added to the table in the order
-that they appear in @scheme[assocs], so later mappings can hide
-earlier mappings. If the optional @scheme[flag] argument is provided,
-it must be @scheme['equal], and the created hash table compares keys
-with @scheme[equal?]; otherwise, the created table compares keys with
-@scheme[eq?].}
+Returns @scheme[#t] if @scheme[hash] retains its keys weakly,
+@scheme[#f] if it retains keys strongly.}
 
 
-@defproc[(hash-table-put! [hash-table (and/c hash-table?
-                                             (not/c immutable?))]
-                          [key any/c]
-                          [v any/c]) void?]{
+@defproc[(make-hash) hash?]{
 
-Maps @scheme[key] to @scheme[v] in @scheme[hash-table], overwriting
+Creates an empty mutable hash table that holds keys strongly and that
+uses @scheme[equal?] to compare keys.}
+
+
+@defproc[(make-hasheq) (and/c hash? hash-eq?)]{
+
+Creates an empty mutable hash table that holds keys strongly and that
+uses @scheme[eq?] to compare keys.}
+
+
+@defproc[(make-weak-hash) (and/c hash? hash-weak?)]{
+
+Creates an empty mutable hash table that holds keys weakly and that
+uses @scheme[equal?] to compare keys.}
+
+
+@defproc[(make-weak-hasheq) (and/c hash? hash-eq? hash-weak?)]{
+
+Creates an empty mutable hash table that holds keys weakly and that
+uses @scheme[eq?] to compare keys.}
+
+
+@defproc[(make-immutable-hash [assocs (listof pair?)])
+         (and/c hash? immutable?)]{
+
+Creates an immutable hash table that compares keys with
+@scheme[equal?]. In each element of @scheme[assocs], the @scheme[car]
+of each pair is a key, and the @scheme[cdr] is the corresponding
+value. The mappings are added to the table in the order that they
+appear in @scheme[assocs], so later mappings can hide earlier
+mappings.}
+
+@defproc[(make-immutable-hasheq [assocs (listof pair?)])
+         (and/c hash? hash-eq? immutable?)]{
+
+Like @scheme[make-immutable-hash], but the resulting hash table
+compares keys with @scheme[eq?].}
+
+
+@defproc[(hash-set! [hash (and/c hash? (not/c immutable?))]
+                    [key any/c]
+                    [v any/c]) void?]{
+
+Maps @scheme[key] to @scheme[v] in @scheme[hash], overwriting
 any existing mapping for @scheme[key].}
 
-@defproc[(hash-table-get [hash-table hash-table?]
-                         [key any/c]
-                         [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+
+@defproc[(hash-set [hash (and/c hash? immutable?)]
+                   [key any/c]
+                   [v any/c])
+          (and/c hash? immutable?)]{
+
+Functionally extends @scheme[hash] by mapping @scheme[key] to
+@scheme[v], overwriting any existing mapping for @scheme[key], and
+returning an extended hash table.}
+
+
+@defproc[(hash-ref [hash hash?]
+                   [key any/c]
+                   [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
          any]{
 
-Returns the value for @scheme[key] in @scheme[hash-table]. If no value
+Returns the value for @scheme[key] in @scheme[hash]. If no value
 is found for @scheme[key], then @scheme[failure-result] determines the
 result: 
 
@@ -557,94 +584,99 @@ result:
 }}
 
 
-@defproc[(hash-table-remove! [hash-table (and/c hash-table?
-                                             (not/c immutable?))]
-                             [key any/c])
+@defproc[(hash-remove! [hash (and/c hash? (not/c immutable?))]
+                       [key any/c])
          void?]{
 
-Removes any existing mapping for @scheme[key] in @scheme[hash-table].}
+Removes any existing mapping for @scheme[key] in @scheme[hash].}
 
 
-@defproc[(hash-table-map [hash-table hash-table?]
-                         [proc (any/c any/c . -> . any/c)])
+@defproc[(hash-remove [hash (and/c hash? immutable?)]
+                      [key any/c])
+         (and/c hash? immutable?)]{
+
+Functionally removes any existing mapping for @scheme[key] in
+@scheme[hash], returning the updated hash table.}
+
+
+@defproc[(hash-map [hash hash?]
+                   [proc (any/c any/c . -> . any/c)])
          (listof any/c)]{
 
 Applies the procedure @scheme[proc] to each element in
-@scheme[hash-table] in an unspecified order, accumulating the results
+@scheme[hash] in an unspecified order, accumulating the results
 into a list. The procedure @scheme[proc] is called each time with a
 key and its value. See the caveat above about concurrent
 modification.}
 
 
-@defproc[(hash-table-for-each [hash-table hash-table?]
-                              [proc (any/c any/c . -> . any)])
+@defproc[(hash-for-each [hash hash?]
+                        [proc (any/c any/c . -> . any)])
          void?]{
 
-Applies @scheme[proc] to each element in @scheme[hash-table] (for the
+Applies @scheme[proc] to each element in @scheme[hash] (for the
 side-effects of @scheme[proc]) in an unspecified order. The procedure
 @scheme[proc] is called each time with a key and its value. See the
 caveat above about concurrent modification.}
 
 
-@defproc[(hash-table-count [hash-table hash-table?])
+@defproc[(hash-count [hash hash?])
          nonnegative-exact-integer?]{
 
-Returns the number of keys mapped by @scheme[hash-table]. If
-@scheme[hash-table] is not created with @scheme['weak], then the
+Returns the number of keys mapped by @scheme[hash]. If
+@scheme[hash] is not created with @scheme['weak], then the
 result is computed in constant time and atomically. If
-@scheme[hash-table] is created with @scheme['weak], see the caveat
+@scheme[hash] is created with @scheme['weak], see the caveat
 above about concurrent modification.}
 
 
-@defproc[(hash-table-iterate-first [hash-table hash-table?])
-         (o/c false/c nonnegative-exact-integer?)]{
+@defproc[(hash-iterate-first [hash hash?])
+         (or/c false/c nonnegative-exact-integer?)]{
 
-Returns @scheme[#f] if @scheme[hash-table] contains no elements,
-otherwise it returns an integer that is a index to the first element
-in the hash table; ``first'' refers to an unspecified ordering of the
-table elements, and the index values are not necessarily consecutive
-integers. This index is guaranteed to refer to the first item only as
-long as no items are added to or removed from @scheme[hash-table].}
+Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
+it returns an integer that is a index to the first element in the hash
+table; ``first'' refers to an unspecified ordering of the table
+elements, and the index values are not necessarily consecutive
+integers. For a mutable @scheme[hash], this index is guaranteed to
+refer to the first item only as long as no items are added to or
+removed from @scheme[hash].}
 
-@defproc[(hash-table-iterate-next [hash-table hash-table?]
-                                  [prev nonnegative-exact-integer?])
-         (o/c false/c nonnegative-exact-integer?)]{
+@defproc[(hash-iterate-next [hash hash?]
+                            [prev nonnegative-exact-integer?])
+         (or/c false/c nonnegative-exact-integer?)]{
 
 Returns either an integer that is an index to the element in
-@scheme[hash-table] after the element indexed by @scheme[pos] (which
-is not necessarily one more than @scheme[pos]) or @scheme[#f] if
-@scheme[pos] refers to the last element in @scheme[hash-table]. If
-@scheme[pos] is not a valid index, then the
-@exnraise[exn:fail:contract]. The result index is guaranteed to refer
-to its item only as long as no items are added to or removed from
-@scheme[hash-table].}
+@scheme[hash] after the element indexed by @scheme[pos] (which is not
+necessarily one more than @scheme[pos]) or @scheme[#f] if @scheme[pos]
+refers to the last element in @scheme[hash]. If @scheme[pos] is not a
+valid index, then the @exnraise[exn:fail:contract]. For a mutable
+@scheme[hash], the result index is guaranteed to refer to its item
+only as long as no items are added to or removed from @scheme[hash].}
 
 
-@defproc[(hash-table-iterate-key [hash-table hash-table?]
-                                 [pos nonnegative-exact-integer?])
+@defproc[(hash-iterate-key [hash hash?]
+                           [pos nonnegative-exact-integer?])
          any]{
 
-Returns the key for the element in @scheme[hash-table] at index
+Returns the key for the element in @scheme[hash] at index
 @scheme[pos]. If @scheme[pos] is not a valid index for
-@scheme[hash-table], the @exnraise[exn:fail:contract].}
+@scheme[hash], the @exnraise[exn:fail:contract].}
 
 
-@defproc[(hash-table-iterate-value [hash-table hash-table?]
-                                   [pos nonnegative-exact-integer?])
+@defproc[(hash-iterate-value [hash hash?]
+                             [pos nonnegative-exact-integer?])
          any]{
 
-Returns the value for the element in @scheme[hash-table] at index
+Returns the value for the element in @scheme[hash] at index
 @scheme[pos]. If @scheme[pos] is not a valid index for
-@scheme[hash-table], the @exnraise[exn:fail:contract].}
+@scheme[hash], the @exnraise[exn:fail:contract].}
 
 
-@defproc[(hash-table-copy [hash-table hash-table?]) 
-         (and/c hash-table?
-                (not/c immutable?))]{
+@defproc[(hash-copy [hash hash?]) 
+         (and/c hash? (not/c immutable?))]{
 
 Returns a mutable hash table with the same mappings, same
-key-comparison mode, and same key-holding strength as
-@scheme[hash-table].}
+key-comparison mode, and same key-holding strength as @scheme[hash].}
 
 
 @defproc[(eq-hash-code [v any/c]) exact-integer?]{

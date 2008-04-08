@@ -56,7 +56,7 @@
   ;; Extract the path part:
   (define path (map path/param-path (url-path url)))
   ;; Find a handler based on the path's first element:
-  (define h (hash-table-get dispatch-table (car path) #f))
+  (define h (hash-ref dispatch-table (car path) #f))
   (if h
       ;; Call a handler:
       (h (url-query url))
@@ -67,10 +67,10 @@
                     "Unknown page: "
                     ,str-path)))))
 
-(define dispatch-table (make-hash-table 'equal))
+(define dispatch-table (make-hash))
 
 ;; A simple dispatcher:
 
-(hash-table-put! dispatch-table "hello"
-                 (lambda (query)
-                   `(html (body "Hello, World!"))))
+(hash-set! dispatch-table "hello"
+           (lambda (query)
+             `(html (body "Hello, World!"))))

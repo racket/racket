@@ -59,16 +59,16 @@
 								(#,lambda-stx (arg ... . rest)
 									      . #,body))))])])
                                      (let* ([args (if allow-key+opt?
-                                                      (let* ([kw-ht (make-hash-table)]
+                                                      (let* ([kw-ht (make-hasheq)]
                                                              [check-kw
                                                               (lambda (kw)
-                                                                (when (hash-table-get kw-ht (syntax-e kw) #f)
+                                                                (when (hash-ref kw-ht (syntax-e kw) #f)
                                                                   (raise-syntax-error
                                                                    #f
                                                                    "duplicate keyword for argument"
                                                                    stx
                                                                    kw))
-                                                                (hash-table-put! kw-ht (syntax-e kw) #t))])
+                                                                (hash-set! kw-ht (syntax-e kw) #t))])
                                                         (let loop ([args args][need-def? #f])
                                                           (syntax-case args ()
                                                             [() null]

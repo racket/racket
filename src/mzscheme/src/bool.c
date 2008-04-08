@@ -324,11 +324,11 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
   static int equal_counter = EQUAL_COUNT_START;
 
  top:
-  if (scheme_eqv (obj1, obj2))
+  if (scheme_eqv(obj1, obj2))
     return 1;
-  else if (NOT_SAME_TYPE(SCHEME_TYPE(obj1), SCHEME_TYPE(obj2)))
+  else if (NOT_SAME_TYPE(SCHEME_TYPE(obj1), SCHEME_TYPE(obj2))) {
     return 0;
-  else if (SCHEME_PAIRP(obj1)) {
+  } else if (SCHEME_PAIRP(obj1)) {
 #   include "mzeqchk.inc"
     if ((eql->car_depth > 2) || !scheme_is_list(obj1)) {
       if (union_check(obj1, obj2, eql))
@@ -448,6 +448,11 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     if (union_check(obj1, obj2, eql))
       return 1;
     return scheme_hash_table_equal_rec((Scheme_Hash_Table *)obj1, (Scheme_Hash_Table *)obj2, eql);
+  } else if (SCHEME_HASHTRP(obj1)) {
+#   include "mzeqchk.inc"
+    if (union_check(obj1, obj2, eql))
+      return 1;
+    return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)obj1, (Scheme_Hash_Tree *)obj2, eql);
   } else if (SCHEME_BUCKTP(obj1)) {
 #   include "mzeqchk.inc"
     if (union_check(obj1, obj2, eql))

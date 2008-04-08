@@ -104,37 +104,37 @@
                                     with-record-error)
                       docs))))
   (define (make-loop first? iter)
-    (let ([ht (make-hash-table 'equal)]
+    (let ([ht (make-hash)]
           [infos (filter (lambda (i) (not (info-failed? i))) infos)]
-          [src->info (make-hash-table 'equal)])
+          [src->info (make-hash)])
       ;; Collect definitions
       (for* ([info infos]
              [k (info-provides info)])
-        (let ([prev (hash-table-get ht k #f)])
+        (let ([prev (hash-ref ht k #f)])
           (when (and first? prev)
             (fprintf (current-error-port)
                      "DUPLICATE tag: ~s\n  in: ~a\n and: ~a\n"
                      k
                      (doc-src-file (info-doc prev))
                      (doc-src-file (info-doc info))))
-          (hash-table-put! ht k info)))
+          (hash-set! ht k info)))
       ;; Build deps:
       (for ([i infos])
-        (hash-table-put! src->info (doc-src-file (info-doc i)) i))
+        (hash-set! src->info (doc-src-file (info-doc i)) i))
       (for ([info infos] #:when (info-build? info))
         (let ([one? #f]
               [added? #f]
-              [deps (make-hash-table)]
+              [deps (make-hasheq)]
               [all-main? (memq 'depends-all-main (doc-flags (info-doc info)))])
           (set-info-deps!
            info
            (map (lambda (d)
-                  (if (info? d) d (or (hash-table-get src->info d #f) d)))
+                  (if (info? d) d (or (hash-ref src->info d #f) d)))
                 (info-deps info)))
           (for ([d (info-deps info)])
-            (let ([i (if (info? d) d (hash-table-get src->info d #f))])
+            (let ([i (if (info? d) d (hash-ref src->info d #f))])
               (if i
-                (hash-table-put! deps i #t)
+                (hash-set! deps i #t)
                 (unless
                     (or (memq 'depends-all (doc-flags (info-doc info)))
                         (and (if (info? d)
@@ -153,11 +153,11 @@
                       (doc-src-file (info-doc info))))
             (for ([i infos])
               (when (and (not (eq? i info))
-                         (not (hash-table-get deps i #f))
+                         (not (hash-ref deps i #f))
                          (or (not all-main?) (doc-under-main? (info-doc i)))
                          (not (memq 'no-depend-on (doc-flags (info-doc i)))))
                 (set! added? #t)
-                (hash-table-put! deps i #t))))
+                (hash-set! deps i #t))))
           (let ([not-found
                  (lambda (k)
                    (unless one?
@@ -166,22 +166,22 @@
                      (set! one? #t))
                    (fprintf (current-error-port) "  undefined tag: ~s\n" k))])
             (for ([k (info-undef info)])
-              (let ([i (hash-table-get ht k #f)])
+              (let ([i (hash-ref ht k #f)])
                 (if i
-                  (when (not (hash-table-get deps i #f))
+                  (when (not (hash-ref deps i #f))
                     (set! added? #t)
-                    (hash-table-put! deps i #t))
+                    (hash-set! deps i #t))
                   (when first? (unless (eq? (car k) 'dep) (not-found k))))))
             (when first?
               (for ([(s-key s-ht) (info-searches info)])
-                (unless (ormap (lambda (k) (hash-table-get ht k #f))
-                               (hash-table-map s-ht (lambda (k v) k)))
+                (unless (ormap (lambda (k) (hash-ref ht k #f))
+                               (hash-map s-ht (lambda (k v) k)))
                   (not-found s-key)))))
           (when added?
             (when (verbose)
               (printf " [Added Dependency: ~a]\n"
                       (doc-src-file (info-doc info))))
-            (set-info-deps! info (hash-table-map deps (lambda (k v) k)))
+            (set-info-deps! info (hash-map deps (lambda (k v) k)))
             (set-info-need-in-write?! info #t)
             (set-info-need-run?! info #t))))
       ;; If a dependency changed, then we need a re-run:
@@ -352,7 +352,7 @@
                 (lambda ()
                   (deserialize v)))))
            (let ([v (list-ref v-in 3)])  ; searches
-             (if (hash-table? v) ; temporary compatibility; used to be not serialized
+             (if (hash? v) ; temporary compatibility; used to be not serialized
                v
                (with-my-namespace
                 (lambda ()

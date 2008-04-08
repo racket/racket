@@ -488,14 +488,14 @@
                                relative->binary-relative)
       (unless (null? paths)
         ;; Determine the shared path prefix:
-        (let* ([root-table (make-hash-table 'equal)]
+        (let* ([root-table (make-hash)]
                [root->path-element (lambda (root)
-                                     (hash-table-get root-table
-                                                     root
-                                                     (lambda ()
-                                                       (let ([v (format "r~a" (hash-table-count root-table))])
-                                                         (hash-table-put! root-table root v)
-                                                         v))))]
+                                     (hash-ref root-table
+                                               root
+                                               (lambda ()
+                                                 (let ([v (format "r~a" (hash-count root-table))])
+                                                   (hash-set! root-table root v)
+                                                   v))))]
                [explode (lambda (src)
                           (reverse
                            (let loop ([src src])

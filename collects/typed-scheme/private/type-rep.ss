@@ -5,7 +5,7 @@
            mzlib/trace scheme/match
            (for-syntax scheme/base))
   
-  (define name-table (make-hash-table 'weak))
+  (define name-table (make-weak-hasheq))
   
   ;; Name = Symbol
   
@@ -16,11 +16,11 @@
   
   ;; i is an nat
   (dt B (i)
-      [#:frees empty-hash-table (make-immutable-hash-table (list (cons i Covariant)))]
+      [#:frees empty-hash-table (make-immutable-hasheq (list (cons i Covariant)))]
       [#:fold-rhs #:base])
   
   ;; n is a Name
-  (dt F (n) [#:frees (make-immutable-hash-table (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
+  (dt F (n) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
   
   ;; id is an Identifier
   (dt Name (id) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
@@ -188,19 +188,19 @@
   (let ()
     (define (mk ht)
       (lambda (stx)
-        (let ([ht (hash-table-copy ht)])
+        (let ([ht (hash-copy ht)])
           (define (mk-matcher kw) 
             (datum->syntax stx (string->symbol (string-append (keyword->string kw) ":"))))
           (define (add-clause cl)
             (syntax-case cl ()
               [(kw #:matcher mtch pats ... expr)
-               (hash-table-put! ht (syntax-e #'kw) (list #'mtch 
-                                                         (syntax/loc cl (pats ...))
-                                                         (lambda (tr er) #'expr)))]
+               (hash-set! ht (syntax-e #'kw) (list #'mtch 
+                                                   (syntax/loc cl (pats ...))
+                                                   (lambda (tr er) #'expr)))]
               [(kw pats ... expr) 
-               (hash-table-put! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
-                                                         (syntax/loc cl (pats ...))
-                                                         (lambda (tr er) #'expr)))]))
+               (hash-set! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
+                                                   (syntax/loc cl (pats ...))
+                                                   (lambda (tr er) #'expr)))]))
           (define rid #'type-rec-id)
           (define erid #'effect-rec-id)
           (define (gen-clause k v)
@@ -224,7 +224,7 @@
                      ;; then generate the fold
                      #,(quasisyntax/loc stx
                          (match #,fold-target
-                           #,@(hash-table-map ht gen-clause))))))]))))
+                           #,@(hash-map ht gen-clause))))))]))))
     (values (mk type-name-ht) (mk effect-name-ht))))
 
 (provide type-case effect-case)
@@ -306,7 +306,7 @@
   ;; the 'smart' constructor
   (define (Mu* name body)    
     (let ([v (*Mu (abstract name body))])
-      (hash-table-put! name-table v name)
+      (hash-set! name-table v name)
       v))
   
   ;; the 'smart' destructor
@@ -319,7 +319,7 @@
   (define (Poly* names body)
     (if (null? names) body
         (let ([v (*Poly (length names) (abstract-many names body))])
-          (hash-table-put! name-table v names)
+          (hash-set! name-table v names)
           v)))
   
   ;; the 'smart' destructor
@@ -356,7 +356,7 @@
       (syntax-case stx ()
         [(_ np bp)
          #'(? Mu?
-              (app (lambda (t) (let ([sym (hash-table-get name-table t (lambda _ (gensym)))])
+              (app (lambda (t) (let ([sym (hash-ref name-table t (lambda _ (gensym)))])
                                  (list sym (Mu-body* sym t))))
                    (list np bp)))])))
   
@@ -381,7 +381,7 @@
          #'(? Poly?
               (app (lambda (t) 
                      (let* ([n (Poly-n t)]
-                            [syms (hash-table-get name-table t)])
+                            [syms (hash-ref name-table t)])
                        (list syms (Poly-body* syms t))))
                    (list nps bp)))])))
   

@@ -315,7 +315,7 @@
 
 ;; gather-one-subterm : syntax syntax -> SubtermTable
 (define (gather-one-subterm whole part)
-  (let ([table (make-hash-table)])
+  (let ([table (make-hasheq)])
     (let ([paths (find-subterm-paths part whole)])
       (for-each (lambda (p) (table-add! table part p)) paths))
     table))
@@ -323,7 +323,7 @@
 ;; gather-proper-subterms : Syntax -> SubtermTable
 ;; FIXME: Eventually, need to descend into vectors, boxes, etc.
 (define (gather-proper-subterms stx0)
-  (let ([table (make-hash-table)])
+  (let ([table (make-hasheq)])
     ;; loop : Syntax Path -> void
     (define (loop stx rpath)
       (unless (eq? stx0 stx)
@@ -370,16 +370,16 @@
 
 ;; A Table is a hashtable[syntax => (list-of Path)
 (define (table-add! table stx v)
-  (hash-table-put! table stx (cons v (table-get table stx))))
+  (hash-set! table stx (cons v (table-get table stx))))
 (define (table-add-if-absent! table stx v)
   (unless (memq v (table-get table stx))
     (table-add! table stx v)))
 (define (table-get table stx)
-  (hash-table-get table stx (lambda () null)))
+  (hash-ref table stx (lambda () null)))
 
 ;; do-rename : syntax syntax -> (values (list-of Subterm) Table)
 (define (do-rename stx rename)
-  (let ([t (make-hash-table)]
+  (let ([t (make-hasheq)]
         [old (subterms-table)])
     ;; loop : syntax syntax -> (list-of Subterm)
     ;; Puts things into the new table, too
@@ -388,7 +388,7 @@
       (cond [(and (syntax? stx) (syntax? rename))
              (let ([paths (table-get old stx)])
                (if (pair? paths)
-                   (begin (hash-table-put! t rename paths)
+                   (begin (hash-set! t rename paths)
                           (loop (syntax-e stx) (syntax-e rename) #f)
                           (if active?
                               (map (lambda (p) (make s:rename p stx rename))

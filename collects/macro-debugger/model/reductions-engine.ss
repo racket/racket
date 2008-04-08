@@ -394,10 +394,10 @@
                  (current-frontier))))))
 
 (define (make-rename-mapping from0 to0)
-  (define table (make-hash-table))
+  (define table (make-hasheq))
   (let loop ([from from0] [to to0])
     (cond [(syntax? from)
-           (hash-table-put! table from (flatten-syntaxes to))
+           (hash-set! table from (flatten-syntaxes to))
            (loop (syntax-e from) to)]
           [(syntax? to)
            (loop from (syntax-e to))]
@@ -417,7 +417,7 @@
            (loop (unbox from) (unbox to))]
           [else (void)]))
   (lambda (stx)
-    (let ([replacement (hash-table-get table stx #f)])
+    (let ([replacement (hash-ref table stx #f)])
       (if replacement
           (begin #;(printf "  replacing ~s with ~s~n" stx replacement)
                  replacement)

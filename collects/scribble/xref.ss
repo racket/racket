@@ -53,7 +53,7 @@
 (define (xref-index xrefs)
   (filter
    values
-   (hash-table-map
+   (hash-map
     (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
     (lambda (k v)
       (and (pair? k)
@@ -128,7 +128,7 @@
         tag->path+anchor (xrefs-ri xrefs) tag))
 
 (define (xref-tag->index-entry xrefs tag)
-  (let ([v (hash-table-get
+  (let ([v (hash-ref
             (collect-info-ext-ht (resolve-info-ci (xrefs-ri xrefs)))
             `(index-entry ,tag)
             #f)])

@@ -142,7 +142,7 @@
   (define annotate-stx
     (opt-lambda (stx break-wrap record-bound-id record-top-level-id [source #f])
       
-      (define breakpoints (make-hash-table))
+      (define breakpoints (make-hasheq))
       
       (define (previous-bindings bound-vars)
         (if (null? bound-vars)
@@ -209,7 +209,7 @@
           (let ([pos (syntax-position expr)]
                 [src (syntax-source expr)])
             (and src pos
-                 (hash-table-get breakpoints pos (lambda () #t))
+                 (hash-ref breakpoints pos (lambda () #t))
                  (kernel:kernel-syntax-case
                   expr #f
                   [(if test then else) #t]
@@ -222,9 +222,9 @@
                   [(#%plain-app . exprs) #t]
                   [_ #f])
                  (begin
-                   (hash-table-put! breakpoints pos #f)
+                   (hash-set! breakpoints pos #f)
                    (when (not is-tail?)
-                     (hash-table-put! breakpoints (+ pos (syntax-span expr) -1) #f))
+                     (hash-set! breakpoints (+ pos (syntax-span expr) -1) #f))
                    #t))))
         
         (define (let/rec-values-annotator letrec?)
@@ -378,4 +378,4 @@
              is-tail?)
             annotated))
       
-      (values (top-level-annotate stx) (hash-table-map breakpoints (lambda (k v) k))))))
+      (values (top-level-annotate stx) (hash-map breakpoints (lambda (k v) k))))))

@@ -161,7 +161,7 @@
 					     [else (cons (car l) (loop (cdr l)))])))
 				    (cons (car rows) rest))))))])
 	    ;; Extract procs and eliminate duplicates
-	    (let ([procs (let ([ht (make-hash-table)])
+	    (let ([procs (let ([ht (make-hasheq)])
 			   (for-each
 			    (lambda (proc-line)
 			      (let-values ([(loc-name ext-name)
@@ -169,11 +169,11 @@
 					      (if (pair? n)
 						  (values (car n) (cadr n))
 						  (values n n)))])
-					  (hash-table-put! ht ext-name (list* (car proc-line)
-									      loc-name
-									      ext-name))))
+					  (hash-set! ht ext-name (list* (car proc-line)
+                                                                        loc-name
+                                                                        ext-name))))
 			    (apply append (map cdr rows)))
-			   (hash-table-map ht (lambda (key val) val)))])
+			   (hash-map ht (lambda (key val) val)))])
 	      (let ([names (map (lambda (proc)
 				  (cond
 				   [(car proc)

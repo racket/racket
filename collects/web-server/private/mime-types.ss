@@ -5,12 +5,12 @@
 (require "util.ss"
          "response-structs.ss")
 (provide/contract
- [read-mime-types (path-string? . -> . hash-table?)]
+ [read-mime-types (path-string? . -> . hash?)]
  [make-path->mime-type (path-string? . -> . (path? . -> . bytes?))])
 
 ; read-mime-types : path? -> hash-table?
 (define (read-mime-types a-path)
-  (define MIME-TYPE-TABLE (make-hash-table))
+  (define MIME-TYPE-TABLE (make-hasheq))
   (with-input-from-file a-path
     (lambda ()
       (let loop ()
@@ -20,9 +20,9 @@
           [(regexp #"^([^\t ]+)[\t ]+(.+)$"
                    (list s type exts))
            (for-each (lambda (ext)
-                       (hash-table-put! MIME-TYPE-TABLE
-                                        (lowercase-symbol! ext)
-                                        type))
+                       (hash-set! MIME-TYPE-TABLE
+                                  (lowercase-symbol! ext)
+                                  type))
                      (regexp-split #" " exts))
            (loop)]
           [_
@@ -41,7 +41,7 @@
   (lambda (path)
     (match (regexp-match file-suffix-regexp (path->bytes path))
       [(list path-bytes sffx)
-       (hash-table-get MIME-TYPE-TABLE
-                       (lowercase-symbol! sffx)
-                       (lambda () TEXT/HTML-MIME-TYPE))]
+       (hash-ref MIME-TYPE-TABLE
+                 (lowercase-symbol! sffx)
+                 (lambda () TEXT/HTML-MIME-TYPE))]
       [_ TEXT/HTML-MIME-TYPE])))

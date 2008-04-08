@@ -6,31 +6,31 @@
 
 (define (new-cache-table)
   ; Only eq? tables are not locked
-  (make-cache-table (make-hash-table)
+  (make-cache-table (make-hasheq)
                     (make-semaphore 1)))
 
 (define (cache-table-clear! ct)
   (call-with-semaphore
    (cache-table-semaphore ct)
    (lambda ()
-     (set-cache-table-hash! ct (make-hash-table)))))
+     (set-cache-table-hash! ct (make-hasheq)))))
 
 (define (cache-table-lookup! ct entry-id entry-thunk)
   (define ht (cache-table-hash ct))
   (define sema (cache-table-semaphore ct))
   ; Fast lookup
-  (hash-table-get
+  (hash-ref
    ht entry-id
    (lambda ()
      ; Now lock for relookup and computation
      (call-with-semaphore
       sema
       (lambda ()
-        (hash-table-get
+        (hash-ref
          ht entry-id
          (lambda ()
            (define entry (entry-thunk))
-           (hash-table-put! ht entry-id entry)
+           (hash-set! ht entry-id entry)
            entry)))))))
 
 (provide/contract

@@ -10,25 +10,25 @@
   (define-struct resolve-info (ci delays undef searches))
 
   (define (part-collected-info part ri)
-    (hash-table-get (collect-info-parts (resolve-info-ci ri))
-                    part))
+    (hash-ref (collect-info-parts (resolve-info-ci ri))
+              part))
 
 
   (define (collect-put! ci key val)
     (let ([ht (collect-info-ht ci)])
-      (when (hash-table-get ht key #f)
+      (when (hash-ref ht key #f)
         (fprintf (current-error-port)
                  "WARNING: collected information for key multiple times: ~e\n"
                  key))
-      (hash-table-put! ht key val)))
+      (hash-set! ht key val)))
 
   (define (resolve-get/where part ri key)
     (let ([key (tag-key key ri)])
-      (let ([v (hash-table-get (if part
-                                   (collected-info-info (part-collected-info part ri))
-                                   (collect-info-ht (resolve-info-ci ri)))
-                               key
-                               #f)])
+      (let ([v (hash-ref (if part
+                             (collected-info-info (part-collected-info part ri))
+                             (collect-info-ht (resolve-info-ci ri)))
+                         key
+                         #f)])
         (cond
          [v (values v #f)]
          [part (resolve-get/where (collected-info-parent
@@ -36,29 +36,29 @@
                                   ri
                                   key)]
          [else
-          (let ([v (hash-table-get (collect-info-ext-ht (resolve-info-ci ri))
-                                   key
-                                   #f)])
+          (let ([v (hash-ref (collect-info-ext-ht (resolve-info-ci ri))
+                             key
+                             #f)])
             (values v #t))]))))
 
   (define (resolve-get part ri key)
     (let-values ([(v ext?) (resolve-get/where part ri key)])
       (when ext?
-        (hash-table-put! (resolve-info-undef ri)
-                         (tag-key key ri)
-                         #t))
+        (hash-set! (resolve-info-undef ri)
+                   (tag-key key ri)
+                   #t))
       v))
 
   (define (resolve-search search-key part ri key)
-    (let ([s-ht (hash-table-get (resolve-info-searches ri)
-                                search-key
-                                (lambda ()
-                                  (let ([s-ht (make-hash-table 'equal)])
-                                    (hash-table-put! (resolve-info-searches ri)
-                                                     search-key
-                                                     s-ht)
-                                    s-ht)))])
-      (hash-table-put! s-ht key #t))
+    (let ([s-ht (hash-ref (resolve-info-searches ri)
+                          search-key
+                          (lambda ()
+                            (let ([s-ht (make-hash)])
+                              (hash-set! (resolve-info-searches ri)
+                                         search-key
+                                         s-ht)
+                              s-ht)))])
+      (hash-set! s-ht key #t))
     (resolve-get part ri key))
 
   (define (resolve-get/tentative part ri key)
@@ -67,7 +67,7 @@
 
   (define (resolve-get-keys part ri key-pred)
     (let ([l null])
-      (hash-table-for-each 
+      (hash-for-each 
        (collected-info-info 
         (part-collected-info part ri))
        (lambda (k v)
@@ -211,11 +211,11 @@
   
   (provide delayed-element-content)
   (define (delayed-element-content e ri)
-    (hash-table-get (resolve-info-delays ri) e))
+    (hash-ref (resolve-info-delays ri) e))
 
   (provide delayed-block-blocks)
   (define (delayed-block-blocks p ri)
-    (hash-table-get (resolve-info-delays ri) p))
+    (hash-ref (resolve-info-delays ri) p))
 
   (provide current-serialize-resolve-info)
   (define current-serialize-resolve-info (make-parameter #f))
@@ -254,10 +254,10 @@
   
   (provide part-relative-element-content)
   (define (part-relative-element-content e ci/ri)
-    (hash-table-get (collect-info-relatives (if (resolve-info? ci/ri)
-                                                (resolve-info-ci ci/ri)
-                                                ci/ri))
-                    e))
+    (hash-ref (collect-info-relatives (if (resolve-info? ci/ri)
+                                          (resolve-info-ci ci/ri)
+                                          ci/ri))
+              e))
 
   (provide collect-info-parents)
 
@@ -326,10 +326,10 @@
          (unless ri
            (error 'serialize-generated-tag
                   "current-serialize-resolve-info not set"))
-         (let ([t (hash-table-get (collect-info-tags
-                                   (resolve-info-ci ri))
-                                  g
-                                  #f)])
+         (let ([t (hash-ref (collect-info-tags
+                              (resolve-info-ci ri))
+                             g
+                             #f)])
            (if t
                (vector t)
                (error 'serialize-generated-tag
@@ -352,20 +352,20 @@
         (let ([t (cadr tg)])
           (list (car tg)
                 (let ([tags (collect-info-tags ci)])
-                  (or (hash-table-get tags t #f)
+                  (or (hash-ref tags t #f)
                       (let ([key (list* 'gentag
-                                        (hash-table-count tags)
+                                        (hash-count tags)
                                         (collect-info-gen-prefix ci))])
-                        (hash-table-put! tags t key)
+                        (hash-set! tags t key)
                         key)))))
         tg))
 
   (define (tag-key tg ri)
     (if (generated-tag? (cadr tg))
         (list (car tg)
-              (hash-table-get (collect-info-tags
-                               (resolve-info-ci ri))
-                              (cadr tg)))
+              (hash-ref (collect-info-tags
+                          (resolve-info-ci ri))
+                         (cadr tg)))
         tg))
 
   ;; ----------------------------------------

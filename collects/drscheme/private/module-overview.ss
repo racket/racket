@@ -78,10 +78,10 @@
   ;; pasteboard as result is the pasteboard to show
   (define (make-module-overview-pasteboard vertical? mouse-currently-over)
     
-    (define level-ht (make-hash-table))
+    (define level-ht (make-hasheq))
     
     ;; snip-table : hash-table[sym -o> snip]
-    (define snip-table (make-hash-table 'equal))
+    (define snip-table (make-hash))
     (define label-font (find-label-font (preferences:get 'drscheme:module-overview:label-font-size)))
     (define text-color (make-object color% "blue"))
     
@@ -175,8 +175,8 @@
               (when s
                 (send s release-from-owner)
                 (loop))))
-          (set! level-ht (make-hash-table))
-          (set! snip-table (make-hash-table 'equal)))
+          (set! level-ht (make-hasheq))
+          (set! snip-table (make-hash)))
         
         (define/public (end-adding-connections)
           (unless max-lines
@@ -243,7 +243,7 @@
         ;; ones. For the same key, always returns the same snip.
         ;; uses snip-table as a cache for this purpose.
         (define/private (find/create-snip name is-filename?)
-          (hash-table-get
+          (hash-ref
            snip-table
            name
            (λ () 
@@ -254,7 +254,7 @@
                             (pb this)
                             (filename (if is-filename? name #f)))])
                (insert snip)
-               (hash-table-put! snip-table name snip)
+               (hash-set! snip-table name snip)
                snip))))
         
         ;; count-lines : string[filename] -> (union #f number)
@@ -320,13 +320,13 @@
             [(null? hidden-paths)
              (add-all)]
             [else
-             (let ([ht (make-hash-table)])
+             (let ([ht (make-hasheq)])
                (for-each
                 (λ (snip)
                   (insert snip)
                   (let loop ([snip snip])
-                    (unless (hash-table-get ht snip (λ () #f))
-                      (hash-table-put! ht snip #t)
+                    (unless (hash-ref ht snip (λ () #f))
+                      (hash-set! ht snip #t)
                       (for-each
                        (λ (child)
                          (unless (ormap (λ (key) (send snip is-special-key-child? key child))
@@ -344,17 +344,17 @@
                 (loop)))))
         
         (define/private (add-all)
-          (let ([ht (make-hash-table)])
+          (let ([ht (make-hasheq)])
             (for-each
              (λ (snip)
                (let loop ([snip snip])
-                 (unless (hash-table-get ht snip (λ () #f))
-                   (hash-table-put! ht snip #t)
+                 (unless (hash-ref ht snip (λ () #f))
+                   (hash-set! ht snip #t)
                    (insert snip)
                    (for-each loop (send snip get-children)))))
              (get-top-most-snips))))
         
-        (define/private (get-top-most-snips) (hash-table-get level-ht 0 (λ () null)))
+        (define/private (get-top-most-snips) (hash-ref level-ht 0 (λ () null)))
         
         ;; render-snips : -> void
         (define/public (render-snips)
@@ -364,7 +364,7 @@
             ;; major-dim is the dimension that new levels extend along
             ;; minor-dim is the dimension that snips inside a level extend along
             
-            (hash-table-for-each
+            (hash-for-each
              level-ht
              (λ (n v)
                (set! max-minor (max max-minor (apply + (map (if vertical?
@@ -372,7 +372,7 @@
                                                                 (λ (x) (get-snip-height x)))
                                                             v))))))
             
-            (let ([levels (sort (hash-table-map level-ht list)
+            (let ([levels (sort (hash-map level-ht list)
                                 (λ (x y) (<= (car x) (car y))))])
               (let loop ([levels levels]
                          [major-dim 0])
@@ -486,11 +486,11 @@
         (define/public (get-level) level)
         (define/public (set-level _l) 
           (when level
-            (hash-table-put! level-ht level
-                             (remq this (hash-table-get level-ht level))))
+            (hash-set! level-ht level
+                       (remq this (hash-ref level-ht level))))
           (set! level _l)
-          (hash-table-put! level-ht level 
-                           (cons this (hash-table-get level-ht level (λ () null)))))
+          (hash-set! level-ht level 
+                     (cons this (hash-ref level-ht level (λ () null)))))
         
         (super-instantiate ())))
     
@@ -501,17 +501,17 @@
                     lines
                     pb)
         
-        (field [special-children (make-hash-table)])
+        (field [special-children (make-hasheq)])
         (define/public (is-special-key-child? key child)
-          (let ([ht (hash-table-get special-children key (λ () #f))])
+          (let ([ht (hash-ref special-children key (λ () #f))])
             (and ht
-                 (hash-table-get ht child (λ () #f)))))
+                 (hash-ref ht child (λ () #f)))))
         (define/public (add-special-key-child key child)
-          (let ([ht (hash-table-get special-children key (λ () #f))])
+          (let ([ht (hash-ref special-children key (λ () #f))])
             (unless ht
-              (set! ht (make-hash-table))
-              (hash-table-put! special-children key ht))
-            (hash-table-put! ht child #t)))
+              (set! ht (make-hasheq))
+              (hash-set! special-children key ht))
+            (hash-set! ht child #t)))
         
         (define/public (get-filename) filename)
         (define/public (get-word) word)
@@ -888,7 +888,7 @@
   (import process-program-import^)
   (export process-program-export^)
   
-  (define visited-hash-table (make-hash-table 'equal))
+  (define visited-hash-table (make-hash))
   
   ;; add-connections : (union syntax string[filename]) -> (union #f string)
   ;; recursively adds a connections from this file and
@@ -932,9 +932,9 @@
     (add-module-code-connections filename (get-module-code filename)))
   
   (define (add-module-code-connections module-name module-code)
-    (unless (hash-table-get visited-hash-table module-name (λ () #f))
+    (unless (hash-ref visited-hash-table module-name (λ () #f))
       (async-channel-put progress-channel (format adding-file module-name))
-      (hash-table-put! visited-hash-table module-name #t)
+      (hash-set! visited-hash-table module-name #t)
       (let ([import-assoc (module-compiled-imports module-code)])
         (for-each
          (λ (line)

@@ -21,11 +21,11 @@
                           (length (current-colors))
                           (current-suffix-option)))
   (define identifier-list
-    (filter identifier? (hash-table-map ht:stx=>flat (lambda (k v) k))))
+    (filter identifier? (hash-map ht:stx=>flat (lambda (k v) k))))
   (define (flat=>stx obj)
-    (hash-table-get ht:flat=>stx obj #f))
+    (hash-ref ht:flat=>stx obj #f))
   (define (stx=>flat stx)
-    (hash-table-get ht:stx=>flat stx))
+    (hash-ref ht:stx=>flat stx))
   (define (current-position)
     (let-values ([(line column position) (port-next-location port)])
       (sub1 position)))
@@ -112,20 +112,20 @@
 ;; range-builder%
 (define range-builder%
   (class object%
-    (define starts (make-hash-table))
-    (define ranges (make-hash-table))
+    (define starts (make-hasheq))
+    (define ranges (make-hasheq))
 
     (define/public (set-start obj n)
-      (hash-table-put! starts obj n))
+      (hash-set! starts obj n))
 
     (define/public (get-start obj)
-      (hash-table-get starts obj (lambda _ #f)))
+      (hash-ref starts obj (lambda _ #f)))
 
     (define/public (add-range obj range)
-      (hash-table-put! ranges obj (cons range (get-ranges obj))))
+      (hash-set! ranges obj (cons range (get-ranges obj))))
 
     (define (get-ranges obj)
-      (hash-table-get ranges obj (lambda () null)))
+      (hash-ref ranges obj (lambda () null)))
 
     (define/public (range:get-ranges) ranges)
 
@@ -138,10 +138,10 @@
     (init-field identifier-list)
     (super-new)
 
-    (define ranges (hash-table-copy (send range-builder range:get-ranges)))
+    (define ranges (hash-copy (send range-builder range:get-ranges)))
 
     (define/public (get-ranges obj)
-      (hash-table-get ranges obj (lambda _ null)))
+      (hash-ref ranges obj (lambda _ null)))
 
     (define/public (all-ranges)
       sorted-ranges)
@@ -152,7 +152,7 @@
     (define sorted-ranges
       (sort 
        (apply append 
-              (hash-table-map
+              (hash-map
                ranges
                (lambda (k vs)
                  (map (lambda (v) (make-range k (car v) (cdr v))) vs))))

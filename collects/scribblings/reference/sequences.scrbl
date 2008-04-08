@@ -13,7 +13,7 @@
 
 @guideintro["sequences"]{sequences}
 
-A @pidefterm{sequence} encapsulates an ordered stream of values. The
+A @deftech{sequence} encapsulates an ordered stream of values. The
 elements of a sequence can be extracted with one of the @scheme[for]
 syntactic forms or with the procedures returned by
 @scheme[sequence-generate].
@@ -107,18 +107,18 @@ in mode)] until an end-of-line is encountered. Note that the default
 mode is @scheme['any], whereas the default mode of @scheme[read-line]
 is @scheme['linefeed].}
 
-@defproc[(in-hash-table [ht hash-table?]) sequence?]{
-Returns a sequence equivalent to @scheme[ht].}
+@defproc[(in-hash [hash hash?]) sequence?]{
+Returns a sequence equivalent to @scheme[hash].}
 
-@defproc[(in-hash-table-keys [ht hash-table?]) sequence?]{
-Returns a sequence whose elements are the keys of @scheme[ht].}
+@defproc[(in-hash-keys [hash hash?]) sequence?]{
+Returns a sequence whose elements are the keys of @scheme[hash].}
 
-@defproc[(in-hash-table-values [ht hash-table?]) sequence?]{
-Returns a sequence whose elements are the values of @scheme[ht].}
+@defproc[(in-hash-values [hash hash?]) sequence?]{
+Returns a sequence whose elements are the values of @scheme[hash].}
 
-@defproc[(in-hash-table-pairs [ht hash-table?]) sequence?]{
+@defproc[(in-hash-pairs [hash hash?]) sequence?]{
 Returns a sequence whose elements are pairs, each containing a key and
-its value from @scheme[ht] (as opposed to using @scheme[ht] directly
+its value from @scheme[hash] (as opposed to using @scheme[hash] directly
 as a sequence to get the key and value as separate values for each
 element).}
 

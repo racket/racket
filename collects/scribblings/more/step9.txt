@@ -52,7 +52,7 @@
   ;; Extract the path part:
   (define path (map path/param-path (url-path url)))
   ;; Find a handler based on the path's first element:
-  (define h (hash-table-get dispatch-table (car path) #f))
+  (define h (hash-ref dispatch-table (car path) #f))
   (if h
       ;; Call a handler:
       (h (url-query url))
@@ -63,11 +63,11 @@
                     "Unknown page: "
                     ,str-path)))))
 
-(define dispatch-table (make-hash-table 'equal))
+(define dispatch-table (make-hash))
 
-(hash-table-put! dispatch-table "hello"
-                 (lambda (query)
-                   `(html (body "Hello, World!"))))
+(hash-set! dispatch-table "hello"
+           (lambda (query)
+             `(html (body "Hello, World!"))))
 
 ;; ----------------------------------------
 
@@ -94,8 +94,8 @@
   `(html (body ,@(for/list ([i (in-range n)])
                    " hello"))))
 
-(hash-table-put! dispatch-table "many" many)
-(hash-table-put! dispatch-table "reply" reply)
+(hash-set! dispatch-table "many" many)
+(hash-set! dispatch-table "reply" reply)
 
 ;; ----------------------------------------
 ;; Old, awkward version:
@@ -113,9 +113,9 @@
         [m (string->number (cdr (assq 'number query)))])
     `(html (body "The sum is " ,(number->string (+ m n))))))
 
-(hash-table-put! dispatch-table "sum" sum)
-(hash-table-put! dispatch-table "one" one)
-(hash-table-put! dispatch-table "two" two)
+(hash-set! dispatch-table "sum" sum)
+(hash-set! dispatch-table "one" one)
+(hash-set! dispatch-table "two" two)
 
 ;; ----------------------------------------
 
@@ -124,7 +124,7 @@
 (define (send/suspend mk-page)
   (let/cc k
     (define tag (format "k~a" (current-inexact-milliseconds)))
-    (hash-table-put! dispatch-table tag k)
+    (hash-set! dispatch-table tag k)
     (abort (mk-page (string-append "/" tag)))))
 
 ;; Helper to run the number-getting page via `send/suspend':
@@ -150,4 +150,4 @@
   (define n (get-number "Second number:"))
   `(html (body "The sum is " ,(number->string (+ m n)))))
 
-(hash-table-put! dispatch-table "sum2" sum2)
+(hash-set! dispatch-table "sum2" sum2)

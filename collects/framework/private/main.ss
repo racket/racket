@@ -167,12 +167,12 @@
   (preferences:set-default 'framework:fixup-parens #t boolean?)
   (preferences:set-default 'framework:fixup-open-parens #t boolean?)
   (preferences:set-default 'framework:paren-match #t boolean?)
-  (let ([hash-table (make-hash-table)])
+  (let ([hash-table (make-hasheq)])
     (for-each (λ (x) 
-                (hash-table-put! hash-table x 'define))
+                (hash-set! hash-table x 'define))
               '(local))
     (for-each (λ (x) 
-                (hash-table-put! hash-table x 'begin))
+                (hash-set! hash-table x 'begin))
               '(case-lambda
                  match-lambda match-lambda*
                  cond
@@ -181,7 +181,7 @@
                  public private override
                  inherit sequence))
     (for-each (λ (x) 
-                (hash-table-put! hash-table x 'lambda))
+                (hash-set! hash-table x 'lambda))
               '(
                 cases
                    instantiate super-instantiate
@@ -225,11 +225,11 @@
      (λ (x)
        (and (list? x)
             (= (length x) 4)
-            (hash-table? (car x))
+            (hash? (car x))
             (andmap (λ (x) (or (regexp? x) (not x))) (cdr x)))))
     (preferences:set-un/marshall
      'framework:tabify 
-     (λ (t) (cons (hash-table-map (car t) list)
+     (λ (t) (cons (hash-map (car t) list)
                   (cdr t)))
      (λ (l) 
        (and (list? l)
@@ -240,8 +240,8 @@
                                 (= 2 (length x))
                                 (andmap symbol? x)))
                     (car l))
-            (let ([h (make-hash-table)])
-              (for-each (λ (x) (apply hash-table-put! h x)) (car l))
+            (let ([h (make-hasheq)])
+              (for-each (λ (x) (apply hash-set! h x)) (car l))
               (cons h (cdr l)))))))
   
   

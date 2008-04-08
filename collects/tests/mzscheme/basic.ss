@@ -308,13 +308,13 @@
 (test #t immutable? (string->immutable-string "hi"))
 (test #t immutable? (string->immutable-string (string-copy "hi")))
 
-(test #t immutable? (make-immutable-hash-table null))
-(test #t immutable? (make-immutable-hash-table '((a . b))))
-(test #t immutable? (make-immutable-hash-table '((a . b)) 'equal))
-(test #f immutable? (make-hash-table))
-(test #f immutable? (make-hash-table 'equal))
-(test #f immutable? (make-hash-table 'weak))
-(test #f immutable? (make-hash-table 'weak 'equal))
+(test #t immutable? (make-immutable-hasheq null))
+(test #t immutable? (make-immutable-hasheq '((a . b))))
+(test #t immutable? (make-immutable-hash '((a . b))))
+(test #f immutable? (make-hasheq))
+(test #f immutable? (make-hash))
+(test #f immutable? (make-weak-hasheq))
+(test #f immutable? (make-weak-hash))
 
 (test #t symbol? 'foo)
 (test #t symbol? (car '(a b)))
@@ -1877,262 +1877,298 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; hash tables
 
-(arity-test make-hash-table 0 2)
-(err/rt-test (make-hash-table 'a))
-(err/rt-test (make-hash-table 'weak 'weak) exn:application:mismatch?)
-(err/rt-test (make-hash-table 'equal 'equal) exn:application:mismatch?)
+(arity-test make-hash 0 0)
+(arity-test make-hasheq 0 0)
+(arity-test make-weak-hash 0 0)
+(arity-test make-weak-hasheq 0 0)
 
-(let ()
-  (define-struct ax (b c)) ; opaque
-  (define-struct a (b c) #:inspector (make-inspector))
+(define (hash-tests make-hash make-hasheq 
+                    make-weak-hash make-weak-hasheq 
+                    hash-ref hash-set! hash-remove! hash-count
+                    hash-map hash-for-each
+                    hash-iterate-first hash-iterate-next
+                    hash-iterate-value hash-iterate-key
+                    hash-copy)
+  (let ()
+    (define-struct ax (b c)) ; opaque
+    (define-struct a (b c) #:inspector (make-inspector))
 
-  (define save (let ([x null])
-                 (case-lambda 
-                  [() x]
-                  [(a) (set! x (cons a x)) a])))
-	 
-  (define an-ax (make-ax 1 2))
+    (define save (let ([x null])
+                   (case-lambda 
+                    [() x]
+                    [(a) (set! x (cons a x)) a])))
+    
+    (define an-ax (make-ax 1 2))
 
-  (let ([check-hash-tables
-	 (lambda (maybe-weak reorder?)
-	   (let ([h1 (apply make-hash-table maybe-weak)]
-		 [l (list 1 2 3)])
-	     (test #t eq? (eq-hash-code l) (eq-hash-code l))
-	     (test #t eq? (equal-hash-code l) (equal-hash-code l))
-	     (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
-	     (hash-table-put! h1 l 'ok)
-	     (test 'ok hash-table-get h1 l)
-	     (test 'nope hash-table-get h1 (list 1 2 3) (lambda () 'nope))
-	     (test '(((1 2 3) . ok)) hash-table-map h1 (lambda (k v) (cons k v)))
-	     (hash-table-remove! h1 l)
-	     (test 'nope hash-table-get h1 l (lambda () 'nope)))
-	   
-	   (let ([h1 (apply make-hash-table 'equal maybe-weak)]
-		 [l (list 1 2 3)]
-		 [v (vector 5 6 7)]
-		 [a (make-a 1 (make-a 2 3))]
-		 [b (box (list 1 2 3))])
+    (let ([check-hash-tables
+           (lambda (weak? reorder?)
+             (let ([h1 (if weak?
+                           (make-weak-hasheq)
+                           (make-hasheq))]
+                   [l (list 1 2 3)])
+               (test #t eq? (eq-hash-code l) (eq-hash-code l))
+               (test #t eq? (equal-hash-code l) (equal-hash-code l))
+               (test #t eq? (equal-hash-code l) (equal-hash-code (list 1 2 3)))
+               (hash-set! h1 l 'ok)
+               (test 'ok hash-ref h1 l)
+               (test 'nope hash-ref h1 (list 1 2 3) (lambda () 'nope))
+               (test '(((1 2 3) . ok)) hash-map h1 (lambda (k v) (cons k v)))
+               (hash-remove! h1 l)
+               (test 'nope hash-ref h1 l (lambda () 'nope)))
+             
+             (let ([h1 (if weak?
+                           (make-weak-hash)
+                           (make-hash))]
+                   [l (list 1 2 3)]
+                   [v (vector 5 6 7)]
+                   [a (make-a 1 (make-a 2 3))]
+                   [b (box (list 1 2 3))])
 
-	     (test 0 hash-table-count h1)
+               (test 0 hash-count h1)
 
-	     ;; Fill in table. Use `puts1' and `puts2' so we can
-	     ;; vary the order of additions.
-	     (let ([puts1 (lambda ()
-			    (hash-table-put! h1 (save l) 'list)
-			    (hash-table-put! h1 (save "Hello World!") 'string)
-			    (hash-table-put! h1 (save 123456789123456789123456789) 'bignum)
-			    (hash-table-put! h1 (save 3.45) 'flonum)
-			    (hash-table-put! h1 (save 3/45) 'rational)
-			    (hash-table-put! h1 (save 3+45i) 'complex)
-                            (hash-table-put! h1 (save (integer->char 955)) 'char))]
-		   [puts2 (lambda ()
-			    (hash-table-put! h1 (save (list 5 7)) 'another-list)
-			    (hash-table-put! h1 (save 3+0.0i) 'izi-complex)
-			    (hash-table-put! h1 (save v) 'vector)
-			    (hash-table-put! h1 (save a) 'struct)
-			    (hash-table-put! h1 (save an-ax) 'structx)
-			    (hash-table-put! h1 (save b) 'box))])
-	       (if reorder?
-		   (begin 
-		     (puts2) 
-		     (test 6 hash-table-count h1)
-		     (puts1))
-		   (begin 
-		     (puts1) 
-		     (test 7 hash-table-count h1)
-		     (puts2))))
+               ;; Fill in table. Use `puts1' and `puts2' so we can
+               ;; vary the order of additions.
+               (let ([puts1 (lambda ()
+                              (hash-set! h1 (save l) 'list)
+                              (hash-set! h1 (save "Hello World!") 'string)
+                              (hash-set! h1 (save 123456789123456789123456789) 'bignum)
+                              (hash-set! h1 (save 3.45) 'flonum)
+                              (hash-set! h1 (save 3/45) 'rational)
+                              (hash-set! h1 (save 3+45i) 'complex)
+                              (hash-set! h1 (save (integer->char 955)) 'char))]
+                     [puts2 (lambda ()
+                              (hash-set! h1 (save (list 5 7)) 'another-list)
+                              (hash-set! h1 (save 3+0.0i) 'izi-complex)
+                              (hash-set! h1 (save v) 'vector)
+                              (hash-set! h1 (save a) 'struct)
+                              (hash-set! h1 (save an-ax) 'structx)
+                              (hash-set! h1 (save b) 'box))])
+                 (if reorder?
+                     (begin 
+                       (puts2) 
+                       (test 6 hash-count h1)
+                       (puts1))
+                     (begin 
+                       (puts1) 
+                       (test 7 hash-count h1)
+                       (puts2))))
 
-             (when reorder?
-               ;; Add 1000 things and take them back out in an effort to 
-               ;; trigger GCs that somehow affect hashing:
-               (let loop ([i 0.0])
-                 (unless (= i 1000.0)
-                   (hash-table-put! h1 i #t)
-                   (loop (add1 i))
-                   (hash-table-remove! h1 i))))
+               (when reorder?
+                 ;; Add 1000 things and take them back out in an effort to 
+                 ;; trigger GCs that somehow affect hashing:
+                 (let loop ([i 0.0])
+                   (unless (= i 1000.0)
+                     (hash-set! h1 i #t)
+                     (loop (add1 i))
+                     (hash-remove! h1 i))))
 
-	     (test 13 hash-table-count h1)
-	     (test 'list hash-table-get h1 l)
-	     (test 'list hash-table-get h1 (list 1 2 3))
-	     (test 'another-list hash-table-get h1 (list 5 7))
-	     (test 'string hash-table-get h1 "Hello World!")
-	     (test 'bignum hash-table-get h1 123456789123456789123456789)
-	     (test 'flonum hash-table-get h1 3.45)
-	     (test 'rational hash-table-get h1 3/45)
-	     (test 'complex hash-table-get h1 3+45i)
-	     (test 'izi-complex hash-table-get h1 3+0.0i)
-	     (test 'vector hash-table-get h1 v)
-	     (test 'vector hash-table-get h1 #(5 6 7))
-	     (test 'struct hash-table-get h1 a)
-	     (test 'struct hash-table-get h1 (make-a 1 (make-a 2 3)))
-	     (test 'structx hash-table-get h1 an-ax)
-	     (test #f hash-table-get h1 (make-ax 1 2) (lambda () #f))
-	     (test 'box hash-table-get h1 b)
-	     (test 'box hash-table-get h1 #&(1 2 3))
-	     (test 'char hash-table-get h1 (integer->char 955))
-	     (test #t
-		   andmap
-		   (lambda (i)
-		     (and (member i 
-				  (hash-table-map h1 (lambda (k v) (cons k v))))
-			  #t))
-		   `(((1 2 3) . list)
-		     ((5 7) . another-list)
-		     ("Hello World!" . string)
-		     (123456789123456789123456789 . bignum)
-		     (3.45 . flonum)
-		     (3/45 . rational)
-		     (3+45i . complex)
-		     (3+0.0i . izi-complex)
-		     (#(5 6 7) . vector)
-		     (,(make-a 1 (make-a 2 3)) . struct)
-		     (,an-ax . structx)
-                     (#\u3BB . char)
-		     (#&(1 2 3) . box)))
-	     (hash-table-remove! h1 (list 1 2 3))
-	     (test 12 hash-table-count h1)
-	     (test 'not-there hash-table-get h1 l (lambda () 'not-there))
-	     (let ([c 0])
-	       (hash-table-for-each h1 (lambda (k v) (set! c (add1 c))))
-	       (test 12 'count c))
-	     ;; return the hash table:
-	     h1))])
+               (test 13 hash-count h1)
+               (test 'list hash-ref h1 l)
+               (test 'list hash-ref h1 (list 1 2 3))
+               (test 'another-list hash-ref h1 (list 5 7))
+               (test 'string hash-ref h1 "Hello World!")
+               (test 'bignum hash-ref h1 123456789123456789123456789)
+               (test 'flonum hash-ref h1 3.45)
+               (test 'rational hash-ref h1 3/45)
+               (test 'complex hash-ref h1 3+45i)
+               (test 'izi-complex hash-ref h1 3+0.0i)
+               (test 'vector hash-ref h1 v)
+               (test 'vector hash-ref h1 #(5 6 7))
+               (test 'struct hash-ref h1 a)
+               (test 'struct hash-ref h1 (make-a 1 (make-a 2 3)))
+               (test 'structx hash-ref h1 an-ax)
+               (test #f hash-ref h1 (make-ax 1 2) (lambda () #f))
+               (test 'box hash-ref h1 b)
+               (test 'box hash-ref h1 #&(1 2 3))
+               (test 'char hash-ref h1 (integer->char 955))
+               (test #t
+                     andmap
+                     (lambda (i)
+                       (and (member i 
+                                    (hash-map h1 (lambda (k v) (cons k v))))
+                            #t))
+                     `(((1 2 3) . list)
+                       ((5 7) . another-list)
+                       ("Hello World!" . string)
+                       (123456789123456789123456789 . bignum)
+                       (3.45 . flonum)
+                       (3/45 . rational)
+                       (3+45i . complex)
+                       (3+0.0i . izi-complex)
+                       (#(5 6 7) . vector)
+                       (,(make-a 1 (make-a 2 3)) . struct)
+                       (,an-ax . structx)
+                       (#\u3BB . char)
+                       (#&(1 2 3) . box)))
+               (hash-remove! h1 (list 1 2 3))
+               (test 12 hash-count h1)
+               (test 'not-there hash-ref h1 l (lambda () 'not-there))
+               (let ([c 0])
+                 (hash-for-each h1 (lambda (k v) (set! c (add1 c))))
+                 (test 12 'count c))
+               ;; return the hash table:
+               h1))])
 
-    (let ([check-tables-equal
-	   (lambda (mode t1 t2 flag)
-	     (test #t equal? t1 t2)
-             (test (equal-hash-code t1) equal-hash-code t2)
-	     (test #t equal? t1 (hash-table-copy t1))
-             (let ([again (apply make-hash-table 'equal flag)])
-               (let loop ([i (hash-table-iterate-first t1)])
-                 (when i
-                   (hash-table-put! again
-                                    (hash-table-iterate-key t1 i)
-                                    (hash-table-iterate-value t1 i))
-                   (loop (hash-table-iterate-next t1 i))))
-               (test #t equal? t1 again))
-	     (let ([meta-ht (make-hash-table 'equal)])
-	       (hash-table-put! meta-ht t1 mode)
-	       (test mode hash-table-get meta-ht t2 (lambda () #f)))
-             (test (hash-table-count t1) hash-table-count t2))])
+      (let ([check-tables-equal
+             (lambda (mode t1 t2 weak?)
+               (test #t equal? t1 t2)
+               (test (equal-hash-code t1) equal-hash-code t2)
+               (test #t equal? t1 (hash-copy t1))
+               (let ([again (if weak?
+                                (make-weak-hash)
+                                (make-hash))])
+                 (let loop ([i (hash-iterate-first t1)])
+                   (when i
+                     (hash-set! again
+                                (hash-iterate-key t1 i)
+                                (hash-iterate-value t1 i))
+                     (loop (hash-iterate-next t1 i))))
+                 (test #t equal? t1 again))
+               (let ([meta-ht (make-hash)])
+                 (hash-set! meta-ht t1 mode)
+                 (test mode hash-ref meta-ht t2 (lambda () #f)))
+               (test (hash-count t1) hash-count t2))])
 
-      (check-tables-equal 'the-norm-table
-                          (check-hash-tables null #f)
-			  (check-hash-tables null #t)
-                          null)
-      (check-tables-equal 'the-weak-table
-                          (check-hash-tables (list 'weak) #f)
-			  (check-hash-tables (list 'weak) #t)
-                           (list 'weak)))
+        (check-tables-equal 'the-norm-table
+                            (check-hash-tables #f #f)
+                            (check-hash-tables #f #t)
+                            #f)
+        (when make-weak-hash
+          (check-tables-equal 'the-weak-table
+                              (check-hash-tables #t #f)
+                              (check-hash-tables #t #t)
+                              #t)))
 
-    (save))) ; prevents gcing of the ht-registered values
+      (save)))) ; prevents gcing of the ht-registered values
 
-(test #f hash-table? 5)
-(test #t hash-table? (make-hash-table))
-(test #f hash-table? 5 'equal)
-(test #f hash-table? (make-hash-table) 'equal)
-(test #t hash-table? (make-hash-table 'equal) 'equal)
-(test #f hash-table? (make-hash-table 'weak) 'equal)
-(test #t hash-table? (make-hash-table 'weak 'equal) 'equal)
-(test #f hash-table? 5 'weak)
-(test #f hash-table? (make-hash-table) 'weak)
-(test #f hash-table? (make-hash-table 'equal) 'weak)
-(test #t hash-table? (make-hash-table 'weak) 'weak)
-(test #t hash-table? (make-hash-table 'weak 'equal) 'weak)
-(test #f hash-table? 5 'weak 'equal)
-(test #f hash-table? (make-hash-table) 'weak 'equal)
-(test #f hash-table? (make-hash-table 'equal) 'weak 'equal)
-(test #f hash-table? (make-hash-table 'weak) 'weak 'equal)
-(test #t hash-table? (make-hash-table 'weak 'equal) 'weak 'equal)
+(hash-tests make-hash make-hasheq 
+            make-weak-hash make-weak-hasheq 
+            hash-ref hash-set! hash-remove! hash-count
+            hash-map hash-for-each
+            hash-iterate-first hash-iterate-next
+            hash-iterate-value hash-iterate-key
+            hash-copy)
+(let ([ub-wrap (lambda (proc)
+                 (lambda (ht . args)
+                   (apply proc (unbox ht) args)))])
+  (hash-tests (lambda () (box #hash()))
+              (lambda () (box #hasheq()))
+              #f #f
+              (ub-wrap hash-ref)
+              (lambda (ht k v) (set-box! ht (hash-set (unbox ht) k v)))
+              (lambda (ht k) (set-box! ht (hash-remove (unbox ht) k)))
+              (ub-wrap hash-count)
+              (ub-wrap hash-map)
+              (ub-wrap hash-for-each)
+              (ub-wrap hash-iterate-first)
+              (ub-wrap hash-iterate-next)
+              (ub-wrap hash-iterate-value)
+              (ub-wrap hash-iterate-key)
+              (lambda (ht) (box (unbox ht)))))
+
+(test #f hash? 5)
+(test #t hash? (make-hasheq))
+(test #t hash-eq? (make-hasheq))
+(test #f hash-eq? (make-hash))
+(test #t hash-eq? (make-weak-hasheq))
+(test #f hash-eq? (make-weak-hash))
+(test #f hash-weak? (make-hasheq))
+(test #f hash-weak? (make-hash))
+(test #t hash-weak? (make-weak-hasheq))
+(test #t hash-weak? (make-weak-hash))
+
+(err/rt-test (hash-eq? 5))
+(err/rt-test (hash-weak? 5))
 
 ;; Check for proper clearing of weak hash tables
 ;; (internally, value should get cleared along with key):
-(let ([ht (make-hash-table 'weak)])
+(let ([ht (make-weak-hasheq)])
   (let loop ([n 10])
     (unless (zero? n)
-      (hash-table-put! ht (make-string 10) #f)
+      (hash-set! ht (make-string 10) #f)
       (loop (sub1 n))))
   (collect-garbage)
-  (map (lambda (i) (format "~a" i)) (hash-table-map ht cons)))
+  (map (lambda (i) (format "~a" i)) (hash-map ht cons)))
 
 ;; Double check that table are equal after deletions
 (let ([test-del-eq
-       (lambda (flags)
-	 (let ([ht1 (apply make-hash-table flags)]
-	       [ht2 (apply make-hash-table flags)])
+       (lambda (mk)
+	 (let ([ht1 (mk)]
+	       [ht2 (mk)])
 	   (test #t equal? ht1 ht2)
-	   (hash-table-put! ht1 'apple 1)
-	   (hash-table-put! ht2 'apple 1)
+	   (hash-set! ht1 'apple 1)
+	   (hash-set! ht2 'apple 1)
 	   (test #t equal? ht1 ht2)
-	   (hash-table-put! ht2 'banana 2)
+	   (hash-set! ht2 'banana 2)
 	   (test #f equal? ht1 ht2)
-	   (hash-table-remove! ht2 'banana)
+	   (hash-remove! ht2 'banana)
 	   (test #t equal? ht1 ht2)))])
-  (test-del-eq null)
-  (test-del-eq '(equal))
-  (test-del-eq '(weak)))
+  (test-del-eq make-hasheq)
+  (test-del-eq make-hash)
+  (test-del-eq make-weak-hasheq)
+  (test-del-eq make-weak-hash))
 
-(err/rt-test (hash-table-count 0))
-(err/rt-test (hash-table-put! 1 2 3))
-(err/rt-test (hash-table-get 1 2))
-(err/rt-test (hash-table-remove! 1 2))
-(err/rt-test (hash-table-get (make-hash-table) 2) exn:application:mismatch?)
-(err/rt-test (hash-table? 5 5))
-(err/rt-test (hash-table? 5 'equal 5))
-(err/rt-test (hash-table? (make-hash-table) 'equal 'equal) exn:application:mismatch?)
-(err/rt-test (hash-table? (make-hash-table) 'weak 'weak) exn:application:mismatch?)
+(err/rt-test (hash-count 0))
+(err/rt-test (hash-set! 1 2 3))
+(err/rt-test (hash-ref 1 2))
+(err/rt-test (hash-remove! 1 2))
+(err/rt-test (hash-ref (make-hasheq) 2) exn:application:mismatch?)
 
-(define im-t (make-immutable-hash-table null))
-(test #t hash-table? im-t)
-(test #f hash-table? im-t 'equal)
-(test null hash-table-map im-t cons)
-(err/rt-test (hash-table-put! im-t 1 2))
-(test #f hash-table-get im-t 5 (lambda () #f))
-(define im-t (make-immutable-hash-table '((1 . 2))))
-(test '((1 . 2)) hash-table-map im-t cons)
-(test 2 hash-table-get im-t 1)
-(define im-t (make-immutable-hash-table '(("hello" . 2))))
-(test 'none hash-table-get im-t "hello" (lambda () 'none))
-(define im-t (make-immutable-hash-table '(("hello" . 2)) 'equal))
-(test 2 hash-table-get im-t "hello" (lambda () 'none))
-(test #t hash-table? im-t 'equal)
+(define im-t (make-immutable-hasheq null))
+(test #t hash? im-t)
+(test #t hash-eq? im-t)
+(test null hash-map im-t cons)
+(err/rt-test (hash-set! im-t 1 2))
+(test #f hash-ref im-t 5 (lambda () #f))
+(define im-t (make-immutable-hasheq '((1 . 2))))
+(test '((1 . 2)) hash-map im-t cons)
+(test 2 hash-ref im-t 1)
+(define im-t (make-immutable-hasheq '(("hello" . 2))))
+(test 'none hash-ref im-t "hello" (lambda () 'none))
+(define im-t (make-immutable-hash '(("hello" . 2))))
+(test 2 hash-ref im-t "hello" (lambda () 'none))
+(test #f hash-eq? im-t)
 
-(err/rt-test (hash-table-put! im-t 1 2))
-(err/rt-test (hash-table-remove! im-t 1))
-(err/rt-test (make-immutable-hash-table '(1)))
-(err/rt-test (make-immutable-hash-table '((1 . 2) . 2)))
-(err/rt-test (make-immutable-hash-table '((1 . 2) 3)))
+(err/rt-test (hash-set! im-t 1 2))
+(err/rt-test (hash-remove! im-t 1))
+(err/rt-test (make-immutable-hasheq '(1)))
+(err/rt-test (make-immutable-hasheq '((1 . 2) . 2)))
+(err/rt-test (make-immutable-hasheq '((1 . 2) 3)))
 (define cyclic-alist (read (open-input-string "#0=((1 . 2) . #0#)")))
-(err/rt-test (make-immutable-hash-table cyclic-alist))
-(err/rt-test (make-immutable-hash-table '((1 . 2)) 'weak))
+(err/rt-test (make-immutable-hasheq cyclic-alist))
+(err/rt-test (make-immutable-hasheq '((1 . 2)) 'weak))
 
-(test 2 hash-table-get (hash-table-copy #hasheq((1 . 2))) 1)
-(test (void) hash-table-put! (hash-table-copy #hasheq((1 . 2))) 3 4)
+(test 2 hash-ref (hash-copy #hasheq((1 . 2))) 1)
+(test (void) hash-set! (hash-copy #hasheq((1 . 2))) 3 4)
 
-(test #f hash-table-iterate-first (make-hash-table))
-(test #f hash-table-iterate-first (make-hash-table 'weak))
-(err/rt-test (hash-table-iterate-next (make-hash-table) 0))
-(err/rt-test (hash-table-iterate-next (make-hash-table 'weak) 0))
+(test #f hash-iterate-first (make-hasheq))
+(test #f hash-iterate-first (make-weak-hasheq))
+(err/rt-test (hash-iterate-next (make-hasheq) 0))
+(err/rt-test (hash-iterate-next (make-weak-hasheq) 0))
 
 (let ([check-all-bad
        (lambda (op)
          (err/rt-test (op #f 0))
-         (err/rt-test (op (make-hash-table) -1))
-         (err/rt-test (op (make-hash-table) (- (expt 2 100))))
-         (err/rt-test (op (make-hash-table) 1.0)))])
-  (check-all-bad hash-table-iterate-next)
-  (check-all-bad hash-table-iterate-key)
-  (check-all-bad hash-table-iterate-value))
+         (err/rt-test (op (make-hasheq) -1))
+         (err/rt-test (op (make-hasheq) (- (expt 2 100))))
+         (err/rt-test (op (make-hasheq) 1.0)))])
+  (check-all-bad hash-iterate-next)
+  (check-all-bad hash-iterate-key)
+  (check-all-bad hash-iterate-value))
 
-(arity-test make-hash-table 0 2)
-(arity-test make-immutable-hash-table 1 2)
-(arity-test hash-table-count 1 1)
-(arity-test hash-table-get 2 3)
-(arity-test hash-table-put! 3 3)
-(arity-test hash-table-remove! 2 2)
-(arity-test hash-table-map 2 2)
-(arity-test hash-table-for-each 2 2)
-(arity-test hash-table? 1 3)
+(arity-test make-immutable-hash 1 1)
+(arity-test make-immutable-hasheq 1 1)
+(arity-test hash-count 1 1)
+(arity-test hash-ref 2 3)
+(arity-test hash-set! 3 3)
+(arity-test hash-set 3 3)
+(arity-test hash-remove! 2 2)
+(arity-test hash-remove 2 2)
+(arity-test hash-map 2 2)
+(arity-test hash-for-each 2 2)
+(arity-test hash? 1 1)
+(arity-test hash-eq? 1 1)
+(arity-test hash-weak? 1 1)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc

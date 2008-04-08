@@ -91,7 +91,10 @@ but we start with an enumeration of changes:
    a relative path).
 
  - Literal vectors and boxes are immutable, as are vectors and boxes
-   produced by `syntax->datum'.
+   produced by `syntax->datum'. Unlike vectors and boxes, immutable
+   hash tables are never equal to mutable hash tables (which is
+   related to support for functional updating of hash tables in
+   `scheme/base').
 
  - Hash table printing is enabled by default, and vector-length
    printing is disabled by default. Opaque structure instances no
@@ -496,6 +499,21 @@ with some syntactic and name changes.
 
  * The result of each expression at the module level is automatically
    printed using `(current-print)'.
+
+ * Hash-table function names have changed:
+
+        make-hash-table              => make-hash    make-weak-hash
+                                        make-hasheq  make-weak-hasheq
+        hash-table?                  => hash?  hash-eq?  hash-weak?
+        hash-table-get               => hash-ref
+        hash-table-put!              => hash-set!
+        hash-table-remove!           => hash-remove!
+        hash-table-count             => hash-count
+        hash-table-map               => hash-map
+        ....                            ....
+
+   The new functions `hash-set' and `hash-remove' support
+   constant-time functional update of immutable hash tables.
 
  * The identifiers `else', `=>', `_', and `...' are bound (as syntax
    that cannot be used as an expression). The `else' and `=>' bindings

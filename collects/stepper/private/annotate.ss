@@ -152,7 +152,7 @@
                
                ; evaluated at runtime, using 3D code:
                [put-into-xml-table (lambda (val)
-                                     (hash-table-put! finished-xml-box-table val #t)
+                                     (hash-set! finished-xml-box-table val #t)
                                      val)]
                
                

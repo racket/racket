@@ -426,6 +426,7 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 #define SCHEME_BUCKTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_bucket_table_type)
 #define SCHEME_HASHTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_table_type)
+#define SCHEME_HASHTRP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_tree_type)
 
 #define SCHEME_VECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_vector_type)
 #define SCHEME_MUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_MUTABLEP(obj))
@@ -786,6 +787,7 @@ typedef struct Scheme_Hash_Table
   int mcount; /* number of non-NULL keys, >= count (which is non-NULL vals) */
 } Scheme_Hash_Table;
 
+typedef struct Scheme_Hash_Tree Scheme_Hash_Tree;
 
 typedef struct Scheme_Bucket
 {

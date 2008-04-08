@@ -57,10 +57,10 @@
              (suffix (syntax-e id) n))))))
 
   (let/ec escape
-    (let ([flat=>stx (make-hash-table)]
-          [stx=>flat (make-hash-table)])
+    (let ([flat=>stx (make-hasheq)]
+          [stx=>flat (make-hasheq)])
       (define (loop obj)
-        (cond [(hash-table-get stx=>flat obj (lambda _ #f))
+        (cond [(hash-ref stx=>flat obj (lambda _ #f))
                => (lambda (datum) datum)]
               [(and partition (identifier? obj))
                (when (and (eq? suffixopt 'all-if-over-limit)
@@ -68,8 +68,8 @@
                  (call-with-values (lambda () (table stx partition #f 'always))
                                    escape))
                (let ([lp-datum (make-identifier-proxy obj)])
-                 (hash-table-put! flat=>stx lp-datum obj)
-                 (hash-table-put! stx=>flat obj lp-datum)
+                 (hash-set! flat=>stx lp-datum obj)
+                 (hash-set! stx=>flat obj lp-datum)
                  lp-datum)]
               [(and (syntax? obj) (check+convert-special-expression obj))
                => (lambda (newobj)
@@ -77,16 +77,16 @@
                     (let* ([inner (cadr newobj)]
                            [lp-inner-datum (loop inner)]
                            [lp-datum (list (car newobj) lp-inner-datum)])
-                      (hash-table-put! flat=>stx lp-inner-datum inner)
-                      (hash-table-put! stx=>flat inner lp-inner-datum)
-                      (hash-table-put! flat=>stx lp-datum obj)
-                      (hash-table-put! stx=>flat obj lp-datum)
+                      (hash-set! flat=>stx lp-inner-datum inner)
+                      (hash-set! stx=>flat inner lp-inner-datum)
+                      (hash-set! flat=>stx lp-datum obj)
+                      (hash-set! stx=>flat obj lp-datum)
                       lp-datum))]
               [(syntax? obj)
                (when partition (send partition get-partition obj))
                (let ([lp-datum (loop (syntax-e obj))])
-                 (hash-table-put! flat=>stx lp-datum obj)
-                 (hash-table-put! stx=>flat obj lp-datum)
+                 (hash-set! flat=>stx lp-datum obj)
+                 (hash-set! stx=>flat obj lp-datum)
                  lp-datum)]
               [(pair? obj)
                (pairloop obj)]

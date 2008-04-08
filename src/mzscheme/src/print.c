@@ -126,7 +126,7 @@ static Scheme_Hash_Table *global_constants_ht;
 	   && SCHEME_STRUCTP(obj) \
 	   && PRINTABLE_STRUCT(obj, pp), 0)) \
     || (qk(SCHEME_STRUCTP(obj) && scheme_is_writable_struct(obj), 0)) \
-    || (qk(pp->print_hash_table, 1) && SCHEME_HASHTP(obj)))
+    || (qk(pp->print_hash_table, 1) && (SCHEME_HASHTP(obj) || SCHEME_HASHTRP(obj))))
 #define ssQUICK(x, isbox) x
 #define ssQUICKp(x, isbox) (pp ? x : isbox)
 #define ssALL(x, isbox) 1
@@ -437,7 +437,8 @@ static int check_cycles(Scheme_Object *obj, Scheme_Hash_Table *ht, PrintParams *
 	       && PRINTABLE_STRUCT(obj, pp))
 	      || scheme_is_writable_struct(obj)))
       || (pp->print_hash_table
-	  && SAME_TYPE(t, scheme_hash_table_type))) {
+	  && (SAME_TYPE(t, scheme_hash_table_type)
+              || SAME_TYPE(t, scheme_hash_tree_type)))) {
     if (scheme_hash_get(ht, obj))
       return 1;
     scheme_hash_set(ht, obj, (Scheme_Object *)0x1);
@@ -479,7 +480,7 @@ static int check_cycles(Scheme_Object *obj, Scheme_Hash_Table *ht, PrintParams *
 	}
       }
     }
-  }  else if (SCHEME_HASHTP(obj)) {
+  } else if (SCHEME_HASHTP(obj)) {
     /* got here => printable */
     Scheme_Hash_Table *t;
     Scheme_Object **keys, **vals, *val;
@@ -496,6 +497,21 @@ static int check_cycles(Scheme_Object *obj, Scheme_Hash_Table *ht, PrintParams *
 	if (check_cycles(val, ht, pp))
 	  return 1;
       }
+    }
+  } else if (SCHEME_HASHTRP(obj)) {
+    /* got here => printable */
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)obj;
+    Scheme_Object *key, *val;
+    int i;
+    
+    i = scheme_hash_tree_next(t, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(t, i, &key, &val);
+      if (check_cycles(key, ht, pp))
+        return 1;
+      if (check_cycles(val, ht, pp))
+        return 1;
+      i = scheme_hash_tree_next(t, i);
     }
   }
 
@@ -576,6 +592,13 @@ static int check_cycles_fast(Scheme_Object *obj, PrintParams *pp)
       cycle = 0;
     else
       /* don't bother with fast checks for non-empty hash tables */
+      cycle = -1;
+  } else if (pp->print_hash_table
+	     && SCHEME_HASHTRP(obj)) {
+    if (!((Scheme_Hash_Tree *)obj)->count)
+      cycle = 0;
+    else
+      /* don't bother with fast checks for non-empty hash trees */
       cycle = -1;
   } else
     cycle = 0;
@@ -687,6 +710,19 @@ static void setup_graph_table(Scheme_Object *obj, Scheme_Hash_Table *ht,
 	setup_graph_table(keys[i], ht, counter, pp);
 	setup_graph_table(val, ht, counter, pp);
       }
+    }
+  } else if (SCHEME_HASHTRP(obj)) {
+    /* got here => printable */
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)obj;
+    Scheme_Object *key, *val;
+    int i;
+    
+    i = scheme_hash_tree_next(t, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(t, i, &key, &val);
+      setup_graph_table(key, ht, counter, pp);
+      setup_graph_table(val, ht, counter, pp);
+      i = scheme_hash_tree_next(t, i);
     }
   }
 }
@@ -1786,42 +1822,69 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	closed = print(SCHEME_BOX_VAL(obj), notdisplay, compact, ht, mt, pp);
       }
     }
-  else if ((compact || pp->print_hash_table) && SCHEME_HASHTP(obj))
+  else if ((compact || pp->print_hash_table) 
+           && (SCHEME_HASHTP(obj) || SCHEME_HASHTRP(obj)))
     {
       Scheme_Hash_Table *t;
-      Scheme_Object **keys, **vals, *val;
+      Scheme_Hash_Tree *tr;
+      Scheme_Object **keys, **vals, *val, *key;
       int i, size, did_one = 0;
 
       if (compact) {
 	print_compact(pp, CPT_HASH_TABLE);
-	if (scheme_is_hash_table_equal(obj))
-	  print_compact_number(pp, 1);
-	else
+	if ((SCHEME_HASHTP(obj) && scheme_is_hash_table_equal(obj))
+            || (SCHEME_HASHTRP(obj) && scheme_is_hash_tree_equal(obj)))
 	  print_compact_number(pp, 0);
+	else
+	  print_compact_number(pp, 1);
       } else {
 	always_scheme(pp, 1);
 	print_utf8_string(pp, "#hash", 0, 5);
-	if (!scheme_is_hash_table_equal(obj))
-	  print_utf8_string(pp, "eq", 0, 2);
+        if (SCHEME_HASHTP(obj)) {
+          if (!scheme_is_hash_table_equal(obj))
+            print_utf8_string(pp, "eq", 0, 2);
+        } else {
+          if (!scheme_is_hash_tree_equal(obj))
+            print_utf8_string(pp, "eq", 0, 2);
+        }
 	print_utf8_string(pp, "(", 0, 1);
       }
 
-      t = (Scheme_Hash_Table *)obj;
-      if (compact)
-	print_compact_number(pp, t->count);
+      if (SCHEME_HASHTP(obj)) {
+        t = (Scheme_Hash_Table *)obj;
+        tr = NULL;
+      } else {
+        t = NULL;
+        tr = (Scheme_Hash_Tree *)obj;
+      }
 
-      keys = t->keys;
-      vals = t->vals;
-      size = t->size;
+      if (compact)
+        print_compact_number(pp, t ? t->count : tr->count);
+
+      if (t) {
+        keys = t->keys;
+        vals = t->vals;
+        size = t->size;
+      } else {
+        keys = NULL;
+        vals = NULL;
+        size = tr->count;
+      }
       for (i = 0; i < size; i++) {
-	if (vals[i]) {
+	if (!vals || vals[i]) {
+          if (!vals) {
+            scheme_hash_tree_index(tr, i, &key, &val);
+          } else {
+            val = vals[i];
+            key = keys[i];
+          }
+
 	  if (!compact) {
 	    if (did_one)
 	      print_utf8_string(pp, " ", 0, 1);
 	    print_utf8_string(pp, "(", 0, 1);
 	  }
-	  val = vals[i];
-	  print(keys[i], notdisplay, compact, ht, mt, pp);
+	  print(key, notdisplay, compact, ht, mt, pp);
 	  if (!compact)
 	    print_utf8_string(pp, " . ", 0, 3);
 	  print(val, notdisplay, compact, ht, mt, pp);

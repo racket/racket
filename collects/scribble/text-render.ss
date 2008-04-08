@@ -89,6 +89,7 @@
                      [(ndash) "\U2013"]
                      [(ldquo) "\U201C"]
                      [(rdquo) "\U201D"]
+                     [(rsquo) "\U2019"]
                      [(lang) ">"]
                      [(rang) "<"]
                      [(rarr) "->"]

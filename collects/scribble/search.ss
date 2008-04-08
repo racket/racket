@@ -7,7 +7,7 @@
   (provide find-scheme-tag
            intern-taglet)
 
-  (define module-info-cache (make-hash-table))
+  (define module-info-cache (make-hasheq))
 
   (define (module-path-index-rejoin mpi rel-to)
     (let-values ([(name base) (module-path-index-split mpi)])
@@ -18,7 +18,7 @@
         (module-path-index-join name 
                                 (module-path-index-rejoin base rel-to))])))
 
-  (define interned (make-hash-table 'equal 'weak))
+  (define interned (make-weak-hash))
   
   (define (intern-taglet v)
     (let ([v (if (list? v)
@@ -27,11 +27,11 @@
       (if (or (string? v)
               (bytes? v)
               (list? v))
-          (let ([b (hash-table-get interned v #f)])
+          (let ([b (hash-ref interned v #f)])
             (if b
                 (weak-box-value b)
                 (begin
-                  (hash-table-put! interned v (make-weak-box v))
+                  (hash-set! interned v (make-weak-box v))
                   v)))
           v)))
      
@@ -72,7 +72,7 @@
                                 (cadddr (cdr stx/binding))))))])])
       (and 
        (pair? b)
-       (let ([seen (make-hash-table)]
+       (let ([seen (make-hasheq)]
              [search-key #f])
          (let loop ([queue (list (list (caddr b) (cadddr b) (list-ref b 4) (list-ref b 5) (list-ref b 6)))]
                     [rqueue null])
@@ -111,9 +111,9 @@
                            (loop queue rqueue)
                            ;; Check parents, if we can get the source:
                            (if (and (path? (resolved-module-path-name rmp))
-                                    (not (hash-table-get seen rmp #f)))
+                                    (not (hash-ref seen rmp #f)))
                                (let ([exports
-                                      (hash-table-get 
+                                      (hash-ref
                                        module-info-cache
                                        rmp
                                        (lambda ()
@@ -136,9 +136,9 @@
                                                      [else (loop (cons (car stxess)
                                                                        base)
                                                                  (cdr stxess))]))])
-                                             (hash-table-put! module-info-cache rmp t)
+                                             (hash-set! module-info-cache rmp t)
                                              t))))])
-                                 (hash-table-put! seen rmp #t)
+                                 (hash-set! seen rmp #t)
                                  (let ([a (assq id (let ([a (assoc export-phase exports)])
                                                      (if a
                                                          (cdr a) 

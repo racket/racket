@@ -876,11 +876,11 @@
 		      ;; -- Check for duplicate external method names, init names, or field names
 		      (let ([check-dup
 			     (lambda (what l)
-			       (let ([ht (make-hash-table)])
+			       (let ([ht (make-hasheq)])
 				 (for-each (lambda (id)
-					     (when (hash-table-get ht (syntax-e id) #f)
+					     (when (hash-ref ht (syntax-e id) #f)
 					       (bad (format "duplicate declared external ~a name" what) id))
-					     (hash-table-put! ht (syntax-e id) #t))
+					     (hash-set! ht (syntax-e id) #t))
 					   l)))])
 			;; method names
 			(check-dup "method" (map cdr (append publics overrides augrides
@@ -892,24 +892,24 @@
 			(check-dup "field" (map norm-init/field-eid (append normal-plain-fields normal-plain-init-fields))))
 		      
 		      ;; -- Check that private/public/override/augride are defined --
-		      (let ([ht (make-hash-table)]
-			    [stx-ht (make-hash-table)])
+		      (let ([ht (make-hasheq)]
+			    [stx-ht (make-hasheq)])
 			(for-each
 			 (lambda (defined-name)
-			   (let ([l (hash-table-get ht (syntax-e defined-name) null)])
-			     (hash-table-put! ht (syntax-e defined-name) (cons defined-name l))))
+			   (let ([l (hash-ref ht (syntax-e defined-name) null)])
+			     (hash-set! ht (syntax-e defined-name) (cons defined-name l))))
 			 defined-method-names)
 			(for-each
 			 (lambda (defined-name)
-			   (let ([l (hash-table-get stx-ht (syntax-e defined-name) null)])
-			     (hash-table-put! stx-ht (syntax-e defined-name) (cons defined-name l))))
+			   (let ([l (hash-ref stx-ht (syntax-e defined-name) null)])
+			     (hash-set! stx-ht (syntax-e defined-name) (cons defined-name l))))
 			 defined-syntax-names)
 			(for-each
 			 (lambda (pubovr-name)
-			   (let ([l (hash-table-get ht (syntax-e pubovr-name) null)])
+			   (let ([l (hash-ref ht (syntax-e pubovr-name) null)])
 			     (unless (ormap (lambda (i) (bound-identifier=? i pubovr-name)) l)
 			       ;; Either undefined or defined as syntax:
-			       (let ([stx-l (hash-table-get stx-ht (syntax-e pubovr-name) null)])
+			       (let ([stx-l (hash-ref stx-ht (syntax-e pubovr-name) null)])
 				 (if (ormap (lambda (i) (bound-identifier=? i pubovr-name)) stx-l)
 				     (bad 
 				      "method declared but defined as syntax"
@@ -921,12 +921,12 @@
 
 		      ;; ---- Check that rename-inner doesn't have a non-final decl ---
 		      (unless (null? rename-inners)
-			(let ([ht (make-hash-table)])
+			(let ([ht (make-hasheq)])
 			  (for-each (lambda (pub)
-				      (hash-table-put! ht (syntax-e (cdr pub)) #t))
+				      (hash-set! ht (syntax-e (cdr pub)) #t))
 				    (append publics public-finals overrides override-finals augrides))
 			  (for-each (lambda (inn)
-				      (when (hash-table-get ht (syntax-e (cdr inn)) #f)
+				      (when (hash-ref ht (syntax-e (cdr inn)) #f)
 					(bad
 					 "inner method is locally declared as public, override, public-final, override-final, or augride"
 					 (cdr inn))))
@@ -1810,10 +1810,10 @@
       ;; -- Match method and field names to indices --
       (let ([method-ht (if no-new-methods?
 			   (class-method-ht super)
-			   (make-hash-table))]
+			   (make-hasheq))]
 	    [field-ht (if no-new-fields?
 			  (class-field-ht super)
-			  (make-hash-table))]
+			  (make-hasheq))]
 	    [super-method-ht (class-method-ht super)]
 	    [super-method-ids (class-method-ids super)]
 	    [super-field-ids (class-field-ids super)]
@@ -1823,37 +1823,37 @@
 	(unless no-new-methods?
 	  (let loop ([ids super-method-ids][p (sub1 (class-method-width super))])
 	    (unless (null? ids)
-	      (hash-table-put! method-ht (car ids) p)
+	      (hash-set! method-ht (car ids) p)
 	      (loop (cdr ids) (sub1 p)))))
 	(unless no-new-fields?
 	  (let loop ([ids super-field-ids])
 	    (unless (null? ids)
-	      (hash-table-put! field-ht (car ids) (hash-table-get super-field-ht (car ids)))
+	      (hash-set! field-ht (car ids) (hash-ref super-field-ht (car ids)))
 	      (loop (cdr ids)))))
 
 	;; Put new ids in table, with pos (replace field pos with accessor info later)
 	(unless no-new-methods?
 	  (let loop ([ids public-names][p (class-method-width super)])
 	    (unless (null? ids)
-	      (when (hash-table-get method-ht (car ids) #f)
+	      (when (hash-ref method-ht (car ids) #f)
 		(obj-error 'class* "superclass already contains method: ~a~a" 
 			   (car ids)
 			   (for-class name)))
-	      (hash-table-put! method-ht (car ids) p)
+	      (hash-set! method-ht (car ids) p)
 	      (loop (cdr ids) (add1 p)))))
 	(unless no-new-fields?
 	  (let loop ([ids public-field-names][p (class-field-width super)])
 	    (unless (null? ids)
-	      (when (hash-table-get field-ht (car ids) #f)
+	      (when (hash-ref field-ht (car ids) #f)
 		(obj-error 'class* "superclass already contains field: ~a~a" 
 			   (car ids)
 			   (for-class name)))
-	      (hash-table-put! field-ht (car ids) p)
+	      (hash-set! field-ht (car ids) p)
 	      (loop (cdr ids) (add1 p)))))
 
 	;; Check that superclass has expected fields
 	(for-each (lambda (id)
-		    (unless (hash-table-get field-ht id #f)
+		    (unless (hash-ref field-ht id #f)
 		      (obj-error 'class* "superclass does not provide field: ~a~a" 
 				 id
 				 (for-class name))))
@@ -1864,7 +1864,7 @@
 	       (lambda (method-ht what ids)
 		 (map
 		  (lambda (id)
-		    (hash-table-get 
+		    (hash-ref 
 		     method-ht id
 		     (lambda ()
 		       (obj-error 'class* 
@@ -1894,7 +1894,7 @@
 	     (lambda (intf)
 	       (for-each
 		(lambda (var)
-		  (unless (hash-table-get method-ht var #f)
+		  (unless (hash-ref method-ht var #f)
 		    (obj-error 'class* 
 			       "interface-required method missing: ~a~a~a" 
 			       var
@@ -1965,7 +1965,7 @@
 		   ;; Used only for prim classes
 		   [preparer (lambda (name)
 			       ;; Map symbol to number:
-			       (hash-table-get method-ht name))]
+			       (hash-ref method-ht name))]
 		   [dispatcher (lambda (obj n)
 				 ;; Extract method:
 				 (vector-ref (class-methods (object-ref obj)) n))])
@@ -2026,7 +2026,7 @@
 		  ;;  There are more accessors and mutators than public fields...
 		  (let loop ([ids public-field-names][pos 0])
 		    (unless (null? ids)
-		      (hash-table-put! field-ht (car ids) (cons c pos))
+		      (hash-set! field-ht (car ids) (cons c pos))
 		      (loop (cdr ids) (add1 pos))))
 
 		  ;; -- Extract superclass methods and make rename-inners ---
@@ -2053,7 +2053,7 @@
 					 ;; To compute `rename-inner' indices, we need to know which methods
 					 ;;  are augonly in this new class.
 					 (for-each (lambda (id)
-						     (vector-set! new-augonly (hash-table-get method-ht id) #t))
+						     (vector-set! new-augonly (hash-ref method-ht id) #t))
 						   (append pubment-names overment-names))
 					 (for-each (lambda (mname index)
 						     (let ([depth (get-depth index)])
@@ -2072,7 +2072,7 @@
 							   rename-inner-indices))
 					 ;; Now that checking is done, add `augment':
 					 (for-each (lambda (id)
-						     (vector-set! new-augonly (hash-table-get method-ht id) #t))
+						     (vector-set! new-augonly (hash-ref method-ht id) #t))
 						   augment-names)
 					 (map (lambda (mname index)
 						(let ([depth (get-depth index)])
@@ -2104,7 +2104,7 @@
 			;; -- Fill in method tables --
 			;;  First copy old methods
 			(unless no-method-changes?
-			  (hash-table-for-each
+			  (hash-for-each
 			   super-method-ht
 			   (lambda (name index)
 			     (vector-set! methods index (vector-ref (class-methods super) index))
@@ -2139,14 +2139,14 @@
 			;; Expand `rename-inner' vector, adding a #f to indicate that
 			;;  no rename-inner function is available, so far
 			(for-each (lambda (id)
-				    (let ([index (hash-table-get method-ht id)])
+				    (let ([index (hash-ref method-ht id)])
 				      (let ([v (list->vector (append (vector->list (vector-ref beta-methods index))
 								     (list #f)))])
 					(vector-set! beta-methods index v))))
 				  augonly-names)
 			;; Mark final methods:
 			(for-each (lambda (id)
-				    (let ([index (hash-table-get method-ht id)])
+				    (let ([index (hash-ref method-ht id)])
 				      (vector-set! meth-flags index 'final)))
 				  final-names)
 			
@@ -2216,12 +2216,12 @@
 			    c))))))))))))
 
   (define (check-still-unique name syms what)
-    (let ([ht (make-hash-table)])
+    (let ([ht (make-hasheq)])
       (for-each (lambda (s)
-		  (when (hash-table-get ht s 
-					(lambda ()
-					  (hash-table-put! ht s #t)
-					  #f))
+		  (when (hash-ref ht s 
+                                  (lambda ()
+                                    (hash-set! ht s #t)
+                                    #f))
 		    (obj-error 'class* "external ~a mapped to overlapping keys~a" 
 			       what
 			       (for-class name))))
@@ -2283,17 +2283,17 @@
 		    intf
 		    (for-intf name))))
      supers)
-    (let ([ht (make-hash-table)])
+    (let ([ht (make-hasheq)])
       (for-each
        (lambda (var)
-	 (hash-table-put! ht var #t))
+	 (hash-set! ht var #t))
        vars)
       ;; Check that vars don't already exist in supers:
       (for-each
        (lambda (super)
 	 (for-each
 	  (lambda (var)
-	    (when (hash-table-get ht var #f)
+	    (when (hash-ref ht var #f)
 	      (obj-error 'interface "variable already in superinterface: ~a~a~a" 
 			 var
 			 (for-intf name)
@@ -2314,24 +2314,24 @@
 	(for-each
 	 (lambda (super)
 	   (for-each
-	    (lambda (var) (hash-table-put! ht var #t))
+	    (lambda (var) (hash-set! ht var #t))
 	    (interface-public-ids super)))
 	 supers)
 	;; Done
-	(let ([i (interface-make name supers #f (hash-table-map ht (lambda (k v) k)) class)])
+	(let ([i (interface-make name supers #f (hash-map ht (lambda (k v) k)) class)])
 	  (setup-all-implemented! i)
 	  i))))
 
   ;; setup-all-implemented! : interface -> void
   ;;  Creates the hash table for all implemented interfaces
   (define (setup-all-implemented! i)
-    (let ([ht (make-hash-table)])
-      (hash-table-put! ht i #t)
+    (let ([ht (make-hasheq)])
+      (hash-set! ht i #t)
       (for-each (lambda (si)
-		  (hash-table-for-each
+		  (hash-for-each
 		   (interface-all-implemented si)
 		   (lambda (k v)
-		     (hash-table-put! ht k #t))))
+		     (hash-set! ht k #t))))
 		(interface-supers i))
       (set-interface-all-implemented! i ht)))
 
@@ -2372,10 +2372,10 @@
 		   object<%>
 		   void ; never inspectable
 
-		   0 (make-hash-table) null
+		   0 (make-hasheq) null
 		   (vector) (vector) (vector)
 		   
-		   0 (make-hash-table) null
+		   0 (make-hasheq) null
 		   
 		   'struct:object object? 'make-object
 		   'field-ref-not-needed 'field-set!-not-needed
@@ -2761,7 +2761,7 @@
                        (identifier? (syntax abs-object))
                        (syntax
                         (let* ([c (object-ref abs-object)]
-                               [pos (hash-table-get (class-method-ht c) name #f)])
+                               [pos (hash-ref (class-method-ht c) name #f)])
                           (cond
                             [pos (values (vector-ref (class-methods c) pos) abs-object)]
                             [(wrapper-object? abs-object) wrapper-case]
@@ -2782,7 +2782,7 @@
       (raise-type-error who "class" class))
     (unless (symbol? name)
       (raise-type-error who "symbol" name))
-    (let ([p (hash-table-get (class-field-ht class) name
+    (let ([p (hash-ref (class-field-ht class) name
 			     (lambda ()
 			       (obj-error who "no such field: ~a~a"
 					  name
@@ -2827,11 +2827,11 @@
 			 obj))
 		      (let-values ([(mth ths) (find-method/who 'make-generic obj name)])
                         mth)))
-		  (let* ([pos (hash-table-get (class-method-ht class) name
-                                              (lambda ()
-                                                (obj-error 'make-generic "no such method: ~a~a"
-                                                           name
-                                                           (for-class (class-name class)))))]
+		  (let* ([pos (hash-ref (class-method-ht class) name
+                                        (lambda ()
+                                          (obj-error 'make-generic "no such method: ~a~a"
+                                                     name
+                                                     (for-class (class-name class)))))]
                          [instance? (class-object? class)]
                          [dynamic-generic
                           (lambda (obj)
@@ -2950,7 +2950,7 @@
      (let loop ([obj obj])
        (let* ([cls (object-ref obj)]
               [field-ht (class-field-ht cls)]
-              [index (hash-table-get 
+              [index (hash-ref 
                       field-ht
                       id
                       #f)])
@@ -2994,7 +2994,7 @@
      (let loop ([obj obj])
        (let* ([cls (object-ref obj)]
               [field-ht (class-field-ht cls)])
-         (or (and (hash-table-get field-ht id #f)
+         (or (and (hash-ref field-ht id #f)
                   #t) ;; ensure that only #t and #f leak out, not bindings in ht
              (and (wrapper-object? obj)
                   (loop (wrapper-object-wrapped obj))))))))
@@ -3010,7 +3010,7 @@
      (let loop ([obj obj])
        (let* ([cls (object-ref obj)]
               [field-ht (class-field-ht cls)]
-              [flds (filter interned? (hash-table-map field-ht (lambda (x y) x)))])
+              [flds (filter interned? (hash-map field-ht (lambda (x y) x)))])
          (if (wrapper-object? obj)
              (append flds (loop (wrapper-object-wrapped obj)))
              flds)))))
@@ -3136,7 +3136,7 @@
      (trace (inspect-event o))
      (let loop ([o o])
        (let* ([c (object-ref o)]
-              [pos (hash-table-get (class-method-ht c) name #f)])
+              [pos (hash-ref (class-method-ht c) name #f)])
          (cond
           [pos (procedure-arity-includes? (vector-ref (class-methods c) pos) 
                                           (add1 cnt))]
@@ -3153,7 +3153,7 @@
     (unless (interface? i)
       (raise-type-error 'interface-extension? "interface" 1 v i))
     (and (interface? i)
-	 (hash-table-get (interface-all-implemented v) i #f)))
+	 (hash-ref (interface-all-implemented v) i #f)))
   
   (define (method-in-interface? s i)
     (unless (symbol? s)
@@ -3384,11 +3384,11 @@
   ;; initialization.
   (define (make-wrapper-class class-name method-ids methods field-ids old-style?)
     (let* ([supers (vector object% #f)]
-           [method-ht (make-hash-table)]
+           [method-ht (make-hasheq)]
            [method-count (length method-ids)]
            [methods-vec (make-vector method-count #f)]
            
-           [field-ht (make-hash-table)]
+           [field-ht (make-hasheq)]
            [field-count (length field-ids)]
            
            [cls
@@ -3462,7 +3462,7 @@
             (vector-set! methods-vec i (if old-style? 
                                            ((car methods) field-ref)
                                            (car methods)))
-            (hash-table-put! method-ht (car method-ids) i)
+            (hash-set! method-ht (car method-ids) i)
             (loop (+ i 1)
                   (cdr methods)
                   (cdr method-ids))))
@@ -3471,7 +3471,7 @@
         (let loop ([i 0]
                    [field-ids field-ids])
           (when (< i field-count)
-            (hash-table-put! field-ht (car field-ids) (cons cls i))
+            (hash-set! field-ht (car field-ids) (cons cls i))
             (loop (+ i 1)
                   (cdr field-ids))))
         

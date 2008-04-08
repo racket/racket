@@ -1,7 +1,7 @@
 
 (load-relative "loadtest.ss")
-(load-relative "scheme.ss")
 (load-relative "mz.ss")
+(load-relative "scheme.ss")
 (load-relative "mzlib.ss")
 (load-in-sandbox "boundmap-test.ss")
 (load-in-sandbox "net.ss")

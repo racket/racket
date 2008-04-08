@@ -478,7 +478,7 @@
            [RunningCode (add1 EOFCode)]
            [RunningBits (add1 BitsPerPixel)];    /* Number of bits per code. */
            [MaxCode1 (arithmetic-shift 1 RunningBits)];    /* Max. code + 1. */
-           [HashTable (make-hash-table)]
+           [HashTable (make-hasheq)]
            [CrntShiftState 0];    /* No information in CrntShiftDWord. */
            [CrntShiftDWord 0]
            [port (gif-stream-port GifFile)]
@@ -523,7 +523,7 @@
                 ;;  * CrntCode as Prefix string with Pixel as postfix char.
                 ;;  */
                 (let* ([NewKey (bitwise-ior (arithmetic-shift CrntCode 8) Pixel)]
-                       [NewCode (hash-table-get HashTable NewKey #f)])
+                       [NewCode (hash-ref HashTable NewKey #f)])
                   (if NewCode
                       ;;/* This Key is already there, or the string is old one, so
                       ;; * simple take new code as our CrntCode:
@@ -550,10 +550,10 @@
                                 (loop CrntCode
                                       (add1 EOFCode) (add1 BitsPerPixel) (arithmetic-shift 1 (add1 BitsPerPixel))
                                       CrntShiftState CrntShiftDWord
-                                      (make-hash-table) (add1 i)))
+                                      (make-hasheq) (add1 i)))
                               ;; /* Put this unique key with its relative Code in hash table: */
                               (begin
-                                (hash-table-put! HashTable NewKey RunningCode)
+                                (hash-set! HashTable NewKey RunningCode)
                                 (loop CrntCode
                                       (add1 RunningCode) RunningBits MaxCode1
                                       CrntShiftState CrntShiftDWord
@@ -629,7 +629,7 @@
                                0)))])
         (let ([mask (car masks)]
               [transparent #f]
-              [table (make-hash-table)] ; relying on fixnums
+              [table (make-hasheq)] ; relying on fixnums
               [idx 0])
           ;; Iterate over image to count colors
           ;; (as reduced by mask)
@@ -646,23 +646,23 @@
                                      (mask (bytes-ref argb (+ 1 pos)))
                                      (mask (bytes-ref argb (+ 2 pos)))
                                      (mask (bytes-ref argb (+ 3 pos))))])
-                           (let ([v (hash-table-get table vec #f)])
+                           (let ([v (hash-ref table vec #f)])
                              (or v
                                  (begin
-                                   (hash-table-put! table vec idx)
+                                   (hash-set! table vec idx)
                                    (set! idx (add1 idx))
                                    (sub1 idx))))))])
                 (unless (= this-idx 256)
                   (bytes-set! result i this-idx)
                   (loop (add1 i) (+ pos 4))))))
-          (if ((hash-table-count table) . > . (if transparent
-                                                  255
-                                                  256))
+          (if ((hash-count table) . > . (if transparent
+                                            255
+                                            256))
               ;; Try again
               (loop (cdr masks))
               ;; Found an ok quantization
               (values result
-                      (let* ([cnt (+ (hash-table-count table)
+                      (let* ([cnt (+ (hash-count table)
                                      (if transparent 1 0))]
                              [size (cond
                                     [(<= cnt 2) 2]
@@ -674,7 +674,7 @@
                                     [(<= cnt 128) 128]
                                     [else 256])]
                              [t (make-vector size #(0 0 0))])
-                        (hash-table-for-each 
+                        (hash-for-each 
                          table
                          (lambda (k v)
                            (vector-set! t v (key->rgb k))))

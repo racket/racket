@@ -3077,6 +3077,82 @@ static int mark_cont_mark_chain_FIXUP(void *p) {
 
 /**********************************************************************/
 
+#ifdef MARKS_FOR_HASH_C
+
+static int hash_tree_val_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
+}
+
+static int hash_tree_val_MARK(void *p) {
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
+
+  gcMARK(ht->root);
+  gcMARK(ht->elems_box);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
+}
+
+static int hash_tree_val_FIXUP(void *p) {
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
+
+  gcFIXUP(ht->root);
+  gcFIXUP(ht->elems_box);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
+}
+
+#define hash_tree_val_IS_ATOMIC 0
+#define hash_tree_val_IS_CONST_SIZE 1
+
+
+static int mark_rb_node_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(RBNode));
+}
+
+static int mark_rb_node_MARK(void *p) {
+  RBNode *rb = (RBNode *)p;
+
+  if (rb->left) {
+    gcMARK(rb->left);
+  }
+  if (rb->right) {
+    gcMARK(rb->right);
+  }
+  gcMARK(rb->key);
+  gcMARK(rb->val);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(RBNode));
+}
+
+static int mark_rb_node_FIXUP(void *p) {
+  RBNode *rb = (RBNode *)p;
+
+  if (rb->left) {
+    gcFIXUP(rb->left);
+  }
+  if (rb->right) {
+    gcFIXUP(rb->right);
+  }
+  gcFIXUP(rb->key);
+  gcFIXUP(rb->val);
+
+  return
+  gcBYTES_TO_WORDS(sizeof(RBNode));
+}
+
+#define mark_rb_node_IS_ATOMIC 0
+#define mark_rb_node_IS_CONST_SIZE 1
+
+
+#endif  /* HASH */
+
+/**********************************************************************/
+
 #ifdef MARKS_FOR_PORTFUN_C
 
 static int mark_load_handler_data_SIZE(void *p) {

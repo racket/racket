@@ -227,8 +227,8 @@
       (define line-break (if (send renderer index-manual-newlines?)
                              (make-element 'newline '("\n"))
                              ""))
-      (define alpha-starts (make-hash-table))
-      (hash-table-for-each
+      (define alpha-starts (make-hasheq))
+      (hash-for-each
        (let ([parent (collected-info-parent (part-collected-info sec ri))])
          (if parent
            (collected-info-info (part-collected-info parent ri))
@@ -253,7 +253,7 @@
                         [(char-ci>? letter (car alpha))
                          (add-letter (car alpha) (loop i (cdr alpha)))]
                         [(char-ci=? letter (car alpha))
-                         (hash-table-put! alpha-starts (car i) letter)
+                         (hash-set! alpha-starts (car i) letter)
                          (list* (make-element
                                  (make-target-url (format "#alpha:~a" letter) #f)
                                  (list (string (car alpha))))
@@ -270,7 +270,7 @@
                  (make-link-element "indexlink"
                                     `(,@(commas (caddr i)) ,line-break)
                                     (car i)))
-               (cond [(hash-table-get alpha-starts i #f)
+               (cond [(hash-ref alpha-starts i #f)
                       => (lambda (let)
                            (make-element (make-url-anchor
                                           (format "alpha:~a" (char-upcase let)))

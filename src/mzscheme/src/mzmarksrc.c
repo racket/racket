@@ -1239,6 +1239,41 @@ END fun;
 
 /**********************************************************************/
 
+START hash;
+
+hash_tree_val {
+ mark:
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
+
+  gcMARK(ht->root);
+  gcMARK(ht->elems_box);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
+}
+
+mark_rb_node {
+ mark:
+  RBNode *rb = (RBNode *)p;
+
+  /* Short-circuit on NULL pointers, which are especially likely */
+  if (rb->left) {
+    gcMARK(rb->left);
+  }
+  if (rb->right) {
+    gcMARK(rb->right);
+  }
+  gcMARK(rb->key);
+  gcMARK(rb->val);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(RBNode));
+}
+
+END hash;
+
+/**********************************************************************/
+
 START portfun;
 
 mark_load_handler_data {

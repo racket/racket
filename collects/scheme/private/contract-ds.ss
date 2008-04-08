@@ -109,7 +109,7 @@ it around flattened out.
                       [any-became-known? #f]
                       [synth-info (wrap-parent-get stct 0)]
                       [ht (synth-info-vals synth-info)])
-                 (hash-table-for-each 
+                 (hash-for-each 
                   ht
                   (lambda (k v)
                     (when (unknown? v)
@@ -120,7 +120,7 @@ it around flattened out.
                              (set! any-unknown? #t)]
                             [else
                              (set! any-became-known? #t)
-                             (hash-table-put! ht k new)]))))))
+                             (hash-set! ht k new)]))))))
                  (unless any-unknown?
                    (check-synth-info-test stct synth-info contract/info))
                  (when any-became-known?
@@ -255,8 +255,8 @@ it around flattened out.
                       (let ([wrapper (wrap-maker val contract/info)])
                         (let ([synth-setup-stuff (contract-get ctc field-count)])
                           (when synth-setup-stuff
-                            (let ([ht (make-hash-table)])
-                              (for-each (λ (pr) (hash-table-put! ht (car pr) (make-unknown (cdr pr))))
+                            (let ([ht (make-hash)])
+                              (for-each (λ (pr) (hash-set! ht (car pr) (make-unknown (cdr pr))))
                                         (cdr synth-setup-stuff))
                               (wrap-parent-set wrapper 0 (make-synth-info '() ht (car synth-setup-stuff))))))
                         wrapper)])))))
@@ -503,9 +503,9 @@ it around flattened out.
 (define (synthesized-value wrap key)
   (unless (wrap-parent-predicate wrap)
     (error 'synthesized-value "expected struct value with contract as first argument, got ~e" wrap))
-  (let ([ans (hash-table-get (synth-info-vals (wrap-parent-get wrap 0))
-                             key
-                             secret)])
+  (let ([ans (hash-ref (synth-info-vals (wrap-parent-get wrap 0))
+                       key
+                       secret)])
     (when (eq? ans secret)
       (error 'synthesized-value "the key ~e is not mapped in ~e" key wrap))
     ans))

@@ -238,7 +238,7 @@ If the namespace does not, they are colored the unbound color.
             
             ;; bindings-table : hash-table[(list text number number) -o> (listof (list text number number))]
             ;; this is a private field
-            (define bindings-table (make-hash-table 'equal))
+            (define bindings-table (make-hash))
             
             ;; add-to-bindings-table : text number number text number number -> boolean
             ;; results indicates if the binding was added to the table. It is added, unless
@@ -253,13 +253,13 @@ If the namespace does not, they are colored the unbound color.
                  #f]
                 [else
                  (let* ([key (list start-text start-left start-right)]
-                        [priors (hash-table-get bindings-table key (λ () '()))]
+                        [priors (hash-ref bindings-table key (λ () '()))]
                         [new (list end-text end-left end-right)])
                    (cond
                      [(member new priors)
                       #f]
                      [else
-                      (hash-table-put! bindings-table key (cons new priors))
+                      (hash-set! bindings-table key (cons new priors))
                       #t]))]))
             
             ;; for use in the automatic test suite
@@ -286,12 +286,12 @@ If the namespace does not, they are colored the unbound color.
                   (send text position-location pos bx by)
                   (send text editor-location-to-dc-location (unbox bx) (unbox by))))
               
-              (hash-table-for-each
+              (hash-for-each
                bindings-table
                (λ (k v)
-                 (hash-table-put! bindings-table k (sort v compare-bindings)))))
+                 (hash-set! bindings-table k (sort v compare-bindings)))))
             
-            (define tacked-hash-table (make-hash-table))
+            (define tacked-hash-table (make-hasheq))
             (define cursor-location #f)
             (define cursor-text #f)
             (define/private (find-poss text left-pos right-pos)
@@ -363,9 +363,9 @@ If the namespace does not, they are colored the unbound color.
             
             ;; syncheck:init-arrows : -> void
             (define/public (syncheck:init-arrows)
-              (set! tacked-hash-table (make-hash-table))
-              (set! arrow-vectors (make-hash-table))
-              (set! bindings-table (make-hash-table 'equal))
+              (set! tacked-hash-table (make-hasheq))
+              (set! arrow-vectors (make-hasheq))
+              (set! bindings-table (make-hash))
               (let ([f (get-top-level-window)])
                 (when f
                   (send f open-status-line 'drscheme:check-syntax:mouse-over))))
@@ -376,7 +376,7 @@ If the namespace does not, they are colored the unbound color.
                 (let ([any-tacked? #f])
                   (when tacked-hash-table
                     (let/ec k
-                      (hash-table-for-each
+                      (hash-for-each
                        tacked-hash-table
                        (λ (key val)
                          (set! any-tacked? #t)
@@ -433,7 +433,7 @@ If the namespace does not, they are colored the unbound color.
             ;; If use-key? is #f, it adds `to-add' without a key.
             ;; pre: arrow-vectors is not #f
             (define/private (add-to-range/key text start end to-add key use-key?)
-              (let ([arrow-vector (hash-table-get 
+              (let ([arrow-vector (hash-ref
                                    arrow-vectors
                                    text 
                                    (λ ()
@@ -441,7 +441,7 @@ If the namespace does not, they are colored the unbound color.
                                             (make-vector
                                              (add1 (send text last-position))
                                              null)])
-                                       (hash-table-put! 
+                                       (hash-set! 
                                         arrow-vectors 
                                         text
                                         new-vec)
@@ -474,7 +474,7 @@ If the namespace does not, they are colored the unbound color.
                 (let ([any-tacked? #f])
                   (when tacked-hash-table
                     (let/ec k
-                      (hash-table-for-each
+                      (hash-for-each
                        tacked-hash-table
                        (λ (key val)
                          (set! any-tacked? #t)
@@ -485,7 +485,7 @@ If the namespace does not, they are colored the unbound color.
             ;; flush-arrow-coordinates-cache : -> void
             ;; pre-condition: arrow-vector is not #f.
             (define/private (flush-arrow-coordinates-cache)
-              (hash-table-for-each
+              (hash-for-each
                arrow-vectors
                (λ (text arrow-vector)
                  (let loop ([n (vector-length arrow-vector)])
@@ -532,23 +532,23 @@ If the namespace does not, they are colored the unbound color.
                               'normal
                               'bold))
                   (send dc set-text-foreground templ-color)
-                  (hash-table-for-each tacked-hash-table
-                                       (λ (arrow v) 
-                                         (when v 
-                                           (cond
-                                             [(var-arrow? arrow)
-                                              (if (var-arrow-actual? arrow)
-                                                  (begin (send dc set-pen var-pen)
-                                                         (send dc set-brush tacked-var-brush))
-                                                  (begin (send dc set-pen templ-pen)
-                                                         (send dc set-brush tacked-templ-brush)))]
-                                             [(tail-arrow? arrow)
-                                              (send dc set-pen tail-pen)
-                                              (send dc set-brush tacked-tail-brush)])
-                                           (draw-arrow2 arrow))))
+                  (hash-for-each tacked-hash-table
+                                 (λ (arrow v) 
+                                    (when v 
+                                      (cond
+                                       [(var-arrow? arrow)
+                                        (if (var-arrow-actual? arrow)
+                                            (begin (send dc set-pen var-pen)
+                                                   (send dc set-brush tacked-var-brush))
+                                            (begin (send dc set-pen templ-pen)
+                                                   (send dc set-brush tacked-templ-brush)))]
+                                       [(tail-arrow? arrow)
+                                        (send dc set-pen tail-pen)
+                                        (send dc set-brush tacked-tail-brush)])
+                                      (draw-arrow2 arrow))))
                   (when (and cursor-location
                              cursor-text)
-                    (let* ([arrow-vector (hash-table-get arrow-vectors cursor-text (λ () #f))])
+                    (let* ([arrow-vector (hash-ref arrow-vectors cursor-text (λ () #f))])
                       (when arrow-vector
                         (let ([eles (vector-ref arrow-vector cursor-location)])
                           (for-each (λ (ele) 
@@ -574,22 +574,22 @@ If the namespace does not, they are colored the unbound color.
             ;; for-each-tail-arrows : (tail-arrow -> void) tail-arrow -> void
             (define/private (for-each-tail-arrows f tail-arrow)
               ;; call-f-ht ensures that `f' is only called once per arrow
-              (define call-f-ht (make-hash-table))
+              (define call-f-ht (make-hasheq))
               
               (define (for-each-tail-arrows/to/from tail-arrow-pos tail-arrow-text
                                                     tail-arrow-other-pos tail-arrow-other-text)
                 
                 ;; traversal-ht ensures that we don't loop in the arrow traversal.
-                (let ([traversal-ht (make-hash-table)])
+                (let ([traversal-ht (make-hasheq)])
                   (let loop ([tail-arrow tail-arrow])
-                    (unless (hash-table-get traversal-ht tail-arrow (λ () #f))
-                      (hash-table-put! traversal-ht tail-arrow #t)
-                      (unless (hash-table-get call-f-ht tail-arrow (λ () #f))
-                        (hash-table-put! call-f-ht tail-arrow #t)
+                    (unless (hash-ref traversal-ht tail-arrow (λ () #f))
+                      (hash-set! traversal-ht tail-arrow #t)
+                      (unless (hash-ref call-f-ht tail-arrow (λ () #f))
+                        (hash-set! call-f-ht tail-arrow #t)
                         (f tail-arrow))
                       (let* ([next-pos (tail-arrow-pos tail-arrow)]
                              [next-text (tail-arrow-text tail-arrow)]
-                             [arrow-vector (hash-table-get arrow-vectors next-text (λ () #f))])
+                             [arrow-vector (hash-ref arrow-vectors next-text (λ () #f))])
                         (when arrow-vector
                           (let ([eles (vector-ref arrow-vector next-pos)])
                             (for-each (λ (ele) 
@@ -659,7 +659,7 @@ If the namespace does not, they are colored the unbound color.
                             (set! cursor-location pos)
                             (set! cursor-text text)
                             
-                            (let* ([arrow-vector (hash-table-get arrow-vectors cursor-text (λ () #f))]
+                            (let* ([arrow-vector (hash-ref arrow-vectors cursor-text (λ () #f))]
                                    [eles (and arrow-vector (vector-ref arrow-vector cursor-location))])
                               (update-docs-background eles)
                               (when eles
@@ -683,7 +683,7 @@ If the namespace does not, they are colored the unbound color.
                     [(send event button-down? 'right)
                      (let-values ([(pos text) (get-pos/text event)])
                        (if (and pos text)
-                           (let ([arrow-vector (hash-table-get arrow-vectors text (λ () #f))])
+                           (let ([arrow-vector (hash-ref arrow-vectors text (λ () #f))])
                              (when arrow-vector
                                (let ([vec-ents (vector-ref arrow-vector pos)])
                                  (cond
@@ -761,7 +761,7 @@ If the namespace does not, they are colored the unbound color.
             (define/private (tack/untack-callback arrows)
               (let ([arrow-tacked?
                      (λ (arrow)
-                       (hash-table-get
+                       (hash-ref
                         tacked-hash-table
                         arrow
                         (λ () #f)))]
@@ -780,11 +780,11 @@ If the namespace does not, they are colored the unbound color.
                  (λ (arrow)
                    (cond
                      [(var-arrow? arrow)
-                      (hash-table-put! tacked-hash-table arrow (not untack-arrows?))]
+                      (hash-set! tacked-hash-table arrow (not untack-arrows?))]
                      [(tail-arrow? arrow)
                       (for-each-tail-arrows
                        (λ (arrow) 
-                         (hash-table-put! tacked-hash-table arrow (not untack-arrows?)))
+                         (hash-set! tacked-hash-table arrow (not untack-arrows?)))
                        arrow)]))
                  arrows))
               (invalidate-bitmap-cache))
@@ -807,7 +807,7 @@ If the namespace does not, they are colored the unbound color.
             (define/private (jump-to-binding/bound-helper text do-jump)
               (let ([pos (send text get-start-position)])
                 (when arrow-vectors
-                  (let ([arrow-vector (hash-table-get arrow-vectors text (λ () #f))])
+                  (let ([arrow-vector (hash-ref arrow-vectors text (λ () #f))])
                     (when arrow-vector
                       (let ([vec-ents (filter var-arrow? (vector-ref arrow-vector pos))])
                         (unless (null? vec-ents)
@@ -818,11 +818,11 @@ If the namespace does not, they are colored the unbound color.
             (define/private (jump-to-next-callback pos txt input-arrows)
               (unless (null? input-arrows)
                 (let* ([arrow-key (car input-arrows)]
-                       [orig-arrows (hash-table-get bindings-table
-                                                    (list (var-arrow-start-text arrow-key)
-                                                          (var-arrow-start-pos-left arrow-key)
-                                                          (var-arrow-start-pos-right arrow-key))
-                                                    (λ () '()))])
+                       [orig-arrows (hash-ref bindings-table
+                                              (list (var-arrow-start-text arrow-key)
+                                                    (var-arrow-start-pos-left arrow-key)
+                                                    (var-arrow-start-pos-right arrow-key))
+                                              (λ () '()))])
                   (cond
                     [(null? orig-arrows) (void)]
                     [(null? (cdr orig-arrows)) (jump-to (car orig-arrows))]
@@ -862,7 +862,7 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:jump-to-definition text)
               (let ([pos (send text get-start-position)])
                 (when arrow-vectors
-                  (let ([arrow-vector (hash-table-get arrow-vectors text (λ () #f))])
+                  (let ([arrow-vector (hash-ref arrow-vectors text (λ () #f))])
                     (when arrow-vector
                       (let ([vec-ents (filter def-link? (vector-ref arrow-vector pos))])
                         (unless (null? vec-ents)
@@ -1336,10 +1336,10 @@ If the namespace does not, they are colored the unbound color.
              [tl-low-tops (make-id-set)]
              [tl-high-tops (make-id-set)]
              [tl-templrefs (make-id-set)]
-             [tl-requires (make-hash-table 'equal)]
-             [tl-require-for-syntaxes (make-hash-table 'equal)]
-             [tl-require-for-templates (make-hash-table 'equal)]
-             [tl-require-for-labels (make-hash-table 'equal)]
+             [tl-requires (make-hash)]
+             [tl-require-for-syntaxes (make-hash)]
+             [tl-require-for-templates (make-hash)]
+             [tl-require-for-labels (make-hash)]
              [expanded-expression
               (λ (user-namespace user-directory sexp jump-to-id)
                 (parameterize ([current-load-relative-directory user-directory])
@@ -1355,10 +1355,10 @@ If the namespace does not, they are colored the unbound color.
                              [low-tops (make-id-set)]
                              [high-tops (make-id-set)]
                              [templrefs (make-id-set)]
-                             [requires (make-hash-table 'equal)]
-                             [require-for-syntaxes (make-hash-table 'equal)]
-                             [require-for-templates (make-hash-table 'equal)]
-                             [require-for-labels (make-hash-table 'equal)])
+                             [requires (make-hash)]
+                             [require-for-syntaxes (make-hash)]
+                             [require-for-templates (make-hash)]
+                             [require-for-labels (make-hash)])
                          (annotate-basic sexp user-namespace user-directory jump-to-id
                                          low-binders high-binders varrefs high-varrefs low-tops high-tops
                                          templrefs
@@ -1421,7 +1421,7 @@ If the namespace does not, they are colored the unbound color.
                             low-tops high-tops
                             templrefs
                             requires require-for-syntaxes require-for-templates require-for-labels)
-      (let ([tail-ht (make-hash-table)]
+      (let ([tail-ht (make-hasheq)]
             [maybe-jump
              (λ (vars)
                (when jump-to-id
@@ -1588,12 +1588,12 @@ If the namespace does not, they are colored the unbound color.
                  (annotate-raw-keyword sexp varrefs)
                  ((annotate-require-open user-namespace user-directory) (syntax lang))
                  
-                 (hash-table-put! requires 
-                                  (syntax->datum (syntax lang))
-                                  (cons (syntax lang)
-                                        (hash-table-get requires 
-                                                        (syntax->datum (syntax lang))
-                                                        (λ () '()))))
+                 (hash-set! requires 
+                            (syntax->datum (syntax lang))
+                            (cons (syntax lang)
+                                  (hash-ref requires 
+                                            (syntax->datum (syntax lang))
+                                            (λ () '()))))
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
               
               ; top level or module top level only:
@@ -1688,12 +1688,12 @@ If the namespace does not, they are colored the unbound color.
       (λ (raw-spec syntax)
         (when (syntax-original? syntax)
           (let ([key (syntax->datum raw-spec)])
-            (hash-table-put! require-ht
-                             key
-                             (cons syntax
-                                   (hash-table-get require-ht
-                                                   key
-                                                   (λ () '()))))))))
+            (hash-set! require-ht
+                       key
+                       (cons syntax
+                             (hash-ref require-ht
+                                       key
+                                       (λ () '()))))))))
     
     ;; annotate-unused-require : syntax -> void
     (define (annotate-unused-require req/tag)
@@ -1720,24 +1720,24 @@ If the namespace does not, they are colored the unbound color.
       
       (let ([rename-ht
              ;; hash-table[(list source number number) -> (listof syntax)]
-             (make-hash-table 'equal)]
-            [unused-requires (make-hash-table 'equal)]
-            [unused-require-for-syntaxes (make-hash-table 'equal)]
-            [unused-require-for-templates (make-hash-table 'equal)]
-            [unused-require-for-labels (make-hash-table 'equal)]
+             (make-hash)]
+            [unused-requires (make-hash)]
+            [unused-require-for-syntaxes (make-hash)]
+            [unused-require-for-templates (make-hash)]
+            [unused-require-for-labels (make-hash)]
             ;; there is no define-for-template form, thus no for-template binders
             [template-binders (make-id-set)]
             [label-binders (make-id-set)]
             [id-sets (list low-binders high-binders low-varrefs high-varrefs low-tops high-tops)])
         
-        (hash-table-for-each requires
-                             (λ (k v) (hash-table-put! unused-requires k #t)))
-        (hash-table-for-each require-for-syntaxes
-                             (λ (k v) (hash-table-put! unused-require-for-syntaxes k #t)))
-        (hash-table-for-each require-for-templates
-                             (lambda (k v) (hash-table-put! unused-require-for-templates k #t)))
-        (hash-table-for-each require-for-labels
-                             (lambda (k v) (hash-table-put! unused-require-for-labels k #t)))
+        (hash-for-each requires
+                       (λ (k v) (hash-set! unused-requires k #t)))
+        (hash-for-each require-for-syntaxes
+                       (λ (k v) (hash-set! unused-require-for-syntaxes k #t)))
+        (hash-for-each require-for-templates
+                       (lambda (k v) (hash-set! unused-require-for-templates k #t)))
+        (hash-for-each require-for-labels
+                       (lambda (k v) (hash-set! unused-require-for-labels k #t)))
         
         (for-each (λ (vars) 
                     (for-each (λ (var)
@@ -1843,22 +1843,22 @@ If the namespace does not, they are colored the unbound color.
         (color-unused require-for-templates unused-require-for-templates)
         (color-unused require-for-syntaxes unused-require-for-syntaxes)
         (color-unused requires unused-requires)
-        (hash-table-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
+        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
         
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
       (let ([key (list (syntax-source stx) (syntax-position stx) (syntax-span stx))])
-        (hash-table-put! rename-ht
-                         key
-                         (cons stx (hash-table-get rename-ht key (λ () '()))))))
+        (hash-set! rename-ht
+                   key
+                   (cons stx (hash-ref rename-ht key (λ () '()))))))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
     (define (color-unused requires unused)
-      (hash-table-for-each
+      (hash-for-each
        unused
        (λ (k v)
          (for-each (λ (stx) (color stx error-style-name))
-                   (hash-table-get requires k)))))
+                   (hash-ref requires k)))))
     
     ;; connect-identifier : syntax
     ;;                      id-set 
@@ -1897,9 +1897,9 @@ If the namespace does not, they are colored the unbound color.
             (when req-path/pr
               (let* ([req-path (car req-path/pr)]
                      [id (cdr req-path/pr)]
-                     [req-stxes (hash-table-get requires req-path (λ () #f))])
+                     [req-stxes (hash-ref requires req-path (λ () #f))])
                 (when req-stxes
-                  (hash-table-remove! unused req-path)
+                  (hash-remove! unused req-path)
                   (for-each (λ (req-stx) 
                               (when (id/require-match? (syntax->datum var) 
                                                        id 
@@ -1981,8 +1981,8 @@ If the namespace does not, they are colored the unbound color.
     (define (add-var ht)
       (λ (var)
         (let* ([key (syntax-e var)]
-               [prev (hash-table-get ht key (λ () null))])
-          (hash-table-put! ht key (cons var prev)))))
+               [prev (hash-ref ht key (λ () null))])
+          (hash-set! ht key (cons var prev)))))
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
@@ -2063,12 +2063,12 @@ If the namespace does not, they are colored the unbound color.
     ;; colors the parens (if any) around the argument
     ;; to indicate this is a tail call.
     (define (annotate-tail-position orig-stx tail-stx tail-ht)
-      (hash-table-put!
+      (hash-set!
        tail-ht 
        orig-stx 
        (cons
         tail-stx
-        (hash-table-get 
+        (hash-ref 
          tail-ht
          orig-stx
          (λ () null)))))
@@ -2227,14 +2227,14 @@ If the namespace does not, they are colored the unbound color.
     
     ;; color-internal-structure : syntax str -> void
     (define (color-internal-structure stx style-name)
-      (let ([ht (make-hash-table)]) 
+      (let ([ht (make-hasheq)]) 
         ;; ht : stx -o> true
         ;; indicates if we've seen this syntax object before
         
         (let loop ([stx stx]
                    [datum (syntax->datum stx)])
-          (unless (hash-table-get ht datum (λ () #f))
-            (hash-table-put! ht datum #t)
+          (unless (hash-ref ht datum (λ () #f))
+            (hash-set! ht datum #t)
             (cond
               [(pair? stx) 
                (loop (car stx) (car datum))
@@ -2287,7 +2287,7 @@ If the namespace does not, they are colored the unbound color.
     
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
-      (hash-table-for-each
+      (hash-for-each
        tail-ht
        (λ (stx-from stx-tos)
          (for-each (λ (stx-to) (add-tail-ht-link stx-from stx-to))

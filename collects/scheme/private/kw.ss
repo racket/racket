@@ -194,15 +194,15 @@
   ;;     (req-kw ...)             ; required keywords (could be extracted from previous)
   ;;     rest)                    ; either () or (rest-id)
   (define-for-syntax (parse-formals stx args)
-    (let* ([kw-ht (make-hash-table)]
+    (let* ([kw-ht (make-hasheq)]
            [check-kw (lambda (kw)
-                       (when (hash-table-get kw-ht (syntax-e kw) #f)
+                       (when (hash-ref kw-ht (syntax-e kw) #f)
                          (raise-syntax-error
                           #f
                           "duplicate keyword for argument"
                           stx
                           kw))
-                       (hash-table-put! kw-ht (syntax-e kw) #t))])
+                       (hash-set! kw-ht (syntax-e kw) #t))])
       (let loop ([args args] [needs-default? #f])
         (syntax-case args ()
           [id
@@ -593,18 +593,18 @@
                     (#%app . #,(cdr (syntax-e stx))))))
           ;; keyword app (maybe)
           (let ([exprs
-                 (let ([kw-ht (make-hash-table)])
+                 (let ([kw-ht (make-hasheq)])
                    (let loop ([l (cddr l)])
                      (cond
                        [(null? l) null]
                        [(keyword? (syntax-e (car l)))
-                        (when (hash-table-get kw-ht (syntax-e (car l)) #f)
+                        (when (hash-ref kw-ht (syntax-e (car l)) #f)
                           (raise-syntax-error
                            'application
                            "duplicate keyword in application"
                            stx
                            (car l)))
-                        (hash-table-put! kw-ht (syntax-e (car l)) #t)        
+                        (hash-set! kw-ht (syntax-e (car l)) #t)        
                         (cond
                           [(null? (cdr l))
                            (raise-syntax-error

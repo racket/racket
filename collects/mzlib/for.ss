@@ -18,10 +18,10 @@
            in-bytes
            in-input-port-bytes
            in-input-port-chars
-           in-hash-table
-           in-hash-table-keys
-           in-hash-table-values
-           in-hash-table-pairs
+           (rename-out [in-hash in-hash-table]
+                       [in-hash-keys in-hash-table-keys]
+                       [in-hash-values in-hash-table-values]
+                       [in-hash-pairs in-hash-table-pairs])
            
            in-parallel
            stop-before

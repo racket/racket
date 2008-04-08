@@ -9,7 +9,10 @@
                               syntax?
                               #%plain-lambda #%plain-app
                               syntax->datum datum->syntax
-                              make-base-empty-namespace)))
+                              make-base-empty-namespace
+                              make-hash make-hasheq make-weak-hash make-weak-hasheq
+                              make-immutable-hash
+                              make-immutable-hasheq)))
 
 @(define-syntax-rule (def-base base-define base-define-struct
                                base-if base-cond base-case base-top-interaction
@@ -294,3 +297,44 @@ Equivalent to @scheme[(namespace-require `(for-syntax ,req))].}
 )]{
 
 Raises @scheme[exn:fail], because the operations are not supported.}
+
+
+@defproc[(hash-table? [v any/c] [flag (one-of/c 'weak 'equal)] ...) 
+         hash-table?]{
+
+Returns @scheme[#t] if @scheme[v] like a hash table created by
+@scheme[make-hash-table] or @scheme[make-immutable-hash-table] with
+the given @scheme[flag]s (or more), @scheme[#f] otherwise. Each
+provided @scheme[flag] must be distinct; if the second @scheme[flag]
+is redundant, the @scheme[exn:fail:contract] exception is raised.}
+
+
+@defproc[(make-hash-table [flag (one-of/c 'weak 'equal)] ...) 
+         hash-table?]{
+
+Creates and returns a new hash table. If provided, each @scheme[flag]
+must one of the following:
+
+ @itemize{
+
+  @item{@indexed-scheme['weak] --- creates a hash table with weakly-held
+   keys via @scheme[make-weak-hash] or @scheme[make-weak-hasheq]}
+
+  @item{@indexed-scheme['equal] --- creates a hash table that compares
+   keys using @scheme[equal?] instead of @scheme[eq?] using
+   @scheme[make-hash] or @scheme[make-weak-hash].}
+
+ }
+
+By default, key comparisons use @scheme[eq?]. If the second
+@scheme[flag] is redundant, the @scheme[exn:fail:contract] exception
+is raised.}
+
+
+@defproc[(make-immutable-hash-table [assocs (listof pair?)]
+                                    [flag (one-of/c 'equal)]
+                                    ...)
+         (and/c hash-table? immutable?)]{
+
+Like @scheme[make-immutable-hash] or @scheme[make-immutable-hasheq],
+depending on whether an @scheme['equal] @scheme[flag] is provided.}

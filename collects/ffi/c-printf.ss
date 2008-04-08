@@ -13,7 +13,7 @@
 
 (provide* (unsafe c-printf))
 
-(define interfaces (make-hash-table 'equal))
+(define interfaces (make-hash))
 
 (define (c-printf fmt . args)
   (define itypes
@@ -27,12 +27,12 @@
                        [else (error 'c-printf
                                     "don't know how to deal with ~e" x)]))
                args)))
-  (let ([printf (hash-table-get interfaces itypes
+  (let ([printf (hash-ref interfaces itypes
                   (lambda ()
                     ;; Note: throws away the return value of printf
                     (let ([i (get-ffi-obj "printf" #f
                                           (_cprocedure itypes _void))])
-                      (hash-table-put! interfaces itypes i)
+                      (hash-set! interfaces itypes i)
                       i)))])
     (apply printf fmt args)))
 

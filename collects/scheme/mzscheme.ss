@@ -46,7 +46,16 @@
                               thread-send
                               thread-receive
                               thread-try-receive
-                              thread-receive-evt)
+                              thread-receive-evt
+                              make-hash make-immutable-hash make-weak-hash
+                              make-hasheq make-immutable-hasheq make-weak-hasheq
+                              hash? hash-eq? hash-weak?
+                              hash-ref hash-set! hash-set
+                              hash-remove! hash-remove 
+                              hash-copy hash-count
+                              hash-map hash-for-each 
+                              hash-iterate-first hash-iterate-next
+                              hash-iterate-value hash-iterate-key)
              (rename syntax->datum syntax-object->datum)
              (rename datum->syntax datum->syntax-object)
              (rename free-identifier=? module-identifier=?)
@@ -54,6 +63,18 @@
              (rename free-template-identifier=? module-template-identifier=?)
              (rename free-label-identifier=? module-label-identifier=?)
              (rename free-identifier=?* free-identifier=?)
+             make-hash-table hash-table? make-immutable-hash-table
+             (rename hash-ref hash-table-get)
+             (rename hash-set! hash-table-put!)
+             (rename hash-remove! hash-table-remove!)
+             (rename hash-count hash-table-count)
+             (rename hash-copy hash-table-copy)
+             (rename hash-map hash-table-map)
+             (rename hash-for-each hash-table-for-each)
+             (rename hash-iterate-first hash-table-iterate-first)
+             (rename hash-iterate-next hash-table-iterate-next)
+             (rename hash-iterate-value hash-table-iterate-value)
+             (rename hash-iterate-key hash-table-iterate-key)
              namespace-transformer-require
              transcript-on transcript-off
              (rename cleanse-path expand-path)

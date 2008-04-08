@@ -80,7 +80,7 @@
 (define (populate-table! t)
   ;; Use the colls ht because a collection might be in multiple
   ;; collection paths, and we only want one
-  (let ([colls (make-hash-table 'equal)])
+  (let ([colls (make-hash)])
     (for ([f+root-dir (reverse (table-paths t))])
       (let ([f (car f+root-dir)]
             [root-dir (cdr f+root-dir)])
@@ -96,7 +96,7 @@
                      key ;; anything is okay here
                      (? integer? maj)
                      (? integer? min))
-               (let ([old-items (hash-table-get colls key null)]
+               (let ([old-items (hash-ref colls key null)]
                      [new-item
                       (make-directory-record
                        maj min key
@@ -105,8 +105,8 @@
                            (build-path root-dir p)
                             p))
                        fields)])
-                 (hash-table-put! colls key
-                                  ((table-insert t) new-item old-items)))]
+                 (hash-set! colls key
+                            ((table-insert t) new-item old-items)))]
               [_ (error 'find-relevant-directories
                         "bad info-domain cache entry: ~e in: ~a" i f)])))))
     ;; For each coll, invert the mapping, adding the col name to the list
@@ -116,8 +116,8 @@
       (match val
         [(struct directory-record (maj min spec path syms))
          (for ([sym syms])
-           (hash-table-put! (table-ht t) sym
-                            (cons val (hash-table-get (table-ht t) sym null))))]
+           (hash-set! (table-ht t) sym
+                      (cons val (hash-ref (table-ht t) sym null))))]
         [_ (error 'get-info
                   "Internal error: invalid info-domain value format: ~s" val)]))))
 
@@ -139,21 +139,21 @@
                        coll))
                (current-library-collection-paths))))
   (unless (equal? (table-paths t) search-path)
-    (set-table-ht! t (make-hash-table))
+    (set-table-ht! t (make-hasheq))
     (set-table-paths! t search-path)
     (populate-table! t))
   (let ([unsorted
          (if (= (length syms) 1)
            ;; Simple case: look up in table
-           (hash-table-get (table-ht t) (car syms) null)
+           (hash-ref (table-ht t) (car syms) null)
            ;; Use a hash table, because the same collection might work
            ;; for multiple syms
-           (let ([result (make-hash-table 'equal)])
+           (let ([result (make-hash)])
              (for* ([sym syms]
-                    [c (hash-table-get (table-ht t) sym null)])
-               (hash-table-put! result c #t))
+                    [c (hash-ref (table-ht t) sym null)])
+               (hash-set! result c #t))
              ;; Extract the relevant collections:
-             (hash-table-map result (lambda (k v) k))))])
+             (hash-map result (lambda (k v) k))))])
     (sort unsorted
           (lambda (a b)
             (compare-directories (directory-record-path a)

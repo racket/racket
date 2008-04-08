@@ -37,7 +37,7 @@
 
 (define current-session (make-parameter #f))
 
-(define the-session-table (make-hash-table 'weak 'equal))
+(define the-session-table (make-weak-hash))
 
 ;; new-session : namespace path uri (listof string) -> session
 (define (new-session cust ns uri paths)
@@ -50,9 +50,9 @@
   ses)
 
 (define (install-session ses paths)
-  (hash-table-put! the-session-table paths ses))
+  (hash-set! the-session-table paths ses))
 
 ;; lookup-session : (listof string) -> (union session #f)
 (define (lookup-session paths)
-  (hash-table-get the-session-table paths 
-                  (lambda () #f)))
+  (hash-ref the-session-table paths 
+            (lambda () #f)))

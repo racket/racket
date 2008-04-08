@@ -242,9 +242,9 @@
    (comp
     'yes
     (match
-        (make-immutable-hash-table '((|1| . (a b))))
+        (make-immutable-hasheq '((|1| . (a b))))
       [(hash-table ('|1| (app (lambda (p)
-                                (make-immutable-hash-table
+                                (make-immutable-hasheq
                                  (list (cons '|1| (car p))
                                        (cons '|2| (cdr p)))))
                               (hash-table ('|1| _) ('|2| _))))) 'yes]

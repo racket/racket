@@ -1,9 +1,9 @@
 
 (load-relative "loadtest.ss")
 
-(load-relative "for.ss")
-(load-relative "list.ss")
-(load-relative "string.ss")
-(load-relative "function.ss")
-(load-relative "promise.ss")
+(load-in-sandbox "for.ss")
+(load-in-sandbox "list.ss")
+(load-in-sandbox "function.ss")
+(load-in-sandbox "promise.ss")
 (load-in-sandbox "contract-test.ss")
+

@@ -23,7 +23,7 @@
 ;; substitute : Type Name Type -> Type
 (define (substitute image name target)    
   (define (sb t) (substitute image name t))
-  (if (hash-table-get (free-vars* target) name #f)
+  (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
                  [#:F name* (if (eq? name* name) image target)])
       target))
@@ -72,7 +72,7 @@
 
 
 ;; fv : Type -> Listof[Name]
-(define (fv t) (hash-table-map (free-vars* t) (lambda (k v) k)))
+(define (fv t) (hash-map (free-vars* t) (lambda (k v) k)))
 
 ;; fv/list : Listof[Type] -> Listof[Name]
-(define (fv/list ts) (hash-table-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
+(define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))

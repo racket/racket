@@ -88,11 +88,11 @@
                                                           [(byte-regexp? v) 'byte-regexp]
                                                           [else 'regexp])
                                                         ,(object-name v))]
-                                                     [(hash-table? v)
-                                                      `(make-... (quote ,(hash-table-map v cons))
-                                                                 ,@(if (hash-table? v 'equal)
-                                                                       '('equal)
-                                                                       '()))]
+                                                     [(hash? v)
+                                                      `(,(if (hash-eq? v)
+                                                             'make-...eq
+                                                             'make-...)
+                                                        (quote ,(hash-map v cons)))]
                                                      [else v]))])
                                            (if (block? e)
                                                e

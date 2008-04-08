@@ -34,7 +34,7 @@
 
 (define-struct mod (name timestamp depends))
 
-(define loaded (make-hash-table 'equal))
+(define loaded (make-hash))
 
 (define (enter-require mod)
   ;; Collect dependencies while loading:
@@ -72,7 +72,7 @@
                                  (apply append
                                         (map cdr (module-compiled-imports code)))
                                  null))])
-          (hash-table-put! loaded path mod))
+          (hash-set! loaded path mod))
         ;; Evaluate the module:
         (eval code))
       ;; Not a module:
@@ -85,14 +85,14 @@
 
 (define (check-latest mod)
   (let ([mpi (module-path-index-join mod #f)]
-        [done (make-hash-table 'equal)])
+        [done (make-hash)])
     (let loop ([mpi mpi])
       (let* ([rpath (module-path-index-resolve mpi)]
              [path (resolved-module-path-name rpath)])
         (when (path? path)
-          (unless (hash-table-get done path #f)
-            (hash-table-put! done path #t)
-            (let ([mod (hash-table-get loaded path #f)])
+          (unless (hash-ref done path #f)
+            (hash-set! done path #t)
+            (let ([mod (hash-ref loaded path #f)])
               (when mod
                 (for-each loop (mod-depends mod))
                 (let ([ts (get-timestamp path)])

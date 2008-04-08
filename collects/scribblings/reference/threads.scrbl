@@ -28,7 +28,7 @@ thread-safe because they are @defterm{atomic}. For example,
 @scheme[set!] assigns to a variable as an atomic action with respect
 to all threads, so that no thread can see a ``half-assigned''
 variable. Similarly, @scheme[vector-set!] assigns to a vector
-atomically. The @scheme[hash-table-put!] procedure is not atomic, but
+atomically. The @scheme[hash-set!] procedure is not atomic, but
 the table is protected by a lock; see @secref["hashtables"] for more
 information. Port operations are generally not atomic, but they are
 thread-safe in the sense that a byte consumed by one thread from an

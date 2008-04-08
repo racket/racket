@@ -415,6 +415,14 @@ MZ_EXTERN int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *
 MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
 MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *bt);
 
+MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int eql);
+MZ_EXTERN Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
+MZ_EXTERN Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
+MZ_EXTERN long scheme_hash_tree_next(Scheme_Hash_Tree *tree, long pos);
+MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, long pos, Scheme_Object **_key, Scheme_Object **_val);
+MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
+MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
+
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
 /*========================================================================*/
