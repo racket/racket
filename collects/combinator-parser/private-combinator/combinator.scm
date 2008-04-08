@@ -60,9 +60,7 @@
                     build)])
           
           (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
-            #;(printf "terminal ~a~n" name)
-            #;(printf "input ~a~n" (pair? input))
-            #;(printf "input ~a~n" (null? input))
+            (printf "terminal ~a~n" name)
             #;(cond
                 [(eq? input return-name)
                  (printf "dummy given~n")]
@@ -130,7 +128,7 @@
                [my-error (sequence-error-gen name sequence-length)]
                [my-walker (seq-walker id-position name my-error)])
           (opt-lambda (input [last-src (list 1 0 1 0)] [alts 1])
-            #;(unless (eq? input return-name) (printf "seq ~a~n" name))
+            (unless (eq? input return-name) (printf "seq ~a~n" name))
             (cond
               [(eq? input return-name) name]
               [(weak-map-get memo-table input #f) 
@@ -244,17 +242,52 @@
                             (next-call (repeat-res-a fst) fst fst
                                        (res-msg (repeat-res-a fst)) #f 
                                        (res-first-tok (repeat-res-a fst)) alts)]
+                           [(or (lazy-choice? fst) (lazy-opts? fst))
+                            #;(printf "lazy res: ~a ~a ~a~n" fst seq-name (length seen))
+                            (let* ([opt-r (make-lazy-opts null 
+                                                          (make-options-fail 0 last-src seq-name 0 0 null)
+                                                          null null)]
+                                   [next-c (lambda (res)
+                                             (cond 
+                                               [(res? res)
+                                                #;(printf "lazy-choice-res, res ~a ~a~n" seq-name (length seen))
+                                                (next-call res fst res (lazy-choice-name fst) 
+                                                           (and id-spot? (res-id res))
+                                                           (res-first-tok res) alts)]
+                                               [(repeat-res? res)
+                                                #;(printf "lazy- choice-res, repeat-res ~a ~a ~a~n"
+                                                          (res? (repeat-res-a res)) seq-name (length seen))
+                                                (next-call (repeat-res-a res) res (repeat-res-a res)
+                                                           (res-msg (repeat-res-a res)) #f 
+                                                           (res-first-tok (repeat-res-a res))
+                                                           alts)]
+                                               [else (error 'parser-internal-errora (format "~a" res))]))]
+                                   [parsed-options (map (lambda (res) (lambda () (next-c res)))
+                                                        (lazy-opts-matches fst))]
+                                   [unparsed-options
+                                    (map
+                                     (lambda (thunked)
+                                       (lambda ()
+                                         (let ([res (next-choice fst)])
+                                           (if res 
+                                               (next-c res)
+                                               (begin (set-lazy-opts-thunks! opt-r null) #f)))))
+                                     (lazy-opts-thunks fst))])
+                              (set-lazy-opts-thunks! opt-r (append parsed-options unparsed-options))
+                              (if (next-opt opt-r)
+                                  opt-r
+                                  (lazy-opts-errors opt-r)))
+                              ]
                            [(or (choice-res? fst) (pair? fst))
-                            #;(printf "choice-res or pair: ~a ~a ~a~n"
-                                      (choice-res? fst)
-                                      seq-name (length seen))
+                            #;(printf "choice-res: ~a ~a ~a~n" fst seq-name (length seen))
                             (let*-values
                                 ([(lst name curr)
-                                  (if (choice-res? fst) 
-                                      (values (choice-res-matches fst)
-                                              (lambda (_) (choice-res-name fst))
-                                              (lambda (_) fst))
-                                      (values fst res-msg (lambda (x) x)))]
+                                  (cond
+                                    [(choice-res? fst) 
+                                     (values (choice-res-matches fst)
+                                             (lambda (_) (choice-res-name fst))
+                                             (lambda (_) fst))]
+                                    [else (values fst res-msg (lambda (x) x))])]
                                  [(new-alts) (+ alts (length lst))]
                                  [(rsts)
                                   (map (lambda (res)
@@ -277,7 +310,8 @@
                               #;(printf "case ~a ~a, choice case: intermediate results are ~a~n"
                                       seq-name (length seen) lst)
                               (cond
-                                [(null? correct-rsts)
+                                [(and (null? correct-rsts) (or (not (lazy-choice? fst))
+                                                               (null? (lazy-opts-thunks fst))))
                                  #;(printf "correct-rsts null for ~a ~a ~n" seq-name (length seen))
                                  (let ([fails 
                                         (map 
@@ -293,6 +327,9 @@
                                               seq-name
                                               (rank-choice (map fail-type-used fails))
                                               (rank-choice (map fail-type-may-use fails)) fails)))]
+                                [(and (null? correct-rsts) (lazy-choice? fst) (not (null? (lazy-opts-thunks fst))))
+                                 (let loop ([next-res (next-choice fst)])
+                                   (when next-res (loop (next-choice fst))))]
                                 [else correct-rsts]))]
                            [else (error 'here3)]))])))])
         walker))
@@ -517,6 +554,7 @@
     (define (repeat-greedy sub)
       (letrec ([repeat-name (lambda () (string-append "any number of " (sub return-name)))]
                [memo-table (make-weak-map)]
+               [inner-memo-table (make-weak-map)]
                [process-rest
                 (lambda (curr-ans rest-ans)
                   (cond 
@@ -567,11 +605,10 @@
                       #;(printf "length of curr-input for ~a ~a~n" repeat-name (length curr-input))
                       #;(printf "curr-input ~a~n" (map position-token-token curr-input))
                       (cond 
+                        [(weak-map-get inner-memo-table curr-input #f)(weak-map-get inner-memo-table curr-input)]
                         [(null? curr-input) 
                          #;(printf "out of input for ~a~n" repeat-name)
                          (make-repeat-res (make-res null null (repeat-name) "" 0 #f #f) 'out-of-input)]
-                        #;[(weak-map-get memo-table curr-input #f)
-                         (weak-map-get memo-table curr-input)]
                         [else
                          (let ([this-res (sub curr-input curr-src)])
                            #;(printf "Repeat of ~a called it's repeated entity ~n" (repeat-name))
@@ -592,7 +629,7 @@
                                       (fail-type-chance (res-msg this-res)))
                               (let ([fail (make-repeat-res (make-res null curr-input (repeat-name) "" 0 #f #f)
                                                            (res-msg this-res))])
-                                #;(weak-map-put! memo-table curr-input fail)
+                                (weak-map-put! inner-memo-table curr-input fail)
                                 fail)]
                              [(repeat-res? this-res)
                               #;(printf "repeat-res case of ~a~n" repeat-name)
@@ -625,12 +662,12 @@
                ans)]))))
     
     ;choice: [list [[list 'a ] -> result]] name -> result
-    (define (choice opt-list name)
+    (define (choice2 opt-list name)
       (let ([memo-table (make-weak-map)]
             [num-choices (length opt-list)]
             [choice-names (lambda () (map (lambda (o) (o return-name)) opt-list))])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
-          #;(unless (eq? input return-name) (printf "choice ~a~n" name))
+          (unless (eq? input return-name) (printf "choice ~a~n" name))
           #;(printf "possible options are ~a~n" choice-names)
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
@@ -674,6 +711,40 @@
                  #;(printf "choice ~a is returning options were ~a ~n" name (choice-names))
                  #;(printf "corrects were ~a~n" corrects)
                  #;(printf "errors were ~a~n" errors)
+                 (weak-map-put! memo-table input ans) ans)])))))
+    
+    ;choice: [list [[list 'a ] -> result]] name -> result
+    (define (choice opt-list name)
+      (let ([memo-table (make-weak-map)]
+            [num-choices (length opt-list)]
+            [choice-names (lambda () (map (lambda (o) (o return-name)) opt-list))])
+        (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
+          (unless (eq? input return-name) (printf "choice ~a~n" name))
+          #;(printf "possible options are ~a~n" choice-names)
+          (let ([sub-opts (sub1 (+ alts num-choices))])
+            (cond
+              [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]
+              [(eq? input return-name) name]
+              [else
+               (let* ([options (map (lambda (term) (lambda () (term input last-src sub-opts))) opt-list)]
+                      [initial-fail (make-choice-fail 0
+                                                      (if (or (null? input) (not (position-token? (car input))))
+                                                          last-src
+                                                          (update-src-end last-src 
+                                                                          (position-token-end-pos (car input))))
+                                                      name
+                                                      0
+                                                      0
+                                                      num-choices
+                                                      (choice-names)
+                                                      (null? input)
+                                                      null)]
+                      [initial-ans (make-lazy-choice null initial-fail options name)]
+                      [ans
+                       (if (next-choice initial-ans)
+                           initial-ans
+                           (fail-res input (lazy-opts-errors initial-ans)))])
+                 (printf "choice ~a is returning options were ~a, answer is ~a ~n" name (choice-names) ans)
                  (weak-map-put! memo-table input ans) ans)])))))
     
     (define (flatten lst)

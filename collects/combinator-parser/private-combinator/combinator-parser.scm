@@ -41,8 +41,54 @@
                                        (position-token-end-pos (car (res-rest result))))))]
                   [(res? result) 
                    (fail-type->message (res-msg result))]
+                  [(lazy-opts? result)
+                   #;(printf "lazy-opts ~a~n" result)
+                   (let* ([finished? (lambda (o)
+                                       (cond [(res? o)
+                                              (and (not (null? (res-a o)))
+                                                   (null? (res-rest o)))]
+                                             [(repeat-res? o)
+                                              (eq? (repeat-res-stop o) 'out-of-input)]
+                                             [else #f]))]
+                          [possible-errors 
+                           (lambda (matches)
+                             (filter res-possible-error 
+                                     (map (lambda (a) (if (repeat-res? a) (repeat-res-a a) a))
+                                          matches)))]
+                          [result-a
+                           (lambda (res)
+                             (cond 
+                               [(res? res) (res-a res)]
+                               [(and (repeat-res? res)
+                                     (res? (repeat-res-a res)))
+                                (res-a (repeat-res-a res))]
+                               [else
+                                (error 'parser-internal-errorcl (format "~a" res))]))])
+                     (let loop ([matched (lazy-opts-matches result)])
+                       (cond
+                         [(and (pair? matched) (finished? (car matched))) (result-a (car matched))]
+                         [(pair? matched) (loop (cdr matched))]
+                         [(and matched (finished? matched)) (result-a matched)]
+                         [(or (null? matched) matched) 
+                          (loop ((if (lazy-choice? result) next-choice next-opt) result))]
+                         [else
+                          (let ([p-errors (possible-errors (lazy-opts-matches result))])
+                            (cond
+                              [(pair? p-errors)
+                               (let ([fails (cons (lazy-opts-errors result) 
+                                                  (map res-possible-error p-errors))])
+                                 (fail-type->message
+                                  (make-options-fail (rank-choice (map fail-type-chance fails))
+                                                     #f
+                                                     (if (lazy-choice? result) 
+                                                         (lazy-choice-name result) "program")
+                                                     (rank-choice (map fail-type-used fails))
+                                                     (rank-choice (map fail-type-may-use fails))
+                                                     fails)))]
+                              [(null? p-errors)
+                               (fail-type->message (lazy-opts-errors result))]))])))]
                   [(or (choice-res? result) (pair? result))
-                   #;(printf "choice-res or pair? ~a~n" (choice-res? result))
+                   (printf "choice-res or pair? ~a~n" result)
                    (let* ([options (if (choice-res? result) (choice-res-matches result) result)]
                           [finished-options (filter (lambda (o) 
                                                       (cond [(res? o) 

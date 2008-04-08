@@ -1,6 +1,6 @@
-(module combinator-example mzscheme
+(module combinator-example scheme/base
 
-(require mzlib/unit
+(require scheme/unit
          parser-tools/lex
          combinator-parser/combinator-unit)
 
