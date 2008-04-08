@@ -7,6 +7,7 @@
 (define compile-omit-paths 
   '("aligned-pasteboard"
     "honu"
+    "match"
     "mred"
     "mysterx"
     "mzcom"
