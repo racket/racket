@@ -6,8 +6,7 @@
          mzlib/pretty
          mzlib/pconvert
          mzlib/class
-         "scheme-gui.scm"
-         "test-display.scm")
+         "scheme-gui.scm")
 
 (require-for-syntax stepper/private/shared)
 
@@ -48,6 +47,8 @@
                                                    (current-namespace))])
           (and test-info
                (let ([display-data (scheme-test-data)])
+                 (send test-info refine-display-class 
+                       (dynamic-require '(lib "test-display.scm" "test-engine") 'test-display%))
                  (send test-info setup-display
                        (car display-data) (cadr display-data))
                  (send test-info summarize-results (current-output-port)))))
@@ -60,7 +61,6 @@
       #'(let ([test-info (namespace-variable-value 'test~object #f builder
                                                    (current-namespace))])
           (and test-info
-               (send test-info refine-display-class test-display-textual%)
                (send test-info summarize-results (current-output-port))))
       'test-call #t)]))
 
