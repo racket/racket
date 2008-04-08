@@ -12,18 +12,22 @@
   (require (for-syntax "stxcase-scheme.ss"))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (define (real->decimal-string n [digits 2])
-    (let* ([e (expt 10 digits)]
-           [num (round (abs (* e (inexact->exact n))))])
-      (format "~a~a.~a"
-              (if (negative? n) "-" "")
-              (quotient num e)
-              (let ([s (number->string (remainder num e))])
-                (if (= (string-length s) digits)
-                  s
-                  (string-append (make-string (- digits (string-length s)) #\0)
-                                 s))))))
+    (unless (exact-nonnegative-integer? digits)
+      (raise-type-error 'real->decimal-string "exact-nonnegative-integer" n))
+    (if (zero? digits)
+      (number->string (inexact->exact (round n)))
+      (let* ([e (expt 10 digits)]
+             [num (round (abs (* e (inexact->exact n))))])
+        (format "~a~a.~a"
+                (if (negative? n) "-" "")
+                (quotient num e)
+                (let ([s (number->string (remainder num e))])
+                  (if (= (string-length s) digits)
+                    s
+                    (string-append (make-string (- digits (string-length s)) #\0)
+                                   s)))))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Regexp helpers
 
