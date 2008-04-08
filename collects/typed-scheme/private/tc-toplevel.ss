@@ -84,7 +84,7 @@
            [(andmap (lambda (s) (syntax-property s 'type-label)) vars)        
             (let ([ts (map get-type vars)])
               (for-each register-type vars ts)
-              (map make-def-binding ts vars))]
+              (map make-def-binding vars ts))]
            ;; if this already had an annotation, we just construct the binding reps
            [(andmap (lambda (s) (lookup-type s (lambda () #f))) vars)
             (for-each finish-register-type vars)
