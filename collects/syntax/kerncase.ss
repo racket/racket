@@ -46,24 +46,24 @@
   (define (kernel-form-identifier-list)
     (syntax-e (quote-syntax
                (begin
-                 define-values
-                 define-syntaxes
-                 define-values-for-syntax
-                 set!
-                 let-values
-                 letrec-values
-                 #%plain-lambda
-                 case-lambda
-                 if
-                 quote
-                 letrec-syntaxes+values
-                 with-continuation-mark
-                 #%expression
-                 #%plain-app
-                 #%top
-                 #%datum ; should this be here?
-                 #%variable-reference))))
-  
+                define-values
+                define-syntaxes
+                define-values-for-syntax
+                set!
+                let-values
+                letrec-values
+                #%plain-lambda
+                case-lambda
+                if
+                quote
+                letrec-syntaxes+values
+                with-continuation-mark
+                #%expression
+                #%plain-app
+                #%top
+                #%datum ; should this be here?
+                #%variable-reference))))
+
   (provide kernel-syntax-case
            kernel-syntax-case*
            kernel-form-identifier-list))
