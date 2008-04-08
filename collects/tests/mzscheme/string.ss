@@ -10,7 +10,8 @@
 (test "1" real->decimal-string 0.6 0)
 (test "1" real->decimal-string 3/4 0)
 (test "1" real->decimal-string 1.2 0)
-(test "0" real->decimal-string -0.0 0) ; !
+(test "0" real->decimal-string -0.0 0) ; note this!
+(test "0.00" real->decimal-string -0.0) ; same here...
 (test "-1" real->decimal-string -0.6 0)
 (test "-1" real->decimal-string -3/4 0)
 (test "-1" real->decimal-string -1.2 0)
