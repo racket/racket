@@ -1,10 +1,11 @@
 #lang scheme/base
 
+(require scheme/contract)
 
-(provide (struct-out binding)
-         (struct-out def-binding)
-         (struct-out def-stx-binding))
+(define-struct binding (name) #:transparent)
+(define-struct (def-binding binding) (ty) #:transparent)
+(define-struct (def-stx-binding binding) () #:transparent)
 
-(define-struct binding (name) #:inspector #f)
-(define-struct (def-binding binding) (ty) #:inspector #f)
-(define-struct (def-stx-binding binding) () #:inspector #f)
+(provide/contract (struct binding ([name identifier?]))
+                  (struct (def-binding binding) ([name identifier?] [ty any/c]))
+                  (struct (def-stx-binding binding) ([name identifier?])))

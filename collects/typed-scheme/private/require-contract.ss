@@ -18,4 +18,4 @@
   (syntax-case stx ()
     [(require/contract nm cnt lib)
      #`(begin (require (only-in lib [nm tmp]))     
-              (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen #'#,stx)))]))
+              (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]))
