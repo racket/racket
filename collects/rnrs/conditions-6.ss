@@ -133,7 +133,7 @@
                       #f))))
          null)
      (if (exn:fail:contract:variable? c)
-         (make-undefined-violation)
+         (list (make-undefined-violation))
          null))]
    [else (raise-type-error 'simple-conditions
                            "condition"
