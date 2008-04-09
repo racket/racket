@@ -1312,6 +1312,7 @@ inline static void register_new_thread(void *t, void *c)
   work->next = threads;
   threads = work;
 }
+
 inline static void register_thread(void *t, void *c)
 {
   struct thread *work;

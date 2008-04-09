@@ -6809,7 +6809,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
 
       /* Discard exsnom[n]s if there are no re-exports */
       for (i = 0; i < excount; i++) {
-        if (!SCHEME_NULLP(exsnoms[count]))
+        if (!SCHEME_NULLP(exsnoms[i]))
           break;
       }
       if (i >= excount) {
