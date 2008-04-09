@@ -175,8 +175,8 @@
                        (add-to-message (car messages) #f #f
                                        (add-to-message
                                         (msg (format "An error occured in this ~a, expected ~a instead."
-                                                     name (nice-list no-dup-names))
-                                             name #f message-to-date))))]
+                                                     name (nice-list no-dup-names)))
+                                        name #f message-to-date)))]
                      [else
                       (collapse-message 
                        (add-to-message

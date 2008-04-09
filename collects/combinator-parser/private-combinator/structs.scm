@@ -54,29 +54,37 @@
    
   (define (make-force thunks set-thunks matches set-matches update-errors errors)
     (letrec ([next 
-              (lambda (lc)
+              (lambda (lc update-errors)
                 (printf "next-opt ~a~n" lc)
                 (cond
                   [(null? (thunks lc)) #f]
                   [else
                    (let ([curr-res ((car (thunks lc)))])
-                     (set-thunks lc (cdr (thunks lc)))
-                     (and curr-res
-                          (cond
-                            [(or (and (res? curr-res) (res-a curr-res))
-                                 (repeat-res? curr-res)
-                                 (choice-res? curr-res)
-                                 (lazy-opts? curr-res)
-                                 (and (lazy-choice? curr-res) (not (null? (lazy-opts-matches curr-res)))))
-                             (set-matches lc (cons curr-res (matches lc)))
-                             curr-res]
-                            [else
-                             (update-errors (errors lc)
-                                            (cond
-                                              [(res? curr-res) (res-msg curr-res)]
-                                              [(lazy-choice? curr-res) (lazy-opts-errors curr-res)]))
-                             (next lc)])))]))])
-      next))
+                     (unless (null? (thunks lc)) (set-thunks lc (cdr (thunks lc))))
+                     (cond
+                       [(and (not curr-res) (not (null? (thunks lc)))) (next lc update-errors)]
+                       [(or (and (res? curr-res) (res-a curr-res))
+                            (repeat-res? curr-res))
+                        (set-matches lc (cons curr-res (matches lc)))
+                        curr-res]
+                       [(lazy-opts? curr-res)
+                        (let* ([next-matches (map (lambda (m) (lambda () m)) (lazy-opts-matches curr-res))]
+                               [new-update (if (lazy-choice? curr-res) update-choice-errors update-opt-errors)]
+                               [remaining (map (lambda (t) (lambda () (next curr-res 
+                                                                            (lambda (_ msg)
+                                                                              (new-update (errors curr-res) msg)))))
+                                               (lazy-opts-thunks curr-res))])
+                          (set-thunks lc (append next-matches remaining (thunks lc)))
+                          (update-errors (errors lc) (lazy-opts-errors curr-res))
+                          (next lc update-errors))]
+                       [(and (not curr-res) (null? (thunks lc))) curr-res]
+                       [else
+                        (update-errors (errors lc)
+                                       (cond
+                                         [(res? curr-res) (res-msg curr-res)]
+                                         [else (error 'next (format "Internal error: failure other than res ~a" curr-res))]))
+                        (next lc update-errors)]))]))])
+      (lambda (lc) (next lc update-errors))))
   
   (define next-choice 
     (make-force lazy-opts-thunks set-lazy-opts-thunks! 
