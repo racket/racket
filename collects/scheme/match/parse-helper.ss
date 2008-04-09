@@ -32,11 +32,13 @@
                 (parse (syntax/loc stx (quote b))))]
     [(quote vec)
      (vector? (syntax-e #'vec))
-     (make-Vector (for/list ([e (vector->list (syntax-e #'vec))])
+     (make-Vector (for/list ([e (syntax-e #'vec)])
                     (parse (quasisyntax/loc stx (quote #,e)))))]
-    [(quote vec)
-     (vector? (syntax-e #'vec))
-     (make-Box (parse (quasisyntax/loc stx (quote #,(syntax-e #'vec)))))]
+    [(quote bx)
+     (box? (syntax-e #'bx))
+     (make-Box (parse (quasisyntax/loc 
+                       stx 
+                       (quote #,(unbox (syntax-e #'bx))))))]
     [(quote v)
      (or (parse-literal (syntax-e #'v))
          (raise-syntax-error 'match "non-literal in quote pattern" stx #'v))]

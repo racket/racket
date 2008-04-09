@@ -403,35 +403,38 @@
     (if (stx-null? clauses)
       body
       (quasisyntax (let* #,clauses #,body))))
-  (if (null? vars)
+  (cond 
+   ;; if there are no rows, then just call the esc continuation
+   [(null? rows) #`(#,esc)]
     ;; if we have no variables, there are no more patterns to match
     ;; so we just pick the first RHS
+   [(null? vars)
     (let ([fns
            (let loop ([blocks (reverse rows)] [esc esc] [acc null])
              (if (null? blocks)
-               ;; if we're done, return the blocks
-               (reverse acc)
-               (with-syntax
-                   (;; f is the name this block will have
-                    [(f) (generate-temporaries #'(f))]
-                    ;; compile the block, with jumps to the previous esc
-                    [c (with-syntax ([rhs #`(syntax-parameterize
-                                             ([fail (make-rename-transformer
-                                                     (quote-syntax #,esc))])
-                                             #,(Row-rhs (car blocks)))])
-                         (if (Row-unmatch (car blocks))
-                           #`(let/ec k
-                               (let ([#,(Row-unmatch (car blocks))
-                                      (lambda () (k (#,esc)))])
-                                 rhs))
-                           #'rhs))])
-                 ;; then compile the rest, with our name as the esc
-                 (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])
+                 ;; if we're done, return the blocks
+                 (reverse acc)
+                 (with-syntax
+                  (;; f is the name this block will have
+                   [(f) (generate-temporaries #'(f))]
+                   ;; compile the block, with jumps to the previous esc
+                   [c (with-syntax ([rhs #`(syntax-parameterize
+                                            ([fail (make-rename-transformer
+                                                    (quote-syntax #,esc))])
+                                            #,(Row-rhs (car blocks)))])
+                                   (if (Row-unmatch (car blocks))
+                                       #`(let/ec k
+                                                 (let ([#,(Row-unmatch (car blocks))
+                                                        (lambda () (k (#,esc)))])
+                                                   rhs))
+                                       #'rhs))])
+                  ;; then compile the rest, with our name as the esc
+                  (loop (cdr blocks) #'f (cons #'[f (lambda () c)] acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
-        (let/wrap #'(fns ...) #'body)))
-
+                   (let/wrap #'(fns ...) #'body)))]
     ;; otherwise, we split the matrix into blocks
     ;; and compile each block with a reference to its continuation
+   [else
     (let*-values
         ([(rows vars) (reorder-columns rows vars)]
          [(fns)
@@ -452,7 +455,7 @@
                                       'typechecker:called-in-tail-position #t)]
                               acc)))))])
       (with-syntax ([(fns ... [_ (lambda () body)]) fns])
-        (let/wrap #'(fns ...) #'body)))))
+        (let/wrap #'(fns ...) #'body)))]))
 
 ;; (require mzlib/trace)
 ;; (trace compile* compile-one)

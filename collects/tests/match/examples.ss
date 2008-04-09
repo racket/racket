@@ -516,10 +516,24 @@
            [(mcons a b) (+ a b)]
            [_ 'no]))
    
+   (comp 1
+         (match (box 'x) ('#&x 1) (else #f)))
+   
+   (comp 2
+         (match (vector 1 2) ('#(1 2) 2) (else #f)))
+
+   (comp 'yes
+         (with-handlers ([exn:fail? (lambda _ 'yes)]
+                         [values (lambda _ 'no)])
+                (match 1)
+                'no))
+
    ;; raises error
    (comp 'yes (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]) 
                 (expand (quote-syntax (match '(1 x 2 y 3 z)
                                         [(list-no-order 1 2 3 rest ... e) rest]
                                         [_ 'no])))
                 'no))
+
+
    ))
