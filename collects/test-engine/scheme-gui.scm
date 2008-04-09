@@ -3,7 +3,8 @@
 (require scheme/class
          "test-engine.scm")
 
-(define scheme-test-data (make-parameter (list #f #f))) 
+(define scheme-test-data (make-parameter (list #f #f #f)))
+(define scheme-test-format (make-parameter (lambda (v) (format "~a" v))))
 
 (define scheme-test%
   (class* test-engine% ()
@@ -28,4 +29,4 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test% scheme-test-data)
+(provide scheme-test% scheme-test-data scheme-test-format)

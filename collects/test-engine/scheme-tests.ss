@@ -1,10 +1,10 @@
 #lang mzscheme
 
 (require lang/private/teachprims
-         mred
-         framework
-         mzlib/pretty
-         mzlib/pconvert
+         #;mred
+         #;framework
+         #;mzlib/pretty
+         #;mzlib/pconvert
          mzlib/class
          "scheme-gui.scm")
 
@@ -47,8 +47,7 @@
                                                    (current-namespace))])
           (and test-info
                (let ([display-data (scheme-test-data)])
-                 (send test-info refine-display-class 
-                       (dynamic-require '(lib "test-display.scm" "test-engine") 'test-display%))
+                 (send test-info refine-display-class (caddr display-data))
                  (send test-info setup-display
                        (car display-data) (cadr display-data))
                  (send test-info summarize-results (current-output-port)))))
@@ -250,19 +249,19 @@
   (cond
     [(unexpected-error? fail)
      (list "check encountered the following error instead of the expected value, "
-           (format-value (unexpected-error-expected fail))
+           ((scheme-test-format) (unexpected-error-expected fail))
            (format ". ~n   :: ~a~n" (unexpected-error-message fail)))]
     [(unequal? fail)
      (list "Actual value "
-           (format-value (unequal-test fail))
+           ((scheme-test-format) (unequal-test fail))
            " differs from "
-           (format-value (unequal-actual fail))
+           ((scheme-test-format) (unequal-actual fail))
            ", the expected value.\n")]
     [(outofrange? fail)
      (list "Actual value "
-           (format-value (outofrange-test fail))
+           ((scheme-test-format) (outofrange-test fail))
            (format " is not within ~v of expected value " (outofrange-range fail))
-           (format-value (outofrange-actual fail))
+           ((scheme-test-format) (outofrange-actual fail))
            ".\n")]
     [(incorrect-error? fail)
      (list (format "check-error encountered the following error instead of the expected ~a~n   :: ~a ~n"
@@ -270,10 +269,10 @@
                    (incorrect-error-message fail)))]
     [(expected-error? fail)
      (list "check-error expected the following error, but instead received the value "
-           (format-value (expected-error-value fail))
+           ((scheme-test-format) (expected-error-value fail))
            (format ".~n ~a~n" (expected-error-message fail)))]))
 
-(define (format-value value)
+#;(define (format-value value)
   (cond
     [(is-a? value snip%) value]
     [(or (pair? value) (struct? value))

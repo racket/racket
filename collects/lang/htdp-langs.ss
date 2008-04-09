@@ -39,6 +39,7 @@
            stepper/private/shared
            
            (lib "scheme-gui.scm" "test-engine")
+	   (lib "test-display.scm" "test-engine")
            )
   
   
@@ -173,7 +174,7 @@
                  (read-accept-dot (get-read-accept-dot))
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
-                 (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace))
+                 (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
                  )))
             (super on-execute settings run-in-user-thread))
           
