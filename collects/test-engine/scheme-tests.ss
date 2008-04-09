@@ -1,12 +1,10 @@
 #lang mzscheme
 
 (require lang/private/teachprims
-         #;mred
-         #;framework
-         #;mzlib/pretty
-         #;mzlib/pconvert
-         mzlib/class
-         "scheme-gui.scm")
+         scheme/class
+         (only scheme/base for)
+         "test-engine.scm"
+         )
 
 (require-for-syntax stepper/private/shared)
 
@@ -15,61 +13,6 @@
  check-within ;; syntax : (check-within <expression> <expression> <expression>)
  check-error  ;; syntax : (check-error <expression> <expression>)
  )
-
-(define (builder)
-  (let ([te (build-test-engine)])
-    (namespace-set-variable-value! 'test~object te (current-namespace))
-    te))
-
-(define (test)
-  (run-tests)
-  (display-results))
-
-(define (test-text)
-  (run-tests)
-  (print-results))
-
-(define-syntax (run-tests stx)
-  (syntax-case stx ()
-    [(_)
-     (syntax-property
-      #'(run (namespace-variable-value 'test~object #f builder
-                                       (current-namespace)))
-      'test-call #t)]))
-
-(define (run test-info) (and test-info (send test-info run)))
-
-(define-syntax (display-results stx) 
-  (syntax-case stx ()
-    [(_)
-     (syntax-property
-      #'(let ([test-info (namespace-variable-value 'test~object #f builder
-                                                   (current-namespace))])
-          (and test-info
-               (let ([display-data (scheme-test-data)])
-                 (send test-info refine-display-class (caddr display-data))
-                 (send test-info setup-display
-                       (car display-data) (cadr display-data))
-                 (send test-info summarize-results (current-output-port)))))
-      'test-call #t)]))
-
-(define-syntax (print-results stx)
-  (syntax-case stx ()
-    [(_)
-     (syntax-property
-      #'(let ([test-info (namespace-variable-value 'test~object #f builder
-                                                   (current-namespace))])
-          (and test-info
-               (send test-info summarize-results (current-output-port))))
-      'test-call #t)]))
-
-(provide run-tests display-results test test-text)
-
-(define (build-test-engine)
-  (let ([engine (make-object scheme-test%)])
-    (send engine setup-info 'check-require)
-    engine))
-(define (insert-test test-info test) (send test-info add-test test))
 
 (define INEXACT-NUMBERS-FMT
   "check-expect cannot compare inexact numbers. Try (check-within test ~a range).")
@@ -272,15 +215,69 @@
            ((scheme-test-format) (expected-error-value fail))
            (format ".~n ~a~n" (expected-error-message fail)))]))
 
-#;(define (format-value value)
-  (cond
-    [(is-a? value snip%) value]
-    [(or (pair? value) (struct? value))
-     (parameterize ([constructor-style-printing #t]
-                    [pretty-print-columns 40])
-       (let* ([text* (new (editor:standard-style-list-mixin text%))]
-              [text-snip (new editor-snip% [editor text*])])
-         (pretty-print (print-convert value) (open-output-text-editor text*))
-         (send text* lock #t)
-         text-snip))]
-    [else (format "~v" value)]))
+
+(define (builder)
+  (let ([te (build-test-engine)])
+    (namespace-set-variable-value! 'test~object te (current-namespace))
+    te))
+
+(define (test) (run-tests) (display-results))
+
+(define-syntax (run-tests stx)
+  (syntax-case stx ()
+    [(_)
+     (syntax-property
+      #'(run (namespace-variable-value 'test~object #f builder (current-namespace)))
+      'test-call #t)]))
+
+(define (run test-info) (and test-info (send test-info run)))
+
+(define-syntax (display-results stx) 
+  (syntax-case stx ()
+    [(_)
+     (syntax-property
+      #'(let ([test-info (namespace-variable-value 'test~object #f builder (current-namespace))])
+          (and test-info
+               (let ([display-data (scheme-test-data)])
+                 (when (caddr display-data)
+                   (send test-info refine-display-class (caddr display-data)))
+                 (send test-info setup-display (car display-data) (cadr display-data))
+                 (send test-info summarize-results (current-output-port)))))
+      'test-call #t)]))
+
+(provide run-tests display-results test builder)
+
+(define (build-test-engine)
+  (let ([engine (make-object scheme-test%)])
+    (send engine setup-info 'check-require)
+    engine))
+
+(define (insert-test test-info test) (send test-info add-test test))
+
+(define scheme-test-data (make-parameter (list #f #f #f)))
+(define scheme-test-format (make-parameter (lambda (v) (format "~a" v))))
+
+(define scheme-test%
+  (class* test-engine% ()
+    (super-instantiate ())
+    (inherit-field test-info test-display)
+    (inherit setup-info)
+
+    (field [tests null]
+           [test-objs null])
+
+    (define/public (add-test tst)
+      (set! tests (cons tst tests)))
+    (define/public (get-info)
+      (unless test-info (send this setup-info 'check-require))
+      test-info)
+
+    (define/augment (run)
+      (inner (void) run)
+      (for ([t (reverse tests)]) (run-test t)))
+
+    (define/augment (run-test test)
+      (test)
+      (inner (void) run-test test))))
+
+(provide scheme-test-data scheme-test-format)

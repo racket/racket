@@ -38,8 +38,9 @@
            "run-teaching-program.ss"
            stepper/private/shared
            
-           (lib "scheme-gui.scm" "test-engine")
-	   (lib "test-display.scm" "test-engine")
+           (only test-engine/scheme-gui format-value)
+           (only test-engine/scheme-tests scheme-test-data scheme-test-format)
+           (lib "test-display.scm" "test-engine")
            )
   
   
@@ -160,7 +161,7 @@
                   [set-result-module-name 
                    ((current-module-name-resolver) '(lib "lang/private/set-result.ss") #f #f)]
                   [scheme-test-module-name
-                   ((current-module-name-resolver) '(lib "test-engine/scheme-gui.scm") #f #f)])
+                   ((current-module-name-resolver) '(lib "test-engine/scheme-tests.ss") #f #f)])
               (run-in-user-thread
                (lambda ()
                  (read-accept-quasiquote (get-accept-quasiquote?))
@@ -175,6 +176,7 @@
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
+                 (scheme-test-format format-value)
                  )))
             (super on-execute settings run-in-user-thread))
           

@@ -607,14 +607,14 @@
                       (cond 
                         [(weak-map-get inner-memo-table curr-input #f)(weak-map-get inner-memo-table curr-input)]
                         [(null? curr-input) 
-                         #;(printf "out of input for ~a~n" repeat-name)
+                         #;(printf "out of input for ~a~n" (repeat-name))
                          (make-repeat-res (make-res null null (repeat-name) "" 0 #f #f) 'out-of-input)]
                         [else
                          (let ([this-res (sub curr-input curr-src)])
                            #;(printf "Repeat of ~a called it's repeated entity ~n" (repeat-name))
                            (cond
                              [(and (res? this-res) (res-a this-res))
-                              #;(printf "loop again case for ~a~n" repeat-name)
+                              #;(printf "loop again case for ~a~n" (repeat-name))
                               (process-rest this-res 
                                             (loop (res-rest this-res)
                                                   (update-src (res-rest this-res) curr-src)))]
@@ -650,8 +650,8 @@
                                                                    curr-src)))]
                                   [else
                                    (map (lambda (match) 
-                                          #;(printf "calling repeat loop again, res-rest match ~a~n" 
-                                                  (length (res-rest match)))
+                                          #;(printf "calling repeat loop again ~a, res-rest match ~a~n" 
+                                                  (repeat-name) (length (res-rest match)))
                                           (process-rest match 
                                                         (loop (res-rest match)
                                                               (update-src (res-rest match) curr-src))))

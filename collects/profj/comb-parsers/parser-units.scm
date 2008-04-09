@@ -353,7 +353,7 @@
         init #;(sequence (new type-name init) "array initialization")))
     
     (define (binary-expression-end op)
-      (sequence (op expression) id "binary expression"))
+      (sequence (op (eta expression)) id "binary expression"))
     
     (define if-expr-end 
       (sequence (? (eta expression) : (eta expression)) id "conditional expression"))
@@ -669,11 +669,11 @@
     
     (define class
       (class-def #f #f (implements-dec identifier)
-                 (repeat-greedy (class-body (list field method constructor)))))
+                 (repeat (class-body (list field method constructor)))))
     
     (define program 
-      (make-program #f (repeat-greedy import-dec) 
-                    (repeat-greedy (top-member (list class interface)))))
+      (make-program #f (repeat import-dec) 
+                    (repeat (top-member (list class interface)))))
     
     (define interact
       (choose (field statement expression) "interactive program"))
