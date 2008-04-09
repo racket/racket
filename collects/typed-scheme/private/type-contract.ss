@@ -97,10 +97,9 @@
                (if rst
                    #'(dom* ...  #:rest (listof rst*) . -> . rng*)
                    #'(dom* ...  . -> . rng*))))
-           (let ([l (map f arrs)])
-             (if (and (pair? l) (null? (cdr l)))
-                 #`(case-> #,@l)
-                 #`(case-> #,@l))))]
+	   (match (map f arrs)
+	     [(list e) e]
+	     [l #`(case-> #,@l)]))]
         [(Vector: t)
          #`(vectorof #,(t->c t))]
         [(Pair: t1 t2)
