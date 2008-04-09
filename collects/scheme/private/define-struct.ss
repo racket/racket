@@ -11,7 +11,32 @@
 
   (#%provide define-struct*
              define-struct/derived
-             struct-field-index)
+             struct-field-index
+             (for-syntax 
+	      (rename checked-struct-info-rec? checked-struct-info?)))
+  
+  (define-values-for-syntax
+    (struct:checked-struct-info 
+     make-checked-struct-info 
+     checked-struct-info-rec?
+     checked-struct-info-ref
+     checked-struct-info-set!)
+    (make-struct-type 'struct-info struct:struct-info
+                      0 0 #f
+                      null (current-inspector)
+                      (lambda (v stx)
+                        (raise-syntax-error
+                         #f
+                         "identifier for static struct-type information cannot be used as an expression"
+                         stx))
+                      null
+                      (lambda (proc info)
+                        (if (and (procedure? proc)
+                                 (procedure-arity-includes? proc 0))
+                            proc
+                            (raise-type-error 'make-struct-info
+                                              "procedure (arity 0)"
+                                              proc)))))
 
   (define-syntax-parameter struct-field-index
     (lambda (stx)
@@ -249,20 +274,22 @@
                              "bad syntax; expected <id> for structure-type name or (<id> <id>) for name and supertype name"
                              stx
                              #'id)]))])
-         (let ([super-info 
-                (and super-id
-                     (let ([v (syntax-local-value super-id (lambda () #f))])
-                       (if (struct-info? v)
-                           (extract-struct-info v)
-                           (raise-syntax-error
-                            #f
-                            (format "parent struct type not defined~a"
-                                    (if v
-                                        (format " (~a does not name struct type information)"
-                                                (syntax-e super-id))
-                                        ""))
-                            stx
-                            super-id))))])
+         (let-values ([(super-info super-info-checked?)
+		       (if super-id
+			   (let ([v (syntax-local-value super-id (lambda () #f))])
+			     (if (struct-info? v)
+				 (values (extract-struct-info v) (checked-struct-info-rec? v))
+				 (raise-syntax-error
+				  #f
+				  (format "parent struct type not defined~a"
+					  (if v
+					      (format " (~a does not name struct type information)"
+						      (syntax-e super-id))
+					      ""))
+				  stx
+				  super-id)))
+			   ;; if there's no super type, it's like it was checked
+			   (values #f #t))])
            (when (and super-info
                       (not (car super-info)))
              (raise-syntax-error
@@ -397,11 +424,14 @@
                                              (and sel
                                                   (if (syntax-e sel)
                                                       #`(c (quote-syntax #,sel))
-                                                      sel)))])
+                                                      sel)))]
+				  [mk-info (if super-info-checked?
+					       #'make-checked-struct-info
+					       #'make-struct-info)])
                               (quasisyntax/loc stx
                                 (define-syntaxes (#,id)
                                   (let ([c (syntax-local-certifier)])
-                                    (make-struct-info
+                                    (#,mk-info
                                      (lambda ()
                                        (list
                                         (c (quote-syntax #,struct:))

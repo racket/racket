@@ -534,9 +534,16 @@ type.
 
 @defproc[(struct-info? [v any/c]) boolean?]{
 
-Returns @scheme[#f] if @scheme[v] is either a six-element list with
+Returns @scheme[#t] if @scheme[v] is either a six-element list with
 the correct shape for representing structure-type information, or a
 procedure encapsulated by @scheme[make-struct-info].}
+
+@defproc[(checked-struct-info? [v any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v] is a structure encapsulated by 
+@scheme[make-struct-info] and produced by @scheme[define-struct]. Such
+values may be relied upon to accurately represent a structure and have
+correct super-type information.}
 
 @defproc[(make-struct-info [thunk (-> (and/c struct-info? list?))])
          struct-info?]{
