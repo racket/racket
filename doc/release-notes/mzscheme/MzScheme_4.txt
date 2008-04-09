@@ -502,8 +502,8 @@ with some syntactic and name changes.
 
  * Hash-table function names have changed:
 
-        make-hash-table              => make-hash    make-weak-hash
-                                        make-hasheq  make-weak-hasheq
+        make-hash-table              => make-hasheq  make-weak-hasheq
+                                        make-hash    make-weak-hash
         hash-table?                  => hash?  hash-eq?  hash-weak?
         hash-table-get               => hash-ref
         hash-table-put!              => hash-set!
@@ -511,6 +511,10 @@ with some syntactic and name changes.
         hash-table-count             => hash-count
         hash-table-map               => hash-map
         ....                            ....
+
+   IMPORTANT: The correct translation of `(make-hash-table)' is
+   `(make-hasheq)', not `(make-hash)'. Instead, `(make-hash)'
+   is equivalent to `(make-hash-table 'equal)'.
 
    The new functions `hash-set' and `hash-remove' support
    constant-time functional update of immutable hash tables.

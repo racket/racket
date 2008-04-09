@@ -1290,24 +1290,24 @@ typedef short Type_Tag;
 #ifdef NEWGC_BTC_ACCOUNT
 inline static int current_owner(Scheme_Custodian *c);
 
-struct thread {
+struct gc_thread_info {
   void *thread;
   int owner;
-  struct thread *next;
+  struct gc_thread_info *next;
 };
 
 static Mark_Proc normal_thread_mark = NULL, normal_custodian_mark = NULL, normal_cust_box_mark = NULL;
-static struct thread *threads = NULL;
+static struct gc_thread_info *threads = NULL;
 
 static unsigned short cust_box_tag;
 
 inline static void register_new_thread(void *t, void *c)
 {
-  struct thread *work;
+  struct gc_thread_info *work;
 
-  work = (struct thread *)malloc(sizeof(struct thread));
+  work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
   work->owner = current_owner((Scheme_Custodian *)c);
-  ((Scheme_Thread *)t)->gc_owner_set = work->owner;
+  ((Scheme_Thread *)t)->gc_info = work;
   work->thread = t;
   work->next = threads;
   threads = work;
@@ -1315,20 +1315,15 @@ inline static void register_new_thread(void *t, void *c)
 
 inline static void register_thread(void *t, void *c)
 {
-  struct thread *work;
+  struct gc_thread_info *work;
 
-  for(work = threads; work; work = work->next)
-    if(work->thread == t) {
-      work->owner = current_owner((Scheme_Custodian *)c);
-      ((Scheme_Thread *)t)->gc_owner_set = work->owner;
-      return;
-    }
-  register_new_thread(t, c);
+  work = ((Scheme_Thread *)t)->gc_info;
+  work->owner = current_owner((Scheme_Custodian *)c);
 }
 
 inline static void mark_threads(int owner)
 {
-  struct thread *work;
+  struct gc_thread_info *work;
 
   for(work = threads; work; work = work->next)
     if(work->owner == owner) {
@@ -1368,7 +1363,7 @@ inline static void mark_cust_boxes(Scheme_Custodian *cur)
 
 inline static void clean_up_thread_list(void)
 {
-  struct thread *work = threads, *prev = NULL;
+  struct gc_thread_info *work = threads, *prev = NULL;
 
   while(work) {
     if(!find_page(work->thread) || marked(work->thread)) {
@@ -1376,7 +1371,7 @@ inline static void clean_up_thread_list(void)
       prev = work;
       work = work->next;
     } else {
-      struct thread *next = work->next;
+      struct gc_thread_info *next = work->next;
 
       if(prev) prev->next = next;
       if(!prev) threads = next;
@@ -1388,7 +1383,7 @@ inline static void clean_up_thread_list(void)
 
 inline static int thread_get_owner(void *p)
 {
-  return ((Scheme_Thread *)p)->gc_owner_set;
+  return ((Scheme_Thread *)p)->gc_info->owner;
 }
 #endif
 
@@ -1535,13 +1530,15 @@ inline static int create_blank_owner_set(void)
 {
   int i;
   unsigned int old_top;
+  struct ot_entry **naya;
 
-  for(i = 1; i < owner_table_top; i++)
-    if(!owner_table[i]) {
+  for (i = 1; i < owner_table_top; i++) {
+    if (!owner_table[i]) {
       owner_table[i] = malloc(sizeof(struct ot_entry));
       bzero(owner_table[i], sizeof(struct ot_entry));
       return i;
     }
+  }
 
   old_top = owner_table_top;
   if (!owner_table_top)
@@ -1549,7 +1546,9 @@ inline static int create_blank_owner_set(void)
   else
     owner_table_top *= 2;
 
-  owner_table = realloc(owner_table, owner_table_top*sizeof(struct ot_entry*));
+  naya = (struct ot_entry **)malloc(owner_table_top*sizeof(struct ot_entry*));
+  memcpy(naya, owner_table, old_top*sizeof(struct ot_entry*));
+  owner_table = naya;
   bzero((char*)owner_table + (sizeof(struct ot_entry*) * old_top),
 	(owner_table_top - old_top) * sizeof(struct ot_entry*));
   
@@ -1563,10 +1562,6 @@ inline static int custodian_to_owner_set(Scheme_Custodian *cust)
   if (cust->gc_owner_set)
     return cust->gc_owner_set;
 
-  for(i = 1; i < owner_table_top; i++)
-    if(owner_table[i] && (owner_table[i]->originator == cust))
-      return i;
-
   i = create_blank_owner_set();
   owner_table[i]->originator = cust;
   cust->gc_owner_set = i;
@@ -1576,30 +1571,32 @@ inline static int custodian_to_owner_set(Scheme_Custodian *cust)
 
 inline static int current_owner(Scheme_Custodian *c)
 {
-  static int has_gotten_root_custodian = 0;
-
-  if(!owner_table) {
-    owner_table = malloc(10 * sizeof(struct ot_entry*));
-    bzero(owner_table, 10 * sizeof(struct ot_entry*));
-    if(create_blank_owner_set() != 1) {
-      GCPRINT(GCOUTF, "Something extremely weird (and bad) has happened.\n");
-      abort();
-    }
-  }
-
-  if(!has_gotten_root_custodian && c) {
-    has_gotten_root_custodian = 1;
-    owner_table[1]->originator = c;
-    c->gc_owner_set = 1;
-    return 1;
-  }
-
-  if(!scheme_current_thread)
+  if (!scheme_current_thread)
     return 1;
   else if (!c)
     return thread_get_owner(scheme_current_thread);
   else
     return custodian_to_owner_set(c);
+}
+
+void GC_register_root_custodian(void *_c)
+{
+  Scheme_Custodian *c = (Scheme_Custodian *)_c;
+
+  if (owner_table) {
+    /* Reset */
+    free(owner_table);
+    owner_table = NULL;
+    owner_table_top = 0;
+  }
+
+  if (create_blank_owner_set() != 1) {
+    GCPRINT(GCOUTF, "Something extremely weird (and bad) has happened.\n");
+    abort();
+  }
+  
+  owner_table[1]->originator = c;
+  c->gc_owner_set = 1;
 }
 
 inline static int custodian_member_owner_set(void *cust, int set)

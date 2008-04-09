@@ -6332,6 +6332,9 @@ static void make_initial_config(Scheme_Thread *p)
   REGISTER_SO(last_custodian);
   REGISTER_SO(limited_custodians);
   main_custodian = scheme_make_custodian(NULL);
+#ifdef MZ_PRECISE_GC
+  GC_register_root_custodian(main_custodian);
+#endif
   last_custodian = main_custodian;
   init_param(cells, paramz, MZCONFIG_CUSTODIAN, (Scheme_Object *)main_custodian);
 

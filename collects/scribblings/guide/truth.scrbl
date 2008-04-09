@@ -53,8 +53,8 @@ mistake, such as accidentally reversing the arguments to
 @interaction[(cons (list 2 3) 1) (cons 1 (list 2 3))]
 
 Non-list pairs are used intentionally, sometimes. For example, the
-@scheme[make-immutable-hash-table] function takes a list of pairs,
-where the @scheme[car] of each pair is a key and the @scheme[cdr] is an
+@scheme[make-immutable-hash] function takes a list of pairs, where the
+@scheme[car] of each pair is a key and the @scheme[cdr] is an
 arbitrary value.
 
 The only thing more confusing to new Schemers than non-list pairs is

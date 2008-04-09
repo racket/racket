@@ -74,6 +74,10 @@ GC2_EXTERN void GC_init_type_tags(int count, int pair, int mutable_pair, int wea
    freedom in the layout of a weak box or ephemeron, so it performs weak
    box traversals itself, but MzScheme gets to choose the tag.) */
 
+GC2_EXTERN void GC_register_root_custodian(void *);
+/*
+   Registers the root custodian. */
+
 GC2_EXTERN void GC_register_new_thread(void *, void *);
 /*
    Indicates that a just-allocated point is for a thread record
