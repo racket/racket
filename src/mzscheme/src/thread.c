@@ -95,6 +95,10 @@ extern HANDLE scheme_break_semaphore;
 
 #include "schfd.h"
 
+#if defined(UNIX_PROCESSES)
+extern void scheme_check_child_done();
+#endif
+
 #define DEFAULT_INIT_STACK_SIZE 1000
 #define MAX_INIT_STACK_SIZE 100000
 
@@ -118,6 +122,8 @@ extern void scheme_gmp_tls_load(long *s);
 extern void scheme_gmp_tls_unload(long *s);
 extern void scheme_gmp_tls_snapshot(long *s, long *save);
 extern void scheme_gmp_tls_restore_snapshot(long *s, long *save, int do_free);
+
+static void check_ready_break();
 
 extern int scheme_num_read_syntax_objects;
 extern int scheme_hash_request_count;
@@ -210,7 +216,8 @@ extern MZ_DLLIMPORT void (*GC_collect_end_callback)(void);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 
-static short delay_breaks = 0, delayed_break_ready = 0;
+static volatile short delayed_break_ready = 0;
+static Scheme_Thread *main_break_target_thread;
 
 void (*scheme_sleep)(float seconds, void *fds);
 void (*scheme_notify_multithread)(int on);
@@ -3216,6 +3223,8 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
      GC cleaning for this thread: */
   prepare_this_thread_for_GC(p);
 
+  check_ready_break();
+
   np->nester = p;
   p->nestee = np;
   np->external_break = p->external_break;
@@ -3579,6 +3588,8 @@ void scheme_check_break_now(void)
 {
   Scheme_Thread *p = scheme_current_thread;
 
+  check_ready_break();
+
   if (p->external_break && scheme_can_break(p)) {
     scheme_thread_block_w_thread(0.0, p);
     p->ran_some = 1;
@@ -3726,14 +3737,36 @@ static void exit_or_escape(Scheme_Thread *p)
   select_thread();
 }
 
-void scheme_break_thread(Scheme_Thread *p)
-     /* This function can be called from an interrupt handler. */
+void scheme_break_main_thread()
+/* This function can be called from an interrupt handler. 
+   On some platforms, it will even be called from multiple
+   OS threads. In the case of multiple threads, there's a
+   tiny chance that a single Ctl-C will trigger multiple
+   break exceptions. */
 {
-  if (delay_breaks) {
-    delayed_break_ready = 1;
-    return;
-  }
+  delayed_break_ready = 1;
+}
 
+void scheme_set_break_main_target(Scheme_Thread *p)
+{
+  if (!main_break_target_thread) {
+    REGISTER_SO(main_break_target_thread);
+  }
+  main_break_target_thread = p;
+}
+
+static void check_ready_break()
+{
+  if (delayed_break_ready) {
+    if (scheme_main_thread) {
+      delayed_break_ready = 0;
+      scheme_break_thread(main_break_target_thread);
+    }
+  }
+}
+
+void scheme_break_thread(Scheme_Thread *p)
+{
   if (!p) {
     p = scheme_main_thread;
     if (!p)
@@ -3801,6 +3834,8 @@ void scheme_thread_block(float sleep_time)
 
  start_sleep_check:
 
+  check_ready_break();
+
   if (!p->external_break && !p->next && scheme_check_for_break && scheme_check_for_break())
     p->external_break = 1;
 
@@ -3817,6 +3852,10 @@ void scheme_thread_block(float sleep_time)
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
+
+#if defined(UNIX_PROCESSES)
+  scheme_check_child_done();
+#endif
 
   if (!do_atomic && (sleep_end >= 0.0)) {
     double msecs = 0.0;
@@ -4029,6 +4068,7 @@ void scheme_thread_block(float sleep_time)
   }
 
   /* Check for external break again after swap or sleep */
+  check_ready_break();
   if (p->external_break && !p->suspend_break && scheme_can_break(p)) {
     raise_break(p);
   }
@@ -7108,9 +7148,6 @@ static void get_ready_for_GC()
 #endif
 
   did_gc_count++;
-
-  delayed_break_ready = 0;
-  delay_breaks = 1;
 }
 
 extern int GC_words_allocd;
@@ -7131,10 +7168,6 @@ static void done_with_GC()
 #ifdef UNIX_PROCESSES
   scheme_block_child_signals(0);
 #endif
-
-  delay_breaks = 0;
-  if (delayed_break_ready)
-    scheme_break_thread(NULL);
 
   scheme_total_gc_time += (scheme_get_process_milliseconds() - start_this_gc_time);
 }

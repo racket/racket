@@ -169,7 +169,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 
 static void user_break_hit(int ignore)
 {
-  scheme_break_thread(NULL);
+  scheme_break_main_thread();
   scheme_signal_received();
 
 #  ifdef SIGSET_NEEDS_REINSTALL

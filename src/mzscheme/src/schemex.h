@@ -74,6 +74,8 @@ Scheme_Object *(*scheme_thread_w_details)(Scheme_Object *thunk,
 						 int suspend_to_kill);
 void (*scheme_kill_thread)(Scheme_Thread *p);
 void (*scheme_break_thread)(Scheme_Thread *p);
+void (*scheme_break_main_thread)();
+void (*scheme_set_break_main_target)(Scheme_Thread *p);
 void (*scheme_thread_block)(float sleep_time);
 void (*scheme_thread_block_enable_break)(float sleep_time, int enable);
 void (*scheme_swap_thread)(Scheme_Thread *process);

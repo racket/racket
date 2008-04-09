@@ -34,6 +34,8 @@
 #define scheme_thread_w_details (scheme_extension_table->scheme_thread_w_details)
 #define scheme_kill_thread (scheme_extension_table->scheme_kill_thread)
 #define scheme_break_thread (scheme_extension_table->scheme_break_thread)
+#define scheme_break_main_thread (scheme_extension_table->scheme_break_main_thread)
+#define scheme_set_break_main_target (scheme_extension_table->scheme_set_break_main_target)
 #define scheme_thread_block (scheme_extension_table->scheme_thread_block)
 #define scheme_thread_block_enable_break (scheme_extension_table->scheme_thread_block_enable_break)
 #define scheme_swap_thread (scheme_extension_table->scheme_swap_thread)

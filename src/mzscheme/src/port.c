@@ -6458,38 +6458,7 @@ void scheme_block_child_signals(int block)
 
 static void child_done(int ingored)
 {
-  pid_t result;
-  int status;
-  System_Child *sc, *prev;
-
-  do {
-    do {
-      result = WAITANY(&status);
-    } while ((result == -1) && (errno == EINTR));
-
-    if (result > 0) {
-      if (WIFEXITED(status))
-	status = WEXITSTATUS(status);
-      else
-	status = MZ_FAILURE_STATUS;
-
-      prev = NULL;
-      for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
-	if (sc->id == result) {
-          sc->done = 1;
-	  sc->status = status;
-
-	  if (prev) {
-	    prev->next = sc->next;
-	  } else
-	    scheme_system_children = sc->next;
-
-	  scheme_signal_received();
-	  break;
-	}
-      }
-    }
-  } while (result > 0);
+  scheme_signal_received();
 
 # ifdef SIGSET_NEEDS_REINSTALL
   MZ_SIGSET(SIGCHLD, child_done);
@@ -6511,6 +6480,43 @@ static void init_sigchld(void)
     END_XFORM_SKIP;
 
     sigchld_installed = 1;
+  }
+}
+
+void scheme_check_child_done()
+{
+  pid_t result;
+  int status;
+  System_Child *sc, *prev;
+
+  if (scheme_system_children) {
+    do {
+      do {
+        result = WAITANY(&status);
+      } while ((result == -1) && (errno == EINTR));
+
+      if (result > 0) {
+        if (WIFEXITED(status))
+          status = WEXITSTATUS(status);
+        else
+          status = MZ_FAILURE_STATUS;
+
+        prev = NULL;
+        for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
+          if (sc->id == result) {
+            sc->done = 1;
+            sc->status = status;
+
+            if (prev) {
+              prev->next = sc->next;
+            } else
+              scheme_system_children = sc->next;
+            
+            break;
+          }
+        }
+      }
+    } while (result > 0);
   }
 }
 

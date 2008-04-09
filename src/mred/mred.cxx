@@ -1655,6 +1655,7 @@ void wxDoEvents()
 								  c->main_cells,
 								  c->main_break_cell,
 								  NULL, 0);
+      scheme_set_break_main_target(user_main_thread);
       cp = scheme_intern_symbol("mred");
       user_main_thread->name = cp;
     }
@@ -1778,7 +1779,7 @@ static void MrEdSleep(float secs, void *fds)
 #ifdef mred_BREAK_HANDLER
 static void user_break_hit(int ignore)
 {
-  scheme_break_thread(user_main_thread);
+  scheme_break_main_thread();
   scheme_signal_received();
 
 #  ifdef SIGSET_NEEDS_REINSTALL
@@ -2369,7 +2370,7 @@ void IOFrame::OnMenuCommand(long id)
   else if (id == 81)
     media->Paste();
   else if (id == 83)
-    scheme_break_thread(user_main_thread);
+    scheme_break_main_thread();
   else if (id == 77)
     if (OnClose())
       Show(FALSE);
@@ -2448,7 +2449,7 @@ static Bool RecordInput(void *m, wxEvent *event, void *data)
 
 static Bool SendBreak(void *m, wxEvent *event, void *data)
 {
-  scheme_break_thread(user_main_thread);
+  scheme_break_main_thread();
   return TRUE;
 }
 
