@@ -6492,14 +6492,18 @@ static void check_child_done()
   if (scheme_system_children) {
     do {
       do {
+        START_XFORM_SKIP;
         result = WAITANY(&status);
+        END_XFORM_SKIP;
       } while ((result == -1) && (errno == EINTR));
 
       if (result > 0) {
+        START_XFORM_SKIP;
         if (WIFEXITED(status))
           status = WEXITSTATUS(status);
         else
           status = MZ_FAILURE_STATUS;
+        END_XFORM_SKIP;
 
         prev = NULL;
         for (sc = scheme_system_children; sc; prev = sc, sc = sc->next) {
