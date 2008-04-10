@@ -14,8 +14,8 @@
   ;; syntax -> void
   (define (fmv/list lstx)
     (for-each find-mutated-vars (syntax->list lstx)))
-  ;(printf "called with ~a~n" (syntax-object->datum form))
-  (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal require/typed-internal #%app lambda)     
+  ;(printf "called with ~a~n" (syntax->datum form))
+  (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal require/typed-internal)     
     ;; what we care about: set!
     [(set! v e)
      (begin
@@ -23,10 +23,10 @@
        (module-identifier-mapping-put! table #'v #t))]
     [(define-values (var ...) expr)
      (find-mutated-vars #'expr)]
-    [(#%app . rest) (fmv/list #'rest)]
+    [(#%plain-app . rest) (fmv/list #'rest)]
     [(begin . rest) (fmv/list #'rest)]
     [(begin0 . rest) (fmv/list #'rest)]
-    [(lambda _ . rest) (fmv/list #'rest)]
+    [(#%plain-lambda _ . rest) (fmv/list #'rest)]
     [(case-lambda (_ . rest) ...) (for-each fmv/list (syntax->list #'(rest ...)))]
     [(if e1 e2) (begin (find-mutated-vars #'e1) (find-mutated-vars #'e2))]
     [(if e1 e2 e3) (begin (find-mutated-vars #'e1) (find-mutated-vars #'e1) (find-mutated-vars #'e3))]

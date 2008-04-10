@@ -1,11 +1,27 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base scheme/require-transform))
+(require (for-syntax scheme/base scheme/require-transform)
+         scheme/require-syntax)
 
 (define-for-syntax (splice-requires specs)  
   (define subs (map (compose cons expand-import) specs))
   (values (apply append (map car subs)) (apply append (map cdr subs))))
 
+(define-syntax define-module
+  (syntax-rules ()
+    [(_ nm spec ...)
+     
+     (define-syntax nm
+       (make-require-transformer
+        (lambda (stx)
+          (splice-requires (list (syntax-local-introduce (quote-syntax spec)) ...)))))
+     #;
+     (define-require-syntax nm
+       (lambda (stx) 
+         (syntax-case stx ()
+           [(_) (datum->syntax stx (syntax->datum #'(combine-in spec ...)))])))]))
+
+#;
 (define-syntax define-module
   (lambda (stx)
     (syntax-case stx ()
@@ -37,6 +53,10 @@
 
 (define-module galore
   (prefix-in table: "tables.ss"))
+
+(require (galore))
+
+(void (table:alist->eq '()))
 
 (define-module schemeunit 
   (planet/multiple ("schematics" "schemeunit.plt" 2 3)

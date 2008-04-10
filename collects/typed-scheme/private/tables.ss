@@ -7,8 +7,12 @@
   (for/hasheq ([e l])
     (values (car e) (cdr e))))
 
+(define (sexp->eq l) 
+  (for/hasheq ([e l])
+    (values (car e) (cadr e))))
+
 ;; to-sexp : table -> Listof(List k v)
-(define (to-sexp t) (hash-map list t))
+(define (to-sexp t) (hash-map t list))
 
 ;; union/value : table(k,v) table(k,v) [(v v -> v)] -> table(k,v)
 (define (union/value t1 t2 [f (lambda (x y) x)])
@@ -20,7 +24,7 @@
 		  [else
 		   (hash-set new-table k v)])))
 
-(define make-eq make-immutable-hasheq)
+(define (make-eq) (make-immutable-hasheq null))
 
 (define (lookup k t) (hash-ref t k #f))
 
