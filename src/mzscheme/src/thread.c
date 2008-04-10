@@ -3458,8 +3458,10 @@ static int check_sleep(int need_activity, int sleep_now)
     if (needs_sleep_cancelled)
       return 0;
 
+#if defined(UNIX_PROCESSES)
     if (scheme_check_child_done())
       return 0;
+# endif
 
     if (post_system_idle()) {
       return 0;
