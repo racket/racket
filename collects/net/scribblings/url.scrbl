@@ -73,7 +73,16 @@ URL that ends in a slash. For example, the result of
 @scheme[(string->url "http://www.drscheme.org/a/")] has a
 @scheme[path] field with strings @scheme["a"] and @scheme[""], while
 the result of @scheme[(string->url "http://www.drscheme.org/a")] has a
-@scheme[path] field with only the string @scheme["a"].}
+@scheme[path] field with only the string @scheme["a"].
+
+When a @scheme["file"] URL is represented by a @scheme[url] structure,
+the @scheme[path] field is mostly a list of path elements. For Unix
+paths, the root directory is not included in @scheme[path]; its
+presence or absence is implicit in the @scheme[path-absolute?] flag.
+For Windows paths, the first element typically represents a drive, but
+a UNC path is represented by a first element that is @scheme[""] and
+then successive elements complete the drive components that are
+separated by @litchar{/} or @litchar{\}.}
 
 @defstruct[path/param ([path (or/c string? (one-of/c 'up 'same))]
                        [param (listof string?)])]{
@@ -95,7 +104,26 @@ Parses the URL specified by @scheme[str] into a @scheme[url]
 struct. The @scheme[string->url] procedure uses
 @scheme[form-urlencoded->alist] when parsing the query, so it is
 sensitive to the @scheme[current-alist-separator-mode] parameter for
-determining the association separator.}
+determining the association separator.
+
+If @scheme[str] starts with @scheme["file:"], then the path is always
+parsed as an absolute path, and the parsing details depend on
+@scheme[file-url-path-convention-type]:
+
+@itemize[
+
+ @item{@scheme['unix] : If @scheme["file:"] is followed by
+       @litchar{//} and a non-@litchar{/}, then the first element
+       after the @litchar{//} is parsed as a host (and maybe port);
+       otherwise, the first element starts the path, and the host is
+       @scheme[""].}
+
+ @item{@scheme['windows] : If @scheme["file:"] is followed by
+       @litchar{//}, then the @litchar{//} is stripped; the remainder
+       parsed as a Windows path. The host is always @scheme[""] and
+       the port is always @scheme[#f].}
+
+]}
 
 
 @defproc[(combine-url/relative [base url?] [relative string?]) url?]{
@@ -117,16 +145,49 @@ scheme @scheme["http"].}
 
 @defproc[(url->string [URL url?]) string?]{
 
-Generates a string corresponding to the contents of a @scheme[url] struct.
-For a @scheme["file:"] URL, empty strings in the path list are treated as
-@scheme['same] for @scheme[build-path].
+Generates a string corresponding to the contents of a @scheme[url]
+struct.  For a @scheme["file:"] URL, the URL must not be relative, the
+result always starts @litchar{file://}, and the interpretation of the
+path depends on the value of @scheme[file-url-path-convention-type]:
+
+@itemize[
+
+ @item{@scheme['unix] : Elements in @scheme[URL] are treated as path
+       elements. Empty strings in the path list are treated like
+       @scheme['same].}
+
+ @item{@scheme['windows] : If the first element is @scheme[""] then
+       the next two elements define the UNC root, and the rest of the
+       elements are treated as path elements. Empty strings in the
+       path list are treated like @scheme['same].}
+
+]
 
 The @scheme[url->string] procedure uses
-@scheme[alist->form-urlencoded] when formatting the query, so it it
+@scheme[alist->form-urlencoded] when formatting the query, so it is
 sensitive to the @scheme[current-alist-separator-mode] parameter for
 determining the association separator. The default is to separate
 associations with a @litchar{&}.}
 
+
+@defproc[(path->url [path (or/c path-string? path-for-some-system?)])
+         url?]{
+
+Converts a path to a @scheme[url].}
+
+
+@defproc[(url->path [URL url?]
+                    [kind (one-of/c 'unix 'windows) (system-path-convention-type)])
+         path-for-some-system?]{
+
+Converts @scheme[URL], which is assumed to be a @scheme["file"] URL,
+to a path.}
+
+
+@defparam[file-url-path-convention-type kind (one-of/c 'unix 'windows)]{
+
+Determines the default conversion to and from strings for
+@scheme["file"] URLs. See @scheme[string->url] and @scheme[url->string].}
 
 
 @deftogether[(
