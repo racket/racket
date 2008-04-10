@@ -9,7 +9,7 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-(module url-unit mzscheme
+(module url-unit scheme/base
   (require mzlib/file
            mzlib/unit
            mzlib/port
@@ -22,16 +22,13 @@
            "tcp-sig.ss")
   (provide url@)
 
-  ;; undocumented hook to allow testing
-  (provide set-url:os-type!)
-  (define url:os-type (system-type))
-  (define (set-url:os-type! new) (set! url:os-type new))
-
   (define-unit url@
     (import tcp^)
     (export url^)
 
     (define-struct (url-exception exn:fail) ())
+
+    (define file-url-path-convention-type (make-parameter (system-path-convention-type)))
 
     (define current-proxy-servers
       (make-parameter null
@@ -73,6 +70,11 @@
             [query  (url-query url)]
             [fragment (url-fragment url)]
             [sa string-append])
+        (when (and (equal? scheme "file")
+                   (not (url-path-absolute? url)))
+          (raise-mismatch-error "url->string"
+                                "cannot convert relative file URL to a string: "
+                                url))
         (sa (if scheme (sa scheme ":") "")
             (if (or user host port)
               (sa "//"
@@ -82,7 +84,9 @@
                   ;; There used to be a "/" here, but that causes an
                   ;; extra leading slash -- wonder why it ever worked!
                   )
-              "")
+              (if (equal? "file" scheme) ; always need "//" for "file" URLs
+                  "//"
+                  ""))
             (combine-path-strings (url-path-absolute? url) path)
             ;; (if query (sa "?" (uri-encode query)) "")
             (if (null? query) "" (sa "?" (alist->form-urlencoded query)))
@@ -131,25 +135,37 @@
         (tcp-abandon-port client->server)
         server->client))
 
-    (define (file://->path url)
-      ;; remove all ""s
-      (let ([elts (remove* '("") (map path/param-path (url-path url)))]
-            [abs? (url-path-absolute? url)])
-        ;; See the discussion in PR8060 for an explanation
-        (if (eq? 'windows url:os-type)
-          (let ([host (or (url-host url) "")])
-            (unless (equal? "" host) (set! elts (cons host elts)))
-            (if (null? elts)
-              (build-path) ; make it throw the error
-              (let* ([fst (car elts)] [len (string-length fst)])
-                (if (or (not abs?) (eq? #\: (string-ref fst (sub1 len))))
-                  (apply build-path elts)
-                  (if (null? (cdr elts))
-                    (build-path (string-append "\\\\" (car elts)))
-                    (apply build-path
-                           (string-append "\\\\" (car elts) "\\" (cadr elts))
-                           (cddr elts)))))))
-          (apply build-path (if abs? (cons "/" elts) elts)))))
+    (define (file://->path url [kind (system-path-convention-type)])
+      (let ([strs (map path/param-path (url-path url))]
+            [string->path-element/same
+             (lambda (e)
+               (if (symbol? e)
+                   e
+                   (if (string=? e "")
+                       'same
+                       (bytes->path-element (string->bytes/locale e) kind))))]
+            [string->path/win (lambda (s)
+                                (bytes->path (string->bytes/utf-8 s) 'windows))])
+        (if (and (url-path-absolute? url)
+                 (eq? 'windows kind))
+            ;; If initial path is "", then build UNC path.
+            (cond
+             [(not (url-path-absolute? url))
+              (apply build-path (map string->path-element/same strs))]
+             [(and ((length strs) . >= . 3)
+                   (equal? (car strs) ""))
+              (apply build-path 
+                     (string->path/win
+                      (string-append "\\\\" (cadr strs) "\\" (caddr strs) "\\"))
+                     (map string->path-element/same (cdddr strs)))]
+             [(pair? strs)
+              (apply build-path (string->path/win (car strs))
+                     (map string->path-element/same (cdr strs)))]
+             [else (build-path)]) ; error
+            (let ([elems (map string->path-element/same strs)])
+              (if (url-path-absolute? url)
+                  (apply build-path "/" elems)
+                  (apply build-path elems))))))
 
     ;; file://get-pure-port : url -> in-port
     (define (file://get-pure-port url)
@@ -362,19 +378,33 @@
                                                scheme)))
            (url-error "Invalid URL string; bad scheme ~e: ~e" scheme str))
          ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
-         (when (and (equal? "" port) (equal? "file" scheme)
-                    (eq? 'windows url:os-type))
-           (set! path (string-append host ":" path))
-           (set! host #f))
-         (let* ([scheme   (and scheme (string-downcase scheme))]
-                [host     (and host (string-downcase host))]
-                [user     (uri-decode/maybe user)]
-                [port     (and port (string->number port))]
-                [abs?     (regexp-match? #rx"^/" path)]
-                [path     (separate-path-strings path)]
-                [query    (if query (form-urlencoded->alist query) '())]
-                [fragment (uri-decode/maybe fragment)])
-           (make-url scheme user host port abs? path query fragment)))
+         (let ([win-file? (and (or (equal? "" port) 
+                                   (not port))
+                               (equal? "file" scheme)
+                               (eq? 'windows (file-url-path-convention-type))
+                               (not (equal? host "")))])
+           (when win-file?
+             (if (equal? "" port)
+                 (set! path (string-append host ":" path))
+                 (set! path (if path
+                                (if host
+                                    (string-append host "/" path)
+                                    path)
+                                host)))
+             (set! port #f)
+             (set! host ""))
+           (let* ([scheme   (and scheme (string-downcase scheme))]
+                  [host     (and host (string-downcase host))]
+                  [user     (uri-decode/maybe user)]
+                  [port     (and port (string->number port))]
+                  [abs?     (or (equal? "file" scheme)
+                                (regexp-match? #rx"^/" path))]
+                  [path     (if win-file?
+                                (separate-windows-path-strings path)
+                                (separate-path-strings path))]
+                  [query    (if query (form-urlencoded->alist query) '())]
+                  [fragment (uri-decode/maybe fragment)])
+             (make-url scheme user host port abs? path query fragment))))
        (cdr (or (regexp-match url-rx str)
                 (url-error "Invalid URL string: ~e" str)))))
 
@@ -388,6 +418,9 @@
     (define (separate-path-strings str)
       (let ([strs (regexp-split #rx"/" str)])
         (map separate-params (if (string=? "" (car strs)) (cdr strs) strs))))
+
+    (define (separate-windows-path-strings str)
+      (url-path (path->url (bytes->path (string->bytes/utf-8 str) 'windows))))
 
     (define (separate-params s)
       (let ([lst (map path-segment-decode (regexp-split #rx";" s))])
@@ -423,6 +456,52 @@
                  (apply string-append (reverse r))
                  (loop (cdr strings) (list* (car strings) sep r))))]))
 
+    (define (path->url path)
+      (let ([url-path (let loop ([path (simplify-path path #f)][accum null])
+                        (let-values ([(base name dir?) (split-path path)])
+                          (cond
+                           [(not base)
+                            (append (map
+                                     (lambda (s)
+                                       (make-path/param s null))
+                                     (if (eq? (path-convention-type path) 'windows)
+                                         ;; For Windows, massage the root:
+                                         (let ([s (regexp-replace 
+                                                   #rx"[/\\\\]$"
+                                                   (bytes->string/utf-8
+                                                    (path->bytes name))
+                                                   "")])
+                                           (cond
+                                            [(regexp-match? #rx"^\\\\\\\\[?]\\\\[a-zA-Z]:" s)
+                                             ;; \\?\<drive>: path:
+                                             (regexp-split #rx"[/\\]+" (substring s 4))]
+                                            [(regexp-match? #rx"^\\\\\\\\[?]\\\\UNC" s)
+                                             ;; \\?\ UNC path:
+                                             (regexp-split #rx"[/\\]+" (substring s 7))]
+                                            [(regexp-match? #rx"^[/\\]" s)
+                                             ;; UNC path:
+                                             (regexp-split #rx"[/\\]+" s)]
+                                            [else
+                                             (list s)]))
+                                         ;; On other platforms, we drop the root:
+                                         null))
+                                    accum)]
+                           [else
+                            (let ([accum (cons (make-path/param 
+                                                (if (symbol? name)
+                                                    name
+                                                    (bytes->string/utf-8
+                                                     (path-element->bytes name)))
+                                                null)
+                                               accum)])
+                              (if (eq? base 'relative) 
+                                  accum
+                                  (loop base accum)))])))])
+        (make-url "file" #f "" #f (absolute-path? path) url-path '() #f)))
+
+    (define (url->path url [kind (system-path-convention-type)])
+      (file://->path url kind))
+    
     ;; delete-pure-port : url [x list (str)] -> in-port
     (define/kw (delete-pure-port url #:optional [strings '()])
       (method-pure-port 'delete url #f strings))

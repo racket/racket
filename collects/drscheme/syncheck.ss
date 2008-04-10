@@ -2399,11 +2399,18 @@ If the namespace does not, they are colored the unbound color.
                                           (label (fw:gui-utils:format-literal-label (string-constant cs-view-docs) (exported-index-desc-name (entry-desc index-entry))))
                                           (callback
                                            (λ (x y)
-                                             (send-url (format "file://~a~a"
-                                                               (path->string path) 
-                                                               (if tag
-                                                                   (string-append "#" (uri-encode tag))
-                                                                   ""))))))))))))))))))))))
+                                              (let* ([url (path->url path)]
+                                                     [url2 (if tag
+                                                               (make-url (url-scheme url)
+                                                                         (url-user url)
+                                                                         (url-host url)
+                                                                         (url-port url)
+                                                                         (url-path-absolute? url)
+                                                                         (url-path url)
+                                                                         (url-query url)
+                                                                         tag)
+                                                               url)])
+                                                (send-url (url->string url2))))))))))))))))))))))
     
     
     

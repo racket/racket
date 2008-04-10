@@ -284,8 +284,8 @@ are valid text.
 As described above, the text turns to a sequence of string arguments
 for the resulting form.  Spaces at the beginning and end of lines are
 discarded, and newlines turn to individual @scheme["\n"] strings
-(i.e., they are not merged with other body parts).  (See also the
-information about newlines and indentation below.)  Spaces are
+(i.e., they are not merged with other body parts); see also the
+information about newlines and indentation below. Spaces are
 @italic{not} discarded if they appear after the open @litchar["{"]
 (before the closing @litchar["}"]) when there is also text that
 follows (precedes) it; specifically, they are preserved in a

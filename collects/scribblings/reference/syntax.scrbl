@@ -1307,6 +1307,7 @@ Legal only in a @tech{module begin context}, and handled by the
                             id
                             (file string)
                             (planet id)
+                            (planet string)
                             (planet rel-string
                                     (user-string pkg-string vers ...)
                                     rel-string ...)]
@@ -1475,12 +1476,13 @@ corresponds to the default @tech{module name resolver}.
  current platform's path conventions.}
 
  @defsubform*[((planet id)
+               (planet string)
                (planet rel-string (user-string pkg-string vers ...)
                        rel-string ...))]{
 
  Specifies a library available via the @PLaneT server.
 
- The first form is a shorthand for the second, where the @scheme[id]'s
+ The first form is a shorthand for the last one, where the @scheme[id]'s
  character sequence must match the following @nonterm{spec} grammar:
 
  @BNF[
@@ -1504,9 +1506,17 @@ corresponds to the default @tech{module name resolver}.
  and where an @nonterm{elem} is a non-empty sequence of characters
  that are ASCII letters, ASCII digits, @litchar{-}, @litchar{+}, or
  @litchar{_}, and an @nonterm{int} is a non-empty sequence of ASCII
- digits.
+ digits. As this shorthand is expended, a @filepath{.plt} extension is
+ added to @nonterm{pkg}, and a @filepath{.ss} extension is added to
+ @scheme{path}; if no @nonterm{path} is included, @filepath{main.ss}
+ is used in the expansion.
 
- In the more general second form of a @scheme[planet] module path, the
+ A @scheme[(planet string)] form is like a @scheme[(planet id)] form
+ with the identifier converted to a string, except that the
+ @scheme[string] can optionally end with a file extension for a
+ @nonterm{path}.
+
+ In the more general last form of a @scheme[planet] module path, the
  @scheme[rel-string]s are similar to the @scheme[lib] form, except
  that the @scheme[(user-string pkg-string vers ...)]  names a
  @|PLaneT|-based package instead of a @tech{collection}.}

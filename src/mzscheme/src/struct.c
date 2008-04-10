@@ -1784,14 +1784,19 @@ static Scheme_Object *make_prefab_struct(int argc, Scheme_Object *argv[])
   return scheme_make_prefab_struct_instance(stype, vec);
 }
 
+#define MAX_STRUCT_FIELD_COUNT 32768
+#define MAX_STRUCT_FIELD_COUNT_STR "32768"
+
 static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
 {
   Scheme_Struct_Type *stype;
   int v;
 
-  if (!SCHEME_INTP(argv[1]))
+  if (SCHEME_INTP(argv[1])) {
     v = SCHEME_INT_VAL(argv[1]);
-  else
+    if (v > MAX_STRUCT_FIELD_COUNT)
+      v = -1;
+  } else
     v = -1;
 
   stype = scheme_lookup_prefab_type(argv[0], (v >= 0) ? v : -1);
@@ -1800,7 +1805,15 @@ static Scheme_Object *prefab_key_struct_type(int argc, Scheme_Object *argv[])
     scheme_wrong_type("make-prefab-struct", "prefab key", 0, argc, argv);
 
   if (v < 0)
-    scheme_wrong_type("make-prefab-struct", "non-negative fixnum", 1, argc, argv);
+    scheme_wrong_type("make-prefab-struct", 
+                      "integer in [0, " MAX_STRUCT_FIELD_COUNT_STR "]", 
+                      1, argc, argv);
+
+  if (stype->num_slots != v) {
+    scheme_arg_mismatch("make-prefab-struct", 
+                        "prefab key field count does not match supplied count: ",
+                        argv[1]);
+  }
 
   return (Scheme_Object *)stype;
 }
@@ -2661,17 +2674,17 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
   if (parent_type)
     struct_type->proc_attr = parent_type->proc_attr;
 
-  /* Check for integer overflow or total more than 32768: */
+  /* Check for integer overflow or total more than MAX_STRUCT_FIELD_COUNT: */
   if ((num_fields < 0) || (num_uninit_fields < 0)
-      || (num_fields > 32768)
-      || (num_uninit_fields > 32768)
-      || (num_uninit_fields + num_fields > 32768)
+      || (num_fields > MAX_STRUCT_FIELD_COUNT)
+      || (num_uninit_fields > MAX_STRUCT_FIELD_COUNT)
+      || (num_uninit_fields + num_fields > MAX_STRUCT_FIELD_COUNT)
       || (parent_type
 	  && ((struct_type->num_slots < parent_type->num_slots)
 	      || (struct_type->num_islots < parent_type->num_islots)))) {
     /* Too many fields. */
     scheme_raise_exn(MZEXN_FAIL,
-		     "too many fields for struct-type; maximum total field count is 32768");
+		     "too many fields for struct-type; maximum total field count is " MAX_STRUCT_FIELD_COUNT_STR);
     return NULL;
   }
 
@@ -3276,6 +3289,9 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
   if (scheme_proper_list_length(key) < 0)
     return NULL;
 
+  if (field_count > MAX_STRUCT_FIELD_COUNT)
+    field_count = MAX_STRUCT_FIELD_COUNT;
+
   if (prefab_table) {
     a = scheme_lookup_in_table(prefab_table, (const char *)key);
     if (a)
@@ -3329,6 +3345,8 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
         return NULL;
     } else {
       icnt = SCHEME_INT_VAL(a);
+      if (icnt > MAX_STRUCT_FIELD_COUNT)
+        return NULL;
       key = SCHEME_CDR(key);
     }
     
@@ -3370,6 +3388,9 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int field_coun
                                             immutable_pos_list);
       prev++;
     }
+
+    if (parent && (icnt + parent->num_slots > MAX_STRUCT_FIELD_COUNT))
+      return NULL;
 
     parent = (Scheme_Struct_Type *)_make_struct_type(name, NULL, 0, 
                                                      (Scheme_Object *)parent,

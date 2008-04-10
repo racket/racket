@@ -174,10 +174,6 @@ flags:
         @Flag{i}/@DFlag{repl}, but uses @scheme[read-eval-print-loop]
         instead of @scheme[graphical-read-eval-print-loop].}
 
-  @item{@FlagFirst{q} or @DFlagFirst{no-init-file} : Skips loading
-        @scheme[(find-system-path 'init-file)] for
-        @Flag{i}/@DFlag{repl} or @Flag{z}/@DFlag{text-repl}.}
-
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
         initialization library (i.e., @schememodname[scheme/init] or
         @schememodname[scheme/gui/init], unless it is changed with the
@@ -203,6 +199,10 @@ flags:
   @item{@FlagFirst{c} or @DFlagFirst{no-compiled} : Disables loading
         of compiled byte-code @filepath{.zo} files, by initializing
         @scheme[current-compiled-file-paths] to @scheme[null].}
+
+  @item{@FlagFirst{q} or @DFlagFirst{no-init-file} : Skips loading
+        @scheme[(find-system-path 'init-file)] for
+        @Flag{i}/@DFlag{repl} or @Flag{z}/@DFlag{text-repl}.}
 
   @item{@FlagFirst{I} @nonterm{path} : Sets @scheme[(lib #,
         @nontermstr{path})] as the path to @scheme[require] to initialize

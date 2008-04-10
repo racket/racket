@@ -804,10 +804,10 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @litchar{/} characters terminated by
 @schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
-@litchar{#lang }@nonterm{name} is equivalent to
-@litchar{#reader }@nonterm{name}@litchar{/lang/reader}, except that
-the terminating whitespace (if any) is consumed before the external
-reading procedure is called.
+@litchar["#lang\u20"]@nonterm{name} is equivalent to
+@litchar["#reader\u20"]@nonterm{name}@litchar{/lang/reader}, except
+that the terminating whitespace (if any) is consumed before the
+external reading procedure is called.
 
 Finally, @as-index{@litchar{#!}} followed by alphanumeric ASCII,
 @litchar{+}, @litchar{-}, or @litchar{_} is a synonym for

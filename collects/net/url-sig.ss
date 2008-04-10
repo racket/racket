@@ -15,7 +15,10 @@ purify-port
 netscape/string->url
 string->url
 url->string
+path->url
+url->path
 call/input-url
 combine-url/relative
 url-exception?
 current-proxy-servers
+file-url-path-convention-type

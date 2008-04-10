@@ -112,7 +112,8 @@ The resulting structure type has
 addition to any fields from @scheme[super-type]), but only
 @scheme[init-field-cnt] constructor arguments (in addition to any
 constructor arguments from @scheme[super-type]). The remaining fields
-are initialized with @scheme[auto-v].
+are initialized with @scheme[auto-v]. The total field count (including
+@scheme[super-type] fields) must be no more than 32768.
 
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
@@ -439,8 +440,9 @@ used instead of a list that contains only a symbol (in the case that
 the structure type has no supertype, no automatic fields, and no
 mutable fields).
 
-If the number of fields indicated by @scheme[key] is inconsistent with
-the number of supplied @scheme[v]s, the @exnraise[exn:fail:contract].
+The total field count must be no more than 32768. If the number of
+fields indicated by @scheme[key] is inconsistent with the number of
+supplied @scheme[v]s, the @exnraise[exn:fail:contract].
 
 @examples[
 (make-prefab-struct 'clown "Binky" "pie")
@@ -449,6 +451,14 @@ the number of supplied @scheme[v]s, the @exnraise[exn:fail:contract].
 (make-prefab-struct '(clown 1 (1 #f) #()) "Binky" "pie")
 (make-prefab-struct '(clown 1 (1 #f) #(0)) "Binky" "pie")
 ]}
+
+@defproc[(prefab-key->struct-type [key (or/c symbol? list?)] 
+                                  [field-count (integer-in 0 32768)])
+         struct-type?]{
+
+Returns a @tech{structure type descriptor} for the @tech{prefab}
+structure type specified by the combination of @scheme[key] and
+@scheme[field-count].}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
@@ -540,10 +550,10 @@ procedure encapsulated by @scheme[make-struct-info].}
 
 @defproc[(checked-struct-info? [v any/c]) boolean?]{
 
-Returns @scheme[#t] if @scheme[v] is a structure encapsulated by 
-@scheme[make-struct-info] and produced by @scheme[define-struct]. Such
-values may be relied upon to accurately represent a structure and have
-correct super-type information.}
+Returns @scheme[#t] if @scheme[v] is a procedure encapsulated by
+@scheme[make-struct-info] and produced by @scheme[define-struct], but
+only when no parent type is specified or the parent type is also
+specified through a transformer binding to such a value).}
 
 @defproc[(make-struct-info [thunk (-> (and/c struct-info? list?))])
          struct-info?]{

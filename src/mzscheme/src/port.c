@@ -286,7 +286,7 @@ int scheme_force_port_closed;
 static int flush_out, flush_err;
 
 #if defined(FILES_HAVE_FDS)
-static int external_event_fd, put_external_event_fd, event_fd_set;
+static int external_event_fd, put_external_event_fd;
 #endif
 
 static void register_port_wait();
@@ -7961,7 +7961,6 @@ static void default_sleep(float v, void *fds)
   if (external_event_fd) {
     char buf[10];
     read(external_event_fd, buf, 10);
-    event_fd_set = 0;
   }
 #endif
 }
@@ -7980,8 +7979,7 @@ void scheme_signal_received(void)
 /* Ensure that MzScheme wakes up if asleep. */
 {
 #if defined(FILES_HAVE_FDS)
-  if (put_external_event_fd && !event_fd_set) {
-    event_fd_set = 1;
+  if (put_external_event_fd) {
     write(put_external_event_fd, "!", 1);
   }
 #endif

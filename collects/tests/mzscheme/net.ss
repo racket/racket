@@ -11,7 +11,6 @@
 (require net/url
 	 net/uri-codec
          mzlib/string
-         net/url-unit ; to get set-url:os-type!
          )
 
 (test "%Pq" uri-decode "%Pq")
@@ -280,8 +279,10 @@
   (err/rt-test (string->url "a b://www.foo.com/") url-exception?)
 
   ;; test file: urls
-  (test-s->u #("file" #f #f #f #t (#("abc") #("def.html")) () #f)
-             "file:/abc/def.html")
+  (test-s->u #("file" #f "" #f #t (#("abc") #("def.html")) () #f)
+             "file:///abc/def.html")
+  (test "file:///abc/def.html" url->string (string->url "file:///abc/def.html"))
+  (test "file://a/b" url->string (string->url "file://a/b"))
 
   (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) () #f)
              "file://localhost/abc/def.html")
@@ -289,26 +290,56 @@
   ;; test files: urls with colons, and the different parsing on Windows
   (test-s->u #("file" #f "localhost" 123 #t (#("abc") #("def.html")) () #f)
              "file://localhost:123/abc/def.html")
-  (set-url:os-type! 'unix)
-  ;; different parse for file://foo:/...
-  (test #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+  (parameterize ([file-url-path-convention-type 'unix])
+    ;; different parse for file://foo:/...
+    (test #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+          string->url/vec
+          "file://foo:/abc/def.html"))
+  (parameterize ([file-url-path-convention-type 'windows])
+    (test #("file" #f "" #f #t (#("foo:") #("abc") #("def.html")) () #f)
         string->url/vec
         "file://foo:/abc/def.html")
-  (set-url:os-type! 'windows)
-  (test #("file" #f #f #f #f (#("foo:") #("abc") #("def.html")) () #f)
+    (test #("file" #f "" #f #t (#("c:") #("abc") #("def.html")) () #f)
         string->url/vec
-        "file://foo:/abc/def.html")
-  (set-url:os-type! 'unix)
-  ;; but no effect on http://foo:/...
-  (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+        "file://c:/abc/def.html")
+    (test #("file" #f "" #f #t (#("") #("d") #("c") #("abc") #("def.html")) () #f)
         string->url/vec
-        "http://foo:/abc/def.html")
-  (set-url:os-type! 'windows)
-  (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
-        string->url/vec
-        "http://foo:/abc/def.html")
-  (set-url:os-type! 'unix)
+        "file:\\\\d\\c\\abc\\def.html"))
 
+  (parameterize ([file-url-path-convention-type 'unix])
+    ;; but no effect on http://foo:/...
+    (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+          string->url/vec
+          "http://foo:/abc/def.html"))
+  (parameterize ([file-url-path-convention-type 'windows])
+    (test #("http" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+          string->url/vec
+          "http://foo:/abc/def.html"))
+
+  (test "file:///c:/a/b"
+        url->string (path->url (bytes->path #"c:\\a\\b" 'windows)))    
+  (test "file:///c:/a/b"
+        url->string (path->url (bytes->path #"\\\\?\\c:\\a\\b" 'windows)))
+
+  (test #"/a/b/c" path->bytes
+        (url->path (path->url (bytes->path #"/a/b/c" 'unix)) 'unix))
+  (test #"a/b/c" path->bytes
+        (url->path (path->url (bytes->path #"a/b/c" 'unix)) 'unix))
+  (test #"c:\\a\\b" path->bytes
+        (url->path (path->url (bytes->path #"c:/a/b" 'windows)) 'windows))
+  (test #"a\\b" path->bytes
+        (url->path (path->url (bytes->path #"a/b" 'windows)) 'windows))
+  (test #"\\\\d\\c\\a" path->bytes
+        (url->path (path->url (bytes->path #"//d/c/a" 'windows)) 'windows))
+  (test #"c:\\a\\b" path->bytes
+        (url->path (path->url (bytes->path #"\\\\?\\c:\\a\\b" 'windows)) 'windows))
+  (test #"\\\\d\\c\\a\\b" path->bytes
+        (url->path (path->url (bytes->path #"\\\\?\\UNC\\d\\c\\a\\b" 'windows)) 'windows))
+  (test #"\\\\?\\c:\\a/x\\b" path->bytes
+        (url->path (path->url (bytes->path #"\\\\?\\c:\\a/x\\b" 'windows)) 'windows))
+  (test #"\\\\?\\UNC\\d\\c\\a/x\\b" path->bytes
+        (url->path (path->url (bytes->path #"\\\\?\\UNC\\d\\\\c\\a/x\\b" 'windows)) 'windows))
+    
   ;; see PR8809 (value-less keys in the query part)
   (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f)) #f)
              "http://foo.bar/baz?ugh")

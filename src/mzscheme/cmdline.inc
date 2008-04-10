@@ -833,6 +833,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  break;
 	case 'q':
 	  no_init_file = 1;
+          was_config_flag = 1;
 	  break;
         case 'n':
           no_init_ns = 1;
@@ -1073,7 +1074,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # ifdef CMDLINE_STDIO_FLAG
 	 "  -z, --text-repl : Like -i, but use text read-eval-print loop\n"
 # endif
-	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for " REPL_FLAGS "\n"
          "  -n, --no-lib : Skip `(require (lib \"<init-lib>\"))' for " REPL_FLAGS "/-e/-f/-r\n"
 	 "  -v, --version : Show version\n"
 # ifdef CMDLINE_STDIO_FLAG
@@ -1084,6 +1084,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
 	 " Configuration options:\n"
          "  -c, --no-compiled : Disable loading of compiled files\n"
+	 "  -q, --no-init-file : Skip load of " INIT_FILENAME " for " REPL_FLAGS "\n"
          "  -I <path> : Set <init-lib> to <path>\n"
 	 "  -X <dir>, --collects <dir> : Main collects at <dir> relative to " PROGRAM "\n"
 	 "  -S <dir>, --search <dir> : More collects at <dir> relative to " PROGRAM "\n"

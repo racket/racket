@@ -26,7 +26,9 @@
 
   (provide/contract
    (string->url ((or/c bytes? string?) . -> . url?))
+   (path->url ((or/c path-string? path-for-some-system?) . -> . url?))
    (url->string (url? . -> . string?))
+   (url->path ((url?) ((one-of/c 'unix 'windows)) . opt-> . path-for-some-system?))
 
    (get-pure-port (opt-> (url?) ((listof string?)) input-port?))
    (get-impure-port (opt-> (url?) ((listof string?)) input-port?))
@@ -54,6 +56,8 @@
    (combine-url/relative (url? string? . -> . url?))
    (url-exception? (any/c . -> . boolean?))
    (current-proxy-servers
-    (parameter/c (or/c false/c (listof (list/c string? string? number?))))))
+    (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
+   (file-url-path-convention-type
+    (parameter/c (one-of/c 'unix 'windows))))
   )
 
