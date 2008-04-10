@@ -709,6 +709,7 @@
 	 [handle-menu-key
 	  (lambda (event)
 	    (and menu-bar 
+                 (send menu-bar all-enabled?)
 		 ;; It can't be a menu event without a
 		 ;; control, meta, alt key, or function key
 		 (or (send event get-control-down)
