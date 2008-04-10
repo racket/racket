@@ -403,6 +403,8 @@ Scheme_Env *scheme_basic_env()
 
   scheme_starting_up = 0;
 
+  --scheme_current_thread->suspend_break; /* created with breaks suspended */
+
 #ifdef TIME_STARTUP_PROCESS
   printf("done @ %ld\n#endif\n", scheme_get_process_milliseconds());
 #endif

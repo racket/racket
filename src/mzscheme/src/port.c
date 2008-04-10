@@ -6483,10 +6483,10 @@ static void init_sigchld(void)
   }
 }
 
-void scheme_check_child_done()
+int scheme_check_child_done()
 {
   pid_t result;
-  int status;
+  int status, did_one = 0;
   System_Child *sc, *prev;
 
   if (scheme_system_children) {
@@ -6512,12 +6512,14 @@ void scheme_check_child_done()
             } else
               scheme_system_children = sc->next;
             
-            break;
+            did_one = 1;
           }
         }
       }
     } while (result > 0);
   }
+
+  return did_one;
 }
 
 #endif
@@ -7980,7 +7982,10 @@ void scheme_signal_received(void)
 {
 #if defined(FILES_HAVE_FDS)
   if (put_external_event_fd) {
-    write(put_external_event_fd, "!", 1);
+    int v;
+    do {
+      v = write(put_external_event_fd, "!", 1);
+    } while ((v == -1) && (errno == EINTR));
   }
 #endif
 #if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)

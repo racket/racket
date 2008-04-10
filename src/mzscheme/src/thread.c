@@ -96,7 +96,7 @@ extern HANDLE scheme_break_semaphore;
 #include "schfd.h"
 
 #if defined(UNIX_PROCESSES)
-extern void scheme_check_child_done();
+extern int scheme_check_child_done();
 #endif
 
 #define DEFAULT_INIT_STACK_SIZE 1000
@@ -2093,6 +2093,8 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     process->prev = NULL;
     process->next = NULL;
 
+    process->suspend_break = 1; /* until start-up finished */
+
     process->error_buf = &main_init_error_buf;
 
     thread_swap_callbacks = scheme_null;
@@ -2175,7 +2177,6 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
   process->current_local_env = NULL;
 
-  process->suspend_break = 0;
   process->external_break = 0;
 
   process->ran_some = 1;
@@ -3455,6 +3456,9 @@ static int check_sleep(int need_activity, int sleep_now)
     }
   
     if (needs_sleep_cancelled)
+      return 0;
+
+    if (scheme_check_child_done())
       return 0;
 
     if (post_system_idle()) {
