@@ -25,7 +25,11 @@ MzScheme's limited stack-trace reporting.
                @schemeblock[(require errortrace)]
                or start MzScheme with the @Flag{l} option before the
                arguments to load your program:
-               @commandline{mzscheme -l errortrace ...}}
+               @commandline{mzscheme -l errortrace ...}
+
+               If you want to use MzScheme interactively, include the
+               @Flag{i} flag first:
+               @commandline{mzscheme -i -l errortrace}}
 
          @item{When an exception occurs, the exception handler prints
                something like a stack trace, most recent contexts first.}
