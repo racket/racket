@@ -134,8 +134,9 @@
     
    [reader-command (:or (:: "#" c s) (:: "#" c i))]
    [sharing (:or (:: "#" (make-uinteger digit10) "=")
-                 (:: "#" (make-uinteger digit10) "#"))])
-  
+                 (:: "#" (make-uinteger digit10) "#"))]
+
+   [list-prefix (:or "" "#hash" "#hasheq" "#s" (:: "#" (:* digit10)))])
   
   (define-lex-trans make-num
     (syntax-rules ()
@@ -278,11 +279,11 @@
      ["#|" (read-nested-comment 1 start-pos input-port)]
      [script
       (ret lexeme 'comment #f start-pos end-pos)]
-     [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "(")
+     [(:: list-prefix "(")
       (ret lexeme 'parenthesis '|(| start-pos end-pos)]
-     [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "[")
+     [(:: list-prefix "[")
       (ret lexeme 'parenthesis '|[| start-pos end-pos)]
-     [(:: (:or "" "#hash" "#hasheq" (:: "#" (:* digit10))) "{")
+     [(:: list-prefix "{")
       (ret lexeme 'parenthesis '|{| start-pos end-pos)]
      [(:or ")" "]" "}")
       (ret lexeme 'parenthesis (string->symbol lexeme) start-pos end-pos)]
