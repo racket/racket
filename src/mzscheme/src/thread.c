@@ -95,10 +95,6 @@ extern HANDLE scheme_break_semaphore;
 
 #include "schfd.h"
 
-#if defined(UNIX_PROCESSES)
-extern int scheme_check_child_done();
-#endif
-
 #define DEFAULT_INIT_STACK_SIZE 1000
 #define MAX_INIT_STACK_SIZE 100000
 
@@ -3458,11 +3454,6 @@ static int check_sleep(int need_activity, int sleep_now)
     if (needs_sleep_cancelled)
       return 0;
 
-#if defined(UNIX_PROCESSES)
-    if (scheme_check_child_done())
-      return 0;
-# endif
-
     if (post_system_idle()) {
       return 0;
     }
@@ -3858,10 +3849,6 @@ void scheme_thread_block(float sleep_time)
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
-
-#if defined(UNIX_PROCESSES)
-  scheme_check_child_done();
-#endif
 
   if (!do_atomic && (sleep_end >= 0.0)) {
     double msecs = 0.0;

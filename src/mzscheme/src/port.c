@@ -6483,10 +6483,10 @@ static void init_sigchld(void)
   }
 }
 
-int scheme_check_child_done()
+static void check_child_done()
 {
   pid_t result;
-  int status, did_one = 0;
+  int status;
   System_Child *sc, *prev;
 
   if (scheme_system_children) {
@@ -6511,15 +6511,11 @@ int scheme_check_child_done()
               prev->next = sc->next;
             } else
               scheme_system_children = sc->next;
-            
-            did_one = 1;
           }
         }
       }
     } while (result > 0);
   }
-
-  return did_one;
 }
 
 #endif
@@ -6679,6 +6675,7 @@ static int subp_done(Scheme_Object *sp)
 
 #if defined(UNIX_PROCESSES)
   System_Child *sc = (System_Child *)sci;
+  check_child_done();
   return sc->done;
 #endif
 #ifdef WINDOWS_PROCESSES
@@ -6716,6 +6713,8 @@ static Scheme_Object *subprocess_status(int argc, Scheme_Object **argv)
 
 #if defined(UNIX_PROCESSES)
     System_Child *sc = (System_Child *)sp->handle;
+
+    check_child_done();
 
     if (sc->done)
       status = sc->status;
@@ -6788,6 +6787,8 @@ static Scheme_Object *subprocess_kill(int argc, Scheme_Object **argv)
 #if defined(UNIX_PROCESSES)
     {
       System_Child *sc = (System_Child *)sp->handle;
+
+      check_child_done();
 
       while (1) {
 	if (sc->done)
