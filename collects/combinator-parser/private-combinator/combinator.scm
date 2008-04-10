@@ -197,6 +197,27 @@
                                      (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
                                           (lazy-opts-matches rsts))
                                      (make-options-fail 0 #f #f 0 0 null) null)]
+                                   [(and (lazy-opts? rsts) (not (lazy-choice? rsts)))
+                                    (make-lazy-opts
+                                     (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                          (lazy-opts-matches rsts))
+                                     (lazy-opts-errors rsts)
+                                     (map (lambda (thunk)
+                                            (lambda ()
+                                              (let ([ans (next-opt rsts)])
+                                                (and ans (next-res old-answer new-id old-used tok ans)))))
+                                          (lazy-opts-thunks rsts)))]
+                                   [(lazy-choice? rsts)
+                                    (make-lazy-choice
+                                     (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                          (lazy-opts-matches rsts))
+                                     (lazy-opts-errors rsts)
+                                     (map (lambda (thunk)
+                                            (lambda ()
+                                              (let ([ans (next-choice rsts)])
+                                                (and ans (next-res old-answer new-id old-used tok ans)))))
+                                          (lazy-opts-thunks rsts))
+                                     (lazy-choice-name rsts))]
                                    [(pair? rsts)
                                     (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
                                          (flatten (correct-list rsts)))]
