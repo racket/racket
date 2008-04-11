@@ -54,7 +54,7 @@
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
             (let ([no-number? (and (pair? number)
                                    (not (car number)))])
-              (printf "\\~a~a~a{"
+              (printf "\\~a~a~a~a{"
                       (case (length number)
                         [(0 1) "sectionNewpage\n\n\\section"]
                         [(2) "subsection"]
@@ -66,7 +66,10 @@
                           "")
                       (if no-number?
                           "*"
-                          "")))
+                          "")
+                      (if (part-style? d 'hidden)
+                          ""
+                          "[]")))
             (render-content (part-title-content d) d ri)
             (printf "}")
             (when (part-style? d 'index)
