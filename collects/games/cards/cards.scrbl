@@ -5,7 +5,7 @@
 
 @title{@bold{Cards}: Virtual Playing Cards Library}
 
-@defmodule[games/cards/main]{The @schememodname[games/cards/main]
+@defmodule[games/cards]{The @schememodname[games/cards]
 module provides a toolbox for creating cards games.}
 
 @; ----------------------------------------------------------------------
@@ -357,12 +357,22 @@ Removes @scheme[card] from the table.}
                             [tt? any/c])
             void?]{
 
- Adds a @onscreen{Help} button to the give pane, where clicking the
+ Adds a @onscreen{Help} button to the given pane, where clicking the
  button opens a new window to display @filepath{doc.txt} from the given
  collection. The @scheme[str] argument is used for the help window
  title.  If @scheme[tt?]  is true, then @filepath{doc.txt} is displayed
  verbatim, otherwise it is formatted as for @scheme[show-help] from
- @scheme[(lib "show-help.ss" "games")].}
+ @schememodname[games/show-help].}
+
+@defmethod[(add-scribble-button [pane (is-a?/c area-container<%>)]
+                                [mod-path module-path?]
+                                [tag string?])
+            void?]{
+
+ Adds a @onscreen{Help} button to the given pane, where clicking the
+ button opens Scribble-based documentation, as with
+ @scheme[show-scribbling] from @schememodname[games/show-scribbling].}
+
 }
 
 @; ----------------------------------------------------------------------

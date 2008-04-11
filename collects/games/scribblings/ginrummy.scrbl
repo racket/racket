@@ -1,4 +1,7 @@
-** To play Rummy, run the "PLT Games" application.
+#lang scribble/doc
+@(require "common.ss")
+
+@gametitle["Rummy" "ginrummy" "Card Game"]
 
 This is a simple variant of Rummy.
 

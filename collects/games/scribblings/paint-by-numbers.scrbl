@@ -1,20 +1,23 @@
-** To play Paint By Numbers, run the "PLT Games" application.
+#lang scribble/doc
+@(require "common.ss")
 
-The object of Paint By Numbers is to discover which cells should be
-colored blue and which should be colored white.  Initially, all
-squares are grey, indicating that the correct colors are not known.
-The lists of numbers to the left and above the grid are your clues to
-the correct color of each square.  Each list of numbers specifies the
-pattern of blue squares in the row beside it or the column below it.
-Each number indicates the length of a group of blue squares.  For
-example, if the list of numbers beside the first row is "2 3" then you
-know that there is a contiguous block of two blue squares followed by
-a contiguous block of three blue squares with at least one white
-square between them.  The label does not tell you where the blue
-squares are, only their shapes.  The trick is to gather as much
-information as you can about each row, and then use that information
-to determine more about each column.  Eventually you should be able to
-fill in the entire puzzle.
+@gametitle["Paint By Numbers" "paint-by-numbers" "Logic Game"]
+
+The object of @game{Paint By Numbers} is to discover which cells
+should be colored blue and which should be colored white.  Initially,
+all squares are grey, indicating that the correct colors are not
+known.  The lists of numbers to the left and above the grid are your
+clues to the correct color of each square.  Each list of numbers
+specifies the pattern of blue squares in the row beside it or the
+column below it.  Each number indicates the length of a group of blue
+squares.  For example, if the list of numbers beside the first row is
+@onscreen{2 3} then you know that there is a contiguous block of two
+blue squares followed by a contiguous block of three blue squares with
+at least one white square between them.  The label does not tell you
+where the blue squares are, only their shapes.  The trick is to gather
+as much information as you can about each row, and then use that
+information to determine more about each column.  Eventually you
+should be able to fill in the entire puzzle.
 
 Click on a square to toggle it between blue and gray.  Hold down a
 modifier key (shift, command, meta, or alt depending on the platform)
@@ -22,22 +25,23 @@ to toggle a square between white and gray.  The third button under
 unix and the right button under windows also toggles between white and
 gray.
 
-For some puzzles, hints are available.  Choose the Nongram|Show
-Mistakes menu item to receive the hints.  This will turn all
+For some puzzles, hints are available.  Choose the @menuitem["Nongram"
+"Show Mistakes"] menu item to receive the hints.  This will turn all
 incorrectly colored squares red.
 
 Thanks to Shoichiro Hattori for his puzzles!  Visit him on the web at:
 
-  http://hattori.m78.com/puzzle/
+@centerline{@selflink["http://hattori.m78.com/puzzle/"]}
 
 Thanks also to many of the contributors to the Kajitani web site for
 permission to re-distribute their puzzles.  Visit them online at:
 
-  http://www02.so-net.ne.jp/~kajitani/index.html
+@centerline{@selflink["http://www02.so-net.ne.jp/~kajitani/index.html"]}
 
 The specific contributers who have permitted their puzzles to be
 redistributed are:
 
+@verbatim[#:indent 2]{
  snordmey /at/ dayton <dot> net
  jtraub /at/ dragoncat <dot> net
  e0gb258s /at/ mail <dot> erin <dot> utoronto <dot> ca
@@ -94,4 +98,4 @@ redistributed are:
  williamson /at/ proaxis <dot> com
  vacko_6 /at/ hotmail <dot> com
  jojess /at/ earthlink <dot> net
-
+}

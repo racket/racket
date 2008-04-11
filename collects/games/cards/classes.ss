@@ -10,7 +10,8 @@
 	   "make-cards.ss"
 	   "region.ss"
 	   string-constants
-	   "../show-help.ss")
+	   "../show-help.ss"
+	   "../show-scribbling.ss")
 
   (provide pasteboard%
 	   table%)
@@ -601,6 +602,15 @@
 		(label (string-constant help-menu-label))
 		(callback
 		 (let ([show-help (show-help where title tt?)])
+		   (lambda x
+		     (show-help))))))]
+	[add-scribble-button
+	 (lambda (pane mod tag)
+	   (new mred:button% 
+		(parent pane)
+		(label (string-constant help-menu-label))
+		(callback
+		 (let ([show-help (show-scribbling mod tag)])
 		   (lambda x
 		     (show-help))))))])
       (begin

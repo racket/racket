@@ -1,6 +1,6 @@
 #lang mzscheme
 (require "board.ss"
-         "../show-help.ss"
+         "../show-scribbling.ss"
          mred
          mzlib/class
          mzlib/unit)
@@ -173,7 +173,7 @@
   (lambda x
     (init-board original-board)))
 
-(let ([help (show-help (list "games" "lights-out") "Lights Out Help")])
+(let ([help (show-scribbling '(lib "games/scribblings/games.scrbl") "lights-out")])
   (make-object button% "Help" button-panel (lambda x (help))))
 
 (make-object grow-box-spacer-pane% button-panel)

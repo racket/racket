@@ -4,6 +4,7 @@
            mzlib/class
            scheme/runtime-path
            scheme/port
+           setup/main-collects
            (for-syntax scheme/base))
   (provide render-mixin)
 
@@ -162,7 +163,9 @@
                                             (/ (cadddr style) 255.0))))
                       #f)]
                [(image-file? style) 
-                (let ([fn (install-file (image-file-path style))])
+                (let ([fn (install-file 
+                           (main-collects-relative->path 
+                            (image-file-path style)))])
                   (printf "\\includegraphics[scale=~a]{~a}" (image-file-scale style) fn))]
                [else (super render-element e part ri)])))
           (when part-label?

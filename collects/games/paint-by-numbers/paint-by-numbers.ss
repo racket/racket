@@ -4,7 +4,7 @@
            (prefix solve: "solve.ss")
            "all-problems.ss"
            "problem.ss"
-           "../show-help.ss"
+           "../show-scribbling.ss"
            framework
            mzlib/class
            mzlib/unit
@@ -66,9 +66,9 @@
            (send g set-value counter)]))))
   
   (define show-this-help
-    (show-help
-     (list "games" "paint-by-numbers")
-     "Paint by Numbers Help"))
+    (show-scribbling
+     '(lib "games/scribblings/games.scrbl")
+     "paint-by-numbers"))
   
   (define (configure-font frame)
     (let ([font (get-font-from-user

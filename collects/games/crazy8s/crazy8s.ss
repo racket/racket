@@ -81,8 +81,8 @@
          [parent status-pane]
          [label "Options..."]
          [callback (lambda (b e) (configure-dialog))])
-    (send t add-help-button status-pane
-          (list "games" "crazy8s") "Crazy 8s Help" #f)
+    (send t add-scribble-button status-pane
+          '(lib "games/scribblings/games.scrbl") "crazy8s")
 
     ;; The "Options.." button opens a configuration dialog that
     ;;  starts a new game:

@@ -14,7 +14,7 @@
 	   "shapes.scm"
 	   "array.scm"
 	   "text.scm"
-	   "../show-help.ss"
+	   "../show-scribbling.ss"
   )
 
   (provide game@)
@@ -50,17 +50,18 @@
   (define jewel-difficulty 0)
 
   ; table of high scores, loaded from a file
-  (define high-scores #( ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1") 
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                         ("NOBODY" "0" "1")
-                      ))
+  (define high-scores (vector
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1") 
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       '("NOBODY" "0" "1")
+                       ))
   
   (define startlife    1000.0)
   (define lifevisible  (* startlife 2.0))
@@ -1786,8 +1787,7 @@
   (jewel-init-game)
 
   (define show-jewel-help
-    (show-help (list "games" "jewel")
-	       "Jewel Help" #f))
+    (show-scribbling '(lib "games/scribblings/games.scrbl") "jewel"))
 
   (define *MAIN_WINDOW* 
           (new jewel-frame%

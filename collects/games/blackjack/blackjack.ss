@@ -53,7 +53,8 @@
 ;; Set up the table
 (define t (make-table "Blackjack" 6 3))
 (define status-pane (send t create-status-pane))
-(send t add-help-button status-pane '("games" "blackjack") "Blackjack Help" #f)
+(send t add-scribble-button status-pane
+      '(lib "games/scribblings/games.scrbl") "blackjack")
 (send t show #t)
 (send t set-double-click-action #f)
 (send t set-button-action 'left 'drag/one)

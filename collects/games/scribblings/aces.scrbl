@@ -1,4 +1,7 @@
-** To play Aces, run the "PLT Games" application.
+#lang scribble/doc
+@(require "common.ss")
+
+@gametitle["Aces" "aces" "Solitaire Card Game"]
 
 Aces is a solitaire card game.  The object is to remove all of the
 cards from the board, except the four Aces.

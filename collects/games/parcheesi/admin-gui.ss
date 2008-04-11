@@ -14,7 +14,6 @@ corresponds to the unplayed move! that's confusing.
 	   "moves.ss"
            "rules.ss"
            "best-players.ss"
-	   "../show-help.ss"
            framework
            mzlib/class
            mzlib/list

@@ -5,7 +5,7 @@
 
 #lang mzscheme
 
-(require mzlib/class mred mzlib/etc "../show-help.ss" mzlib/unit)
+(require mzlib/class mred mzlib/etc "../show-scribbling.ss" mzlib/unit)
 (provide game@)
 
 (define customs '())
@@ -527,7 +527,9 @@
   (instantiate horizontal-pane% (gcalc-frame)))
 
 (define help
-  (show-help (list "games" "gcalc") "GCalc Help" #t))
+  (show-scribbling
+   '(lib "games/scribblings/games.scrbl")
+   "gcalc"))
 
 (define file-name #f)
 (define modified? #f)

@@ -174,7 +174,9 @@
 
    [target-url ([addr (or/c string? path?)][style any/c])]
    [url-anchor ([name string?])]
-   [image-file ([path path-string?]
+   [image-file ([path (or/c path-string?
+                            (cons/c (one-of/c 'collects)
+                                    (listof bytes?)))]
                 [scale real?])])
 
   ;; ----------------------------------------

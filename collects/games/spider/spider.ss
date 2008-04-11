@@ -1,7 +1,7 @@
 #lang mzscheme
 
 (require games/cards mred mzlib/class mzlib/list mzlib/file mzlib/unit
-         "../show-help.ss")
+         "../show-scribbling.ss")
 
 (define (list-first-n l n)
   (if (zero? n)
@@ -131,7 +131,8 @@
                  (send d center)
                  (send d show #t))])
 
-      (define help (show-help '("games" "spider") "Spider Rules" #f))
+      (define help (show-scribbling '(lib "games/scribblings/games.scrbl") 
+                                    "spider"))
       (new menu-item%
 	   [label "&Rules"]
 	   [parent (make-object menu% "&Help" mb)]

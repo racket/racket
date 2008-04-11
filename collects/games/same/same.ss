@@ -4,7 +4,7 @@
            mzlib/unit
            mred
            mzlib/list
-           "../show-help.ss")
+           "../show-scribbling.ss")
   
   (provide game@)
   
@@ -352,9 +352,9 @@
       (define help-button (make-object button% "Help"
                             hp
                             (let ([show-help
-                                   (show-help
-                                    (list "games" "same")
-                                    "Same Help")])
+                                   (show-scribbling
+                                    '(lib "games/scribblings/games.scrbl")
+                                    "same")])
                               (lambda (_1 _2)
                                 (show-help)))))
       

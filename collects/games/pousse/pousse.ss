@@ -2,6 +2,7 @@
   (require "utils.ss"
            "board.ss"
            "board-size.ss"
+           "../show-scribbling.ss"
            mzlib/class
            mzlib/class100
            (all-except mzlib/unit rename) ; rename collides with class100
@@ -655,7 +656,7 @@
       (define misc-panel (make-object horizontal-panel% frame))
       (send misc-panel stretchable-height #f)
       
-      (make-object button% "Help" misc-panel (lambda (b e) (help #f)))
+      (make-object button% "Help" misc-panel (lambda (b e) (help)))
       (make-object button% "Setup..." misc-panel (lambda (b e) (setup)))
       (make-object vertical-pane% misc-panel) ; spacer
       
@@ -747,39 +748,12 @@
         (send setup-dialog show #t))
       
       ;; Help or source code window:
-      (define (help code?)
-        (define f (make-object frame% 
-                    (if code? "Pousse GUI Source Code" "Pousse Help")
-                    #f 580 300))
-        (define p (if code?
-                      (void)
-                      (make-object choice% #f '("Rules" "Using the GUI" "Writing Players")
-                        f
-                        (lambda (p ev)
-                          (send e lock #f)
-                          (send e load-file
-                                (local-file (case (send p get-selection)
-                                              [(0) "doc.txt"]
-                                              [(1) "help.txt"]
-                                              [(2) "robots.txt"])))
-			  (when (zero? (send p get-selection))
-			    ;; Delete the "run the Games app" line
-			    (send e delete 0 (send e line-start-position 2)))
-                          (send e lock #t)))))
-        (define c (make-object editor-canvas% f))
-        (define e (make-object text%))
-        (send c set-editor e)
-        (send (send (send e get-style-list) 
-                    find-named-style 
-                    "Standard")
-              set-delta
-              (make-object style-delta% 'change-family 'modern))
-        (send e load-file (local-file "doc.txt"))
-	;; Delete the "run the Games app" line
-	(send e delete 0 (send e line-start-position 2))
-        (send e lock #t)
-        (send f show #t))
-      
+      (define help
+        (show-scribbling
+         '(lib "games/scribblings/games.scrbl")
+         "pousse"))
+        
+
       ; Draw initial board
       (send canvas repaint)
       

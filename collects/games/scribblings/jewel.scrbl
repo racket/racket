@@ -1,16 +1,23 @@
-** To play Jewel, run the "PLT Games" application.
+#lang scribble/doc
+@(require "common.ss")
 
-The board is an 8x8 array of jewels of 7 types.  You need to get 3 or
-more in a row horizontally or vertically in order to score points.
+@gametitle["Jewel" "jewel" "3-D Skill Game"]
+
+The board is an 8 by 8 array of jewels of 7 types.  You need to get 3
+or more in a row horizontally or vertically in order to score points.
 You can swap any two jewels that are next to each other up and down or
 left and right.  The mechanic is to either:
 
- * Click the mouse on the first one, then drag in the direction for
-   the swap.
+@itemize[
 
- * Move a bubble using the arrow keys, lock the bubble to a jewel with
+ @item{Click the mouse on the first one, then drag in the direction for
+   the swap.}
+
+ @item{Move a bubble using the arrow keys, lock the bubble to a jewel with
    the space bar, and the swap the locked jewel with another by using
-   the arrow keys.  Space unlocks a locked bubble without swapping.
+   the arrow keys.  Space unlocks a locked bubble without swapping.}
+
+]
 
 Jewels can only be swapped if after the swap there are at least 3 or
 more same shape or color in a row or column.  Otherwise the jewels
@@ -19,15 +26,11 @@ left.  When it counts down to 0 the game is over.  Getting 3 in a row
 adds time to the clock.
 
 Hit spacebar to start a new game then select the difficulty number by
-pressing '0', '1', '2', '3' or '4'.  You can always press 'ESC' to
-exit.  During playing press 'p' to pause the game.
+pressing @onscreen{0}, @onscreen{1}, @onscreen{2}, @onscreen{3}, or
+@onscreen{0}.  You can always press ESC to exit.  During playing press
+@onscreen{P} to pause the game.
 
 The code is released under the LGPL.  The code is a conversion of Dave
 Ashley's C program to Scheme with some modifications and enhancements.
 
 Enjoy.
-
-Peter Ivanyi
-
-(Matthew edited Peter's code and help text a little: added keyboard
- support, plus other minor changes.)

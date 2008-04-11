@@ -758,7 +758,7 @@
             `((a ((name ,(url-anchor-name style)))
                  ,@(super render-element e part ri)))]
            [(image-file? style) 
-            (let* ([src (image-file-path style)]
+            (let* ([src (main-collects-relative->path (image-file-path style))]
                    [scale (image-file-scale style)]
                    [sz (if (= 1.0 scale)
                            null
@@ -776,7 +776,7 @@
                                     `((width ,(to-num w))
                                       (height ,(to-num h))))
                                   null))))])
-              `((img ((src ,(install-file src)) ,@sz))))]
+              `((img ((src ,(install-file src))) ,@sz)))]
            [else (super render-element e part ri)])))
 
       (define/override (render-table t part ri need-inline?)

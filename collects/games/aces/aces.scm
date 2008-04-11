@@ -8,7 +8,7 @@ possible to remap single click (instead of double click)?
 #lang mzscheme
 
 (require games/cards mred mzlib/class mzlib/list mzlib/unit string-constants
-         "../show-help.ss")
+         "../show-scribbling.ss")
 
 (provide game@)
 (define game@ (unit (import) (export)
@@ -16,7 +16,8 @@ possible to remap single click (instead of double click)?
 (define table (make-table "Aces" 6 5))
 
 (make-object button% (string-constant help-menu-label) table
-  (let ([show-help (show-help (list "games" "aces") "Aces Help")])
+  (let ([show-help (show-scribbling '(lib "games/scribblings/games.scrbl")
+                                    "aces")])
     (lambda x (show-help))))
 
 (define draw-pile null)
