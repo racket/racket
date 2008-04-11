@@ -451,7 +451,7 @@
                          (allow-close-with-no-filename?))
                     (case (gui-utils:unsaved-warning
                            (get-filename/untitled-name)
-                           (string-constant close-anyway)
+                           (string-constant dont-save)
                            #t
                            (or (get-top-level-window)
                                (get-can-close-parent)))

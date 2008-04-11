@@ -231,6 +231,7 @@ please adhere to these guidelines:
  (file-is-not-saved "The file \"~a\" is not saved.")
  (save "Save")
  (close-anyway "Close Anyway")
+ (dont-save "Don't Save")
  (clear-anyway "Clear Anyway")
 
  ;; menu item title
