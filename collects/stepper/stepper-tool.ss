@@ -468,7 +468,8 @@
                               (send language-level stepper:enable-let-lifting?))
 	 (send language-level stepper:show-lambdas-as-lambdas?)
          language-level
-         run-on-drscheme-side)
+         run-on-drscheme-side
+         #f)
         (send s-frame show #t)
 
         s-frame)

@@ -66,13 +66,15 @@
         boolean?                        ; track-inferred-names?
         (or/c object? (symbols 'testing))   ;; FIXME: can do better: subclass of language%       ; the language level
         (procedure? . -> . void?)       ; run-on-drscheme-side
+        boolean?                        ; disable-error-handling (to allow debugging)
         . -> .
         void?)])
 
   ; go starts a stepper instance
   ; see provide stmt for contract
   (define (go program-expander receive-result render-settings
-              show-lambdas-as-lambdas? language-level run-on-drscheme-side)
+              show-lambdas-as-lambdas? language-level run-on-drscheme-side
+              disable-error-handling)
 
     ;; finished-exps:
     ;;   (listof (list/c syntax-object? (or/c number? false?)( -> any)))
@@ -104,7 +106,7 @@
     ;;   whole be highlighted.  Is either one "wrong?"  equivalences between
     ;;   reduction semantics?
     ;;
-    ;; 2005-11-14: punting. just highlight the whole damn thing if there are
+    ;; 2005-11-14: punting. just highlight the whole darn thing if there are
     ;; any differences.  In fact, just test for eq?-ness.
 
     #;
@@ -311,10 +313,8 @@
 
     (program-expander
      (lambda ()
-       ;; swap these to allow errors to escape (e.g., when debugging)
-       #;(error-display-handler err-display-handler)
-       (void)
-       )
+       (unless disable-error-handling
+         (error-display-handler err-display-handler)))
      (lambda (expanded continue-thunk) ; iter
        (r:reset-special-values)
        (if (eof-object? expanded)

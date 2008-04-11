@@ -4,6 +4,7 @@
            mzlib/contract
 	   "model-settings.ss"
            "shared.ss"
+           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            (for-syntax scheme/base))
 
   (provide/contract [unwind (syntax? render-settings? . -> . syntax?)])
@@ -139,7 +140,7 @@
                                          (if define-type
                                              (kernel:kernel-syntax-case 
                                               unwound-body #f
-                                              [(#%plain-lambda arglist lam-body ...)
+                                              [(lambda arglist lam-body ...)
                                                (case define-type
                                                  [(shortened-proc-define)
                                                   (let ([proc-define-name
@@ -243,6 +244,8 @@
                    (syntax-case stx (if begin)
                      ;; the else clause disappears when it's a
                      ;; language-inserted else clause
+                     [(if test result)
+                      (list (unwind-cond-clause stx #`test #`result settings))]                     
                      [(if test result else-clause)
                       (cons (unwind-cond-clause stx #`test #`result settings)
                             (loop (syntax else-clause)))]
