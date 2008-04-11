@@ -8,6 +8,7 @@
            setup/main-doc
            setup/main-collects
            mzlib/list
+	   net/url
            (prefix-in xml: xml/xml)
            (for-syntax scheme/base))
   (provide render-mixin
@@ -1018,7 +1019,7 @@
 
   (define (from-root p d)
     (if (not d)
-      p
+      (url->string (path->url p))
       (let ([e-d (explode (path->complete-path d (current-directory)))]
             [e-p (explode (path->complete-path p (current-directory)))])
         (let loop ([e-d e-d]
