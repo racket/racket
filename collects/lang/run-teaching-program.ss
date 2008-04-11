@@ -12,10 +12,10 @@
                                 any/c
                                 (listof any/c)
                                 (or/c false/c (object-contract [display-results/void (-> (listof any/c) any)])))
-                               (symbol?)
+                               (symbol? boolean?)
                                any)])
 
-(define (expand-teaching-program port reader language-module teachpacks rep [module-name '#%htdp])
+(define (expand-teaching-program port reader language-module teachpacks rep [module-name '#%htdp] [enable-testing? #t])
   (let ([state 'init]
         ;; state : 'init => 'require => 'done-or-exn
         
@@ -57,7 +57,9 @@
                 `(,#'module ,module-name ,language-module 
                             ,@(map (λ (x) `(require ,x)) teachpacks)
                             ,@body-exps
-                            ,@(if (null? body-exps) '() '((run-tests) (display-results))))))
+                            ,@(if enable-testing?
+                                  (if (null? body-exps) '() '((run-tests) (display-results)))
+                                  '()))))
               rep)))]
         [(require)
          (set! state 'done-or-exn)
