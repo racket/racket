@@ -11,6 +11,7 @@
   (define current-table-mode (make-parameter #f))
   (define rendering-tt (make-parameter #f))
   (define show-link-page-numbers (make-parameter #f))
+  (define disable-images (make-parameter #f))
 
   (define-struct (toc-paragraph paragraph) ())
 
@@ -54,7 +55,7 @@
               (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
             (let ([no-number? (and (pair? number)
                                    (not (car number)))])
-              (printf "\\~a~a~a~a{"
+              (printf "\\~a~a~a"
                       (case (length number)
                         [(0 1) "sectionNewpage\n\n\\section"]
                         [(2) "subsection"]
@@ -66,10 +67,13 @@
                           "")
                       (if no-number?
                           "*"
-                          "")
-                      (if (part-style? d 'hidden)
-                          ""
-                          "[]")))
+                          ""))
+              (when (not (part-style? d 'hidden))
+                (printf "[")
+                (parameterize ([disable-images #t])
+                  (render-content (part-title-content d) d ri))
+                (printf "]")))
+            (printf "{")
             (render-content (part-title-content d) d ri)
             (printf "}")
             (when (part-style? d 'index)
@@ -166,10 +170,12 @@
                                             (/ (cadddr style) 255.0))))
                       #f)]
                [(image-file? style) 
-                (let ([fn (install-file 
-                           (main-collects-relative->path 
-                            (image-file-path style)))])
-                  (printf "\\includegraphics[scale=~a]{~a}" (image-file-scale style) fn))]
+                (if (disable-images)
+                    (void)
+                    (let ([fn (install-file 
+                               (main-collects-relative->path 
+                                (image-file-path style)))])
+                      (printf "\\includegraphics[scale=~a]{~a}" (image-file-scale style) fn)))]
                [else (super render-element e part ri)])))
           (when part-label?
             (printf "''"))
