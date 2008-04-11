@@ -72,7 +72,7 @@
                           (if (unbox typed-context?)
                               (make-rename-transformer #'id)
                               (lambda (stx) (tc-error/stx stx "The type of ~a cannot be converted to a contract" (syntax-e #'id)))))
-                        (provide (rename export-id out-id))))])))]
+                        (provide (rename-out [export-id out-id]))))])))]
       [(mem? internal-id stx-defs) 
        =>
        (lambda (b)
@@ -85,10 +85,10 @@
                        (make-rename-transformer #'id)
                        (lambda (stx)
                          (tc-error/stx stx "Macro ~a from typed module used in untyped code" (syntax-e #'out-id)))))
-                 (provide (rename export-id out-id))))))]
+                 (provide (rename-out [export-id out-id]))))))]
       [(eq? (syntax-e internal-id) (syntax-e external-id))
        #`(provide #,internal-id)]
-      [else #`(provide (rename #,internal-id #,external-id))]))
+      [else #`(provide (rename-out [#,internal-id #,external-id]))]))
   (kernel-syntax-case form #f
     [(#%provide form ...)
      (map 
