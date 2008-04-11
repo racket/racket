@@ -1349,7 +1349,11 @@
               #t)]
            [load-file
             (λ (edit event)
-              (handler:open-file)
+              (let ([fn (send edit get-filename)])
+                (handler:open-file
+                 (and fn
+                      (let-values ([(base name dir) (split-path fn)])
+                        base))))
               #t)])
       (λ (kmap)
         (let* ([map (λ (key func) 

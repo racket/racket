@@ -158,7 +158,6 @@
         
         (drscheme:app:add-language-items-to-help-menu menu))
       
-      (define/override (file-menu:open-callback item evt) (handler:open-file))
       (define/override (file-menu:new-string) (string-constant new-menu-item))
       (define/override (file-menu:open-string) (string-constant open-menu-item))
       

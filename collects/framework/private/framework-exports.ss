@@ -642,13 +642,15 @@
              ]})
 
         (handler:open-file
-         (-> (or/c false/c (is-a?/c frame:basic<%>)))
-         ()
+         (->* ()
+              ((or/c false/c path? string?))
+              (or/c false/c (is-a?/c frame:basic<%>)))
+         (((dir #f)))
          @{This function queries the user for a filename and opens the file for
            editing.  It uses @scheme[handler:edit-file] to open the file, once
            the user has chosen it.
 
-           Calls @scheme[finder:get-file] and @scheme[handler:edit-file].})
+           Calls @scheme[finder:get-file] and @scheme[handler:edit-file], passing along @scheme[dir].})
 
         (handler:install-recent-items
          ((is-a?/c menu%) . -> . void?)

@@ -1039,23 +1039,20 @@
         (super set-label (gui-utils:trim-string (get-entire-label) 200))
         (send (group:get-the-frame-group) frame-label-changed this))
       
-      (public get-entire-label get-label-prefix set-label-prefix)
-      [define get-entire-label
-        (λ ()
-          (cond
-            [(string=? "" label)
-             label-prefix]
-            [(string=? "" label-prefix)
-             label]
-            [else 
-             (string-append label " - " label-prefix)]))]
-      [define get-label-prefix (λ () label-prefix)]
-      [define set-label-prefix
-        (λ (s)
-          (when (and (string? s)
-                     (not (string=? s label-prefix)))
-            (set! label-prefix s)
-            (do-label)))]
+      (define/public (get-entire-label)
+        (cond
+          [(string=? "" label)
+           label-prefix]
+          [(string=? "" label-prefix)
+           label]
+          [else 
+           (string-append label " - " label-prefix)]))
+      (define/public (get-label-prefix) label-prefix)
+      (define/public (set-label-prefix s)
+        (when (and (string? s)
+                   (not (string=? s label-prefix)))
+          (set! label-prefix s)
+          (do-label)))
       [define/override get-label (λ () label)]
       [define/override set-label
         (λ (t)
@@ -1115,6 +1112,14 @@
           base))
       
       (inherit get-checkable-menu-item% get-menu-item%)
+      
+      (define/override (file-menu:open-callback item evt)
+        (let* ([e (get-editor)]
+               [fn (and e (send e get-filename))]
+               [dir (and fn
+                         (let-values ([(base name dir) (split-path fn)])
+                           base))])
+          (handler:open-file dir)))
       
       (define/override (file-menu:revert-on-demand item)
         (send item enable (not (send (get-editor) is-locked?))))
