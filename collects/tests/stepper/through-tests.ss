@@ -32,6 +32,8 @@
   
   (define show-all-steps (make-parameter #f))
 
+  (define disable-stepper-error-handling (make-parameter #f))
+  
   (define (stream-ify stx-thunk iter)
     (lambda ()
       (let* ([next (stx-thunk)]
@@ -43,7 +45,7 @@
     (fprintf (current-error-port) "~a: ~a\n" who (apply format fmt args)))
 
   (define (test-sequence-core namespace-spec teachpack-specs render-settings
-                              show-lambdas-as-lambdas? in-port expected-steps)
+                              show-lambdas-as-lambdas? enable-testing? in-port expected-steps)
     (let* ([current-error-display-handler (error-display-handler)]
            [all-steps
             (append expected-steps '((finished-stepping)))]
@@ -65,8 +67,7 @@
             (let ([module-id (gensym "stepper-module-name-")])
             (lambda (init iter)
               (init)
-              #;((make-expr-stream (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f module-id) iter module-id))
-              ((stream-ify (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f module-id) iter))))])
+              ((stream-ify (expand-teaching-program in-port read-syntax namespace-spec teachpack-specs #f module-id enable-testing?) iter))))])
       (let/ec escape
         (parameterize ([error-escape-handler (lambda () (escape (void)))])
           (go program-expander receive-result render-settings
@@ -74,11 +75,12 @@
               ;; language level:
               'testing
               ;; run-in-drscheme thunk:
-              (lambda (thunk) (thunk)))))
+              (lambda (thunk) (thunk))
+              (disable-stepper-error-handling))))
       (error-display-handler current-error-display-handler)))
 
   (define (test-sequence namespace-spec teachpack-specs render-settings
-                         show-lambdas-as-lambdas? exp-str expected-steps)
+                         show-lambdas-as-lambdas? enable-testing? exp-str expected-steps)
     (let ([filename (build-path test-directory "stepper-test")])
       (call-with-output-file filename
         (lambda (port) (fprintf port "~a" exp-str))
@@ -88,33 +90,33 @@
         (printf "testing string: ~v\n" exp-str))
       (letrec ([port (open-input-file filename)])
         (test-sequence-core namespace-spec teachpack-specs render-settings
-                            show-lambdas-as-lambdas? port expected-steps))))
+                            show-lambdas-as-lambdas? enable-testing? port expected-steps))))
 
-  (define (lang-level-test-sequence namespace-spec rs show-lambdas-as-lambdas?)
+  (define (lang-level-test-sequence namespace-spec rs show-lambdas-as-lambdas? enable-testing?)
     (lambda args
-      (apply test-sequence namespace-spec `() rs show-lambdas-as-lambdas? args)))
+      (apply test-sequence namespace-spec `() rs show-lambdas-as-lambdas? enable-testing? args)))
 
   (define (make-multi-level-test-sequence level-fns)
     (lambda args
       (for-each (lambda (fn) (apply fn args)) level-fns)))
 
   (define test-mz-sequence
-    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #t))
+    (lang-level-test-sequence 'mzscheme fake-mz-render-settings #t #f))
   (define test-beginner-sequence
     (lang-level-test-sequence `(lib "htdp-beginner.ss" "lang")
-                              fake-beginner-render-settings #f))
+                              fake-beginner-render-settings #f #t))
   (define test-beginner-wla-sequence
     (lang-level-test-sequence `(lib "htdp-beginner-abbr.ss" "lang")
-                              fake-beginner-wla-render-settings #f))
+                              fake-beginner-wla-render-settings #f #t))
   (define test-intermediate-sequence
     (lang-level-test-sequence `(lib "htdp-intermediate.ss" "lang")
-                              fake-intermediate-render-settings #f))
+                              fake-intermediate-render-settings #f #t))
   (define test-intermediate/lambda-sequence
     (lang-level-test-sequence `(lib "htdp-intermediate-lambda.ss" "lang")
-                              fake-intermediate/lambda-render-settings #t))
+                              fake-intermediate/lambda-render-settings #t #t))
   (define test-advanced-sequence
     (lang-level-test-sequence `(lib "htdp-advanced.ss" "lang")
-                              fake-advanced-render-settings #t))
+                              fake-advanced-render-settings #t #t))
 
   (define test-upto-int/lam
     (make-multi-level-test-sequence
@@ -142,7 +144,7 @@
 
   (define test-lazy-sequence
     (lang-level-test-sequence `(lib "lazy.ss" "lazy")
-                              fake-mz-render-settings #f))
+                              fake-mz-render-settings #f #f))
 
   ;; mutate these to values you want to examine in the repl:
   (define bell-jar-specimen-1 #f)
@@ -1347,7 +1349,7 @@
                                     ;(let ([new-custodian (make-custodian)])
                                      ; (parameterize ([current-custodian new-custodian])
                                       ;  (parameterize ([current-eventspace (make-eventspace)])
-                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #f expr-string expected-results)
+                                          (test-sequence `(lib "htdp-beginner.ss" "lang") teachpack-specs fake-beginner-render-settings #f #f expr-string expected-results)
                                     ;))
                                      ; (custodian-shutdown-all new-custodian))
       ))
@@ -1655,14 +1657,15 @@
       "(define (f2c x) x) (convert-gui f2c)" `() ; placeholder
       ))
 
-  ;; make sure to leave these off when saving, or the nightly tests will run these too...
-  #;(run-all-tests)
-  (parameterize ()
-    (run-test '(top-app)))
-  #;(parameterize ([store-steps? #t])
-    (run-tests '(top-def)))
-  #;(parameterize ([display-only-errors #t])
-    (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3)))
+  ;; run whatever tests are enabled (intended for interactive use):
+  (define (ggg)
+    #;(run-all-tests)
+    (parameterize ()
+      (run-all-tests))
+    #;(parameterize ([store-steps? #t])
+        (run-tests '(top-def)))
+    #;(parameterize ([display-only-errors #t])
+        (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3))))
   
 
 
