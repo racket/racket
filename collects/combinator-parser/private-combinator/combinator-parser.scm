@@ -52,8 +52,12 @@
                                              [else #f]))]
                           [possible-errors 
                            (lambda (matches)
-                             (filter res-possible-error 
-                                     (map (lambda (a) (if (repeat-res? a) (repeat-res-a a) a))
+                             (map (lambda (r)
+                                    (or (and (res? r) (res-possible-error r))
+                                        (and (repeat-res? r) (repeat-res-stop r))))
+                                  (filter (lambda (r)
+                                            (or (and (res? r) (res-possible-error r))
+                                                (and (repeat-res? r) (fail-type? (repeat-res-stop r)))))
                                           matches)))]
                           [result-a
                            (lambda (res)
@@ -69,14 +73,13 @@
                          [(and (pair? matched) (finished? (car matched))) (result-a (car matched))]
                          [(pair? matched) (loop (cdr matched))]
                          [(and matched (finished? matched)) (result-a matched)]
-                         [(or (null? matched) matched) 
-                          (loop ((if (lazy-choice? result) next-choice next-opt) result))]
+                         [(or (null? matched) matched) (loop (next-opt result))]
                          [else
                           (let ([p-errors (possible-errors (lazy-opts-matches result))])
                             (cond
                               [(pair? p-errors)
-                               (let ([fails (cons (lazy-opts-errors result) 
-                                                  (map res-possible-error p-errors))])
+                               (let ([fails (cons (lazy-opts-errors result) p-errors)])
+                                 #;(printf "~nfails ~a~n~n" fails)
                                  (fail-type->message
                                   (make-options-fail (rank-choice (map fail-type-chance fails))
                                                      #f
@@ -88,7 +91,7 @@
                               [(null? p-errors)
                                (fail-type->message (lazy-opts-errors result))]))])))]
                   [(or (choice-res? result) (pair? result))
-                   (printf "choice-res or pair? ~a~n" result)
+                   #;(printf "choice-res or pair? ~a~n" result)
                    (let* ([options (if (choice-res? result) (choice-res-matches result) result)]
                           [finished-options (filter (lambda (o) 
                                                       (cond [(res? o) 
@@ -132,8 +135,6 @@
                                (not (null? possible-errors)))
                            (let ([fails (cons (choice-res-errors result) 
                                               (map res-possible-error possible-errors))])
-                             #;(printf "we are gonna call fail-type->message ~a ~n" fails)
-                             ;uncomment printf, stop the loop, get the error... wtf
                              (fail-type->message
                               (make-options-fail (rank-choice (map fail-type-chance fails))
                                                  #f

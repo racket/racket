@@ -202,7 +202,7 @@
       (choose (base-type name) "type"))
     
     (define (method-type base-t)
-      (choice (list base-t voidT) "method return"))
+      (choose (base-t voidT) "method return"))
     
     (define (array-type base-t)
       (sequence (base-t (repeat (sequence (O_BRACKET C_BRACKET) id "array type"))) id "type"))
@@ -287,7 +287,7 @@
              [base (sequence (type (^ identifier)) id var-name)]
              [decl
               (cond
-                [(and expr share-type?) (choose (s&e e base) var-name)]
+                [(and expr share-type?) s&e #;(choose (s&e e base) var-name)]
                 [share-type? s]
                 [expr (choose (e base) var-name)]
                 [else base])])
@@ -506,10 +506,10 @@
                                (choose ((sequence (O_PAREN C_PAREN) id)
                                         (sequence (O_PAREN a C_PAREN) id)) "method parameter list")
                                (sequence (O_PAREN C_PAREN) id "method parameter list"))]
-             [full (sequence ((repeat m) ret (^ identifier) method-parms throws (comma-sep n "thrown types")) id "method signature")]
              [full-no-t (sequence ((repeat m) ret (^ identifier) method-parms) id "method signature")]
-             [no-mods-t (sequence (ret (^ identifier) method-parms throws (comma-sep n "thrown types")) id "method signature")]
-             [no-mods (sequence (ret (^ identifier) method-parms) id "method signature")])
+             [full (sequence ((^ full-no-t) throws (comma-sep n "thrown types")) id "method signature")]
+             [no-mods (sequence (ret (^ identifier) method-parms) id "method signature")]
+             [no-mods-t (sequence ((^ no-mods) throws (comma-sep n "thrown types")) id "method signature")])
          (cond 
            [(and m t?) (choose (full full-no-t) "method signature")]
            [m full-no-t]
@@ -546,12 +546,11 @@
             [m (sequence ((repeat modifier) interface (^ IDENTIFIER) O_BRACE body C_BRACE) id "interface definition")]
             [e (sequence (interface (^ IDENTIFIER) extends O_BRACE body C_BRACE) id "interface definition")]
             [always (sequence (interface (^ IDENTIFIER) O_BRACE body C_BRACE) id "interface definition")])
-        (choice (cond 
-                  [(and modifier extends) (list m&e m e always)]
-                  [modifier (list m always)]
-                  [extends (list e always)]
-                  [else (list always)])
-                "interface definition")))
+        (cond 
+          [(and modifier extends) (choose (m&e m) "interface definition")]
+          [modifier m]
+          [extends (choose (e always) "interface definition")]
+          [else always])))
     
     )
     
@@ -594,7 +593,6 @@
     (define (top-member mems)
       (choice mems "class or interface"))
     
-    ;Note -- should enfore name to be identifier.identifier instead of name
     (define import-dec
       (let ([name (sequence (identifier (repeat-greedy (sequence (PERIOD identifier) id "import name")))
                             id "import name")])
@@ -608,17 +606,15 @@
             [i (sequence (import body) id "program")])
         (cond
           [(and package import)
-           (choice (list p&i i ) "program")]
+           (choose (p&i i) "program")]
           [package
-           (choice (list p body) "program")]
-          [import
-           (choice (list i body) "program")]
+           (choose (p body) "program")]
+          [import i]
           [else body])))
     
     ) 
   
   ;Remembered Unsupported Features
-  ;throws clause
   ;strictfp
   ;allowing static fields in interface
   
@@ -664,16 +660,17 @@
     (define constructor (make-constructor #f (repeat-greedy init) (value+name-type prim-type)))
     
     (define interface (interface-def #f #f 
-                                     (repeat-greedy 
-                                      (sequence (method-sig SEMI_COLON) id "method signature"))))
+                                     (repeat (sequence (method-sig SEMI_COLON) id "method signature"))))
     
     (define class
-      (class-def #f #f (implements-dec identifier)
+      (class-def #f #f 
+                 (implements-dec identifier)
                  (repeat (class-body (list field method constructor)))))
     
     (define program 
-      (make-program #f (repeat import-dec) 
-                    (repeat (top-member (list class interface)))))
+      (make-program #f 
+                    (repeat-greedy import-dec) 
+                    (repeat-greedy (top-member (list class interface)))))
     
     (define interact
       (choose (field statement expression) "interactive program"))
@@ -769,7 +766,8 @@
 
     
     (define program
-      (make-program #f (repeat-greedy import-dec) 
+      (make-program #f 
+                    (repeat-greedy import-dec) 
                     (repeat-greedy (choose (class interface) "class or interface"))))
     
     (define interact

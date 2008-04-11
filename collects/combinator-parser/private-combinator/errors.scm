@@ -19,7 +19,7 @@
       (let* ([name (fail-type-name fail-type)]
              [a (a/an name)]
              [msg (lambda (m) (make-err m (fail-type-src fail-type)))])
-        (printf "fail-type->message ~a~n" fail-type)
+        #;(printf "fail-type->message ~a~n" fail-type)
         (cond
           [(terminal-fail? fail-type)
            (collapse-message

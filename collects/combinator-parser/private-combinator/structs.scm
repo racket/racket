@@ -1,9 +1,6 @@
 (module structs scheme/base
   
-  (provide (except-out (all-defined-out) 
-                       set-choice-fail-messages! 
-                       set-lazy-opts-matches!)
-           )
+  (provide (all-defined-out))
   
   (require parser-tools/lex)
     
@@ -41,59 +38,55 @@
   ;(make-lazy-choice (listof res) fail-type (listof (_ -> res)) string)
   (define-struct (lazy-choice lazy-opts) (name) #:transparent)
   
-  (define (update-choice-errors failc mss)
-    (set-choice-fail-messages! failc (cons mss (choice-fail-messages failc)))
+  (define (update-lazy-errors failc mss)
     (set-fail-type-chance! failc (max (fail-type-chance failc) (fail-type-chance mss)))
     (set-fail-type-used! failc (max (fail-type-used failc) (fail-type-used mss)))
-    (set-fail-type-may-use! failc (max (fail-type-may-use failc) (fail-type-may-use mss))))
-  (define (update-opt-errors failc mss)
-    (set-options-fail-opts! failc (cons mss (options-fail-opts failc)))
-    (set-fail-type-chance! failc (max (fail-type-chance failc) (fail-type-chance mss)))
-    (set-fail-type-used! failc (max (fail-type-used failc) (fail-type-used mss)))
-    (set-fail-type-may-use! failc (max (fail-type-may-use failc) (fail-type-may-use mss))))
-   
-  (define (make-force thunks set-thunks matches set-matches update-errors errors)
+    (set-fail-type-may-use! failc (max (fail-type-may-use failc) (fail-type-may-use mss)))
+    (if (choice-fail? failc)
+        (set-choice-fail-messages! failc (cons mss (choice-fail-messages failc)))
+        (set-options-fail-opts! failc (cons mss (options-fail-opts failc)))))
+  
+  
+  (define (next-opt lc)
     (letrec ([next 
               (lambda (lc update-errors)
-                (printf "next-opt ~a~n" lc)
+                #;(printf "next-opt ~a~n" lc)
                 (cond
-                  [(null? (thunks lc)) #f]
+                  [(null? (lazy-opts-thunks lc)) #f]
                   [else
-                   (let ([curr-res ((car (thunks lc)))])
-                     (unless (null? (thunks lc)) (set-thunks lc (cdr (thunks lc))))
+                   (let ([curr-res ((car (lazy-opts-thunks lc)))])
+                     (unless (null? (lazy-opts-thunks lc)) 
+                       (set-lazy-opts-thunks! lc (cdr (lazy-opts-thunks lc))))
                      (cond
-                       [(and (not curr-res) (not (null? (thunks lc)))) (next lc update-errors)]
-                       [(or (and (res? curr-res) (res-a curr-res))
-                            (repeat-res? curr-res))
-                        (set-matches lc (cons curr-res (matches lc)))
+                       [(and (not curr-res) (null? (lazy-opts-thunks lc))) curr-res]
+                       [(and (not curr-res) (not (null? (lazy-opts-thunks lc)))) (next lc update-errors)]
+                       [(or (and (res? curr-res) (res-a curr-res)) (repeat-res? curr-res))
+                        (set-lazy-opts-matches! lc (cons curr-res (lazy-opts-matches lc)))
                         curr-res]
                        [(lazy-opts? curr-res)
                         (let* ([next-matches (map (lambda (m) (lambda () m)) (lazy-opts-matches curr-res))]
-                               [new-update (if (lazy-choice? curr-res) update-choice-errors update-opt-errors)]
-                               [remaining (map (lambda (t) (lambda () (next curr-res 
-                                                                            (lambda (_ msg)
-                                                                              (new-update (errors curr-res) msg)))))
+                               [remaining (map (lambda (t) 
+                                                 (lambda () 
+                                                   (next curr-res 
+                                                         (lambda (_ msg) (update-lazy-errors (lazy-opts-errors curr-res) msg)))))
                                                (lazy-opts-thunks curr-res))])
-                          (set-thunks lc (append next-matches remaining (thunks lc)))
-                          (update-errors (errors lc) (lazy-opts-errors curr-res))
+                          (set-lazy-opts-thunks! lc (append next-matches remaining (lazy-opts-thunks lc)))
+                          (update-errors (lazy-opts-errors lc) (lazy-opts-errors curr-res))
                           (next lc update-errors))]
-                       [(and (not curr-res) (null? (thunks lc))) curr-res]
                        [else
-                        (update-errors (errors lc)
+                        (update-errors (lazy-opts-errors lc)
                                        (cond
                                          [(res? curr-res) (res-msg curr-res)]
                                          [else (error 'next (format "Internal error: failure other than res ~a" curr-res))]))
                         (next lc update-errors)]))]))])
-      (lambda (lc) (next lc update-errors))))
+      (next lc update-lazy-errors)))
   
-  (define next-choice 
-    (make-force lazy-opts-thunks set-lazy-opts-thunks! 
-                lazy-opts-matches set-lazy-opts-matches!
-                update-choice-errors lazy-opts-errors))
-  (define next-opt
-    (make-force lazy-opts-thunks set-lazy-opts-thunks!
-                lazy-opts-matches set-lazy-opts-matches!
-                update-opt-errors lazy-opts-errors))
+  (define (update-lazy-opts old-opts matches thunks)
+    (cond
+      [(lazy-choice? old-opts)
+       (make-lazy-choice matches (lazy-opts-errors old-opts) thunks (lazy-choice-name old-opts))]
+      [(lazy-opts? old-opts)
+       (make-lazy-opts matches (lazy-opts-errors old-opts) thunks)]))
   
   (define (fail-res rst msg) (make-res #f rst msg "" 0 #f #f))
   
