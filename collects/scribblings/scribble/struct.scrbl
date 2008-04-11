@@ -1,7 +1,8 @@
 #lang scribble/doc
 @(require scribble/manual
           "utils.ss"
-          (for-label scribble/manual-struct))
+          (for-label scribble/manual-struct
+                     setup/main-collects))
 
 @title[#:tag "struct"]{Structures And Processing}
 
@@ -512,10 +513,13 @@ Used as a style for an @scheme[element]. The @scheme[style] at this
 layer is a style for the hyperlink.}
 
 
-@defstruct[image-file ([path path-string?]
+@defstruct[image-file ([path (or/c path-string?
+                                   (cons/c 'collects (listof bytes?)))]
                        [scale real?])]{
 
-Used as a style for an @scheme[element].}
+Used as a style for an @scheme[element] to inline an image. The
+@scheme[path] field can be a result of
+@scheme[path->main-collects-relative].}
 
 
 @defproc[(block? [v any/c]) boolean?]{

@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label "main.ss"
+          (for-label games/cards
                      scheme/gui/base))
 
 @title{@bold{Cards}: Virtual Playing Cards Library}

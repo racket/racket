@@ -1,5 +1,9 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label scheme/base
+                     scheme/contract
+                     games/show-help
+                     games/show-scribbling))
 
 @title{@bold{Games}}
 
@@ -51,7 +55,21 @@ typically belong in the @scheme["Cards"] game set.
 
 @; ----------------------------------------------------------------------
 
-@section{Showing Help}
+@section{Showing Scribbled Help}
+
+@defmodule[games/show-scribbling]
+
+@defproc[(show-scribbling [mod-path module-path?]
+                          [section-tag string?])
+         (-> void?)]{
+
+Returns a thunk for opening a Scribbled section in the user's HTML
+browser. The @scheme[mod-path] is the document's main source module,
+and @scheme[section-tag] specifies the section in the document.}
+
+@; ----------------------------------------------------------------------
+
+@section{Showing Text Help}
 
 @defmodule[games/show-help]
 
@@ -85,5 +103,3 @@ verbatim, otherwise it is formatted as follows:
  @item{Other lines are paragraph-flowed to fit the window.}
 
 ]}
-
-

@@ -1,12 +1,15 @@
 #lang scribble/doc
 @(require scribble/manual
           "utils.ss"
-          (for-syntax scheme/base))
+          (for-syntax scheme/base)
+          (for-label setup/main-collects))
 
 @(define-syntax def-section-like
    (syntax-rules ()
      [(_ id result/c x ...)
       (defproc (id [#:tag tag (or/c false/c string?) #f]
+                   [#:tag-prefix tag-prefix (or/c false/c string? module-path?) #f]
+                   [#:style style any/c #f]
                    [pre-content any/c] (... ...+))
         result/c
         x ...)]))
@@ -51,6 +54,7 @@ have @schememodname[scribble/manual]).
 @section{Document Structure}
 
 @defproc[(title [#:tag tag (or/c false/c string?) #f]
+                [#:tag-prefix tag-prefix (or/c false/c string? module-path?) #f]
                 [#:style style any/c #f]
                 [#:version vers (or/c string? false/c) #f]
                 [pre-content any/c] ...+)
@@ -67,6 +71,11 @@ A style of @scheme['toc] causes sub-sections to be generated as
 separate pages in multi-page HTML output. A style of @scheme['index]
 indicates an index section whose body is rendered in two columns for
 Latex output.
+
+The @scheme[tag-prefix] argument is propagated to the generated
+structure (see @secref["tags"]). If @scheme[tag-prefix] is a module
+path, it is converted to a string using
+@scheme[module-path-prefix->string].
 
 The @scheme[vers] argument is propagated to the @scheme[title-decl]
 structure.
@@ -116,6 +125,13 @@ Returns @scheme[#t] if @scheme[v] is an item produced by
  and returns its @scheme[doc] export (without making any imports
  visible to the enclosing context). Since this form expands to
  @scheme[require], it must be used in a module or top-level context.}
+
+@defproc[(module-path-prefix->string [mod-path module-path?])
+         string?]{
+
+Converts a module path to a string by resolving it to a path, and
+using @scheme[path->main-collects-relative].}
+
 
 @; ------------------------------------------------------------------------
 
