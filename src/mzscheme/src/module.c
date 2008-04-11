@@ -3459,20 +3459,23 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
   return menv;
 }
 
-static int expstart_module(Scheme_Env *menv, Scheme_Env *env, int restart, 
-                           int eval_exp, int eval_run)
+static void expstart_module(Scheme_Env *menv, Scheme_Env *env, int restart, 
+                            int eval_exp, int eval_run)
 {
+  int delay_run = ((!eval_exp && (menv->phase >= 0))
+                   || (!eval_run && (menv->phase == -1)));
+
   if (!restart) {
     if (menv && menv->et_running) {
       /* show("chck", menv, with_tt); */
-      if (eval_exp && menv->lazy_syntax)
+      if (menv->lazy_syntax && !delay_run)
 	finish_expstart_module(menv);
-      return menv->lazy_syntax;
+      return;
     }
   }
 
   if (menv->module->primitive) {
-    return 0;
+    return;
   }
 
   show("exps", menv, eval_exp, eval_run);
@@ -3481,14 +3484,14 @@ static int expstart_module(Scheme_Env *menv, Scheme_Env *env, int restart,
   if (scheme_starting_up)
     menv->attached = 1; /* protect initial modules from redefinition, etc. */
 
-  if (!eval_exp)
+  if (delay_run)
     menv->lazy_syntax = 1;
   else
     finish_expstart_module(menv);
 
   show_done("exp!", menv, eval_exp, eval_run);
 
-  return menv->lazy_syntax;
+  return;
 }
 
 static void finish_expstart_module(Scheme_Env *menv)
@@ -3620,6 +3623,9 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
       return;
     }
   } else if (env->phase < 0) {
+    if (env->phase == -1) {
+      expstart_module(menv, env, restart, eval_exp, eval_run);
+    }
     show_done("nrn-", menv, eval_exp, eval_run);
     return;
   } else {
