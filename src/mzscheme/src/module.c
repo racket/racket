@@ -195,7 +195,7 @@ static Scheme_Bucket_Table *modpath_table;
 
 typedef void (*Check_Func)(Scheme_Object *prnt_name, Scheme_Object *name, 
                            Scheme_Object *nominal_modname, Scheme_Object *nominal_export,
-			   Scheme_Object *modname, Scheme_Object *srcname, 
+			   Scheme_Object *modname, Scheme_Object *srcname, int exet,
 			   int isval, void *data, Scheme_Object *e, Scheme_Object *form, 
                            Scheme_Object *err_src, Scheme_Object *mark_src,
                            Scheme_Object *to_phase, Scheme_Object *src_phase_index,
@@ -2018,7 +2018,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       saw_mb = 1;
 
     if (required) {
-      vec = scheme_make_vector(8, NULL);
+      vec = scheme_make_vector(9, NULL);
       nml = scheme_make_pair(idx, scheme_null);
       SCHEME_VEC_ELS(vec)[0] = nml;
       SCHEME_VEC_ELS(vec)[1] = midx;
@@ -2028,6 +2028,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       SCHEME_VEC_ELS(vec)[5] = orig_src;
       SCHEME_VEC_ELS(vec)[6] = mark_src;
       SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
+      SCHEME_VEC_ELS(vec)[8] = exets ? scheme_make_integer(exets[i]) : 0;
       scheme_hash_set(required, exs[i], vec);
     }
   }
@@ -2043,7 +2044,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
       numvals = kernel->me->rt->num_var_provides;
       for (i = kernel->me->rt->num_provides; i--; ) {
         if (!SAME_OBJ(pt->kernel_exclusion, exs[i])) {
-          vec = scheme_make_vector(8, NULL);
+          vec = scheme_make_vector(9, NULL);
           nml = scheme_make_pair(idx, scheme_null);
           SCHEME_VEC_ELS(vec)[0] = nml;
           SCHEME_VEC_ELS(vec)[1] = kernel_modidx;
@@ -2053,6 +2054,7 @@ static int do_add_simple_require_renames(Scheme_Object *rn,
           SCHEME_VEC_ELS(vec)[5] = orig_src;
           SCHEME_VEC_ELS(vec)[6] = mark_src;
           SCHEME_VEC_ELS(vec)[7] = (can_override ? scheme_true : scheme_false);
+          SCHEME_VEC_ELS(vec)[8] = scheme_make_integer(0);
           scheme_hash_set(required, exs[i], vec);
         }
       }
@@ -5050,7 +5052,7 @@ Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *e
 
 static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name, 
                                Scheme_Object *nominal_modidx, Scheme_Object *nominal_name,
-			       Scheme_Object *modidx, Scheme_Object *exname,
+			       Scheme_Object *modidx, Scheme_Object *exname, int exet,
 			       int isval, void *tables, Scheme_Object *e, Scheme_Object *form, 
                                Scheme_Object *err_src, Scheme_Object *mark_src,
                                Scheme_Object *phase, Scheme_Object *src_phase_index,
@@ -5142,7 +5144,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
   }
 
   /* Remember require: */
-  vec = scheme_make_vector(8, NULL);
+  vec = scheme_make_vector(9, NULL);
   nml = scheme_make_pair(nominal_modidx, scheme_null);
   SCHEME_VEC_ELS(vec)[0] = nml;
   SCHEME_VEC_ELS(vec)[1] = modidx;
@@ -5152,6 +5154,7 @@ static void check_require_name(Scheme_Object *prnt_name, Scheme_Object *name,
   SCHEME_VEC_ELS(vec)[5] = (err_src ? err_src : scheme_false);
   SCHEME_VEC_ELS(vec)[6] = (mark_src ? mark_src : scheme_false);
   SCHEME_VEC_ELS(vec)[7] = scheme_false;
+  SCHEME_VEC_ELS(vec)[8] = scheme_make_integer(exet);
   scheme_hash_set(required, name, vec);
 }
 
@@ -6681,11 +6684,8 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
       exss = MALLOC_N(Scheme_Object *, count);
       exsnoms = MALLOC_N(Scheme_Object *, count);
       exps = MALLOC_N_ATOMIC(char, count);
-      if (SAME_OBJ(phase, scheme_make_integer(1))) {
-        exets = MALLOC_N_ATOMIC(char, count);
-        memset(exets, 0, count);
-      } else
-        exets = NULL;
+      exets = MALLOC_N_ATOMIC(char, count);
+      memset(exets, 0, count);
 
       /* Do non-syntax first. */
       for (count = 0, i = provided->size; i--; ) {
@@ -6718,7 +6718,7 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
             exss[count] = scheme_false; /* means "self" */
             exsnoms[count] = scheme_null; /* since "self" */
             exps[count] = protected;
-            if (exets)
+            if (SAME_OBJ(phase, scheme_make_integer(1)))
               exets[count] = 1;
             count++;
           } else if (genv 
@@ -6745,6 +6745,9 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
                 noms = adjust_for_rename(exs[count], SCHEME_VEC_ELS(v)[4], SCHEME_VEC_ELS(v)[0]);
                 exsnoms[count] = noms;
                 exps[count] = protected;
+                if (SAME_OBJ(SCHEME_VEC_ELS(v)[8], scheme_make_integer(1)))
+                  exets[count] = 1;
+                
                 count++;
               }
             }
@@ -6785,8 +6788,6 @@ char *compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table 
             exss[count] = scheme_false; /* means "self" */
             exsnoms[count] = scheme_null; /* since "self" */
             exps[count] = protected;
-            if (exets)
-              exets[count] = 1;
             count++;
           } else if ((v = scheme_hash_get(required, name))) {
             /* Required */
@@ -7706,7 +7707,8 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
           }
 
           if (ck)
-            ck(prnt_iname, iname, nominal_modidx, exs[j], modidx, exsns[j], (j < var_count), 
+            ck(prnt_iname, iname, nominal_modidx, exs[j], modidx, exsns[j], exets ? exets[j] : 0,
+               (j < var_count), 
                data, cki, form, err_src, mark_src, to_phase, src_phase_index, pt->phase_index);
 
           if (!is_kern) {
@@ -8253,7 +8255,7 @@ void parse_requires(Scheme_Object *form,
 
 static void check_dup_require(Scheme_Object *prnt_name, Scheme_Object *name, 
                               Scheme_Object *nominal_modidx, Scheme_Object *nominal_name, 
-			      Scheme_Object *modidx, Scheme_Object *srcname, 
+			      Scheme_Object *modidx, Scheme_Object *srcname, int exet,
 			      int isval, void *ht, Scheme_Object *e, Scheme_Object *form, 
                               Scheme_Object *err_src, Scheme_Object *mark_src, 
                               Scheme_Object *to_phase, Scheme_Object *src_phase_index,
