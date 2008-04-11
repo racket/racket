@@ -1850,7 +1850,11 @@
 
   (provide commandline)
   (define (commandline . s)
-    (make-paragraph (list (hspace 2) (apply tt s))))
+    (make-paragraph (cons (hspace 2) (map (lambda (s)
+                                            (if (string? s)
+                                                (make-element 'tt (list s))
+                                                s))
+                                          s))))
   
   (define (elemtag t . body)
     (make-target-element #f (decode-content body) `(elem ,t)))

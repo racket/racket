@@ -777,7 +777,11 @@
                                     `((width ,(to-num w))
                                       (height ,(to-num h))))
                                   null))))])
-              `((img ((src ,(install-file src))) ,@sz)))]
+              `((img ((src ,(let ([p (install-file src)])
+                              (if (path? p)
+                                  (url->string (path->url p))
+                                  p))))
+                     ,@sz)))]
            [else (super render-element e part ri)])))
 
       (define/override (render-table t part ri need-inline?)

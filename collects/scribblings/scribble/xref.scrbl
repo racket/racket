@@ -133,19 +133,28 @@ the binding and its original name.}
 
 @defproc[(xref-render [xref xref?]
                       [doc part?]
-                      [dest path-string?]
+                      [dest (or/c path-string? false/c)]
                       [#:render% using-render% (subclass?/c render%)
-                                 (render-mixin render%)])
-         void?]{
+                                 (render-mixin render%)]
+                      [#:refer-to-existing-files? use-existing? any/c (not dest)])
+         (or/c void? any/c)]{
 
 Renders @scheme[doc] using the cross-reference info in @scheme[xref]
 to the destination @scheme[dest]. For example, @scheme[doc] might be a
 generated document of search results using link tags described in
 @scheme[xref].
 
+If @scheme[dest] is @scheme[#f], no file is written, and the result is
+an X-expression for the rendered page. Otherwise, the file
+@scheme[dest] is written and the result is @|void-const|.
+
 The optional @scheme[using-render%] argument is as for
 @scheme[load-xref]. It determines the kind of output that is
-generated.}
+generated.
+
+If @scheme[use-existing?] is true, then files referenced during
+rendering (such as image files) are referenced from their existing
+locations, instead of copying to the directory of @scheme[dest].}
 
 
 @defproc[(xref-index [xref xref?]) (listof entry?)]{

@@ -63,20 +63,20 @@
 ;; dest-file can be #f, which will make it return a string holding the
 ;; resulting html
 (define (xref-render xrefs doc dest-file
-                     #:render% [render% (html:render-mixin render%)])
-  ;; In case rendering writes a file (like an image file), which to the
-  ;; temp directory:
-  (parameterize ([current-directory (find-system-path 'temp-dir)])
-    (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
-           [renderer (new render% [dest-dir (and dest-file (path-only dest-file))]
-                          [css-path 'inline])]
-           [ci (send renderer collect (list doc) (list dest-file))]
-           [_ (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))]
-           [ri (send renderer resolve (list doc) (list dest-file) ci)]
-           [xs (send renderer render (list doc) (list dest-file) ri)])
-      (if dest-file
-          (void)
-          (car xs)))))
+                     #:render% [render% (html:render-mixin render%)]
+                     #:refer-to-existing-files? [use-existing? (not dest-file)])
+  (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
+         [renderer (new render% 
+                        [dest-dir (and dest-file (path-only dest-file))]
+                        [refer-to-existing-files use-existing?]
+                        [css-path 'inline])]
+         [ci (send renderer collect (list doc) (list dest-file))]
+         [_ (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))]
+         [ri (send renderer resolve (list doc) (list dest-file) ci)]
+         [xs (send renderer render (list doc) (list dest-file) ri)])
+    (if dest-file
+        (void)
+        (car xs))))
 
 ;; Returns (values <tag-or-#f> <form?>)
 (define xref-binding-tag

@@ -105,7 +105,7 @@
   (let-values ([(file anchor) (xref-tag->path+anchor xref t)])
     (printf "Sending to web browser...\n  file: ~a\n" file)
     (when anchor (printf "  anchor: ~a\n" anchor))
-    (unless (send-url/file file #:fragment (uri-encode anchor))
+    (unless (send-url/file file #:fragment (and anchor (uri-encode anchor)))
       (error 'help "browser launch failed"))))
 
 (define generate-search-results #f)

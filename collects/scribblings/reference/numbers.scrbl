@@ -75,14 +75,14 @@ noted above). Two numbers are @scheme[equal?] when they are
 @; ----------------------------------------
 @section{Number Types}
 
-@defproc[(number? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v]
+@defproc[(number? [v any/c]) boolean?]{Returns @scheme[#t] if @scheme[v]
  is a number, @scheme[#f] otherwise.
 
 @examples[(number? 1) (number? 2+3i) (number? "hello")]}
 
 
-@defproc[(complex? [v any/c]) boolean?]{ Returns @scheme[(number? #,
- @scheme[v])], because all numbers are @tech{complex numbers}.}
+@defproc[(complex? [v any/c]) boolean?]{ Returns @scheme[(number? v)],
+because all numbers are @tech{complex numbers}.}
 
 
 @defproc[(real? [v any/c]) boolean?]{ Returns @scheme[#t] if @scheme[v] is

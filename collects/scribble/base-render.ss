@@ -13,7 +13,8 @@
 (define render%
   (class object%
 
-    (init-field dest-dir)
+    (init-field dest-dir
+                [refer-to-existing-files #f])
 
     (define/public (get-dest-directory) dest-dir)
 
@@ -370,29 +371,33 @@
     ;; ----------------------------------------
 
     (define/public (install-file fn)
-      (let ([src-dir (path-only fn)]
-            [dest-dir (get-dest-directory)]
-            [fn (file-name-from-path fn)])
-        (let ([src-file (build-path (or src-dir (current-directory)) fn)]
-              [dest-file (build-path (or dest-dir (current-directory)) fn)])
-          (unless (and (file-exists? dest-file)
-                       (call-with-input-file*
-                        src-file
-                        (lambda (src)
-                          (call-with-input-file* 
-                           dest-file
-                           (lambda (dest)
-                             (or (equal? (port-file-identity src)
-                                         (port-file-identity dest))
-                                 (let loop ()
-                                   (let ([s (read-bytes 4096 src)]
-                                         [d (read-bytes 4096 dest)])
-                                     (and (equal? s d)
-                                          (or (eof-object? s) (loop)))))))))))
-            (when (file-exists? dest-file) (delete-file dest-file))
-            (make-directory* (path-only dest-file))
-            (copy-file src-file dest-file))
-          (path->string fn))))
+      (if refer-to-existing-files
+          (if (string? fn)
+              (string->path fn)
+              fn)
+          (let ([src-dir (path-only fn)]
+                [dest-dir (get-dest-directory)]
+                [fn (file-name-from-path fn)])
+            (let ([src-file (build-path (or src-dir (current-directory)) fn)]
+                  [dest-file (build-path (or dest-dir (current-directory)) fn)])
+              (unless (and (file-exists? dest-file)
+                           (call-with-input-file*
+                            src-file
+                            (lambda (src)
+                              (call-with-input-file* 
+                               dest-file
+                               (lambda (dest)
+                                 (or (equal? (port-file-identity src)
+                                             (port-file-identity dest))
+                                     (let loop ()
+                                       (let ([s (read-bytes 4096 src)]
+                                             [d (read-bytes 4096 dest)])
+                                         (and (equal? s d)
+                                              (or (eof-object? s) (loop)))))))))))
+                (when (file-exists? dest-file) (delete-file dest-file))
+                (make-directory* (path-only dest-file))
+                (copy-file src-file dest-file))
+              (path->string fn)))))
 
     ;; ----------------------------------------
 
