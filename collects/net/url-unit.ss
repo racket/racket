@@ -164,7 +164,7 @@
              [else (build-path)]) ; error
             (let ([elems (map string->path-element/same strs)])
               (if (url-path-absolute? url)
-                  (apply build-path "/" elems)
+                  (apply build-path (bytes->path #"/" 'unix) elems)
                   (apply build-path elems))))))
 
     ;; file://get-pure-port : url -> in-port

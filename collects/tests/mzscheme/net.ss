@@ -282,10 +282,12 @@
   (test-s->u #("file" #f "" #f #t (#("abc") #("def.html")) () #f)
              "file:///abc/def.html")
   (test "file:///abc/def.html" url->string (string->url "file:///abc/def.html"))
-  (test "file://a/b" url->string (string->url "file://a/b"))
+  (parameterize ([file-url-path-convention-type 'unix])
+    (test "file://a/b" url->string (string->url "file://a/b")))
 
-  (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) () #f)
-             "file://localhost/abc/def.html")
+  (parameterize ([file-url-path-convention-type 'unix])
+    (test-s->u #("file" #f "localhost" #f #t (#("abc") #("def.html")) () #f)
+               "file://localhost/abc/def.html"))
 
   ;; test files: urls with colons, and the different parsing on Windows
   (test-s->u #("file" #f "localhost" 123 #t (#("abc") #("def.html")) () #f)
