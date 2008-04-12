@@ -226,15 +226,27 @@ Unfilled and filled ellipses.}
 Unfilled and filled rectangles.}
 
 @defproc*[([(rounded-rectangle [w real?] [h real?] 
-                               [corner-radius real? 0.25])
+                               [corner-radius real? -0.25]
+                               [#:angle angle real? 0])
             pict?]
            [(filled-rounded-rectangle [w real?] [h real?]
-                                      [corner-radius real? 0.25])
+                                      [corner-radius real? -0.25]
+                                      [#:angle angle real? 0])
             pict?])]{
 
-Unfilled and filled rectangles with rounded corners. If the
-@scheme[corner-radius] is less than @scheme[1], then it is a
-percentage of the smaller of @scheme[width] and @scheme[height].}
+Unfilled and filled rectangles with rounded corners.  The
+@scheme[corner-radius] is used to determine how much
+rounding occurs in the corners. If it is a positive number,
+then it determines the radius of a circle touching the edges
+in each corner, and the rounding of the rectangle follow the
+edge of those circles. If it is a negative number, then the
+radius of the circles in the corners is the absolute value of the
+@scheme[corner-radius] times the smaller of @scheme[width]
+and @scheme[height].
+
+The @scheme[angle] determines how much the rectangle is
+rotated, in radians.
+}
 
 @defproc[(bitmap [img (or/c path-string? (is-a?/c bitmap%))])
          pict]{

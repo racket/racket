@@ -1,10 +1,4 @@
-
-(module utils mzscheme
-  (require mzlib/class
-	   mzlib/math
-	   mzlib/etc
-	   mzlib/contract
-           mred)
+#lang scheme/gui
 
   (require "mrpict.ss")
 
@@ -64,26 +58,27 @@
 	   hyperlinkize)
   
   (provide/contract 
-   [pin-line (opt-> (pict?
-                     pict? (-> pict? pict? (values number? number?))
-                     pict? (-> pict? pict? (values number? number?)))
-                    ((union false/c number?)
-                     (union false/c string?)
-                     boolean?)
-                    pict?)]
-   [pin-arrow-line (opt-> (number? pict?
+   [pin-line (->* (pict?
+                   pict? (-> pict? pict? (values number? number?))
+                   pict? (-> pict? pict? (values number? number?)))
+                  ((or/c false/c number?)
+                   (or/c false/c string?)
+                   boolean?)
+                  pict?)]
+   [pin-arrow-line (->* (number?
+                         pict?
+                         pict? (-> pict? pict? (values number? number?))
+                         pict? (-> pict? pict? (values number? number?)))
+                        ((or/c false/c number?) 
+                         (or/c false/c string?)
+                         boolean?
+                         boolean?)
+                        pict?)]
+   [pin-arrows-line (->* (number? pict?
                            pict? (-> pict? pict? (values number? number?))
                            pict? (-> pict? pict? (values number? number?)))
-                          ((union false/c number?) 
-                           (union false/c string?)
-                           boolean?
-                           boolean?)
-                          pict?)]
-   [pin-arrows-line (opt-> (number? pict?
-                           pict? (-> pict? pict? (values number? number?))
-                           pict? (-> pict? pict? (values number? number?)))
-                          ((union false/c number?)
-                           (union false/c string?)
+                          ((or/c false/c number?)
+                           (or/c false/c string?)
                            boolean?
                            boolean?)
                           pict?)])
@@ -277,30 +272,34 @@
      w
      h))
   
-  (define filled-rounded-rectangle
-    (opt-lambda (w h [corner -0.25])
-      (dc
-       (lambda (dc x y)
-	 (let ([b (send dc get-brush)])
-	   (send dc set-brush (send the-brush-list find-or-create-brush
-				    (send (send dc get-pen) get-color)
-				    'solid))
-	   (send dc draw-rounded-rectangle x y w h corner)
-	   (send dc set-brush b)))
-       w
-       h)))
+  (define (rounded-rectangle w h [corner-radius 0.25] #:angle [angle 0])
+    (let ([dc-path (new dc-path%)])
+      (send dc-path rounded-rectangle 0 0 w h (- corner-radius))
+      (send dc-path rotate angle)
+      (let-values ([(x y w h) (send dc-path get-bounding-box)])
+        (dc (λ (dc dx dy) 
+              (let ([brush (send dc get-brush)])
+                (send dc set-brush (send the-brush-list find-or-create-brush
+                                         "white" 'transparent))
+                (send dc draw-path dc-path (- dx x) (- dy y))
+                (send dc set-brush brush)))
+            w
+            h))))
   
-  (define rounded-rectangle
-    (opt-lambda (w h [corner -0.25])
-      (dc
-       (lambda (dc x y)
-	 (let ([b (send dc get-brush)])
-	   (send dc set-brush (send the-brush-list find-or-create-brush
-				    "white" 'transparent))
-	   (send dc draw-rounded-rectangle x y w h corner)
-	   (send dc set-brush b)))
-       w
-       h)))
+  (define (filled-rounded-rectangle w h [corner-radius 0.25] #:angle [angle 0])
+    (let ([dc-path (new dc-path%)])
+      (send dc-path rounded-rectangle 0 0 w h (- corner-radius))
+      (send dc-path rotate angle)
+      (let-values ([(x y w h) (send dc-path get-bounding-box)])
+        (dc (λ (dc dx dy) 
+              (let ([brush (send dc get-brush)])
+                (send dc set-brush (send the-brush-list find-or-create-brush
+                                         (send (send dc get-pen) get-color)
+                                         'solid))
+                (send dc draw-path dc-path (- dx x) (- dy y))
+                (send dc set-brush brush)))
+            w
+            h))))
   
   (define (circle size) (ellipse size size))
   
@@ -361,7 +360,7 @@
        w h)]))
 
   (define file-icon
-    (opt-lambda (w h gray [fancy? #f])
+    (lambda (w h gray [fancy? #f])
       (dc
        (let* ([sw (lambda (x) (* (/ w 110) x))]
 	      [sh (lambda (y) (* (/ h 150) y))]
@@ -410,7 +409,7 @@
        w h)))
 
   (define angel-wing
-    (opt-lambda (w h left?)
+    (lambda (w h left?)
       (dc
        (lambda (dc x y)
 	 (let-values ([(sx sy) (send dc get-scale)]
@@ -449,7 +448,7 @@
        w h)))
 
   (define desktop-machine
-    (opt-lambda (s [style null])
+    (lambda (s [style null])
       (define icon
 	(let ([bm (if (and (list? style) (memq 'plt style))
 		      (make-object bitmap% (build-path (collection-path "icons") "plt-small-shield.gif"))
@@ -546,7 +545,7 @@
 	  icon)))
 
   (define jack-o-lantern
-    (opt-lambda (size [pumpkin-color "orange"] [face-color "black"] [stem-color "brown"])
+    (lambda (size [pumpkin-color "orange"] [face-color "black"] [stem-color "brown"])
       (dc (lambda (dc x y)
 	    (let ([b (send dc get-brush)]
 		  [p (send dc get-pen)]
@@ -643,7 +642,7 @@
 	  size (* 1.1 size))))
 
   (define standard-fish 
-    (opt-lambda (w h [direction 'left] [c "blue"] [ec #f] [mouth-open #f])
+    (lambda (w h [direction 'left] [c "blue"] [ec #f] [mouth-open #f])
       (define no-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
       (define color (if (string? c) (make-object color% c) c))
       (define dark-color (scale-color 0.8 color))
@@ -824,15 +823,15 @@
          base))))
 
   (define add-line
-    (opt-lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
+    (lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
       (-add-line base src find-src dest find-dest thickness color #f #f under? #t)))
   
   (define add-arrow-line
-    (opt-lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
       (-add-line base src find-src dest find-dest thickness color arrow-size #f under? #t)))
   
   (define add-arrows-line
-    (opt-lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
       (-add-line base src find-src dest find-dest thickness color arrow-size arrow-size under? #t)))
 
   (define (flip-find-y find-)
@@ -841,17 +840,17 @@
 	(values x (- (pict-height base) y)))))
 
   (define pin-line
-    (opt-lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
+    (lambda (base src find-src dest find-dest [thickness #f] [color #f] [under? #f])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
 		 thickness color #f #f under? #t)))
   
   (define pin-arrow-line
-    (opt-lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
 		 thickness color arrow-size #f under? solid-head?)))
   
   (define pin-arrows-line
-    (opt-lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
+    (lambda (arrow-size base src find-src dest find-dest [thickness #f] [color #f] [under? #f] [solid-head? #t])
       (-add-line base src (flip-find-y find-src) dest (flip-find-y find-dest)
                  thickness color arrow-size arrow-size under? solid-head?)))
   
@@ -875,10 +874,10 @@
 	  (frame (inset (colorize (text "bitmap failed") "red") 2)))))
   
   (define find-brush
-    (opt-lambda (color [style 'solid])
+    (lambda (color [style 'solid])
       (send the-brush-list find-or-create-brush color style)))
   (define find-pen
-    (opt-lambda (color [size 1] [style 'solid])
+    (lambda (color [size 1] [style 'solid])
       (send the-pen-list find-or-create-pen color size style)))  
 
   (define (color-series dc steps dstep start-c end-c f pen? brush?)
@@ -1033,7 +1032,7 @@
   
   
   (provide/contract [explode-star
-                     (-> number? number?  number? number? (union (is-a?/c color%) string?) pict?)])
+                     (-> number? number?  number? number? (or/c (is-a?/c color%) string?) pict?)])
   ;; abstract-explosion number number number number color -> pict
   (define (explode-star small-rad large-rad points line-size line-color)
     (define (find-xy radius theta)
@@ -1083,4 +1082,4 @@
        (* large-rad 2)
        0
        0)))
-  )
+ 
