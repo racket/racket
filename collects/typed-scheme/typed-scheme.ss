@@ -5,6 +5,7 @@
          "private/extra-procs.ss"
          "private/internal-forms.ss"
          "private/base-env.ss"
+         "private/base-types.ss"
          (for-syntax 
           scheme/base
           "private/type-utils.ss"

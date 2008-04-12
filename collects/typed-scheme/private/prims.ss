@@ -40,7 +40,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
          (except-in (lib "contract.ss") ->)
          (only-in (lib "contract.ss") [-> c->])
          (lib "struct.ss")
-         "base-env.ss")
+         "base-types.ss")
 
 
 

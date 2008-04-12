@@ -20,11 +20,13 @@
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type id type)
+  ;(printf "register-type ~a~n" (syntax-e id))
   (module-identifier-mapping-put! the-mapping id type))
 
 ;; add a single type to the mapping
 ;; identifier type -> void
 (define (register-type/undefined id type)
+  ;(printf "register-type/undef ~a~n" (syntax-e id))
   (module-identifier-mapping-put! the-mapping id (box type)))
 
 ;; add a bunch of types to the mapping
