@@ -1,14 +1,13 @@
 #lang scribble/doc
-@(require scribble/manual
-          (for-label scheme/base
-                     scheme/contract
-                     "../graphics.ss"))
+@(require "common.ss"
+          (for-label "../graphics.ss"
+                     "../graphics-sig.ss"
+                     "../graphics-unit.ss"
+                     "../graphics-posn-less-unit.ss"))
 
 @title{@bold{Graphics}: Legacy Library}
 
-@table-of-contents[]
-
-@section[#:style 'toc]{Viewport Graphics}
+@defmodule[graphics/graphics]
 
 The viewport graphics library is a relatively simple toolbox of
 graphics commands. The library is not very powerful; it is intended as
@@ -20,13 +19,11 @@ commands available within Chez Scheme at Rice University. The
 functionality of that library has been reproduced (with backward
 compatibility) in this version.
 
-@defmodule[graphics/graphics]
-
-@local-table-of-contents[]
+@table-of-contents[]
 
 @; ----------------------------------------------------------------------
 
-@subsection{Basic Commands}
+@section{Basic Commands}
 
 @defproc[(open-graphics) void?]{
 
@@ -85,7 +82,7 @@ for drawing), @scheme[#f] otherwise.}
 
 @; ----------------------------------------------------------------------
 
-@subsection{Position Operations}
+@section[#:tag "posn"]{Position Operations}
 
 A position is a pixel location within a viewport.  The upper-left
 corner is pixel @math{(0, 0)}, and positions increase to the left and
@@ -120,7 +117,7 @@ to draw.}
 
 @; ----------------------------------------------------------------------
 
-@subsection{Color Operations}
+@section{Color Operations}
 
 A color can be represented in three ways: as a color index (an integer
 in 0 to 299, inclusive), as a color name string, or as a @scheme[rgb]
@@ -151,7 +148,7 @@ color or @scheme[#f] otherwise.}
 
 @; ----------------------------------------------------------------------
 
-@subsection{Draw, Clear, and Flip Operations}
+@section{Draw, Clear, and Flip Operations}
 
 The following are the basic graphics operations for drawing to a
 viewport.  Each function takes a viewport as its argument and returns
@@ -166,7 +163,7 @@ colored, @schemeidfont{clear-} functions make them white, and
 @schemeidfont{flip-} commands @deftech{invert} pixels (which makes
 black white, white black, and is otherwise ill-defined).
 
-@subsubsection{Viewports}
+@subsection{Viewports}
 
 @defproc[((draw-viewport [viewport viewport?])
           [color (or/c (integer-in 0 299)
@@ -195,7 +192,7 @@ Copies the content of @scheme[source] into @scheme[dest].}
 
 @; ----------------------------------------
 
-@subsubsection{Pixels}
+@subsection{Pixels}
 
 @defproc[((draw-pixel [viewport viewport?]) 
           [p posn?]
@@ -221,7 +218,7 @@ Whitens the pixel in @scheme[viewport] at @scheme[p].}
 
 @; ----------------------------------------
 
-@subsubsection{Lines}
+@subsection{Lines}
 
 @defproc[((draw-line [viewport viewport?]) 
           [p1 posn?]
@@ -255,7 +252,7 @@ and @scheme[p2].}
 
 @; ----------------------------------------
 
-@subsubsection{Rectangles}
+@subsection{Rectangles}
 
 @defproc[((draw-rectangle [viewport viewport?]) 
           [p posn?]
@@ -328,7 +325,7 @@ to @scheme[draw-solid-rectangle].}
 
 @; ----------------------------------------
 
-@subsubsection{Ellipses}
+@subsection{Ellipses}
 
 @defproc[((draw-ellipse [viewport viewport?]) 
           [p posn?]
@@ -401,7 +398,7 @@ to @scheme[draw-solid-ellipse].}
 
 @; ----------------------------------------
 
-@subsubsection{Polygons}
+@subsection{Polygons}
 
 @defproc[((draw-polygon [viewport viewport?]) 
           [points (listof posn?)]
@@ -468,7 +465,7 @@ Whitens a polygon border in @scheme[viewport], analogous to
 
 @; ----------------------------------------
 
-@subsubsection{Strings}
+@subsection{Strings}
 
 @defproc[((draw-string [viewport viewport?]) 
           [p posn?]
@@ -502,7 +499,7 @@ The lower left of the string begins at @scheme[p].}
 
 @; ----------------------------------------
 
-@subsubsection{Pixmaps}
+@subsection{Pixmaps}
 
 @defproc[(((draw-pixmap-posn [file path-string?] 
                              [type (one-of/c 'unknown 'unknown/mask 
@@ -552,95 +549,90 @@ The @scheme[type] argument determines the kind of file that is written.}
 
 @; ----------------------------------------
 
-@;{
+@section{World Operations}
 
-@subsection{World Operations}
+Every canvas comes with an associated world. A client program can set
+the world, start the world's clock, stop the world's clock, and deal
+with tick events (the clock ticks) and keyboard inputs (keyevents).
 
-Every canvas comes with an associated world. A client program can set the world,
-start the world's clock, stop the world's clock, and deal with tick events (the
-clock ticks) and keyboard inputs (keyevents). 
+@defproc[((init-world [viewport viewport?]) [v any/c]) void?]{
 
-@itemize{
-@item{\Function{init-world}
-  @scheme[((init-world @scheme[viewport]) X)] 
-Takes a viewport descriptor.  It returns a function whose input becomes the
-initial value of the world associated with this canvas.}
+Sets the initial value of @scheme[viewport]'s world to @scheme[v].}
 
-@item{\Function{set-on-tick-event}
-  @scheme[((set-on-tick-event @scheme[viewport]) number @scheme[unary procedure])] 
-Takes a viewport descriptor.  It returns a function whose first input is a
-  number and the second one is a function from worlds to worlds. The number
-  determines how frequently the clock ticks. The given function is called for
-  every clock tick on the current world; the result becomes the next world.} 
+@defproc[((set-on-tick-event [viewport viewport?])
+          [secs real?] [update-callback (any/c . -> . any/c)]) void?]{
 
-@item{\Function{stop-tick}
-  @scheme[((stop-tick @scheme[viewport]))] 
-Takes a viewport descriptor.  It returns a function of no arguments that can
-  stop the clock for this canvas's world.} 
+For @scheme[viewport], sets @scheme[update-callback] to be invoked to
+transform the world value every @scheme[secs] seconds. Only one
+callback is installed at a time.}
 
-@item{\Function{set-on-key-event} 
-  @scheme[((set-on-key-event @scheme[viewport]) unary-procedure)]
-Takes a viewport descriptor.  It returns a function whose input becomes the
-  keyevent callback function. This callback consumes the latest keyevent and the
-  current world and a keyevent; it produces the next world.}
-}
+@defproc[((stop-tick [viewport viewport?])) void?]{
 
-@subsection{Miscellaneous Operations}
+Stops updating @scheme[viewport]'s world via a callback installed with
+@scheme[set-on-tick-event].}
 
-@itemize{
-@item{\Function{get-string-size}
-  @scheme[((get-string-size @scheme[viewport]) string)] 
- Takes a viewport descriptor.  It returns a
-function that returns the size of a string as a list of two numbers:
-the width and height.}
+@defproc[((set-on-key-event [viewport viewport?])
+          [key-callback (any/c any/c . -> . any/c)])
+         void?]{
 
-@item{\Function{viewport->snip}
-  @scheme[(viewport->snip @scheme[viewport])] 
- Takes a viewport descriptor.  It returns an
-object that can be inserted into an editor buffer to display the
-current image in the viewport. (Subsequent drawing to the viewport
-does not affect the snip's image.)
+Sets @scheme[key-callback] as the function to call whenever a key
+event is received for @scheme[viewport]. The @scheme[key-callback] is
+given a key event and the current world, and it produces an updated
+world.}
 
-When snips are the results of computations in the interactions window, DrScheme will print show the contents of the viewport, right in the interactions window.}
+@; ----------------------------------------
 
-@item{\Function{viewport-dc}
-  @scheme[(viewport-dc @scheme[viewport])] 
- Takes a viewport descriptor.  It returns an
-object that can be used with the primitive MrEd toolbox
-functions to draw into the viewport's on-screen representation
-(if any). Mirror all such drawing to the result of 
-@scheme[(viewport-offscreen-dc @scheme[viewport])], too.}
+@section{Miscellaneous Operations}
 
-@item{\Function{viewport-offscreen-dc}
-  @scheme[(viewport-offscreen-dc @scheme[viewport])] 
- Takes a viewport descriptor.  It returns an
- object that can be used with the primitive MrEd toolbox
- functions to draw into the viewport's off-screen representation.
- Mirror all such drawing to the result of 
- @scheme[(viewport-dc @scheme[viewport])], too.}
-}
+@defproc[((get-string-size [viewport viewport?]) [str string?]) (list/c real? real?)]{
 
-@subsection{An Example}
+Returns the size of @scheme[str] as drawn into @scheme[viewport] as a
+list of two numbers: width and height.}
+
+@defproc[(viewport->snip [viewport viewport?]) (is-a?/c snip%)] 
+
+Returns an object that can be inserted into an editor buffer to
+display the current image in the viewport. (Subsequent drawing to the
+viewport does not affect the snip's image.)
+
+When snips are the results of computations in the interactions window,
+DrScheme shows the snip in the interactions window.}
+
+@defproc[(viewport-dc [viewport viewport?]) (is-a?/c dc<%>)]{
+
+Returns an object for direct drawing into @scheme[viewport]'s
+on-screen representation (if any). Mirror all such drawing to the
+result of @scheme[(viewport-buffer-dc viewport)], too.}
+
+@defproc[(viewport-buffer-dc [viewport viewport?]) (is-a?/c dc<%>)]{
+
+Returns an object for direct drawing into @scheme[viewport]'s
+off-screen representation. Mirror all such drawing to the
+result of @scheme[(viewport-dc viewport)], too.}
+
+@; ----------------------------------------
+
+@section{An Example}
 
 @schemeblock[
 (open-graphics)
-;; nothing appears to happen, but the library is initialized...
+(code:comment #, @t{nothing appears to happen, but the library is initialized...})
 
 (define w (open-viewport "practice" 300 300))
-;; viewport appears
+(code:comment #, @t{viewport window appears})
 
 ((draw-line w) (make-posn 30 30) (make-posn 100 100))     
-;; line appears
+(code:comment #, @t{line appears})
 
 (close-viewport w)
-;; viewport disappears
+(code:comment #, @t{viewport disappears})
 
 (close-graphics)
-;; again, nothing appears to happen, but
-;; unclosed viewports (if any) would disappear
+(code:comment #, @t{again, nothing appears to happen, but})
+(code:comment #, @t{unclosed viewports (if any) would disappear})
 ]
 
-@subsection{A More Complicated Example}
+@section{A More Complicated Example}
 
 The use of multiple viewports, viewport descriptors, drawing
 operations for multiple viewports is as easy as the use of a single
@@ -648,24 +640,24 @@ viewport:
 
 @schemeblock[
 (open-graphics)
-(let* (;; @scheme[w1] and @scheme[w2] are viewport descriptors for different windows
+(let* ((code:comment #, @t{@scheme[w1] and @scheme[w2] are viewports for different windows})
        [w1  (open-viewport "viewport 1" 300 300)]
        [w2  (open-viewport "viewport 2" 200 500)]
-       ;; d1 and d2 are functions that draw lines in different viewports
+       (code:comment #, @t{@scheme[d1] and @scheme[d2] draw lines in different viewports})
        [d1  (draw-line w1)]
        [d2  (draw-line w2)])
-  ;; draws a line in viewport labeled "viewport 1"
+  (code:comment #, @t{draws a line in viewport labeled ``viewport 1''})
   (d1 (make-posn 100 5) (make-posn 5 100))
-  ;; draws a line in viewport labeled "viewport 2"
+  (code:comment #, @t{draws a line in viewport labeled ``viewport 2''})
   (d2 (make-posn 100 100) (make-posn 101 400)))
  
-;; we no longer have access to viewports 1 and 2, 
-;; since their descriptors did not escape the @scheme[let]
+(code:comment #, @t{we no longer have access to viewports 1 and 2,})
+(code:comment #, @t{since their descriptors did not escape the @scheme[let]})
 (close-graphics) 
-;; removes the viewports
+(code:comment #, @t{removes the viewports})
 ]
 
-@subsection{Protecting Graphics Operations}
+@section{Protecting Graphics Operations}
 
 To guarantee the proper closing of viewports in cases of errors,
 especially when a program manages several viewports simultaneously, a
@@ -674,436 +666,152 @@ programmer should use @scheme[dynamic-wind:]
 @schemeblock[
 (let ([w (open-viewport "hello" 100 100)])
   (dynamic-wind
-    ;; what we want to happen first: nothing
+    (code:comment #, @t{what we want to happen first: nothing})
     void
-    ;; the main program (errors constrained to this piece)
-    (lambda () (draw-pixel 13))  ; an error
-    ;; what we would like to happen, whether the main program finishes 
-    ;; normally or not
+    (code:comment #, @t{the main program (errors constrained to this piece)})
+    (lambda () (draw-pixel 13))  (code:comment #, @t{an error})
+    (code:comment #, @t{what we would like to happen, whether the main program})
+    (code:comment #, @t{finishes normally or not})
     (lambda () (close-viewport w))))
 ]
 
-@subsection{Mouse Operations}
+@; ----------------------------------------
 
-The graphics library contains functions that determine where the
-mouse is, if there are any clicks, etc.
-The functions @scheme[get-mouse-click] and @scheme[ready-mouse-click] first
-return a ``mouse-click descriptor,'' and then other functions take
-the descriptor and return the mouse's position, which button was
-pushed, etc.
-Mouse clicks are buffered and returned in the same order in which
-they occurred.
-Thus, the descriptors returned by @scheme[get-mouse-click] and 
-@scheme[ready-mouse-click] may be from clicks that occurred long
-before these functions were called.
+@section{Mouse Operations}
 
-@itemize{
-@item{\Function{get-mouse-click}
-  @scheme[(get-mouse-click @scheme[viewport])] 
- Takes a viewport descriptor and returns
-a mouse click descriptor. 
-It returns the next mouse click in the @scheme[viewport], waiting for a click 
+The graphics library contains functions that determine where the mouse
+is, if there are any clicks, etc.  The functions
+@scheme[get-mouse-click] and @scheme[ready-mouse-click] first return a
+``mouse-click descriptor,'' and then other functions take the
+descriptor and return the mouse's position, which button was pushed,
+etc.  Mouse clicks are buffered and returned in the same order in
+which they occurred.  Thus, the descriptors returned by
+@scheme[get-mouse-click] and @scheme[ready-mouse-click] may be from
+clicks that occurred long before these functions were called.
+
+@defproc[(get-mouse-click [viewport viewport?]) mouse-click?]{
+
+Returns the next mouse click in @scheme[viewport], waiting for a click
 if necessary.}
 
-@item{\Function{ready-mouse-click}
-  @scheme[(ready-mouse-click @scheme[viewport])] 
- Takes a viewport descriptor and returns
-either a mouse click descriptor, or else @scheme[#f] if none is available.
-Unlike the previous function, @scheme[ready-mouse-click] returns immediately.}
 
-@item{\Function{ready-mouse-release}
-  @scheme[(ready-mouse-release @scheme[viewport])] 
- Takes a viewport descriptor and returns
-either a click descriptor from a mouse-release (button-up) event,
-or else @scheme[#f] if none is available.}
+@defproc[(ready-mouse-click [viewport viewport?])
+         (or/c mouse-click? false/c)]{
 
-@item{\Function{query-mouse-posn}
-  @scheme[(query-mouse-posn @scheme[viewport])] 
- Takes a viewport descriptor and returns
-either the position of the mouse cursor within the @scheme[viewport], 
-or else @scheme[#f] if the cursor is currently outside the @scheme[viewport].}
+Returns either a mouse click descriptor or @scheme[#f] if none is
+available.  Unlike @scheme[get-mouse-click],
+@scheme[ready-mouse-click] always returns immediately.}
 
-@item{\Function{mouse-click-posn}
-  @scheme[(mouse-click-posn @scheme[mouse-click])] 
- Takes a mouse click descriptor and
-returns the position of the pixel where the click occurred.}
 
-@item{\Function{left-mouse-click?}
-  @scheme[(left-mouse-click?\ @scheme[mouse-click])]  
- Takes a mouse click descriptor and returns
-@scheme[#t] if the click occurred with the left mouse button,
-or else @scheme[#f].}
+@defproc[(ready-mouse-release [viewport viewport?]) 
+         (or/c mouse-click? false/c)]{
 
-@item{\Function{middle-mouse-click?}
-  @scheme[(middle-mouse-click?\ @scheme[mouse-click])] 
-Similar to @scheme[left-mouse-click?].}
+Returns either a click descriptor from a mouse-release (button-up)
+event or @scheme[#f] if none is available.}
 
-@item{\Function{right-mouse-click?}
-  @scheme[(right-mouse-click?\ @scheme[mouse-click])] 
-Similar to @scheme[left-mouse-click?].}
-}
 
-@subsection{Keyboard Operations}
+@defproc[(query-mouse-posn [viewport viewport?]) (or/c posn? false/c)]{
+
+Returns either the position of the mouse cursor within
+@scheme[viewport] or else @scheme[#f] if the cursor is currently
+outside @scheme[viewport].}
+
+
+@defproc[(mouse-click-posn [mouse-click mouse-click?]) posn?]{
+
+Returns the position of the pixel within a viewport where a given
+mouse click occurred.}
+
+
+@defproc[(left-mouse-click? [mouse-click mouse-click?]) boolean?]{
+
+Returns @scheme[#t] if the mouse click occurred with the left mouse
+button, @scheme[#f] otherwise.}
+
+@defproc[(middle-mouse-click? [mouse-click mouse-click?]) boolean?]{
+
+Returns @scheme[#t] if the mouse click occurred with the middle mouse
+button, @scheme[#f] otherwise.}
+
+@defproc[(right-mouse-click? [mouse-click mouse-click?]) boolean?]{
+
+Returns @scheme[#t] if the mouse click occurred with the right mouse
+button, @scheme[#f] otherwise.}
+
+@; ----------------------------------------
+
+@section{Keyboard Operations}
 
 The graphics library contains functions that report key presses from
- the keyboard.  The functions @scheme[get-key-press] and
- @scheme[ready-key-press] return a ``key-press descriptor,'' and then
- @scheme[key-value] takes the descriptor and returns a character or
- symbol (usually a character) representing the key that was pressed.
- Key presses are buffered and returned in the same order in which they
- occurred.  Thus, the descriptors returned by @scheme[get-key-press] and
- @scheme[ready-key-press] may be from presses that occurred long before
- these functions were called.
-
-@itemize{
-@item{\Function{get-key-press}
-  @scheme[(get-key-press @scheme[viewport])] 
- Takes a viewport descriptor and returns
-a key press descriptor. 
-It returns the next key press in the @scheme[viewport], waiting for a click 
-if necessary.}
-
-@item{\Function{ready-key-press}
-  @scheme[(ready-key-press @scheme[viewport])] 
- Takes a viewport descriptor and returns
-either a key press descriptor, or else @scheme[#f] if none is available.
-Unlike the previous function, @scheme[ready-key-press] returns immediately.}
-
-@item{\Function{key-value}
-  @scheme[(key-value @scheme[key-press])]  
-
- Takes a key press descriptor and returns a character or special
- symbol for the key that was pressed. For example, the Enter key
- generates \scmch{return}, and the up-arrow key generates @scheme['up].
- For a complete list of possible return values, see {\MrEdManual}.} 
-}
-
-@subsection{Flushing}
-
-@itemize{
-@item{\Function{viewport-flush-input}
-  @scheme[(viewport-flush-input @scheme[viewport])] 
-As noted above, key presses and mouse clicks are buffered.
-@scheme[viewport-flush-input] takes a viewport descriptor 
-and empties the input buffer of mouse and keyboard events.}
-}
-
-@subsection{Unitized Graphics}
-
-To use a unitized version of the graphics library (see {\MzLibManual}
- for more information on units), get the signatures
- \scmsigfirst{graphics}, \scmsigfirst{graphics:posn-less}, and
- \scmsigfirst{graphics:posn} with:
-
-@schemeblock[
-(require (libKW "graphics-sig.ss" "graphics"))
-]
-
-The \scmsig{graphics} signature includes all of the names defined in
- this chapter. The \scmsig{graphics:posn-less} signature contains
- everything except the \scm{posn} structure information, and
- \scmsig{graphics:posn} contains only the \scm{posn} structure.
-
-To obtain \scmunitfirst{graphics}, which imports \scmsig{mred} (all of
- the MrEd classes, functions, and constants) and exports
- \scmsig{graphics}:
-
-@schemeblock[
-(require (libKW "graphics-unit.ss" "graphics"))
-]
-
-The @filepath{graphics-posn-less-unit.ss} library provides
- \scmunit{graphics-posn-less}, which imports \scmsig{graphics:posn} in
- addition to MrEd.
-
-@; ======================================================================
-
-@section[#:tag "misc:turtles"]{Turtles}
-
-@subsection{Traditional Turtles}
-
-There are two ways to use the turtles in DrScheme. You can
-use it as a TeachPack (see the DrScheme manual for details
-of TeachPacks) or as a library. Use the
-@filepath{turtles.ss} TeachPack.
-
-In the MrEd language or in a module, load turtles with
-
-@schemeblock[
-(require (libKW "turtles.ss" "graphics"))
-]
-
-The following are the turtle functions:
-
-@itemize{
-@item{{@scheme[(turtles b)]}\Function{turtles}
-  shows and hides the turtles window based on the boolean @scheme[b].
-  The parameter @scheme[b] is optional; if it is left out, it toggles the
-  state of the turtles.}
-
-@item{{{@scheme[(move n)]}}\Function{move}
-  moves the turtle n pixels.}
-
-@item{{{@scheme[(draw n)]}}\Function{draw}
-  moves the turtle n pixels and draws a line on that path.}
-
-@item{{{@scheme[(erase n)]}}\Function{erase}
-  moves the turtle n pixels and erases along that path.
-
-\Function{move-offset}
-\Function{draw-offset}
-\Function{erase-offset}}
-@item{{{ @scheme[(move-offset h v)], @scheme[(draw-offset h v)], @scheme[(erase-offset h v)]}}
-  are just like move, draw and erase, except they take a horizontal and
-  vertical offset from the turtle's current position.}
-
-@item{{ @scheme[(turn theta)]}\Function{turn}
-  turns the turtle theta degrees counter-clockwise.}
-
-@item{{ @scheme[(turn/radians theta)]}\Function{turn/radians}
-  turns the turtle theta radians counter-clockwise.}
-
-@item{{{@scheme[(clear)]}}\Function{clear}
-  erases the turtles window.}
-}
-
-Turtles also defines these syntactic forms:
-
-@itemize{
-@item{{{@scheme[(split E)]}}\Function{split}
-  spawns a new turtle where
-  the turtle is currently located. In order to distinguish the two turtles,
-  only the new one evaluates the expression E. For example, if you start
-  with a fresh turtle-window and type:
-
-\begin{center}
-\begin{schemebox}
-(split (turn/radians (/ pi 2)))
-\end{schemebox}
-\end{center}
-
-  you will have two turtles, pointing at right angles to each other.
-  To see that, try this:
-
-\begin{center}
-\begin{schemebox}
-(draw 100)
-\end{schemebox}
-\end{center}
-
-  You will see two lines. Now, if you evaluate those two expression
-  again, you will have four turtles, etc}
-
-@item{{{@scheme[(split* E ...)]}}\Function{split*}
-  is similar to @scheme[(split E ...)], except it creates as many turtles as
-  there are expressions and each turtles does one of the expression. For
-  example, to create two turtles, one pointing at $\pi/2$ and one at
-  $\pi/3$, evaluate this:
-
-\begin{center}
-\begin{schemebox}
-(split* (turn/radians (/ pi 3)) (turn/radians (/ pi 2)))
-\end{schemebox}
-\end{center}}
+the keyboard.  The functions @scheme[get-key-press] and
+@scheme[ready-key-press] return a ``key-press descriptor,'' and then
+@scheme[key-value] takes the descriptor and returns a character or
+symbol (usually a character) representing the key that was pressed.
+Key presses are buffered and returned in the same order in which they
+occurred.  Thus, the descriptors returned by @scheme[get-key-press]
+and @scheme[ready-key-press] may be from presses that occurred long
+before these functions were called.
 
-@item{{{@scheme[(tprompt E...)]}}\Function{tprompt}
-  provides a way to limit the splitting of the turtles. Before
-  the expression E is run, the state of the turtles (how many, their
-  positions and headings) is "checkpointed," then E is evaluated and
-  the state of the turtles is restored, but all drawing that may have
-  occurred during execution of E remains. 
+@defproc[(get-key-press [viewport viewport?]) key-press?]{
 
-  For example, if you do this:
+Returns the next key press in the @scheme[viewport], waiting for a
+key press if necessary.}
 
-\begin{center}
-\begin{schemebox}
-(tprompt (draw 100))
-\end{schemebox}
-\end{center}
+@defproc[(ready-key-press [viewport viewport?]) key-press?]{
 
-  the turtle will move forward 100 pixels, draw a line there and then
-  be immediately put back in it's original position. Also, if you do this:
+Returns the next key press in the @scheme[viewport] or returns
+@scheme[#f] if none is available. Unlike @scheme[get-key-press],
+@scheme[ready-key-press] always returns immediately.}
 
-\begin{center}
-\begin{schemebox}
-(tprompt (split (turn/radians (/ pi 2))))
-\end{schemebox}
-\end{center}
+@defproc[(key-value [key-press key-press?]) (or/c character? symbol?)]{
 
-  the turtle will split into two turtles, one will turn 90 degrees and then
-  the turtles will be put back into their original state -- as if the split
-  never took place.
+Returns a character or special symbol for the key that was
+pressed. For example, the Enter key generates @scheme[#\return], and the
+up-arrow key generates @scheme['up].  For a complete list of possible
+return values, see @method[key-event% get-key-code].}
 
-  The fern functions below demonstrate more advanced use of @scheme[tprompt].}
-}
+@; ----------------------------------------
 
-In the file @filepath{turtle-examples.ss} in the @filepath{graphics} library of your PLT
- distribution, you will find these functions and values defined, as
- example turtle programs. (The file is located in the @filepath{graphics}
- subdirectory of the @filepath{collects} subdirectory of the PLT
- distribution).
+@section{Flushing}
 
-@itemize{
-@item{{{@scheme[(regular-poly sides radius)]}}
-  draws a regular poly centered at the turtle with 
-  sides @scheme[sides] and with radius @scheme[radius].}
+@defproc[(viewport-flush-input [viewport viewport?]) void?]{
 
-@item{{{@scheme[(regular-polys sides s)]}}
-  draws s regular polys spaced evenly outwards with sides @scheme[sides].}
+Empties all mouse and keyboard events in the input buffer of
+@scheme[viewport].}
 
-@item{{{@scheme[(radial-turtles  n)]}}
-  places $2^n$ turtles spaced evenly pointing radially outward} 
+@; ----------------------------------------
 
-@item{{{@scheme[(spaced-turtles n)]}}
-  places $2^n$ turtles pointing in the same direction as the original turtle
-  evenly spaced in a line.}
+@section{Graphics Library as a Unit}
 
-@item{{{@scheme[(spokes)]}}
-  draws some spokes, using radial-turtles and spaced-turtles}
+@subsection{Signatures}
 
-@item{{{@scheme[(spyro-gyra)]}}
-  draws a spyro-grya reminiscent shape}
+@defmodule[graphics/graphics-sig]
 
-@item{{{@scheme[(neato)]}}
-  as the name says\ldots}
+@defsignature[graphics^ ()]
 
-@item{{{@scheme[(graphics-bexam)]}}
-  draws a fractal that came up on an exam I took.}
+Includes all of the bindings defined earlier in this chapter, except
+the @scheme[posn] bindings of @secref["posn"].
 
-@item{{{@scheme[serp-size]}}
-  a constant which is a good size for the serp procedures
 
-\index{Serpinski Triangle}}
-@item{{@scheme[(serp serp-size)], @scheme[(serp-nosplit serp-size)]}
-  draws the Serpinski triangle in two different ways, the first using split
-  heavily. After running the first one, try executing
- @scheme[(draw 10)].}
+@defsignature[graphics:posn^ ()]
 
-@item{{{@scheme[koch-size]}}
-  a constant which is a good size for the koch procedures
+Includes the @scheme[posn] bindings of @secref["posn"].
 
-\index{Koch Snowflake}}
-@item{{{@scheme[(koch-split koch-size)],@scheme[(koch-draw koch-size)]}}
-  draws the same koch snowflake in two different ways.
-
-\index{Lorenz Attractor}
-\index{Butterfly Attractor}}
-@item{{{@scheme[(lorenz a b c)]}}
-  watch the lorenz "butterfly" attractor with initial values a b and c.}
-
-@item{{{@scheme[(lorenz1)]}}
-  a good setting for the lorenz attractor
-
-\index{Peano space-filling curve}}
-@item{{@scheme[(peano1 peano-size)]}
-
-This will draw the Peano space-filling curve, using split.}
-
-@item{{@scheme[(peano2 peano-size)]}
-
-This will draw the Peano space-filling curve, without using split.
-
-\index{Fern Fractal}}
-@item{{{@scheme[fern-size]}}
-  a good size for the fern functions}
-
-@item{{{@scheme[(fern1 fern-size)]}}
-  You will probably want to point the turtle up before running
-  this one, with something like:
-
-\begin{center}
-@scheme[(turn/radians (- (/ pi 2)))]
-\end{center}}
-
-@item{{{@scheme[(fern2 fern-size)]}}
-  a fern -- you may need to backup a little for this one.}
-
-}
-
-@subsection{Value Turtles}
-
-There are two ways to use the turtles in DrScheme. You can
-use it as a TeachPack (see the DrScheme manual for details
-of TeachPacks) or as a library. Use the
-@filepathFirst{value-turtles.ss} TeachPack.
-
-In the MrEd language or in a module, load turtles with
-
-@schemeblock[
-(require (libKW "value-turtles.ss" "graphics"))
-]
-
-
-The value turtles are a variation on the turtles library.
-Rather than having just a single window where each operation
-changes the state of that window, in this library, the
-entire turtles window is treated as a value. This  means
-that each of the primitive operations accepts, in addition
-to the usual arguments, a turtles window value and instead
-of returning nothing, returns a turtles window value.
-
-The following are the value turtle functions:
-
-@itemize{
-@item{{@scheme[(turtles number number [number number number])]}\FunctionK{turtles}{turtlesVal}
-  creates a new turtles window. The first two arguments are
-  the width and height of the turtles window. The remaining
-  arguments specify the x,y position of the initial turtle
-  and the angle. The default to a turtle in the middle of
-  the window, pointing to the right.}
-
-@item{{{@scheme[(move n turtles)]}}\FunctionK{move}{moveVal}
-  moves the turtle n pixels, returning a new turtles window.}
-
-@item{{{@scheme[(draw n turtles)]}}\FunctionK{draw}{drawVal}
-  moves the turtle n pixels and draws a line on that path, 
-  returning a new turtles window.}
-
-@item{{{@scheme[(erase n turtles)]}}\FunctionK{erase}{eraseVal}
-  moves the turtle n pixels and erases along that path,
-  returning a new turtles window.
-
-\FunctionK{move-offset}{move-offsetVal}
-\FunctionK{draw-offset}{draw-offsetVal}
-\FunctionK{erase-offset}{erase-offsetVal}}
-@item{{{@scheme[(move-offset h v turtles)],
-       @scheme[(draw-offset h v turtles)],
-       @scheme[(erase-offset h v turtles)]}}
-  are just like move, draw and erase, except they take a horizontal and
-  vertical offset from the turtle's current position.}
-
-@item{{ @scheme[(turn theta turtles)]}\FunctionK{turn}{turnVal}
-  turns the turtle theta degrees counter-clockwise,
-  returning a new turtles window.}
-
-@item{{ @scheme[(turn/radians theta)]}\FunctionK{turn/radians}{turn/radiansVal}
-  turns the turtle theta radians counter-clockwise,
-  returning a new turtles window.}
-
-@item{{@scheme[(merge turtles turtles)]}\Function{merge}
-    
-    The @scheme[split] and @scheme[tprompt] functionality
-    provided by the imperative turtles implementation aren't
-    needed for this, since the turtles window is itself a
-    value. 
-    
-    Instead, the @scheme[merge] accepts two turtles windows
-    and combines the state of the two turtles windows into a
-    single window. The new window contains all of the
-    turtles of the previous two windows, but only the line
-    drawings of the first turtles argument.}
-
-}
-
-In the file @filepath{value-turtles-examples.ss} in the
-@filepath{graphics} library of your PLT distribution, you will
-find these functions and values defined, as example turtle
-programs. (The file is located in the @filepath{graphics}
-subdirectory of the @filepath{collects} subdirectory of the PLT
-distribution).
-
-It contains a sampling of the examples from the normal
-turtles implementation, but translated to use @scheme[merge]
-and the values turtles.
-
-}
+
+@subsection{Unit with @scheme[posn]}
+
+@defmodule[graphics/graphics-unit]
+
+@defthing[graphics@ unit?]{
+
+Imports @scheme[mred^] and exports both @scheme[graphics^] and
+@scheme[graphics:posn^].}
+
+@subsection{Unit without @scheme[posn]}
+
+@defmodule[graphics/graphics-posn-less-unit]
+
+@defthing[graphics-posn-less@ unit?]{
+
+Imports @scheme[mred^] and @scheme[graphics:posn^] and exports
+@scheme[graphics^].}
