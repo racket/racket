@@ -10,13 +10,10 @@
 
 In the descriptive body of @scheme[defform], @scheme[defproc], etc.,
 do not start with ``This ...'' Instead, start with a sentence whose
-implicit subject is the form or value being described. Capitalize the first
-word. Thus, the
-description will often start with ``Produces.'' Refer to arguments and
-sub-forms by name.
+implicit subject is the form or value being described. Capitalize the
+first word. Thus, the description will often start with ``Returns'' or
+``Produces.''  Refer to arguments and sub-forms by name.
 
-@; [Eli] It's probably a good idea to say here that it's better to
-@;   refer to "functions" instead of "procedures".
 Do not use the word ``argument'' to describe a sub-form in a syntactic
 form; use the term ``sub-form'' instead, reserving ``argument'' for
 values or expressions in a function call.  Refer to libraries and
@@ -25,6 +22,7 @@ typeset a library or language name is called @scheme[schememodname]).
 Do not call an identifier (i.e., a syntactic element) a ``variable''
 or a ``symbol.'' Do not use the word ``expression'' for a form that is
 a definition or might be a definition; use the word ``form,'' instead.
+Prefer ``function'' to ``procedure.''
 
 Avoid cut-and-paste for descriptive text. If two functions are
 similar, consider documenting them together with
@@ -117,3 +115,15 @@ noun; use it as an annotation.
 Do not start a sentence with a Scheme variable name, since it is
 normally lowercase. For example, use ``The @scheme[_thing] argument
 is...'' instead of ``@scheme[_thing] is...''
+
+@section{Section Titles}
+
+Capitalize all words except articles (``the,'' ``a,'' etc.),
+prepositions, and conjunctions that are not at the start of the title.
+
+A manual title should normally start with a suitable keyword or key
+phrase (such as ``Scribble'' for this manual) that is in boldface. If
+the key word is primarily an executable name, use @scheme[exec]
+instead of @scheme[bold]. Optionally add further descriptive text in
+the title after a colon, where the text starting with the colon is not
+in boldface.
