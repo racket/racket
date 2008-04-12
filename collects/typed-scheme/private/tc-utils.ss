@@ -29,7 +29,9 @@
   ;(printf "orig: ~a~n" (syntax-object->datum omodule))
   ;(printf "exp: ~a~n" (syntax-object->datum emodule))
   ;(printf "stx (locate): ~a~n" (syntax-object->datum stx))
-  (look-for-in-orig omodule emodule stx))
+  (if (and omodule emodule stx)
+      (look-for-in-orig omodule emodule stx)
+      stx))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)
