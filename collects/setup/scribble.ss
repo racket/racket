@@ -327,13 +327,13 @@
             (doc-src-file doc))
     (if up-to-date?
       ;; Load previously calculated info:
-      (with-handlers ([exn? (lambda (exn)
-                              (fprintf (current-error-port) "~a\n" (exn-message exn))
-                              (delete-file info-out-file)
-                              (delete-file info-in-file)
-                              ((get-doc-info only-dirs latex-dest auto-main?
-                                             auto-user? with-record-error)
-                               doc))])
+      (with-handlers ([exn:fail? (lambda (exn)
+                                   (fprintf (current-error-port) "~a\n" (exn-message exn))
+                                   (delete-file info-out-file)
+                                   (delete-file info-in-file)
+                                   ((get-doc-info only-dirs latex-dest auto-main?
+                                                  auto-user? with-record-error)
+                                    doc))])
         (let* ([v-in (with-input-from-file info-in-file read)]
                [v-out (with-input-from-file info-out-file read-out-sxref)])
           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
@@ -378,7 +378,7 @@
                     [ci (send renderer collect (list v) (list dest-dir))]
                     [ri (send renderer resolve (list v) (list dest-dir) ci)]
                     [out-v (and info-out-time
-                                (with-handlers ([exn? (lambda (exn) #f)])
+                                (with-handlers ([exn:fail? (lambda (exn) #f)])
                                   (let ([v (with-input-from-file info-out-file read-out-sxref)])
                                     (unless (equal? (car v) (list vers (doc-flags doc)))
                                       (error "old info has wrong version or flags"))

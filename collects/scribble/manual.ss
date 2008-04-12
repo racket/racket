@@ -1929,7 +1929,7 @@
                                                         (list (make-element 'superscript
                                                                             (loop (caddr m))))
                                                         (loop (cadddr m))))]
-                                          [(regexp-match #px"^(.*)([()0-9{}\\[\\]])(.*)$" i)
+                                          [(regexp-match #px"^(.*)([()0-9{}\\[\\]\u03C0])(.*)$" i)
                                            => (lambda (m)
                                                 (append (loop (cadr m))
                                                         (list (caddr m))
@@ -2056,7 +2056,7 @@
 
   (define-struct decl (name super app-mixins intfs ranges mk-head body))
   (define-struct constructor (def))
-  (define-struct meth (name mode desc def))
+  (define-struct meth (names mode desc def))
   (define-struct spec (def))
   (define-struct impl (def))
 
@@ -2106,8 +2106,10 @@
                                     (cons super accum)))]))))]
            [ht (let ([ht (make-hasheq)])
                  (for-each (lambda (i)
-                             (when (meth? i) 
-                               (hash-set! ht (meth-name i) #t)))
+                             (cond
+                              [(meth? i)
+                               (for-each (lambda (name) (hash-set! ht name #t))
+                                         (meth-names i))]))
                            (decl-body decl))
                  ht)]
            [inh (apply
@@ -2164,10 +2166,16 @@
                                                              (decl-super decl)))
                                (id-info (decl-super decl)))
                           (map id-info (decl-intfs decl))
-                          (map (lambda (m)
-                                 (meth-name m))
-                               (filter meth? (decl-body decl)))))))))))
-
+                          (apply
+                           append
+                           (map (lambda (m) 
+                                  (let loop ([l (meth-names m)])
+                                    (cond
+                                     [(null? l) null]
+                                     [(memq (car l) (cdr l)) (loop (cdr l))]
+                                     [else (cons (car l) (loop (cdr l)))])))
+                                (filter meth? (decl-body decl))))))))))))
+    
   (define (build-body decl body)
     (append
      (map (lambda (i)
@@ -2445,7 +2453,7 @@
                                              (*xmethod/super (quote-syntax/loc cname) 'name1) "."))]
                                       [else
                                        null])])
-           #'(make-meth 'name1
+           #'(make-meth '(name ...)
                         'mode
                         (lambda () (make-splice (apply
                                                  append

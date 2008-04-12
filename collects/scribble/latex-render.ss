@@ -146,8 +146,8 @@
                               (case (string-length s)
                                 [(0) (void)]
                                 [else
-                                 (printf "{~a}"
-                                         (regexp-replace* #rx"." s "\\\\hphantom{\\\\mytexttt{x}}"))]))]
+                                 (printf "\\mbox{\\hphantom{\\mytexttt{~a}}}"
+                                         (regexp-replace* #rx"." s "x"))]))]
                   [(newline) (printf "\\\\")]
                   [else (error 'latex-render "unrecognzied style symbol: ~s" style)])]
                [(string? style)
@@ -371,6 +371,7 @@
                   [(#\u03BB) (display "$\\lambda$")]
                   [(#\u039B) (display "$\\Lambda$")]
                   [(#\u03BC) (display "$\\mu$")]
+                  [(#\u03C0) (display "$\\pi$")]
                   [else (display c)]))
               (loop (add1 i))))))
 

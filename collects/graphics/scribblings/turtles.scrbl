@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual)
 
-@title{Turtle Graphics}
+@title{@bold{Turtle Graphics}}
 
 Turtle graphics are available in two forms: traditional imperative
 turtle operations that draw into a fixed window, and functional turtle
