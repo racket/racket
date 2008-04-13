@@ -503,11 +503,11 @@
         
         (field [special-children (make-hasheq)])
         (define/public (is-special-key-child? key child)
-          (let ([ht (hash-ref special-children key (λ () #f))])
+          (let ([ht (hash-ref special-children key #f)])
             (and ht
-                 (hash-ref ht child (λ () #f)))))
+                 (hash-ref ht child #f))))
         (define/public (add-special-key-child key child)
-          (let ([ht (hash-ref special-children key (λ () #f))])
+          (let ([ht (hash-ref special-children key #f)])
             (unless ht
               (set! ht (make-hasheq))
               (hash-set! special-children key ht))
@@ -988,6 +988,9 @@
   (define (get-key dr)
     (and (module-path-index? dr)
          (let-values ([(a b) (module-path-index-split dr)])
-           (and (pair? a)
-                (symbol? (car a))
-                (car a))))))
+           (cond
+             [(symbol? a) 'lib]
+             [(pair? a)
+              (and (symbol? (car a))
+                   (car a))]
+             [else #f])))))
