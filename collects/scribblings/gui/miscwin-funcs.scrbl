@@ -200,7 +200,7 @@ See also @method[dc<%> get-text-extent].
                                          [redirect-ports? any/c (not eval-eventspace)])
          void?]{
 
-Similar to MzScheme's @scheme[read-eval-print-loop], except that none of
+Similar to @scheme[read-eval-print-loop], except that none of
  @scheme[read-eval-print-loop]'s configuration parameters are used (such
  as @scheme[current-read]) and the interaction occurs in a GUI window
  instead of using the current input and output ports.
@@ -235,6 +235,27 @@ The keymap for the read-eval-print loop's editor is initialized by
 
 
 }
+
+@defproc[(textual-read-eval-print-loop)
+         void?]{
+
+Similar to @scheme[read-eval-print-loop], except that evaluation uses
+ a newly created eventspace.
+
+The @scheme[current-prompt-read] parameter is used in the current
+ thread to read input. The result is queued for evaluation and
+ printing in the created eventspace's @tech{handler thread}, which
+ uses @scheme[current-eval] and @scheme[current-print]. After printing
+ completes for an interaction result, the next expression in read in
+ the original thread, and so on.
+
+If an @scheme[exn:break] exception is raised in the original thread
+during reading, it aborts the current call to @scheme[(current-read)]
+and a new one is started. If an @scheme[exn:break] exception is raised
+in the original thread while waiting for an interaction to complete, a
+break is sent (via @scheme[break-thread]) to the created eventspace's
+@tech{handler thread}.}
+
 
 @defproc[(hide-cursor-until-moved)
          void?]{

@@ -231,6 +231,7 @@
 	   text%
 	   pasteboard%
 	   graphical-read-eval-print-loop
+	   textual-read-eval-print-loop
 	   message-box
 	   message+check-box
 	   message-box/custom

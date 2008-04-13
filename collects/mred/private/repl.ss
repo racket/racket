@@ -9,7 +9,8 @@
 	   "mrmenu.ss"
 	   "filedialog.ss")
 
-  (provide graphical-read-eval-print-loop)
+  (provide graphical-read-eval-print-loop
+           textual-read-eval-print-loop)
 
   (define (-graphical-read-eval-print-loop user-esp override-ports?)
     ;; The REPL buffer class
@@ -180,4 +181,57 @@
      [(esp override-ports?)
       (unless (or (not esp) (wx:eventspace? esp))
 	(raise-type-error 'graphical-read-eval-print-loop "eventspace or #f" esp))
-      (-graphical-read-eval-print-loop esp override-ports?)])))
+      (-graphical-read-eval-print-loop esp override-ports?)]))
+
+  (define (textual-read-eval-print-loop)
+    (define user-custodian (make-custodian))
+    (define user-eventspace
+      (parameterize ((current-custodian user-custodian))
+        (wx:make-eventspace)))
+    (define ready-sema (make-semaphore))
+    (define (evaluate expr)
+      (parameterize ((wx:current-eventspace user-eventspace))
+	(wx:queue-callback
+	 (lambda ()
+	   (dynamic-wind
+	       void
+	       (lambda () 
+		 (call-with-values
+		     (lambda () (call-with-continuation-prompt
+                                 (lambda () (eval (cons
+                                                   '#%top-interaction
+                                                   expr)))))
+		   (lambda results
+		     (for-each 
+		      (lambda (v) 
+                        ((current-print) v))
+		      results))))
+	       (lambda ()
+                 (semaphore-post ready-sema)))))))
+    (parameterize-break 
+     #f
+     (let loop ()
+       (let ([e (let read-loop ()
+                  (call-with-continuation-prompt
+                   ;; Enable break during reading:
+                   (lambda ()
+                     (parameterize-break 
+                      #t
+                      ((current-prompt-read))))
+                   (default-continuation-prompt-tag)
+                   (lambda args (read-loop))))])
+         (unless (eof-object? e)
+           (evaluate e)
+           ;; While waiting, redirect breaks:
+           (call-with-exception-handler
+            (lambda (exn)
+              (if (exn:break? exn)
+                  (begin
+                    (break-thread (eventspace-handler-thread user-eventspace))
+                    ((exn:break-continuation exn) (void)))
+                  exn))
+            (lambda ()
+              (parameterize-break
+               #t
+               (semaphore-wait ready-sema))))
+           (loop)))))))

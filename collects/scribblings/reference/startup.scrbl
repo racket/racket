@@ -171,8 +171,9 @@ flags:
         'init-file)].}
 
   @item{@FlagFirst{z} or @DFlagFirst{text-repl} : MrEd only; like
-        @Flag{i}/@DFlag{repl}, but uses @scheme[read-eval-print-loop]
-        instead of @scheme[graphical-read-eval-print-loop].}
+        @Flag{i}/@DFlag{repl}, but uses
+        @scheme[textual-read-eval-print-loop] instead of
+        @scheme[graphical-read-eval-print-loop].}
 
   @item{@FlagFirst{n} or @DFlagFirst{no-lib} : Skips requiring the
         initialization library (i.e., @schememodname[scheme/init] or

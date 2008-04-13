@@ -179,8 +179,8 @@ static void do_graph_repl(Scheme_Env *env)
 
   if (!scheme_setjmp(newbuf)) {
     if (xfa->a->alternate_rep) {
-      a[0] = scheme_intern_symbol("scheme/base");
-      a[1] = scheme_intern_symbol("read-eval-print-loop");
+      a[0] = scheme_intern_symbol("mred/mred");
+      a[1] = scheme_intern_symbol("textual-read-eval-print-loop");
     } else {
       a[0] = scheme_intern_symbol("mred/mred");
       a[1] = scheme_intern_symbol("graphical-read-eval-print-loop");
