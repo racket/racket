@@ -4,6 +4,8 @@
            (for-syntax scheme/base syntax/kerncase)
            (only-in mzscheme transcript-on transcript-off))
 
+  (provide (rename-out [r5rs:body #%r5rs:body])) ; Temporary hack!
+
   (provide (for-syntax syntax-rules ...)
            (rename-out
             [mcons cons]
@@ -272,15 +274,15 @@
                       ((var1 init1) ...)
                       body ...))))
 
-  (define-syntax r5rs:lambda
-    ;; Convert rest-arg list to mlist:
-    (syntax-rules ()
+  (define-syntax (r5rs:lambda stx)
+    ;; Convert rest-arg list to mlist, and use r5rs:body:
+    (syntax-case stx ()
       [(_ (id ...) . body)
-       (#%plain-lambda (id ...) (r5rs:body . body))]
+       #'(#%plain-lambda (id ...) (r5rs:body . body))]
       [(_ (id ... . rest) . body)
-       (#%plain-lambda (id ... . rest)
-                       (let ([rest (list->mlist rest)])
-                         (r5rs:body . body)))]))
+       #'(#%plain-lambda (id ... . rest)
+                         (let ([rest (list->mlist rest)])
+                           (r5rs:body . body)))]))
 
   (define-syntax (r5rs:define stx)
     ;; Use r5rs:lambda
