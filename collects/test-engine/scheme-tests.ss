@@ -69,8 +69,12 @@
                                                  (syntax-position stx)
                                                  (syntax-span stx)))
                                   test-info)))))
-            `stepper-hint
-            `comes-from-check-expect)))]
+            `stepper-skipto
+            (append skipto/third ;; let 
+                    skipto/third skipto/second ;; unless (it expands into a begin)
+                    skipto/cdr skipto/third ;; application of insert-test
+                    '(syntax-e cdr cdr syntax-e car) ;; lambda
+                    ))))]
     [(_ test)
      (not (eq? (syntax-local-context) 'expression))
      (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
