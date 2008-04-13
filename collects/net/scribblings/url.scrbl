@@ -22,8 +22,7 @@ you have a regular input port with which to process the document, as with
 any other file. 
 
 Currently the only supported protocols are @scheme["http"] and
-sometimes @scheme["file"]. See also the @schememodname[net/news]
-library.
+sometimes @scheme["file"].
 
 @section{URL Structure}
 
@@ -284,7 +283,7 @@ something like @litchar{1.0} or @litchar{1.1}, @nonterm{code} is an
 exact integer for the response code, and @nonterm{message} is
 arbitrary text without a return or newline.
 
-The @schememodname[net/head.ss] library provides procedures, such as
+The @schememodname[net/head] library provides procedures, such as
 @scheme[extract-field] for manipulating the header.
 
 Since web servers sometimes return mis-formatted replies,

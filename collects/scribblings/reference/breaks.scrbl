@@ -76,7 +76,7 @@ exception is raised, but not both.  Scheme therefore supplies
 which does permit the implementation of such an exclusive guarantee:
 
 @schemeblock[
-(parameterize ([break-enabled #f])
+(parameterize-break #f
   (with-handlers ([exn:break? (lambda (x) (void))])
     (semaphore-wait/enable-break s)))
 ]
