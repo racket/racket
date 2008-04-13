@@ -1355,6 +1355,17 @@
       ))
   
   (t1 check-expect
+      (test-upto-int/lam
+       "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
+       `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
+                       ((check-expect (+ 3 4) (hilite 17))))
+         (before-after ((check-expect (hilite (+ 3 4)) 17))
+                       ((check-expect (hilite 7) 17)))
+         (before-after ((finished-test-case) (hilite (+ 4 5)))
+                       ((finished-test-case) (hilite 9))))))
+  
+  
+  #;(t1 check-expect
       (test-teachpack-sequence
        `(htdp/testing)
        "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
@@ -1660,8 +1671,8 @@
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
     #;(run-all-tests)
-    (parameterize ()
-      (run-all-tests))
+    (parameterize ([disable-stepper-error-handling #t])
+      (run-tests '(check-expect)))
     #;(parameterize ([store-steps? #t])
         (run-tests '(top-def)))
     #;(parameterize ([display-only-errors #t])
