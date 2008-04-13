@@ -6,7 +6,7 @@
                      scheme/tcp
                      openssl))
 
-@title{Sending E-Mail via SMTP}
+@title{SMTP: Sending E-Mail}
 
 @defmodule[net/smtp]{The @schememodname[net/smtp] module provides
 tools for sending electronic mail messages using SMTP. The client must

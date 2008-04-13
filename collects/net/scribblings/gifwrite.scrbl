@@ -3,7 +3,7 @@
           scribble/extract
           (for-label net/gifwrite))
 
-@title{Writing GIF Files}
+@title{GIF: Writing Image Files}
 
 @defmodule[net/gifwrite]
 

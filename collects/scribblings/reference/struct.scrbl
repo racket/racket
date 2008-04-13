@@ -80,8 +80,8 @@ structures depends on the current inspector.)
 
 @defproc[(make-struct-type [name symbol?]
                            [super-type (or/c struct-type? false/c)]
-                           [init-field-cnt nonnegative-exact-integer?]
-                           [auto-field-cnt nonnegative-exact-integer?]
+                           [init-field-cnt exact-nonnegative-integer?]
+                           [auto-field-cnt exact-nonnegative-integer?]
                            [auto-v any/c #f]
                            [props (listof (cons/c struct-type-property?
                                                   any/c))
@@ -89,10 +89,10 @@ structures depends on the current inspector.)
                            [inspector (or/c inspector? false/c (one-of/c 'prefab))
                                       (current-inspector)]
                            [proc-spec (or/c procedure?
-                                            nonnegative-exact-integer?
+                                            exact-nonnegative-integer?
                                             false/c)
                                       #f]
-                           [immutables (listof nonnegative-exact-integer?)
+                           [immutables (listof exact-nonnegative-integer?)
                                        null]
                            [guard (or/c procedure? false/c) #f])
           (values struct-type?

@@ -1243,9 +1243,9 @@
                                             ;; multiple results
                                             (if (null? res)
                                                 'nbsp
-                                                (let ([w (apply max 0 (map block-width res))])
+                                                (let ([w (apply + (map block-width res))])
                                                   (if (or (ormap table? res)
-                                                          (w . > . 30))
+                                                          (w . > . 40))
                                                       (make-table
                                                        #f
                                                        (map (lambda (fe)
