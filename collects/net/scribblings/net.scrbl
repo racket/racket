@@ -6,13 +6,16 @@
 @table-of-contents[]
 
 @include-section["url.scrbl"]
+@include-section["uri-codec.scrbl"]
 @include-section["sendurl.scrbl"]
 @include-section["smtp.scrbl"]
 @include-section["cgi.scrbl"]
 @include-section["sendmail.scrbl"]
+@include-section["head.scrbl"]
 @include-section["nntp.scrbl"]
 @include-section["pop3.scrbl"]
 @include-section["imap.scrbl"]
+@include-section["dns.scrbl"]
 @include-section["gifwrite.scrbl"]
 
 @(bibliography
@@ -21,6 +24,13 @@
             #:title "Common Gateway Interface (CGI/1.1)"
             #:url "http://hoohoo.ncsa.uiuc.edu/cgi/")
 
+ (bib-entry #:key "RFC822"
+            #:title "Standard for the Format of ARPA Internet Text Messages"
+            #:author "David Crocker"
+            #:location "RFC"
+            #:url "http://www.ietf.org/rfc/rfc0822.txt"
+            #:date "1982")
+            
  (bib-entry #:key "RFC977"
             #:title "Network News Transfer Protocol"
             #:author "Brian Kantor and Phil Lapsley"
@@ -28,6 +38,13 @@
             #:url "http://www.ietf.org/rfc/rfc0977.txt"
             #:date "1986")
             
+ (bib-entry #:key "RFC1738"
+            #:title "Uniform Resource Locators (URL)"
+            #:author "T. Berners-Lee, L. Masinter, and M. McCahill"
+            #:location "RFC"
+            #:url "http://www.ietf.org/rfc/rfc1738.txt"
+            #:date "1994")
+
  (bib-entry #:key "RFC1939"
             #:title "Post Office Protocol - Version 3"
             #:author "J. Myers and M. Rose"

@@ -43,9 +43,9 @@
 
 @title{IMAP: Reading Mail}
 
-@defmodule[net/imap]{The @schememodname[net/imap] module provides for
-the client side of Internet Message Access Protocol version 4rev1
-@cite["RFC2060"].}
+@defmodule[net/imap]{The @schememodname[net/imap] module provides
+utilities for the client side of Internet Message Access Protocol
+version 4rev1 @cite["RFC2060"].}
 
 @; ----------------------------------------
 
@@ -497,3 +497,22 @@ mailbox path names.}
 Returns a list of IMAP flags for the given mailbox. See also
 @scheme[imap-flag->symbol].}
 
+@; ----------------------------------------
+
+@section{IMAP Unit}
+
+@defmodule[net/imap-unit]
+
+@defthing[imap@ unit?]{
+
+Imports nothing, exports @scheme[imap^].}
+
+@; ----------------------------------------
+
+@section{IMAP Signature}
+
+@defmodule[net/imap-sig]
+
+@defsignature[imap^ ()]{}
+
+Includes everything exported by the @schememodname[net/imap] module.
