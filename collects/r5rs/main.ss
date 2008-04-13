@@ -1,7 +1,7 @@
 
 (module main scheme/base
   (require scheme/mpair
-           (for-syntax scheme/base)
+           (for-syntax scheme/base syntax/kerncase)
            (only-in mzscheme transcript-on transcript-off))
 
   (provide (for-syntax syntax-rules ...)
@@ -227,47 +227,60 @@
   ;; Copied from R5rS, but with an added `let' around body,
   ;; and with optimization for precedure letrecs
   (define undefined (letrec ([u u]) u))
-  (define-syntax r5rs:letrec
-    (syntax-rules (r5rs:lambda)
-      ((r5rs:letrec ((var1 (r5rs:lambda . _rest)) ...) body ...)
-       (letrec ((var1 (r5rs:lambda . _rest)) ...) body ...))
+  (define-for-syntax (immediate-value? stx)
+    (let ([v (syntax-e stx)])
+      (or (number? v)
+          (boolean? v)
+          (string? v)
+          (syntax-case stx (r5rs:lambda quote r5rs:quote #%datum)
+            [(r5rs:lambda . _rest) #t]
+            [(quote . _) #t]
+            [(r5rs:quote . _) #t]
+            [(#%datum . _) #t]
+            [_ #f]))))
+  (define-syntax (r5rs:letrec stx)
+    (syntax-case stx (r5rs:lambda)
+      ((r5rs:letrec ((var1 rhs) ...) body ...)
+       (andmap immediate-value? (syntax->list #'(rhs ...)))
+       #'(letrec ((var1 rhs) ...) (r5rs:body body ...)))
       ((r5rs:letrec ((var1 init1) ...) body ...)
-       (r5rs:letrec "generate_temp_names"
-	 (var1 ...)
-	 ()
-	 ((var1 init1) ...)
-	 body ...))
+       #'(r5rs:letrec "generate_temp_names"
+                      (var1 ...)
+                      ()
+                      ((var1 init1) ...)
+                      body ...))
       ((r5rs:letrec "generate_temp_names"
-	 ()
-	 (temp1 ...)
-	 ((var1 init1) ...)
-	 body ...)
-       (let ((var1 undefined) ...)
-	 (let ((temp1 init1) ...)
-	   (set! var1 temp1)
-	   ...
-	   (let ()
-	     body ...))))
+                    ()
+                    (temp1 ...)
+                    ((var1 init1) ...)
+                    body ...)
+       #'(let ((var1 undefined) ...)
+           (let ((temp1 init1) ...)
+             (set! var1 temp1)
+             ...
+             (let ()
+               (r5rs:body
+                body ...)))))
       ((r5rs:letrec "generate_temp_names"
-	 (x y ...)
-	 (temp ...)
-	 ((var1 init1) ...)
-	 body ...)
-       (r5rs:letrec "generate_temp_names"
-	 (y ...)
-	 (newtemp temp ...)
-	 ((var1 init1) ...)
-	 body ...))))
+                    (x y ...)
+                    (temp ...)
+                    ((var1 init1) ...)
+                    body ...)
+       #'(r5rs:letrec "generate_temp_names"
+                      (y ...)
+                      (newtemp temp ...)
+                      ((var1 init1) ...)
+                      body ...))))
 
   (define-syntax r5rs:lambda
     ;; Convert rest-arg list to mlist:
     (syntax-rules ()
       [(_ (id ...) . body)
-       (#%plain-lambda (id ...) . body)]
+       (#%plain-lambda (id ...) (r5rs:body . body))]
       [(_ (id ... . rest) . body)
        (#%plain-lambda (id ... . rest)
                        (let ([rest (list->mlist rest)])
-                         . body))]))
+                         (r5rs:body . body)))]))
 
   (define-syntax (r5rs:define stx)
     ;; Use r5rs:lambda
@@ -283,6 +296,12 @@
          (define . rest))]))
 
   (define-syntax (r5rs:define-syntax stx)
+    ;; Disallow in internal-definition contexts:
+    (when (pair? (syntax-local-context))
+      (raise-syntax-error
+       #f
+       "disallowed as an internal definition"
+       stx))
     (syntax-case stx ()
       [(_ id expr)
        (identifier? #'id)
@@ -316,6 +335,98 @@
 	    (apply values (promise-p p)))
 	  (apply values v))))
 
+  (define-syntax r5rs:let
+    (syntax-rules ()
+      [(_ (binding ...) . body)
+       (let (binding ...) (r5rs:body . body))]
+      [(_ id (binding ...) . body)
+       (let id (binding ...) (r5rs:body . body))]))
+  (define-syntax-rule (r5rs:let* bindings . body)
+    (let* bindings (r5rs:body . body)))
+  (define-syntax-rule (r5rs:let-syntax bindings . body)
+    (let-syntax bindings (r5rs:body . body)))
+  (define-syntax-rule (r5rs:letrec-syntax bindings . body)
+    (letrec-syntax bindings (r5rs:body . body)))
+
+  (define-syntax (r5rs:body stx)
+    (syntax-case stx (let)
+      [(_ (let () . body))
+       #'(let () . body)]
+      [_
+       ;; Convert internal definitions to `r5rs:letrec', as opposed
+       ;; to `letrec'.
+       (let ([def-ctx (syntax-local-make-definition-context)]
+             [ctx (list (gensym 'intdef))]
+             [kernel-forms (kernel-form-identifier-list)]
+             [init-exprs (let ([v (syntax->list stx)])
+                           (unless v
+                             (raise-syntax-error #f "bad syntax" stx))
+                           (cdr v))])
+         (with-syntax ([(exprs ((id ...) ...) (rhs ...) (stx-ids ...) (stx-rhs ...))
+                        (let loop ([exprs init-exprs]
+                                   [idss null][rhss null]
+                                   [stx-idss null][stx-rhss null])
+                          (if (null? exprs)
+                              (raise-syntax-error
+                               #f
+                               "no expression in body"
+                               stx)
+                              (let ([expr (local-expand (car exprs) ctx kernel-forms def-ctx)])
+                                (syntax-case expr (begin define-syntaxes define-values)
+                                  [(begin . rest)
+                                   (let ([l (syntax->list #'rest)])
+                                     (if l
+                                         (loop (append l exprs) idss rhss stx-idss stx-rhss)
+                                         (raise-syntax-error #f expr "bad syntax")))]
+                                  [(define-syntaxes (id ...) rhs)
+                                   (andmap identifier? (syntax->list #'(id ...)))
+                                   (with-syntax ([rhs (local-transformer-expand
+                                                       #'rhs
+                                                       'expression
+                                                       null)])
+                                     (syntax-local-bind-syntaxes
+                                      (syntax->list #'(id ...))
+                                      #'rhs def-ctx)
+                                     (loop (cdr exprs)
+                                           idss rhss
+                                           (cons #'(id ...) stx-idss)
+                                           (cons #'rhs stx-rhss)))]
+                                  [(define-values (id ...) rhs)
+                                   (andmap identifier? (syntax->list #'(id ...)))
+                                   (let ([ids (syntax->list #'(id ...))])
+                                     (syntax-local-bind-syntaxes ids #f def-ctx)
+                                     (loop (cdr exprs)
+                                           (cons #'(id ...) idss)
+                                           (cons #'rhs rhss)
+                                           stx-idss stx-rhss))]
+                                  [else 
+                                   (list (cons expr
+                                               (map (lambda (expr)
+                                                      (local-expand expr ctx kernel-forms def-ctx))
+                                                    (cdr exprs)))
+                                         (reverse idss) (reverse rhss)
+                                         (reverse stx-idss) (reverse stx-rhss))]))))])
+           (if (and (null? (syntax-e #'(stx-rhs ...)))
+                    (andmap (lambda (ids)
+                              (= 1 (length (syntax->list ids))))
+                            (syntax->list #'((id ...) ...))))
+               ;; This is the normal case: use `r5rs:letrec':
+               #`(r5rs:letrec ([id ... rhs] ...)
+                              (let () . exprs))
+               ;; Unusual case: need to expand to `set!' manually:
+               (with-syntax ([((tmp-id ...) ...)
+                              (map (lambda (ids)
+                                     (generate-temporaries ids))
+                                   (syntax->list #'((id ...) ...)))])
+                 #`(letrec-syntaxes+values 
+                       ([stx-ids stx-rhs] ...)
+                       ([(id ...) (values (mk-undefined id) ...)] ...)
+                     (let-values ([(tmp-id ...) rhs] ...)
+                       (begin (set! id tmp-id) ...) ...
+                       . exprs))))))]))
+
+  (define-syntax-rule (mk-undefined id) undefined)
+    
   (provide unquote unquote-splicing 
 	   (rename-out [r5rs:quote quote]
                        [r5rs:quasiquote quasiquote]
@@ -324,10 +435,13 @@
                        [r5rs:letrec letrec]
                        [r5rs:define define]
                        [r5rs:define-syntax define-syntax]
-                       [r5rs:delay delay])
-           let and or cond case do
-	   let* begin set!
-	   let-syntax letrec-syntax
+                       [r5rs:delay delay]
+                       [r5rs:let let]
+                       [r5rs:let* let*]
+                       [r5rs:let-syntax let-syntax]
+                       [r5rs:letrec-syntax letrec-syntax])
+           and or cond case do
+	   begin set!
            => else
 
 	   ;; We have to include the following MzScheme-isms to do anything,
