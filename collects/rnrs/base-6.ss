@@ -18,7 +18,7 @@
  (rename-out [r5rs:quote quote])
 
  ;; 11.4.2
- (rename-out [r5rs:lambda lambda])
+ (rename-out [r6rs:lambda lambda])
 
  ;; 11.4.3
  (rename-out [r5rs:if if])
@@ -32,7 +32,7 @@
  
  ;; 11.4.6
  let let*
- (rename-out [r5rs:letrec letrec]
+ (rename-out [r6rs:letrec letrec]
              [letrec letrec*]
              [r6rs:let-values let-values]
              [r6rs:let*-values let*-values])
@@ -364,6 +364,13 @@
   r5rs:quasiquote unquote unquote-splicing values)
 
 ;; ----------------------------------------
+;; letrec
+;;   Need bindings like R5RS, but int-def body like MzScheme
+
+(define-syntax-rule (r6rs:letrec bindings . body)
+  (r5rs:letrec bindings (let () . body)))
+
+;; ----------------------------------------
 ;; let[*]-values
 
 (define-syntax (r6rs:let-values stx)
@@ -407,21 +414,32 @@
                                       #`[#,ids
                                          (call-with-values
                                              (lambda () #,expr)
-                                           (r5rs:lambda #,formals
+                                           (r6rs:lambda #,formals
                                              (values . #,ids)))])))
                               (syntax->list #'(formals ...))
                               (syntax->list #'(expr ...)))])
             #'(dest:let-values bindings body0 body ...))]))]))
 
 ;; ----------------------------------------
-;; define
+;; lambda & define
+;;   Need rest-arg conversion like R5RS, but int-def handlign like MzScheme
+
+(define-syntax (r6rs:lambda stx)
+  (syntax-case stx ()
+    [(_ (id ...) . body)
+     (andmap identifier? (syntax->list #'(id ...)))
+     (syntax/loc stx (lambda (id ...) . body))]
+    [(_ args . body)
+     (syntax/loc stx (r5rs:lambda args (let () . body)))]))
 
 (define-syntax (r6rs:define stx)
   (syntax-case stx ()
     [(_ id) 
      (identifier? #'id)
-     #'(define id (void))]
-    [(_ . rest) #'(r5rs:define . rest)]))
+     (syntax/loc stx (define id (void)))]
+    [(_ (name . args) . body)
+     (syntax/loc stx (r5rs:define (name . args) (let () . body)))]
+    [(_ . rest) #'(define . rest)]))
 
 ;; ----------------------------------------
 ;; define-syntax: wrap a transformer to
