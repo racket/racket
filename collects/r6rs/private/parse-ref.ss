@@ -54,8 +54,8 @@
                                                         exn))))])
                                  (apply collection-path coll))
                                file)])
-         (let ([vers (find-version (path->bytes base) (syntax->datum #'(vers ...)))])
-           (if vers
+         (let ([vers.ext (find-version (path->bytes base) (syntax->datum #'(vers ...)))])
+           (if vers.ext
                (apply string-append
                       (car coll)
                       (append
@@ -64,8 +64,8 @@
                             (append (cdr coll) (list file)))
                        (map (lambda (v)
                               (format "-~a" v))
-                            vers)
-                       (list ".ss")))
+                            (car vers.ext))
+                       (list (cdr vers.ext))))
                (err "cannot find suitable installed library")))))]
     [(id1 id2 ...)
      (and (identifier? #'id1)

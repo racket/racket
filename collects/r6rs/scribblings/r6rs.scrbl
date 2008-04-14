@@ -2,7 +2,8 @@
 @(require scribble/manual
           scribble/bnf
           (for-label setup/dirs
-                     rnrs/programs-6))
+                     rnrs/programs-6
+                     (only-in scheme/base lib)))
 
 @(define guide-src '(lib "scribblings/guide/guide.scrbl"))
 
@@ -142,8 +143,8 @@ the files are written. Libraries installed by @exec{plt-r6rs
 @section[#:tag "libpaths"]{Libraries and Collections}
 
 An @|r6rs| library name is sequence of symbols, optionally followed by
-a version as a sequence of exact, non-negative integers. Such a name
-is converted to a PLT Scheme module pathname (see @secref[#:doc
+a version as a sequence of exact, non-negative integers. Roughly, such
+a name is converted to a PLT Scheme module pathname (see @secref[#:doc
 guide-src "module-paths"]) by concatenating the symbols with a
 @litchar{/} separator, and then appending the version integers each
 with a preceeding @litchar{-}. As a special case, when an @|r6rs| path
@@ -153,15 +154,31 @@ symbol is effectively inserted after the initial symbol.
 Examples:
 
 @schemeblock[
-(rnrs io simple (6))  #, @elem{corresponds to}  rnrs/io/simple-6
-(rnrs)                #, @elem{corresponds to}  rnrs
-(rnrs (6))            #, @elem{corresponds to}  rnrs/main-6
+(rnrs io simple (6))  #, @elem{roughly means}  rnrs/io/simple-6
+(rnrs)                #, @elem{roughly means}  rnrs
+(rnrs (6))            #, @elem{roughly means}  rnrs/main-6
 ]
 
 When an @|r6rs| library or top-level program refers to another
 library, it can supply version constraints rather than naming a
-specific version. The version constraint is resolved at compile time
-by searching the set of installed files.
+specific version. Version constraints are always resolved at compile
+time by searching the set of installed files.
+
+In addition, when an @|r6rs| library path is converted, a file
+extension is selected at compile time based on installed files. The
+search order for file extensions is @filepath{.mzscheme.ss},
+@filepath{.mzscheme.sls}, @filepath{.ss}, and @filepath{.sls}.  When
+resolving version constraints, these extensions are all tried when
+looking for matches.
+
+Examples (assuming a typical PLT Scheme installation):
+
+@schemeblock[
+(rnrs io simple (6))  #, @elem{really means}  (lib "rnrs/io/simple-6.ss")
+(rnrs)                #, @elem{really means}  (lib "rnrs/main-6.ss")
+(rnrs (6))            #, @elem{really means}  (lib "rnrs/main-6.ss")
+]
+
 
 @; ----------------------------------------
 
