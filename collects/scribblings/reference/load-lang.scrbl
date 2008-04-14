@@ -5,13 +5,17 @@
 
 @defmodulelang[scheme/load]
 
-The @scheme[scheme/load] language supports traditional Scheme
+The @schememodname[scheme/load] language supports traditional Scheme
 evaluation, where each top-level form in the module body is separately
-passed to @scheme[eval] in the same way as for @scheme[load]. The
-namespace for evaluation shares the @tech{module registry} with the
-enclosing module, but it has a separate top-level environment, and it is
-initialized with the bindings of @schememodname[scheme]. The
-@scheme[scheme/load] library itself exports only
+passed to @scheme[eval] in the same way as for @scheme[load].
+
+The namespace for evaluation shares the @tech{module registry} with
+the @schememodname[scheme/load] module instance, but it has a separate
+top-level environment, and it is initialized with the bindings of
+@schememodname[scheme]. A single namespace is created for each
+instance of the @schememodname[scheme/load] module (i.e., multiple
+modules using the @schememodname[scheme/load] language share a
+namespace). The @scheme[scheme/load] library exports only
 @schemeidfont{#%module-begin} and @schemeidfont{#%top-interaction}
 forms that effectively swap in the evaluation namespace and call
 @scheme[eval].
