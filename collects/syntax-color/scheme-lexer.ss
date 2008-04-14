@@ -265,12 +265,13 @@
     (lexer
      [(:+ scheme-whitespace)
       (ret lexeme 'white-space #f start-pos end-pos)]
-     [(:or "#t" "#f" "#T" "#F" character keyword
+     [(:or "#t" "#f" "#T" "#F" character
            (make-num digit2 radix2)
            (make-num digit8 radix8)
            (make-num digit10 (:? radix10))
            (make-num digit16 radix16))
       (ret lexeme 'constant #f start-pos end-pos)]
+     [keyword (ret lexeme 'parenthesis #f start-pos end-pos)]
      [str (ret lexeme 'string #f start-pos end-pos)]
      [line-comment
       (ret lexeme 'comment #f start-pos end-pos)]

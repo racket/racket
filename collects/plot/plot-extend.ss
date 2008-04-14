@@ -107,6 +107,6 @@
                             body))))))])))]))
   (provide
    define-plot-type
-   (all-from plot/view)
+   (all-from-except plot/view plot-view%)
    (all-from plot/renderer-helpers)))
 

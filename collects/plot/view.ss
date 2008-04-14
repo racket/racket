@@ -334,5 +334,6 @@
       (plot)))
  
   (provide
+   plot-view%
    2d-view%
    3d-view%))

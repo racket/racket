@@ -9,13 +9,14 @@
 @include-section["uri-codec.scrbl"]
 @include-section["sendurl.scrbl"]
 @include-section["smtp.scrbl"]
-@include-section["cgi.scrbl"]
 @include-section["sendmail.scrbl"]
 @include-section["head.scrbl"]
-@include-section["nntp.scrbl"]
-@include-section["pop3.scrbl"]
 @include-section["imap.scrbl"]
+@include-section["pop3.scrbl"]
+@include-section["mime.scrbl"]
 @include-section["dns.scrbl"]
+@include-section["nntp.scrbl"]
+@include-section["cgi.scrbl"]
 @include-section["gifwrite.scrbl"]
 
 @(bibliography

@@ -1600,7 +1600,8 @@ follows.
  first @scheme[provide-spec], but omitting the bindings listed in each
  subsequent @scheme[provide-spec]. If one of the latter bindings is
  not included in the initial @scheme[provide-spec], a syntax error is
- reported.}
+ reported. The symbolic export name information in the latter
+ @scheme[provide-spec]s is ignored; only the bindings are used.}
 
  @defsubform[(prefix-out prefix-id provide-spec)]{
  Like @scheme[provide-spec], but with each symbolic export name from
