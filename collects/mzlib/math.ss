@@ -1,6 +1,6 @@
 
 (module math scheme/base
   (require scheme/math)
-  (provide (except-out (all-from-out scheme/math)
-                       euler)
-           (rename-out [euler e])))
+  (provide (all-from-out scheme/math)
+           e)
+  (define e (exp 1.0)))

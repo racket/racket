@@ -4,16 +4,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #lang scheme/base
-(provide euler
-         pi
+(provide pi
          sqr
          sgn conjugate
          sinh cosh)
 
 (define (sqr z) (* z z))
 
-;; circular constants and aliases
-(define euler (exp 1.0))
 (define pi (atan 0 -1))
 
 ;; sgn function

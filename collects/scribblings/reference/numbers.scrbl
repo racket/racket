@@ -813,10 +813,6 @@ is little-endian.}
 
 @note-lib[scheme/math]
 
-@defthing[euler real?]{
-
-An approximation to Euler's constant: @number->string[euler].}
-
 @defthing[pi real]{
 
 An approximation to the ratio of a circle's circumference to its
