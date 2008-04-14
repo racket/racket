@@ -21,7 +21,7 @@ otherwise.}
 
 @defproc[(make-empty-namespace) namespace?]{
 
-Creates a new namespace that is empty, and whose module registry
+Creates a new namespace that is empty, and whose @tech{module registry}
 contains no mappings. Attach modules from an existing namespace to the
 new one with @scheme[namespace-attach-module].}
 
@@ -56,7 +56,7 @@ Returns @scheme[#t] if @scheme[v] is a namespace-anchor value,
 
 @defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
 
-Returns an empty namespace that shares a module registry with the
+Returns an empty namespace that shares a @tech{module registry} with the
 source of the anchor.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
@@ -75,8 +75,8 @@ Returns a namespace corresponding to the source of the anchor.
 If the anchor is from a @scheme[define-namespace-anchor] form in a
 module context, then the result is a namespace obtained via
 @scheme[module->namespace] using the resolved name of the enclosing
-module and the module registry of the module instance at @tech{phase}
-0.
+module and the @tech{module registry} of the module instance at
+@tech{phase} 0.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
 top-level content, then the result is the namespace in which the
@@ -203,18 +203,19 @@ undefined.}
          any]{
 
 Attaches the instantiated module named by @scheme[modname] in
-@scheme[src-namespace] to the registry of @scheme[dest-namespace]. If
-@scheme[modname] is not a symbol, the current module name resolver is
-called to resolve the path, but no module is loaded; the resolved form
-of @scheme[modname] is used as the module name in
-@scheme[dest-namespace]. In addition to @scheme[modname], every module
-that it imports (directly or indirectly) is also recorded in the
-current namespace's registry. If @scheme[modname] does not refer to an
-instantiated module in @scheme[src-namespace], or if the name of any
-module to be attached already has a different declaration or instance
-in @scheme[dest-namespace], then the @exnraise[exn:fail:contract].
-The inspector of the module invocation in @scheme[dest-namespace] is
-the same as inspector of the invocation in @scheme[src-namespace].}
+@scheme[src-namespace] to the @tech{module registry} of
+@scheme[dest-namespace]. If @scheme[modname] is not a symbol, the
+current module name resolver is called to resolve the path, but no
+module is loaded; the resolved form of @scheme[modname] is used as the
+module name in @scheme[dest-namespace]. In addition to
+@scheme[modname], every module that it imports (directly or
+indirectly) is also recorded in the current namespace's @tech{module
+registry}. If @scheme[modname] does not refer to an instantiated
+module in @scheme[src-namespace], or if the name of any module to be
+attached already has a different declaration or instance in
+@scheme[dest-namespace], then the @exnraise[exn:fail:contract].  The
+inspector of the module invocation in @scheme[dest-namespace] is the
+same as inspector of the invocation in @scheme[src-namespace].}
 
 
 @defproc[(namespace-unprotect-module [inspector inspector?]
@@ -223,36 +224,35 @@ the same as inspector of the invocation in @scheme[src-namespace].}
          void?]{
 
 Changes the inspector for the instance of the module referenced by
-@scheme[modname] in @scheme[namespace]'s registry so that it is
-controlled by the current code inspector. The given @scheme[inspector]
-must currently control the invocation of the module in
-@scheme[namespace]'s registry, otherwise the
+@scheme[modname] in @scheme[namespace]'s @tech{module registry} so
+that it is controlled by the current code inspector. The given
+@scheme[inspector] must currently control the invocation of the module
+in @scheme[namespace]'s @tech{module registry}, otherwise the
 @exnraise[exn:fail:contract]. See also @secref["modprotect"].}
 
 
 @defproc[(namespace-module-registry [namespace namespace?])
          any]{
 
-Returns the registry of the given namespace. This value is useful only
-for identification via @scheme[eq?].}
+Returns the @tech{module registry} of the given namespace. This value
+is useful only for identification via @scheme[eq?].}
 
 
 @defproc[(module->namespace [modname module-path?]) namespace?]{
 
 Returns a namespace that corresponds to the body of an instantiated
-module in the current namespace's registry. The returned namespace has
-the same module registry as the current namespace. Modifying a binding
-in the namespace changes the binding seen in modules that require the
-namespace's module.
+module in the current namespace's @tech{module registry}. The returned
+namespace has the same @tech{module registry} as the current
+namespace. Modifying a binding in the namespace changes the binding
+seen in modules that require the namespace's module.
 
 Module paths in a top-level @scheme[require] expression are resolved
 with respect to the namespace's module. New @scheme[provide]
 declarations are not allowed.
 
 If the current code inspector does not control the invocation of the
-module in the current namespace's registry, the
-@exnraise[exn:fail:contract]; see also
-@secref["modprotect"].
+module in the current namespace's @tech{module registry}, the
+@exnraise[exn:fail:contract]; see also @secref["modprotect"].
 
 Bindings in the namespace cannot be modified if the
 @scheme[compile-enforce-module-constants] parameter was true when the

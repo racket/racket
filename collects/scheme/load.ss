@@ -9,16 +9,29 @@
 (define-syntax-rule (top-interaction . form)
   (strip-context-and-eval (quote-syntax form)))
 
-(define-namespace-anchor a)
+;; Make a new namespace to run user code. All evaluation has to start
+;; with `module-begin' or `top-interaction', and we wrap such
+;; evaluations to swap the namespace in and out.
 
+;; One way in which this differs from MzScheme is that 
+;; `#reader'-loaded modules see a different top-level namespace,
+;; though it's the same module registry.
+
+(define-namespace-anchor a)
 (define namespace (namespace-anchor->empty-namespace a))
 (parameterize ([current-namespace namespace])
   (namespace-require 'scheme))
 
 (define (strip-context-and-eval e)
-  (parameterize ([current-namespace namespace])
-    (eval-syntax (namespace-syntax-introduce
-                  (strip-context e)))))
+  (let ([ns (current-namespace)])
+    (current-namespace namespace)
+    (begin0
+     (call-with-continuation-prompt
+      (lambda ()
+        (eval-syntax (namespace-syntax-introduce
+                      (strip-context e)))))
+     (set! namespace (current-namespace))
+     (current-namespace ns))))
 
 (define (strip-context e)
   (cond
