@@ -4,8 +4,6 @@
            (for-syntax scheme/base syntax/kerncase)
            (only-in mzscheme transcript-on transcript-off))
 
-  (provide (rename-out [r5rs:body #%r5rs:body])) ; Temporary hack!
-
   (provide (for-syntax syntax-rules ...)
            (rename-out
             [mcons cons]
@@ -244,45 +242,49 @@
     (syntax-case stx (r5rs:lambda)
       ((r5rs:letrec ((var1 rhs) ...) body ...)
        (andmap immediate-value? (syntax->list #'(rhs ...)))
-       #'(letrec ((var1 rhs) ...) (r5rs:body body ...)))
+       (syntax/loc stx (letrec ((var1 rhs) ...) (r5rs:body body ...))))
       ((r5rs:letrec ((var1 init1) ...) body ...)
-       #'(r5rs:letrec "generate_temp_names"
+       (syntax/loc stx
+         (r5rs:letrec "generate_temp_names"
                       (var1 ...)
                       ()
                       ((var1 init1) ...)
-                      body ...))
+                      body ...)))
       ((r5rs:letrec "generate_temp_names"
                     ()
                     (temp1 ...)
                     ((var1 init1) ...)
                     body ...)
-       #'(let ((var1 undefined) ...)
+       (syntax/loc stx
+         (let ((var1 undefined) ...)
            (let ((temp1 init1) ...)
              (set! var1 temp1)
              ...
              (let ()
                (r5rs:body
-                body ...)))))
+                body ...))))))
       ((r5rs:letrec "generate_temp_names"
                     (x y ...)
                     (temp ...)
                     ((var1 init1) ...)
                     body ...)
-       #'(r5rs:letrec "generate_temp_names"
+       (syntax/loc stx
+         (r5rs:letrec "generate_temp_names"
                       (y ...)
                       (newtemp temp ...)
                       ((var1 init1) ...)
-                      body ...))))
+                      body ...)))))
 
   (define-syntax (r5rs:lambda stx)
     ;; Convert rest-arg list to mlist, and use r5rs:body:
     (syntax-case stx ()
       [(_ (id ...) . body)
-       #'(#%plain-lambda (id ...) (r5rs:body . body))]
+       (syntax/loc stx (#%plain-lambda (id ...) (r5rs:body . body)))]
       [(_ (id ... . rest) . body)
-       #'(#%plain-lambda (id ... . rest)
+       (syntax/loc stx
+         (#%plain-lambda (id ... . rest)
                          (let ([rest (list->mlist rest)])
-                           (r5rs:body . body)))]))
+                           (r5rs:body . body))))]))
 
   (define-syntax (r5rs:define stx)
     ;; Use r5rs:lambda

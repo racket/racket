@@ -4428,6 +4428,8 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
 				       Scheme_Comp_Env *env, 
 				       Scheme_Compile_Info *rec, int drec)
 {
+ try_again:
+
   if (SCHEME_STX_PAIRP(forms) && SCHEME_STX_NULLP(SCHEME_STX_CDR(forms))) {
     /* If it's a begin, we have to check some more... */
     Scheme_Object *first, *val;
@@ -4437,11 +4439,12 @@ Scheme_Object *scheme_compile_sequence(Scheme_Object *forms,
 
     if (SAME_OBJ(val, scheme_begin_syntax) && SCHEME_STX_PAIRP(first)) {      
       /* Flatten begin: */
-      Scheme_Object *rest;
-      rest = SCHEME_STX_CDR(first);
-      if (scheme_stx_proper_list_length(rest) > 0) {
-	first = scheme_datum_to_syntax(rest, first, first, 0, 2);
-	return scheme_compile_sequence(first, env, rec, drec);
+      if (scheme_stx_proper_list_length(first) > 0) {
+        Scheme_Object *rest;
+        rest = scheme_flatten_begin(first, scheme_null);
+        first = scheme_datum_to_syntax(rest, first, first, 0, 2);
+        forms = first;
+        goto try_again;
       }
     }
 

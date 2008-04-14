@@ -5500,6 +5500,29 @@ static int arg_count(Scheme_Object *lam, Scheme_Comp_Env *env)
   return cnt;
 }
 
+static Scheme_Object *cert_ids(Scheme_Object *orig_ids, Scheme_Object *orig)
+{
+  Scheme_Object *id, *ids = orig_ids, *pr, *first = scheme_null, *last = NULL;
+
+  while (!SCHEME_STX_NULLP(ids)) {
+
+    id = SCHEME_STX_CAR(ids);
+    id = scheme_stx_cert(id, NULL, NULL, orig, NULL, 1);
+
+    pr = scheme_make_pair(id, scheme_null);
+    
+    if (last)
+      SCHEME_CDR(last) = pr;
+    else
+      first = pr;
+    last = pr;
+
+    ids = SCHEME_STX_CDR(ids);
+  }
+
+  return scheme_datum_to_syntax(first, orig_ids, orig_ids, 0, 2);
+}
+
 static Scheme_Object *
 compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env, 
 		   Scheme_Compile_Expand_Info *rec, int drec)
@@ -5542,7 +5565,7 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
     origname = name;
     
     name = scheme_check_immediate_macro(name, env, rec, drec, 0, &gval, NULL, NULL);
-    
+
     /* look for ((lambda (x) ...) ...); */
     if (SAME_OBJ(gval, scheme_lambda_syntax)) {
       Scheme_Object *argsnbody;
@@ -5579,6 +5602,9 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
                 /* If we don't check here, the error is in terms of `let': */
                 scheme_dup_symbol_check(&r, NULL, n, "argument", name);
   
+                /* Propagate certifications to bound id: */
+                n = scheme_stx_cert(n, NULL, NULL, name, NULL, 1);
+
                 v = SCHEME_STX_CAR(rest);
                 v = cons(cons(cons(n, scheme_null), cons(v, scheme_null)), scheme_null);
                 if (last)
@@ -5591,16 +5617,19 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
                 rest = SCHEME_STX_CDR(rest);
               }
 
+              body = scheme_datum_to_syntax(icons(begin_symbol, body), form, 
+                                            scheme_sys_wraps(env), 
+                                            0, 2);
+              /* Copy certifications from lambda to `body'. */
+              body = scheme_stx_cert(body, NULL, NULL, name, NULL, 1);
+              
               body = scheme_datum_to_syntax(cons(let_values_symbol,
                                                  cons(bindings,
-                                                      body)),
+                                                      cons(body, scheme_null))),
                                             form, 
                                             scheme_sys_wraps(env), 
                                             0, 2);
 
-              /* Copy certifications from lambda to `body'. */
-              body = scheme_stx_cert(body, NULL, NULL, name, NULL, 1);
-		
               return scheme_compile_expand_expr(body, env, rec, drec, 0);
             } else {
 #if 0
@@ -5642,18 +5671,27 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
                 if (SAME_OBJ(gval, scheme_lambda_syntax) 
                     && SCHEME_STX_PAIRP(second)
                     && (arg_count(second, env) >= 0)) {
-                  Scheme_Object *lhs;
+                  Scheme_Object *lhs, *orig_post_first, *orig_post_second;
+                  orig_post_first = first;
+                  orig_post_second = second;
                   second = SCHEME_STX_CDR(second);
                   lhs = SCHEME_STX_CAR(second);
                   second = SCHEME_STX_CDR(second);
                   first = SCHEME_STX_CDR(first);
                   first = SCHEME_STX_CDR(first);
+                  first = icons(begin_symbol, first);
+                  first = scheme_datum_to_syntax(first, orig_post_first, scheme_sys_wraps(env), 0, 1);
+                  second = icons(begin_symbol, second);
+                  second = scheme_datum_to_syntax(second, orig_post_second, scheme_sys_wraps(env), 0, 1);
+                  /* Copy certifications from lambda to body: */
+                  lhs = cert_ids(lhs, orig_post_second);
+                  first = scheme_stx_cert(first, NULL, NULL, orig_post_first, NULL, 1);
+                  second = scheme_stx_cert(second, NULL, NULL, orig_post_second, NULL, 1);
                   /* Convert to let-values: */
                   name = icons(let_values_symbol,
-                               icons(icons(icons(lhs, icons(icons(begin_symbol, first), 
-                                                            scheme_null)), 
+                               icons(icons(icons(lhs, icons(first, scheme_null)), 
                                            scheme_null),
-                                     second));
+                                     icons(second, scheme_null)));
                   form = scheme_datum_to_syntax(name, forms, scheme_sys_wraps(env), 0, 2);
                   return scheme_compile_expand_expr(form, env, rec, drec, 0);
                 }
@@ -6264,8 +6302,8 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
              stx_start = scheme_null; */
 	if (stx_start) {
 	  result = scheme_make_pair(letrec_syntaxes_symbol,
-					      scheme_make_pair(stx_start,
-									 scheme_make_pair(start, result)));
+                                    scheme_make_pair(stx_start,
+                                                     scheme_make_pair(start, result)));
 	} else {
 	  result = scheme_make_pair(letrec_values_symbol, scheme_make_pair(start, result));
 	}
@@ -6442,6 +6480,7 @@ scheme_flatten_begin(Scheme_Object *expr, Scheme_Object *append_onto)
   for (ll = l; !SCHEME_NULLP(ll); ll = SCHEME_CDR(ll)) {
     a = SCHEME_CAR(ll);
     a = scheme_stx_track(a, expr, name);
+    a = scheme_stx_cert(a, NULL, NULL, expr, NULL, 1);
     SCHEME_CAR(ll) = a;
   }
   
