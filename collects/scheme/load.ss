@@ -1,16 +1,24 @@
 #lang scheme
 
-(provide (rename-out [module-begin #%module-begin]))
+(provide (rename-out [module-begin #%module-begin]
+                     [top-interaction #%top-interaction]))
 
 (define-syntax-rule (module-begin form ...)
-  (#%plain-module-begin (strip-context-and-eval (quote-syntax form)) ...))
+  (#%plain-module-begin (top-interaction . form) ...))
 
+(define-syntax-rule (top-interaction . form)
+  (strip-context-and-eval (quote-syntax form)))
 
-(namespace-require 'scheme)
+(define-namespace-anchor a)
+
+(define namespace (namespace-anchor->empty-namespace a))
+(parameterize ([current-namespace namespace])
+  (namespace-require 'scheme))
 
 (define (strip-context-and-eval e)
-  (eval-syntax (namespace-syntax-introduce
-                (strip-context e))))
+  (parameterize ([current-namespace namespace])
+    (eval-syntax (namespace-syntax-introduce
+                  (strip-context e)))))
 
 (define (strip-context e)
   (cond
