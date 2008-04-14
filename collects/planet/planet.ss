@@ -9,8 +9,7 @@ PLANNED FEATURES:
    that if it's a tool it won't start w/ DrScheme, etc)
 4. Examine and alter linkage table
 |#
-  (require mzlib/cmdline
-           mzlib/string
+  (require mzlib/string
            mzlib/file
            (only mzlib/list sort)
            net/url
@@ -18,109 +17,89 @@ PLANNED FEATURES:
            
            "config.ss"
            "private/planet-shared.ss"
+           "private/command.ss"
            "resolver.ss" ;; the code I need should be pulled out into a common library
            "util.ss") 
   
-  (define actions '())
+  (define erase? (make-parameter #f))
+  (define displayer (make-parameter (λ () (show-installed-packages))))
   
   (define (start)
 
     (make-directory* (PLANET-DIR))
     (make-directory* (CACHE-DIR))
     
-    (command-line
-     "planet"
-     (current-command-line-arguments)
-     (once-each
-      (("--force")
-       ""
-       "Used in conjunction with --create-package; force a package to be"
-       "created even its info.ss file contains errors."
-       (force-package-building? #t)))
-     (once-any
-      (("-f" "--file")
-       plt-file owner maj min
-       ""
-       "Install local file <plt-file> as though it had been downloaded from"
-       "the planet server.  The installed package has path"
-       "  (planet (<owner> <plt-file's filename> <maj> <min>))"
-       (set! actions (cons (lambda () (install-plt-file plt-file owner maj min)) actions)))
-      (("-c" "--create-archive")
-       path
-       ""
-       "Create a PLaneT archive in the current directory"
-       "whose contents are the directory <path>"
-       (set! actions (cons (lambda () (do-archive path)) actions)))
-      (("-i" "--install")
-       owner pkg maj min
-       ""
-       "Download and install the package"
-       "  (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))"
-       "would install"
-       (set! actions (cons (lambda () (download/install owner pkg maj min)) actions)))
-      (("-d" "--download")
-       owner pkg maj min
-       ""
-       "Download the given package file without installing it"
-       (set! actions (cons (lambda () (download/no-install owner pkg maj min)) actions)))
-      (("-r" "--remove")
-       owner pkg maj min
-       ""
-       "Remove the specified package from the local cache"
-       (set! actions (cons (lambda () (remove owner pkg maj min)) actions)))
-      (("-e" "--erase")
-       owner pkg maj min
-       ""
-       "Erase the specified package, removing it as -r does and "
-       "eliminating the package's distribution file from the "
-       "uninstalled-package cache"
-       (set! actions (cons (lambda () (erase owner pkg maj min)) actions)))
-      (("-U" "--unlink-all")
-       ""
-       "Clear the linkage table, unlinking all packages and allowing upgrades"
-       (set! actions (cons unlink-all actions)))
-      (("-p" "--packages")
-       ""
-       "List the packages installed in the local cache"
-       (set! actions (cons show-installed-packages actions)))
-      (("-l" "--linkage")
-       ""
-       "List the current linkage table"
-       (set! actions (cons show-linkage actions)))
-      
-      (("-a" "--associate")
-       owner pkg maj min path
-       ""
-       "Create a development link between the specified package specifier "
-       "and the specified directory name"
-       (set! actions (cons (lambda () (add-hard-link-cmd owner pkg maj min path)) actions)))
-      
-      (("-u" "--unassociate")
-       owner pkg maj min
-       ""
-       "Remove any development link associated with the specified package"
-       (set! actions (cons (lambda () (remove-hard-link-cmd owner pkg maj min)) actions)))
-      
-      (("--url")
-       owner pkg maj min
-       "Get a URL for the given package"
-       (set! actions (cons (lambda () (get-download-url owner pkg maj min)) actions)))
-      
-      (("--unpack")
-       plt-file target
-       "Unpack the contents of the given package into the given directory without installing"
-       (set! actions (cons (lambda () (do-unpack plt-file target)) actions)))
+    (svn-style-command-line
+     #:program "planet"
+     #:argv (current-command-line-arguments)
+     "PLT Scheme PLaneT command-line tool. Provides commands to help you manipulate your local planet cache."
+     ["create" "create a PLaneT archive from a directory"
+      '("" "Create a PLaneT archive in the current directory whose contents are the directory <path>.")
+      #:once-each
+      [("-f" "--force") "force a package to be created even its info.ss file contains errors."
+       (force-package-building? #t)]
+      #:args (path)
+      (do-archive path)]
+     ["install" "download and install a given package"
+      '("" "Download and install the package that"
+        "   (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))"
+        "would install")          
+      #:args (owner pkg maj min)
+      (download/install owner pkg maj min)]
+     ["remove" "remove the specified package from the local cache"
+       '("" "Remove the specified package from the local cache, optionally also removing its distribution file")
+      #:once-each 
+      [("-e" "--erase") "also remove the package's distribution file from the uninstalled-package cache"
+       (erase? #t)]
+      #:args (owner pkg maj min)
+      ((if (erase?) erase remove) owner pkg maj min)]
+     ["show" "list the packages installed in the local cache"
+      '("" "List the packages installed in the local cache")       
+      #:once-any
+      [("-p" "--packages") "show packages only (default)" (displayer show-installed-packages)]
+      [("-l" "--linkage")  "show linkage table only"      (displayer show-linkage)]
+      [("-a" "--all")      "show packages and linkage"    (displayer (λ () (show-installed-packages) (newline) (show-linkage)))]
+      #:args ()
+      ((displayer))]
+     ["clearlinks" "clear the linkage table, unlinking all packages and allowing upgrades"
+      '("" "Clear the linkage table, unlinking all packages and allowing upgrades")
+      #:args ()
+      (unlink-all)]
+     ["fileinject" "install a local file to the planet cache"
+       '("" "Install local file <plt-file> into the planet cache as though it had been downloaded from the planet server.  The installed package has path"
+         "  (planet (<owner> <plt-file's filename> <maj> <min>))")
+       #:args (owner plt-file maj min)
+       (install-plt-file plt-file owner maj min)]
+     ["link" "create a development link"
+       '("" "Create a development link between the specified package specifier and the specified directory name")
+      #:args (owner pkg maj min path)
+      (add-hard-link-cmd owner pkg maj min path)]
+     ["unlink" "remove development link associated with the given package"
+      '("" "Remove development link associated with the given package")              
+      #:args (owner pkg maj min)
+      (remove-hard-link-cmd owner pkg maj min)]
+     ["fetch" "download a package file without installing it"
+       '("" "Download the given package file without installing it")
+       #:args (owner pkg maj min)
+       (download/no-install owner pkg maj min)]
+     ["url" "get a URL for the given package"
+      '("" "Get a URL for the given package."
+           "This is not necessary for normal use of planet, but may be helpful in some circumstances for retrieving packages.")
+      #:args (owner pkg maj min)
+      (get-download-url owner pkg maj min)]
+     ["open" "unpack the contents of the given package"
+      '("" "Unpack the contents of the given package into the given directory without installing."
+           "This command is not necessary for normal use of planet. It is intended to allow you to inspect package contents"
+           "offline without needing to install the package.")
+      #:args (plt-file target)
+      (do-unpack plt-file target)]
                                        
-      ;; unimplemented so far:
-      #;(("-u" "--unlink")
+     ;; unimplemented so far:
+     #;(("-u" "--unlink")
          module
          "Remove all linkage the given module has, forcing it to upgrade"
          ...)))
-
-    (cond
-      ; make showing the installed packages the default thing to do.
-      [(null? actions) (show-installed-packages)]
-      [else (for-each (lambda (f) (f)) actions)]))
+  
   
   ;; ============================================================
   ;; FEATURE IMPLEMENTATIONS
