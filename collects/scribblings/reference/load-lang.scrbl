@@ -7,13 +7,14 @@
 
 The @scheme[scheme/load] language supports traditional Scheme
 evaluation, where each top-level form in the module body is separately
-passed to @scheme[eval]. The namespace for evaluation shares the
-@tech{module registry} with the enclosing module, but has a separate
-top-level environment, and it is initialized with the bindings of
-@schememodname[scheme]. The @scheme[scheme/load] library itself
-exports only @schemeidfont{#%module-begin} and
-@schemeidfont{#%top-interaction} forms that swap in the evaluation
-namespace and call @scheme[eval].
+passed to @scheme[eval] in the same way as for @scheme[load]. The
+namespace for evaluation shares the @tech{module registry} with the
+enclosing module, but it has a separate top-level environment, and it is
+initialized with the bindings of @schememodname[scheme]. The
+@scheme[scheme/load] library itself exports only
+@schemeidfont{#%module-begin} and @schemeidfont{#%top-interaction}
+forms that effectively swap in the evaluation namespace and call
+@scheme[eval].
 
 For example, the body of a module using @scheme[scheme/load] can
 include @scheme[module] forms, so that running the following module

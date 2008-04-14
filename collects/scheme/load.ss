@@ -4,7 +4,7 @@
                      [top-interaction #%top-interaction]))
 
 (define-syntax-rule (module-begin form ...)
-  (#%plain-module-begin (top-interaction . form) ...))
+  (#%plain-module-begin (top-interaction . (#%top-interaction . form)) ...))
 
 (define-syntax-rule (top-interaction . form)
   (strip-context-and-eval (quote-syntax form)))
@@ -24,14 +24,22 @@
 
 (define (strip-context-and-eval e)
   (let ([ns (current-namespace)])
-    (current-namespace namespace)
-    (begin0
-     (call-with-continuation-prompt
-      (lambda ()
-        (eval-syntax (namespace-syntax-introduce
-                      (strip-context e)))))
-     (set! namespace (current-namespace))
-     (current-namespace ns))))
+    (dynamic-wind
+        (lambda ()
+          (current-namespace namespace))
+        (lambda ()
+          (call-with-continuation-prompt
+           (lambda ()
+             (eval-syntax (namespace-syntax-introduce
+                           (strip-context e))))
+           (default-continuation-prompt-tag)
+           (lambda args
+             (apply abort-current-continuation 
+                    (default-continuation-prompt-tag)
+                    args))))
+        (lambda ()
+          (set! namespace (current-namespace))
+          (current-namespace ns)))))
 
 (define (strip-context e)
   (cond
