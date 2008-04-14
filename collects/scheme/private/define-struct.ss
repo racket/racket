@@ -21,7 +21,7 @@
      checked-struct-info-rec?
      checked-struct-info-ref
      checked-struct-info-set!)
-    (make-struct-type 'struct-info struct:struct-info
+    (make-struct-type 'checked-struct-info struct:struct-info
                       0 0 #f
                       null (current-inspector)
                       (lambda (v stx)
