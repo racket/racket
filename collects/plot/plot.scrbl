@@ -168,8 +168,8 @@ To fit a particular function to a curve:
   @secref["curve-fit"].
            
     @schemeblock[
-      (define fit-result
-        (fir fit-fun
+      (define fitted
+        (fit fit-fun
              '((m 1) (b 1))
              data))
       ]
@@ -178,10 +178,10 @@ To fit a particular function to a curve:
   @item{View the resulting parameters; for example,
              
     @schemeblock[
-      (fit-result-final-params fit-result)
+      (fit-result-final-params fitted)
       ]
     
-    will produce @schemeresultfont{((m 2) (b 3))}.
+    will produce @schemeresultfont{(2.0 3.0)}.
     }
   
   @item{For some visual feedback of the fit result, plot the function
@@ -190,7 +190,7 @@ To fit a particular function to a curve:
             
     @schemeblock[
       (plot (mix (points data)
-                 (line (fit-result-function fit-result)))
+                 (line (fit-result-function fitted)))
             #:y-max 15)
       ]
     }
@@ -217,7 +217,7 @@ function, we could do the following:
   (define (dashed-line fun
                        #:x-min [x-min -5]
                        #:x-max [x-max 5]
-                       #:sample [sample 100]
+                       #:samples [samples 100]
                        #:segments [segments 20]
                        #:color [color 'red]
                        #:width [width 1])
@@ -225,7 +225,7 @@ function, we could do the following:
            (x-lists (build-list
                      (/ segments 2)
                      (lambda (index)
-                       (x-samples
+                       (x-values
                         (/ samples segments)
                         (+ x-min (* 2 index dash-size))
                         (+ x-min (* (add1 (* 2 index)) 
@@ -432,12 +432,12 @@ values. The more accurate your initial guesses are, the more likely
 the fit is to succeed; if there are no good values for the guesses,
 leave them as @scheme[1].}
 
-@defstruct[fit-result ([rms any/c]
-                       [variance any/c]
+@defstruct[fit-result ([rms real?]
+                       [variance real?]
                        [names (listof symbol?)]
-                       [final-params (listof (cons/c symbol? real?))]
-                       [std-error real?]
-                       [std-error-percent real?]
+                       [final-params (listof real?)]
+                       [std-error (listof real?)]
+                       [std-error-percent (listof real?)]
                        [function (real? ... . -> . real?)])]{
 
 The @scheme[params] field contains an associative list of the

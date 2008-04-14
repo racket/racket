@@ -5,9 +5,11 @@
                              plot plot3d
                              points line error-bars
                              vector-field contour
-                             shade surface
-                             mix fit
-                             derivative gradient make-vec)))
+                             shade surface))
+         (only-in "plot.ss"
+                  mix
+                  derivative gradient make-vec)
+         (only-in "fit.ss" fit-int))
 
 (provide plot
          plot3d
@@ -19,11 +21,11 @@
          contour
          shade
          surface
-         (rename-out [orig:mix mix]
-                     [orig:fit fit]
-                     [orig:derivative derivative]
-                     [orig:gradient gradient]
-                     [orig:make-vec make-vec]))
+         (rename-out [fit-int fit])
+         mix
+         derivative
+         gradient
+         make-vec)
 
 (define-syntax-rule (out-fit-struct)
   (begin
