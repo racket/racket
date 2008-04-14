@@ -109,9 +109,10 @@
         [(F: v) (cond [(assoc v (vars)) => cadr]
                       [else (int-err "unknown var: ~a" v)])]
         [(Mu: n b)
-         (with-syntax ([(n*) (generate-temporaries (list n))])
-           (parameterize ([vars (cons (list n #'n*) (vars))])
-             #`(flat-rec-contract n* #,(t->c b))))]
+         (match-let ([(Mu-name: n-nm _) ty])
+           (with-syntax ([(n*) (generate-temporaries (list n-nm))])
+             (parameterize ([vars (cons (list n #'n*) (vars))])
+               #`(flat-rec-contract n* #,(t->c b)))))]
         [(Value: #f) #'false/c]    
         [(Instance: _) #'(is-a?/c object%)]
         [(Class: _ _ _) #'(subclass?/c object%)]

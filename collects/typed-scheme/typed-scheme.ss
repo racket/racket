@@ -91,7 +91,7 @@
                          [(transformed-body ...) (remove-provides #'(body2 ...))])]
            [with-syntax ([(transformed-body ...) (change-contract-fixups #'(transformed-body ...))])])
         (do-time "Typechecked")
-        (printf "checked ~a~n" module-name)
+        #;(printf "checked ~a~n" module-name)
         #;(printf "created ~a types~n" (count!))
         #;(printf "tried to create ~a types~n" (all-count!))
         #;(printf "created ~a union types~n" (union-count!))
