@@ -308,7 +308,8 @@
                          profjWizard:special:java-class
                          profjWizard:special:java-union
                          drscheme:special:insert-image
-                         drscheme:special:insert-large-letters)) #t]
+                         drscheme:special:insert-large-letters
+                         tests:test-menu)) #t]
               [(memq s '(slideshow:special-menu 
                          drscheme:define-popup
                          profj:special:java-interactions-box)) #f]

@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/file scheme/class scheme/unit drscheme/tool framework mred)
+(require scheme/file scheme/class scheme/unit scheme/contract drscheme/tool framework mred)
 (require "test-display.scm")
 (provide tool@)
 
@@ -71,8 +71,7 @@
           (unless (send test-panel is-shown?)
             (send test-frame add-child test-panel)
             (let ([test-box-size
-                   (get-preference 'profj:test-dock-size
-                                   (lambda () '(2/3 1/3)))])
+                   (get-preference 'test:test-dock-size (lambda () '(2/3 1/3)))])
               (send test-frame set-percentages test-box-size))))
         (define test-panel null)
         (define test-frame null)
@@ -105,8 +104,7 @@
         (define/augment (on-tab-change from-tab to-tab)
           (let ([test-editor (send to-tab get-test-editor)]
                 [panel-shown? (send test-panel is-shown?)]
-                [dock? (get-preference 'profj:test-window:docked?
-                                       (lambda () #f))])
+                [dock? (get-preference 'test:test-window:docked? (lambda () #f))])
             (cond [(and test-editor panel-shown? dock?)
                    (send test-panel update-editor test-editor)]
                   [(and test-editor dock?)
@@ -116,7 +114,52 @@
                   [panel-shown? (send test-panel remove)])
             (inner (void) on-tab-change from-tab to-tab)))
 
-        (super-instantiate ())))
+        (inherit get-menu-bar get-menu% register-capability-menu-item get-definitions-text)
+        (define testing-menu 'not-init)
+        (define/private (test-menu-init)
+          (let ([menu-bar (get-menu-bar)]
+                [test-label "Testing"]
+                [enable-label "Enable tests"]
+                [disable-label "Disable tests"])
+            (set! testing-menu (make-object (get-menu%) test-label menu-bar))
+            (make-object (class* menu:can-restore-menu-item% ()
+                           (define enabled? #t)
+                           (define/public (test-enabled?) enabled?)
+                           (define/public (test-enable e) (set! enabled? e))
+                           (super-instantiate ()))
+              disable-label testing-menu  
+              (lambda (_1 _2)
+                (cond 
+                  [(send _1 test-enabled?)
+                   (send _1 set-label enable-label)
+                   (send _1 test-enable #f)
+                   (put-preferences '(tests:enable?) '(#f))]
+                  [else
+                   (send _1 set-label disable-label)
+                   (send _1 test-enable #t)
+                   (put-preferences '(tests:enable?) '(#t))]))
+              #f)
+            (make-object menu:can-restore-menu-item% 
+              "Dock tests"
+              testing-menu
+              (lambda (_1 _2)
+                (if (equal? (send _1 get-label) "Dock tests")
+                    (send _1 set-label "Undock tests")
+                    (send _1 set-label "Dock tests"))) #f)
+            (register-capability-menu-item 'tests:test-menu testing-menu)))
+        (define/override (language-changed)
+          (super language-changed)
+          (let* ([settings (send (get-definitions-text) get-next-settings)]
+                 [language (drscheme:language-configuration:language-settings-language settings)]
+                 [show-testing (send language capability-value 'tests:test-menu)])
+            (when (eq? testing-menu 'not-init) (test-menu-init))
+            (if show-testing
+                (send testing-menu restore)
+                (send testing-menu delete))))
+        
+        (drscheme:language:register-capability 'tests:test-menu (flat-contract boolean?) #f)
+        (super-instantiate ())
+        ))
 
     (define (test-tab%-mixin %)
       (class* % ()
@@ -141,8 +184,7 @@
                  [settings
                   (drscheme:language-configuration:language-settings-settings
                    language-settings)])
-            (when (object-method-arity-includes? language
-                                                 'update-test-setting 2)
+            (when (object-method-arity-includes? language 'update-test-setting 2)
               (let ([next-setting
                      (drscheme:language-configuration:make-language-settings
                       language

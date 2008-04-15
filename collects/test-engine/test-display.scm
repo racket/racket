@@ -48,9 +48,9 @@
                     (send current-tab current-test-window #f)
                     (send current-tab current-test-editor #f)))))
         (if (and drscheme-frame
-                 (get-preference 'profj:test-window:docked? 
+                 (get-preference 'test:test-window:docked? 
                                  (lambda ()
-                                   (put-preferences '(profj:test-window:docked?)
+                                   (put-preferences '(test:test-window:docked?)
                                                     '(#f))
                                    #f)))
           (send drscheme-frame display-test-panel content)
@@ -76,7 +76,7 @@
                            "Test passed!\n\n"]
                           [(zero? failed-tests) "All tests passed!\n\n"]
                           [(= failed-tests total-tests) "0 tests passed.\n"]
-                          [else "~a of the ~a tests failed.\n\n"]))))]
+                          [else (format "~a of the ~a tests failed.\n\n" failed-tests total-tests)]))))]
              [check-outcomes
               (lambda (zero-message)
                 (send editor insert
@@ -213,7 +213,7 @@
                          (lambda (b c)
                            (when (eq? 'button (send c get-event-type))
                              (send this show #f)
-                             (put-preferences '(profj:test-window:docked?)
+                             (put-preferences '(test:test-window:docked?)
                                               '(#t))
                              (switch-func))))
             (make-object grow-box-spacer-pane% button-panel)))
@@ -266,7 +266,7 @@
                  button-panel
                  (lambda (b c)
                    (when (eq? 'button (send c get-event-type))
-                     (put-preferences '(profj:test-window:docked?) '(#f))
+                     (put-preferences '(test:test-window:docked?) '(#f))
                      (send frame undock-tests))))
 
     (define/public (update-editor e)
@@ -278,7 +278,7 @@
 
     (define/public (remove)
       (let ([parent (get-parent)])
-        (put-preferences '(profj:test-dock-size)
+        (put-preferences '(test:test-dock-size)
                          (list (send parent get-percentages)))
         (send parent delete-child this)))))
 
