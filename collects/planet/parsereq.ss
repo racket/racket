@@ -5,12 +5,51 @@
          "private/data.ss")
 
 (provide (struct-out request)
+         parse-package-string
+         (struct-out exn:parse-failure)
          spec->req
          pkg-spec->full-pkg-spec
-         version->bounds)
+         version->bounds
+         
+         string->longpkg
+         string->shortpkg
+         short-pkg-string->spec)
 
 (define-struct request (full-pkg-spec file path))
 
+(define (tospec owner pkg maj min)
+  `(,owner ,pkg ,@(if maj (list maj) '()) ,@(if min (list min) '())))
+
+(define-struct (exn:parse-failure exn:fail) ())
+
+(define (string->longpkg s)
+  (let ([mtch (regexp-match #rx"^[ ]*([^ :/]+)[ ]+([^ :/]+)[ ]*([0-9]*)[ ]*([0-9]*)[ ]*$" s)])
+    (if mtch 
+        (let-values ([(owner pkg majstr minstr) (apply values (cdr mtch))])
+          (tospec owner pkg 
+                  (if (string=? majstr "") #f (string->number majstr))
+                  (if (string=? minstr "") #f (string->number minstr))))
+        #f)))
+
+(define (string->shortpkg s)
+  (define ((yell fmt) x) (raise (make-exn:parse-failure (format fmt x) (current-continuation-marks))))
+  (with-handlers ([exn:parse-failure? (λ (e) #f)])
+    (let* ([pkg-spec/tail (short-pkg-string->spec s yell)]
+           [pkg-spec (car pkg-spec/tail)]
+           [tail     (cadr pkg-spec/tail)])
+      (if (regexp-match #rx"^[ ]*$" tail) pkg-spec #f))))
+
+(define all-parsers (list string->longpkg string->shortpkg))
+
+;; parse-package-string : string -> pkg-spec
+;; parses a "package name string", the kind of string that shows up in places where we're only interested
+;; in naming a particular package, not a full path
+(define (parse-package-string str)
+  (define (yell str) (raise (make-exn:parse-failure str (current-continuation-marks))))
+  (ormap (λ (p) (p str)) all-parsers))
+
+;; spec->req : sexp[require sexp] stx -> request
+;; maps the given require spec to a planet package request structure
 (define (spec->req spec stx)
   (match (cdr spec)
     [(file-name pkg-spec path ...)
@@ -27,18 +66,28 @@
     [((? (lambda (x) (or (symbol? x) (string? x))) s))
      (let ([str (if (symbol? s) (symbol->string s) s)])
        (define (yell msg) (λ (str) (raise-syntax-error #f (format msg str) stx)))
-       (try-parsing str
-                    ([owner   (get-next-slash #:on-error (yell "Illegal syntax; expected an owner, received ~e"))]
-                     [package (get-next-slash-or-end #:on-error (yell "Illegal syntax; expected a package, received ~e"))])
-                    (λ (tail)
-                      (let-values ([(pkg maj min) (parse-package package stx)])
-                        (let* ([pkg-spec `(,owner ,pkg ,@(if maj (list maj) '()) ,@(if min (list min) '()))]
-                               [fullspec (pkg-spec->full-pkg-spec pkg-spec stx)]
-                               [final-path (if (string=? tail "")
-                                               "main.ss"
-                                               (string-append tail ".ss"))])
-                          (make-request fullspec final-path '()))))))]
+       (let* ([pkg-spec/tail (short-pkg-string->spec str yell)]
+              [pkg-spec (car pkg-spec/tail)]
+              [tail (cadr pkg-spec/tail)]
+              [fullspec (pkg-spec->full-pkg-spec pkg-spec stx)]
+              [final-path (if (string=? tail "")
+                              "main.ss"
+                              (string-append tail ".ss"))])
+         (make-request fullspec final-path '())))]
     [_ (raise-syntax-error 'require (format "Illegal PLaneT invocation: ~e" (cdr spec)) stx)]))
+
+;; short-pkg-string->spec : string (string -> string -> 'a) -> (list pkg-spec string)
+;; extracts the named package from the given short-style string, returning 
+;; both that package spec and the leftover string
+(define (short-pkg-string->spec str yell)
+  (try-parsing str
+    ([(consume-whitespace)]
+     [owner   (get-next-slash        #:on-error (yell "expected an owner, received ~e"))]
+     [package (get-next-slash-or-end #:on-error (yell "expected a package, received ~e"))])
+    (λ (tail)
+      (let*-values ([(yell!) (yell "~a")]
+                    [(pkg maj min) (parse-package package yell!)])
+        (list (tospec owner pkg maj min) tail)))))
 
 ; pkg-spec->full-pkg-spec : PKG-SPEC syntax -> FULL-PKG-SPEC
 (define (pkg-spec->full-pkg-spec spec stx)
@@ -60,10 +109,10 @@
     [_ (fail)]))
 
 
-  ;; version->bounds : VER-SPEC -> (list (number | #f) number (number | #f)) | #f
-  ;; determines the bounds for a given version-specifier
-  ;; [technically this handles a slightly extended version of VER-SPEC where MAJ may
-  ;;  be in a list by itself, because that's slightly more convenient for the above fn]
+;; version->bounds : VER-SPEC -> (list (number | #f) number (number | #f)) | #f
+;; determines the bounds for a given version-specifier
+;; [technically this handles a slightly extended version of VER-SPEC where MAJ may
+;;  be in a list by itself, because that's slightly more convenient for the above fn]
 (define (version->bounds spec-list fail)
   (match spec-list
     [() (list #f 0 #f)]
