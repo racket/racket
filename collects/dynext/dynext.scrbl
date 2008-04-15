@@ -3,7 +3,13 @@
 @(require
   scribble/manual
   (for-label scheme
-             dynext))
+             dynext
+             dynext/compile-unit
+             dynext/compile-sig
+             dynext/link-unit
+             dynext/link-sig
+             dynext/file-unit
+             dynext/file-sig))
 
 @title{@bold{Dynext}: Running a C Compiler/Linker}
 
@@ -160,6 +166,22 @@ inlined in the corresponding position in the output list. This
 expansion enables occasional parametrization of flag lists, etc.,
 depending on the current compile variant.}
 
+@subsection[#:tag "compile-sig"]{Signature}
+
+@defmodule[dynext/compile-sig]
+
+@defsignature[dynext:compile^ ()]
+
+Includes everything exported by the @schememodname[dynext/compile] module.
+
+@subsection[#:tag "compile-unit"]{Unit}
+
+@defmodule[dynext/compile-unit]
+
+@defthing[dyntex:compile@ unit?]{
+
+Imports nothing, exports @scheme[dynext:compile^].}
+
 @; ----------------------------------------------------------------------
 
 @section{Linking}
@@ -283,6 +305,23 @@ particular known linker.}
 
 The same as @scheme[expand-for-compile-variant].}
 
+
+@subsection[#:tag "link-sig"]{Signature}
+
+@defmodule[dynext/link-sig]
+
+@defsignature[dynext:link^ ()]
+
+Includes everything exported by the @schememodname[dynext/link] module.
+
+@subsection[#:tag "link-unit"]{Unit}
+
+@defmodule[dynext/link-unit]
+
+@defthing[dyntex:link@ unit?]{
+
+Imports nothing, exports @scheme[dynext:link^].}
+
 @; ----------------------------------------------------------------------
 
 @section{Filenames}
@@ -348,3 +387,21 @@ files.}
 @defproc[(extract-base-filename/ext (s path-string?) (program any/c #f)) (or/c path? false/c)]{
 
 Same as @scheme[extract-base-filename/c], but for extension files.}
+
+
+@subsection[#:tag "file-sig"]{Signature}
+
+@defmodule[dynext/file-sig]
+
+@defsignature[dynext:file^ ()]
+
+Includes everything exported by the @schememodname[dynext/file] module.
+
+@subsection[#:tag "file-unit"]{Unit}
+
+@defmodule[dynext/file-unit]
+
+@defthing[dyntex:file@ unit?]{
+
+Imports nothing, exports @scheme[dynext:file^].}
+

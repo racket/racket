@@ -30,7 +30,6 @@
                        (string->symbol
                         (path->string (path-replace-suffix name #""))))
                      'page)]
-           [id 'doc]
            [tag-src (lambda (v)
                       (if (syntax? modpath)
                           (datum->syntax #f 

@@ -303,7 +303,7 @@
            [s (element->string f)])
       (index* (list (substring s 1 (sub1 (string-length s)))) (list f) f)))
   (define (exec . str)
-    (make-element 'tt (decode-content str)))
+    (make-element 'tt str))
   (define (Flag . str)
     (make-element 'no-break (list (make-element 'tt (cons "-" (decode-content str))))))
   (define (DFlag . str)

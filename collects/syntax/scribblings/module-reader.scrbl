@@ -49,12 +49,19 @@ For example, @scheme[scheme/base/lang/reader] is implemented as
 
 @defproc[(wrap-read-all [mod-path module-path?]
                         [in input-port?]
-                        [read (input-port . -> . any/c)])
+                        [read (input-port . -> . any/c)]
+                        [mod-path-stx syntax?]
+                        [src (or/c syntax? #f)]
+                        [line number?]
+                        [col number?]
+                        [pos number?])
          any/c]{
 
 Repeatedly calls @scheme[read] on @scheme[in] until an end of file,
 collecting the results in order into @scheme[_lst], and derives a
-@scheme[_name-id] from @scheme[(object-name in)].  The result is
+@scheme[_name-id] from @scheme[(object-name in)].  The last five 
+arguments are used to construct the syntax object for the language
+position of the module.  The result is roughly
 
 @schemeblock[
 `(module ,_name-id ,mod-path ,@_lst)

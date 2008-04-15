@@ -1,13 +1,13 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
-          (for-label html/html)
+          (for-label html)
           (for-label xml))
 
 @title{@bold{HTML}: Parsing Library}
 
 
-@defmodule[html/html]{The @schememodname[html/html] library provides
+@defmodule[html]{The @schememodname[html] library provides
 functions to read html documents and structures to represent them.}
 
 
@@ -23,10 +23,10 @@ Reads (X)HTML from a port, producing an @scheme[html] instance.}
 
 
 @defproc[(read-html-as-xml [port input-port?])
-         (listof content)]{
+         (listof content?)]{
  
 Reads HTML from a port, producing an xexpr compatible with the
-@schememodname[xml] library (which defines @scheme[content]).}
+@schememodname[xml] library (which defines @scheme[content?]).}
 
 
 
@@ -34,10 +34,10 @@ Reads HTML from a port, producing an xexpr compatible with the
 @def+int[
 (module html-example scheme
 
-  (code:comment #, @t{Some of the symbols in html/html and xml conflict with})
+  (code:comment #, @t{Some of the symbols in @schememodname[html] and @schememodname[xml] conflict with})
   (code:comment #, @t{each other and with scheme/base language, so we prefix})
   (code:comment #, @t{to avoid namespace conflict.})
-  (require (prefix-in h: html/html)
+  (require (prefix-in h: html)
            (prefix-in x: xml))
 
   (define an-html
@@ -198,9 +198,9 @@ An @scheme[area] is
 @scheme[(make-area (listof attribute))]
 }
 
-@defstruct[(link html-element) ()]{
-A @scheme[link] is
-@scheme[(make-link (listof attribute))]
+@defstruct[(alink html-element) ()]{
+A @scheme[alink] is
+@scheme[(make-alink (listof attribute))]
 }
 
 @defstruct[(img html-element) ()]{
