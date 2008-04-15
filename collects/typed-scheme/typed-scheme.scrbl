@@ -287,7 +287,7 @@ The following constructors are parameteric in their type arguments.
 
 @defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
   and @scheme[t] as the @scheme[cdr]}
-@defform[(-> dom ... rng)]{is the type of functions from the (possibly-empty)
+@defform[#:id -> (dom ... -> rng)]{is the type of functions from the (possibly-empty)
   sequence @scheme[dom ...] to the @scheme[rng] type.}
 @defform[(U t ...)]{is the union of the types @scheme[t ...]}
 @defform[(case-lambda fun-ty ...)]{is a function that behaves like all of
