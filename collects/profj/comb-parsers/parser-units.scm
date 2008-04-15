@@ -665,7 +665,7 @@
     (define class
       (class-def #f #f 
                  (implements-dec identifier)
-                 (repeat (class-body (list field method constructor)))))
+                 (repeat-greedy (class-body (list field method constructor)))))
     
     (define program 
       (make-program #f 
