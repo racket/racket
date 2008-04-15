@@ -2,4 +2,4 @@
 
 (define post-install-collection "installer.ss")
 
-(define scribblings '(("mysterx.scrbl" (multi-page))))
+(define scribblings '(("scribblings/mysterx.scrbl" (multi-page))))

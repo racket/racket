@@ -1,9 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
-          (for-label mysterx
-                     scheme/class
-                     scheme/base
-                     scheme/contract))
+@(require "common.ss")
 
 @title{@bold{MysterX}: Using Windows COM Objects in Scheme}
 
@@ -15,674 +11,20 @@ Distributed COM (DCOM) for your version of Windows is also required.
 Recent versions of Windows come with DCOM; DCOM packages for Windows
 95 and 98 are made available separately.
 
-@table-of-contents[]
-
-@section{Installation}
-
-Two Windows DLLs support low-level operations in MysterX:
-@filepath{myspage.dll} and @filepath{myssink.dll}.  Both are installed
-in the registry (using @exec{regsvr32.exe}) when Setup PLT runs the
-the MysterX post-installer. If you move the location of your PLT
-installation, you may need to re-run Setup PLT to make MysterX
-work. Neither of these DLLs is specific to a PLT Scheme version, so
-it's ok for one version of PLT Scheme to use the DLLs registered by
-another.
-
-@margin-note{Prior to version 369.4, @filepath{myssink.dll} was
-version-specific. Its GUID was changed when it was made
-version-independent.}
-
-If you build a stand-alone executable that uses MysterX, you need to
-specifically include @filepath{myspage.dll} and @filepath{myssink.dll}
-with your distribution, and the DLLs will need to be registered on the
-end user's machine. One way to do that is to include the following
-little setup program (as an executable) in your distribution:
-
-@schemeblock[
-  (module setup scheme/base
-    (require mzlib/runtime-path
-             mzlib/process)
-
-    (code:comment #, @t{Ensure that DLLs are included with the distribution:})
-    (define-runtime-path myspage-dll '(so "myspage"))
-    (define-runtime-path myssink-dll '(so "myssink"))
-
-    (code:comment #, @t{Register the DLLs:})
-    (define regsvr32 
-      (path->string (find-executable-path "regsvr32.exe" #f)))
-    (system* regsvr32 (path->string myspage-dll))
-    (system* regsvr32 (path->string myssink-dll)))
-]
-
-
-@section{Running a Demo}
-
-Try 
-
-@schemeblock[
-  (require mysterx/mxdemo)
-]
-
-The demo requires the MSCal Calendar control.  The calendar control is
-normally installed with Microsoft Office, but it can also be
-downloaded from elsewhere; look for @filepath{mscal.ocx}.
-
-
-@section{Loading}
-
-Load the MysterX module with 
-
-@schemeblock[
-  (require mysterx)
-]
-
-Because some MysterX code relies on the @schememodname[scheme/class]
-class system, you may also need
-
-@schemeblock[
-  (require mzlib/class)
-]
-
-Several MysterX procedures take HTML strings as input.  The
-@schememodname[xml] library provides procedures that convert Scheme
-syntax into XML strings.  You may find using these procedures useful
-in creating HTML strings for use by MysterX.
-
-@; ----------------------------------------------------------------------
-
-@section[#:style 'toc]{Functions and Classes}
-
 @defmodule[mysterx]
 
-@local-table-of-contents[]
-
-@; ----------------------------------------
-
-@subsection{Version}
-
-@defproc[(mx-version) string?]{
-
- Returns a string indicating the version of MysterX.}
-
-@; ----------------------------------------
-@subsection{Browsers}
-
- A MysterX application consists of one or more browsers, which are
- instances of the class @scheme[mx-browser%].
-
-@defproc[(block-while-browsers)  void?]{
- 
- Blocks until all browser windows have been closed or hidden, using
- the show method of @scheme[mx-browser%].  This is useful when a
- MysterX program file is run as a script, to prevent @exec{mzscheme}
- or @exec{mred} from closing prematurely.}
-
-@defclass[mx-browser% object% ()]{
-
-@defconstructor[([label string? "MysterX"] 
-                 [width (or/c exact-nonnegative-integer? (one-of/c 'default)) 'default]
-                 [height (or/c exact-nonnegative-integer? (one-of/c 'default)) 'default]
-                 [x (or/c exact-integer? (one-of/c 'default)) 'default]
-                 [y (or/c exact-integer? (one-of/c 'default)) 'default]
-                 [style (listof (any-of/c 'iconize 'maximize 'no-system-menu
-                                          'no-thick-border 'scrollbars))])]{
-
-  Creates an instance of a MysterX browser. The @scheme[label]
-  argument is a string for the document caption, with default .  The
-  @scheme[width], @scheme[height], @scheme[x], and @scheme[y] give the
-  size and placement of the browser window on the desktop, with
-  defaults provided by Windows.  When @scheme[style-list] includes
-  @scheme['scrollbars], the vertical scrollbar is disabled if
-  scrolling is unnecessary, and the horizontal scrollbar disappears if
-  scrolling is unnecessary.
-
-  Although the browser window cannot be hidden initially, it can be
-  iconized.  The @method[mx-browser% restore] method can be used to
-  restore an iconized browser to an ordinary window.}
-
-@defmethod[(current-document) (is-a?/c mx-document%)]{
-
- Returns the current document in the browser.}
-
-@defmethod[(print-document) void?]{
-
- Prints the document displayed by the browser to the default
- printer.  As an unintentional side-effect, the browser 
- window is minimized.}
-
-@defmethod[(show [show? any/c]) void?]{
-
-  If @scheme[show?] is @scheme[#f], the browser window is hidden.
-  Otherwise, the window is shown.}
-
-@defmethod[(navigate [url string?]) string?]{
-
-  Navigates the browser to the URL given by @scheme[url].
-  Any DHTML changes to the page associated with the URL 
-  are not shown.  Returns a string that is the actual URL 
-  navigated to.}
-
-@defmethod[(navigate/status [url string?]) 
-           (list/c string? (or/c false/c integer? (one-of/c 'no-status)))]{
-
-  Navigates the browser to the URL given by @scheme[url].
-  Any DHTML changes to the page associated with the URL 
-  are not shown.  Returns a list, whose first element string that 
-  is the actual URL navigated to, and whose second element is
-  a status code, one of: @scheme[#f], indicating no status could be 
-  obtained; a number, such as @scheme[200] or @scheme[404], indicating the 
-  http status; or @scheme['no-status], indicating that @scheme[url] does not 
-  denote a URL with the ``http'' scheme.}
-
-@defmethod[(go-back) string?]{
-
-  Navigates the browser back to a URL within its history list.
-  Any DHTML changes to the page associated with the URL 
-  are not shown.  Returns a string that is the actual URL 
-  navigated to.}
-
-@defmethod[(go-forward) string?]{
-
-  Navigates the browser forward to a URL within its history list.  
-  Any DHTML changes to the page associated with the URL are 
-  not shown.  Returns a string that is the actual URL 
-  navigated to.}
-
-@defmethod[(refresh) boolean?]{
-
-  Refreshes the document in the browser.  Returns @scheme[#t]
-  if the refresh is successful, @scheme[#f] otherwise.}
-
-@defmethod[(iconize) void?]{
-
-  Iconizes the browser window.}
-
-@defmethod[(restore) void?]{
-
-  Restores the browser window, if it has been iconized.}
-
-@defmethod[(current-url) string?]{
-
-  Returns a string indicating the currently displayed URL. }
-
-@defmethod[(register-event-handler [elem (is-a?/c mx-element%)] 
-                                   [f ((is-a?/c mx-event%) . -> . any)])
-           void?]{
-
-  Registers an event handler for the HTML element @scheme[elem].
-  The result of @scheme[f] is discarded.}
-
-@defmethod[(unregister-event-handler [elem (is-a?/c mx-element%)]) void?]{
-
-  Unregisters an event handler for an HTML element
-  in the browser.}
-
-@defmethod[(handle-events) void?]{
-
-  Creates a thread to handle events using the registered event
-  handlers.}
-
-@defmethod[(stop-handling-events) void?]{
-
-  Kills the thread currently handling events for
-  the browser.}
-
-}
-
-@; ----------------------------------------
-
-@subsection{Documents}
-
- A browser contains one document at a time.  If 
- hyperlinks are clicked, or the navigation methods
- (navigate, go-forward, go-back) are used, the 
- document changes.
-
-@defclass[mx-document% object% ()]{
-
-@defmethod[(insert-html [html string?]) void?]{
-
-  Inserts the specified HTML string at the
-  beginning of the document.}
-
-@defmethod[(append-html [html string?]) void?]{
-
-  Appends the specified HTML string at the end of
-  the document.}
-
-@defmethod[(replace-html [html string?]) void?]{
-
-  Replace the current HTML in the document with
-  the specified HTML string.}
-
-@defmethod[(objects) (listof (is-a?/c com-object%))]{
-
-  Returns a list of COM objects, including ActiveX
-  controls, that occur in the document.  The order
-  of the objects is the same as in the document.}
-
-@defmethod[(insert-object-from-coclass [coclass string?]
-                                       [width exact-integer?]
-                                       [height exact-integer?]
-                                       [size (one-of/c 'pixels 'percent) 'pixels])
-           com-object%]{
-
-  Inserts a COM object with class @scheme[coclass] at the beginning of
-  the document.  The optional @scheme[size] argument gives an
-  interpretation for the width and height, where @scheme['percent]
-  indicates that the width and height are a fixed percentage of the
-  document window size.  An instance of <com-object> is returned.}
-
-@defmethod[(insert-object-from-progid [progid string?]
-                                       [width exact-integer?]
-                                       [height exact-integer?]
-                                       [size (one-of/c 'pixels 'percent) 'pixels])
-           com-object%]{
-
-  Like @method[mx-document% insert-object-from-coclass], but with a
-  ProgID instead of a COM class.}
-
-@defmethod[(append-object-from-coclass [coclass string?]
-                                       [width exact-integer?]
-                                       [height exact-integer?]
-                                       [size (one-of/c 'pixels 'percent) 'pixels])
-           com-object%]{
-
- Like @method[mx-document% insert-object-from-coclass], but adds to the
- end of the document.}
-
-
-@defmethod[(append-object-from-progid [progid string?]
-                                       [width exact-integer?]
-                                       [height exact-integer?]
-                                       [size (one-of/c 'pixels 'percent) 'pixels])
-           com-object%]{
-
- Like @method[mx-document% insert-object-from-progid], but adds to the
- end of the document.}
-
-@defmethod[(title) string?]{
-
-  Returns a string indicating the document's title, that is,
-  the text that appears within HTML TITLE tags.  If the document 
-  has no title, the empty string is returned.}
-
-@defmethod[(find-element [tag string?]
-                         [id string?]
-                         [index exact-nonnegative-integer? 0])
-           (is-a?/c mx-element%)]{
-
-  Returns an object that encapsulates an HTML element, where
-  @scheme[tag] names an HTML tag, and @scheme[id] names the @scheme["id"]
-  attribute of the HTML element.  The @scheme[index] is a nonnegative
-  integer indicating the zero-based index of the element among all
-  elements with the same @scheme[tag] and @scheme[id].  The ordering
-  of elements is defined by Internet Explorer.  The requested element
-  must be within the document's @scheme["body"] tags or the
-  @scheme["body"] element itself.}
-
-@defmethod[(find-element-by-id-or-name
-                         [id string?]
-                         [index exact-nonnegative-integer? 0])
-           (is-a?/c mx-element%)]{
-
-  Returns an object that encapsulates an HTML element, where
-  @scheme[id] names either the @scheme["id"] or @scheme["name"]
-  attribute of the HTML element.  The @scheme[index] is a nonnegative
-  integer indicating the zero-based index of the element among all
-  elements with the same @scheme["id"] or @scheme["name"].  The ordering
-  of elements is defined by Internet Explorer.  The requested element
-  must be within the document's @scheme["body"] tags or the
-  @scheme["body"] element itself.}
-
-@defmethod[(elements-with-tag [tag string?])
-           (listof (is-a?/c mx-element%))]{
-
-  Returns a list of elements with the HTML tag given by @scheme[tag].
-  The requested elements must be within the document's @scheme["body"]
-  tags or the @scheme["body"] element itself.}
-
-}
+@table-of-contents[]
+
+@include-section["overview.scrbl"]
+@include-section["version.scrbl"]
+@include-section["browsers.scrbl"]
+@include-section["documents.scrbl"]
+@include-section["html-events.scrbl"]
+@include-section["com-types.scrbl"]
+@include-section["com.scrbl"]
+@include-section["dcom.scrbl"]
 
 @;{
-
-  HTML events
-  -----------
-
-  MysterX HTML events are generated by mouse and
-  keyboard interaction with HTML elements in a
-  document.  HTML events are instances of the
-  class mx-event%.  The action that generated an
-  event can be determined by the following
-  predicates, only one of which may hold:
-
-> keypress? :: (send an-mx-event keypress?)
-> keydown? :: (send an-mx-event event-keydown?) 
-> keyup? :: (send an-mx-event keyup?)
-> mousedown? :: (send an-mx-event mousedown?)
-> mousemove? :: (send an-mx-event mousemove?)
-> mouseover? :: (send an-mx-event mouseover?)
-> mouseout? :: (send an-mx-event mouseout?)
-> mouseup? :: (send an-mx-event mouseup?)
-> click? :: (send an-mx-event click?)
-> dblclick? :: (send an-mx-event dblclick?)
-> error? :: (send an-mx-event error?)
-  
-  Events have attributes that give detail about
-  the event.
-
-> alt-key :: (send an-mx-event alt-key)
-
-  Returns #t if the Alt key was pressed when the 
-  event was generated, #f otherwise.
-
-> ctrl-key :: (send an-mx-event ctrl-key)
-
-  Returns #t if the Ctrl key was pressed when the 
-  event was generated, #f otherwise. 
-
-> from-tag :: (send an-mx-event from-tag)
-
-  Returns a string indicating the tag of the HTML
-  element where the mouse is being moved from.
-  Return value is valid only for events for which
-  `mouseover?' or `mouseout?' hold.
-
-> from-id :: (send an-mx-event from-id)
-
-  Returns a string indicating the identifier of
-  the HTML element where the mouse is being moved
-  from.  Return value is valid only for events for
-  which `mouseover?' or `mouseout?' hold.
-
-> id :: (send an-mx-event id)
-
-  Returns a string indicating the identifier of
-  the HTML element where the event occurred.
-
-> keycode :: (send an-mx-event keycode)
-
-  Returns a number indicating the keycode for the
-  key that generated the event.  Return value is 
-  valid only for events for which `keypress?',
-  `keydown', or `keyup?' hold.
-
-> shift-key :: (send an-mx-event shift-key)
-
-  Returns #t if the Shift key was pressed when the 
-  event was generated, #f otherwise.
-
-> tag :: (send an-mx-event tag)
-
-  Returns a string indicating the HTML tag of the
-  element where the event occurred.
-
-> to-tag :: (send an-mx-event to-tag)
-
-  Returns a string indicating the tag of the
-  target HTML element where the mouse is being
-  moved to.  Return value is valid only for events
-  for which `mouseover?' or `mouseout?' hold.
-
-> to-id :: (send an-mx-event to-id)
-
-  Returns a string indicating the identifier of
-  the target HTML element where the mouse is being
-  moved from.  Return value is valid only for
-  events for which `mouseover?' or `mouseout?' hold.
-
-> x :: (send an-mx-event x)
-
-  Returns an integer indicating the x-coordinate 
-  within the document where the event occurred.
-
-> y :: (send an-mx-event y)
-
-  Returns an integer indicating the y-coordinate 
-  within the document where the event occurred.
-
-  COM types
-  ---------
-
-> (com-object-type a-com-object)
-
-  Returns a <com-type> value for `a-com-object', a <com-object>.
-
-> (com-is-a? a-com-object a-com-type)
-
-  Return #t if `a-com-object', a <com-object>, is of the
-  type `a-com-type', a <com-type>.
-
-  COM methods and properties
-  --------------------------
-
-  MysterX allows scripting of most COM components
-  from Scheme.  A COM component can be scripted in
-  MysterX if 1) it supports OLE Automation, that
-  is, the IDispatch interface, and 2) publishes
-  type information using the ITypeInfo interface.
-
-> (com-all-coclasses)
-
-  Returns a list of strings for all COM classes
-  registered on a system.
-
-> (com-all-controls)
-
-  Returns a list of strings for all COM classes
-  registered on a system that have the "Control"
-  subkey.
-
-> (cocreate-instance-from-coclass a-coclass [where])
-> (cci/coclass a-coclass [where])
-
-  `a-coclass` is the name of a COM class.  Returns
-  an instance of the class, of type <com-object>.
-  Useful for COM classes without a visual
-  representation, or when a visual representation
-  is not needed.
-
-  The optional argument `where' indicates a for
-  running the instance, and may be 'local (the
-  default), 'remote, or a string indicating a
-  machine name.  See "Running remote COM servers",
-  below, for more information.
-
-> (cocreate-instance-from-progid a-progid [where])
-> (cci/progid a-progid [where])
-
-  `a-progid` is the ProgID for a COM class.
-  Returns an instance of the class, of type
-  <com-object>.  Useful for COM classes without a
-  visual representation, or when a visual
-  representation is not needed.
-
-  The optional argument `where' indicates a for
-  running the instance, and may be 'local (the
-  default), 'remote, or a string indicating a
-  machine name.  See "Running remote COM servers",
-  below, for more information.
-
-> (coclass a-com-object)
-
-  Given a <com-object>, returns a string that is
-  the name of the COM class instantiated by the
-  object.  Raises an error if the COM class is not
-  known.
-
-> (progid a-com-object)
-
-  Given a <com-object>, returns a string that is
-  the ProgID for the COM class instantiated by the
-  object.  Raises an error if the COM class is not
-  known.
-
-> (set-coclass! a-com-object coclass)
-
-  Sets the COM class for a <com-object> to be
-  `coclass', a string.  This is useful when
-  MysterX COM event-handling procedures can only
-  obtain ambiguous information about the object's
-  COM class.
-
-> (set-coclass-from-progid! a-com-object progid)
-
-  Sets the COM class for a <com-object> to be the
-  class denoted by `progid', a string.  This is
-  useful when MysterX COM event-handling
-  procedures can only obtain ambiguous information
-  about the object's COM class.
-
-> (com-methods a-com-object)
-> (com-methods a-com-type)
-
-  `a-com-object' is a <com-object>.  `a-com-type'
-   is a <com-type>.  Returns a list of strings
-   indicating the names of methods.
-
-> (com-method-type a-com-object method-name)
-> (com-method-type a-com-type method-name)
-
-  `a-com-object' is a <com-object>.  `a-com-type'
-  is a <com-type>.  `method-name' is a string.
-  Returns a list of symbols indicating the type of
-  the specified method.
-
-> (com-invoke a-com-object method-name ...)
-
-  `a-com-object' is a <com-object>, and
-  `method-name' is a string.  Invokes the
-  requested method using the arguments given.  The
-  special value `com-omit' may be used for
-  optional arguments, useful when values are
-  supplied for arguments to the right of the
-  omitted argument(s).
-
-> (com-get-properties a-com-object)
-> (com-get-properties a-com-type)
-
-  `a-com-object' has type <com-object>.
-  `a-com-type' is a <com-type>.  Returns a list of
-  strings indicating the names of readable
-  properties in the object.
-
-> (com-get-property-type a-com-object property-name)
-> (com-get-property-type a-com-type property-name)
-
-  `a-com-object' is a <com-object>, `a-com-type'
-  is a <com-type>, and `property-name' is a
-  string.  Returns a list of symbols indicating
-  the type of the specified property.
-
-> (com-get-property a-com-object property property ...)
-
-  `a-com-object' is a <com-object>, and each 
-  `property' is a string, or a list whose first element is a string,
-  and whose remaining elements are Scheme values (an "indexed" 
-  property).  Returns the value of the final property 
-  by following the indicated path of properties, where each 
-  intermediate property is a <com-object>. 
-
-> (com-set-properties a-com-object)
-> (com-set-properties a-com-type)
-
-  `a-com-object' has type <com-object>.
-  `a-com-type' is a <com-type>.  Returns a list of
-  strings indicating the names of writable
-  properties in the object.
-
-> (com-set-property-type a-com-object pptyroperty-name)
-> (com-set-property-type a-com-type property-name)
-
-  `a-com-object' is a <com-object>, `a-com-type'
-  is a <com-type>, and `property-name' is a
-  string.  Returns a list of symbols indicating
-  the type of the specified property.
-
-> (com-set-property! a-com-object property property ... val)
-
-  `a-com-object' is a <com-object>, each `property' is a 
-   string, or a list whose first element is a string and whose
-   remaining elements are Scheme values (indicating an "indexed"
-   property); `val' is a Scheme value.  Sets the value of the final 
-   property by following the indicated path of properties, where 
-   each intermediate property is a <com-object>. 
-
-> (com-help a-com-object [topic])
-> (com-help a-com-type [topic])
-
-  Starts the Window Help system with help about
-  the COM object or COM type.  `a-com-object' is a
-  <com-object>, `a-com-type' is a <com-type>, and
-  `topic' is an optional string, typically a
-  method or property name.
-
-> (com-object-eq? a-com-object a-com-object)
-
-  Returns #t if the two COM objects are the same,
-  #f otherwise.
-
-> (com-object? a-com-object)
-
-  Returns #t if the argument is a COM object, #f
-  otherwise.
-
-> (com-add-ref a-com-object)
- 
-  Increments the reference count for a COM object.
-  This procedure should only be called when system-level 
-  errors occur due to a mismanaged COM object.  Ordinarily,
-  MysterX handles all COM reference-counting automatically.
-  See also `com-ref-count'.
-
-> (com-ref-count a-com-object)
-
-  Returns a number indicating the current reference count
-  for a COM object.  See also `com-add-ref'.
-
-_DCOM_
-======
-_Remote COM servers_
-====================
-
-  Running remote COM servers
-  --------------------------
-
-  For the MysterX procedures
-  cocreate-instance-from-coclass and
-  cocreate-instance-from-progid, the optional
-  `where' argument may be 'remote.  In that case,
-  the server instance is run at the location given
-  by the Registry key
-
-    HKEY_CLASSES_ROOT\AppID\<CLSID>\RemoteServerName
-
-  where <CLSID> is the CLSID of the application.
-  This key may be set using the DCOMCNFG utility.
-  From DCOMCNFG, pick the application to be run on
-  the Applications tab, then click on the
-  Properties button.  On the Location tab, choose
-  "Run application on the following computer", and
-  enter the machine name.
-
-  In order to run a COM remote server, the Registry on the 
-  client machine must contain an entry at 
-
-    HKEY_CLASSES_ROOT\CLSID\<CLSID>
-
-  where <CLSID> is the CLSID for the server.  The server 
-  application itself need not be installed on the client
-  machine.
-
-  There are a number of configuration issues relating to 
-  DCOM, which MysterX uses to invoke remote COM servers.
-  The Web page 
-
-    http://www.distribucon.com/dcom95.html 
-
-  discusses how to setup client and server machines for 
-  DCOM.
-
   COM events
   -----------
 
@@ -693,8 +35,8 @@ _Remote COM servers_
   programmer to write handlers for both stock and
   custom events.
 
-> (com-events a-com-object)
-> (com-events a-com-type)
+> (com-events [obj com-object?])
+> (com-events [type com-type?])
 
   Returns a list of strings naming the events
   supported by the COM object `a-com-object' or
@@ -705,12 +47,12 @@ _Remote COM servers_
   `set-coclass-from-progid!', then retry the
   procedure.
 
-> (com-event-type a-com-object ev)
-> (com-event-type a-com-type ev)
+> (com-event-type [obj com-object?] ev)
+> (com-event-type [type com-type?] ev)
 
   Returns the type of an event handler for the
   event ev, a string, generated by the particular
-  COM object `a-com-object', or by COM objects
+  COM object `[obj com-object?]', or by COM objects
   that have type `a-com-type'.  The return type of
   all COM event handlers is void.  If calling this
   procedure results in an error indicating that
@@ -719,7 +61,7 @@ _Remote COM servers_
   `set-coclass-from-progid!', then retry the
   procedure.
 
-> (com-register-event-handler a-com-object ev fn)
+> (com-register-event-handler [obj com-object?] ev fn)
 
   Registers the event handler fn, a procedure, to
   handle the event ev, a string, when generated by
@@ -732,7 +74,7 @@ _Remote COM servers_
   `set-coclass!' or `set-coclass-from-progid',
   then retry the procedure.
 
-> (com-unregister-event-handler a-com-object ev)
+> (com-unregister-event-handler [obj com-object?] ev)
 
   Unregisters any event handler for the event ev,
   a string, that is generated by the COM object
@@ -749,7 +91,7 @@ _Remote COM servers_
 > boolean
 
   A boolean.  When a boolean is required in
-  argument position, MysterX will interpret #f as
+  argument position, MysterX will interpret @scheme[#f] as
   false, and any other value as true.
 
 > short-int
@@ -762,7 +104,7 @@ _Remote COM servers_
 
 > (com-currency? a-val)
 
-  Returns #t if `a-val' has type com-currency, #f otherwise.
+  Returns @scheme[#t] if `a-val' has type com-currency, @scheme[#f] otherwise.
 
 > (com-currency->number a-com-curr)
 
@@ -782,13 +124,13 @@ _Remote COM servers_
   
 > (com-date? a-val)
 
-  Returns #t if `a-val' has type com-date, #f otherwise.
+  Returns @scheme[#t] if `a-val' has type com-date, @scheme[#f] otherwise.
 
 > (com-date->date a-com-date)
 
   Returns an instance of the date structure, given `a-com-date',
   a com-date.  In the returned structure, the dst? field is
-  always #f and the time-zone-offset field is 0.
+  always @scheme[#f] and the time-zone-offset field is 0.
 
 > (date->com-date a-date)
 
@@ -801,7 +143,7 @@ _Remote COM servers_
   
 > (com-scode? a-val)
 
-  Returns #t if `a-val' has type com-scode, #f otherwise.
+  Returns @scheme[#t] if `a-val' has type com-scode, @scheme[#f] otherwise.
   
 > (com-scode->number an-scode)
 
@@ -822,14 +164,14 @@ _Remote COM servers_
   
 > (com-iunknown? a-val)
 
-  Returns #t if `a-val' has type com-iunknown, #f otherwise.
+  Returns @scheme[#t] if `a-val' has type com-iunknown, @scheme[#f] otherwise.
   
 > mx-any
 
   A method or property requiring a value of mx-any
   will accept values of any of these Scheme types:
   char, int, float, real, and string, as well as
-  the values #t and #f, as well as values of the
+  the values @scheme[#t] and @scheme[#f], as well as values of the
   COM-specific types <mx-currency>, <mx-date>,
   <mx-scode>, and <mx-unknown-com-object>.
 
@@ -923,7 +265,7 @@ _Remote COM servers_
  A-F).  The first two digits are for the red
  component of the color, the middle two for the
  green component, and the last two for the blue
- component.  For example, "#FFFFFF" is white,
+ component.  For example, "@scheme[#f]FFFFF" is white,
  "#000000" is black, and "#00FF00" is green.
 
  There are also predefined color names.  The
@@ -987,7 +329,7 @@ _Remote COM servers_
 
   Replaces the HTML in the element with the string `html'.  You must 
   use the `find-element' or `find-element-by-id-or-name' methods of 
-  mx-document% to retrieve the updated element.
+  mx-document<%> to retrieve the updated element.
   
 > insert-text :: (send an-mx-element insert-text txt)
 
@@ -1061,7 +403,7 @@ _Remote COM servers_
 
   Sets the attribute named by the string `attr'.  The new
   value `val' has a type that depends on the attribute,
-  but must be either a string, an integer, a float, #t, or #f.
+  but must be either a string, an integer, a float, @scheme[#t], or @scheme[#f].
   
 > click :: (send an-mx-element click)
 
@@ -2234,7 +1576,7 @@ _Remote COM servers_
 > set-text-decoration-none! :: (send an-mx-element set-text-decoration-none! tdn)
 
   Sets the element's CSS text-decoration-none
-  using `tdn'.  If `tdn' is #f, the value is
+  using `tdn'.  If `tdn' is @scheme[#f], the value is
   false, otherwise it is considered true.
 
 > text-decoration-underline :: (send an-mx-element text-decoration-underline)
@@ -2245,7 +1587,7 @@ _Remote COM servers_
 > set-text-decoration-underline! :: (send an-mx-element set-text-decoration-underline! tdu)
 
   Sets the element's CSS text-decoration-underline
-  using `tdu'.  If `tdn' is #f, the value is
+  using `tdu'.  If `tdn' is @scheme[#f], the value is
   false, otherwise it is considered true.
 
 > text-decoration-overline :: (send an-mx-element text-decoration-overline)
@@ -2256,7 +1598,7 @@ _Remote COM servers_
 > set-text-decoration-overline! :: (send an-mx-element set-text-decoration-overline! tdo)
 
   Sets the element's CSS text-decoration-overline
-  using `tdo'.  If `tdn' is #f, the value is
+  using `tdo'.  If `tdn' is @scheme[#f], the value is
   false, otherwise it is considered true.
 
 > text-decoration-linethrough :: (send an-mx-element text-decoration-linethrough)
@@ -2268,7 +1610,7 @@ _Remote COM servers_
 
   Sets the element's CSS
   text-decoration-linethrough using `tdlt'.  If
-  `tdn' is #f, the value is false, otherwise it is
+  `tdn' is @scheme[#f], the value is false, otherwise it is
   considered true.
 
 > text-decoration-blink :: (send an-mx-element text-decoration-blink)
@@ -2279,7 +1621,7 @@ _Remote COM servers_
 > set-text-decoration-blink! :: (send an-mx-element set-text-decoration-blink! bl)
 
   Sets the element's CSS text-decoration-blink
-  using `bl'.  If `tdn' is #f, the value is false,
+  using `bl'.  If `tdn' is @scheme[#f], the value is false,
   otherwise it is considered true.
 
 > pixel-top :: (send an-mx-element pixel-top)

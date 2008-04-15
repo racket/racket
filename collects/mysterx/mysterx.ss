@@ -24,6 +24,8 @@
   (provide
     mx-browser%
     mx-element%
+    mx-document<%>
+    mx-event<%>
     mx-version
     block-while-browsers
     com-invoke
@@ -2292,6 +2294,8 @@
 	(define y (lambda () (mxprims:event-y event)))
 	(super-make-object)))
 
+  (define mx-event<%> (class->interface mx-event%))
+
   (define mx-browser%
     (class object% (init (label "MysterX")
 			 (width 'default)
@@ -2589,6 +2593,8 @@
 	 (apply append-object-from-progid-raw args)))
 
      (super-make-object)))
+
+  (define mx-document<%> (class->interface mx-document%))
 
   (thread
    (lambda ()
