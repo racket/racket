@@ -2573,7 +2573,7 @@ char *scheme_normal_path_seps(char *si, int *_len, int delta)
 #define PATH_EXTRA_SPACE 4
 
 static Scheme_Object *do_build_path(int argc, Scheme_Object **argv, int idelta, int no_final_simplify, int kind)
-/* Originally, it make sense to just perform build operations
+/* Originally, it made sense to just perform build operations
    directly on string representations, because it was simple enough.
    Over the years, though, as we refined the path syntax for Windows
    to deal with all of its idiosyncracies, this has gotten completely 
