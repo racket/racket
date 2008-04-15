@@ -301,7 +301,8 @@
 (test #f immutable? 1)
 (test #t immutable? #(1 2 3))
 (test #f immutable? (vector 1 2 3))
-(test #f immutable? #())
+(test #f immutable? (vector))
+(test #t immutable? #())
 (test #f immutable? (string-copy "hi"))
 
 (test #t immutable? "hi")
