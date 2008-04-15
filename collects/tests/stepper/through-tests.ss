@@ -1670,13 +1670,10 @@
 
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    #;(run-all-tests)
-    (parameterize ([disable-stepper-error-handling #t])
-      (run-tests '(check-expect)))
-    #;(parameterize ([store-steps? #t])
-        (run-tests '(top-def)))
-    #;(parameterize ([display-only-errors #t])
-        (run-all-tests-except '(prims qq-splice time set! local-set! lazy1 lazy2 lazy3))))
+    (parameterize ([disable-stepper-error-handling #t]
+                   #;[display-only-errors #f]
+                   #;[store-steps #f])
+      (run-tests '(check-expect))))
   
 
 
