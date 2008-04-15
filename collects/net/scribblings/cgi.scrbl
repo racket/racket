@@ -4,7 +4,7 @@
                      net/cgi-unit
                      net/cgi-sig))
 
-@title{CGI Scripts}
+@title[#:tag "cgi"]{CGI Scripts}
 
 @defmodule[net/cgi]{The @schememodname[net/cgi] module provides tools
 for scripts that follow the Common Gateway Interface @cite["CGI"].}

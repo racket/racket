@@ -3,7 +3,7 @@
           (for-label net/sendurl
                      scheme/file))
 
-@title{Send URL: Opening a Web Browser}
+@title[#:tag "sendurl"]{Send URL: Opening a Web Browser}
 
 @defmodule[net/sendurl]{Provides @scheme[send-url] for opening a URL
 in the user's chosen web browser.}

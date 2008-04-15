@@ -6,7 +6,7 @@
 
 @(define pt (tt ">"))
 
-@title{POP3: Reading Mail}
+@title[#:tag "pop3"]{POP3: Reading Mail}
 
 @defmodule[net/pop3]{The @schememodname[net/pop3] module provides
 tools for the Post Office Protocol version 3 @cite["RFC977"].}

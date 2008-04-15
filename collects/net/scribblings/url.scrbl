@@ -7,7 +7,7 @@
                      net/head
                      net/uri-codec))
 
-@title{URLs and HTTP}
+@title[#:tag "url"]{URLs and HTTP}
 
 @defmodule[net/url]{The @schememodname[net/url] library provides
 utilities to parse and manipulate URIs, as specified in RFC 2396

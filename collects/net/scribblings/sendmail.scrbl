@@ -4,7 +4,7 @@
                      net/sendmail-unit
                      net/sendmail-sig))
 
-@title{@exec{sendmail}: Sending E-Mail}
+@title[#:tag "sendmail"]{@exec{sendmail}: Sending E-Mail}
 
 @defmodule[net/sendmail]{The @schememodname[net/sendmail] module
 provides tools for sending electronic mail messages using a

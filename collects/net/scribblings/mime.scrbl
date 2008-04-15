@@ -26,9 +26,9 @@
       ...)
      ...))))
 
-@title{MIME: Decoding Internet Data}
+@title[#:tag "mime"]{MIME: Decoding Internet Data}
 
-@defmodule[net/mime]{The @schememodname[net/mime] module provides
+@defmodule[net/mime]{The @schememodname[net/mime] library provides
 utilities for parsing and creating MIME encodings as described in RFC
 2045 through RFC 2049.
 
@@ -235,3 +235,22 @@ when the specification is incorrectly formatted.}
 Raised when type specified for the @scheme["Content-Disposition"]
 field, or when the specification is incorrectly formatted.}
 
+@; ----------------------------------------
+
+@section{MIME Unit}
+
+@defmodule[net/mime-unit]
+
+@defthing[mime@ unit?]{
+
+Imports nothing, exports @scheme[mime^].}
+
+@; ----------------------------------------
+
+@section{MIME Signature}
+
+@defmodule[net/mime-sig]
+
+@defsignature[mime^ ()]{}
+
+Includes everything exported by the @schememodname[net/mime] module.
