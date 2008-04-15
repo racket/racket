@@ -1701,6 +1701,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             goto start_over;
           } else if ((ch < 128) && is_lang_nonsep_char(ch)) {
             Scheme_Object *v;
+            if (!params->can_read_reader) {
+              scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
+                              "read: #! reader expressions not currently enabled");
+              return NULL;
+            }
             v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params, ch);
             if (!v) {
               if (comment_mode & RETURN_FOR_SPECIAL_COMMENT)
