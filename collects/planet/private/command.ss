@@ -15,7 +15,7 @@
    #:program <name-of-the-program-string>
    #:argv <argument vector, generally (current-command-line-arguments)>
    <program-general-description string>
-   [<command1> <brief-help-string> <long-help-description-listof-strings>
+   [<command1> <brief-help-string> <long-help-description-string>
     ... arguments just like the command-line macro takes, until ...
     #:args formals
     body-expr] ...)
@@ -45,7 +45,7 @@
                             [(list? a) a]
                             [(vector? a) (vector->list a)]
                             [else (error 'command "expected a vector or list for arguments, received ~e" a)])]
-                [help (λ () (display-help-message p general-description '((name description) ...)))])
+                [help (λ () (display-help-message p general-description `((name description) ...)))])
            (let-values ([(the-command remainder)
                          (if (null? argslist)
                              (values "help" '())
@@ -60,7 +60,7 @@
                             (λ (_ . formals) final-expr)
                             (pimap symbol->string 'formals)
                             (λ (help-string)
-                              (for-each (λ (l) (display l) (newline)) long-description)
+                              (for-each (λ (l) (display l) (newline)) (wrap-to-count long-description 80))
                               (newline)
                               (display "Usage:\n")
                               (display help-string)
@@ -72,21 +72,22 @@
 ;; display-help-message : string (listof (list string string)) -> void
 ;; prints out the help message
 (define (display-help-message prog general-description commands)
-  (let ([maxlen (apply max (map (λ (p) (string-length (car p))) commands))])
-    (begin
-      (printf "Usage: ~a <subcommand> [option ...] <arg ...>\n" prog)
-      (printf "[note: you can name a subcommand by typing any unambiguous prefix of it.]\n\n")
-      (display general-description)
-      (newline)
-      (newline)
-      (display "For help on a particular subcommand, type 'planet <subcommand> --help'\n")
-      (display "Available subcommands:\n")
-      (for-each (λ (command) 
-                  (let ([padded-name (pad (car command) maxlen)]
-                        [desc        (cadr command)])
-                    (printf "  ~a    ~a\n" padded-name desc)))
-                commands))))
-
+  (let* ([maxlen (apply max (map (λ (p) (string-length (car p))) commands))]
+         [message-lines
+          `(,(format "Usage: ~a <subcommand> [option ...] <arg ...>" prog)
+            "[note: you can name a subcommand by typing any unambiguous prefix of it.]"
+            ""
+            ,@(wrap-to-count general-description 80)
+            ""
+            "For help on a particular subcommand, type 'planet <subcommand> --help'"
+            "Available subcommands:"
+            ,@(map (λ (command) 
+                     (let* ([padded-name (pad (car command) maxlen)]
+                            [desc        (cadr command)]
+                            [msg         (format "  ~a    ~a" padded-name desc)])
+                       msg))
+                   commands))])
+    (for-each (λ (line) (display line) (newline)) message-lines)))
 
 ;; ----------------------------------------
 ;; utility
@@ -105,3 +106,24 @@
     [(pair? pil) (cons (pimap f (car pil))
                        (pimap f (cdr pil)))]
     [else (f pil)]))
+
+;; wrap-to-count : string nat -> (listof string)
+;; breaks str into substrings such that no substring
+;; is longer than n characters long. Only breaks on spaces, which
+;; are eaten in the process.
+(define (wrap-to-count str n)
+  (cond
+    [(< (string-length str) n) (list str)]
+    [(regexp-match-positions #rx"\n" str 0 n)
+     =>
+     (λ (posn)
+       (let-values ([(x y) (values (car (car posn)) (cdr (car posn)))])
+         (cons (substring str 0 x) (wrap-to-count (substring str y) n))))] 
+    [else
+     ;; iterate backwards from char n looking for a good break
+     (let loop ([k n])
+       (cond
+         [(= k 0) (error wrap-to-count "could not break string")]
+         [(char=? (string-ref str k) #\space)
+          (cons (substring str 0 k) (wrap-to-count (substring str (add1 k)) n))]
+         [else (loop (sub1 k))]))]))

@@ -74,15 +74,54 @@
 
 
 (define-syntax (prefix-case stx)
-  (syntax-case stx (else)
+  
+  (define (else? stx)
+    (syntax-case stx (else)
+      [(else clause) #t]
+      [_ #f]))
+  
+  (define (amb? stx)
+    (syntax-case stx (ambiguous)
+      [(ambiguous (name) body) #t]
+      [_ #f]))
+  
+  (define (extract-clause name options transformer default)
+    (case (length options)
+      [(0) default]
+      [(1) (transformer (car options))]
+      [else
+       (raise-syntax-error #f (format "only 1 ~a clause is allowed" name) stx (list-ref options 1))]))
+
+  (define (else-clause->body c)
+    (syntax-case c (else)
+      [(else body) #'body]
+      [_ (raise-syntax-error #f "malformed else clause" stx c)]))
+  
+  (define (amb-clause->body c)
+    (syntax-case c (ambiguous)
+      [(ambiguous (name) body) #'(λ (name) body)]
+      [_ (raise-syntax-error #f "malformed ambiguous clause" stx c)]))
+  
+  (syntax-case stx ()
     [(_ elt
-      [option result] ...
-      [else alternative])
-     #'(with-handlers ([exn:prefix-dispatcher? (λ (e) alternative)])
-         (((get-prefix-dispatcher (list (list option (λ () result)) ...))
-           elt)))]
-    [(_ elt [option result] ...)
-     #'(let ([e elt]) (prefix-case e [option result] ... [else (error 'prefix-case "element ~e was not a prefix" e)]))]))
+      clause ...)
+     (let* ([clauses (syntax-e #'(clause ...))]
+            [else-clauses (filter else? clauses)]
+            [amb-clauses  (filter amb?  clauses)]
+            [rest         (filter (λ (x) (not (or (else? x) (amb? x)))) clauses)]
+            [else (extract-clause "else" else-clauses else-clause->body 
+                                  #'(error 'prefix-case "element ~e was not a prefix" e))]
+            [amb  (extract-clause "ambiguous" amb-clauses amb-clause->body 
+                                  #'(λ (opts) (error 'prefix-case "element matches more than one option: ~s" opts)))])
+       (with-syntax ([else-clause else]
+                     [amb-clause amb]
+                     [((option result) ...) rest])
+         #'(with-handlers ([exn:ambiguous-command? 
+                            (λ (e) (amb-clause (exn:ambiguous-command-possibilities e)))]
+                           [exn:unknown-command?
+                            (λ (e) else-clause)])
+             (((get-prefix-dispatcher (list (list option (λ () result)) ...))
+               elt)))))]))
    
     
     

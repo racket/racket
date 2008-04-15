@@ -3,11 +3,8 @@
 This module contains code that implements the `planet' command-line tool.
   
 PLANNED FEATURES:
-  
-2. Remove a package from the cache
-3. Disable a package without removing it (disabling meaning
-   that if it's a tool it won't start w/ DrScheme, etc)
-4. Examine and alter linkage table
+* Disable a package without removing it (disabling meaning
+  that if it's a tool it won't start w/ DrScheme, etc)
 |#
   (require mzlib/string
            mzlib/file
@@ -34,63 +31,70 @@ PLANNED FEATURES:
      #:argv (current-command-line-arguments)
      "PLT Scheme PLaneT command-line tool. Provides commands to help you manipulate your local planet cache."
      ["create" "create a PLaneT archive from a directory"
-      '("" "Create a PLaneT archive in the current directory whose contents are the directory <path>.")
+      "\nCreate a PLaneT archive in the current directory whose contents are the directory <path>."
       #:once-each
-      [("-f" "--force") "force a package to be created even its info.ss file contains errors."
+      [("-f" "--force") ("force a package to be created even if its info.ss file contains"
+                         "errors.")
        (force-package-building? #t)]
       #:args (path)
       (do-archive path)]
      ["install" "download and install a given package"
-      '("" "Download and install the package that"
-        "   (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))"
-        "would install")          
+      "
+Download and install the package that
+   (require (planet \"file.ss\" (<owner> <pkg> <maj> <min>)))
+would install"
       #:args (owner pkg maj min)
       (download/install owner pkg maj min)]
      ["remove" "remove the specified package from the local cache"
-       '("" "Remove the specified package from the local cache, optionally also removing its distribution file")
+      "
+Remove the specified package from the local cache, optionally also removing its distribution file"
       #:once-each 
-      [("-e" "--erase") "also remove the package's distribution file from the uninstalled-package cache"
+      [("-e" "--erase") 
+       ("also remove the package's distribution file from the"
+        "uninstalled-package cache")
        (erase? #t)]
       #:args (owner pkg maj min)
       ((if (erase?) erase remove) owner pkg maj min)]
      ["show" "list the packages installed in the local cache"
-      '("" "List the packages installed in the local cache")       
+      "\nList the packages installed in the local cache"
       #:once-any
       [("-p" "--packages") "show packages only (default)" (displayer show-installed-packages)]
       [("-l" "--linkage")  "show linkage table only"      (displayer show-linkage)]
       [("-a" "--all")      "show packages and linkage"    (displayer (λ () (show-installed-packages) (newline) (show-linkage)))]
       #:args ()
       ((displayer))]
-     ["clearlinks" "clear the linkage table, unlinking all packages and allowing upgrades"
-      '("" "Clear the linkage table, unlinking all packages and allowing upgrades")
+     ["clearlinks" "clear the linkage table, allowing upgrades"
+      "\nClear the linkage table, allowing upgrades"
       #:args ()
       (unlink-all)]
      ["fileinject" "install a local file to the planet cache"
-       '("" "Install local file <plt-file> into the planet cache as though it had been downloaded from the planet server.  The installed package has path"
-         "  (planet (<owner> <plt-file's filename> <maj> <min>))")
+       "
+Install local file <plt-file> into the planet cache as though it had been downloaded from the planet server.  The installed package has path
+  (planet (<owner> <plt-file's filename> <maj> <min>))"
        #:args (owner plt-file maj min)
        (install-plt-file plt-file owner maj min)]
      ["link" "create a development link"
-       '("" "Create a development link between the specified package specifier and the specified directory name")
+      "\nCreate a development link between the specified package specifier and the specified directory name"
       #:args (owner pkg maj min path)
       (add-hard-link-cmd owner pkg maj min path)]
      ["unlink" "remove development link associated with the given package"
-      '("" "Remove development link associated with the given package")              
+      "\nRemove development link associated with the given package"
       #:args (owner pkg maj min)
       (remove-hard-link-cmd owner pkg maj min)]
      ["fetch" "download a package file without installing it"
-       '("" "Download the given package file without installing it")
+       "\nDownload the given package file without installing it"
        #:args (owner pkg maj min)
        (download/no-install owner pkg maj min)]
      ["url" "get a URL for the given package"
-      '("" "Get a URL for the given package."
-           "This is not necessary for normal use of planet, but may be helpful in some circumstances for retrieving packages.")
+      "
+Get a URL for the given package.
+This is not necessary for normal use of planet, but may be helpful in some circumstances for retrieving packages."
       #:args (owner pkg maj min)
       (get-download-url owner pkg maj min)]
      ["open" "unpack the contents of the given package"
-      '("" "Unpack the contents of the given package into the given directory without installing."
-           "This command is not necessary for normal use of planet. It is intended to allow you to inspect package contents"
-           "offline without needing to install the package.")
+      "
+Unpack the contents of the given package into the given directory without installing.
+This command is not necessary for normal use of planet. It is intended to allow you to inspect package contents offline without needing to install the package."
       #:args (plt-file target)
       (do-unpack plt-file target)]
                                        
@@ -254,6 +258,11 @@ PLANNED FEATURES:
                [((caar c) (car a) (car b)) #t]
                [(not ((cadar c) (car a) (car b))) #f]
                [else (loop (cdr a) (cdr b) (cdr c))])))))
+  
+  
+  
+            
+            
 
 
   ;; ============================================================
