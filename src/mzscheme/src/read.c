@@ -1703,7 +1703,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             Scheme_Object *v;
             if (!params->can_read_reader) {
               scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation,
-                              "read: #! reader expressions not currently enabled");
+                              "read: #! readerppppp expressions not currently enabled");
               return NULL;
             }
             v = read_lang(port, stxsrc, line, col, pos, ht, indentation, params, ch);
@@ -4638,9 +4638,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	  SCHEME_VEC_ELS(vec)[i] = cv;
 	}
 
-        if (l) {
-          SCHEME_SET_IMMUTABLE(vec);
-        }
+        SCHEME_SET_IMMUTABLE(vec);
 
 	v = vec;
       }

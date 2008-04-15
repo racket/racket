@@ -2752,8 +2752,7 @@ static Scheme_Object *stx_activate_certs(Scheme_Object *o, Scheme_Cert **cp)
       SCHEME_VEC_ELS(v2)[i] = e;
     }
 
-    if (size)
-      SCHEME_SET_IMMUTABLE(v2);
+    SCHEME_SET_IMMUTABLE(v2);
     return v2;
   } else if (prefab_p(o)) {
     Scheme_Object *e = NULL;
@@ -5196,8 +5195,7 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
     }
 
     result = r;
-    if (size)
-      SCHEME_SET_IMMUTABLE(result);
+    SCHEME_SET_IMMUTABLE(result);
   } else if (prefab_p(v)) {
     Scheme_Structure *s = (Scheme_Structure *)v;
     Scheme_Object *a;
@@ -5945,8 +5943,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       SCHEME_VEC_ELS(result)[i] = a;
     }
 
-    if (size)
-      SCHEME_SET_VECTOR_IMMUTABLE(result);
+    SCHEME_SET_VECTOR_IMMUTABLE(result);
   } else if (prefab_p(o)) {
     Scheme_Structure *s = (Scheme_Structure *)o;
     Scheme_Object *a;

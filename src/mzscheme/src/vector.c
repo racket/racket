@@ -38,18 +38,10 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 
-static Scheme_Object *zero_length_vector;
-
 void
 scheme_init_vector (Scheme_Env *env)
 {
   Scheme_Object *p;
-
-  REGISTER_SO(zero_length_vector);
-  zero_length_vector = (Scheme_Object *)scheme_malloc_tagged(sizeof(Scheme_Vector)
-							     - sizeof(Scheme_Object *));
-  zero_length_vector->type = scheme_vector_type;
-  SCHEME_VEC_SIZE(zero_length_vector) = 0;
 
   p = scheme_make_folding_prim(vector_p, "vector?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -127,12 +119,9 @@ scheme_make_vector (int size, Scheme_Object *fill)
   Scheme_Object *vec;
   int i;
 
-  if (size <= 0) {
-    if (size) {
-      vec = scheme_make_integer(size);
-      scheme_wrong_type("make-vector", "non-negative exact integer", -1, 0, &vec);
-    } else
-      return zero_length_vector;
+  if (size < 0) {
+    vec = scheme_make_integer(size);
+    scheme_wrong_type("make-vector", "non-negative exact integer", -1, 0, &vec);
   }
 
   if (size < 1024) {
@@ -207,8 +196,7 @@ vector_immutable (int argc, Scheme_Object *argv[])
   Scheme_Object *vec;
 
   vec = vector(argc, argv);
-  if (argc)
-    SCHEME_SET_IMMUTABLE(vec);
+  SCHEME_SET_IMMUTABLE(vec);
 
   return vec;
 }
@@ -411,8 +399,6 @@ static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
 
   ovec = argv[0];
   len = SCHEME_VEC_SIZE(ovec);
-  if (!len)
-    return ovec;
 
   vec = scheme_make_vector(len, NULL);
   for (i = 0; i < len; i++) {
