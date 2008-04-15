@@ -199,8 +199,12 @@ should be returned:
        (extract-addresses "John Doe <doe@localhost>" 'all)
        (extract-addresses "doe@localhost (Johnny Doe)" 'all)
        (extract-addresses "doe@localhost" 'all)
-       (extract-addresses " \"Doe, John\" <doe@localhost>, jane"
-                          'all)
+       (define r
+         (extract-addresses " \"John\" <doe@localhost>, jane"
+                            'all))
+       (length r)
+       (car r)
+       (cadr r)
        ]}
 
 ]}
