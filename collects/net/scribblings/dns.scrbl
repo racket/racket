@@ -4,9 +4,9 @@
                      net/dns-unit
                      net/dns-sig))
 
-@title{DNS: Domain Name Service Queries}
+@title[#:tag "dns"]{DNS: Domain Name Service Queries}
 
-@defmodule[net/dns]{The @schememodname[net/dns] module provides
+@defmodule[net/dns]{The @schememodname[net/dns] library provides
 utilities for looking up hostnames.
 
 Thanks to Eduardo Cavazos and Jason Crowe for repairs and

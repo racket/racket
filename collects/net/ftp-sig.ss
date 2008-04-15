@@ -1,5 +1,6 @@
 #lang scheme/signature
 
+ftp-connection?
 ftp-cd
 ftp-establish-connection ftp-establish-connection*
 ftp-close-connection

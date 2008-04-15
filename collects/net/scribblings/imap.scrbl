@@ -41,7 +41,7 @@
          ...))
      ...))))
 
-@title{IMAP: Reading Mail}
+@title[#:tag "imap"]{IMAP: Reading Mail}
 
 @defmodule[net/imap]{The @schememodname[net/imap] module provides
 utilities for the client side of Internet Message Access Protocol

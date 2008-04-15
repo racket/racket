@@ -1,5 +1,6 @@
 #lang scheme/signature
 
+cookie?
 set-cookie
 cookie:add-comment
 cookie:add-domain

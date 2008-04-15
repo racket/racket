@@ -4,7 +4,7 @@
                      net/nntp-unit
                      net/nntp-sig))
 
-@title{NNTP: Newsgroup Protocol}
+@title[#:tag "nntp"]{NNTP: Newsgroup Protocol}
 
 @defmodule[net/nntp]{The @schememodname[net/nntp] module provides
 tools to access Usenet group via NNTP @cite["RFC977"].}

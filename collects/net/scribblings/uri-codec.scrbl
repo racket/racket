@@ -10,7 +10,7 @@
 @(define uri-codec-eval (make-base-eval))
 @interaction-eval[#:eval uri-codec-eval (require net/uri-codec)]
 
-@title{URI Codec: Encoding and Decoding URIs}
+@title[#:tag "uri-codec"]{URI Codec: Encoding and Decoding URIs}
 
 @defmodule[net/uri-codec]{The @schememodname[net/uri-codec] module
 provides utilities for encoding and decoding strings using the URI

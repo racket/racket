@@ -7,6 +7,7 @@
 
 @include-section["url.scrbl"]
 @include-section["uri-codec.scrbl"]
+@include-section["ftp.scrbl"]
 @include-section["sendurl.scrbl"]
 @include-section["smtp.scrbl"]
 @include-section["sendmail.scrbl"]
@@ -14,9 +15,15 @@
 @include-section["imap.scrbl"]
 @include-section["pop3.scrbl"]
 @include-section["mime.scrbl"]
+@include-section["base64.scrbl"]
+@include-section["qp.scrbl"]
 @include-section["dns.scrbl"]
 @include-section["nntp.scrbl"]
+@include-section["tcp.scrbl"]
+@include-section["tcp-redirect.scrbl"]
+@include-section["ssl-tcp-unit.scrbl"]
 @include-section["cgi.scrbl"]
+@include-section["cookie.scrbl"]
 @include-section["gifwrite.scrbl"]
 
 @(bibliography
@@ -59,6 +66,13 @@
             #:location "RFC"
             #:url "http://www.ietf.org/rfc/rfc2060.txt"
             #:date "1996")
+
+ (bib-entry #:key "RFC2109"
+            #:title "HTTP State Management Mechanism"
+            #:author "D. Kristol and L. Montulli"
+            #:location "RFC"
+            #:url "http://www.ietf.org/rfc/rfc2109.txt"
+            #:date "1997")
 
  (bib-entry #:key "RFC2396"
             #:title "Uniform Resource Identifiers (URI): Generic Syntax"

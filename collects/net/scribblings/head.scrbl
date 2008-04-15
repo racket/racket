@@ -9,7 +9,7 @@
 @(define head-eval (make-base-eval))
 @interaction-eval[#:eval head-eval (require net/head)]
 
-@title{headers: Parsing and Constructing}
+@title[#:tag "head"]{Headers: Parsing and Constructing}
 
 @defmodule[net/head]{The @schememodname[net/head] module provides
 utilities for parsing and constructing RFC 822 headers
