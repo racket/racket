@@ -7528,7 +7528,8 @@
       r)))
 
 (define tex2page-file-if-exists
-  (lambda (f) (when (file-exists? f) (tex2page-file f))))
+  ;; the argument can come from `file-in-home' so it can be #f
+  (lambda (f) (when (and f (file-exists? f)) (tex2page-file f))))
 
 (define do-input
   (lambda ()
