@@ -1429,7 +1429,7 @@
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"
                       (list (string-constant legacy-languages)
-                            (string-constant r5rs-lang-name))
+                            (string-constant r5rs-language-name))
                       (list -1000 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)

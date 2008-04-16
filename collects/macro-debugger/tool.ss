@@ -209,7 +209,7 @@
         (or (equal? main-group "Module")
             (and (equal? main-group (string-constant legacy-languages))
                  (or (member second 
-                             (list (string-constant r5rs-lang-name)
+                             (list (string-constant r5rs-language-name)
                                    "Swindle"))
                      (member third
                              (list (string-constant mzscheme-w/debug)
