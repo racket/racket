@@ -41,9 +41,9 @@
 @title{@bold{SRFIs}: Libraries}
 
 The @link["http://srfi.schemers.org/"]{Scheme Requests for
-Implementation} (a.k.a. @deftech{SRFI}) process allows the Scheme
-community as a whole to propose extensions of Scheme to be supported
-by multiple implementations.
+Implementation} (a.k.a. @deftech{SRFI}) process allows individual
+members of the Scheme community to propose libraries and extensions to
+be supported by multiple Scheme implementations.
 
 PLT Scheme is distributed with implementations of many SRFIs, most of
 which can be implemented as libraries. To import the bindings of SRFI
