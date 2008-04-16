@@ -5,6 +5,11 @@
 
 @section{Installation}
 
+MysterX requires Internet Explorer (IE) 4 or later to be installed.
+Distributed COM (DCOM) for your version of Windows is also required.
+Recent versions of Windows come with DCOM; DCOM packages for Windows
+95 and 98 are made available separately.
+
 Two Windows DLLs support low-level operations in MysterX:
 @filepath{myspage.dll} and @filepath{myssink.dll}.  Both are installed
 in the registry (using @exec{regsvr32.exe}) when Setup PLT runs the
@@ -40,6 +45,8 @@ little setup program (as an executable) in your distribution:
     (system* regsvr32 (path->string myssink-dll)))
 ]
 
+@; ----------------------------------------------------------------------
+
 @section{Running a Demo}
 
 Try 
@@ -52,6 +59,7 @@ The demo requires the MSCal Calendar control.  The calendar control is
 normally installed with Microsoft Office, but it can also be
 downloaded from elsewhere; look for @filepath{mscal.ocx}.
 
+@; ----------------------------------------------------------------------
 
 @section{Loading}
 
@@ -72,3 +80,7 @@ Several MysterX procedures take HTML strings as input.  The
 @schememodname[xml] library provides procedures that convert Scheme
 syntax into XML strings.  You may find using these procedures useful
 in creating HTML strings for use by MysterX.
+
+@; ----------------------------------------------------------------------
+
+@include-section["dcom.scrbl"]

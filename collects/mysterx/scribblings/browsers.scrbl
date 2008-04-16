@@ -3,16 +3,6 @@
 
 @title[#:tag "browsers"]{Browsers}
 
- A MysterX application consists of one or more browsers, which are
- instances of the class @scheme[mx-browser%].
-
-@defproc[(block-while-browsers)  void?]{
- 
- Blocks until all browser windows have been closed or hidden, using
- the show method of @scheme[mx-browser%].  This is useful when a
- MysterX program file is run as a script, to prevent @exec{mzscheme}
- or @exec{mred} from closing prematurely.}
-
 @defclass[mx-browser% object% ()]{
 
 @defconstructor[([label string? "MysterX"] 
@@ -124,3 +114,14 @@
   the browser.}
 
 }
+
+@; ----------------------------------------
+
+@defproc[(block-while-browsers) void?]{
+ 
+ Blocks until all browser windows have been closed or hidden, using
+ the show method of @scheme[mx-browser%].  This is useful when a
+ MysterX program file is run as a script, to prevent @exec{mzscheme}
+ or @exec{mred} from closing prematurely.}
+
+

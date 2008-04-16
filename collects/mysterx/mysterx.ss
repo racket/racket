@@ -27,7 +27,6 @@
     mx-document<%>
     mx-event<%>
     mx-version
-    mx-any?
     block-while-browsers
     com-invoke
     com-get-property
@@ -2596,17 +2595,6 @@
      (super-make-object)))
 
   (define mx-document<%> (class->interface mx-document%))
-
-  (define (mx-any? v)
-    (or (char? v)
-        (real? v)
-        (string? v)
-        (boolean? v)
-        (com-date? v)
-        (com-currency? v)
-        (com-scode? v)
-        (com-iunknown? v)
-        (com-object? v)))
 
   (thread
    (lambda ()
