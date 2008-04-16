@@ -121,16 +121,18 @@
       (inner (void) setup-display cur-rep event-space))
 
     (define/pubment (run)
-      (unless test-info (send this setup-info 'check-base))
-      (inner (void) run))
+      (when (test-execute)
+        (unless test-info (send this setup-info 'check-base))
+        (inner (void) run)))
     (define/public (summarize-results port)
-      (unless test-display (setup-display #f #f))
-      (let ([result (send test-info summarize-results)])
-        (case result
-          [(no-tests) (send this display-untested port)]
-          [(all-passed) (send this display-success port)]
-          [(mixed-results)
-           (send this display-results display-rep display-event-space)])))
+      (when (test-execute)
+        (unless test-display (setup-display #f #f))
+        (let ([result (send test-info summarize-results)])
+          (case result
+            [(no-tests) (send this display-untested port)]
+            [(all-passed) (send this display-success port)]
+            [(mixed-results)
+             (send this display-results display-rep display-event-space)]))))
 
     (define/public (display-success port)
       (fprintf port "All tests passed!~n"))
@@ -154,4 +156,7 @@
     (define/pubment (run-testcase testcase)
       (inner (void) run-testcase testcase))))
 
-(provide test-engine% test-display-textual%)
+(define test-format (make-parameter (lambda (v) (format "~a" v))))
+(define test-execute (make-parameter #t))
+
+(provide test-engine% test-display-textual% test-format test-execute)

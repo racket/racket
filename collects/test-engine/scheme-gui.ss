@@ -5,7 +5,21 @@
   
   (require (except-in "scheme-tests.ss" test) "test-display.scm")
   
+  (define (make-formatter printer)
+    (lambda (value)
+      (let* ([text* (new (editor:standard-style-list-mixin text%))]
+             [text-snip (new editor-snip% [editor text*])])
+        (printer value (open-output-text-editor text* 0))
+        (send text* delete (send text* get-end-position) 'back)
+        (send text* lock #t) 
+        text-snip)))
+  
   (define (format-value value)
+    (parameterize ([constructor-style-printing #t]
+                   [pretty-print-columns 40])
+      (make-formatter (lambda (v o) (pretty-print (print-convert v) o)))))
+  
+  #;(define (format-value value)
     (cond
       [(is-a? value snip%) value]
       [(or (pair? value) (struct? value))
@@ -22,12 +36,12 @@
   
   (define (pop-up)
     (let ([test-info (namespace-variable-value 'test~object #f builder (current-namespace))])
-      (parameterize ([scheme-test-format format-value])
+      (parameterize ([test-format format-value])
         (and test-info
              (send test-info refine-display-class test-display%)
              (send test-info setup-display #f #f)
              (send test-info summarize-results (current-output-port))))))
   
-  (provide test format-value (all-from-out "scheme-tests.ss"))
+  (provide test format-value make-formatter (all-from-out "scheme-tests.ss"))
   
   )

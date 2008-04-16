@@ -38,8 +38,8 @@
            "run-teaching-program.ss"
            stepper/private/shared
            
-           (only test-engine/scheme-gui format-value)
-           (only test-engine/scheme-tests scheme-test-data scheme-test-format)
+           (only test-engine/scheme-gui make-formatter)
+           (only test-engine/scheme-tests scheme-test-data test-format test-execute)
            (lib "test-display.scm" "test-engine")
            )
   
@@ -176,7 +176,8 @@
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
-                 (scheme-test-format format-value)
+                 (test-execute (get-preference 'tests:enable? (lambda () #t)))
+                 (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40))))
                  )))
             (super on-execute settings run-in-user-thread))
           
@@ -532,6 +533,7 @@
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
+              [(tests:test-menu) #t]
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value
                            key)]))

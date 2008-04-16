@@ -199,7 +199,7 @@
                            (when (eq? 'button (send c get-event-type))
                              (close-cleanup)
                              (send this show #f))))
-            (make-object button%
+            #;(make-object button%
                          (string-constant profj-test-results-close-and-disable)
                          button-panel
                          (lambda (b c)
@@ -253,7 +253,7 @@
                  (lambda (b c)
                    (when (eq? 'button (send c get-event-type))
                      (hide))))
-    (make-object button%
+    #;(make-object button%
                  (string-constant profj-test-results-hide-and-disable)
                  button-panel
                  (lambda (b c)

@@ -141,7 +141,7 @@
                           (when (send _1 is-enabled?)
                             (send _1 enable #f)
                             (send disable-opt enable #t)
-                            (put-preferences '(test:enable?) '(#t)))) #f)]
+                            (put-preferences '(tests:enable?) '(#t)))) #f)]
                      [disable-opt
                       (make-object menu:can-restore-menu-item%
                         disable-label testing-menu
@@ -149,7 +149,7 @@
                           (when (send _1 is-enabled?)
                             (send _1 enable #f)
                             (send enable-opt enable #t)
-                            (put-preferences '(test:enable?) '(#f)))) #f)])
+                            (put-preferences '(tests:enable?) '(#f)))) #f)])
               (make-object separator-menu-item% testing-menu)
               (set! dock-menu-item (make-object menu:can-restore-menu-item% 
                                      dock-label testing-menu
@@ -163,12 +163,12 @@
                                            (undock-tests)
                                            (put-preferences '(test:test-window:docked?) '(#f)))) #f))
               
-              (if (get-preference 'test:enable? (lambda () #t))
+              (if (get-preference 'tests:enable? (lambda () #t))
                   (send enable-opt enable #f)
                   (send disable-opt enable #f))
               (if (get-preference 'test:test-window:docked? (lambda () #t))
                   (send dock-menu-item enable #f)
-                  (send undock-menu-item enable #t))
+                  (send undock-menu-item enable #f))
               (register-capability-menu-item 'tests:test-menu testing-menu))))
         (define/override (language-changed)
           (super language-changed)

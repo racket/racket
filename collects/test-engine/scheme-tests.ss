@@ -196,19 +196,19 @@
   (cond
     [(unexpected-error? fail)
      (list "check encountered the following error instead of the expected value, "
-           ((scheme-test-format) (unexpected-error-expected fail))
+           ((test-format) (unexpected-error-expected fail))
            (format ". ~n   :: ~a~n" (unexpected-error-message fail)))]
     [(unequal? fail)
      (list "Actual value "
-           ((scheme-test-format) (unequal-test fail))
+           ((test-format) (unequal-test fail))
            " differs from "
-           ((scheme-test-format) (unequal-actual fail))
+           ((test-format) (unequal-actual fail))
            ", the expected value.\n")]
     [(outofrange? fail)
      (list "Actual value "
-           ((scheme-test-format) (outofrange-test fail))
+           ((test-format) (outofrange-test fail))
            (format " is not within ~v of expected value " (outofrange-range fail))
-           ((scheme-test-format) (outofrange-actual fail))
+           ((test-format) (outofrange-actual fail))
            ".\n")]
     [(incorrect-error? fail)
      (list (format "check-error encountered the following error instead of the expected ~a~n   :: ~a ~n"
@@ -216,7 +216,7 @@
                    (incorrect-error-message fail)))]
     [(expected-error? fail)
      (list "check-error expected the following error, but instead received the value "
-           ((scheme-test-format) (expected-error-value fail))
+           ((test-format) (expected-error-value fail))
            (format ".~n ~a~n" (expected-error-message fail)))]))
 
 
@@ -259,7 +259,6 @@
 (define (insert-test test-info test) (send test-info add-test test))
 
 (define scheme-test-data (make-parameter (list #f #f #f)))
-(define scheme-test-format (make-parameter (lambda (v) (format "~a" v))))
 
 (define scheme-test%
   (class* test-engine% ()
@@ -284,4 +283,4 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test-data scheme-test-format)
+(provide scheme-test-data test-format test-execute)
