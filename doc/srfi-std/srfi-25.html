@@ -1,0 +1,531 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 25: Multi-dimensional Array Primitives</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 25: Multi-dimensional Array Primitives
+
+<H1>Author</H1>
+
+Jussi Piitulainen
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-25/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+<P>
+<UL>
+<LI>Draft: 2001/11/12-2002/01/11 </LI>
+<LI>Revised: 2002/02/03</LI>
+<LI>Final: 2002/05/21</LI>
+</UL>
+</P>
+
+<H1>Abstract</H1>
+
+<p>
+A core set of procedures for creating and manipulating heterogeneous
+multidimensional arrays is proposed. The design is consistent with the
+rest of Scheme and independent of other container data types. It
+provides easy sharing of parts of an array as other arrays without
+copying, encouraging a declarative style of programming.
+</p>
+
+<p>
+The specification is based on an original contribution by Alan Bawden
+in 1993.
+</p>
+
+<H1>Rationale</H1>
+
+<p>
+The proposed arrays encourage a natural declarative programming
+style. They allow sharing of most any rectangular part of an array
+through an affine index mapping, without copying. But imperative style
+is equally natural.
+</p>
+
+<p>
+The design is consistent with the two indexed data structures of
+Scheme: vectors and strings. The design makes arrays a self-contained
+type. These statements are illustrated in the following paragraphs.
+</p>
+
+<p>
+First, in the one-dimensional case, the arguments of the following
+relevant calls match exactly.
+</p>
+
+<pre>
+    (vector-set! v k o)
+    (string-set! s k c)
+    (array-set! a k o)
+</pre>
+
+<p>
+Likewise, <code>make-array</code> matches <code>make-vector</code> and
+<code>make-string</code>. An analogue to <code>vector</code>,
+<code>string</code> and <code>list</code> is provided, alleviating the
+lack of an external representation. Index bounds are specified as for
+<code>substring</code>, lower bound included and upper bound excluded.
+</p>
+
+<p>
+Array shapes are specified as arrays. These can be made with a special
+procedure <code>shape</code> that does not have a shape argument. An
+array does not retain a dependence to the shape array. For example,
+mutation of a shape array is allowed.
+</p>
+
+<p>
+Index mappings return multiple values as multiple values.
+</p>
+
+<p>
+Array dimensions can begin at any index. In particular, the choice
+between <code>0</code> and <code>1</code> is left to the user.
+(Shapes and index objects are zero based, though.)
+</p>
+
+<p>
+The ability to pack an index sequence in a vector is useful for
+implementing higher level operations. (The ability to pack it in a
+one-dimensional array lets one use, say, a row of a matrix as an
+index.)
+</p>
+
+<p>
+It is not required that vectors not be arrays. It is not required that
+they be, either.
+</p>
+
+<H1>Specification</H1>
+
+<p>
+Arrays are heterogeneous data structures whose elements are indexed by
+integer sequences of fixed length.  The length of a valid index
+sequence is the <dfn>rank</dfn> or the number of <dfn>dimensions</dfn>
+of an array. The <dfn>shape</dfn> of an array consists of bounds for
+each index.
+</p>
+
+<p>
+The lower bound <var>b</var> and the upper bound <var>e</var> of a
+dimension are exact integers with
+<code>(&lt;=&nbsp;<var>b</var>&nbsp;<var>e</var>)</code>. A valid
+index along the dimension is an exact integer <var>k</var> that
+satisfies both
+<code>(&lt;=&nbsp;<var>b</var>&nbsp;<var>k</var>)</code> and
+<code>(&lt;&nbsp;<var>k</var>&nbsp;<var>e</var>)</code>. The length of
+the array along the dimension is the difference
+<code>(-&nbsp;<var>e</var>&nbsp;<var>b</var>)</code>. The
+<dfn>size</dfn> of an array is the product of the lengths of its
+dimensions.
+</p>
+
+<p>
+A shape is specified as an even number of exact integers. These are
+alternately the lower and upper bounds for the dimensions of an array.
+</p>
+
+<p>
+The following ten procedures should be implemented.
+</p>
+
+<p><a name="array-p"></a>
+<code>(array? <var>obj</var>)</code><br> 
+
+Returns <samp>#t</samp> if <var>obj</var> is an array, otherwise
+returns <samp>#f</samp>.
+</p>
+
+<p>
+Note: there is no reasonable way to implement this procedure
+accurately in R5RS; <a href="http://srfi.schemers.org/srfi-9/">SRFI
+9</a> (Defining Record Types) specifies a way, and many Scheme
+implementations provide something similar.
+</p>
+
+<p><a name="make-array"></a>
+<code>(make-array <var>shape</var>)</code><br>
+<code>(make-array <var>shape</var> <var>obj</var>)</code><br>
+
+Returns a newly allocated array whose shape is given by
+<var>shape</var>.  If <var>obj</var> is provided, then each element is
+initialized to it. Otherwise the initial contents of each element is
+unspecified. The array does not retain a dependence to
+<var>shape</var>.
+</p>
+
+<p><a name="shape"></a>
+<code>(shape <var>bound ...</var>)</code><br> 
+
+Returns a shape. The sequence <var>bound ...</var> must consist of an
+even number of exact integers that are pairwise not decreasing. Each
+pair gives the lower and upper bound of a dimension. If the shape is
+used to specify the dimensions of an array and <var>bound ...</var> is
+the sequence <var>b0 e0 ... bk ek ...</var> of <var>n</var> pairs of
+bounds, then a valid index to the array is any sequence <var>j0 ... jk
+...</var> of <var>n</var> exact integers where each <var>jk</var>
+satisfies <code>(&lt;=&nbsp;<var>bk</var>&nbsp;<var>jk</var>)</code>
+and <code>(&lt;&nbsp;<var>jk</var>&nbsp;<var>ek</var>)</code>.
+</p>
+
+<p>
+The shape of a <var>d</var>-dimensional array is a
+<var>d</var>&nbsp;&times;&nbsp;<var>2</var> array where the element at
+<var>k 0</var> contains the lower bound for an index along dimension
+<var>k</var> and the element at <var>k 1</var> contains the
+corresponding upper bound, where <var>k</var> satisfies
+<code>(&lt;=&nbsp;0&nbsp;<var>k</var>)</code> and
+<code>(&lt;&nbsp;<var>k</var>&nbsp;<var>d</var>)</code>.
+</p>
+
+<p><a name="array"></a>
+<code>(array <var>shape</var> <var>obj ...</var>)</code><br>
+
+Returns a new array whose shape is given by <var>shape</var> and the
+initial contents of the elements are <var>obj ...</var> in row major
+order. The array does not retain a dependence to <var>shape</var>.
+</p>
+
+<p><a name="array-rank"></a>
+<code>(array-rank <var>array</var>)</code><br>
+
+Returns the number of dimensions of <var>array</var>.
+<pre>
+    (array-rank
+       (make-array (shape 1 2 3 4)))
+</pre>
+
+<p>
+Returns <samp>2</samp>.
+</p>
+
+<p><a name="array-start"></a>
+<code>(array-start <var>array</var> <var>k</var>)</code><br>
+
+Returns the lower bound for the index along dimension <var>k</var>.
+</p>
+
+<p><a name="array-end"></a>
+<code>(array-end <var>array</var> <var>k</var>)</code><br>
+
+Returns the upper bound for the index along dimension <var>k</var>.
+</p>
+
+<!--
+<p>
+<code>(array-shape <var>array</var>)</code><br>
+
+Returns a newly allocated shape of <var>array</var>.
+</p>
+
+<pre>
+    (= (array-rank a)
+       (array-ref (array-shape (array-shape a)) 0 1))
+</pre>
+
+<p>
+Returns <samp>#t</samp>.
+</p>
+
+<p>
+Implementation note: <code>array-shape</code> has <code>(shape 0 2 0
+2)</code> as a fixed point which is reached in two or three iterations
+from any array.
+</p>
+-->
+
+<p><a name="array-ref"></a>
+<code>(array-ref <var>array</var> <var>k ...</var>)</code><br>
+<code>(array-ref <var>array</var> <var>index</var>)</code><br>
+
+Returns the contents of the element of <var>array</var> at index
+<var>k ...</var>. The sequence <var>k ...</var> must be a valid index
+to <var>array</var>. In the second form, <var>index</var> must be
+either a vector or a 0-based 1-dimensional array containing <var>k
+...</var>.
+</p>
+
+<pre>
+    (array-ref (array (shape 0 2 0 3)
+                  'uno 'dos 'tres
+                  'cuatro 'cinco 'seis)
+       1 0)
+</pre>
+
+<p>
+Returns <samp>cuatro</samp>.
+</p>
+
+<pre>
+    (let ((a (array (shape 4 7 1 2) 3 1 4)))
+       (list (array-ref a 4 1)
+             (array-ref a (vector 5 1))
+             (array-ref a (array (shape 0 2)
+                             6 1))))
+</pre>
+
+<p>
+Returns <samp>(3 1 4)</samp>.
+</p>
+
+<p><a name="array-set!"></a>
+<code>(array-set! <var>array</var> <var>k ...</var> <var>obj</var>)</code><br>
+<code>(array-set! <var>array</var> <var>index</var> <var>obj</var>)</code><br>
+
+Stores <var>obj</var> in the element of <var>array</var> at index
+<var>k ...</var>. Returns an unspecified value. The sequence <var>k
+...</var> must be a valid index to <var>array</var>. In the second
+form, <var>index</var> must be either a vector or a 0-based
+1-dimensional array containing <var>k ...</var>.
+
+<pre>
+    (let ((a (make-array
+                (shape 4 5 4 5 4 5))))
+       (array-set! a 4 4 4 'huuhkaja)
+       (array-ref a 4 4 4))
+</pre>
+
+<p>
+Returns <samp>huuhkaja</samp>.
+</p>
+
+<p><a name="share-array"></a>
+<code>(share-array <var>array</var> <var>shape</var> <var>proc</var>)</code>
+<br> 
+
+Returns a new array of shape <var>shape</var> that shares elements of
+<var>array</var> through <var>proc</var>. The procedure
+<var>proc</var> must implement an affine function that returns indices
+of <var>array</var> when given indices of the array returned by
+<code>share-array</code>. The array does not retain a dependence to
+<var>shape</var>.
+</p>
+
+<pre>
+    (define i_4
+       (let* ((i (make-array
+                    (shape 0 4 0 4)
+                    0))
+              (d (share-array i
+                    (shape 0 4)
+                    (lambda (k)
+                       (values k k)))))
+          (do ((k 0 (+ k 1)))
+              ((= k 4))
+             (array-set! d k 1))
+          i))
+</pre>
+
+<p>
+Note: the affinity requirement for <var>proc</var> means that each
+value must be a sum of multiples of the arguments passed to
+<var>proc</var>, plus a constant.
+</p>
+
+<p>
+Implementation note: arrays have to maintain an internal index mapping
+from indices <var>k1 ... kd</var> to a single index into a backing
+vector; the composition of this mapping and <var>proc</var> can be
+recognised as <code>(+ n0 (* n1 <var>k1</var>) ... (* nd
+<var>kd</var>))</code> by setting each index in turn to <code>1</code>
+and others to <code>0</code>, and all to <code>0</code> for the
+constant term; the composition can then be compiled away, together
+with any complexity that the user introduced in their procedure.
+</p>
+
+<p>
+This document does not specify any external representation for arrays.
+This document does not specify when arrays are <code>equal?</code>.
+(Indeed, R5RS <code>equal?</code> will do the wrong thing.)
+</p>
+
+<h1>Examples</h1>
+
+<p>
+The reference implementation comes with a number of files that
+illustrate some ways to use the proposed system (and are very useful
+in <em>testing</em> an implementation; that is their origin).
+</p>
+
+<ol>
+
+<li> A library <a href="http://srfi.schemers.org/srfi-25/arlib.scm">arlib.scm</a> that contains, among
+     several other things, <code>tabulate-array</code> for a more
+     useful initialization of a new array, an
+     <code>array-equal?</code>, and a <code>transpose</code> that can
+     permute the dimensions of an array any which way.
+
+<li> A test suite <a href="http://srfi.schemers.org/srfi-25/test.scm">test.scm</a> for <em>array</em>,
+     and another test suite <a href="http://srfi.schemers.org/srfi-25/list.scm">list.scm</a> for
+     <em>arlib</em>.
+
+<li> A rudimentary display procedure <code>(play array)</code> in <a
+     href="http://srfi.schemers.org/srfi-25/play.scm">play.scm</a>, for playing around with the system.
+
+</ol>
+
+<H1>Implementation</H1>
+
+<p>
+A portable reference implementation is provided. It uses a minimal
+error reporting mechanism that conforms to <a
+href="http://srfi.schemers.org/srfi-23/">SRFI 23</a> (Error reporting
+mechanism). Type disjointness requires support from the host
+implementation, such as support for <a
+href="http://srfi.schemers.org/srfi-9/">SRFI 9</a> (Defining Record
+Types). All names not defined in this proposal are in the prefix
+"<code>array:</code>", which serves as a module system.
+</p>
+
+<p>
+You can get <a href="http://srfi.schemers.org/srfi-25/srfi-25-reference.scm">source for the reference
+implementation</a> as a single file and stop reading. But there are
+variations. This single file represents arrays as procedures (so the
+type predicate is very approximate); it represents index mapping as
+vectors of coefficients; map recognition is not optimised for any
+number of dimensions as that would be redundant in this
+representation.
+</p>
+
+<p>
+The real source comes in too many files. A working installation
+consists of the following parts, each in its own file.
+</p>
+
+<ol>
+
+<li> a <dfn>record type definition</dfn>, either system specific for
+     type disjointness, or portable as procedures, in a file
+     <em>as-*.scm</em>, and
+
+<li> <dfn>indexing operations</dfn> to match the type, in a file
+     <em>ix-*.scm</em>, and
+
+<li> an <dfn>affine recogniser</dfn> of one of three types, optimised
+     up to some number of dimensions, in a file <em>op-*.scm</em>, and
+
+<li> the main source file <a href="http://srfi.schemers.org/srfi-25/array.scm">array.scm</a>.
+
+</ol>
+
+<p>
+Affine recognisers are made by a program <a href="http://srfi.schemers.org/srfi-25/opt.scm">opt.scm</a>
+but one of each type is also available here, optimized for 0, 1, 2 and
+3 dimensions. Choose one type: pick a recogniser with matching index
+procedures; load <tt>as-</tt>, <tt>ix-</tt> and <tt>op-</tt> and
+<tt>array</tt>.)
+</p>
+
+<ol>
+
+<li> In the <a href="http://srfi.schemers.org/srfi-25/op-mbda.scm">mbda</a> type representation, index
+     mappings are procedures that accept an optional argument.  The
+     matching <a href="http://srfi.schemers.org/srfi-25/ix-mbda.scm">access procedures</a> apply the
+     mapping to the arguments of <code>array-ref</code> and
+     <code>array-set!</code>.
+
+<li> In the <a href="http://srfi.schemers.org/srfi-25/op-tter.scm">tter</a> type representation, index
+     mappings are pairs of procedures: one takes exactly the indices,
+     the other takes indices and an object. The matching <a
+     href="http://srfi.schemers.org/srfi-25/ix-tter.scm">access procedures</a> apply the first
+     procedure to the argumets of <code>array-ref</code> and the
+     second procedure to the arguments of <code>array-set!</code>.
+
+<li> In <a href="http://srfi.schemers.org/srfi-25/op-ctor.scm">ctor</a> representation, index mappings
+     are coefficient vectors. The <a href="http://srfi.schemers.org/srfi-25/ix-ctor.scm">access
+     procedures</a> compute the sum of products of coefficients and
+     indexes in a loop on the list.
+
+</ol>
+
+<p>
+Record implementations are available <a href="http://srfi.schemers.org/srfi-25/as-procedure.scm">for
+generic Scheme</a> (arrays are not disjoint from procedures), <a
+href="http://srfi.schemers.org/srfi-25/as-srfi-9-record.scm">for SRFI 9</a> (Defining Record Types)
+(<em>not tested</em>), and <a href="http://srfi.schemers.org/srfi-25/as-plt-struct.scm">for PLT
+Scheme</a> (arrays belong to a struct type).
+</p>
+
+<p>
+With the three files from above, the <a href="http://srfi.schemers.org/srfi-25/array.scm">main source
+file</a> should work in any Scheme implementation without need of
+modification.
+</p>
+
+<p>
+Error checking in the implementation may be a tad expensive. The
+places where it occurs are cleanly separated from the surrounding
+code. (Sharing uses a check that is exponential in the number of
+dimensions. It is disabled above a threshold rank.)
+</p>
+
+<h1>Acknowledgements</h1>
+
+<p>
+The original concept comes from a message to the Usenet newsgroup
+<tt>comp.lang.scheme</tt> by Alan Bawden in 1993. A variant of that
+implementation by Richard Kelsey in the Scheme 48 system was also an
+influence. Apart from the origins, the main design goal has been
+consistency with the core types of Scheme.
+</p>
+
+<p>
+Alan Bawden and Mark K. Gardner gave useful comments at an earlier
+attempt to make this specification public. (There was at least one
+other. Notes have gone missing.) SRFI feedback led to improved
+wording, hidden shapes, and two kinds of index objects.
+</p>
+
+<p>
+The exact title of the proposal comes from a <a href="http://zurich.ai.mit.edu/pipermail/rrrs-authors/1998-May/002349.html">message titled "a process that might work"</a> by William D. Clinger to the <tt>rrrs-authors</tt>
+mailing list in 1998. That appears to be a part of the past of the <a
+href="http://srfi.schemers.org">SRFI process</a>.
+</p>
+
+<H1>Copyright</H1>
+<p>Copyright (C) Jussi Piitulainen (2001). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a
+    href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Tue May 28 18:46:09 MST 2002
+<!-- hhmts end -->
+  </body>
+</html>

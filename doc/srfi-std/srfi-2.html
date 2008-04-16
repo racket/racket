@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head><title>SRFI 2: AND-LET*: an AND with local bindings, a guarded LET* special form</title></head>
+
+<body>
+<H1>Title</H1>
+
+SRFI-2: AND-LET*: an AND with local bindings, a guarded LET* special form
+
+<H1>Author</H1>
+
+Oleg Kiselyov
+
+<H1>Status</H1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion on this SRFI via <A HREF="http://srfi.schemers.org/srfi-2/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+      <LI>Received: 1998/12/28
+      <LI>Revised: 1999/02/09
+      <LI>Draft: 1998/12/28-1999/02/28
+      <LI>Final: 1999/03/01
+</UL>
+
+<H1>Abstract</H1>
+
+<P>Like an ordinary AND, an AND-LET* special form evaluates its arguments --
+expressions -- one after another in order, till the first one that
+yields #f. Unlike AND, however, a non-#f result of one expression can
+be bound to a fresh variable and used in the subsequent expressions.
+AND-LET* is a cross-breed between LET* and AND.
+
+<H1>Rationale</H1>
+
+<P>In case of an ordinary AND formed of proper boolean expressions:<BR>
+(AND E1 E2 ...)<BR>
+expression E2, if it gets to be evaluated, knows that E1 has returned
+non-#f. Moreover, E2 knows exactly what the result of E1 was -- #t --
+which E2 can use to its advantage. If E1 however is an extended
+boolean expression, E2 can no longer tell which particular non-#f
+value E1 has returned. Chances are it took a lot of work to evaluate
+E1, and the produced result (a number, a vector, a string, etc) may be
+of value to E2. Alas, the AND form merely checks that the result is
+not an #f, and throws it away. If E2 needs it, it has to compute that
+value anew. This proposed AND-LET* special form lets constituent
+expressions get hold of the results of already evaluated expressions,
+without re-doing their work.
+
+<P>AND-LET* can be thought of as a combination of LET* and AND, or a
+generalization of COND's send operator =&gt;. An AND-LET* form can also be
+considered a sequence of guarded expressions. In a regular program,
+forms may produce results, bind them to variables and let other forms
+use these results. AND-LET* differs in that it checks to make sure that
+every produced result "makes sense" (that is, not an #f). The first
+"failure" triggers the guard and aborts the rest of the sequence
+(which presumably would not make any sense to execute anyway).
+
+Examples:
+<PRE>
+(AND-LET* ((my-list (compute-list)) ((not (null? my-list))))
+          (do-something my-list))
+
+(define (look-up key alist)
+  (and-let* ((x (assq key alist))) (cdr x)))
+
+(or
+  (and-let* ((c (read-char))
+    ((not (eof-object? c))))
+    (string-set! some-str i c)  
+    (set! i (+ 1 i)))
+  (begin (do-process-eof)))
+
+			; A more realistic example
+                        ; Parse the 'timestamp' ::= 'token1' 'token2'
+                        ;   token1 ::= 'YY' 'MM' 'J'
+                        ;   token2 ::= 'GG' 'gg' "/"
+(define (parse-full-timestamp token1 token2)
+  (AND-LET* (((= 5 (string-length token1)))
+             ((= 5 (string-length token2)))
+             (timestamp
+               (OS:string-&gt;time "%m/%d/%y %H:%M"
+                 (string
+                   (string-ref token1 2) (string-ref token1 3) #\/
+                   (string-ref token1 0) (string-ref token1 1) #\/
+                   (case (string-ref token1 4)
+                     ((#\8 #\9) #\9) (else #\0))
+                   (string-ref token1 4) #\space
+                   (string-ref token2 0) (string-ref token2 1) #\:
+                   (string-ref token2 2) (string-ref token2 3))))
+             ((positive? timestamp)))
+           timestamp))
+</PRE>
+
+<P>
+AND-LET* is also similar to an "anaphoric AND" LISP macro [Rob Warnock,
+comp.lang.scheme, 26 Feb 1998 09:06:43 GMT, Message-ID:
+6d3bb3$3804h@fido.asd.sgi.com]. AND-LET* allows however more than one
+intermediate result, each of which continues to be bound through the
+rest of the form.
+
+
+<H1>Specification</H1>
+
+<H2><a name="and-let">Syntax and Informal Semantics</a></H2>
+
+<PRE>
+AND-LET* (CLAWS) BODY
+
+CLAWS ::= '() | (cons CLAW CLAWS)
+CLAW  ::=  (VARIABLE EXPRESSION) | (EXPRESSION) |
+           BOUND-VARIABLE
+</PRE>
+
+<UL>
+<LI>The CLAWS are evaluated in the strict left-to-right order
+<LI>For each CLAW, the EXPRESSION part is evaluated first (or BOUND-VARIABLE is looked up)
+<LI>If the result is #f, AND-LET* immediately returns #f
+<LI>Otherwise, if  the CLAW is of the form (VARIABLE EXPRESSION)
+the EXPRESSION's value is bound to a freshly made VARIABLE
+<LI>The VARIABLE is available for the rest of the CLAWS , and the BODY
+<LI>As usual, all VARIABLEs must be unique (like in let*)
+</UL>
+
+<H2>Formal (Denotational) Semantics</H2>
+
+<PRE>
+eval[ (AND-LET* (CLAW1 ...) BODY), env] =
+   eval_claw[ CLAW1, env ] andalso
+   eval[ (AND-LET* ( ...) BODY), ext_claw_env[CLAW1, env]]
+
+eval[ (AND-LET* (CLAW) ), env] = eval_claw[ CLAW, env ]
+eval[ (AND-LET* () FORM1 ...), env] = eval[ (BEGIN FORM1 ...), env ]
+eval[ (AND-LET* () ), env] = #t
+
+eval_claw[ BOUND-VARIABLE, env ] =
+   eval[ BOUND-VARIABLE, env ]
+eval_claw[ (EXPRESSION), env ] =
+   eval[ EXPRESSION, env ]
+eval_claw[ (VARIABLE EXPRESSION), env ] =
+   eval[ EXPRESSION, env ]
+
+ext_claw_env[ BOUND-VARIABLE, env ] = env
+ext_claw_env[ (EXPRESSION), env ] =
+   env-after-eval[ EXPRESSION, env ]
+ext_claw_env[ (VARIABLE EXPRESSION), env ] =
+   extend-env[ env-after-eval[ EXPRESSION, env ],
+              VARIABLE boundto eval[ EXPRESSION, env ]]
+</PRE>
+
+<H1>Implementation</H1>
+
+<P>The full implementation plus the validation code are available <A href="http://srfi.schemers.org/srfi-2/vland-gambit.scm">here</A> (which is a copy of
+<A href="http://pobox.com/~oleg/ftp/Scheme/vland.scm">
+http://pobox.com/~oleg/ftp/Scheme/vland.scm</A>).
+
+<P>This is an implementation of AND-LET* as a (Gambit) low-level macro that
+re-writes AND-LET* as a "tree" of AND and LET forms. A validation code is
+also presented, which verifies not only that everything works as
+expected, but also that AND-LET* finds syntax errors where expected.
+
+<H1>Copyright</H1>
+Copyright (C) Oleg Kiselyov (1998). All Rights Reserved. 
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+<address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Dave Mason</a></address>
+<!-- Created: Mon Dec 28 13:49:00 PST 1998 -->
+<P>
+<!-- hhmts start -->
+Last modified: Wed Feb  6 17:21:57 MET 2002
+<!-- hhmts end -->
+</body>
+</html>
+<!-- <code><a href="mailto:oleg@pobox.com">&lt;oleg@pobox.com&gt;</A></code>, <code>&lt;oleg@acm.org&gt;</code>, <code>&lt;oleg@computer.org&gt;</code>-->
+

@@ -1,0 +1,2023 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+            "http://www.w3.org/TR/html4/loose.dtd">
+<!-- 
+ - Do a paragraph check <p>
+ - The Unicode char tables are messed up, but it can't be fixed w/o CSS2
+   support, which I do not currently find in web browsers.
+ - Can I have bangs, plusses, or slashes in #tags? Spaces?
+        Yes: plus, bang, star   No: space  Yes: slash, question, ampersand
+        You can't put sharp in a path, so anything goes, really.
+        Nonetheless, some of these confuse Netscape, so I'll avoid them.
+ -->
+
+<!--========================================================================-->
+<html lang=en-US>
+  <head>
+    <meta name="keywords" content="Scheme, programming language, list processing, SRFI, youthful devotees of intra-gender communion">
+    <link rev=made href="mailto:shivers@ai.mit.edu">
+    <title>SRFI 14: Character-set Library</title>
+
+    <!-- Should have a media=all to get, for example, printing to work.
+      == But my Netscape will completely ignore the tag if I do that.
+      -->
+    <style type="text/css">
+           /* A little general layout hackery for headers & the title. */
+           body { margin-left: +7%;
+                  font-family: "Helvetica", sans-serif;
+                  }
+           /* Netscape workaround: */
+           td, th { font-family: "Helvetica", sans-serif; }
+
+           code, pre { font-family: "courier new", "courier"; }
+
+           div.inset { margin-left: +5%; }
+
+           h1 { margin-left: -5%; }
+           h1, h2 { clear: both; }
+           h1, h2, h3, h4, h5, h6 { color: blue }
+           div.title-text { font-size: large; font-weight: bold; }
+	   h3 { margin-top: 2em; margin-bottom: 0em }
+
+           div.indent { margin-left: 2em; }       /* General indentation */
+           pre.code-example { margin-left: 2em; } /* Indent code examples. */
+
+	   /* "Continue" class marks text that isn't really the start
+	   ** of a new paragraph -- e.g., continuing a para after a 
+	   ** code sample.
+	   */
+	   p.continue { text-indent: 0em; margin-top: 0em}
+
+           /* This stuff is for definition lists of defined procedures.
+           ** A proc-def1 is used when you want a stack of procs to go
+           ** with one dd body. In this case, make the first
+           ** proc a proc-def1, following ones proc-defi's, and the last one
+           ** a proc-defn.
+           **
+           ** Unfortunately, Netscape has huge bugs with respect to style
+           ** sheets and dl list rendering. We have to set truly random
+           ** values here to get the rendering to come out. The proper values
+           ** are in the following style sheet, for Internet Explorer.
+           ** In the following settings, the *comments* say what the 
+           ** setting *really* causes Netscape to do.
+           **
+           ** Ugh. Professional coders sacrifice their self-respect,
+           ** that others may live.
+           */
+           /* m-t ignored; m-b sets top margin space. */
+           dt.proc-def1 { margin-top: 0ex; margin-bottom: 3ex; }
+           dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+           dt.proc-defn { margin-top: 0ex; margin-bottom: 0ex; }
+
+           /* m-t works weird depending on whether or not the last line
+           ** of the previous entry was a pre. Set to zero.
+           */
+           dt.proc-def  { margin-top: 0ex; margin-bottom: 3ex; }
+
+           /* m-b sets space between dd & dt; m-t ignored. */
+           dd.proc-def { margin-bottom: 0.5ex; margin-top: 0ex; } 
+
+
+           /* Boldface the name of a procedure when it's being defined. */
+           code.proc-def { font-weight: bold; font-size: 110%}
+
+           /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+           /* m-b sets space between dd & dt; m-t ignored. */
+           dd.proc-index  { margin-bottom: 0ex; margin-top: 0ex; } 
+           /* What the fuck? */
+           pre.proc-index { margin-top: -2ex; }
+
+           /* Pull the table of contents back flush with the margin.
+           ** Both NS & IE screw this up in different ways.
+           */
+           #toc-table { margin-top: -2ex; margin-left: -5%; }
+
+           /* R5RS proc names are in italic; extended R5RS names 
+           ** in italic boldface.
+           */
+           span.r5rs-proc { font-weight: bold; }
+           span.r5rs-procx { font-style: italic; font-weight: bold; }
+
+           /* Spread out bibliographic lists. */
+           /* More Netscape-specific lossage; see the following stylesheet
+           ** for the proper values (used by IE).
+           */
+           dt.biblio { margin-bottom: 3ex; }
+
+           /* Links to draft copies (e.g., not at the official SRFI site)
+           ** are colored in red, so people will use them during the 
+           ** development process and kill them when the document's done.
+           */
+           a.draft { color: red; }
+
+    </style>
+
+    <style type="text/css" media=all>
+           /* Nastiness: Here, I'm using a bug to work around a bug.
+           ** Netscape rendering bugs mean you need bogus <dt> and <dd>
+           ** margin settings -- settings which screw up IE's proper rendering.
+           ** Fortunately, Netscape has *another* bug: it will ignore this
+           ** media=all style sheet. So I am placing the (proper) IE values
+           ** here. Perhaps, one day, when these rendering bugs are fixed,
+           ** this gross hackery can be removed.
+           */
+           dt.proc-def1 { margin-top: 3ex; margin-bottom: 0ex; }
+           dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+           dt.proc-defn { margin-top: 0ex; margin-bottom: 0.5ex; }
+           dt.proc-def  { margin-top: 3ex; margin-bottom: 0.5ex; }
+
+           pre { margin-top: 1ex; }
+
+           dd.proc-def { margin-bottom: 2ex; margin-top: 0.5ex; } 
+
+           /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+           dd.proc-index { margin-top: 0ex; } 
+           pre.proc-index { margin-top: 0ex; }
+
+           /* Spread out bibliographic lists. */
+           dt.biblio { margin-top: 3ex; margin-bottom: 0ex; }
+           dd.biblio { margin-bottom: 1ex; }
+    </style>
+  </head>
+
+<body>
+
+<!--========================================================================-->
+<H1>Title</H1>
+
+<div class=title-text>SRFI 14: Character-set Library</div>
+
+<!--========================================================================-->
+<H1>Author</H1>
+
+Olin Shivers
+
+<H1>Status</H1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-14/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/10/17
+<LI>Draft: 1999/10/30-1999/12/30
+<LI>Revised: 2000/04/30
+<LI>Revised: 2000/04/30
+<LI>Revised: 2000/06/09
+<LI>Revised: 2000/12/23
+</UL>
+
+<!--========================================================================-->
+<h1>Table of contents</H1>
+
+<!-- A bug in netscape (?) keeps the first link in this UL from being active.
+==== So the Abstract link be dead. 99/8/22 -Olin
+-->
+<ul id=toc-table>
+<li><a href="#Abstract">Abstract</a>
+<li><a href="#VariableIndex">Variable index</a>
+<li><a href="#Rationale">Rationale</a>
+  <ul>
+  <li><a href="#LinearUpdateOperations">"Linear-update" operations</a>
+  <li><a href="#ExtraSRFI">Extra-SRFI recommendations</a>
+  </ul>
+
+<li><a href="#Specification">Specification</a>
+  <ul>
+  <li><a href="#GeneralProcs">General procedures</a>
+  <li><a href="#Iterating">Iterating over character sets</a>
+  <li><a href="#Creating">Creating character sets</a>
+  <li><a href="#Querying">Querying character sets</a>
+  <li><a href="#Algebra">Character set algebra</a>
+  <li><a href="#StandardCharsets">Standard character sets</a>
+  </ul>
+
+<li><a href="#StandardCharsetDefs">Unicode, Latin-1 and ASCII definitions of the standard character sets</a>
+<li><a href="#ReferenceImp">Reference implementation</a>
+<li><a href="#Acknowledgements">Acknowledgements</a>
+<li><a href="#Links">References &amp; Links</a>
+<li><a href="#Copyright">Copyright</a>
+</ul>
+
+<!--========================================================================-->
+<h1><a name="Abstract">Abstract</a></H1>
+<p>
+
+The ability to efficiently represent and manipulate sets of characters is an
+unglamorous but very useful capability for text-processing code -- one that
+tends to pop up in the definitions of other libraries.  Hence it is useful to
+specify a general substrate for this functionality early.  This SRFI defines a
+general library that provides this functionality. 
+
+It is accompanied by a reference implementation for the spec. The reference
+implementation is fairly efficient, straightforwardly portable, and has a
+"free software" copyright. The implementation is tuned for "small" 7 or 8
+bit character types, such as ASCII or Latin-1; the data structures and
+algorithms would have to be altered for larger 16 or 32 bit character types
+such as Unicode -- however, the specs have been carefully designed with these
+larger character types in mind.
+
+Several forthcoming SRFIs can be defined in terms of this one:
+<ul>
+    <li> string library
+    <li> delimited input procedures (<em>e.g.</em>, <code>read-line</code>)
+    <li> regular expressions
+</ul>
+
+
+<!--========================================================================-->
+<h1><a name="VariableIndex">Variable Index</a></h1>
+<p>
+Here is the complete set of bindings -- procedural and otherwise --
+exported by this library. In a Scheme system that has a module or package 
+system, these procedures should be contained in a module named "char-set-lib".
+
+<div class=indent>
+<dl>
+<dt class=proc-index> Predicates &amp; comparison
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set-p">char-set?</a> <a href="#char-set=">char-set=</a> <a href="#char-set<=">char-set<=</a> <a href="#char-set-hash">char-set-hash</a>
+</pre>
+
+<dt class=proc-index> Iterating over character sets
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set-cursor">char-set-cursor</a> <a href="#char-set-ref">char-set-ref</a> <a href="#char-set-cursor-next">char-set-cursor-next</a> <a href="#end-of-char-set-p">end-of-char-set?</a> 
+<a href="#char-set-fold">char-set-fold</a> <a href="#char-set-unfold">char-set-unfold</a> <a href="#char-set-unfold!">char-set-unfold!</a>
+<a href="#char-set-for-each">char-set-for-each</a> <a href="#char-set-map">char-set-map</a>
+</pre>
+
+<dt class=proc-index> Creating character sets
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set-copy">char-set-copy</a> <a href="#char-set">char-set</a>
+
+<a href="#list->char-set">list->char-set</a>  <a href="#string->char-set">string->char-set</a>
+<a href="#list->char-set!">list->char-set!</a> <a href="#string->char-set!">string->char-set!</a>
+    
+<a href="#char-set-filter">char-set-filter</a>  <a href="#ucs-range->char-set">ucs-range->char-set</a> <a href="#
+char-set-filter!">
+char-set-filter!</a> <a href="#ucs-range->char-set!">ucs-range->char-set!</a>
+
+<a href="#->char-set">->char-set</a>
+</pre>
+
+<dt class=proc-index> Querying character sets
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set->list">char-set->list</a> <a href="#char-set->string">char-set->string</a>
+<a href="#char-set-size">char-set-size</a> <a href="#char-set-count">char-set-count</a> <a href="#char-set-contains-p">char-set-contains?</a>
+<a href="#char-set-every">char-set-every</a> <a href="#char-set-any">char-set-any</a>
+</pre>
+
+<dt class=proc-index> Character-set algebra
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set-adjoin">char-set-adjoin</a>  <a href="#char-set-delete">char-set-delete</a>
+<a href="#char-set-adjoin!">char-set-adjoin!</a> <a href="#char-set-delete!">char-set-delete!</a>
+
+<a href="#char-set-complement">char-set-complement</a>  <a href="#char-set-union">char-set-union</a>  <a href="#char-set-intersection">char-set-intersection</a>
+<a href="#char-set-complement!">char-set-complement!</a> <a href="#char-set-union!">char-set-union!</a> <a href="#char-set-intersection!">char-set-intersection!</a>
+
+<a href="#char-set-difference">char-set-difference</a>  <a href="#char-set-xor">char-set-xor</a>  <a href="#char-set-diff+intersection">char-set-diff+intersection</a>
+<a href="#char-set-difference!">char-set-difference!</a> <a href="#char-set-xor!">char-set-xor!</a> <a href="#char-set-diff+intersection!">char-set-diff+intersection!</a>
+</pre>
+
+<dt class=proc-index> Standard character sets
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#char-set:lower-case">char-set:lower-case</a>  <a href="#char-set:upper-case">char-set:upper-case</a>  <a href="#char-set:title-case">char-set:title-case</a>
+<a href="#char-set:letter">char-set:letter</a>      <a href="#char-set:digit">char-set:digit</a>       <a href="#char-set:letter+digit">char-set:letter+digit</a>
+<a href="#char-set:graphic">char-set:graphic</a>     <a href="#char-set:printing">char-set:printing</a>    <a href="#char-set:whitespace">char-set:whitespace</a>
+<a href="#char-set:iso-control">char-set:iso-control</a> <a href="#char-set:punctuation">char-set:punctuation</a> <a href="#char-set:symbol">char-set:symbol</a>
+<a href="#char-set:hex-digit">char-set:hex-digit</a>   <a href="#char-set:blank">char-set:blank</a>       <a href="#char-set:ascii">char-set:ascii</a>
+<a href="#char-set:empty">char-set:empty</a>       <a href="#char-set:full">char-set:full</a>
+</pre>
+
+</dl>
+</div>
+
+<!--========================================================================-->
+<h1><a name="Rationale">Rationale</a></h1>
+
+<p>
+The ability to efficiently manipulate sets of characters is quite
+useful for text-processing code. Encapsulating this functionality in
+a general, efficiently implemented library can assist all such code.
+This library defines a new data structure to represent these sets, called
+a "char-set." The char-set type is distinct from all other types.
+
+<p>
+This library is designed to be portable across implementations that use
+different character types and representations, especially ASCII, Latin-1
+and Unicode. Some effort has been made to preserve compatibility with Java
+in the Unicode case (see the definition of <code>char-set:whitespace</code> for the
+single real deviation).
+
+<!--========================================================================-->
+<h2><a name="LinearUpdateOperations">Linear-update operations</a></h2>
+
+<p>
+The procedures of this SRFI, by default, are "pure functional" -- they do not
+alter their parameters. However, this SRFI defines a set of "linear-update"
+procedures which have a hybrid pure-functional/side-effecting semantics: they
+are allowed, but not required, to side-effect one of their parameters in order
+to construct their result. An implementation may legally implement these
+procedures as pure, side-effect-free functions, or it may implement them using
+side effects, depending upon the details of what is the most efficient or
+simple to implement in terms of the underlying representation.
+
+<p>
+The linear-update routines all have names ending with "!".
+
+<p>
+Clients of these procedures <em>may not</em> rely upon these procedures working by
+side effect. For example, this is not guaranteed to work:
+<pre class=code-example>
+(let* ((cs1 (char-set #\a #\b #\c))      ; cs1 = {a,b,c}.
+       (cs2 (char-set-adjoin! cs1 #\d))) ; Add d to {a,b,c}.
+  cs1) ; Could be either {a,b,c} or {a,b,c,d}.
+</pre>
+<p class=continue>
+However, this is well-defined:
+<pre class=code-example>
+(let ((cs (char-set #\a #\b #\c)))
+  (char-set-adjoin! cs #\d)) ; Add d to {a,b,c}.
+</pre>
+
+<p>
+So clients of these procedures write in a functional style, but must
+additionally be sure that, when the procedure is called, there are no other
+live pointers to the potentially-modified character set (hence the term
+"linear update").
+
+<p>
+There are two benefits to this convention:
+<ul>
+  <li> Implementations are free to provide the most efficient possible
+    implementation, either functional or side-effecting.
+  <li> Programmers may nonetheless continue to assume that character sets
+    are purely functional data structures: they may be reliably shared
+    without needing to be copied, uniquified, and so forth.
+</ul>
+
+<p>
+Note that pure functional representations are the right thing for
+ASCII- or Latin-1-based Scheme implementations, since a char-set can
+be represented in an ASCII Scheme with 4 32-bit words. Pure set-algebra
+operations on such a representation are very fast and efficient. Programmers
+who code using linear-update operations are guaranteed the system will
+provide the best implementation across multiple platforms.
+
+<p>
+In practice, these procedures are most useful for efficiently constructing
+character sets in a side-effecting manner, in some limited local context, 
+before passing the character set outside the local construction scope to be
+used in a functional manner.
+
+<p>
+Scheme provides no assistance in checking the linearity of the potentially
+side-effected parameters passed to these functions --- there's no linear
+type checker or run-time mechanism for detecting violations. (But
+sophisticated programming environments, such as DrScheme, might help.)
+
+<!--========================================================================-->
+<h2><a name="ExtraSRFI">Extra-SRFI recommendations</a></h2>
+<p>
+Users are cautioned that the R5RS predicates 
+<div class=inset><code>
+char-alphabetic? <br>
+char-numeric? <br>
+char-whitespace? <br>
+char-upper-case? <br>
+char-lower-case? <br>
+</code>
+</div>
+<p class=continue>
+may or may not be in agreement with the SRFI 14 base character sets
+<div class=inset>
+<code>
+char-set:letter<br>
+char-set:digit<br>
+char-set:whitespace<br>
+char-set:upper-case<br>
+char-set:lower-case<br>
+</code>
+</div>
+<p class=continue>
+Implementors are strongly encouraged to bring these predicates into
+agreement with the base character sets of this SRFI; not to do so risks
+major confusion.
+
+
+<!--========================================================================-->
+<h1><a name="Specification">Specification</a></h1>
+<p>
+In the following procedure specifications:
+<ul>
+    <li> A <var>cs</var> parameter is a character set.
+
+    <li> An <var>s</var> parameter is a string.
+
+    <li> A <var>char</var> parameter is a character.
+
+    <li> A <var>char-list</var> parameter is a list of characters.
+
+    <li> A <var>pred</var> parameter is a unary character predicate procedure, returning 
+      a true/false value when applied to a character.
+
+    <li> An <var>obj</var> parameter may be any value at all.
+</ul>
+
+<p>
+Passing values to procedures with these parameters that do not satisfy these
+types is an error.
+
+<p>
+Unless otherwise noted in the specification of a procedure, procedures
+always return character sets that are distinct (from the point of view
+of the linear-update operations) from the parameter character sets. For
+example, <code>char-set-adjoin</code> is guaranteed to provide a fresh character set,
+even if it is not given any character parameters.
+
+<p>
+Parameters given in square brackets are optional. Unless otherwise noted in the
+text describing the procedure, any prefix of these optional parameters may
+be supplied, from zero arguments to the full list. When a procedure returns
+multiple values, this is shown by listing the return values in square
+brackets, as well. So, for example, the procedure with signature
+<pre class=code-example>
+halts? <var>f [x init-store]</var> -> <var>[boolean integer]</var>
+</pre>
+would take one (<var>f</var>), two (<var>f</var>, <var>x</var>) 
+or three (<var>f</var>, <var>x</var>, <var>init-store</var>) input parameters, 
+and return two values, a boolean and an integer.
+
+<p>
+A parameter followed by "<code>...</code>" means zero-or-more elements. 
+So the procedure with the signature
+<pre class=code-example>
+sum-squares <var>x ... </var> -> <var>number</var>
+</pre>
+takes zero or more arguments (<var>x ...</var>), 
+while the procedure with signature
+<pre class=code-example>
+spell-check <var>doc dict<sub>1</sub> dict<sub>2</sub> ...</var> -> <var>string-list</var>
+</pre>
+takes two required parameters 
+(<var>doc</var> and <var>dict<sub>1</sub></var>) 
+and zero or more optional parameters (<var>dict<sub>2</sub> ...</var>).
+
+
+<!--========================================================================-->
+<h2><a name="GeneralProcs">General procedures</a></h2>
+<dl>
+
+<!--
+==== char-set?
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-p"></a>
+<code class=proc-def>char-set?</code><var> obj -> boolean</var>
+<dd class=proc-def>
+
+    Is the object <var>obj</var> a character set?
+
+<!--
+==== char-set=
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set="></a>
+<code class=proc-def>char-set=</code><var> cs<sub>1</sub> ... -> boolean</var>
+<dd class=proc-def>
+    Are the character sets equal?
+<p>
+    Boundary cases:
+<pre class=code-example>
+(char-set=) => <var>true</var>
+(char-set= cs) => <var>true</var>
+</pre>
+
+<p>
+    Rationale: transitive binary relations are generally extended to n-ary
+    relations in Scheme, which enables clearer, more concise code to be
+    written. While the zero-argument and one-argument cases will almost
+    certainly not arise in first-order uses of such relations, they may well
+    arise in higher-order cases or macro-generated code. 
+    <em>E.g.,</em> consider
+<pre class=code-example>
+(apply char-set= cset-list)
+</pre>
+<p class=continue>
+    This is well-defined if the list is empty or a singleton list. Hence
+    we extend these relations to any number of arguments. Implementors
+    have reported actual uses of n-ary relations in higher-order cases
+    allowing for fewer than two arguments. The way of Scheme is to handle the
+    general case; we provide the fully general extension.
+<p>
+    A counter-argument to this extension is that 
+    <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>'s
+    transitive binary arithmetic relations 
+    (<code>=</code>, <code>&lt;</code>, <em>etc.</em>) 
+    require at least two arguments, hence
+    this decision is a break with the prior convention -- although it is
+    at least one that is backwards-compatible.
+
+<!--
+==== char-set<=
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set<="></a>
+<code class=proc-def>char-set<=</code><var> cs<sub>1</sub> ... -> boolean</var>
+<dd class=proc-def>
+    Returns true if every character set <var>cs<sub>i</sub></var> is 
+    a subset of character set <var>cs<sub>i+1</sub></var>.
+
+<p>
+Boundary cases:
+<pre class=code-example>
+(char-set<=) => <var>true</var>
+(char-set<= cs) => <var>true</var>
+</pre>
+<p>
+Rationale: See <code>char-set=</code> for discussion of zero- and one-argument
+applications. Consider testing a list of char-sets for monotonicity
+with 
+<pre class=code-example>
+(apply char-set<= cset-list)
+</pre>
+
+<!--
+==== char-set-hash
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-hash"></a>
+<code class=proc-def>char-set-hash</code><var> cs [bound] -> integer</var>
+<dd class=proc-def>
+    Compute a hash value for the character set <var>cs</var>. 
+    <var>Bound</var> is a non-negative
+    exact integer specifying the range of the hash function. A positive
+    value restricts the return value to the range [0,<var>bound</var>).
+
+    <p>
+    If <var>bound</var> is either zero or not given, the implementation may use
+    an implementation-specific default value, chosen to be as large as
+    is efficiently practical. For instance, the default range might be chosen
+    for a given implementation to map all strings into the range of
+    integers that can be represented with a single machine word.
+
+
+    <p>
+    Invariant:
+<pre class=code-example>
+(char-set= cs<sub>1</sub> cs<sub>2</sub>) => (= (char-set-hash cs<sub>1</sub> b) (char-set-hash cs<sub>2</sub> b))
+</pre>
+
+    <p>
+    A legal but nonetheless discouraged implementation:
+<pre class=code-example>
+(define (char-set-hash cs . maybe-bound) 1)
+</pre>
+
+<p>
+    Rationale: allowing the user to specify an explicit bound simplifies user
+    code by removing the mod operation that typically accompanies every hash
+    computation, and also may allow the implementation of the hash function to
+    exploit a reduced range to efficiently compute the hash value. 
+    <em>E.g.</em>, for
+    small bounds, the hash function may be computed in a fashion such that
+    intermediate values never overflow into bignum integers, allowing the
+    implementor to provide a fixnum-specific "fast path" for computing the
+    common cases very rapidly.
+
+</dl>
+
+<!--========================================================================-->
+<h2><a name="Iterating">Iterating over character sets</a></h2>
+
+<dl>
+<!--
+==== char-set-cursor char-set-ref char-set-cursor-next end-of-char-set?
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-cursor"></a>
+<a name="char-set-ref"></a>
+<a name="char-set-cursor-next"></a>
+<a name="end-of-char-set-p"></a>
+<code class=proc-def>char-set-cursor</code><var> cset -> cursor</var>
+<dt class=proc-defi>
+<code class=proc-def>char-set-ref</code><var> cset cursor -> char</var>
+<dt class=proc-defi>
+<code class=proc-def>char-set-cursor-next</code><var> cset cursor -> cursor</var>
+<dt class=proc-defn>
+<code class=proc-def>end-of-char-set?</code><var> cursor -> boolean</var>
+<dd class=proc-def>
+    Cursors are a low-level facility for iterating over the characters in a
+    set. A cursor is a value that indexes a character in a char set.
+    <code>char-set-cursor</code> produces a new cursor for a given char set. 
+    The set element indexed by the cursor is fetched with 
+    <code>char-set-ref</code>. 
+    A cursor index is incremented with <code>char-set-cursor-next</code>; 
+    in this way, code can step through every character in a char set. 
+    Stepping a cursor "past the end" of a char set produces a cursor that 
+    answers true to <code>end-of-char-set?</code>. 
+    It is an error to pass such a cursor to <code>char-set-ref</code> or to
+    <code>char-set-cursor-next</code>.
+
+<p>
+    A cursor value may not be used in conjunction with a different character
+    set; if it is passed to <code>char-set-ref</code> or 
+    <code>char-set-cursor-next</code> with
+    a character set other than the one used to create it, the results and
+    effects are undefined.
+
+<p>
+    Cursor values are <em>not</em> necessarily distinct from other types. 
+    They may be
+    integers, linked lists, records, procedures or other values. This license
+    is granted to allow cursors to be very "lightweight" values suitable for
+    tight iteration, even in fairly simple implementations.
+
+<p>
+    Note that these primitives are necessary to export an iteration facility
+    for char sets to loop macros.
+
+<p>
+    Example:
+<pre class=code-example>
+(define cs (char-set #\G #\a #\T #\e #\c #\h))
+
+;; Collect elts of CS into a list.
+(let lp ((cur (char-set-cursor cs)) (ans '()))
+  (if (end-of-char-set? cur) ans
+      (lp (char-set-cursor-next cs cur)
+          (cons (char-set-ref cs cur) ans))))
+  => (#\G #\T #\a #\c #\e #\h)
+
+;; Equivalently, using a list unfold (from SRFI 1):
+(unfold-right end-of-char-set? 
+              (curry char-set-ref cs)
+	      (curry char-set-cursor-next cs)
+	      (char-set-cursor cs))
+  => (#\G #\T #\a #\c #\e #\h)
+</pre>
+
+<p>
+    Rationale: Note that the cursor API's four functions "fit" the functional
+    protocol used by the unfolders provided by the list, string and char-set
+    SRFIs (see the example above). By way of contrast, here is a simpler, 
+    two-function API that was rejected for failing this criterion. Besides 
+    <code>char-set-cursor</code>, it provided a single
+    function that mapped a cursor and a character set to two values, the
+    indexed character and the next cursor. If the cursor had exhausted the
+    character set, then this function returned false instead of the character
+    value, and another end-of-char-set cursor. In this way, the other three
+    functions of the current API were combined together.
+
+<!--
+==== char-set-fold
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-fold"></a>
+<code class=proc-def>char-set-fold</code><var> kons knil cs -> object</var>
+<dd class=proc-def>
+    This is the fundamental iterator for character sets.  Applies the function
+    <var>kons</var> across the character set <var>cs</var> using initial state value <var>knil</var>.  That is,
+    if <var>cs</var> is the empty set, the procedure returns <var>knil</var>.  Otherwise, some
+    element <var>c</var> of <var>cs</var> is chosen; 
+    let <var>cs'</var> be the remaining, unchosen characters.
+    The procedure returns
+<pre class=code-example>
+(char-set-fold <var>kons</var> (<var>kons</var> <var>c</var> <var>knil</var>) <var>cs'</var>)
+</pre>
+    <p>
+    Examples:
+<pre class=code-example>
+;; CHAR-SET-MEMBERS
+(lambda (cs) (char-set-fold cons '() cs))
+
+;; CHAR-SET-SIZE
+(lambda (cs) (char-set-fold (lambda (c i) (+ i 1)) 0 cs))
+
+;; How many vowels in the char set?
+(lambda (cs) 
+  (char-set-fold (lambda (c i) (if (vowel? c) (+ i 1) i))
+                 0 cs))
+</pre>
+
+<!--
+==== char-set-unfold char-set-unfold!
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-unfold"></a>
+<a name="char-set-unfold!"></a>
+<code class=proc-def>char-set-unfold&nbsp;</code><var> f p g seed [base-cs] -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-unfold!</code><var> f p g seed base-cs -> char-set</var>
+<dd class=proc-def>
+    This is a fundamental constructor for char-sets. 
+<ul>
+    <li> <var>G</var> is used to generate a series of "seed" values from the initial seed:
+        <var>seed</var>, (<var>g</var> <var>seed</var>), (<var>g<sup>2</sup></var> <var>seed</var>), (<var>g<sup>3</sup></var> <var>seed</var>), ...
+    <li> <var>P</var> tells us when to stop -- when it returns true when applied to one 
+      of these seed values.
+    <li> <var>F</var> maps each seed value to a character. These characters are added
+      to the base character set <var>base-cs</var> to form the result; <var>base-cs</var> defaults to
+      the empty set. <code>char-set-unfold!</code> adds the characters to <var>base-cs</var> in a 
+      linear-update -- it is allowed, but not required, to side-effect
+      and use <var>base-cs</var>'s storage to construct the result.
+</ul>
+
+    <p>
+    More precisely, the following definitions hold, ignoring the
+    optional-argument issues:
+
+<pre class=code-example>
+(define (char-set-unfold p f g seed base-cs) 
+  (char-set-unfold! p f g seed (char-set-copy base-cs)))
+
+(define (char-set-unfold! p f g seed base-cs)
+  (let lp ((seed seed) (cs base-cs))
+        (if (p seed) cs                                 ; P says we are done.
+            (lp (g seed)                                ; Loop on (G SEED).
+                (char-set-adjoin! cs (f seed))))))      ; Add (F SEED) to set.
+</pre>
+
+    (Note that the actual implementation may be more efficient.)
+
+    <p>
+    Examples:
+<pre class=code-example>                         
+(port->char-set p) = (char-set-unfold eof-object? values
+                                      (lambda (x) (read-char p))
+                                      (read-char p))
+
+(list->char-set lis) = (char-set-unfold null? car cdr lis)
+</pre>
+<!--
+==== char-set-for-each
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-for-each"></a>
+<code class=proc-def>char-set-for-each</code><var> proc cs -> unspecified</var>
+<dd class=proc-def>
+    Apply procedure <var>proc</var> to each character in the character set <var>cs</var>.
+    Note that the order in which <var>proc</var> is applied to the characters in the
+    set is not specified, and may even change from one procedure application
+    to another.
+
+    <p>
+    Nothing at all is specified about the value returned by this procedure; it
+    is not even required to be consistent from call to call. It is simply
+    required to be a value (or values) that may be passed to a command
+    continuation, <em>e.g.</em> as the value of an expression appearing as a
+    non-terminal subform of a <code>begin</code> expression. 
+    Note that in 
+    <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>,
+    this restricts the procedure to returning a single value; 
+    non-R5RS systems may not even provide this restriction.
+
+<!--
+==== char-set-map
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-map"></a>
+<code class=proc-def>char-set-map</code><var> proc cs -> char-set</var>
+<dd class=proc-def>
+    <var>proc</var> is a char->char procedure. Apply it to all the characters in
+    the char-set <var>cs</var>, and collect the results into a new character set.
+
+    <p>
+    Essentially lifts <var>proc</var> from a char->char procedure to a char-set ->
+    char-set procedure.
+
+    <p>
+    Example:
+<pre class=code-example>
+(char-set-map char-downcase cset)
+</pre>
+</dl>
+
+
+<!--========================================================================-->
+<h2><a name="Creating">Creating character sets</a></h2>
+<dl>
+
+<!--
+==== char-set-copy
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-copy"></a>
+<code class=proc-def>char-set-copy</code><var> cs -> char-set</var>
+<dd class=proc-def>
+    Returns a copy of the character set <var>cs</var>.  "Copy" means that if either the
+    input parameter or the result value of this procedure is passed to one of
+    the linear-update procedures described below, the other character set is
+    guaranteed not to be altered.  
+
+    <p>
+    A system that provides pure-functional implementations of the
+    linear-operator suite could implement this procedure as the identity
+    function -- so copies are <em>not</em> guaranteed to be distinct by <code>eq?</code>.
+
+<!--
+==== char-set
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set"></a>
+<code class=proc-def>char-set</code><var> char<sub>1</sub> ... -> char-set</var>
+<dd class=proc-def>
+    Return a character set containing the given characters.
+
+<!--
+==== list->char-set list->char-set
+============================================================================-->
+<dt class=proc-def1>
+<a name="list->char-set"></a>
+<a name="list->char-set!"></a>
+<code class=proc-def>list->char-set&nbsp;</code><var> char-list [base-cs] -> char-set</var>
+<dt class=proc-defn><code class=proc-def>list->char-set!</code><var> char-list base-cs -> char-set</var>
+<dd class=proc-def>
+    Return a character set containing the characters in the list of
+    characters <var>char-list</var>.
+
+    <p>
+    If character set <var>base-cs</var> is provided, the characters from <var>char-list</var>
+    are added to it. <code>list->char-set!</code> is allowed, but not required,
+    to side-effect and reuse the storage in <var>base-cs</var>; 
+    <code>list->char-set</code> produces a fresh character set.
+
+<!--
+==== string->char-set string->char-set!
+============================================================================-->
+<dt class=proc-def1>
+<a name="string->char-set"></a>
+<a name="string->char-set!"></a>
+<code class=proc-def>string->char-set&nbsp;</code><var> s [base-cs] -> char-set</var>
+<dt class=proc-defn><code class=proc-def>string->char-set!</code><var> s base-cs -> char-set</var>
+<dd class=proc-def>
+
+    Return a character set containing the characters in the string <var>s</var>.
+
+    <p>
+    If character set <var>base-cs</var> is provided, the characters from <var>s</var> are added to
+    it. <code>string->char-set!</code> is allowed, but not required, to side-effect and
+    reuse the storage in <var>base-cs</var>; <code>string->char-set</code> produces a fresh character
+    set.
+
+<!--
+==== char-set-filter char-set-filter!
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-filter"></a>
+<a name="char-set-filter!"></a>
+<code class=proc-def>char-set-filter&nbsp;</code><var> pred cs [base-cs] -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-filter!</code><var> pred cs base-cs -> char-set</var>
+<dd class=proc-def>
+
+    Returns a character set containing every character <var>c</var> 
+    in <var>cs</var> such that <code>(<var>pred</var> <var>c</var>)</code> 
+    returns true.
+
+<p>
+    If character set <var>base-cs</var> is provided, the characters specified 
+    by <var>pred</var> are added to it. 
+    <code>char-set-filter!</code> is allowed, but not required,
+    to side-effect and reuse the storage in <var>base-cs</var>; 
+    <code>char-set-filter</code> produces a fresh character set.
+
+<p>
+    An implementation may not save away a reference to <var>pred</var> and
+    invoke it after <code>char-set-filter</code> or 
+    <code>char-set-filter!</code> returns -- that is, "lazy,"
+    on-demand implementations are not allowed, as <var>pred</var> may have
+    external dependencies on mutable data or have other side-effects.
+
+<p>
+    Rationale: This procedure provides a means of converting a character
+    predicate into its equivalent character set; the <var>cs</var> parameter
+    allows the programmer to bound the predicate's domain. Programmers should
+    be aware that filtering a character set such as <code>char-set:full</code>
+    could be a very expensive operation in an implementation that provided an
+    extremely large character type, such as 32-bit Unicode. An earlier draft
+    of this library provided a simple <code>predicate->char-set</code>
+    procedure, which was rejected in favor of <code>char-set-filter</code> for
+    this reason.
+
+
+<!--
+==== ucs-range->char-set ucs-range->char-set!
+============================================================================-->
+<dt class=proc-def1>
+<a name="ucs-range->char-set"></a>
+<a name="ucs-range->char-set!"></a>
+<code class=proc-def>ucs-range->char-set&nbsp;</code><var> lower upper [error? base-cs] -> char-set</var>
+<dt class=proc-defn><code class=proc-def>ucs-range->char-set!</code><var> lower upper error? base-cs -> char-set</var>
+<dd class=proc-def>
+    <var>Lower</var> and <var>upper</var> are exact non-negative integers; 
+    <var>lower</var> <= <var>upper</var>.
+
+    <p>
+    Returns a character set containing every character whose ISO/IEC 10646
+    UCS-4 code lies in the half-open range [<var>lower</var>,<var>upper</var>).
+
+<ul>
+    <li> If the requested range includes unassigned UCS values, these are
+      silently ignored (the current UCS specification has "holes" in the
+      space of assigned codes).
+    
+    <li> If the requested range includes "private" or "user space" codes, these
+      are handled in an implementation-specific manner; however, a UCS- or
+      Unicode-based Scheme implementation should pass them through
+      transparently.
+    
+    <li> If any code from the requested range specifies a valid, assigned
+      UCS character that has no corresponding representative in the
+      implementation's character type, then (1) an error is raised if <var>error?</var>
+      is true, and (2) the code is ignored if <var>error?</var> is false (the default).
+      This might happen, for example, if the implementation uses ASCII
+      characters, and the requested range includes non-ASCII characters.
+</ul>
+
+    <p>
+    If character set <var>base-cs</var> is provided, the characters specified by the
+    range are added to it. <code>ucs-range->char-set!</code> is allowed, but not required,
+    to side-effect and reuse the storage in <var>base-cs</var>; 
+    <code>ucs-range->char-set</code> produces a fresh character set.
+
+    <p>
+    Note that ASCII codes are a subset of the Latin-1 codes, which are in turn
+    a subset of the 16-bit Unicode codes, which are themselves a subset of the
+    32-bit UCS-4 codes. We commit to a specific encoding in this routine,
+    regardless of the underlying representation of characters, so that client
+    code using this library will be portable. <em>I.e.</em>, a conformant Scheme
+    implementation may use EBCDIC or SHIFT-JIS to encode characters; it must
+    simply map the UCS characters from the given range into the native
+    representation when possible, and report errors when not possible.
+
+<!--
+==== ->char-set
+============================================================================-->
+<dt class=proc-def>
+<a name="->char-set"></a>
+<code class=proc-def>->char-set</code><var> x -> char-set</var>
+<dd class=proc-def>
+    Coerces <var>x</var> into a char-set. 
+    <var>X</var> may be a string, character or
+    char-set. A string is converted to the set of its constituent characters;
+    a character is converted to a singleton set; a char-set is returned
+    as-is.
+    This procedure is intended for use by other procedures that want to 
+    provide "user-friendly," wide-spectrum interfaces to their clients.
+
+</dl>
+
+<!--========================================================================-->
+<h2><a name="Querying">Querying character sets</a></h2>
+<dl>
+
+<!--
+==== char-set-size
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-size"></a>
+<code class=proc-def>char-set-size</code><var> cs -> integer</var>
+<dd class=proc-def>
+    Returns the number of elements in character set <var>cs</var>.
+
+<!--
+==== char-set-count
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-count"></a>
+<code class=proc-def>char-set-count</code><var> pred cs -> integer</var>
+<dd class=proc-def>
+    Apply <var>pred</var> to the chars of character set <var>cs</var>, and return the number
+    of chars that caused the predicate to return true.
+
+<!--
+==== char-set->list
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set->list"></a>
+<code class=proc-def>char-set->list</code><var> cs -> character-list</var>
+<dd class=proc-def>
+    This procedure returns a list of the members of character set <var>cs</var>.
+    The order in which <var>cs</var>'s characters appear in the list is not defined,
+    and may be different from one call to another.
+
+<!--
+==== char-set->string
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set->string"></a>
+<code class=proc-def>char-set->string</code><var> cs -> string</var>
+<dd class=proc-def>
+    This procedure returns a string containing the members of character set <var>cs</var>.
+    The order in which <var>cs</var>'s characters appear in the string is not defined,
+    and may be different from one call to another.
+
+<!--
+==== char-set-contains?
+============================================================================-->
+<dt class=proc-def>
+<a name="char-set-contains-p"></a>
+<code class=proc-def>char-set-contains?</code><var> cs char -> boolean</var>
+<dd class=proc-def>
+    This procedure tests <var>char</var> for membership in character set <var>cs</var>.
+
+    <p>
+    The MIT Scheme character-set package called this procedure
+    <var>char-set-member?</var>, but the argument order isn't consistent with the name.
+
+<!--
+==== char-set-every char-set-any
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-every"></a>
+<a name="char-set-any"></a>
+<code class=proc-def>char-set-every</code><var> pred cs -> boolean</var>
+<dt class=proc-defn><code class=proc-def>char-set-any&nbsp;&nbsp;</code><var> pred cs -> boolean</var>
+<dd class=proc-def>
+    The <code>char-set-every</code> procedure returns true if predicate <var>pred</var>
+    returns true of every character in the character set <var>cs</var>.
+    Likewise, <code>char-set-any</code> applies <var>pred</var> to every character in
+    character set <var>cs</var>, and returns the first true value it finds.
+    If no character produces a true value, it returns false.
+    The order in which these procedures sequence through the elements of
+    <var>cs</var> is not specified.
+
+    <p>
+    Note that if you need to determine the actual character on which a 
+    predicate returns true, use <code>char-set-any</code> and arrange for the predicate 
+    to return the character parameter as its true value, <em>e.g.</em>
+<pre class=code-example>
+(char-set-any (lambda (c) (and (char-upper-case? c) c)) 
+              cs)
+</pre>
+</dl>
+
+<!--========================================================================-->
+<h2><a name="Algebra">Character-set algebra</a></h2>
+<dl>
+
+<!--
+==== char-set-adjoin char-set-delete
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-adjoin"></a>
+<a name="char-set-delete"></a>
+<code class=proc-def>char-set-adjoin</code><var> cs char<sub>1</sub> ... -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-delete</code><var> cs char<sub>1</sub> ... -> char-set</var>
+<dd class=proc-def>
+    Add/delete the <var>char<sub>i</sub></var> characters to/from character set <var>cs</var>.
+
+<!--
+==== char-set-adjoin! char-set-delete!
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-adjoin!"></a>
+<a name="char-set-delete!"></a>
+<code class=proc-def>char-set-adjoin!</code><var> cs char<sub>1</sub> ... -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-delete!</code><var> cs char<sub>1</sub> ... -> char-set</var>
+<dd class=proc-def>
+
+    Linear-update variants. These procedures are allowed, but not
+    required, to side-effect their first parameter.
+
+<!--
+==== char-set-complement char-set-union char-set-intersection 
+==== char-set-difference char-set-xor char-set-diff+intersection
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-complement"></a>
+<a name="char-set-union"></a>
+<a name="char-set-intersection"></a>
+<a name="char-set-difference"></a>
+<a name="char-set-xor"></a>
+<a name="char-set-diff+intersection"></a>
+<code class=proc-def>char-set-complement</code><var> cs                     -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-union</code><var> cs<sub>1</sub> ...                 -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-intersection</code><var> cs<sub>1</sub> ...          -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-difference</code><var> cs<sub>1</sub> cs<sub>2</sub> ...        -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-xor</code><var> cs<sub>1</sub> ...                   -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-diff+intersection</code><var> cs<sub>1</sub> cs<sub>2</sub> ... -> [char-set char-set]</var>
+<dd class=proc-def>
+    These procedures implement set complement, union, intersection,
+    difference, and exclusive-or for character sets. The union, intersection
+    and xor operations are n-ary. The difference function is also n-ary,
+    associates to the left (that is, it computes the difference between
+    its first argument and the union of all the other arguments),
+    and requires at least one argument.
+
+    <p>
+    Boundary cases:
+<pre class=code-example>
+(char-set-union) => char-set:empty
+(char-set-intersection) => char-set:full
+(char-set-xor) => char-set:empty
+(char-set-difference <var>cs</var>) => <var>cs</var>
+</pre>
+
+    <p>
+    <code>char-set-diff+intersection</code> returns both the difference and the
+    intersection of the arguments -- it partitions its first parameter.
+    It is equivalent to 
+<pre class=code-example>
+(values (char-set-difference <var>cs<sub>1</sub></var> <var>cs<sub>2</sub></var> ...)
+        (char-set-intersection <var>cs<sub>1</sub></var> (char-set-union <var>cs<sub>2</sub></var> ...)))
+</pre>
+    but can be implemented more efficiently.
+
+<p>
+    Programmers should be aware that <code>char-set-complement</code> could potentially
+    be a very expensive operation in Scheme implementations that provide
+    a very large character type, such as 32-bit Unicode. If this is a
+    possibility, sets can be complimented with respect to a smaller
+    universe using <code>char-set-difference</code>.
+
+
+<!--
+==== char-set-complement! char-set-union! char-set-intersection! 
+==== char-set-difference! char-set-xor! char-set-diff+intersection!
+============================================================================-->
+<dt class=proc-def1>
+<a name="char-set-complement!"></a>
+<a name="char-set-union!"></a>
+<a name="char-set-intersection!"></a>
+<a name="char-set-difference!"></a>
+<a name="char-set-xor!"></a>
+<a name="char-set-diff+intersection!"></a>
+<code class=proc-def>char-set-complement!</code><var> cs                     -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-union!</code><var>  cs<sub>1</sub> cs<sub>2</sub> ...                   -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-intersection!</code><var>  cs<sub>1</sub> cs<sub>2</sub> ...          -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-difference!</code><var>  cs<sub>1</sub> cs<sub>2</sub> ...            -> char-set</var>
+<dt class=proc-defi><code class=proc-def>char-set-xor!</code><var>  cs<sub>1</sub> cs<sub>2</sub> ...                   -> char-set</var>
+<dt class=proc-defn><code class=proc-def>char-set-diff+intersection!</code><var>  cs<sub>1</sub> cs<sub>2</sub> cs<sub>3</sub> ... -> [char-set char-set]</var>
+<dd class=proc-def>
+    These are linear-update variants of the set-algebra functions.
+    They are allowed, but not required, to side-effect their first (required)
+    parameter.
+
+    <p>
+    <code>char-set-diff+intersection!</code> is allowed to side-effect both
+    of its two required parameters, <var>cs<sub>1</sub></var>
+    and <var>cs<sub>2</sub></var>.
+</dl>
+
+<!--========================================================================-->
+<h2><a name="StandardCharsets">Standard character sets</a></h2>
+<p>
+Several character sets are predefined for convenience:
+<a name="char-set:lower-case"></a>
+<a name="char-set:lower-case"></a>
+<a name="char-set:upper-case"></a>
+<a name="char-set:title-case"></a>
+<a name="char-set:letter"></a>
+<a name="char-set:digit"></a>
+<a name="char-set:letter+digit"></a>
+<a name="char-set:graphic"></a>
+<a name="char-set:printing"></a>
+<a name="char-set:whitespace"></a>
+<a name="char-set:iso-control"></a>
+<a name="char-set:punctuation"></a>
+<a name="char-set:symbol"></a>
+<a name="char-set:hex-digit"></a>
+<a name="char-set:blank"></a>
+<a name="char-set:ascii"></a>
+<a name="char-set:empty"></a>
+<a name="char-set:full"></a>
+<div class=inset>
+<table cellpadding=0 cellspacing=0>
+<tr><td><code>char-set:lower-case</code> </td><td>Lower-case letters</td></tr>
+<tr><td><code>char-set:upper-case</code> </td><td>Upper-case letters</td></tr>
+<tr><td><code>char-set:title-case</code> </td><td>Title-case letters</td></tr>
+<tr><td><code>char-set:letter</code> </td><td>Letters</td></tr>
+<tr><td><code>char-set:digit</code> </td><td>Digits</td></tr>
+<tr><td><code>char-set:letter+digit</code> </td><td>Letters and digits</td></tr>
+<tr><td><code>char-set:graphic</code> </td><td>Printing characters except spaces</td></tr>
+<tr><td><code>char-set:printing</code> </td><td>Printing characters including spaces</td></tr>
+<tr><td><code>char-set:whitespace</code> </td><td>Whitespace characters </td></tr>
+<tr><td><code>char-set:iso-control</code> </td><td>The ISO control characters </td></tr>
+<tr><td><code>char-set:punctuation</code> </td><td>Punctuation characters</td></tr>
+<tr><td><code>char-set:symbol</code> </td><td>Symbol characters</td></tr>
+<tr><td><code>char-set:hex-digit</code> </td><td>A hexadecimal digit: 0-9, A-F, a-f </td></tr>
+<tr><td><code>char-set:blank</code> </td><td>Blank characters -- horizontal whitespace</td></tr>
+<tr><td><code>char-set:ascii</code> </td><td>All characters in the ASCII set. </td></tr>
+<tr><td><code>char-set:empty</code> </td><td>Empty set </td></tr>
+<tr><td><code>char-set:full</code> </td><td>All characters </td></tr>
+</table>
+</div>
+
+<p>
+Note that there may be characters in <code>char-set:letter</code> that are neither upper or
+lower case---this might occur in implementations that use a character type
+richer than ASCII, such as Unicode. A "graphic character" is one that would
+put ink on your page. While the exact composition of these sets may vary
+depending upon the character type provided by the underlying Scheme system,
+here are the definitions for some of the sets in an ASCII implementation:
+<div class=inset>
+<table cellpadding=0 cellspacing=0>
+<tr><td><code>char-set:lower-case</code> </td><td>a-z </td></tr>
+<tr><td><code>char-set:upper-case</code> </td><td>A-Z </td></tr>
+<tr><td><code>char-set:letter</code> </td><td>A-Z and a-z </td></tr>
+<tr><td><code>char-set:digit</code> </td><td>0123456789</td></tr>
+<tr><td><code>char-set:punctuation</code> </td><td><code>!"#%&amp;'()*,-./:;?@[\]_{}</code></td></tr>
+<tr><td><code>char-set:symbol</code> </td><td><code>$+&lt;=&gt;^`|~</code></td></tr>
+<tr><td><code>char-set:whitespace</code> </td><td>Space, newline, tab, form feed, </td></tr>
+<tr><td></td><td>                               vertical tab, carriage return </td></tr>
+<tr><td><code>char-set:blank</code> </td><td>Space and tab </td></tr>
+<tr><td><code>char-set:graphic</code> </td><td>letter + digit + punctuation + symbol</td></tr>
+<tr><td><code>char-set:printing</code> </td><td>graphic + whitespace</td></tr>
+<tr><td><code>char-set:iso-control</code> </td><td>ASCII 0-31 and 127 </td></tr>
+</table>
+</div>
+
+<p>
+Note that the existence of the <code>char-set:ascii</code> set implies that the underlying
+character set is required to be at least as rich as ASCII (including
+ASCII's control characters).
+
+<p>
+Rationale: The name choices reflect a shift from the older "alphabetic/numeric"
+terms found in 
+<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>
+and Posix to newer, Unicode-influenced "letter/digit" lexemes.
+
+<!--========================================================================-->
+<h1><a name="StandardCharsetDefs">
+    Unicode, Latin-1 and ASCII definitions of the standard character sets</a>
+</h1>
+<p>
+In Unicode Scheme implementations, the base character sets are compatible with
+Java's Unicode specifications. For ASCII or Latin-1, we simply restrict the
+Unicode set specifications to their first 128 or 256 codes, respectively.
+Scheme implementations that are not based on ASCII, Latin-1 or Unicode should
+attempt to preserve the sense or spirit of these definitions.
+
+<p>
+The following descriptions frequently make reference to the "Unicode character
+database." This is a file, available at URL
+<div class=inset>
+<a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">
+ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+<p class=continue>
+Each line contains a description of a Unicode character. The first
+semicolon-delimited field of the line gives the hex value of the character's
+code; the second field gives the name of the character, and the third field
+gives a two-letter category. Other fields give simple 1-1 case-mappings for
+the character and other information; see
+<div class=inset>
+<a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html">
+ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html</a>
+</div>
+<p class=continue>
+for further description of the file's format. Note in particular the
+two-letter category specified in the the third field, which is referenced
+frequently in the descriptions below.
+
+<!--========================================================================-->
+<h2><a name="lower-case-def">char-set:lower-case</a></h2>
+<p>
+For Unicode, we follow Java's specification: a character is lowercase if
+<ul>
+<li> it is not in the range [U+2000,U+2FFF], and
+<li> the Unicode attribute table does not give a lowercase mapping for it, and
+<li> at least one of the following is true:
+  <ul>
+  <li> the Unicode attribute table gives a mapping to uppercase 
+    for the character, or
+  <li> the name for the character in the Unicode attribute table contains
+    the words "SMALL LETTER" or "SMALL LIGATURE".
+  </ul>
+</ul>
+
+<p>
+The lower-case ASCII characters are 
+<div class=inset>
+    abcdefghijklmnopqrstuvwxyz
+</div>
+<p class=continue>
+Latin-1 adds another 33 lower-case characters to the ASCII set:
+<div class=inset>
+<table cellpadding=0 cellspacing=0>
+<tr><td>00B5</td> <td>MICRO SIGN</td></tr>
+<tr><td>00DF</td> <td>LATIN SMALL LETTER SHARP S</td></tr>
+<tr><td>00E0</td> <td>LATIN SMALL LETTER A WITH GRAVE</td></tr>
+<tr><td>00E1</td> <td>LATIN SMALL LETTER A WITH ACUTE</td></tr>
+<tr><td>00E2</td> <td>LATIN SMALL LETTER A WITH CIRCUMFLEX</td></tr>
+<tr><td>00E3</td> <td>LATIN SMALL LETTER A WITH TILDE</td></tr>
+<tr><td>00E4</td> <td>LATIN SMALL LETTER A WITH DIAERESIS</td></tr>
+<tr><td>00E5</td> <td>LATIN SMALL LETTER A WITH RING ABOVE</td></tr>
+<tr><td>00E6</td> <td>LATIN SMALL LETTER AE</td></tr>
+<tr><td>00E7</td> <td>LATIN SMALL LETTER C WITH CEDILLA</td></tr>
+<tr><td>00E8</td> <td>LATIN SMALL LETTER E WITH GRAVE</td></tr>
+<tr><td>00E9</td> <td>LATIN SMALL LETTER E WITH ACUTE</td></tr>
+<tr><td>00EA</td> <td>LATIN SMALL LETTER E WITH CIRCUMFLEX</td></tr>
+<tr><td>00EB</td> <td>LATIN SMALL LETTER E WITH DIAERESIS</td></tr>
+<tr><td>00EC</td> <td>LATIN SMALL LETTER I WITH GRAVE</td></tr>
+<tr><td>00ED</td> <td>LATIN SMALL LETTER I WITH ACUTE</td></tr>
+<tr><td>00EE</td> <td>LATIN SMALL LETTER I WITH CIRCUMFLEX</td></tr>
+<tr><td>00EF</td> <td>LATIN SMALL LETTER I WITH DIAERESIS</td></tr>
+<tr><td>00F0</td> <td>LATIN SMALL LETTER ETH</td></tr>
+<tr><td>00F1</td> <td>LATIN SMALL LETTER N WITH TILDE</td></tr>
+<tr><td>00F2</td> <td>LATIN SMALL LETTER O WITH GRAVE</td></tr>
+<tr><td>00F3</td> <td>LATIN SMALL LETTER O WITH ACUTE</td></tr>
+<tr><td>00F4</td> <td>LATIN SMALL LETTER O WITH CIRCUMFLEX</td></tr>
+<tr><td>00F5</td> <td>LATIN SMALL LETTER O WITH TILDE</td></tr>
+<tr><td>00F6</td> <td>LATIN SMALL LETTER O WITH DIAERESIS</td></tr>
+<tr><td>00F8</td> <td>LATIN SMALL LETTER O WITH STROKE</td></tr>
+<tr><td>00F9</td> <td>LATIN SMALL LETTER U WITH GRAVE</td></tr>
+<tr><td>00FA</td> <td>LATIN SMALL LETTER U WITH ACUTE</td></tr>
+<tr><td>00FB</td> <td>LATIN SMALL LETTER U WITH CIRCUMFLEX</td></tr>
+<tr><td>00FC</td> <td>LATIN SMALL LETTER U WITH DIAERESIS</td></tr>
+<tr><td>00FD</td> <td>LATIN SMALL LETTER Y WITH ACUTE</td></tr>
+<tr><td>00FE</td> <td>LATIN SMALL LETTER THORN</td></tr>
+<tr><td>00FF</td> <td>LATIN SMALL LETTER Y WITH DIAERESIS</td></tr>
+</table>
+</div>
+<p class=continue>
+Note that three of these have no corresponding Latin-1 upper-case character:
+<div class=inset>
+<table cellpadding=0 cellspacing=0>
+<tr><td>00B5</td> <td>MICRO SIGN</td></tr>
+<tr><td>00DF</td> <td>LATIN SMALL LETTER SHARP S</td></tr>
+<tr><td>00FF</td> <td>LATIN SMALL LETTER Y WITH DIAERESIS</td></tr>
+</table>
+</div>
+<p class=continue>
+(The compatibility micro character uppercases to the non-Latin-1 Greek capital
+mu; the German sharp s character uppercases to the pair of characters "SS,"
+and the capital y-with-diaeresis is non-Latin-1.)
+
+<p>
+(Note that the Java spec for lowercase characters given at
+<div class=inset>
+<a href="http://java.sun.com/docs/books/jls/html/javalang.doc4.html#14345">
+http://java.sun.com/docs/books/jls/html/javalang.doc4.html#14345</a>
+</div>
+<p class=continue>
+is inconsistent. U+00B5 MICRO SIGN fulfills the requirements for a lower-case
+character (as of Unicode 3.0), but is not given in the numeric list of
+lower-case character codes.)
+
+<p>
+(Note that the Java spec for <code>isLowerCase()</code> given at
+<div class=inset>
+<a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html#isLowerCase(char)">
+http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html#isLowerCase(char)</a>
+</div>
+<p class=continue>
+gives three mutually inconsistent definitions of "lower case." The first is
+the definition used in this SRFI. Following text says "A character is
+considered to be lowercase if and only if it is specified to be lowercase by
+the Unicode 2.0 standard (category Ll in the Unicode specification data
+file)." The former spec excludes U+00AA FEMININE ORDINAL INDICATOR and
+U+00BA MASCULINE ORDINAL INDICATOR; the later spec includes them. Finally,
+the spec enumerates a list of characters in the Latin-1 subset; this list
+excludes U+00B5 MICRO SIGN, which is included in both of the previous specs.) 
+
+<!--========================================================================-->
+<h2><a name="upper-case-def">char-set:upper-case</a></h2>
+<p>
+For Unicode, we follow Java's specification: a character is uppercase if
+<ul>
+<li> it is not in the range [U+2000,U+2FFF], and
+<li> the Unicode attribute table does not give an uppercase mapping for it
+(this excludes titlecase characters), and
+<li> at least one of the following is true:
+  <ul>
+  <li> the Unicode attribute table gives a mapping to lowercase 
+    for the character, or
+  <li> the name for the character in the Unicode attribute table contains
+    the words "CAPITAL LETTER" or "CAPITAL LIGATURE".
+  </ul>
+</ul>
+
+<p>
+The upper-case ASCII characters are 
+<div class=inset>
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+</div>
+<p class=continue>
+Latin-1 adds another 30 upper-case characters to the ASCII set:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>00C0</td> <td>LATIN CAPITAL LETTER A WITH GRAVE</td></tr>
+<tr><td>00C1</td> <td>LATIN CAPITAL LETTER A WITH ACUTE</td></tr>
+<tr><td>00C2</td> <td>LATIN CAPITAL LETTER A WITH CIRCUMFLEX</td></tr>
+<tr><td>00C3</td> <td>LATIN CAPITAL LETTER A WITH TILDE</td></tr>
+<tr><td>00C4</td> <td>LATIN CAPITAL LETTER A WITH DIAERESIS</td></tr>
+<tr><td>00C5</td> <td>LATIN CAPITAL LETTER A WITH RING ABOVE</td></tr>
+<tr><td>00C6</td> <td>LATIN CAPITAL LETTER AE</td></tr>
+<tr><td>00C7</td> <td>LATIN CAPITAL LETTER C WITH CEDILLA</td></tr>
+<tr><td>00C8</td> <td>LATIN CAPITAL LETTER E WITH GRAVE</td></tr>
+<tr><td>00C9</td> <td>LATIN CAPITAL LETTER E WITH ACUTE</td></tr>
+<tr><td>00CA</td> <td>LATIN CAPITAL LETTER E WITH CIRCUMFLEX</td></tr>
+<tr><td>00CB</td> <td>LATIN CAPITAL LETTER E WITH DIAERESIS</td></tr>
+<tr><td>00CC</td> <td>LATIN CAPITAL LETTER I WITH GRAVE</td></tr>
+<tr><td>00CD</td> <td>LATIN CAPITAL LETTER I WITH ACUTE</td></tr>
+<tr><td>00CE</td> <td>LATIN CAPITAL LETTER I WITH CIRCUMFLEX</td></tr>
+<tr><td>00CF</td> <td>LATIN CAPITAL LETTER I WITH DIAERESIS</td></tr>
+<tr><td>00D0</td> <td>LATIN CAPITAL LETTER ETH</td></tr>
+<tr><td>00D1</td> <td>LATIN CAPITAL LETTER N WITH TILDE</td></tr>
+<tr><td>00D2</td> <td>LATIN CAPITAL LETTER O WITH GRAVE</td></tr>
+<tr><td>00D3</td> <td>LATIN CAPITAL LETTER O WITH ACUTE</td></tr>
+<tr><td>00D4</td> <td>LATIN CAPITAL LETTER O WITH CIRCUMFLEX</td></tr>
+<tr><td>00D5</td> <td>LATIN CAPITAL LETTER O WITH TILDE</td></tr>
+<tr><td>00D6</td> <td>LATIN CAPITAL LETTER O WITH DIAERESIS</td></tr>
+<tr><td>00D8</td> <td>LATIN CAPITAL LETTER O WITH STROKE</td></tr>
+<tr><td>00D9</td> <td>LATIN CAPITAL LETTER U WITH GRAVE</td></tr>
+<tr><td>00DA</td> <td>LATIN CAPITAL LETTER U WITH ACUTE</td></tr>
+<tr><td>00DB</td> <td>LATIN CAPITAL LETTER U WITH CIRCUMFLEX</td></tr>
+<tr><td>00DC</td> <td>LATIN CAPITAL LETTER U WITH DIAERESIS</td></tr>
+<tr><td>00DD</td> <td>LATIN CAPITAL LETTER Y WITH ACUTE</td></tr>
+<tr><td>00DE</td> <td>LATIN CAPITAL LETTER THORN</td></tr>
+</table>
+</div>
+<!--========================================================================-->
+<h2><a name="title-case-def">char-set:title-case</a></h2>
+<p>
+In Unicode, a character is titlecase if it has the category Lt in
+the character attribute database. There are very few of these characters;
+here is the entire 31-character list as of Unicode 3.0:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>01C5 </td><td nowrap> LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON
+</td></tr>
+<tr><td>01C8 </td><td nowrap> LATIN CAPITAL LETTER L WITH SMALL LETTER J
+</td></tr>
+<tr><td>01CB </td><td nowrap> LATIN CAPITAL LETTER N WITH SMALL LETTER J
+</td></tr>
+<tr><td>01F2 </td><td nowrap> LATIN CAPITAL LETTER D WITH SMALL LETTER Z
+</td></tr>
+<tr><td>1F88 </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH PSILI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F89 </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH DASIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8A </td><td nowrap>GREEK CAPITAL LETTER ALPHA WITH PSILI AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8B </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH DASIA AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8C </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH PSILI AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8D </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH DASIA AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8E </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH PSILI AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F8F </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH DASIA AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F98 </td><td nowrap> GREEK CAPITAL LETTER ETA WITH PSILI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F99 </td><td nowrap> GREEK CAPITAL LETTER ETA WITH DASIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9A </td><td nowrap> GREEK CAPITAL LETTER ETA WITH PSILI AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9B </td><td nowrap> GREEK CAPITAL LETTER ETA WITH DASIA AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9C </td><td nowrap> GREEK CAPITAL LETTER ETA WITH PSILI AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9D </td><td nowrap> GREEK CAPITAL LETTER ETA WITH DASIA AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9E </td><td nowrap> GREEK CAPITAL LETTER ETA WITH PSILI AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1F9F </td><td nowrap> GREEK CAPITAL LETTER ETA WITH DASIA AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FA8 </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH PSILI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FA9 </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH DASIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAA </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH PSILI AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAB </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH DASIA AND VARIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAC </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH PSILI AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAD </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH DASIA AND OXIA AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAE </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH PSILI AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FAF </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH DASIA AND PERISPOMENI AND PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FBC </td><td nowrap> GREEK CAPITAL LETTER ALPHA WITH PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FCC </td><td nowrap> GREEK CAPITAL LETTER ETA WITH PROSGEGRAMMENI
+</td></tr>
+<tr><td>1FFC </td><td nowrap> GREEK CAPITAL LETTER OMEGA WITH PROSGEGRAMMENI
+</td></tr>
+</table>
+</div>
+<p>
+There are no ASCII or Latin-1 titlecase characters.
+
+
+<!--========================================================================-->
+<h2><a name="letter-def">char-set:letter</a></h2>
+<p>
+In Unicode, a letter is any character with one of the letter categories
+(Lu, Ll, Lt, Lm, Lo) in the Unicode character database. 
+
+<p>
+There are 52 ASCII letters
+<div class=indent>
+    abcdefghijklmnopqrstuvwxyz <br>
+    ABCDEFGHIJKLMNOPQRSTUVWXYZ <br>
+</div>
+<p>
+There are 117 Latin-1 letters. These are the 115 characters that are
+members of the Latin-1 <code>char-set:lower-case</code> and <code>char-set:upper-case</code> sets, 
+plus
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>00AA</td> <td>FEMININE ORDINAL INDICATOR</td></tr>
+<tr><td>00BA</td> <td>MASCULINE ORDINAL INDICATOR</td></tr>
+</table>
+</div>
+<p class=continue>
+(These two letters are considered lower-case by Unicode, but not by
+Java or SRFI 14.)
+
+<!--========================================================================-->
+<h2><a name="digit-def">char-set:digit</a></h2>
+
+<p>
+In Unicode, a character is a digit if it has the category Nd in
+the character attribute database. In Latin-1 and ASCII, the only
+such characters are 0123456789. In Unicode, there are other digit
+characters in other code blocks, such as Gujarati digits and Tibetan
+digits.
+
+
+<!--========================================================================-->
+<h2><a name="hex-digit-def">char-set:hex-digit</a></h2>
+<p>
+The only hex digits are 0123456789abcdefABCDEF.
+
+
+<!--========================================================================-->
+<h2><a name="letter+digit-def">char-set:letter+digit</a></h2>
+<p>
+The union of <code>char-set:letter</code> and <code>char-set:digit.</code>
+
+<!--========================================================================-->
+<h2><a name="graphic-def">char-set:graphic</a></h2>
+<p>
+A graphic character is one that would put ink on paper. The ASCII and Latin-1
+graphic characters are the members of
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td><code>char-set:letter</code></td></tr>
+<tr><td><code>char-set:digit</code></td></tr>
+<tr><td><code>char-set:punctuation</code></td></tr>
+<tr><td><code>char-set:symbol</code></td></tr>
+</table>
+</div>
+
+<!--========================================================================-->
+<h2><a name="printing-def">char-set:printing</a></h2>
+<p>
+A printing character is one that would occupy space when printed, <em>i.e.</em>,
+a graphic character or a space character. <code>char-set:printing</code> is the union
+of <code>char-set:whitespace</code> and <code>char-set:graphic.</code>
+
+<!--========================================================================-->
+<h2><a name="whitespace-def">char-set:whitespace</a></h2>
+<p>
+In Unicode, a whitespace character is either
+<ul>
+  <li> a character with one of the space, line, or paragraph separator categories
+    (Zs, Zl or Zp) of the Unicode character database.
+  <li> U+0009 Horizontal tabulation (\t control-I)
+  <li> U+000A Line feed (\n control-J)
+  <li> U+000B Vertical tabulation (\v control-K)
+  <li> U+000C Form feed (\f control-L)
+  <li> U+000D Carriage return (\r control-M)
+</ul>
+
+<p>
+There are 24 whitespace characters in Unicode 3.0:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>0009</td> <td>HORIZONTAL TABULATION </td> <td>  \t control-I</td></tr>
+<tr><td>000A</td> <td>LINE FEED         </td> <td> \n control-J</td></tr>
+<tr><td>000B</td> <td>VERTICAL TABULATION       </td> <td> \v control-K</td></tr>
+<tr><td>000C</td> <td>FORM FEED         </td> <td> \f control-L</td></tr>
+<tr><td>000D</td> <td>CARRIAGE RETURN   </td> <td> \r control-M</td></tr>
+<tr><td>0020</td> <td>SPACE                     </td> <td> Zs</td></tr>
+<tr><td>00A0</td> <td>NO-BREAK SPACE    </td> <td> Zs</td></tr>
+<tr><td>1680</td> <td>OGHAM SPACE MARK  </td> <td> Zs</td></tr>
+<tr><td>2000</td> <td>EN QUAD           </td> <td> Zs</td></tr>
+<tr><td>2001</td> <td>EM QUAD           </td> <td> Zs</td></tr>
+<tr><td>2002</td> <td>EN SPACE          </td> <td> Zs</td></tr>
+<tr><td>2003</td> <td>EM SPACE          </td> <td> Zs</td></tr>
+<tr><td>2004</td> <td>THREE-PER-EM SPACE        </td> <td> Zs</td></tr>
+<tr><td>2005</td> <td>FOUR-PER-EM SPACE </td> <td> Zs</td></tr>
+<tr><td>2006</td> <td>SIX-PER-EM SPACE  </td> <td> Zs</td></tr>
+<tr><td>2007</td> <td>FIGURE SPACE              </td> <td> Zs</td></tr>
+<tr><td>2008</td> <td>PUNCTUATION SPACE </td> <td> Zs</td></tr>
+<tr><td>2009</td> <td>THIN SPACE                </td> <td> Zs</td></tr>
+<tr><td>200A</td> <td>HAIR SPACE                </td> <td> Zs</td></tr>
+<tr><td>200B</td> <td>ZERO WIDTH SPACE  </td> <td> Zs</td></tr>
+<tr><td>2028</td> <td>LINE SEPARATOR    </td> <td> Zl</td></tr>
+<tr><td>2029</td> <td>PARAGRAPH SEPARATOR       </td> <td> Zp</td></tr>
+<tr><td>202F</td> <td>NARROW NO-BREAK SPACE     </td> <td> Zs</td></tr>
+<tr><td>3000</td> <td>IDEOGRAPHIC SPACE </td> <td> Zs</td></tr>
+</table>
+</div>
+<p>
+The ASCII whitespace characters are the first six characters in the above list
+-- line feed, horizontal tabulation, vertical tabulation, form feed, carriage
+return, and space. These are also exactly the characters recognised by the
+Posix <code>isspace()</code> procedure. Latin-1 adds the no-break space.
+
+<p>
+Note: Java's <code>isWhitespace()</code> method is incompatible, including
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>0009</td> <td>HORIZONTAL TABULATION </td> <td>  (\t control-I)</td></tr>
+<tr><td>001C</td> <td>FILE SEPARATOR   </td> <td> (control-\)</td></tr>
+<tr><td>001D</td> <td>GROUP SEPARATOR  </td> <td>(control-])</td></tr>
+<tr><td>001E</td> <td>RECORD SEPARATOR </td> <td>(control-^)</td></tr>
+<tr><td>001F</td> <td>UNIT SEPARATOR   </td> <td>(control-_)</td></tr>
+</table>
+</div>
+<p class=continue>
+and excluding
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>00A0</td> <td>NO-BREAK SPACE</td></tr>
+</table>
+</div>
+<p>
+Java's excluding the no-break space means that tokenizers can simply break
+character streams at "whitespace" boundaries. However, the exclusion introduces
+exceptions in other places, <em>e.g.</em> <code>char-set:printing</code> is no longer simply the
+union of <code>char-set:graphic</code> and <code>char-set:whitespace.</code>
+
+
+<!--========================================================================-->
+<h2><a name="iso-control-def">char-set:iso-control</a></h2>
+<p>
+The ISO control characters are the Unicode/Latin-1 characters in the ranges
+[U+0000,U+001F] and [U+007F,U+009F].
+
+<p>
+ASCII restricts this set to the characters in the range [U+0000,U+001F] 
+plus the character U+007F.
+
+<p>
+Note that Unicode defines other control characters which do not belong to this
+set (hence the qualifying prefix "iso-" in the name). This restriction is
+compatible with the Java <code>IsISOControl()</code> method.
+
+
+<!--========================================================================-->
+<h2><a name="punctuation-def">char-set:punctuation</a></h2>
+<p>
+In Unicode, a punctuation character is any character that has one of the
+punctuation categories in the Unicode character database (Pc, Pd, Ps,
+Pe, Pi, Pf, or Po.)
+
+<p>
+ASCII has 23 punctuation characters:
+<pre class=code-example>
+!"#%&amp;'()*,-./:;?@[\]_{}
+</pre>
+<p>
+Latin-1 adds six more:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>00A1 </td> <td> INVERTED EXCLAMATION MARK
+<tr><td>00AB </td> <td> LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+<tr><td>00AD </td> <td> SOFT HYPHEN
+<tr><td>00B7 </td> <td> MIDDLE DOT
+<tr><td>00BB </td> <td> RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+<tr><td>00BF </td> <td> INVERTED QUESTION MARK
+</table>
+</div>
+
+<p>
+Note that the nine ASCII characters <code>$+<=>^`|~</code> are <em>not</em>
+punctuation. They are "symbols."
+
+
+<!--========================================================================-->
+<h2><a name="symbol-def">char-set:symbol</a></h2>
+<p>
+In Unicode, a symbol is any character that has one of the symbol categories
+in the Unicode character database (Sm, Sc, Sk, or So). There
+are nine ASCII symbol characters:
+<pre class=code-example>
+$+&lt;=&gt;^`|~
+</pre>
+<p>
+Latin-1 adds 18 more:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>00A2 </td> <td> CENT SIGN </td></tr>
+<tr><td>00A3 </td> <td> POUND SIGN </td></tr>
+<tr><td>00A4 </td> <td> CURRENCY SIGN </td></tr>
+<tr><td>00A5 </td> <td> YEN SIGN </td></tr>
+<tr><td>00A6 </td> <td> BROKEN BAR </td></tr>
+<tr><td>00A7 </td> <td> SECTION SIGN </td></tr>
+<tr><td>00A8 </td> <td> DIAERESIS </td></tr>
+<tr><td>00A9 </td> <td> COPYRIGHT SIGN </td></tr>
+<tr><td>00AC </td> <td> NOT SIGN </td></tr>
+<tr><td>00AE </td> <td> REGISTERED SIGN </td></tr>
+<tr><td>00AF </td> <td> MACRON </td></tr>
+<tr><td>00B0 </td> <td> DEGREE SIGN </td></tr>
+<tr><td>00B1 </td> <td> PLUS-MINUS SIGN </td></tr>
+<tr><td>00B4 </td> <td> ACUTE ACCENT </td></tr>
+<tr><td>00B6 </td> <td> PILCROW SIGN </td></tr>
+<tr><td>00B8 </td> <td> CEDILLA </td></tr>
+<tr><td>00D7 </td> <td> MULTIPLICATION SIGN </td></tr>
+<tr><td>00F7 </td> <td> DIVISION SIGN </td></tr>
+</table>
+</div>
+
+<!--========================================================================-->
+<h2><a name="blank-def">char-set:blank</a></h2>
+
+<p>
+Blank chars are horizontal whitespace. In Unicode, a blank character is either
+<ul>
+  <li> a character with the space separator category (Zs) in the Unicode 
+    character database.
+  <li> U+0009 Horizontal tabulation (\t control-I)
+</ul>
+
+<p>
+There are eighteen blank characters in Unicode 3.0:
+<div class=inset>
+<table cellspacing=0 cellpadding=0>
+<tr><td>0009 </td> <td> HORIZONTAL TABULATION   </td> <td> \t control-I </td></tr>
+<tr><td>0020 </td> <td> SPACE                   </td> <td> Zs </td></tr>
+<tr><td>00A0 </td> <td> NO-BREAK SPACE  </td> <td> Zs </td></tr>
+<tr><td>1680 </td> <td> OGHAM SPACE MARK        </td> <td> Zs </td></tr>
+<tr><td>2000 </td> <td> EN QUAD         </td> <td> Zs </td></tr>
+<tr><td>2001 </td> <td> EM QUAD         </td> <td> Zs </td></tr>
+<tr><td>2002 </td> <td> EN SPACE                </td> <td> Zs </td></tr>
+<tr><td>2003 </td> <td> EM SPACE                </td> <td> Zs </td></tr>
+<tr><td>2004 </td> <td> THREE-PER-EM SPACE      </td> <td> Zs </td></tr>
+<tr><td>2005 </td> <td> FOUR-PER-EM SPACE       </td> <td> Zs </td></tr>
+<tr><td>2006 </td> <td> SIX-PER-EM SPACE        </td> <td> Zs </td></tr>
+<tr><td>2007 </td> <td> FIGURE SPACE            </td> <td> Zs </td></tr>
+<tr><td>2008 </td> <td> PUNCTUATION SPACE       </td> <td> Zs </td></tr>
+<tr><td>2009 </td> <td> THIN SPACE              </td> <td> Zs </td></tr>
+<tr><td>200A </td> <td> HAIR SPACE              </td> <td> Zs </td></tr>
+<tr><td>200B </td> <td> ZERO WIDTH SPACE        </td> <td> Zs </td></tr>
+<tr><td>202F </td> <td> NARROW NO-BREAK SPACE   </td> <td> Zs </td></tr>
+<tr><td>3000 </td> <td> IDEOGRAPHIC SPACE       </td> <td> Zs </td></tr>
+</table>
+</div>
+<p>
+The ASCII blank characters are the first two characters above --
+horizontal tab and space. Latin-1 adds the no-break space.
+
+<p>
+Java doesn't have the concept of "blank" characters, so there are no
+compatibility issues.
+
+
+<!--========================================================================-->
+<h1><a name="ReferenceImp">Reference implementation</a></h1>
+<p>
+This SRFI comes with a reference implementation. It resides at:
+<div class=inset>
+    <a href="http://srfi.schemers.org/srfi-14/srfi-14.scm">
+http://srfi.schemers.org/srfi-14/srfi-14.scm</a>
+</div>
+<p class=continue>
+I have placed this source on the Net with an unencumbered, "open" copyright.
+Some of the code in the reference implementation bears a distant family
+relation to the MIT Scheme implementation, and being derived from that code,
+is covered by the MIT Scheme copyright (which is a generic BSD-style
+open-source copyright -- see the source file for details). The remainder of
+the code was written by myself for scsh or for this SRFI; I have placed this
+code under the scsh copyright, which is also a generic BSD-style open-source
+copyright.
+
+<p>
+The code is written for portability and should be simple to port to
+any Scheme. It has only the following deviations from R4RS, clearly
+discussed in the comments:
+<ul>
+  <li> an <code>error</code> procedure;
+  <li> the R5RS <code>values</code> procedure for producing multiple return values;
+  <li> a simple <code>check-arg</code> procedure for argument checking;
+  <li> <code>let-optionals*</code> and <code>:optional</code> macros for for parsing, checking and defaulting
+    optional arguments from rest lists;
+  <li> The SRFI-19 <code>define-record-type</code> form;
+  <li> <code>bitwise-and</code> for the hash function;
+  <li> <code>%latin1->char</code> and <code>%char->latin1</code>.
+</ul>
+
+<p>
+The library is written for clarity and well-commented; the current source is
+about 375 lines of source code and 375 lines of comments and white space.
+It is also written for efficiency. Fast paths are provided for common cases.
+
+<p>
+This is not to say that the implementation can't be tuned up for
+a specific Scheme implementation. There are notes in comments addressing
+ways implementors can tune the reference implementation for performance.
+
+<p>
+In short, I've written the reference implementation to make it as painless
+as possible for an implementor -- or a regular programmer -- to adopt this
+library and get good results with it.
+
+<p>
+The code uses a rather simple-minded, inefficient representation for
+ASCII/Latin-1 char-sets -- a 256-character string. The character whose code is
+<var>i</var> is in the set if <var>s[i]</var> = ASCII 1 (soh, or ^a); 
+not in the set if <var>s[i]</var> = ASCII 0 (nul). 
+A much faster and denser representation would be 16 or 32 bytes worth
+of bit string. A portable implementation using bit sets awaits standards for
+bitwise logical-ops and byte vectors.
+
+<p>
+"Large" character types, such as Unicode, should use a sparse representation,
+taking care that the Latin-1 subset continues to be represented with a
+dense 32-byte bit set.
+
+
+<!--========================================================================-->
+<h1><a name="Acknowledgements">Acknowledgements</a></h1>
+<p>
+The design of this library benefited greatly from the feedback provided during
+the SRFI discussion phase. Among those contributing thoughtful commentary and
+suggestions, both on the mailing list and by private discussion, were Paolo
+Amoroso, Lars Arvestad, Alan Bawden, Jim Bender, Dan Bornstein, Per Bothner,
+Will Clinger, Brian Denheyer, Kent Dybvig, Sergei Egorov, Marc Feeley,
+Matthias Felleisen, Will Fitzgerald, Matthew Flatt, Arthur A. Gleckler, Ben
+Goetter, Sven Hartrumpf, Erik Hilsdale, Shiro Kawai, Richard Kelsey, Oleg
+Kiselyov, Bengt Kleberg, Donovan Kolbly, Bruce Korb, Shriram Krishnamurthi,
+Bruce Lewis, Tom Lord, Brad Lucier, Dave Mason, David Rush, Klaus Schilling,
+Jonathan Sobel, Mike Sperber, Mikael Staldal, Vladimir Tsyshevsky, Donald
+Welsh, and Mike Wilson. I am grateful to them for their assistance.
+
+<p>
+I am also grateful the authors, implementors and documentors of all the
+systems mentioned in the introduction. Aubrey Jaffer should be noted for his
+work in producing Web-accessible versions of the R5RS spec, which was a
+tremendous aid.
+
+<p>
+This is not to imply that these individuals necessarily endorse the final
+results, of course. 
+
+<p>
+During this document's long development period, great patience was exhibited
+by Mike Sperber, who is the editor for the SRFI, and by Hillary Sullivan,
+who is not.
+
+<!--========================================================================-->
+<h1><a name="Links">References &amp; links</a></h1>
+
+<dl>
+<dt class=biblio><strong><a name="Java">[Java]</a></strong>
+<dd>
+    The following URLs provide documentation on relevant Java classes. <br>
+
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/String.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/String.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/StringBuffer.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/StringBuffer.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/text/Collator.html">http://java.sun.com/products/jdk/1.2/docs/api/java/text/Collator.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/text/package-summary.html">http://java.sun.com/products/jdk/1.2/docs/api/java/text/package-summary.html</a>
+
+<dt class=biblio><strong><a name="MIT-Scheme">[MIT-Scheme]</a></strong>
+<dd>
+    <a href="http://www.swiss.ai.mit.edu/projects/scheme/">http://www.swiss.ai.mit.edu/projects/scheme/</a>
+
+<dt class=biblio><strong><a name="R5RS">[R5RS]</a></strong></dt>
+<dd>Revised<sup>5</sup> report on the algorithmic language Scheme.<br>
+    R. Kelsey, W. Clinger, J. Rees (editors). <br>
+    Higher-Order and Symbolic Computation, Vol. 11, No. 1, September, 1998. <br>
+    and ACM SIGPLAN Notices, Vol. 33, No. 9, October, 1998. <br>
+    Available at <a href="http://www.schemers.org/Documents/Standards/">
+    http://www.schemers.org/Documents/Standards/</a>.
+
+<dt class=biblio><strong>[SRFI]</strong></dt>
+<dd>
+    The SRFI web site. <br>
+    <a href="http://srfi.schemers.org/">http://srfi.schemers.org/</a>
+
+<dt class=biblio><strong>[SRFI-14]</strong></dt>
+<dd>
+    SRFI-14: String libraries. <br>
+    <a href="http://srfi.schemers.org/srfi-14/">http://srfi.schemers.org/srfi-14/</a>
+
+    <dl>    
+    <dt>
+      This document, in HTML:
+    <dd><a href="http://srfi.schemers.org/srfi-14/srfi-14.html">
+        http://srfi.schemers.org/srfi-14/srfi-14.html</a>
+
+    <dt>
+      This document, in plain text format:
+    <dd><a href="http://srfi.schemers.org/srfi-14/srfi-14.txt">
+        http://srfi.schemers.org/srfi-14/srfi-14.txt</a>
+
+    <dt> Source code for the reference implementation:
+    <dd>
+      <a href="http://srfi.schemers.org/srfi-14/srfi-14.scm">
+         http://srfi.schemers.org/srfi-14/srfi-14.scm</a>
+
+    <dt> Scheme 48 module specification, with typings:
+    <dd>
+      <a href="http://srfi.schemers.org/srfi-14/srfi-14-s48-module.scm">
+        http://srfi.schemers.org/srfi-14/srfi-14-s48-module.scm</a>
+
+    <dt> Regression-test suite:
+    <dd> <a href="http://srfi.schemers.org/srfi-14/srfi-14-tests.scm">
+         http://srfi.schemers.org/srfi-14/srfi-14-tests.scm</a>
+
+    </dl>
+</dd>
+
+<dt class=biblio><strong><a name="Unicode">[Unicode]</a></strong>
+<dd>
+    <a href="http://www.unicode.org/">http://www.unicode.org/</a>
+
+<dt class=biblio><strong><a name="UnicodeData">[UnicodeData]</a></strong>
+<dd>
+    The Unicode character database. <br>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+    <br>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html</a>
+</dl>
+
+<!--========================================================================-->
+<h1><a name="Copyright">Copyright</a></h1>
+
+<p>
+Certain portions of this document -- the specific, marked segments of text
+describing the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> procedures -- were adapted with permission from the R5RS
+report.
+    
+<p>
+All other text is copyright (C) Olin Shivers (1998, 1999, 2000). 
+All Rights Reserved. 
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+</body>
+</html>
+<!--
+  LocalWords:  SRFI refs HTML css hackery sans Netscape td pre div para
+  LocalWords:  proc def procs defi's defn dl dt defi dd NS RS rs procx
+  LocalWords:  stylesheet IE biblio IE's Internationalisation ascii doc
+  LocalWords:  normalisation lib ref ci ok titlecase upcase downcase
+  LocalWords:  xsubstring xcopy tokenize kmp slib RScheme MzScheme init
+  LocalWords:  Bigloo Chez APL SML Unicode API eszet SS dz downcases
+  LocalWords:  titlecasing normalised normalise underbar ss eq vs dict
+  LocalWords:  backquote parameterised denmark taiwan UnicodeData txt
+  LocalWords:  pred nchars obj len cBa epilog foo baz wrt subst tstart
+  LocalWords:  Szilagyi zilagyi cs abcdefgh ca cd cond eek ee tHIS com
+  LocalWords:  elba elbA ary consed XXXX ac bc kons knil ans plusses 
+  LocalWords:  catamorphism lp eof lis cdr knull kar kdr anamorphism
+  LocalWords:  abcdefg sfrom sto TCL perl slen rv exp initialisation
+  LocalWords:  plen SJ PJ si sj pj IPORT iport patlen DF buf Bevan
+  LocalWords:  Denheyer scsh Paolo Amoroso Arvestad Bawden Dybvig
+  LocalWords:  Bornstein Bothner Egorov Feeley Matthias Felleisen
+  LocalWords:  Flatt ucs Gleckler Goetter Sven Hartrumpf Hilsdale
+  LocalWords:  Kiselyov Bengt Korb Kleberg Kolbly Shriram  bignum
+  LocalWords:  Krishnamurthi Lucier Schilling Sobel Mikael Staldal
+  LocalWords:  Tsyshevsky documentors Jaffer Sperber cltl AE fixnum
+  LocalWords:  CommonLisp HyperSpec Clinger Rees SIGPLAN uniquified
+  LocalWords:  cset EA DrScheme IEC conformant JIS xor diff Posix URL
+  LocalWords:  FFF DIAERESIS abcdefghijklmnopqrstuvwxyz EB EC EF ETH
+  LocalWords:  FA FB FC FD FF Ll AA diaeresis isLowerCase BA CB CC CE
+  LocalWords:  CF DA DC Lt CARON PSILI Lu PROSGEGRAMMENI DASIA VARIA
+  LocalWords:  OXIA PERISPOMENI FAA FAB FAC FAE FAF FBC FFC Lm Lo
+  LocalWords:  abcdefABCDEF Zs Zl Zp OGHAM IDEOGRAPHIC Pc recognised
+  LocalWords:  tokenizers iso Pd Ps Pe Pf AB BB BF Sm Sc Sk AF MACRON
+  LocalWords:  PILCROW soh nul ops Shiro Kawai subform
+-->

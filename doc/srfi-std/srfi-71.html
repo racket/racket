@@ -1,0 +1,549 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+  <head>
+    <title>SRFI 71: Extended LET-syntax for multiple values</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+Extended LET-syntax for multiple values
+
+<H1>Author</H1>
+
+<a href="mailto:sebastian.egner-AT-philips.com">Sebastian Egner</a>
+
+<p>
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see
+<A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+To
+provide input on this SRFI, please <CODE>
+<A HREF="mailto:srfi-71@srfi.schemers.org">mailto:srfi-71@srfi.schemers.org</A></CODE>.
+See <A HREF="http://srfi.schemers.org/srfi-list-subscribe.html">instructions
+here</A> to subscribe to the list. You can access the discussion via
+<A HREF="http://srfi.schemers.org/srfi-71/mail-archive/maillist.html">the
+archive of the mailing list</A>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-71/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+</p>
+<UL>
+  <LI>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-71/srfi-71.html?rev=1.1">2005/05/16</a></LI>
+  <li>Draft: 2005/05/16 - 2005/07/14</li>
+  <li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-71/srfi-71.html?rev=1.2">2005/05/18</a>
+  <li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-71/srfi-71.html?rev=1.3">2005/08/01</a>
+  <li>Final: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-71/srfi-71.html?rev=1.6">2005/08/12</a>
+</UL>
+
+
+<H1>Abstract</H1>
+
+This SRFI is a proposal for extending <code>let</code>,
+<code>let*</code>, and <code>letrec</code>
+for receiving multiple values.
+The syntactic extension is fully compatible with the existing syntax.
+It is the intention that single-value bindings, 
+i.e. <code>(let ((var expr)) ...)</code>, and
+multiple-value binding can be mixed freely and conveniently.
+<p>
+The most simple form of the new syntax is best explained by an example:
+<p>
+<pre>(define (quo-rem x y)
+  (values (quotient x y) (remainder x y)))
+
+(define (quo x y)
+  (let ((q r (quo-rem x y)))
+    q))
+</pre>
+The procedure <code>quo-rem</code> delivers two values to
+its continuation. These values are received as <code>q</code>
+and <code>r</code> in the <code>let</code>-expression of the
+procedure <code>quo</code>.
+In other words, the syntax of <code>let</code> is extended such
+that several variables can be specified---and these variables
+receive the values delivered by the expression <code>(quo-rem x y)</code>.
+<p>
+The syntax of <code>let</code> is further extended to cases in which
+a rest argument receives the list of all residual values.
+Again by example, 
+<pre>(let (((values y1 y2 . y3+) (foo x)))
+   body)
+</pre>
+In this example, <code>values</code> is a syntactic keyword 
+indicating the presence of multiple values to be received,
+and <code>y1</code>, <code>y2</code>, and <code>y3+</code>, 
+resp., are variables bound to the first value, the second value,
+and the list of the remaining values, resp., as produced by 
+<code>(foo x)</code>.
+The syntactic keyword <code>values</code> allows receiving
+all values as in <code>(let (((values . xs) (foo x))) body)</code>.
+It also allows receiving no values at all as in 
+<code>(let (((values) (for-each foo list))) body)</code>.
+<p>
+A common application of binding multiple values is
+decomposing data structures into their components.
+This mechanism is illustrated in its most primitive form as follows:
+The procedure <code>uncons</code> (defined below) 
+decomposes a pair <code>x</code> into its car and its cdr
+and delivers them as two values to its continuation.
+Then an extended <code>let</code> can receive these values:
+<pre>(let ((car-x cdr-x (uncons x)))
+  (foo car-x cdr-x))
+</pre>
+Of course, for pairs this method is probably neither faster 
+nor clearer than using the procedures <code>car</code>
+and <code>cdr</code>.
+However, for data structures doing substantial work upon
+decomposition this is different: Extracting the element of
+highest priority from a priority queue, while at the
+same time constructing the residual queue,
+can both be more efficient and more convenient than
+doing both operations independently.
+In fact, the <code>quo-rem</code> example illustrates this
+point already as both quotient and remainder are probably
+computed by a common exact division algorithm.
+(And often caching is used to avoid executing this
+algorithm twice as often as needed.)
+<p>
+As the last feature of this SRFI, a mechanism is specified
+to store multiple values in heap-allocated data structures.
+For this purpose, <code>values->list</code> and <code>values->vector</code>
+construct a list (a vector, resp.) storing all values delivered 
+by evaluating their argument expression.
+Note that these operations cannot be procedures.
+
+<H1>Rationale</H1>
+
+My original motivation for writing this SRFI is my unhappiness with
+the current state of affairs in Scheme with respect to multiple values.
+Multiple values are mandatory in the
+Revised^5 Report on the Algorithmic
+Language Scheme (<a href="#R5RS">R5RS</a>),
+and they are fully available in all major Scheme implementations.
+Yet there is often a painful hesitation about using them.
+<p>
+The reason for this hesitation is that multiple values are
+nearly fully integrated into Scheme---but not quite.
+(Unlike for example in the languages Matlab, Octave, or
+the computer algebra system Magma, in which returning
+multiple values from a function is the most natural thing
+in the world: <code>q, r := quo_rem(x, y);</code>)
+However, considerable progress has been made on this point,
+and I understand this SRFI as a minor contribution 
+"placing the last corner stone".
+But first a very brief history of multiple values in Scheme,
+as far as relevant for this SRFI.
+<p>
+<a href="#R5RS">R5RS</a> specifies the procedures <code>values</code>
+and <code>call-with-values</code> for passing any number of values
+from a producer procedure to a consumer procedure. 
+This is the only construct in R5RS 
+dealing with multiple values explicitly, and it is sufficient
+to implement anything that can be implemented for multiple values.
+<p>
+However, as John David Stone observed in <a href="#SRFI8">SRFI&nbsp;8</a>,
+the mechanism exposes explicitly how multiple values are 
+passed---but that is hardly ever interesting.
+In fact, <code>call-with-values</code> is often clumsy because
+the continuations are made explicit.
+<a href="#SRFI8">SRFI&nbsp;8</a> improves on this situation
+by adding the special form 
+<code>(receive &lt;formals&gt; &lt;expression&gt; &lt;body&gt;)</code>
+for receiving several values produced by the expression
+in variables specified by <code>&lt;formals&gt;</code> and
+using them in the body.
+<p>
+The major limitation of <code>receive</code> is that it can only 
+handle a single expression, which means programs dealing with
+multiple values frequently get deeply nested.
+<a href="#SRFI11">SRFI&nbsp;11</a> provides a more versatile construct:
+<code>Let-values</code> and <code>let*-values</code> are
+modeled after <code>let</code> and <code>let*</code> but
+replace <code>&lt;variable&gt;</code> by an argument list
+with the syntax of <code>&lt;formals&gt;</code>.
+The <code>let-values</code> binding construct makes multiple
+values about as convenient as it will ever get in Scheme.
+Its primary shortcoming is that <code>let-values</code> is
+incompatible with the existing syntax of <code>let</code>:
+In <code>(let-values ((v x)) ...)</code> is <code>v</code> bound
+to the list of all values delivered by <code>x</code> (as in <a href="#SRFI11">SRFI&nbsp;11</a>)?
+Or is <code>x</code> to deliver a single value to be
+bound to <code>v</code> (as in <code>let</code>)?
+Refer to the 
+<a href="http://srfi.schemers.org/srfi-11/mail-archive/threads.html">discussion
+archive of SRFI 11</a> for details.
+Moreover, <code>let-values</code> suffers from "parenthesis complexity",
+despite Scheme programmers are tolerant to braces.
+<p>
+Eli Barzilay's <a href="#Eli">Swindle</a> library (for MzScheme) on 
+the other hand redefines let to include multiple-values and internal
+procedures: The syntactic keyword <code>values</code> indicates the
+presence of multiple values, while additional parentheses (with the
+syntax of <code>&lt;formals&gt;</code>)
+indicate a <code>lambda</code>-expression as right-hand side.
+<p>
+This SRFI follows Eli's approach, while keeping the syntax
+simple (few parentheses and concepts) and adding tools for
+dealing more conveniently with multiple values.
+The aim is convenient integration of multiple values into Scheme,
+at full coexistence with the existing syntax (<a href="#R5RS">R5RS</a>.)
+This is achieved by extending the syntax in two different
+ways (multiple left-hand sides or a syntactic keyword)
+and adding operations to convert between (implicitly passed)
+values and (first class) data structures.
+<p>
+Finally, I would like to mention that Oscar Waddell et al.
+describe an efficient compilation method for Scheme's 
+<code>letrec</code> (<a href="#Fix">Fixing Letrec</a>)
+and propose a <code>letrec*</code> binding construct
+to as a basis for internal <code>define</code>.
+I expect their compilation method (and <code>letrec*</code>)
+and this SRFI to be fully compatible with one another,
+although I have not checked this claim by way of implementation.
+
+<H1>Specification</H1>
+
+<a name="let"></a>The syntax of Scheme (<a href="#R5RS">R5RS</a>, Section 7.1.3.)
+is extended by replacing the existing production:
+
+<pre>&lt;binding spec&gt; --&gt; (&lt;variable&gt; &lt;expression&gt;)
+</pre>
+
+by the three new productions
+
+<pre>&lt;binding spec&gt; --&gt; ((values &lt;variable&gt;*) &lt;expression&gt;)
+&lt;binding spec&gt; --&gt; ((values &lt;variable&gt;* . &lt;variable&gt;) &lt;expression&gt;)
+&lt;binding spec&gt; --&gt; (&lt;variable&gt;+ &lt;expression&gt;)
+</pre>
+
+The form <code>(&lt;variable&gt;+ &lt;expression&gt;)</code> is just
+an abbreviation for <code>((values &lt;variable&gt;+) &lt;expression&gt;)</code>,
+and it includes the original <code>&lt;binding spec&gt;</code> of <a href="#R5RS">R5RS</a>.
+<p>
+The first two forms are evaluated as follows: The variables are bound and
+the expression is evaluated according to the enclosing construct
+(either <code>let</code>, <code>let*</code>, or <code>letrec</code>.)
+However, the expression may deliver any number of values to its continuation, 
+which stores these values into the variables specified, 
+possibly allocating a rest list in case of the <code>. &lt;variable&gt;</code> form. 
+<p>
+The number of values delivered by the expression must match the
+number of values expected by the binding specification.
+Otherwise an error is raised, as <code>call-with-values</code> would.
+This implies in particular, that each binding of a named let involves
+exactly one value, because this binding can also be an argument to a
+lambda-expression.
+
+<h3>Standard operations</h3>
+
+The following procedures, specified in terms of standard procedures,
+are added to the set of standard procedures:
+<pre><a name="uncons"></a>(define (uncons pair)
+  (values (car pair) (cdr pair)))
+
+(define (uncons-2 list)
+  (values (car list) (cadr list) (cddr list)))
+
+(define (uncons-3 list)
+  (values (car list) (cadr list) (caddr list) (cdddr list)))
+
+(define (uncons-4 list)
+  (values (car list) (cadr list) (caddr list) (cadddr list) (cddddr list)))
+
+<a name="uncons-cons"></a>(define (uncons-cons alist)
+  (values (caar alist) (cdar alist) (cdr alist)))
+
+<a name="unlist"></a>(define (unlist list)
+  (apply values list))
+
+<a name="unvector"></a>(define (unvector vector)
+  (apply values (vector->list vector)))
+</pre>
+These procedures decompose the standard concrete data structures
+(pair, list, vector) and deliver the components as values.
+It is an error if the argument cannot be decomposed as expected.
+Note that the procedures are not necessarily implemented by
+the definition given above.
+<p>
+The preferred way of decomposing a list into the first two elements
+and the rest list is <code>(let ((x1 x2 x3+ (uncons-2 x))) body)</code>,
+and similar for three or four elements and a rest.
+This is <i>not</i> equivalent to 
+<code>(let (((values x1 x2 . x3+) (unlist x))) body)</code>
+because the latter binds <code>x3+</code> to a newly allocated
+copy of <code>(cddr x)</code>.
+<p>
+Finally, the following two macros are added to the standard macros:
+
+<pre><a name="values2list"></a>(values->list   &lt;expression&gt;)
+<a name="values2vector"></a>(values->vector &lt;expression&gt;)
+</pre>
+
+These operation receive all values (if any) delivered by their 
+argument expression and return a newly allocated list (vector, resp.)
+of these values. 
+Note that <code>values->list</code> is <i>not</i> the same as 
+<code>list</code> (the procedure returning the list of its arguments).
+
+<H1>Design Rationale</H1>
+
+<h3>Which alternatives designs for the syntax were considered?</h3>
+
+This SRFI defines two notations for receiving several values:
+Using the keyword <code>values</code>,
+or simply listing the variables if there is at least one.
+There are several alternatives for this design,
+some of which were proposed during the discussion.
+(Refer in particular to <a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00000.html">msg00000</a>,
+<a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00001.html">msg00001</a>, and
+<a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00002.html">msg00002</a>,
+<a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00007.html">msg00007</a>.)
+The alternatives considered include:
+<ol>
+<li>Just listing the variables (no syntactic keyword at all) as in
+<code>(let ((x1 x2 expr)) body)</code>.</li>
+<li>Only using a keyword, e.g. <code>values</code>, as in
+<code>(let (((values x1 x2 . x3+) expr)) body)</code>.</li>
+<li>A keyword, e.g. <code>dot</code>, indicating the 
+rest list as in <code>(let ((x1 x2 dot x3+ expr)) body)</code>.</li>
+<li>The keyword <code>...</code> indicating the 
+rest list as in <code>(let ((x1 x2 x3+ ... expr)) body)</code>.</li>
+<li>A keyword, e.g. <code>rest</code>, indicating the 
+rest list as in <code>(let ((x1 x2 (rest x3+) expr)) body)</code>.</li>
+<li>Using the <code>&lt;formals&gt;</code> syntax of
+<a href="#R5RS">R5RS</a> as in
+<code>(let (((x1 x2 . x3+) expr)) body)</code>.
+<li>Mimicking <code>&lt;formals&gt;</code> but with
+one level of parentheses removed as in
+<code>(let ((x1 x2 . x3+ expr)) body)</code>.</li>
+<li>As the previous but with additional syntax for 
+&quot;no values&quot; and &quot;just a rest&quot;, e.g.
+<code>(let ((! expr)) body)</code> and
+<code>(let ((xs . expr)) body)</code>.
+</ol>
+<p>
+The requirements for the design are
+compatibility with the existing <code>let</code>,
+concise notation for the frequent use cases,
+robustness against most common mistakes, and
+full flexibility of receiving values.
+<p>
+For the sake of compatibility,
+only modifications of <code>&lt;binding spec&gt;</code> were
+considered. 
+The alternative, i.e. modifying the syntax of <code>let</code> 
+in other ways, was not considered.
+Concerning concise notation, by far the most convenient notation
+is <i>listing the variables</i>.
+As this notation also covers the existing syntax, it was adopted
+as the basis of the extension to be specified.
+<p>
+The <i>listing the variables</i> notation is limited by the fact that
+the preferred marker for a rest list (&quot;<code>.</code>&quot;)
+cannot follow an opening parenthesis as in
+<code>(let ((. xs expr)) body)</code>, 
+nor that it can be followed by two syntactic elements as in
+<code>(let ((x1 . x2+ expr)) body)</code>.
+Lifting these restrictions would require major modifications
+in unrelated parts of the Scheme syntax, which is not an
+attractive option.
+<p>
+Another problematic aspect of the <i>listing the variables</i> notation
+is the case of no variables at all.
+While this case is not conflicting with existing syntax,
+it seriously harms syntactic robustness:
+<code>(let (((run! foo))) body)</code> and 
+<code>(let ((run! foo)) body)</code> would both be
+syntactically correct and could easily be confused with one another.
+For this reason, the notation of listing the variables was
+restricted to one or more variables.
+<p>
+This leaves the problem of extending the notation in order to
+cover rest arguments and the &quot;no values&quot;-case.
+This can either be done <i>ad hoc</i>, covering the open cases,
+or by adding a general notation covering all cases.
+In view of readability and uniformity (useful when code gets
+processed automatically) the latter approach was chosen.
+This has resulted in the design specified in this SRFI.
+
+<h3>Why is <code>values</code> needed in the &quot;zero values&quot;-case?</h3>
+
+The syntax specified in this SRFI allows zero variables being
+bound in a binding specification using the syntax
+<code>(let (((values) (for-each foo (bar)))) body)</code>.
+An alternative is allowing <code>(&lt;expression&gt;)</code>
+as a binding specification.
+(Refer to the discussion archive starting at <a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00001.html">msg00001</a>.)
+<p>
+The syntax specified in this SRFI is designed for static
+detection of the most frequent types (forgotten parentheses).
+For example, writing 
+<code>(let ((values) (for-each foo (bar))) body)</code>
+is not a well-formed let-expression in this SRFI.
+<p>
+In the alternative syntax, both 
+<code>(let (((for-each foo (bar)))) body)</code>
+and <code>(let ((for-each foo (bar))) body)</code> 
+are syntactically correct.
+The first just executes <code>(for-each foo (bar))</code>,
+whereas the second binds the variables <code>for-each</code> and
+<code>foo</code> to the two values delivered by <code>(bar)</code>. 
+Assuming the first meaning was intended, 
+the error will probably manifest itself at the moment 
+<code>(bar)</code> fails to deliver exactly two values.
+Unless it does, in which case the error must manifest itself much 
+further downstream from the fact that <code>foo</code> never got called. 
+<p>
+In order to avoid this sort of expensive typos, 
+the syntax proposed in this SRFI is more verbose
+than it needs to be.
+
+<h3>Why not also include a syntax for procedures?</h3>
+
+This SRFI is a proposal for extending the syntax of <code>let</code>
+etc. in order to include multiple values.
+It is also desirable to extend the syntax of <code>let</code> 
+for simplifying the definition of local procedures.
+(For example, as in <a href="#Swindle">Swindle</a>.)
+However, this SRFI does not include this feature.
+<p>
+The reason I have chosen not restrict this SRFI to a syntax
+for multiple values is simplicity.
+
+<h3>Why the names <code>unlist</code> etc.?</h3>
+
+An alternative naming convention for the decomposition
+operation <code>unlist</code> is <code>list->values</code>,
+which is more symmetric with respect to its
+inverse operation <code>values->list</code>.
+<p>
+This symmetry ends, however, as soon as more complicated
+data structures with other operations are involved.
+Then it becomes apparent that the same data structure can
+support different decomposition operations:
+A double-ended queue (deque) for example supports splitting off
+the head and splitting of the tail; and neither of these
+operations should be named <code>deque->values</code>.
+The <code>un</code>-convention covers this in a natural way.
+<p>
+Please also refer to the double-ended queue (deque) example
+in <a href="examples.scm">examples.scm</a> to see how to
+use decomposition procedures for dealing with data structures.
+
+<h3>Which decomposition operations are included?</h3>
+
+The particular set of operations specified in this SRFI 
+for decomposing lists represents a trade-off between limiting
+the number of operations and convenience.
+<p>
+As Al Petrofsky has pointed out during the discussion
+(<a href="http://srfi.schemers.org/srfi-71/mail-archive/msg00018.html">
+msg00018</a>) it is not sufficient to have only 
+<code>unlist</code> as this will copy the rest list.
+For this reason specialized decomposition operations
+for splitting off the first 1, ..., 4 elements are
+provided, and a decomposition operation expecting the
+first element to be a pair itself.
+These appear to be the most common cases.
+
+<H1>Implementation</H1>
+
+The reference implementation is written in <a href="#R5RS">R5RS</a> 
+using hygienic macros, only.
+It is not possible, however, to portably detect read access to
+an uninitialized variable introduced by <code>letrec</code>.
+The definition of the actual functionality can be found 
+<a href="letvalues.scm">here</a>.
+The implementation defines macros <code>srfi-let/*/rec</code> etc.
+in terms of <code>r5rs-let/*/rec</code>.
+Implementors may use this to redefine (or even re-implement)
+<code>let/*/rec</code> in terms of <code>srfi-let/*/rec</code>,
+while providing implementations of <code>r5rs-let/*/rec</code>.
+An efficient method for the latter is given in <a href="#Fix">Fixing Letrec</a>
+by O. Waddell et al.
+<p>
+<i>R5RS:</i>
+For trying out the functionality, a complete implementation under
+<a href="#R5RS">R5RS</a> can be found <a href="letvalues-r5rs.scm">here</a>. 
+It defines <code>r5rs-let/*/rec</code> in terms of <code>lambda</code>
+and redefines <code>let/*/rec</code> as <code>srfi-let/*/rec</code>.
+This may not be the most efficient implementation, because many
+Scheme systems handle <code>let</code> etc. specially and do not
+reduce it into <code>lambda</code>
+<p>
+<i>PLT&nbsp;208:</i>
+The implementation found <a href="letvalues-plt.scm">here</a>
+uses <a href="#PLT">PLT</a>'s module system for exporting 
+<code>srfi-let/*/rec</code>
+under the name of <code>let/*/rec</code>, while defining
+<code>r5rs-let/*/rec</code> as a copy of the built-in
+<code>let/*/rec</code>. This code should be efficient.
+<p>
+Examples using the new functionality
+can be found in <a href="examples.scm">examples.scm</a>.
+
+<H1>References</H1>
+
+<table>
+
+<tr>
+<td><a name="R5RS">[R5RS]</a>
+<td>Richard Kelsey, William Clinger, and Jonathan Rees (eds.):
+Revised^5 Report on the Algorithmic Language Scheme of
+20 February 1998.
+Higher-Order and Symbolic Computation, Vol. 11, No. 1, September 1998.
+<a href="http://schemers.org/Documents/Standards/R5RS/">
+http://schemers.org/Documents/Standards/R5RS/</a>.
+</tr>
+
+<tr>
+<td><a name="SRFI8">[SRFI&nbsp;8]</a>
+<td>John David Stone: <code>Receive</code>: Binding to multiple values.
+<a href="http://srfi.schemers.org/srfi-8/">http://srfi.schemers.org/srfi-8/</a>
+</tr>
+
+<tr>
+<td><a name="SRFI11">[SRFI&nbsp;11]</a>
+<td>Lars T. Hansen: Syntax for receiving multiple values.
+<a href="http://srfi.schemers.org/srfi-11/">http://srfi.schemers.org/srfi-11/</a>
+</tr>
+
+<tr>
+<td><a name="Eli">[Swindle]</a>
+<td>Eli Barzilay: Swindle, documentation for "base.ss" (Swindle Version 20040908.)
+<a href="http://www.cs.cornell.edu/eli/Swindle/base-doc.html#let">http://www.cs.cornell.edu/eli/Swindle/base-doc.html#let</a>
+</tr>
+
+<tr>
+<td><a name="Fix">[Fix]</a>
+<td>O. Waddell, D. Sarkar, R. K. Dybvig:
+Fixing Letrec: A Faithful Yet Efficient Implementation of Scheme's
+Recursive Binding Construct. To appear, 2005.
+<a href="http://www.cs.indiana.edu/~dyb/pubs/fixing-letrec.pdf">http://www.cs.indiana.edu/~dyb/pubs/fixing-letrec.pdf</a>
+</tr>
+
+</table>
+
+
+<H1>Copyright</H1>
+Copyright (c) 2005 Sebastian Egner.
+<p>
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ``Software''), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+<p>
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+<p>
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+    <hr>
+    <address>Author: <a href="mailto:sebastian.egner@philips.com">Sebastian Egner</a></address>
+    <address>Editor: <a
+    href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Fri Apr 29 09:30:00 CEST 2005 -->
+<!-- hhmts start -->
+Last modified: Sun Sep 11 16:07:38 CEST 2005
+<!-- hhmts end -->
+  </body>
+</html>

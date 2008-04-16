@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 23: Error reporting mechanism</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 23: Error reporting mechanism
+
+<H1>Author</H1>
+
+Stephan Houben
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  
+You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-23/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+<P>
+<UL>
+<LI>Draft: 2001/03/09-2001/06/09</LI>
+<LI>Revised: 2001/03/22
+<LI>Revised: 2001/04/26
+</UL>
+</P>
+
+<H1>Abstract</H1>
+
+A mechanism is proposed to allow Scheme code to report errors and abort
+execution.
+The proposed mechanism is already implemented in several Scheme systems
+and can be implemented, albeit imperfectly, in any R5RS conforming Scheme.
+
+<H1>Rationale</H1>
+
+<p>
+R5RS Scheme requires certain operations to signal an error when they fail.
+"Signalling an error" means that implementations must detect and report
+the error.
+Moreover, R5RS encourages, but not requires, 
+implementations to signal an error in many more circumstances.
+
+<p>
+However, there is no direct way for the Scheme application programmer to report
+an error that occured in his or her own application. 
+This means that Scheme procedures created by applications or libraries are
+in this respect not on equal footing with procedures provided by the
+Scheme system.
+
+<p>
+Many Scheme systems already provide a mechanism that allows application code
+to report an error. At least the following implementations support
+such a mechanism: Bigloo, Guile, MIT Scheme, PLT Scheme, RScheme, Scsh, SCM,
+all implementations supported by SLIB.
+Of these implementations, the following have an error mechanism compatible
+with this SRFI: Guile, MIT Scheme, PLT Scheme, RScheme, Scsh.
+The implementation in SLIB has a different name than the
+one proposed in this SRFI.
+
+<p>
+To summarise, many implementations already have the error reporting
+mechanism described in this SRFI and others are easily made compatible
+with this SRFI. This shows that the proposed mechanism is considered useful
+and that it is easy to implement in most major implementations.
+
+<H1>Specification</H1>
+
+<p>
+The following procedure should be provided:
+<p><a name="error"></a>
+<code>(error</code> &lt;reason&gt;<code> [&lt;arg1&gt; [&lt;arg2&gt; ...]])</code>
+<p>
+The argument &lt;reason&gt; should be a string.
+The procedure <code>error</code> will <em>signal an error</em>,
+as described in R5RS, and it will report the message &lt;reason&gt;
+and the objects &lt;arg1&gt, &lt;arg2&gt, .... 
+What exactly constitutes "signalling" and "reporting" is not prescribed, because of the large variation in Scheme systems. So it is left to the implementor
+to do something reasonable. To that end, a few examples of possible behaviour
+are given.
+<ol>
+ <li>
+   Display &lt;reason&gt; and &lt;arg1&gt;... on the screen and terminate
+   the Scheme program. (This might be suitable for a Scheme system
+   implemented as a batch compiler.)
+ <li>  
+  Display &lt;reason&gt; and &lt;arg1&gt;... on the screen and  
+  go back to the read-evaluate-print loop. (This might be suitable for
+  an interactive implementation).
+ <li>
+  In the case of a multi-threaded system: terminate the current
+  thread, but do not terminate the other threads. Possibly make the
+  arguments to <code>error</code> available to other threads in some
+  way. See the <code>thread-join!</code> mechanism in SRFI-18 on
+  how this could be done.
+ <li>
+  Package &lt;reason&gt; and &lt;arg1&gt;... up into an error object
+  and pass this error object to an exception handler. The default
+  exception handler then might do something as described in points 1 to 3.
+ <li>
+  In the case of a Scheme system that runs completely unattended
+  and that has no way to notify a human, the only reasonable
+  course of action might be to do nothing at all. However, this should
+  be considered a last resort. Clearly, if all implementors would choose
+  this strategy, this SRFI would not be very useful.
+</ol>  
+An implementation might report more information than just 
+&lt;reason&gt; and &lt;arg1&gt;... . For instance, it might report the procedure name in which
+the error occured or even print a stack trace.
+However, this will require additional support in the Scheme implementation.
+
+
+<H1>Why <code>error</code> is a procedure</H1>
+
+It is conceivable to allow <code>error</code> to be a special form,
+such as a macro, rather than a procedure. This might make providing
+information such as the source code location easier. This possibility
+has been considered, but rejected, for two reasons.
+<ol>
+ <li>
+  Since <code>error</code> accepts a variable number of arguments,
+  it could occasionally be useful to use <code>apply</code> to call
+  <code>error</code>. However, this is not possible if <code>error</code>
+  was allowed to be a special form.
+ <li>
+  Since <code>error</code> is currently a procedure in all Scheme
+  implementations mentioned above, it doesn't seem all that
+  worthwhile to allow it to be a special form.
+</ol>
+
+<H1>Implementation</H1>
+
+An implementation that works in almost any R5RS Scheme is the following:
+<pre>
+  (define (error reason . args)
+      (display "Error: ")
+      (display reason)
+      (for-each (lambda (arg) 
+                  (display " ")
+		  (write arg))
+		args)
+      (newline)
+      (scheme-report-environment -1))  ;; we hope that this will signal an error
+</pre>
+This implementation has a flaw,
+namely, in many implementations this
+will actually print 2 messages.
+<ol>
+ <li> The message <code>message</code>, followed by <code>objs</code>, and
+ <li> A message about <code>scheme-report-environment</code> getting an invalid argument. 
+</ol> 
+This might be confusing to the user.
+
+<p>
+The <a href="http://www.swiss.ai.mit.edu/~jaffer/SLIB.html">SLIB</a> procedure <code>slib:error</code> works like the <code>error</code>
+procedure described in this document.
+Thus, when SLIB is loaded, <code>error</code> can be defined as:
+<pre>
+  (define error slib:error)
+</pre>  
+
+<p>
+If <a href="http://srfi.schemers.org/srfi-18/">SRFI 18</a> is supported, it is allowed 
+(but not required) to implement <code>error</code> in
+terms of the exception mechanism of SRFI 18.
+<pre>
+  (define (error reason . args)
+    (raise (make-error-exception reason args)))
+</pre>
+Here, <code>make-error-exception</code> is implementation dependent.
+
+<H1>Copyright</H1>
+<p>Copyright (C) <a href="mailto:stephanh@win.tue.nl">Stephan Houben</a> (2001). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a
+    href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Thu Mar  8 15:33:07 CET 2001 -->
+<!-- hhmts start -->
+Last modified: Mon Feb  4 14:46:29 MET 2002
+<!-- hhmts end -->
+  </body>
+</html>

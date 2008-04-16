@@ -1,0 +1,160 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-12.html">previous</a></span><span>, <a href="r5rs-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_Temp_9"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_Temp_9">Example</a></h1>
+<p>
+</p>
+<p></p>
+<p> 
+<tt>Integrate-system</tt> integrates the system 
+</p>
+<div align=left><img src="r5rs-Z-G-63.gif" border="0"></div>
+<p>
+of differential equations with the method of Runge-Kutta.</p>
+<p>
+The parameter <tt>system-derivative</tt> is a function that takes a system
+state (a vector of values for the state variables <em>y</em><sub>1</sub>, <tt>...</tt>, <em>y</em><sub><em>n</em></sub>)
+and produces a system derivative (the values <em>y</em><sub>1</sub><sup>/</sup>, <tt>...</tt>,
+<em>y</em><sub><em>n</em></sub><sup>/</sup>).  The parameter <tt>initial-state</tt> provides an initial
+system state, and <tt>h</tt> is an initial guess for the length of the
+integration step.</p>
+<p>
+The value returned by <tt>integrate-system</tt> is an infinite stream of
+system states.</p>
+<p>
+<tt>(define&nbsp;integrate-system<br>
+&nbsp;&nbsp;(lambda&nbsp;(system-derivative&nbsp;initial-state&nbsp;h)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((next&nbsp;(runge-kutta-4&nbsp;system-derivative&nbsp;h)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec&nbsp;((states<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;initial-state<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(delay&nbsp;(map-streams&nbsp;next<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states))))</p>
+</tt>
+<p>
+<tt>Runge-Kutta-4</tt> takes a function, <tt>f</tt>, that produces a
+system derivative from a system state.  <tt>Runge-Kutta-4</tt>
+produces a function that takes a system state and
+produces a new system state.</p>
+<p>
+<tt>(define&nbsp;runge-kutta-4<br>
+&nbsp;&nbsp;(lambda&nbsp;(f&nbsp;h)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((*h&nbsp;(scale-vector&nbsp;h))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*2&nbsp;(scale-vector&nbsp;2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*1/2&nbsp;(scale-vector&nbsp;(/&nbsp;1&nbsp;2)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*1/6&nbsp;(scale-vector&nbsp;(/&nbsp;1&nbsp;6))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;y&nbsp;is&nbsp;a&nbsp;system&nbsp;state<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*&nbsp;((k0&nbsp;(*h&nbsp;(f&nbsp;y)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(k1&nbsp;(*h&nbsp;(f&nbsp;(add-vectors&nbsp;y&nbsp;(*1/2&nbsp;k0)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(k2&nbsp;(*h&nbsp;(f&nbsp;(add-vectors&nbsp;y&nbsp;(*1/2&nbsp;k1)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(k3&nbsp;(*h&nbsp;(f&nbsp;(add-vectors&nbsp;y&nbsp;k2)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(add-vectors&nbsp;y<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*1/6&nbsp;(add-vectors&nbsp;k0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*2&nbsp;k1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*2&nbsp;k2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;k3))))))))<br>
+<br>
+(define&nbsp;elementwise<br>
+&nbsp;&nbsp;(lambda&nbsp;(f)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;vectors<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(generate-vector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vector-length&nbsp;(car&nbsp;vectors))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(apply&nbsp;f<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;(lambda&nbsp;(v)&nbsp;(vector-ref&nbsp;&nbsp;v&nbsp;i))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vectors)))))))<br>
+<br>
+(define&nbsp;generate-vector<br>
+&nbsp;&nbsp;(lambda&nbsp;(size&nbsp;proc)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((ans&nbsp;(make-vector&nbsp;size)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec&nbsp;((loop<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;((=&nbsp;i&nbsp;size)&nbsp;ans)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vector-set!&nbsp;ans&nbsp;i&nbsp;(proc&nbsp;i))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(+&nbsp;i&nbsp;1)))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;0)))))<br>
+<br>
+(define&nbsp;add-vectors&nbsp;(elementwise&nbsp;+))<br>
+<br>
+(define&nbsp;scale-vector<br>
+&nbsp;&nbsp;(lambda&nbsp;(s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(elementwise&nbsp;(lambda&nbsp;(x)&nbsp;(*&nbsp;x&nbsp;s)))))</p>
+</tt>
+<p>
+<tt>Map-streams</tt> is analogous to <tt>map</tt>: it applies its first
+argument (a procedure) to all the elements of its second argument (a
+stream).</p>
+<p>
+<tt>(define&nbsp;map-streams<br>
+&nbsp;&nbsp;(lambda&nbsp;(f&nbsp;s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(f&nbsp;(head&nbsp;s))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(delay&nbsp;(map-streams&nbsp;f&nbsp;(tail&nbsp;s))))))</p>
+</tt>
+<p>
+Infinite streams are implemented as pairs whose car holds the first
+element of the stream and whose cdr holds a promise to deliver the rest
+of the stream.</p>
+<p>
+<tt>(define&nbsp;head&nbsp;car)<br>
+(define&nbsp;tail<br>
+&nbsp;&nbsp;(lambda&nbsp;(stream)&nbsp;(force&nbsp;(cdr&nbsp;stream))))</p>
+</tt>
+<p>
+</p>
+<p><br></p>
+<p><br></p>
+<p>The following illustrates the use of <tt>integrate-system</tt> in
+integrating the system
+</p>
+<div align=left><img src="r5rs-Z-G-64.gif" border="0"></div>
+<p></p>
+<div align=left><img src="r5rs-Z-G-65.gif" border="0"></div>
+<p>
+which models a damped oscillator.</p>
+<p>
+<tt>(define&nbsp;damped-oscillator<br>
+&nbsp;&nbsp;(lambda&nbsp;(R&nbsp;L&nbsp;C)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(state)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((Vc&nbsp;(vector-ref&nbsp;state&nbsp;0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Il&nbsp;(vector-ref&nbsp;state&nbsp;1)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vector&nbsp;(-&nbsp;0&nbsp;(+&nbsp;(/&nbsp;Vc&nbsp;(*&nbsp;R&nbsp;C))&nbsp;(/&nbsp;Il&nbsp;C)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(/&nbsp;Vc&nbsp;L))))))<br>
+<br>
+(define&nbsp;the-states<br>
+&nbsp;&nbsp;(integrate-system<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(damped-oscillator&nbsp;10000&nbsp;1000&nbsp;.001)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'#(1&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.01))</p>
+</tt>
+<p>
+</p>
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p>
+
+
+
+
+
+</p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-12.html">previous</a></span><span>, <a href="r5rs-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

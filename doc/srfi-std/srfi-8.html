@@ -1,0 +1,221 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+<head>
+<title>SRFI 8: RECEIVE: Binding to multiple values</title>
+</head>
+
+<body>
+<H1>Title</H1>
+
+SRFI 8: <code>receive</code>: Binding to multiple values
+
+<H1>Author</H1>
+
+John David Stone
+
+<p>
+Department of Mathematics and Computer Science, Grinnell College, Grinnell, Iowa 50112,
+<a href="mailto:stone@cs.grinnell.edu">email</a>.
+</p>
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-8/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/05/27
+<LI>Draft: 1999/07/01-1999/08/30
+<LI>Final: 1999/08/30
+</UL>
+
+<H1>Related SRFIs</H1>
+
+<p>
+The syntax proposed in this SRFI is used in the reference implementation of
+<a href="srfi-1.html">SRFI-1</a>, ``List library.''
+</p>
+
+<H1>Abstract</H1>
+
+<p>
+The only mechanism that R<sup>5</sup>RS provides for binding identifiers to
+the values of a multiple-valued expression is the primitive
+<code>call-with-values</code>.  This SRFI proposes a more concise, more
+readable syntax for creating such bindings.
+</p>
+
+<H1>Rationale</H1>
+
+<p>
+Although R<sup>5</sup>RS supports multiple-valued expressions, it provides
+only the essential procedures <code>values</code> and
+<code>call-with-values</code>.  It is evident that the authors expected
+Scheme programmers to define other constructs in terms of these,
+abstracting common patterns of use.
+</p>
+
+<p>
+One such pattern consists in binding an identifier to each of the values of
+a multiple-valued expression and then evaluating an expression in the scope
+of the bindings.  As an instance of this pattern, consider the following
+excerpt from a quicksort procedure:
+</p>
+
+<pre>
+<code>
+(call-with-values
+  (lambda ()
+    (partition (precedes pivot) others))
+  (lambda (fore aft)
+    (append (qsort fore) (cons pivot (qsort aft)))))
+</code>
+</pre>
+
+<p>
+Here <code>partition</code> is a multiple-valued procedure that takes two
+arguments, a predicate and a list, and returns two lists, one comprising
+the list elements that satisfy the predicate, the other those that do not.
+The purpose of the expression shown is to partition the list
+<code>others</code>, sort each of the sublists, and recombine the results
+into a sorted list.
+</p>
+
+<p>
+For our purposes, the important step is the binding of the identifiers
+<code>fore</code> and <code>aft</code> to the values returned by
+<code>partition</code>.  Expressing the construction and use of these
+bindings with the <code>call-by-values</code> primitive is cumbersome: One
+must explicitly embed the expression that provides the values for the
+bindings in a parameterless procedure, and one must explicitly embed the
+expression to be evaluated in the scope of those bindings in another
+procedure, writing as its parameters the identifiers that are to be bound
+to the values received.
+</p>
+
+<p>
+These embeddings are boilerplate, exposing the underlying binding mechanism
+but not revealing anything relevant to the particular program in which it
+occurs.  So the use of a syntactic abstraction that exposes only the
+interesting parts -- the identifiers to be bound, the multiple-valued
+expression that supplies the values, and the body of the receiving
+procedure -- makes the code more concise and more readable:
+</p>
+
+<pre>
+<code>
+(receive (fore aft) (partition (precedes pivot) others)
+  (append (qsort fore) (cons pivot (qsort aft))))
+</code>
+</pre>
+
+<p>
+The advantages are similar to those of a <code>let</code>-expression over a 
+procedure call with a <code>lambda</code>-expression as its operator.  In
+both cases, cleanly separating a ``header'' in which the bindings are
+established from a ``body'' in which they are used makes it easier to
+follow the code.
+</p>
+
+<H1>Specification</H1>
+<a name="receive"></a>
+<p>
+<code>(receive</code> &lt;formals&gt; &lt;expression&gt;
+&lt;body&gt;<code>)</code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;library&nbsp;syntax 
+</p>
+
+<p>
+&lt;Formals&gt;, &lt;expression&gt;, and &lt;body&gt; are as described in
+R<sup>5</sup>RS.  Specifically, &lt;formals&gt; can have any of three
+forms:
+</p>
+
+<ul>
+<li><p>
+<code>(</code>&lt;variable<sub>1</sub>&gt; <code>...</code>
+&lt;variable<sub><i>n</i></sub>&gt;<code>)</code>: The environment in which 
+the <code>receive</code>-expression is evaluated is extended by binding
+</code>&lt;variable<sub>1</sub>&gt;, ...,
+&lt;variable<sub><i>n</i></sub>&gt; to fresh locations.  The
+&lt;expression&gt; is evaluated, and its values are stored into those
+locations.  (It is an error if &lt;expression&gt; does not have exactly
+<i>n</i> values.)
+</p></li>
+
+<li><p>
+&lt;variable&gt;: The environment in which the
+<code>receive</code>-expression is evaluated is extended by binding 
+&lt;variable&gt; to a fresh location.  The &lt;expression&gt; is evaluated,
+its values are converted into a newly allocated list, and the list is
+stored in the location bound to &lt;variable&gt;.
+</p></li>
+
+<li><p>
+<code>(</code>&lt;variable<sub>1</sub>&gt; <code>...</code>
+&lt;variable<sub><i>n</i></sub>&gt; . &lt;variable<sub><i>n</i> +
+1</sub>&gt;<code>)</code>:  The environment in which 
+the <code>receive</code>-expression is evaluated is extended by binding
+</code>&lt;variable<sub>1</sub>&gt;, ...,
+&lt;variable<sub><i>n</i> + 1</sub>&gt; to fresh locations.  The
+&lt;expression&gt; is evaluated.  Its first <i>n</i> values are stored into
+the locations bound to &lt;variable<sub>1</sub>&gt; <code>...</code>
+&lt;variable<sub><i>n</i></sub>&gt;.  Any remaining values are converted
+into a newly allocated list, which is stored into the location bound to 
+&lt;variable<sub><i>n</i> + 1</sub>&gt;.  (It is an error if
+&lt;expression&gt; does not have at least
+<i>n</i> values.)
+</p></li>
+</ul>
+
+<p>
+In any case, the expressions in &lt;body&gt; are evaluated sequentially in
+the extended environment.  The results of the last expression in the body
+are the values of the <code>receive</code>-expression.
+</p>
+
+<H1>Reference implementation</H1>
+
+<pre>
+<code>
+(define-syntax receive
+  (syntax-rules ()
+    ((receive formals expression body ...)
+     (call-with-values (lambda () expression)
+                       (lambda formals body ...)))))
+</code>
+</pre>
+
+<hr>
+
+<p>
+Copyright (C) John David Stone (1999).  All Rights Reserved.
+</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+<hr>
+
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+
+</body>
+</html>

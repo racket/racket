@@ -1,0 +1,2972 @@
+<!doctype html public '-//W3C//DTD HTML 4.01//EN'
+  'http://www.w3.org/TR/REC-html4/strict.dtd'>
+<!-- Can I have bangs, plusses, or slashes in #tags? Spaces?
+        Yes: plus, bang, star   No: space  Yes: slash, question, ampersand
+        You can't put sharp in a path, so anything goes, really.
+        Nonetheless, some of these confuse Netscape, so I'll avoid them.
+ -->
+
+<!--========================================================================-->
+<html lang=en-US>
+  <head>
+    <meta name="keywords" content="Scheme, programming language, list processing, SRFI, youthful devotees of intra-gender communion">
+    <link rev=made href="mailto:shivers@ai.mit.edu">
+    <title>SRFI 13: String Libraries</title>
+
+    <!-- Should have a media=all to get, for example, printing to work.
+      == But my Netscape will completely ignore the tag if I do that.
+      -->
+    <style type="text/css">
+           /* A little general layout hackery for headers & the title. */
+           body { margin-left: +7%;
+                  font-family: "Helvetica", sans-serif;
+                  }
+           /* Netscape workaround: */
+           td, th { font-family: "Helvetica", sans-serif; }
+
+           code, pre { font-family: "courier new", "courier"; }
+
+           div.inset { margin-left: +5%; }
+
+           h1 { margin-left: -5%; }
+           h1, h2 { clear: both; }
+           h1, h2, h3, h4, h5, h6 { color: blue }
+           div.title-text { font-size: large; font-weight: bold; }
+	   h3 { margin-top: 2em; margin-bottom: 0em }
+
+	   /* "Continue" class marks text that isn't really the start
+	   ** of a new paragraph -- e.g., continuing a para after a 
+	   ** code sample.
+	   */
+	   p.continue { text-indent: 0em; margin-top: 0em}
+
+           div.indent { margin-left: 2em; }       /* General indentation */
+           pre.code-example { margin-left: 2em; } /* Indent code examples. */
+
+           /* This stuff is for definition lists of defined procedures.
+           ** A proc-def1 is used when you want a stack of procs to go
+           ** with one dd body. In this case, make the first
+           ** proc a proc-def1, following ones proc-defi's, and the last one
+           ** a proc-defn.
+           **
+           ** Unfortunately, Netscape has huge bugs with respect to style
+           ** sheets and dl list rendering. We have to set truly random
+           ** values here to get the rendering to come out. The proper values
+           ** are in the following style sheet, for Internet Explorer.
+           ** In the following settings, the *comments* say what the 
+           ** setting *really* causes Netscape to do.
+           **
+           ** Ugh. Professional coders sacrifice their self-respect,
+           ** that others may live.
+           */
+           /* m-t ignored; m-b sets top margin space. */
+           dt.proc-def1 { margin-top: 0ex; margin-bottom: 3ex; }
+           dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+           dt.proc-defn { margin-top: 0ex; margin-bottom: 0ex; }
+
+           /* m-t works weird depending on whether or not the last line
+           ** of the previous entry was a pre. Set to zero.
+           */
+           dt.proc-def  { margin-top: 0ex; margin-bottom: 3ex; }
+
+           /* m-b sets space between dd & dt; m-t ignored. */
+           dd.proc-def { margin-bottom: 0.5ex; margin-top: 0ex; } 
+
+
+           /* Boldface the name of a procedure when it's being defined. */
+           code.proc-def { font-weight: bold; font-size: 110%}
+
+           /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+           /* m-b sets space between dd & dt; m-t ignored. */
+           dd.proc-index  { margin-bottom: 0ex; margin-top: 0ex; } 
+           /* What the fuck? */
+           pre.proc-index { margin-top: -2ex; }
+
+           /* Pull the table of contents back flush with the margin.
+           ** Both NS & IE screw this up in different ways.
+           */
+           #toc-table { margin-top: -2ex; margin-left: -5%; }
+
+           /* R5RS proc names are in italic; extended R5RS names 
+           ** in italic boldface.
+           */
+           span.r5rs-proc { font-weight: bold; }
+           span.r5rs-procx { font-style: italic; font-weight: bold; }
+
+           /* Spread out bibliographic lists. */
+           /* More Netscape-specific lossage; see the following stylesheet
+           ** for the proper values (used by IE).
+           */
+           dt.biblio { margin-bottom: 3ex; }
+
+           /* Links to draft copies (e.g., not at the official SRFI site)
+           ** are colored in red, so people will use them during the 
+           ** development process and kill them when the document's done.
+           */
+           a.draft { color: red; }
+    </style>
+
+    <style type="text/css" media=all>
+           /* Nastiness: Here, I'm using a bug to work around a bug.
+           ** Netscape rendering bugs mean you need bogus <dt> and <dd>
+           ** margin settings -- settings which screw up IE's proper rendering.
+           ** Fortunately, Netscape has *another* bug: it will ignore this
+           ** media=all style sheet. So I am placing the (proper) IE values
+           ** here. Perhaps, one day, when these rendering bugs are fixed,
+           ** this gross hackery can be removed.
+           */
+           dt.proc-def1 { margin-top: 3ex; margin-bottom: 0ex; }
+           dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+           dt.proc-defn { margin-top: 0ex; margin-bottom: 0.5ex; }
+           dt.proc-def  { margin-top: 3ex; margin-bottom: 0.5ex; }
+
+           pre { margin-top: 1ex; }
+
+           dd.proc-def { margin-bottom: 2ex; margin-top: 0.5ex; } 
+
+           /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+           dd.proc-index { margin-top: 0ex; } 
+           pre.proc-index { margin-top: 0ex; }
+
+           /* Spread out bibliographic lists. */
+           dt.biblio { margin-top: 3ex; margin-bottom: 0ex; }
+           dd.biblio { margin-bottom: 1ex; }
+    </style>
+  </head>
+
+<body>
+
+<!--========================================================================-->
+<H1>Title</H1>
+
+<div class=title-text>SRFI 13: String Libraries</div>
+
+<!--========================================================================-->
+<H1>Author</H1>
+
+Olin Shivers
+
+<H1>Status</H1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-13/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/10/17
+<LI>Draft: 1999/10/18-1999/12/16
+<LI>Revised: 1999/10/31
+<LI>Revised: 1999/11/13
+<LI>Revised: 1999/11/22
+<LI>Revised: 2000/04/30
+<LI>Revised: 2000/06/09
+<LI>Revised: 2000/12/23
+</UL>
+
+<h1>Table of contents</H1>
+
+<!-- A bug in netscape (?) keeps the first link in this UL from being active.
+==== So the Abstract link be dead. 99/8/22 -Olin
+-->
+<ul id=toc-table>
+<li><a href="#Abstract">Abstract</a>
+<li><a href="#ProcedureIndex">Procedure index</a>
+<li><a href="#Rationale">Rationale</a>
+  <ul>
+  <li><a href="#StringsAreCodePointSeqs">Strings are code-point sequences</a>
+  <li><a href="#NoLocales">String operations are locale- and context-independent</a>
+  <li><a href="#Unicode">Internationalisation &amp; super-ASCII character types</a>
+    <ul>
+    <li><a href="#Case">Case mapping and case folding</a>
+    <li><a href="#Eq">String equality &amp; string normalisation</a>
+    <li><a href="#Ineq">String inequality</a>    
+    </ul>
+  <li><a href="#NamingConventions">Naming conventions</a>
+  <li><a href="#SharedStorage">Shared storage</a>
+  <li><a href="#R5RS-procs">R4RS/R5RS procedures</a>
+  <li><a href="#ExtraSRFI">Extra-SRFI recommendations</a>
+  </ul>
+
+<li><a href="#Procedures">Procedure specification</a>
+  <ul>
+  <li><a href="#MainProcs">Main procedures</a>
+    <ul>
+    <li><a href="#Predicates">Predicates</a>
+    <li><a href="#Constructors">Constructors</a>
+    <li><a href="#List2String">List &amp; string conversion</a>
+    <li><a href="#Selection">Selection</a>
+    <li><a href="#Modification">Modification</a>
+    <li><a href="#Comparison">Comparison</a>
+    <li><a href="#PrefixesSuffixes">Prefixes &amp; suffixes</a>
+    <li><a href="#Searching">Searching</a>
+    <li><a href="#CaseMapping">Alphabetic case mapping</a>
+    <li><a href="#ReverseAppend">Reverse &amp; append</a>
+    <li><a href="#FoldUnfoldMap">Fold, unfold &amp; map</a>
+    <li><a href="#ReplicateRotate">Replicate &amp; rotate</a>
+    <li><a href="#Miscellaneous">Miscellaneous: insertion, parsing</a>
+    <li><a href="#FilterDelete">Filtering &amp; deleting</a>
+    </ul>
+
+  <li><a href="#LowLevelProcs">Low-level procedures</a>
+    <ul>
+    <li><a href="#ArgUtils">Start/end optional argument parsing &amp; checking utilities</a>
+    <li><a href="#KMP">Knuth-Morris-Pratt searching</a>
+    </ul>
+  </ul>
+
+<li><a href="#ReferenceImp">Reference implementation</a>
+<li><a href="#Acknowledgements">Acknowledgements</a>
+<li><a href="#Links">References &amp; Links</a>
+<li><a href="#Copyright">Copyright</a>
+</ul>
+
+<!--========================================================================-->
+<h1><a name="Abstract">Abstract</a></H1>
+<p>
+
+<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>
+Scheme has an impoverished set of string-processing utilities, which is a
+problem for authors of portable code. This <abbr title="Scheme Request for
+Implementation">SRFI</abbr> proposes a coherent and comprehensive set of
+string-processing procedures; it is accompanied by a reference implementation
+of the spec. The reference implementation is
+<ul>
+<li>portable
+<li>efficient
+<li>open source
+</ul>
+<p>
+The routines in this SRFI are backwards-compatible with the string-processing
+routines of
+<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>.
+
+<!--========================================================================-->
+<h1><a name="ProcedureIndex">Procedure Index</a></h1>
+<p>
+Here is a list of the procedures provided by the string-lib 
+and string-lib-internals packages.
+<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>
+procedures are shown in 
+<span class=r5rs-proc>bold</span>;
+extended <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>
+
+         procedures, in <span class=r5rs-procx>bold italic</span>.
+<div class=indent>
+<dl>
+<dt class=proc-index> Predicates
+<dd class=proc-index>
+<pre class=proc-index>
+<span class=r5rs-proc><a href="#string-p">string?</a></span> <a href="#string-null-p">string-null?</a> 
+<a href="#string-every">string-every</a> <a href="#string-any">string-any</a>
+</pre>
+
+<dt class=proc-index> Constructors
+<dd class=proc-index>
+<pre class=proc-index>
+<span class=r5rs-proc><a href="#make-string">make-string</a> <a href="#string">string</a></span> <a href="#string-tabulate">string-tabulate</a>
+</pre>
+
+<dt class=proc-index> List &amp; string conversion
+<dd class=proc-index>
+<pre class=proc-index>
+<span class=r5rs-procx><a href="#string2list">string->list</a></span> <span class=r5rs-proc><a href="#list2string">list->string</a></span>
+<a href="#reverse-list2string">reverse-list->string</a> <a href="#string-join">string-join</a>
+</pre>
+
+<dt class=proc-index> Selection
+<dd class=proc-index>
+<pre class=proc-index>
+<span class=r5rs-proc><a href="#string-length">string-length</a>
+<a href="#string-ref">string-ref</a></span>
+<span class=r5rs-procx><a href="#string-copy">string-copy</a></span>
+<a href="#substring/shared">substring/shared</a>
+<a href="#string-copy!">string-copy!</a> 
+<a href="#string-take">string-take</a> <a href="#string-take-right">string-take-right</a>
+<a href="#string-drop">string-drop</a> <a href="#string-drop-right">string-drop-right</a>
+<a href="#string-pad">string-pad</a>  <a href="#string-pad-right">string-pad-right</a> 
+<a href="#string-trim">string-trim</a> <a href="#string-trim-right">string-trim-right</a> <a href="#string-trim-both">string-trim-both</a> 
+</pre>
+
+<dt class=proc-index>Modification
+<dd class=proc-index>
+<pre class=proc-index>
+<span class=r5rs-proc><a href="#string-set!">string-set!</a></span> <span class=r5rs-procx><a href="#string-fill!">string-fill!</a></span>
+</pre>
+
+<dt class=proc-index>Comparison
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-compare">string-compare</a> <a href="#string-compare-ci">string-compare-ci</a>
+<a href="#string<>">string&lt;&gt;</a>     <a href="#string=">string=</a>    <a href="#string<">string&lt;</a>    <a href="#string>">string&gt;</a>    <a href="#string<=">string&lt;=</a>    <a href="#string>=">string&gt;=</a>
+<a href="#string-ci<>">string-ci&lt;&gt;</a>  <a href="#string-ci=">string-ci=</a> <a href="#string-ci<">string-ci&lt;</a> <a href="#string-ci>">string-ci&gt;</a> <a href="#string-ci<=">string-ci&lt;=</a> <a href="#string-ci>=">string-ci&gt;=</a>
+<a href="#string-hash">string-hash</a>  <a href="#string-hash-ci">string-hash-ci</a>
+</pre>
+
+<dt class=proc-index>Prefixes &amp; suffixes
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-prefix-length">string-prefix-length</a>    <a href="#string-suffix-length">string-suffix-length</a>
+<a href="#string-prefix-length-ci">string-prefix-length-ci</a> <a href="#string-suffix-length-ci">string-suffix-length-ci</a>
+
+<a href="#string-prefix-p">string-prefix?</a>    <a href="#string-suffix-p">string-suffix?</a>    
+<a href="#string-prefix-ci-p">string-prefix-ci?</a> <a href="#string-suffix-ci-p">string-suffix-ci?</a> 
+</pre>
+
+<dt class=proc-index>Searching
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-index">string-index</a> <a href="#string-index-right">string-index-right</a>
+<a href="#string-skip">string-skip</a>  <a href="#string-skip-right">string-skip-right</a> 
+<a href="#string-count">string-count</a> 
+<a href="#string-contains">string-contains</a> <a href="#string-contains-ci">string-contains-ci</a>
+</pre>
+
+<dt class=proc-index>Alphabetic case mapping
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-titlecase">string-titlecase</a>  <a href="#string-upcase">string-upcase</a>  <a href="#string-downcase">string-downcase</a>
+<a href="#string-titlecase!">string-titlecase!</a> <a href="#string-upcase!">string-upcase!</a> <a href="#string-downcase!">string-downcase!</a>
+</pre>
+
+<dt class=proc-index>Reverse &amp; append
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-reverse">string-reverse</a> <a href="#string-reverse!">string-reverse!</a>
+<span class=r5rs-proc><a href="#string-append">string-append</a></span>
+<a href="#string-concatenate">string-concatenate</a>
+<a href="#string-concatenate/shared">string-concatenate/shared</a> <a href="#string-append/shared">string-append/shared</a>
+<a href="#string-concatenate-reverse">string-concatenate-reverse</a> <a href="#string-concatenate-reverse/shared">string-concatenate-reverse/shared</a>
+</pre>
+
+<dt class=proc-index>Fold, unfold &amp; map
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-map">string-map</a>      <a href="#string-map!">string-map!</a>
+<a href="#string-fold">string-fold</a>     <a href="#string-fold-right">string-fold-right</a>
+<a href="#string-unfold">string-unfold</a>   <a href="#string-unfold-right">string-unfold-right</a>
+<a href="#string-for-each">string-for-each</a> <a href="#string-for-each-index">string-for-each-index</a>
+</pre>
+
+<dt class=proc-index>Replicate &amp; rotate
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#xsubstring">xsubstring</a> <a href="#string-xcopy!">string-xcopy!</a>
+</pre>
+
+<dt class=proc-index>Miscellaneous: insertion, parsing
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-replace">string-replace</a> <a href="#string-tokenize">string-tokenize</a>
+</pre>
+
+<dt class=proc-index>Filtering &amp; deleting
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-filter">string-filter</a> <a href="#string-delete">string-delete</a> 
+</pre>
+
+<dt class=proc-index>Low-level procedures
+<dd class=proc-index>
+<pre class=proc-index>
+<a href="#string-parse-start+end">string-parse-start+end</a>
+<a href="#string-parse-final-start+end">string-parse-final-start+end</a>
+<a href="#let-string-start+end">let-string-start+end</a>
+
+<a href="#check-substring-spec">check-substring-spec</a>
+<a href="#substring-spec-ok-p">substring-spec-ok?</a>
+
+<a href="#make-kmp-restart-vector">make-kmp-restart-vector</a> <a href="#kmp-step">kmp-step</a> <a href="#string-kmp-partial-search">string-kmp-partial-search</a>
+</pre>
+
+</dl>
+</div>
+
+<!--========================================================================-->
+<h1><a name="Rationale">Rationale</a></h1>
+<p>
+
+This SRFI defines two libraries that provide a rich set of operations for
+manipulating strings. These are frequently useful for scripting and other
+text-manipulation applications. The library's design was influenced by the
+string libraries found in MIT Scheme, Gambit, RScheme, MzScheme, slib, Common
+Lisp, Bigloo, guile, Chez, APL, Java, and the SML standard basis.
+<p>
+
+All procedures involving character comparison are available in
+both case-sensitive and case-insensitive forms.
+<p>
+
+All functionality is available in substring and full-string forms.
+
+<!--========================================================================-->
+<h2><a name="StringsAreCodePointSeqs">Strings are code-point sequences</a></h2>
+<p>
+This SRFI considers strings simply to be a sequence of "code points" or
+character encodings. Operations such as comparison or reversal are always done
+code point by code point. See the comments below on super-ASCII character
+types for implications that follow.
+<p>
+
+It's entirely possible that a legal string might not be a sensible "text"
+sequence. For example, consider a string comprised entirely of zero-width
+Unicode accent characters with no preceding base character to modify --
+this is a legal string, albeit one that does not make a great deal of sense
+when interpreted as a sequence of natural-language text. The routines in
+this SRFI do not handle these "text" concerns; they restrict themselves
+to the underlying view of strings as merely a sequence of "code points."
+
+<!--========================================================================-->
+<h2><a name="NoLocales">String operations are locale- and context-independent</a></h2>
+<p>
+
+This SRFI defines string operations that are locale- and context-independent.
+While it is certainly important to have a locale-sensitive comparison or
+collation procedure when processing text, it is also important to have a suite
+of operations that are reliably invariant for basic string processing ---
+otherwise, a change of locale could cause data structures such as hash tables,
+b-trees, symbol tables, directories of filenames, <em>etc.</em> 
+to become corrupted.
+
+<p>
+Locale- and context-sensitive text operations, such as collation, are
+explicitly deferred to a subsequent, companion "text" SRFI.
+
+<!--========================================================================-->
+<h2><a name="Unicode">Internationalisation &amp; super-ASCII character types</a></h2>
+
+<p>
+The major issue confronting this SRFI is the existence of super-ASCII
+character encodings, such as eight-bit Latin-1 or 16- and 32-bit Unicode.  It
+is a design goal of this SRFI for the API to be portable across string
+implementations based on at least these three standard encodings.
+Unfortunately, this places strong limitations on the API design. Here are
+some relevant issues. Be warned that life in a super-ASCII world is
+significantly more complex; there are no easy answers for many of these issues.
+
+<!--========================================================================-->
+<h3><a name="Case">Case mapping and case-folding</a></h3>
+
+<p>
+Upper- and lower-casing characters is complex in super-ASCII encodings.
+
+<ul>
+<li> Some characters case-map to more than one character. For example,
+  the Latin-1 German eszet character upper-cases to "SS." 
+  <ul>
+  <li> This means that the <abbr title="Revised^5 Report on Scheme">
+    <a href="#R5RS">R5RS</a></abbr> function <code>char-upcase</code> is not well-defined, 
+    since it is defined to produce a (single) character result. 
+
+  <li> It means that an in-place <code>string-upcase!</code> procedure cannot be reliably
+    defined, since the original string may not be long enough to contain
+    the result -- an N-character string might upcase to a 2N-character result.
+
+  <li> It means that case-insensitive string-matching or searching is quite
+    tricky. For example, an n-character string <var>s</var> might match a 2N-character
+    string <var>s'</var>.
+  </ul>
+
+<li> Some characters case-map in different ways depending upon their surrounding
+  context. For example, the Unicode Greek capital sigma character downcases
+  differently depending upon whether or not it is the final character in a
+  word. Again, this spells trouble for the simple <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> <code>char-downcase</code> function.
+
+<li> Unicode defines three cases: lowercase, uppercase and titlecase. The
+  distinction between uppercase and titlecase arises in the presence of
+  Unicode's compound characters. For example, Unicode has a single character
+  representing the compound pair "dz." Uppercasing the "dz" character produces
+  the compound character "DZ", while titlecasing (or, as Americans say,
+  capitalizing) it produces compound character "Dz".
+
+<li> Turkish actually has different case-mappings from other languages.
+</ul>
+
+<p>
+The Unicode Consortium's web site
+<div class=inset>
+    <a href="http://www.unicode.org/">http://www.unicode.org/</a>
+</div>
+<p class=continue>
+has detailed discussions of the issues. See in particular technical report
+21 on case mappings
+<div class=inset>
+    <a href="http://www.unicode.org/unicode/reports/tr21/">http://www.unicode.org/unicode/reports/tr21/</a>
+</div>
+
+<p>
+SRFI 13 makes no attempt to deal with these issues; it uses a simple 1-1
+locale- and context-independent case-mapping, specifically Unicode's 1-1
+case-mappings given in
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+<p class=continue>
+The format of this file is explained in
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html</a>
+</div>
+<p class=continue>
+Note that this means that German eszet upper-cases to itself, not "SS".
+
+<p>
+Case-mapping and case-folding operations in SRFI 13 are locale-independent so
+that shifting locales won't wreck hash tables, b-trees, symbol tables, <em>etc.</em>
+
+
+<!--========================================================================-->
+<h3><a name="Eq">String equality &amp; string normalisation</a></h3>
+
+<p>
+Comparing strings for equality is complicated because in some cases Unicode
+actually provides multiple encodings for the "same" character, and because
+what we usually think of as a "character" can be represented in Unicode as a
+<em>sequence</em> of several code-points. For example, consider the letter "e" with
+an acute accent. There is a single Unicode character for this. However,
+Unicode also allows one to represent this with a two-character sequence: the
+"e" character followed by a zero-width acute-accent character. As another
+example, Unicode provides some Asian characters in "narrow" and "full" widths.
+
+<p>
+There are multiple ways we might want to compare strings for equality. In
+(roughly) decreasing order of precision,
+
+<ul>
+<li> we might want a precise comparison of the actual encoding, so that
+  &lt;e-acute&gt; would <em>not</em> compare equal to &lt;e, acute&gt;.
+
+<li> We might want a "normalised" comparison, where these two sequences 
+     would compare equal.
+
+<li> We might want an even more-permissive normalisation, where visually-distinct
+  properties of "the same" character would be ignored. For example, we might
+  want narrow/full-width versions of the same Asian character to compare equal.
+
+<li> We might want comparisons that are insensitive to accents and diacritical
+  marks.
+
+<li> We might want comparisons that are case-insensitive.
+
+<li> We might want comparisons that are insensitive to several of the above
+  properties.
+
+<li> We might want ways to "normalise" strings into various canonical forms.
+</ul>
+
+<p>
+This library does not address these complexities. SRFI 13 string equality is
+simply based upon comparing the encoding values used for the characters.
+Accent-insensitive and other types of comparison are not provided; only
+a simple form of case-insensitive comparison is provided, which uses the
+1-1 case mappings specified by Unicode in
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+<p class=continue>
+These are adequate for "program" or "systems" use of strings (<em>e.g.</em>, to 
+manipulate program identifiers and operating-system filenames).
+
+<!--========================================================================-->
+<h3><a name="Ineq">String inequality</a></h3>
+
+<p>
+Above and beyond the issues arising in string-equality, when we attempt
+to order strings there are even further considerations.
+
+<ul>
+<li> French orders accents with right-to-left significance -- the reverse of
+  the significance of the characters.
+
+<li> Case-insensitive ordering is not well defined by simple "code-point"
+  considerations, even for simple ASCII: there are punctuation characters
+  between the ASCII's upper-case range of letters and its lower-case range
+  (left-bracket, backslash, right-bracket, caret, underbar and backquote).
+  Does left-bracket compare less-than or greater-than "a" in a
+  case-insensitive comparison? 
+
+<li> The German eszet character should sort as if it were the <em>pair</em> of
+  letters "ss".
+</ul>
+
+<p>
+Unicode defines a complex set of machinery for ordering or "collating"
+strings, which involves mapping each string to a multi-byte sort key,
+and then doing simple lexicographic sorting with these keys. These rules
+can be overlaid by additional domain- or language-specific rules. Again,
+this SRFI does not address these issues. SRFI 13 string ordering is strictly
+based upon a character-by-character comparison of the values used for
+representing the string.
+
+<!--========================================================================-->
+<h2><a name="NamingConventions">Naming conventions</a></h2>
+
+<p>
+This library contains a large number of procedures, but they follow
+a consistent naming scheme, and are consistent with the conventions
+developed in SRFI 1. The names are composed of smaller lexemes
+in a regular way that exposes the structure and relationships between the
+procedures. This should help the programmer to recall or reconstitute the name
+of the particular procedure that he needs when writing his own code. In
+particular
+
+<ul>
+    <li> Procedures whose names end in "-ci" are case-insensitive variants.
+
+    <li> Procedures whose names end in "!" are side-effecting variants.
+      What values these procedures return is usually not specified.
+
+    <li> The order of common parameters is consistent across the
+      different procedures.
+
+    <li> Left/right/both directionality:
+      Procedures that have left/right directional variants
+      use the following convention:
+          <div class=indent>
+          <table cellspacing=0 cellpadding=0>
+          <tr align=left><th>Direction</th>
+                         <th>&nbsp;&nbsp;</th>
+                         <th>Suffix</th></tr>
+          <tr><td>left-to-right</td><td></td><td><em>none</em></td></tr>
+          <tr><td>right-to-left</td><td></td><td><code>-right</code></td></tr>
+          <tr><td>both         </td><td></td><td><code>-both</code></td></tr>
+          </table>
+          </div>
+
+      This is a general convention that was established in SRFI 1.
+      The value of a convention is proportional to the extent of its 
+      use.
+</ul>
+      
+<!--========================================================================-->
+<h2><a name="SharedStorage">Shared storage</a></h2>
+
+<p>
+Some Scheme implementations, <em>e.g.</em> guile and T, provide ways to construct
+substrings that share storage with other strings. This facility is called
+"shared-text substrings." Shared-text substrings can be used to eliminate the
+allocation and copying time and space required to produce substrings, which
+can be a tremendous savings for some applications, reducing a linear-time
+operation to constant time.  Additionally, some algorithms rely on the sharing
+property of these substrings -- the application assumes that if the underlying
+storage is mutated, then all strings sharing that storage will show the
+change.  However, shared-text substrings are not a common feature; most Scheme
+implementations do not provide them.
+
+<p>
+SRFI 13 takes a middle ground with respect to shared-text substrings.  In
+particular, a Scheme implementation does not need to have shared-text
+substrings in order to implement this SRFI.
+
+<p>
+There is an additional form of storage sharing enabled by some SRFI 13
+procedures, even without the benefit of shared-text substrings. In 
+some cases, some SRFI 13 routines are allowed to return as a result one
+of the strings that was passed in as a parameter. For example, when
+constructing a substring with the <code>substring/shared</code> procedure, if the
+requested substring is the entire string, the procedure is permitted
+simply to return the original value. That is,
+<pre class=code-example>
+(eq? s (substring/shared s 0 (string-length s))) =&gt; true or false
+</pre>
+<p class=continue>
+whereas the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> 
+<code>substring</code> function is required to allocate a fresh copy
+<pre class=code-example>
+(eq? s (substring s 0 (string-length s))) =&gt; false.
+</pre>
+<p>
+In keeping with SRFI 13's general approach to sharing, compliant
+implementations are allowed, but not required, to provide this kind of
+sharing. Hence, procedures may not <em>rely</em> upon sharing in these cases.
+<p class=continue>
+Most procedures that permit results to share storage with inputs have
+equivalent procedures that require allocating fresh storage for results. 
+If an application wishes to be sure a new, fresh string is allocated, then 
+these "pure" procedures should be used.
+<div class=inset>
+<table cellpadding=0 cellspacing=0>
+<tr align=left><th>Fresh copy guaranteed</th>
+               <th>Sharing permitted</th></tr>
+<tr><td><code>string-copy</code></td>
+    <td><code>substring/shared</code></td></tr>
+<tr><td><code>string-copy</code></td>
+    <td><code>string-take string-take-right</code></td></tr>
+<tr><td><code>string-copy</code></td>
+    <td><code>string-drop string-drop-right</code></tr>
+<tr><td><code>string-concatenate</code></td>
+    <td><code>string-concatenate/shared</code></tr>
+<tr><td><code>string-append</code></td> 
+    <td><code>string-append/shared</code></td></tr>
+<tr><td><code>string-concatenate-reverse</code>
+    <td><code>string-concatenate-reverse/shared</code></td></tr>
+<tr><td></td>
+    <td><code>string-pad string-pad-right</code></td></tr>
+<tr><td></td>
+    <td><code>string-trim string-trim-right</code></td></tr>
+<tr><td></td>
+    <td><code>string-trim-both</code></td></tr> <!-- netscape blows up. -->
+<tr><td></td>
+    <td><code>string-filter string-delete</code></td></tr>
+</table>
+</div>
+
+<p>
+On the other hand, the functionality is present to allow one to write
+efficient code <em>without</em> shared-text substrings. You can write efficient code
+that works by passing around start/end ranges indexing into a string instead
+of simply building a shared-text substring. The API would be much simpler
+without this consideration -- if we had cheap shared-text substrings, all the
+start/end index parameters would vanish. However, since SRFI 13 does not
+require implementations to provide shared-text substrings, the extended
+API is provided.
+
+<!--========================================================================-->
+<h2><a name="R5RS-procs">R4RS/R5RS procedures</a></h2>
+
+<p>
+The R4RS and <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> reports define 22 string procedures. The string-lib
+package includes 8 of these exactly as defined, 3 in an extended,
+backwards-compatible way, and drops the remaining 11 (whose functionality
+is available via other bindings).
+
+<p>
+The 8 procedures provided exactly as documented in the reports are
+    <code>string?</code>,
+    <code>make-string</code>,
+    <code>string</code>,
+    <code>string-length</code>,
+    <code>string-ref</code>,
+    <code>string-set!</code>,
+    <code>string-append</code>, and
+    <code>list-&gt;string</code>.
+
+<p>
+The eleven functions not included are
+    <code>string=?</code>, <code>string-ci=?</code>,
+    <code>string&lt;?</code>,  <code>string-ci&lt;?</code>,
+    <code>string&gt;?</code>,  <code>string-ci&gt;?</code>,
+    <code>string&lt;=?</code>, <code>string-ci&lt;=?</code>,
+    <code>string&gt;=?</code>, <code>string-ci&gt;=?</code>, and
+    <code>substring</code>.
+The string-lib package provides alternate bindings and extended functionality.
+
+<p>
+Additionally, the three extended procedures are
+<pre class=code-example>
+string-fill! <var>s char [start end] -&gt; unspecified</var>
+string-&gt;list <var>s [start end] -&gt; char-list</var>
+string-copy  <var>s [start end] -&gt; string</var>
+</pre>
+<p class=continue>
+They are uniformly extended to take optional start/end parameters specifying
+substring ranges.
+
+<!--========================================================================-->
+<h2><a name="ExtraSRFI">Extra-SRFI recommendations</a></h2>
+
+<p>
+This SRFI recommends the following
+
+<ul>
+<li> A SRFI be defined for shared-text substrings, allowing programs to
+  be written that actually rely on the shared-storage properties of these data
+  structures.
+
+<li> A SRFI be defined for manipulating Unicode text -- various normalisation
+  operations, collation, searching, <em>etc.</em> Collation operations might be
+  parameterised by a "collation" structure representing collation rules
+  for a particular locale or language. Alternatively, a data structure
+  specifying collation rules could be activated with dynamic scope by
+  special procedures, possibly overridden by allowing collation rules
+  to be optional arguments to procedures that need to order strings, <em>e.g.</em>
+<pre class=code-example>
+(with-locale* denmark-locale
+  (lambda () 
+    (f x)
+    (g 42)))
+
+(with-locale taiwan-locale
+  (f x)
+  (h denmark-locale)
+  (g 42))
+
+(set-locale! denmark-locale)
+</pre>
+
+<li> A SRFI be defined for manipulating characters that is portable across
+  at least ASCII, Latin-1 and Unicode. 
+
+  <ul>
+  <li> For backwards-compatibility, <code>char-upcase</code> and <code>char-downcase</code> should 
+    be defined to use the 1-1 locale- and context-insensitive case
+    mappings given by Unicode's UnicodeData.txt table.
+  
+  <li> numeric codes for standard functions that map between characters and
+    integers should be required to use the Unicode/Latin-1/ASCII mapping. This
+    allows programmers to write portable code.
+
+  <li> <code>char-titlecase</code> be added to <code>char-upcase</code> and <code>char-downcase</code>.
+
+  <li> <code>char-titlecase?</code> be added to <code>char-upcase?</code> and <code>char-downcase?</code>.
+
+  <li> Title/up/down-case functions be added to the character-processing suite
+    which allow 1-&gt;n case maps by returning immutable,
+    possibly-multi-character strings instead of single characters. These case
+    mappings need not be locale- or context-sensitive.
+  </ul>
+</ul>
+
+<p>
+  These recommendations are not a part of the SRFI 13 spec. Note also that
+  requiring a Unicode/Latin-1/ASCII interface to integer/char mapping
+  functions does not imply anything about the actual underlying encodings of
+  characters.
+
+
+<!--========================================================================-->
+<h1><a name="Procedures">Procedure Specification</a></h1>
+
+<p>
+In the following procedure specifications:
+<ul>
+    <li> An <var>s</var> parameter is a string.
+
+    <li> A <var>char</var> parameter is a character.
+
+    <li> <var>Start</var> and <var>end</var> parameters are half-open string indices specifying 
+      a substring within a string parameter; when optional, they default
+      to 0 and the length of the string, respectively. When specified, it
+      must be the case that 0 &lt;= <var>start</var> &lt;= <var>end</var> 
+      &lt;= <code>(string-length <var>s</var>)</code>, for
+      the corresponding parameter <var>s</var>. They typically restrict a procedure's
+      action to the indicated substring.
+
+    <li> A <var>pred</var> parameter is a unary character predicate procedure, returning 
+      a true/false value when applied to a character.
+
+    <li> A <var>char/char-set/pred</var> parameter is a value used to select/search
+      for a character in a string. If it is a character, it is used in
+      an equality test; if it is a character set, it is used as a
+      membership test; if it is a procedure, it is applied to the 
+      characters as a test predicate.
+
+    <li> An <var>i</var> parameter is an exact non-negative integer specifying an index
+      into a string.
+    
+    <li> <var>Len</var> and <var>nchars</var> parameters are exact non-negative integers specifying a
+      length of a string or some number of characters.
+
+    <li> An <var>obj</var> parameter may be any value at all.
+</ul>
+<p class=continue>
+Passing values to procedures with these parameters that do not satisfy these
+types is an error.
+
+<p>
+Parameters given in square brackets are optional. Unless otherwise noted in the
+text describing the procedure, any prefix of these optional parameters may
+be supplied, from zero arguments to the full list. When a procedure returns
+multiple values, this is shown by listing the return values in square
+brackets, as well. So, for example, the procedure with signature
+<pre class=code-example>
+halts? <var>f [x init-store]</var> -> <var>[boolean integer]</var>
+</pre>
+would take one (<var>f</var>), two (<var>f</var>, <var>x</var>) 
+or three (<var>f</var>, <var>x</var>, <var>init-store</var>) input parameters, 
+and return two values, a boolean and an integer.
+
+<p>
+A parameter followed by "<code>...</code>" means zero-or-more elements. 
+So the procedure with the signature
+<pre class=code-example>
+sum-squares <var>x ... </var> -> <var>number</var>
+</pre>
+takes zero or more arguments (<var>x ...</var>), 
+while the procedure with signature
+<pre class=code-example>
+spell-check <var>doc dict<sub>1</sub> dict<sub>2</sub> ...</var> -> <var>string-list</var>
+</pre>
+takes two required parameters 
+(<var>doc</var> and <var>dict<sub>1</sub></var>) 
+and zero or more optional parameters (<var>dict<sub>2</sub> ...</var>).
+
+<p>
+If a procedure is said to return "unspecified," this means that nothing at
+all is said about what the procedure returns. Such a procedure is not even
+required to be consistent from call to call. It is simply required to
+return a value (or values) that may be passed to a command continuation,
+<em>e.g.</em> as the value of an expression appearing as a non-terminal 
+subform of a <code>begin</code> expression. 
+Note that in 
+    <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>,
+this restricts such a procedure to returning a single value; 
+non-R5RS systems may not even provide this restriction.
+
+<!--========================================================================-->
+<h2><a name="MainProcs">Main procedures</a></h2>
+
+<p>
+In a Scheme system that has a module or package system, these procedures
+should be contained in a module named "string-lib".
+
+<!--========================================================================-->
+<h3><a name="Predicates">Predicates</a></h3>
+
+<dl>
+<!--
+==== string?
+============================================================================-->
+<dt class=proc-def>
+<a name="string-p"></a>
+<code class=proc-def>string?</code><var> obj -&gt; boolean</var>
+<dd class=proc-def>
+    [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+Returns <code>#t</code> if <var>obj</var> is a string, otherwise returns <code>#f</code>.
+
+<!--
+==== string-null?
+============================================================================-->
+<dt class=proc-def>
+<a name="string-null-p"></a>
+<code class=proc-def>string-null?</code><var> s -> boolean</var>
+<dd class=proc-def>
+    Is <var>s</var> the empty string?
+</dd>
+
+<!--
+==== string-every string-any
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-every"></a>
+<a name="string-any"></a>
+<code class=proc-def>string-every</code><var> char/char-set/pred s [start end] -> value</var>
+<dt class=proc-defn><code class=proc-def>string-any</code><var> char/char-set/pred s [start end] -> value</var>
+<dd class=proc-def>
+    Checks to see if the given criteria is true of every / any character in <var>s</var>,
+    proceeding from left (index <var>start</var>) to right (index <var>end</var>).
+
+<p>
+    If <var>char/char-set/pred</var> is a character, it is tested for equality with
+    the elements of <var>s</var>.
+
+<p>
+    If <var>char/char-set/pred</var> is a character set, the elements of <var>s</var> are tested
+    for membership in the set.
+
+<p>
+    If <var>char/char-set/pred</var> is a predicate procedure, it is applied to the 
+    elements of <var>s</var>. The predicate is "witness-generating:"
+
+    <ul>
+      <li> If <code>string-any</code> returns true, the returned true value is the one produced
+        by the application of the predicate.
+    
+      <li> If <code>string-every</code> returns true, the returned true value is the one
+        produced by the final application of the predicate to <var>s</var>[<var>end</var>]. 
+        If <code>string-every</code> is applied to an empty sequence of characters, 
+        it simply returns <code>#t</code>.
+    </ul>
+      If <code>string-every</code> or <code>string-any</code> apply the predicate to the final element
+      of the selected sequence (<em>i.e.</em>, <var>s</var>[<var>end</var>-1]), that final application is a
+      tail call.
+
+<p>
+    The names of these procedures do not end with a question mark -- this is to
+    indicate that, in the predicate case, they do not return a simple boolean
+    (<code>#t</code> or <code>#f</code>), but a general value.
+</dl>
+
+
+<!--========================================================================-->
+<h3><a name="Constructors">Constructors</a></h3>
+
+<dl>
+<!--
+==== make-string
+============================================================================-->
+<dt class=proc-def>
+<a name="make-string"></a>
+<code class=proc-def>make-string</code> <var>len [char] -&gt; string</var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  <code>make-string</code> returns a newly allocated string of length <var>len</var>.  If
+  <var>char</var> is given, then all elements of the string are initialized
+  to <var>char</var>, otherwise the contents of the string are unspecified.
+
+<!--
+==== string
+============================================================================-->
+<dt class=proc-def>
+<a name="string"></a>
+<code class=proc-def>string</code><var> char<sub>1</sub> ... -> string</var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  Returns a newly allocated string composed of the argument characters.
+    
+<!--
+==== string-tabulate
+============================================================================-->
+<dt class=proc-def>
+<a name="string-tabulate"></a>
+<code class=proc-def>string-tabulate</code><var> proc len -> string</var>
+<dd class=proc-def>
+    <var>Proc</var> is an integer->char procedure. Construct a string of size <var>len</var>
+    by applying <var>proc</var> to each index to produce the corresponding string
+    element. The order in which <var>proc</var> is applied to the indices is not
+    specified.
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="List2String">List &amp; string conversion</a></h3>
+
+<dl>
+
+<!--
+==== string->list list->string
+============================================================================-->
+<dt class=proc-def1>
+<a name="string2list"></a>
+<a name="list2string"></a>
+<code class=proc-def>string-&gt;list</code><var> s [start end] -> char-list</var>
+<dt class=proc-defn><code class=proc-def>list-&gt;string</code><var> char-list -> string</var>
+<dd class=proc-def>
+    [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>+]
+    <code>string->list</code> returns a newly allocated list of the characters
+    that make up the given string.  <code>list->string</code> returns a newly
+    allocated string formed from the characters in the list <var>char-list</var>,
+    which must be a list of characters. <code>string->list</code> and <code>list->string</code> 
+    are inverses so far as <code>equal?</code> is concerned.
+
+    <p>
+    <code>string->list</code> is extended from the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> definition to take optional
+    <var>start/end</var> arguments.
+
+<!--
+==== reverse-list->string
+============================================================================-->
+<dt class=proc-def>
+<a name="reverse-list2string"></a>
+<code class=proc-def>reverse-list-&gt;string</code><var> char-list -> string</var>
+<dd class=proc-def>
+    An efficient implementation of <code>(compose list->string reverse)</code>:
+<pre class=code-example>
+(reverse-list->string '(#\a #\B #\c)) -> "cBa"
+</pre>
+    This is a common idiom in the epilog of string-processing loops
+    that accumulate an answer in a reverse-order list. (See also
+    <code>string-concatenate-reverse</code> for the "chunked" variant.)
+
+<!--
+==== string-join
+============================================================================-->
+<dt class=proc-def>
+<a name="string-join"></a>
+<code class=proc-def>string-join</code><var> string-list [delimiter grammar] -> string</var>
+<dd class=proc-def>
+    This procedure is a simple unparser --- it pastes strings together using
+    the delimiter string. 
+
+    <p>
+    The <var>grammar</var> argument is a symbol that determines how the delimiter is
+    used, and defaults to <code>'infix</code>.
+    
+<ul>
+      <li> <code>'infix</code> means an infix or separator grammar: 
+        insert the delimiter
+        between list elements.  An empty list will produce an empty string --
+        note, however, that parsing an empty string with an infix or separator
+        grammar is ambiguous. Is it an empty list, or a list of one element,
+        the empty string?
+    
+      <li> <code>'strict-infix</code> means the same as <code>'infix</code>, 
+        but will raise an error if given an empty list.
+    
+      <li> <code>'suffix</code> means a suffix or terminator grammar: 
+        insert the delimiter
+        after every list element. This grammar has no ambiguities.
+
+      <li> <code>'prefix</code> means a prefix grammar: insert the delimiter
+        before every list element. This grammar has no ambiguities.
+</ul>
+
+    The delimiter is the string used to delimit elements; it defaults to
+    a single space "&nbsp;".
+<pre class=code-example>
+(string-join '("foo" "bar" "baz") ":")         =&gt; "foo:bar:baz"
+(string-join '("foo" "bar" "baz") ":" 'suffix) =&gt; "foo:bar:baz:"
+
+;; Infix grammar is ambiguous wrt empty list vs. empty string,
+(string-join '()   ":") =&gt; ""
+(string-join '("") ":") =&gt; ""
+
+;; but suffix &amp; prefix grammars are not.
+(string-join '()   ":" 'suffix) =&gt; ""
+(string-join '("") ":" 'suffix) =&gt; ":"
+</pre>
+</dl>
+
+
+<!--========================================================================-->
+<h3><a name="Selection">Selection</a></h3>
+
+<dl>
+<!--
+==== string-length
+============================================================================-->
+<dt class=proc-def>
+<a name="string-length"></a>
+<code class=proc-def>string-length</code><var> s -> integer</var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  Returns the number of characters in the string <var>s</var>.
+
+<!--
+==== string-ref
+============================================================================-->
+<dt class=proc-def>
+<a name="string-ref"></a>
+<code class=proc-def>string-ref</code><var> s i -> char</var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  Returns character <var>s[i]</var> using zero-origin indexing.
+  <var>I</var> must be a valid index of <var>s</var>.  
+
+<!--
+==== string-copy substring/shared
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-copy"></a>
+<a name="substring/shared"></a>
+<code class=proc-def>string-copy</code><var>      s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>substring/shared</code><var> s start [end] -> string</var>
+<dd class=proc-def>
+    [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>+]
+    <code>substring/shared</code> returns a string whose contents are the characters of <var>s</var>
+    beginning with index <var>start</var> (inclusive) and ending with index <var>end</var>
+    (exclusive). It differs from the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> <code>substring</code> in two ways:
+    <ul>
+      <li> The <var>end</var> parameter is optional, not required.
+      <li> <code>substring/shared</code> may return a value that shares memory with <var>s</var> or
+        is <code>eq?</code> to <var>s</var>.
+    </ul>
+
+    <p>
+    <code>string-copy</code> is extended from its <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> definition by the addition of
+    its optional <var>start/end</var> parameters. In contrast to <code>substring/shared</code>,
+    it is guaranteed to produce a freshly-allocated string.
+
+    <p>
+    Use <code>string-copy</code> when you want to indicate explicitly in your code that you
+    wish to allocate new storage; use <code>substring/shared</code> when you don't care if 
+    you get a fresh copy or share storage with the original string.
+<pre class=code-example>
+(string-copy "Beta substitution") =&gt; "Beta substitution"
+(string-copy "Beta substitution" 1 10) 
+    =&gt; "eta subst"
+(string-copy "Beta substitution" 5) =&gt; "substitution"
+</pre>
+
+<!--
+==== string-copy!
+============================================================================-->
+<dt class=proc-def>
+<a name="string-copy!"></a>
+<code class=proc-def>string-copy!</code><var> target tstart s [start end] -> unspecified</var>
+<dd class=proc-def>
+    Copy the sequence of characters from index range [<var>start</var>,<var>end</var>) in
+    string <var>s</var> to string <var>target</var>, beginning at index <var>tstart</var>. The characters 
+    are copied left-to-right or right-to-left as needed -- the copy is
+    guaranteed to work, even if <var>target</var> and <var>s</var> are the same string.
+
+    <p>
+    It is an error if the copy operation runs off the end of the target
+    string, <em>e.g.</em>
+<pre class=code-example>
+(string-copy! (string-copy "Microsoft") 0
+              "Regional Microsoft Operating Companies") =&gt; <em>error</em>
+</pre>
+
+
+<!--
+==== string-take string-drop string-take-right string-drop-right
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-take"></a>
+<a name="string-drop"></a>
+<a name="string-take-right"></a>
+<a name="string-drop-right"></a>
+<code class=proc-def>string-take</code><var> s nchars -> string</var>
+<dt class=proc-defi><code class=proc-def>string-drop</code><var> s nchars -> string</var>
+<dt class=proc-defi><code class=proc-def>string-take-right</code><var> s nchars -> string</var>
+<dt class=proc-defn><code class=proc-def>string-drop-right</code><var> s nchars -> string</var>
+<dd class=proc-def>
+    <code>string-take</code> returns the first <var>nchars</var> of <var>s</var>; 
+    <code>string-drop</code> returns all but the first <var>nchars</var> of <var>s</var>.
+    <code>string-take-right</code> returns the last <var>nchars</var> of <var>s</var>;
+    <code>string-drop-right</code> returns all but the last <var>nchars</var> of <var>s</var>.
+    If these procedures produce the entire string, they may return either
+    <var>s</var> or a copy of <var>s</var>; in some implementations, proper substrings may share
+    memory with <var>s</var>.
+<pre class=code-example>
+(string-take "Pete Szilagyi" 6) =&gt; "Pete S"
+(string-drop "Pete Szilagyi" 6) =&gt; "zilagyi"
+
+(string-take-right "Beta rules" 5) =&gt; "rules"
+(string-drop-right "Beta rules" 5) =&gt; "Beta "
+</pre>
+
+    It is an error to take or drop more characters than are in the string:
+<pre class=code-example>
+(string-take "foo" 37) =&gt; <em>error</em>
+</pre>
+
+<!--
+==== string-pad string-pad-right
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-pad"></a>
+<a name="string-pad-right"></a>
+<code class=proc-def>string-pad</code><var>       s len [char start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-pad-right</code><var> s len [char start end] -> string</var>
+<dd class=proc-def>
+    Build a string of length <var>len</var> comprised of <var>s</var> padded on the left (right)
+    by as many occurrences of the character <var>char</var> as needed. If <var>s</var> has more
+    than <var>len</var> chars, it is truncated on the left (right) to length <var>len</var>. <var>Char</var>
+    defaults to #\space.
+
+    <p>
+    If <var>len</var> &lt;= <var>end</var>-<var>start</var>, the returned value is allowed to share storage
+    with <var>s</var>, or be exactly <var>s</var> (if <var>len</var> = <var>end</var>-<var>start</var>).
+<pre class=code-example>
+(string-pad     "325" 5) =&gt; "  325"
+(string-pad   "71325" 5) =&gt; "71325"
+(string-pad "8871325" 5) =&gt; "71325"
+</pre>
+
+<!--
+==== string-trim string-trim-right string-trim-both
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-trim"></a>
+<a name="string-trim-right"></a>
+<a name="string-trim-both"></a>
+<code class=proc-def>string-trim&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code><var> s [char/char-set/pred start end] -> string</var>
+<dt class=proc-defi><code class=proc-def>string-trim-right</code><var> s [char/char-set/pred start end] -> string</var>
+<dt class=proc-defi><code class=proc-def>string-trim-both&nbsp;</code><var> s [char/char-set/pred start end] -> string</var>
+<dd class=proc-defn>
+    Trim <var>s</var> by skipping over all characters on the left / on the right /
+    on both sides that satisfy the second parameter <var>char/char-set/pred</var>:
+    <ul>
+        <li> if it is a character <var>char</var>, characters equal to <var>char</var> are trimmed;
+        <li> if it is a char set <var>cs</var>, characters contained in <var>cs</var> are trimmed;
+        <li> if it is a predicate <var>pred</var>, it is a test predicate that is applied
+          to the characters in <var>s</var>; a character causing it to return true
+          is skipped.
+    </ul>
+    <var>Char/char-set/pred</var> defaults to the character set <code>char-set:whitespace</code>
+    defined in <a href="#SRFI-14">SRFI 14</a>.
+
+    <p>
+    If no trimming occurs, these functions may return either <var>s</var> or a copy of <var>s</var>;
+    in some implementations, proper substrings may share memory with <var>s</var>.
+
+<pre class=code-example>
+(string-trim-both "  The outlook wasn't brilliant,  \n\r")
+    =&gt; "The outlook wasn't brilliant,"
+</pre>
+</dl>
+
+
+<!--========================================================================-->
+<h3><a name="Modification">Modification</a></h3>
+
+<dl>
+
+<!--
+==== string-set!
+============================================================================-->
+<dt class=proc-def>
+<a name="string-set!"></a>
+<code class=proc-def>string-set!</code><var> s i char -> unspecified                                     </var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  <var>I</var> must be a valid index of <var>s</var>.  <code>string-set!</code> stores <var>char</var> in
+  element <var>i</var> of <var>s</var>. Constant string literals appearing in code are 
+  immutable; it is an error to use them in a <code>string-set!.</code>
+
+<pre class=code-example>
+(define (f) (make-string 3 #\*))
+(define (g) "***")
+(string-set! (f) 0 #\?)                ==&gt;  <em>unspecified</em>
+(string-set! (g) 0 #\?)                ==&gt;  <em>error</em>
+(string-set! (symbol->string 'immutable)
+             3
+             #\?)                      ==&gt;  <em>error</em>
+</pre>
+
+<!--
+==== string-fill!
+============================================================================-->
+<dt class=proc-def>
+<a name="string-fill!"></a>
+<code class=proc-def>string-fill!</code><var> s char [start end] -> unspecified                          </var>
+<dd class=proc-def>
+    [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>+]
+    Stores <var>char</var> in every element of <var>s</var>.
+
+    <p>
+    <code>string-fill</code> is extended from the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> definition to take optional
+    <var>start/end</var> arguments.
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="Comparison">Comparison</a></h3>
+
+<dl>
+
+<!--
+==== string-compare string-compare-ci
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-compare"></a>
+<a name="string-compare-ci"></a>
+<code class=proc-def>string-compare&nbsp;&nbsp;&nbsp;</code><var> s1 s2 proc&lt; proc= proc&gt; [start1 end1 start2 end2] -> values</var>
+<dt class=proc-defi><code class=proc-def>string-compare-ci</code><var> s1 s2 proc&lt; proc= proc&gt; [start1 end1 start2 end2] -> values</var>
+<dd class=proc-defn>
+Apply <var>proc&lt;</var>, <var>proc=</var>, or <var>proc&gt;</var>
+ to the mismatch index, depending
+upon whether <var>s1</var> is less than, equal to, or greater than <var>s2</var>.
+The "mismatch index" is the largest index <var>i</var> such that for
+every 0 &lt;= <var>j</var> &lt; <var>i</var>, 
+<var>s1[j]</var> = <var>s2[j]</var>
+-- that is, <var>i</var> is the first position that doesn't match.
+
+<p>
+<code>string-compare-ci</code> is the case-insensitive variant. Case-insensitive
+comparison is done by case-folding characters with the operation
+<pre class=code-example>
+(char-downcase (char-upcase <var>c</var>))
+</pre>
+where the two case-mapping operations are assumed to be 1-1, locale- and
+context-insensitive, and compatible with the 1-1 case mappings specified
+by Unicode's UnicodeData.txt table:
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+
+<p>
+The optional start/end indices restrict the comparison to the indicated
+substrings of <var>s1</var> and <var>s2</var>. The mismatch index is always an index into <var>s1</var>;
+in the case of <var>proc=</var>, it is always <var>end1</var>; 
+we observe the protocol
+in this redundant case for uniformity.
+
+<pre class=code-example>
+(string-compare "The cat in the hat" "abcdefgh" 
+                values values values
+                4 6         ; Select "ca" 
+                2 4)        ; &amp; "cd"
+    =&gt; 5    ; Index of S1's "a"
+</pre>
+
+Comparison is simply done on individual code-points of the string. 
+True text collation is not handled by this SRFI.
+
+<!--
+==== string= string<> string< string> string<= string>=
+============================================================================-->
+<dt class=proc-def1>
+<a name="string="></a>
+<a name="string<>"></a>
+<a name="string<"></a>
+<a name="string>"></a>
+<a name="string<="></a>
+<a name="string>="></a>
+<code class=proc-def>string=&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string&lt;&gt;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string&lt;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string&gt;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string&lt;=</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defn><code class=proc-def>string&gt;=</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dd class=proc-def>
+    These procedures are the lexicographic extensions to strings of the
+    corresponding orderings on characters.  For example, <code>string&lt;</code> is the
+    lexicographic ordering on strings induced by the ordering <code>char&lt;?</code> on
+    characters.  If two strings differ in length but are the same up to 
+    the length of the shorter string, the shorter string is considered to 
+    be lexicographically less than the longer string.
+
+    <p>
+    The optional start/end indices restrict the comparison to the indicated
+    substrings of <var>s1</var> and <var>s2</var>. 
+
+    <p>
+    Comparison is simply done on individual code-points of the string. 
+    True text collation is not handled by this SRFI.
+
+<!--
+==== string-ci= string-ci<> string-ci< string-ci> string-ci<= string-ci>=
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-ci="></a>
+<a name="string-ci<>"></a>
+<a name="string-ci<"></a>
+<a name="string-ci>"></a>
+<a name="string-ci<="></a>
+<a name="string-ci>="></a>
+<code class=proc-def>string-ci=&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-ci&lt;&gt;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-ci&lt;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-ci&gt;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-ci&lt;=</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defn><code class=proc-def>string-ci&gt;=</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dd class=proc-def>
+    Case-insensitive variants.
+
+    <p>
+    Case-insensitive comparison is done by case-folding characters with 
+    the operation
+<pre class=code-example>
+(char-downcase (char-upcase <var>c</var>))
+</pre>
+    where the two case-mapping operations are assumed to be 1-1, locale- and
+    context-insensitive, and compatible with the 1-1 case mappings specified
+    by Unicode's UnicodeData.txt table:
+<div class=inset>
+        <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+
+<!--
+==== string-hash string-hash-ci
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-hash"></a>
+<a name="string-hash-ci"></a>
+<code class=proc-def>string-hash&nbsp;&nbsp;&nbsp;</code><var> s [bound start end] -> integer</var>
+<dt class=proc-defn><code class=proc-def>string-hash-ci</code><var> s [bound start end] -> integer</var>
+<dd class=proc-def>
+Compute a hash value for the string <var>s</var>. 
+<var>Bound</var> is a non-negative
+exact integer specifying the range of the hash function. A positive
+value restricts the return value to the range [0,<var>bound</var>).
+
+<p>
+If <var>bound</var> is either zero or not given, the implementation may use
+an implementation-specific default value, chosen to be as large as
+is efficiently practical. For instance, the default range might be chosen
+for a given implementation to map all strings into the range of
+integers that can be represented with a single machine word.
+
+<p>
+The optional start/end indices restrict the hash operation to the 
+indicated substring of <var>s</var>.
+
+<p>
+<code>string-hash-ci</code> is the case-insensitive variant. Case-insensitive
+comparison is done by case-folding characters with the operation
+<pre class=code-example>
+(char-downcase (char-upcase <var>c</var>))
+</pre>
+where the two case-mapping operations are assumed to be 1-1, locale- and
+context-insensitive, and compatible with the 1-1 case mappings specified
+by Unicode's UnicodeData.txt table:
+<div class=inset>
+     <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">
+         ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+
+<p>
+Invariants:
+<pre class=code-example>
+(&lt;= 0 (string-hash s b) (- b 1)) ; When B > 0.
+(string=    s1 s2)  =&gt;  (= (string-hash s1 b)    (string-hash s2 b))
+(string-ci= s1 s2)  =&gt;  (= (string-hash-ci s1 b) (string-hash-ci s2 b))
+</pre>
+
+<p>
+A legal but nonetheless discouraged implementation:
+<pre class=code-example>
+(define (string-hash    s . other-args) 1)
+(define (string-hash-ci s . other-args) 1)
+</pre>
+
+<p>
+    Rationale: allowing the user to specify an explicit bound simplifies user
+    code by removing the mod operation that typically accompanies every hash
+    computation, and also may allow the implementation of the hash function to
+    exploit a reduced range to efficiently compute the hash value. 
+    <em>E.g.</em>, for
+    small bounds, the hash function may be computed in a fashion such that
+    intermediate values never overflow into bignum integers, allowing the
+    implementor to provide a fixnum-specific "fast path" for computing the
+    common cases very rapidly.
+
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="PrefixesSuffixes">Prefixes &amp; suffixes</a></h3>
+
+<dl>
+<!--
+==== string-prefix-length    string-suffix-length
+==== string-prefix-length-ci string-suffix-length-ci
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-prefix-length"></a>
+<a name="string-suffix-length"></a>
+<a name="string-prefix-length-ci"></a>
+<a name="string-suffix-length-ci"></a>
+<code class=proc-def>string-prefix-length&nbsp;&nbsp;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> integer</var>
+<dt class=proc-defi><code class=proc-def>string-suffix-length&nbsp;&nbsp;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> integer</var>
+<dt class=proc-defi><code class=proc-def>string-prefix-length-ci</code><var> s1 s2 [start1 end1 start2 end2] -> integer</var>
+<dt class=proc-defn><code class=proc-def>string-suffix-length-ci</code><var> s1 s2 [start1 end1 start2 end2] -> integer</var>
+<dd class=proc-def>
+Return the length of the longest common prefix/suffix of the two strings.
+For prefixes, this is equivalent to the "mismatch index" for the strings
+(modulo the <var>start</var>i index offsets).
+
+<p>
+The optional start/end indices restrict the comparison to the indicated
+substrings of <var>s1</var> and <var>s2</var>.
+
+<p>
+<code>string-prefix-length-ci</code> and <code>string-suffix-length-ci</code> are the
+case-insensitive variants. Case-insensitive comparison is done by
+case-folding characters with the operation
+<pre class=code-example>
+(char-downcase (char-upcase c))
+</pre>
+where the two case-mapping operations are assumed to be 1-1, locale- and
+context-insensitive, and compatible with the 1-1 case mappings specified
+by Unicode's UnicodeData.txt table:
+<div class=inset>
+        <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+Comparison is simply done on individual code-points of the string. 
+
+<!--
+==== string-prefix? string-suffix? string-prefix-ci? string-suffix-ci?
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-prefix-p"></a>
+<a name="string-suffix-p"></a>
+<a name="string-prefix-ci-p"></a>
+<a name="string-suffix-ci-p"></a>
+<code class=proc-def>string-prefix?&nbsp;&nbsp;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-suffix?&nbsp;&nbsp;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defi><code class=proc-def>string-prefix-ci?</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dt class=proc-defn><code class=proc-def>string-suffix-ci?</code><var> s1 s2 [start1 end1 start2 end2] -> boolean</var>
+<dd class=proc-def>
+Is <var>s1</var> a prefix/suffix of <var>s2</var>?
+
+<p>
+The optional start/end indices restrict the comparison to the indicated
+substrings of <var>s1</var> and <var>s2</var>.
+
+<p>
+<code>string-prefix-ci?</code> and <code>string-suffix-ci?</code> are the case-insensitive variants.
+Case-insensitive comparison is done by case-folding characters with the
+operation
+<pre class=code-example>
+(char-downcase (char-upcase c))
+</pre>
+where the two case-mapping operations are assumed to be 1-1, locale- and
+context-insensitive, and compatible with the 1-1 case mappings specified
+by Unicode's UnicodeData.txt table:
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+
+<p>
+Comparison is simply done on individual code-points of the string. 
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="Searching">Searching</a></h3>
+
+<dl>
+
+<!--
+==== string-index string-index-right string-skip string-skip-right
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-index"></a>
+<a name="string-index-right"></a>
+<a name="string-skip"></a>
+<a name="string-skip-right"></a>
+<code class=proc-def>string-index</code><var>       s char/char-set/pred [start end] -> integer or #f</var>
+<dt class=proc-defi><code class=proc-def>string-index-right</code><var> s char/char-set/pred [start end] -> integer or #f</var>
+<dt class=proc-defi><code class=proc-def>string-skip</code><var> s char/char-set/pred [start end] -> integer or #f</var>
+<dt class=proc-defn><code class=proc-def>string-skip-right</code><var> s char/char-set/pred [start end] -> integer or #f</var>
+<dd class=proc-def>
+<code>string-index</code> (<code>string-index-right</code>) searches through the string from the 
+left (right), returning the index of the first occurrence of a character 
+which
+<ul>
+    <li> equals <var>char/char-set/pred</var> (if it is a character);
+    <li> is in <var>char/char-set/pred</var> (if it is a character set);
+    <li> satisfies the predicate <var>char/char-set/pred</var> (if it is a procedure).
+</ul>
+If no match is found, the functions return false.
+
+<p>
+The <var>start</var> and <var>end</var> parameters specify the beginning and end indices of
+the search; the search includes the start index, but not the end index.
+Be careful of "fencepost" considerations: when searching right-to-left, 
+the first index considered is
+<div class=inset>
+    <var>end</var>-1
+</div>
+whereas when searching left-to-right, the first index considered is
+<div class=inset>
+      <var>start</var>
+</div>
+That is, the start/end indices describe a same half-open interval
+[<var>start</var>,<var>end</var>) in these procedures that they do
+in all the other SRFI 13 procedures.
+
+<p>
+The skip functions are similar, but use the complement of the criteria:
+they search for the first char that <em>doesn't</em> satisfy the test. <em>E.g.</em>, 
+to skip over initial whitespace, say
+<pre class=code-example>
+(cond ((string-skip s char-set:whitespace) =&gt;
+       (lambda (i) ...)) ; s[i] is not whitespace.
+      ...)
+</pre>
+
+<!--
+==== string-count
+============================================================================-->
+<dt class=proc-def>
+<a name="string-count"></a>
+<code class=proc-def>string-count</code><var> s char/char-set/pred [start end] -> integer</var>
+<dd class=proc-def>
+    Return a count of the number of characters in <var>s</var> that satisfy the
+    <var>char/char-set/pred</var> argument. If this argument is a procedure, 
+    it is applied to the character as a predicate; if it is a character set, 
+    the character is tested for membership; if it is a character, it is 
+    used in an equality test.
+
+<!--
+==== string-contains string-contains-ci
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-contains"></a>
+<a name="string-contains-ci"></a>
+<code class=proc-def>string-contains&nbsp;&nbsp;&nbsp;</code><var> s1 s2 [start1 end1 start2 end2] -> integer or false</var>
+<dt class=proc-defn><code class=proc-def>string-contains-ci</code><var> s1 s2 [start1 end1 start2 end2] -> integer or false</var>
+<dd class=proc-def>
+Does string <var>s1</var> contain string <var>s2</var>?
+
+<p>
+Return the index in <var>s1</var> where <var>s2</var> occurs as a substring, or false.
+The optional start/end indices restrict the operation to the
+indicated substrings.
+
+<p>
+The returned index is in the range [<var>start1</var>,<var>end1</var>). 
+A successful match must lie entirely in the 
+[<var>start1</var>,<var>end1</var>) range of <var>s1</var>.
+
+<p>
+<pre class=code-example>
+(string-contains "eek -- what a geek." "ee"
+                 12 18) ; Searches "a geek"
+    =&gt; 15
+</pre>
+
+<p>
+<code>string-contains-ci</code> is the case-insensitive variant. Case-insensitive
+comparison is done by case-folding characters with the operation
+<pre class=code-example>
+(char-downcase (char-upcase <var>c</var>))
+</pre>
+where the two case-mapping operations are assumed to be 1-1, locale- and
+context-insensitive, and compatible with the 1-1 case mappings specified
+by Unicode's UnicodeData.txt table:
+<div class=inset>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+</div>
+
+<p>
+Comparison is simply done on individual code-points of the string. 
+
+<p>
+The names of these procedures do not end with a question mark -- this is to
+indicate that they do not return a simple boolean (<code>#t</code> or <code>#f</code>). Rather,
+they return either false (<code>#f</code>) or an exact non-negative integer.
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="CaseMapping">Alphabetic case mapping</a></h3>
+
+<dl>
+
+<!--
+==== string-titlecase string-titlecase!
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-titlecase"></a>
+<a name="string-titlecase!"></a>
+<code class=proc-def>string-titlecase&nbsp;</code><var> s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-titlecase!</code><var> s [start end] -> unspecified</var>
+<dd class=proc-def>
+For every character <var>c</var> in the selected range of <var>s</var>, 
+if <var>c</var> is preceded by a cased character, it is downcased; 
+otherwise it is titlecased.
+
+<p>
+<code>string-titlecase</code> returns the result string and does not alter its <var>s</var>
+parameter. <code>string-titlecase!</code> is the in-place side-effecting variant.
+
+<p>
+<pre class=code-example>
+(string-titlecase "--capitalize tHIS sentence.") =&gt;
+  "--Capitalize This Sentence."
+
+(string-titlecase "see Spot run. see Nix run.") =&gt;
+  "See Spot Run. See Nix Run."
+
+(string-titlecase "3com makes routers.") =&gt;
+  "3Com Makes Routers."
+</pre>
+
+<p>
+Note that if a <var>start</var> index is specified, then the character
+preceding <var>s</var>[<var>start</var>] has no effect on the titlecase decision for
+character <var>s</var>[<var>start</var>]:
+<pre class=code-example>
+(string-titlecase "greasy fried chicken" 2) =&gt; "Easy Fried Chicken"
+</pre>
+
+<p>
+Titlecase and cased information must be compatible with the Unicode
+specification.
+
+<!--
+==== string-upcase string-upcase! string-downcase string-downcase!
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-upcase"></a>
+<a name="string-upcase!"></a>
+<a name="string-downcase"></a>
+<a name="string-downcase!"></a>
+<code class=proc-def>string-upcase&nbsp;</code><var> s [start end] -> string</var>
+<dt class=proc-defi><code class=proc-def>string-upcase!</code><var> s [start end] -> unspecified</var>
+<dt class=proc-defi><code class=proc-def>string-downcase&nbsp;</code><var> s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-downcase!</code><var> s [start end] -> unspecified</var>
+<dd class=proc-def>
+    Raise or lower the case of the alphabetic characters in the string.
+
+    <p>
+    <code>string-upcase</code> and <code>string-downcase</code> return the result string and do not
+    alter their <var>s</var> parameter. <code>string-upcase!</code> and <code>string-downcase!</code> are the
+    in-place side-effecting variants.    
+
+    <p>
+    These procedures use the locale- and context-insensitive 1-1 case mappings
+    defined by Unicode's UnicodeData.txt table:
+    <div class=inset>
+         <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+    </div>
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="ReverseAppend">Reverse &amp; append</a></h3>
+
+<dl>
+
+<!--
+==== string-reverse string-reverse!
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-reverse"></a>
+<a name="string-reverse!"></a>
+<code class=proc-def>string-reverse&nbsp;</code><var> s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-reverse!</code><var> s [start end] -> unspecified</var>
+<dd class=proc-def>
+Reverse the string.
+
+<p>
+<code>string-reverse</code> returns the result string 
+and does not alter its <var>s</var> parameter. 
+<code>string-reverse!</code> is the in-place side-effecting variant.
+
+<pre class=code-example>
+(string-reverse "Able was I ere I saw elba.") 
+    =&gt; ".able was I ere I saw elbA"
+
+;;; In-place rotate-left, the Bell Labs way:
+(lambda (s i)
+  (let ((i (modulo i (string-length s))))
+    (string-reverse! s 0 i)
+    (string-reverse! s i)
+    (string-reverse! s)))
+</pre>
+
+<p>
+Unicode note: Reversing a string simply reverses the sequence of
+code-points it contains. So a zero-width accent character <var>a</var> 
+coming <em>after</em> a base character <var>b</var> in string <var>s</var> 
+would come out <em>before</em> <var>b</var> in the reversed result.
+
+<!--
+==== string-append
+============================================================================-->
+<dt class=proc-def>
+<a name="string-append"></a>
+<code class=proc-def>string-append</code><var> s<sub>1</sub> ... -> string</var>
+<dd class=proc-def>
+  [<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>]
+  Returns a newly allocated string whose characters form the
+  concatenation of the given strings.
+
+<!--
+==== string-concatenate
+============================================================================-->
+<dt class=proc-def>
+<a name="string-concatenate"></a>
+<code class=proc-def>string-concatenate</code><var> string-list -> string</var>
+<dd class=proc-def>
+    Append the elements of <code>string-list</code> together into a single string.
+    Guaranteed to return a freshly allocated string.
+
+    <p>
+    Note that the <code>(apply string-append <var>string-list</var>)</code>
+    idiom is
+    not robust for long lists of strings, as some Scheme implementations
+    limit the number of arguments that may be passed to an n-ary procedure.
+
+<!--
+==== string-concatenate/shared string-append/shared
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-concatenate/shared"></a>
+<a name="string-append/shared"></a>
+<code class=proc-def>string-concatenate/shared</code><var> string-list -> string</var>
+<dt class=proc-defn><code class=proc-def>string-append/shared</code><var> s<sub>1</sub> ... -> string</var>
+<dd class=proc-def>
+    These two procedures are variants of <code>string-concatenate</code> 
+    and <code>string-append</code>
+    that are permitted to return results that share storage with their
+    parameters. 
+    In particular, if <code>string-append/shared</code> is applied to just 
+    one argument, it may return exactly that argument, 
+    whereas <code>string-append</code> is required to allocate a fresh string.
+
+<!--
+==== string-concatenate-reverse string-concatenate-reverse/shared
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-concatenate-reverse"></a>
+<a name="string-concatenate-reverse/shared"></a>
+<code class=proc-def>string-concatenate-reverse</code><var>        string-list [final-string end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-concatenate-reverse/shared</code><var> string-list [final-string end] -> string</var>
+<dd class=proc-def>
+With no optional arguments, these functions are equivalent to
+<pre class=code-example>
+(string-concatenate (reverse <var>string-list</var>))
+</pre>
+and
+<pre class=code-example>
+(string-concatenate/shared (reverse <var>string-list</var>))
+</pre>
+respectively.
+
+<p>
+If the optional argument <var>final-string</var> is specified, it is consed
+onto the beginning of <var>string-list</var>
+before performing the list-reverse and string-concatenate operations.
+
+</p>
+If the optional argument <var>end</var> is given, 
+only the first <var>end</var> characters
+of <var>final-string</var> are added to the string list, thus producing
+<pre class=code-example>
+(string-concatenate 
+  (reverse (cons (substring/shared <var>final-string</var> 0 <var>end</var>)
+                 <var>string-list</var>)))
+</pre>
+<em>E.g.</em>
+<pre class=code-example>
+(string-concatenate-reverse '(" must be" "Hello, I") " going.XXXX" 7)
+  =&gt; "Hello, I must be going."
+</pre>
+
+<p>
+This procedure is useful in the construction of procedures that 
+accumulate character data into lists of string buffers, and wish to
+convert the accumulated data into a single string when done.
+
+<p>
+Unicode note: Reversing a string simply reverses the sequence of
+code-points it contains. 
+So a zero-width accent character <var>ac</var> coming <em>after</em>
+a base character <var>bc</var> in string <var>s</var> would come out 
+<em>before</em> <var>bc</var> in the reversed result.
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="FoldUnfoldMap">Fold, unfold &amp; map</a></h3>
+
+<dl>
+
+<!--
+==== string-map string-map!
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-map"></a>
+<a name="string-map!"></a>
+<code class=proc-def>string-map&nbsp;</code><var> proc s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-map!</code><var> proc s [start end] -> unspecified</var>
+<dd class=proc-def>
+    <var>Proc</var> is a char->char procedure; it is mapped over <var>s</var>.
+    
+    <p>
+    <code>string-map</code> returns the result string and does not alter its <var>s</var> parameter.
+    <code>string-map!</code> is the in-place side-effecting variant.
+
+    <p>
+    Note: The order in which <var>proc</var> is applied to the elements of
+    <var>s</var> is not specified.
+
+<!--
+==== string-fold string-fold-right
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-fold"></a>
+<a name="string-fold-right"></a>
+<code class=proc-def>string-fold</code><var>       kons knil s [start end] -> value</var>
+<dt class=proc-defn><code class=proc-def>string-fold-right</code><var> kons knil s [start end] -> value</var>
+<dd class=proc-def>
+These are the fundamental iterators for strings.
+
+<p>
+The left-fold operator maps the <var>kons</var> procedure across the
+string from left to right
+<pre class=code-example>
+(... (<var>kons</var> <var>s</var>[2] (<var>kons</var> <var>s</var>[1] (<var>kons</var> <var>s</var>[0] <var>knil</var>))))
+</pre>
+In other words, <code>string-fold</code> obeys the (tail) recursion
+<pre class=code-example>
+(string-fold <var>kons</var> <var>knil</var> <var>s</var> <var>start</var> <var>end</var>) =
+    (string-fold <var>kons</var> (<var>kons</var> <var>s</var>[<var>start</var>] <var>knil</var>) <var>start+1</var> <var>end</var>)
+</pre>
+
+<p>
+The right-fold operator maps the <var>kons</var> procedure across the
+string from right to left
+<pre class=code-example>
+(<var>kons</var> <var>s</var>[0] (... (<var>kons</var> <var>s</var>[<var>end-3</var>] (<var>kons</var> <var>s</var>[<var>end-2</var>] (<var>kons</var> <var>s</var>[<var>end-1</var>] <var>knil</var>)))))
+</pre>
+obeying the (tail) recursion
+<pre class=code-example>
+(string-fold-right <var>kons</var> <var>knil</var> <var>s</var> <var>start</var> <var>end</var>) =
+    (string-fold-right <var>kons</var> (<var>kons</var> <var>s</var>[<var>end-1</var>] <var>knil</var>) <var>start</var> <var>end-1</var>)
+</pre>
+    
+<p>
+Examples: 
+<pre class=code-example>
+;;; Convert a string to a list of chars.
+(string-fold-right cons '() s)
+
+;;; Count the number of lower-case characters in a string.
+(string-fold (lambda (c count)
+               (if (char-lower-case? c)
+                   (+ count 1)
+                   count))
+             0
+             s)
+
+;;; Double every backslash character in S.
+(let* ((ans-len (string-fold (lambda (c sum)
+                               (+ sum (if (char=? c #\\) 2 1)))
+                             0 s))
+       (ans (make-string ans-len)))
+  (string-fold (lambda (c i)
+                 (let ((i (if (char=? c #\\)
+                              (begin (string-set! ans i #\\) (+ i 1))
+                              i)))
+                   (string-set! ans i c)
+                   (+ i 1)))
+               0 s)
+  ans)
+</pre>
+
+<p>
+The right-fold combinator is sometimes called a "catamorphism."
+
+<!--
+==== string-unfold
+============================================================================-->
+<dt class=proc-def>
+<a name="string-unfold"></a>
+<code class=proc-def>string-unfold</code><var> p f g seed [base make-final] -> string</var>
+<dd class=proc-def>
+This is a fundamental constructor for strings. 
+<ul>
+<li> <var>G</var> is used to generate a series of "seed" values from the initial seed:
+<div class=inset>
+    <var>seed</var>, (<var>g</var> <var>seed</var>), (<var>g<sup>2</sup></var> <var>seed</var>), (<var>g<sup>3</sup></var> <var>seed</var>), ...
+</div>
+<li> <var>P</var> tells us when to stop -- when it returns true when applied to one 
+  of these seed values.
+<li> <var>F</var> maps each seed value to the corresponding character 
+  in the result string. These chars are assembled into the
+  string in a left-to-right order.
+<li> <var>Base</var> is the optional initial/leftmost portion of the constructed string;
+  it defaults to the empty string "".
+<li> <var>Make-final</var> is applied to the terminal seed value (on which <var>p</var> returns
+  true) to produce the final/rightmost portion of the constructed string.
+  It defaults to <code>(lambda (x) "")</code>.
+</ul>
+
+<p>
+More precisely, the following (simple, inefficient) definitions hold:
+
+<pre class=code-example>
+;;; Iterative
+(define (string-unfold p f g seed base make-final)
+  (let lp ((seed seed) (ans base))
+    (if (p seed) 
+        (string-append ans (make-final seed))
+        (lp (g seed) (string-append ans (string (f seed)))))))
+                                    
+;;; Recursive
+(define (string-unfold p f g seed base make-final)
+  (string-append base
+                 (let recur ((seed seed))
+                   (if (p seed) (make-final seed)
+                       (string-append (string (f seed))
+                                      (recur (g seed)))))))
+</pre>
+<p>
+<code>string-unfold</code> is a fairly powerful string constructor -- you can use it to
+convert a list to a string, read a port into a string, reverse a string,
+copy a string, and so forth. Examples:
+<pre class=code-example>
+(port->string p) = (string-unfold eof-object? values
+                                  (lambda (x) (read-char p))
+                                  (read-char p))
+
+(list->string lis) = (string-unfold null? car cdr lis)
+
+(string-tabulate f size) = (string-unfold (lambda (i) (= i size)) f add1 0)
+</pre>
+<p>
+To map <var>f</var> over a list <var>lis</var>, producing a string:
+<pre class=code-example>
+(string-unfold null? (compose f car) cdr lis)
+</pre>
+<p>
+Interested functional programmers may enjoy noting that 
+<code>string-fold-right</code> 
+and <code>string-unfold</code> are in some sense inverses. That is, given operations 
+<var>knull?</var>, <var>kar</var><var>, kdr</var>, <var>kons</var>, and <var>knil</var> satisfying
+<pre class=code-example>
+(<var>kons</var> (<var>kar</var> x) (<var>kdr</var> x)) = x  and (<var>knull?</var> <var>knil</var>) = #t
+</pre>
+then
+<pre class=code-example>
+(string-fold-right <var>kons</var> <var>knil</var> (string-unfold <var>knull?</var> <var>kar</var> <var>kdr</var> <var>x</var>)) = <var>x</var>
+</pre>
+and
+<pre class=code-example>
+(string-unfold <var>knull?</var> <var>kar</var> <var>kdr</var> (string-fold-right <var>kons</var> <var>knil</var> <var>s</var>)) = <var>s</var>.
+</pre>
+
+The final string constructed does not share storage with either <var>base</var>
+or the value produced by <var>make-final</var>.
+
+<p>
+This combinator sometimes is called an "anamorphism."
+
+<p>
+Note: implementations should take care that runtime stack limits do not
+cause overflow when constructing large (<em>e.g.</em>, megabyte) strings with
+<code>string-unfold</code>.
+
+
+<!--
+==== string-unfold-right
+============================================================================-->
+<dt class=proc-def>
+<a name="string-unfold-right"></a>
+<code class=proc-def>string-unfold-right</code><var> p f g seed [base make-final] -> string</var>
+<dd class=proc-def>
+    This is a fundamental constructor for strings. 
+    <ul>
+    <li> <var>G</var> is used to generate a series of "seed" values from the initial seed:
+        <var>seed</var>, (<var>g</var> <var>seed</var>), (<var>g<sup>2</sup></var> <var>seed</var>), (<var>g<sup>3</sup></var> <var>seed</var>), ...
+    <li> <var>P</var> tells us when to stop -- when it returns true when applied to one 
+      of these seed values.
+    <li> <var>F</var> maps each seed value to the corresponding character 
+      in the result string. These chars are assembled into the
+      string in a right-to-left order.
+    <li> <var>Base</var> is the optional initial/rightmost portion of the constructed string;
+      it defaults to the empty string "".
+    <li> <var>Make-final</var> is applied to the terminal seed value (on which <var>P</var> returns
+      true) to produce the final/leftmost portion of the constructed string.
+      It defaults to <code>(lambda (x) "")</code>.
+    </ul>
+
+    <p>
+    More precisely, the following (simple, inefficient) definitions hold:
+<pre class=code-example>
+;;; Iterative
+(define (string-unfold-right p f g seed base make-final)
+  (let lp ((seed seed) (ans base))
+    (if (p seed) 
+        (string-append (make-final seed) ans)
+        (lp (g seed) (string-append (string (f seed)) ans)))))
+
+;;; Recursive
+(define (string-unfold-right p f g seed base make-final)
+  (string-append (let recur ((seed seed))
+                   (if (p seed) (make-final seed)
+                       (string-append (recur (g seed))
+                                      (string (f seed)))))
+                 base))
+</pre>
+    Interested functional programmers may enjoy noting that 
+    <code>string-fold</code>
+    and <code>string-unfold-right</code> are in some sense inverses. 
+    That is, given operations <var>knull?</var>, <var>kar</var>, <var>kdr</var>, <var>kons</var>, and <var>knil</var> satisfying
+<div class=inset>
+<code>(<var>kons</var> (<var>kar</var> <var>x</var>) (<var>kdr</var> <var>x</var>))</code> = <var>x</var>  and <code>(<var>knull?</var> <var>knil</var>)</code> = #t
+</div>
+    then
+<pre class=code-example>
+(string-fold <var>kons</var> <var>knil</var> (string-unfold-right <var>knull?</var> <var>kar</var> <var>kdr</var> <var>x</var>)) = <var>x</var>
+</pre>
+    and
+<pre class=code-example>
+(string-unfold-right <var>knull?</var> <var>kar</var> <var>kdr</var> (string-fold <var>kons</var> <var>knil</var> <var>s</var>)) = <var>s</var>.
+</pre>
+
+    The final string constructed does not share storage with either <var>base</var>
+    or the value produced by <var>make-final</var>.
+
+    <p>
+    Note: implementations should take care that runtime stack limits do not
+    cause overflow when constructing large (<em>e.g.</em>, megabyte) strings with
+    <code>string-unfold-right.</code>
+
+
+<!--
+==== string-for-each
+============================================================================-->
+<dt class=proc-def>
+<a name="string-for-each"></a>
+<code class=proc-def>string-for-each</code><var>  proc s [start end] -> unspecified</var>
+<dd class=proc-def>
+    Apply <var>proc</var> to each character in <var>s</var>.
+    <code>string-for-each</code> is required to iterate from <var>start</var> to <var>end</var>
+    in increasing order.
+
+<!--
+==== string-for-each-index
+============================================================================-->
+<dt class=proc-def>
+<a name="string-for-each-index"></a>
+<code class=proc-def>string-for-each-index</code><var> proc s [start end] -> unspecified</var>
+<dd class=proc-def>
+Apply <var>proc</var> to each index of <var>s</var>, in order. The optional <var>start/end</var>
+pairs restrict the endpoints of the loop. This is simply a
+method of looping over a string that is guaranteed to be safe
+and correct.
+
+Example:
+<pre class=code-example>
+(let* ((len (string-length s))
+       (ans (make-string len)))
+  (string-for-each-index
+      (lambda (i) (string-set! ans (- len i) (string-ref s i)))
+      s)
+  ans)
+</pre>
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="ReplicateRotate">Replicate &amp; rotate</a></h3>
+
+<dl>
+
+<!--
+==== xsubstring
+============================================================================-->
+<dt class=proc-def>
+<a name="xsubstring"></a>
+<code class=proc-def>xsubstring</code><var> s from [to start end] -> string</var>
+<dd class=proc-def>
+    This is the "extended substring" procedure that implements replicated
+    copying of a substring of some string.
+
+    <p>
+    <var>S</var> is a string; <var>start</var> and <var>end</var> are optional arguments that demarcate
+    a substring of <var>s</var>, defaulting to 0 and the length of <var>s</var> (<em>i.e.</em>, the whole
+    string). Replicate this substring up and down index space, in both the
+    positive and negative directions. For example, if <var>s</var> = "abcdefg", <var>start</var>=3, 
+    and <var>end</var>=6, then we have the conceptual bidirectionally-infinite string
+<div class=inset>
+<table>
+<tr align=right>
+<td>...  <td>d  <td>e  <td>f  <td>d  <td>e  <td>f  <td>d  <td>e  <td>f  <td>d  <td>e  <td>f  <td>d  <td>e  <td>f  <td>d  <td>e  <td>f  <td>d  <td>...
+</tr>
+<tr align=right>
+<td>... <td>-9 <td>-8 <td>-7 <td>-6 <td>-5 <td>-4 <td>-3 <td>-2 <td>-1  <td>0  <td>+1  <td>+2  <td>+3  <td>+4  <td>+5  <td>+6  <td>+7  <td>+8  <td>+9 <td>...
+</tr>
+</table>
+</div>
+
+    <code>xsubstring</code> returns the substring of this string beginning at index <var>from</var>,
+    and ending at <var>to</var> 
+    (which defaults to <var>from</var>+(<var>end</var>-<var>start</var>)).
+
+    <p>
+    You can use <code>xsubstring</code> to perform a variety of tasks:
+    <ul>
+    <li> To rotate a string left:  <code>(xsubstring "abcdef" 2)</code>  =&gt; <code>"cdefab"</code>
+    <li> To rotate a string right: <code>(xsubstring "abcdef" -2)</code> =&gt; <code>"efabcd"</code>
+    <li> To replicate a string:    <code>(xsubstring "abc" 0 7)</code> =&gt; <code>"abcabca"</code>
+    </ul>
+
+    <p>
+    Note that 
+      <ul>
+      <li> The <var>from</var>/<var>to</var> indices give a half-open range -- the characters from
+        index <var>from</var> up to, but not including, index <var>to</var>.
+      <li> The <var>from</var>/<var>to</var> indices are not in terms of the index space for string <var>s</var>.
+        They are in terms of the replicated index space of the substring
+        defined by <var>s</var>, <var>start</var>, and <var>end</var>.
+      </ul>
+
+    <p>
+    It is an error if <var>start</var>=<var>end</var> -- although this is allowed by special
+    dispensation when <var>from</var>=<var>to</var>.
+
+<!--
+==== string-xcopy!
+============================================================================-->
+<dt class=proc-def>
+<a name="string-xcopy!"></a>
+<code class=proc-def>string-xcopy!</code><var> target tstart s sfrom [sto start end] -> unspecified</var>
+<dd class=proc-def>
+    Exactly the same as <code>xsubstring,</code> but the extracted text is written
+    into the string <var>target</var> starting at index <var>tstart</var>.
+    This operation is not defined if <code>(eq? <var>target</var> <var>s</var>)</code>
+    or these two arguments
+    share storage -- you cannot copy a string on top of itself.
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="Miscellaneous">Miscellaneous: insertion, parsing</a></h3>
+
+<dl>
+
+<!--
+==== string-replace
+============================================================================-->
+<dt class=proc-def>
+<a name="string-replace"></a>
+<code class=proc-def>string-replace</code><var> s1 s2 start1 end1 [start2 end2] -> string</var>
+<dd class=proc-def>
+    Returns
+<pre class=code-example>
+(string-append (substring/shared <var>s1</var> 0 <var>start1</var>)
+               (substring/shared <var>s2</var> <var>start2</var> <var>end2</var>)
+               (substring/shared <var>s1</var> <var>end1</var> (string-length <var>s1</var>)))
+</pre>
+
+    That is, the segment of characters in <var>s1</var> from <var>start1</var> to <var>end1</var>
+    is replaced by the segment of characters in <var>s2</var> from <var>start2</var> to <var>end2</var>.
+    If <var>start1</var>=<var>end1</var>, this simply splices the <var>s2</var> characters into <var>s1</var> at the
+    specified index.
+
+    <p>
+    Examples:
+<pre class=code-example>
+(string-replace "The TCL programmer endured daily ridicule."
+                "another miserable perl drone" 4 7 8 22 ) =&gt;
+    "The miserable perl programmer endured daily ridicule."
+
+(string-replace "It's easy to code it up in Scheme." "lots of fun" 5 9) =&gt;
+    "It's lots of fun to code it up in Scheme."
+
+(define (string-insert s i t) (string-replace s t i i))
+
+(string-insert "It's easy to code it up in Scheme." 5 "really ") =&gt;
+    "It's really easy to code it up in Scheme."
+</pre>
+
+<!--
+==== string-tokenize
+============================================================================-->
+<dt class=proc-def>
+<a name="string-tokenize"></a>
+<code class=proc-def>string-tokenize</code><var> s [token-set start end] -> list</var>
+<dd class=proc-def>
+   Split the string <var>s</var> into a list of substrings, where each substring is
+   a maximal non-empty contiguous sequence of characters from the character set
+   <var>token-set</var>.
+    <ul>
+       <li> <var>token-set</var> defaults to <code>char-set:graphic</code> 
+         (see <a href="#SRFI-14">SRFI 14</a> 
+          for more on character sets and <code>char-set:graphic</code>).
+       <li> If <var>start</var> or <var>end</var> indices are provided, they restrict 
+         <code>string-tokenize</code> to operating on the indicated substring of <var>s</var>.
+    </ul>
+
+    <p>
+    This function provides a minimal parsing facility for simple applications.
+    More sophisticated parsers that handle quoting and backslash effects can
+    easily be constructed using regular-expression systems; be careful not
+    to use <code>string-tokenize</code> in contexts where more serious parsing is needed.
+
+<pre class=code-example>
+(string-tokenize "Help make programs run, run, RUN!") =&gt;
+  ("Help" "make" "programs" "run," "run," "RUN!")
+</pre>
+
+</dl>
+
+<!--========================================================================-->
+<h3><a name="FilterDelete">Filtering &amp; deleting</a></h3>
+
+<dl>
+
+<!--
+==== string-filter string-delete
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-filter"></a>
+<a name="string-delete"></a>
+<code class=proc-def>string-filter</code><var> char/char-set/pred s [start end] -> string</var>
+<dt class=proc-defn><code class=proc-def>string-delete</code><var> char/char-set/pred s [start end] -> string</var>
+<dd class=proc-def>
+    Filter the string <var>s</var>, retaining only those characters that
+    satisfy / do not satisfy the <var>char/char-set/pred</var> argument. If
+    this argument is a procedure, it is applied to the character
+    as a predicate; if it is a char-set, the character is tested
+    for membership; if it is a character, it is used in an equality test.
+
+    <p>
+    If the string is unaltered by the filtering operation, these
+    functions may return either <var>s</var> or a copy of <var>s</var>.
+
+
+</dl>
+
+<!--========================================================================-->
+<h2><a name="LowLevelProcs">Low-level procedures</a></h2>
+<p>
+The following procedures are useful for writing other string-processing
+functions. In a Scheme system that has a module or package system, these
+procedures should be contained in a module named "string-lib-internals".
+
+<!--========================================================================-->
+<h3><a name="ArgUtils">Start/end optional-argument parsing &amp; checking utilities</a></h3>
+
+
+<dl>
+
+<!--
+==== string-parse-start+end string-parse-final-start+end
+============================================================================-->
+<dt class=proc-def1>
+<a name="string-parse-start+end"></a>
+<a name="string-parse-final-start+end"></a>
+<code class=proc-def>string-parse-start+end</code><var> proc s args -> [rest start end]</var>
+<dt class=proc-defn><code class=proc-def>string-parse-final-start+end</code><var> proc s args -> [start end]</var>
+<dd class=proc-def>
+    <code>string-parse-start+end</code> may be used to parse a pair of optional <var>start/end</var> 
+    arguments from an argument list, defaulting them to 0 and the length of 
+    some string <var>s</var>, respectively. Let the length of string <var>s</var> be <var>slen</var>.
+    <ul>
+    <li> If <var>args</var> = (), the function returns 
+         <code>(values '() 0 <var>slen</var>)</code>
+    <li> If <var>args</var> = (<var>i</var>), <var>i</var> is checked to ensure it is an exact integer, and
+      that 0 &lt;= i &lt;= <var>slen</var>. 
+      Returns <code>(values (cdr <var>args</var>) <var>i</var> <var>slen</var>)</code>.
+    <li> If <var>args</var> = <code>(<var>i</var> <var>j</var> ...)</code>, 
+         <var>i</var> and <var>j</var> are checked to ensure they are exact
+      integers, and that 0 &lt;= <var>i</var> &lt;= <var>j</var> &lt;=
+         <var>slen</var>. 
+      Returns <code>(values (cddr <var>args</var>) <var>i</var> <var>j</var>)</code>.
+    </ul>
+
+    <p>
+    If any of the checks fail, an error condition is raised, and <var>proc</var> is used
+    as part of the error condition -- it should be the client procedure whose
+    argument list <code>string-parse-start+end</code> is parsing.
+    
+    <p>
+    <code>string-parse-final-start+end</code> is exactly the same, except that the args list
+    passed to it is required to be of length two or less; if it is longer,
+    an error condition is raised. It may be used when the optional <var>start/end</var> 
+    parameters are final arguments to the procedure.
+
+    <p>
+    Note that in all cases, these functions ensure that <var>s</var> is a string
+    (by necessity, since all cases apply <code>string-length</code> to <var>s</var> either to
+    default <var>end</var> or to bounds-check it).
+
+<dt class=proc-def>
+<a name="let-string-start+end"></a>
+<code class=proc-def>let-string-start+end</code><var> (start end [rest]) proc-exp s-exp args-exp body ... -> value(s)</var>
+<dd class=proc-def>
+
+    [Syntax]
+    Syntactic sugar for an application of <code>string-parse-start+end</code> or
+    <code>string-parse-final-start+end.</code>
+      
+    <p>
+    If a <var>rest</var> variable is given, the form is equivalent to
+<pre class=code-example>
+(call-with-values
+    (lambda () (string-parse-start+end <var>proc-exp</var> <var>s-exp</var> <var>args-exp</var>))
+  (lambda (<var>rest</var> <var>start</var> <var>end</var>) <var>body</var> ...))
+</pre>
+        
+    <p>
+    If no <var>rest</var> variable is given, the form is equivalent to
+<pre class=code-example>
+(call-with-values
+    (lambda () (string-parse-final-start+end <var>proc-exp</var> <var>s-exp</var> <var>args-exp</var>))
+  (lambda (<var>start</var> <var>end</var>) <var>body</var> ...))
+</pre>
+
+<!--
+==== check-substring-spec substring-spec-ok?
+============================================================================-->
+<dt class=proc-def1>
+<a name="check-substring-spec"></a>
+<a name="substring-spec-ok-p"></a>
+<code class=proc-def>check-substring-spec</code><var> proc s start end -> unspecified</var>
+<dt class=proc-defn><code class=proc-def>substring-spec-ok?</code><var> s start end -> boolean</var>
+<dd class=proc-def>
+    Check values <var>s</var>, <var>start</var> and <var>end</var> to ensure they specify a valid substring.
+    This means that <var>s</var> is a string, <var>start</var> and <var>end</var> are exact integers, and 
+        0 &lt;= <var>start</var> &lt;= <var>end</var> &lt;= 
+        <code>(string-length <var>s</var>)</code>
+
+    <p>
+    If the values are not proper
+        <ul>
+        <li> <code>check-substring-spec</code> raises an error condition. <var>proc</var> is used
+          as part of the error condition, and should be the procedure whose 
+          parameters we are checking.
+        <li> <code>substring-spec-ok?</code> returns false.
+        </ul>
+    Otherwise, <code>substring-spec-ok?</code> returns true, and <code>check-substring-spec</code>
+    simply returns (what it returns is not specified).
+
+</dl>
+
+
+<!--========================================================================-->
+<h3><a name="KMP">Knuth-Morris-Pratt searching</a></h3>
+<p>
+The Knuth-Morris-Pratt string-search algorithm is a method of rapidly scanning
+a sequence of text for the occurrence of some fixed string.  It has the
+advantage of never requiring backtracking -- hence, it is useful for searching
+not just strings, but also other sequences of text that do not support
+backtracking or random-access, such as input ports.  These routines package up
+the initialisation and searching phases of the algorithm for general use. They
+also support searching through sequences of text that arrive in buffered
+chunks, in that intermediate search state can be carried across applications
+of the search loop from the end of one buffer application to the next.
+
+<p>
+A second critical property of KMP search is that it requires the allocation of
+auxiliary memory proportional to the length of the pattern, but <em>constant</em>
+in the size of the character type. Alternate searching algorithms frequently
+require the construction of a table with an entry for every possible
+character -- which can be prohibitively expensive in a 16- or 32-bit character
+representation.
+
+<dl>
+<!--
+==== make-kmp-restart-vector
+============================================================================-->
+<dt class=proc-def>
+<a name="make-kmp-restart-vector"></a>
+<code class=proc-def>make-kmp-restart-vector</code><var> s [c= start end] -> integer-vector</var>
+<dd class=proc-def>
+Build a Knuth-Morris-Pratt "restart vector," which is useful for quickly
+searching character sequences for the occurrence of string <var>s</var> (or the
+substring of <var>s</var> demarcated by the optional <var>start/end</var> parameters, if
+provided). <var>C=</var> is a character-equality function used to construct the
+restart vector. It defaults to <code>char=?</code>; use <code>char-ci=?</code> instead for
+case-folded string search.
+
+<p>
+The definition of the restart vector <var>rv</var> for string <var>s</var> is:
+If we have matched chars 0..<var>i</var>-1 of <var>s</var> against some search string <var>ss</var>, and
+<var>s</var>[<var>i</var>] doesn't match <var>ss</var>[<var>k</var>], then reset <var>i</var> := <var>rv</var>[<var>i</var>], and try again to
+match <var>ss</var>[<var>k</var>].  
+If <var>rv</var>[<var>i</var>] = -1, 
+then punt <var>ss</var>[<var>k</var>] completely, and move on to
+<var>ss</var>[<var>k</var>+1] and <var>s</var>[0].
+
+<p>
+In other words, if you have matched the first <var>i</var> chars of <var>s</var>, but
+the <var>i</var>+1'th char doesn't match, 
+<var>rv</var>[<var>i</var>] tells you what the next-longest
+prefix of <var>s</var> is that you have matched.
+
+<p>
+The following string-search function shows how a restart vector is used to
+search.  Note the attractive feature of the search process: it is "on
+line," that is, it never needs to back up and reconsider previously seen
+data. It simply consumes characters one-at-a-time until declaring a complete
+match or reaching the end of the sequence. Thus, it can be easily adapted to
+search other character sequences (such as ports) that do not provide random
+access to their contents.
+
+<pre class=code-example>
+(define (find-substring pattern source start end)
+  (let ((plen (string-length pattern))
+        (rv (make-kmp-restart-vector pattern)))
+
+    ;; The search loop. SJ &amp; PJ are redundant state.
+    (let lp ((si start) (pi 0)
+             (sj (- end start))     ; (- end si)  -- how many chars left.
+             (pj plen))             ; (- plen pi) -- how many chars left.
+
+      (if (= pi plen) (- si plen)                   ; Win.
+
+          (and (&lt;= pj sj)                           ; Lose.
+
+               (if (char=? (string-ref source si)           ; Test.
+                           (string-ref pattern pi))
+                   (lp (+ 1 si) (+ 1 pi) (- sj 1) (- pj 1)) ; Advance.
+
+                   (let ((pi (vector-ref rv pi)))           ; Retreat.
+                     (if (= pi -1)
+                         (lp (+ si 1)  0   (- sj 1)  plen)  ; Punt.
+                         (lp si        pi  sj        (- plen pi))))))))))
+</pre>
+
+<p>
+The optional <var>start/end</var> parameters restrict the restart vector to the
+indicated substring of <var>pat</var>; <var>rv</var> is <var>end</var> - <var>start</var> elements long. If <var>start</var> &gt; 0,
+then <var>rv</var> is offset by <var>start</var> elements from <var>pat</var>.
+That is,  <var>rv[i]</var> describes
+pattern element <var>pat[i + start]</var>. 
+Elements of <var>rv</var> are themselves indices
+that range just over [0, <var>end</var>-<var>start</var>), 
+<em>not</em> [<var>start</var>, <var>end</var>).
+
+<p>
+Rationale: the actual value of <var>rv</var> is "position independent" -- it
+does not depend on where in the <var>pat</var> string the pattern occurs, but
+only on the actual characters comprising the pattern.
+
+<!--
+==== kmp-step
+============================================================================-->
+<dt class=proc-def>
+<a name="kmp-step"></a>
+<code class=proc-def>kmp-step</code><var> pat rv c i c= p-start -> integer</var>
+<dd class=proc-def>
+This function encapsulates the work performed by one step of the
+KMP string search; it can be used to scan strings, input ports,
+or other on-line character sources for fixed strings. 
+
+<p>
+<var>Pat</var> is the non-empty string specifying the text for which we are searching.
+<var>Rv</var> is the Knuth-Morris-Pratt restart vector for the pattern, 
+as constructed by <code>make-kmp-restart-vector.</code> 
+The pattern begins at <var>pat</var>[<var>p-start</var>], and is
+<code>(string-length <var>rv</var>)</code> characters long.
+<var>C=</var> is the character-equality function used to construct the
+restart vector, typically <code>char=?</code> or <code>char-ci=?</code>.
+
+<p>
+Suppose the pattern is N characters in length: 
+<var>pat</var>[<var>p-start</var>, <var>p-start</var> + <var>n</var>).
+We have already matched <var>i</var> characters: 
+<var>pat[p-start, p-start + i)</var>. 
+(<var>P-start</var> is typically zero.) 
+<var>C</var> is the next character in the input stream. <code>kmp-step</code>
+returns the new <var>i</var> value -- that is, how much of the pattern we have
+matched, <em>including</em> character <var>c</var>. 
+When <var>i</var> reaches <var>n</var>, the entire pattern has been matched.
+
+<p>
+Thus a typical search loop looks like this:
+<pre class=code-example>
+(let lp ((i 0))
+  (or (= i n)                           ; Win -- #t
+      (and (not (end-of-stream))        ; Lose -- #f
+           (lp (kmp-step pat rv (get-next-character) i char=? 0)))))
+</pre>
+
+<p>
+Example:
+<pre class=code-example>
+;; Read chars from IPORT until we find string PAT or hit EOF.
+(define (port-skip pat iport)
+  (let* ((rv (make-kmp-restart-vector pat))
+         (patlen (string-length pat)))
+    (let lp ((i 0) (nchars 0))
+      (if (= i patlen) nchars                    ; Win -- nchars skipped
+          (let ((c (read-char iport)))
+            (if (eof-object? c) c                ; Fail -- EOF
+                (lp (kmp-step pat rv c i char=? 0) ; Continue
+                    (+ nchars 1))))))))
+</pre>
+
+<p>
+This procedure could be defined as follows:
+<pre class=code-example>
+(define (kmp-step pat rv c i c= p-start)
+  (let lp ((i i))
+    (if (c= c (string-ref pat (+ i p-start)))     ; Match =&gt;
+        (+ i 1)                                   ;   Done.
+        (let ((i (vector-ref rv i)))              ; Back up in PAT.
+          (if (= i -1) 0                          ; Can't back up more.
+              (lp i)))))))                        ; Keep going.
+</pre>
+
+<p>
+Rationale: this procedure takes no optional arguments because it
+is intended as an inner-loop primitive and we do not want any
+run-time penalty for optional-argument parsing and defaulting,
+nor do we wish barriers to procedure integration/inlining.
+
+<!--
+==== string-kmp-partial-search
+============================================================================-->
+<dt class=proc-def>
+<a name="string-kmp-partial-search"></a>
+<code class=proc-def>string-kmp-partial-search</code><var> pat rv s i [c= p-start s-start s-end] -> integer</var>
+<dd class=proc-def>
+Applies <code>kmp-step</code> across <var>s</var>; 
+optional <var>s-start</var>/<var>s-end</var> bounds parameters 
+restrict search to a substring of <var>s</var>. 
+The pattern is <code>(vector-length <var>rv</var>)</code> characters long; 
+optional <var>p-start</var> index indicates non-zero start of pattern 
+in <var>pat</var>.
+
+<p>
+Suppose <var>plen</var> = <code>(vector-length <var>rv</var>)</code>
+is the length of the pattern.
+<var>I</var> is an integer index into the pattern 
+(that is, 0 &lt;= <var>i</var> &lt; <var>plen</var>)
+indicating how much of the pattern has already been matched. 
+(This means the pattern must be non-empty -- <var>plen</var> &gt; 0.)
+
+<ul>
+<li> On success, returns -<var>j</var>, 
+where <var>j</var> is the index in <var>s</var> bounding
+  the <em>end</em> of the pattern -- <em>e.g.</em>, a value that could be used as 
+  the <var>end</var> parameter in a call to <code>substring/shared</code>.
+
+<li> On continue, returns the current search state <var>i'</var> 
+(an index into <var>rv</var>)
+  when the search reached the end of the string. This is a non-negative
+  integer.
+</ul>
+
+Hence:
+<ul>
+<li> A negative return value indicates success, and says
+  where in the string the match occured.
+
+<li> A non-negative return value provides the <var>i</var> to use for
+  continued search in a following string.
+</ul>
+
+<p>
+This utility is designed to allow searching for occurrences of a fixed
+string that might extend across multiple buffers of text. This is
+why, for example, we do not provide the index of the <em>start</em> of the
+match on success -- it may have occurred in a previous buffer.
+
+<p>
+To search a character sequence that arrives in "chunks," write a
+loop of this form:
+<pre class=code-example>
+(let lp ((i 0))
+  (and (not (end-of-data?))             ; Lose -- return #f.
+       (let* ((buf (get-next-chunk))    ; Get or fill up the buffer.
+              (i (string-kmp-partial-search pat rv buf i)))
+         (if (&lt; i 0) (- i)              ; Win -- return end index.
+             (lp i)))))                 ; Keep looking.
+</pre>
+Modulo start/end optional-argument parsing, this procedure could
+be defined as follows:
+<pre class=code-example>
+(define (string-kmp-partial-search pat rv s i c= p-start s-start s-end)
+  (let ((patlen (vector-length rv)))
+    (let lp ((si s-start)       ; An index into S.
+             (vi i))            ; An index into RV.
+      (cond ((= vi patlen) (- si))      ; Win.
+            ((= si end) vi)             ; Ran off the end.
+            (else (lp (+ si 1)          ; Match s[si] &amp; loop.
+                      (kmp-step pat rv (string-ref s si)
+                                vi c= p-start)))))))
+</pre>
+</dl>
+
+<!--========================================================================-->
+<h1><a name="ReferenceImp">Reference implementation</a></h1>
+
+<p>
+This SRFI comes with a reference implementation. It can be found at:
+<div class=inset>
+    <a href="http://srfi.schemers.org/srfi-13/srfi-13.scm">http://srfi.schemers.org/srfi-13/srfi-13.scm</a>
+</div>
+<p class=continue>
+I have placed this source on the Net with an unencumbered, "open" copyright.
+The prefix/suffix and comparison routines in this code had (extremely distant)
+origins in MIT Scheme's string lib, and were substantially reworked by myself.
+Being derived from that code, they are covered by the MIT Scheme copyright,
+which is a generic BSD-style open-source copyright. See the source file for
+details.
+
+<p>
+The KMP string-search code was influenced by implementations written by
+Stephen Bevan, Brian Denheyer and Will Fitzgerald. However, this version was
+written from scratch by myself.
+
+<p>
+The remainder of the code was written by myself for scsh or for this SRFI; I
+have placed this code under the scsh copyright, which is also a generic
+BSD-style open-source copyright.
+
+<p>
+The code is written for portability and should be straightforward to port to
+any Scheme. The source comments contains detailed notes describing the non-<abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr>
+dependencies.
+
+<p>
+The library is written for clarity and well-commented; the current source is
+approximately 1000 lines of source code and 1000 lines of comments and white
+space. It is also written for efficiency. Fast paths are provided for common
+cases. This is not to say that the implementation can't be tuned up for a
+specific Scheme implementation. There are notes in the comments addressing
+ways implementors can tune the reference implementation for performance.
+
+<p>
+In short, I've written the reference implementation to make it as painless
+as possible for an implementor -- or a regular programmer -- to adopt this
+library and get good results with it.
+
+
+<!--========================================================================-->
+<h1><a name="Acknowledgements">Acknowledgements</a></h1>
+
+<p>
+The design of this library benefited greatly from the feedback provided during
+the SRFI discussion phase. Among those contributing thoughtful commentary and
+suggestions, both on the mailing list and by private discussion, were Paolo
+Amoroso, Lars Arvestad, Alan Bawden, Jim Bender, Dan Bornstein, Per Bothner,
+Will Clinger, Brian Denheyer, Mikael Djurfeldt, Kent Dybvig, Sergei Egorov,
+Marc Feeley, Matthias Felleisen, Will Fitzgerald, Matthew Flatt, Arthur A.
+Gleckler, Ben Goetter, Sven Hartrumpf, Erik Hilsdale, Richard Kelsey, Oleg
+Kiselyov, Bengt Kleberg, Donovan Kolbly, Bruce Korb, Shriram Krishnamurthi,
+Bruce Lewis, Tom Lord, Brad Lucier, Dave Mason, David Rush, Klaus Schilling,
+Jonathan Sobel, Mike Sperber, Mikael Staldal, Vladimir Tsyshevsky, Donald
+Welsh, and Mike Wilson. I am grateful to them for their assistance.
+
+<p>
+I am also grateful the authors, implementors and documentors of all the systems
+mentioned in the introduction. Aubrey Jaffer and Kent Pitman should be noted
+for their work in producing Web-accessible versions of the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> and Common
+Lisp spec, which was a tremendous aid.
+
+<p>
+This is not to imply that these individuals necessarily endorse the final
+results, of course. 
+
+<p>
+During this document's long development period, great patience was exhibited
+by Mike Sperber, who is the editor for the SRFI, and by Hillary Sullivan,
+who is not.
+
+<!--========================================================================-->
+<h1><a name="Links">References &amp; links</a></h1>
+
+<dl>
+
+<dt class=biblio><strong><a name="Case-map">[Case-map]</a></strong>
+<dd>
+    Case mappings. <br>
+    Unicode Technical Report 21. <br>
+    <a href="http://www.unicode.org/unicode/reports/tr21/">http://www.unicode.org/unicode/reports/tr21/</a>
+
+<dt class=biblio><strong><a name="CommonLisp">[CommonLisp]</a></strong></dt>
+<dd><em>Common Lisp: the Language.</em><br>
+Guy L. Steele Jr. (editor).<br>
+Digital Press, Maynard, Mass., second edition 1990.<br>
+Available at <a href="http://www.elwood.com/alu/table/references.htm#cltl2">
+http://www.elwood.com/alu/table/references.htm#cltl2</a>.
+<p>
+
+The Common Lisp "HyperSpec," produced by Kent Pitman, is essentially
+the ANSI spec for Common Lisp:
+<a href="http://www.harlequin.com/education/books/HyperSpec/">
+http://www.harlequin.com/education/books/HyperSpec/</a>.
+
+<dt class=biblio><strong><a name="Java">[Java]</a></strong>
+<dd>
+    The following URLs provide documentation on relevant Java classes. <br>
+
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/Character.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/String.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/String.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/lang/StringBuffer.html">http://java.sun.com/products/jdk/1.2/docs/api/java/lang/StringBuffer.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/text/Collator.html">http://java.sun.com/products/jdk/1.2/docs/api/java/text/Collator.html</a>
+    <br>
+    <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/text/package-summary.html">http://java.sun.com/products/jdk/1.2/docs/api/java/text/package-summary.html</a>
+
+<dt class=biblio><strong><a name="MIT-Scheme">[MIT-Scheme]</a></strong>
+<dd>
+    <a href="http://www.swiss.ai.mit.edu/projects/scheme/">http://www.swiss.ai.mit.edu/projects/scheme/</a>
+
+<dt class=biblio><strong><a name="R5RS">[R5RS]</a></strong></dt>
+<dd>Revised<sup>5</sup> report on the algorithmic language Scheme.<br>
+    R. Kelsey, W. Clinger, J. Rees (editors). <br>
+    Higher-Order and Symbolic Computation, Vol. 11, No. 1, September, 1998. <br>
+    and ACM SIGPLAN Notices, Vol. 33, No. 9, October, 1998. <br>
+    Available at <a href="http://www.schemers.org/Documents/Standards/">
+    http://www.schemers.org/Documents/Standards/</a>.
+
+<dt class=biblio><strong>[SRFI]</strong></dt>
+<dd>
+    The SRFI web site. <br>
+    <a href="http://srfi.schemers.org/">http://srfi.schemers.org/</a>
+
+<dt class=biblio><strong>[SRFI-13]</strong></dt>
+<dd>
+    SRFI-13: String libraries. <br>
+    <a href="http://srfi.schemers.org/srfi-13/">http://srfi.schemers.org/srfi-13/</a>
+
+    <dl>    
+    <dt>
+      This document, in HTML:
+    <dd><a href="http://srfi.schemers.org/srfi-13/srfi-13.html">
+        http://srfi.schemers.org/srfi-13/srfi-13.html</a>
+
+    <dt>
+      This document, in plain text format:
+    <dd><a href="http://srfi.schemers.org/srfi-13/srfi-13.txt">
+        http://srfi.schemers.org/srfi-13/srfi-13.txt</a>
+
+    <dt> Source code for the reference implementation:
+    <dd>
+      <a href="http://srfi.schemers.org/srfi-13/srfi-13.scm">
+         http://srfi.schemers.org/srfi-13/srfi-13.scm</a>
+
+    <dt> Scheme 48 module specification, with typings:
+    <dd>
+      <a href="http://srfi.schemers.org/srfi-13/srfi-13-s48-module.scm">
+        http://srfi.schemers.org/srfi-13/srfi-13-s48-module.scm</a>
+    </dl>
+</dd>
+
+<dt class=biblio><strong><a name=SRFI-14>[SRFI-14]</a></strong>
+<dd>
+    SRFI-14: Character-set library. <br>
+    <a href="http://srfi.schemers.org/srfi-14/">http://srfi.schemers.org/srfi-14/</a> <br>
+    The SRFI 14 char-set library defines a character-set data type,
+    which is used by some procedures in this library.
+
+<dt class=biblio><strong><a name="Unicode">[Unicode]</a></strong>
+<dd>
+    <a href="http://www.unicode.org/">http://www.unicode.org/</a>
+
+<dt class=biblio><strong><a name="UnicodeData">[UnicodeData]</a></strong>
+<dd>
+    The Unicode character database. <br>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt</a>
+    <br>
+    <a href="ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html">ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.html</a>
+
+</dl>
+
+<!--========================================================================-->
+<h1><a name="Copyright">Copyright</a></h1>
+
+<p>
+Certain portions of this document -- the specific, marked segments of text
+describing the <abbr title="Revised^5 Report on Scheme"><a href="#R5RS">R5RS</a></abbr> procedures -- were adapted with permission from the R5RS
+report.
+    
+<p>
+All other text is copyright (C) Olin Shivers (1998, 1999, 2000). 
+All Rights Reserved. 
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+</body>
+</html>
+
+<!--
+  LocalWords:  SRFI refs HTML css hackery sans Netscape td pre div init doc
+  LocalWords:  proc def procs defi's defn dl dt defi dd NS RS rs procx dict
+  LocalWords:  stylesheet IE biblio IE's Internationalisation  subform maillist
+  LocalWords:  normalisation lib ref ci ok titlecase upcase downcase Djurfeldt
+  LocalWords:  xsubstring xcopy tokenize kmp slib RScheme MzScheme html
+  LocalWords:  Bigloo Chez APL SML Unicode API eszet SS dz downcases
+  LocalWords:  titlecasing normalised normalise underbar ss eq vs
+  LocalWords:  backquote parameterised denmark taiwan UnicodeData txt
+  LocalWords:  pred nchars obj len cBa epilog foo baz wrt subst tstart
+  LocalWords:  Szilagyi zilagyi cs abcdefgh ca cd cond eek ee tHIS com
+  LocalWords:  elba elbA ary consed XXXX ac bc kons knil ans fixnum
+  LocalWords:  catamorphism lp eof lis cdr knull kar kdr anamorphism
+  LocalWords:  abcdefg sfrom sto TCL perl slen rv exp initialisation
+  LocalWords:  plen SJ PJ si sj pj IPORT iport patlen DF buf Bevan
+  LocalWords:  Denheyer scsh Paolo Amoroso Arvestad Bawden Dybvig
+  LocalWords:  Bornstein Bothner Egorov Feeley Matthias Felleisen
+  LocalWords:  Flatt ucs Gleckler Goetter Sven Hartrumpf Hilsdale
+  LocalWords:  Kiselyov Bengt Korb Kleberg Kolbly Shriram
+  LocalWords:  Krishnamurthi Lucier Schilling Sobel Mikael Staldal
+  LocalWords:  Tsyshevsky documentors Jaffer Sperber cltl AE
+  LocalWords:  CommonLisp HyperSpec Clinger Rees SIGPLAN uniquified
+  LocalWords:  cset EA DrScheme IEC conformant JIS xor diff Posix URL
+  LocalWords:  FFF DIAERESIS abcdefghijklmnopqrstuvwxyz EB EC EF ETH
+  LocalWords:  FA FB FC FD FF Ll AA diaeresis isLowerCase BA CB CC CE
+  LocalWords:  CF DA DC Lt CARON PSILI Lu PROSGEGRAMMENI DASIA VARIA
+  LocalWords:  OXIA PERISPOMENI FAA FAB FAC FAE FAF FBC FFC Lm Lo
+  LocalWords:  abcdefABCDEF Zs Zl Zp OGHAM IDEOGRAPHIC Pc recognised
+  LocalWords:  tokenizers iso Pd Ps Pe Pf AB BB BF Sm Sc Sk AF MACRON
+  LocalWords:  PILCROW soh nul ops Shiro Kawai para bignum
+-->

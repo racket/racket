@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>SRFI 61: A more general COND clause</title>
+  </head>
+
+  <body>
+
+
+<H1>Title</H1>
+
+<p>A more general <code>cond</code> clause</p>
+
+
+<H1>Author</H1>
+
+<p>Taylor Campbell</p>
+
+
+<H1>Status</H1>
+<p>This SRFI is currently in ``final'' status.  To see an explanation of
+each status that a SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+You can access previous messages via
+<a href="http://srfi.schemers.org/srfi-61/mail-archive/maillist.html">the archive of the mailing list</a>.</p>
+<ul>	<li>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-61/srfi-61.txt?rev=1.1">2005/01/04</a></li>
+	<li>Draft: 2005/01/03-2005/03/04</li>
+        <li>Final: 2005/07/21</li>
+</ul>
+
+
+<H1>Abstract</H1>
+
+<p>This SRFI proposes an extension to the <code>cond</code> syntax to allow a more
+general clause, one that allows binding the results of tests as in the
+<code>=&gt;</code> clauses and user-defined meaning of the success &amp; failure of tests.</p>
+
+
+<H1>Rationale</H1>
+
+<p>The present set of <code>cond</code> clauses is based on simple boolean testing.  It
+is prohibitively inexpressive in that the condition part of a <code>cond</code>
+clause that uses <code>=&gt;</code> may pass only a single value to the receiver, and
+it enforces a semantics whereby <code>#f</code> implies failure of the condition.
+Programmers frequently use different tokens to imply failure, such as
+in R5RS's I/O readers which return a distinguished 'EOF object' to
+denote failure, and a successful condition may produce more than one
+useful value.  This simple extension allows any meaning of 'failure' to
+be assigned on a per-clause basis, and it also allows the condition to
+return multiple values to be passed to the receiver.</p>
+
+
+<H1>Specification</H1>
+
+<p>The <code>&lt;cond clause&gt;</code> production in the formal syntax of Scheme as written
+by R5RS in section 7.1.3 is extended with a new option:</p>
+
+<blockquote>
+<pre><code>  &lt;cond clause&gt; ---&gt;
+      ...
+    | (&lt;generator&gt; &lt;guard&gt; =&gt; &lt;receiver&gt;)</code></pre>
+</blockquote>
+
+<p>where <code>&lt;generator&gt;</code>, <code>&lt;guard&gt;</code>, &amp; <code>&lt;receiver&gt;</code> are all <code>&lt;expression&gt;</code>s.</p>
+
+<p>Clauses of this form have the following semantics: <code>&lt;generator&gt;</code> is
+evaluated.  It may return arbitrarily many values.  <code>&lt;Guard&gt;</code> is applied
+to an argument list containing the values in order that <code>&lt;generator&gt;</code>
+returned.  If <code>&lt;guard&gt;</code> returns a true value for that argument list,
+<code>&lt;receiver&gt;</code> is applied with an equivalent argument list.  If <code>&lt;guard&gt;</code>
+returns a false value, however, the clause is abandoned and the next
+one is tried.</p>
+
+
+<H1>Examples</H1>
+
+<p>This <code>port-&gt;char-list</code> procedure accepts an input port and returns a list
+of all the characters it produces until the end.</p>
+
+<blockquote>
+<pre><code>  (define (port-&gt;char-list port)
+    (cond ((read-char port) char?
+           =&gt; (lambda (c) (cons c (port-&gt;char-list port))))
+          (else '())))</code></pre>
+</blockquote>
+
+<p>Consider now a hypothetical <code>table-entry</code> procedure that accepts two
+arguments, a table (perhaps a hash table) and a key to an entry that
+may be in the table; it returns two values: a boolean that denotes
+whether or not an entry with the given key was in the table and, if it
+was, the value associated with the key.  Also, a hypothetical <code>proj0</code>
+combinator (projection of argument 0) returns its 0<sup>th</sup> argument and
+ignores all others.  One might conditionally branch to a certain body
+of code if the table contains the desired entry like so with the new
+type of <code>cond</code> clause:</p>
+
+<blockquote>
+<pre><code>  (cond ...
+        ((table-entry &lt;table&gt; &lt;key&gt;) proj0
+         =&gt; (lambda (present? value)
+              ...[VALUE is bound to the value of the entry]...))
+        ...)</code></pre>
+</blockquote>
+
+
+<H1>Implementation</H1>
+
+<p>The entirety of a syntax transformer for the new <code>cond</code> syntax is given
+here.  It uses an auxiliary macro, <code>cond/maybe-more</code>, to simplify the
+construction of <code>if</code> expressions with or without more <code>cond</code> clauses.  The
+code is in the public domain.</p>
+
+<blockquote>
+<pre><code>(define-syntax cond
+  (syntax-rules (=&gt; ELSE)
+
+    ((COND (ELSE else1 else2 ...))
+     ;; The (IF #T (BEGIN ...)) wrapper ensures that there may be no
+     ;; internal definitions in the body of the clause.  R5RS mandates
+     ;; this in text (by referring to each subform of the clauses as
+     ;; &lt;expression&gt;) but not in its reference implementation of COND,
+     ;; which just expands to (BEGIN ...) with no (IF #T ...) wrapper.
+     (IF #T (BEGIN else1 else2 ...)))
+
+    ((COND (test =&gt; receiver) more-clause ...)
+     (LET ((T test))
+       (COND/MAYBE-MORE T
+                        (receiver T)
+                        more-clause ...)))
+
+    ((COND (generator guard =&gt; receiver) more-clause ...)
+     (CALL-WITH-VALUES (LAMBDA () generator)
+       (LAMBDA T
+         (COND/MAYBE-MORE (APPLY guard    T)
+                          (APPLY receiver T)
+                          more-clause ...))))
+
+    ((COND (test) more-clause ...)
+     (LET ((T test))
+       (COND/MAYBE-MORE T T more-clause ...)))
+
+    ((COND (test body1 body2 ...) more-clause ...)
+     (COND/MAYBE-MORE test
+                      (BEGIN body1 body2 ...)
+                      more-clause ...))))
+
+(define-syntax cond/maybe-more
+  (syntax-rules ()
+    ((COND/MAYBE-MORE test consequent)
+     (IF test
+         consequent))
+    ((COND/MAYBE-MORE test consequent clause ...)
+     (IF test
+         consequent
+         (COND clause ...)))))</code></pre>
+</blockquote>
+
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) 2004 Taylor Campbell.  All rights reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+
+  </body>
+</html>

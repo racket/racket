@@ -1,0 +1,403 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 26: Notation for Specializing Parameters without Currying</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 26: Notation for Specializing Parameters without Currying
+
+<H1>Author</H1>
+
+Sebastian Egner
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<UL>
+<LI>Draft: 2002/02/06-2002/04/06 </LI>
+<LI>Revised: 2002/02/15</LI>
+<LI>Revised: 2002/02/28</LI>
+<LI>Revised: 2002/06/04</LI>
+<LI>Revised: 2002/06/06</LI>
+<LI>Final: 2002/06/14</LI>
+</UL>
+
+<H1>Abstract</H1>
+
+When programming in functional style,
+it is frequently necessary to specialize some of the
+parameters of a multi-parameter procedure.
+For example, from the binary operation <code>cons</code> 
+one might want to obtain the unary operation 
+<code>(lambda (x) (cons 1 x))</code>.
+This specialization of parameters is also known as
+"partial application", "operator section" or "projection".<p>
+
+The mechanism proposed here allows to write this sort
+of specialization in a simple and compact way.
+The mechanism is best explained by a few examples:<p>
+
+<TABLE>
+<TR>
+<TD><code>(cut cons (+ a 1) &lt;&gt;)</code> 
+<TD>is the same as
+<TD><code>(lambda (x2) (cons (+ a 1) x2))</code>
+</TR>
+<TR>
+<TD><code>(cut list 1 &lt;&gt; 3 &lt;&gt; 5)</code> 
+<TD>is the same as
+<TD><code>(lambda (x2 x4) (list 1 x2 3 x4 5))</code>
+</TR>
+<TR>
+<TD><code>(cut list)</code> 
+<TD>is the same as
+<TD><code>(lambda () (list))</code>
+</TR>
+<TR>
+<TD><code>(cut list 1 &lt;&gt; 3 &lt;...&gt;)</code> 
+<TD>is the same as
+<TD><code>(lambda (x2 . xs) (apply list 1 x2 3 xs))</code>
+</TR>
+<TR>
+<TD><code>(cut &lt;&gt; a b)</code> 
+<TD>is the same as
+<TD><code>(lambda (f) (f a b))</code>
+</TR>
+</TABLE><p>
+
+As you see, the macro <code>cut</code> specializes some of the 
+parameters of its first argument. 
+The parameters that are to show up as formal
+variables of the result are indicated by the symbol <code>&lt;&gt;</code>, 
+pronouced as "slot". In addition, the symbol <code>&lt;...&gt;</code>,
+pronounced as "rest-slot", matches all residual arguments of a variable 
+argument procedure.
+As you can see from the last example above, the first argument can also
+be a slot, as one should expect in Scheme.<p>
+
+In addition to <code>cut</code>, there is a variant called <code>cute</code>
+(a mnemonic for "<code>cut</code> with evaluated non-slots") which evaluates
+the non-slot expressions at the time the procedure is specialized, not at 
+the time the specialized procedure is called.
+For example,<p>
+
+<TABLE>
+<TR>
+<TD><code>(cute cons (+ a 1) &lt;&gt;)</code> 
+<TD>is the same as
+<TD><code>(let ((a1 (+ a 1))) (lambda (x2) (cons a1 x2)))</code>
+</TR>
+</TABLE><p>
+
+As you see from comparing this example with the first example above,
+the <code>cute</code>-variant will evaluate <code>(+ a 1)</code>
+once, while the <code>cut</code>-variant will evaluate it during
+every invokation of the resulting procedure.<p>
+
+The mechanism proposed in this SRFI allows specializing any subset 
+of the variables of a procedure.
+The result can be of fixed arity or of variable arity.
+The mechanism does not allow permutation, omission, duplication
+or any other processing of the arguments;
+for this it is necessary to write to use a different
+mechanism such as <code>lambda</code>.
+
+<H1>Rationale</H1>
+
+A particularly elegant way to deal with specialization is known 
+as <em>currying</em> (Sch&ouml;nfinkel 1924, Curry 1958).
+The idea of currying is to reduce multi-argument functions to
+single-argument functions by regarding an <i>n</i>-ary 
+function as a unary function mapping its first argument into 
+an (<i>n</i>-1)-ary function (which is curried in turn).
+This point of view, apart from its theoretical elegance, 
+allows an extremely compact notation for specializing the 
+first argument of a function.
+In the first example, one could simply write <code>(cons 1)</code>.<p>
+
+Yet, Scheme is not a curried language---the
+number of arguments passed to a procedure must match
+the number of its parameters at all times.
+This allows zero- and variable-arity procedures 
+but in order to specialize parameters
+one usually has to write down a lambda-expression
+and invent some irrelevant identifiers for its 
+formal variables (<code>x</code> in the example).
+For this reason, the mechanism proposed in this SRFI 
+provides a simple and compact notation for specializing
+any subset of the parameters of a procedure.<p>
+
+Note: <em>The mechanism proposed here is not currying!</em><p>
+
+The purpose of the mechanism proposed here is to make the benefits
+of currying available within the programming language Scheme.
+There are two primary benefits of currying in practice:
+Higher-order types are substantially simplified and
+there is a simple notation for specializing parameters.
+The type aspect is irrelevant as Scheme has latent typing.
+The specialization aspect is largly covered with this SRFI.<p>
+
+Here are a few more examples for illustration:
+
+<TABLE>
+<TR>
+<TD><code>(map (cut * 2 &lt;&gt;) '(1 2 3 4))</code> 
+</TR>
+<TR>
+<TD><code>(map (cut vector-set! x &lt;&gt; 0) indices)</code> 
+</TR>
+<TR>
+<TD><code>(for-each (cut write &lt;&gt; port) exprs)</code> 
+</TR>
+<TR>
+<TD><code>(map (cut &lt;&gt; x y z) (list min max))</code> 
+</TR>
+<TR>
+<TD><code>(for-each (cut &lt;&gt;) thunks)</code> 
+</TR>
+</TABLE>
+
+<H1>Specification</H1>
+
+<a name="cut"></a><a name="cute"></a>
+The formal syntax of a specialized expression, in the style of the 
+<a href="http://www.schemers.org/Documents/Standards/R5RS/"><I>Revised^5 Report on the Algorithmic Language Scheme</I></a>:<p>
+
+<TABLE>
+<TR>
+<TD><a name="cut"></a><a name="cute"></a><code>&lt;cut-expression&gt;</code>
+<TD><code>--></code>
+<TD><TD><code>(cut &lt;slot-or-expr&gt; &lt;slot-or-expr&gt;*)</code>
+<TD>
+</TR>
+<TR>
+<TD><TD><TD>|<TD><code>(cut &lt;slot-or-expr&gt; &lt;slot-or-expr&gt;* &lt;...&gt;)</code>
+<TD>; with "rest-slot"
+</TR>
+<TR>
+<TD><TD><TD>|<TD><code>(cute &lt;slot-or-expr&gt; &lt;slot-or-expr&gt;*)</code>
+<TD>; evaluate non-slots at specialization time
+</TR>
+<TR>
+<TD><TD><TD>|<TD><code>(cute &lt;slot-or-expr&gt; &lt;slot-or-expr&gt;* &lt;...&gt;)</code>
+<TD>; with "rest-slot"
+</TR>
+<TR>
+<TD><code>&lt;slot-or-expr&gt;</code>
+<TD><code>--></code>
+<TD><TD><code>&lt;&gt;</code><TD>; a "slot"
+</TR>
+<TR>
+<TD><TD><TD>|<TD> <code>&lt;expression&gt;</code><TD>; a "non-slot expression"
+</TR>
+</TABLE><p>
+
+The macro <code>cut</code> transforms a <code>&lt;cut-expression&gt;</code> 
+into a <code>&lt;lambda expression&gt;</code> with as many formal variables
+as there are slots in the list <code>&lt;slot-or-expr&gt;*</code>.
+The body of the resulting <code>&lt;lambda expression&gt;</code> calls
+the first <code>&lt;slot-or-expr&gt;</code> with arguments from
+<code>&lt;slot-or-expr&gt;*</code> in the order they appear.
+In case there is a rest-slot symbol, the resulting procedure is also of 
+variable arity, and the body calls the first <code>&lt;slot-or-expr&gt;</code>
+with all arguments provided to the actual call of the specialized procedure.<p>
+
+The macro <code>cute</code> is similar to the macro <code>cut</code>,
+except that it first binds new variables to the result of evaluating
+the non-slot expressions (in an unspecific order) and then substituting 
+the variables for the non-slot expressions.
+In effect, <code>cut</code> evaluates non-slot expressions at the time
+the resulting procedure is called, whereas <code>cute</code> evaluates
+the non-slot expressions at the time the procedure is constructed.<p>
+
+<H1>Implementation</H1>
+
+The reference implementation defines the two macros
+<code>cut</code> and <code>cute</code> using macro 
+mechanism of R5RS.
+It does not use any other SRFI or any library.
+The implementation makes use of internal macros to
+run through the list of <code>&lt;slot-or-expr;&gt;</code>s.
+As macros in R5RS are hygienic and referentially transparent,
+the macro mechanism makes sure the names of the newly
+introduced formal variables are unique and do not clash.
+The template <code>(param ... slot)</code>, see 
+<a href="http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-10.html#%_sec_7.1.5">Sect. 7.1.5. of R5RS</a>,
+allows to preserve the order of arguments---which would get
+reversed otherwise.
+
+The reference implementation has been written by
+Al Petrofsky. It can be found <a href="http://srfi.schemers.org/srfi-26/cut.scm">here</a>.<p>
+
+Finally, there is a small collection of 
+<a href="http://srfi.schemers.org/srfi-26/check.scm">confidence tests</a>.
+It checks some special cases of the mechanism defined
+in this SRFI and signals an error in case something is wrong.
+Passing the tests does not mean a correct implementation.
+
+
+<H1>Design Rationale</H1>
+
+<H3>Why not real currying/uncurrying?</H3>
+
+It is possible in Scheme to implement a macro turning a multi-argument 
+procedure into a nesting of single-argument procedures and back.
+These operations are usually called "curry" and "uncurry" in
+other programming languages.
+Yet, Scheme remains an inherently uncurried language and is not
+prepared to deal with curried procedures in a convenient way.
+Hence, a "by the book" implementation of currying would only be useful
+if you apply it in the sequence "curry, specialize some arguments,
+and uncurry again"---which is exactly the purpose of the macro 
+<code>cut</code> specified in this document.
+The primary relevance of currying/uncurrying in Scheme is to
+teach concepts of combinatory logic.<p>
+
+<H3>Why not a more general mechanism, also allowing permutation,
+omission and duplication of arguments?</H3>
+
+The reason is that I, the author of this SRFI, consider more general 
+mechanisms too dangerous to mix them with the mechanism proposed here.
+In particular, as soon as parameters are being rearranged it
+is usually necessary to be aware of the meaning of the parameters;
+unnamed variables can be quite harmful then.
+The mechanism proposed here is designed to prevent this.
+Please refer to the discussion threads
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00018.html">"OK, how about...,"</a> (Alan Bawden),
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00038.html">"is that useful?"</a> (Walter C. Pelissero), and
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00040.html">"l, the ultimate curry that is not curry"</a> (Al Petrofsky).<p>
+
+<H3>Why are the macro called <code>cut/cute</code> and not 
+[<em>enter your favourite here</em>]?</H3>
+
+Well, the original name proposed for this SRFI was <code>curry</code>
+which immediately stirred some emotions as it does not what is
+commonly known as currying.
+Some alternatives have been discussed, such as <code>section</code>,
+<code>specialise</code>, <code>specialize</code>, <code>partial-apply</code>, 
+<code>partial-call</code>, <code>partial-lambda</code>, 
+<code>_j</code>, <code>_i</code>, <code>$</code>,
+<code>&amp;</code>, <code>srfi-26</code>, <code>foobar</code>, 
+<code>xyz</code>, <code>schoenfinkelize</code>, 
+<code>curry-which-isnt-curry</code>, <code>tandoori</code>, 
+and it has also been suggested to pick a five letter symbol uniformly
+at random and fix this as a name.
+To be fair, not all of these name have been put forward as serious proposals,
+some of them were merely to illustrate a point in the discussion.
+In addition, I have played with the game of the name quite a bit 
+and considered other candidates not listed here.
+Despite the fact that the discussion list only represents a highly
+biased random sample of people's opinion (motivation to post a message
+is higher if you disagree, for example) it told me that the SRFI
+could potentially benefit from a different name---however impractical
+it may be to go for unanimous popularity.
+The name <code>cut</code> refers to "operator section", as the
+concept is often called in other programming languages, 
+but I tend to remember it as the acronym for "Curry Upon This" ;-).
+The names for the evaluating version of <code>cut</code> that
+have been proposed were <code>cut!</code>, <code>cutlet</code>,
+<code>cut*</code>, and <code>cute</code>.<p>
+
+<H3>Is it possible to implement the SRFI without macros?</H3>
+
+Not really.
+As Stephan Houben has pointed out during the discussion (refer to
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00008.html">"Implementing it as a procedure"</a>) it is possible to implement the 
+<code>cute</code>-mechanism as a procedure.
+Refer also to Al Petrofsky's posting 
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00048.html">"Problems with "curry"'s formal specification"</a> for details.
+However, the procedural implementation comes with a slight performance
+penalty and it is not possible the implement the <code>cut</code>-mechanism 
+as a procedure, too.
+As both are needed, we rely on macros to implement the SRFI.
+
+<H3>Why is there another symbol for the rest-slot when lambda-expressions
+use the dotted notation for variable length argument lists?</H3>
+There are two reasons.
+The first one is the existence of a procedural implementation
+of a related mechanism (refer to the previous paragraph).
+For a procedure, however, it is not possible to have dotted notation.
+The second reason is the way the hygienic macro mechanism in R5RS
+is defined to deal with dotted notation, as Felix Winkelmann has pointed out.
+Refer to the discussion threads
+<a href="http://srfi.schemers.org/srfi-26/mail-archive/msg00001.html">"Improper lists in macros [WAS: none]"</a>.<p>
+
+<H3>Why is it impossible to specify when a non-slot is evaluated individually 
+per non-slot?</H3>
+<code>Cut</code> evaluates all non-slots at the time the specialized
+procedure is called and <code>cute</code> evaluates all non-slots at
+the time the procedure is being specialized.
+These are only the two extremes and it is possible to define a 
+syntax that allows to choose per non-slot.
+However, I am convinced that the benefit of the greater flexibility
+is not worth the risk of confusion.
+If a piece of code really depends on the distinction, it might be
+better to make this explicit through <code>let</code> and 
+<code>lambda</code>.<p>
+
+<H3>Why is <code>(cut if &lt;&gt; 0 1)</code> etc. illegal?</H3>
+
+It is specified that a <code>&lt;slot-or-expr&gt;</code> must be
+either the slot symbol or an <code>&lt;expression&gt;</code> in the sense
+of <a href="http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-10.html#%_sec_7.1.3"><I>R5RS, 
+Section 7.1.3</I></a>.
+As <code>if</code> is no <code>&lt;expression&gt;</code>,
+the above case is illegal.
+The reason why <code>cut</code> and <code>cute</code> are
+restricted in this sense is the difficulty of defining
+the meaning of such generalized expressions.
+Please refer to the discussion archive for details.
+
+<H1>Acknowledgements</H1>
+
+An important part of this SRFI is based on the contribution
+of other people, mostly through the discussion archive.
+In particular, the semantics and the design rationale have
+been greatly improved in the course of the discussion.
+I would like to thank all who have contributed.
+
+<H1>Copyright</H1>
+<p>Copyright (C) Sebastian Egner (2002). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+    <address>Author: <a href="mailto:sebastian.egner@philips.com">Sebastian Egner</a></address>
+<!-- Created: Mon Feb 4 15:20:00 EST 2002 -->
+<!-- hhmts start -->
+Last modified: Wed Jun 19 10:54:36 MST 2002
+<!-- hhmts end -->
+  </body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 39: Parameter objects</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 39: Parameter objects
+
+<H1>Author</H1>
+
+Marc Feeley
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  
+You can access
+previous messages via
+<a href="http://srfi.schemers.org/srfi-39/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<UL>
+      <LI>Draft: 2002/12/21-2003/02/18</LI>
+      <LI>Revised: 2003/5/15</LI>
+      <LI>Final: 2003/6/30</LI>
+</UL>
+
+
+<H1>Abstract</H1>
+
+<P>
+This SRFI defines <I>parameter</I> objects, the procedure
+<CODE>make-parameter</CODE> to
+create parameter objects and the <CODE>parameterize</CODE> special
+form to dynamically bind parameter objects.  In the dynamic
+environment, each parameter object is bound to a cell containing the
+value of the parameter.  When a procedure is called the called
+procedure inherits the dynamic environment from the caller.  The
+<CODE>parameterize</CODE> special form allows the binding of a
+parameter object to be changed for the dynamic extent of its body.
+</P>
+
+<H1>Rationale</H1>
+
+<P>
+The <I>dynamic environment</I> is the structure which allows
+the system to find the value returned by the R5RS procedures
+<CODE>current-input-port</CODE> and <CODE>current-output-port</CODE>.
+The R5RS procedures <CODE>with-input-from-file</CODE> and
+<CODE>with-output-to-file</CODE> extend the dynamic environment to
+produce a new dynamic environment which is in effect for the dynamic
+extent of the call to the thunk passed as their last argument.  These
+procedures are essentially special purpose dynamic binding operations
+on hidden dynamic variables (one for <CODE>current-input-port</CODE>
+and one for <CODE>current-output-port</CODE>).  The purpose of this
+SRFI is to generalize this dynamic binding mechanism (which exists in
+all R5RS compliant systems) to allow the user to introduce new dynamic
+variables and dynamically bind them.
+</P>
+
+<P>
+General dynamic binding mechanisms exist in several implementations of
+Scheme under various names, including "fluid" variables and parameter
+objects.  The parameter objects specified in this SRFI are compatible
+with the semantics of all implementations of Scheme we know which
+currently support parameter objects (in the sense that it is possible
+to implement this SRFI so that old code works the same as before).  We
+believe Chez-Scheme was the first implementation of Scheme to have
+used parameter objects.
+</P>
+
+<P>
+In the presence of threads, the dynamic binding mechanism does not
+behave the same way in all implementations of Scheme supporting
+dynamic binding.  The issue is the relationship between the dynamic
+environments of the parent and child threads when a thread is created.
+In Scheme 48 the child gets a fresh dynamic environment where
+(typically but not necessarily) all the bindings are to their initial
+value.  In MzScheme and Gambit-C the child is given a dynamic
+environment inherited from the parent.  In this inherited dynamic
+environment the dynamic variables have the same values as the parent's
+dynamic environment.  However, in MzScheme the cells bound to the
+dynamic variables in the child are distinct from those of the parent
+(i.e. an assignment of a value to a dynamic variable is not visible in
+the other thread).  In Gambit-C the child and parent dynamic
+environment share the same cells (i.e. an assignment of a value to a
+dynamic variable is visible in the other thread).  Note that in the
+absence of assignment to dynamic variables the MzScheme and Gambit-C
+approaches are equivalent.
+</P>
+
+<P>
+Given that there are semantic differences in the presence of threads
+and that there are valid reasons for choosing each semantics, this
+SRFI does not specify the semantics of parameter objects in the
+presence of threads.  It is left to the implementation and other SRFIs
+which extend this SRFI to specify the interaction between parameter
+objects and threads.
+</P>
+
+<H1>Specification</H1>
+
+<P>
+The <I>dynamic environment</I> is composed of two parts: the <I>local
+dynamic environment</I> and the <I>global dynamic environment</I>.
+The global dynamic environment is used to lookup parameter objects
+that can't be found in the local dynamic environment.  When parameter
+objects are created, their initial binding is put in the global
+dynamic environment (by mutation).  The local dynamic environment is
+only extended by the <CODE>parameterize</CODE> form.
+</P>
+
+<P>
+<I>Parameter objects</I> are created with the
+<CODE>make-parameter</CODE> procedure which takes one or two
+arguments.  The second argument is a one argument <I>conversion
+procedure</I>.  If only one argument is passed to
+<CODE>make-parameter</CODE> the identity function is used as a
+conversion procedure.  The global dynamic environment is updated to
+associate the parameter object to a new cell.  The initial content of
+the cell is the result of applying the conversion procedure to the
+first argument of <CODE>make-parameter</CODE>.
+</P>
+
+<P>
+A <I>parameter object</I> is a procedure which accepts zero or one
+argument.  The cell bound to a particular parameter object in the
+dynamic environment is accessed by calling the parameter object.  When
+no argument is passed, the content of the cell is returned.  When one
+argument is passed the content of the cell is updated with the result
+of applying the parameter object's conversion procedure to the
+argument.
+</P>
+
+<P>
+The <CODE>parameterize</CODE> special form, when given a parameter
+object and a value, binds for the dynamic extent of its body the
+parameter object to a new cell.  The initial content of the cell is
+the result of applying the parameter object's conversion procedure to
+the value.  The <CODE>parameterize</CODE> special form behaves
+analogously to <CODE>let</CODE> when binding more than one parameter
+object (that is the order of evaluation is unspecified and the new
+bindings are only visible in the body of the <CODE>parameterize</CODE>
+special form).
+</P>
+
+<P>
+Note that the conversion procedure can be used for guaranteeing the
+type of the parameter object's binding and/or to perform some
+conversion of the value.
+</P>
+
+<P>
+Because it is possible to implement the R5RS procedures
+<CODE>current-input-port</CODE> and <CODE>current-output-port</CODE>
+as parameter objects and this offers added functionnality, it is
+required by this SRFI that they be implemented as parameter objects
+created with <CODE>make-parameter</CODE>.
+</P>
+
+<H4>Procedures and syntax</H4>
+
+<DL>
+
+<DT><PRE>
+<a name="make-parameter">(make-parameter <I>init</I> [<I>converter</I>])</a>                     ;procedure
+</PRE><DD>
+
+<P>
+Returns a new parameter object which is bound in the global dynamic
+environment to a cell containing the value returned by the call
+<CODE>(<I>converter</I> <I>init</I>)</CODE>.  If the conversion
+procedure <I>converter</I> is not specified the identity function is
+used instead.
+</P>
+
+<P>
+The parameter object is a procedure which accepts zero or one
+argument.  When it is called with no argument, the content of the cell
+bound to this parameter object in the current dynamic environment is
+returned.  When it is called with one argument, the content of the
+cell bound to this parameter object in the current dynamic environment
+is set to the result of the call <CODE>(<I>converter</I>
+<I>arg</I>)</CODE>, where <I>arg</I> is the argument passed to the
+parameter object, and an unspecified value is returned.
+</P>
+
+<PRE>
+    (define radix
+      (make-parameter 10))
+
+    (define write-shared
+      (make-parameter
+        #f
+        (lambda (x)
+          (if (boolean? x)
+              x
+              (error "only booleans are accepted by write-shared")))))
+
+    (radix)           ==>  10
+    (radix 2)
+    (radix)           ==>  2
+    (write-shared 0)  gives an error
+
+    (define prompt
+      (make-parameter
+        123
+        (lambda (x)
+          (if (string? x)
+              x
+              (with-output-to-string (lambda () (write x)))))))
+
+    (prompt)       ==>  "123"
+    (prompt ">")
+    (prompt)       ==>  ">"
+</PRE>
+
+<P>
+<DT><PRE>
+<a name="parameterize">(parameterize ((<I>expr1</I> <I>expr2</I>) ...) <I>&lt;body&gt;</I>)</a>             ;syntax
+</PRE><DD>
+
+<P>
+    The expressions <I>expr1</I> and <I>expr2</I> are evaluated in an
+    unspecified order.  The value of the <I>expr1</I> expressions must
+    be parameter objects.  For each <I>expr1</I> expression and in an
+    unspecified order, the local dynamic environment is extended with
+    a binding of the parameter object <I>expr1</I> to a new cell whose
+    content is the result of the call <CODE>(<I>converter</I>
+    <I>val</I>)</CODE>, where <I>val</I> is the value of <I>expr2</I>
+    and <I>converter</I> is the conversion procedure of the parameter
+    object.  The resulting dynamic environment is then used for the
+    evaluation of <I>&lt;body&gt</I> (which refers to the R5RS grammar
+    nonterminal of that name).  The result(s) of the
+    <CODE>parameterize</CODE> form are the result(s) of the
+    <I>&lt;body&gt</I>.
+</P>
+
+<PRE>
+    (radix)                                              ==>  2
+    (parameterize ((radix 16)) (radix))                  ==>  16
+    (radix)                                              ==>  2
+
+    (define (f n) (number->string n (radix)))
+
+    (f 10)                                               ==>  "1010"
+    (parameterize ((radix 8)) (f 10))                    ==>  "12"
+    (parameterize ((radix 8) (prompt (f 10))) (prompt))  ==>  "1010"
+</PRE>
+
+<H1>Implementation</H1>
+
+<P>
+The following implementation uses association lists to represent local
+dynamic environments.  The global dynamic environment binding is
+stored in the parameter object itself.  Since we are assuming that
+there is a single thread, the current local dynamic environment can be
+bound to a global variable, <CODE>dynamic-env-local</CODE>.  Mutations
+of this variable are wrapped in a <CODE>dynamic-wind</CODE> so that
+the local dynamic environment returns to its previous value when
+control exits the body of the <CODE>parameterize</CODE>.
+</P>
+
+<PRE>
+    (define make-parameter
+      (lambda (init . conv)
+        (let ((converter
+               (if (null? conv) (lambda (x) x) (car conv))))
+          (let ((global-cell
+                 (cons #f (converter init))))
+            (letrec ((parameter
+                      (lambda new-val
+                        (let ((cell (dynamic-lookup parameter global-cell)))
+                          (cond ((null? new-val)
+                                 (cdr cell))
+                                ((null? (cdr new-val))
+                                 (set-cdr! cell (converter (car new-val))))
+                                (else ; this case is needed for parameterize
+                                 (converter (car new-val))))))))
+              (set-car! global-cell parameter)
+              parameter)))))
+
+    (define-syntax parameterize
+      (syntax-rules ()
+        ((parameterize ((expr1 expr2) ...) body ...)
+         (dynamic-bind (list expr1 ...)
+                       (list expr2 ...)
+                       (lambda () body ...)))))
+
+    (define dynamic-bind
+      (lambda (parameters values body)
+        (let* ((old-local
+                (dynamic-env-local-get))
+               (new-cells
+                (map (lambda (parameter value)
+                       (cons parameter (parameter value #f)))
+                     parameters
+                     values))
+               (new-local
+                (append new-cells old-local)))
+          (dynamic-wind
+            (lambda () (dynamic-env-local-set! new-local))
+            body
+            (lambda () (dynamic-env-local-set! old-local))))))
+
+    (define dynamic-lookup
+      (lambda (parameter global-cell)
+        (or (assq parameter (dynamic-env-local-get))
+            global-cell)))
+
+    (define dynamic-env-local '())
+
+    (define dynamic-env-local-get
+      (lambda () dynamic-env-local))
+
+    (define dynamic-env-local-set!
+      (lambda (new-env) (set! dynamic-env-local new-env)))
+</PRE>
+
+<H1>Copyright</H1>
+<p>Copyright (C) Marc Feeley 2002. All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+  </body>
+</html>

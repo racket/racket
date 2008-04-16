@@ -1,0 +1,1201 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-6.html">previous</a></span><span>, <a href="r5rs-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_4"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_4">Chapter 4</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_4">Expressions</a></h1>
+<p></p>
+<p>
+
+</p>
+<p>
+
+Expression types are categorized as <em>primitive</em> or <em>derived</em>.
+Primitive expression types include variables and procedure calls.
+Derived expression types are not semantically primitive, but can instead
+be defined as macros.
+With the exception of <tt>quasiquote</tt>, whose macro definition is complex,
+the derived expressions are classified as library features.
+Suitable definitions are given in section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.3">7.3</a>.</p>
+<p>
+</p>
+<a name="%_sec_4.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1">4.1&nbsp;&nbsp;Primitive expression types</a></h2>
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.1">4.1.1&nbsp;&nbsp;Variable references</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>&lt;variable&gt;</tt>&nbsp;</div>
+
+<p>
+An expression consisting of a variable<a name="%_idx_82"></a>
+(section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.1">3.1</a>) is a variable reference.  The value of
+the variable reference is the value stored in the location to which the
+variable is bound.  It is an error to reference an
+unbound<a name="%_idx_84"></a> variable.</p>
+<p>
+<tt>(define&nbsp;x&nbsp;28)<br>
+x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;28</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.2">4.1.2&nbsp;&nbsp;Literal expressions</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_86"></a>quote<i> &lt;datum&gt;</i>)</tt>&nbsp;</div>
+
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt><tt>'</tt>&lt;datum&gt;</tt>&nbsp;</div>
+
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>&lt;constant&gt;</tt>&nbsp;</div>
+
+<p>
+<tt>(quote &lt;datum&gt;)</tt> evaluates to &lt;datum&gt;.<a name="%_idx_88"></a>
+&lt;Datum&gt;
+may be any external representation of a Scheme object (see
+section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.3">3.3</a>).  This notation is used to include literal
+constants in Scheme code.</p>
+<p>
+<tt>(quote&nbsp;a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;a<br>
+(quote&nbsp;<tt>#</tt>(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(a&nbsp;b&nbsp;c)<br>
+(quote&nbsp;(+&nbsp;1&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(+&nbsp;1&nbsp;2)</p>
+</tt>
+<p>
+<tt>(quote &lt;datum&gt;)</tt> may be abbreviated as
+<tt>'</tt>&lt;datum&gt;.  The two notations are equivalent in all
+respects.</p>
+<p>
+<tt>'a&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;a<br>
+'#(a&nbsp;b&nbsp;c)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(a&nbsp;b&nbsp;c)<br>
+'()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;()<br>
+'(+&nbsp;1&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(+&nbsp;1&nbsp;2)<br>
+'(quote&nbsp;a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(quote&nbsp;a)<br>
+''a&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(quote&nbsp;a)</p>
+</tt>
+<p>
+Numerical constants, string constants, character constants, and boolean
+constants evaluate ``to themselves''; they need not be quoted.</p>
+<p>
+<tt>'&quot;abc&quot;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;&quot;abc&quot;<br>
+&quot;abc&quot;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;&quot;abc&quot;<br>
+'145932&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;145932<br>
+145932&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;145932<br>
+'<tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+<tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+As noted in section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.4">3.4</a>, it is an error to alter a constant
+(i.e.&nbsp;the value of a literal expression) using a mutation procedure like
+<tt>set-car!</tt> or <tt>string-set!</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.3">4.1.3&nbsp;&nbsp;Procedure calls</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(&lt;operator&gt; &lt;operand<sub>1</sub>&gt; <tt>...</tt>)</tt>&nbsp;</div>
+
+<p>
+A procedure call is written by simply enclosing in parentheses
+expressions for the procedure to be called and the arguments to be
+passed to it.  The operator and operand expressions are evaluated (in an
+unspecified order) and the resulting procedure is passed the resulting
+arguments.<a name="%_idx_90"></a><a name="%_idx_92"></a>
+<tt>(+&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7<br>
+((if&nbsp;<tt>#f</tt>&nbsp;+&nbsp;*)&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;12</p>
+</tt>
+<p>
+A number of procedures are available as the values of variables in the
+initial environment; for example, the addition and multiplication
+procedures in the above examples are the values of the variables <tt>+</tt>
+and <tt>*</tt>.  New procedures are created by evaluating <tt>lambda</tt> expressions
+(see section&nbsp;<a href="#%_sec_4.1.4">4.1.4</a>).
+
+
+Procedure calls may return any number of values (see <tt>values</tt> in
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.4">6.4</a>).  With the exception of <tt>values</tt>
+the procedures available in the initial environment return one
+value or, for procedures such as <tt>apply</tt>, pass on the values returned
+by a call to one of their arguments.</p>
+<p>
+Procedure calls are also called <em>combinations</em>.
+<a name="%_idx_94"></a></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em> In contrast to other dialects of Lisp, the order of
+evaluation is unspecified, and the operator expression and the operand
+expressions are always evaluated with the same evaluation rules.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Although the order of evaluation is otherwise unspecified, the effect of
+any concurrent evaluation of the operator and operand expressions is
+constrained to be consistent with some sequential order of evaluation.
+The order of evaluation may be chosen differently for each procedure call.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em> In many dialects of Lisp, the empty combination, <tt>()</tt>, is a legitimate expression.  In Scheme, combinations must have at
+least one subexpression, so <tt>()</tt> is not a syntactically valid
+expression.  
+</blockquote>
+<p>
+</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.4">4.1.4&nbsp;&nbsp;Procedures</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_96"></a>lambda<i> &lt;formals&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Formals&gt; should be a formal arguments list as described below,
+and &lt;body&gt; should be a sequence of one or more expressions.</p>
+<p>
+<em>Semantics: </em>A <tt>lambda</tt> expression evaluates to a procedure.  The environment in
+effect when the <tt>lambda</tt> expression was evaluated is remembered as part of the
+procedure.  When the procedure is later called with some actual
+arguments, the environment in which the <tt>lambda</tt> expression was evaluated will
+be extended by binding the variables in the formal argument list to
+fresh locations, the corresponding actual argument values will be stored
+in those locations, and the expressions in the body of the <tt>lambda</tt> expression
+will be evaluated sequentially in the extended environment.
+The result(s) of the last expression in the body will be returned as
+the result(s) of the procedure call.</p>
+<p>
+<tt>(lambda&nbsp;(x)&nbsp;(+&nbsp;x&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<em>a&nbsp;procedure</em><br>
+((lambda&nbsp;(x)&nbsp;(+&nbsp;x&nbsp;x))&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;8<br>
+<br>
+(define&nbsp;reverse-subtract<br>
+&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y)&nbsp;(-&nbsp;y&nbsp;x)))<br>
+(reverse-subtract&nbsp;7&nbsp;10)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+<br>
+(define&nbsp;add4<br>
+&nbsp;&nbsp;(let&nbsp;((x&nbsp;4))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(y)&nbsp;(+&nbsp;x&nbsp;y))))<br>
+(add4&nbsp;6)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;10</p>
+</tt>
+<p>
+&lt;Formals&gt; should have one of the following forms:</p>
+<p>
+</p>
+<ul>
+<li>
+<p><tt>(&lt;variable<sub>1</sub>&gt; <tt>...</tt>)</tt>:
+The procedure takes a fixed number of arguments; when the procedure is
+called, the arguments will be stored in the bindings of the
+corresponding variables.</p>
+<p>
+</p>
+<li>
+<p>&lt;variable&gt;:
+The procedure takes any number of arguments; when the procedure is
+called, the sequence of actual arguments is converted into a newly
+allocated list, and the list is stored in the binding of the
+&lt;variable&gt;.</p>
+<p>
+</p>
+<li>
+<p><tt>(&lt;variable<sub>1</sub>&gt; <tt>...</tt> &lt;variable<sub><em>n</em></sub>&gt; <strong>.</strong>
+&lt;variable<sub><em>n</em>+1</sub>&gt;)</tt>:
+If a space-delimited period precedes the last variable, then
+the procedure takes <em>n</em> or more arguments, where <em>n</em> is the
+number of formal arguments before the period (there must
+be at least one).
+The value stored in the binding of the last variable will be a
+newly allocated
+list of the actual arguments left over after all the other actual
+arguments have been matched up against the other formal arguments.
+</p>
+</ul>
+<p></p>
+<p>
+It is an error for a &lt;variable&gt; to appear more than once in
+&lt;formals&gt;.</p>
+<p>
+<tt>((lambda&nbsp;x&nbsp;x)&nbsp;3&nbsp;4&nbsp;5&nbsp;6)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(3&nbsp;4&nbsp;5&nbsp;6)<br>
+((lambda&nbsp;(x&nbsp;y&nbsp;.&nbsp;z)&nbsp;z)<br>
+&nbsp;3&nbsp;4&nbsp;5&nbsp;6)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(5&nbsp;6)</p>
+</tt>
+<p>
+Each procedure created as the result of evaluating a <tt>lambda</tt> expression is
+(conceptually) tagged
+with a storage location, in order to make <tt>eqv?</tt> and
+<tt>eq?</tt> work on procedures (see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.1">6.1</a>).</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.5">4.1.5&nbsp;&nbsp;Conditionals</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_98"></a>if<i> &lt;test&gt; &lt;consequent&gt; &lt;alternate&gt;</i>)</tt>&nbsp;</div>
+
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_100"></a>if<i> &lt;test&gt; &lt;consequent&gt;</i>)</tt>&nbsp;</div>
+  
+<em>Syntax: </em>&lt;Test&gt;, &lt;consequent&gt;, and &lt;alternate&gt; may be arbitrary
+expressions.
+<p>
+<em>Semantics: </em>An <tt>if</tt> expression is evaluated as follows: first,
+&lt;test&gt; is evaluated.  If it yields a true value<a name="%_idx_102"></a> (see
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>), then &lt;consequent&gt; is evaluated and
+its value(s) is(are) returned.  Otherwise &lt;alternate&gt; is evaluated and its
+value(s) is(are) returned.  If &lt;test&gt; yields a false value and no
+&lt;alternate&gt; is specified, then the result of the expression is
+unspecified.</p>
+<p>
+<tt>(if&nbsp;(&gt;&nbsp;3&nbsp;2)&nbsp;'yes&nbsp;'no)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;yes<br>
+(if&nbsp;(&gt;&nbsp;2&nbsp;3)&nbsp;'yes&nbsp;'no)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;no<br>
+(if&nbsp;(&gt;&nbsp;3&nbsp;2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(-&nbsp;3&nbsp;2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;3&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.1.6"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.1.6">4.1.6&nbsp;&nbsp;Assignments</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_104"></a>set!<i> &lt;variable&gt; &lt;expression&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+&lt;Expression&gt; is evaluated, and the resulting value is stored in
+the location to which &lt;variable&gt; is bound.  &lt;Variable&gt; must
+be bound either in some region<a name="%_idx_106"></a> enclosing the <tt>set!</tt> expression
+or at top level.  The result of the <tt>set!</tt> expression is
+unspecified.</p>
+<p>
+<tt>(define&nbsp;x&nbsp;2)<br>
+(+&nbsp;x&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(set!&nbsp;x&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(+&nbsp;x&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;5</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2">4.2&nbsp;&nbsp;Derived expression types</a></h2>
+<p></p>
+<p>
+The constructs in this section are hygienic, as discussed in
+section&nbsp;<a href="#%_sec_4.3">4.3</a>.
+For reference purposes, section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.3">7.3</a> gives macro definitions
+that will convert most of the constructs described in this section 
+into the primitive constructs described in the previous section.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_4.2.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.1">4.2.1&nbsp;&nbsp;Conditionals</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_108"></a>cond<i> &lt;clause<sub>1</sub>&gt; &lt;clause<sub>2</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>Each &lt;clause&gt; should be of the form
+<tt>(&lt;test&gt;&nbsp;&lt;expression<sub>1</sub>&gt;&nbsp;<tt>...</tt>)</p>
+</tt>
+where &lt;test&gt; is any expression.  Alternatively, a &lt;clause&gt; may be
+of the form
+<tt>(&lt;test&gt;&nbsp;=&gt;&nbsp;&lt;expression&gt;)</tt>
+The last &lt;clause&gt; may be
+an ``else clause,'' which has the form
+<tt>(else&nbsp;&lt;expression<sub>1</sub>&gt;&nbsp;&lt;expression<sub>2</sub>&gt;&nbsp;<tt>...</tt>).</tt>
+<a name="%_idx_110"></a>
+<a name="%_idx_112"></a>
+<p>
+<em>Semantics: </em>A <tt>cond</tt> expression is evaluated by evaluating the &lt;test&gt;
+expressions of successive &lt;clause&gt;s in order until one of them
+evaluates to a true value<a name="%_idx_114"></a> (see
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>).  When a &lt;test&gt; evaluates to a true
+value, then the remaining &lt;expression&gt;s in its &lt;clause&gt; are
+evaluated in order, and the result(s) of the last &lt;expression&gt; in the
+&lt;clause&gt; is(are) returned as the result(s) of the entire <tt>cond</tt>
+expression.  If the selected &lt;clause&gt; contains only the
+&lt;test&gt; and no &lt;expression&gt;s, then the value of the
+&lt;test&gt; is returned as the result.  If the selected &lt;clause&gt; uses the
+<tt>=&gt;</tt> alternate form, then the &lt;expression&gt; is evaluated.
+Its value must be a procedure that accepts one argument; this procedure is then
+called on the value of the &lt;test&gt; and the value(s) returned by this
+procedure is(are) returned by the <tt>cond</tt> expression.
+If all &lt;test&gt;s evaluate
+to false values, and there is no else clause, then the result of
+the conditional expression is unspecified; if there is an else
+clause, then its &lt;expression&gt;s are evaluated, and the value(s) of
+the last one is(are) returned.</p>
+<p>
+<tt>(cond&nbsp;((&gt;&nbsp;3&nbsp;2)&nbsp;'greater)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&lt;&nbsp;3&nbsp;2)&nbsp;'less))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;greater<br>
+(cond&nbsp;((&gt;&nbsp;3&nbsp;3)&nbsp;'greater)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&lt;&nbsp;3&nbsp;3)&nbsp;'less)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;'equal))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;equal<br>
+(cond&nbsp;((assv&nbsp;'b&nbsp;'((a&nbsp;1)&nbsp;(b&nbsp;2)))&nbsp;=&gt;&nbsp;cadr)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;<tt>#f</tt>))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;2</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_116"></a>case<i> &lt;key&gt; &lt;clause<sub>1</sub>&gt; &lt;clause<sub>2</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Key&gt; may be any expression.  Each &lt;clause&gt; should have
+the form
+<tt>((&lt;datum<sub>1</sub>&gt;&nbsp;<tt>...</tt>)&nbsp;&lt;expression<sub>1</sub>&gt;&nbsp;&lt;expression<sub>2</sub>&gt;&nbsp;<tt>...</tt>),</p>
+</tt>
+where each &lt;datum&gt; is an external representation of some object.
+All the &lt;datum&gt;s must be distinct.
+The last &lt;clause&gt; may be an ``else clause,'' which has the form
+<tt>(else&nbsp;&lt;expression<sub>1</sub>&gt;&nbsp;&lt;expression<sub>2</sub>&gt;&nbsp;<tt>...</tt>).</tt>
+<a name="%_idx_118"></a>
+<p>
+<em>Semantics: </em>A <tt>case</tt> expression is evaluated as follows.  &lt;Key&gt; is
+evaluated and its result is compared against each &lt;datum&gt;.  If the
+result of evaluating &lt;key&gt; is equivalent (in the sense of
+<tt>eqv?</tt>; see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.1">6.1</a>) to a &lt;datum&gt;, then the
+expressions in the corresponding &lt;clause&gt; are evaluated from left
+to right and the result(s) of the last expression in the &lt;clause&gt; is(are)
+returned as the result(s) of the <tt>case</tt> expression.  If the result of
+evaluating &lt;key&gt; is different from every &lt;datum&gt;, then if
+there is an else clause its expressions are evaluated and the
+result(s) of the last is(are) the result(s) of the <tt>case</tt> expression;
+otherwise the result of the <tt>case</tt> expression is unspecified.</p>
+<p>
+<tt>(case&nbsp;(*&nbsp;2&nbsp;3)<br>
+&nbsp;&nbsp;((2&nbsp;3&nbsp;5&nbsp;7)&nbsp;'prime)<br>
+&nbsp;&nbsp;((1&nbsp;4&nbsp;6&nbsp;8&nbsp;9)&nbsp;'composite))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;composite<br>
+(case&nbsp;(car&nbsp;'(c&nbsp;d))<br>
+&nbsp;&nbsp;((a)&nbsp;'a)<br>
+&nbsp;&nbsp;((b)&nbsp;'b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(case&nbsp;(car&nbsp;'(c&nbsp;d))<br>
+&nbsp;&nbsp;((a&nbsp;e&nbsp;i&nbsp;o&nbsp;u)&nbsp;'vowel)<br>
+&nbsp;&nbsp;((w&nbsp;y)&nbsp;'semivowel)<br>
+&nbsp;&nbsp;(else&nbsp;'consonant))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;consonant</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_120"></a>and<i> &lt;test<sub>1</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+The &lt;test&gt; expressions are evaluated from left to right, and the
+value of the first expression that evaluates to a false value (see
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>) is returned.  Any remaining expressions
+are not evaluated.  If all the expressions evaluate to true values, the
+value of the last expression is returned.  If there are no expressions
+then <tt>#t</tt> is returned.</p>
+<p>
+<tt>(and&nbsp;(=&nbsp;2&nbsp;2)&nbsp;(&gt;&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(and&nbsp;(=&nbsp;2&nbsp;2)&nbsp;(&lt;&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(and&nbsp;1&nbsp;2&nbsp;'c&nbsp;'(f&nbsp;g))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(f&nbsp;g)<br>
+(and)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_122"></a>or<i> &lt;test<sub>1</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+The &lt;test&gt; expressions are evaluated from left to right, and the value of the
+first expression that evaluates to a true value (see
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>) is returned.  Any remaining expressions
+are not evaluated.  If all expressions evaluate to false values, the
+value of the last expression is returned.  If there are no
+expressions then <tt>#f</tt> is returned.</p>
+<p>
+<tt>(or&nbsp;(=&nbsp;2&nbsp;2)&nbsp;(&gt;&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(or&nbsp;(=&nbsp;2&nbsp;2)&nbsp;(&lt;&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(or&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(or&nbsp;(memq&nbsp;'b&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(/&nbsp;3&nbsp;0))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(b&nbsp;c)</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.2">4.2.2&nbsp;&nbsp;Binding constructs</a></h3>
+<p>The three binding constructs <tt>let</tt>, <tt>let*</tt>, and <tt>letrec</tt>
+give Scheme a block structure, like Algol 60.  The syntax of the three
+constructs is identical, but they differ in the regions<a name="%_idx_124"></a> they establish
+for their variable bindings.  In a <tt>let</tt> expression, the initial
+values are computed before any of the variables become bound; in a
+<tt>let*</tt> expression, the bindings and evaluations are performed
+sequentially; while in a <tt>letrec</tt> expression, all the bindings are in
+effect while their initial values are being computed, thus allowing
+mutually recursive definitions.</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_126"></a>let<i> &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Bindings&gt; should have the form
+<tt>((&lt;variable<sub>1</sub>&gt;&nbsp;&lt;init<sub>1</sub>&gt;)&nbsp;<tt>...</tt>),</p>
+</tt>
+where each &lt;init&gt; is an expression, and &lt;body&gt; should be a
+sequence of one or more expressions.  It is
+an error for a &lt;variable&gt; to appear more than once in the list of variables
+being bound.
+<p>
+<em>Semantics: </em>The &lt;init&gt;s are evaluated in the current environment (in some
+unspecified order), the &lt;variable&gt;s are bound to fresh locations
+holding the results, the &lt;body&gt; is evaluated in the extended
+environment, and the value(s) of the last expression of &lt;body&gt;
+is(are) returned.  Each binding of a &lt;variable&gt; has &lt;body&gt; as its
+region.<a name="%_idx_128"></a></p>
+<p>
+<tt>(let&nbsp;((x&nbsp;2)&nbsp;(y&nbsp;3))<br>
+&nbsp;&nbsp;(*&nbsp;x&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;6<br>
+<br>
+(let&nbsp;((x&nbsp;2)&nbsp;(y&nbsp;3))<br>
+&nbsp;&nbsp;(let&nbsp;((x&nbsp;7)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(z&nbsp;(+&nbsp;x&nbsp;y)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;z&nbsp;x)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;35</p>
+</tt>
+<p>
+See also named <tt>let</tt>, section <a href="#%_sec_4.2.4">4.2.4</a>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_130"></a>let*<i> &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Bindings&gt; should have the form
+<tt>((&lt;variable<sub>1</sub>&gt;&nbsp;&lt;init<sub>1</sub>&gt;)&nbsp;<tt>...</tt>),</p>
+</tt>
+and &lt;body&gt; should be a sequence of
+one or more expressions.
+<p>
+<em>Semantics: </em><tt>Let*</tt> is similar to <tt>let</tt>, but the bindings are performed
+sequentially from left to right, and the region<a name="%_idx_132"></a> of a binding indicated
+by <tt>(&lt;variable&gt; &lt;init&gt;)</tt> is that part of the <tt>let*</tt>
+expression to the right of the binding.  Thus the second binding is done
+in an environment in which the first binding is visible, and so on.</p>
+<p>
+<tt>(let&nbsp;((x&nbsp;2)&nbsp;(y&nbsp;3))<br>
+&nbsp;&nbsp;(let*&nbsp;((x&nbsp;7)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(z&nbsp;(+&nbsp;x&nbsp;y)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;z&nbsp;x)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;70</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_134"></a>letrec<i> &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Bindings&gt; should have the form
+<tt>((&lt;variable<sub>1</sub>&gt;&nbsp;&lt;init<sub>1</sub>&gt;)&nbsp;<tt>...</tt>),</p>
+</tt>
+and &lt;body&gt; should be a sequence of
+one or more expressions. It is an error for a &lt;variable&gt; to appear more
+than once in the list of variables being bound.
+<p>
+<em>Semantics: </em>The &lt;variable&gt;s are bound to fresh locations holding undefined
+values, the &lt;init&gt;s are evaluated in the resulting environment (in
+some unspecified order), each &lt;variable&gt; is assigned to the result
+of the corresponding &lt;init&gt;, the &lt;body&gt; is evaluated in the
+resulting environment, and the value(s) of the last expression in
+&lt;body&gt; is(are) returned.  Each binding of a &lt;variable&gt; has the
+entire <tt>letrec</tt> expression as its region<a name="%_idx_136"></a>, making it possible to
+define mutually recursive procedures.</p>
+<p>
+<tt>(letrec&nbsp;((even?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(zero?&nbsp;n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#t</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(odd?&nbsp;(-&nbsp;n&nbsp;1)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(odd?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(zero?&nbsp;n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(even?&nbsp;(-&nbsp;n&nbsp;1))))))<br>
+&nbsp;&nbsp;(even?&nbsp;88))&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+One restriction on <tt>letrec</tt> is very important: it must be possible
+to evaluate each &lt;init&gt; without assigning or referring to the value of any
+&lt;variable&gt;.  If this restriction is violated, then it is an error.  The
+restriction is necessary because Scheme passes arguments by value rather than by
+name.  In the most common uses of <tt>letrec</tt>, all the &lt;init&gt;s are
+<tt>lambda</tt> expressions and the restriction is satisfied automatically.</p>
+<p>
+
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.3">4.2.3&nbsp;&nbsp;Sequencing</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_138"></a>begin<i> &lt;expression<sub>1</sub>&gt; &lt;expression<sub>2</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+The &lt;expression&gt;s are evaluated sequentially from left to right,
+and the value(s) of the last &lt;expression&gt; is(are) returned.  This
+expression type is used to sequence side effects such as input and
+output.</p>
+<p>
+<tt>(define&nbsp;x&nbsp;0)<br>
+<br>
+(begin&nbsp;(set!&nbsp;x&nbsp;5)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;x&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;6<br>
+<br>
+(begin&nbsp;(display&nbsp;&quot;4&nbsp;plus&nbsp;1&nbsp;equals&nbsp;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(+&nbsp;4&nbsp;1)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+&nbsp;<em>&nbsp;and&nbsp;prints</em>&nbsp;&nbsp;4&nbsp;plus&nbsp;1&nbsp;equals&nbsp;5</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.4">4.2.4&nbsp;&nbsp;Iteration</a></h3>
+<p>
+</p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(do ((&lt;variable<sub>1</sub>&gt; &lt;init<sub>1</sub>&gt; &lt;step<sub>1</sub>&gt;)</tt>&nbsp;</div>
+
+<a name="%_idx_140"></a><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>...</tt>)<br>
+&nbsp;&nbsp;&nbsp;(&lt;test&gt;&nbsp;&lt;expression&gt;&nbsp;<tt>...</tt>)<br>
+&nbsp;&lt;command&gt;&nbsp;<tt>...</tt>)</tt>
+<p>
+<tt>Do</tt> is an iteration construct.  It specifies a set of variables to
+be bound, how they are to be initialized at the start, and how they are
+to be updated on each iteration.  When a termination condition is met,
+the loop exits after evaluating the &lt;expression&gt;s.</p>
+<p>
+<tt>Do</tt> expressions are evaluated as follows:
+The &lt;init&gt; expressions are evaluated (in some unspecified order),
+the &lt;variable&gt;s are bound to fresh locations, the results of the
+&lt;init&gt; expressions are stored in the bindings of the
+&lt;variable&gt;s, and then the iteration phase begins.</p>
+<p>
+Each iteration begins by evaluating &lt;test&gt;; if the result is
+false (see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>), then the &lt;command&gt;
+expressions are evaluated in order for effect, the &lt;step&gt;
+expressions are evaluated in some unspecified order, the
+&lt;variable&gt;s are bound to fresh locations, the results of the
+&lt;step&gt;s are stored in the bindings of the
+&lt;variable&gt;s, and the next iteration begins.</p>
+<p>
+If &lt;test&gt; evaluates to a true value, then the
+&lt;expression&gt;s are evaluated from left to right and the value(s) of
+the last &lt;expression&gt; is(are) returned.  If no &lt;expression&gt;s
+are present, then the value of the <tt>do</tt> expression is unspecified.</p>
+<p>
+The region<a name="%_idx_142"></a> of the binding of a &lt;variable&gt;
+consists of the entire <tt>do</tt> expression except for the &lt;init&gt;s.
+It is an error for a &lt;variable&gt; to appear more than once in the
+list of <tt>do</tt> variables.</p>
+<p>
+A &lt;step&gt; may be omitted, in which case the effect is the
+same as if <tt>(&lt;variable&gt; &lt;init&gt; &lt;variable&gt;)</tt> had
+been written instead of <tt>(&lt;variable&gt; &lt;init&gt;)</tt>.</p>
+<p>
+<tt>(do&nbsp;((vec&nbsp;(make-vector&nbsp;5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i&nbsp;0&nbsp;(+&nbsp;i&nbsp;1)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((=&nbsp;i&nbsp;5)&nbsp;vec)<br>
+&nbsp;&nbsp;(vector-set!&nbsp;vec&nbsp;i&nbsp;i))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(0&nbsp;1&nbsp;2&nbsp;3&nbsp;4)<br>
+<br>
+(let&nbsp;((x&nbsp;'(1&nbsp;3&nbsp;5&nbsp;7&nbsp;9)))<br>
+&nbsp;&nbsp;(do&nbsp;((x&nbsp;x&nbsp;(cdr&nbsp;x))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(sum&nbsp;0&nbsp;(+&nbsp;sum&nbsp;(car&nbsp;x))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((null?&nbsp;x)&nbsp;sum)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;25</p>
+</tt>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_144"></a>let<i> &lt;variable&gt; &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+
+``Named <tt>let</tt>'' is a variant on the syntax of <tt>let</tt> which provides
+a more general looping construct than <tt>do</tt> and may also be used to express
+recursions.
+It has the same syntax and semantics as ordinary <tt>let</tt>
+except that &lt;variable&gt; is bound within &lt;body&gt; to a procedure
+whose formal arguments are the bound variables and whose body is
+&lt;body&gt;.  Thus the execution of &lt;body&gt; may be repeated by
+invoking the procedure named by &lt;variable&gt;.</p>
+<p>
+<tt>(let&nbsp;loop&nbsp;((numbers&nbsp;'(3&nbsp;-2&nbsp;1&nbsp;6&nbsp;-5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(nonneg&nbsp;'())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(neg&nbsp;'()))<br>
+&nbsp;&nbsp;(cond&nbsp;((null?&nbsp;numbers)&nbsp;(list&nbsp;nonneg&nbsp;neg))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&gt;=&nbsp;(car&nbsp;numbers)&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(cdr&nbsp;numbers)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(car&nbsp;numbers)&nbsp;nonneg)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;neg))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((&lt;&nbsp;(car&nbsp;numbers)&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(cdr&nbsp;numbers)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nonneg<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(car&nbsp;numbers)&nbsp;neg)))))&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((6&nbsp;1&nbsp;3)&nbsp;(-5&nbsp;-2))</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.5">4.2.5&nbsp;&nbsp;Delayed evaluation</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_146"></a>delay<i> &lt;expression&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+</p>
+<p>
+The <tt>delay</tt> construct is used together with the procedure <tt>force</tt> to
+implement <a name="%_idx_148"></a><em>lazy evaluation</em> or <a name="%_idx_150"></a><em>call by need</em>.
+<tt>(delay&nbsp;&lt;expression&gt;)</tt> returns an object called a
+<a name="%_idx_152"></a><em>promise</em> which at some point in the future may be asked (by
+the <tt>force</tt> procedure)  to evaluate
+&lt;expression&gt;, and deliver the resulting value.
+The effect of &lt;expression&gt; returning multiple values
+is unspecified.</p>
+<p>
+See the description of <tt>force</tt> (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.4">6.4</a>) for a
+more complete description of <tt>delay</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.2.6"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.2.6">4.2.6&nbsp;&nbsp;Quasiquotation</a></h3>
+<p></p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_154"></a>quasiquote<i> &lt;qq template&gt;</i>)</tt>&nbsp;</div>
+ <div align=left><u>syntax:</u>&nbsp;&nbsp;<tt><tt>`</tt>&lt;qq template&gt;</tt>&nbsp;</div>
+
+<p>
+``Backquote'' or ``quasiquote''<a name="%_idx_156"></a> expressions are useful
+for constructing a list or vector structure when most but not all of the
+desired structure is known in advance.  If no
+commas<a name="%_idx_158"></a> appear within the &lt;qq template&gt;, the result of
+evaluating
+<tt>`</tt>&lt;qq template&gt; is equivalent to the result of evaluating
+<tt>'</tt>&lt;qq template&gt;.  If a comma<a name="%_idx_160"></a> appears within the
+&lt;qq template&gt;, however, the expression following the comma is
+evaluated (``unquoted'') and its result is inserted into the structure
+instead of the comma and the expression.  If a comma appears followed
+immediately by an at-sign (<tt>@</tt>),<a name="%_idx_162"></a> then the following
+expression must evaluate to a list; the opening and closing parentheses
+of the list are then ``stripped away'' and the elements of the list are
+inserted in place of the comma at-sign expression sequence.  A comma
+at-sign should only appear within a list or vector &lt;qq template&gt;.</p>
+<p>
+
+<tt>`(list&nbsp;,(+&nbsp;1&nbsp;2)&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(list&nbsp;3&nbsp;4)<br>
+(let&nbsp;((name&nbsp;'a))&nbsp;`(list&nbsp;,name&nbsp;',name))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(list&nbsp;a&nbsp;(quote&nbsp;a))<br>
+`(a&nbsp;,(+&nbsp;1&nbsp;2)&nbsp;,@(map&nbsp;abs&nbsp;'(4&nbsp;-5&nbsp;6))&nbsp;b)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;3&nbsp;4&nbsp;5&nbsp;6&nbsp;b)<br>
+`((<tt>&nbsp;foo</tt>&nbsp;,(-&nbsp;10&nbsp;3))&nbsp;,@(cdr&nbsp;'(c))&nbsp;.&nbsp;,(car&nbsp;'(cons)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((foo&nbsp;7)&nbsp;.&nbsp;cons)<br>
+`#(10&nbsp;5&nbsp;,(sqrt&nbsp;4)&nbsp;,@(map&nbsp;sqrt&nbsp;'(16&nbsp;9))&nbsp;8)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(10&nbsp;5&nbsp;2&nbsp;4&nbsp;3&nbsp;8)</p>
+</tt>
+<p>
+Quasiquote forms may be nested.  Substitutions are made only for
+unquoted components appearing at the same nesting level
+as the outermost backquote.  The nesting level increases by one inside
+each successive quasiquotation, and decreases by one inside each
+unquotation.</p>
+<p>
+<tt>`(a&nbsp;`(b&nbsp;,(+&nbsp;1&nbsp;2)&nbsp;,(foo&nbsp;,(+&nbsp;1&nbsp;3)&nbsp;d)&nbsp;e)&nbsp;f)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;`(b&nbsp;,(+&nbsp;1&nbsp;2)&nbsp;,(foo&nbsp;4&nbsp;d)&nbsp;e)&nbsp;f)<br>
+(let&nbsp;((name1&nbsp;'x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(name2&nbsp;'y))<br>
+&nbsp;&nbsp;`(a&nbsp;`(b&nbsp;,,name1&nbsp;,',name2&nbsp;d)&nbsp;e))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;`(b&nbsp;,x&nbsp;,'y&nbsp;d)&nbsp;e)</p>
+</tt>
+<p>
+The two notations
+<tt>`</tt>&lt;qq template&gt; and <tt>(quasiquote &lt;qq template&gt;)</tt>
+are identical in all respects.
+<tt>,&lt;expression&gt;</tt> is identical to <tt>(unquote &lt;expression&gt;)</tt>,
+and
+<tt>,@&lt;expression&gt;</tt> is identical to <tt>(unquote-splicing &lt;expression&gt;)</tt>.
+The external syntax generated by <tt>write</tt> for two-element lists whose
+car is one of these symbols may vary between implementations.
+<a name="%_idx_164"></a></p>
+<p>
+<tt>(quasiquote&nbsp;(list&nbsp;(unquote&nbsp;(+&nbsp;1&nbsp;2))&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(list&nbsp;3&nbsp;4)<br>
+'(quasiquote&nbsp;(list&nbsp;(unquote&nbsp;(+&nbsp;1&nbsp;2))&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;`(list&nbsp;,(+&nbsp;1&nbsp;2)&nbsp;4)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<em>i.e.,</em>&nbsp;(quasiquote&nbsp;(list&nbsp;(unquote&nbsp;(+&nbsp;1&nbsp;2))&nbsp;4))</p>
+</tt>
+<p>
+Unpredictable behavior can result if any of the symbols
+<tt>quasiquote</tt>, <tt>unquote</tt>, or <tt>unquote-splicing</tt> appear in
+positions within a &lt;qq template&gt; otherwise than as described above.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.3">4.3&nbsp;&nbsp;Macros</a></h2>
+<p></p>
+<p>
+Scheme programs can define and use new derived expression types,
+called <em>macros</em>.<a name="%_idx_166"></a>
+Program-defined expression types have the syntax
+<tt>(&lt;keyword&gt;&nbsp;&lt;datum&gt;&nbsp;...)</p>
+</tt>where &lt;keyword&gt; is an identifier that uniquely determines the
+expression type.  This identifier is called the <em>syntactic
+keyword</em><a name="%_idx_168"></a>, or simply <em>keyword</em><a name="%_idx_170"></a>, of the macro<a name="%_idx_172"></a>.  The
+number of the &lt;datum&gt;s, and their syntax, depends on the
+expression type.
+<p>
+Each instance of a macro is called a <em>use</em><a name="%_idx_174"></a>
+of the macro.
+The set of rules that specifies
+how a use of a macro is transcribed into a more primitive expression
+is called the <em>transformer</em><a name="%_idx_176"></a>
+of the macro.</p>
+<p>
+The macro definition facility consists of two parts:</p>
+<p>
+</p>
+<ul>
+<li>
+<p>A set of expressions used to establish that certain identifiers
+are macro keywords, associate them with macro transformers, and control
+the scope within which a macro is defined, and</p>
+<p>
+</p>
+<li>
+<p>a pattern language for specifying macro transformers.
+</p>
+</ul>
+<p></p>
+<p>
+The syntactic keyword of a macro may shadow variable bindings, and local
+variable bindings may shadow keyword bindings.  <a name="%_idx_178"></a>  All macros
+defined using the pattern language  are ``hygienic'' and ``referentially
+transparent'' and thus preserve Scheme's lexical scoping&nbsp;[<a href="r5rs-Z-H-14.html#cite{Kohlbecker86}">14</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{hygienic}">15</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{Bawden88}">2</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{macrosthatwork}">7</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{syntacticabstraction}">9</a>]:
+<a name="%_idx_180"></a>
+<a name="%_idx_182"></a></p>
+<p>
+</p>
+<ul>
+<p>
+</p>
+<li>
+<p>If a macro transformer inserts a binding for an identifier
+(variable or keyword), the identifier will in effect be renamed
+throughout its scope to avoid conflicts with other identifiers.
+Note that a <tt>define</tt> at top level may or may not introduce a binding;
+see section&nbsp;<a href="r5rs-Z-H-8.html#%_sec_5.2">5.2</a>.</p>
+<p>
+</p>
+<li>
+<p>If a macro transformer inserts a free reference to an
+identifier, the reference refers to the binding that was visible
+where the transformer was specified, regardless of any local
+bindings that may surround the use of the macro.</p>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+
+
+</p>
+<a name="%_sec_4.3.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.3.1">4.3.1&nbsp;&nbsp;Binding constructs for syntactic keywords</a></h3>
+<p></p>
+<p>
+<tt>Let-syntax</tt> and <tt>letrec-syntax</tt> are
+analogous to <tt>let</tt> and <tt>letrec</tt>, but they bind
+syntactic keywords to macro transformers instead of binding variables
+to locations that contain values.  Syntactic keywords may also be
+bound at top level; see section&nbsp;<a href="r5rs-Z-H-8.html#%_sec_5.3">5.3</a>.</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_184"></a>let-syntax<i> &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Bindings&gt; should have the form
+<tt>((&lt;keyword&gt;&nbsp;&lt;transformer&nbsp;spec&gt;)&nbsp;<tt>...</tt>)</p>
+</tt>
+Each &lt;keyword&gt; is an identifier,
+each &lt;transformer spec&gt; is an instance of <tt>syntax-rules</tt>, and
+&lt;body&gt; should be a sequence of one or more expressions.  It is an error
+for a &lt;keyword&gt; to appear more than once in the list of keywords
+being bound.
+<p>
+<em>Semantics: </em>The &lt;body&gt; is expanded in the syntactic environment
+obtained by extending the syntactic environment of the
+<tt>let-syntax</tt> expression with macros whose keywords are
+the &lt;keyword&gt;s, bound to the specified transformers.
+Each binding of a &lt;keyword&gt; has &lt;body&gt; as its region.</p>
+<p>
+<tt>(let-syntax&nbsp;((when&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((when&nbsp;test&nbsp;stmt1&nbsp;stmt2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;stmt1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stmt2&nbsp;...))))))<br>
+&nbsp;&nbsp;(let&nbsp;((if&nbsp;<tt>#t</tt>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(when&nbsp;if&nbsp;(set!&nbsp;if&nbsp;'now))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;if))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;now<br>
+<br>
+(let&nbsp;((x&nbsp;'outer))<br>
+&nbsp;&nbsp;(let-syntax&nbsp;((m&nbsp;(syntax-rules&nbsp;()&nbsp;((m)&nbsp;x))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;'inner))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(m))))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;outer</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_186"></a>letrec-syntax<i> &lt;bindings&gt; &lt;body&gt;</i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>Same as for <tt>let-syntax</tt>.</p>
+<p>
+<em>Semantics: </em>The &lt;body&gt; is expanded in the syntactic environment obtained by
+extending the syntactic environment of the <tt>letrec-syntax</tt>
+expression with macros whose keywords are the
+&lt;keyword&gt;s, bound to the specified transformers.
+Each binding of a &lt;keyword&gt; has the &lt;bindings&gt;
+as well as the &lt;body&gt; within its region,
+so the transformers can
+transcribe expressions into uses of the macros
+introduced by the <tt>letrec-syntax</tt> expression.</p>
+<p>
+<tt>(letrec-syntax<br>
+&nbsp;&nbsp;((my-or&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((my-or)&nbsp;<tt>#f</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((my-or&nbsp;e)&nbsp;e)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((my-or&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;e1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(my-or&nbsp;e2&nbsp;...)))))))<br>
+&nbsp;&nbsp;(let&nbsp;((x&nbsp;<tt>#f</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(y&nbsp;7)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;8)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;odd?)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;even?))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(my-or&nbsp;x<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;temp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_4.3.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_4.3.2">4.3.2&nbsp;&nbsp;Pattern language</a></h3>
+<p></p>
+<p>
+A &lt;transformer spec&gt; has the following form:</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_188"></a>syntax-rules<i> &lt;literals&gt; &lt;syntax rule&gt; <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+<em>Syntax: </em>&lt;Literals&gt; is a list of identifiers and each &lt;syntax rule&gt;
+should be of the form
+<tt>(&lt;pattern&gt;&nbsp;&lt;template&gt;)</p>
+</tt>
+The &lt;pattern&gt; in a &lt;syntax rule&gt; is a list &lt;pattern&gt;
+that begins with the keyword for the macro.
+<p>
+A &lt;pattern&gt; is either an identifier, a constant, or one of the
+following
+<tt>(&lt;pattern&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;pattern&gt;&nbsp;&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;pattern&gt;)<br>
+(&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;&lt;pattern&gt;&nbsp;&lt;ellipsis&gt;)<br>
+#(&lt;pattern&gt;&nbsp;<tt>...</tt>)<br>
+#(&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;&lt;pattern&gt;&nbsp;&lt;ellipsis&gt;)</p>
+</tt>
+and a template is either an identifier, a constant, or one of the following
+<tt>(&lt;element&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;element&gt;&nbsp;&lt;element&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;template&gt;)<br>
+#(&lt;element&gt;&nbsp;<tt>...</tt>)</tt>
+where an &lt;element&gt; is a &lt;template&gt; optionally
+followed by an &lt;ellipsis&gt; and
+an &lt;ellipsis&gt; is the identifier ``<tt>...</tt>'' (which cannot be used as
+an identifier in either a template or a pattern).<a name="%_idx_190"></a>
+<p>
+<em>Semantics: </em>An instance of <tt>syntax-rules</tt> produces a new macro
+transformer by specifying a sequence of hygienic rewrite rules.  A use
+of a macro whose keyword is associated with a transformer specified by
+<tt>syntax-rules</tt> is matched against the patterns contained in the
+&lt;syntax rule&gt;s, beginning with the leftmost &lt;syntax rule&gt;.
+When a match is found, the macro use is transcribed hygienically
+according to the template.</p>
+<p>
+An identifier that appears in the pattern of a &lt;syntax rule&gt; is
+a <em>pattern variable</em>, unless it is the keyword that begins the pattern,
+is listed in &lt;literals&gt;, or is the identifier ``<tt>...</tt>''.
+Pattern variables match arbitrary input elements and
+are used to refer to elements of the input in the template.  It is an
+error for the same pattern variable to appear more than once in a
+&lt;pattern&gt;.</p>
+<p>
+The keyword at the beginning of the pattern in a
+&lt;syntax rule&gt; is not involved in the matching and
+is not considered a pattern variable or literal identifier.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+The scope of the keyword is determined by the expression or syntax
+definition that binds it to the associated macro transformer.
+If the keyword were a pattern variable or literal
+identifier, then
+the template that follows the pattern would be within its scope
+regardless of whether the keyword were bound by <tt>let-syntax</tt>
+or by <tt>letrec-syntax</tt>.
+</blockquote>
+<p>
+Identifiers that appear in &lt;literals&gt; are interpreted as literal
+identifiers to be matched against corresponding subforms of the input.
+A subform
+in the input matches a literal identifier if and only if it is an
+identifier
+and either both its occurrence in the macro expression and its
+occurrence in the macro definition have the same lexical binding, or
+the two identifiers are equal and both have no lexical binding.</p>
+<p>
+
+A subpattern followed by <tt>...</tt> can match zero or more elements of the
+input.  It is an error for <tt>...</tt> to appear in &lt;literals&gt;.
+Within a pattern the identifier <tt>...</tt> must follow the last element of
+a nonempty sequence of subpatterns.</p>
+<p>
+More formally, an input form <em>F</em> matches a pattern <em>P</em> if and only if:</p>
+<p>
+</p>
+<ul>
+<li>
+<p><em>P</em> is a non-literal identifier; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is a literal identifier and <em>F</em> is an identifier with the same
+binding; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is a list <tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt> and <em>F</em> is a
+list of <em>n</em>
+forms that match <em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>, respectively; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is an improper list
+<tt>(<em>P</em><sub>1</sub> <em>P</em><sub>2</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub> . <em>P</em><sub><em>n</em>+1</sub>)</tt>
+and <em>F</em> is a list or
+improper list of <em>n</em> or more forms that match <em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>,
+respectively, and whose <em>n</em>th ``cdr'' matches <em>P</em><sub><em>n</em>+1</sub>; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is of the form
+<tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub> <em>P</em><sub><em>n</em>+1</sub> &lt;ellipsis&gt;)</tt>
+where &lt;ellipsis&gt; is the identifier <tt>...</tt>
+and <em>F</em> is
+a proper list of at least <em>n</em> forms, the first <em>n</em> of which match
+<em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>, respectively, and each remaining element of <em>F</em>
+matches <em>P</em><sub><em>n</em>+1</sub>; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is a vector of the form <tt>#(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt>
+and <em>F</em> is a vector
+of <em>n</em> forms that match <em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is of the form
+<tt>#(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub> <em>P</em><sub><em>n</em>+1</sub> &lt;ellipsis&gt;)</tt>
+where &lt;ellipsis&gt; is the identifier <tt>...</tt>
+and <em>F</em> is a vector of <em>n</em>
+or more forms the first <em>n</em> of which match
+<em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>, respectively, and each remaining element of <em>F</em>
+matches <em>P</em><sub><em>n</em>+1</sub>; or</p>
+<p>
+</p>
+<li>
+<p><em>P</em> is a datum and <em>F</em> is equal to <em>P</em> in the sense of
+the <tt>equal?</tt> procedure.
+</p>
+</ul>
+<p></p>
+<p>
+It is an error to use a macro keyword, within the scope of its
+binding, in an expression that does not match any of the patterns.</p>
+<p>
+When a macro use is transcribed according to the template of the
+matching &lt;syntax rule&gt;, pattern variables that occur in the
+template are replaced by the subforms they match in the input.
+Pattern variables that occur in subpatterns followed by one or more
+instances of the identifier
+<tt>...</tt> are allowed only in subtemplates that are
+followed by as many instances of <tt>...</tt>.
+They are replaced in the
+output by all of the subforms they match in the input, distributed as
+indicated.  It is an error if the output cannot be built up as
+specified.</p>
+<p>
+
+Identifiers that appear in the template but are not pattern variables
+or the identifier
+<tt>...</tt> are inserted into the output as literal identifiers.  If a
+literal identifier is inserted as a free identifier then it refers to the
+binding of that identifier within whose scope the instance of
+<tt>syntax-rules</tt> appears.
+If a literal identifier is inserted as a bound identifier then it is
+in effect renamed to prevent inadvertent captures of free identifiers.</p>
+<p>
+As an example, if <tt>let</tt> and <tt>cond</tt> are defined as in
+section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.3">7.3</a> then they are hygienic (as required) and
+the following is not an error.</p>
+<p>
+<tt>(let&nbsp;((=&gt;&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;(cond&nbsp;(<tt>#t</tt>&nbsp;=&gt;&nbsp;'ok)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;ok</p>
+</tt>
+<p>
+The macro transformer for <tt>cond</tt> recognizes <tt>=&gt;</tt>
+as a local variable, and hence an expression, and not as the
+top-level identifier <tt>=&gt;</tt>, which the macro transformer treats
+as a syntactic keyword.  Thus the example expands into</p>
+<p>
+<tt>(let&nbsp;((=&gt;&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;(if&nbsp;<tt>#t</tt>&nbsp;(begin&nbsp;=&gt;&nbsp;'ok)))</p>
+</tt>
+<p>
+instead of</p>
+<p>
+<tt>(let&nbsp;((=&gt;&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;(let&nbsp;((temp&nbsp;<tt>#t</tt>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp&nbsp;('ok&nbsp;temp))))</p>
+</tt>
+<p>
+which would result in an invalid procedure call.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-6.html">previous</a></span><span>, <a href="r5rs-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

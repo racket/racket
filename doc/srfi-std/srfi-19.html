@@ -1,0 +1,662 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+  <head>
+    <title>SRFI 19: Time Data Types and Procedures</title>
+    <meta name="keywords" content="Scheme, programming language, time
+    processing, date processing, Julian Day, SRFI, overdone temporal smut">
+    <link rev=made href="mailto:will.fitzgerald@pobox.com">
+ <!-- This style sheet is from the SRFI-1 description (Olin Shivers), but modified to taste.
+      -->
+    <style type="text/css">
+	   /* A little general layout hackery for headers & the title. */
+           body { margin-left: +7%;
+	          font-family: "Georgia", "Times Roman", serif;
+		  }
+           /* Netscape workaround: */
+	   td, th { font-family: "Georgia", "Times Roman", serif; }
+
+	   code, pre { font-family: "courier new", "courier"; }
+
+           h1 { margin-left: -5%; }
+	   h1, h2 { clear: both; }
+	   h1, h2, h3, h4, h5, h6 { color: black }
+	   div.title-text { font-size: large; font-weight: bold; }
+
+	   div.indent { margin-left: 2em; }	  /* General indentation */
+	   pre.code-example { margin-left: 2em; } /* Indent code examples. */
+
+	   /* This stuff is for definition lists of defined procedures.
+           ** A proc-def2 is used when you want a stack of procs to go
+	   ** with one <dd> ... </dd> body. In this case, make the first
+	   ** proc a proc-def1, following ones proc-defi's, and the last one
+           ** a proc-defn.
+           **
+           ** Unfortunately, Netscape has huge bugs with respect to style
+           ** sheets and dl list rendering. We have to set truly random
+           ** values here to get the rendering to come out. The proper values
+           ** are in the following style sheet, for Internet Explorer.
+	   ** In the following settings, the *comments* say what the 
+           ** setting *really* causes Netscape to do.
+	   **
+           ** Ugh. Professional coders sacrifice their self-respect,
+           ** that others may live.
+           */
+	   /* m-t ignored; m-b sets top margin space. */
+	   dt.proc-def1 { margin-top: 0ex; margin-bottom: 3ex; }
+	   dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+	   dt.proc-defn { margin-top: 0ex; margin-bottom: 0ex; }
+
+	   /* m-t works weird depending on whether or not the last line
+           ** of the previous entry was a pre. Set to zero.
+           */
+	   dt.proc-def  { margin-top: 0ex; margin-bottom: 3ex; }
+
+	   /* m-b sets space between dd & dt; m-t ignored. */
+	   dd.proc-def { margin-bottom: 0.5ex; margin-top: 0ex; } 
+
+
+	   /* Boldface the name of a procedure when it's being defined. */
+	   code.proc-def { font-weight: bold; }
+
+	   /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+	   /* m-b sets space between dd & dt; m-t ignored. */
+	   dd.proc-index  { margin-bottom: 0ex; margin-top: 0ex; } 
+
+	   pre.proc-index { margin-top: -2ex; }
+
+	   /* Pull the table of contents back flush with the margin.
+	   ** Both NS & IE screw this up in different ways.
+	   */
+	   #toc-table { margin-top: -2ex; margin-left: -5%; }
+
+	   /* R5RS proc names are in italic; extended R5RS names 
+           ** in italic boldface.
+	   */
+	   span.r5rs-proc { font-weight: bold; }
+	   span.r5rs-procx { font-style: italic; font-weight: bold; }
+
+	   /* Spread out bibliographic lists. */
+	   /* More Netscape-specific lossage; see the following stylesheet
+	   ** for the proper values (used by IE).
+           */
+	   dt.biblio { margin-bottom: 1ex; }
+
+	   /* Links to draft copies (e.g., not at the official SRFI site)
+	   ** are colored in red, so people will use them during the 
+	   ** development process and kill them when the document's done.
+	   */
+           a.draft { color: red; }
+    </style>
+
+    <style type="text/css"; media=all>
+	   /* Nastiness: Here, I'm using a bug to work around a bug.
+	   ** Netscape rendering bugs mean you need bogus <dt> and <dd>
+	   ** margin settings -- settings which screw up IE's proper rendering.
+	   ** Fortunately, Netscape has *another* bug: it will ignore this
+	   ** media=all style sheet. So I am placing the (proper) IE values
+	   ** here. Perhaps, one day, when these rendering bugs are fixed,
+	   ** this gross hackery can be removed.
+	   */
+	   dt.proc-def1 { margin-top: 3ex; margin-bottom: 0ex; }
+	   dt.proc-defi { margin-top: 0ex; margin-bottom: 0ex; }
+	   dt.proc-defn { margin-top: 0ex; margin-bottom: 0.5ex; }
+	   dt.proc-def  { margin-top: 3ex; margin-bottom: 0.5ex; }
+
+	   pre { margin-top: 1ex; }
+
+	   dd.proc-def { margin-bottom: 2ex; margin-top: 0.5ex; } 
+
+	   /* For the index of procedures. 
+           ** Same hackery as for dt.proc-def, above.
+           */
+	   dd.proc-index { margin-top: 0ex; } 
+	   pre.proc-index { margin-top: 0ex; }
+
+	   /* Spread out bibliographic lists. */
+	   dt.biblio { margin-top: 3ex; margin-bottom: 0ex; }
+	   dd.biblio { margin-bottom: 1ex; }
+    </style>
+  </head>
+
+<body>
+
+<H1>Title</H1>
+
+SRFI 19: Time Data Types and Procedures
+
+<H1>Author</H1>
+
+Will Fitzgerald
+
+<H1>Status</H1>
+
+<p>This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  You can
+access the discussion via <a
+href="http://srfi.schemers.org/srfi-19/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+
+<UL>
+<LI>Draft: 2000-02-28 to 2000-08-28 </LI>
+<LI>Final: 2000-08-31</LI>
+<LI>Fixed reference implementation: 2003-02-28</LI>
+<LI>Documentation bug for <code>~D</code> fixed: 2003-05-30</LI>
+<LI>Various Documentation bugs fixed: 2004-03-15</LI>
+</UL>
+
+<H1>Abstract</H1>
+
+Points in time are represented a the number of seconds (with
+nanosecond precision) since "the epoch," a zero point in time. Several
+standard variants are defined, including UTC (universal coordinated
+time), TAI (international atomic time), and monotonic time. A point in time can also be
+represented as a Julian Day or Modified Julian Day number. Time
+durations, including time spent in a process or thread, are defined. Conversion
+routines are provided. The procedure CURRENT-TIME queries the current
+time in a specified variant, with a system-dependent
+resolution. Procedures for time arithmetic and time comparisons are
+also provided. 
+
+<p>A date is a representation of a point in time in the Gregorian
+calendar, a 24 hour clock (with nanosecond precision) and a
+time zone offset from UTC. Procedures for 
+converting between time and dates are provided, as well as for reading
+and writing string representations of dates.
+
+<H1>Issues</H1>[None currently]
+
+
+<H1>Rationale</H1>
+
+R5RS Scheme does not provide standard data types for time. This
+SRFI addresses this lack by specifying data types for time and
+associated procedures.
+
+
+<H1>Specification</H1>
+
+<p>A <b>Time</b> object, which is distinct from all existing types,
+defines a point in time or a time duration in some standard time
+system. The standard <a name="#timesystem">time systems</a> are:
+
+<ul>
+  <li>Universal Coordinated Time (UTC),
+  <li>International Atomic Time (TAI),
+  <li>monotonic time (a monotonically increasing point in time from some
+      epoch, which is implementation-dependent), 
+  <li>CPU time in current thread (implementation dependent),
+  <li>CPU time in current process (implementation dependent),
+  <li>Time duration.
+</ul>
+
+Implementations are required to implement UTC, monotonic time, CPU
+time in current process, and time duration. Implementations are
+allowed to create extensions (for example, amount of time spent in
+garbage collection).
+
+<p>A <a name="timeobject">time object</a> consists of three components: 
+<ul>
+  <li><b>Time type</b>, a symbol representing the time system
+  representation used. The constants <code>TIME-TAI</code>,
+  <code>TIME-UTC</code>, <code>TIME-MONOTONIC</code>,
+  <code>TIME-THREAD</code>, <code>TIME-PROCESS</code>, and
+  <code>TIME-DURATION</code> must be provided for these
+  symbols. Implementations should provide constants for time type
+  extensions.  
+  <li><b>Second</b>, an integer representing the number
+  of whole seconds from "the epoch."  
+  <li><b>Nanosecond</b>, an
+  integer of the number of nanoseconds in the fractional
+  portion. Although a time object has nanosecond precision, clocks
+  may have a lower resolution.
+</ul>
+
+<p>A <a name="dateobject"><b>Date</b></a> object, which is distinct from all existing
+types, represents a point in time as represented by the Gregorian
+calendar as well as by a time zone. Dates are immutable.  A date
+consists of the following components:
+  
+<ul>
+<li><b>Nanosecond</b>, an integer between 0 and 9,999,999, inclusive.
+<li><b>Second</b>, an integer 0 and 60, inclusive, 
+    (60 represents a leap second)
+<li><b>Minute</b>, an integer between 0 and 59, inclusive,
+<li><b>Hour</b>, an integer between 0 and 23, inclusive,
+<li><b>Day</b>, an integer between 0 and 31, inclusive, the upper limit depending
+on the month and year of the point in time,
+<li><b>Month</b>, an integer between 1 and 12, inclusive; in which 1 means
+January, 2 February, and so on.
+<li><b>Year</b>, an integer representing the year.
+<li><b>Time zone</b>, an integer representing the number of seconds east of GMT for this timezone.
+</ul>
+
+<p>A <b>Julian Day</b> represents a point in time as a real number
+of days since -4714-11-24T12:00:00Z (November 24, -4714 at noon,
+UTC).
+
+<p>A <b>Modified Julian Day</b> represents a point in time as a
+real number of days since 1858-11-17T00:00:00Z (November 17,
+1858 at midnight, UTC).
+
+<h2>Constants</h2>
+<P>The following constants are required: 
+
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="time-duration">time-duration</a></CODE> 
+  <DD class=proc-def>Symbol representing Time duration.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic">time-monotonic</a></CODE>
+  <DD class=proc-def>Symbol representing monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-process">time-process</a></CODE>
+  <DD class=proc-def>Symbol representing time spent in current process.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai">time-tai</a></CODE>
+  <DD class=proc-def>Symbol representing TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-thread">time-thread</a></CODE>
+  <DD class=proc-def>Symbol representing time spent in current thread.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc">time-utc</a></CODE>
+  <DD class=proc-def>Symbol representting UTC time.
+</DL>
+<h2>Current time and clock resolution</h2>
+<P>The following procedures are required:
+
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="current-date">current-date</a></CODE> [<VAR>tz-offset</VAR>] -> <VAR>date</VAR>
+  <DD class=proc-def>Date corresponding to the current UTC time. 
+  <DT class=proc-def><CODE class=proc-def><a name="current-julian-day">current-julian-day</a></CODE> -> <VAR>jdn</VAR>
+  <DD class=proc-def>Current Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="current-modified-julian-day">current-modified-julian-day</a></CODE> -> <VAR>mjdn</VAR>
+  <DD class=proc-def>Current Modified Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="current-time">current-time</a></CODE> [<VAR>time-type</VAR>] -> <VAR>time</VAR>
+  <DD class=proc-def>Current time, of type <code>time-type</code> system, which defaults to <code>TIME-UTC</code>.
+  <DT class=proc-def><CODE class=proc-def><a name="time-resolution">time-resolution</a></CODE> [<VAR>time-type</VAR>] -> <VAR>integer</VAR>
+  <DD class=proc-def>Clock resolution, in nanoseconds, of the system clock of type type <code>time-type</code> system, which defaults to <code>TIME-UTC</code>.
+</DL>
+<h2>Time object and accessors</h2>
+<P>The following procedures are required:
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="make-time">make-time</a></CODE> <VAR>type nanosecond second</VAR> -> <VAR>time</VAR>
+  <DD class=proc-def>Creates a time object.
+  <DT class=proc-def><CODE class=proc-def><a name="time-p">time?</a></CODE> <VAR>object</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if object is a time object, otherwise, <code>#f</code>.
+  <DT class=proc-def><CODE class=proc-def><a name="time-type">time-type</a></CODE> <VAR>time</VAR> -> <VAR>time-type</VAR>
+  <DD class=proc-def>Time type.
+  <DT class=proc-def><CODE class=proc-def><a name="time-nanosecond">time-nanosecond</a></CODE> <VAR>time</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Time nanosecond.
+  <DT class=proc-def><CODE class=proc-def><a name="time-second">time-second</a></CODE> <VAR>time</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Time second.
+  <DT class=proc-def><CODE class=proc-def><a name="set-time-type!">set-time-type!</a></CODE> <VAR>time time-type</VAR>
+  <DD class=proc-def>Changes time type. Note: This changes the semantics of the time object. To convert a time to another
+                     system of representation, use one of the conversion procedures.
+  <DT class=proc-def><CODE class=proc-def><a name="set-time-nanosecond!">set-time-nanosecond!</a></CODE> <VAR>time integer</VAR>
+  <DD class=proc-def>Changes time nanosecond.
+  <DT class=proc-def><CODE class=proc-def><a name="set-time-second!">set-time-second!</a></CODE> <VAR>time integer</VAR>
+  <DD class=proc-def>Changes time second.
+  <DT class=proc-def><CODE class=proc-def><a name="copy-time">copy-time</a></CODE> <VAR>time1</VAR> -> <VAR>time2</VAR>
+  <DD class=proc-def>Creates a new time object, with the same time type, nanosecond, and second as <var>time1</var>.
+</DL>
+
+<h2>Time comparison procedures</h2>
+
+<P>All of the time comparison procedures require the time objects to
+be of the same type. It is an error to use these procedures on time
+objects of different types. For the point-in-time measurements (e.g.,
+<code>TIME-TAI</code> and <code>TIME-UTC</code>), the semantics are
+described in plain text. For durations, (e.g.,
+<code>TIME-DURATION</code>, <code>TIME-CPU</code>, the semantics are
+described in parentheses.
+
+<p> The following procedures are required:
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="time<=-p">time&lt;=?</a></CODE> <VAR>time1 time2</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if <var>time1</var> is before or at (less than or equal to) <var>time2</var>, <code>#f</code> otherwise. 
+  <DT class=proc-def><CODE class=proc-def><a name="time<-p">time&lt;?</a></CODE> <VAR>time1 time2</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if <var>time1</var> is before (less than) <var>time2</var>, <code>#f</code> otherwise. 
+  <DT class=proc-def><CODE class=proc-def><a name="time=-p">time=?</a></CODE> <VAR>time1 time2</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if <var>time1</var> at (equal) <var>time2</var>, <code>#f</code> otherwise. 
+  <DT class=proc-def><CODE class=proc-def><a name="time>=-p">time&gt;=?</a></CODE> <VAR>time1 time2</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if <var>time1</var> is at or after (greater than or equal to) <var>time2</var>, <code>#f</code> otherwise. 
+  <DT class=proc-def><CODE class=proc-def><a name="time>-p">time&gt;?</a></CODE> <VAR>time1 time2</VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if <var>time1</var> is after (greater than) <var>time2</var>, <code>#f</code> otherwise. 
+</DL>
+
+<h2>Time arithmetic procedures</h2>
+
+<P>The following procedures are required.
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="time-difference">time-difference</a></CODE> <VAR>time1 time2</VAR> -> <VAR>time-duration</VAR>
+  <DD class=proc-def>The <code>TIME-DURATION</code> between <VAR>time1</VAR> and <VAR>time2</VAR>. It is an error if <VAR>time1</VAR> and <VAR>time2</VAR> are of different time types. A new time object is created.
+  <DT class=proc-def><CODE class=proc-def><a name="time-difference!">time-difference!</a></CODE> <VAR>time1 time2</VAR> -> <VAR>time-duration</VAR>
+  <DD class=proc-def>The <code>TIME-DURATION</code> between <VAR>time1</VAR> and <VAR>time2</VAR>. It is an error if <VAR>time1</VAR> and <VAR>time2</VAR> are of different time types. <var>Time1</var> may be used to create the resulting <code>TIME-DURATION</code> object.
+  <DT class=proc-def><CODE class=proc-def><a name="add-duration">add-duration</a></CODE> <VAR>time1 time-duration</VAR> -> <VAR>time</VAR>
+  <DD class=proc-def>The time resulting from adding <VAR>time-duration</VAR> to  <VAR>time1</VAR>, which is a time object of the same time type as  <VAR>time1</VAR>. A new time object is created.
+  <DT class=proc-def><CODE class=proc-def><a name="add-duration!">add-duration!</a></CODE> <VAR>time1 time-duration</VAR> -> <VAR>time</VAR>
+  <DD class=proc-def>The time resulting from adding <VAR>time-duration</VAR> to  <VAR>time1</VAR>, which is a time object of the same time type as  <VAR>time1</VAR>. <var>Time1</var> may used to create the resulting time object.
+  <DT class=proc-def><CODE class=proc-def><a name="subtract-duration">subtract-duration</a></CODE> <VAR>time1 time-duration</VAR> -> <VAR>time</VAR>
+  <DD class=proc-def>The time resulting from subtracting <VAR>time-duration</VAR> to  <VAR>time1</VAR>, which is a time object of the same time type as  <VAR>time1</VAR>. A new time object is created.
+  <DT class=proc-def><CODE class=proc-def><a name="subtract-duration!">subtract-duration!</a></CODE> <VAR>time1 time-duration</VAR> -> <VAR>time</VAR>
+  <DD class=proc-def>The time resulting from subtracting <VAR>time-duration</VAR> to  <VAR>time1</VAR>, which is a time object of the same time type as  <VAR>time1</VAR>. <var>Time1</var> may used to create the resulting time object.
+</DL>
+
+<h2>Date object and accessors</h2>
+
+<P>Date objects are immutable once created. The following procedures are required.
+<DL>
+
+  <DT class=proc-def><CODE class=proc-def><a name="make-date">make-date</a></CODE> <VAR>nanosecond second minute hour day month year zone-offset</VAR> -> <VAR>date</VAR>
+  <DD class=proc-def>Creates a date object.
+  <DT class=proc-def><CODE class=proc-def><a name="date-p">date?</a></CODE> <VAR>date </VAR> -> <VAR>boolean</VAR>
+  <DD class=proc-def><code>#t</code> if object is a time object, otherwise, <code>#f</code>.
+  <DT class=proc-def><CODE class=proc-def><a name="date-nanosecond">date-nanosecond</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date nanosecond.
+  <DT class=proc-def><CODE class=proc-def><a name="date-second">date-second</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date second.
+  <DT class=proc-def><CODE class=proc-def><a name="date-minute">date-minute</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date minute.
+  <DT class=proc-def><CODE class=proc-def><a name="date-hour">date-hour</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date hour.
+  <DT class=proc-def><CODE class=proc-def><a name="date-day">date-day</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date day.
+  <DT class=proc-def><CODE class=proc-def><a name="date-month">date-month</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date month.
+  <DT class=proc-def><CODE class=proc-def><a name="date-year">date-year</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date year.
+  <DT class=proc-def><CODE class=proc-def><a name="date-zone-offset">date-zone-offset</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>Date time zone offset.
+  <DT class=proc-def><CODE class=proc-def><a name="date-year-day">date-year-day</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>The ordinal day of the year of this date. January 1 is 1, etc.
+  <DT class=proc-def><CODE class=proc-def><a name="date-week-day">date-week-day</a></CODE> <VAR>date</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>The day of the week of this date, where Sunday=0, Monday=1, etc.
+  <DT class=proc-def><CODE class=proc-def><a name="date-week-number">date-week-number</a></CODE> <VAR>date day-of-week-starting-week</VAR> -> <VAR>integer</VAR>
+  <DD class=proc-def>The ordinal week of the year which holds this date, ignoring a first partial week. 'Day-of-week-starting-week' is the integer corresponding to the day of the week which is to be considered the first day of the week (Sunday=0, Monday=1, etc.).
+</DL>
+
+<H2>Time/Date/Julian Day/Modified Julian Day Converters</h2>
+
+The following conversion procedures are required.
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="date->julian-day">date->julian-day</a></CODE> <VAR>date</VAR> -> <VAR>jd</VAR>
+  <DD class=proc-def>Convert date to Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="date->modified-julian-day">date->modified-julian-day</a></CODE> <VAR>date</VAR> -> <VAR>mjd</VAR>
+  <DD class=proc-def>Convert date to Modified Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="date->time-monotonic">date->time-monotonic</a></CODE> <VAR>date</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert date to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="date->time-tai">date->time-tai</a></CODE> <VAR>date</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert date to TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="date->time-utc">date->time-utc</a></CODE> <VAR>date</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert date to UTC time.
+  <DT class=proc-def><CODE class=proc-def><a name="julian-day->date">julian-day->date</a></CODE> <VAR>jd</VAR>  [<VAR>tz-offset</VAR>] -> <VAR>date</VAR>
+  <DD class=proc-def>Convert Julian Day to date, , using time zone offset, which defaults to the local time zone.
+  <DT class=proc-def><CODE class=proc-def><a name="julian-day->time-monotonic">julian-day->time-monotonic</a></CODE> <VAR>jd</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert Julian Day to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="julian-day->time-tai">julian-day->time-tai</a></CODE> <VAR>jd</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert Julian Day to TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="julian-day->time-utc">julian-day->time-utc</a></CODE> <VAR>jd</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert Julian Day to UTC time.
+  <DT class=proc-def><CODE class=proc-def><a name="modified-julian-day->date">modified-julian-day->date</a></CODE> <VAR>mjd</VAR> [<VAR>tz-offset</VAR>] -> <VAR>date</VAR>
+  <DD class=proc-def>Convert Modified Julian Day to date, using time zone offset, which defaults to the local time zone.
+  <DT class=proc-def><CODE class=proc-def><a name="modified-julian-day->time-monotonic">modified-julian-day->time-monotonic</a></CODE> <VAR>mjd</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert Modified Julian Day to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="modified-julian-day->time-tai">modified-julian-day->time-tai</a></CODE> <VAR>mjd</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert Modified Julian Day to TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="modified-julian-day->time-utc">modified-julian-day->time-utc</a></CODE> <VAR>mjd</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert Modified Julian Day to UTC time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->date">time-monotonic->date</a></CODE> <VAR>time-monotonic</VAR> [<VAR>tz-offset</VAR>] -> <VAR>date</VAR>
+  <DD class=proc-def>Convert monotonic time to date, using time zone offset, which defaults to the local time zone.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->julian-day">time-monotonic->julian-day</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>jd</VAR>
+  <DD class=proc-def>Convert monotonic time to Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->modified-julian-day">time-monotonic->modified-julian-day</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>mjd</VAR>
+  <DD class=proc-def>Convert monotonic time to Modified Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->time-tai">time-monotonic->time-tai</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert monotonic time to TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->time-tai!">time-monotonic->time-tai!</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert monotonic time to TAI time. The time structure may be reused.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->time-utc">time-monotonic->time-utc</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert monotonic time to UTC time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-monotonic->time-utc!">time-monotonic->time-utc!</a></CODE> <VAR>time-monotonic</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert monotonic time to UTC time.  The time structure may be reused.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->date">time-tai->date</a></CODE> <VAR>time-tai [tz-offset]</VAR> -> <VAR>date</VAR>
+  <DD class=proc-def>Convert TAI time to date, using time zone offset, which defaults to the local time zone.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->julian-day">time-tai->julian-day</a></CODE> <VAR>time-tai</VAR> -> <VAR>jd</VAR>
+  <DD class=proc-def>Convert TAI time to Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->modified-julian-day">time-tai->modified-julian-day</a></CODE> <VAR>time-tai</VAR> -> <VAR>mjd</VAR>
+  <DD class=proc-def>Convert TAI time to Modified Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->time-monotonic">time-tai->time-monotonic</a></CODE> <VAR>time-tai</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert TAI time to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->time-monotonic!">time-tai->time-monotonic!</a></CODE> <VAR>time-tai</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert TAI time to monotonic time. The time structure may be reused.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->time-utc">time-tai->time-utc</a></CODE> <VAR>time-tai</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert TAI time to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-tai->time-utc!">time-tai->time-utc!</a></CODE> <VAR>time-tai</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert TAI time to monotonic time. The time structure may be reused.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->date">time-utc->date</a></CODE> <VAR>time-utc [tz-offset]</VAR> -> <VAR>time-utc</VAR>
+  <DD class=proc-def>Convert UTC time to date, using time zone offset, which defaults to the local time zone.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->julian-day">time-utc->julian-day</a></CODE> <VAR>time-utc</VAR> -> <VAR>jd</VAR>
+  <DD class=proc-def>Convert UTC time to Julian Day
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->modified-julian-day">time-utc->modified-julian-day</a></CODE> <VAR>time-utc</VAR> -> <VAR>mjd</VAR>
+  <DD class=proc-def>Convert UTC time to Modified Julian Day.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->time-monotonic">time-utc->time-monotonic</a></CODE> <VAR>time-utc</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert UTC time to monotonic time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->time-monotonic!">time-utc->time-monotonic!</a></CODE> <VAR>time-utc</VAR> -> <VAR>time-monotonic</VAR>
+  <DD class=proc-def>Convert UTC time to monotonic time. The time structure may be reused.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->time-tai">time-utc->time-tai</a></CODE> <VAR>time-utc</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert UTC time to TAI time.
+  <DT class=proc-def><CODE class=proc-def><a name="time-utc->time-tai!">time-utc->time-tai!</a></CODE> <VAR>time-utc</VAR> -> <VAR>time-tai</VAR>
+  <DD class=proc-def>Convert UTC time to TAI time. The time structure may be reused.
+</DL>
+
+<h2>Date to String/String to Date Converters</h2>
+
+These procedures provide conversion to and from strings. They are required. The specification below describes a 'locale;' the
+specification of locales is beyond this SRFI.
+
+<DL>
+  <DT class=proc-def><CODE class=proc-def><a name="date->string">date->string</a></CODE> <VAR>date</VAR> [<VAR>format-string</VAR>] -> <VAR>string</VAR>
+  <DD class=proc-def>Converts a date to a string, using the format string. The format string is copied as is; except
+escape characters (indicated by the tilde) are replaced with specfic conversions. Table 1 lists the required conversion specifiers;
+implementations are free to extend this list.
+  <DT class=proc-def><CODE class=proc-def><a name="string->date">string->date</a></CODE> <VAR>input-string template-string</VAR> -> <VAR>date</VAR>
+  <DD class=proc-def>Converts an input string to a date, using the template string. The input string must match the template
+sting as is; except escape characters (indicate by the tilde) indicate special converters which (1) move to the next character in the input string fulfilling a criterion; (2) read a value, and (3) act on this value in some way. Table 2 lists the required 
+converters; implementations are free to extend this list.
+</DL>
+
+<TABLE ALIGN="CENTER" WIDTH="80%" summary="DATE->STRING conversion specifiers">
+<TR><TD COLSPAN="2"><HR WIDTH="100%"></TD></TR>
+<TR><TH>Ch</TH><TH>Conversion</TH></TR>
+<TR><TD COLSPAN="2"><HR WIDTH="100%"></TD></TR>
+<TR><TD width="5%"><code>~~</code></TD><TD WIDTH="95%">a literal <CODE>~</CODE></TD></TR>
+<TR><TD width="5%"><code>~a</code></TD><TD WIDTH="95%">locale's abbreviated weekday name (Sun...Sat)</TD></TR>
+<TR><TD width="5%"><code>~A</code></TD><TD WIDTH="95%">locale's full weekday name (Sunday...Saturday)</TD></TR>
+<TR><TD width="5%"><code>~b</code></TD><TD WIDTH="95%">locale's abbreviate month name (Jan...Dec)</TD></TR>
+<TR><TD width="5%"><code>~B</code></TD><TD WIDTH="95%">locale's full month day (January...December)</TD></TR>
+<TR><TD width="5%"><code>~c</code></TD><TD WIDTH="95%">locale's date and time (e.g., "Fri Jul 14 20:28:42-0400 2000") </TD></TR>
+<TR><TD width="5%"><code>~d</code></TD><TD WIDTH="95%">day of month, zero padded (01...31)</TD></TR>
+<TR><TD width="5%"><code>~D</code></TD><TD WIDTH="95%">date (mm/dd/yy)</TD></TR>
+<TR><TD width="5%"><code>~e</code></TD><TD WIDTH="95%">day of month, blank padded ( 1...31)</TD></TR>
+<TR><TD width="5%"><code>~f</code></TD><TD WIDTH="95%">seconds+fractional seconds, using locale's decimal separator (e.g. 5.2).</TD></TR>
+<TR><TD width="5%"><code>~h</code></TD><TD WIDTH="95%">same as ~b</TD></TR>
+<TR><TD width="5%"><code>~H</code></TD><TD WIDTH="95%">hour, zero padded, 24-hour clock (00...23)</TD></TR>
+<TR><TD width="5%"><code>~I</code></TD><TD WIDTH="95%">hour, zero padded, 12-hour clock (01...12)</TD></TR>
+<TR><TD width="5%"><code>~j</code></TD><TD WIDTH="95%">day of year, zero padded</TD></TR>
+<TR><TD width="5%"><code>~k</code></TD><TD WIDTH="95%">hour, blank padded, 24-hour clock (00...23)</TD></TR>
+<TR><TD width="5%"><code>~l</code></TD><TD WIDTH="95%">hour, blank padded, 12-hour clock (01...12)</TD></TR>
+<TR><TD width="5%"><code>~m</code></TD><TD WIDTH="95%">month, zero padded (01...12)</TD></TR>
+<TR><TD width="5%"><code>~M</code></TD><TD WIDTH="95%">minute, zero padded (00...59)</TD></TR>
+<TR><TD width="5%"><code>~n</code></TD><TD WIDTH="95%">new line</TD></TR>
+<TR><TD width="5%"><code>~N</code></TD><TD WIDTH="95%">nanosecond, zero padded</TD></TR>
+<TR><TD width="5%"><code>~p</code></TD><TD WIDTH="95%">locale's AM or PM</TD></TR>
+<TR><TD width="5%"><code>~r</code></TD><TD WIDTH="95%">time, 12 hour clock, same as "~I:~M:~S ~p"</TD></TR>
+<TR><TD width="5%"><code>~s</code></TD><TD WIDTH="95%">number of full seconds since "the epoch" (in UTC)</TD></TR>
+<TR><TD width="5%"><code>~S</code></TD><TD WIDTH="95%">second, zero padded (00...60)</TD></TR>
+<TR><TD width="5%"><code>~t</code></TD><TD WIDTH="95%">horizontal tab</TD></TR>
+<TR><TD width="5%"><code>~T</code></TD><TD WIDTH="95%">time, 24 hour clock, same as "~H:~M:~S"</TD></TR>
+<TR><TD width="5%"><code>~U</code></TD><TD WIDTH="95%">week  number  of  year  with Sunday as first day of week (00...53)</TD></TR>
+<TR><TD width="5%"><code>~V</code></TD><TD WIDTH="95%">week number of year with Monday  as  first  day  of week (01...52)</TD></TR>
+<TR><TD width="5%"><code>~w</code></TD><TD WIDTH="95%"> day of week (0...6)</TD></TR>
+<TR><TD width="5%"><code>~W</code></TD><TD WIDTH="95%">week  number  of  year  with Monday as first day of week (01...52)</TD></TR>
+<TR><TD width="5%"><code>~x</code></TD><TD WIDTH="95%">week  number  of  year  with Monday as first day of week (00...53)</TD></TR>
+<TR><TD width="5%"><code>~X</code></TD><TD WIDTH="95%">locale's date representation, for example: "07/31/00" </TD></TR>
+<TR><TD width="5%"><code>~y</code></TD><TD WIDTH="95%">last two digits of year (00...99)</TD></TR>
+<TR><TD width="5%"><code>~Y</code></TD><TD WIDTH="95%">year</TD></TR>
+<TR><TD width="5%"><code>~z</code></TD><TD WIDTH="95%">time zone in RFC-822 style</TD></TR>
+<TR><TD width="5%"><code>~Z</code></TD><TD WIDTH="95%">symbol time zone (not-implemented)</TD></TR>
+<TR><TD width="5%"><code>~1</code></TD><TD WIDTH="95%">ISO-8601 year-month-day format</TD></TR>
+<TR><TD width="5%"><code>~2</code></TD><TD WIDTH="95%">ISO-8601 hour-minute-second-timezone format</TD></TR>
+<TR><TD width="5%"><code>~3</code></TD><TD WIDTH="95%">ISO-8601 hour-minute-second format</TD></TR>
+<TR><TD width="5%"><code>~4</code></TD><TD WIDTH="95%">ISO-8601 year-month-day-hour-minute-second-timezone format</TD></TR>
+<TR><TD width="5%"><code>~5</code></TD><TD WIDTH="95%">ISO-8601 year-month-day-hour-minute-second format</TD></TR>
+<TR><TD COLSPAN="2"><HR WIDTH="100%"></TD></TR>
+<TR><TH COLSPAN="2">Table 1: <code>DATE->STRING</code> conversion specifiers</TH></TR>
+<TR><TD COLSPAN="2"><HR WIDTH="100%"></TD></TR>
+</TABLE>
+
+<p>
+<TABLE ALIGN="CENTER" WIDTH="80%" summary="STRING->DATE conversion specifiers">
+<TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>
+<TR><TH>Ch</TH><TH>Skip to</TH><TH>Read</TH><TH>Set</TH></TR>
+<TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>
+<TR><TD width="6%"><code>~~</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">read literal <code>~</code></TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~a</code></TD><TD WIDTH="23%">char-alphabetic?</TD><TD WIDTH="50%">abbreviated weekday in locale</TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~A</code></TD><TD WIDTH="23%">char-alphabetic?</TD><TD WIDTH="50%">full weekday in locale</TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~b</code></TD><TD WIDTH="23%">char-alphabetic?</TD><TD WIDTH="50%">abbreviated month name in locale</TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~B</code></TD><TD WIDTH="23%">char-alphabetic?</TD><TD WIDTH="50%">full month name in locale</TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~d</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">day of month</TD><TD WIDTH="23%"><code>date-day</code></TD></TR>
+<TR><TD width="6%"><code>~e</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">day of month, blank padded</TD><TD WIDTH="23%"><code>date-day</code></TD></TR>
+<TR><TD width="6%"><code>~h</code></TD><TD WIDTH="23%">char-alphabetic?</TD><TD WIDTH="50%">same as ~b</TD><TD WIDTH="23%">nothing</TD></TR>
+<TR><TD width="6%"><code>~H</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">hour</TD><TD WIDTH="23%"><code>date-hour</code></TD></TR>
+<TR><TD width="6%"><code>~k</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">hour, blank padded</TD><TD WIDTH="23%"><code>date-hour</code></TD></TR>
+<TR><TD width="6%"><code>~m</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">month</TD><TD WIDTH="23%"><code>date-month</code></TD></TR>
+<TR><TD width="6%"><code>~M</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">minute</TD><TD WIDTH="23%"><code>date-minute</code></TD></TR>
+<TR><TD width="6%"><code>~S</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">second</TD><TD WIDTH="23%"><code>date-second</code></TD></TR>
+<TR><TD width="6%"><code>~y</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">2-digit year</TD><TD WIDTH="23%"><code>date-year</code> within 50 years</TD></TR>
+<TR><TD width="6%"><code>~Y</code></TD><TD WIDTH="23%">char-numeric?</TD><TD WIDTH="50%">year</TD><TD WIDTH="23%"><code>date-year</code></TD></TR>
+<TR><TD width="6%"><code>~z</code></TD><TD WIDTH="23%">any</TD><TD WIDTH="50%">time zone</TD><TD WIDTH="23%"><code>date-zone-offset</code></TD></TR>
+<TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>
+<TR><TH COLSPAN="4">Table 2: <code>STRING->DATE</code> conversion specifiers</TH></TR>
+<TR><TD COLSPAN="4"><HR WIDTH="100%"></TD></TR>
+</TABLE>
+
+<H1>Implementation</H1>
+
+This SRFI cannot be written in completely standard Scheme. In
+particular, there must be some system-independent method of finding
+the values for <code>CURRENT-TIME</code>. The GNU C function,
+<code>gettimeofday</code> might prove useful to implementors. 
+
+<p>The difference between TAI and UTC is not determinate, and
+implementations must provide some method for getting TAI. A procedure
+is provided in the accompany implmentation for reading the leap second
+table provided by the Time Service of the US Naval Observatory
+(available at <a
+href="ftp://maia.usno.navy.mil/ser7/tai-utc.dat">ftp://maia.usno.navy.mil/ser7/tai-utc.dat</a>). 
+
+<P>The accompanying implementation assumes <a
+href="http://srfi.schemers.org/srfi-6/">SRFI 6 Basic String Ports</a>.
+The accompanying implementation also assumes an <CODE>error</CODE>
+procedure.  The accompanying implementation also assumes <a
+href="http://srfi.schemers.org/srfi-8/">SRFI 8 RECEIVE: Binding to
+multiple values</a>.  which is easy to implement with the following
+syntax:
+
+<CODE>
+<PRE>
+(define-syntax receive
+  (syntax-rules ()
+    ((receive formals expression body ...)
+     (call-with-values (lambda () expression)
+                       (lambda formals body ...)))))
+</PRE>
+</CODE>
+
+<p>Note that it contains TAI-UTC.DAT reader.
+
+<P>The <a href="http://srfi.schemers.org/srfi-19/srfi-19.scm">accompanying 
+implementation</a> is written in MzScheme.  MzScheme provides the procedure 
+<CODE>current-seconds</CODE>, which returns the number of seconds (UTC)
+since 1970-01-01T00:00:00Z+00:00, and
+<code>current-milliseconds</code>, which is a monotonic time
+clock. Combining these provides an implementation of
+<code>(current-time time-utc)</code>. Monontonic time, in this
+implementation, is the same as TAI time; differences between TAI and
+UTC are resolved through a leap second table. According to the
+International Earth Rotation Service, there will be no leap second in
+December, 2000. Thus, the leap second table is guaranteed to be
+correct through June, 2000. 
+
+<p>Also, MzScheme (as of version 102, I believe) provides a method for
+returning the current time zone offset, via its SECONDS-&gt;DATE and
+CURRENT-DATE procedures. 
+
+<p>MzScheme's <code>DEFINE-STRUCT</code> was used to define the time
+and date objects. <a
+href="http://srfi.schemers.org/srfi-9/">SRFI 9</a>, Defining Record
+Types, could be used instead.
+
+<p>Procedures meant to be used internally have names beginning with
+<code>TM:</code>. Locale-related constants and procedures have
+<code>locale</code> in their name; if a 'locale' SRFI is ever written,
+it might be good to use that code instead.
+
+<p>From this, the rest of the implementation was built. 
+
+<p>There is also a <a href="http://srfi.schemers.org/srfi-19/srfi-19-test-suite.scm">test suite</a>.
+
+<h1>Acknowledgements</h1>
+
+Claus
+Tøndering's<a href="http://www.tondering.dk/claus/calendar.html"> Frequently Asked Questions</a> about calendars was a very
+useful resource. The implementation of Julian Day, Modified Julian
+Day, and Year Day comes from his FAQ. Markus Kuhn has a <a
+href="http://www.cl.cam.ac.uk/~mgk25/iso-time.html">useful
+description</a> of the <a
+href="http://www.iso.ch/markete/8601.pdf">ISO Standard 8601</a> for
+Date/Time notation; The W3 Consortium also has a <a
+href="http://www.w3.org/TR/NOTE-datetime">useful Note</a>.
+
+<p>Mike Sperber, Marc Feely, Dave Mason, and "Prfnoff" all made useful
+comments on previous versions of this draft. Thanks to Shriram 
+Krishnamurthi for his editing help.
+
+<p>The <code>DATE->STRING</code> procedure uses a format string, based on
+GNU C's <code>date</code> procedure, as well as <code>scsh</code>'s
+<code>FORMAT-DATE</code> procedure. 
+
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) Neodesic Corporation (2000). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+<HR>
+
+<ADDRESS>Editor: <A href="mailto:srfi-editors@srfi.schemers.org">Shriram 
+Krishnamurthi</A></ADDRESS>
+Last 
+modified by the author:<BR><CODE>(display (date->string (current-date 0)
+"~4"))</CODE>: 2004-03-15T02:21:15Z
+</BODY></HTML>

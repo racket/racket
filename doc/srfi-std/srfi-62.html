@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html><head><title>SRFI 62: S-expression comments</title></head><body>
+
+<h1>Title</h1>
+
+S-expression comments
+
+<h1>Author</h1>
+
+Taylor Campbell
+
+<h1>Status</h1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+You can access previous messages via <a href="http://srfi.schemers.org/srfi-62/mail-archive/maillist.html">the archive of the mailing list</a>.
+<p></p><ul>
+
+<li>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-62/srfi-62.txt?rev=1.1">2005/01/04</a>
+</li><li>Draft: 2005/01/03-2005/03/04
+</li><li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-62/srfi-62.txt?rev=1.3">2005/02/27</a>
+</li><li>Final: 2005/07/21</li>
+</ul>
+
+<h1>Abstract</h1>
+
+<p>
+This SRFI proposes a simple extension to Scheme's lexical syntax that
+allows individual S-expressions to be made into comments, ignored by
+the reader.  This contrasts with the standard Lisp semicolon commnets,
+which make the reader ignore the remainder of the line, and the
+slightly less common block comments, as <a href="http://srfi.schemers.org/srfi-30/srfi-30.html">SRFI 30</a>
+defines: both of these mechanisms comment out slices of text, not
+S-expressions.
+</p>
+
+<h1>Rationale</h1>
+
+<p>
+Line and block comments are useful for embedding textual commentary in
+programs, but they are not conducive to commenting out code easily in
+an absence of extensive editor support for removing selected text that
+composes S-expressions while retaining them in the text itself, or
+subsequently removing the comments and re-introducing the S-expressions
+themselves.
+</p>
+
+<h1>Informal specification</h1>
+
+<p>
+A new octothorpe reader syntax character is defined, <tt>#\;</tt>, such
+that the reader ignores the S-expression following the <tt>#;</tt> and
+proceeds on to the S-expression after that.  For example,
+<br>
+</p>
+<table border="0" cellpadding="0" cellspacing="10">
+  <tbody><tr>
+    <td><tt>(+ 1 #;(* 2 3) 4)</tt></td>
+    <td>-reads-&gt; <tt>(+ 1 4)</tt></td>
+    <td>-evals-&gt; <tt>5</tt></td>
+  </tr>
+  <tr>
+    <td><tt>(list 'x #;'y 'z)</tt></td>
+    <td>-reads-&gt; <tt>(list (quote x) (quote z))</tt></td>
+    <td>-evals-&gt; <tt>(x z)</tt></td>
+  </tr>
+  <tr>
+    <td><tt>(* 3 4 #;(+ 1 2))</tt></td>
+    <td>-reads-&gt; <tt>(* 3 4)</tt></td>
+    <td>-evals-&gt; <tt>12</tt></td>
+  </tr>
+  <tr>
+    <td><tt>(#;sqrt abs -16)</tt></td>
+    <td>-reads-&gt; <tt>(abs -16)</tt></td>
+    <td>-evals-&gt; <tt>16</tt></td>
+  </tr>
+</tbody></table>
+
+<p>
+Some examples of nested S-expression comments may appear confusing at
+first, but they are straightforwardly explained.  For instance,
+consider the text <tt>(list 'a #; #;'b 'c 'd)</tt>.  This reads as the
+list represented by <tt>(list (quote a) (quote d))</tt>.  Note that
+both <tt>'b</tt> and <tt>'c</tt> seemed to 'disappear.'  The reason is
+simply that when the first <tt>#;</tt> causes the reader to read ahead
+in the input stream for the next S-expression, the reader encounters
+another <tt>#;</tt>, which causes the <tt>'b</tt> to be consumed, and
+which then moves the reader on to <tt>'c</tt> to return as the first
+S-expression following the first <tt>#;</tt>.  Since it is the first
+S-expression following a <tt>#;</tt>, <tt>'b</tt> is ignored as well,
+leaving only <tt>'d</tt>.
+</p>
+
+<p>
+That is a fairly special case of nested S-expression comments.  Others
+are somewhat simpler for intuition to grasp immediately, such as:
+<br>
+<br>
+<tt>(list 'a #;(list 'b #;c 'd) 'e)</tt> -reads-&gt; <tt>(list (quote a) (quote e))</tt> -evals-&gt; <tt>(a e)</tt>
+<br>
+<br>
+There are also some other somewhat peculiar examples, such as in dotted
+lists and at the end of lists, which are still simple to grasp:
+<br>
+<br>
+<table border="0" cellpadding="0" cellspacing="10">
+  <tbody><tr>
+    <td><tt>'(a . #;b c)</tt></td>
+    <td>-reads-&gt; <tt>(quote (a . c))</tt></td>
+  </tr>
+  <tr>
+    <td><tt>'(a . b #;c)</tt></td>
+    <td>-reads-&gt; <tt>(quote (a . b))</tt></td>
+  </tr>
+</tbody></table>
+</p>
+
+<p>
+Note, however, that any text that is invalid without S-expression
+comments will be invalid with them as well, and an S-expression comment
+prefix, <tt>#;</tt>, must be followed by a complete S-expression (and
+after that either a complete S-expression or a special token such as a
+closing parenthesis, a dot in dotted lists, or the end of file); for
+instance, the following are all errors:
+<br>
+<br>
+</p><ul>
+  <li><tt>(#;a . b)</tt></li>
+  <li><tt>(a . #;b)</tt></li>
+  <li><tt>(a #;. b)</tt></li>
+  <li><tt>(#;x #;y . z)</tt></li>
+  <li><tt>(#; #;x #;y . z)</tt></li>
+  <li><tt>(#; #;x . z)</tt></li>
+</ul>
+<p></p>
+
+<h1>Formal specification</h1>
+
+<p>
+R5RS's formal syntax is modified as follows:
+</p><ul>
+  <li>In section 7.1.1, a <tt>#;</tt> option is added to the
+      <tt>&lt;token&gt;</tt> non-terminal.</li>
+  <li>In section 7.1.2, a non-terminal <tt>&lt;commented datum&gt;</tt>
+      is defined:
+<pre>  &lt;commented datum&gt; ---&gt; "#;" &lt;datum&gt; &lt;datum&gt;
+</pre></li>
+  <li>Also in section 7.1.2, the <tt>&lt;datum&gt;</tt> non-terminal is
+      modified to have a <tt>&lt;commented datum&gt;</tt> option.</li>
+  <li>Finally in section 7.1.2, the <tt>&lt;list&gt;</tt> and
+      <tt>&lt;vector&gt;</tt> non-terminals are replaced with the
+      following rules, along with two auxiliary ones:
+<pre>  &lt;list&gt; ---&gt; "(" &lt;datum&gt;* &lt;optional dot&gt; &lt;delimiter prefix&gt; ")"
+  &lt;vector&gt; ---&gt; "#(" &lt;datum&gt;* &lt;delimiter prefix&gt; ")"
+  &lt;optional dot&gt; ---&gt; &lt;empty&gt; | &lt;datum&gt; &lt;delimiter prefix&gt; "." &lt;datum&gt;
+  &lt;delimiter prefix&gt; ---&gt; &lt;empty&gt; | "#;" &lt;datum&gt; &lt;delimiter prefix&gt;
+</pre></li>
+</ul>
+The first datum in a <tt>&lt;commented datum&gt;</tt> is ignored
+semantically, as is any datum immediately following a <tt>#;</tt> token
+in a delimiter prefix.
+<br><br>
+All of the new or modified rules are presented here:
+<pre>  7.1.1:
+
+    &lt;token&gt; ---&gt; &lt;identifier&gt; | &lt;boolean&gt; | &lt;number&gt;
+        | &lt;character&gt; | &lt;string&gt;
+        | "(" | ")" | "#(" | "'" | "`" | "," | ",@" | "." | "#;"
+
+  7.1.2:
+
+    &lt;datum&gt; ---&gt; &lt;simple datum&gt; | &lt;compound datum&gt;
+        | &lt;commented datum&gt;
+    &lt;commented datum&gt; ---&gt; "#;" &lt;datum&gt; &lt;datum&gt;
+    &lt;list&gt; ---&gt; "(" &lt;datum&gt;* &lt;optional dot&gt; &lt;delimiter prefix&gt; ")"
+    &lt;vector&gt; ---&gt; "#(" &lt;datum&gt;* &lt;delimiter prefix&gt; ")"
+    &lt;optional dot&gt; ---&gt; &lt;empty&gt; | &lt;datum&gt; &lt;delimiter prefix&gt; "." &lt;datum&gt;
+    &lt;delimiter prefix&gt; ---&gt; &lt;empty&gt; | "#;" &lt;datum&gt; &lt;delimiter prefix&gt;
+</pre>
+<p></p>
+
+<h1>Copyright</h1>
+
+<p>Copyright (C) 2004 Taylor Campbell.  All rights reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi%20minus%20editors%20at%20srfi%20dot%20schemers%20dot%20org">Mike Sperber</a></address>
+  
+</body></html>

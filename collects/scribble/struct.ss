@@ -159,6 +159,8 @@
    [(target-element element) ([tag tag?])]
    [(toc-target-element target-element) ()]
    [(page-target-element target-element) ()]
+   [(redirect-target-element target-element) ([alt-path path-string?]
+                                              [alt-anchor string?])]
    [(link-element element) ([tag tag?])]
    [(index-element element) ([tag tag?]
                              [plain-seq (listof string?)]

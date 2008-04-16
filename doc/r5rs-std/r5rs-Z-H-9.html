@@ -1,0 +1,3484 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-8.html">previous</a></span><span>, <a href="r5rs-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_6"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_6">Chapter 6</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_6">Standard procedures</a></h1>
+<p>
+</p>
+<p>
+<a name="%_idx_204"></a>
+<a name="%_idx_206"></a>
+<a name="%_idx_208"></a></p>
+<p>
+This chapter describes Scheme's built-in procedures.  The initial (or
+``top level'') Scheme environment starts out with a number of variables
+bound to locations containing useful values, most of which are primitive
+procedures that manipulate data.  For example, the variable <tt>abs</tt> is
+bound to (a location initially containing) a procedure of one argument
+that computes the absolute value of a number, and the variable <tt>+</tt>
+is bound to a procedure that computes sums.  Built-in procedures that
+can easily be written in terms of other built-in procedures are identified as
+``library procedures''.</p>
+<p>
+A program may use a top-level definition to bind any variable.  It may
+subsequently alter any such binding by an assignment (see <a href="r5rs-Z-H-7.html#%_sec_4.1.6">4.1.6</a>).
+These operations do not modify the behavior of Scheme's built-in
+procedures.  Altering any top-level binding that has not been introduced by a
+definition has an unspecified effect on the behavior of the built-in procedures.</p>
+<p>
+</p>
+<a name="%_sec_6.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.1">6.1&nbsp;&nbsp;Equivalence predicates</a></h2>
+<p></p>
+<p>
+A <a name="%_idx_210"></a><em>predicate</em> is a procedure that always returns a boolean
+value (<tt>#t</tt> or <tt>#f</tt>).  An <a name="%_idx_212"></a><em>equivalence predicate</em> is
+the computational analogue of a mathematical equivalence relation (it is
+symmetric, reflexive, and transitive).  Of the equivalence predicates
+described in this section, <tt>eq?</tt> is the finest or most
+discriminating, and <tt>equal?</tt> is the coarsest.  <tt>Eqv?</tt> is
+slightly less discriminating than <tt>eq?</tt>.  </p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_214"></a>eqv?<i> <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+The <tt>eqv?</tt> procedure defines a useful equivalence relation on objects.
+Briefly, it returns <tt>#t</tt> if <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> should
+normally be regarded as the same object.  This relation is left slightly
+open to interpretation, but the following partial specification of
+<tt>eqv?</tt> holds for all implementations of Scheme.</p>
+<p>
+The <tt>eqv?</tt> procedure returns <tt>#t</tt> if:</p>
+<p>
+</p>
+<ul>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both <tt>#t</tt> or both <tt>#f</tt>.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both symbols and</p>
+<p>
+<tt>(string=?&nbsp;(symbol-&gt;string&nbsp;obj1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(symbol-&gt;string&nbsp;obj2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em> 
+This assumes that neither <i>obj<sub>1</sub></i> nor <i>obj<sub>2</sub></i> is an ``uninterned
+symbol'' as alluded to in section&nbsp;<a href="#%_sec_6.3.3">6.3.3</a>.  This report does
+not presume to specify the behavior of <tt>eqv?</tt> on implementation-dependent
+extensions.
+</blockquote>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both numbers, are numerically
+equal (see <tt>=</tt>, section&nbsp;<a href="#%_sec_6.2">6.2</a>), and are either both
+exact<a name="%_idx_216"></a> or both inexact<a name="%_idx_218"></a>.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both characters and are the same
+character according to the <tt>char=?</tt> procedure
+(section&nbsp;<a href="#%_sec_6.3.4">6.3.4</a>).</p>
+<p>
+</p>
+<li>
+<p>both <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are the empty list.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are pairs, vectors, or strings that denote the
+same locations in the store (section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.4">3.4</a>).</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are procedures whose location tags are
+equal (section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.4">4.1.4</a>).
+</p>
+</ul>
+<p></p>
+<p>
+The <tt>eqv?</tt> procedure returns <tt>#f</tt> if:</p>
+<p>
+</p>
+<ul>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are of different types
+(section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.2">3.2</a>).</p>
+<p>
+</p>
+<li>
+<p>one of <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> is <tt>#t</tt> but the other is
+<tt>#f</tt>.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are symbols but</p>
+<p>
+<tt>(string=?&nbsp;(symbol-&gt;string&nbsp;<i>obj<sub>1</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(symbol-&gt;string&nbsp;<i>obj<sub>2</sub></i>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+</p>
+<li>
+<p>one of <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> is an exact number but the other
+is an inexact number.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are numbers for which the <tt>=</tt>
+procedure returns <tt>#f</tt>.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are characters for which the <tt>char=?</tt>
+procedure returns <tt>#f</tt>.</p>
+<p>
+</p>
+<li>
+<p>one of <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> is the empty list but the other
+is not.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are pairs, vectors, or strings that denote
+distinct locations.</p>
+<p>
+</p>
+<li>
+<p><i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are procedures that would behave differently
+(return different value(s) or have different side effects) for some arguments.</p>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+<tt>(eqv?&nbsp;'a&nbsp;'a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;'a&nbsp;'b)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(eqv?&nbsp;2&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;'()&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;100000000&nbsp;100000000)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;(cons&nbsp;1&nbsp;2)&nbsp;(cons&nbsp;1&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(eqv?&nbsp;(lambda&nbsp;()&nbsp;1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(eqv?&nbsp;#f&nbsp;'nil)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(let&nbsp;((p&nbsp;(lambda&nbsp;(x)&nbsp;x)))<br>
+&nbsp;&nbsp;(eqv?&nbsp;p&nbsp;p))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+The following examples illustrate cases in which the above rules do
+not fully specify the behavior of <tt>eqv?</tt>.  All that can be said
+about such cases is that the value returned by <tt>eqv?</tt> must be a
+boolean.</p>
+<p>
+<tt>(eqv?&nbsp;&quot;&quot;&nbsp;&quot;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eqv?&nbsp;'#()&nbsp;'#())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eqv?&nbsp;(lambda&nbsp;(x)&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eqv?&nbsp;(lambda&nbsp;(x)&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(y)&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i></p>
+</tt>
+<p>
+The next set of examples shows the use of <tt>eqv?</tt> with procedures
+that have local state.  <tt>Gen-counter</tt> must return a distinct
+procedure every time, since each procedure has its own internal counter.
+<tt>Gen-loser</tt>, however, returns equivalent procedures each time, since
+the local state does not affect the value or side effects of the
+procedures.</p>
+<p>
+<tt>(define&nbsp;gen-counter<br>
+&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((n&nbsp;0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;(set!&nbsp;n&nbsp;(+&nbsp;n&nbsp;1))&nbsp;n))))<br>
+(let&nbsp;((g&nbsp;(gen-counter)))<br>
+&nbsp;&nbsp;(eqv?&nbsp;g&nbsp;g))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;(gen-counter)&nbsp;(gen-counter))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(define&nbsp;gen-loser<br>
+&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((n&nbsp;0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;(set!&nbsp;n&nbsp;(+&nbsp;n&nbsp;1))&nbsp;27))))<br>
+(let&nbsp;((g&nbsp;(gen-loser)))<br>
+&nbsp;&nbsp;(eqv?&nbsp;g&nbsp;g))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eqv?&nbsp;(gen-loser)&nbsp;(gen-loser))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+<br>
+(letrec&nbsp;((f&nbsp;(lambda&nbsp;()&nbsp;(if&nbsp;(eqv?&nbsp;f&nbsp;g)&nbsp;'both&nbsp;'f)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(g&nbsp;(lambda&nbsp;()&nbsp;(if&nbsp;(eqv?&nbsp;f&nbsp;g)&nbsp;'both&nbsp;'g))))<br>
+&nbsp;&nbsp;(eqv?&nbsp;f&nbsp;g))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+<br>
+(letrec&nbsp;((f&nbsp;(lambda&nbsp;()&nbsp;(if&nbsp;(eqv?&nbsp;f&nbsp;g)&nbsp;'f&nbsp;'both)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(g&nbsp;(lambda&nbsp;()&nbsp;(if&nbsp;(eqv?&nbsp;f&nbsp;g)&nbsp;'g&nbsp;'both))))<br>
+&nbsp;&nbsp;(eqv?&nbsp;f&nbsp;g))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+
+Since it is an error to modify constant objects (those returned by
+literal expressions), implementations are permitted, though not
+required, to share structure between constants where appropriate.  Thus
+the value of <tt>eqv?</tt> on constants is sometimes
+implementation-dependent.</p>
+<p>
+<tt>(eqv?&nbsp;'(a)&nbsp;'(a))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eqv?&nbsp;&quot;a&quot;&nbsp;&quot;a&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eqv?&nbsp;'(b)&nbsp;(cdr&nbsp;'(a&nbsp;b)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(let&nbsp;((x&nbsp;'(a)))<br>
+&nbsp;&nbsp;(eqv?&nbsp;x&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em> 
+The above definition of <tt>eqv?</tt> allows implementations latitude in
+their treatment of procedures and literals:  implementations are free
+either to detect or to fail to detect that two procedures or two literals
+are equivalent to each other, and can decide whether or not to
+merge representations of equivalent objects by using the same pointer or
+bit pattern to represent both.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_220"></a>eq?<i> <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Eq?</tt> is similar to <tt>eqv?</tt> except that in some cases it is
+capable of discerning distinctions finer than those detectable by
+<tt>eqv?</tt>.</p>
+<p>
+<tt>Eq?</tt> and <tt>eqv?</tt> are guaranteed to have the same
+behavior on symbols, booleans, the empty list, pairs, procedures,
+and non-empty
+strings and vectors.  <tt>Eq?</tt>'s behavior on numbers and characters is
+implementation-dependent, but it will always return either true or
+false, and will return true only when <tt>eqv?</tt> would also return
+true.  <tt>Eq?</tt> may also behave differently from <tt>eqv?</tt> on empty
+vectors and empty strings.</p>
+<p>
+<tt>(eq?&nbsp;'a&nbsp;'a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eq?&nbsp;'(a)&nbsp;'(a))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eq?&nbsp;(list&nbsp;'a)&nbsp;(list&nbsp;'a))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(eq?&nbsp;&quot;a&quot;&nbsp;&quot;a&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eq?&nbsp;&quot;&quot;&nbsp;&quot;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eq?&nbsp;'()&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(eq?&nbsp;2&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eq?&nbsp;#<tt>\</tt>A&nbsp;#<tt>\</tt>A)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(eq?&nbsp;car&nbsp;car)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(let&nbsp;((n&nbsp;(+&nbsp;2&nbsp;3)))<br>
+&nbsp;&nbsp;(eq?&nbsp;n&nbsp;n))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(let&nbsp;((x&nbsp;'(a)))<br>
+&nbsp;&nbsp;(eq?&nbsp;x&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(let&nbsp;((x&nbsp;'#()))<br>
+&nbsp;&nbsp;(eq?&nbsp;x&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(let&nbsp;((p&nbsp;(lambda&nbsp;(x)&nbsp;x)))<br>
+&nbsp;&nbsp;(eq?&nbsp;p&nbsp;p))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em> It will usually be possible to implement <tt>eq?</tt> much
+more efficiently than <tt>eqv?</tt>, for example, as a simple pointer
+comparison instead of as some more complicated operation.  One reason is
+that it may not be possible to compute <tt>eqv?</tt> of two numbers in
+constant time, whereas <tt>eq?</tt> implemented as pointer comparison will
+always finish in constant time.  <tt>Eq?</tt> may be used like <tt>eqv?</tt>
+in applications using procedures to implement objects with state since
+it obeys the same constraints as <tt>eqv?</tt>.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_222"></a>equal?<i> <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Equal?</tt> recursively compares the contents of pairs, vectors, and
+strings, applying <tt>eqv?</tt> on other objects such as numbers and symbols.
+A rule of thumb is that objects are generally <tt>equal?</tt> if they print
+the same.  <tt>Equal?</tt> may fail to terminate if its arguments are
+circular data structures.</p>
+<p>
+<tt>(equal?&nbsp;'a&nbsp;'a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;'(a)&nbsp;'(a))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;'(a&nbsp;(b)&nbsp;c)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(a&nbsp;(b)&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;&quot;abc&quot;&nbsp;&quot;abc&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;2&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;(make-vector&nbsp;5&nbsp;'a)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-vector&nbsp;5&nbsp;'a))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(equal?&nbsp;(lambda&nbsp;(x)&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(y)&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2">6.2&nbsp;&nbsp;Numbers</a></h2>
+<p>
+<a name="%_idx_224"></a></p>
+<p>
+
+
+</p>
+<p>
+Numerical computation has traditionally been neglected by the Lisp
+community.  Until Common Lisp there was no carefully thought out
+strategy for organizing numerical computation, and with the exception of
+the MacLisp system [<a href="r5rs-Z-H-14.html#cite{Pitman83}">20</a>] little effort was made to
+execute numerical code efficiently.  This report recognizes the excellent work
+of the Common Lisp committee and accepts many of their recommendations.
+In some ways this report simplifies and generalizes their proposals in a manner
+consistent with the purposes of Scheme.</p>
+<p>
+It is important to distinguish between the mathematical numbers, the
+Scheme numbers that attempt to model them, the machine representations
+used to implement the Scheme numbers, and notations used to write numbers.
+This report uses the types <i>number</i>, <i>complex</i>, <i>real</i>,
+<i>rational</i>, and <i>integer</i> to refer to both mathematical numbers
+and Scheme numbers.  Machine representations such as fixed point and
+floating point are referred to by names such as <i>fixnum</i> and
+<i>flonum</i>.</p>
+<p>
+
+</p>
+<a name="%_sec_6.2.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.1">6.2.1&nbsp;&nbsp;Numerical types</a></h3>
+<p>
+<a name="%_idx_226"></a></p>
+<p>
+
+
+Mathematically, numbers may be arranged into a tower of subtypes
+in which each level is a subset of the level above it:
+</p>
+<p>
+         number <br>
+&nbsp;&nbsp;&nbsp; complex <br>
+&nbsp;&nbsp;&nbsp; real <br>
+&nbsp;&nbsp;&nbsp; rational <br>
+&nbsp;&nbsp;&nbsp; integer 
+</p>
+
+<p></p>
+<p>
+For example, 3 is an integer.  Therefore 3 is also a rational,
+a real, and a complex.  The same is true of the Scheme numbers
+that model 3.  For Scheme numbers, these types are defined by the
+predicates <tt>number?</tt>, <tt>complex?</tt>, <tt>real?</tt>, <tt>rational?</tt>,
+and <tt>integer?</tt>.</p>
+<p>
+There is no simple relationship between a number's type and its
+representation inside a computer.  Although most implementations of
+Scheme will offer at least two different representations of 3, these
+different representations denote the same integer.</p>
+<p>
+
+Scheme's numerical operations treat numbers as abstract data, as
+independent of their representation as possible.  Although an implementation
+of Scheme may use fixnum, flonum, and perhaps other representations for
+numbers, this should not be apparent to a casual programmer writing
+simple programs.</p>
+<p>
+It is necessary, however, to distinguish between numbers that are
+represented exactly and those that may not be.  For example, indexes
+into data structures must be known exactly, as must some polynomial
+coefficients in a symbolic algebra system.  On the other hand, the
+results of measurements are inherently inexact, and irrational numbers
+may be approximated by rational and therefore inexact approximations.
+In order to catch uses of inexact numbers where exact numbers are
+required, Scheme explicitly distinguishes exact from inexact numbers.
+This distinction is orthogonal to the dimension of type.</p>
+<p>
+</p>
+<a name="%_sec_6.2.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.2">6.2.2&nbsp;&nbsp;Exactness</a></h3>
+<p>
+<a name="%_idx_228"></a> 
+Scheme numbers are either <i>exact</i> or <i>inexact</i>.  A number is
+exact if it was written as an exact constant or was derived from
+exact numbers using only exact operations.  A number is
+inexact if it was written as an inexact constant,
+if it was
+derived using inexact ingredients, or if it was derived using
+inexact operations. Thus inexactness is a contagious
+property of a number.
+
+If two implementations produce exact results for a
+computation that did not involve inexact intermediate results,
+the two ultimate results will be mathematically equivalent.  This is
+generally not true of computations involving inexact numbers
+since approximate methods such as floating point arithmetic may be used,
+but it is the duty of each implementation to make the result as close as
+practical to the mathematically ideal result.</p>
+<p>
+Rational operations such as <tt>+</tt> should always produce
+exact results when given exact arguments.
+If the operation is unable to produce an exact result,
+then it may either report the violation of an implementation restriction
+or it may silently coerce its
+result to an inexact value.
+See section&nbsp;<a href="#%_sec_6.2.3">6.2.3</a>.</p>
+<p>
+With the exception of <tt>inexact-&gt;exact</tt>, the operations described in
+this section must generally return inexact results when given any inexact
+arguments.  An operation may, however, return an exact result if it can
+prove that the value of the result is unaffected by the inexactness of its
+arguments.  For example, multiplication of any number by an exact zero
+may produce an exact zero result, even if the other argument is
+inexact.</p>
+<p>
+</p>
+<a name="%_sec_6.2.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.3">6.2.3&nbsp;&nbsp;Implementation restrictions</a></h3>
+<p><a name="%_idx_230"></a></p>
+<p>
+Implementations of Scheme are not required to implement the whole
+tower of subtypes given in section&nbsp;<a href="#%_sec_6.2.1">6.2.1</a>,
+but they must implement a coherent subset consistent with both the
+purposes of the implementation and the spirit of the Scheme language.
+For example, an implementation in which all numbers are real
+may still be quite useful.</p>
+<p>
+Implementations may also support only a limited range of numbers of
+any type, subject to the requirements of this section.  The supported
+range for exact numbers of any type may be different from the
+supported range for inexact numbers of that type.  For example,
+an implementation that uses flonums to represent all its
+inexact real numbers may
+support a practically unbounded range of exact integers
+and rationals
+while limiting the range of inexact reals (and therefore
+the range of inexact integers and rationals)
+to the dynamic range of the flonum format.
+Furthermore
+the gaps between the representable inexact integers and
+rationals are
+likely to be very large in such an implementation as the limits of this
+range are approached.</p>
+<p>
+An implementation of Scheme must support exact integers
+throughout the range of numbers that may be used for indexes of
+lists, vectors, and strings or that may result from computing the length of a
+list, vector, or string.  The <tt>length</tt>, <tt>vector-length</tt>,
+and <tt>string-length</tt> procedures must return an exact
+integer, and it is an error to use anything but an exact integer as an
+index.  Furthermore any integer constant within the index range, if
+expressed by an exact integer syntax, will indeed be read as an exact
+integer, regardless of any implementation restrictions that may apply
+outside this range.  Finally, the procedures listed below will always
+return an exact integer result provided all their arguments are exact integers
+and the mathematically expected result is representable as an exact integer
+within the implementation:</p>
+<p>
+<tt>+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*<br>
+quotient&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;remainder&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;modulo<br>
+max&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;min&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;abs<br>
+numerator&nbsp;&nbsp;&nbsp;&nbsp;denominator&nbsp;&nbsp;&nbsp;gcd<br>
+lcm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;floor&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ceiling<br>
+truncate&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;round&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rationalize<br>
+expt</p>
+</tt>
+<p>
+Implementations are encouraged, but not required, to support
+exact integers and exact rationals of
+practically unlimited size and precision, and to implement the
+above procedures and the <tt>/</tt> procedure in
+such a way that they always return exact results when given exact
+arguments.  If one of these procedures is unable to deliver an exact
+result when given exact arguments, then it may either report a
+violation of an
+implementation restriction or it may silently coerce its result to an
+inexact number.  Such a coercion may cause an error later.</p>
+<p>
+
+An implementation may use floating point and other approximate 
+representation strategies for inexact numbers.
+This report recommends, but does not require, that the IEEE 32-bit
+and 64-bit floating point standards be followed by implementations that use
+flonum representations, and that implementations using
+other representations should match or exceed the precision achievable
+using these floating point standards&nbsp;[<a href="r5rs-Z-H-14.html#cite{IEEE}">12</a>].</p>
+<p>
+In particular, implementations that use flonum representations
+must follow these rules: A flonum result
+must be represented with at least as much precision as is used to express any of
+the inexact arguments to that operation.  It is desirable (but not required) for
+potentially inexact operations such as <tt>sqrt</tt>, when applied to exact
+arguments, to produce exact answers whenever possible (for example the
+square root of an exact 4 ought to be an exact 2).
+If, however, an
+exact number is operated upon so as to produce an inexact result
+(as by <tt>sqrt</tt>), and if the result is represented as a flonum, then
+the most precise flonum format available must be used; but if the result
+is represented in some other way then the representation must have at least as
+much precision as the most precise flonum format available.</p>
+<p>
+Although Scheme allows a variety of written
+notations for
+numbers, any particular implementation may support only some of them.
+For example, an implementation in which all numbers are real
+need not support the rectangular and polar notations for complex
+numbers.  If an implementation encounters an exact numerical constant that
+it cannot represent as an exact number, then it may either report a
+violation of an implementation restriction or it may silently represent the
+constant by an inexact number.</p>
+<p>
+</p>
+<a name="%_sec_6.2.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.4">6.2.4&nbsp;&nbsp;Syntax of numerical constants</a></h3>
+<p></p>
+<p>
+
+
+The syntax of the written representations for numbers is described formally in
+section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.1">7.1.1</a>.  Note that case is not significant in numerical
+constants.</p>
+<p>
+
+A number may be written in binary, octal, decimal, or
+hexadecimal by the use of a radix prefix.  The radix prefixes are <tt>#b</tt><a name="%_idx_232"></a> (binary), <tt>#o</tt><a name="%_idx_234"></a> (octal), <tt>#d</tt><a name="%_idx_236"></a> (decimal), and <tt>#x</tt><a name="%_idx_238"></a> (hexadecimal).  With
+no radix prefix, a number is assumed to be expressed in decimal.</p>
+<p>
+A
+numerical constant may be specified to be either exact or
+inexact by a prefix.  The prefixes are <tt>#e</tt><a name="%_idx_240"></a>
+for exact, and <tt>#i</tt><a name="%_idx_242"></a> for inexact.  An exactness
+prefix may appear before or after any radix prefix that is used.  If
+the written representation of a number has no exactness prefix, the
+constant may be either inexact or exact.  It is
+inexact if it contains a decimal point, an
+exponent, or a ``<tt>#</tt>'' character in the place of a digit,
+otherwise it is exact.
+
+In systems with inexact numbers
+of varying precisions it may be useful to specify
+the precision of a constant.  For this purpose, numerical constants
+may be written with an exponent marker that indicates the
+desired precision of the inexact
+representation.  The letters <tt>s</tt>, <tt>f</tt>,
+<tt>d</tt>, and <tt>l</tt> specify the use of <i>short</i>, <i>single</i>,
+<i>double</i>, and <i>long</i> precision, respectively.  (When fewer
+than four internal
+inexact
+representations exist, the four size
+specifications are mapped onto those available.  For example, an
+implementation with two internal representations may map short and
+single together and long and double together.)  In addition, the
+exponent marker <tt>e</tt> specifies the default precision for the
+implementation.  The default precision has at least as much precision
+as <i>double</i>, but
+implementations may wish to allow this default to be set by the user.</p>
+<p>
+<tt>3.14159265358979F0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Round&nbsp;to&nbsp;single&nbsp;---&nbsp;3.141593<br>
+0.6L0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Extend&nbsp;to&nbsp;long&nbsp;---&nbsp;.600000000000000</p>
+</tt>
+<p>
+</p>
+<a name="%_sec_6.2.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.5">6.2.5&nbsp;&nbsp;Numerical operations</a></h3>
+<p>The reader is referred to section&nbsp;<a href="r5rs-Z-H-4.html#%_sec_1.3.3">1.3.3</a> for a summary
+of the naming conventions used to specify restrictions on the types of
+arguments to numerical routines.
+The examples used in this section assume that any numerical constant written
+using an exact notation is indeed represented as an exact
+number.  Some examples also assume that certain numerical constants written
+using an inexact notation can be represented without loss of
+accuracy; the inexact constants were chosen so that this is
+likely to be true in implementations that use flonums to represent
+inexact numbers.</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_244"></a>number?<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_246"></a>complex?<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_248"></a>real?<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_250"></a>rational?<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_252"></a>integer?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+These numerical type predicates can be applied to any kind of
+argument, including non-numbers.  They return <tt>#t</tt> if the object is
+of the named type, and otherwise they return <tt>#f</tt>.
+In general, if a type predicate is true of a number then all higher
+type predicates are also true of that number.  Consequently, if a type
+predicate is false of a number, then all lower type predicates are
+also false of that number.
+
+If <em>z</em> is an inexact complex number, then <tt>(real? <em>z</em>)</tt> is true if
+and only if <tt>(zero? (imag-part <em>z</em>))</tt> is true.  If <em>x</em> is an inexact
+real number, then <tt>(integer? <em>x</em>)</tt> is true if and only if
+<tt>(= <em>x</em> (round <em>x</em>))</tt>.</p>
+<p>
+<tt>(complex?&nbsp;3+4i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(complex?&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(real?&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(real?&nbsp;-2.5+0.0i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(real?&nbsp;#e1e10)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(rational?&nbsp;6/10)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(rational?&nbsp;6/3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(integer?&nbsp;3+0i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(integer?&nbsp;3.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(integer?&nbsp;8/4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The behavior of these type predicates on inexact numbers
+is unreliable, since any inaccuracy may affect the result.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+In many implementations the <tt>rational?</tt> procedure will be the same
+as <tt>real?</tt>, and the <tt>complex?</tt> procedure will be the same as
+<tt>number?</tt>, but unusual implementations may be able to represent
+some irrational numbers exactly or may extend the number system to
+support some kind of non-complex numbers.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_254"></a>exact?<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_256"></a>inexact?<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<p>
+These numerical predicates provide tests for the exactness of a
+quantity.  For any Scheme number, precisely one of these predicates
+is true.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_258"></a>=<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub> <em>z</em><sub>3</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_260"></a>&lt;<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <em>x</em><sub>3</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_262"></a>&gt;<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <em>x</em><sub>3</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_264"></a>&lt;=<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <em>x</em><sub>3</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_266"></a>&gt;=<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <em>x</em><sub>3</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return <tt>#t</tt> if their arguments are (respectively):
+equal, monotonically increasing, monotonically decreasing,
+monotonically nondecreasing, or monotonically nonincreasing.</p>
+<p>
+These predicates are required to be transitive.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The traditional implementations of these predicates in Lisp-like
+languages are not transitive.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+While it is not an error to compare inexact numbers using these
+predicates, the results may be unreliable because a small inaccuracy
+may affect the result; this is especially true of <tt>=</tt> and <tt>zero?</tt>.
+When in doubt, consult a numerical analyst.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_268"></a>zero?<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_270"></a>positive?<i> <em>x</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_272"></a>negative?<i> <em>x</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_274"></a>odd?<i> <em>n</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_276"></a>even?<i> <em>n</em></i>)</tt>&nbsp;</div>
+
+<p>
+These numerical predicates test a number for a particular property,
+returning <tt>#t</tt> or <tt>#f</tt>.  See note above.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_278"></a>max<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_280"></a>min<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return the maximum or minimum of their arguments.</p>
+<p>
+<tt>(max&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;exact<br>
+(max&nbsp;3.9&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4.0&nbsp;&nbsp;;&nbsp;inexact</p>
+</tt>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+If any argument is inexact, then the result will also be inexact (unless
+the procedure can prove that the inaccuracy is not large enough to affect the
+result, which is possible only in unusual implementations).  If <tt>min</tt> or
+<tt>max</tt> is used to compare numbers of mixed exactness, and the numerical
+value of the result cannot be represented as an inexact number without loss of
+accuracy, then the procedure may report a violation of an implementation
+restriction.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_282"></a>+<i> <em>z</em><sub>1</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_284"></a>*<i> <em>z</em><sub>1</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return the sum or product of their arguments.
+
+<tt>(+&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7<br>
+(+&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(+)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;0<br>
+(*&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4<br>
+(*)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1</p>
+</tt> 
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_286"></a>-<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_288"></a>-<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_290"></a>-<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_292"></a>/<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_294"></a>/<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_296"></a>/<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+With two or more arguments, these procedures return the difference or
+quotient of their arguments, associating to the left.  With one argument,
+however, they return the additive or multiplicative inverse of their argument.
+
+<tt>(-&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+(-&nbsp;3&nbsp;4&nbsp;5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-6<br>
+(-&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-3<br>
+(/&nbsp;3&nbsp;4&nbsp;5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3/20<br>
+(/&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1/3</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_298"></a>abs<i> x</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Abs</tt> returns the absolute value of its argument.  
+<tt>(abs&nbsp;-7)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7<br>
+</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_300"></a>quotient<i> <em>n</em><sub>1</sub> <em>n</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_302"></a>remainder<i> <em>n</em><sub>1</sub> <em>n</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_304"></a>modulo<i> <em>n</em><sub>1</sub> <em>n</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures implement number-theoretic (integer)
+division.  <em>n</em><sub>2</sub> should be non-zero.  All three procedures
+return integers.  If <em>n</em><sub>1</sub>/<em>n</em><sub>2</sub> is an integer:
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;(quotient&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>n</em><sub>1</sub>/<em>n</em><sub>2</sub><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(modulo&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;0<br>
+</p>
+</tt>
+If <em>n</em><sub>1</sub>/<em>n</em><sub>2</sub> is not an integer:
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;(quotient&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>n</em><sub><em>q</em></sub><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>n</em><sub><em>r</em></sub><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(modulo&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>n</em><sub><em>m</em></sub><br>
+</tt>
+where <em>n</em><sub><em>q</em></sub> is <em>n</em><sub>1</sub>/<em>n</em><sub>2</sub> rounded towards zero,
+0 &lt; |<em>n</em><sub><em>r</em></sub>| &lt; |<em>n</em><sub>2</sub>|, 0 &lt; |<em>n</em><sub><em>m</em></sub>| &lt; |<em>n</em><sub>2</sub>|,
+<em>n</em><sub><em>r</em></sub> and <em>n</em><sub><em>m</em></sub> differ from <em>n</em><sub>1</sub> by a multiple of <em>n</em><sub>2</sub>,
+<em>n</em><sub><em>r</em></sub> has the same sign as <em>n</em><sub>1</sub>, and
+<em>n</em><sub><em>m</em></sub> has the same sign as <em>n</em><sub>2</sub>.
+<p>
+From this we can conclude that for integers <em>n</em><sub>1</sub> and <em>n</em><sub>2</sub> with
+<em>n</em><sub>2</sub> not equal to 0,
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(=&nbsp;<em>n</em><sub>1</sub>&nbsp;(+&nbsp;(*&nbsp;<em>n</em><sub>2</sub>&nbsp;(quotient&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<em>n</em><sub>1</sub>&nbsp;<em>n</em><sub>2</sub>)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+provided all numbers involved in that computation are exact.
+<p>
+<tt>(modulo&nbsp;13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+(remainder&nbsp;13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+<br>
+(modulo&nbsp;-13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(remainder&nbsp;-13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+<br>
+(modulo&nbsp;13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-3<br>
+(remainder&nbsp;13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+<br>
+(modulo&nbsp;-13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+(remainder&nbsp;-13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+<br>
+(remainder&nbsp;-13&nbsp;-4.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1.0&nbsp;&nbsp;;&nbsp;inexact</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_306"></a>gcd<i> <em>n</em><sub>1</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_308"></a>lcm<i> <em>n</em><sub>1</sub> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return the greatest common divisor or least common
+multiple of their arguments.  The result is always non-negative.
+
+<tt>(gcd&nbsp;32&nbsp;-36)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4<br>
+(gcd)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;0<br>
+(lcm&nbsp;32&nbsp;-36)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;288<br>
+(lcm&nbsp;32.0&nbsp;-36)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;288.0&nbsp;&nbsp;;&nbsp;inexact<br>
+(lcm)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_310"></a>numerator<i> <em>q</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_312"></a>denominator<i> <em>q</em></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return the numerator or denominator of their
+argument; the result is computed as if the argument was represented as
+a fraction in lowest terms.  The denominator is always positive.  The
+denominator of 0 is defined to be 1.
+
+<tt>(numerator&nbsp;(/&nbsp;6&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(denominator&nbsp;(/&nbsp;6&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;2<br>
+(denominator<br>
+&nbsp;&nbsp;(exact-&gt;inexact&nbsp;(/&nbsp;6&nbsp;4)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;2.0</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_314"></a>floor<i> x</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_316"></a>ceiling<i> x</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_318"></a>truncate<i> x</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_320"></a>round<i> x</i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return integers.
+<tt>Floor</tt> returns the largest integer not larger than <em>x</em>.
+<tt>Ceiling</tt> returns the smallest integer not smaller than&nbsp;<em>x</em>.
+<tt>Truncate</tt> returns the integer closest to <em>x</em> whose absolute
+value is not larger than the absolute value of <em>x</em>.  <tt>Round</tt> returns the
+closest integer to <em>x</em>, rounding to even when <em>x</em> is halfway between two
+integers.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Round</tt> rounds to even for consistency with the default rounding
+mode specified by the IEEE floating point standard.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+If the argument to one of these procedures is inexact, then the result
+will also be inexact.  If an exact value is needed, the
+result should be passed to the <tt>inexact-&gt;exact</tt> procedure.
+</blockquote>
+<p>
+<tt>(floor&nbsp;-4.3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-5.0<br>
+(ceiling&nbsp;-4.3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-4.0<br>
+(truncate&nbsp;-4.3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-4.0<br>
+(round&nbsp;-4.3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-4.0<br>
+<br>
+(floor&nbsp;3.5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3.0<br>
+(ceiling&nbsp;3.5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4.0<br>
+(truncate&nbsp;3.5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3.0<br>
+(round&nbsp;3.5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4.0&nbsp;&nbsp;;&nbsp;inexact<br>
+<br>
+(round&nbsp;7/2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;exact<br>
+(round&nbsp;7)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_322"></a>rationalize<i> x y</i>)</tt>&nbsp;</div>
+
+
+<p>
+<tt>Rationalize</tt> returns the <em>simplest</em> rational number
+differing from <em>x</em> by no more than <em>y</em>.  A rational number <em>r</em><sub>1</sub> is
+<em>simpler</em> <a name="%_idx_324"></a> than another rational number
+<em>r</em><sub>2</sub> if <em>r</em><sub>1</sub>  =  <em>p</em><sub>1</sub>/<em>q</em><sub>1</sub> and <em>r</em><sub>2</sub>  =  <em>p</em><sub>2</sub>/<em>q</em><sub>2</sub> (in lowest terms) and |<em>p</em><sub>1</sub>|
+<u>&lt;</u> |<em>p</em><sub>2</sub>| and |<em>q</em><sub>1</sub>| <u>&lt;</u> |<em>q</em><sub>2</sub>|.  Thus 3/5 is simpler than 4/7.
+Although not all rationals are comparable in this ordering (consider 2/7
+and 3/5) any interval contains a rational number that is simpler than
+every other rational number in that interval (the simpler 2/5 lies
+between 2/7 and 3/5).  Note that 0  =  0/1 is the simplest rational of
+all.</p>
+<p>
+<tt>(rationalize<br>
+&nbsp;&nbsp;(inexact-&gt;exact&nbsp;.3)&nbsp;1/10)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;1/3&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;exact<br>
+(rationalize&nbsp;.3&nbsp;1/10)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;#i1/3&nbsp;&nbsp;;&nbsp;inexact</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_326"></a>exp<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_328"></a>log<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_330"></a>sin<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_332"></a>cos<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_334"></a>tan<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_336"></a>asin<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_338"></a>acos<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_340"></a>atan<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_342"></a>atan<i> <em>y</em> <em>x</em></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures are part of every implementation that supports
+general
+real numbers; they compute the usual transcendental functions.  <tt>Log</tt>
+computes the natural logarithm of <em>z</em> (not the base ten logarithm).
+<tt>Asin</tt>, <tt>acos</tt>, and <tt>atan</tt> compute arcsine (sin<sup><tt>-</tt>1</sup>),
+arccosine (cos<sup><tt>-</tt>1</sup>), and arctangent (tan<sup><tt>-</tt>1</sup>), respectively.
+The two-argument variant of <tt>atan</tt> computes <tt>(angle
+(make-rectangular <em>x</em> <em>y</em>))</tt> (see below), even in implementations
+that don't support general complex numbers.</p>
+<p>
+In general, the mathematical functions log, arcsine, arccosine, and
+arctangent are multiply defined.
+The value of log <em>z</em> is defined to be the one whose imaginary
+part lies in the range from  <tt>-</tt> <img src="r5rs-Z-G-D-3.gif" border="0"> (exclusive) to <img src="r5rs-Z-G-D-3.gif" border="0"> (inclusive).
+log 0 is undefined.
+With log defined this way, the values of sin<sup><tt>-</tt>1</sup> <em>z</em>, cos<sup><tt>-</tt>1</sup> <em>z</em>,
+and tan<sup><tt>-</tt>1</sup> <em>z</em> are according to the following formul&aelig;:
+</p>
+<div align=left><table><tr><td>sin<sup><tt>-</tt>1</sup> <em>z</em>  =   <tt>-</tt> <em>i</em> log (<em>i</em> <em>z</em>  +  (1  <tt>-</tt>  <em>z</em><sup>2</sup>)<sup>1/2</sup>)</td></tr></table></div>
+<p>
+</p>
+<div align=left><table><tr><td>cos<sup><tt>-</tt>1</sup> <em>z</em>  =  <img src="r5rs-Z-G-D-3.gif" border="0"> / 2  <tt>-</tt>  sin<sup><tt>-</tt>1</sup> <em>z</em></td></tr></table></div>
+<p>
+</p>
+<div align=left><table><tr><td>tan<sup><tt>-</tt>1</sup> <em>z</em>  =  (log (1  +  <em>i</em> <em>z</em>)  <tt>-</tt>  log (1  <tt>-</tt>  <em>i</em> <em>z</em>)) / (2 <em>i</em>)</td></tr></table></div>
+<p></p>
+<p>
+The above specification follows&nbsp;[<a href="r5rs-Z-H-14.html#cite{CLtL}">27</a>], which in turn
+cites&nbsp;[<a href="r5rs-Z-H-14.html#cite{Penfield81}">19</a>]; refer to these sources for more detailed
+discussion of branch cuts, boundary conditions, and implementation of
+these functions.  When it is possible these procedures produce a real
+result from a real argument.</p>
+<p>
+</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_344"></a>sqrt<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<p>
+Returns the principal square root of <em>z</em>.  The result will have
+either positive real part, or zero real part and non-negative imaginary
+part.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_346"></a>expt<i> <em>z</em><sub>1</sub> <em>z</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<p>
+Returns <em>z</em><sub>1</sub> raised to the power <em>z</em><sub>2</sub>.  For <em>z</em><sub>1</sub> <img src="r5rs-Z-G-D-8.gif" border="0"> 0
+</p>
+<div align=left><table><tr><td><em>z</em><sub>1</sub><sup><em>z</em><sub>2</sub></sup>  =  <em>e</em><sup><em>z</em><sub>2</sub> log <em>z</em><sub>1</sub></sup></td></tr></table></div>
+<p>
+0<sup><em>z</em></sup> is 1 if <em>z</em>  =  0 and 0 otherwise.
+</p>
+
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_348"></a>make-rectangular<i> <em>x</em><sub>1</sub> <em>x</em><sub>2</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_350"></a>make-polar<i> <em>x</em><sub>3</sub> <em>x</em><sub>4</sub></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_352"></a>real-part<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_354"></a>imag-part<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_356"></a>magnitude<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_358"></a>angle<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures are part of every implementation that supports
+general
+complex numbers.  Suppose <em>x</em><sub>1</sub>, <em>x</em><sub>2</sub>, <em>x</em><sub>3</sub>, and <em>x</em><sub>4</sub> are
+real numbers and <em>z</em> is a complex number such that
+</p>
+<div align=left><table><tr><td> <em>z</em>  =  <em>x</em><sub>1</sub>  +  <em>x</em><sub>2</sub><em>i</em>
+ =  <em>x</em><sub>3</sub>  &middot;  <em>e</em><sup><em>i</em> <em>x</em><sub>4</sub></sup></td></tr></table></div>
+<p>
+Then
+<tt>(make-rectangular&nbsp;<em>x</em><sub>1</sub>&nbsp;<em>x</em><sub>2</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>z</em><br>
+(make-polar&nbsp;<em>x</em><sub>3</sub>&nbsp;<em>x</em><sub>4</sub>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>z</em><br>
+(real-part&nbsp;<em>z</em>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>x</em><sub>1</sub><br>
+(imag-part&nbsp;<em>z</em>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>x</em><sub>2</sub><br>
+(magnitude&nbsp;<em>z</em>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;|<em>x</em><sub>3</sub>|<br>
+(angle&nbsp;<em>z</em>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;<em>x</em><sub><em>a</em><em>n</em><em>g</em><em>l</em><em>e</em></sub><br>
+</p>
+</tt>
+where  <tt>-</tt> <img src="r5rs-Z-G-D-3.gif" border="0"> &lt; <em>x</em><sub><em>a</em><em>n</em><em>g</em><em>l</em><em>e</em></sub> <u>&lt;</u> <img src="r5rs-Z-G-D-3.gif" border="0"> with <em>x</em><sub><em>a</em><em>n</em><em>g</em><em>l</em><em>e</em></sub>  =  <em>x</em><sub>4</sub>  +  2<img src="r5rs-Z-G-D-3.gif" border="0"> <em>n</em>
+for some integer <em>n</em>.
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Magnitude</tt> is the same as <tt>abs</tt> for a real argument,
+but <tt>abs</tt> must be present in all implementations, whereas
+<tt>magnitude</tt> need only be present in implementations that support
+general complex numbers.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_360"></a>exact-&gt;inexact<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_362"></a>inexact-&gt;exact<i> <em>z</em></i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Exact-&gt;inexact</tt> returns an inexact representation of <em>z</em>.
+The value returned is the
+inexact number that is numerically closest to the argument.  
+If an exact argument has no reasonably close inexact equivalent,
+then a violation of an implementation restriction may be reported.</p>
+<p>
+<tt>Inexact-&gt;exact</tt> returns an exact representation of
+<em>z</em>.  The value returned is the exact number that is numerically
+closest to the argument.
+If an inexact argument has no reasonably close exact equivalent,
+then a violation of an implementation restriction may be reported.</p>
+<p>
+
+These procedures implement the natural one-to-one correspondence between
+exact and inexact integers throughout an
+implementation-dependent range.  See section&nbsp;<a href="#%_sec_6.2.3">6.2.3</a>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.2.6"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.2.6">6.2.6&nbsp;&nbsp;Numerical input and output</a></h3>
+<p></p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_364"></a>number-&gt;string<i> z</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_366"></a>number-&gt;string<i> z radix</i>)</tt>&nbsp;</div>
+
+<p>
+<em>R</em><em>a</em><em>d</em><em>i</em><em>x</em> must be an exact integer, either 2, 8, 10, or 16.  If omitted,
+<em>r</em><em>a</em><em>d</em><em>i</em><em>x</em> defaults to 10.
+The procedure <tt>number-&gt;string</tt> takes a
+number and a radix and returns as a string an external representation of
+the given number in the given radix such that
+<tt>(let&nbsp;((number&nbsp;<em>n</em><em>u</em><em>m</em><em>b</em><em>e</em><em>r</em>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(radix&nbsp;<em>r</em><em>a</em><em>d</em><em>i</em><em>x</em>))<br>
+&nbsp;&nbsp;(eqv?&nbsp;number<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(string-&gt;number&nbsp;(number-&gt;string&nbsp;number<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;radix)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;radix)))<br>
+</p>
+</tt>
+is true.  It is an error if no possible result makes this expression true.
+<p>
+If <em>z</em> is inexact, the radix is 10, and the above expression
+can be satisfied by a result that contains a decimal point,
+then the result contains a decimal point and is expressed using the
+minimum number of digits (exclusive of exponent and trailing
+zeroes) needed to make the above expression
+true&nbsp;[<a href="r5rs-Z-H-14.html#cite{howtoprint}">3</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{howtoread}">5</a>];
+otherwise the format of the result is unspecified.</p>
+<p>
+The result returned by <tt>number-&gt;string</tt>
+never contains an explicit radix prefix.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The error case can occur only when <em>z</em> is not a complex number
+or is a complex number with a non-rational real or imaginary part.
+</blockquote>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+If <em>z</em> is an inexact number represented using flonums, and
+the radix is 10, then the above expression is normally satisfied by
+a result containing a decimal point.  The unspecified case
+allows for infinities, NaNs, and non-flonum representations.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_368"></a>string-&gt;number<i> string</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_370"></a>string-&gt;number<i> string radix</i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns a number of the maximally precise representation expressed by the
+given <em>s</em><em>t</em><em>r</em><em>i</em><em>n</em><em>g</em>.  <em>R</em><em>a</em><em>d</em><em>i</em><em>x</em> must be an exact integer, either 2, 8, 10,
+or 16.  If supplied, <em>r</em><em>a</em><em>d</em><em>i</em><em>x</em> is a default radix that may be overridden
+by an explicit radix prefix in <em>s</em><em>t</em><em>r</em><em>i</em><em>n</em><em>g</em> (e.g. <tt>&quot;#o177&quot;</tt>).  If <em>r</em><em>a</em><em>d</em><em>i</em><em>x</em>
+is not supplied, then the default radix is 10.  If <em>s</em><em>t</em><em>r</em><em>i</em><em>n</em><em>g</em> is not
+a syntactically valid notation for a number, then <tt>string-&gt;number</tt>
+returns <tt>#f</tt>.</p>
+<p>
+<tt>(string-&gt;number&nbsp;&quot;100&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;100<br>
+(string-&gt;number&nbsp;&quot;100&quot;&nbsp;16)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;256<br>
+(string-&gt;number&nbsp;&quot;1e2&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;100.0<br>
+(string-&gt;number&nbsp;&quot;15##&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1500.0</p>
+</tt>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The domain of <tt>string-&gt;number</tt> may be restricted by implementations
+in the following ways.  <tt>String-&gt;number</tt> is permitted to return
+<tt>#f</tt> whenever <em>s</em><em>t</em><em>r</em><em>i</em><em>n</em><em>g</em> contains an explicit radix prefix.
+If all numbers supported by an implementation are real, then
+<tt>string-&gt;number</tt> is permitted to return <tt>#f</tt> whenever
+<em>s</em><em>t</em><em>r</em><em>i</em><em>n</em><em>g</em> uses the polar or rectangular notations for complex
+numbers.  If all numbers are integers, then
+<tt>string-&gt;number</tt> may return <tt>#f</tt> whenever
+the fractional notation is used.  If all numbers are exact, then
+<tt>string-&gt;number</tt> may return <tt>#f</tt> whenever
+an exponent marker or explicit exactness prefix is used, or if
+a <tt>#</tt> appears in place of a digit.  If all inexact
+numbers are integers, then
+<tt>string-&gt;number</tt> may return <tt>#f</tt> whenever
+a decimal point is used.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3">6.3&nbsp;&nbsp;Other data types</a></h2>
+<p>This section describes operations on some of Scheme's non-numeric data types:
+booleans, pairs, lists, symbols, characters, strings and vectors.</p>
+<p>
+</p>
+<a name="%_sec_6.3.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.1">6.3.1&nbsp;&nbsp;Booleans</a></h3>
+<p></p>
+<p>
+The standard boolean objects for true and false are written as
+<tt>#t</tt> and <tt>#f</tt>.<a name="%_idx_372"></a><a name="%_idx_374"></a>  What really
+matters, though, are the objects that the Scheme conditional expressions
+(<tt>if</tt>, <tt>cond</tt>, <tt>and</tt>, <tt>or</tt>, <tt>do</tt>) treat as
+true<a name="%_idx_376"></a> or false<a name="%_idx_378"></a>.  The phrase ``a true value''<a name="%_idx_380"></a>
+(or sometimes just ``true'') means any object treated as true by the
+conditional expressions, and the phrase ``a false value''<a name="%_idx_382"></a> (or
+``false'') means any object treated as false by the conditional expressions.</p>
+<p>
+Of all the standard Scheme values, only <tt>#f</tt>
+counts as false in conditional expressions.
+Except for <tt>#f</tt>,
+all standard Scheme values, including <tt>#t</tt>,
+pairs, the empty list, symbols, numbers, strings, vectors, and procedures,
+count as true.</p>
+<p>
+
+
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Programmers accustomed to other dialects of Lisp should be aware that
+Scheme distinguishes both <tt>#f</tt> and the empty list <a name="%_idx_384"></a>
+from the symbol <tt>nil</tt>.
+</blockquote>
+<p>
+Boolean constants evaluate to themselves, so they do not need to be quoted
+in programs.</p>
+<p>
+<tt><tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+<tt>#f</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+'<tt>#f</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_386"></a>not<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Not</tt> returns <tt>#t</tt> if <i>obj</i> is false, and returns
+<tt>#f</tt> otherwise.</p>
+<p>
+<tt>(not&nbsp;<tt>#t</tt>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(not&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(not&nbsp;(list&nbsp;3))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(not&nbsp;<tt>#f</tt>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(not&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(not&nbsp;(list))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(not&nbsp;'nil)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_388"></a>boolean?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Boolean?</tt> returns <tt>#t</tt> if <i>obj</i> is either <tt>#t</tt> or
+<tt>#f</tt> and returns <tt>#f</tt> otherwise.</p>
+<p>
+<tt>(boolean?&nbsp;<tt>#f</tt>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(boolean?&nbsp;0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(boolean?&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.2">6.3.2&nbsp;&nbsp;Pairs and lists</a></h3>
+<p></p>
+<p>
+A <a name="%_idx_390"></a><em>pair</em> (sometimes called a <a name="%_idx_392"></a><em>dotted pair</em>) is a
+record structure with two fields called the car and cdr fields (for
+historical reasons).  Pairs are created by the procedure <tt>cons</tt>.
+The car and cdr fields are accessed by the procedures <tt>car</tt> and
+<tt>cdr</tt>.  The car and cdr fields are assigned by the procedures
+<tt>set-car!</tt> and <tt>set-cdr!</tt>.</p>
+<p>
+Pairs are used primarily to represent lists.  A list can
+be defined recursively as either the empty list<a name="%_idx_394"></a> or a pair whose
+cdr is a list.  More precisely, the set of lists is defined as the smallest
+set <i>X</i> such that</p>
+<p>
+</p>
+<ul>
+<li>
+<p>The empty list is in <i>X</i>.
+</p>
+<li>
+<p>If <i>list</i> is in <i>X</i>, then any pair whose cdr field contains
+<i>list</i> is also in <i>X</i>.
+</p>
+</ul>
+<p></p>
+<p>
+The objects in the car fields of successive pairs of a list are the
+elements of the list.  For example, a two-element list is a pair whose car
+is the first element and whose cdr is a pair whose car is the second element
+and whose cdr is the empty list.  The length of a list is the number of
+elements, which is the same as the number of pairs.</p>
+<p>
+The empty list<a name="%_idx_396"></a> is a special object of its own type
+(it is not a pair); it has no elements and its length is zero.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The above definitions imply that all lists have finite length and are
+terminated by the empty list.
+</blockquote>
+<p>
+The most general notation (external representation) for Scheme pairs is
+the ``dotted'' notation <tt>(<i>c<sub>1</sub></i> . <i>c<sub>2</sub></i>)</tt> where
+<i>c<sub>1</sub></i> is the value of the car field and <i>c<sub>2</sub></i> is the value of the
+cdr field.  For example <tt>(4 . 5)</tt> is a pair whose car is 4 and whose
+cdr is 5.  Note that <tt>(4 . 5)</tt> is the external representation of a
+pair, not an expression that evaluates to a pair.</p>
+<p>
+A more streamlined notation can be used for lists: the elements of the
+list are simply enclosed in parentheses and separated by spaces.  The
+empty list<a name="%_idx_398"></a> is written <tt>()</tt> .  For example,</p>
+<p>
+<tt>(a&nbsp;b&nbsp;c&nbsp;d&nbsp;e)</p>
+</tt>
+<p>
+and</p>
+<p>
+<tt>(a&nbsp;.&nbsp;(b&nbsp;.&nbsp;(c&nbsp;.&nbsp;(d&nbsp;.&nbsp;(e&nbsp;.&nbsp;())))))</p>
+</tt>
+<p>
+are equivalent notations for a list of symbols.</p>
+<p>
+A chain of pairs not ending in the empty list is called an
+<a name="%_idx_400"></a><em>improper list</em>.  Note that an improper list is not a list.
+The list and dotted notations can be combined to represent
+improper lists:</p>
+<p>
+<tt>(a&nbsp;b&nbsp;c&nbsp;.&nbsp;d)</p>
+</tt>
+<p>
+is equivalent to</p>
+<p>
+<tt>(a&nbsp;.&nbsp;(b&nbsp;.&nbsp;(c&nbsp;.&nbsp;d)))</p>
+</tt>
+<p>
+Whether a given pair is a list depends upon what is stored in the cdr
+field.  When the <tt>set-cdr!</tt> procedure is used, an object can be a
+list one moment and not the next:</p>
+<p>
+<tt>(define&nbsp;x&nbsp;(list&nbsp;'a&nbsp;'b&nbsp;'c))<br>
+(define&nbsp;y&nbsp;x)<br>
+y&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;b&nbsp;c)<br>
+(list?&nbsp;y)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(set-cdr!&nbsp;x&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;.&nbsp;4)<br>
+(eqv?&nbsp;x&nbsp;y)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+y&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;.&nbsp;4)<br>
+(list?&nbsp;y)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(set-cdr!&nbsp;x&nbsp;x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(list?&nbsp;x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+
+Within literal expressions and representations of objects read by the
+<tt>read</tt> procedure, the forms <tt>'</tt>&lt;datum&gt;<a name="%_idx_402"></a>,
+<tt>`</tt>&lt;datum&gt;, <tt>,</tt>&lt;datum&gt;<a name="%_idx_404"></a>, and
+<tt>,@</tt>&lt;datum&gt; denote two-element lists whose first elements are
+the symbols <tt>quote</tt>, <tt>quasiquote</tt>, <tt>unquote</tt>, and
+<tt>unquote-splicing</tt>, respectively.  The second element in each case
+is &lt;datum&gt;.  This convention is supported so that arbitrary Scheme
+programs may be represented as lists.   That is, according to Scheme's grammar, every
+&lt;expression&gt; is also a &lt;datum&gt; (see section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.2">7.1.2</a>).
+Among other things, this permits the use of the <tt>read</tt> procedure to
+parse Scheme programs.  See section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.3">3.3</a>. </p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_406"></a>pair?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Pair?</tt> returns <tt>#t</tt> if <i>obj</i> is a pair, and otherwise
+returns <tt>#f</tt>.</p>
+<p>
+<tt>(pair?&nbsp;'(a&nbsp;.&nbsp;b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(pair?&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(pair?&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(pair?&nbsp;'#(a&nbsp;b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_408"></a>cons<i> <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated pair whose car is <i>obj<sub>1</sub></i> and whose cdr is
+<i>obj<sub>2</sub></i>.  The pair is guaranteed to be different (in the sense of
+<tt>eqv?</tt>) from every existing object.</p>
+<p>
+<tt>(cons&nbsp;'a&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a)<br>
+(cons&nbsp;'(a)&nbsp;'(b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((a)&nbsp;b&nbsp;c&nbsp;d)<br>
+(cons&nbsp;&quot;a&quot;&nbsp;'(b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(&quot;a&quot;&nbsp;b&nbsp;c)<br>
+(cons&nbsp;'a&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;.&nbsp;3)<br>
+(cons&nbsp;'(a&nbsp;b)&nbsp;'c)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((a&nbsp;b)&nbsp;.&nbsp;c)</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_410"></a>car<i> pair</i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns the contents of the car field of <i>pair</i>.  Note that it is an
+error to take the car of the empty list<a name="%_idx_412"></a>.</p>
+<p>
+<tt>(car&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;a<br>
+(car&nbsp;'((a)&nbsp;b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a)<br>
+(car&nbsp;'(1&nbsp;.&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+(car&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_414"></a>cdr<i> pair</i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns the contents of the cdr field of <i>pair</i>.
+Note that it is an error to take the cdr of the empty list.</p>
+<p>
+<tt>(cdr&nbsp;'((a)&nbsp;b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(b&nbsp;c&nbsp;d)<br>
+(cdr&nbsp;'(1&nbsp;.&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;2<br>
+(cdr&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_416"></a>set-car!<i> pair obj</i>)</tt>&nbsp;</div>
+
+<p>
+  
+Stores <i>obj</i> in the car field of <i>pair</i>.
+The value returned by <tt>set-car!</tt> is unspecified.  
+<tt>(define&nbsp;(f)&nbsp;(list&nbsp;'not-a-constant-list))<br>
+(define&nbsp;(g)&nbsp;'(constant-list))<br>
+(set-car!&nbsp;(f)&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(set-car!&nbsp;(g)&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_418"></a>set-cdr!<i> pair obj</i>)</tt>&nbsp;</div>
+
+<p>
+
+Stores <i>obj</i> in the cdr field of <i>pair</i>.
+The value returned by <tt>set-cdr!</tt> is unspecified.  
+</p>
+
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_420"></a>caar<i> pair</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_422"></a>cadr<i> pair</i>)</tt>&nbsp;</div>
+
+<div align=left><u> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="r5rs-Z-G-D-1.gif" border="0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</u>&nbsp;&nbsp;<tt> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<img src="r5rs-Z-G-D-1.gif" border="0">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_424"></a>cdddar<i> pair</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_426"></a>cddddr<i> pair</i>)</tt>&nbsp;</div>
+
+<p>
+These procedures are compositions of <tt>car</tt> and <tt>cdr</tt>, where
+for example <tt>caddr</tt> could be defined by</p>
+<p>
+<tt>(define&nbsp;caddr&nbsp;(lambda&nbsp;(x)&nbsp;(car&nbsp;(cdr&nbsp;(cdr&nbsp;x))))).</p>
+</tt>
+<p>
+Arbitrary compositions, up to four deep, are provided.  There are
+twenty-eight of these procedures in all.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_428"></a>null?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is the empty list<a name="%_idx_430"></a>,
+otherwise returns <tt>#f</tt>.</p>
+<p>
+ 
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_432"></a>list?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a list, otherwise returns <tt>#f</tt>.
+By definition, all lists have finite length and are terminated by
+the empty list.</p>
+<p>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list?&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list?&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list?&nbsp;'(a&nbsp;.&nbsp;b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;(list&nbsp;'a)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set-cdr!&nbsp;x&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list?&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_434"></a>list<i> <i>obj</i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated list of its arguments.</p>
+<p>
+<tt>(list&nbsp;'a&nbsp;(+&nbsp;3&nbsp;4)&nbsp;'c)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;7&nbsp;c)<br>
+(list)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;()</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_436"></a>length<i> list</i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns the length of <i>list</i>.</p>
+<p>
+<tt>(length&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(length&nbsp;'(a&nbsp;(b)&nbsp;(c&nbsp;d&nbsp;e)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(length&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;0</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_438"></a>append<i> list <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns a list consisting of the elements of the first <i>list</i>
+followed by the elements of the other <i>list</i>s.</p>
+<p>
+<tt>(append&nbsp;'(x)&nbsp;'(y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(x&nbsp;y)<br>
+(append&nbsp;'(a)&nbsp;'(b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;b&nbsp;c&nbsp;d)<br>
+(append&nbsp;'(a&nbsp;(b))&nbsp;'((c)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;(b)&nbsp;(c))</p>
+</tt>
+<p>
+The resulting list is always newly allocated, except that it shares
+structure with the last <i>list</i> argument.  The last argument may
+actually be any object; an improper list results if the last argument is not a
+proper list.  </p>
+<p>
+<tt>(append&nbsp;'(a&nbsp;b)&nbsp;'(c&nbsp;.&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;b&nbsp;c&nbsp;.&nbsp;d)<br>
+(append&nbsp;'()&nbsp;'a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;a</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_440"></a>reverse<i> list</i>)</tt>&nbsp;</div>
+
+<p>
+
+Returns a newly allocated list consisting of the elements of <i>list</i>
+in reverse order.</p>
+<p>
+<tt>(reverse&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(c&nbsp;b&nbsp;a)<br>
+(reverse&nbsp;'(a&nbsp;(b&nbsp;c)&nbsp;d&nbsp;(e&nbsp;(f))))&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((e&nbsp;(f))&nbsp;d&nbsp;(b&nbsp;c)&nbsp;a)</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_442"></a>list-tail<i> list <em>k</em></i>)</tt>&nbsp;</div>
+
+<p>
+Returns the sublist of <i>list</i> obtained by omitting the first <em>k</em>
+elements.  It is an error if <i>list</i> has fewer than <em>k</em> elements.
+<tt>List-tail</tt> could be defined by</p>
+<p>
+<tt>(define&nbsp;list-tail<br>
+&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;k)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(zero?&nbsp;k)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list-tail&nbsp;(cdr&nbsp;x)&nbsp;(-&nbsp;k&nbsp;1)))))</p>
+</tt> 
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_444"></a>list-ref<i> list <em>k</em></i>)</tt>&nbsp;</div>
+
+<p>
+Returns the <em>k</em>th element of <i>list</i>.  (This is the same
+as the car of <tt>(list-tail <i>list</i> <em>k</em>)</tt>.)
+It is an error if <i>list</i> has fewer than <em>k</em> elements.</p>
+<p>
+<tt>(list-ref&nbsp;'(a&nbsp;b&nbsp;c&nbsp;d)&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;c<br>
+(list-ref&nbsp;'(a&nbsp;b&nbsp;c&nbsp;d)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(inexact-&gt;exact&nbsp;(round&nbsp;1.8)))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;c</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_446"></a>memq<i> obj list</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_448"></a>memv<i> obj list</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_450"></a>member<i> obj list</i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return the first sublist of <i>list</i> whose car is
+<i>obj</i>, where the sublists of <i>list</i> are the non-empty lists
+returned by <tt>(list-tail <i>list</i> <i>k</i>)</tt> for <i>k</i> less
+than the length of <i>list</i>.  If
+<i>obj</i> does not occur in <i>list</i>, then <tt>#f</tt> (not the empty list) is
+returned.  <tt>Memq</tt> uses <tt>eq?</tt> to compare <i>obj</i> with the elements of
+<i>list</i>, while <tt>memv</tt> uses <tt>eqv?</tt> and <tt>member</tt> uses <tt>equal?</tt>.</p>
+<p>
+<tt>(memq&nbsp;'a&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;b&nbsp;c)<br>
+(memq&nbsp;'b&nbsp;'(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(b&nbsp;c)<br>
+(memq&nbsp;'a&nbsp;'(b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(memq&nbsp;(list&nbsp;'a)&nbsp;'(b&nbsp;(a)&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(member&nbsp;(list&nbsp;'a)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(b&nbsp;(a)&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((a)&nbsp;c)<br>
+(memq&nbsp;101&nbsp;'(100&nbsp;101&nbsp;102))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(memv&nbsp;101&nbsp;'(100&nbsp;101&nbsp;102))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(101&nbsp;102)</p>
+</tt> 
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_452"></a>assq<i> obj alist</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_454"></a>assv<i> obj alist</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_456"></a>assoc<i> obj alist</i>)</tt>&nbsp;</div>
+
+<p>
+<i>Alist</i> (for ``association list'') must be a list of
+pairs.  These procedures find the first pair in <i>alist</i> whose car field is <i>obj</i>,
+and returns that pair.  If no pair in <i>alist</i> has <i>obj</i> as its
+car, then <tt>#f</tt> (not the empty list) is returned.  <tt>Assq</tt> uses
+<tt>eq?</tt> to compare <i>obj</i> with the car fields of the pairs in <i>alist</i>,
+while <tt>assv</tt> uses <tt>eqv?</tt> and <tt>assoc</tt> uses <tt>equal?</tt>.</p>
+<p>
+<tt>(define&nbsp;e&nbsp;'((a&nbsp;1)&nbsp;(b&nbsp;2)&nbsp;(c&nbsp;3)))<br>
+(assq&nbsp;'a&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(a&nbsp;1)<br>
+(assq&nbsp;'b&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(b&nbsp;2)<br>
+(assq&nbsp;'d&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(assq&nbsp;(list&nbsp;'a)&nbsp;'(((a))&nbsp;((b))&nbsp;((c))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(assoc&nbsp;(list&nbsp;'a)&nbsp;'(((a))&nbsp;((b))&nbsp;((c))))&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;((a))<br>
+(assq&nbsp;5&nbsp;'((2&nbsp;3)&nbsp;(5&nbsp;7)&nbsp;(11&nbsp;13)))&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(assv&nbsp;5&nbsp;'((2&nbsp;3)&nbsp;(5&nbsp;7)&nbsp;(11&nbsp;13)))&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(5&nbsp;7)</p>
+</tt>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+Although they are ordinarily used as predicates,
+<tt>memq</tt>, <tt>memv</tt>, <tt>member</tt>, <tt>assq</tt>, <tt>assv</tt>, and <tt>assoc</tt> do not
+have question marks in their names because they return useful values rather
+than just <tt>#t</tt> or <tt>#f</tt>.
+</blockquote>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.3">6.3.3&nbsp;&nbsp;Symbols</a></h3>
+<p></p>
+<p>
+Symbols are objects whose usefulness rests on the fact that two
+symbols are identical (in the sense of <tt>eqv?</tt>) if and only if their
+names are spelled the same way.  This is exactly the property needed to
+represent identifiers<a name="%_idx_458"></a> in programs, and so most
+implementations of Scheme use them internally for that purpose.  Symbols
+are useful for many other applications; for instance, they may be used
+the way enumerated values are used in Pascal.</p>
+<p>
+The rules for writing a symbol are exactly the same as the rules for
+writing an identifier; see sections&nbsp;<a href="r5rs-Z-H-5.html#%_sec_2.1">2.1</a>
+and&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.1">7.1.1</a>.</p>
+<p>
+It is guaranteed that any symbol that has been returned as part of
+a literal expression, or read using the <tt>read</tt> procedure, and
+subsequently written out using the <tt>write</tt> procedure, will read back
+in as the identical symbol (in the sense of <tt>eqv?</tt>).  The
+<tt>string-&gt;symbol</tt> procedure, however, can create symbols for
+which this write/read invariance may not hold because their names
+contain special characters or letters in the non-standard case.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Some implementations of Scheme have a feature known as ``slashification''
+in order to guarantee write/read invariance for all symbols, but
+historically the most important use of this feature has been to
+compensate for the lack of a string data type.
+<p>
+Some implementations also have ``uninterned symbols'', which
+defeat write/read invariance even in implementations with slashification,
+and also generate exceptions to the rule that two symbols are the same
+if and only if their names are spelled the same.
+</p>
+</blockquote>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_460"></a>symbol?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a symbol, otherwise returns <tt>#f</tt>.</p>
+<p>
+<tt>(symbol?&nbsp;'foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(symbol?&nbsp;(car&nbsp;'(a&nbsp;b)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(symbol?&nbsp;&quot;bar&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(symbol?&nbsp;'nil)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(symbol?&nbsp;'())&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(symbol?&nbsp;<tt>#f</tt>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_462"></a>symbol-&gt;string<i> symbol</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the name of <i>symbol</i> as a string.  If the symbol was part of
+an object returned as the value of a literal expression
+(section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.2">4.1.2</a>) or by a call to the <tt>read</tt> procedure,
+and its name contains alphabetic characters, then the string returned
+will contain characters in the implementation's preferred standard
+case -- some implementations will prefer upper case, others lower case.
+If the symbol was returned by <tt>string-&gt;symbol</tt>, the case of
+characters in the string returned will be the same as the case in the
+string that was passed to <tt>string-&gt;symbol</tt>.  It is an error
+to apply mutation procedures like <tt>string-set!</tt> to strings returned
+by this procedure.</p>
+<p>
+The following examples assume that the implementation's standard case is
+lower case:</p>
+<p>
+<tt>(symbol-&gt;string&nbsp;'flying-fish)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;&quot;flying-fish&quot;<br>
+(symbol-&gt;string&nbsp;'Martin)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;&quot;martin&quot;<br>
+(symbol-&gt;string<br>
+&nbsp;&nbsp;&nbsp;(string-&gt;symbol&nbsp;&quot;Malvina&quot;))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;&quot;Malvina&quot;</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_464"></a>string-&gt;symbol<i> string</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the symbol whose name is <i>string</i>.  This procedure can
+create symbols with names containing special characters or letters in
+the non-standard case, but it is usually a bad idea to create such
+symbols because in some implementations of Scheme they cannot be read as
+themselves.  See <tt>symbol-&gt;string</tt>.</p>
+<p>
+The following examples assume that the implementation's standard case is
+lower case:</p>
+<p>
+<tt>(eq?&nbsp;'mISSISSIppi&nbsp;'mississippi)&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(string-&gt;symbol&nbsp;&quot;mISSISSIppi&quot;)&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;the&nbsp;symbol&nbsp;with&nbsp;name&nbsp;&quot;mISSISSIppi&quot;<br>
+(eq?&nbsp;'bitBlt&nbsp;(string-&gt;symbol&nbsp;&quot;bitBlt&quot;))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(eq?&nbsp;'JollyWog<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(string-&gt;symbol<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(symbol-&gt;string&nbsp;'JollyWog)))&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(string=?&nbsp;&quot;K.&nbsp;Harper,&nbsp;M.D.&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(symbol-&gt;string<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(string-&gt;symbol&nbsp;&quot;K.&nbsp;Harper,&nbsp;M.D.&quot;)))&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.4">6.3.4&nbsp;&nbsp;Characters</a></h3>
+<p></p>
+<p>
+Characters are objects that represent printed characters such as
+letters and digits.  
+Characters are written using the notation <tt>#</tt><tt>\</tt>&lt;character&gt;
+or <tt>#</tt><tt>\</tt>&lt;character name&gt;.
+For example:</p>
+<p>
+</p>
+<div align=left><table><tr><td>
+
+
+<table border=0><tr><td valign=top ><tt>#<tt>\</tt>a</tt></td><td valign=top >; lower case letter</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>A</tt></td><td valign=top >; upper case letter</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>(</tt></td><td valign=top >; left parenthesis</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt> </tt></td><td valign=top >; the space character</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>space</tt></td><td valign=top >; the preferred way to write a space</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>newline</tt></td><td valign=top >; the newline character</td></tr>
+<tr><td valign=top ></td></tr></table>
+</td></tr></table></div>
+<p></p>
+<p>
+Case is significant in <tt>#</tt><tt>\</tt>&lt;character&gt;, but not in
+<tt>#</tt><tt>\</tt>&lt;character name&gt;.                                                              If &lt;character&gt; in
+<tt>#</tt><tt>\</tt>&lt;character&gt; is alphabetic, then the character
+following &lt;character&gt; must be a delimiter character such as a
+space or parenthesis.  This rule resolves the ambiguous case where, for
+example, the sequence of characters ``<tt><tt>#</tt><tt>\</tt>space</tt>''
+could be taken to be either a representation of the space character or a
+representation of the character ``<tt><tt>#</tt><tt>\</tt>s</tt>'' followed
+by a representation of the symbol ``<tt>pace</tt>.''</p>
+<p>
+
+Characters written in the <tt>#</tt><tt>\</tt> notation are self-evaluating.
+That is, they do not have to be quoted in programs.  
+
+Some of the procedures that operate on characters ignore the
+difference between upper case and lower case.  The procedures that
+ignore case have ``<tt>-ci</tt>'' (for ``case
+insensitive'') embedded in their names.</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_466"></a>char?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a character, otherwise returns <tt>#f</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_468"></a>char=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_470"></a>char&lt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_472"></a>char&gt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_474"></a>char&lt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_476"></a>char&gt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+
+
+These procedures impose a total ordering on the set of characters.  It
+is guaranteed that under this ordering:</p>
+<p>
+</p>
+<ul>
+<li>
+<p>The upper case characters are in order.  For example, <tt>(char&lt;? #<tt>\</tt>A #<tt>\</tt>B)</tt> returns <tt>#t</tt>.
+</p>
+<li>
+<p>The lower case characters are in order.  For example, <tt>(char&lt;? #<tt>\</tt>a #<tt>\</tt>b)</tt> returns <tt>#t</tt>.
+</p>
+<li>
+<p>The digits are in order.  For example, <tt>(char&lt;? #<tt>\</tt>0 #<tt>\</tt>9)</tt> returns <tt>#t</tt>.
+</p>
+<li>
+<p>Either all the digits precede all the upper case letters, or vice versa.
+</p>
+<li>
+<p>Either all the digits precede all the lower case letters, or vice versa.
+</p>
+</ul>
+<p></p>
+<p>
+Some implementations may generalize these procedures to take more than
+two arguments, as with the corresponding numerical predicates.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_478"></a>char-ci=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_480"></a>char-ci&lt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_482"></a>char-ci&gt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_484"></a>char-ci&lt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_486"></a>char-ci&gt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+
+These procedures are similar to <tt>char=?</tt> et cetera, but they treat
+upper case and lower case letters as the same.  For example, <tt>(char-ci=? #<tt>\</tt>A #<tt>\</tt>a)</tt> returns <tt>#t</tt>.  Some
+implementations may generalize these procedures to take more than two
+arguments, as with the corresponding numerical predicates.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_488"></a>char-alphabetic?<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_490"></a>char-numeric?<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_492"></a>char-whitespace?<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_494"></a>char-upper-case?<i> letter</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_496"></a>char-lower-case?<i> letter</i>)</tt>&nbsp;</div>
+
+<p>
+These procedures return <tt>#t</tt> if their arguments are alphabetic,
+numeric, whitespace, upper case, or lower case characters, respectively,
+otherwise they return <tt>#f</tt>.  The following remarks, which are specific to
+the ASCII character set, are intended only as a guide:  The alphabetic characters
+are the 52 upper and lower case letters.  The numeric characters are the
+ten decimal digits.  The whitespace characters are space, tab, line
+feed, form feed, and carriage return.
+</p>
+
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_498"></a>char-&gt;integer<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_500"></a>integer-&gt;char<i> <em>n</em></i>)</tt>&nbsp;</div>
+
+<p>
+Given a character, <tt>char-&gt;integer</tt> returns an exact integer
+representation of the character.  Given an exact integer that is the image of
+a character under <tt>char-&gt;integer</tt>, <tt>integer-&gt;char</tt>
+returns that character.  These procedures implement order-preserving isomorphisms
+between the set of characters under the <tt>char&lt;=?</tt> ordering and some
+subset of the integers under the <tt>&lt;=</tt> ordering.  That is, if</p>
+<p>
+<tt>(char&lt;=?&nbsp;<em>a</em>&nbsp;<em>b</em>)&nbsp;===&gt;&nbsp;<tt>#t</tt>&nbsp;&nbsp;and&nbsp;&nbsp;(&lt;=&nbsp;<em>x</em>&nbsp;<em>y</em>)&nbsp;===&gt;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+and <em>x</em> and <em>y</em> are in the domain of
+<tt>integer-&gt;char</tt>, then</p>
+<p>
+<tt>(&lt;=&nbsp;(char-&gt;integer&nbsp;<em>a</em>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(char-&gt;integer&nbsp;<em>b</em>))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+<br>
+(char&lt;=?&nbsp;(integer-&gt;char&nbsp;<em>x</em>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(integer-&gt;char&nbsp;<em>y</em>))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_502"></a>char-upcase<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_504"></a>char-downcase<i> char</i>)</tt>&nbsp;</div>
+
+<p>
+
+These procedures return a character <i>char<sub>2</sub></i> such that <tt>(char-ci=? <i>char</i> <i>char<sub>2</sub></i>)</tt>.  In addition, if <i>char</i> is
+alphabetic, then the result of <tt>char-upcase</tt> is upper case and the
+result of <tt>char-downcase</tt> is lower case.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.5">6.3.5&nbsp;&nbsp;Strings</a></h3>
+<p></p>
+<p>
+Strings are sequences of characters.  
+Strings are written as sequences of characters enclosed within doublequotes
+(<tt>&quot;</tt>).  A doublequote can be written inside a string only by escaping
+it with a backslash (<tt>\</tt>), as in</p>
+<p>
+<tt>&quot;The&nbsp;word&nbsp;<tt>\</tt>&quot;recursion<tt>\</tt>&quot;&nbsp;has&nbsp;many&nbsp;meanings.&quot;</p>
+</tt>
+<p>
+A backslash can be written inside a string only by escaping it with another
+backslash.  Scheme does not specify the effect of a backslash within a
+string that is not followed by a doublequote or backslash.</p>
+<p>
+A string constant may continue from one line to the next, but
+the exact contents of such a string are unspecified.
+
+The <em>length</em> of a string is the number of characters that it
+contains.  This number is an exact, non-negative integer that is fixed when the
+string is created.  The <a name="%_idx_506"></a><em>valid indexes</em> of a string are the
+exact non-negative integers less than the length of the string.  The first
+character of a string has index 0, the second has index 1, and so on.</p>
+<p>
+In phrases such as ``the characters of <i>string</i> beginning with
+index <i>start</i> and ending with index <i>end</i>,'' it is understood
+that the index <i>start</i> is inclusive and the index <i>end</i> is
+exclusive.  Thus if <i>start</i> and <i>end</i> are the same index, a null
+substring is referred to, and if <i>start</i> is zero and <i>end</i> is
+the length of <i>string</i>, then the entire string is referred to.</p>
+<p>
+Some of the procedures that operate on strings ignore the
+difference between upper and lower case.  The versions that ignore case
+have ``<tt>-ci</tt>'' (for ``case insensitive'') embedded in their
+names.</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_508"></a>string?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a string, otherwise returns <tt>#f</tt>.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_510"></a>make-string<i> <em>k</em></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_512"></a>make-string<i> <em>k</em> char</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Make-string</tt> returns a newly allocated string of
+length <em>k</em>.  If <i>char</i> is given, then all elements of the string
+are initialized to <i>char</i>, otherwise the contents of the
+<i>string</i> are unspecified.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_514"></a>string<i> char <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated string composed of the arguments.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_516"></a>string-length<i> string</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the number of characters in the given <i>string</i>.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_518"></a>string-ref<i> string <em>k</em></i>)</tt>&nbsp;</div>
+
+<p>
+<em>k</em> must be a valid index of <i>string</i>.
+<tt>String-ref</tt> returns character <em>k</em> of <i>string</i> using zero-origin indexing.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_520"></a>string-set!<i> string k char</i>)</tt>&nbsp;</div>
+
+<p>
+<em>k</em> must be a valid index of <i>string</i>.
+<tt>String-set!</tt> stores <i>char</i> in element <em>k</em> of <i>string</i>
+and returns an unspecified value.  
+<tt>(define&nbsp;(f)&nbsp;(make-string&nbsp;3&nbsp;<tt>#</tt><tt>\</tt>*))<br>
+(define&nbsp;(g)&nbsp;&quot;***&quot;)<br>
+(string-set!&nbsp;(f)&nbsp;0&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(string-set!&nbsp;(g)&nbsp;0&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i><br>
+(string-set!&nbsp;(symbol-&gt;string&nbsp;'immutable)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_522"></a>string=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_524"></a>string-ci=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if the two strings are the same length and contain the same
+characters in the same positions, otherwise returns <tt>#f</tt>.
+<tt>String-ci=?</tt> treats
+upper and lower case letters as though they were the same character, but
+<tt>string=?</tt> treats upper and lower case as distinct characters.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_526"></a>string&lt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_528"></a>string&gt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_530"></a>string&lt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_532"></a>string&gt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_534"></a>string-ci&lt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_536"></a>string-ci&gt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_538"></a>string-ci&lt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_540"></a>string-ci&gt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<p>
+These procedures are the lexicographic extensions to strings of the
+corresponding orderings on characters.  For example, <tt>string&lt;?</tt> is
+the lexicographic ordering on strings induced by the ordering
+<tt>char&lt;?</tt> on characters.  If two strings differ in length but
+are the same up to the length of the shorter string, the shorter string
+is considered to be lexicographically less than the longer string.</p>
+<p>
+Implementations may generalize these and the <tt>string=?</tt> and
+<tt>string-ci=?</tt> procedures to take more than two arguments, as with
+the corresponding numerical predicates.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_542"></a>substring<i> string start end</i>)</tt>&nbsp;</div>
+
+<p>
+<i>String</i> must be a string, and <i>start</i> and <i>end</i>
+must be exact integers satisfying
+</p>
+<div align=left><table><tr><td>0 <u>&lt;</u> <i>start</i> <u>&lt;</u> <i>end</i> <u>&lt;</u> <tt>(string-length <i>string</i>).</tt></td></tr></table></div>
+<p>
+<tt>Substring</tt> returns a newly allocated string formed from the characters of
+<i>string</i> beginning with index <i>start</i> (inclusive) and ending with index
+<i>end</i> (exclusive).
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_544"></a>string-append<i> <i>string</i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated string whose characters form the concatenation of the
+given strings.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_546"></a>string-&gt;list<i> string</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_548"></a>list-&gt;string<i> list</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>String-&gt;list</tt> returns a newly allocated list of the
+characters that make up the given string.  <tt>List-&gt;string</tt>
+returns a newly allocated string formed from the characters in the list
+<i>list</i>, which must be a list of characters. <tt>String-&gt;list</tt>
+and <tt>list-&gt;string</tt> are
+inverses so far as <tt>equal?</tt> is concerned.  
+
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_550"></a>string-copy<i> string</i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated copy of the given <i>string</i>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_552"></a>string-fill!<i> string char</i>)</tt>&nbsp;</div>
+
+<p>
+Stores <i>char</i> in every element of the given <i>string</i> and returns an
+unspecified value.  
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.3.6"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.3.6">6.3.6&nbsp;&nbsp;Vectors</a></h3>
+<p></p>
+<p>
+Vectors are heterogenous structures whose elements are indexed
+by integers.  A vector typically occupies less space than a list
+of the same length, and the average time required to access a randomly
+chosen element is typically less for the vector than for the list.</p>
+<p>
+The <em>length</em> of a vector is the number of elements that it
+contains.  This number is a non-negative integer that is fixed when the
+vector is created.  The <em>valid indexes</em><a name="%_idx_554"></a> of a
+vector are the exact non-negative integers less than the length of the
+vector.  The first element in a vector is indexed by zero, and the last
+element is indexed by one less than the length of the vector.</p>
+<p>
+Vectors are written using the notation <tt>#(<i>obj</i> <tt>...</tt>)</tt>.
+For example, a vector of length 3 containing the number zero in element
+0, the list <tt>(2 2 2 2)</tt> in element 1, and the string <tt>&quot;Anna&quot;</tt> in
+element 2 can be written as following:</p>
+<p>
+<tt>#(0&nbsp;(2&nbsp;2&nbsp;2&nbsp;2)&nbsp;&quot;Anna&quot;)</p>
+</tt>
+<p>
+Note that this is the external representation of a vector, not an
+expression evaluating to a vector.  Like list constants, vector
+constants must be quoted:</p>
+<p>
+<tt>'#(0&nbsp;(2&nbsp;2&nbsp;2&nbsp;2)&nbsp;&quot;Anna&quot;)&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(0&nbsp;(2&nbsp;2&nbsp;2&nbsp;2)&nbsp;&quot;Anna&quot;)</p>
+</tt>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_556"></a>vector?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a vector, otherwise returns <tt>#f</tt>.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_558"></a>make-vector<i> k</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_560"></a>make-vector<i> k fill</i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated vector of <i>k</i> elements.  If a second
+argument is given, then each element is initialized to <i>fill</i>.
+Otherwise the initial contents of each element is unspecified.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_562"></a>vector<i> obj <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+Returns a newly allocated vector whose elements contain the given
+arguments.  Analogous to <tt>list</tt>.</p>
+<p>
+<tt>(vector&nbsp;'a&nbsp;'b&nbsp;'c)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(a&nbsp;b&nbsp;c)</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_564"></a>vector-length<i> vector</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the number of elements in <i>vector</i> as an exact integer.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_566"></a>vector-ref<i> vector k</i>)</tt>&nbsp;</div>
+
+<p>
+<em>k</em> must be a valid index of <i>vector</i>.
+<tt>Vector-ref</tt> returns the contents of element <em>k</em> of
+<i>vector</i>.</p>
+<p>
+<tt>(vector-ref&nbsp;'#(1&nbsp;1&nbsp;2&nbsp;3&nbsp;5&nbsp;8&nbsp;13&nbsp;21)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5)&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;8<br>
+(vector-ref&nbsp;'#(1&nbsp;1&nbsp;2&nbsp;3&nbsp;5&nbsp;8&nbsp;13&nbsp;21)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((i&nbsp;(round&nbsp;(*&nbsp;2&nbsp;(acos&nbsp;-1)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(inexact?&nbsp;i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(inexact-&gt;exact&nbsp;i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i)))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;13</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_568"></a>vector-set!<i> vector k obj</i>)</tt>&nbsp;</div>
+
+<p>
+<em>k</em> must be a valid index of <i>vector</i>.
+<tt>Vector-set!</tt> stores <i>obj</i> in element <em>k</em> of <i>vector</i>.
+The value returned by <tt>vector-set!</tt> is unspecified.  
+<tt>(let&nbsp;((vec&nbsp;(vector&nbsp;0&nbsp;'(2&nbsp;2&nbsp;2&nbsp;2)&nbsp;&quot;Anna&quot;)))<br>
+&nbsp;&nbsp;(vector-set!&nbsp;vec&nbsp;1&nbsp;'(&quot;Sue&quot;&nbsp;&quot;Sue&quot;))<br>
+&nbsp;&nbsp;vec)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(0&nbsp;(&quot;Sue&quot;&nbsp;&quot;Sue&quot;)&nbsp;&quot;Anna&quot;)<br>
+<br>
+(vector-set!&nbsp;'#(0&nbsp;1&nbsp;2)&nbsp;1&nbsp;&quot;doe&quot;)&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>error</i>&nbsp;&nbsp;;&nbsp;constant&nbsp;vector</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_570"></a>vector-&gt;list<i> vector</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_572"></a>list-&gt;vector<i> list</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Vector-&gt;list</tt> returns a newly allocated list of the objects contained
+in the elements of <i>vector</i>.  <tt>List-&gt;vector</tt> returns a newly
+created vector initialized to the elements of the list <i>list</i>.</p>
+<p>
+<tt>(vector-&gt;list&nbsp;'#(dah&nbsp;dah&nbsp;didah))&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(dah&nbsp;dah&nbsp;didah)<br>
+(list-&gt;vector&nbsp;'(dididit&nbsp;dah))&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(dididit&nbsp;dah)</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_574"></a>vector-fill!<i> vector fill</i>)</tt>&nbsp;</div>
+
+<p>
+Stores <i>fill</i> in every element of <i>vector</i>.
+The value returned by <tt>vector-fill!</tt> is unspecified.  
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.4"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.4">6.4&nbsp;&nbsp;Control features</a></h2>
+<p></p>
+<p>
+
+This chapter describes various primitive procedures which control the
+flow of program execution in special ways.
+The <tt>procedure?</tt> predicate is also described here.</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_576"></a>procedure?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a procedure, otherwise returns <tt>#f</tt>.</p>
+<p>
+<tt>(procedure?&nbsp;car)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(procedure?&nbsp;'car)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(procedure?&nbsp;(lambda&nbsp;(x)&nbsp;(*&nbsp;x&nbsp;x)))&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt><br>
+(procedure?&nbsp;'(lambda&nbsp;(x)&nbsp;(*&nbsp;x&nbsp;x)))&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt><br>
+(call-with-current-continuation&nbsp;procedure?)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#t</tt></p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_578"></a>apply<i> proc <i>arg<sub>1</sub></i> <tt>...</tt> args</i>)</tt>&nbsp;</div>
+
+<p>
+<i>Proc</i> must be a procedure and <i>args</i> must be a list.
+Calls <i>proc</i> with the elements of the list
+<tt>(append (list <i>arg<sub>1</sub></i> <tt>...</tt>) <i>args</i>)</tt> as the actual
+arguments.</p>
+<p>
+<tt>(apply&nbsp;+&nbsp;(list&nbsp;3&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;7<br>
+<br>
+(define&nbsp;compose<br>
+&nbsp;&nbsp;(lambda&nbsp;(f&nbsp;g)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;args<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(f&nbsp;(apply&nbsp;g&nbsp;args)))))<br>
+<br>
+((compose&nbsp;sqrt&nbsp;*)&nbsp;12&nbsp;75)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;30</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_580"></a>map<i> proc <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+The <i>list</i>s must be lists, and <i>proc</i> must be a
+procedure taking as many arguments as there are <i>list</i>s
+and returning a single value.  If more
+than one <i>list</i> is given, then they must all be the same length.
+<tt>Map</tt> applies <i>proc</i> element-wise to the elements of the
+<i>list</i>s and returns a list of the results, in order.
+The dynamic order in which <i>proc</i> is applied to the elements of the
+<i>list</i>s is unspecified.</p>
+<p>
+<tt>(map&nbsp;cadr&nbsp;'((a&nbsp;b)&nbsp;(d&nbsp;e)&nbsp;(g&nbsp;h)))&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(b&nbsp;e&nbsp;h)<br>
+<br>
+(map&nbsp;(lambda&nbsp;(n)&nbsp;(expt&nbsp;n&nbsp;n))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(1&nbsp;4&nbsp;27&nbsp;256&nbsp;3125)<br>
+<br>
+(map&nbsp;+&nbsp;'(1&nbsp;2&nbsp;3)&nbsp;'(4&nbsp;5&nbsp;6))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(5&nbsp;7&nbsp;9)<br>
+<br>
+(let&nbsp;((count&nbsp;0))<br>
+&nbsp;&nbsp;(map&nbsp;(lambda&nbsp;(ignored)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;count&nbsp;(+&nbsp;count&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(a&nbsp;b)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(1&nbsp;2)&nbsp;<i>or</i>&nbsp;(2&nbsp;1)<br>
+</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_582"></a>for-each<i> proc <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+The arguments to <tt>for-each</tt> are like the arguments to <tt>map</tt>, but
+<tt>for-each</tt> calls <i>proc</i> for its side effects rather than for its
+values.  Unlike <tt>map</tt>, <tt>for-each</tt> is guaranteed to call <i>proc</i> on
+the elements of the <i>list</i>s in order from the first element(s) to the
+last, and the value returned by <tt>for-each</tt> is unspecified.</p>
+<p>
+<tt>(let&nbsp;((v&nbsp;(make-vector&nbsp;5)))<br>
+&nbsp;&nbsp;(for-each&nbsp;(lambda&nbsp;(i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vector-set!&nbsp;v&nbsp;i&nbsp;(*&nbsp;i&nbsp;i)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(0&nbsp;1&nbsp;2&nbsp;3&nbsp;4))<br>
+&nbsp;&nbsp;v)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;#(0&nbsp;1&nbsp;4&nbsp;9&nbsp;16)</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_584"></a>force<i> promise</i>)</tt>&nbsp;</div>
+
+<p>
+Forces the value of <i>promise</i> (see <tt>delay</tt>,
+section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.2.5">4.2.5</a>).<a name="%_idx_586"></a>  If no value has been computed for
+the promise, then a value is computed and returned.  The value of the
+promise is cached (or ``memoized'') so that if it is forced a second
+time, the previously computed value is returned.
+
+<tt>(force&nbsp;(delay&nbsp;(+&nbsp;1&nbsp;2)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;3<br>
+(let&nbsp;((p&nbsp;(delay&nbsp;(+&nbsp;1&nbsp;2))))<br>
+&nbsp;&nbsp;(list&nbsp;(force&nbsp;p)&nbsp;(force&nbsp;p)))&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;(3&nbsp;3)<br>
+<br>
+(define&nbsp;a-stream<br>
+&nbsp;&nbsp;(letrec&nbsp;((next<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;n&nbsp;(delay&nbsp;(next&nbsp;(+&nbsp;n&nbsp;1)))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(next&nbsp;0)))<br>
+(define&nbsp;head&nbsp;car)<br>
+(define&nbsp;tail<br>
+&nbsp;&nbsp;(lambda&nbsp;(stream)&nbsp;(force&nbsp;(cdr&nbsp;stream))))<br>
+<br>
+(head&nbsp;(tail&nbsp;(tail&nbsp;a-stream)))&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;2</p>
+</tt>
+<p>
+<tt>Force</tt> and <tt>delay</tt> are mainly intended for programs written in
+functional style.  The following examples should not be considered to
+illustrate good programming style, but they illustrate the property that
+only one value is computed for a promise, no matter how many times it is
+forced.
+
+<tt>(define&nbsp;count&nbsp;0)<br>
+(define&nbsp;p<br>
+&nbsp;&nbsp;(delay&nbsp;(begin&nbsp;(set!&nbsp;count&nbsp;(+&nbsp;count&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(&gt;&nbsp;count&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(force&nbsp;p)))))<br>
+(define&nbsp;x&nbsp;5)<br>
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>a&nbsp;promise</i><br>
+(force&nbsp;p)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;6<br>
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>a&nbsp;promise,&nbsp;still</i><br>
+(begin&nbsp;(set!&nbsp;x&nbsp;10)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(force&nbsp;p))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;6</p>
+</tt>
+<p>
+Here is a possible implementation of <tt>delay</tt> and <tt>force</tt>.
+Promises are implemented here as procedures of no arguments,
+and <tt>force</tt> simply calls its argument:</p>
+<p>
+<tt>(define&nbsp;force<br>
+&nbsp;&nbsp;(lambda&nbsp;(object)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(object)))</p>
+</tt>
+<p>
+We define the expression</p>
+<p>
+<tt>(delay&nbsp;&lt;expression&gt;)</p>
+</tt>
+<p>
+to have the same meaning as the procedure call</p>
+<p>
+<tt>(make-promise&nbsp;(lambda&nbsp;()&nbsp;&lt;expression&gt;))<br>
+</p>
+</tt>
+<p>
+as follows</p>
+<p>
+<tt>(define-syntax&nbsp;delay<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((delay&nbsp;expression)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-promise&nbsp;(lambda&nbsp;()&nbsp;expression))))),</p>
+</tt>
+<p>
+where <tt>make-promise</tt> is defined as follows:</p>
+<p>
+
+<tt>(define&nbsp;make-promise<br>
+&nbsp;&nbsp;(lambda&nbsp;(proc)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((result-ready?&nbsp;<tt>#f</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(result&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;result-ready?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;(proc)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;result-ready?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;(set!&nbsp;result-ready?&nbsp;<tt>#t</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;result&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result))))))))</p>
+</tt>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+A promise may refer to its own value, as in the last example above.
+Forcing such a promise may cause the promise to be forced a second time
+before the value of the first force has been computed.
+This complicates the definition of <tt>make-promise</tt>.
+</blockquote>
+<p>
+Various extensions to this semantics of <tt>delay</tt> and <tt>force</tt>
+are supported in some implementations:</p>
+<p>
+</p>
+<ul>
+<li>
+<p>Calling <tt>force</tt> on an object that is not a promise may simply
+return the object.</p>
+<p>
+</p>
+<li>
+<p>It may be the case that there is no means by which a promise can be
+operationally distinguished from its forced value.  That is, expressions
+like the following may evaluate to either <tt>#t</tt> or to <tt>#f</tt>,
+depending on the implementation:</p>
+<p>
+<tt>(eqv?&nbsp;(delay&nbsp;1)&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i><br>
+(pair?&nbsp;(delay&nbsp;(cons&nbsp;1&nbsp;2)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<i>unspecified</i></p>
+</tt>
+<p>
+</p>
+<li>
+<p>Some implementations may implement ``implicit forcing,'' where
+the value of a promise is forced by primitive procedures like <tt>cdr
+and <tt>+:</p>
+<p>
+<tt>(+&nbsp;(delay&nbsp;(*&nbsp;3&nbsp;7))&nbsp;13)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;34</p>
+</tt>
+</ul>
+<p></tt></tt>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_588"></a>call-with-current-continuation<i> proc</i>)</tt>&nbsp;</div>
+
+<p>
+ <i>Proc</i> must be a procedure of one
+argument. The procedure <tt>call-with-current-continuation</tt> packages
+up the current continuation (see the rationale below) as an ``escape
+procedure''<a name="%_idx_590"></a> and passes it as an argument to
+<i>proc</i>.  The escape procedure is a Scheme procedure that, if it is
+later called, will abandon whatever continuation is in effect at that later
+time and will instead use the continuation that was in effect
+when the escape procedure was created.  Calling the escape procedure
+may cause the invocation of <i>before</i> and <i>after</i> thunks installed using
+<tt>dynamic-wind</tt>.</p>
+<p>
+The escape procedure accepts the same number of arguments as the continuation to
+the original call to <tt>call-with-current-continuation</tt>.
+Except for continuations created by the <tt>call-with-values</tt>
+procedure, all continuations take exactly one value.  The
+effect of passing no value or more than one value to continuations
+that were not created by <tt>call-with-values</tt> is unspecified.</p>
+<p>
+The escape procedure that is passed to <i>proc</i> has
+unlimited extent just like any other procedure in Scheme.  It may be stored
+in variables or data structures and may be called as many times as desired.</p>
+<p>
+The following examples show only the most common ways in which
+<tt>call-with-current-continuation</tt> is used.  If all real uses were as
+simple as these examples, there would be no need for a procedure with
+the power of <tt>call-with-current-continuation</tt>.</p>
+<p>
+<tt>(call-with-current-continuation<br>
+&nbsp;&nbsp;(lambda&nbsp;(exit)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(for-each&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(negative?&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(exit&nbsp;x)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(54&nbsp;0&nbsp;37&nbsp;-3&nbsp;245&nbsp;19))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<tt>#t</tt>))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-3<br>
+<br>
+(define&nbsp;list-length<br>
+&nbsp;&nbsp;(lambda&nbsp;(obj)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(call-with-current-continuation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(return)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec&nbsp;((r<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(obj)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;((null?&nbsp;obj)&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((pair?&nbsp;obj)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;(r&nbsp;(cdr&nbsp;obj))&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;(return&nbsp;<tt>#f</tt>))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(r&nbsp;obj))))))<br>
+<br>
+(list-length&nbsp;'(1&nbsp;2&nbsp;3&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;4<br>
+<br>
+(list-length&nbsp;'(a&nbsp;b&nbsp;.&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;<tt>#f</tt></p>
+</tt>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<p>
+A common use of <tt>call-with-current-continuation</tt> is for
+structured, non-local exits from loops or procedure bodies, but in fact
+<tt>call-with-current-continuation</tt> is extremely useful for implementing a
+wide variety of advanced control structures.</p>
+<p>
+Whenever a Scheme expression is evaluated there is a
+<a name="%_idx_592"></a><em>continuation</em> wanting the result of the expression.  The continuation
+represents an entire (default) future for the computation.  If the expression is
+evaluated at top level, for example, then the continuation might take the
+result, print it on the screen, prompt for the next input, evaluate it, and
+so on forever.  Most of the time the continuation includes actions
+specified by user code, as in a continuation that will take the result,
+multiply it by the value stored in a local variable, add seven, and give
+the answer to the top level continuation to be printed.  Normally these
+ubiquitous continuations are hidden behind the scenes and programmers do not
+think much about them.  On rare occasions, however, a programmer may
+need to deal with continuations explicitly.
+<tt>Call-with-current-continuation</tt> allows Scheme programmers to do
+that by creating a procedure that acts just like the current
+continuation.</p>
+<p>
+Most programming languages incorporate one or more special-purpose
+escape constructs with names like <tt>exit</tt>, <tt>return</tt>, or
+even <tt>goto</tt>.  In 1965, however, Peter Landin&nbsp;[<a href="r5rs-Z-H-14.html#cite{Landin65}">16</a>]
+invented a general purpose escape operator called the J-operator.  John
+Reynolds&nbsp;[<a href="r5rs-Z-H-14.html#cite{Reynolds72}">24</a>] described a simpler but equally powerful
+construct in 1972.  The <tt>catch</tt> special form described by Sussman
+and Steele in the 1975 report on Scheme is exactly the same as
+Reynolds's construct, though its name came from a less general construct
+in MacLisp.  Several Scheme implementors noticed that the full power of the
+<tt>catch</tt> construct could be provided by a procedure instead of by a
+special syntactic construct, and the name
+<tt>call-with-current-continuation</tt> was coined in 1982.  This name is
+descriptive, but opinions differ on the merits of such a long name, and
+some people use the name <tt>call/cc</tt> instead.
+</p>
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_594"></a>values<i> obj <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<p>
+Delivers all of its arguments to its continuation.
+Except for continuations created by the <tt>call-with-values</tt>
+procedure, all continuations take exactly one value.
+<tt>Values</tt> might be defined as follows:
+<tt>(define&nbsp;(values&nbsp;.&nbsp;things)<br>
+&nbsp;&nbsp;(call-with-current-continuation&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(cont)&nbsp;(apply&nbsp;cont&nbsp;things))))<br>
+</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_596"></a>call-with-values<i> producer consumer</i>)</tt>&nbsp;</div>
+
+<p>
+Calls its <i>producer</i> argument with no values and
+a continuation that, when passed some values, calls the
+<i>consumer</i> procedure with those values as arguments.
+The continuation for the call to <i>consumer</i> is the
+continuation of the call to <tt>call-with-values</tt>.</p>
+<p>
+<tt>(call-with-values&nbsp;(lambda&nbsp;()&nbsp;(values&nbsp;4&nbsp;5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(a&nbsp;b)&nbsp;b))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;5<br>
+<br>
+(call-with-values&nbsp;*&nbsp;-)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_598"></a>dynamic-wind<i> before thunk after</i>)</tt>&nbsp;</div>
+
+<p>
+Calls <i>thunk</i> without arguments, returning the result(s) of this call.
+<i>Before</i> and <i>after</i> are called, also without arguments, as required
+by the following rules (note that in the absence of calls to continuations
+captured using <tt>call-with-current-continuation</tt> the three arguments are
+called once each, in order).  <i>Before</i> is called whenever execution
+enters the dynamic extent of the call to <i>thunk</i> and <i>after</i> is called
+whenever it exits that dynamic extent.  The dynamic extent of a procedure
+call is the period between when the call is initiated and when it
+returns.  In Scheme, because of <tt>call-with-current-continuation</tt>, the
+dynamic extent of a call may not be a single, connected time period.
+It is defined as follows:
+</p>
+<ul>
+<li>
+<p>The dynamic extent is entered when execution of the body of the
+called procedure begins.</p>
+<p>
+</p>
+<li>
+<p>The dynamic extent is also entered when execution is not within
+the dynamic extent and a continuation is invoked that was captured
+(using <tt>call-with-current-continuation</tt>) during the dynamic extent.</p>
+<p>
+</p>
+<li>
+<p>It is exited when the called procedure returns.</p>
+<p>
+</p>
+<li>
+<p>It is also exited when execution is within the dynamic extent and
+a continuation is invoked that was captured while not within the
+dynamic extent.
+</p>
+</ul>
+<p></p>
+<p>
+If a second call to <tt>dynamic-wind</tt> occurs within the dynamic extent of the
+call to <i>thunk</i> and then a continuation is invoked in such a way that the
+<i>after</i>s from these two invocations of <tt>dynamic-wind</tt> are both to be
+called, then the <i>after</i> associated with the second (inner) call to
+<tt>dynamic-wind</tt> is called first.</p>
+<p>
+If a second call to <tt>dynamic-wind</tt> occurs within the dynamic extent of the
+call to <i>thunk</i> and then a continuation is invoked in such a way that the
+<i>before</i>s from these two invocations of <tt>dynamic-wind</tt> are both to be
+called, then the <i>before</i> associated with the first (outer) call to
+<tt>dynamic-wind</tt> is called first.</p>
+<p>
+If invoking a continuation requires calling the <i>before</i> from one call
+to <tt>dynamic-wind</tt> and the <i>after</i> from another, then the <i>after</i>
+is called first.</p>
+<p>
+The effect of using a captured continuation to enter or exit the dynamic
+extent of a call to <i>before</i> or <i>after</i> is undefined.</p>
+<p>
+<tt>(let&nbsp;((path&nbsp;'())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;#f))<br>
+&nbsp;&nbsp;(let&nbsp;((add&nbsp;(lambda&nbsp;(s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;path&nbsp;(cons&nbsp;s&nbsp;path)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(dynamic-wind<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;(add&nbsp;'connect))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(add&nbsp;(call-with-current-continuation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(c0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;c&nbsp;c0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'talk1))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;(add&nbsp;'disconnect)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(&lt;&nbsp;(length&nbsp;path)&nbsp;4)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;'talk2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(reverse&nbsp;path))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;(connect&nbsp;talk1&nbsp;disconnect<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;connect&nbsp;talk2&nbsp;disconnect)<br>
+</p>
+</tt>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.5"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.5">6.5&nbsp;&nbsp;<tt>Eval</tt></a></h2>
+<p></p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_600"></a>eval<i> expression environment-specifier</i>)</tt>&nbsp;</div>
+
+<p>
+Evaluates <i>expression</i> in the specified environment and returns its value.
+<i>Expression</i> must be a valid Scheme expression represented as data,
+and <i>environment-specifier</i> must be a value returned by one of the
+three procedures described below.
+Implementations may extend <tt>eval</tt> to allow non-expression programs
+(definitions) as the first argument and to allow other
+values as environments, with the restriction that <tt>eval</tt> is not
+allowed to create new bindings in the environments associated with
+<tt>null-environment</tt> or <tt>scheme-report-environment</tt>.</p>
+<p>
+<tt>(eval&nbsp;'(*&nbsp;7&nbsp;3)&nbsp;(scheme-report-environment&nbsp;5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;21<br>
+<br>
+(let&nbsp;((f&nbsp;(eval&nbsp;'(lambda&nbsp;(f&nbsp;x)&nbsp;(f&nbsp;x&nbsp;x))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(null-environment&nbsp;5))))<br>
+&nbsp;&nbsp;(f&nbsp;+&nbsp;10))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;20<br>
+</p>
+</tt>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_602"></a>scheme-report-environment<i> version</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_604"></a>null-environment<i> version</i>)</tt>&nbsp;</div>
+
+<p>
+<i>Version</i> must be the exact integer <tt>5</tt>,
+corresponding to this revision of the Scheme report (the
+Revised<sup>5</sup> Report on Scheme).
+<tt>Scheme-report-environment</tt> returns a specifier for an
+environment that is empty except for all bindings defined in
+this report that are either required or both optional and
+supported by the implementation. <tt>Null-environment</tt> returns
+a specifier for an environment that is empty except for the
+(syntactic) bindings for all syntactic keywords defined in
+this report that are either required or both optional and
+supported by the implementation.</p>
+<p>
+Other values of <i>version</i> can be used to specify environments
+matching past revisions of this report, but their support is not
+required.  An implementation will signal an error if <i>version</i>
+is neither <tt>5</tt> nor another value supported by
+the implementation.</p>
+<p>
+The effect of assigning (through the use of <tt>eval</tt>) a variable
+bound in a <tt>scheme-report-environment</tt>
+(for example <tt>car</tt>) is unspecified.  Thus the environments specified
+by <tt>scheme-report-environment</tt> may be immutable.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_606"></a>interaction-environment<i></i>)</tt>&nbsp;</div>
+
+<p>
+This procedure returns a specifier for the environment that
+contains implementation-defined bindings, typically a superset of
+those listed in the report.  The intent is that this procedure
+will return the environment in which the implementation would evaluate
+expressions dynamically typed by the user.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.6"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.6">6.6&nbsp;&nbsp;Input and output</a></h2>
+<p></p>
+<a name="%_sec_6.6.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.6.1">6.6.1&nbsp;&nbsp;Ports</a></h3>
+<p></p>
+<p>
+Ports represent input and output devices.  To Scheme, an input port is a
+Scheme object that can deliver characters upon command, while an output port
+is a Scheme object that can accept characters. <a name="%_idx_608"></a></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_610"></a>call-with-input-file<i> string proc</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_612"></a>call-with-output-file<i> string proc</i>)</tt>&nbsp;</div>
+
+<p>
+<i>String</i> should be a string naming a file, and
+<i>proc</i> should be a procedure that accepts one argument.
+For <tt>call-with-input-file</tt>,
+the file should already exist; for
+<tt>call-with-output-file</tt>,
+the effect is unspecified if the file
+already exists. These procedures call <i>proc</i> with one argument: the
+port obtained by opening the named file for input or output.  If the
+file cannot be opened, an error is signalled.  If <i>proc</i> returns,
+then the port is closed automatically and the value(s) yielded by the
+<i>proc</i> is(are) returned.  If <i>proc</i> does not return, then 
+the port will not be closed automatically unless it is possible to
+prove that the port will never again be used for a read or write
+operation.
+
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+Because Scheme's escape procedures have unlimited extent, it  is
+possible to escape from the current continuation but later to escape back in. 
+If implementations were permitted to close the port on any escape from the
+current continuation, then it would be impossible to write portable code using
+both <tt>call-with-current-continuation</tt> and <tt>call-with-input-file</tt> or
+<tt>call-with-output-file</tt>.
+
+</blockquote> 
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_614"></a>input-port?<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_616"></a>output-port?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is an input port or output port
+respectively, otherwise returns <tt>#f</tt>.</p>
+<p>
+</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_618"></a>current-input-port<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_620"></a>current-output-port<i></i>)</tt>&nbsp;</div>
+
+<p>
+Returns the current default input or output port.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_622"></a>with-input-from-file<i> string thunk</i>)</tt>&nbsp;</div>
+
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_624"></a>with-output-to-file<i> string thunk</i>)</tt>&nbsp;</div>
+
+<p>
+<i>String</i> should be a string naming a file, and
+<i>proc</i> should be a procedure of no arguments.
+For <tt>with-input-from-file</tt>,
+the file should already exist; for
+<tt>with-output-to-file</tt>,
+the effect is unspecified if the file
+already exists.
+The file is opened for input or output, an input or output port
+connected to it is made the default value returned by
+<tt>current-input-port</tt> or <tt>current-output-port</tt>
+(and is used by <tt>(read)</tt>, <tt>(write <i>obj</i>)</tt>, and so forth),
+and the
+<i>thunk</i> is called with no arguments.  When the <i>thunk</i> returns,
+the port is closed and the previous default is restored.
+<tt>With-input-from-file</tt> and <tt>with-output-to-file</tt> return(s) the
+value(s) yielded by <i>thunk</i>.
+If an escape procedure
+is used to escape from the continuation of these procedures, their
+behavior is implementation dependent.</p>
+<p>
+
+
+</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_626"></a>open-input-file<i> filename</i>)</tt>&nbsp;</div>
+
+<p>
+Takes a string naming an existing file and returns an input port capable of
+delivering characters from the file.  If the file cannot be opened, an error is
+signalled.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_628"></a>open-output-file<i> filename</i>)</tt>&nbsp;</div>
+
+<p>
+Takes a string naming an output file to be created and returns an output
+port capable of writing characters to a new file by that name.  If the file
+cannot be opened, an error is signalled.  If a file with the given name
+already exists, the effect is unspecified.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_630"></a>close-input-port<i> port</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_632"></a>close-output-port<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+Closes the file associated with <i>port</i>, rendering the <i>port</i>
+incapable of delivering or accepting characters.  
+These routines have no effect if the file has already been closed.
+The value returned is unspecified.</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.6.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.6.2">6.6.2&nbsp;&nbsp;Input</a></h3>
+<p></p>
+<p>
+   </p>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_634"></a>read<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_636"></a>read<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+<tt>Read</tt> converts external representations of Scheme objects into the
+objects themselves.  That is, it is a parser for the nonterminal
+&lt;datum&gt; (see sections&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.2">7.1.2</a> and
+<a href="#%_sec_6.3.2">6.3.2</a>).  <tt>Read</tt> returns the next
+object parsable from the given input <i>port</i>, updating <i>port</i> to point to
+the first character past the end of the external representation of the object.</p>
+<p>
+If an end of file is encountered in the input before any
+characters are found that can begin an object, then an end of file
+object is returned.   The port remains open, and further attempts
+to read will also return an end of file object.  If an end of file is
+encountered after the beginning of an object's external representation,
+but the external representation is incomplete and therefore not parsable,
+an error is signalled.</p>
+<p>
+The <i>port</i> argument may be omitted, in which case it defaults to the
+value returned by <tt>current-input-port</tt>.  It is an error to read from
+a closed port.
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_638"></a>read-char<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_640"></a>read-char<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the next character available from the input <i>port</i>, updating
+the <i>port</i> to point to the following character.  If no more characters
+are available, an end of file object is returned.  <i>Port</i> may be
+omitted, in which case it defaults to the value returned by <tt>current-input-port</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_642"></a>peek-char<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_644"></a>peek-char<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+Returns the next character available from the input <i>port</i>,
+<em>without</em> updating
+the <i>port</i> to point to the following character.  If no more characters
+are available, an end of file object is returned.  <i>Port</i> may be
+omitted, in which case it defaults to the value returned by <tt>current-input-port</tt>.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The value returned by a call to <tt>peek-char</tt> is the same as the
+value that would have been returned by a call to <tt>read-char</tt> with the
+same <i>port</i>.  The only difference is that the very next call to
+<tt>read-char</tt> or <tt>peek-char</tt> on that <i>port</i> will return the
+value returned by the preceding call to <tt>peek-char</tt>.  In particular, a call
+to <tt>peek-char</tt> on an interactive port will hang waiting for input
+whenever a call to <tt>read-char</tt> would have hung.
+</blockquote>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_646"></a>eof-object?<i> obj</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is an end of file object, otherwise returns
+<tt>#f</tt>.  The precise set of end of file objects will vary among
+implementations, but in any case no end of file object will ever be an object
+that can be read in using <tt>read</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_648"></a>char-ready?<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_650"></a>char-ready?<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+Returns <tt>#t</tt> if a character is ready on the input <i>port</i> and
+returns <tt>#f</tt> otherwise.  If <tt>char-ready</tt> returns <tt>#t</tt> then
+the next <tt>read-char</tt> operation on the given <i>port</i> is guaranteed
+not to hang.  If the <i>port</i> is at end of file then <tt>char-ready?</tt>
+returns <tt>#t</tt>.  <i>Port</i> may be omitted, in which case it defaults to
+the value returned by <tt>current-input-port</tt>.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Char-ready?</tt> exists to make it possible for a program to
+accept characters from interactive ports without getting stuck waiting for
+input.  Any input editors associated with such ports must ensure that
+characters whose existence has been asserted by <tt>char-ready?</tt> cannot
+be rubbed out.  If <tt>char-ready?</tt> were to return <tt>#f</tt> at end of
+file, a port at end of file would be indistinguishable from an interactive
+port that has no ready characters.
+</blockquote>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.6.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.6.3">6.6.3&nbsp;&nbsp;Output</a></h3>
+<p></p>
+<p>
+
+</p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_652"></a>write<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_654"></a>write<i> obj port</i>)</tt>&nbsp;</div>
+
+<p>
+Writes a written representation of <i>obj</i> to the given <i>port</i>.  Strings
+that appear in the written representation are enclosed in doublequotes, and
+within those strings backslash and doublequote characters are
+escaped by backslashes.
+Character objects are written using the <tt>#<tt>\</tt></tt> notation.
+<tt>Write</tt> returns an unspecified value.  The
+<i>port</i> argument may be omitted, in which case it defaults to the value
+returned by <tt>current-output-port</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_656"></a>display<i> obj</i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_658"></a>display<i> obj port</i>)</tt>&nbsp;</div>
+
+<p>
+Writes a representation of <i>obj</i> to the given <i>port</i>.  Strings
+that appear in the written representation are not enclosed in
+doublequotes, and no characters are escaped within those strings.  Character
+objects appear in the representation as if written by <tt>write-char</tt>
+instead of by <tt>write</tt>.  <tt>Display</tt> returns an unspecified value.
+The <i>port</i> argument may be omitted, in which case it defaults to the
+value returned by <tt>current-output-port</tt>.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Write</tt> is intended
+for producing machine-readable output and <tt>display</tt> is for producing
+human-readable output.  Implementations that allow ``slashification''
+within symbols will probably want <tt>write</tt> but not <tt>display</tt> to
+slashify funny characters in symbols.
+</blockquote>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_660"></a>newline<i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>library procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_662"></a>newline<i> port</i>)</tt>&nbsp;</div>
+
+<p>
+Writes an end of line to <i>port</i>.  Exactly how this is done differs
+from one operating system to another.  Returns an unspecified value.
+The <i>port</i> argument may be omitted, in which case it defaults to the
+value returned by <tt>current-output-port</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_664"></a>write-char<i> char</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_666"></a>write-char<i> char port</i>)</tt>&nbsp;</div>
+
+<p>
+Writes the character <i>char</i> (not an external representation of the
+character) to the given <i>port</i> and returns an unspecified value.  The
+<i>port</i> argument may be omitted, in which case it defaults to the value
+returned by <tt>current-output-port</tt>.</p>
+<p>
+</p>
+
+<p></p>
+<p>
+</p>
+<a name="%_sec_6.6.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_6.6.4">6.6.4&nbsp;&nbsp;System interface</a></h3>
+<p>Questions of system interface generally fall outside of the domain of this
+report.  However, the following operations are important enough to
+deserve description here.</p>
+<p>
+</p>
+<p></p>
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_668"></a>load<i> filename</i>)</tt>&nbsp;</div>
+
+<p>
+</p>
+<p>
+<i>Filename</i> should be a string naming an existing file
+containing Scheme source code.  The <tt>load</tt> procedure reads
+expressions and definitions from the file and evaluates them
+sequentially.  It is unspecified whether the results of the expressions
+are printed.  The <tt>load</tt> procedure does not affect the values
+returned by <tt>current-input-port</tt> and <tt>current-output-port</tt>.
+<tt>Load</tt> returns an unspecified value.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+For portability, <tt>load</tt> must operate on source files.
+Its operation on other kinds of files necessarily varies among
+implementations.
+</blockquote>
+
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_670"></a>transcript-on<i> filename</i>)</tt>&nbsp;</div>
+
+<div align=left><u>optional procedure:</u>&nbsp;&nbsp;<tt>(<a name="%_idx_672"></a>transcript-off<i></i>)</tt>&nbsp;</div>
+
+<p>
+<i>Filename</i> must be a string naming an output file to be
+created. The effect of <tt>transcript-on</tt> is to open the named file
+for output, and to cause a transcript of subsequent interaction between
+the user and the Scheme system to be written to the file.  The
+transcript is ended by a call to <tt>transcript-off</tt>, which closes the
+transcript file.  Only one transcript may be in progress at any time,
+though some implementations may relax this restriction.  The values
+returned by these procedures are unspecified.</p>
+<p>
+</p>
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-8.html">previous</a></span><span>, <a href="r5rs-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

@@ -437,6 +437,55 @@
          (lambda () (car content))
          (lambda () (car content))))))
 
+
+  (define (make-binding-redirect-elements mod-path redirects)
+    (let ([taglet (path->main-collects-relative
+                   (resolved-module-path-name
+                    (module-path-index-resolve
+                     (module-path-index-join mod-path #f))))])
+      (make-element
+       #f
+       (map
+        (lambda (redirect)
+          (let ([id (car redirect)]
+                [form? (cadr redirect)]
+                [path (caddr redirect)]
+                [anchor (cadddr redirect)])
+            (let ([make-one
+                   (lambda (kind)
+                     (make-redirect-target-element
+                      #f
+                      null
+                      (list kind (list taglet id))
+                      path
+                      anchor))])
+              (make-element
+               #f
+               (list (make-one (if form? 'form 'def))
+                     (make-one 'dep)
+                     (make-index-element #f
+                                         null
+                                         (list (if form? 'form 'def)
+                                               (list taglet id))
+                                         (list (symbol->string id))
+                                         (list
+                                          (make-element 
+                                           "schemesymbol"
+                                           (list 
+                                            (make-element
+                                             (if form?
+                                                 "schemesyntaxlink"
+                                                 "schemevaluelink")
+                                             (list (symbol->string id))))))
+                                         ((if form?
+                                              make-form-index-desc
+                                              make-procedure-index-desc)
+                                          id
+                                          (list mod-path))))))))
+        redirects))))
+
+  (provide make-binding-redirect-elements)
+
   (define current-signature (make-parameter #f))
 
   (define-syntax-rule (sigelem sig elem)

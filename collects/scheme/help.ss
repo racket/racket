@@ -80,7 +80,7 @@
               (error 'help
                      "no documentation found for: ~e provided by: ~a"
                      (syntax-e id)
-                     (module-path-index-resolve (caddr b)))))
+                     (module-path-index-resolve (caddr (or lb b))))))
         (search-for-exports xref (syntax-e id)))))
 
 (define (search-for-exports xref sym)

@@ -1,0 +1,845 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head><title>SRFI 64: A Scheme API for test suites</title>
+
+  
+    
+<style type="text/css">
+  div.title h1 { font-size: small; color: blue }
+  div.title { font-size: xx-large; color: blue; font-weight: bold }
+  h1 { font-size: x-large; color: blue }
+  h2 { font-size: large; color: blue }
+  /* So var inside pre gets same font as var in paragraphs. */
+  var { font-family: monospace; }
+</style></head><body>
+<div class="title">
+<h1>Title</h1>
+A Scheme API for test suites
+</div>
+
+<h1>Author</h1>
+<p>Per Bothner
+<code><a href="mailto:per@bothner.com">&lt;per@bothner.com&gt;</a></code></p>
+
+<h1>Status</h1>
+
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see
+<a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+It will remain in draft status until 2005/03/17, or as amended. To
+provide input on this SRFI, please <code>
+<a href="mailto:srfi%20minus%2064%20at%20srfi%20dot%20schemers%20dot%20org">mailto:srfi minus 64 at srfi dot schemers dot org</a></code>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">instructions
+here</a> to subscribe to the list. You can access previous messages via
+<a href="http://srfi.schemers.org/srfi-64/mail-archive/maillist.html">the
+archive of the mailing list</a>.
+<p>
+</p><ul>
+  <li>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-64/srfi-64.html">2005/01/07</a></li>
+  <li>Draft: 2005/01/28 - 2005/03/28</li>
+  <li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-64/srfi-64.html?rev=1.3">2005/10/18</a>  
+  </li><li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-64/srfi-64.html?rev=1.5">2006/02/24</a>  
+  </li><li>Final: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-64/srfi-64.html?rev=1.6">2006/06/18</a></li>
+</ul>
+<p></p>
+
+
+<h1>Abstract</h1>
+<p>
+This defines an API for writing <dfn>test suites</dfn>, to make it easy
+to portably test Scheme APIs, libraries, applications, and implementations.
+A test suite is a collection of <dfn>test cases</dfn> that execute
+in the context of a <dfn>test-runner</dfn>.  This specifications
+also supports writing new test-runners, to allow customization
+of reporting and processing the result of running test suites.</p>
+
+<h1>Rationale</h1>
+
+<p>The Scheme community needs a standard for writing test suites.
+Every SRFI or other library should come with a test suite.
+Such a test suite must be portable, without requiring any
+non-standard features, such as modules.  The test suite implementation
+or "runner" need not be portable, but it is desirable that it be
+possible to write a portable basic implementation.</p>
+<p>
+There are other testing frameworks written in Scheme, including
+<a href="http://schematics.sourceforge.net/schemeunit.html">SchemeUnit</a>.
+However SchemeUnit is not portable.
+It is also a bit on the verbose side.
+It would be useful to have a bridge between this framework and SchemeUnit
+so SchemeUnit tests could run under this framework and vice versa.
+There exists also at least one Scheme wrapper providing a Scheme interface
+to the <q>standard</q> <a href="http://www.junit.org/">JUnit</a> API for Java.
+It would be useful to have a bridge so that tests written using this
+framework can run under a JUnit runner.
+Neither of these features are part of this specification.</p>
+<p>
+This API makes use of implicit dynamic state, including an
+implicit <q>test runner</q>.  This makes the API convenient
+and terse to use, but it may be a little less elegant and <q>compositional</q>
+than using explicit test objects, such as JUnit-style frameworks.
+It is not claimed to follow either object-oriented or functional design
+principles, but I hope it is useful and convenient to use and extend.</p>
+<p>
+This proposal allows converting a Scheme source file to a
+test suite by just adding a few macros.  You don't have to
+write the entire file in a new form, thus you don't have to
+re-indent it.</p>
+<p>
+All names defined by the API start with the prefix <code>test-</code>.
+All function-like forms are defined as syntax.  They may be implemented
+as functions or macros or built-ins.  The reason for specifying them as
+syntax is to allow specific tests to be skipped without evaluating sub-expressions, or for implementations
+to add features such as printing line numbers or catching exceptions.</p>
+
+<h1>Specification</h1>
+
+<p>While this is a moderately complex specification,
+you should be able to write simple test suites after just reading the
+first few sections below.  More advanced functionality, such
+as writing a custom test-runner, is at the end of the specification.</p>
+
+<h2>Writing basic test suites</h2>
+<p>Let's start with a simple example.
+This is a complete self-contained test-suite.</p>
+
+<pre>;; Initialize and give a name to a simple testsuite.
+(test-begin "vec-test")
+(define v (make-vector 5 99))
+;; Require that an expression evaluate to true.
+(test-assert (vector? v))
+;; Test that an expression is eqv? to some other expression.
+(test-eqv 99 (vector-ref v 2))
+(vector-set! v 2 7)
+(test-eqv 7 (vector-ref v 2))
+;; Finish the testsuite, and report results.
+(test-end "vec-test")
+</pre>
+<p>
+This testsuite could be saved in its own source file.
+Nothing else is needed:
+We do not require any top-level forms, so it is easy
+to wrap an existing program or test to this form, without adding indentation.
+It is also easy to add new tests, without having to name individual
+tests (though that is optional).</p>
+<p>
+Test cases are executed in the context of a <dfn>test runner</dfn>,
+which is a object that accumulates and reports test results.
+This specification defines how to create and use custom test runners,
+but implementations should also provide a default test runner.
+It is suggested (but not required) that loading the above
+file in a top-level environment will cause the
+tests to be executed using an implementation-specified default test runner,
+and <code>test-end</code> will cause a summary to be displayed
+in an implementation-specified manner.</p>
+
+<h3>Simple test-cases</h3>
+<p>
+Primitive test cases test that a given condition is true.
+They may have a name.
+The core test case form is <code>test-assert</code>:</p>
+<pre>(<b>test-assert</b> [<var>test-name</var>] <var>expression</var>)
+</pre>
+<p>
+This evaluates the <var>expression</var>.
+The test passes if the result
+is true; if the result is false, a test failure is reported.
+The test also fails if an exception is raised, assuming the implementation
+has a way to catch exceptions.
+How the failure is reported depends on the test runner environment.
+The <var>test-name</var> is a string that names the test case.
+(Though the <var>test-name</var> is a string literal in the examples,
+it is an expression.  It is evaluated only once.) 
+It is used when reporting errors, and also when skipping tests,
+as described below.
+It is an error to invoke <code>test-assert</code>
+if there is no current test runner.</p>
+<p>
+The following forms may be more convenient than
+using <code>test-assert</code> directly:</p>
+<pre>(<b>test-eqv</b> [<var>test-name</var>] <var>expected</var> <var>test-expr</var>)
+</pre>
+<p>
+This is equivalent to:</p>
+<pre>(test-assert [<var>test-name</var>] (eqv? <var>expected</var> <var>test-expr</var>))
+</pre>
+<p>
+Similarly <code>test-equal</code> and <code>test-eq</code>
+are shorthand for <code>test-assert</code> combined with
+<code>equal?</code> or <code>eq?</code>, respectively:</p>
+<pre>(<b>test-equal</b> [<var>test-name</var>] <var>expected</var> <var>test-expr</var>)
+(<b>test-eq</b> [<var>test-name</var>] <var>expected</var> <var>test-expr</var>)</pre>
+<p>
+Here is a simple example:</p>
+<pre>(define (mean x y) (/ (+ x y) 2.0))
+(test-eqv 4 (mean 3 5))
+</pre>
+<p>For testing approximate equality of inexact reals
+we can use <code>test-approximate</code>:</p>
+<pre>(<b>test-approximate</b> [test-name] expected test-expr error)
+</pre>
+<p>
+This is equivalent to (except that each argument is only evaluated once):</p>
+<pre>(test-assert [test-name]
+  (and (&gt;= test-expr (- expected error))
+       (&lt;= test-expr (+ expected error))))
+</pre>
+
+<h3>Tests for catching errors</h3>
+<p>
+We need a way to specify that evaluation <em>should</em> fail.
+This verifies that errors are detected when required.</p>
+<pre>(<b>test-error</b> [[<var>test-name</var>] <var>error-type</var>] <var>test-expr</var>)
+</pre>
+<p>
+Evaluating <var>test-expr</var> is expected to signal an error.
+The kind of error is indicated by  <var>error-type</var>.</p>
+<p>
+If the <var>error-type</var> is left out, or it is
+<code>#t</code>, it means "some kind of unspecified error should be signaled".
+For example:</p>
+<pre>(test-error #t (vector-ref '#(1 2) 9))
+</pre>
+<p>
+This specification leaves it implementation-defined (or for a future
+specification) what form <code><var>test-error</var></code> may take,
+though all implementations must allow <code>#t</code>.
+Some implementations may support
+<a href="http://srfi.schemers.org/srfi-35/srfi-35.html">SRFI-35's conditions</a>,
+but these are only standardized for 
+<a href="http://srfi.schemers.org/srfi-36/srfi-36.html">SRFI-36's I/O conditions</a>, which are seldom useful in test suites.
+An implementation may also allow implementation-specific
+<q>exception types</q>.
+For example Java-based implementations may allow
+the names of Java exception classes:</p>
+<pre>;; Kawa-specific example
+(test-error &lt;java.lang.IndexOutOfBoundsException&gt; (vector-ref '#(1 2) 9))
+</pre>
+<p>
+An implementation that cannot catch exceptions should skip
+<code>test-error</code> forms.</p>
+
+<h3>Testing syntax</h3>
+<p>
+Testing syntax is tricky, especially if we want to
+check that invalid syntax is causes an error.
+The following utility function can help:</p>
+<pre>(<b>test-read-eval-string</b> <var>string</var>)
+</pre>
+<p>
+This function parses <var>string</var> (using <code>read</code>)
+and evaluates the result.
+The result of evaluation is returned from <code>test-read-eval-string</code>.
+An error is signalled if there are unread characters after the
+<code>read</code> is done.
+For example:<br>
+<code>(test-read-eval-string "(+ 3 4)")</code> <i>evaluates to</i> <code>7</code>.<br>
+<code>(test-read-eval-string "(+ 3 4")</code> <i>signals an error</i>.<br>
+<code>(test-read-eval-string "(+ 3 4) ")</code> <i>signals an error</i>,
+because there is extra <q>junk</q> (<i>i.e.</i> a space) after the
+list is read.
+</p>
+<p>
+The <code>test-read-eval-string</code> used in tests:</p>
+<pre>(test-equal 7 (test-read-eval-string "(+ 3 4)"))
+(test-error (test-read-eval-string "(+ 3"))
+(test-equal #\newline (test-read-eval-string "#\\newline"))
+(test-error (test-read-eval-string "#\\newlin"))
+
+;; Skip the next 2 tests unless srfi-62 is available.
+(test-skip (cond-expand (srfi-62 0) (else 2)))
+(test-equal 5 (test-read-eval-string "(+ 1 #;(* 2 3) 4)"))
+(test-equal '(x z) (test-read-string "(list 'x #;'y 'z)"))
+</pre>
+
+<h3>Test groups and paths</h3>
+<p>A <dfn>test group</dfn> is a named sequence of forms containing testcases,
+expressions, and definitions.
+Entering a group sets the <dfn>test group name</dfn>; leaving a
+group restores the previous group name.
+These are dynamic (run-time) operations, and a group has no
+other effect or identity.
+Test groups are informal groupings: they are neither
+Scheme values, nor are they syntactic forms.</p>
+<!--(More formal <q>test suite</q> values are introduced below.)-->
+<p>
+A test group may contain nested inner test groups.
+The <dfn>test group path</dfn> is a list of the currently-active
+(entered) test group names, oldest (outermost) first.</p>
+<pre>(<b>test-begin</b> <var>suite-name</var> [<var>count</var>])
+</pre>
+<p>A <code>test-begin</code> enters a new test group.
+The <var>suite-name</var> becomes the current test group name,
+and is added to the end of the test group path.
+Portable test suites should use a sting literal for <var>suite-name</var>;
+the effect of expressions or other kinds of literals is unspecified.</p>
+<p>
+<b>Rationale:</b> In some ways using symbols would be preferable.
+However, we want human-readable names, and standard Scheme does not
+provide a way to include spaces or mixed-case text in
+literal symbols.</p>
+<p>
+The optional <var>count</var> must match the number of
+test-cases executed by this group.
+(Nested test groups count as a single test case for this count.)
+This extra test may be useful to catch cases where a test doesn't
+get executed because of some unexpected error.</p>
+<p>
+Additionally, if there is no currently executing test runner,
+one is installed in an implementation-defined manner.</p>
+<pre>(<b>test-end</b> [<var>suite-name</var>])
+</pre>
+<p>
+A <code>test-end</code> leaves the current test group.
+An error is reported if the <var>suite-name</var> does not
+match the current test group name.
+<!--If it does match an earlier
+name in the test group path, intervening groups are left.
+--></p>
+<p>
+Additionally, if the matching <code>test-begin</code>
+installed a new test-runner, then the <code>test-end</code>
+will de-install it, after reporting the accumulated test
+results in an implementation-defined manner.</p>
+
+<pre>(<b>test-group</b> <var>suite-name</var> <var>decl-or-expr</var> ...)
+</pre>
+<p>
+Equivalent to:</p>
+<pre>(if (not (test-to-skip% <var>suite-name</var>))
+  (dynamic-wind
+    (lambda () (test-begin <var>suite-name</var>))
+    (lambda () <var>decl-or-expr</var> ...)
+    (lambda () (test-end <var>suite-name</var>))))
+</pre>
+<p>This is usually equivalent to executing the <var>decl-or-expr</var>s
+within the named test group.  However, the entire group is skipped
+if it matched an active <code>test-skip</code> (see later).
+Also, the <code>test-end</code> is executed in case of an exception.</p>
+
+<h3>Handling set-up and cleanup</h3>
+<pre>(<b>test-group-with-cleanup</b> <var>suite-name</var>
+  <var>decl-or-expr</var> ...
+  <var>cleanup-form</var>)
+</pre>
+<p>
+Execute each of the <code><var>decl-or-expr</var></code> forms in order
+(as in a <code><var>&lt;body&gt;</var></code>),
+and then execute the <code><var>cleanup-form</var></code>.
+The latter should be executed even if
+one of a <code><var>decl-or-expr</var></code> forms raises an exception
+(assuming the implementation has a way to catch exceptions).</p>
+<p>For example:</p>
+<pre>(test-group-with-cleanup "test-file"
+  (define f (open-output-file "log"))
+  (do-a-bunch-of-tests f)
+  (close-output-port f))
+</pre>
+
+<!--
+<h2>Test suites</h2>
+<p>
+<i>(Not sure how useful this is, given <code>test-group</code>).</i>
+<p>A <dfn>test suite</dfn> is a test group that can (and must) be
+executed explicitly.
+<pre>
+(test-suite <var>suite-name</var> <var>decl-or-expr</var> ...)
+</pre>
+<p>
+The <df>test suite path</dfn> is the list of names of currently
+running testsuites, from outermost (oldest) to innermost (newest).
+<p>A <code>test-suite</code> form is equivalent to:
+<pre>
+(test-suite-register <var>suite-name</var>
+  (test-group <var>suite-name</var> <var>decl-or-expr</var> ...))
+</pre>
+You can run previously registered test suite:
+<pre>
+(test-suite-run <var>suite-name</var>)
+</pre>
+-->
+
+<h2>Conditonal test-suites and other advanced features</h2>
+<p>
+The following describes features for controlling which tests to execute,
+or specifing that some tests are <em>expected</em> to fail.</p>
+
+<h3>Test specifiers</h3>
+<p>Sometimes we want to only run certain tests, or we know that
+certain tests are expected to fail.
+A <dfn>test specifier</dfn> is one-argument function that takes a test-runner
+and returns a boolean.  The specifier may be run before a test is performed,
+and the result may control whether the test is executed.
+For convenience, a specifier may also be a non-procedure value,
+which is coerced to a specifier procedure, as described below for
+<code><var>count</var></code> and <code><var>name</var></code>.</p>
+<p>
+A simple example is:</p>
+<pre>(if <var>some-condition</var>
+  (test-skip 2)) ;; skip next 2 tests
+</pre>
+<p>
+<code>(<b>test-match-name</b> <var>name</var>)</code><br>
+The resulting specifier matches if the current test name (as
+returned by <code>test-runner-test-name</code>) is <code>equals?</code> to
+<var>name</var>.</p>
+<p>
+<code>(<b>test-match-nth</b> <var>n</var> [<var>count</var>])</code><br>
+This evaluates to a <em>stateful</em> predicate: A counter keeps track of
+how many times it has been called.
+The predicate matches the <var>n</var>'th time it is called
+(where <code>1</code> is the first time), and
+the next <code>(- <var>count</var> 1)</code> times,
+where <var>count</var> defaults to <code>1</code>.</p>
+<p>
+<code>(<b>test-match-any</b> <var>specifier</var> ...)</code><br>
+The resulting specifier matches if any <var>specifier</var>
+matches.
+Each <code><var>specifier</var></code> is applied, in order,
+so side-effects from a later <code><var>specifier</var></code> happen
+even if an earlier <code><var>specifier</var></code> is true.</p>
+<p>
+<code>(<b>test-match-all</b> <var>specifier</var> ...)</code><br>
+The resulting specifier matches if each <var>specifier</var>
+matches.
+Each <code><var>specifier</var></code> is applied, in order,
+so side-effects from a later <code><var>specifier</var></code> happen
+even if an earlier <code><var>specifier</var></code> is false.</p>
+<p>
+<code><var>count</var> </code><i>(i.e. an integer)</i><br>
+Convenience short-hand for: <code>(test-match-nth 1 <var>count</var>)</code>.</p>
+<p>
+<code><var>name</var> </code><i>(i.e. a string)</i><br>
+Convenience short-hand for <code>(test-match-name <var>name</var>)</code>.</p>
+
+<h3>Skipping selected tests</h3>
+<p>In some cases you may want to skip a test.</p>
+<pre>(<b>test-skip</b> <var>specifier</var>)
+</pre>
+<p>Evaluating <code>test-skip</code> adds the
+resulting <var>specifier</var>
+to the set of currently active skip-specifiers.
+Before each test (or <code>test-group</code>)
+the set of active skip-specifiers are applied to the active test-runner.
+If any specifier matches, then the test is skipped.</p>
+<p>
+For convenience, if the <var>specifier</var> is a string that
+is syntactic sugar for <code>(test-match-name <var>specifier</var>)</code>.
+For example:</p>
+<pre>(test-skip "test-b")
+(test-assert "test-a")   ;; executed
+(test-assert "test-b")   ;; skipped
+</pre>
+<p>
+Any skip specifiers introduced by a <code>test-skip</code>
+are removed by a following non-nested <code>test-end</code>.</p>
+<pre>(test-begin "group1")
+(test-skip "test-a")
+(test-assert "test-a")   ;; skipped
+(test-end "group1")      ;; Undoes the prior test-skip
+(test-assert "test-a")   ;; executed
+</pre>
+
+<h3>Expected failures</h3>
+<p>
+Sometimes you know a test case will fail, but you don't have time
+to or can't fix it.   Maybe a certain feature only works on certain platforms.
+However, you want the test-case to be there
+to remind you to fix it.  You want to note that 
+such tests are expected to fail.</p>
+<pre>(<b>test-expect-fail</b> <var>specifier</var>)
+</pre>
+<p>
+Matching tests (where matching is defined as in <code>test-skip</code>)
+are expected to fail.  This only affects test reporting,
+not test execution.  For example:</p>
+<pre>(test-expect-fail 2)
+(test-eqv ...) ;; expected to fail
+(test-eqv ...) ;; expected to fail
+(test-eqv ...) ;; expected to pass
+</pre>
+
+<h2>Test-runner</h2>
+<p>
+A <dfn>test-runner</dfn> is an object that runs a test-suite,
+and manages the state.  The test group path, and the sets skip and
+expected-fail specifiers are part of the test-runner.
+A test-runner will also typically accumulate statistics about executed tests,
+</p>
+<p>
+<code>(<b>test-runner?</b> <var>value</var>)</code><br>
+True iff <code><var>value</var></code> is a test-runner object.</p>
+<p>
+<code>(<b>test-runner-current</b>)</code><br>
+<code>(<b>test-runner-current</b> <var>runner</var>)</code><br>
+Get or set the current test-runner.
+If an implementation supports parameter objects
+(as in <a href="http://srfi.schemers.org/srfi-39/srfi-39.html">SRFI-39</a>),
+then <code>test-runner-current</code> can be a parameter object.
+Alternatively, <code>test-runner-current</code> may be implemented
+as a macro or function 
+that uses a fluid or thread-local variable, or a plain global variable.</p>
+<p>
+<code>(<b>test-runner-get</b>)</code><br>
+Same as <code>(test-runner-current)</code>, buth trows an exception
+if there is no current test-runner.</p>
+<p>
+<code>(<b>test-runner-simple</b>)</code><br>
+Creates a new simple test-runner, that prints errors and a summary
+on the standard output port.</p>
+<p>
+<code>(<b>test-runner-null</b>)</code><br>
+Creates a new test-runner, that does nothing with the test results.
+This is mainly meant for extending when writing a custom runner.</p>
+<p>
+Implementations <em>may</em> provide other test-runners, perhaps
+a <code>(test-runner-gui)</code>.</p>
+<p><code>(<b>test-runner-create</b>)</code><br>
+Create a new test-runner.  Equivalent to
+<code>((test-runner-factory))</code>.</p>
+<p>
+<code>(<b>test-runner-factory</b>)</code><br>
+<code>(<b>test-runner-factory</b> <var>factory</var>)</code><br>
+Get or set the current test-runner factory.
+A factory is a zero-argument function that creates a new test-runner.
+The default value is <code>test-runner-simple</code>,
+but implementations may provide a way to override the default.
+As with <code>test-runner-current</code>, this may be a parameter object,
+or use a per-thread, fluid, or global variable.</p>
+
+<h3>Running specific tests with a specified runner</h3>
+<p>
+<code>(<b>test-apply</b> [<var>runner</var>] <var>specifier</var> ... <var>procedure</var>)</code><br>
+Calls <var>procedure</var> with no arguments using the specified
+<var>runner</var> as the current test-runner.
+If <var>runner</var> is omitted,
+then <code>(test-runner-current)</code> is used.
+(If there is no current runner, one is created as in <code>test-begin</code>.)
+If one or more <var>specifier</var>s are listed then only tests matching
+the <var>specifier</var>s are executed.  A <var>specifier</var> has the same form
+as one used for <code>test-skip</code>.  A test is executed
+if it matches any of the <var>specifier</var>s in the
+<code>test-apply</code> <em>and</em> does not match any
+active <code>test-skip</code> specifiers.</p>
+<p>
+<code>(<b>test-with-runner </b><var>runner</var> <var>decl-or-expr</var> ...)</code><br>
+Executes each <var>decl-or-expr</var> in order in a context
+where the current test-runner is <var>runner</var>.</p>
+
+<h2>Test results</h2>
+<p>Running a test sets various status properties in the current test-runner.
+This can be examined by a custom test-runner,
+or (more rarely) in a test-suite.</p>
+
+<h3>Result kind</h3>
+<p>Running a test may yield one of the following
+status symbols:</p>
+<dl>
+<dt><code>'pass</code></dt><dd>The passed, as expected.</dd>
+<dt><code>'fail</code></dt><dd>The test failed (and was not expected to).</dd>
+<dt><code>'xfail</code></dt><dd>The test failed and was expected to.</dd>
+<dt><code>'xpass</code></dt><dd>The test passed, but was expected to fail.</dd>
+<dt><code>'skip</code></dt><dd>The test was skipped.</dd>
+</dl>
+<p>
+<code>(<b>test-result-kind</b> [<var>runner</var>])</code><br>
+Return one of the above result codes from the most recent tests.
+Returns <code>#f</code> if no tests have been run yet.
+If we've started on a new test, but don't have a result yet,
+then the result kind is <code>'xfail</code> is the test is expected to fail,
+<code>'skip</code> is the test is supposed to be skipped,
+or <code>#f</code> otherwise.</p>
+<p>
+<code>(<b>test-passed?</b> [<var>runner</var>])</code><br>
+True if the value of <code>(test-result-kind [<var>runner</var>])</code>
+is one of <code>'pass</code> or <code>'xpass</code>.
+This is a convenient shorthand that might be useful
+in a test suite to only run certain tests if the previous test passed.</p>
+
+<h3>Test result properties</h3>
+<p>
+A test runner also maintains a set of more detailed <q>result properties</q>
+associated with the current or most recent test.  (I.e. the properties of the
+most recent test are available as long as a new test hasn't started.)
+Each property has a name (a symbol) and a value (any value).
+Some properties are standard or set by the implementation;
+implementations can add more.</p>
+<p>
+<code>(<b>test-result-ref</b> <var>runner</var> '<var>pname</var> [<var>default</var>])</code><br>
+Returns the property value associated with the <var>pname</var> property name.
+If there is no value associated with <code>'<var>pname</var></code>
+return <var>default</var>,
+or <code>#f</code> if <var>default</var> isn't specified.</p>
+<p>
+<code>(<b>test-result-set!</b> <var>runner</var> '<var>pname</var> <var>value</var>)</code><br>
+Sets the property value associated with the <var>pname</var>
+property name to <var>value</var>.
+Usually implementation code should call this function, but it may be
+useful for a custom test-runner to add extra properties.</p>
+<p>
+<code>(<b>test-result-remove</b> <var>runner</var> '<var>pname</var>)</code><br>
+Remove the property with the name <code>'<var>pname</var></code>.</p>
+<p>
+<code>(<b>test-result-clear</b> <var>runner</var>)</code><br>
+Remove all result properties.
+The implementation automatically calls <code>test-result-clear</code>
+at the start of a <code>test-assert</code> and similar procedures.</p>
+<p>
+<code>(<b>test-result-alist</b> <var>runner</var>)</code><br>
+Returns an association list of the current result properties.
+It is unspecified if the result shares state with the test-runner.
+The result should not be modified, on the other hand the result
+may be implicitly modified by future <code>test-result-set!</code> or
+<code>test-result-remove</code> calls.
+However, A <code>test-result-clear</code> does not modify the returned
+alist.  Thus you can <q>archive</q> result objects from previous runs.</p>
+
+<h3>Standard result properties</h3>
+<p>
+The set of available result properties is implementation-specific.
+However, it is suggested that the following might be provided:</p>
+<dl>
+<dt><code>'result-kind</code></dt>
+<dd>The result kind, as defined previously.
+This is the only mandatory result property.<br>
+<code>(test-result-kind <var>runner</var>)</code> is equivalent to:<br>
+<code>(test-result-ref  <var>runner</var> 'result-kind)</code>
+</dd>
+<dt><code>'source-file</code></dt>
+<dt><code>'source-line</code></dt>
+<dd>If known, the location of test statements (such as <code>test-assert</code>)
+in test suite source code..</dd>
+<dt><code>'source-form</code></dt>
+<dd>The source form, if meaningful and known.</dd>
+<dt><code>'expected-value</code></dt>
+<dd>The expected non-error result, if meaningful and known.</dd>
+<dt><code>'expected-error</code></dt>
+<dd>The <code><var>error-type</var></code>
+specified in a <code>test-error</code>, if it meaningful and known.</dd>
+<dt><code>'actual-value</code></dt>
+<dd>The actual non-error result value, if meaningful and known.</dd>
+<dt><code>'actual-error</code></dt>
+<dd>The error value, if an error was signalled and it is known.
+The actual error value is implementation-defined.</dd>
+</dl>
+
+<h2>Writing a new test-runner</h2>
+<p>This section specifies how to write a test-runner.
+It can be ignored if you just want to write test-cases.</p>
+
+
+<h3>Call-back functions</h3>
+<p>
+These call-back functions are <q>methods</q> (in the object-oriented sense)
+of a test-runner. A method <code>test-runner-on-<var>event</var></code>
+is called by the implementation when <var>event</var> happens.</p>
+<p>
+To define (set) the callback function for <var>event</var> use the following expression.
+(This is normally done when initializing a test-runner.)
+<br>
+<code>(test-runner-on-<var>event</var>! <var>runner</var> <var>event-function</var>)</code></p>
+<p>
+An <var>event-function</var> takes a test-runner argument, and possibly other arguments, depending on the <var>event</var>.</p>
+<p>
+To extract (get) the callback function for <var>event</var> do this:<br>
+<code>(test-runner-on-<var>event</var> <var>runner</var>)</code></p>
+<p>
+To extract call the callback function for <var>event</var> use the following expression.
+(This is normally done by the implementation core.)<br>
+<code>((test-runner-on-<var>event</var> <var>runner</var>) <var>runner</var> <var>other-args</var> ...)</code></p>
+<p>
+The following call-back hooks are available.</p>
+<p>
+<code>(<b>test-runner-on-test-begin</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-test-begin!</b> <var>runner</var> <var>on-test-begin-function</var>)</code><br>
+<code>(<var>on-test-begin-function</var> <var>runner</var>)</code><br>
+The <var>on-test-begin-function</var> is called at the start of an
+individual testcase, before the test expression (and expected value) are
+evaluated.
+</p>
+<p>
+<code>(<b>test-runner-on-test-end</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-test-end!</b> <var>runner</var> <var>on-test-end-function</var>)</code><br>
+<code>(<var>on-test-end-function</var> <var>runner</var>)</code><br>
+The <var>on-test-end-function</var> is called at the end of an
+individual testcase, when the result of the test is available.</p>
+<p>
+<code>(<b>test-runner-on-group-begin</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-group-begin!</b> <var>runner</var> <var>on-group-begin-function</var>)</code><br>
+<code>(<var>on-group-begin-function</var> <var>runner</var> <var>suite-name</var> <var>count</var>)</code><br>
+The <var>on-group-begin-function</var> is called by a <code>test-begin</code>,
+including at the start of a <code>test-group</code>.
+The <var>suite-name</var> is a Scheme string,
+and <var>count</var> is an integer or <code>#f</code>.</p>
+<p>
+<code>(<b>test-runner-on-group-end</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-group-end!</b> <var>runner</var> <var>on-group-end-function</var>)</code><br>
+<code>(<var>on-group-end-function</var> <var>runner</var>)</code><br>
+The <var>on-group-end-function</var> is called by a <code>test-end</code>,
+including at the end of a <code>test-group</code>.</p>
+<p>
+<code>(<b>test-runner-on-bad-count</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-bad-count!</b> <var>runner</var> <var>on-bad-count-function</var>)</code><br>
+<code>(<var>on-bad-count-function</var> <var>runner</var> <var>actual-count</var> <var>expected-count</var>)</code><br>
+Called from <code>test-end</code> (before the <var>on-group-end-function</var>
+is called) if an <var>expected-count</var> was specified by the matching
+<code>test-begin</code> and the <var>expected-count</var> does not match
+the <var>actual-count</var> of tests actually executed or skipped.</p>
+<p>
+<code>(<b>test-runner-on-base-end-name</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-bad-end-name!</b> <var>runner</var> <var>on-bad-end-name-function</var>)</code><br>
+<code>(<var>on-bad-end-name-function</var> <var>runner</var> <var>begin-name</var> <var>end-name</var>)</code><br>
+Called from <code>test-end</code> (before the <var>on-group-end-function</var>
+is called) if a <var>suite-name</var> was specified, and it did not that the
+name in the matching <code>test-begin</code>.</p>
+<p>
+<code>(<b>test-runner-on-final</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-on-final!</b> <var>runner</var> <var>on-final-function</var>)</code><br>
+<code>(<var>on-final-function</var> <var>runner</var>)</code><br>
+The <var>on-final-function</var> takes one parameter (a test-runner)
+and typically displays a summary (count) of the tests.
+The <var>on-final-function</var> is called after called the
+<var>on-group-end-function</var> correspondiong to the outermost
+<code>test-end</code>.
+The default value is <code>test-on-final-simple</code> which writes
+to the standard output port the number of tests of the various kinds.
+</p>
+<p>
+The default test-runner returned by <code>test-runner-simple</code>
+uses the following call-back functions:<br>
+<code>(<b>test-on-test-begin-simple</b> <var>runner</var>)</code><br>
+<code>(<b>test-on-test-end-simple</b> <var>runner</var>)</code><br>
+<code>(<b>test-on-group-begin-simple</b> <var>runner</var> <var>suite-name</var> <var>count</var>)</code><br>
+<code>(<b>test-on-group-end-simple</b> <var>runner</var>)</code><br>
+<code>(<b>test-on-bad-count-simple</b> <var>runner</var> <var>actual-count</var> <var>expected-count</var>)</code><br>
+<code>(<b>test-on-bad-end-name-simple</b> <var>runner</var> <var>begin-name</var> <var>end-name</var>)</code><br>
+You can call those if you want to write a your own test-runner.</p>
+
+<h3>Test-runner components</h3>
+<p>
+The following functions are for accessing the other components of a test-runner.
+They would normally only be used to write a new test-runner or
+a match-predicate.</p>
+<p>
+<code>(<b>test-runner-pass-count</b> <var>runner</var>)</code><br>
+Returns the number of tests that passed, and were expected to pass.</p>
+<p>
+<code>(<b>test-runner-fail-count</b> <var>runner</var>)</code><br>
+Returns the number of tests that failed, but were expected to pass.</p>
+<p>
+<code>(<b>test-runner-xpass-count</b> <var>runner</var>)</code><br>
+Returns the number of tests that passed, but were expected to fail.</p>
+<p>
+<code>(<b>test-runner-xfail-count</b> <var>runner</var>)</code><br>
+Returns the number of tests that failed, and were expected to pass.</p>
+<p>
+<code>(<b>test-runner-skip-count</b> <var>runner</var>)</code><br>
+Returns the number of tests or test groups that were skipped.</p>
+<p>
+<code>(<b>test-runner-test-name</b> <var>runner</var>)</code><br>
+Returns the name of the current test or test group, as a string.
+During execution of <code>test-begin</code> this is the name of the
+test group; during the execution of an actual test, this is the name
+of the test-case.
+If no name was specified, the name is the empty string.</p>
+<p>
+<code>(<b>test-runner-group-path</b> <var>runner</var>)</code><br>
+A list of names of groups we're nested in, with the outermost group first.</p>
+<p>
+<code>(<b>test-runner-group-stack</b> <var>runner</var>)</code><br>
+A list of names of groups we're nested in, with the outermost group last.
+(This is more efficient than <code>test-runner-group-path</code>,
+since it doesn't require any copying.)</p>
+<p>
+<code>(<b>test-runner-aux-value</b> <var>runner</var>)</code><br>
+<code>(<b>test-runner-aux-value!</b> <var>runner</var> <var>on-test</var>)</code><br>
+Get or set the <code>aux-value</code> field of a test-runner.
+This field is not used by this API or the <code>test-runner-simple</code>
+test-runner, but may be used by custom test-runners to store extra state.</p>
+<p>
+<code>(<b>test-runner-reset</b> <var>runner</var>)</code><br>
+Resets the state of the <var>runner</var> to its initial state.
+</p>
+
+<h3>Example</h3>
+<p>This is an example of a simple custom test-runner.
+Loading this program before running a test-suite will install
+it as the default test runner.</p>
+<pre>(define (my-simple-runner filename)
+  (let ((runner (test-runner-null))
+	(port (open-output-file filename))
+        (num-passed 0)
+        (num-failed 0))
+    (test-runner-on-test! runner
+      (lambda (runner result)
+        (case (cdr (assq 'result-kind result))
+          ((pass xpass) (set! num-passed (+ num-passed 1)))
+          ((fail xfail) (set! num-failed (+ num-failed 1)))
+          (else #t))))
+    (test-runner-on-final! runner
+       (lambda (runner)
+          (format port "Passing tests: ~d.~%Failing tests: ~d.~%"
+                  num-passed num-failed)
+	  (close-output-port port)))
+    runner))
+
+(test-runner-factory
+ (lambda () (my-simple-runner "/tmp/my-test.log")))
+</pre>
+
+<h1>Implementation</h1>
+<p>
+The test implementation uses <code>cond-expand</code>
+(<a href="http://srfi.schemers.org/srfi-0/srfi-0.html">SRFI-0</a>)
+to select different code depending on certain SRFI names (<code>srfi-9</code>,
+<code>srfi-34</code>, <code>srfi-35</code>, <code>srfi-39</code>),
+or implementations (<code>kawa</code>).
+It should otherwise be portable to any R5RS implementation.</p>
+
+<p><a href="http://srfi.schemers.org/srfi-64/testing.scm">testing.scm</a></p>
+
+<h2>Examples</h2>
+<p>Here is <a href="http://srfi.schemers.org/srfi-64/srfi-25-test.scm"><code>srfi-25-test.scm</code></a>,
+based converted from Jussi Piitulainen's
+<a href="http://srfi.schemers.org/srfi-25/test.scm"><code>test.scm</code></a>
+for <a href="http://srfi.schemers.org/srfi-25/srfi-25.html">SRFI-25</a>.</p>
+
+<h2>Test suite</h2>
+<p>
+Of course we need a test suite for the testing framework itself.
+This suite <code><a href="http://srfi.schemers.org/srfi-64/srfi-64-test.scm">srfi-64-test.scm</a></code>
+was contributed by Donovan Kolbly
+<a href="mailto:donovan@rscheme.org"><code>&lt;donovan@rscheme.org&gt;</code></a>.</p>
+
+<h1>Copyright</h1>
+<p>
+Copyright (C) Per Bothner (2005, 2006)</p>
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<hr>
+<address>Author: <a href="mailto:per@bothner.com">Per Bothner</a></address>
+<address>Editor: <a href="mailto:srfi%20minus%20editors%20at%20srfi%20dot%20schemers%20dot%20org">Francisco Solsona</a></address>
+<p>
+<!-- Created: Sat Sep  4 12:26:07 PDT 2004 -->
+<!-- hhmts start -->
+Last modified: Sun Jan 28 13:40:18 MET 2007
+<!-- hhmts end -->
+</p>
+  
+</body></html>

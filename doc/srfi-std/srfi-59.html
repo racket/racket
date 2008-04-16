@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<HTML>
+  <HEAD>
+    <title>SRFI 59: Vicinity</title>
+  </HEAD>
+
+  <BODY>
+
+<H1>Title</H1>
+
+Vicinity
+
+<H1>Author</H1>
+
+Aubrey Jaffer
+
+<H1>Status</H1> 
+
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see <A
+href="http://srfi.schemers.org/srfi-process.html">here</A>. You can access
+previous messages via <A
+href="http://srfi.schemers.org/srfi-59/mail-archive/maillist.html">the
+archive of the mailing list</A>.
+
+<P> 
+<UL>
+  <LI>Received: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-59/srfi-59.html?rev=1.1">2004/12/30</A></LI>
+  <LI>Draft: 2004/12/30 - 2005/02/27</LI>
+  <LI>Final: 2005/03/08</LI>
+</UL>
+
+<H1>Abstract</H1>
+
+A vicinity is a descriptor for a place in the file system.  Vicinities
+hide from the programmer the concepts of host, volume, directory, and
+version.  Vicinities express only the concept of a file environment
+where a file name can be resolved to a file in a system independent
+manner.
+<P>
+All of these procedures are file-system dependent.  Use of these
+vicinity procedures can make programs file-system
+<EM>in</EM>dependent.
+<P>
+
+<H1>Rationale</H1>
+
+Most computer languages expose the syntax of pathnames of the host
+file-system when dealing with files.
+But a great many programs require read access to data, text, or
+library files they were installed with.
+<P>
+Some programs use literal strings to locate accessory files, breaking
+on installations with different destinations.
+More savvy coders will construct pathnames from environment variables
+or compile-time definitions.
+<P>
+In most languages, programs intended for portability must condition
+all manipulations of pathnames to the syntax and capabilities of the
+host file-system.  Inconsistent conditioning is a common cause of
+porting failures.
+<P>
+Common-Lisp attacks the general problem of naming files anywhere in
+any file system.  It has a six-component <DFN>pathname</DFN> datatype
+to represent names in the most complicated file-system imaginable;
+names in simpler file systems use fewer components.
+<P>
+In this arrangement, portable file-handling programs must be capable
+of handling pathnames with 6 components, and those employing fewer.
+But which component will be used is not obvious.  Is a
+<CODE>".txt"</CODE> filename suffix a <I>type</I> or part of the
+<I>name</I>?
+<P>
+Vicinities attack a smaller problem, that of describing pathnames in 5
+predefined locations, and their sub-vicinities.  Those predefined
+locations cover the usual areas for ancillary and configuration files
+used by Scheme implementations and programs.  The
+<CODE>program-vicinity</CODE> is particularly useful as it is the
+directory where the currently loading file is located.  This is
+captured by redefining <CODE>load</CODE> to <CODE>fluid-let</CODE> a
+top-level variable with its argument.
+<P>
+The <CODE>make-vicinity</CODE> and <CODE>pathname-&gt;vicinity</CODE>
+procedures provide means to create new base vicinities.  Base
+vicinities should generally be absolute pathnames.
+<P>
+Vicinities need not be tied to individual files in a file system.  The
+files named could be members of a zip archive, as Java does.
+Vicinities can even be used on <EM>flat</EM> file systems (which have
+no directory structure) by having the vicinity express constraints on
+the file name.  On most systems a vicinity is a string.
+<P>
+<A HREF="http://swiss.csail.mit.edu/~jaffer/slib_2.html#SEC14"><TT>vicinity</TT></A>
+procedures are supported by all implementations in
+<A HREF="http://swiss.csail.mit.edu/~jaffer/SLIB">SLIB</A>.
+<P>
+
+<H1>Specification</H1>
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="program-vicinity">program-vicinity</a></B>
+<DD><A NAME="IDX60"></A>
+Returns the vicinity of the currently loading Scheme code.  For an
+interpreter this would be the directory containing source code.  For a
+compiled system (with multiple files) this would be the directory
+where the object or executable files are.  If no file is currently
+loading, then the result is undefined.  <STRONG>Warning:</STRONG>
+<CODE>program-vicinity</CODE> can return incorrect values if your program
+escapes back into a <CODE>load</CODE> continuation.
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="library-vicinity">library-vicinity</a></B>
+<DD><A NAME="IDX61"></A>
+Returns the vicinity of the shared Scheme library.
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="implementation-vicinity">implementation-vicinity</a></B>
+<DD><A NAME="IDX62"></A>
+Returns the vicinity of the underlying Scheme implementation.  This
+vicinity will likely contain startup code and messages and a compiler.
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="user-vicinity">user-vicinity</a></B>
+<DD><A NAME="IDX63"></A>
+Returns the vicinity of the current directory of the user.  On most
+systems this is <TT>`""'</TT> (the empty string).
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="home-vicinity">home-vicinity</a></B>
+<DD><A NAME="IDX64"></A>
+Returns the vicinity of the user's <EM>HOME</EM> directory, the directory
+<A NAME="IDX65"></A>
+which typically contains files which customize a computer environment
+for a user.  If scheme is running without a user (eg. a daemon) or if
+this concept is meaningless for the platform, then <CODE>home-vicinity</CODE>
+returns <CODE>#f</CODE>.
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="in-vicinity">in-vicinity</a></B> <I>vicinity filename</I>
+<DD><A NAME="IDX67"></A>
+Returns a filename suitable for use by <CODE>load</CODE>,
+<CODE>open-input-file</CODE>, <CODE>open-output-file</CODE>, etc.  The
+returned filename is <VAR>filename</VAR> in <VAR>vicinity</VAR>.
+<CODE>in-vicinity</CODE> should allow <VAR>filename</VAR> to override
+<VAR>vicinity</VAR> when <VAR>filename</VAR> is an absolute pathname
+and <VAR>vicinity</VAR> is equal to the value of
+<CODE>(user-vicinity)</CODE>.  The behavior of
+<CODE>in-vicinity</CODE> when <VAR>filename</VAR> is absolute and
+<VAR>vicinity</VAR> is not equal to the value of
+<CODE>(user-vicinity)</CODE> is unspecified.  For most systems
+<CODE>in-vicinity</CODE> can be <CODE>string-append</CODE>.  </DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="sub-vicinity">sub-vicinity</a></B> <I>vicinity name</I>
+<DD><A NAME="IDX68"></A>
+Returns the vicinity of <VAR>vicinity</VAR> restricted to <VAR>name</VAR>.  This
+is used for large systems where names of files in subsystems could
+conflict.  On systems with directory structure <CODE>sub-vicinity</CODE> will
+return a pathname of the subdirectory <VAR>name</VAR> of
+<VAR>vicinity</VAR>.
+</DL>
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="make-vicinity">make-vicinity</a></B> <I>dirpath</I>
+<DD><A NAME="IDX58"></A>
+Returns <VAR>dirpath</VAR> as a vicinity for use as first argument to
+<CODE>in-vicinity</CODE>.
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="pathname-to-vicinity">pathname-&#62;vicinity</a></B> <I>path</I>
+<DD><A NAME="IDX59"></A>
+Returns the vicinity containing <VAR>path</VAR>.
+
+<PRE>
+(pathname-&#62;vicinity "/usr/local/lib/scm/Link.scm")
+                    => "/usr/local/lib/scm/"
+</PRE>
+
+</DL>
+
+
+<P>
+<DL>
+<DT><U>Function:</U> <B><a name="vicinity:suffix-p">vicinity:suffix?</a></B> <I>chr</I>
+<DD><A NAME="IDX66"></A>
+Returns the <SAMP>`#t'</SAMP> if <VAR>chr</VAR> is a vicinity suffix character; and
+<CODE>#f</CODE> otherwise.  Typical vicinity suffixes are <SAMP>`/'</SAMP>,
+<SAMP>`:'</SAMP>, and <SAMP>`\'</SAMP>,
+</DL>
+
+
+<H1>Implementation</H1>
+
+This code is taken from
+<A HREF="http://savannah.gnu.org/cgi-bin/viewcvs/*checkout*/slib/slib/logical.scm?rev=HEAD&amp;content-type=text/vnd.viewcvs-markup">slib/Template.scm</A>
+and
+<A HREF="http://savannah.gnu.org/cgi-bin/viewcvs/*checkout*/slib/slib/logical.scm?rev=HEAD&amp;content-type=text/vnd.viewcvs-markup">slib/require.scm</A>
+<P>
+
+<PRE>
+;;@ (implementation-vicinity) should be defined to be the pathname of
+;;; the directory where any auxillary files to your Scheme
+;;; implementation reside.
+(define (implementation-vicinity)
+  (case (software-type)
+    ((UNIX)	"/usr/local/src/scheme/")
+    ((VMS)	"scheme$src:")
+    ((MS-DOS)	"C:\\scheme\\")))
+
+;;@ (library-vicinity) should be defined to be the pathname of the
+;;; directory where files of Scheme library functions reside.
+(define library-vicinity
+  (let ((library-path
+	 (or
+	  ;; Use this getenv if your implementation supports it.
+	  (getenv "SCHEME_LIBRARY_PATH")
+	  ;; Use this path if your scheme does not support GETENV
+	  ;; or if SCHEME_LIBRARY_PATH is not set.
+	  (case (software-type)
+	    ((UNIX) "/usr/local/lib/slib/")
+	    ((VMS) "lib$scheme:")
+	    ((MS-DOS) "C:\\SLIB\\")
+	    (else "")))))
+    (lambda () library-path)))
+
+;;@ (home-vicinity) should return the vicinity of the user's HOME
+;;; directory, the directory which typically contains files which
+;;; customize a computer environment for a user.
+(define (home-vicinity)
+  (let ((home (getenv "HOME")))
+    (and home
+	 (case (software-type)
+	   ((UNIX COHERENT MS-DOS)	;V7 unix has a / on HOME
+	    (if (eqv? #\/ (string-ref home (+ -1 (string-length home))))
+		home
+		(string-append home "/")))
+	   (else home)))))
+;@
+(define in-vicinity string-append)
+;@
+(define (user-vicinity)
+  (case (software-type)
+    ((VMS)	"[.]")
+    (else	"")))
+;@
+(define vicinity:suffix?
+  (let ((suffi
+	 (case (software-type)
+	   ((AMIGA)				'(#\: #\/))
+	   ((MACOS THINKC)			'(#\:))
+	   ((MS-DOS WINDOWS ATARIST OS/2)	'(#\\ #\/))
+	   ((NOSVE)				'(#\: #\.))
+	   ((UNIX COHERENT PLAN9)		'(#\/))
+	   ((VMS)				'(#\: #\]))
+	   (else
+	    (slib:warn "require.scm" 'unknown 'software-type (software-type))
+	    "/"))))
+    (lambda (chr) (and (memv chr suffi) #t))))
+;@
+(define (pathname-&gt;vicinity pathname)
+  (let loop ((i (- (string-length pathname) 1)))
+    (cond ((negative? i) "")
+	  ((vicinity:suffix? (string-ref pathname i))
+	   (substring pathname 0 (+ i 1)))
+	  (else (loop (- i 1))))))
+(define (program-vicinity)
+  (if *load-pathname*
+      (pathname-&gt;vicinity *load-pathname*)
+      (slib:error 'program-vicinity "called while not within load")))
+;@
+(define sub-vicinity
+  (case (software-type)
+    ((VMS) (lambda
+	       (vic name)
+	     (let ((l (string-length vic)))
+	       (if (or (zero? (string-length vic))
+		       (not (char=? #\] (string-ref vic (- l 1)))))
+		   (string-append vic "[" name "]")
+		   (string-append (substring vic 0 (- l 1))
+				  "." name "]")))))
+    (else (let ((*vicinity-suffix*
+		 (case (software-type)
+		   ((NOSVE) ".")
+		   ((MACOS THINKC) ":")
+		   ((MS-DOS WINDOWS ATARIST OS/2) "\\")
+		   ((UNIX COHERENT PLAN9 AMIGA) "/"))))
+	    (lambda (vic name)
+	      (string-append vic name *vicinity-suffix*))))))
+;@
+(define (make-vicinity pathname) pathname)
+</PRE>
+<P>
+
+<H1>Copyright</H1>
+<p>Copyright (C) Aubrey Jaffer (2004). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+    <HR>
+    <ADDRESS>Editor: <A HREF="mailto:srfi-editors@srfi.schemers.org">David Van Horn</A></ADDRESS>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Thu Dec 30 23:48:06 EST 2004
+<!-- hhmts end -->
+  </BODY>
+</HTML>

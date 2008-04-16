@@ -1,0 +1,515 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>SRFI 35: Conditions</title></head><body>
+<h1>Title</h1>
+
+Conditions
+
+<h1>Authors</h1>
+
+Richard Kelsey and Michael Sperber
+
+<h1>Status</h1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.  It will
+remain in draft until 2002-10-20, or as amended.  to provide input on
+this SRFI, please mail to 
+<a href="mailto:srfi%20minus%2035%20at%20srfi%20dot%20schemers%20dot%20org">
+<code>srfi minus 35 at srfi dot schemers dot org</code></a>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">
+instructions here</a> to subscribe to the list.  You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-35/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-34/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<ul>
+      <li>Draft: 2002/07/24-2002/10/20</li>
+      <li>Revised: 2002/09/20</li>
+      <li>Final: 2002/12/1</li>
+</ul>
+
+<h1>Abstract</h1>
+<p>The SRFI defines constructs for creating and inspecting <i>condition</i>
+types and values. A condition value encapsulates information about an
+exceptional situation, or exception. This SRFI also defines a few basic
+condition types.</p>
+<h1>Rationale</h1>
+<p>Conditions are values that communicate information about exceptional
+situations between parts of a program. Code that detects an exception
+may be in a different part of the program than the code that handles
+it. In fact, the former may have been written independently from the
+latter. Consequently, to facilitate effective handling of exceptions,
+conditions must communicate as much information as possible as
+accurately as possible, and still allow effective handling by code that
+did not precisely anticipate the nature of the exception that occurred.</p>
+<p>This  SRFI provides two mechanisms to enable this kind of communication</p><ul><li>subtyping among condition types allows handling code to determine the <em>general</em>
+ nature of an exception even though it does not anticipate its <em>exact</em>
+ nature,</li>
+<li>compound conditions allow an exceptional situation to be described in multiple ways.</li>
+</ul>
+<p></p>
+<h1>Specification</h1>
+<p>Conditions are records with named fields. Each condition belongs to one or more <i>condition types</i>.
+Each condition type specifies a set of field names. A condition
+belonging to a condition type includes a value for each of the type's
+field names. These values can be extracted from the condition by using
+the appropriate field name.</p>
+<p>There is a tree of condition types with the distinguished <code>&amp;condition</code>
+ as its root. All other condition types have a parent condition type.</p>
+<p>A condition belonging to several condition types with a common
+supertype may have distinct values for the supertype's fields for each
+type. The type used to access a field determines which of the values is
+returned. The program can extract each of these field values separately.</p>
+<h2>Procedures</h2>
+<dl><dt><code>(make-condition-type </code><var>id</var>
+ <var>parent</var>
+ <var>field-names</var><code>)</code></dt>
+<dd><p><code>Make-condition-type</code>
+ returns a new condition type. <var>Id</var>
+ must be a symbol that serves as a symbolic name for the condition type.  <var>Parent</var>
+ must itself be a condition type. <var>Field-names</var>
+ must be a list of symbols.  It identifies the fields of the conditions associated with the condition type.</p>
+<p><var>Field-names</var>
+ must be disjoint from the field names of <var>parent</var>
+ and its ancestors.</p>
+</dd>
+<dt><code>(condition-type? </code><var>thing</var><code>)</code></dt>
+<dd><p><code>Condition-type?</code>
+ is a predicate for condition types: it returns <code>#t</code>
+ if <var>thing</var>
+ is a condition type, and <code>#f</code>
+ otherwise</p>
+</dd>
+<dt><code>(make-condition </code><var>type</var>
+ <var>field-name</var>
+ <var>value</var>
+ ...<code>)</code></dt>
+<dd><p><code>Make-condition</code>
+ creates a condition value belonging condition type <var>type</var>.  The following arguments must be, in turn, a field name and an arbitrary value.  There must be such a pair for each field of <var>type</var>
+ and its direct and indirect supertypes.  <code>Make-condition</code>
+ returns the condition value, with the argument values associated with their respective fields.</p>
+</dd>
+<dt><code>(condition? </code><var>thing</var><code>)</code></dt>
+<dd><p><code>Condition?</code>
+ is a predicate for conditions: it returns <code>#t</code>
+ if <var>thing</var>
+ is a condition type, and <code>#f</code>
+ otherwise</p>
+</dd>
+<dt><code>(condition-has-type? </code><var>condition</var>
+ <var>condition-type</var><code>)</code></dt>
+<dd><p><code>Condition-has-type?</code>
+ tests if condition <var>condition</var>
+ belongs to condition type <var>condition-type</var>.  It returns <code>#t</code>
+ if any of <var>condition</var>
+'s types includes <var>condition-type</var>
+eitherdirectlyorasanancestorand
+	<code>#f</code>
+ otherwise.</p>
+<p>It is an error if <var>condition</var>
+ is not a condition, or if <var>condition-type</var>
+ is not a condition type.</p>
+</dd>
+<dt><code>(condition-ref </code><var>condition</var>
+ <var>field-name</var><code>)</code></dt>
+<dd><p><var>Condition</var>
+ must be a condition, and <var>field-name</var>
+ a symbol.  Moreover, <var>condition</var>
+ must belong to a condition type which has a field name called <var>field-name</var>, or one of its (direct or indirect) supertypes must have the field. <code>Condition-ref</code>
+ returns the value associated with <var>field-name</var>.</p>
+<p>It is an error to refer to a field the condition does not have.</p>
+</dd>
+<dt><code>(make-compound-condition </code><var>condition<sub>0</sub>
+</var>
+ <var>condition<sub>1</sub>
+...</var><code>)</code></dt>
+<dd><p><code>Make-compound-condition</code>
+ returns a compound condition  belonging to all condition types that the <var>condition<sub>i</sub>
+</var>
+ belong to. </p>
+<p><code>Condition-ref</code>, when applied to a compound condition will return the value from the first of the <var>condition<sub>i</sub>
+</var>
+ that has such a field.</p>
+</dd>
+<dt><code>(extract-condition </code><var>condition</var>
+ <var>condition-type</var><code>)</code></dt>
+<dd><p><var>Condition</var>
+ must be a condition belonging to <var>condition-type</var>.  <code>Extract-condition</code>
+returns a condition of condition type <var>condition-type</var>
+ with the field values specified by <var>condition</var>.</p>
+<p>If <var>condition</var>
+ is a compound condition, <code>extract-condition</code>
+ extracts the field values from  the subcondition belonging to <var>condition-type</var>
+ that appeared first in the call to <code>make-compound-condition</code>
+ that created the the condition. The returned condition may be newly created; it is possible for</p><pre>(let* ((&amp;c (make-condition-type 'c &amp;condition '()))
+       (c0 (make-condition &amp;c))
+       (c1 (make-compound-condition c0)))
+  (eq? c0 (extract-condition c1 &amp;c)))
+</pre>to return false.<p></p>
+</dd>
+</dl>
+<h2>Macros</h2>
+<dl><dt><code>(define-condition-type </code>&lt;condition-type&gt; &lt;supertype&gt; &lt;predicate&gt; &lt;field-spec&gt; ...<code>)</code></dt>
+<dd><p>This defines a new condition type. &lt;Condition-type&gt;, &lt;supertypes&gt;, and &lt;predicate&gt; must all be identifiers. <code>Define-condition-type</code>
+defines an identifier &lt;condition-type&gt; to some value describing
+the condition type. &lt;supertype&gt; must be the name of a previously
+defined condition type. </p>
+<p><code>Define-condition-type</code> also defines &lt;predicate&gt; to
+a predicate that identifies conditions associated with that type, or
+with any of its subtypes.</p>
+<p>Each &lt;field-spec&gt; must be of the form <code>(</code>
+&lt;field&gt; &lt;accessor&gt;<code>)</code>
+ where both &lt;field&gt; and &lt;accessor&gt; must be identifiers. <code>Define-condition-type</code>
+defines each &lt;accessor&gt; to a procedure which extracts the value
+of the named field from a condition associated with this condition type.</p>
+</dd>
+<dt><code>(condition </code>&lt;type-field-binding&gt; ...<code>)</code></dt>
+<dd><p>This creates a condition value. Each &lt;type-field-binding&gt; must be of the form <code>(</code>
+&lt;condition-type&gt; &lt;field-binding&gt; ...<code>)</code>
+Each &lt;field-binding&gt; must be of the form <code>(</code>
+&lt;field&gt; &lt;exp&gt;<code>)</code>
+ where &lt;field&gt; is a field identifier from the definition of &lt;condition-type&gt;. </p>
+<p>The &lt;exp&gt; are evaluated in some unspecified order; their
+values can later be extracted from the condition object via the
+accessors of the associated condition types or their supertypes.</p>
+<p>The condition returned by <code>condition</code>
+ is created by a call of form</p>
+<pre>(make-compound-condition
+  (make-condition &lt;condition-type&gt; '&lt;field-name&gt; &lt;value&gt;...)
+  ...)</pre>
+<p> with the condition types retaining their order from the<code>condition</code>
+form. The field names and values are duplicated as necessary as described below.</p>
+<p>Each &lt;type-field-binding&gt; must contain field bindings for <em>all</em>
+fields of &lt;condition-type&gt; without duplicates. There is an
+exception to this rule: if a field binding is missing, and the field
+belongs to a supertype shared with one of the other
+&lt;type-field-binding&gt; subforms, then the value defaults to that of
+the first such binding in the <code>condition</code>
+ form.</p>
+</dd>
+</dl>
+<h2>Standard Conditions</h2>
+<dl><dt><code>&amp;condition</code>
+</dt>
+<dd><p>This is the root of the entire condition type hierarchy. It has a no fields.</p>
+</dd>
+<dt><code>&amp;message</code>
+</dt>
+<dd><p>This condition type could be defined by</p><pre>(define-condition-type &amp;message &amp;condition
+  message-condition?
+  (message condition-message))
+</pre><p></p>
+<p>It carries a message further describing the nature of the condition to humans.</p>
+</dd>
+<dt><code>&amp;serious</code>
+</dt>
+<dd><p>This condition type could be defined by</p><pre>(define-condition-type &amp;serious &amp;condition
+  serious-condition?)
+</pre><p></p>
+<p>This type describes conditions serious enough that they cannot
+safely be ignored. This condition type is primarily intended as a
+supertype of other condition types.</p>
+</dd><dt><code>&amp;error</code>
+</dt>
+<dd><p>This condition type could be defined by</p><pre>(define-condition-type &amp;error &amp;serious
+  error?)
+</pre><p></p>
+<p>This condition describes errors, typically caused by something that
+has gone wrong in the interaction of the program with the external
+world or the user.</p>
+</dd>
+
+</dl>
+<h1>Examples</h1>
+<pre>(define-condition-type &amp;c &amp;condition
+  c?
+  (x c-x))
+
+(define-condition-type &amp;c1 &amp;c
+  c1?
+  (a c1-a))
+
+(define-condition-type &amp;c2 &amp;c
+  c2?
+  (b c2-b))
+(define v1 (make-condition &amp;c1 'x "V1" 'a "a1"))
+
+(c? v1)        =&gt; #t
+(c1? v1)       =&gt; #t
+(c2? v1)       =&gt; #f
+(c-x v1)       =&gt; "V1"
+(c1-a v1)      =&gt; "a1"
+
+(define v2 (condition (&amp;c2
+                        (x "V2")
+                        (b "b2"))))
+
+(c? v2)        =&gt; #t
+(c1? v2)       =&gt; #f
+(c2? v2)       =&gt; #t
+(c-x v2)       =&gt; "V2"
+(c2-b v2)      =&gt; "b2"
+
+(define v3 (condition (&amp;c1
+                       (x "V3/1")
+                       (a "a3"))
+                      (&amp;c2
+                       (b "b3"))))
+
+(c? v3)        =&gt; #t
+(c1? v3)       =&gt; #t
+(c2? v3)       =&gt; #t
+(c-x v3)       =&gt; "V3/1"
+(c1-a v3)      =&gt; "a3"
+(c2-b v3)      =&gt; "b3"
+
+(define v4 (make-compound-condition v1 v2))
+
+(c? v4)        =&gt; #t
+(c1? v4)       =&gt; #t
+(c2? v4)       =&gt; #t
+(c-x v4)       =&gt; "V1"
+(c1-a v4)      =&gt; "a1"
+(c2-b v4)      =&gt; "b2"
+
+(define v5 (make-compound-condition v2 v3))
+
+(c? v5)        =&gt; #t
+(c1? v5)       =&gt; #t
+(c2? v5)       =&gt; #t
+(c-x v5)       =&gt; "V2"
+(c1-a v5)      =&gt; "a3"
+(c2-b v5)      =&gt; "b2"
+</pre><h1>Reference Implementation</h1>
+<p>The reference implementation makes use of <a href="http://srfi.schemers.org/srfi-1/">SRFI 1</a>
+ ("List Library"), <a href="http://srfi.schemers.org/srfi-9/">SRFI 9</a>
+ ("Defining Record Types"), and <a href="http://srfi.schemers.org/srfi-23/">SRFI 23</a>
+ ("Error reporting mechanism").</p>
+<pre>(define-record-type :condition-type
+  (really-make-condition-type name supertype fields all-fields)
+  condition-type?
+  (name condition-type-name)
+  (supertype condition-type-supertype)
+  (fields condition-type-fields)
+  (all-fields condition-type-all-fields))
+
+(define (make-condition-type name supertype fields)
+  (if (not (symbol? name))
+      (error "make-condition-type: name is not a symbol"
+             name))
+  (if (not (condition-type? supertype))
+      (error "make-condition-type: supertype is not a condition type"
+             supertype))
+  (if (not
+       (null? (lset-intersection eq?
+                                 (condition-type-all-fields supertype)
+                                 fields)))
+      (error "duplicate field name" ))
+  (really-make-condition-type name
+                              supertype
+                              fields
+                              (append (condition-type-all-fields supertype)
+                                      fields)))
+
+(define-syntax define-condition-type
+  (syntax-rules ()
+    ((define-condition-type ?name ?supertype ?predicate
+       (?field1 ?accessor1) ...)
+     (begin
+       (define ?name
+         (make-condition-type '?name
+                              ?supertype
+                              '(?field1 ...)))
+       (define (?predicate thing)
+         (and (condition? thing)
+              (condition-has-type? thing ?name)))
+       (define (?accessor1 condition)
+         (condition-ref (extract-condition condition ?name)
+                        '?field1))
+       ...))))
+
+(define (condition-subtype? subtype supertype)
+  (let recur ((subtype subtype))
+    (cond ((not subtype) #f)
+          ((eq? subtype supertype) #t)
+          (else
+           (recur (condition-type-supertype subtype))))))
+
+(define (condition-type-field-supertype condition-type field)
+  (let loop ((condition-type condition-type))
+    (cond ((not condition-type) #f)
+          ((memq field (condition-type-fields condition-type))
+           condition-type)
+          (else
+           (loop (condition-type-supertype condition-type))))))
+
+; The type-field-alist is of the form
+; ((&lt;type&gt; (&lt;field-name&gt; . &lt;value&gt;) ...) ...)
+(define-record-type :condition
+  (really-make-condition type-field-alist)
+  condition?
+  (type-field-alist condition-type-field-alist))
+
+(define (make-condition type . field-plist)
+  (let ((alist (let label ((plist field-plist))
+                 (if (null? plist)
+                            '()
+                     (cons (cons (car plist)
+                                 (cadr plist))
+                           (label (cddr plist)))))))
+    (if (not (lset= eq?
+                    (condition-type-all-fields type)
+                    (map car alist)))
+        (error "condition fields don't match condition type"))
+    (really-make-condition (list (cons type alist)))))
+
+(define (condition-has-type? condition type)
+  (any (lambda (has-type)
+         (condition-subtype? has-type type))
+       (condition-types condition)))
+
+(define (condition-ref condition field)
+  (type-field-alist-ref (condition-type-field-alist condition)
+                        field))
+
+(define (type-field-alist-ref type-field-alist field)
+  (let loop ((type-field-alist type-field-alist))
+    (cond ((null? type-field-alist)
+           (error "type-field-alist-ref: field not found"
+                  type-field-alist field))
+          ((assq field (cdr (car type-field-alist)))
+           =&gt; cdr)
+          (else
+           (loop (cdr type-field-alist))))))
+
+(define (make-compound-condition condition-1 . conditions)
+  (really-make-condition
+   (apply append (map condition-type-field-alist
+                      (cons condition-1 conditions)))))
+
+(define (extract-condition condition type)
+  (let ((entry (find (lambda (entry)
+                              (condition-subtype? (car entry) type))
+                            (condition-type-field-alist condition))))
+    (if (not entry)
+        (error "extract-condition: invalid condition type"
+                      condition type))
+    (really-make-condition
+      (list (cons type
+                  (map (lambda (field)
+                         (assq field (cdr entry)))
+                       (condition-type-all-fields type)))))))
+
+(define-syntax condition
+  (syntax-rules ()
+    ((condition (?type1 (?field1 ?value1) ...) ...)
+     (type-field-alist-&gt;condition
+      (list
+       (cons ?type1
+             (list (cons '?field1 ?value1) ...))
+       ...)))))
+
+(define (type-field-alist-&gt;condition type-field-alist)
+  (really-make-condition
+   (map (lambda (entry)
+          (cons (car entry)
+                (map (lambda (field)
+                       (or (assq field (cdr entry))
+                           (cons field
+                                 (type-field-alist-ref type-field-alist field))))
+                     (condition-type-all-fields (car entry)))))
+        type-field-alist)))
+
+(define (condition-types condition)
+  (map car (condition-type-field-alist condition)))
+
+(define (check-condition-type-field-alist the-type-field-alist)
+  (let loop ((type-field-alist the-type-field-alist))
+    (if (not (null? type-field-alist))
+        (let* ((entry (car type-field-alist))
+               (type (car entry))
+               (field-alist (cdr entry))
+               (fields (map car field-alist))
+               (all-fields (condition-type-all-fields type)))
+          (for-each (lambda (missing-field)
+                      (let ((supertype
+                             (condition-type-field-supertype type missing-field)))
+                        (if (not
+                             (any (lambda (entry)
+                                    (let ((type (car entry)))
+                                      (condition-subtype? type supertype)))
+                                  the-type-field-alist))
+                            (error "missing field in condition construction"
+                                   type
+                                   missing-field))))
+                    (lset-difference eq? all-fields fields))
+          (loop (cdr type-field-alist))))))
+
+(define &amp;condition (really-make-condition-type '&amp;condition
+                                               #f
+                                               '()
+                                               '()))
+
+(define-condition-type &amp;message &amp;condition
+  message-condition?
+  (message condition-message))
+
+(define-condition-type &amp;serious &amp;condition
+  serious-condition?)
+
+(define-condition-type &amp;error &amp;serious
+  error?)
+</pre><h1>References</h1>
+<ul><li><a href="http://srfi.schemers.org/srfi-12/">SRFI 12: Exception Handling</a>
+by William Clinger, R. Kent Dybvig, Matthew Flatt, and Marc Feeley</li>
+<li><a href="http://www.swiss.ai.mit.edu/ftpdir/scheme-mail/HTML/rrrs-1996/msg00022.html">Richard Kelsey's 1996 proposal</a>
+</li>
+<li><a href="http://world.std.com/%7Epitman/Papers/Condition-Handling-2001.html">Kent Pitman's history paper</a>
+</li>
+<li>The <a href="http://www.xanalys.com/software_tools/reference/HyperSpec/Body/09_.htm">Conditions chapter</a>
+ from the <a href="http://www.xanalys.com/software_tools/reference/HyperSpec/Front/index.htm">Common Lisp HyperSpec</a>
+</li>
+<li>The Conditions chapter by Kent M. Pitman in <a href="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/ai-repository/ai/html/cltl/cltl2.html"><i>Common Lisp the Language, 2nd edition</i>
+</a>
+ by Guy L. Steele</li>
+<li>The <a href="http://www.gwydiondylan.org/drm/drm_52.htm#HEADING52-0">Conditions chapter</a>
+ in the <a href="http://www.gwydiondylan.org/drm/drm_1.htm">Dylan Reference Manual</a>
+</li>
+</ul>
+
+<h1>Copyright</h1>
+
+<p>Copyright (C) Richard Kelsey, Michael Sperber (2002). All Rights
+Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi%20minus%20editors%20at%20srfi%20dot%20schemers%20dot%20org">Francisco Solsona</a></address>
+
+</body></html>

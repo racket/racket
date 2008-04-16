@@ -9,6 +9,7 @@
            setup/main-collects
            mzlib/list
 	   net/url
+           scheme/serialize
            (prefix-in xml: xml/xml)
            (for-syntax scheme/base))
   (provide render-mixin
@@ -49,23 +50,27 @@
   ;;  (i.e., the ones that are not allowed as-in in URI
   ;;  codecs) by using "~" followed by a hex encoding.
   (define (anchor-name v)
-    (let loop ([s (format "~a" v)])
-      (cond
-       [(regexp-match-positions #rx"[A-Z.]" s)
-        => (lambda (m)
-             (string-append
-              (loop (substring s 0 (caar m)))
-              "."
-              (substring s (caar m) (cdar m))
-              (loop (substring s (cdar m)))))]
-       [(regexp-match-positions #rx"[^-a-zA-Z0-9_!*'().]" s)
-        => (lambda (m)
-             (string-append
-              (substring s 0 (caar m))
-              "~"
-              (format "~x" (char->integer (string-ref s (caar m))))
-              (loop (substring s (cdar m)))))]
-       [else s])))
+    (if (literal-anchor? v)
+        (literal-anchor-string v)
+        (let loop ([s (format "~a" v)])
+          (cond
+           [(regexp-match-positions #rx"[A-Z.]" s)
+            => (lambda (m)
+                 (string-append
+                  (loop (substring s 0 (caar m)))
+                  "."
+                  (substring s (caar m) (cdar m))
+                  (loop (substring s (cdar m)))))]
+           [(regexp-match-positions #rx"[^-a-zA-Z0-9_!*'().]" s)
+            => (lambda (m)
+                 (string-append
+                  (substring s 0 (caar m))
+                  "~"
+                  (format "~x" (char->integer (string-ref s (caar m))))
+                  (loop (substring s (cdar m)))))]
+           [else s]))))
+
+  (define-serializable-struct literal-anchor (string))
 
   (define literal
     (let ([loc (xml:make-location 0 0 0)])
@@ -229,10 +234,18 @@
         (let ([key (generate-tag (target-element-tag i) ci)])
           (collect-put! ci
                         key
-                        (vector (path->relative (current-output-file))
-                                #f 
+                        (vector (path->relative (let ([p (current-output-file)])
+                                                  (if (redirect-target-element? i)
+                                                      (let-values ([(base name dir?) (split-path p)])
+                                                        (build-path 
+                                                         base
+                                                         (redirect-target-element-alt-path i)))
+                                                      p)))
+                                #f
                                 (page-target-element? i)
-                                key))))
+                                (if (redirect-target-element? i)
+                                    (make-literal-anchor (redirect-target-element-alt-anchor i))
+                                    key)))))
 
       (define (dest-path dest)
         (if (vector? dest) ; temporary

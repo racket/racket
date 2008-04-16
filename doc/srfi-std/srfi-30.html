@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+  <head>
+    <title>SRFI 30: Nested Multi-line Comments</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 30: Nested Multi-line Comments
+
+<H1>Author</H1>
+
+Martin Gasbichler
+    
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  It will
+remain in draft until 2002-04-06, or as amended.  to provide input on
+this SRFI, please
+<a href="mailto:srfi-30@srfi.schemers.org">
+mail to <code>srfi-30@srfi.schemers.org</code></a>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">
+instructions here</a> to subscribe to the list.  You can access
+previous messages via
+<a href="http://srfi.schemers.org/srfi-30/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-30/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<UL>
+      <LI>Draft: 2002/04/12-2002/06/10</LI>
+      <li>Revised: 2002/06/05</li>
+      <li>Final: 2002/08/07</li>
+</UL>
+
+    <h1>Related SRFIs</h1>
+    
+    <p><a href="http://srfi.schemers.org/srfi-22/">SRFI 22</a> defines
+    a multi line comment that may only appear at the beginning of a
+    file.</p>
+
+    <p><a href="http://srfi.schemers.org/srfi-10/">SRFI 10</a>
+    proposes the notation
+
+    <PRE> "#" &lt;discriminator&gt; &lt;other-char&gt;*</PRE> for further
+    SRFIs that introduce values which may be read and written.</p>
+
+    <H1>Abstract</H1>
+
+    <p>This SRFI extends R5RS by possibly nested, multi-line
+    comments. Multi-line comments start with <code>#|</code> and end
+    with <code>|#</code>.</p>
+    
+    <H1>Rationale</H1>
+    
+    <p>Multi-line comments are common to many programming languages. They
+    provide a convenient mean for adding blocks of text inside a program and
+    support development by fading out incomplete code or alternative
+    implementations.</p>
+    
+    <p>The syntax <code>#|</code> ... <code>|#</code> was chosen
+    because it is already widely used (Chez Scheme, Chicken, Gambit-C,
+    Kawa, MIT Scheme, MzScheme and RScheme) and since it fits smoothly
+    with R5RS. Nested comments are an important feature for
+    incrementally commenting out code.</p>
+    
+    <H1>Specification</H1>
+
+    <p>This SRFI extends the specification of comments -- <a
+    href="http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-5.html#%_sec_2.2">R5RS
+    section 2.2</a> -- as follows:</p>
+
+    <a name="spec"></a>
+    <p>The sequence <code>#|</code> indicates the start of a
+    multi-line comment. The multi-line comment continues until
+    <code>|#</code> appears. If the closing <code>|#</code> is
+    omitted, an error is signaled. Multi-line comments are visible to
+    Scheme as a single whitespace. Multi-line comments may be nested:
+    Every <code>#|</code> within the comment starts a new multi-line
+    comment, which has to be terminated by a matching
+    <code>|#</code>.</p>
+    
+    <p>This SRFI furthermore extends the production for
+    <code>&lt;comment&gt;</code> in the specification of lexical
+    structure -- <a
+    href="http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-10.html#%_sec_7.1.1">R5RS
+    section 7.1.1</a> -- to:
+    </p>
+    <pre>
+    &lt;comment&gt; ---&gt; ; &lt;all subsequent characters up to a line break&gt;
+     	    |         #| &lt;comment-text&gt; (&lt;comment&gt; &lt;comment-text&gt;)* |#
+
+    &lt;comment-text&gt; ---&gt; &lt;character sequence not containing #| or |#&gt;
+
+    </pre>
+
+
+    <h1><code>&lt;delimiter&gt;</code> and <code>#</code></h1> 
+
+    <p>The SRFI does not extend the specification of
+    <code>&lt;delimiter&gt;</code> from <a
+    href="http://www.schemers.org/Documents/Standards/R5RS/HTML/r5rs-Z-H-10.html#%_sec_7.1.1">R5RS
+    section 7.1.1</a>. It is therefore required to separate tokens
+    which require implicit termination (identifiers, numbers,
+    characters, and dot) from multi-line comments by a
+    <code>&lt;delimiter&gt;</code> from R5RS.</p>
+
+    <p><em>Rationale</em> An extension of the
+    <code>&lt;delimiter&gt;</code> to <code>#|</code> would be
+    incompatible with existing implementations which allow
+    <code>#</code> as legal character within identifiers.</p>
+
+    <H1>Implementation</H1>
+    
+    <p>The following procedure <code>skip-comment</code> deletes a
+    leading multi-line comment from the current input port. Its
+    optional argument specifies whether the caller has already removed
+    leading characters of the comment from the current input port. The
+    symbol <code>start</code> means that the caller has removed
+    nothing, <code>read-sharp</code> means that it has removed a sharp
+    and finally <code>read-bar</code> indicates that the caller has
+    removed <code>#|</code>. </p>
+
+    <pre>
+(define (skip-comment! . maybe-start-state)
+  (let lp ((state (if (null? maybe-start-state) 'start (car maybe-start-state))) 
+	   (nested-level 0))
+    (define (next-char)
+      (let ((c (read-char)))
+	(if (eof-object? c)
+	    (error "EOF inside block comment -- #| missing a closing |#")
+	    c)))
+
+    (case state
+      ((start) (case (next-char)
+		 ((#\|) (lp 'read-bar nested-level))
+		 ((#\#) (lp 'read-sharp nested-level))
+		 (else (lp 'start nested-level))))
+      ((read-bar) (case (next-char)
+		    ((#\#) (if (> nested-level 1)
+			       (lp 'start (- nested-level 1))))
+		    (else (lp 'start nested-level))))
+      ((read-sharp) (case (next-char)
+		      ((#\|) (lp 'start (+ nested-level 1)))
+		      (else (lp 'start nested-level)))))))
+    </pre>
+
+    <p>A <a href="http://srfi.schemers.org/srfi-22/">SRFI 22</a> script to remove nested multi-line comments is
+    available at 
+      
+      <a
+	 href="http://srfi.schemers.org/srfi-30/remove-srfi30-comments-script.scm">http://srfi.schemers.org/srfi-30/remove-srfi30-comments-script.scm</a>.
+      
+      The script will read a Scheme program containing nested
+      multi-line comments from standard input and emit the same
+      programs with the comments removed to standard output. The
+      script mimics the Scheme 48 reader and uses the
+      <code>error</code> procedure from <a
+      href="http://srfi.schemers.org/srfi-23/">SRFI 23</a>.</p>
+
+     <p>A number of Scheme implemenations already support this SRFI:
+     Chez Scheme, Chicken, Gambit-C, Kawa, MIT Scheme, MzScheme and
+     RScheme. Bigloo supports multi-line comments via
+     <code>#!</code>/<code>!#</code>. Among the major Scheme
+     implementations, Scheme 48 and Guile do not support this SRFI
+     yet.</p>
+
+    <H1>Copyright</H1>
+    <p>Copyright (C) Martin Gasbichler (2002). All Rights Reserved.</p>
+
+    <p>
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation
+    files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use, copy,
+    modify, merge, publish, distribute, sublicense, and/or sell copies
+    of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    </p>
+    <p>
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+    </p>
+    <p>
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+    </p>
+
+      
+    <hr>
+    <address>Editor: <a
+    href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Sun Sep  1 17:14:55 MST 2002
+<!-- hhmts end -->
+  </body>
+</html>

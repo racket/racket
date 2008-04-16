@@ -1,0 +1,1389 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML><HEAD><title>SRFI 57: Records</title>
+</HEAD>
+<BODY>
+<H1>Title</H1> 
+Records
+
+<H1>Author</H1> 
+Andr&eacute; van Tonder 
+
+<H1>Status</H1> 
+
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see <A
+href="http://srfi.schemers.org/srfi-process.html">here</A>. You can access
+previous messages via <A
+href="http://srfi.schemers.org/srfi-57/mail-archive/maillist.html"> the
+archive of the mailing list</A>.
+
+<P> 
+<UL>
+  <LI>Received: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.1">2004/09/08</A></LI>
+  <LI>Draft: 2004/09/08 - 2005/01/08</LI>
+  <LI>Revised: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.2">2004/09/22</A></LI>
+  <LI>Revised: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.3">2004/11/08</A></LI>
+  <LI>Revised: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.6">2004/11/25</A></LI>
+  <LI>Revised: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.7">2004/12/08</A></LI>
+  <LI>Revised: <A HREF="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-57/srfi-57.html?rev=1.8">2005/03/07</A></LI>
+  <LI>Final: 2005/03/07</LI>
+</UL>
+
+<H1>Abstract</H1>
+
+We describe a syntax for defining record types.    
+A predicate, constructor, 
+and field accessors and modifiers may be specified for each record
+type.
+We also introduce a syntax for declaring record type schemes, representing
+families of record types that share a set of field labels.  
+A polymorphic predicate and 
+polymorphic field accessors and modifiers may be specified for each
+record type scheme.
+A syntax is provided for constructing records by
+field label, for in-place and for functional record 
+update, and for composing records. 
+
+
+<H1>Rationale</H1>
+
+We extend the existing SRFI-9 [1] with the following features,
+each listed with a brief justification.  Expanded rationales appear
+in the specification section below.  
+
+<ul>
+<li>A syntax for constructing record values by field label.  Such a
+    feature is common in the prior art [2].  Indeed, the ability to
+    address fields by labels instead of position is one of the main
+    reasons for introducing the concept of records in the first
+    place.  
+    Taking advantage of this feature can ease coding and increase readability and 
+    robustness of code.
+</li><li>
+  A mechanism for defining and incrementally extending 
+   polymorphic functions on families 
+  of record types sharing a set of field labels.  This automates
+  a common programming pattern which would otherwise be laborious to 
+  code explicitly.  
+</li><li>Facilities for record composition, functional record update, 
+    including polymorphic
+    update, and linear in-place update.
+    These facilitate functional style programming with records.  
+</li><li>A declaration syntax that allows shorter variations and
+    optional elements, to save labor and reduce namespace
+    pollution.    
+</li></ul>
+
+  
+<H1>Specification</H1>
+
+<h2>Declaration</h2>
+
+<pre> &lt;command or definition&gt;           
+   -&gt; &lt;record type definition&gt;          
+   -&gt; &lt;record scheme definition&gt;           ; addition to 7.1.6 in R5RS
+
+ &lt;record type definition&gt; -&gt; (define-record-type &lt;type clause&gt; 
+                                                 &lt;constructor clause&gt; 
+                                                 &lt;predicate clause&gt;                          
+                                                 &lt;field clause&gt; ...)  
+                          -&gt; (define-record-type &lt;type clause&gt; 
+                                                 &lt;constructor clause&gt;)  
+                          -&gt; (define-record-type &lt;type clause&gt;)                   
+
+ &lt;record scheme definition&gt; -&gt; (define-record-scheme &lt;scheme clause&gt; 
+                                                     &lt;deconstructor clause&gt; 
+                                                     &lt;predicate clause&gt;                          
+                                                     &lt;field clause&gt; ...)  
+                            -&gt; (define-record-scheme &lt;scheme clause&gt; 
+                                                     &lt;deconstructor clause&gt;)  
+                            -&gt; (define-record-scheme &lt;scheme clause&gt;)                   
+
+ &lt;type clause&gt; -&gt; &lt;type name&gt;                           
+               -&gt; (&lt;type name&gt; &lt;scheme name&gt; ...)  
+
+ &lt;scheme clause&gt; -&gt; &lt;scheme name&gt;                           
+                 -&gt; (&lt;scheme name&gt; &lt;parent scheme name&gt; ...)  
+
+ &lt;constructor clause&gt; -&gt; (&lt;constructor name&gt; &lt;field label&gt; ...)               
+                      -&gt; &lt;constructor name&gt; 
+                      -&gt; #f
+
+ &lt;deconstructor clause&gt; -&gt; (&lt;deconstructor name&gt; &lt;field label&gt; ...)               
+                        -&gt; &lt;deconstructor name&gt; 
+                        -&gt; #f
+
+ &lt;predicate clause&gt; -&gt; &lt;predicate name&gt;                 
+                    -&gt; #f
+
+ &lt;field clause&gt; -&gt; (&lt;field label&gt; &lt;accessor clause&gt; &lt;modifier clause&gt;) 
+                -&gt; (&lt;field label&gt; &lt;accessor clause&gt;)
+                -&gt; (&lt;field label&gt;)
+            
+ &lt;accessor clause&gt; -&gt; &lt;accessor name&gt;                 
+                   -&gt; #f
+
+ &lt;modifier clause&gt; -&gt; &lt;modifier name&gt;                 
+                   -&gt; #f             
+
+ &lt;field label&gt; -&gt; &lt;identifier&gt;
+ &lt;... name&gt;    -&gt; &lt;identifier&gt;
+
+</pre>
+
+<h3>Record types</h3>
+
+An instance of <code>define-record-type</code> is equivalent to the following:
+
+<ul>
+<li> A list of field labels is associated with the record type <code>&lt;type name&gt;</code>,
+     obtained by appending from left to right the lists of field labels  
+     of any record 
+     type schemes (see below) appearing in the <code>&lt;type clause&gt;</code>,
+ followed by the list of labels in the
+     <code>&lt;constructor clause&gt;</code>, followed by the labels
+     in order of appearance in the <code>&lt;field
+     clause&gt;</code>s.    
+     Duplicates are removed from the resulting list according
+     to the semantics of <code>delete-duplicates</code> of SRFI-1. 
+     Labels in the constructor clause must be
+     distinct.  Labels in the field clauses must also be distinct. 
+     <p>
+
+</p></li><li>For each <code>&lt;scheme name&gt;</code> in <code>&lt;type clause&gt;</code>, the record type 
+      <code>&lt;type name&gt;</code> is said to be an <i>instance</i> of, or to 
+     <i>conform</i> to the corresponding 
+      record type scheme <code>&lt;scheme name&gt;</code> and to all 
+      parent type schemes (see below) of <code>&lt;scheme name&gt;</code>.  
+
+<p></p></li><li> <code>&lt;type name&gt;</code> is bound to a macro, described below, that can be used to construct record 
+     values by label.  It may also be registered, as specified in a
+     future SRFI, for performing pattern matching on record values of
+     type  <code>&lt;type name&gt;</code>.
+   <p> 
+</p></li><li> If <code>&lt;constructor clause&gt;</code> is 
+     of the form <code>(&lt;constructor name&gt; &lt;field label&gt; ...)</code>, then
+     <code>&lt;constructor name&gt;</code> is bound to a procedure that takes as many arguments as 
+      there are <code>&lt;field label&gt;</code>s following it
+      and returns a new <code>&lt;type name&gt;</code> record. 
+      Fields whose labels are listed with <code>&lt;type name&gt;</code> have the corresponding 
+     argument as their initial value. The initial values of all other fields are unspecified.
+     If <code>&lt;constructor clause&gt;</code> is of the form <code>&lt;constructor name&gt;</code>, 
+     the  procedure
+     <code>&lt;constructor name&gt;</code> takes as many arguments as there are field labels
+     associated with <code>&lt;type name&gt;</code>, in the default order defined above.
+     <p></p><p> 
+
+   <code>&lt;constructor name&gt;</code> may be
+      registered, in a way to be described in a future SRFI,  for performing a 
+      positional pattern match of the fields <code>&lt;field label&gt; ...</code> 
+      of record 
+      values of type <code>&lt;type name&gt;</code> in the first case,
+      or of all fields 
+     associated with <code>&lt;scheme name&gt;</code> in the default
+      order defined above in the second case.
+
+</p></li><li> <code>&lt;predicate name&gt;</code>, is bound to a predicate procedure 
+     that returns <code>#t</code> when given a record value that has been constructed using
+     the macro <code>&lt;type name&gt;</code> or the procedure <code>&lt;constructor name&gt;</code>,
+     and <code>#f</code> for any other
+    value.  Values on which <code>&lt;predicate name&gt;</code>, if applied, would return 
+    <code>#t</code>, are said to be <i>of type</i> <code>&lt;type name&gt;</code>. 
+     <p>
+
+</p></li><li> Field labels inherited from a <code>&lt;type scheme&gt;</code> or 
+      introduced in the <code>&lt;constructor clause&gt;</code> do not have to be 
+      repeated in the 
+      <code>&lt;field clause&gt;</code>s. 
+      Where present, <code>&lt;field
+      clause&gt;</code>s may provide additional information on such fields, or may
+      declare additional fields.
+  
+     <p></p><p>
+     Field labels may be reused as the name of accessors or modifiers (a practice known 
+     as punning).
+     </p><p>
+</p><ul>
+<p></p><li> Each <code>&lt;accessor name&gt;</code> is bound to
+     a procedure that takes a 
+     value of type <code>&lt;type name&gt;</code>,
+     and returns the current value of the corresponding 
+     field.  It is an error to pass an accessor a value not of type 
+     <code>&lt;type name&gt;</code>.  
+<p></p></li><li> Each <code>&lt;modifier name&gt;</code> is bound to 
+     a procedure that takes a value of type <code>&lt;type name&gt;</code>
+     and a value which becomes the new value of the corresponding field.  
+     It is an error to pass a modifier a first argument that is not of type
+     <code>&lt;type name&gt;</code>.
+      The return value of <code>&lt;modifier name&gt;</code> is unspecified.  
+     <p>
+</p></li></ul></li></ul>
+ 
+<p>
+<code>Define-record-type</code> is generative: each use creates a new record type that is distinct 
+from all existing types, including
+other record types and Scheme's predefined types. This SRFI only
+specifies the behaviour of <code>define-record-type</code> at
+top-level.  
+  
+
+</p><h3>Record type schemes</h3>
+
+An instance of <code>define-record-scheme</code> is equivalent to the following:
+
+<ul>
+<li> A list of field labels is associated with the type scheme <code>&lt;scheme name&gt;</code>,
+     obtained by appending from left to right the lists of field labels  
+     of any parent
+     type schemes appearing in the <code>&lt;scheme clause&gt;</code>,
+ followed by the list of labels in the
+     <code>&lt;deconstructor clause&gt;</code>, followed by the labels
+     in order of appearance in the <code>&lt;field clause&gt;</code>s.
+     Duplicates are removed from the resulting list according
+     to the semantics of <code>delete-duplicates</code> of SRFI-1.  
+    Labels in the constructor clause must be
+     distinct.  Labels in the field clauses must also be distinct. 
+     <p>
+
+</p></li><li>A record type scheme is called a <i>parent scheme</i> of
+      <code>&lt;scheme name&gt;</code> if it appears in the 
+      <code>&lt;scheme clause&gt;</code>, or if it is a parent scheme of 
+      one of the  <code>&lt;parent scheme name&gt;</code>'s appearing in the 
+        <code>&lt;scheme clause&gt;</code>.  
+      The type scheme 
+      <code>&lt;scheme name&gt;</code> is said to
+     <i>extend</i> its parent type schemes.  It is an error to extend a type scheme
+     that has not yet been defined.  
+        
+
+<p></p></li><li> <code>&lt;scheme name&gt;</code> may be bound to a macro or otherwise   
+     registered, in a way to be 
+      described in a future
+     SRFI, 
+     for performing pattern matching on record 
+     values conforming to <code>&lt;scheme name&gt;</code>. 
+   <p> 
+</p></li><li>If <code>&lt;deconstructor clause&gt;</code> is 
+     of the form <code>(&lt;deconstructor name&gt; &lt;field label&gt; ...)</code>, then
+     <code>&lt;deconstructor name&gt;</code> may be bound to a macro or otherwise
+      registered, in a way to be described in a future SRFI,  for performing a 
+      positional pattern match of the fields <code>&lt;field label&gt; ...</code> 
+      on record 
+      values conforming to <code>&lt;scheme name&gt;</code>.
+     If <code>&lt;deconstructor clause&gt;</code> is of the form <code>&lt;deconstructor name&gt;</code>, 
+     the positional match will be on all fields 
+     associated with <code>&lt;scheme name&gt;</code>, in the default order defined above.
+     <p></p><p> 
+
+</p></li><li> <code>&lt;predicate name&gt;</code>, is bound to a predicate procedure 
+     that returns <code>#t</code> when given a record value of any record type conforming
+     to <code>&lt;scheme name&gt;</code>,
+     and <code>#f</code> for any other
+    value. 
+     <p>
+
+</p></li><li> Field labels inherited from a <code>&lt;parent type scheme&gt;</code> or 
+      introduced in the <code>&lt;deconstructor clause&gt;</code> do not have to be 
+      repeated in the 
+      <code>&lt;field clause&gt;</code>s. 
+      Where present, <code>&lt;field
+      clause&gt;</code>s may provide additional information on such fields, or may
+      declare additional fields.
+  
+     <p></p><p>
+     Field labels may be reused as the name of accessors or modifiers (a practice known 
+     as punning).
+     </p><p>
+</p><ul>
+<p></p><li> Each <code>&lt;accessor name&gt;</code> is bound to
+     a procedure that takes a 
+     value conforming to <code>&lt;scheme name&gt;</code>,
+     and returns the current value of the corresponding 
+     field.  It is an error to pass an accessor a value not conforming to 
+     <code>&lt;scheme name&gt;</code>.  
+<p></p></li><li> Each <code>&lt;modifier name&gt;</code> is bound to 
+     a procedure that takes a value conforming to  <code>&lt;scheme name&gt;</code>
+     and a value which becomes the new value of the corresponding field.  
+     It is an error to pass a modifier a first argument that does not conform to
+     <code>&lt;scheme name&gt;</code>.
+      The return value of <code>&lt;modifier name&gt;</code> is unspecified.  
+     <p>
+</p></li></ul></li></ul>
+
+
+
+
+
+
+
+
+<p></p><h3>Examples</h3>
+
+<h4>A simple record:</h4>
+
+<pre>  (define-record-type point (make-point x y) point?
+    (x get-x set-x!)           
+    (y get-y set-y!))                    
+
+  (define p (make-point 1 2))
+  (get-y  p)                                 ==&gt; 2
+  (set-y! p 3))                             
+  (get-y  p)                                 ==&gt; 3                             
+  (point? p)                                 ==&gt; #t  
+</pre>
+
+
+<h4>Record type schemes:</h4>
+
+Let's declare a couple of record schemes.  Record schemes do not have constructors.
+They introduce polymorphic predicates and accessors.
+<pre>  (define-record-scheme &lt;point #f &lt;point? 
+    (x &lt;point.x)
+    (y &lt;point.y))
+
+  (define-record-scheme &lt;color #f &lt;color?
+    (hue &lt;color.hue))
+</pre>
+
+We now declare concrete instances of the above schemes.
+Constructors may be introduced.
+Predicates and accessors for concrete record types, when declared, are monomorphic.  
+
+<pre>  (define-record-type (point &lt;point) make-point point?
+    (x point.x)
+    (y point.y))
+
+  (define-record-type (color &lt;color) make-color)
+
+  (define-record-type (color-point &lt;color &lt;point) 
+                      (make-color-point x y hue) color-point?
+    (info color-point.info))
+
+  (define cp (make-color-point 1 2 'blue))
+
+  (&lt;point?          cp)            ==&gt; #t 
+  (&lt;color?          cp)            ==&gt; #t
+  (&lt;point.y         cp)            ==&gt; 2
+  (&lt;color.hue       cp)            ==&gt; blue
+  (point?           cp)            ==&gt; #f      
+  (point.x          cp)            ==&gt; error   
+  (color-point?     cp)            ==&gt; #t
+  (color-point.info cp)            ==&gt; &lt;undefined&gt;
+</pre>
+
+<h4>Optional elements:</h4>
+
+Elements may be left out if not desired, as the following examples illustrate:
+<pre>  
+  (define-record-type node (make-node left right)) 
+  (define-record-type leaf (make-leaf value))       
+</pre>
+In these declarations, no predicates are bound.  Also note that field labels listed in the 
+constructor do not have to be repeated in the field clause list unless 
+we want to bind getters or setters.
+
+<pre>              
+  (define-record-type monday)               
+  (define-record-type tuesday #f tuesday?)      
+</pre>
+Here <code>monday</code> has no declared constructor or predicate, while <code>tuesday</code>
+has a predicate but no constructor.       
+
+<pre>  (define-record-type node make-node #f                                   
+    (left  left)                        
+    (right right))                     
+</pre>
+Here the constructor <code>make-node</code> has the default argument order and no predicate
+is bound.   Also note that field labels are
+punned.    
+  
+
+
+
+ 
+
+
+
+<p></p><h4>A note on repeated fields and redefinitions</h4>
+
+In the following example, two record type schemes define different accessors for the same field:
+
+<pre>  (define-record-scheme foo #f #f (x foo-x))
+  (define-record-scheme bar #f #f (x bar-x))
+  (define-record-type (foo-bar foo bar))
+</pre>
+
+Since any value <code>fb</code> of type <code>foo-bar</code> conforms to both
+<code>foo</code> and <code>bar</code>, both <code>foo-x</code> and <code>bar-x</code> 
+can be applied to <code>fb</code>, returning the value of the <code>x</code> field. 
+
+<p>
+In the following example, two declarations introduce
+the same accessor:
+
+</p><pre>  (define-record-scheme foo     #f #f (x foo-x))
+  (define-record-type (bar foo) #f #f (x foo-x))
+</pre>
+As in any <code>define-...</code> form, later bindings replace earlier bindings.
+After the second declaration is executed, 
+<code>foo-x</code> will be bound to the monomorphic accessor applicable only to values
+ of type <code>bar</code>, replacing its binding to the polymorphic accessor procedure 
+introduced in the <code>foo</code> declaration.  
+
+
+
+  
+<h2>Labeled record expressions</h2>
+
+The following syntax allows one to construct a record value by labels.  The result 
+is a record value of type <code>&lt;type name&gt;</code> with each field 
+<code>&lt;field label&gt;</code> populated with the value of the corresponding 
+<code>&lt;expression&gt;</code>.  The order of evaluation of the expressions
+<code>&lt;expression&gt; ...</code> is undefined.  All the
+<code>&lt;field label&gt;</code>s have to belong to the record type <code>&lt;type name&gt;</code>.
+If this condition is not satisfied, an expansion time error must be signaled.  The
+runtime efficiency of a labeled record expression is required to be at least that of 
+the equivalent positional constructor.  
+
+<pre>   &lt;expression&gt; -&gt; (&lt;type name&gt; (&lt;field label&gt; &lt;expression&gt;) ...)
+</pre>
+
+</p><p>
+The order of evaluation of the expressions
+<code>&lt;expression&gt; ...</code> is undefined.
+
+
+
+<h4>Rationale</h4>
+
+The traditional practice of instantiating record values with a positional constructor procedure
+can lead to code that is hard to read and fragile under common operations such as
+adding, removing, or rearranging field declarations.  The ability to populate record values 
+by labels provides a more robust and readable alternative, especially useful when a record has 
+more than two or three fields, or if it inherits fields from a type scheme.  
+Field labels are checked for validity 
+and the macro may be compiled to a positional constructor at expansion time, 
+thus eliminating a large class of potential programmer errors at no cost in efficiency. 
+
+<h4>Example</h4>
+
+<pre>  (color-point (info 'hi) 
+               (x 1) 
+               (y 2))  
+            
+                 ==&gt; (color-point (hue &lt;undefined&gt;) (x 1) (y 2) (info hi)) 
+</pre>
+
+<h2>Record update</h2>
+
+The following syntax allows different forms of record update:
+
+<pre>   &lt;expression&gt; -&gt; (record-update  &lt;record&gt; &lt;scheme name&gt; (&lt;field label&gt; &lt;expression&gt;) ...)
+                -&gt; (record-update  &lt;record&gt; &lt;type name&gt;   (&lt;field label&gt; &lt;expression&gt;) ...)
+                -&gt; (record-update! &lt;record&gt; &lt;type name&gt;   (&lt;field label&gt; &lt;expression&gt;) ...)
+                -&gt; (record-update! &lt;record&gt; &lt;scheme name&gt; (&lt;field label&gt; &lt;expression&gt;) ...)
+</pre>
+
+The first alternative is used for polymorphic functional record update.  The expression 
+<code>&lt;record&gt;</code> must evaluate to a record value that conforms to  
+<code>&lt;scheme name&gt;</code>.  
+The result will be a new record value of the same type as 
+the original <code>&lt;record&gt;</code>, with the given fields updated.  The original 
+record value is unaffected.  All the
+<code>&lt;field label&gt;</code>s have to belong to the record type scheme <code>&lt;scheme name&gt;</code>.
+If this condition is not satisfied, an expansion time error must be signaled. 
+<p>
+
+The second alternative is used for monomorphic functional record update.  The expression 
+<code>&lt;record&gt;</code> must evaluate to a record value of type 
+<code>&lt;type name&gt;</code>.  The result will be a new record value of type 
+<code>&lt;type name&gt;</code>, with the given fields updated.  The original 
+record value is unaffected.  All the
+<code>&lt;field label&gt;</code>s have to belong to the record type <code>&lt;type name&gt;</code>.
+If this condition is not satisfied, an expansion time error must be signaled. 
+</p><p>
+
+The third and fourth alternatives are used for linear, in-place record update.  The expression 
+<code>&lt;record&gt;</code> must evaluate to a record value of type 
+<code>&lt;type name&gt;</code> or conforming to scheme <code>&lt;scheme name&gt;</code> .  The result will be the original record value 
+ with the given fields
+mutated in place.  
+Note that a useful value is returned.  All the
+<code>&lt;field label&gt;</code>s have to belong to the record type <code>&lt;type name&gt;</code> or scheme <code>&lt;scheme name&gt;</code>.
+If this condition is not satisfied, an expansion time error must be signaled. 
+
+</p><p>
+In these forms, the order of evaluation of the expressions
+<code>&lt;expression&gt; ...</code> is undefined.
+
+</p><h4>Rationale</h4>
+ 
+A mechanism for functional update facilitates and encourages functional-style programming
+with records.  
+Note that polymorphic record update is not reducible
+to the other operations we have listed and therefore has to be 
+provided as a built-in primitive [2].   
+
+
+<p></p><p>The linear version
+<code>update!</code> is provided especially for cases where the programmer 
+knows that no other references to a value exist to produce what is, observationally, a
+pure-functional result.  In these cases, an <code>update</code> 
+operation may be replaced by <code>update!</code> for efficiency.
+See SRFI-1 for a good discussion of the rationale behind linear update procedures.
+Note, however, that in contrast with the linear procedures in SRFI-1, <code>update!</code> here is <i>required</i>
+to mutate the original record.  
+
+</p><h4>Examples</h4>
+
+Monomorphic update:
+<pre>  (define p (point (x 1) (y 2)))
+
+  (record-update p point (x 7))      ==&gt; (point (x 7) (y 2))
+  p                                  ==&gt; (point (x 1) (y 2))   - original unaffected
+</pre>
+
+Polymorphic update:
+<pre>  (define cp (color-point (hue 'blue) (x 1) (y 2)))
+ 
+  (record-update cp &lt;point (x 7))    ==&gt; (color-point (info &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+  cp                                 ==&gt; (color-point (info &lt;undefined&gt;) (hue blue) (x 1) (y 2))
+</pre>
+
+In-place update:
+<pre>  (record-update! cp &lt;point (x 7)))  ==&gt; (color-point (info &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+  cp                                 ==&gt; (color-point (info &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+</pre>
+
+
+<h2>Record composition</h2>
+
+The following syntax provides a shorthand for composing record values:
+
+<pre>   &lt;expression&gt; -&gt; (record-compose (&lt;import name&gt; &lt;record&gt;) 
+                                   ...
+                                   (&lt;export-type name&gt; (&lt;field label&gt; &lt;expression&gt;) ...))
+
+   &lt;import name&gt; -&gt; &lt;type name&gt;
+                 -&gt; &lt;scheme name&gt;
+</pre>
+Here each expression <code>&lt;record&gt;</code> must evaluate to a record value of type 
+<code>&lt;type name&gt;</code> or conforming to type scheme <code>&lt;scheme name&gt;</code>.   The expression 
+evaluates to a new record value of type <code>&lt;export-type name&gt;</code> 
+whose fields are
+populated as follows:  For each field label belonging to <code>&lt;import name&gt;</code>
+ that is also a field label of the type
+&lt;export-type name&gt;, the corresponding field of <code>&lt;record&gt;</code>
+is copied into the result.  This is done for all imports from left to
+right, dropping any repeated fields.  The additional fields <code>&lt;field label&gt;</code>
+are then populated with the value of the
+ corresponding <code>&lt;expression&gt;</code>, overwriting
+any fields with the same labels already imported.   Any remaining fields are undefined.
+All the
+<code>&lt;field label&gt;</code>s have to belong to the record type <code>&lt;export type name&gt;</code>.
+If this condition is not satisfied, an expansion time error must be signaled.
+
+<p>
+The order of evaluation of the expressions <code>&lt;record&gt; ...</code> and
+<code>&lt;expression&gt; ...</code> is undefined.  All the
+expressions  <code>&lt;record&gt; ...</code> will be evaluated, even
+if their values might not be used in
+the result.  
+
+</p><h4>Rationale</h4>
+
+Calculi for composing record values, such as the above scheme, 
+may be used, for example, as units are used in 
+PLT Scheme, or for writing what amounts to modules and functors in the sense of ML.<p>  
+Monomorphic record update is a special case of <code>record-compose</code>.  The latter
+may be used to express more general updates polymorphic in the 
+argument but monomorphic in the result type.
+</p><p>
+
+
+</p><h4>Examples</h4>
+
+Use <code>record-compose</code> for updates polymorphic in the argument but 
+monomorphic in the result type:
+<pre>  (define cp (make-color-point 1 2 'green))
+
+  (record-compose (&lt;point cp) (point (x 8)))   ==&gt; (point (x 8) (y 2))
+</pre>
+
+A more general composition example:
+
+<pre>  (define cp (make-color-point 1 2 'green))
+  (define c  (make-color 'blue))
+  
+  (record-compose (&lt;point cp)                ; polymorphic import - only fields x and y of cp taken
+                  (color  c)                 ; monomorphic import
+                  (color-point (x 8)         ; overrides imported field
+                               (info 'hi)))                 
+                                      
+                                         ==&gt; (color-point (info hi) (hue blue) (x 8) (y 2))
+</pre>
+
+Small module-functor example:
+<pre>  
+  (define-record-type monoid #f #f 
+    (mult monoid.mult) 
+    (one  monoid.one))
+
+  (define-record-type abelian-group #f #f 
+    (add  group.add) 
+    (zero group.zero)
+    (sub  group.sub))
+
+  (define-record-type ring #f #f
+    (mult ring.mult) 
+    (one  ring.one)
+    (add  ring.add) 
+    (zero ring.zero)
+    (sub  ring.sub))
+
+  (define integer-monoid (monoid (mult *) 
+                                 (one  1)))
+
+  (define integer-group (abelian-group (add  +)
+                                       (zero 0)
+                                       (sub  -)))
+
+  (define (make-ring g m)          ; simple functor a la ML
+    (record-compose (monoid m)
+                    (abelian-group g)
+                    (ring)))
+
+  (define integer-ring (make-ring integer-group 
+                                  integer-monoid))
+  
+  ((ring.add integer-ring) 1
+                           2)    ==&gt; 3
+</pre>
+
+
+
+<H1>Implementation</H1>
+
+<p>
+The reference implementation uses the macro mechanism of 
+R5RS. It assumes an existing implementation of SRFI-9, here denoted
+srfi-9:define-record-type.  It also contains a trivial use of
+case-lambda from SRFI-16.
+
+</p><p>
+The reference implementation, though relatively portable as a set of
+<code>syntax-rules</code> macros, is slow.  For practical
+implementations, it is recommended that a procedural macro system be
+used.  Such implementations are provided separately in the discussion
+archives.  Unless otherwise stated by the author(s), they are covered
+by the same copyright agreement as this document.  
+
+
+</p><p>  
+This version depends on <code>define</code> being treated as a binding
+form by <code>syntax-rules</code>.  This is true for recent versions of portable syntax-case as used in Chez Scheme.  It is
+also true for PLT, for Scheme48, and possibly others.  It also assumes
+that the implementation of SRFI-9 binds the type name passed to it, which is a
+hygienically introduced internal identifier, 
+using <code>define</code>.  
+
+
+</p><p>
+The SRFI specification was designed with the constraint that 
+all record expressions containing field labels be translatable into positional 
+expressions at macro-expansion time.  For example, labeled record expressions 
+and patterns should be just as efficient as positional constructors and 
+patterns.  This is true for the reference implementation.
+
+</p><p>
+Only the names mentioned in the specification should be visible to
+the user.  Other
+names should be hidden by a module system or naming convention.  
+</p><p>
+The last section contains a few examples and (non-exhaustive) tests.  
+
+
+
+</p>
+<h2>Reference implementation </h2>
+
+
+<pre>;============================================================================================
+; IMPLEMENTATION:
+;
+; Andre van Tonder, 2004.
+;
+;============================================================================================
+
+(define-syntax define-record-type    
+  (syntax-rules ()
+    ((define-record-type . body)
+     (parse-declaration #f . body))))
+
+(define-syntax define-record-scheme    
+  (syntax-rules ()
+    ((define-record-scheme . body)
+     (parse-declaration #t . body))))
+
+(define-syntax parse-declaration    
+  (syntax-rules ()
+    ((parse-declaration is-scheme? (name super ...) constructor-clause predicate field-clause ...)
+     (build-record 0 constructor-clause (super ...) (field-clause ...) name predicate is-scheme?))
+    ((parse-declaration is-scheme? (name super ...) constructor-clause)
+     (parse-declaration is-scheme? (name super ...) constructor-clause #f))  
+    ((parse-declaration is-scheme? (name super ...))
+     (parse-declaration is-scheme? (name super ...) #f #f))
+    ((parse-declaration is-scheme? name . rest)
+     (parse-declaration is-scheme? (name) . rest))))
+
+(define-syntax record-update!
+  (syntax-rules ()
+    ((record-update! record name (label exp) ...)
+     (meta
+      `(let ((r record)) 
+         ((meta ,(name ("setter") label)) r exp)
+         ...
+         r)))))
+
+(define-syntax record-update
+  (syntax-rules ()
+    ((record-update record name (label exp) ...)
+     (name ("is-scheme?")
+           (meta                                                         
+            `(let ((new ((meta ,(name ("copier"))) record)))
+               (record-update! new name (label exp) ...)))
+           (record-compose (name record) (name (label exp) ...))))))    
+           
+(define-syntax record-compose
+  (syntax-rules ()
+    ((record-compose (export-name (label exp) ...))
+     (export-name (label exp) ...))
+    ((record-compose (import-name record) ... (export-name (label exp) ...))
+     (help-compose 1 (import-name record) ... (export-name (label exp) ...)))))
+
+(define-syntax help-compose
+  (syntax-rules ()
+    ((help-compose 1 (import-name record) import ... (export-name (label exp) ...))
+     (meta
+      `(help-compose 2
+                     (meta ,(intersection
+                             (meta ,(export-name ("labels")))
+                             (meta ,(remove-from (meta ,(import-name ("labels")))
+                                                 (label ...)
+                                                 if-free=))
+                             if-free=))
+                     (import-name record) 
+                     import ...
+                     (export-name (label exp) ...))))
+    ((help-compose 2 (copy-label ...) (import-name record) import ... (export-name . bindings))
+     (meta
+      `(let ((r record))
+         (record-compose import ...
+           (export-name (copy-label ((meta ,(import-name ("getter") copy-label)) r))
+                        ...
+                        . bindings)))))))
+
+(define-syntax build-record
+  (syntax-rules ()
+   ((build-record 0 (constructor . pos-labels) . rest)              ; extract positional labels from constructor clause
+    (build-record 1 (constructor . pos-labels) pos-labels . rest))  ; 
+   ((build-record 0 constructor . rest)                             ; 
+    (build-record 1 (constructor . #f) () . rest))                  ; 
+   ((build-record 1 constructor-clause (pos-label ...) (super ...)  
+                    ((label . accessors) ...) . rest)
+    (meta 
+     `(build-record 2
+                    constructor-clause
+                    (meta ,(union (meta ,(super ("labels")))        ; compute union of labels from supers,
+                                  ...                               ; constructor clause and field clauses
+                                  (pos-label ...) 
+                                  (label ...)      
+                                  top:if-free=))
+                    ((label . accessors) ...)
+                    (meta  ,(union (meta ,(super ("supers")))       ; compute transitive union of supers
+                                   ...
+                                   top:if-free=))
+                    . rest)))
+    ((build-record 2 (constructor . pos-labels) labels . rest)      ; insert default constructor labels if not given
+     (syntax-if pos-labels
+                (build-record 3 (constructor . pos-labels) labels . rest)
+                (build-record 3 (constructor . labels)     labels . rest)))
+    ((build-record 3 constructor-clause labels ((label . accessors) ...) . rest)
+     (meta 
+      `(build-record 4
+                     (meta ,(remove-from labels                     ; separate the labels that do not appear in a
+                                         (label ...)                ; field clause for next step
+                                         top:if-free=))
+                     ((label . accessors) ...) 
+                     constructor-clause
+                     labels
+                     . rest)))
+    ((build-record 4
+                   (undeclared-label ...)
+                   (field-clause ...)
+                   (constructor . pos-labels)
+                   labels
+                   supers
+                   name
+                   predicate
+                   is-scheme?)
+     (meta
+      `(build-record 5                                              ; generate identifiers for constructor, predicate
+                     is-scheme?                                     ; getters and setters as needed 
+                     name
+                     supers
+                     supers
+                     labels 
+                     (meta ,(to-identifier constructor))   
+                     (meta ,(add-temporaries pos-labels))           ; needed for constructor below
+                     (meta ,(to-identifier predicate))
+                     (meta ,(augment-field field-clause)) 
+                     ... 
+                     (undeclared-label (meta ,(generate-identifier))
+                                       (meta ,(generate-identifier)))
+                     ...)))
+    ((build-record 5
+                   is-scheme?
+                   name
+                   (super ...)
+                   supers
+                   (label ...)
+                   constructor  
+                   ((pos-label pos-temp) ...) 
+                   predicate
+                   (field-label getter setter)
+                   ...)  
+     
+     (begin
+       (syntax-if is-scheme?
+                  
+                  (begin
+                    (define-generic (predicate x) (lambda (x) #f))
+                    (define-generic (getter x))
+                    ...
+                    (define-generic (setter x v))
+                    ...
+                    (define-generic (copy x)))
+                  
+                  (begin
+                    (srfi-9:define-record-type internal-name
+                                               (maker field-label ...)
+                                               predicate
+                                               (field-label getter setter) ...)  
+       
+                    (define constructor 
+                      (lambda (pos-temp ...)
+                        (populate 1 maker (field-label ...) (pos-label pos-temp) ...)))
+       
+                    (extend-predicates supers predicate)
+                    (extend-accessors supers field-label predicate getter setter)
+                    ...
+       
+                    (define (copy x)
+                      (maker (getter x) ...))
+                    (extend-copiers supers copy predicate)
+   
+                    (define-method (show (r predicate))
+                      (list 'name
+                            (list 'field-label (getter r)) 
+                            ...))))    
+       
+       (define-syntax name
+         (syntax-rules (field-label ...)
+           ((name ("is-scheme?") sk fk)     (syntax-if is-scheme? sk fk))
+           ((name ("predicate") k)          (syntax-apply k predicate))
+           ((name ("supers") k)             (syntax-apply k (super ... name)))  
+           ((name ("labels") k)             (syntax-apply k (label ...)))
+           ((name ("pos-labels") k)         (syntax-apply k (pos-label ...)))
+           ((name ("getter") field-label k) (syntax-apply k getter))   
+           ...
+           ((name ("getter") other k)       (syntax-apply k #f))
+           ((name ("setter") field-label k) (syntax-apply k setter))  
+           ...
+           ((name ("setter") other k)       (syntax-apply k #f))
+           ((name ("copier") k)             (syntax-apply k copy))
+           ((name . bindings)               (populate 1 maker (field-label ...) . bindings))))))))
+
+
+(define-syntax to-identifier
+  (syntax-rules ()
+    ((to-identifier #f k) (syntax-apply k generated-identifier))
+    ((to-identifier id k) (syntax-apply k id))))
+
+(define-syntax augment-field 
+  (syntax-rules ()
+    ((augment-field (label) k)               (syntax-apply k (label generated-getter generated-setter)))
+    ((augment-field (label getter) k)        (meta `(label (meta ,(to-identifier getter)) generated-setter) k))
+    ((augment-field (label getter setter) k) (meta `(label (meta ,(to-identifier getter)) 
+                                                           (meta ,(to-identifier setter))) k))))
+
+(define-syntax extend-predicates
+  (syntax-rules ()
+    ((extend-predicates (super ...) predicate)
+     (begin
+       (meta
+        `(define-method (meta ,(super ("predicate")))
+                        (predicate)
+                        (x)
+                        any?))   
+       ...))))
+
+(define-syntax extend-copiers
+  (syntax-rules ()
+    ((extend-copiers (super ...) copy predicate)
+     (begin
+       (meta
+        `(define-method (meta ,(super ("copier")))
+                        (predicate)
+                        (x)
+                        copy))    
+       ...))))
+
+(define-syntax extend-accessors
+  (syntax-rules ()
+    ((extend-accessors (super ...) label predicate selector modifier)
+     (meta
+      `(begin 
+         (syntax-if (meta ,(super ("getter") label))
+                    (define-method (meta ,(super ("getter") label))
+                                   (predicate)
+                                   (x)
+                                   selector)
+                    (begin))
+         ...
+         (syntax-if (meta ,(super ("setter") label))
+                    (define-method (meta ,(super ("setter") label))
+                                   (predicate any?)
+                                   (x v)
+                                   modifier)
+                    (begin))
+         ...)))))
+
+(define-syntax populate
+  (syntax-rules ()
+    ((populate 1 maker labels . bindings)
+     (meta 
+      `(populate 2 maker
+                   (meta ,(order labels bindings ('&lt;undefined&gt;))))))
+    ((populate 2 maker ((label exp) ...))
+     (maker exp ...))))
+
+(define-syntax order
+  (syntax-rules ()
+    ((order (label ...) ((label* . binding) ...) default k)
+     (meta
+      `(if-empty? (meta ,(remove-from (label* ...) 
+                                      (label ...) 
+                                      if-free=))
+                  (order "emit" (label ...) ((label* . binding) ...) default k)
+                  (syntax-error "Illegal labels in" ((label* . binding) ...)
+                                "Legal labels are" (label ...)))))
+    ((order "emit" (label ...) bindings default k)
+     (meta 
+      `((label . (meta ,(syntax-lookup label 
+                                       bindings 
+                                       if-free= 
+                                       default)))
+        ...)
+      k))))
+
+
+;============================================================================================
+; Simple generic functions:
+
+(define-syntax define-generic
+  (syntax-rules ()
+    ((define-generic (name arg ...))
+     (define-generic (name arg ...)
+       (lambda (arg ...) (error "Inapplicable method:" 'name
+                                "Arguments:" (show arg) ... ))))
+    ((define-generic (name arg ...) proc)
+     (define name (make-generic (arg ...) proc)))))  
+  
+(define-syntax define-method
+  (syntax-rules ()
+    ((define-method (generic (arg pred?) ...) . body)
+     (define-method generic (pred? ...) (arg ...) (lambda (arg ...) . body))) 
+    ((define-method generic (pred? ...) (arg ...) procedure)
+     (let ((next ((generic) 'get-proc))
+           (proc procedure))
+       (((generic) 'set-proc)
+        (lambda (arg ...)
+          (if (and (pred? arg) ...)
+              (proc arg ...)
+              (next arg ...))))))))
+
+(define-syntax make-generic
+  (syntax-rules ()
+    ((make-generic (arg arg+ ...) default-proc)
+     (let ((proc default-proc))
+       (case-lambda
+         ((arg arg+ ...)
+          (proc arg arg+ ...))
+         (()
+          (lambda (msg)
+            (case msg
+              ((get-proc) proc)
+              ((set-proc) (lambda (new)
+                            (set! proc new)))))))))))
+
+(define-generic (show x) 
+  (lambda (x) x))
+
+(define (any? x) #t)
+
+
+;============================================================================================
+; Syntax utilities:
+
+(define-syntax syntax-error
+  (syntax-rules ()))
+
+(define-syntax syntax-apply
+  (syntax-rules ()
+    ((syntax-apply (f . args) exp ...) 
+     (f exp ... . args))))
+
+(define-syntax syntax-cons
+  (syntax-rules ()
+    ((syntax-cons x rest k) 
+     (syntax-apply k (x . rest)))))
+
+(define-syntax syntax-cons-after
+  (syntax-rules ()
+    ((syntax-cons-after rest x k)
+     (syntax-apply k (x . rest)))))
+
+(define-syntax if-empty?
+  (syntax-rules ()
+    ((if-empty? () sk fk)      sk)
+    ((if-empty? (h . t) sk fk) fk)))
+
+(define-syntax add-temporaries   
+  (syntax-rules () 
+    ((add-temporaries lst k)                (add-temporaries lst () k))
+    ((add-temporaries () lst-temps k)       (syntax-apply k lst-temps))
+    ((add-temporaries (h . t) (done ...) k) (add-temporaries t (done ... (h temp)) k))))
+
+(define-syntax if-free=
+  (syntax-rules ()
+    ((if-free= x y kt kf)
+      (let-syntax
+          ((test (syntax-rules (x)
+                   ((test x kt* kf*) kt*)
+                   ((test z kt* kf*) kf*))))
+        (test y kt kf)))))
+
+(define-syntax top:if-free=
+  (syntax-rules ()
+    ((top:if-free= x y kt kf)
+     (begin
+       (define-syntax if-free=:test
+         (syntax-rules (x)
+           ((if-free=:test x kt* kf*) kt*)
+           ((if-free=:test z kt* kf*) kf*)))
+       (if-free=:test y kt kf)))))
+
+(define-syntax meta
+  (syntax-rules (meta quasiquote unquote)
+    ((meta `(meta ,(function argument ...)) k)
+     (meta `(argument ...) (syntax-apply-to function k)))
+    ((meta `(a . b) k)
+     (meta `a (descend-right b k)))
+    ((meta `whatever k) (syntax-apply k whatever))
+    ((meta `arg)
+     (meta `arg (syntax-id)))))
+
+(define-syntax syntax-apply-to
+  (syntax-rules ()
+    ((syntax-apply-to (argument ...) function k)
+     (function argument ... k))))
+
+(define-syntax descend-right
+  (syntax-rules ()
+    ((descend-right evaled b k)
+     (meta `b (syntax-cons-after evaled k)))))
+
+(define-syntax syntax-id
+  (syntax-rules ()
+    ((syntax-id arg) arg))) 
+
+(define-syntax remove-duplicates
+  (syntax-rules ()
+    ((remove-duplicates lst compare? k)
+     (remove-duplicates lst () compare? k))
+    ((remove-duplicates () done compare? k)
+     (syntax-apply k done))
+    ((remove-duplicates (h . t) (d ...) compare? k)
+     (if-member? h (d ...) compare? 
+                 (remove-duplicates t (d ...) compare? k)
+                 (remove-duplicates t (d ... h) compare? k)))))
+
+(define-syntax syntax-filter
+  (syntax-rules ()
+    ((syntax-filter () (if-p? arg ...) k)
+     (syntax-apply k ()))
+    ((syntax-filter (h . t) (if-p? arg ...) k)
+     (if-p? h arg ...
+            (syntax-filter t (if-p? arg ...) (syntax-cons-after h k))
+            (syntax-filter t (if-p? arg ...) k)))))
+
+(define-syntax if-member?
+  (syntax-rules ()
+    ((if-member? x () compare? sk fk) 
+     fk)
+    ((if-member? x (h . t) compare? sk fk)
+     (compare? x h
+               sk
+               (if-member? x t compare? sk fk)))))
+
+(define-syntax union
+  (syntax-rules ()
+    ((union (x ...) ... compare? k)
+     (remove-duplicates (x ... ...) compare? k))))
+
+(define-syntax intersection
+  (syntax-rules ()
+    ((intersection list1 list2 compare? k)
+     (syntax-filter list1 (if-member? list2 compare?) k))))
+
+(define-syntax remove-from
+  (syntax-rules ()
+    ((remove-from list1 list2 compare? k)
+     (syntax-filter list1 (if-not-member? list2 compare?) k))))
+
+(define-syntax if-not-member?
+  (syntax-rules ()
+    ((if-not-member? x list compare? sk fk)
+     (if-member? x list compare? fk sk))))
+
+(define-syntax generate-identifier
+  (syntax-rules ()
+    ((generate-identifier k) (syntax-apply k generated-identifier))))
+
+(define-syntax syntax-if
+  (syntax-rules ()
+    ((syntax-if #f sk fk)    fk)
+    ((syntax-if other sk fk) sk)))
+
+(define-syntax syntax-lookup
+  (syntax-rules ()
+    ((syntax-lookup label () compare fail k)
+     (syntax-apply k fail))
+    ((syntax-lookup label ((label* . value) . bindings) compare fail k)
+     (compare label label*
+              (syntax-apply k value)
+              (syntax-lookup label bindings compare fail k)))))
+</pre>
+
+
+
+<h2>Tests and examples</h2>
+
+<pre>;============================================================================================
+; Examples:
+
+; A simple record declaration:
+
+(define-record-type point (make-point x y) point?
+  (x point.x point.x-set!)
+  (y point.y point.y-set!))
+
+(define p (make-point 1 2))
+
+(point? p)             ;==&gt; #t
+(point.y p)            ;==&gt; 2
+(point.y-set! p 7)
+(point.y p)            ;==&gt; 7
+
+; Simple record schemes.
+; Record schemes don't have constructors.
+; The predicates and accessors are polymorphic.
+
+(define-record-scheme &lt;point #f &lt;point? 
+  (x &lt;point.x)
+  (y &lt;point.y))
+
+(define-record-scheme &lt;color #f &lt;color?
+  (hue &lt;color.hue))
+
+; Concrete instances of the above schemes.
+; Constructors may be declared.
+; Predicates and accessors, when provided, are monomorphic.  
+
+(define-record-type (point &lt;point) make-point point?
+  (x point.x)
+  (y point.y))
+
+(define-record-type (color &lt;color) make-color)
+
+(define-record-type (color-point &lt;color &lt;point) (make-color-point x y hue) color-point?
+  (extra color-point.extra))
+
+(define cp (make-color-point 1 2 'blue))
+
+(&lt;point? cp)            ;==&gt; #t         
+(&lt;color? cp)            ;==&gt; #t
+(color-point? cp)       ;==&gt; #t
+;(point.x cp)           ;==&gt; error 
+(&lt;point.y cp)           ;==&gt; 2
+(&lt;color.hue cp)         ;==&gt; blue
+(color-point.extra cp)  ;==&gt; &lt;undefined&gt;
+
+; Constructing records by field labels:
+
+(define p (point (x 1) 
+                 (y 2)))
+(define cp (color-point (hue 'blue) 
+                        (x 1) 
+                        (y 2)))
+
+; Monomorphic functional update:
+
+(show
+ (record-update p point (x 7)))     ;==&gt; (point (x 7) (y 2))
+(show p)                            ;==&gt; (point (x 1) (y 2))   - original unaffected
+
+; Polymorphic functional update:
+
+(show 
+ (record-update cp &lt;point (x 7)))   ;==&gt; (color-point (extra &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+(show cp)                           ;==&gt; (color-point (extra &lt;undefined&gt;) (hue blue) (x 1) (y 2))
+
+; In-place update:
+
+(show 
+ (record-update! cp &lt;point (x 7)))  ;==&gt; color-point (extra &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+(show cp)                           ;==&gt; color-point (extra &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+ 
+; Use record-compose for updates polymorphic in argument but monomorphic in result type:
+
+(show
+ (record-compose (&lt;point cp) (point (x 8))))  ;==&gt; (point (x 8) (y 2))
+(show cp)                                     ;==&gt; (color-point (extra &lt;undefined&gt;) (hue blue) (x 7) (y 2))
+
+; More general record composition example:
+
+(define cp (make-color-point 1 2 'green))
+(define c  (make-color 'blue))
+ 
+(show 
+ (record-compose (&lt;point cp)                 ; polymorphic import - only fields x and y of cp taken
+                 (color c)                   ; monomorphic import
+                 (color-point (x 8)          ; override imported field
+                              (extra 'hi))))                 
+                                      
+                                         ;==&gt; (color-point (extra hi) (hue blue) (x 8) (y 2))
+
+; Small module-functor example:
+  
+(define-record-type monoid #f #f 
+  (mult monoid.mult) 
+  (one  monoid.one))
+
+(define-record-type abelian-group #f #f 
+  (add  group.add) 
+  (zero group.zero)
+  (sub  group.sub))
+
+(define-record-type ring #f #f
+  (mult ring.mult) 
+  (one  ring.one)
+  (add  ring.add) 
+  (zero ring.zero)
+  (sub  ring.sub))
+
+(define integer-monoid (monoid (mult *) 
+                               (one  1)))
+
+(define integer-group (abelian-group (add  +)
+                                     (zero 0)
+                                     (sub  -)))
+
+(define (make-ring g m)          ; simple "functor"
+  (record-compose (monoid m)
+                  (abelian-group g)
+                  (ring)))
+
+(define integer-ring (make-ring integer-group 
+                                integer-monoid))
+  
+((ring.add integer-ring) 1 2)    ;==&gt; 3
+
+; Example of tree data type
+
+(define-record-scheme &lt;tree #f &lt;tree?) 
+
+(define-record-type (node &lt;tree) make-node node?
+  (lhs node.lhs)
+  (rhs node.rhs))
+
+(define-record-type (leaf &lt;tree) make-leaf leaf?
+  (val leaf.val))
+
+(define (tree-&gt;list t)
+  (cond
+    ((leaf? t) (leaf.val t))
+    ((node? t) (cons (tree-&gt;list (node.lhs t))
+                     (tree-&gt;list (node.rhs t))))))
+
+(define t 
+  (make-node (make-node (make-leaf 1)
+                        (make-leaf 2))
+             (make-leaf 3)))
+
+(&lt;tree? t)         ;==&gt; #t
+(tree-&gt;list t)     ;==&gt; ((1 . 2) . 3)
+</pre>
+
+
+<h2>References</h2>
+
+<pre>[1] Richard Kelsey, Defining Record Types, SRFI-9: http://srfi.schemers.org/srfi-9/srfi-9.html
+
+[2] See e.g.
+    Benjamin C. Pierce, Types and Programming Languages, MIT Press 2002, and references therein.
+    Mitchell Wand, Type inference for record concatenation and multiple inheritance, 
+                   Information and Computation, v.93 n.1, p.1-15, July 1991
+    John Reppy, Jon Riecke, Simple objects for Standard ML,
+                Proceedings of the ACM SIGPLAN '96 Conference on Programming Language Design and Implementation
+
+
+</pre>
+
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) Andr&eacute; van Tonder (2004). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+<HR>
+
+<ADDRESS>Author: <A href="mailto:andre@het.brown.edu">Andr&eacute; van 
+Tonder</A></ADDRESS>
+<ADDRESS>Editor: <A href="mailto:srfi-editors@srfi.schemers.org">David Van Horn</A></ADDRESS>
+<!-- Created: Tue Mar 16 19:01:34 EST 2004 --><!-- hhmts start -->
+Last modified: Wed Dec  8 15:31:34 EST 2004
+<!-- hhmts end --></BODY></HTML>

@@ -111,10 +111,16 @@
           (unless (null? parts)
             (let ([s (car parts)])
               (collect-part s d p-ci
-                            (cons (if (unnumbered-part? s) #f pos)
+                            (cons (if (or (unnumbered-part? s) 
+                                          (part-style? s 'unnumbered))
+                                      #f 
+                                      pos)
                                   number))
               (loop (cdr parts)
-                    (if (unnumbered-part? s) pos (add1 pos))))))
+                    (if (or (unnumbered-part? s) 
+                            (part-style? s 'unnumbered))
+                        pos
+                        (add1 pos))))))
         (let ([prefix (part-tag-prefix d)])
           (for ([(k v) (collect-info-ht p-ci)])
             (when (cadr k)

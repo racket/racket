@@ -1,0 +1,184 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 11: Syntax for receiving multiple values</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 11: Syntax for receiving multiple values
+
+<H1>Author</H1>
+
+Lars T Hansen
+
+<H1>Status</H1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status 
+that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-11/mail-archive/maillist.html">the archive of 
+the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/09/10
+<LI>Draft: 1999/09/14-1999/11/12
+<LI>Revised: 1999/11/01
+<LI>Revised: 2000/03/15
+<LI>Final: 2000/03/15
+</UL>
+
+<H1>Abstract</H1>
+
+The SRFI introduces syntactic forms LET-VALUES and LET*-VALUES that bind the values of
+expressions that return multiple values.
+
+<H1>Issues</H1>
+
+None.
+
+<H1>Rationale</H1>
+
+LET-VALUES and LET*-VALUES reduce the clutter of the CALL-WITH-VALUES notation for
+receiving multiple values.
+
+
+<H1>Specification</H1>
+
+<dl>
+<dt><a name="let-values"></a>
+<tt>(LET-VALUES ((&lt;formals&gt; &lt;expression&gt;) ...) &lt;body&gt;)</tt>
+<br>Syntax
+<dd>
+<p>Each &lt;formals&gt; should be a formal arguments list as for a LAMBDA 
+   expression, cf section 4.1.4 of the R5RS.</p>
+
+<p>The &lt;expression&gt;s are evaluated in the current environment, the 
+   variables of the &lt;formals&gt; are bound to fresh locations, the return 
+   values of the &lt;expression&gt;s are stored in the variables, the &lt;body&gt; 
+   is evaluated in the extended environment, and the values of the
+   last expression of &lt;body&gt; are returned.  The &lt;body&gt; is a 
+   &lt;tail body&gt;, cf section 3.5 of the R5RS.</p>
+
+<p>The matching of each &lt;formals&gt; to values is as for the matching of 
+   &lt;formals&gt; to arguments in a LAMBDA expression, and it is an
+   error for an &lt;expression&gt; to return a number of values that does
+   not match its corresponding &lt;formals&gt;.</p>
+
+<p>
+<pre>
+             (let-values (((a b . c) (values 1 2 3 4)))
+               (list a b c))            --&gt; (1 2 (3 4))
+
+             (let ((a 'a) (b 'b) (x 'x) (y 'y))
+               (let-values (((a b) (values x y))
+                            ((x y) (values a b)))
+                 (list a b x y)))       --&gt; (x y a b)
+</pre>
+</p>
+
+<dt><a name="let*-values"></a>
+<tt>(LET*-VALUES ((&lt;formals&gt; &lt;expression&gt;) ...) &lt;body&gt;)</tt>
+<br>Syntax
+<dd>
+<p>Each &lt;formals&gt; should be a formal arguments list as for a LAMBDA 
+   expression, cf section 4.1.4 of the R5RS.</p>
+
+<p>LET*-VALUES is similar to LET-VALUES, but the bindings are performed
+   sequentially from left to right, and the region of a binding indicated
+   by (&lt;formals&gt; &lt;expression&gt;) is that part of the LET*-VALUES
+   expression to the right of the binding.  Thus the second binding is done in
+   an environment in which the first binding is visible, and so on.</p>
+
+<p>
+<pre>
+             (let ((a 'a) (b 'b) (x 'x) (y 'y))
+               (let*-values (((a b) (values x y))
+                             ((x y) (values a b)))
+                 (list a b x y)))       --&gt; (x y x y)
+</pre>
+</p>
+</dl>
+
+<H1>Implementation</H1>
+
+The following implementation is written in R5RS Scheme.  It is not
+compatible with the IEEE Scheme standard because the IEEE standard does
+not contain the high-level macro system.
+
+<p>The implementation assumes that some top-level names defined by the
+R5RS are bound to their original values.
+
+<p>
+<pre>
+;; This code is in the public domain.
+
+(define-syntax let-values
+  (syntax-rules ()
+    ((let-values (?binding ...) ?body0 ?body1 ...)
+     (let-values "bind" (?binding ...) () (begin ?body0 ?body1 ...)))
+    
+    ((let-values "bind" () ?tmps ?body)
+     (let ?tmps ?body))
+    
+    ((let-values "bind" ((?b0 ?e0) ?binding ...) ?tmps ?body)
+     (let-values "mktmp" ?b0 ?e0 () (?binding ...) ?tmps ?body))
+    
+    ((let-values "mktmp" () ?e0 ?args ?bindings ?tmps ?body)
+     (call-with-values 
+       (lambda () ?e0)
+       (lambda ?args
+         (let-values "bind" ?bindings ?tmps ?body))))
+    
+    ((let-values "mktmp" (?a . ?b) ?e0 (?arg ...) ?bindings (?tmp ...) ?body)
+     (let-values "mktmp" ?b ?e0 (?arg ... x) ?bindings (?tmp ... (?a x)) ?body))
+    
+    ((let-values "mktmp" ?a ?e0 (?arg ...) ?bindings (?tmp ...) ?body)
+     (call-with-values
+       (lambda () ?e0)
+       (lambda (?arg ... . x)
+         (let-values "bind" ?bindings (?tmp ... (?a x)) ?body))))))
+
+(define-syntax let*-values
+  (syntax-rules ()
+    ((let*-values () ?body0 ?body1 ...)
+     (begin ?body0 ?body1 ...))
+
+    ((let*-values (?binding0 ?binding1 ...) ?body0 ?body1 ...)
+     (let-values (?binding0)
+       (let*-values (?binding1 ...) ?body0 ?body1 ...)))))
+</pre>
+
+<H1>Copyright</H1>
+<p>Copyright (C) Lars T Hansen (1999). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Tue Sep 28 10:59:57 MST 2004
+<!-- hhmts end -->
+  </body>
+</html>

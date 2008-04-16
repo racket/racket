@@ -1,0 +1,141 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>SRFI 87: =&gt; in case clauses</title></head><body>
+
+<h1>Title</h1>
+
+=&gt; in case clauses
+
+<h1>Author</h1>
+
+Chongkai Zhu
+
+<h1>Status</h1>
+
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see
+<a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+To provide input on this SRFI, please <code>
+<a href="mailto:srfi-87@srfi.schemers.org">mailto:srfi-87@srfi.schemers.org</a></code>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">instructions
+here</a> to subscribe to the list. You can access the discussion via
+<a href="http://srfi.schemers.org/srfi-87/mail-archive/maillist.html">the
+archive of the mailing list</a>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-87/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+<p>
+</p><ul>
+  <li>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-87/srfi-87.html?rev=1.1">2006/04/10</a></li>
+  <li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-87/srfi-87.html?rev=1.2">2006/05/08</a></li>
+  <li>Draft: 2006/04/10 - 2006/06/08</li>
+  <li>Final: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-87/srfi-87.html?rev=1.3">2006/10/18</a></li>
+</ul>
+
+<h1>Abstract</h1>This SRFI proposes an extension to the <code>case</code> syntax 
+to allow the <code>=&gt;</code> clauses as in <code>cond</code>.
+<h1>Rationale</h1><code>case</code> is introduced as a syntax sugar based on 
+<code>cond</code>, which helps to save a explicit calling to <code>let</code>. 
+But without the <code>=&gt;</code> clause, if the <code>result </code>expression 
+needs the value of <code>key</code>, the <code>let </code>can't be saved. For an 
+easy example, suppose we want the following:
+<blockquote><pre>(case (get-symbol)
+  ((true) #t)
+  ((false) #f)
+  (else =&gt; (lambda (x) x)))</pre></blockquote>
+<p>Without the <code>=&gt;</code> clause in <code>case</code>, we have to 
+write:</p>
+<blockquote><pre>(let ((key (get-symbol)))
+  (cond ((eq? key 'true) #t)
+        ((eq? key 'false) #f)
+        (else key)))</pre></blockquote>
+<h1>Specification</h1>
+<p>(Based on R5RS section 4.2.1 Conditionals)</p>
+<dl>
+  <dt><u>library syntax:</u> <b><a name="case">case</a></b> <i>&lt;key&gt; &lt;clause1&gt; 
+  &lt;clause2&gt; ...</i> 
+  </dt><dd><em>Syntax:</em> &lt;Key&gt; may be any expression. Each &lt;clause&gt; 
+  should have the form <pre><tt>((&lt;datum1&gt; ...) &lt;expression1&gt; &lt;expression2&gt; ...),</tt></pre>
+  <p>where each &lt;datum&gt; is an external representation of some object. All 
+  the &lt;datum&gt;s must be distinct. The last &lt;clause&gt; may be an "else 
+  clause," which has the form </p><pre><tt>(else &lt;expression1&gt; &lt;expression2&gt; ...).</tt></pre>
+  <p><font color="#ff0000">Alternatively, a &lt;clause&gt; may be of the form 
+  </font></p><pre><font color="#ff0000"><tt>((&lt;datum1&gt; ...) =&gt; &lt;expression&gt;)</tt></font></pre>
+  <p><font color="#ff0000">and the last &lt;clause&gt; may be of the 
+  form</font></p><pre><font color="#ff0000"><tt>(else =&gt; &lt;expression&gt;)</tt></font></pre>
+  <p><em>Semantics:</em> A <samp>`case'</samp> expression is evaluated as 
+  follows. &lt;Key&gt; is evaluated and its result is compared against each 
+  &lt;datum&gt;. If the result of evaluating &lt;key&gt; is equivalent (in the 
+  sense of <samp>`eqv?'</samp>; see section see section <a href="http://www.swiss.ai.mit.edu/%7Ejaffer/r5rs_8.html#SEC49">6.1 Equivalence 
+  predicates</a>) to a &lt;datum&gt;, then the expressions in the corresponding 
+  &lt;clause&gt; are evaluated from left to right and the result(s) of the last 
+  expression in the &lt;clause&gt; is(are) returned as the result(s) of the 
+  <samp>`case'</samp> expression. If the result of evaluating &lt;key&gt; is 
+  different from every &lt;datum&gt;, then if there is an else clause its 
+  expressions are evaluated and the result(s) of the last is(are) the result(s) 
+  of the <samp>`case'</samp> expression; otherwise the result of the 
+  <samp>`case'</samp> expression is unspecified. <font color="#ff0000">If the 
+  selected &lt;clause&gt; uses the <code>=&gt;</code> alternate form, then the 
+  &lt;expression&gt; is evaluated. Its value must be a procedure that accepts 
+  one argument; this procedure is then called on the value of &lt;Key&gt; and 
+  the value(s) returned by this procedure is(are) returned by the 
+  <samp>`case'</samp> expression. </font></p></dd></dl>
+<p>(Based on R5RS section 3.5 Proper tail recursion)</p>
+<dd>If a <tt>cond</tt> <font color="#ff0000">or <tt>case</tt></font> expression is in a tail context, and has a clause of the 
+form <tt>(&lt;expression<sub>1</sub>&gt; =&gt; &lt;expression<sub>2</sub>&gt;)</tt> then the 
+(implied) call to the procedure that results from the evaluation of &lt;expression<sub>2</sub>&gt; 
+is in a tail context. &lt;expression<sub>2</sub>&gt; itself is not in a tail context.</dd>
+<h1>Implementation</h1>
+<blockquote><pre><code>(define-syntax case
+  (syntax-rules (else =&gt;)
+    ((case (key ...)
+       clauses ...)
+     (let ((atom-key (key ...)))
+       (case atom-key clauses ...)))
+    ((case key
+       (else =&gt; result))
+     (result key))
+    ((case key
+       ((atoms ...) =&gt; result))
+     (if (memv key '(atoms ...))
+         (result key)))
+    ((case key
+       ((atoms ...) =&gt; result)
+       clause clauses ...)
+     (if (memv key '(atoms ...))
+         (result key)
+         (case key clause clauses ...)))
+    ((case key
+       (else result1 result2 ...))
+     (begin result1 result2 ...))
+    ((case key
+       ((atoms ...) result1 result2 ...))
+     (if (memv key '(atoms ...))
+         (begin result1 result2 ...)))
+    ((case key
+       ((atoms ...) result1 result2 ...)
+       clause clauses ...)
+     (if (memv key '(atoms ...))
+         (begin result1 result2 ...)
+         (case key clause clauses ...)))))</code></pre></blockquote>
+<h1>Copyright</h1>Copyright (C) 2006 Chongkai Zhu. All Rights Reserved. 
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy 
+of this software and associated documentation files (the "Software"), to deal in 
+the Software without restriction, including without limitation the rights to 
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of 
+the Software, and to permit persons to whom the Software is furnished to do so, 
+subject to the following conditions: 
+</p><p>The above copyright notice and this permission notice shall be included in 
+all copies or substantial portions of the Software. 
+</p><p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. 
+</p><hr>
+
+<address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike 
+Sperber</a></address><!-- Created: Tue Sep 29 19:20:08 EDT 1998 --><!-- hhmts start -->Last 
+modified: Mon Apr 10 21:20:25 CEST 2006 <!-- hhmts end -->
+</body></html>

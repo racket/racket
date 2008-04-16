@@ -1,0 +1,112 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-10.html">previous</a></span><span>, <a href="r5rs-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_Temp_6"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_Temp_6">Notes</a></h1>
+<p>
+</p>
+<p></p>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_Temp_7"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_Temp_7">Language changes</a></h3>
+<p></p>
+<p>
+This section enumerates the changes that have been made to Scheme since
+the ``Revised<sup>4</sup> report''&nbsp;[<a href="r5rs-Z-H-14.html#cite{R4RS}">6</a>] was published.</p>
+<p>
+</p>
+<ul>
+<p>
+</p>
+<li>
+<p>The report is now a superset of the IEEE standard for Scheme
+[<a href="r5rs-Z-H-14.html#cite{IEEEScheme}">13</a>]: implementations that conform to the report will
+also conform to the standard.  This required the following changes:
+</p>
+<ul>
+<p>
+</p>
+<li>
+<p>The empty list is now required to count as true.</p>
+<p>
+</p>
+<li>
+<p>The classification of features as essential or inessential has been
+removed.  There are now three classes of built-in procedures: primitive,
+library, and optional.  The optional procedures are <tt>load</tt>,
+<tt>with-input-from-file</tt>, <tt>with-output-to-file</tt>,
+<tt>transcript-on</tt>, <tt>transcript-off</tt>, and
+<tt>interaction-environment</tt>,
+and <tt>-</tt> and <tt>/</tt> with more than two arguments.
+None of these are in the IEEE standard.</p>
+<p>
+</p>
+<li>
+<p>Programs are allowed to redefine built-in procedures.  Doing so
+will not change the behavior of other built-in procedures.
+</p>
+</ul>
+<p></p>
+<p>
+</p>
+<li>
+<p><em>Port</em> has been added to the list of disjoint types.</p>
+<p>
+</p>
+<li>
+<p>The macro appendix has been removed.  High-level macros are now part
+of the main body of the report.  The rewrite rules for derived expressions
+have been replaced with macro definitions.  There are no reserved identifiers.</p>
+<p>
+</p>
+<li>
+<p><tt>Syntax-rules</tt> now allows vector patterns.</p>
+<p>
+</p>
+<li>
+<p>Multiple-value returns, <tt>eval</tt>, and <tt>dynamic-wind</tt> have
+been added.</p>
+<p>
+</p>
+<li>
+<p>The calls that are required to be implemented in a properly tail-recursive
+fashion are defined explicitly.</p>
+<p>
+</p>
+<li>
+<p>`<tt>@</tt>' can be used within identifiers. `<tt><code class=verbatim>|</code></tt>' is reserved
+for possible future extensions.</p>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+
+
+</p>
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p>
+  </p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-10.html">previous</a></span><span>, <a href="r5rs-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

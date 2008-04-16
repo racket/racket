@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+<head>
+   <title>SRFI 5: A compatible let form with signatures and rest arguments</title>
+</head>
+<body>
+
+<H1>Title</H1>
+
+SRFI-5: A compatible <code>let</code> form with signatures and rest arguments
+
+<H1>Author</H1>
+
+Andy Gaynor
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion on this SRFI via <A HREF="http://srfi.schemers.org/srfi-5/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/2/2
+<LI>Draft: 1999/2/10-1999/04/12
+<LI>Final: 1999/4/26
+<LI>Revised reference implementation: 2003/01/27
+</UL>
+
+<H1>Abstract</H1>
+
+The <i>named-let</i> incarnation of the <code>let</code> form has two slight
+inconsistencies with the <code>define</code> form.  As defined, the <code>let</code>
+form makes no accommodation for rest arguments, an issue of functionality
+and consistency.  As defined, the <code>let</code> form does not accommodate
+signature-style syntax, an issue of aesthetics and consistency.  Both
+issues are addressed here in a manner which is compatible with the traditional
+<code>let</code> form but for minor extensions.
+
+<H1>Rationale</H1>
+
+<H2>Signature-style Syntax</H2>
+
+Consider the following two equivalent definitions:
+
+<p><pre>
+(define fibonacci
+  (lambda (n i f0 f1)
+    (if (= i n)
+      f0
+      (fibonacci n (+ i 1) f1 (+ f0 f1)))))
+
+(define (fibonacci n i f0 f1)
+  (if (= i n)
+    f0
+    (fibonacci n (+ i 1) f1 (+ f0 f1))))
+</pre>
+
+Although there is a named-let analog for the former form, there is none
+for the latter.  To wit, suppose one wished to compute the 10th element
+of the Fibonacci sequence using a named let:
+
+<p>
+<pre>
+(let fibonacci ((n 10) (i 0) (f0 0) (f1 1))
+  (if (= i n)
+    f0
+    (fibonacci n (+ i 1) f1 (+ f0 f1))))
+Values: 55
+</pre>
+
+As it stands, one cannot equivalently write
+
+<p>
+<pre>
+(let (fibonacci (n 10) (i 0) (f0 0) (f1 1))
+  (if (= i n)
+    f0
+    (fibonacci n (+ i 1) f1 (+ f0 f1))))
+</pre>
+
+which is consistent with <code>define</code>'s signature-style form.
+<p>Those that favor the signature style may prefer this extension. 
+In any case, it may be more appropriate to include all bound names within
+the binding section.  As presented, this straightforward extension
+introduces no ambiguity or incompatibility with the existing definition
+of let.
+
+<H2>Rest Arguments</H2>
+
+As it stands, one cannot write a named let with rest arguments, as in
+
+<p>
+<pre>
+(let (blast (port (current-output-port)) . (x (+ 1 2) 4 5))
+  (if (null? x)
+    'just-a-silly-contrived-example
+    (begin
+      (write (car x) port)
+      (apply blast port (cdr x)))))
+</pre>
+
+otherwise equivalent to
+
+<p>
+<pre>
+(letrec ((blast (lambda (port . x)
+		  (if (null? x)
+		      'just-a-silly-contrived-example
+		      (begin
+			(write (car x) port)
+			(apply blast port (cdr x)))))))
+  (blast (current-output-port) (+ 1 2) 4 5))
+</pre>
+
+While this example is rather contrived, the functionality is not. 
+There are several times when the author has used this construct in practice. 
+Regardless, there is little reason to deny the <code>let</code> form access to
+all the features of lambda functionality.
+
+<H2>Symbols in Binding Sections</H2>
+
+Both the features above rely upon the placement of symbols in <code>let</code>
+binding lists (this statement is intentially simplistic).  The only
+other apparent use of such symbol placement is to tersely bind variables
+to unspecified values.  For example, one might desire to use
+<code>(let (foo bar baz) ...)</code>
+to bind <code>foo</code>, <code>bar</code>, and <code>baz</code> to
+unspecified values.
+
+<p>This usage is considered less important in light of the rationales
+presented above, and an alternate syntax is immediately apparent, as
+in <code>(let ((foo) (bar) (baz)) ...)</code> This may even
+be preferable, consistently parenthesizing normal binding clauses.
+
+<H1>Specification</H1>
+
+<H2>Syntax</H2>
+
+<p>
+A formal specification of the syntax follows.  Below, body, expression,
+and identifier are free.  Each instantiation of binding-name must be
+unique.
+</p>
+
+<p>
+<pre>
+            let = "(" "let" let-bindings body ")"
+    expressions = nothing | expression expressions
+   let-bindings = let-name bindings
+                | "(" let-name "." bindings ")"
+       let-name = identifier
+       bindings = "(" ")"
+                | rest-binding
+                | "(" normal-bindings ["." rest-binding] ")"
+normal-bindings = nothing
+                | normal-binding normal-bindings
+ normal-binding = "(" binding-name expression ")"
+   binding-name = identifier
+   rest-binding = "(" binding-name expressions ")"
+</pre>
+
+<p>
+For clarity and convenience, an informal specification follows.
+</p>
+
+<ol>
+<li><a name="unnamed">Unnamed</a>
+
+<p><pre>
+(let ((&lt;parameter&gt; &lt;argument&gt;)...) 
+  &lt;body&gt;...)
+</pre>
+</li>
+
+<li><a name="named-non-sig">
+Named, non-signature-style, no rest argument</a>
+
+<p><pre>
+(let &lt;name&gt; ((&lt;parameter&gt; &lt;argument&gt;)...)
+  &lt;body&gt;...)
+</pre>
+</li>
+
+<li><a name="named-sig">Named, signature-style,  no rest argument</a>
+
+<p><pre>
+(let (&lt;name&gt; (&lt;parameter&gt; &lt;argument&gt;)...)
+  &lt;body&gt;...)
+</pre>
+</li>
+
+<li><a name="named-non-sig-rest">Named, non-signature-style, rest argument</a>
+
+<p><pre>
+(let &lt;name&gt; ((&lt;parameter&gt; &lt;argument&gt;)...
+    
+. (&lt;rest-parameter&gt; &lt;rest-argument&gt;...))
+  &lt;body&gt;...)
+</pre>
+
+<li><a name="named-sig-rest">Named, signature-style, rest argument</a>
+
+<p><pre>
+(let (&lt;name&gt; (&lt;parameter&gt; &lt;argument&gt;)...
+   
+. (&lt;rest-parameter&gt; &lt;rest-argument&gt;...))
+  &lt;body&gt;...)
+</pre>
+</li>
+</ol>
+
+<H2>Semantics</H2>
+
+Let <code>$lambda</code> and <code>$letrec</code> be hygienic bindings for the <code>lambda</code>
+and <code>letrec</code> forms, respectively.
+
+<ul>
+<li>For informal syntax 1:
+
+<p><pre>
+(($lambda (&lt;parameter&gt;...) &lt;body&gt;...) &lt;argument&gt;...)
+</pre>
+</li>
+
+<li>For informal syntaxes 2 and 3:
+
+<p>
+<pre>
+($letrec ((&lt;name&gt; ($lambda (&lt;parameter&gt;...) &lt;body&gt;...)))
+  (&lt;name&gt; &lt;argument&gt;...))
+</pre>
+</li>
+
+<li>For informal syntaxes 4 and 5:
+
+<p>
+<pre>
+($letrec ((&lt;name&gt; ($lambda (&lt;parameter&gt;...
+   
+. &lt;rest-parameter&gt;) &lt;body&gt;...))) 
+  (&lt;name&gt; &lt;argument&gt;... &lt;rest-argument&gt;...))
+</pre>
+</li>
+</ul>
+
+<H1>Implementation</H1>
+
+Here is an implementation using <code>SYNTAX-RULES</code>.
+
+<p>
+<pre>
+;; Use your own standard let.
+;; Or call a lambda.
+;; (define-syntax standard-let
+;;
+;;   (syntax-rules ()
+;;
+;;     ((let ((var val) ...) body ...)
+;;      ((lambda (var ...) body ...) val ...))))
+
+(define-syntax let
+
+  (syntax-rules ()
+
+    ;; No bindings: use standard-let.
+    ((let () body ...)
+     (standard-let () body ...))
+    ;; Or call a lambda.
+    ;; ((lambda () body ...))
+
+    ;; All standard bindings: use standard-let.
+    ((let ((var val) ...) body ...)
+     (standard-let ((var val) ...) body ...))
+    ;; Or call a lambda.
+    ;; ((lambda (var ...) body ...) val ...)
+
+    ;; One standard binding: loop.
+    ;; The all-standard-bindings clause didn't match,
+    ;; so there must be a rest binding.
+    ((let ((var val) . bindings) body ...)
+     (let-loop #f bindings (var) (val) (body ...)))
+
+    ;; Signature-style name: loop.
+    ((let (name binding ...) body ...)
+     (let-loop name (binding ...) () () (body ...)))
+
+    ;; defun-style name: loop.
+    ((let name bindings body ...)
+     (let-loop name bindings () () (body ...)))))
+
+(define-syntax let-loop
+
+  (syntax-rules ()
+
+    ;; Standard binding: destructure and loop.
+    ((let-loop name ((var0 val0) binding ...) (var ...     ) (val ...     ) body)
+     (let-loop name (            binding ...) (var ... var0) (val ... val0) body))
+
+    ;; Rest binding, no name: use standard-let, listing the rest values.
+    ;; Because of let's first clause, there is no "no bindings, no name" clause.
+    ((let-loop #f (rest-var rest-val ...) (var ...) (val ...) body)
+     (standard-let ((var val) ... (rest-var (list rest-val ...))) . body))
+    ;; Or call a lambda with a rest parameter on all values.
+    ;; ((lambda (var ... . rest-var) . body) val ... rest-val ...))
+    ;; Or use one of several other reasonable alternatives.
+
+    ;; No bindings, name: call a letrec'ed lambda.
+    ((let-loop name () (var ...) (val ...) body)
+     ((letrec ((name (lambda (var ...) . body)))
+        name)
+      val ...))
+
+    ;; Rest binding, name: call a letrec'ed lambda.
+    ((let-loop name (rest-var rest-val ...) (var ...) (val ...) body)
+     ((letrec ((name (lambda (var ... . rest-var) . body)))
+        name)
+      val ... rest-val ...))))
+</pre>
+
+
+<H1>Copyright</H1>
+
+Copyright (C) Andy Gaynor (1999). All Rights Reserved.
+<p>This document and translations of it may be copied and furnished to
+others, and derivative works that comment on or otherwise explain it or
+assist in its implementation may be prepared, copied, published and distributed,
+in whole or in part, without restriction of any kind, provided that the
+above copyright notice and this paragraph are included on all such copies
+and derivative works. However, this document itself may not be modified
+in any way, such as by removing the copyright notice or references to the
+Scheme Request For Implementation process or editors, except as needed
+for the purpose of developing SRFIs in which case the procedures for copyrights
+defined in the SRFI process must be followed, or as required to translate
+it into languages other than English.
+<p>The limited permissions granted above are perpetual and will not be
+revoked by the authors or their successors or assigns.
+<p>This document and the information contained herein is provided on an
+"AS IS" basis and THE AUTHOR AND THE SRFI EDITORS DISCLAIM ALL WARRANTIES,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE
+USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+
+</body>
+</html>

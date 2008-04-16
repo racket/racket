@@ -1,0 +1,652 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html><head><title>SRFI 54: Formatting</title></head><body>
+
+<h1>Title</h1>
+
+Formatting
+
+<h1>Author</h1>
+
+Joo ChurlSoo
+
+<h1>Status</h1>
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+You can access the discussion via <a href="http://srfi.schemers.org/srfi-54/mail-archive/maillist.html">the archive of the mailing list</a>.
+<p></p><ul>
+
+<li>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.1">2004/03/28</a></li>
+<li>Draft: 2004/03/22-2004/06/22</li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.3">2004/04/07</a></li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.4">2004/04/12</a></li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.6">2004/04/20</a></li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.7">2004/04/29</a></li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.txt?rev=1.8">2004/05/27</a></li>
+<li>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.html?rev=1.9">2004/06/09</a></li>
+<li>Reference implementation fix: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-54/srfi-54.html?rev=1.10">2006/01/20</a></li>
+<li>Final: 2004/06/24</li>
+</ul>
+
+<h1>Abstract</h1>
+
+
+<p>This SRFI introduces the CAT procedure that converts any object to a string.
+It takes one object as the first argument and accepts a variable number of
+optional arguments, unlike the procedure called FORMAT.</p>
+
+
+<h1>Rationale</h1>
+
+
+<p>It is difficult to gain a complete consensus for the design of a generic
+formatting procedure that performs a variety of necessary functions in
+addition to essential functions provided in C's PRINTF and Common lisp's
+FORMAT.  One of such ways would be to devise a free (and/or floating) sequence
+method that easily handles optional arguments, in contrast to the conventional
+fixed sequence method, in order to obtain a handy optional and functional
+interface.  With the concept of free sequencing, the CAT procedure is then
+defined, not to process optional arguments with default values, but to process
+default values with optional arguments.</p>
+
+<h1>Issues</h1>
+
+
+<p>In converting a number to a string, it has not been tried to uniformly express
+the exactness of a number.  The CAT procedure makes it possible for the user
+to prefix an exact sign to the resulting string as well as not to prefix it to
+the resulting string as conventionally used when an exact number is made to
+have a decimal point.  An inexact sign is prefixed to the resulting string in
+addition to an radix sign when an inexact number is converted to a
+non-decimal.</p>
+
+<h1>Specification</h1>
+
+<dl>
+<dt>
+<code>
+(CAT &lt;object&gt; [&lt;exactness%&gt;] [&lt;radix%&gt;] [&lt;sign%&gt;] [&lt;precision%&gt;] [&lt;separator%&gt;]
+	      [&lt;writer$&gt;] [&lt;pipe$&gt;] [&lt;take$&gt;]
+	      [&lt;converter*&gt;] [&lt;width*&gt;] [&lt;char*&gt;] [&lt;port*&gt;] [&lt;string*&gt;] ...)
+</code></dt>
+<dd>&lt;suffix%&gt;: effective only for the number type of &lt;object&gt;.<br>
+    &lt;suffix$&gt;: effective for all types except the number type of &lt;object&gt;.<br>
+    &lt;suffix*&gt;: effective for all types of &lt;object&gt;.</dd>
+<dd>&lt;object&gt; is any Scheme object.</dd>
+<dd>&lt;exactness&gt; is a symbol: exact or inexact.</dd>
+<dd>&lt;radix&gt; is a symbol: binary, octal, decimal, or hexadecimal.<br>
+    Each radix sign except decimal is prefixed to the resulting string.<br>
+    The default value is decimal.</dd>
+<dd>If &lt;sign&gt; is a symbol that takes the form of 'sign, and
+&lt;object&gt; is a positive number without a positive sign, the
+positive sign is prefixed to the resulting string.</dd>
+<dd>&lt;precision&gt; is an inexact integer whose absolute value
+specifies the number of decimal digits after a decimal point. If
+&lt;precision&gt; is a non-negative integer, an exact sign is prefixed
+to the resulting string as needed.</dd>
+<dd>&lt;separator&gt; is a list whose first element is a character
+serving as a separator and second element is a positive exact integer.
+If the integer is n, the resulting string is separated in every
+n-characters of the resulting string. When the integer is omitted, the
+default value is 3.</dd>
+<dd>&lt;writer&gt; is a procedure of two arguments; &lt;object&gt; and
+a string port. It writes &lt;object&gt; to the string port. The default
+value of &lt;writer&gt; is varied according to the type of
+&lt;object&gt;. When &lt;object&gt; is a self-evaluating constant, it
+becomes equivalent to DISPLAY procedure, otherwise, it becomes WRITE
+procedure. If you want any objects to be displayed in your own way, you
+have to define your own &lt;writer&gt;. Otherwise, they are displayed
+simply in their evaluated forms.</dd>
+<dd>&lt;pipe&gt; is a list which is composed of one or more procedures.
+Each procedure takes at least one string argument and returns a string.
+One procedure connects with another as a pipe.</dd>
+<dd>&lt;take&gt; is a list whose elements are two exact integers; n and
+m, and the absolute values of n and m are N and M, respectively. First,
+the resulting string takes from the left n-characters, if it is
+non-negative, or all the characters but N-characters, if negative.
+Second, it takes from the right m-characters, if it is non-negative, or
+all the characters but M-characters, if negative. Then, it concatenates
+two set of characters taken. The second element can be omitted. If
+omitted, the default value is 0.</dd>
+<dd>&lt;converter&gt; is a pair whose car value is a predicate
+procedure that checks whether &lt;object&gt; satisfies it, and cdr
+value is a procedure that takes the &lt;object&gt; as an argument and
+returns a string. When &lt;object&gt; satisfies the predicate
+procedure, all optional arguments are ineffective except &lt;width&gt;,
+&lt;char&gt;, &lt;port&gt;, and &lt;string&gt;.</dd>
+<dd>&lt;width&gt; is an exact integer whose absolute value specifies
+the width of the resulting string. When the resulting string has fewer
+characters than the absolute value of &lt;width&gt;, it is placed
+rightmost with the rest being padded with &lt;char&gt;s, if
+&lt;width&gt; is positive, or it is placed leftmost with the rest being
+padded with &lt;char&gt;s, if &lt;width&gt; is negative. On the other
+hand, when the resulting string has more characters than the absolute
+value of &lt;width&gt;, the &lt;width&gt; is ignored. The default value
+is 0.</dd>
+<dd>&lt;char&gt; is a padding character.  The default value is #\space.</dd>
+<dd>&lt;port&gt; is an output port or a boolean. If an output port is
+specified, the resulting string and &lt;string&gt;s are output into
+that port and simultaneously returned as a string. If &lt;port&gt; is
+#t, the output port is current output port. If &lt;port&gt; is #f, the
+output is only returned as a string. The default value is #f.</dd>
+<dd>&lt;string&gt; is a string that is appended to the resulting string.</dd>
+</dl>
+
+<p>The order of all optional arguments does not matter.  The CAT procedure
+processes optional arguments in the following order; &lt;exactness&gt;, &lt;radix&gt;,
+&lt;precision&gt;, &lt;separator&gt;, &lt;sign&gt; for the number type of &lt;object&gt;, or in the
+following order; &lt;writer&gt;, &lt;pipe&gt;, &lt;take&gt; for all other types.</p>
+
+<h2>Examples</h2>
+
+<blockquote><pre><code>(cat 129.995 -10 2.) =&gt; "130.00    "</code></pre></blockquote>
+<blockquote><pre><code>(cat 129.995 10 2.) =&gt; "    130.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129.985 10 2.) =&gt; "    129.98"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129.985001 10 2.) =&gt; "    129.99"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129.995 2. 'exact) =&gt; "#e130.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129 -2.) =&gt; "129.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129 2.) =&gt; "#e129.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129 10 2. #\0 'sign) =&gt; "#e+0129.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129 10 2. #\* 'sign) =&gt; "*#e+129.00"</code></pre></blockquote>
+<blockquote><pre><code>(cat 1/3) =&gt; "1/3"</code></pre></blockquote>
+<blockquote><pre><code>(cat 1/3 10 2.) =&gt; "    #e0.33"</code></pre></blockquote>
+<blockquote><pre><code>(cat 1/3 10 -2.) =&gt; "      0.33"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129.995 10 '(#\, 2)) =&gt; " 1,29.99,5"</code></pre></blockquote>
+<blockquote><pre><code>(cat 129995 10 '(#\,) 'sign) =&gt; "  +129,995"</code></pre></blockquote>
+<blockquote><pre><code>(cat (cat 129.995 0.) '(0 -1)) =&gt; "130"</code></pre></blockquote>
+<blockquote><pre><code>(cat 99.5 10 'sign 'octal) =&gt; "#i#o+307/2"</code></pre></blockquote>
+<blockquote><pre><code>(cat 99.5 10 'sign 'octal 'exact) =&gt; "  #o+307/2"</code></pre></blockquote>
+<blockquote><pre><code>(cat #x123 'octal 'sign) =&gt; "#o+443"</code></pre></blockquote>
+<blockquote><pre><code>(cat #x123 -10 2. 'sign #\*) =&gt; "#e+291.00*"</code></pre></blockquote>
+<blockquote><pre><code>(cat -1.2345e+15+1.2355e-15i 3.) =&gt; "-1.234e15+1.236e-15i"</code></pre></blockquote>
+<blockquote><pre><code>(cat 1.2345e+15 10 3. 'sign) =&gt; " +1.234e15"</code></pre></blockquote>
+<blockquote><pre><code>(cat "string" -10) =&gt; "string    "</code></pre></blockquote>
+<blockquote><pre><code>(cat "string" 10 (list string-upcase)) =&gt; "    STRING"</code></pre></blockquote>
+<blockquote><pre><code>(cat "string" 10 (list string-upcase) '(-2)) =&gt; "      RING"</code></pre></blockquote>
+<blockquote><pre><code>(cat "string" 10 `(,string-titlecase) '(2 3)) =&gt; "     Sting"</code></pre></blockquote>
+<blockquote><pre><code>(cat "string" `(,string-reverse ,string-upcase) =&gt; "GNIRTS"</code></pre></blockquote>
+<blockquote><pre><code>(cat #\a 10) =&gt; "         a"</code></pre></blockquote>
+<blockquote><pre><code>(cat 'symbol 10) =&gt; "    symbol"</code></pre></blockquote>
+<blockquote><pre><code>(cat '#(#\a "str" s)) =&gt; "#(#\\a \"str\" s)"</code></pre></blockquote>
+<blockquote><pre><code>(cat '(#\a "str" s)) =&gt; "(#\\a \"str\" s)"</code></pre></blockquote>
+<blockquote><pre><code>(cat '(#\a "str" s) #t) =&gt; (#\a "str" s)"(#\\a \"str\" s)"</code></pre></blockquote>
+<blockquote><pre><code>(cat '(#\a "str" s) (current-output-port)) =&gt; (#\a "str" s)"(#\\a \"str\" s)"</code></pre></blockquote>
+<blockquote><pre><code>(cat 3 (cat 's) " " (cat "str" write)) =&gt; "3s \"str\""</code></pre></blockquote>
+<blockquote><pre><code>(cat 3 #t (cat 's) " " (cat "str" write)) =&gt; 3s "str""3s \"str\""</code></pre></blockquote>
+<blockquote><pre><code>(cat 3 #t (cat 's #t) " " (cat "str" write)) =&gt; s3s "str""3s \"str\""</code></pre></blockquote>
+<blockquote>
+<pre><code>
+(define-record-type :example
+    (make-example num str)
+    example?
+    (num get-num set-num!)
+    (str get-str set-str!))
+(define ex (make-example 123 "string"))
+(define (record-&gt;string object)
+  (cat (get-num object) "-" (get-str object)))
+(define (record-writer object string-port)
+    (if (example? object)
+	(begin (display (get-num object) string-port)
+	       (display "-" string-port)
+	       (display (get-str object) string-port))
+	((or (and (or (string? object)
+		      (char? object)
+		      (boolean? object))
+		  display)
+	     write) object string-port)))
+ex =&gt; '#{:example}
+(cat ex) =&gt; "#{:example}"
+(cat ex 20 record-writer) =&gt; "          123-string"
+(cat ex 20 record-writer
+     `(,(cut string-delete char-set:digit &lt;&gt;)
+       ,string-upcase ,string-reverse)
+     '(0 -1) #\-) =&gt; "--------------GNIRTS"
+(cat "string" 20 record-writer
+     (list string-upcase) '(2 3) #\-) =&gt; "---------------STING"
+(cat 12 20 record-writer 3.) =&gt; "            #e12.000"
+(cat ex 20 (cons example? record-&gt;string)) =&gt; "          123-string"
+(cat ex 20 (cons example? record-&gt;string)
+     `(,(cut string-delete char-set:digit &lt;&gt;)
+       ,string-upcase ,string-reverse)
+     '(0 -1) #\-) =&gt; "----------123-string"
+(cat "string" 20 (cons example? record-&gt;string)
+     (list string-upcase) '(2 3) #\-) =&gt; "---------------STING"
+(cat 12 20 (cons example? record-&gt;string) -3.) =&gt; "              12.000"
+</code>
+</pre>
+</blockquote>
+
+
+<h1>Implementation</h1>
+
+<p>
+</p><p>The implementation below requires <a href="http://srfi.schemers.org/srfi-6/">SRFI 6</a>
+(Basic string ports) and <a href="http://srfi.schemers.org/srfi-23/">SRFI 23</a> (Error
+reporting mechanism).
+    </p>
+
+<pre><code>
+(define (cat object . rest)
+  (let* ((str-rest (part string? rest))
+	 (str-list (car str-rest))
+	 (rest-list (cdr str-rest)))
+    (if (null? rest-list)
+	(apply string-append
+	       (cond
+		((number? object) (number-&gt;string object))
+		((string? object) object)
+		((char? object) (string object))
+		((boolean? object) (if object "#t" "#f"))
+		((symbol? object) (symbol-&gt;string object))
+		(else
+		 (get-output-string
+		  (let ((str-port (open-output-string)))
+		    (write object str-port)
+		    str-port))))
+	       str-list)
+	(alet-cat* rest-list
+	  ((width 0 (and (integer? width) (exact? width)))
+	   (port #f (or (boolean? port) (output-port? port))
+		 (if (eq? port #t) (current-output-port) port))
+	   (char #\space (char? char))
+	   (converter #f (and (pair? converter)
+			      (procedure? (car converter))
+			      (procedure? (cdr converter))))
+	   (precision #f (and (integer? precision)
+			      (inexact? precision)))
+	   (sign #f (eq? 'sign sign))
+	   (radix 'decimal
+		  (memq radix '(decimal octal binary hexadecimal)))
+	   (exactness #f (memq exactness '(exact inexact)))
+	   (separator #f (and (list? separator)
+			      (&lt; 0 (length separator) 3)
+			      (char? (car separator))
+			      (or (null? (cdr separator))
+				  (let ((n (cadr separator)))
+				    (and (integer? n) (exact? n)
+					 (&lt; 0 n))))))
+	   (writer #f (procedure? writer))
+	   (pipe #f (and (list? pipe)
+			 (not (null? pipe))
+			 (every? procedure? pipe)))
+	   (take #f (and (list? take)
+			 (&lt; 0 (length take) 3)
+			 (every? (lambda (x)
+				   (and (integer? x) (exact? x)))
+				 take))))
+	  (let* ((str
+		  (cond
+		   ((and converter
+			 ((car converter) object))
+		    (let* ((str ((cdr converter) object))
+			   (pad (- (abs width) (string-length str))))
+		      (cond
+		       ((&lt;= pad 0) str)
+		       ((&lt; 0 width) (string-append (make-string pad char) str))
+		       (else (string-append str (make-string pad char))))))
+		   ((number? object)
+		    (and (not (eq? radix 'decimal)) precision
+			 (error "cat: non-decimal cannot have a decimal point"))
+		    (and precision (&lt; precision 0) (eq? exactness 'exact)
+			 (error "cat: exact number cannot have a decimal point without exact sign"))
+		    (let* ((exact-sign (and precision
+					    (&lt;= 0 precision)
+					    (or (eq? exactness 'exact)
+						(and (exact? object)
+						     (not (eq? exactness
+							       'inexact))))
+					    "#e"))
+			   (inexact-sign (and (not (eq? radix 'decimal))
+					      (or (and (inexact? object)
+						       (not (eq? exactness
+								 'exact)))
+						  (eq? exactness 'inexact))
+					      "#i"))
+			   (radix-sign (cdr (assq radix
+						  '((decimal . #f)
+						    (octal . "#o")
+						    (binary . "#b")
+						    (hexadecimal . "#x")))))
+			   (plus-sign (and sign (&lt; 0 (real-part object)) "+"))
+			   (exactness-sign (or exact-sign inexact-sign))
+			   (str
+			    (if precision
+				(let ((precision (inexact-&gt;exact
+						  (abs precision)))
+				      (imag (imag-part object)))
+				  (if (= 0 imag)
+				      (e-mold object precision)
+				      (string-append
+				       (e-mold (real-part object) precision)
+				       (if (&lt; 0 imag) "+" "")
+				       (e-mold imag precision)
+				       "i")))
+				(number-&gt;string
+				 (cond
+				  (inexact-sign (inexact-&gt;exact object))
+				  (exactness
+				   (if (eq? exactness 'exact)
+				       (inexact-&gt;exact object)
+				       (exact-&gt;inexact object)))
+				  (else object))
+				 (cdr (assq radix '((decimal . 10)
+						    (octal . 8)
+						    (binary . 2)
+						    (hexadecimal . 16)))))))
+			   (str
+			    (if (and separator
+				     (not (or (and (eq? radix 'decimal)
+						   (str-index str #\e))
+					      (str-index str #\i)
+					      (str-index str #\/))))
+				(let ((sep (string (car separator)))
+				      (num (if (null? (cdr separator))
+					       3 (cadr separator)))
+				      (dot-index (str-index str #\.)))
+				  (if dot-index
+				      (string-append
+				       (separate (substring str 0 dot-index)
+						 sep num (if (&lt; object 0)
+							     'minus #t))
+				       "."
+				       (separate (substring
+						  str (+ 1 dot-index)
+						  (string-length str))
+						 sep num #f))
+				      (separate str sep num (if (&lt; object 0)
+								'minus #t))))
+				str))
+			   (pad (- (abs width)
+				   (+ (string-length str)
+				      (if exactness-sign 2 0)
+				      (if radix-sign 2 0)
+				      (if plus-sign 1 0))))
+			   (pad (if (&lt; 0 pad) pad 0)))
+		      (if (&lt; 0 width)
+			  (if (char-numeric? char)
+			      (if (&lt; (real-part object) 0)
+				  (string-append (or exactness-sign "")
+						 (or radix-sign "")
+						 "-"
+						 (make-string pad char)
+						 (substring str 1
+							    (string-length
+							     str)))
+				  (string-append (or exactness-sign "")
+						 (or radix-sign "")
+						 (or plus-sign "")
+						 (make-string pad char)
+						 str))
+			      (string-append (make-string pad char)
+					     (or exactness-sign "")
+					     (or radix-sign "")
+					     (or plus-sign "")
+					     str))
+			  (string-append (or exactness-sign "")
+					 (or radix-sign "")
+					 (or plus-sign "")
+					 str
+					 (make-string pad char)))))
+		   (else
+		    (let* ((str (cond
+				 (writer (get-output-string
+					  (let ((str-port
+						 (open-output-string)))
+					    (writer object str-port)
+					    str-port)))
+				 ((string? object) object)
+				 ((char? object) (string object))
+				 ((boolean? object) (if object "#t" "#f"))
+				 ((symbol? object) (symbol-&gt;string object))
+				 (else (get-output-string
+					(let ((str-port (open-output-string)))
+					  (write object str-port)
+					  str-port)))))
+			   (str (if pipe
+				    (let loop ((str ((car pipe) str))
+					       (fns (cdr pipe)))
+				      (if (null? fns)
+					  str
+					  (loop ((car fns) str)
+						(cdr fns))))
+				    str))
+			   (str
+			    (if take
+				(let ((left (car take))
+				      (right (if (null? (cdr take))
+						 0 (cadr take)))
+				      (len (string-length str)))
+				  (define (substr str beg end)
+				    (let ((end (cond
+						((&lt; end 0) 0)
+						((&lt; len end) len)
+						(else end)))
+					  (beg (cond
+						((&lt; beg 0) 0)
+						((&lt; len beg) len)
+						(else beg))))
+				      (if (and (= beg 0) (= end len))
+					  str
+					  (substring str beg end))))
+				  (string-append
+				   (if (&lt; left 0)
+				       (substr str (abs left) len)
+				       (substr str 0 left))
+				   (if (&lt; right 0)
+				       (substr str 0 (+ len right))
+				       (substr str (- len right) len))))
+				str))
+			   (pad (- (abs width) (string-length str))))
+		      (cond
+		       ((&lt;= pad 0) str)
+		       ((&lt; 0 width) (string-append (make-string pad char) str))
+		       (else (string-append str (make-string pad char))))))))
+		 (str (apply string-append str str-list)))
+	    (and port (display str port))
+	    str)))))
+
+(define-syntax alet-cat*		; borrowed from SRFI-86
+  (syntax-rules ()
+    ((alet-cat* z (a . e) bd ...)
+     (let ((y z))
+       (%alet-cat* y (a . e) bd ...)))))
+
+(define-syntax %alet-cat*		; borrowed from SRFI-86
+  (syntax-rules ()
+    ((%alet-cat* z ((n d t ...)) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (if (null? (cdr z))
+		      (wow-cat-end z n t ...)
+		      (error "cat: too many arguments" (cdr z))))))
+       bd ...))
+    ((%alet-cat* z ((n d t ...) . e) bd ...)
+     (let ((n (if (null? z)
+		  d
+		  (wow-cat! z n d t ...))))
+       (%alet-cat* z e bd ...)))
+    ((%alet-cat* z e bd ...)
+     (let ((e z)) bd ...))))
+
+(define-syntax wow-cat!			; borrowed from SRFI-86
+  (syntax-rules ()
+    ((wow-cat! z n d)
+     (let ((n (car z)))
+       (set! z (cdr z))
+       n))
+    ((wow-cat! z n d t)
+     (let ((n (car z)))
+       (if t
+	   (begin (set! z (cdr z)) n)
+	   (let lp ((head (list n)) (tail (cdr z)))
+	     (if (null? tail)
+		 d
+		 (let ((n (car tail)))
+		   (if t
+		       (begin (set! z (append (reverse head) (cdr tail))) n)
+		       (lp (cons n head) (cdr tail)))))))))
+    ((wow-cat! z n d t ts)
+     (let ((n (car z)))
+       (if t
+	   (begin (set! z (cdr z)) ts)
+	   (let lp ((head (list n)) (tail (cdr z)))
+	     (if (null? tail)
+		 d
+		 (let ((n (car tail)))
+		   (if t
+		       (begin (set! z (append (reverse head) (cdr tail))) ts)
+		       (lp (cons n head) (cdr tail)))))))))
+    ((wow-cat! z n d t ts fs)
+     (let ((n (car z)))
+       (if t
+	   (begin (set! z (cdr z)) ts)
+	   (begin (set! z (cdr z)) fs))))))
+
+(define-syntax wow-cat-end		; borrowed from SRFI-86
+  (syntax-rules ()
+    ((wow-cat-end z n)
+     (car z))
+    ((wow-cat-end z n t)
+     (let ((n (car z)))
+       (if t n (error "cat: too many argument" z))))
+    ((wow-cat-end z n t ts)
+     (let ((n (car z)))
+       (if t ts (error "cat: too many argument" z))))
+    ((wow-cat-end z n t ts fs)
+     (let ((n (car z)))
+       (if t ts fs)))))
+
+(define (str-index str char)
+  (let ((len (string-length str)))
+    (let lp ((n 0))
+      (and (&lt; n len)
+	   (if (char=? char (string-ref str n))
+	       n
+	       (lp (+ n 1)))))))
+
+(define (every? pred ls)
+  (let lp ((ls ls))
+    (or (null? ls)
+	(and (pred (car ls))
+	     (lp (cdr ls))))))
+
+(define (part pred ls)
+  (let lp ((ls ls) (true '()) (false '()))
+    (cond
+     ((null? ls) (cons (reverse true) (reverse false)))
+     ((pred (car ls)) (lp (cdr ls) (cons (car ls) true) false))
+     (else (lp (cdr ls) true (cons (car ls) false))))))
+
+(define (e-mold num pre)
+  (let* ((str (number-&gt;string (exact-&gt;inexact num)))
+	 (e-index (str-index str #\e)))
+    (if e-index
+	(string-append (mold (substring str 0 e-index) pre)
+		       (substring str e-index (string-length str)))
+	(mold str pre))))
+
+(define (mold str pre)
+  (let ((ind (str-index str #\.)))
+    (if ind
+	(let ((d-len (- (string-length str) (+ ind 1))))
+	  (cond
+	   ((= d-len pre) str)
+	   ((&lt; d-len pre) (string-append str (make-string (- pre d-len) #\0)))
+	   ;;((char&lt;? #\4 (string-ref str (+ 1 ind pre)))
+	   ;;(let ((com (expt 10 pre)))
+	   ;;  (number-&gt;string (/ (round (* (string-&gt;number str) com)) com))))
+	   ((or (char&lt;? #\5 (string-ref str (+ 1 ind pre)))
+		(and (char=? #\5 (string-ref str (+ 1 ind pre)))
+		     (or (&lt; (+ 1 pre) d-len)
+			 (memv (string-ref str (+ ind (if (= 0 pre) -1 pre)))
+			       '(#\1 #\3 #\5 #\7 #\9)))))
+	    (apply
+	     string
+	     (let* ((minus (char=? #\- (string-ref str 0)))
+		    (str (substring str (if minus 1 0) (+ 1 ind pre)))
+		    (char-list
+		     (reverse
+		      (let lp ((index (- (string-length str) 1))
+			       (raise #t))
+			(if (= -1 index)
+			    (if raise '(#\1) '())
+			    (let ((chr (string-ref str index)))
+			      (if (char=? #\. chr)
+				  (cons chr (lp (- index 1) raise))
+				  (if raise
+				      (if (char=? #\9 chr)
+					  (cons #\0 (lp (- index 1) raise))
+					  (cons (integer-&gt;char
+						 (+ 1 (char-&gt;integer chr)))
+						(lp (- index 1) #f)))
+				      (cons chr (lp (- index 1) raise))))))))))
+	       (if minus (cons #\- char-list) char-list))))
+	   (else
+	    (substring str 0 (+ 1 ind pre)))))
+	(string-append str "." (make-string pre #\0)))))
+
+(define (separate str sep num opt)
+  (let* ((len (string-length str))
+	 (pos (if opt
+		  (let ((pos (remainder (if (eq? opt 'minus) (- len 1) len)
+					num)))
+		    (if (= 0 pos) num pos))
+		  num)))
+    (apply string-append
+	   (let loop ((ini 0)
+		      (pos (if (eq? opt 'minus) (+ pos 1) pos)))
+	     (if (&lt; pos len)
+		 (cons (substring str ini pos)
+		       (cons sep (loop pos (+ pos num))))
+		 (list (substring str ini len)))))))
+
+;;; eof
+</code>
+</pre>
+
+
+<h1>Acknowledgment</h1>
+
+
+<p>I owe much to those who incite me to make this SRFI better.  And I
+must thank Michael Sperber for his encouragement and guidance during
+the draft period of <a href="http://srfi.schemers.org/srfi-51/">SRFI 51</a>, as the important part of this SRFI is
+based on SRFI 51.  Without him, neither SRFI 51 nor SRFI 54 would have
+been finilized.  Again, I greatly appreciate his kindness and effort.
+Finally, I deeply apologize to Francisco Solsona for bringing disgrace
+upon him against my will early in the draft period.</p>
+
+
+<h1>Copyright</h1>
+
+<p>Copyright (C) Joo ChurlSoo (2004). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi%20minus%20editors%20at%20srfi%20dot%20schemers%20dot%20org">Francisco Solsona</a></address>
+<!-- Created: Mon Feb  3 14:53:23 MET 2003 -->
+<!-- hhmts start -->
+Last modified: Sun Jan 28 13:40:19 MET 2007
+<!-- hhmts end -->
+  
+</body></html>

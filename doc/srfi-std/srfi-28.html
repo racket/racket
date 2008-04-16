@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org">
+    <title>SRFI 28: Basic Format Strings</title>
+    <meta name="author" content="Scott G. Miller">
+    <meta name="description" content="Basic Format Strings">
+  </head>
+
+  <body>
+
+    <H1>Title</H1>
+
+    SRFI 28: Basic Format Strings 
+
+    <H1>Author</H1>
+
+    Scott G. Miller 
+
+    <H1>Status</H1>
+
+    This SRFI is currently in ``final'' status. To see an explanation of each status that a SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.
+
+    You can access the discussion on this SRFI via <a href="http://srfi.schemers.org/srfi-28/mail-archive/maillist.html">the archive of the mailing list</a>.
+
+    <ul>
+      <li>Draft: 2002/03/23-2002/05/23</li>
+      <li>Final: 2002/06/25
+    </ul>
+
+    <H1>Abstract</H1>
+
+    This document specifies Format Strings, a method of
+    interpreting a Scheme string which contains a number of escape
+    sequences that are replaced with other string data according to
+    the semantics of each sequence. 
+
+    <H1>Rationale</H1>
+
+    Many Scheme systems provide access to a function called <tt>
+    format.</tt> This function takes as arguments a format string,
+    an ordinary Scheme string containing zero or more escape
+    sequences, followed zero or more Scheme values. The procedure
+    processes the format string and performs string replacement on
+    the escape sequences according to the rules for each code. This
+    SRFI defines a basic version of <tt>format</tt> which should
+    allow portable code to be written using the function without
+    much (if any) effort on the part of Scheme implementors. 
+
+    <H1>Specification</H1>
+
+    <b><a name="format"></a><tt>format</tt></b> <tt><i>format-string [obj ...] -&gt;
+    string</i></tt> 
+
+    <blockquote>
+      <p>Accepts a message template (a Scheme String), and
+      processes it, replacing any escape sequences in order with
+      one or more characters, the characters themselves dependent
+      on the semantics of the escape sequence encountered.</p>
+
+      <p>An escape sequence is a two character sequence in the
+      string where the first character is a tilde '~'. Each escape
+      code's meaning is as follows:</p>
+
+      <ul>
+        <li><tt>~a</tt> The corresponding value is inserted into
+        the string as if printed with <tt>display</tt>.</li>
+
+        <li><tt>~s</tt> The corresponding value is inserted into
+        the string as if printed with <tt>write</tt>.</li>
+
+        <li><tt>~%</tt> A newline is inserted.</li>
+
+        <li><tt>~~</tt> A tilde '~' is inserted.</li>
+      </ul>
+
+      <p><tt>~a</tt> and <tt>~s</tt>, when encountered, require a
+      corresponding Scheme value to be present after the format
+      string. The values provided as operands are used by the
+      escape sequences in order. It is an error if fewer values are
+      provided than escape sequences that require them.</p>
+
+      <p><tt>~%</tt> and <tt>~~</tt> require no corresponding
+      value.</p>
+    </blockquote>
+
+    <h2>Examples</h2>
+<pre>
+(format "Hello, ~a" "World!")
+; =&gt; "Hello, World!"
+
+(format "Error, list is too short: ~s~%" '(one "two" 3))
+; =&gt; "Error, list is too short: (one \"two\" 3))"
+</pre>
+
+    <H1>Implementation</H1>
+
+    The implementation below requires SRFI-6 (Basic string ports)
+    and SRFI-23 (Error reporting mechanism). <br>
+     
+<pre>
+(define format
+  (lambda (format-string . objects)
+    (let ((buffer (open-output-string)))
+      (let loop ((format-list (string-&gt;list format-string))
+                 (objects objects))
+        (cond ((null? format-list) (get-output-string buffer))
+              ((char=? (car format-list) #\~)
+               (if (null? (cdr format-list))
+                   (error 'format "Incomplete escape sequence")
+                   (case (cadr format-list)
+                     ((#\a)
+                      (if (null? objects)
+                          (error 'format "No value for escape sequence")
+                          (begin
+                            (display (car objects) buffer)
+                            (loop (cddr format-list) (cdr objects)))))
+	             ((#\s)
+                      (if (null? objects)
+                          (error 'format "No value for escape sequence")
+                          (begin
+                            (write (car objects) buffer)
+                            (loop (cddr format-list) (cdr objects)))))
+                     ((#\%)
+                      (newline buffer)
+                      (loop (cddr format-list) objects))
+                     ((#\~)
+                      (write-char #\~ buffer)
+                      (loop (cddr format-list) objects))
+                     (else
+                      (error 'format "Unrecognized escape sequence")))))
+              (else (write-char (car format-list) buffer)
+                    (loop (cdr format-list) objects)))))))
+    
+</pre>
+
+    <H1>Copyright</H1>
+
+    <p>Copyright (C) Scott G. Miller (2002). All Rights Reserved.</p>
+
+    <p>
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation
+    files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use, copy,
+    modify, merge, publish, distribute, sublicense, and/or sell copies
+    of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    </p>
+    <p>
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+    </p>
+    <p>
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+    </p>
+    <hr>
+
+    <address>
+      Editor: <a href="mailto:srfi-editors@srfi.schemers.org">
+      Francisco Solsona</a>
+    </address>
+
+    <address>
+      Author: <a href="mailto:scgmille@freenetproject.org">Scott G.
+      Miller</a>
+    </address>
+    <!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+    <!-- Revised: Friday, March 22, 2002  19:20 PST  -->
+    <!-- hhmts start -->Last modified: Mon Apr 8 06:54:37 CDT 2002 
+    <!-- hhmts end -->
+  </body>
+</html>
+

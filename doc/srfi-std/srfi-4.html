@@ -1,0 +1,368 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 4: Homogeneous numeric vector datatypes</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI-4: Homogeneous numeric vector datatypes
+
+<H1>Author</H1>
+
+Marc Feeley
+
+<H1>Status</H1>
+This SRFI is currently in ``final'' status.  To see an explanation of
+each status that a SRFI can hold, see <A
+HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access previous messages via <A
+HREF="http://srfi.schemers.org/srfi-4/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1998/1/11
+<LI>Draft: 1999/1/19-1999/03/19
+<LI>Revised: 1999/04/26
+<LI>Final: 1999/5/22
+</UL>
+
+<H1>Abstract</H1>
+
+This SRFI describes a set of datatypes for vectors whose elements are
+of the same numeric type (signed or unsigned exact integer or inexact
+real of a given precision).  These datatypes support operations
+analogous to the Scheme vector type, but they are distinct datatypes.
+An external representation is specified which must be supported by the
+<code>read</code> and <code>write</code> procedures and by the program
+parser (i.e. programs can contain references to literal homogeneous
+vectors).
+
+<H1>Rationale</H1>
+
+Like lists, Scheme vectors are a heterogeneous datatype which impose
+no restriction on the type of the elements.  This generality is not
+needed for applications where all the elements are of the same type.
+The use of Scheme vectors is not ideal for such applications because,
+in the absence of a compiler with a fancy static analysis, the
+representation will typically use some form of boxing of the elements
+which means low space efficiency and slower access to the elements.
+Moreover, homogeneous vectors are convenient for interfacing with
+low-level libraries (e.g. binary block I/O) and to interface with
+foreign languages which support homogeneous vectors.  Finally, the use
+of homogeneous vectors allows certain errors to be caught earlier.
+
+	<p></p>
+
+This SRFI specifies a set of homogeneous vector datatypes which cover
+the most practical case, that is where the type of the elements is
+numeric (exact integer or inexact real) and the precision and
+representation is efficiently implemented on the hardware of most
+current computer architectures (8, 16, 32 and 64 bit integers, either
+signed or unsigned, and 32 and 64 bit floating point numbers).
+
+<H1>Specification</H1>
+
+There are 8 datatypes of exact integer homogeneous vectors (which will
+be called integer vectors):
+
+<TABLE>
+<TR>
+<TD><TD><STRONG>datatype</STRONG> <TD><STRONG>type of elements</STRONG>
+</TR>
+<TR>
+<TD><TD><code><a name="s8vector">s8vector</a></code> <TD>signed exact integer in the range -(2^7) to (2^7)-1
+</TR>
+<TR>
+<TD><TD><code><a name="u8vector">u8vector</a></code> <TD>unsigned exact integer in the range 0 to (2^8)-1
+</TR>
+<TR>
+<TD><TD><code><a name="s16vector">s16vector</a></code><TD>signed exact integer in the range -(2^15) to (2^15)-1
+</TR>
+<TR>
+<TD><TD><code><a name="u16vector">u16vector</a></code><TD>unsigned exact integer in the range 0 to (2^16)-1
+</TR>
+<TR>
+<TD><TD><code><a name="s32vector">s32vector</a></code><TD>signed exact integer in the range -(2^31) to (2^31)-1
+</TR>
+<TR>
+<TD><TD><code><a name="u32vector">u32vector</a></code><TD>unsigned exact integer in the range 0 to (2^32)-1
+</TR>
+<TR>
+<TD><TD><code><a name="s64vector">s64vector</a></code><TD>signed exact integer in the range -(2^63) to (2^63)-1
+</TR>
+<TR>
+<TD><TD><code><a name="u64vector">u64vector</a></code><TD>unsigned exact integer in the range 0 to (2^64)-1
+</TR>
+</TABLE>
+
+	<p></p>
+
+There are 2 datatypes of inexact real homogeneous vectors (which will
+be called float vectors):
+
+<TABLE>
+<TR>
+<TD><TD><STRONG>datatype</STRONG> <TD><STRONG>type of elements</STRONG>
+</TR>
+<TR>
+<TD><TD><code><a name="f32vector">f32vector</a></code> <TD>inexact real
+</TR>
+<TR>
+<TD><TD><code><a name="f64vector">f64vector</a></code> <TD>inexact real
+</TR>
+</TABLE>
+
+	<p></p>
+
+The only difference between the two float vector types is that
+<code>f64vector</code>s preserve at least as much precision as
+<code>f32vector</code>s (see the implementation section for details).
+
+	<p></p>
+
+A Scheme system that conforms to this SRFI does not have to support
+all of these homogeneous vector datatypes.  However, a Scheme system
+must support <code>f32vector</code>s and <code>f64vector</code>s if it
+supports Scheme inexact reals (of any precision).  A Scheme system
+must support a particular integer vector datatype if the system's
+exact integer datatype contains all the values that can be stored in
+such an integer vector.  Thus a Scheme system with bignum support must
+implement all the integer vector datatypes and a Scheme system may
+only support <code>s8vector</code>s, <code>u8vector</code>s,
+<code>s16vector</code>s and <code>u16vector</code>s if it only
+supports small integers in the range -(2^29) to (2^29)-1 (which would
+be the case if they are represented as 32 bit fixnums with two bits
+for tag).  Note that it is possible to test which numeric datatypes
+the Scheme system supports by calling the
+<code>string-&gt;number</code> procedure (e.g.
+<code>(string-&gt;number "0.0")</code> returns <code>#f</code> if the
+Scheme system does not support inexact reals).
+
+	<p></p>
+
+Each homogeneous vector datatype has an external representation which
+is supported by the <code>read</code> and <code>write</code>
+procedures and by the program parser.  Each datatype also has a set of
+associated predefined procedures analogous to those available for
+Scheme's heterogeneous vectors.
+
+	<p></p>
+
+For each value of <code>TAG</code> in {
+<code>s8</code>, <code>u8</code>,
+<code>s16</code>, <code>u16</code>,
+<code>s32</code>, <code>u32</code>,
+<code>s64</code>, <code>u64</code>,
+<code>f32</code>, <code>f64</code>
+}, if the datatype <code>TAGvector</code> is supported, then
+
+	<p></p>
+
+<OL>
+
+<LI> the external representation of instances of the datatype
+<code>TAGvector</code> is <code>#TAG(</code> ...elements... <code>)</code>.
+
+	<p></p>
+
+For example, <code>#u8(0 #e1e2 #xff)</code> is an
+<code>u8vector</code> of length 3 containing 0, 100 and 255;
+<code>#f64(-1.5)</code> is an <code>f64vector</code> of length 1
+containing -1.5.
+
+	<p></p>
+
+Note that the syntax for float vectors conflicts with Standard Scheme
+which parses <code>#f32()</code> as 3 objects: <code>#f</code>,
+<code>32</code> and <code>()</code>.  For this reason, conformance to
+this SRFI implies this minor nonconformance to Standard Scheme.
+
+	<p></p>
+
+This external representation is also available in program source code.
+For example, <code>(set! x '#u8(1 2 3))</code> will set <code>x</code>
+to the object <code>#u8(1 2 3)</code>.  Literal homogeneous vectors
+must be quoted just like heterogeneous vectors must be.  Homogeneous
+vectors can appear in quasiquotations but must not contain
+<code>unquote</code> or <code>unquote-splicing</code> forms
+(i.e. <code>`(,x #u8(1 2))</code> is legal but <code>`#u8(1 ,x
+2)</code> is not).  This restriction is to accomodate the many Scheme
+systems that use the <code>read</code> procedure to parse programs.
+
+	<p></p>
+
+<LI> the following predefined procedures are available:
+
+<OL>
+<LI> <code>(TAGvector? obj)</code>
+<LI> <code>(make-TAGvector n [ TAGvalue ])</code>
+<LI> <code>(TAGvector TAGvalue...)</code>
+<LI> <code>(TAGvector-length TAGvect)</code>
+<LI> <code>(TAGvector-ref TAGvect i)</code>
+<LI> <code>(TAGvector-set! TAGvect i TAGvalue)</code>
+<LI> <code>(TAGvector-&gt;list TAGvect)</code>
+<LI> <code>(list-&gt;TAGvector TAGlist)</code>
+</OL>
+
+where <code>obj</code> is any Scheme object, <code>n</code> is a
+nonnegative exact integer, <code>i</code> is a nonnegative exact
+integer less than the length of the vector, <code>TAGvect</code> is an
+instance of the <code>TAGvector</code> datatype, <code>TAGvalue</code>
+is a number of the type acceptable for elements of the
+<code>TAGvector</code> datatype, and <code>TAGlist</code> is a proper
+list of numbers of the type acceptable for elements of the
+<code>TAGvector</code> datatype.
+
+	<p></p>
+
+It is an error if <code>TAGvalue</code> is not the same type as the
+elements of the <code>TAGvector</code> datatype (for example if an
+exact integer is passed to <code>f64vector</code>).  If the fill
+value is not specified, the content of the vector is unspecified
+but individual elements of the vector are guaranteed to be in the
+range of values permitted for that type of vector.
+
+</OL>
+
+<H1>Implementation</H1>
+
+The homogeneous vector datatypes described here suggest a concrete
+implementation as a sequence of 8, 16, 32 or 64 bit elements, using
+two's complement representation for the signed exact integers, and
+single and double precision IEEE-754 floating point representation for
+the inexact reals.  Although this is a practical implementation on
+many modern byte adressed machines, a different implementation is
+possible for machines which don't support these concrete numeric types
+(the CRAY-T90 for example does not have a 32 bit floating point
+representation and the 64 bit floating point representation does not
+conform to IEEE-754, so both the <code>f32vector</code> and
+<code>f64vector</code> datatypes could be represented the same way
+with 64 bit floating point numbers).
+
+	<p></p>
+
+A portable implementation of the homogeneous vector predefined
+procedures can be based on Scheme's heterogeneous vectors.
+Here is for example an implementation of <code>s8vector</code>s
+which is exempt of error checking:
+
+<PRE>
+(define s8vector? #f)
+(define make-s8vector #f)
+(define s8vector #f)
+(define s8vector-length #f)
+(define s8vector-ref #f)
+(define s8vector-set! #f)
+(define s8vector-&gt;list #f)
+(define list-&gt;s8vector #f)
+
+(let ((orig-vector? vector?)
+      (orig-make-vector make-vector)
+      (orig-vector vector)
+      (orig-vector-length vector-length)
+      (orig-vector-ref vector-ref)
+      (orig-vector-set! vector-set!)
+      (orig-vector-&gt;list vector-&gt;list)
+      (orig-list-&gt;vector list-&gt;vector)
+      (orig-&gt; &gt;)
+      (orig-eq? eq?)
+      (orig-+ +)
+      (orig-null? null?)
+      (orig-cons cons)
+      (orig-car car)
+      (orig-cdr cdr)
+      (orig-not not)
+      (tag (list 's8)))
+
+  (set! s8vector?
+    (lambda (obj)
+      (and (orig-vector? obj)
+           (orig-&gt; (orig-vector-length obj) 0)
+           (orig-eq? (orig-vector-ref obj 0) tag))))
+
+  (set! make-s8vector
+    (lambda (n . opt-fill)
+      (let ((v (orig-make-vector
+                 (orig-+ n 1)
+                 (if (orig-null? opt-fill) 123 (orig-car opt-fill)))))
+        (orig-vector-set! v 0 tag)
+        v)))
+
+  (set! s8vector
+    (lambda s8list
+      (orig-list-&gt;vector (orig-cons tag s8list))))
+
+  (set! s8vector-length
+    (lambda (s8vect)
+      (orig-+ (orig-vector-length s8vect) -1)))
+
+  (set! s8vector-ref
+    (lambda (s8vect i)
+      (orig-vector-ref s8vect (orig-+ i 1))))
+
+  (set! s8vector-set!
+    (lambda (s8vect i s8value)
+      (orig-vector-set! s8vect (orig-+ i 1) s8value)))
+
+  (set! s8vector-&gt;list
+    (lambda (s8vect)
+      (orig-cdr (orig-vector-&gt;list s8vect))))
+
+  (set! list-&gt;s8vector
+    (lambda (s8list)
+      (orig-list-&gt;vector (orig-cons tag s8list))))
+
+  (set! vector?
+    (lambda (obj)
+      (and (orig-vector? obj)
+           (orig-not (and (orig-&gt; (orig-vector-length obj) 0)
+                          (orig-eq? (orig-vector-ref obj 0) tag)))))))
+</PRE>
+
+	<p></p>
+
+The Scheme system's <code>read</code> and <code>write</code>
+procedures and the program parser also need to be extended to handle
+the homogeneous vector external representations.  The implementation
+is very similar to heterogeneous vectors except that <code>read</code>
+and the program parser must recognize the prefixes <code>#s8</code>,
+<code>#f32</code>, etc.  (this can be done by checking if the sharp
+sign is followed by a character that can start a symbol, and if this
+is the case, parse a symbol and check if it is <code>t</code>,
+<code>f</code>, <code>s8</code>, <code>f32</code>, and so on, and in
+the case of a homogeneous vector prefix, check if the next character
+is an opening parenthesis).
+
+<H1>Copyright</H1>
+Copyright (C) Marc Feeley (1999). All Rights Reserved. 
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+<hr>
+<address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">
+  Shriram Krishnamurthi</a></address>
+
+  </body>
+</html>

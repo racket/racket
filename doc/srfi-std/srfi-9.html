@@ -1,0 +1,403 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+  <head>
+    <title>SRFI 9: Defining Record Types</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 9: Defining Record Types
+
+<H1>Author</H1>
+
+Richard Kelsey
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-9/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/07/01
+<LI>Revised: 1999/08/25
+<LI>Draft: 1999/07/07-1999/09/06
+<LI>Final: 1999/09/09
+</UL>
+
+<H1>Abstract</H1>
+
+This SRFI describes syntax for creating new data types, called record types.
+A predicate, constructor, and field accessors and modifiers are defined for
+each record type.  Each new record type is distinct from all existing types,
+including other record types and Scheme's predefined types.
+
+<H1>Rationale</H1>
+
+Many Scheme implementations provide means for creating new types,
+ usually called either records or structures.
+The <code>DEFINE-RECORD-TYPE</code> syntax described here is a slight
+ simplification of one written for Scheme&#032;48 by Jonathan Rees.
+Unlike many record-defining macros or special forms, it
+ does not create any new identifiers.
+Instead, the names of the
+ record type, predicate, constructor, and so on are all listed explicitly
+ in the source.
+This has the following advantages:
+<UL>
+<LI> It can be defined using a simple <code>SYNTAX-RULES</code> macro
+ in Scheme implementations that provide a procedural interface
+ for creating record types.
+<LI> It does not restrict users to a particular naming convention.
+<LI> Tools like <code>grep</code> and GNU Emacs's tag facility will see the
+ defining occurance of each identifier.
+</UL>
+
+<H1>Specification</H1>
+
+The syntax of a record-type definition is:
+<a name="define-record-type"></a>
+<PRE>
+ &lt;command or definition&gt;           
+   -&gt; &lt;record type definition&gt;           ; addition to 8.1.6 in R5RS
+
+ &lt;record type definition&gt;
+   -&gt; (define-record-type &lt;type name&gt;
+	(&lt;constructor name&gt; &lt;field tag&gt; ...)
+	&lt;predicate name&gt;
+	&lt;field spec&gt; ...)
+
+ &lt;field spec&gt; -&gt; (&lt;field tag&gt; &lt;accessor name&gt;)
+              -&gt; (&lt;field tag&gt; &lt;accessor name&gt; &lt;modifier name&gt;)
+
+ &lt;field tag&gt; -&gt; &lt;identifier&gt;
+ &lt;... name&gt;  -&gt; &lt;identifier&gt;
+</PRE> 
+
+<code>DEFINE-RECORD-TYPE</code> is generative: 
+each use creates a new record type that is distinct from all existing types,
+including other record types and Scheme's predefined types.
+
+Record-type definitions may only occur at top-level (there are two
+possible semantics for `internal' record-type definitions, generative
+and nongenerative, and no consensus as to which is better).
+
+<P>
+An instance of <code>DEFINE-RECORD-TYPE</code> is equivalent to the following
+definitions:
+<UL>
+<LI> <code>&lt;type name&gt;</code> is bound to a representation of the record
+    type itself.  Operations on record types, such as defining print
+    methods, reflection, etc. are left to other SRFIs.
+
+<LI> <code>&lt;constructor name&gt;</code> is bound to a procedure that takes
+    as many arguments as there are <code>&lt;field tag&gt;</code>s in the
+    <code>(&lt;constructor name&gt; ...)</code>
+    subform and returns a new <code>&lt;type name&gt;</code> record.
+    Fields whose tags are listed with <code>&lt;constructor name&gt;</code>
+    have the corresponding argument as their
+    initial value.  The initial values of all other fields are unspecified.
+
+<LI> <code>&lt;predicate name&gt;</code> is a predicate that returns #T when
+    given a value returned by <code>&lt;constructor name&gt;</code> and #F
+    for everything else.
+
+<LI> Each <code>&lt;accessor name&gt;</code> is a procedure that takes a record
+    of type <code>&lt;type name&gt;</code> and returns the current value of the
+    corresponding field.
+    It is an error to pass an accessor a value which is not a record of
+    the appropriate type.
+    
+<LI> Each <code>&lt;modifier name&gt;</code> is a procedure that takes a record
+    of type <code>&lt;type name&gt;</code> and a value which becomes the new
+    value of the corresponding field; an unspecified value is returned.
+    It is an error to pass a modifier a first
+    argument which is not a record of the appropriate type.
+</UL>
+
+<P>
+Records are disjoint from the types listed in Section 4.2 of R5RS.
+
+<P>
+<code>Set!</code>ing the value of any of these identifiers has no
+ effect on the behavior of any of their original values.
+
+<P>
+The following
+<PRE>
+  (define-record-type :pare
+    (kons x y)
+    pare?
+    (x kar set-kar!)
+    (y kdr))
+</PRE>
+defines <code>KONS</code> to be a constructor, <code>KAR</code> and
+<code>KDR</code> to be accessors, <code>SET-KAR!</code> to be a modifier,
+and <code>PARE?</code> to be a predicate for <code>:PARE</code>s.
+
+<PRE>
+  (pare? (kons 1 2))        --&gt; #t
+  (pare? (cons 1 2))        --&gt; #f
+  (kar (kons 1 2))          --&gt; 1
+  (kdr (kons 1 2))          --&gt; 2
+  (let ((k (kons 1 2)))
+    (set-kar! k 3)
+    (kar k))                --&gt; 3
+</PRE>
+
+<H1>Implementation</H1>
+
+This code is divided into three layers.  In top-down order these are:
+<OL>
+<LI> Syntax definitions for <code>DEFINE-RECORD-TYPE</code> and an auxillary
+ macro.
+<LI> An implementation of record types with a procedural interface.
+Some Scheme implementations already have something close to this.
+<LI> Vector-like records implemented in R5RS.  This redefines some standard
+Scheme procedures and therefor must be loaded before any other code, including
+part 2 above.  Note that these procedures can be used to break the
+record-type abstraction (for example, <code>RECORD-SET!</code> can be used
+to modify the type of a record).  Access to these procedures should be
+restricted.
+</OL>
+
+<H2>Syntax definitions</H2>
+
+<PRE>
+; Definition of DEFINE-RECORD-TYPE
+
+(define-syntax define-record-type
+  (syntax-rules ()
+    ((define-record-type type
+       (constructor constructor-tag ...)
+       predicate
+       (field-tag accessor . more) ...)
+     (begin
+       (define type
+         (make-record-type 'type '(field-tag ...)))
+       (define constructor
+         (record-constructor type '(constructor-tag ...)))
+       (define predicate
+         (record-predicate type))
+       (define-record-field type field-tag accessor . more)
+       ...))))
+
+; An auxilliary macro for define field accessors and modifiers.
+; This is needed only because modifiers are optional.
+
+(define-syntax define-record-field
+  (syntax-rules ()
+    ((define-record-field type field-tag accessor)
+     (define accessor (record-accessor type 'field-tag)))
+    ((define-record-field type field-tag accessor modifier)
+     (begin
+       (define accessor (record-accessor type 'field-tag))
+       (define modifier (record-modifier type 'field-tag))))))
+</PRE>
+
+<H2>Record types</H2>
+
+<PRE>
+; We define the following procedures:
+; 
+; (make-record-type &lt;type-name &lt;field-names&gt;)    -> &lt;record-type&gt;
+; (record-constructor &lt;record-type&lt;field-names&gt;) -> &lt;constructor&gt;
+; (record-predicate &lt;record-type&gt;)               -> &lt;predicate&gt;
+; (record-accessor &lt;record-type &lt;field-name&gt;)    -> &lt;accessor&gt;
+; (record-modifier &lt;record-type &lt;field-name&gt;)    -> &lt;modifier&gt;
+;   where
+; (&lt;constructor&gt; &lt;initial-value&gt; ...)         -> &lt;record&gt;
+; (&lt;predicate&gt; &lt;value&gt;)                       -> &lt;boolean&gt;
+; (&lt;accessor&gt; &lt;record&gt;)                       -> &lt;value&gt;
+; (&lt;modifier&gt; &lt;record&gt; &lt;value&gt;)         -> &lt;unspecific&gt;
+
+; Record types are implemented using vector-like records.  The first
+; slot of each record contains the record's type, which is itself a
+; record.
+
+(define (record-type record)
+  (record-ref record 0))
+
+;----------------
+; Record types are themselves records, so we first define the type for
+; them.  Except for problems with circularities, this could be defined as:
+;  (define-record-type :record-type
+;    (make-record-type name field-tags)
+;    record-type?
+;    (name record-type-name)
+;    (field-tags record-type-field-tags))
+; As it is, we need to define everything by hand.
+
+(define :record-type (make-record 3))
+(record-set! :record-type 0 :record-type)	; Its type is itself.
+(record-set! :record-type 1 ':record-type)
+(record-set! :record-type 2 '(name field-tags))
+
+; Now that :record-type exists we can define a procedure for making more
+; record types.
+
+(define (make-record-type name field-tags)
+  (let ((new (make-record 3)))
+    (record-set! new 0 :record-type)
+    (record-set! new 1 name)
+    (record-set! new 2 field-tags)
+    new))
+
+; Accessors for record types.
+
+(define (record-type-name record-type)
+  (record-ref record-type 1))
+
+(define (record-type-field-tags record-type)
+  (record-ref record-type 2))
+
+;----------------
+; A utility for getting the offset of a field within a record.
+
+(define (field-index type tag)
+  (let loop ((i 1) (tags (record-type-field-tags type)))
+    (cond ((null? tags)
+           (error "record type has no such field" type tag))
+          ((eq? tag (car tags))
+           i)
+          (else
+           (loop (+ i 1) (cdr tags))))))
+
+;----------------
+; Now we are ready to define RECORD-CONSTRUCTOR and the rest of the
+; procedures used by the macro expansion of DEFINE-RECORD-TYPE.
+
+(define (record-constructor type tags)
+  (let ((size (length (record-type-field-tags type)))
+        (arg-count (length tags))
+        (indexes (map (lambda (tag)
+                        (field-index type tag))
+                      tags)))
+    (lambda args
+      (if (= (length args)
+             arg-count)
+          (let ((new (make-record (+ size 1))))
+            (record-set! new 0 type)
+            (for-each (lambda (arg i)
+			(record-set! new i arg))
+                      args
+                      indexes)
+            new)
+          (error "wrong number of arguments to constructor" type args)))))
+
+(define (record-predicate type)
+  (lambda (thing)
+    (and (record? thing)
+         (eq? (record-type thing)
+              type))))
+
+(define (record-accessor type tag)
+  (let ((index (field-index type tag)))
+    (lambda (thing)
+      (if (and (record? thing)
+               (eq? (record-type thing)
+                    type))
+          (record-ref thing index)
+          (error "accessor applied to bad value" type tag thing)))))
+
+(define (record-modifier type tag)
+  (let ((index (field-index type tag)))
+    (lambda (thing value)
+      (if (and (record? thing)
+               (eq? (record-type thing)
+                    type))
+          (record-set! thing index value)
+          (error "modifier applied to bad value" type tag thing)))))
+</PRE>
+
+<H2>Records</H2>
+
+<PRE>
+; This implements a record abstraction that is identical to vectors,
+; except that they are not vectors (VECTOR? returns false when given a
+; record and RECORD? returns false when given a vector).  The following
+; procedures are provided:
+;   (record? &lt;value&gt;)                -> &lt;boolean&gt;
+;   (make-record &lt;size&gt;)             -> &lt;record&gt;
+;   (record-ref &lt;record&gt; &lt;index&gt;)    -> &lt;value&gt;
+;   (record-set! &lt;record&gt; &lt;index&gt; &lt;value&gt;) -> &lt;unspecific&gt;
+;
+; These can implemented in R5RS Scheme as vectors with a distinguishing
+; value at index zero, providing VECTOR? is redefined to be a procedure
+; that returns false if its argument contains the distinguishing record
+; value.  EVAL is also redefined to use the new value of VECTOR?.
+
+; Define the marker and redefine VECTOR? and EVAL.
+
+(define record-marker (list 'record-marker))
+
+(define real-vector? vector?)
+
+(define (vector? x)
+  (and (real-vector? x)
+       (or (= 0 (vector-length x))
+	   (not (eq? (vector-ref x 0)
+		record-marker)))))
+
+; This won't work if ENV is the interaction environment and someone has
+; redefined LAMBDA there.
+
+(define eval
+  (let ((real-eval eval))
+    (lambda (exp env)
+      ((real-eval `(lambda (vector?) ,exp))
+       vector?))))
+
+; Definitions of the record procedures.
+
+(define (record? x)
+  (and (real-vector? x)
+       (&lt; 0 (vector-length x))
+       (eq? (vector-ref x 0)
+            record-marker)))
+
+(define (make-record size)
+  (let ((new (make-vector (+ size 1))))
+    (vector-set! new 0 record-marker)
+    new))
+
+(define (record-ref record index)
+  (vector-ref record (+ index 1)))
+
+(define (record-set! record index value)
+  (vector-set! record (+ index 1) value))
+</PRE>
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) Richard Kelsey (1999). All Rights Reserved. </p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+<hr>
+
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+
+  </body>
+</html>

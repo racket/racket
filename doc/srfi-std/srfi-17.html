@@ -1,0 +1,285 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 17:  Generalized set!</title>
+  </head>
+
+<body>
+
+<H1>Title</H1>
+
+SRFI 17: Generalized <code>set!</code>
+
+<H1>Author</H1>
+
+Per Bothner
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-17/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/12/08
+<LI>Draft: 2000/01/16-2000/03/17
+<LI>Revised: 2000/04/28
+<LI>Final: 2000/07/24
+</UL>
+
+<H1>Abstract</H1>
+
+This is a proposal to allow procedure calls that evaluate
+to the "value of a location" to be used to <em>set</em>
+the value of the location, when used as the first
+operand of <code>set!</code>.
+For example:
+<pre>
+(set! (car x) (car y))
+</pre>
+becomes equivalent to
+<pre>
+(set-car! x (car y))
+</pre>
+
+<p>
+      Many programming languages have the concept of an <i>lvalue</i>.
+that is an "expression" that "evaluates" to a location, and
+which can appear on the left-hand-side of an assignment.
+Common Lisp has a related concept of "generalized variables"
+which can be used in <code>setf</code> and some other special forms.
+However, the Common Lisp concept is based on the idea of
+compile-time recognition of special "location-producing" functions;
+this does not seem to be in the "spirit of Scheme".
+<p>
+This SRFI proposes an extension of <code>set!</code>
+so that it provides similar functionality as Common Lisp's <code>setf</code>,
+except that the updater is associated with a procedure value,
+rather than a name.
+
+<H1>Rationale</H1>
+
+There is ample precedent for general "lvalues" on the
+left-hand side of an assignment.  This includes most statically
+typed languages, and many dynamically typed languages (including APL
+and Common Lisp).  That suggests this is a natural idiom for people.
+One reason may be that there are fewer procedure names to learn.
+Another is that it becomes visually clearer which expression is the new value,
+and which are parameters.  Also, the visual consistency between
+an expression evaluated for its value and one evaluated to yield
+a location seems natural to people.
+<p>
+For most languages, the set of lvalue-producing operators is limited
+(typically array indexing and field selection).  Some languages have
+general lvalues as first class values.  For example Algol 68 has
+expressions that have reference type.  However, this is made convenient
+by using automatic dereferencing coercions, which would not work for
+a dynamically typed language like Scheme.  ML goes further:  All
+mutable variables are first-class "cells", and accessing the
+contents of a cell requires an explicit operator.  This is also not
+compatible with Scheme.  Instead we need to stick to the model
+where using a variable in most contexts means using its value,
+but refering to a variable in certain lvalue contexts (lhs of
+assignment) refers to its actual location.  Sticking to this model
+for general "lvalue expressions" in <code>set!</code> means
+that "evaluation" must be done differently from normal
+evaluation when in an "lvalue context".  That is what this proposal does.
+<p>
+This is a controversial issue. This srfi does not wish to imply that
+all Scheme implementations should support this feature; it only
+requests that implementations that <em>do</em> implement
+generalized <code>set!</code> should be compatible with this srfi.
+
+<H1><a name="!set">Specification</a></H1>
+
+The special form <code>set!</code> is extended so the first operand
+can be a procedure application, and not just a variable.
+The procedure is typically one that extracts a component from
+some data structure.  Informally, when the procedure is called
+in the first operand of <code>set!</code>, it causes the corresponding
+component to be <em>replaced</em> by the second operand.
+For example,
+<pre>
+(set (vector-ref x i) v)
+</pre>
+would be equivalent to:
+<pre>
+(vector-set! x i v)
+</pre>
+<p>
+Each procedure that may be used as the first operand to <code>set!</code>
+must have a corresponding "setter" procedure.
+The builtin procedure <code>setter</code> takes a procedure and returns the
+corresponding setter procedure.
+<p>
+We define:
+<pre>
+(set! (proc arg ...) value)
+</pre>
+as:
+<pre>
+((setter proc) arg ... value)
+</pre>
+<p><strong>Note:</strong>
+This definition matches
+the existing Scheme convention for setter procedures, where
+the new value is given last.  For example we can define
+<code>(setter car)</code> to be <code>set-car!</code>.
+An alternative definition would be:
+<pre>
+((setter proc) value arg ...) ;; Not the actual definition.
+</pre>
+This definition would work better when you consider
+procedures that take a variable number of arguments.
+This is because it is straight-forward to add one extra
+initial fixed argument, but if you add an extra fixed
+argument to the end of an argument list that has
+a "rest" parameter, then things get more messy.
+However, consistency with the existing new-value-last convention
+seems more valuable.
+
+<h2>Standard setters</h2>
+
+The following standard procedures have pre-defined setters:
+<pre>
+(set! (car x) v) == (set-car! x v)
+(set! (cdr x) v) == (set-cdr! x v)
+(set! (caar x) v) == (set-car! (car x) v)
+(set! (cadr x) v) == (set-car! (cdr x) v)
+....
+(set! (caXXr x) v) == (set-car! (cXXr x) v)
+(set! (cdXXr x) v) == (set-cdr! (cXXr x) v)
+(set! (string-ref x i) v) == (string-set! x i v)
+(set! (vector-ref x i) v) == (vector-set! x i v)
+</pre>
+
+<!--
+<p>
+One useful addition:
+<pre>
+(set! (substring x i j) v) == ....
+</pre>
+(Of course this is more useful if Scheme had
+variable-length mutable strings.)
+-->
+
+<h2>Setting setters;  properties</h2>
+
+A setter procedure is a special case of the concept of procedures having
+associated <dfn>properties</dfn>.  Other properties might include
+the procedures's name or usage documentation.
+As a <em>hypothetical</em> example (i.e. not part of this SRFI),
+we can use the Common Lisp <code>documentation</code> function,
+where for example:
+<pre>
+(documentation sqrt)
+</pre>
+returns the "documentation string" (if defined) for <code>sqrt</code>.
+Such properties should also be settable using generalized <code>set!</code>.
+For example:
+<pre>
+(set! (documentation sqrt) "Calculates the square root.")
+</pre>
+
+<p>
+This SRFI does
+not propose a general "procedure properties" feature, but it
+should be compatible with it.  It does specify the special case
+for the <code>setter</code> property.  This is defined such that:
+<pre>
+(set! (setter <var>proc</var>) <var>setter</var>)
+</pre>
+sets the setter procedure associated with <var>proc</var>
+to <var>setter</var>.
+For example, we can assume
+<pre>
+(set! (setter car) set-car!)
+</pre>
+has been executed by the Scheme prologue.
+
+<h2>Efficiency Issues</h2>
+
+If <code>(set! (foo ..) ...)</code> is to be the preferred idiom,
+we want to make  <code>((setter foo) ...)</code> as efficient
+as <code>(set-foo! ...)</code>.
+This is only possible when the compiler knows both what function
+the symbol <code>foo</code> is bound to, <em>and</em> the setter
+associated with that function.  Scheme (as opposed to Common Lisp)
+does not say anything about a compiler or what it can inline,
+so we cannot say much here.  A compiler that does whole-program
+analysis can safely inline calls using a variable bound unchangably
+to a known procedure; it can make the same deduction if the
+procedure's setter is set.  If separate compilation is supported,
+then a compiler cannot safely make such deductions for either
+plain calls or setter calls, without extra information, such as
+a module system, compiler switches, or other non-standard declarations.
+Thus my belief is that this srfi does not inherently make efficient
+compilation more difficult.  However, the next section does define
+a way to inherently tie a setter to a procedure, which does reduce
+the problem of inlining generalized <code>set!</code> to the
+standard inlining problem.
+
+<h2><code>getter-with-setter</code></h2>
+<p>The function <code>getter-with-setter</code> can be used
+to define a procedure with associated properties. 
+Specifically: <a name="getter-with-setter"></a>
+<pre>
+(getter-with-setter <var>getter</var> <var>setter</var>)
+</pre>
+This evaluates to a new anonymous procedure which when 
+applied invokes <var>getter</var>, and whose setter is <var>setter</var>.
+It is an error for a program to subsequently try to modify
+the setter of the resulting compound.
+<p>
+For example, we could define:
+<pre>
+(define car (getter-with-setter %primitive-car %primitive-set-car!))
+(define set-car! %primitive-set-car!)
+</pre>
+The advantage of this approach that whenever a compiler can inline
+<code>car</code>, it can also inline <code>(setter car)</code>.
+
+<H1>Implementation</H1>
+
+<a href="http://srfi.schemers.org/srfi-17/srfi-17-twobit.scm">Here</a> is a sample implementation
+for Twobit.
+<p>Here is a sample definition of  <code>getter-with-setter</code>:
+<pre>
+(define (getter-with-setter get set)
+  (let ((proc (lambda args (apply get args))))
+    (set! (setter proc) set)
+    proc))
+</pre>
+
+<H1>Copyright</H1>
+<p>Copyright (C) Per Bothner (1999, 2000). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@schemers.org">Mike Sperber</a></address>
+<!-- Created: Wed Nov 10 03:14:43 PST 1999 -->
+<!-- hhmts start -->
+Last modified: Mon Jul 24 12:00:06 MST 2000
+<!-- hhmts end -->
+  </body>
+</html>

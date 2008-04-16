@@ -1,0 +1,213 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-7.html">previous</a></span><span>, <a href="r5rs-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_5"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_5">Chapter 5</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_5">Program structure</a></h1>
+<p></p>
+<p>
+</p>
+<a name="%_sec_5.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_5.1">5.1&nbsp;&nbsp;Programs</a></h2>
+<p>A Scheme program consists of a sequence of expressions, definitions,
+and syntax definitions.
+Expressions are described in chapter&nbsp;<a href="r5rs-Z-H-7.html#%_chap_4">4</a>;
+definitions and syntax definitions are the subject of the rest of the
+present chapter.</p>
+<p>
+Programs are typically stored in files or entered interactively to a
+running Scheme system, although other paradigms are possible;
+questions of user interface lie outside the scope of this report.
+(Indeed, Scheme would still be useful as a notation for expressing
+computational methods even in the absence of a mechanical
+implementation.)</p>
+<p>
+Definitions and syntax definitions occurring at the top level of a program
+can be interpreted
+declaratively.
+They cause bindings to be created in the top level
+environment or modify the value of existing top-level bindings.
+Expressions occurring at the top level of a program are
+interpreted imperatively; they are executed in order when the program is
+invoked or loaded, and typically perform some kind of initialization.</p>
+<p>
+At the top level of a program <tt>(begin &lt;form<sub>1</sub>&gt; <tt>...</tt>)</tt> is
+equivalent to the sequence of expressions, definitions, and syntax definitions
+that form the body of the <tt>begin</tt>.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_5.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_5.2">5.2&nbsp;&nbsp;Definitions</a></h2>
+<p></p>
+<p>
+Definitions are valid in some, but not all, contexts where expressions
+are allowed.  They are valid only at the top level of a &lt;program&gt;
+and at the beginning of a &lt;body&gt;.
+<a name="%_idx_192"></a></p>
+<p>
+A definition should have one of the following forms:<a name="%_idx_194"></a></p>
+<p>
+</p>
+<ul>
+<p>
+</p>
+<li>
+<p><tt>(define &lt;variable&gt; &lt;expression&gt;)</tt></p>
+<p>
+</p>
+<li>
+<p><tt>(define (&lt;variable&gt; &lt;formals&gt;) &lt;body&gt;)</tt></p>
+<p>
+&lt;Formals&gt; should be either a
+sequence of zero or more variables, or a sequence of one or more
+variables followed by a space-delimited period and another variable (as
+in a lambda expression).  This form is equivalent to
+<tt>(define&nbsp;&lt;variable&gt;<br>
+&nbsp;&nbsp;(lambda&nbsp;(&lt;formals&gt;)&nbsp;&lt;body&gt;)).</p>
+</tt>
+<p>
+</p>
+<li>
+<p><tt>(define (&lt;variable&gt; . &lt;formal&gt;) &lt;body&gt;)</tt></p>
+<p>
+&lt;Formal&gt; should be a single
+variable.  This form is equivalent to
+<tt>(define&nbsp;&lt;variable&gt;<br>
+&nbsp;&nbsp;(lambda&nbsp;&lt;formal&gt;&nbsp;&lt;body&gt;)).</p>
+</tt>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+</p>
+<a name="%_sec_5.2.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_5.2.1">5.2.1&nbsp;&nbsp;Top level definitions</a></h3>
+<p>At the top level of a program, a definition
+<tt>(define&nbsp;&lt;variable&gt;&nbsp;&lt;expression&gt;)</p>
+</tt>
+has essentially the same effect as the assignment expression
+<tt>(<tt>set!</tt> &lt;variable&gt;&nbsp;&lt;expression&gt;)</tt>
+if &lt;variable&gt; is bound.  If &lt;variable&gt; is not bound,
+however, then the definition will bind &lt;variable&gt; to a new
+location before performing the assignment, whereas it would be an error
+to perform a <tt>set!</tt> on an unbound<a name="%_idx_196"></a> variable.
+<p>
+<tt>(define&nbsp;add3<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)&nbsp;(+&nbsp;x&nbsp;3)))<br>
+(add3&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;6<br>
+(define&nbsp;first&nbsp;car)<br>
+(first&nbsp;'(1&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1</p>
+</tt>
+<p>
+Some implementations of Scheme use an initial environment in
+which all possible variables are bound to locations, most of
+which contain undefined values.  Top level definitions in
+such an implementation are truly equivalent to assignments.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_5.2.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_5.2.2">5.2.2&nbsp;&nbsp;Internal definitions</a></h3>
+<p></p>
+<p>
+Definitions may occur at the
+beginning of a &lt;body&gt; (that is, the body of a <tt>lambda</tt>,
+<tt>let</tt>, <tt>let*</tt>, <tt>letrec</tt>, <tt>let-syntax</tt>, or <tt>letrec-syntax</tt>
+expression or that of a definition of an appropriate form).
+Such definitions are known as <em>internal definitions</em> <a name="%_idx_198"></a> as opposed to the top level definitions described above.
+The variable defined by an internal definition is local to the
+&lt;body&gt;.  That is, &lt;variable&gt; is bound rather than assigned,
+and the region of the binding is the entire &lt;body&gt;.  For example,</p>
+<p>
+<tt>(let&nbsp;((x&nbsp;5))<br>
+&nbsp;&nbsp;(define&nbsp;foo&nbsp;(lambda&nbsp;(y)&nbsp;(bar&nbsp;x&nbsp;y)))<br>
+&nbsp;&nbsp;(define&nbsp;bar&nbsp;(lambda&nbsp;(a&nbsp;b)&nbsp;(+&nbsp;(*&nbsp;a&nbsp;b)&nbsp;a)))<br>
+&nbsp;&nbsp;(foo&nbsp;(+&nbsp;x&nbsp;3)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;45</p>
+</tt>
+<p>
+A &lt;body&gt; containing internal definitions can always be converted
+into a completely equivalent <tt>letrec</tt> expression.  For example, the
+<tt>let</tt> expression in the above example is equivalent to</p>
+<p>
+<tt>(let&nbsp;((x&nbsp;5))<br>
+&nbsp;&nbsp;(letrec&nbsp;((foo&nbsp;(lambda&nbsp;(y)&nbsp;(bar&nbsp;x&nbsp;y)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bar&nbsp;(lambda&nbsp;(a&nbsp;b)&nbsp;(+&nbsp;(*&nbsp;a&nbsp;b)&nbsp;a))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(foo&nbsp;(+&nbsp;x&nbsp;3))))</p>
+</tt>
+<p>
+Just as for the equivalent <tt>letrec</tt> expression, it must be
+possible to evaluate each &lt;expression&gt; of every internal
+definition in a &lt;body&gt; without assigning or referring to
+the value of any &lt;variable&gt; being defined.</p>
+<p>
+Wherever an internal definition may occur
+<tt>(begin &lt;definition<sub>1</sub>&gt; <tt>...</tt>)</tt>
+is equivalent to the sequence of definitions
+that form the body of the <tt>begin</tt>.</p>
+<p>
+</p>
+<a name="%_sec_5.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_5.3">5.3&nbsp;&nbsp;Syntax definitions</a></h2>
+<p>Syntax definitions are valid only at the top level of a &lt;program&gt;.
+<a name="%_idx_200"></a>
+They have the following form:<a name="%_idx_202"></a></p>
+<p>
+<tt>(define-syntax &lt;keyword&gt; &lt;transformer spec&gt;)</tt></p>
+<p>
+&lt;Keyword&gt; is an identifier, and
+the &lt;transformer spec&gt; should be an instance of <tt>syntax-rules</tt>.
+The top-level syntactic environment is extended by binding the
+&lt;keyword&gt; to the specified transformer.</p>
+<p>
+There is no <tt>define-syntax</tt> analogue of internal definitions.</p>
+<p>
+
+
+Although macros may expand into definitions and syntax definitions in
+any context that permits them, it is an error for a definition or syntax
+definition to shadow a syntactic keyword whose meaning is needed to
+determine whether some form in the group of forms that contains the
+shadowing definition is in fact a definition, or, for internal definitions,
+is needed to determine the boundary between the group and the expressions
+that follow the group.  For example, the following are errors:</p>
+<p>
+<tt>(define&nbsp;define&nbsp;3)<br>
+<br>
+(begin&nbsp;(define&nbsp;begin&nbsp;list))<br>
+<br>
+(let-syntax<br>
+&nbsp;&nbsp;((foo&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((foo&nbsp;(proc&nbsp;args&nbsp;...)&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;proc<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(args&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...))))))<br>
+&nbsp;&nbsp;(let&nbsp;((x&nbsp;3))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(foo&nbsp;(plus&nbsp;x&nbsp;y)&nbsp;(+&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;foo&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(plus&nbsp;foo&nbsp;x)))<br>
+</p>
+</tt>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p>
+</p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-7.html">previous</a></span><span>, <a href="r5rs-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

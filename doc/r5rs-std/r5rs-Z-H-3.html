@@ -1,0 +1,135 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-2.html">previous</a></span><span>, <a href="r5rs-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_Temp_3"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_Temp_3">Introduction</a></h1>
+<p>
+</p>
+<p>
+</p>
+<p>
+Programming languages should be designed not by piling feature on top of
+feature, but by removing the weaknesses and restrictions that make additional
+features appear necessary.  Scheme demonstrates that a very small number
+of rules for forming expressions, with no restrictions on how they are
+composed, suffice to form a practical and efficient programming language
+that is flexible enough to support most of the major programming
+paradigms in use today.</p>
+<p>
+Scheme
+was one of the first programming languages to incorporate first class
+procedures as in the lambda calculus, thereby proving the usefulness of
+static scope rules and block structure in a dynamically typed language.
+Scheme was the first major dialect of Lisp to distinguish procedures
+from lambda expressions and symbols, to use a single lexical
+environment for all variables, and to evaluate the operator position
+of a procedure call in the same way as an operand position.  By relying
+entirely on procedure calls to express iteration, Scheme emphasized the
+fact that tail-recursive procedure calls are essentially goto's that
+pass arguments.  Scheme was the first widely used programming language to
+embrace first class escape procedures, from which all previously known
+sequential control structures can be synthesized.  A subsequent
+version of Scheme introduced the concept of exact and inexact numbers,
+an extension of Common Lisp's generic arithmetic.
+More recently, Scheme became the first programming language to support
+hygienic macros, which permit the syntax of a block-structured language
+to be extended in a consistent and reliable manner.
+
+</p>
+<p>
+</p>
+<a name="%_sec_Temp_4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_Temp_4">Background</a></h3>
+<p>The first description of Scheme was written in
+1975&nbsp;[<a href="r5rs-Z-H-14.html#cite{Scheme75}">28</a>].  A revised report&nbsp;[<a href="r5rs-Z-H-14.html#cite{Scheme78}">25</a>]
+ appeared in 1978, which described the evolution
+of the language as its MIT implementation was upgraded to support an
+innovative compiler&nbsp;[<a href="r5rs-Z-H-14.html#cite{Rabbit}">26</a>].  Three distinct projects began in
+1981 and 1982 to use variants of Scheme for courses at MIT, Yale, and
+Indiana University&nbsp;[<a href="r5rs-Z-H-14.html#cite{Rees82}">21</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{MITScheme}">17</a>,&nbsp;<a href="r5rs-Z-H-14.html#cite{Scheme311}">10</a>].  An introductory
+computer science textbook using Scheme was published in
+1984&nbsp;[<a href="r5rs-Z-H-14.html#cite{SICP}">1</a>].</p>
+<p>
+As Scheme became more widespread,
+local dialects began to diverge until students and researchers
+occasionally found it difficult to understand code written at other
+sites.
+Fifteen representatives of the major implementations of Scheme therefore
+met in October 1984 to work toward a better and more widely accepted
+standard for Scheme.
+Their report&nbsp;[<a href="r5rs-Z-H-14.html#cite{RRRS}">4</a>]
+was published at MIT and Indiana University in the summer of 1985.
+Further revision took place in the spring of 1986&nbsp;[<a href="r5rs-Z-H-14.html#cite{R3RS}">23</a>],
+and in the spring of 1988&nbsp;[<a href="r5rs-Z-H-14.html#cite{R4RS}">6</a>].
+The present report reflects further revisions agreed upon in a meeting
+at Xerox PARC in June 1992.</p>
+<p>
+
+</p>
+<p>
+</p>
+<p></p>
+<p></p>
+<p>
+We intend this report to belong to the entire Scheme community, and so
+we grant permission to copy it in whole or in part without fee.  In
+particular, we encourage implementors of Scheme to use this report as
+a starting point for manuals and other documentation, modifying it as
+necessary.</p>
+<p>
+</p>
+<a name="%_sec_Temp_5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_Temp_5">Acknowledgements</a></h3>
+<p>We would like to thank the following people for their help: Alan Bawden, Michael
+Blair, George Carrette, Andy Cromarty, Pavel Curtis, Jeff Dalton, Olivier Danvy,
+Ken Dickey, Bruce Duba, Marc Feeley,
+Andy Freeman, Richard Gabriel, Yekta G&uuml;rsel, Ken Haase, Robert
+Hieb, Paul Hudak, Morry Katz, Chris Lindblad, Mark Meyer, Jim Miller, Jim Philbin,
+John Ramsdell, Mike Shaff, Jonathan Shapiro, Julie Sussman,
+Perry Wagle, Daniel Weise, Henry Wu, and Ozan Yigit.
+We thank Carol Fessenden, Daniel
+Friedman, and Christopher Haynes for permission to use text from the Scheme 311
+version 4 reference manual.  We thank Texas Instruments, Inc.&nbsp;for permission to
+use text from the <em>TI Scheme Language Reference Manual</em>[<a href="r5rs-Z-H-14.html#cite{TImanual85}">30</a>].
+We gladly acknowledge the influence of manuals for MIT Scheme[<a href="r5rs-Z-H-14.html#cite{MITScheme}">17</a>],
+T[<a href="r5rs-Z-H-14.html#cite{Rees84}">22</a>], Scheme 84[<a href="r5rs-Z-H-14.html#cite{Scheme84}">11</a>],Common Lisp[<a href="r5rs-Z-H-14.html#cite{CLtL}">27</a>],
+and Algol 60[<a href="r5rs-Z-H-14.html#cite{Naur63}">18</a>].</p>
+<p>
+We also thank Betty Dexter for the extreme effort she put into
+setting this report in T<small>E</small>X, and Donald Knuth for designing the program
+that caused her troubles.</p>
+<p>
+The Artificial Intelligence Laboratory of the
+Massachusetts Institute of Technology, the Computer Science
+Department of Indiana University, the Computer and Information
+Sciences Department of the University of Oregon, and the NEC Research
+Institute supported the preparation of this report.  Support for the MIT
+work was provided in part by
+the Advanced Research Projects Agency of the Department of Defense under Office
+of Naval Research contract N00014-80-C-0505.  Support for the Indiana
+University work was provided by NSF grants NCS 83-04567 and NCS
+83-03325.</p>
+<p>
+   </p>
+<p></p>
+<p></p>
+<p>
+ 
+</p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-2.html">previous</a></span><span>, <a href="r5rs-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

@@ -1,0 +1,201 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-4.html">previous</a></span><span>, <a href="r5rs-Z-H-6.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_2"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_2">Chapter 2</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_2">Lexical conventions</a></h1>
+<p>This section gives an informal account of some of the lexical
+conventions used in writing Scheme programs.  For a formal syntax of
+Scheme, see section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1">7.1</a>.</p>
+<p>
+Upper and lower case forms of a letter are never distinguished
+except within character and string constants.  For example, <tt>Foo</tt> is
+the same identifier as <tt>FOO</tt>, and <tt>#x1AB</tt> is the same number as
+<tt>#X1ab</tt>.</p>
+<p>
+</p>
+<a name="%_sec_2.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_2.1">2.1&nbsp;&nbsp;Identifiers</a></h2>
+<p></p>
+<p>
+Most identifiers<a name="%_idx_14"></a> allowed by other programming
+languages are also acceptable to Scheme.  The precise rules for forming
+identifiers vary among implementations of Scheme, but in all
+implementations a sequence of letters, digits, and ``extended alphabetic
+characters'' that begins with a character that cannot begin a number is
+an identifier.  In addition, <tt>+</tt>, <tt>-</tt>, and <tt>...</tt> are identifiers. 
+Here are some examples of identifiers:</p>
+<p>
+<tt>lambda&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q<br>
+list-&gt;vector&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;soup<br>
++&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;V17a<br>
+&lt;=?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a34kTMNs<br>
+the-word-recursion-has-many-meanings</p>
+</tt>
+<p>
+Extended alphabetic characters may be used within identifiers as if
+they were letters.  The following are extended alphabetic characters:</p>
+<p>
+<tt>! $&nbsp;%&nbsp;<code class=verbatim>&amp;</code>&nbsp;*&nbsp;+&nbsp;-&nbsp;.&nbsp;/&nbsp;: &lt;&nbsp;=&nbsp;&gt;&nbsp;?&nbsp;@&nbsp;<code class=verbatim>^</code>&nbsp;<code class=verbatim>_</code>&nbsp;<code class=verbatim>~</code>&nbsp;</p>
+</tt>
+<p>
+See section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.1">7.1.1</a> for a formal syntax of identifiers.</p>
+<p>
+Identifiers have two uses within Scheme programs:
+</p>
+<ul>
+<li>
+<p>Any identifier may be used as a variable<a name="%_idx_16"></a>
+or as a syntactic keyword<a name="%_idx_18"></a>
+(see sections&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.1">3.1</a> and&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.3">4.3</a>).</p>
+<p>
+</p>
+<li>
+<p>When an identifier appears as a literal or within a literal
+(see section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.2">4.1.2</a>), it is being used to denote a <em>symbol</em>
+(see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.3">6.3.3</a>).</p>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_2.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_2.2">2.2&nbsp;&nbsp;Whitespace and comments</a></h2>
+<p><a name="%_idx_20"></a><em>Whitespace</em> characters are spaces and newlines.
+(Implementations typically provide additional whitespace characters such
+as tab or page break.)  Whitespace is used for improved readability and
+as necessary to separate tokens from each other, a token being an
+indivisible lexical unit such as an identifier or number, but is
+otherwise insignificant.  Whitespace may occur between any two tokens,
+but not within a token.  Whitespace may also occur inside a string,
+where it is significant.</p>
+<p>
+A semicolon (<tt>;</tt>) indicates the start of a
+comment.<a name="%_idx_22"></a><a name="%_idx_24"></a>  The comment continues to the
+end of the line on which the semicolon appears.  Comments are invisible
+to Scheme, but the end of the line is visible as whitespace.  This
+prevents a comment from appearing in the middle of an identifier or
+number.</p>
+<p>
+<tt>;;;&nbsp;The&nbsp;FACT&nbsp;procedure&nbsp;computes&nbsp;the&nbsp;factorial<br>
+;;;&nbsp;of&nbsp;a&nbsp;non-negative&nbsp;integer.<br>
+(define&nbsp;fact<br>
+&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(=&nbsp;n&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;Base&nbsp;case:&nbsp;return&nbsp;1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;n&nbsp;(fact&nbsp;(-&nbsp;n&nbsp;1))))))</p>
+</tt>
+<p>
+</p>
+<a name="%_sec_2.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_2.3">2.3&nbsp;&nbsp;Other notations</a></h2>
+<p></p>
+<p>
+For a description of the notations used for numbers, see
+section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.2">6.2</a>.</p>
+<p>
+</p>
+<ul>
+<p>
+</p>
+<li>
+<p><b><tt>. + -</tt></b>&nbsp;&nbsp;
+These are used in numbers, and may also occur anywhere in an identifier
+except as the first character.  A delimited plus or minus sign by itself
+is also an identifier.
+A delimited period (not occurring within a number or identifier) is used
+in the notation for pairs (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.2">6.3.2</a>), and to indicate a
+rest-parameter in a  formal parameter list (section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.4">4.1.4</a>).
+A delimited sequence of three successive periods is also an identifier.</p>
+<p>
+</p>
+<li>
+<p><b><tt>( )</tt></b>&nbsp;&nbsp;
+Parentheses are used for grouping and to notate lists
+(section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.2">6.3.2</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>'</tt></b>&nbsp;&nbsp;
+The single quote character is used to indicate literal data (section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.2">4.1.2</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>`</tt></b>&nbsp;&nbsp;
+The backquote character is used to indicate almost-constant
+data (section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.2.6">4.2.6</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>, ,@</tt></b>&nbsp;&nbsp;
+The character comma and the sequence comma at-sign are used in conjunction
+with backquote (section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.2.6">4.2.6</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>&quot;</tt></b>&nbsp;&nbsp;
+The double quote character is used to delimit strings (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.5">6.3.5</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>\</tt></b>&nbsp;&nbsp;
+Backslash is used in the syntax for character constants
+(section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.4">6.3.4</a>) and as an escape character within string
+constants (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.5">6.3.5</a>).</p>
+<p>
+</p>
+<li>
+<p><b><code class=verbatim>[ ] { } |</code></b>&nbsp;&nbsp;
+Left and right square brackets and curly braces and vertical bar
+are reserved for possible future extensions to the language.</p>
+<p>
+</p>
+<li>
+<p><b><tt>#</tt></b>&nbsp;&nbsp; Sharp sign is used for a variety of purposes depending on
+the character that immediately follows it:</p>
+<p>
+</p>
+<li>
+<p><b><tt>#t</tt> <tt>#f</tt></b>&nbsp;&nbsp;
+These are the boolean constants (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>#</tt><tt>\</tt></b>&nbsp;&nbsp;
+This introduces a character constant (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.4">6.3.4</a>).</p>
+<p>
+</p>
+<li>
+<p><b><tt>#</tt><tt>(</tt></b>&nbsp;&nbsp;
+This introduces a vector constant (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.6">6.3.6</a>).  Vector constants
+are terminated by&nbsp;<tt>)</tt>&nbsp;.</p>
+<p>
+</p>
+<li>
+<p><b><tt>#e #i #b #o #d #x</tt></b>&nbsp;&nbsp;
+These are used in the notation for numbers (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.2.4">6.2.4</a>).</p>
+<p>
+</p>
+</ul>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-4.html">previous</a></span><span>, <a href="r5rs-Z-H-6.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

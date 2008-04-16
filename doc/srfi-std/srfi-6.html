@@ -1,0 +1,353 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 6: Basic String Ports</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI-6: Basic String Ports
+
+<H1>Author</H1>
+
+William D Clinger
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-6/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/04/07
+<LI>Draft: 1999/04/26-1999/06/24
+<LI>Final: 1999/07/01
+</UL>
+
+
+<H1>Abstract</H1>
+
+Scheme's i/o primitives are extended by adding three new procedures
+that
+<ul>
+<li>create an input port from a string,
+<li>create an output port whose contents are accumulated in Scheme's
+    working memory instead of an external file, and
+<li>extract the accumulated contents of an in-memory output port
+    and return them in the form of a string.
+</ul>
+
+<H1>Issues</H1>
+
+None.
+
+<H1>Rationale</H1>
+
+Scheme's procedures for performing input and output from and to ports
+become more useful when extended by string ports.  The interface
+described here has been in use since 1986 or before, and is currently
+supported by several of the major implementations.
+
+<H1>Specification</H1>
+
+This specification is taken from the MacScheme Reference Manual.
+
+<dl>
+<dt><a name="open-input-string"></a><pre>
+(OPEN-INPUT-STRING string)                            ;procedure
+</pre><dd>
+    Takes a string and returns an input port that delivers characters
+    from the string.  The port can be closed by
+    <code>CLOSE-INPUT-PORT</code>, though its storage will be
+    reclaimed by the garbage collector if it becomes inaccessible.
+<pre>
+        (define p
+          (open-input-string "(a . (b . c . ())) 34"))
+
+        (input-port? p)                 -->  #t
+        (read p)                        -->  (a b c)
+        (read p)                        -->  34
+        (eof-object? (peek-char p))     -->  #t
+</pre>
+
+<dt><a name="open-output-string"></a><pre>
+(OPEN-OUTPUT-STRING)                                  ;procedure
+</pre><dd>
+    Returns an output port that will accumulate characters for
+    retrieval by <code>GET-OUTPUT-STRING</code>.  The port can be
+    closed by the procedure <code>CLOSE-OUTPUT-PORT</code>, though
+    its storage will be reclaimed by the garbage collector if it
+    becomes inaccessible.
+<pre>
+        (let ((q (open-output-string))
+              (x '(a b c)))
+          (write (car x) q)
+          (write (cdr x) q)
+          (get-output-string q))        -->  "a(b c)"
+</pre>
+
+<dt><a name="get-output-string"></a><pre>
+(GET-OUTPUT-STRING output-port)                       ;procedure
+</pre><dd>
+    Given an output port created by <code>OPEN-OUTPUT-STRING</code>,
+    returns a string consisting of the characters that have been
+    output to the port so far.
+</dl>
+
+
+<H1>Implementation</H1>
+
+What follows is just an outline of how these procedures might be
+implemented, because a real implementation would also have to
+redefine <code>READ</code>, <code>WRITE</code>, and so forth
+to use <code>PEEK-CHAR</code>, <code>READ-CHAR</code>, and
+<code>WRITE-CHAR</code> as redefined below.
+
+<p>
+Since the code for <code>READ</code> and <code>WRITE</code>
+would be identical to code that already exists in any
+implementation, however, it should not be necessary for this
+SRFI to include that code within this SRFI.  Including it
+would only detract from the readability of this implementation.
+
+<p>
+<pre>
+; This implementation is not IEEE- or R5RS-compliant,
+; for the following reasons:
+;
+; This implementation does not redefine procedures
+; like READ, WRITE, DISPLAY, and NEWLINE to ensure
+; that they use the redefined PEEK-CHAR, READ-CHAR,
+; WRITE-CHAR, and so forth.  That should be easy
+; for an implementor to do, however.
+;
+; This implementation obtains an end-of-file object
+; by reading a Unix-specific file, /dev/null.
+
+(define open-input-string 0)  ; assigned below
+(define open-output-string 0) ; assigned below
+(define get-output-string 0)  ; assigned below
+
+; We have to remember the original procedures before
+; we can define new ones.
+
+(define ur-vector? vector?)
+(define ur-vector-length vector-length)
+(define ur-vector-ref vector-ref)
+(define ur-vector-set! vector-set!)
+(define ur-input-port? input-port?)
+(define ur-output-port? output-port?)
+(define ur-close-input-port close-input-port)
+(define ur-close-output-port close-output-port)
+(define ur-peek-char peek-char)
+(define ur-read-char read-char)
+(define ur-write-char write-char)
+
+; IEEE/ANSI Scheme insists that we define any global
+; variables that we are going to assign.  R5RS Scheme
+; apparently does not require this.
+
+(define vector? vector?)
+(define vector-length vector-length)
+(define vector-ref vector-ref)
+(define vector-set! vector-set!)
+(define input-port? input-port?)
+(define output-port? output-port?)
+(define close-input-port close-input-port)
+(define close-output-port close-output-port)
+(define peek-char peek-char)
+(define read-char read-char)
+(define write-char write-char)
+
+(let ((ur-vector? ur-vector?)
+      (ur-vector-length ur-vector-length)
+      (ur-vector-ref ur-vector-ref)
+      (ur-vector-set! ur-vector-set!)
+      (ur-input-port? ur-input-port?)
+      (ur-output-port? ur-output-port?)
+      (ur-close-input-port ur-close-input-port)
+      (ur-close-output-port ur-close-output-port)
+      (ur-peek-char ur-peek-char)
+      (ur-read-char ur-read-char)
+      (ur-write-char ur-write-char)
+      (eof (call-with-input-file "/dev/null" read-char))
+      (input-string-tag (list 'input-string-tag))
+      (output-string-tag (list 'output-string-tag)))
+  
+  (define (error)
+    (display "You're not supposed to do that!")
+    (newline)
+    (if #f #f))
+  
+  (define (restrict f pred?)
+    (lambda (x . rest)
+      (if (pred? x)
+          (apply f x rest)
+          (error))))
+  
+  (define (my-vector? x)
+    (and (ur-vector? x)
+         (not (input-string? x))
+         (not (output-string? x))))
+  
+  (define (input-string? x)
+    (and (ur-vector? x)
+         (positive? (ur-vector-length x))
+         (eq? input-string-tag (ur-vector-ref x 0))))
+  
+  (define (output-string? x)
+    (and (ur-vector? x)
+         (positive? (ur-vector-length x))
+         (eq? output-string-tag (ur-vector-ref x 0))))
+  
+  (define (selector pred? i)
+    (lambda (x)
+      (if (pred? x)
+          (ur-vector-ref x i)
+          (error))))
+  
+  (define (setter pred? i)
+    (lambda (x y)
+      (if (pred? x)
+          (begin (ur-vector-set! x i y)
+                 (if #f #f))
+          (error))))
+  
+  (set! vector?       my-vector?)
+  (set! vector-length (restrict ur-vector-length my-vector?))
+  (set! vector-ref    (restrict ur-vector-ref  my-vector?))
+  (set! vector-set!   (restrict ur-vector-set! my-vector?))
+  
+  (let ()
+    
+    ; The guts of the implementation begin here.
+    
+    (define (make-input-string s)
+      (vector input-string-tag #t s (string-length s) 0))
+    
+    (define input-string:open?  (selector input-string? 1))
+    (define input-string:open?! (setter   input-string? 1))
+    (define input-string:string (selector input-string? 2))
+    (define input-string:size   (selector input-string? 3))
+    (define input-string:next   (selector input-string? 4))
+    (define input-string:next!  (setter   input-string? 4))
+    
+    (define (make-output-string)
+      (vector output-string-tag #t '()))
+    
+    (define output-string:open?     (selector output-string? 1))
+    (define output-string:open?!    (setter   output-string? 1))
+    (define output-string:contents  (selector output-string? 2))
+    (define output-string:contents! (setter   output-string? 2))
+    
+    (set! open-input-string make-input-string)
+    (set! open-output-string make-output-string)
+    (set! get-output-string
+          (lambda (x)
+            (list->string (reverse (output-string:contents x)))))
+    
+    (set! input-port?
+          (lambda (x)
+            (or (ur-input-port? x)
+                (input-string? x))))
+    
+    (set! output-port?
+          (lambda (x)
+            (or (ur-output-port? x)
+                (output-string? x))))
+    
+    (set! close-input-port
+          (lambda (x)
+            (if (input-string? x)
+                (input-string:open?! x #f)
+                (ur-close-input-port x))))
+    
+    (set! close-output-port
+          (lambda (x)
+            (if (output-string? x)
+                (output-string:open?! x #f)
+                (ur-close-output-port x))))
+    
+    (set! peek-char
+          (lambda args
+            (if (null? args)
+                (ur-peek-char)
+                (let ((x (car args)))
+                  (if (input-string? x)
+                      (let ((s (input-string:string x))
+                            (i (input-string:next x))
+                            (n (input-string:size x)))
+                        (if (input-string:open? x)
+                            (if (< i n)
+                                (string-ref s i)
+                                eof)
+                            (error)))
+                      (ur-peek-char x))))))
+    
+    (set! read-char
+          (lambda args
+            (if (null? args)
+                (ur-read-char)
+                (let ((x (car args)))
+                  (if (input-string? x)
+                      (let ((s (input-string:string x))
+                            (i (input-string:next x))
+                            (n (input-string:size x)))
+                        (if (input-string:open? x)
+                            (if (< i n)
+                                (let ((c (string-ref s i)))
+                                  (input-string:next! x (+ i 1))
+                                  c)
+                                eof)
+                            (error)))
+                      (ur-read-char x))))))
+    
+    (set! write-char
+          (lambda (c . rest)
+            (if (null? rest)
+                (ur-write-char c)
+                (let ((x (car rest)))
+                  (if (output-string? x)
+                      (if (output-string:open? x)
+                          (output-string:contents!
+                           x
+                           (cons c (output-string:contents x)))
+                          (error))
+                      (ur-write-char c x))))))
+    
+    (if #f #f)))
+</pre>
+
+<H1>Copyright</H1>
+Copyright (C) William D Clinger (1999). All Rights Reserved. 
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Mon Feb 24 11:54:01 MET 2003
+<!-- hhmts end -->
+  </body>
+</html>

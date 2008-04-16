@@ -1,0 +1,146 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-1.html">previous</a></span><span>, <a href="r5rs-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_Temp_2"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+Contents</h1>
+<p></p>
+<p></p>
+<p>                    <a name="%_toc_start"></p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_3" href="r5rs-Z-H-3.html#%_chap_Temp_3">Introduction</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_Temp_4" href="r5rs-Z-H-3.html#%_sec_Temp_4">Background</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_Temp_5" href="r5rs-Z-H-3.html#%_sec_Temp_5">Acknowledgements</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_1" href="r5rs-Z-H-4.html#%_chap_1">1&nbsp;&nbsp;Overview of Scheme</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.1" href="r5rs-Z-H-4.html#%_sec_1.1">1.1&nbsp;&nbsp;Semantics</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.2" href="r5rs-Z-H-4.html#%_sec_1.2">1.2&nbsp;&nbsp;Syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3" href="r5rs-Z-H-4.html#%_sec_1.3">1.3&nbsp;&nbsp;Notation and terminology</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3.1" href="r5rs-Z-H-4.html#%_sec_1.3.1">1.3.1&nbsp;&nbsp;Primitive, library, and optional features</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3.2" href="r5rs-Z-H-4.html#%_sec_1.3.2">1.3.2&nbsp;&nbsp;Error situations and unspecified behavior</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3.3" href="r5rs-Z-H-4.html#%_sec_1.3.3">1.3.3&nbsp;&nbsp;Entry format</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3.4" href="r5rs-Z-H-4.html#%_sec_1.3.4">1.3.4&nbsp;&nbsp;Evaluation examples</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_1.3.5" href="r5rs-Z-H-4.html#%_sec_1.3.5">1.3.5&nbsp;&nbsp;Naming conventions</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_2" href="r5rs-Z-H-5.html#%_chap_2">2&nbsp;&nbsp;Lexical conventions</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_2.1" href="r5rs-Z-H-5.html#%_sec_2.1">2.1&nbsp;&nbsp;Identifiers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_2.2" href="r5rs-Z-H-5.html#%_sec_2.2">2.2&nbsp;&nbsp;Whitespace and comments</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_2.3" href="r5rs-Z-H-5.html#%_sec_2.3">2.3&nbsp;&nbsp;Other notations</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_3" href="r5rs-Z-H-6.html#%_chap_3">3&nbsp;&nbsp;Basic concepts</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_3.1" href="r5rs-Z-H-6.html#%_sec_3.1">3.1&nbsp;&nbsp;Variables, syntactic keywords, and regions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_3.2" href="r5rs-Z-H-6.html#%_sec_3.2">3.2&nbsp;&nbsp;Disjointness of types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_3.3" href="r5rs-Z-H-6.html#%_sec_3.3">3.3&nbsp;&nbsp;External representations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_3.4" href="r5rs-Z-H-6.html#%_sec_3.4">3.4&nbsp;&nbsp;Storage model</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_3.5" href="r5rs-Z-H-6.html#%_sec_3.5">3.5&nbsp;&nbsp;Proper tail recursion</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_4" href="r5rs-Z-H-7.html#%_chap_4">4&nbsp;&nbsp;Expressions</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1" href="r5rs-Z-H-7.html#%_sec_4.1">4.1&nbsp;&nbsp;Primitive expression types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.1" href="r5rs-Z-H-7.html#%_sec_4.1.1">4.1.1&nbsp;&nbsp;Variable references</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.2" href="r5rs-Z-H-7.html#%_sec_4.1.2">4.1.2&nbsp;&nbsp;Literal expressions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.3" href="r5rs-Z-H-7.html#%_sec_4.1.3">4.1.3&nbsp;&nbsp;Procedure calls</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.4" href="r5rs-Z-H-7.html#%_sec_4.1.4">4.1.4&nbsp;&nbsp;Procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.5" href="r5rs-Z-H-7.html#%_sec_4.1.5">4.1.5&nbsp;&nbsp;Conditionals</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.1.6" href="r5rs-Z-H-7.html#%_sec_4.1.6">4.1.6&nbsp;&nbsp;Assignments</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2" href="r5rs-Z-H-7.html#%_sec_4.2">4.2&nbsp;&nbsp;Derived expression types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.1" href="r5rs-Z-H-7.html#%_sec_4.2.1">4.2.1&nbsp;&nbsp;Conditionals</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.2" href="r5rs-Z-H-7.html#%_sec_4.2.2">4.2.2&nbsp;&nbsp;Binding constructs</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.3" href="r5rs-Z-H-7.html#%_sec_4.2.3">4.2.3&nbsp;&nbsp;Sequencing</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.4" href="r5rs-Z-H-7.html#%_sec_4.2.4">4.2.4&nbsp;&nbsp;Iteration</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.5" href="r5rs-Z-H-7.html#%_sec_4.2.5">4.2.5&nbsp;&nbsp;Delayed evaluation</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.2.6" href="r5rs-Z-H-7.html#%_sec_4.2.6">4.2.6&nbsp;&nbsp;Quasiquotation</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.3" href="r5rs-Z-H-7.html#%_sec_4.3">4.3&nbsp;&nbsp;Macros</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.3.1" href="r5rs-Z-H-7.html#%_sec_4.3.1">4.3.1&nbsp;&nbsp;Binding constructs for syntactic keywords</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_4.3.2" href="r5rs-Z-H-7.html#%_sec_4.3.2">4.3.2&nbsp;&nbsp;Pattern language</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_5" href="r5rs-Z-H-8.html#%_chap_5">5&nbsp;&nbsp;Program structure</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_5.1" href="r5rs-Z-H-8.html#%_sec_5.1">5.1&nbsp;&nbsp;Programs</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_5.2" href="r5rs-Z-H-8.html#%_sec_5.2">5.2&nbsp;&nbsp;Definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_5.2.1" href="r5rs-Z-H-8.html#%_sec_5.2.1">5.2.1&nbsp;&nbsp;Top level definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_5.2.2" href="r5rs-Z-H-8.html#%_sec_5.2.2">5.2.2&nbsp;&nbsp;Internal definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_5.3" href="r5rs-Z-H-8.html#%_sec_5.3">5.3&nbsp;&nbsp;Syntax definitions</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_6" href="r5rs-Z-H-9.html#%_chap_6">6&nbsp;&nbsp;Standard procedures</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.1" href="r5rs-Z-H-9.html#%_sec_6.1">6.1&nbsp;&nbsp;Equivalence predicates</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2" href="r5rs-Z-H-9.html#%_sec_6.2">6.2&nbsp;&nbsp;Numbers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.1" href="r5rs-Z-H-9.html#%_sec_6.2.1">6.2.1&nbsp;&nbsp;Numerical types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.2" href="r5rs-Z-H-9.html#%_sec_6.2.2">6.2.2&nbsp;&nbsp;Exactness</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.3" href="r5rs-Z-H-9.html#%_sec_6.2.3">6.2.3&nbsp;&nbsp;Implementation restrictions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.4" href="r5rs-Z-H-9.html#%_sec_6.2.4">6.2.4&nbsp;&nbsp;Syntax of numerical constants</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.5" href="r5rs-Z-H-9.html#%_sec_6.2.5">6.2.5&nbsp;&nbsp;Numerical operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.2.6" href="r5rs-Z-H-9.html#%_sec_6.2.6">6.2.6&nbsp;&nbsp;Numerical input and output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3" href="r5rs-Z-H-9.html#%_sec_6.3">6.3&nbsp;&nbsp;Other data types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.1" href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1&nbsp;&nbsp;Booleans</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.2" href="r5rs-Z-H-9.html#%_sec_6.3.2">6.3.2&nbsp;&nbsp;Pairs and lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.3" href="r5rs-Z-H-9.html#%_sec_6.3.3">6.3.3&nbsp;&nbsp;Symbols</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.4" href="r5rs-Z-H-9.html#%_sec_6.3.4">6.3.4&nbsp;&nbsp;Characters</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.5" href="r5rs-Z-H-9.html#%_sec_6.3.5">6.3.5&nbsp;&nbsp;Strings</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.3.6" href="r5rs-Z-H-9.html#%_sec_6.3.6">6.3.6&nbsp;&nbsp;Vectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.4" href="r5rs-Z-H-9.html#%_sec_6.4">6.4&nbsp;&nbsp;Control features</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.5" href="r5rs-Z-H-9.html#%_sec_6.5">6.5&nbsp;&nbsp;<tt>Eval</tt></a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.6" href="r5rs-Z-H-9.html#%_sec_6.6">6.6&nbsp;&nbsp;Input and output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.6.1" href="r5rs-Z-H-9.html#%_sec_6.6.1">6.6.1&nbsp;&nbsp;Ports</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.6.2" href="r5rs-Z-H-9.html#%_sec_6.6.2">6.6.2&nbsp;&nbsp;Input</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.6.3" href="r5rs-Z-H-9.html#%_sec_6.6.3">6.6.3&nbsp;&nbsp;Output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_6.6.4" href="r5rs-Z-H-9.html#%_sec_6.6.4">6.6.4&nbsp;&nbsp;System interface</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_7" href="r5rs-Z-H-10.html#%_chap_7">7&nbsp;&nbsp;Formal syntax and semantics</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1" href="r5rs-Z-H-10.html#%_sec_7.1">7.1&nbsp;&nbsp;Formal syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.1" href="r5rs-Z-H-10.html#%_sec_7.1.1">7.1.1&nbsp;&nbsp;Lexical structure</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.2" href="r5rs-Z-H-10.html#%_sec_7.1.2">7.1.2&nbsp;&nbsp;External representations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.3" href="r5rs-Z-H-10.html#%_sec_7.1.3">7.1.3&nbsp;&nbsp;Expressions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.4" href="r5rs-Z-H-10.html#%_sec_7.1.4">7.1.4&nbsp;&nbsp;Quasiquotations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.5" href="r5rs-Z-H-10.html#%_sec_7.1.5">7.1.5&nbsp;&nbsp;Transformers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.1.6" href="r5rs-Z-H-10.html#%_sec_7.1.6">7.1.6&nbsp;&nbsp;Programs and definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.2" href="r5rs-Z-H-10.html#%_sec_7.2">7.2&nbsp;&nbsp;Formal semantics</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.2.1" href="r5rs-Z-H-10.html#%_sec_7.2.1">7.2.1&nbsp;&nbsp;Abstract syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.2.2" href="r5rs-Z-H-10.html#%_sec_7.2.2">7.2.2&nbsp;&nbsp;Domain equations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.2.3" href="r5rs-Z-H-10.html#%_sec_7.2.3">7.2.3&nbsp;&nbsp;Semantic functions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.2.4" href="r5rs-Z-H-10.html#%_sec_7.2.4">7.2.4&nbsp;&nbsp;Auxiliary functions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_7.3" href="r5rs-Z-H-10.html#%_sec_7.3">7.3&nbsp;&nbsp;Derived expression types</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_6" href="r5rs-Z-H-11.html#%_chap_Temp_6">Notes</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="%_toc_%_sec_Temp_7" href="r5rs-Z-H-11.html#%_sec_Temp_7">Language changes</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_8" href="r5rs-Z-H-12.html#%_chap_Temp_8">Additional material</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_9" href="r5rs-Z-H-13.html#%_chap_Temp_9">Example</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_10" href="r5rs-Z-H-14.html#%_chap_Temp_10">Bibliography</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="%_toc_%_chap_Temp_11" href="r5rs-Z-H-15.html#%_chap_Temp_11">Alphabetic Index of Definitions of Concepts,
+Keywords, and Procedures</a></b><br>
+</p>
+<p>
+   </p>
+<p>
+
+</p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-1.html">previous</a></span><span>, <a href="r5rs-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

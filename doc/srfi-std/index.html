@@ -1,0 +1,258 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>SRFI documents inside PLT</title>
+  </head>
+
+  <body>
+    <h1>SRFI documents inside PLT</h1>
+
+    <h1>Scheme Requests for Implementation</h1>
+
+    <p>The "Scheme Requests for Implementation" (<em>SRFI</em>) process
+    is a new approach to helping Scheme users to write portable and
+    yet useful code.  It is a forum for people interested in
+    coordinating libraries and other additions to the Scheme language
+    between implementations.</p>
+
+    <p>This manual includes the <em style="font-style: normal">original</em> documentation of all
+    the SRFIs already ported to PLT Scheme.  For more information on
+    the SRFI process, please <a href="http://srfi.schemers.org">follow
+    this link</a>.</p>
+
+
+    <h2>Loading</h2>
+
+    <p>To load a SRFI with name conflicts (currently SRFIs 1, 5, 13, 17, 19, 43, 
+    45, 48, 61, 63, 69 and 87) in a module,<br>
+    please see the note below.<br>
+    <br>
+    To load a SRFI, use the following form:<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;N.ss&quot; &quot;srfi&quot;))<br>
+    <br>
+    if you know the number of the SRFI you want to load. This is the preferred 
+    method, or this one:<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;NAME.ss&quot; &quot;srfi&quot; &quot;N&quot;))<br>
+    <br>
+    if you know the `informative name' of the SRFI.<br>
+    <br>
+    N, is a number corresponding to the sub-collection that holds a particular 
+    SRFI, and NAME is a more descriptive name we assigned to the main file in 
+    which the SRFI is defined. For instance, to load SRFI-34 you have to do 
+    either one of:<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;34.ss&quot; &quot;srfi&quot;))<br>
+    <br>
+    or,<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;exception.ss&quot; &quot;srfi&quot; &quot;34&quot;))<br>
+    <br>
+    　</p>
+
+
+    <p>
+    <b><font color="#FF0000">NOTE on SRFIs with name conflicts</font><br>
+    </b><br>
+    Certain SRFIs (currently SRFIs 1, 5, 13, 17, 19, 43, 45, 48, 61, 63, 69 and 
+    87) provide names which conflict with names provided by the 'mzscheme' 
+    language. Attempting to require one of these SRFIs in a module written in 
+    the 'mzscheme' language will result in an error.<br>
+    <br>
+    To address this problem, the PLT implementations of these SRFIs provide a 
+    different module which renames the problematic exports to avoid these 
+    conflicts. For SRFI 1, this library is called list.ss, and should be 
+    required like this:<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;list.ss&quot; &quot;srfi&quot; &quot;1&quot;))<br>
+    <br>
+    which supplies the colliding names with a prefix of 's:' (e.g. &quot;s:map&quot;, 
+    &quot;s:reverse!&quot;) and is therefore suitable for requires in a module.<br>
+    <br>
+    For SRFI 19, this library is called time.ss, and should be required like 
+    this:<br>
+    <br>
+&nbsp;&nbsp;&nbsp;&nbsp; (require (lib &quot;time.ss&quot; &quot;srfi&quot; &quot;19&quot;))<br>
+    <br>
+    which supplies the colliding names with a prefix of 'srfi:' (e.g. 
+    &quot;srfi:date?&quot;, &quot;srfi:date-second&quot;) and is therefore<br>
+    suitable for requires in a module.<br>
+    <br>
+    　</p>
+
+
+    <p>
+    <b>Supported SRFIs</b><br>
+    　</p>
+
+
+    <p>SRFI&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; File 
+    name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    Sub-collection<br>
+    SRFI-1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; list.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    1<br>
+    SRFI-2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; and-let.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    2<br>
+    SRFI-4(*1)&nbsp;&nbsp;&nbsp;&nbsp; 4.ss<br>
+    SRFI-5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; let.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    5<br>
+    SRFI-6(+)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6.ss<br>
+    SRFI-7&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; program.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    7<br>
+    SRFI-8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; receive.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    8<br>
+    SRFI-9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; record.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    9<br>
+    SRFI-11(+)&nbsp;&nbsp;&nbsp;&nbsp; 11.ss<br>
+    SRFI-13&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; string.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    13<br>
+    SRFI-14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; char-set.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    14<br>
+    SRFI-16(+)&nbsp;&nbsp;&nbsp;&nbsp; 16.ss<br>
+    SRFI-17&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; set.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    17<br>
+    SRFI-19(*2)&nbsp;&nbsp;&nbsp; time.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    19<br>
+    SRFI-23(+)&nbsp;&nbsp;&nbsp;&nbsp; 23.ss<br>
+    SRFI-25&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; array.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    25<br>
+    SRFI-26&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cut.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    26<br>
+    SRFI-27&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; random-bits.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    27<br>
+    SRFI-28(+)&nbsp;&nbsp;&nbsp;&nbsp; 28.ss<br>
+    SRFI-29&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; localization.ss&nbsp;&nbsp;&nbsp;&nbsp; 
+    29<br>
+    SRFI-30(+)&nbsp;&nbsp;&nbsp;&nbsp; 30.ss<br>
+    SRFI-31&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rec.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    31<br>
+    SRFI-32&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sort.scm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    32<br>
+    SRFI-34&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; exception.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    34<br>
+    SRFI-35&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; condition.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    35<br>
+    SRFI-38(+)&nbsp;&nbsp;&nbsp;&nbsp; 38.ss<br>
+    SRFI-39(+)&nbsp;&nbsp;&nbsp;&nbsp; 39.ss<br>
+    SRFI-40&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; stream.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    40<br>
+    SRFI-42&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; comprehensions.ss&nbsp;&nbsp; 
+    42<br>
+    SRFI-43&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vector-lib.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    43<br>
+    SRFI-45(*3)&nbsp;&nbsp;&nbsp; lazy.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    45<br>
+    SRFI-48&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; format.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    48<br>
+    SRFI-54&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cat.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    54<br>
+    SRFI-57&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; records.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    57<br>
+    SRFI-59&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vicinity.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    59<br>
+    SRFI-60&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 60.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    60<br>
+    SRFI-61&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; cond.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    61<br>
+    SRFI-62(+)<br>
+    SRFI-63&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 63.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    63<br>
+    SRFI-64&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; testing.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    64<br>
+    SRFI-66&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 66.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    66<br>
+    SRFI-67&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; compare.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    67<br>
+    SRFI-69&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; hash.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    69<br>
+    SRFI-71&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; letvalues.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    71<br>
+    SRFI-74&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 74.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    74<br>
+    SRFI-78&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; check.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    78<br>
+    SRFI-86&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 86.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    86<br>
+    SRFI-87&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; case.ss&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    87<br>
+　</p>
+
+
+    <p><b>Notes:</b></p>
+
+
+    <p>+ Supported by the core of PLT Scheme<br>
+    <br>
+    *1 The functionality is all part of mzscheme available
+    via (lib&quot;foreign.ss&quot;), the only missing part is the i/o
+    syntax.<br>
+    <br>
+    *2 The time module does not export its time structure
+    (you have to use the time-* procedures.) It renames all
+    the date-* accessors to tm:date-* so that you won't get
+    errors when including this code in other modules. Care
+    most be taken NOT to confuse the internal date structure
+    with the PLT Scheme one, they are not the same, and all
+    procedures from this library expect the former.<br>
+    <br>
+    *3 This port also provides promise? / srfi-45-promise?.<br>
+　</p>
+
+
+    <h2>Ported SRFIs: original documents</h2>
+
+    <ul>
+      <li><a href="srfi-1.html">SRFI 1: List Library</a></li>
+      <li><a href="srfi-2.html">SRFI 2: AND-LET*: an AND with local bindings, a guarded LET* special form</a></li>
+      <li><a href="srfi-4.html">SRFI 4: Homogeneous numeric vector datatypes</a></li>
+      <li><a href="srfi-5.html">SRFI 5: A compatible let form with signatures and rest arguments</a></li>
+      <li><a href="srfi-6.html">SRFI 6: Basic String Ports</a></li>
+      <li><a href="srfi-7.html">SRFI 7: Feature-based program configuration language</a></li>
+      <li><a href="srfi-8.html">SRFI 8: RECEIVE: Binding to multiple values</a></li>
+      <li><a href="srfi-9.html">SRFI 9: Defining Record Types</a></li>
+      <li><a href="srfi-11.html">SRFI 11: Syntax for receiving multiple values</a></li>
+      <li><a href="srfi-13.html">SRFI 13: String Libraries</a></li>
+      <li><a href="srfi-14.html">SRFI 14: Character-set Library</a></li>
+      <li><a href="srfi-16.html">SRFI 16: Syntax for procedures of variable arity</a></li>
+      <li><a href="srfi-17.html">SRFI 17:  Generalized set!</a></li>
+      <!-- SRFI 18 is partially supported.  I'm not moving the document so as not to give false hopes! -->
+      <li><a href="srfi-19.html">SRFI 19: Time Data Types and Procedures</a></li>
+      <li><a href="srfi-23.html">SRFI 23: Error reporting mechanism</a></li>
+      <li><a href="srfi-25.html">SRFI 25: Multi-dimensional Array Primitives</a></li>
+      <li><a href="srfi-26.html">SRFI 26: Notation for Specializing Parameters without Currying</a></li>
+      <li><a href="srfi-27.html">SRFI 27: Sources of Random Bits</a></li>
+      <li><a href="srfi-28.html">SRFI 28: Basic Format Strings</a></li>
+      <li><a href="srfi-29.html">SRFI 29: Localization</a></li>
+      <li><a href="srfi-30.html">SRFI 30: Nested Multi-line Comments</a></li>
+      <li><a href="srfi-31.html">SRFI 31: A special form rec for recursive evaluation</a></li>
+      <li><a href="srfi-34.html">SRFI 34: Exception Handling for Programs</a></li>
+      <li><a href="srfi-35.html">SRFI 35: Conditions</a></li>
+      <li><a href="srfi-38.html">SRFI 38: External Representation for Data With Shared Structure</a></li>
+      <li><a href="srfi-39.html">SRFI 39: Parameter objects</a></li>
+      <li><a href="srfi-40.html">SRFI 40: A Library of Streams</a></li>
+      <li><a href="srfi-42.html">SRFI 42: Eager Comprehensions</a></li>
+      <li><a href="srfi-43.html">SRFI 43: Vector Library</a></li>
+      <li><a href="srfi-45.html">SRFI 45: Primitives for Expressing Iterative Lazy Algorithms</a></li>
+      <li><a href="srfi-48.html">SRFI 48: Intermediate Format Strings</a></li>
+      <li><a href="srfi-54.html">SRFI 54: Formatting</a></li>
+      <li><a href="srfi-57.html">SRFI 57: Records</a></li>
+      <li><a href="srfi-59.html">SRFI 59: Vicinity</a></li>
+      <li><a href="srfi-60.html">SRFI 60: Integers as Bits</a></li>
+      <li><a href="srfi-61.html">SRFI 61: A more general cond clause</a></li>
+      <li><a href="srfi-62.html">SRFI 62: S-expression comments</a></li>
+      <li><a href="srfi-63.html">SRFI 63: Homogeneous and Heterogeneous Arrays</a></li>
+      <li><a href="srfi-64.html">SRFI 64: A Scheme API for test suites</a></li>
+      <li><a href="srfi-66.html">SRFI 66: Octet Vectors</a></li>
+      <li><a href="srfi-67/srfi-67.html">SRFI 67: Compare Procedures</a></li>
+      <li><a href="srfi-69.html">SRFI 69: Basic hash tables</a></li>
+      <li><a href="srfi-71.html">SRFI 71: Extended LET-syntax for multiple values</a></li>
+      <li><a href="srfi-74.html">SRFI 74: Octet-Addressed Binary Blocks</a></li>
+      <li><a href="srfi-78.html">SRFI 78: Lightweight testing</a></li>
+      <li><a href="srfi-86.html">SRFI  86: MU and NU simulating VALUES &amp; 
+      CALL-WITH-VALUES, and their related LET-syntax</a></li>
+      <li><a href="srfi-87.html">SRFI 87: =&gt; in case clauses</a></li>
+    </ul>
+
+    </body>
+</html>

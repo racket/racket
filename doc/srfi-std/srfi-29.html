@@ -1,0 +1,507 @@
+<!DOCTYPE html PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <meta name="generator" content="HTML Tidy, see www.w3.org">
+    <title>SRFI 29: Localization</title>
+    <meta name="author" content="Scott G. Miller">
+    <meta name="description" content="Localization">
+  </head>
+  <body>
+    <H1>Title</H1>
+
+    SRFI 29: Localization 
+
+    <H1>Author</H1>
+
+    Scott G. Miller 
+
+    <H1>Abstract</H1>
+
+    This document specifies an interface to retrieving and
+    displaying locale sensitive messages. A Scheme program can
+    register one or more translations of templated messages, and
+    then write Scheme code that can transparently retrieve the
+    appropriate message for the locale under which the Scheme
+    system is running. <br>
+     
+
+    <H1>Rationale</H1>
+
+    <p>As any programmer that has ever had to deal with making his
+    or her code readable in more than one locale, the process of
+    sufficiently abstracting program messages from their
+    presentation to the user is non-trivial without help from the
+    programming language. Most modern programming language
+    libraries do provide some mechanism for performing this
+    separation.</p>
+
+    <p>A portable API that allows a piece of code to run without
+    modification in different countries and under different
+    languages is a must for any non-trivial software project.
+    &nbsp;The interface should separate the logic of a program from
+    the myriad of translations that may be necessary.</p>
+
+    <p>The interface described in this document provides such
+    functionality. The underlying implementation is also allowed to
+    use whatever datastructures it likes to provide access to the
+    translations in the most efficient manner possible. &nbsp;In
+    addition, the implementation is provided with standardized
+    functions that programs will use for accessing an external,
+    unspecified repository of translations.</p>
+
+    <p>This interface <i>does not</i> cover all aspects of
+    localization, including support for non-latin characters,
+    number and date formatting, etc. Such functionality is the
+    scope of a future SRFI that may extend this one.</p>
+
+    <H1>Dependencies</H1>
+
+    An SRFI-29 conformant implementation must also implement
+    SRFI-28, Basic Format Strings. Message templates are strings
+    that must be processed by the <tt>format</tt> function
+    specified in that SRFI. 
+
+    <H1>Specification</H1>
+
+    <h3>Message Bundles</h3>
+
+    <p>A Message Bundle is a set of message templates and their
+    identifying keys. Each bundle contains one or more such
+    key/value pairs. The bundle itself is associated with a
+    <i>bundle specifier</i> which uniquely identifies the
+    bundle.</p>
+
+    <h3>Bundle Specifiers</h3>
+
+    <p>A Bundle Specifier is a Scheme list that describes, in order
+    of importance, the package and locale of a message bundle.
+    &nbsp;In most cases, a locale specifier will have between one
+    and three elements. The first element is a symbol denoting the
+    package for which this bundle applies. The second and third
+    elements denote a <i>locale</i>. The second element (first
+    element of the locale) if present, is the two letter, ISO 639-1
+    language code for the bundle. The third element, if present, is
+    a two letter ISO 3166-1 country code. &nbsp;In some cases, a
+    fourth element may be present, specifying the encoding used for
+    the bundle. &nbsp;All bundle specifier elements are Scheme
+    symbols.</p>
+
+    <p>If only one translation is provided, it should be designated
+    only by a package name, for example <tt>(mathlib)</tt>. This
+    translation is called the <i>default</i> translation.</p>
+
+    <h3>Bundle Searching</h3>
+
+    <p>When a message template is retrieved from a bundle, the
+    Scheme implementation will provide the locale under which the
+    system is currently running. When the template is retrieved,
+    the package name will be specified. The Scheme system should
+    construct a Bundle Specifier from the provided package name and
+    the active locale. For example, when retrieving a message
+    template for French Canadian, in the <tt>mathlib</tt> package,
+    the bundle specifier '<tt>(mathlib fr ca)</tt>' is used. A
+    program may also retrieve the elements of the current locale
+    using the no-argument procedures:</p>
+
+    <p><b><a name="current-language"></a><tt>current-language</tt></b> <tt>-&gt;
+    <i>symbol</i></tt><br>
+     <tt><b>current-language</b> <i>symbol</i> -&gt;
+    undefined</tt><br>
+    </p>
+
+    <blockquote>
+      When given no arguments, returns the current ISO 639-1
+      language code as a symbol. &nbsp;If provided with an
+      argument, the current language is set to that named by the
+      symbol for the currently executing Scheme thread (or for the
+      entire Scheme system if such a distinction is not possible).
+      &nbsp;
+    </blockquote>
+
+    <p><b><a name="current-country"></a><tt>current-country</tt></b> <tt>-&gt;
+    <i>symbol</i></tt><br>
+     <tt><b>current-country</b> <i>symbol</i> -&gt;
+    undefined</tt><br>
+    </p>
+
+    <blockquote>
+      returns the current ISO 3166-1 country code as a symbol.
+      &nbsp;If provided with an argument, the current country is
+      set to that named by the symbol for the currently executing
+      Scheme thread (or for the entire Scheme system if such a
+      distinction is not possible). &nbsp;&nbsp;
+    </blockquote>
+
+    <p><b><a name="current-locale-details"></a><tt>current-locale-details</tt></b> <tt>-&gt; <i>list of
+    symbol</i></tt>s<br>
+     <tt><b>current-locale-details</b> <i>list-of-symbols</i> -&gt;
+    undefined</tt><br>
+    </p>
+
+    <blockquote>
+      Returns a list of additional locale details as a list of
+      symbols. &nbsp;This list may contain information about
+      encodings or other more specific information. &nbsp;If
+      provided with an argument, the current locale details are set
+      to those given in the currently executing Scheme thread (or
+      for the entire Scheme system if such a distinction is not
+      possible).&nbsp;
+    </blockquote>
+
+    <p>The Scheme System should first check for a bundle with the
+    exact name provided. If no such bundle is found, the last
+    element from the list is removed and a search is tried for a
+    bundle with that name. If no bundle is then found, the list is
+    shortened by removing the last element again. If no message is
+    found and the bundle specifier is now the empty list, an error
+    should be raised.</p>
+
+    <p>The reason for this search order is to provide the most
+    locale sensitive template possible, but to fall back on more
+    general templates if a translation has not yet been provided
+    for the given locale.</p>
+
+    <h3>Message Templates</h3>
+
+    <p>A message template is a localized message that may or may
+    not contain one of a number of formatting codes. A message
+    template is a Scheme string. The string is of a form that can
+    be processed by the <tt>format</tt> procedure found in many
+    Scheme systems and formally specified in SRFI-28 (Basic Format
+    Strings).</p>
+
+    <p>This SRFI also extends SRFI-28 to provide an additional
+    <tt>format</tt> escape code:</p>
+
+    <blockquote>
+      <tt>~[n]@*</tt> - Causes a value-requiring escape code that
+      follows this code immediately to reference the [N]'th
+      optional value absolutely, rather than the next unconsumed
+      value. The referenced value is <i>not</i> consumed.
+    </blockquote>
+    This extension allows optional values to be positionally
+    referenced, so that message templates can be constructed that
+    can produce the proper word ordering for a language. 
+
+    <h3>Preparing Bundles</h3>
+    Before a bundle may be used by the Scheme system to retrieve
+    localized template messages, they must be made available to the
+    Scheme system. &nbsp;This SRFI specifies a way to portably
+    define the bundles, as well as store them in and retrieve them
+    from an unspecified system which may be provided by resources
+    outside the Scheme system.<br>
+     
+
+    <p><b><a name="declare-bundle!"></a><tt>declare-bundle!</tt></b> <tt><i>bundle-specifier
+    association-list</i> -&gt; undefined<br>
+    </tt></p>
+
+    <blockquote>
+      Declares a new bundle named by the given bundle-specifier.
+      &nbsp;The contents of the bundle are defined by the provided
+      association list. &nbsp;The list contains associations
+      between Scheme symbols and the message templates (Scheme
+      strings) they name. &nbsp;If a bundle already exists with the
+      given name, it is overwritten with the newly declared
+      bundle.<br>
+    </blockquote>
+    <tt><a name="store-bundle"></a><b>store-bundle</b> <i>bundle-specifier</i> -&gt;
+    boolean</tt><br>
+     
+
+    <blockquote>
+      Attempts to store a bundle named by the given bundle
+      specifier, and previously made available using
+      <tt>declare-bundle!</tt> or <tt>load-bundle!</tt>, in an
+      unspecified mechanism that may be persistent across Scheme
+      system restarts. &nbsp;If successful, a non-false value is
+      returned. &nbsp;If unsuccessful, <tt>#f</tt> is returned.<br>
+    </blockquote>
+    <tt><a name="load-bundle!"></a><b>load-bundle!</b> <i>bundle-specifier</i> -&gt;
+    boolean</tt><br>
+     
+
+    <blockquote>
+      Attempts to retrieve a bundle from an unspecified mechanism
+      which stores bundles outside the Scheme system. &nbsp;If the
+      bundle was retrieved successfully, the function returns a
+      non-false value, and the bundle is immediately available to
+      the Scheme system. If the bundle could not be found or loaded
+      successfully, the function returns <tt>#f</tt>, and the
+      Scheme system's bundle registry remains unaffected.<br>
+    </blockquote>
+    A compliant Scheme system may choose not to provide any
+    external mechanism to store localized bundles. &nbsp;If it does
+    not, it must still provide implementations for
+    <tt>store-bundle</tt> and <tt>load-bundle!</tt>. In such a
+    case, both functions must return <tt>#f</tt> regardless of the
+    arguments given. Users of this SRFI should recognize that the
+    inability to load or store a localized bundle in an external
+    repository is <i>not</i> a fatal error.<br>
+     
+
+    <h3>Retrieving Localized Message Templates</h3>
+
+    <p><a name="localized-template"></a><b><tt>localized-template</tt></b> <i><tt>package-name
+    message-template-name</tt></i> <tt>-&gt; <i>string or #f<br>
+    </i></tt></p>
+
+    <blockquote>
+      Retrieves a localized message template for the given package
+      name and the given message template name (both symbols).
+      &nbsp;If no such message could be found, false (#f) is
+      returned.<br>
+      <br>
+    </blockquote>
+    After retrieving a template, the calling program can use
+    <tt>format</tt> to produce a string that can be displayed to
+    the user.<br>
+     
+
+    <h2>Examples</h2>
+    The below example makes use of SRFI-29 to display simple,
+    localized messages. &nbsp;It also defines its bundles in such a
+    way that the Scheme system may store and retrieve the bundles
+    from a more efficient system catalog, if available.<br>
+     
+<pre>
+(let ((translations
+       '(((en) . ((time . "Its ~a, ~a.")
+                (goodbye . "Goodbye, ~a.")))
+         ((fr) . ((time . "~1@*~a, c'est ~a.")
+                (goodbye . "Au revoir, ~a."))))))
+  (for-each (lambda (translation)
+              (let ((bundle-name (cons 'hello-program (car translation))))
+                (if (not (load-bundle! bundle-name))
+                    (begin
+                     (declare-bundle! bundle-name (cdr translation))
+                     (store-bundle! bundle-name)))))
+             translations))
+
+(define localized-message
+  (lambda (message-name . args)
+    (apply format (cons (localized-template 'hello-program
+                                            message-name)
+                        args))))
+
+(let ((myname "Fred"))
+  (display (localized-message 'time "12:00" myname))
+  (display #\newline)
+
+  (display (localized-message 'goodbye myname))
+  (display #\newline))
+
+;; Displays (English):
+;; Its 12:00, Fred.
+;; Goodbye, Fred.
+;;
+;; French:
+;; Fred, c'est 12:00.
+;; Au revoir, Fred.
+</pre>
+
+    <H1>Implementation</H1>
+
+    <p>The implementation requires that the Scheme system provide a
+    definition for <tt>current-language</tt> and
+    <tt>current-country</tt> capable of distinguishing the correct
+    locale present during a Scheme session. The definitions of
+    those functions in the reference implementation are not capable
+    of that distinction. Their implementation is provided only so
+    that the following code can run in any R4RS scheme system.
+    &nbsp;<br>
+    </p>
+
+    <p>In addition, the below implementation of a compliant
+    <tt>format</tt> requires SRFI-6 (Basic String Ports) and
+    SRFI-23 (Error reporting)</p>
+<pre>
+;; The association list in which bundles will be stored
+(define *localization-bundles* '())
+
+;; The current-language and current-country functions provided
+;; here must be rewritten for each Scheme system to default to the
+;; actual locale of the session
+(define current-language
+  (let ((current-language-value 'en))
+    (lambda args
+      (if (null? args)
+          current-language-value
+          (set! current-language-value (car args))))))
+
+(define current-country
+  (let ((current-country-value 'us))
+    (lambda args
+      (if (null? args)
+          current-country-value
+          (set! current-country-value (car args))))))
+
+;; The load-bundle! and store-bundle! both return #f in this
+;; reference implementation.  A compliant implementation need
+;; not rewrite these procedures.
+(define load-bundle!
+  (lambda (bundle-specifier)
+    #f))
+
+(define store-bundle!
+  (lambda (bundle-specifier)
+    #f))
+
+;; Declare a bundle of templates with a given bundle specifier
+(define declare-bundle!
+  (letrec ((remove-old-bundle
+            (lambda (specifier bundle)
+              (cond ((null? bundle) '())
+                    ((equal? (caar bundle) specifier)
+                     (cdr bundle))
+                    (else (cons (car bundle)
+                                (remove-old-bundle specifier
+                                                   (cdr bundle))))))))
+    (lambda (bundle-specifier bundle-assoc-list)
+      (set! *localization-bundles*
+            (cons (cons bundle-specifier bundle-assoc-list)
+                  (remove-old-bundle bundle-specifier
+                                     *localization-bundles*))))))
+
+;;Retrieve a localized template given its package name and a template name
+(define localized-template
+  (letrec ((rdc
+            (lambda (ls)
+              (if (null? (cdr ls))
+                  '()
+                  (cons (car ls) (rdc (cdr ls))))))
+           (find-bundle
+            (lambda (specifier template-name)
+              (cond ((assoc specifier *localization-bundles*) =&gt;
+                     (lambda (bundle) bundle))
+                    ((null? specifier) #f)
+                    (else (find-bundle (rdc specifier)
+                                       template-name))))))
+    (lambda (package-name template-name)
+      (let loop ((specifier (cons package-name
+                                  (list (current-language)
+                                        (current-country)))))
+        (and (not (null? specifier))
+             (let ((bundle (find-bundle specifier template-name)))
+               (and bundle
+                    (cond ((assq template-name bundle) =&gt; cdr)
+                          ((null? (cdr specifier)) #f)
+                          (else (loop (rdc specifier)))))))))))
+
+;;An SRFI-28 and SRFI-29 compliant version of format.  It requires
+;;SRFI-23 for error reporting.
+(define format
+  (lambda (format-string . objects)
+    (let ((buffer (open-output-string)))
+      (let loop ((format-list (string-&gt;list format-string))
+                 (objects objects)
+                 (object-override #f))
+        (cond ((null? format-list) (get-output-string buffer))
+              ((char=? (car format-list) #\~)
+               (cond ((null? (cdr format-list))
+                      (error 'format "Incomplete escape sequence"))
+                     ((char-numeric? (cadr format-list))
+                      (let posloop ((fl (cddr format-list))
+                                    (pos (string-&gt;number
+                                          (string (cadr format-list)))))
+                        (cond ((null? fl)
+                               (error 'format "Incomplete escape sequence"))
+                              ((and (eq? (car fl) '#\@)
+                                    (null? (cdr fl)))
+                                    (error 'format "Incomplete escape sequence"))
+                              ((and (eq? (car fl) '#\@)
+                                    (eq? (cadr fl) '#\*))
+                               (loop (cddr fl) objects (list-ref objects pos)))
+                              (else
+                                (posloop (cdr fl)
+                                         (+ (* 10 pos)
+                                            (string-&gt;number
+                                             (string (car fl)))))))))
+                     (else
+                       (case (cadr format-list)
+                         ((#\a)
+                          (cond (object-override
+                                 (begin
+                                   (display object-override buffer)
+                                   (loop (cddr format-list) objects #f)))
+                                ((null? objects)
+                                 (error 'format "No value for escape sequence"))
+                                (else
+                                  (begin
+                                    (display (car objects) buffer)
+                                    (loop (cddr format-list)
+                                          (cdr objects) #f)))))
+                         ((#\s)
+                          (cond (object-override
+                                 (begin
+                                   (display object-override buffer)
+                                   (loop (cddr format-list) objects #f)))
+                                ((null? objects)
+                                 (error 'format "No value for escape sequence"))
+                                (else
+                                  (begin
+                                    (write (car objects) buffer)
+                                    (loop (cddr format-list)
+                                          (cdr objects) #f)))))
+                         ((#\%)
+                          (if object-override
+                              (error 'format "Escape sequence following positional override does not require a value"))
+                          (display #\newline buffer)
+                          (loop (cddr format-list) objects #f))
+                        ((#\~)
+                          (if object-override
+                              (error 'format "Escape sequence following positional override does not require a value"))
+                          (display #\~ buffer)
+                          (loop (cddr format-list) objects #f))
+                         (else
+                           (error 'format "Unrecognized escape sequence"))))))
+              (else (display (car format-list) buffer)
+                    (loop (cdr format-list) objects #f)))))))
+
+</pre>
+
+    <H1>Copyright</H1>
+
+    Copyright (C) Scott G. Miller (2002). All Rights Reserved. 
+
+    <p>This document and translations of it may be copied and
+    furnished to others, and derivative works that comment on or
+    otherwise explain it or assist in its implementation may be
+    prepared, copied, published and distributed, in whole or in
+    part, without restriction of any kind, provided that the above
+    copyright notice and this paragraph are included on all such
+    copies and derivative works. However, this document itself may
+    not be modified in any way, such as by removing the copyright
+    notice or references to the Scheme Request For Implementation
+    process or editors, except as needed for the purpose of
+    developing SRFIs in which case the procedures for copyrights
+    defined in the SRFI process must be followed, or as required to
+    translate it into languages other than English.</p>
+
+    <p>The limited permissions granted above are perpetual and will
+    not be revoked by the authors or their successors or
+    assigns.</p>
+
+    <p>This document and the information contained herein is
+    provided on an "AS IS" basis and THE AUTHOR AND THE SRFI
+    EDITORS DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+    BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
+    HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES
+    OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.</p>
+    <hr>
+
+    <address>
+      Editor: <a href="mailto:srfi-editors@srfi.schemers.org">David
+      Rush</a>
+    </address>
+
+    <address>
+      Author: <a href="mailto:scgmille@freenetproject.org">Scott G.
+      Miller</a>
+    </address>
+    <!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+    <!-- hhmts start -->Last modified: Mon Jun 17 12:00:08 Pacific
+    Daylight Time 2002 <!-- hhmts end --> <br>
+  </body>
+</html>
+

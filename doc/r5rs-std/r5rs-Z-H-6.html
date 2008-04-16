@@ -1,0 +1,338 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-5.html">previous</a></span><span>, <a href="r5rs-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_3"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_3">Chapter 3</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_3">Basic concepts</a></h1>
+<p></p>
+<p>
+</p>
+<a name="%_sec_3.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_3.1">3.1&nbsp;&nbsp;Variables, syntactic keywords, and regions</a></h2>
+<p>
+</p>
+<p>
+An identifier<a name="%_idx_26"></a> may name a type of syntax, or it may name
+a location where a value can be stored.  An identifier that names a type
+of syntax is called a <em>syntactic keyword</em><a name="%_idx_28"></a>
+and is said to be <em>bound</em> to that syntax.  An identifier that names a
+location is called a <em>variable</em><a name="%_idx_30"></a> and is said to be
+<em>bound</em> to that location.  The set of all visible
+bindings<a name="%_idx_32"></a> in effect at some point in a program is
+known as the <em>environment</em> in effect at that point.  The value
+stored in the location to which a variable is bound is called the
+variable's value.  By abuse of terminology, the variable is sometimes
+said to name the value or to be bound to the value.  This is not quite
+accurate, but confusion rarely results from this practice.</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+Certain expression types are used to create new kinds of syntax
+and bind syntactic keywords to those new syntaxes, while other
+expression types create new locations and bind variables to those
+locations.  These expression types are called <em>binding constructs</em>.
+<a name="%_idx_34"></a>
+Those that bind syntactic keywords are listed in section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.3">4.3</a>.
+The most fundamental of the variable binding constructs is the
+<tt>lambda</tt> expression, because all other variable binding constructs
+can be explained in terms of <tt>lambda</tt> expressions.  The other
+variable binding constructs are <tt>let</tt>, <tt>let*</tt>, <tt>letrec</tt>,
+and <tt>do</tt> expressions (see sections&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.4">4.1.4</a>, <a href="r5rs-Z-H-7.html#%_sec_4.2.2">4.2.2</a>, and
+<a href="r5rs-Z-H-7.html#%_sec_4.2.4">4.2.4</a>).</p>
+<p>
+
+Like Algol and Pascal, and unlike most other dialects of Lisp
+except for Common Lisp, Scheme is a statically scoped language with
+block structure.  To each place where an identifier is bound in a program
+there corresponds a <a name="%_idx_36"></a><em>region</em> of the program text within which
+the binding is visible.  The region is determined by the particular
+binding construct that establishes the binding; if the binding is
+established by a <tt>lambda</tt> expression, for example, then its region
+is the entire <tt>lambda</tt> expression.  Every mention of an identifier
+refers to the binding of the identifier that established the
+innermost of the regions containing the use.  If there is no binding of
+the identifier whose region contains the use, then the use refers to the
+binding for the variable in the top level environment, if any
+(chapters&nbsp;<a href="r5rs-Z-H-7.html#%_chap_4">4</a> and <a href="r5rs-Z-H-9.html#%_chap_6">6</a>); if there is no
+binding for the identifier,
+it is said to be <a name="%_idx_38"></a><em>unbound</em>.<a name="%_idx_40"></a><a name="%_idx_42"></a></p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_3.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_3.2">3.2&nbsp;&nbsp;Disjointness of types</a></h2>
+<p></p>
+<p>
+No object satisfies more than one of the following predicates:</p>
+<p>
+<tt>boolean?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pair?<br>
+symbol?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;number?<br>
+char?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string?<br>
+vector?&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;port?<br>
+procedure?</p>
+</tt>
+<p>
+These predicates define the types <em>boolean</em>, <em>pair</em>, <em>symbol</em>, <em>number</em>, <em>char</em> (or <em>character</em>), <em>string</em>, <em>vector</em>, <em>port</em>, and <em>procedure</em>.  The empty list is a special
+object of its own type; it satisfies none of the above predicates.
+<a name="%_idx_44"></a><a name="%_idx_46"></a><a name="%_idx_48"></a><a name="%_idx_50"></a>
+<a name="%_idx_52"></a><a name="%_idx_54"></a><a name="%_idx_56"></a><a name="%_idx_58"></a>
+<a name="%_idx_60"></a><a name="%_idx_62"></a><a name="%_idx_64"></a></p>
+<p>
+Although there is a separate boolean type,
+any Scheme value can be used as a boolean value for the purpose of a
+conditional test.  As explained in section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.1">6.3.1</a>, all
+values count as true in such a test except for <tt>#f</tt>.
+This report uses the word ``true'' to refer to any
+Scheme value except <tt>#f</tt>, and the word ``false'' to refer to
+<tt>#f</tt>. <a name="%_idx_66"></a> <a name="%_idx_68"></a></p>
+<p>
+</p>
+<a name="%_sec_3.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_3.3">3.3&nbsp;&nbsp;External representations</a></h2>
+<p></p>
+<p>
+An important concept in Scheme (and Lisp) is that of the <em>external
+representation</em> of an object as a sequence of characters.  For example,
+an external representation of the integer 28 is the sequence of
+characters ``<tt>28</tt>'', and an external representation of a list consisting
+of the integers 8 and 13 is the sequence of characters ``<tt>(8 13)</tt>''.</p>
+<p>
+The external representation of an object is not necessarily unique.  The
+integer 28 also has representations ``<tt>#e28.000</tt>'' and ``<tt>#x1c</tt>'', and the
+list in the previous paragraph also has the representations ``<tt>( 08 13
+)</tt>'' and ``<tt>(8 . (13 . ()))</tt>'' (see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.2">6.3.2</a>).</p>
+<p>
+Many objects have standard external representations, but some, such as
+procedures, do not have standard representations (although particular
+implementations may define representations for them).</p>
+<p>
+An external representation may be written in a program to obtain the
+corresponding object (see <tt>quote</tt>, section&nbsp;<a href="r5rs-Z-H-7.html#%_sec_4.1.2">4.1.2</a>).</p>
+<p>
+External representations can also be used for input and output.  The
+procedure <tt>read</tt> (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.6.2">6.6.2</a>) parses external
+representations, and the procedure <tt>write</tt> (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.6.3">6.6.3</a>)
+generates them.  Together, they provide an elegant and powerful
+input/output facility.</p>
+<p>
+Note that the sequence of characters ``<tt>(+ 2 6)</tt>'' is <em>not</em> an
+external representation of the integer 8, even though it <em>is</em> an
+expression evaluating to the integer 8; rather, it is an external
+representation of a three-element list, the elements of which are the symbol
+<tt>+</tt> and the integers 2 and 6.  Scheme's syntax has the property that
+any sequence of characters that is an expression is also the external
+representation of some object.  This can lead to confusion, since it may
+not be obvious out of context whether a given sequence of characters is
+intended to denote data or program, but it is also a source of power,
+since it facilitates writing programs such as interpreters and
+compilers that treat programs as data (or vice versa).</p>
+<p>
+The syntax of external representations of various kinds of objects
+accompanies the description of the primitives for manipulating the
+objects in the appropriate sections of chapter&nbsp;<a href="r5rs-Z-H-9.html#%_chap_6">6</a>.</p>
+<p>
+</p>
+<a name="%_sec_3.4"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_3.4">3.4&nbsp;&nbsp;Storage model</a></h2>
+<p></p>
+<p>
+Variables and objects such as pairs, vectors, and strings implicitly
+denote locations<a name="%_idx_70"></a> or sequences of locations.  A string, for
+example, denotes as many locations as there are characters in the string. 
+(These locations need not correspond to a full machine word.) A new value may be
+stored into one of these locations using the <tt>string-set!</tt> procedure, but
+the string continues to denote the same locations as before.</p>
+<p>
+An object fetched from a location, by a variable reference or by
+a procedure such as <tt>car</tt>, <tt>vector-ref</tt>, or <tt>string-ref</tt>, is
+equivalent in the sense of <tt>eqv?</tt> (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.1">6.1</a>)
+to the object last stored in the location before the fetch.</p>
+<p>
+Every location is marked to show whether it is in use.
+No variable or object ever refers to a location that is not in use.
+Whenever this report speaks of storage being allocated for a variable
+or object, what is meant is that an appropriate number of locations are
+chosen from the set of locations that are not in use, and the chosen
+locations are marked to indicate that they are now in use before the variable
+or object is made to denote them.</p>
+<p>
+In many systems it is desirable for constants<a name="%_idx_72"></a> (i.e. the values of
+literal expressions) to reside in read-only-memory.  To express this, it is
+convenient to imagine that every object that denotes locations is associated
+with a flag telling whether that object is mutable<a name="%_idx_74"></a> or
+immutable<a name="%_idx_76"></a>.  In such systems literal constants and the strings
+returned by <tt>symbol-&gt;string</tt> are immutable objects, while all objects
+created by the other procedures listed in this report are mutable.  It is an
+error to attempt to store a new value into a location that is denoted by an
+immutable object.</p>
+<p>
+</p>
+<a name="%_sec_3.5"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_3.5">3.5&nbsp;&nbsp;Proper tail recursion</a></h2>
+<p></p>
+<p>
+Implementations of Scheme are required to be
+<em>properly tail-recursive</em><a name="%_idx_78"></a>.
+Procedure calls that occur in certain syntactic
+contexts defined below are `tail calls'.  A Scheme implementation is
+properly tail-recursive if it supports an unbounded number of active
+tail calls.  A call is <em>active</em> if the called procedure may still
+return.  Note that this includes calls that may be returned from either
+by the current continuation or by continuations captured earlier by
+<tt>call-with-current-continuation</tt> that are later invoked.
+In the absence of captured continuations, calls could
+return at most once and the active calls would be those that had not
+yet returned.
+A formal definition of proper tail recursion can be found
+in&nbsp;[<a href="r5rs-Z-H-14.html#cite{propertailrecursion}">8</a>].</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<p>
+Intuitively, no space is needed for an active tail call because the
+continuation that is used in the tail call has the same semantics as the
+continuation passed to the procedure containing the call.  Although an improper
+implementation might use a new continuation in the call, a return
+to this new continuation would be followed immediately by a return
+to the continuation passed to the procedure.  A properly tail-recursive
+implementation returns to that continuation directly.</p>
+<p>
+Proper tail recursion was one of the central ideas in Steele and
+Sussman's original version of Scheme.  Their first Scheme interpreter
+implemented both functions and actors.  Control flow was expressed using
+actors, which differed from functions in that they passed their results
+on to another actor instead of returning to a caller.  In the terminology
+of this section, each actor finished with a tail call to another actor.</p>
+<p>
+Steele and Sussman later observed that in their interpreter the code
+for dealing with actors was identical to that for functions and thus
+there was no need to include both in the language.</p>
+<p>
+</p>
+</blockquote>
+<p>
+A <em>tail call</em><a name="%_idx_80"></a> is a procedure call that occurs
+in a <em>tail context</em>.  Tail contexts are defined inductively.  Note
+that a tail context is always determined with respect to a particular lambda
+expression.</p>
+<p>
+</p>
+<ul>
+<li>
+<p>The last expression within the body of a lambda expression,
+shown as &lt;tail expression&gt; below, occurs in a tail context.
+<tt>(lambda&nbsp;&lt;formals&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;definition&gt;*&nbsp;&lt;expression&gt;*&nbsp;&lt;tail&nbsp;expression&gt;)<br>
+</p>
+</tt>
+<li>
+<p>If one of the following expressions is in a tail context,
+then the subexpressions shown as &lt;tail expression&gt; are in a tail context.
+These were derived from rules in the grammar given in
+chapter&nbsp;<a href="r5rs-Z-H-10.html#%_chap_7">7</a> by replacing some occurrences of &lt;expression&gt;
+with &lt;tail expression&gt;.  Only those rules that contain tail contexts
+are shown here.</p>
+<p>
+<tt>(if&nbsp;&lt;expression&gt;&nbsp;&lt;tail&nbsp;expression&gt;&nbsp;&lt;tail&nbsp;expression&gt;)<br>
+(if&nbsp;&lt;expression&gt;&nbsp;&lt;tail&nbsp;expression&gt;)<br>
+<br>
+(cond&nbsp;&lt;cond&nbsp;clause&gt;<sup>+</sup>)<br>
+(cond&nbsp;&lt;cond&nbsp;clause&gt;*&nbsp;(else&nbsp;&lt;tail&nbsp;sequence&gt;))<br>
+<br>
+(case&nbsp;&lt;expression&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;case&nbsp;clause&gt;<sup>+</sup>)<br>
+(case&nbsp;&lt;expression&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;case&nbsp;clause&gt;*<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;&lt;tail&nbsp;sequence&gt;))<br>
+<br>
+(and&nbsp;&lt;expression&gt;*&nbsp;&lt;tail&nbsp;expression&gt;)<br>
+(or&nbsp;&lt;expression&gt;*&nbsp;&lt;tail&nbsp;expression&gt;)<br>
+<br>
+(let&nbsp;(&lt;binding&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+(let&nbsp;&lt;variable&gt;&nbsp;(&lt;binding&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+(let*&nbsp;(&lt;binding&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+(letrec&nbsp;(&lt;binding&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+<br>
+(let-syntax&nbsp;(&lt;syntax&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+(letrec-syntax&nbsp;(&lt;syntax&nbsp;spec&gt;*)&nbsp;&lt;tail&nbsp;body&gt;)<br>
+<br>
+(begin&nbsp;&lt;tail&nbsp;sequence&gt;)<br>
+<br>
+(do&nbsp;(&lt;iteration&nbsp;spec&gt;*)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(&lt;test&gt;&nbsp;&lt;tail&nbsp;sequence&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;expression&gt;*)<br>
+<br>
+where<br>
+<br>
+&lt;cond&nbsp;clause&gt;&nbsp;---&gt;&nbsp;(&lt;test&gt;&nbsp;&lt;tail&nbsp;sequence&gt;)<br>
+&lt;case&nbsp;clause&gt;&nbsp;---&gt;&nbsp;((&lt;datum&gt;*)&nbsp;&lt;tail&nbsp;sequence&gt;)<br>
+<br>
+&lt;tail&nbsp;body&gt;&nbsp;---&gt;&nbsp;&lt;definition&gt;*&nbsp;&lt;tail&nbsp;sequence&gt;<br>
+&lt;tail&nbsp;sequence&gt;&nbsp;---&gt;&nbsp;&lt;expression&gt;*&nbsp;&lt;tail&nbsp;expression&gt;<br>
+</p>
+</tt>
+<li>
+<p>If a <tt>cond</tt> expression is in a tail context, and has a clause of
+the form <tt>(&lt;expression<sub>1</sub>&gt; =&gt; &lt;expression<sub>2</sub>&gt;)</tt>
+then the (implied) call to
+the procedure that results from the evaluation of &lt;expression<sub>2</sub>&gt; is in a
+tail context.  &lt;expression<sub>2</sub>&gt; itself is not in a tail context.</p>
+<p>
+</p>
+</ul>
+<p></p>
+<p>
+Certain built-in procedures are also required to perform tail calls.
+The first argument passed to <tt>apply</tt> and to
+<tt>call-with-current-continuation</tt>, and the second argument passed to
+<tt>call-with-values</tt>, must be called via a tail call.
+Similarly, <tt>eval</tt> must evaluate its argument as if it
+were in tail position within the <tt>eval</tt> procedure.</p>
+<p>
+In the following example the only tail call is the call to <tt>f</tt>.
+None of the calls to <tt>g</tt> or <tt>h</tt> are tail calls.  The reference to
+<tt>x</tt> is in a tail context, but it is not a call and thus is not a
+tail call.
+<tt>(lambda&nbsp;()<br>
+&nbsp;&nbsp;(if&nbsp;(g)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;(h)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(g)&nbsp;(f))))<br>
+</p>
+</tt>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Implementations are allowed, but not required, to
+recognize that some non-tail calls, such as the call to <tt>h</tt>
+above, can be evaluated as though they were tail calls.
+In the example above, the <tt>let</tt> expression could be compiled
+as a tail call to <tt>h</tt>. (The possibility of <tt>h</tt> returning
+an unexpected number of values can be ignored, because in that
+case the effect of the <tt>let</tt> is explicitly unspecified and
+implementation-dependent.)
+</blockquote>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-5.html">previous</a></span><span>, <a href="r5rs-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

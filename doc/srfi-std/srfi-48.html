@@ -1,0 +1,797 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 48: Intermediate Format Strings</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 48: Intermediate Format Strings
+
+<H1>Author</H1>
+
+Ken Dickey
+
+<H1>Status</H1> 
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a
+SRFI can hold, see <a href="http://srfi.schemers.org/srfi-process.html">here</a>.  
+You can access
+previous messages via
+<a href="http://srfi.schemers.org/srfi-48/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+    <p><ul>
+      <li>Received: 2003/11/24</li>
+      <li>Draft: 2003/11/25-2004/02/25</li>
+      <li>Revised: 2003/12/04</li>
+      <li>Revised: 2003/12/28</li>
+      <li>Final: 2004/03/02</li>
+      <li>Revised: 2005/06/01</li>
+      </ul></p>
+
+<H1>Abstract</H1>
+
+This document specifies Format Strings, a method of interpreting a Scheme string which contains a 
+number of format directives that are replaced with other string data according to the semantics of each directive.
+This SRFI extends <a href="http://srfi.schemers.org/srfi-28/srfi-28.html">SRFI-28</a> in being more generally useful but is less general than
+advanced format strings in that it does not allow, aside from ~F, for controlled positioning of text within fields.  
+
+<H1>Issues</H1>
+
+<P>
+Some may disagree with specific escape options or return values.  
+For those who desire complex options as implemented by SLIB 
+or Common Lisp's FORMAT, an upwards compatible 
+"Advanced Format" SRFI should be proposed.
+</P><P>
+In particular, the reference implementation given here does not accept numeric arguments 
+(aside from ~F).  
+Hence it does <b>not</b> support <a href="http://srfi.schemers.org/srfi-29/srfi-29.html">SRFI-29</a>.
+</P><P>
+It is highly desireable that baseline library code be small, attempt to
+eliminiate heap allocation and bound stack usage.  
+This is especially important in embedded systems.
+This can be accomplished by writing directly to a port, 
+rather than a string, by not supporting ~W or ~F, 
+and by replacing
+<I>(display (number->string n r) p)</I> with a carefully written 
+<I>(display:number->string n r p)</I> which does not build intermediate strings.
+</P><P>
+As this is <B>intermediate</B> format, it was felt that ~F and ~W are too highly useful to elide. 
+The ~H option is helpful to users, allows for programattic query, and makes clear which format directives are supported.
+</P>
+
+<H1>Rationale</H1>
+<P>
+Inheriting from MacLisp, nearly all Lisp and Scheme implementations support some form of
+FORMAT function with support for various numbers of format directives.  
+By agreeing to the options here, we raise the bar for portable code.  
+</P><P>
+The reference implementation is R5RS compliant and easy to port.
+In not requiring advanced features (aside from ~W and ~F) small implementations are possible. 
+E.g. the reference code does not use side effects (assignment) and is less than 
+a third the source size of the latest SLIB implementation of FORMAT 
+(less than a tenth if ~F support is elided).
+</P><P>
+The optional <i>port</i> argument allows for compatibility with older code 
+written for, e.g. scheme48, MIT Scheme, T, et cetera, which required a port argument.  
+It is also useful in cases where a synoptic
+implementation of Scheme and CommonLisp is maintained.
+</P>
+
+<H1>Specification</H1>
+
+    <a name="format"><b><tt>format</tt></b></a> <tt><i>[port] format-string [obj ...]</i> </tt>
+
+    <blockquote>
+      <p>Accepts a format template (a Scheme String), and
+      processes it, replacing any format directives in order with
+      one or more characters, the characters themselves dependent
+      on the semantics of the format directive encountered.  Each directive
+      may consume one obj. It is an error if fewer or more obj values are
+      provided than format directives that require them.</p>
+      
+      <p>When a <i>port</i> is specified it must be either an output port or 
+      a boolean.  If an output-port is specified, the formatted output is
+      output into that port.  If the port argument is #t, output is to the
+      current-output-port.  If the port is #f or no port is specified, the
+      output is returned as a string.  If the port is specified and is #t 
+      or an output-port, the result of the format function is unspecified.</p>
+      
+      <p>It is unspecified which encoding is used (e.g. ASCII, EBCDIC, UNICODE).  
+      A given implementation must specify which encoding is used.  
+      The implementation may or may not allow the encoding to be selected or changed.</p>
+      
+      <p>It is an error if an format directive consumes an <i>obj</i> argument and 
+      that argument does not
+      confirm to a required type as noted in the table below.</p>
+      
+      <p>It is permissible, but highly discouraged, to implement pretty-print as
+      <i>(define pretty-print write)</i>.</p>
+
+      <p>An format directive is a two character sequence in the
+      string where the first character is a tilde '~'. Directive characters
+      are case-independent, i.e. upper and lower case characters
+      are interpreted the same.  Each directive
+      code's meaning is described in the following table:</p>
+      
+      <table>
+<tr>
+<td><b>DIRECTIVE</b></td>
+<td><b>MNEMONIC</b></td>
+<td><b>ACTION</b></td>
+<td><b>CONSUMES?</b><td>
+</tr>
+<tr>
+	<td>~a</td>
+	<td>Any</td>
+	<td>(display obj) for humans</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~s</td>
+	<td>Slashified</td>
+	<td>(write obj) for parsers</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~w</td>
+	<td>WriteCircular</td>
+	<td>(write-with-shared-structure obj) like ~s, but handles recursive structures</td>
+	<td>yes</td>
+</tr>	
+<tr>
+	<td>~d</td>
+	<td>Decimal</td>
+	<td>the obj is a number which is output in decimal radix</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~x</td>
+	<td>heXadecimal</td>
+	<td>the obj is a number which is output in hexdecimal radix</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~o</td>
+	<td>Octal</td>
+	<td>the obj is a number which is output in octal radix</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~b</td>
+	<td>Binary</td>
+	<td>the obj is a number which is output in binary radix</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~c</td>
+	<td>Character</td>
+	<td>the single charater obj is output by write-char</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~y</td>
+	<td>Yuppify</td>
+	<td>the list obj is pretty-printed to the output</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~?</td>
+	<td>Indirection</td>
+	<td>the obj is another format-string and the following obj is a list of arguments; format is called recursively</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~K</td>
+	<td>Indirection</td>
+	<td>the same as ~? for backward compatability with some existing implementations</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~[w[,d]]F</td>
+	<td>Fixed</td>
+	<td>~w,dF outputs a number with width w and d digits after the decimal; 
+	~wF outputs a string or number with width w.</td>
+	<td>yes</td>
+</tr>
+<tr>
+	<td>~~</td>
+	<td>Tilde</td>
+	<td>output a tilde</td>
+	<td>no</td>
+</tr>
+<tr>
+	<td>~t</td>
+	<td>Tab</td>
+	<td>output a tab character</td>
+	<td>no</td>
+</tr>
+<tr>
+	<td>~%</td>
+	<td>Newline</td>
+	<td>output a newline character</td>
+	<td>no</td>
+</tr>
+<tr>
+	<td>~&</td>
+	<td>Freshline</td>
+	<td>output a newline character if it is known that the previous output was not a newline</td>
+	<td>no</td>
+</tr>
+<tr>
+	<td>~_</td>
+	<td>Space</td>
+	<td>a single space character is output</td>
+	<td>no</td>
+</tr>
+<tr>
+	<td>~h</td>
+	<td>Help</td>
+	<td>outputs one line of call synopsis, one line of comment, and one line of
+synopsis for each format directive, starting with the directive (e.g. "~t")
+	</td>
+	<td>no</td>
+</tr>
+	</table>
+<br>
+	<p>
+	The <b>~F</b>, fixed format, directive requires some elucidation.
+	</p><p>
+	<b>~wF</b> is useful for strings or numbers.  Where the string (or number->string
+	of the number) has fewer characters than the integer width w, the string is
+	padded on the left with space characters.
+	</p><p>
+	<b>~w,dF</b> is typically used only on numbers.  For strings, the <b>d</b>
+	specifier is ignored. For numbers, the integer <b>d</b> specifies the number
+	of decimal digits after the decimal place.  Both <b>w</b> and <b>d</b> must be
+	zero or positive.
+	</p><p>
+	If <b>d</b> is specified, the number is processed
+	as if added to 0.0, i.e. it is converted to an inexact value.
+	<pre>(format "~8,2F" 1/3) =&gt; "    0.33"</pre>
+	If no <b>d</b> is specified, the number is <i>not</i> coerced to inexact.
+	<pre>(format "~6F" 32) =&gt; "    32"</pre>
+	Digits are padded to the right with zeros
+	<pre>(format "~8,2F" 32) =&gt; "   32.00"</pre>
+	If the number it too large to fit in the width specified, 
+	a string longer than the width is returned
+	<pre>(format "~1,2F" 4321) =&gt; "4321.00"</pre>
+	If the number is complex, <b>d</b> is applied to both real and imaginal parts
+	<pre>(format "~1,2F" (sqrt -3.9)) =&gt; "0.00+1.97i"</pre>
+	</p><p>
+	For very large or very small numbers, the point where exponential notation 
+	is used is implementation defined.
+	<pre>(format "~8F" 32e5) =&gt; "   3.2e6" or "3200000.0"</pre>
+	</p>
+    </blockquote>
+<br>
+    <h2>Examples</h2>
+<pre>
+(format "~h")
+; =&gt; 
+"(format [&lt;port&gt;] &lt;format-string&gt; [&lt;arg&gt;...]) -- &lt;port&gt; is #t, #f or an output-port
+OPTION	[MNEMONIC]	DESCRIPTION	-- This implementation Assumes ASCII Text Encoding
+~H	[Help]		output this text
+~A	[Any]		(display arg) for humans
+~S	[Slashified]	(write arg) for parsers
+~~	[tilde]		output a tilde
+~T	[Tab]		output a tab character
+~%	[Newline]	output a newline character
+~&	[Freshline]	output a newline character if the previous output was not a newline
+~D	[Decimal]	the arg is a number which is output in decimal radix
+~X	[heXadecimal]	the arg is a number which is output in hexdecimal radix
+~O	[Octal]		the arg is a number which is output in octal radix
+~B	[Binary]	the arg is a number which is output in binary radix
+~w,dF	[Fixed]		the arg is a string or number which has width w and d digits after the decimal
+~C	[Character]	charater arg is output by write-char
+~_	[Space]		a single space character is output
+~Y	[Yuppify]	the list arg is pretty-printed to the output
+~?	[Indirection]	recursive format: next arg is a format-string and the following arg a list of arguments
+~K	[Indirection]	same as ~?
+"
+
+(format "Hello, ~a" "World!")
+; =&gt; "Hello, World!"
+
+(format "Error, list is too short: ~s" '(one "two" 3))
+; =&gt; "Error, list is too short: (one \"two\" 3))"
+
+(format "test me")
+; =&gt; "test me"
+
+(format "~a ~s ~a ~s" 'this 'is "a" "test")
+; =&gt; "this is a \"test\""
+
+(format #t "#d~d #x~x #o~o #b~b~%" 32 32 32 32)
+;; Prints:   #d32 #x20 #o40 #b100000
+; =&gt; &lt;unspecified&gt;
+
+(format "~a ~? ~a" 'a "~s" '(new) 'test)
+; =&gt;"a new test"
+
+(format #f "~&1~&~&2~&~&~&3~%")
+; =&gt; 
+"
+1
+2
+3
+"
+
+(format #f "~a ~? ~a ~%" 3 " ~s ~s " '(2 2) 3)
+; =&gt; 
+"3  2 2  3 
+"
+
+(format "~w" (let ( (c '(a b c)) ) (set-cdr! (cddr c) c) c))
+; =&gt; "#1=(a b c . #1#)"
+
+(format "~8,2F" 32)
+; =&gt; "   32.00"
+
+(format "~8,3F" (sqrt -3.8))
+; =&gt; "0.000+1.949i"
+
+(format "~8,2F" 3.4567e11)
+; =&gt; " 3.45e11"
+
+(format "~6,3F" 1/3)
+; =&gt; " 0.333"
+
+(format "~4F" 12)
+; =&gt; "  12"
+
+(format "~8,3F" 123.3456)
+; =&gt; " 123.346"
+
+ (format "~6,3F" 123.3456)
+; =&gt; "123.346"
+
+ (format "~2,3F" 123.3456)
+; =&gt; "123.346"
+
+(format "~8,3F" "foo")
+; =&gt; "     foo"
+
+(format "~a~a~&" (list->string (list #\newline)) "")
+; =&gt;
+"
+"
+
+</pre>
+    
+
+
+<H1>Implementation</H1>
+
+    The implementation below requires SRFI-6 (Basic string ports),
+    SRFI-23 (Error reporting mechanism) and 
+    SRFI-38 (External Representation for Data With Shared Structure). <br>
+     
+
+<pre>
+
+;; IMPLEMENTATION DEPENDENT options
+
+(define ascii-tab   (integer->char  9))  ;; NB: assumes ASCII encoding
+(define dont-print  (if (eq? #t #f) 1))
+;;(define DONT-PRINT (string->symbol ""))
+;;(define DONT-PRINT (void))
+;;(define DONT-PRINT #!void)
+(define pretty-print   write) ; ugly but permitted
+;; (require 'srfi-38)  ;; write-with-shared-structure
+
+
+;; FORMAT
+(define (format . args)
+  (cond
+   ((null? args)
+    (error "FORMAT: required format-string argument is missing")
+    )
+   ((string? (car args))
+    (apply format (cons #f args)))
+   ((< (length args) 2)
+    (error (format #f "FORMAT: too few arguments ~s" (cons 'format args)))
+    )
+   (else
+    (let ( (output-port   (car  args))
+           (format-string (cadr args))
+           (args          (cddr args))
+         )
+      (letrec ( (port 
+                 (cond ((output-port? output-port) output-port)
+                       ((eq? output-port #t) (current-output-port)) 
+                       ((eq? output-port #f) (open-output-string)) 
+                       (else (error
+                              (format #f "FORMAT: bad output-port argument: ~s"
+                                      output-port)))
+                ) )
+                (return-value 
+                 (if (eq? output-port #f)    ;; if format into a string 
+                     (lambda () (get-output-string port)) ;; then return the string
+                     (lambda () dont-print)) ;; else do something harmless
+                 )        
+             )  
+
+         (define (string-index str c)
+           (let ( (len (string-length str)) )
+             (let loop ( (i 0) )
+               (cond ((= i len) #f)
+                     ((eqv? c (string-ref str i)) i)
+                     (else (loop (+ i 1)))))))
+
+         (define (string-grow str len char)
+           (let ( (off (- len (string-length str))) )
+             (if (positive? off)
+               (string-append (make-string off char) str)
+               str)))
+
+         (define (compose-with-digits digits pre-str frac-str exp-str)
+           (let ( (frac-len (string-length frac-str)) )
+             (cond
+              ((< frac-len digits) ;; grow frac part, pad with zeros
+               (string-append pre-str "."
+                              frac-str (make-string (- digits frac-len) #\0)
+                              exp-str)
+               )
+              ((= frac-len digits) ;; frac-part is exactly the right size
+               (string-append pre-str "."
+                              frac-str
+                              exp-str)
+               )
+              (else ;; must round to shrink it
+               (let* ( (first-part (substring frac-str 0 digits))
+                       (last-part  (substring frac-str digits frac-len))
+                       (temp-str
+                        (number->string
+                         (round (string->number
+                                 (string-append first-part "." last-part)))))
+                       (dot-pos (string-index  temp-str #\.))
+                       (carry?
+                        (and (> dot-pos digits)
+                             (> (round (string->number
+                                        (string-append "0." frac-str)))
+                                0)))
+                       (new-frac
+                        (substring temp-str 0 digits))
+                     )
+                 (string-append
+                  (if carry? (number->string (+ 1 (string->number pre-str))) pre-str)
+                  "."
+                  new-frac
+                  exp-str)))
+         ) ) )
+ 
+         (define (format-fixed number-or-string width digits) ; returns a string
+           (cond
+            ((string? number-or-string)
+             (string-grow number-or-string width #\space)
+             )
+            ((number? number-or-string)
+             (let ( (real (real-part number-or-string))
+                    (imag (imag-part number-or-string))
+                  )
+               (cond
+                ((not (zero? imag))
+                 (string-grow
+                  (string-append (format-fixed real 0 digits)
+                                 (if (negative? imag) "" "+")
+                                 (format-fixed imag 0 digits)
+                                 "i")
+                  width
+                  #\space)
+                 )
+                (digits
+                 (let* ( (num-str   (number->string (exact->inexact real)))
+                         (dot-index (string-index  num-str #\.))
+                         (exp-index (string-index  num-str #\e))
+                         (length    (string-length num-str))
+                         (pre-string
+                          (cond
+                           (exp-index
+                            (if dot-index
+                                (substring num-str 0 dot-index)
+                                (substring num-str 0 (+ exp-index 1)))
+                            )
+                           (dot-index
+                            (substring num-str 0 dot-index)
+                            )
+                           (else
+                            num-str))
+                          )
+                         (exp-string
+                          (if exp-index (substring num-str exp-index length) "")
+                          )
+                         (frac-string
+                          (if exp-index
+                              (substring num-str (+ dot-index 1) exp-index)
+                              (substring num-str (+ dot-index 1) length))
+                          )
+                       )
+                   (string-grow
+                    (if dot-index
+                        (compose-with-digits digits
+                                             pre-string
+                                             frac-string
+                                             exp-string)
+                        (string-append pre-string exp-string))
+                    width
+                    #\space)
+                 ))
+                (else ;; no digits
+                 (string-grow (number->string real) width #\space)))
+             ))
+            (else
+             (error
+              (format "FORMAT: ~F requires a number or a string, got ~s" number-or-string)))
+            ))
+
+         (define documentation-string
+"(format [&lt;port&gt;] &lt;format-string&gt; [&lt;arg&gt;...]) -- &lt;port&gt; is #t, #f or an output-port
+OPTION  [MNEMONIC]      DESCRIPTION     -- Implementation Assumes ASCII Text Encoding
+~H      [Help]          output this text
+~A      [Any]           (display arg) for humans
+~S      [Slashified]    (write arg) for parsers
+~W      [WriteCircular] like ~s but outputs circular and recursive data structures
+~~      [tilde]         output a tilde
+~T      [Tab]           output a tab character
+~%      [Newline]       output a newline character
+~&      [Freshline]     output a newline character if the previous output was not a newline
+~D      [Decimal]       the arg is a number which is output in decimal radix
+~X      [heXadecimal]   the arg is a number which is output in hexdecimal radix
+~O      [Octal]         the arg is a number which is output in octal radix
+~B      [Binary]        the arg is a number which is output in binary radix
+~w,dF   [Fixed]         the arg is a string or number which has width w and d digits after the decimal
+~C      [Character]     charater arg is output by write-char
+~_      [Space]         a single space character is output
+~Y      [Yuppify]       the list arg is pretty-printed to the output
+~?      [Indirection]   recursive format: next 2 args are format-string and list of arguments
+~K      [Indirection]   same as ~?
+"
+          )
+
+         (define (require-an-arg args)
+           (if (null? args)
+               (error "FORMAT: too few arguments" ))
+         )
+        
+         (define (format-help format-strg arglist)
+          
+          (letrec (
+             (length-of-format-string (string-length format-strg))
+             
+             (anychar-dispatch       
+              (lambda (pos arglist last-was-newline) 
+                (if (>= pos length-of-format-string) 
+                  arglist ; return unused args 
+                  (let ( (char (string-ref format-strg pos)) ) 
+                    (cond            
+                     ((eqv? char #\~)   
+                      (tilde-dispatch (+ pos 1) arglist last-was-newline)) 
+                     (else                   
+                      (write-char char port)     
+                      (anychar-dispatch (+ pos 1) arglist #f)        
+                      ))               
+                    ))        
+             )) ; end anychar-dispatch
+
+             (has-newline?
+              (lambda (whatever last-was-newline)
+                (or (eqv? whatever #\newline)
+                    (and (string? whatever)
+                         (let ( (len (string-length whatever)) )
+                           (if (zero? len)
+                               last-was-newline
+                               (eqv? #\newline (string-ref whatever (- len 1)))))))
+              )) ; end has-newline?
+             
+             (tilde-dispatch          
+              (lambda (pos arglist last-was-newline)     
+                (cond           
+                 ((>= pos length-of-format-string)   
+                  (write-char #\~ port) ; tilde at end of string is just output
+                  arglist ; return unused args
+                  )     
+                 (else      
+                  (case (char-upcase (string-ref format-strg pos)) 
+                    ((#\A)       ; Any -- for humans
+                     (require-an-arg arglist)
+                     (let ( (whatever (car arglist)) )
+                       (display whatever port)
+                       (anychar-dispatch (+ pos 1) 
+                                         (cdr arglist) 
+                                         (has-newline? whatever last-was-newline))
+                     ))
+                    ((#\S)       ; Slashified -- for parsers
+                     (require-an-arg arglist)
+                     (let ( (whatever (car arglist)) )
+                        (write whatever port)     
+                        (anychar-dispatch (+ pos 1) 
+                                          (cdr arglist) 
+                                          (has-newline? whatever last-was-newline)) 
+                     ))
+                    ((#\W)
+                     (require-an-arg arglist)
+                     (let ( (whatever (car arglist)) )
+                        (write-with-shared-structure whatever port)  ;; srfi-38
+                        (anychar-dispatch (+ pos 1) 
+                                          (cdr arglist) 
+                                          (has-newline? whatever last-was-newline))
+                     ))                           
+                    ((#\D)       ; Decimal
+                     (require-an-arg arglist)
+                     (display (number->string (car arglist) 10) port)  
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f)  
+                     )            
+                    ((#\X)       ; HeXadecimal
+                     (require-an-arg arglist)
+                     (display (number->string (car arglist) 16) port)
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f)  
+                     )             
+                    ((#\O)       ; Octal
+                     (require-an-arg arglist)
+                     (display (number->string (car arglist)  8) port) 
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f) 
+                     )       
+                    ((#\B)       ; Binary
+                     (require-an-arg arglist)
+                     (display (number->string (car arglist)  2) port)
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f) 
+                     )           
+                    ((#\C)       ; Character
+                     (require-an-arg arglist)
+                     (write-char (car arglist) port) 
+                     (anychar-dispatch (+ pos 1) (cdr arglist) (eqv? (car arglist) #\newline))  
+                     )          
+                    ((#\~)       ; Tilde  
+                     (write-char #\~ port)   
+                     (anychar-dispatch (+ pos 1) arglist #f) 
+                     )            
+                    ((#\%)       ; Newline   
+                     (newline port) 
+                     (anychar-dispatch (+ pos 1) arglist #t) 
+                     )
+                    ((#\&)      ; Freshline
+                     (if (not last-was-newline) ;; (unless last-was-newline ..
+                         (newline port))
+                     (anychar-dispatch (+ pos 1) arglist #t)
+                     )
+                    ((#\_)       ; Space 
+                     (write-char #\space port)   
+                     (anychar-dispatch (+ pos 1) arglist #f)
+                     )             
+                    ((#\T)       ; Tab -- IMPLEMENTATION DEPENDENT ENCODING    
+                     (write-char ascii-tab port)          
+                     (anychar-dispatch (+ pos 1) arglist #f)     
+                     )             
+                    ((#\Y)       ; Pretty-print
+                     (pretty-print (car arglist) port)  ;; IMPLEMENTATION DEPENDENT
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f)
+                     )              
+                    ((#\F)
+                     (require-an-arg arglist)
+                     (display (format-fixed (car arglist) 0 #f) port)
+                     (anychar-dispatch (+ pos 1) (cdr arglist) #f)
+                     )
+                    ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) ;; gather "~w[,d]F" w and d digits
+                     (let loop ( (index (+ pos 1))
+                                 (w-digits (list (string-ref format-strg pos)))
+                                 (d-digits '())
+                                 (in-width? #t)
+                               )
+                       (if (>= index length-of-format-string)
+                           (error
+                            (format "FORMAT: improper numeric format directive in ~s" format-strg))
+                           (let ( (next-char (string-ref format-strg index)) )
+                             (cond
+                              ((char-numeric? next-char)
+                               (if in-width?
+                                   (loop (+ index 1)
+                                         (cons next-char w-digits)
+                                         d-digits
+                                         in-width?)
+                                   (loop (+ index 1)
+                                         w-digits
+                                         (cons next-char d-digits)
+                                         in-width?))
+                               )
+                              ((char=? next-char #\F)
+                               (let ( (width  (string->number (list->string (reverse w-digits))))
+                                      (digits (if (zero? (length d-digits))
+                                                  #f
+                                                  (string->number (list->string (reverse d-digits)))))
+                                    )
+                                 (display (format-fixed (car arglist) width digits) port)
+                                 (anychar-dispatch (+ index 1) (cdr arglist) #f))
+                               )
+                              ((char=? next-char #\,)
+                               (if in-width?
+                                   (loop (+ index 1)
+                                         w-digits
+                                         d-digits
+                                         #f)
+                                   (error
+                                    (format "FORMAT: too many commas in directive ~s" format-strg)))
+                               )
+                              (else
+                               (error (format "FORMAT: ~~w.dF directive ill-formed in ~s" format-strg))))))
+                     ))
+                    ((#\? #\K)       ; indirection -- take next arg as format string
+                     (cond           ;  and following arg as list of format args
+                      ((< (length arglist) 2)
+                       (error
+                        (format "FORMAT: less arguments than specified for ~~?: ~s" arglist))
+                       )
+                      ((not (string? (car arglist)))
+                       (error
+                        (format "FORMAT: ~~? requires a string: ~s" (car arglist)))
+                       )
+                      (else
+                       (format-help (car arglist) (cadr arglist))
+                       (anychar-dispatch (+ pos 1) (cddr arglist) #f)
+                     )))
+                    ((#\H)      ; Help
+                     (display documentation-string port)
+                     (anychar-dispatch (+ pos 1) arglist #t)
+                     )
+                    (else                
+                     (error (format "FORMAT: unknown tilde escape: ~s"
+                                    (string-ref format-strg pos))))
+                    )))
+                )) ; end tilde-dispatch   
+             ) ; end letrec            
+            
+             ; format-help main      
+             (anychar-dispatch 0 arglist #f) 
+            )) ; end format-help    
+        
+        ; format main
+        (let ( (unused-args (format-help format-string args)) )
+          (if (not (null? unused-args))
+              (error
+               (format "FORMAT: unused arguments ~s" unused-args)))
+          (return-value))
+                                              
+      )) ; end letrec, if
+)))  ; end format
+
+</pre>
+
+
+<H1>Copyright</H1>
+<p>Copyright (C) Kenneth A Dickey (2003). All Rights Reserved.</p>
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Author: <a href="mailto:Ken.Dickey@allvantage.com">Ken Dickey</a></address>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Francisco Solsona</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Wed Jun 01 10:40:09 CST 2005
+<!-- hhmts end -->
+  </body>
+</html>

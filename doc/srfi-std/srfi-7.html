@@ -1,0 +1,337 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 3.2//EN">
+<html>
+<head>
+   <title>SRFI 7: Feature-based program configuration language</title>
+</head>
+<body>
+
+<H1>Title</H1>
+
+SRFI-7: Feature-based program configuration language
+
+<H1>Author</H1>
+
+Richard Kelsey
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status.  To see an explanation of each status that a SRFI can hold, see <A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+You can access the discussion via <A HREF="http://srfi.schemers.org/srfi-7/mail-archive/maillist.html">the archive of the mailing list</A>.
+<P><UL>
+<LI>Received: 1999/05/12
+<LI>Draft: 1999/05/26-1999/07/26
+<LI>Final: 1999/08/19
+</UL>
+
+<H1>Abstract</H1>
+
+<p>
+This SRFI describes a configuration language to be used for specifing
+the set of Scheme features or extensions required to run a program.
+In addition to a list of required features, a program may also contain
+Scheme code to be used only when a particular feature or combination of
+features is available.
+</p>
+
+<p>
+The configuration language is entirely distinct from Scheme; it is
+neither embedded in Scheme nor includes Scheme as a subset.
+</p>
+
+<H1>Rationale</H1>
+
+<p>
+The use of a separate configuration language makes it easy for
+both human and machine readers to determine the requirements of a
+program.  It also avoids ambiguities arising from having to expand
+macros to determine which features, and thus which macros, are used
+in the program.
+</p>
+
+<p> See <a href="http://srfi.schemers.org/srfi-0">SRFI 0</a> for a
+rationale for the need for some kind of configuration control.
+</p>
+
+<H1>Specification</H1>
+<a name="program"></a>
+<a name="requires"></a>
+<a name="code"></a>
+<a name="feature-cond"></a>
+<a name="and"></a>
+<a name="or"></a>
+<a name="not"></a>
+<a name="else"></a>
+
+<H2>Syntax</H2>
+
+<p>
+<pre>
+ &lt;program&gt; --&gt; (program &lt;program clause&gt;+)
+
+ &lt;program clause&gt;
+   --&gt; (requires &lt;feature identifier&gt;+)
+     | (files &lt;filename&gt;*)
+     | (code &lt;Scheme expression, definition, or syntax definition&gt;*)
+     | (feature-cond &lt;feature-cond clause&gt;+)
+     | (feature-cond &lt;feature-cond clause&gt;* (else &lt;program clause&gt;+))
+
+ &lt;feature-cond clause&gt;
+   --&gt; (&lt;feature requirement&gt; &lt;program clause&gt;+)
+
+ &lt;feature requirement&gt;
+   --&gt; &lt;feature identifier&gt;
+     | (and &lt;feature requirement&gt;*)
+     | (or &lt;feature requirement&gt;*)
+     | (not &lt;feature requirement&gt;)
+
+ &lt;feature identifier&gt;
+   --&gt; a symbol which is the name of a SRFI
+</pre>
+</p>
+
+<H2>Semantics</H2>
+<p>
+The configuration language is distinct from Scheme.  Given a set of
+available features a <code>&lt;program&gt;</code> can be converted into a
+sequence of Scheme commands, definitions, and syntax definitions.
+This conversion does not require expanding macros or doing any other
+processing of Scheme code.
+</p>
+
+<p>
+An implementation of the configuration language will need to provide
+some method for executing a program.  For example, it might have a
+<code>(LOAD-PROGRAM &lt;filename&gt;)</code> function or a compiler that
+compiles a program into an executable file.
+</p>
+
+<p> The meanings of the different <code>&lt;program&gt;</code> clauses are
+given below.  The ordering of the clauses in a <code>&lt;program&gt;</code>
+determines the order of the forms in the resultant Scheme program.
+
+<p> In processing the <code>REQUIRES</code> and
+<code>FEATURE-COND</code> clauses in a <code>&lt;program&gt;</code>,
+an implementation should be consistent with some fixed set of present
+and absent features.  An implementation may analyze a <code>&lt;program&gt;</code>
+before choosing a set of features to use in processing it, but it
+should not use different sets of features for different clauses in the
+same <code>&lt;program&gt;</code>.
+</p>
+
+<dl>
+      <dt><code>(requires &lt;feature-identifier&gt;+)</code></dt>
+      <dd>The listed features are required by the program.  If one or
+	more is not provided by the implementation the program cannot
+	be run.
+      </dd>
+      
+    <dt><code>(files &lt;filename&gt;*)</code></dt>
+  <dd>The listed files are read and the forms they contain added to the program.</dd>
+
+    <dt><code>(code &lt;body&gt;)</code></dt>
+  <dd>The forms in &lt;body&gt; are added to the program.</dd>
+
+    <dt><code>(feature-cond &lt;feature-cond clause&gt;+)</code></dt>
+      <dd>The meaning of a <code>FEATURE-COND</code> clause is that of the
+<code>&lt;program-clause&gt;</code>s in the first <code>&lt;feature-cond clause&gt;</code> whose
+<code>&lt;implementation-requirement&gt;</code> is satisfied by the implementation.
+If an <code>ELSE</code> clause is present it is used if and only if no preceding
+clause is satisfied; a <code>FEATURE-COND</code> with an
+<code>ELSE</code> clause is always satisfied.
+
+<p>If no clause can be satisified the <code>&lt;program&gt;</code> cannot be evaluated in
+the implementation.</p>
+
+	<p>
+The meaning of the <code>&lt;implementation requirement&gt;</code>s is as follows:</p>
+
+	<table>
+	  <tr><td><code>&lt;feature identifier&gt;</code></td><td>satisfied if the feature is present</td>
+	  </tr>
+
+	  <tr><td><code>(and)</code></td><td>always satisfied</td>
+	  </tr>
+
+	<tr><td><code>(and x ...)</code></td><td>satisfied if every
+	<code>X</code> is satisfied</td>
+	    </tr>
+
+	<tr><td><code>(or)</code></td><td>never satisfied</td></tr>
+
+	<tr><td><code>(or x ...)</code></td><td>satisfied if any
+	<code>X</code> is satisfied</td></tr>
+
+	  <tr><td><code>(not x)</code></td><td>satisfied if <code>X</code> is not satisfied</td></tr>
+	</table>
+
+</dl>
+
+<H1>Implementation</H1>
+
+<p> Two implementations are provided here.  The first is a
+<code>PROCESS-PROGRAM</code> function that converts a
+<code>&lt;program&gt;</code>, represented as an S-expression, and a
+list of feature identifiers and returns the list expressions,
+definitions, and syntax definitions that are the source for the
+<code>&lt;program&gt;</code> in the presence of those features.  The
+function returns <code>#F</code> if the program cannot be run using
+the features provided.
+</p>
+
+<p>
+This is not a complete implementation of the configuration language; it needs
+an (implementation-dependent) method for evaluating the forms returned by
+<code>PROCESS-PROGRAM</code>.
+</p>
+
+<p>
+<pre>
+(define (process-program program features)
+  (call-with-current-continuation
+    (lambda (exit)	; We exit early when an unsatisfiable clause is found.
+
+      ; Process each clause in turn
+
+      (define (process-clauses clauses)
+	(if (null? clauses)
+	    '()
+	    (append (process-clause (car clauses))
+		    (process-clauses (cdr clauses)))))
+      
+      ; Dispatch on the type of the clause.
+
+      (define (process-clause clause)
+	(case (car clause)
+	  ((requires)
+	   (if (all-satisfied? (cdr clause))
+	       '()
+	       (exit #f)))
+	  ((code)
+	   (cdr clause))
+	  ((files)
+	   (read-files (cdr clause)))
+	  ((feature-cond)
+	   (process-cond-clauses (cdr clause)))))
+      
+      ; Loop through CLAUSES finding the first that is satisfied.
+
+      (define (process-cond-clauses clauses)
+	(cond ((null? clauses)
+	       (exit #f))
+	      ((or (and (eq? (caar clauses) 'else)
+			(null? (cdr clauses)))
+		   (satisfied? (caar clauses)))
+	       (process-clauses (cdar clauses)))
+	      (else
+	       (process-cond-clauses (cdr clauses)))))
+    
+      ; Compound requirements are handled recursively, simple ones are tested.
+
+      (define (satisfied? requirement)
+	(if (pair? requirement)
+	    (case (car requirement)
+	      ((and)
+	       (all-satisfied? (cdr requirement)))
+	      ((or)
+	       (any-satisfied? (cdr requirement)))
+	      ((not)
+	       (not (satisfied? (cadr requirement)))))
+	    (memq requirement features)))
+      
+      ; True if every requirement in LIST is satisfied.
+
+      (define (all-satisfied? list)
+	(if (null? list)
+	    #t
+	    (and (satisfied? (car list))
+		 (all-satisfied? (cdr list)))))
+      
+      ; True if any requirement in LIST is satisfied.
+
+      (define (any-satisfied? list)
+	(if (null? list)
+	    #f
+	    (or (satisfied? (car list))
+		(any-satisfied? (cdr list)))))
+      
+      ; Start by doing the whole program.
+
+      (process-clauses (cdr program)))))
+
+; Returns a list of the forms in the named files.
+
+(define (read-files filenames)
+  (if (null? filenames)
+      '()
+      (append (call-with-input-file (car filenames)
+		(lambda (in)
+		  (let label ()
+		    (let ((next (read in)))
+		      (if (eof-object? next)
+			  '()
+			  (cons next (label)))))))
+	      (read-files (cdr filenames)))))
+</pre></p>
+
+<p>
+The second implementation is a <code>PROGRAM</code> macro that implements
+the configuration language in terms of the <code>COND-EXPAND</code>
+syntax of <a href="http://srfi.schemers.org/srfi-0">SRFI 0</a>.
+Note that this implementation requires that <code>LOAD</code> use the current
+evaluation environment.
+</p>
+
+<p><pre>
+(define-syntax program
+  (syntax-rules (requires files code feature-cond)
+    ((program)
+     (begin))
+    ((program (requires feature-id ...)
+              more ...)
+     (begin (cond-expand ((and feature-id ...) 'okay))
+            (program more ...)))
+    ((program (files filename ...)
+              more ...)
+     (begin (load filename) ...
+            (program more ...)))
+    ((program (code stuff ...)
+              more ...)
+     (begin stuff ...
+            (program more ...)))
+    ((program (feature-cond (requirement stuff ...) ...)
+              more ...)
+     (begin (cond-expand (requirement (program stuff ...)) ...)
+            (program more ...)))))
+</pre></p>
+
+<H1>Copyright</H1>
+
+Copyright (C) Richard Kelsey (1999). All Rights Reserved.
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Mike Sperber</a></address>
+
+</body>
+</html>

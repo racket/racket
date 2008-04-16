@@ -1,0 +1,300 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-3.html">previous</a></span><span>, <a href="r5rs-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_1"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_1">Chapter 1</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_1">Overview of Scheme</a></h1>
+<p></p>
+<a name="%_sec_1.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.1">1.1&nbsp;&nbsp;Semantics</a></h2>
+<p></p>
+<p>
+This section gives an overview of Scheme's semantics.  A
+detailed informal semantics is the subject of
+chapters&nbsp;<a href="r5rs-Z-H-6.html#%_chap_3">3</a> through&nbsp;<a href="r5rs-Z-H-9.html#%_chap_6">6</a>.  For reference
+purposes, section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.2">7.2</a> provides a formal
+semantics of Scheme.</p>
+<p>
+Following Algol, Scheme is a statically scoped programming
+language.  Each use of a variable is associated with a lexically
+apparent binding of that variable.</p>
+<p>
+Scheme has latent as opposed to manifest types.  Types
+are associated with values (also called objects<a name="%_idx_2"></a>) rather than
+with variables.  (Some authors refer to languages with latent types as
+weakly typed or dynamically typed languages.)  Other languages with
+latent types are APL, Snobol, and other dialects of Lisp.  Languages
+with manifest types (sometimes referred to as strongly typed or
+statically typed languages) include Algol 60, Pascal, and&nbsp;C.</p>
+<p>
+All objects created in the course of a Scheme computation, including
+procedures and continuations, have unlimited extent.
+No Scheme object is ever destroyed.  The reason that
+implementations of Scheme do not (usually!) run out of storage is that
+they are permitted to reclaim the storage occupied by an object if
+they can prove that the object cannot possibly matter to any future
+computation.  Other languages in which most objects have unlimited
+extent include APL and other Lisp dialects.</p>
+<p>
+Implementations of Scheme are required to be properly tail-recursive.
+This allows the execution of an iterative computation in constant space,
+even if the iterative computation is described by a syntactically
+recursive procedure.  Thus with a properly tail-recursive implementation,
+iteration can be expressed using the ordinary procedure-call
+mechanics, so that special iteration constructs are useful only as
+syntactic sugar.  See section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.5">3.5</a>.</p>
+<p>
+Scheme procedures are objects in their own right.  Procedures can be
+created dynamically, stored in data structures, returned as results of
+procedures, and so on.  Other languages with these properties include
+Common Lisp and ML. </p>
+<p>
+One distinguishing feature of Scheme is that continuations, which
+in most other languages only operate behind the scenes, also have
+``first-class'' status.  Continuations are useful for implementing a
+wide variety of advanced control constructs, including non-local exits,
+backtracking, and coroutines.  See section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.4">6.4</a>.</p>
+<p>
+Arguments to Scheme procedures are always passed by value, which
+means that the actual argument expressions are evaluated before the
+procedure gains control, whether the procedure needs the result of the
+evaluation or not.  ML, C, and APL are three other languages that always
+pass arguments by value.
+This is distinct from the lazy-evaluation semantics of Haskell,
+or the call-by-name semantics of Algol 60, where an argument
+expression is not evaluated unless its value is needed by the
+procedure.</p>
+<p>
+</p>
+<p>
+Scheme's model of arithmetic is designed to remain as independent as
+possible of the particular ways in which numbers are represented within a
+computer. In Scheme, every integer is a rational number, every rational is a
+real, and every real is a complex number.  Thus the distinction between integer
+and real arithmetic, so important to many programming languages, does not
+appear in Scheme.  In its place is a distinction between exact arithmetic,
+which corresponds to the mathematical ideal, and inexact arithmetic on
+approximations.  As in Common Lisp, exact arithmetic is not limited to
+integers.</p>
+<p>
+</p>
+<a name="%_sec_1.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.2">1.2&nbsp;&nbsp;Syntax</a></h2>
+<p>Scheme, like most dialects of Lisp, employs a fully parenthesized prefix
+notation for programs and (other) data; the grammar of Scheme generates a
+sublanguage of the language used for data.  An important
+consequence of this simple, uniform representation is the susceptibility of
+Scheme programs and data to uniform treatment by other Scheme programs.
+For example, the <tt>eval</tt> procedure evaluates a Scheme program expressed
+as data.</p>
+<p>
+The <tt>read</tt> procedure performs syntactic as well as lexical decomposition of
+the data it reads.  The <tt>read</tt> procedure parses its input as data
+(section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1.2">7.1.2</a>), not as program.</p>
+<p>
+The formal syntax of Scheme is described in section&nbsp;<a href="r5rs-Z-H-10.html#%_sec_7.1">7.1</a>.</p>
+<p>
+</p>
+<a name="%_sec_1.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3">1.3&nbsp;&nbsp;Notation and terminology</a></h2>
+<p></p>
+<a name="%_sec_1.3.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3.1">1.3.1&nbsp;&nbsp;Primitive, library, and optional features</a></h3>
+<p></p>
+<p>
+It is required that every implementation of Scheme support all
+features that are not marked as being <a name="%_idx_4"></a><em>optional</em>.  Implementations are
+free to omit optional features of Scheme or to add extensions,
+provided the extensions are not in conflict with the language reported
+here.  In particular, implementations must support portable code by
+providing a syntactic mode that preempts no lexical conventions of this
+report.</p>
+<p>
+To aid in understanding and implementing Scheme, some features are marked
+as <a name="%_idx_6"></a><em>library</em>. These can be easily implemented in terms of the other,
+primitive, features.  They are redundant in the strict sense of
+the word, but they capture common patterns of usage, and are therefore
+provided as convenient abbreviations.</p>
+<p>
+</p>
+<a name="%_sec_1.3.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3.2">1.3.2&nbsp;&nbsp;Error situations and unspecified behavior</a></h3>
+<p><a name="%_idx_8"></a>
+When speaking of an error situation, this report uses the phrase ``an
+error is signalled'' to indicate that implementations must detect and
+report the error.  If such wording does not appear in the discussion of
+an error, then implementations are not required to detect or report the
+error, though they are encouraged to do so.  An error situation that
+implementations are not required to detect is usually referred to simply
+as ``an error.''</p>
+<p>
+For example, it is an error for a procedure to be passed an argument that
+the procedure is not explicitly specified to handle, even though such
+domain errors are seldom mentioned in this report.  Implementations may
+extend a procedure's domain of definition to include such arguments.</p>
+<p>
+This report uses the phrase ``may report a violation of an
+implementation restriction'' to indicate circumstances under which an
+implementation is permitted to report that it is unable to continue
+execution of a correct program because of some restriction imposed by the
+implementation.  Implementation restrictions are of course discouraged,
+but implementations are encouraged to report violations of implementation
+restrictions.<a name="%_idx_10"></a></p>
+<p>
+For example, an implementation may report a violation of an
+implementation restriction if it does not have enough storage to run a
+program.</p>
+<p>
+If the value of an expression is said to be ``unspecified,'' then
+the expression must evaluate to some object without signalling an error,
+but the value depends on the implementation; this report explicitly does
+not say what value should be returned. <a name="%_idx_12"></a></p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_1.3.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3.3">1.3.3&nbsp;&nbsp;Entry format</a></h3>
+<p>Chapters&nbsp;<a href="r5rs-Z-H-7.html#%_chap_4">4</a> and&nbsp;<a href="r5rs-Z-H-9.html#%_chap_6">6</a> are organized
+into entries.  Each entry describes one language feature or a group of
+related features, where a feature is either a syntactic construct or a
+built-in procedure.  An entry begins with one or more header lines of the form</p>
+<p>
+</p>
+<div align=left><u><i>category</i>:</u>&nbsp;&nbsp;<tt><i>template</i></tt>&nbsp;</div>
+
+<p>
+for required, primitive features, or</p>
+<p>
+</p>
+<div align=left><u><i>qualifier</i> <i>category</i>:</u>&nbsp;&nbsp;<tt><i>template</i></tt>&nbsp;</div>
+
+<p>
+where <i>qualifier</i> is either ``library'' or ``optional'' as defined
+in section&nbsp;<a href="#%_sec_1.3.1">1.3.1</a>.</p>
+<p>
+If <i>category</i> is ``syntax'', the entry describes an expression
+type, and the template gives the syntax of the expression type.
+Components of expressions are designated by syntactic variables, which
+are written using angle brackets, for example, &lt;expression&gt;,
+&lt;variable&gt;.  Syntactic variables should be understood to denote segments of
+program text; for example, &lt;expression&gt; stands for any string of
+characters which is a syntactically valid expression.  The notation
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;thing<sub>1</sub>&gt; <tt>...</tt>
+</p>
+
+<p>
+indicates zero or more occurrences of a &lt;thing&gt;, and
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;thing<sub>1</sub>&gt; &lt;thing<sub>2</sub>&gt; <tt>...</tt>
+</p>
+
+<p>
+indicates one or more occurrences of a &lt;thing&gt;.</p>
+<p>
+If <i>category</i> is ``procedure'', then the entry describes a procedure, and
+the header line gives a template for a call to the procedure.  Argument
+names in the template are <i>italicized</i>.  Thus the header line</p>
+<p>
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(vector-ref <i>vector</i> <i>k</i>)</tt>&nbsp;</div>
+
+<p>
+indicates that the built-in procedure <tt>vector-ref</tt> takes
+two arguments, a vector <i>vector</i> and an exact non-negative integer
+<i>k</i> (see below).  The header lines</p>
+<p>
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(make-vector <i>k</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(make-vector <i>k</i> <i>fill</i>)</tt>&nbsp;</div>
+
+<p>
+indicate that the <tt>make-vector</tt> procedure must be defined to take
+either one or two arguments.</p>
+<p>
+
+It is an error for an operation to be presented with an argument that it
+is not specified to handle.  For succinctness, we follow the convention
+that if an argument name is also the name of a type listed in
+section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.2">3.2</a>, then that argument must be of the named type.
+For example, the header line for <tt>vector-ref</tt> given above dictates that the
+first argument to <tt>vector-ref</tt> must be a vector.  The following naming
+conventions also imply type restrictions:
+
+</p>
+<div align=left><table><tr><td>
+
+
+<table border=0><tr><td valign=top ><i>obj</i></td><td valign=top >any object</td></tr>
+<tr><td valign=top ><em>l</em><em>i</em><em>s</em><em>t</em>, <em>l</em><em>i</em><em>s</em><em>t</em><sub>1</sub>, <tt>...</tt> <em>l</em><em>i</em><em>s</em><em>t</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >list (see section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.3.2">6.3.2</a>)</td></tr>
+<tr><td valign=top ><em>z</em>, <em>z</em><sub>1</sub>, <tt>...</tt> <em>z</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >complex number</td></tr>
+<tr><td valign=top ><em>x</em>, <em>x</em><sub>1</sub>, <tt>...</tt> <em>x</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >real number</td></tr>
+<tr><td valign=top ><em>y</em>, <em>y</em><sub>1</sub>, <tt>...</tt> <em>y</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >real number</td></tr>
+<tr><td valign=top ><em>q</em>, <em>q</em><sub>1</sub>, <tt>...</tt> <em>q</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >rational number</td></tr>
+<tr><td valign=top ><em>n</em>, <em>n</em><sub>1</sub>, <tt>...</tt> <em>n</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >integer</td></tr>
+<tr><td valign=top ><em>k</em>, <em>k</em><sub>1</sub>, <tt>...</tt> <em>k</em><sub><em>j</em></sub>, <tt>...</tt></td><td valign=top >exact non-negative integer</td></tr>
+<tr><td valign=top ></td></tr></table>
+</td></tr></table></div>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_1.3.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3.4">1.3.4&nbsp;&nbsp;Evaluation examples</a></h3>
+<p>The symbol ``===&gt;'' used in program examples should be read
+``evaluates to.''  For example,</p>
+<p>
+<tt>(*&nbsp;5&nbsp;8)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;40</p>
+</tt>
+<p>
+means that the expression <tt>(* 5 8)</tt> evaluates to the object <tt>40</tt>.
+Or, more precisely:  the expression given by the sequence of characters
+``<tt>(* 5 8)</tt>'' evaluates, in the initial environment, to an object
+that may be represented externally by the sequence of characters ``<tt>40</tt>''.  See section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.3">3.3</a> for a discussion of external
+representations of objects.</p>
+<p>
+</p>
+<a name="%_sec_1.3.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_1.3.5">1.3.5&nbsp;&nbsp;Naming conventions</a></h3>
+<p>By convention, the names of procedures that always return a boolean
+value usually end
+in ``<tt>?</tt>''.  Such procedures are called predicates.</p>
+<p>
+By convention, the names of procedures that store values into previously
+allocated locations (see section&nbsp;<a href="r5rs-Z-H-6.html#%_sec_3.4">3.4</a>) usually end in
+``<tt>!</tt>''.
+Such procedures are called mutation procedures.
+By convention, the value returned by a mutation procedure is unspecified.</p>
+<p>
+By convention, ``<tt>-&gt;</tt>'' appears within the names of procedures that
+take an object of one type and return an analogous object of another type.
+For example, <tt>list-&gt;vector</tt> takes a list and returns a vector whose
+elements are the same as those of the list.</p>
+<p>
+
+  </p>
+<p>
+</p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-3.html">previous</a></span><span>, <a href="r5rs-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

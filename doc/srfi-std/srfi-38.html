@@ -1,0 +1,637 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>SRFI 38: External Representation for Data With Shared Structure</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+External Representation for Data With Shared Structure
+
+<H1>Author</H1>
+
+Ray Dillinger
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.
+You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-38/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<UL>
+      <LI>Draft: 2002/12/20-2003/04/02</li>
+      <LI>Final: 2003/04/02</LI>
+</UL>
+
+<H1>Abstract</H1>
+<P>
+This SRFI proposes <tt>(write-with-shared-structure)</tt> and 
+<tt>(read-with-shared-structure)</tt>, procedures for writing
+and reading external representations of data containing shared
+structure.  These procedures implement a proposed standard
+external notation for data containing shared structure.
+</P>
+<P>
+This SRFI permits but does not require replacing the standard
+<tt>(write)</tt> and <tt>(read)</tt> functions.  These functions
+may be implemented without the overhead in time and space required
+to detect and specify shared structure.
+</P>
+<P>
+An implementation conforms to this SRFI if it provides procedures
+named <tt>(write-with-shared-structure)</tt> and
+<tt>(read-with-shared-structure)</tt>, which produce and read
+the same notation as produced by the reference implementation.
+It may also provide <tt>(read/ss)</tt> and <tt>(write/ss)</tt>,
+equivalent functions with shorter names.
+</P>
+
+
+<H1>Rationale</H1>
+
+<P>
+
+R5RS scheme and IEEE scheme provide the procedure <tt>(write)</tt>,
+which prints machine-readable representations of lists and other
+objects.  However, the printed representation does not preserve
+information about what parts of the structure are shared, and in the
+case of self-referential objects the behavior of <tt>(write)</tt>
+itself is undefined; it is permitted to go into an infinite loop or
+invoke the dreaded curse of the nasal demons.
+
+</P>
+<P>
+
+For example, it is possible to have a list within which two or more
+members are the same string (in the sense of <tt>(eq?)</tt>), but when
+the list is written, there is not sufficient information in the
+representation to recover the <tt>(eq?)</tt> relationship.  When the
+list is read back in, there will be two or more copies of the string
+which are <tt>(eqv?)</tt> but not <tt>(eq?)</tt>.
+
+</P>
+<P>
+As an example of the second problem,  The results of evaluating
+<PRE>
+(begin (define a (cons 'val1 'val2))
+       (set-cdr! a a)
+       (write a))
+</PRE>
+
+are undefined; in R5RS parlance, calling write on such a structure
+&quot;is an error&quot;, but not one that is necessarily
+signalled. The routine is permitted to print a nonstandard notation
+such as the one proposed in this standard or a different one, fail
+silently, signal an error, go into an infinite loop, or make demons
+fly out of your nose.  Some of these results are unacceptable in some
+cases. This SRFI hopes to provide a standard way of dealing with this
+problem by providing a method of writing data which is guaranteed to
+be well-behaved and predictable even on data containing shared
+structures.
+
+</P>
+
+<P>
+
+The extended functionality described below in the implementation of
+<tt>(write-with-shared-structure)</tt>is already present in the
+<tt>(write)</tt> function of several major scheme implementations
+(PLT, SISC, Chez, Bigloo, MIT scheme, and possibly others).
+
+</P>
+
+<H1>Specification</H1>
+<P>
+
+<h2> Formal Grammar of the New External Representation</h2>
+This SRFI creates an alternative external representation for data
+written and read under <tt>(write/ss)</tt> and <tt>(read/ss)</tt>.
+It is identical to the grammar for external representation for data
+written and read under <tt>(write)</tt> and <tt>(read)</tt> given in
+section 7 of R5RS, except that the single production
+<PRE>
+
+&lt;datum&gt; --&gt; &lt;simple datum&gt; | &lt;compound datum&gt; 
+
+</PRE>
+Is replaced by the following five productions.
+<PRE>
+
+&lt;datum&gt; --&gt; &lt;defining datum&gt; | &lt;nondefining datum&gt; | &lt;defined datum&gt;
+
+&lt;defining datum&gt; --&gt;  #&lt;indexnum&gt;=&lt;nondefining datum&gt;
+
+&lt;defined datum&gt; --&gt; #&lt;indexnum&gt;#
+
+&lt;nondefining datum&gt; --&gt; &lt;simple datum&gt; | &lt;compound datum&gt; 
+
+&lt;indexnum&gt; --&gt; &lt;digit 10&gt;+
+</PRE>
+</P>
+
+<h2>New Procedures</h2>
+<P>
+<PRE>
+
+[[library procedure]] <a name="write-with-shared-structure">(write-with-shared-structure obj)</a>
+[[library procedure]] (write-with-shared-structure obj port)
+[[library procedure]] (write-with-shared-structure obj port optarg)
+
+</PRE>
+
+Writes a written representation of obj to the given port. Strings that
+appear in the written representation are enclosed in doublequotes, and
+within those strings backslash and doublequote characters are escaped
+by backslashes. Character objects are written using the #\
+notation. 
+
+</P><P>
+
+Objects which denote locations rather than values (cons cells,
+vectors, and non-zero-length strings in R5RS scheme; also mutable
+objects, records, or containers if provided by the implementation), if
+they appear at more than one point in the data being written, must be
+preceded by <tt>"#N="</tt> the first time they are written and
+replaced by <tt>"#N#"</tt> all subsequent times they are written,
+where N is a natural number used to identify that particular object.
+If objects which denote locations occur only once in the structure,
+then <tt>(write-with-shared-structure)</tt> must produce the same
+external representation for those objects as <tt>(write)</tt>.
+
+</P>
+
+<P>
+
+Write-with-shared-structure must terminate in finite time when writing
+finite data.  Write-with-shared-structure must produce a finite
+representation when writing finite data.
+
+</P><P>
+
+Write-with-shared-structure returns an unspecified value. The port
+argument may be omitted, in which case it defaults to the value
+returned by <tt>(current-output-port)</tt>.  The optarg argument may
+also be omitted.  If present, its effects on the output and return
+value are unspecified but <tt>(write-with-shared-structure)</tt> must
+still write a representation that can be read by
+<tt>(read-with-shared-structure)</tt>.  Some implementations may wish to
+use optarg to specify formatting conventions, numeric radixes, or
+return values. The reference implementation ignores optarg.
+
+</P>
+<P>
+
+For example, the code
+<PRE>
+
+(begin (define a (cons 'val1 'val2))
+       (set-cdr! a a)
+       (write-with-shared-structure a))
+
+</PRE>
+
+should produce the output <tt> #1=(val1 . #1#) </tt>.  This shows a cons
+cell whose cdr contains itself.
+
+</P><P>
+
+<PRE>
+
+[[library procedure]] <a name="read-with-shared-structure">(read-with-shared-structure)</a>
+[[library procedure]] (read-with-shared-structure  port)
+
+</PRE>
+
+<tt>(read-with-shared-structure)</tt> converts the external
+representations of Scheme objects produced by
+<tt>(write-with-shared-structure)</tt> into scheme objects.  That is,
+it is a parser for the nonterminal &lt;datum&gt; in the augmented
+external representation grammar defined above.
+<tt>(read-with-shared-structure)</tt> returns the next object parsable
+from the given input port, updating port to point to the first
+character past the end of the external representation of the object.
+
+</P> <P>
+
+If an end-of-file is encountered in the input before any characters
+are found that can begin an object, then an end-of-file object is
+returned.  The port remains open, and further attempts to read it (by
+<tt>(read-with-shared-structure)</tt> or <tt>(read)</tt> will also
+return an end-of-file object.  If an end of file is encountered after
+the beginning of an object's external representation, but the external
+representation is incomplete and therefore not parsable, an error is
+signalled.
+
+</P><P>
+
+The port argument may be omitted, in which case it defaults to the
+value returned by <tt>(current-input-port)</tt>.  It is an error to
+read from a closed port.
+
+</P>
+
+
+
+
+<H1>Implementation</H1>
+
+<P>
+
+The reference implementation of <tt>(write-with-shared-structure)</tt>
+is based on an implementation provided by Al Petrofsky.  If there are
+any errors in it, I probably introduced them when I was adding support
+for an optional port argument.  The reference implementation of
+<tt>(read-with-shared-structure)</tt> <i>is</i> the implementation
+provided by Al Petrofsky.  Both are used here with his generous
+permission.
+
+</P>
+
+<P>
+
+Note that portability forces the reference implementation of
+<tt>(write-with-shared-structure)</tt> to be O(N^2) but that if an
+implementor tracks objects through additional fields hidden from R5RS
+scheme, a more efficient implementation can be provided.
+
+</P>
+<P>
+
+If all the locations in your scheme are mutable and you don't do any
+locking or multithreading, you can write an O(n) version that
+destructively marks locations as it goes and then restores them all
+when done.  If locations are immutable, then there should be some
+fixed ordering of them that you can use to make an O(log n) lookup
+table, giving you an O(n log n) write-with-shared-structure.  R5RS
+does not give the programmer access to mutability information nor to
+comparison of constant data's addresses, but both of these are trivial
+operations if you have access to the system's internals.
+
+</P>
+
+
+<PRE>
+;;; A printer that shows all sharing of substructures.  Uses the Common
+;;; Lisp print-circle notation: #n# refers to a previous substructure
+;;; labeled with #n=.   Takes O(n^2) time.
+
+
+  (define (write-with-shared-structure obj . optional-port)
+    (define (acons key val alist)
+      (cons (cons key val) alist))
+    (define outport (if (eq? '() optional-port)
+			(current-output-port)
+			(car optional-port)))
+    ;; We only track duplicates of pairs, vectors, and strings.  We
+    ;; ignore zero-length vectors and strings because r5rs doesn't
+    ;; guarantee that eq? treats them sanely (and they aren't very
+    ;; interesting anyway).
+
+    (define (interesting? obj)
+      (or (pair? obj)
+	  (and (vector? obj) (not (zero? (vector-length obj))))
+	  (and (string? obj) (not (zero? (string-length obj))))))
+    ;; (write-obj OBJ ALIST):
+    ;; ALIST has an entry for each interesting part of OBJ.  The
+    ;; associated value will be:
+    ;;  -- a number if the part has been given one,
+    ;;  -- #t if the part will need to be assigned a number but has not been yet,
+    ;;  -- #f if the part will not need a number.
+    ;; The cdr of ALIST's first element should be the most recently
+    ;; assigned number.
+    ;; Returns an alist with new shadowing entries for any parts that
+    ;; had numbers assigned.
+    (define (write-obj obj alist)
+      (define (write-interesting alist)
+	(cond ((pair? obj)
+	       (display "(" outport)
+	       (let write-cdr ((obj (cdr obj)) (alist (write-obj (car obj) alist)))
+		 (cond ((and (pair? obj) (not (cdr (assq obj alist))))
+			(display " " outport)
+			(write-cdr (cdr obj) (write-obj (car obj) alist)))
+		       ((null? obj)
+			(display ")" outport)
+			alist)
+		       (else
+			(display " . " outport)
+			(let ((alist (write-obj obj alist)))
+			  (display ")" outport)
+			  alist)))))
+	      ((vector? obj)
+	       (display "#(" outport)
+	       (let ((len (vector-length obj)))
+		 (let write-vec ((i 1) (alist (write-obj (vector-ref obj 0) alist)))
+		   (cond ((= i len) (display ")" outport) alist)
+			 (else (display " " outport)
+			       (write-vec (+ i 1)
+					  (write-obj (vector-ref obj i) alist)))))))
+	      ;; else it's a string
+	      (else (write obj outport) alist)))
+      (cond ((interesting? obj)
+	     (let ((val (cdr (assq obj alist))))
+	       (cond ((not val) (write-interesting alist))
+		     ((number? val) 
+		      (begin (display "#" outport)
+			     (write val outport)
+			     (display "#" outport) alist))
+		     (else
+		      (let ((n (+ 1 (cdar alist))))
+			(begin (display "#" outport)
+			       (write n outport) 
+			       (display "=" outport))
+			(write-interesting (acons obj n alist)))))))
+	    (else (write obj outport) alist)))
+
+    ;; Scan computes the initial value of the alist, which maps each
+    ;; interesting part of the object to #t if it occurs multiple times,
+    ;; #f if only once.
+    (define (scan obj alist)
+      (cond ((not (interesting? obj)) alist)
+	    ((assq obj alist)
+             => (lambda (p) (if (cdr p) alist (acons obj #t alist))))
+	    (else
+	     (let ((alist (acons obj #f alist)))
+	       (cond ((pair? obj) (scan (car obj) (scan (cdr obj) alist)))
+		     ((vector? obj)
+		      (let ((len (vector-length obj)))
+			(do ((i 0 (+ 1 i))
+			     (alist alist (scan (vector-ref obj i) alist)))
+			    ((= i len) alist))))
+		     (else alist))))))
+    (write-obj obj (acons 'dummy 0 (scan obj '())))
+    ;; We don't want to return the big alist that write-obj just returned.
+    (if #f #f))
+
+
+
+
+
+(define (read-with-shared-structure . optional-port)
+  (define port
+    (if (null? optional-port) (current-input-port) (car optional-port)))
+
+  (define (read-char*) (read-char port))
+  (define (peek-char*) (peek-char port))
+
+  (define (looking-at? c)
+    (eqv? c (peek-char*)))
+
+  (define (delimiter? c)
+    (case c
+      ((#\( #\) #\" #\;) #t)
+      (else (or (eof-object? c)
+		(char-whitespace? c)))))
+
+  (define (not-delimiter? c) (not (delimiter? c)))
+
+  (define (eat-intertoken-space)
+    (define c (peek-char*))
+    (cond ((eof-object? c))
+	  ((char-whitespace? c) (read-char*) (eat-intertoken-space))
+	  ((char=? c #\;)
+	   (do ((c (read-char*) (read-char*)))
+	       ((or (eof-object? c) (char=? c #\newline))))
+	   (eat-intertoken-space))))
+
+  (define (read-string)
+    (read-char*)
+    (let read-it ((chars '()))
+      (let ((c (read-char*)))
+	(if (eof-object? c)
+	    (error "EOF inside a string")
+	    (case c
+	      ((#\") (list->string (reverse chars)))
+	      ((#\\) (read-it (cons (read-char*) chars)))
+	      (else (read-it (cons c chars))))))))
+
+  ;; reads chars that match PRED and returns them as a string.
+  (define (read-some-chars pred)
+    (let iter ((chars '()))
+      (let ((c (peek-char*)))
+	(if (or (eof-object? c) (not (pred c)))
+	    (list->string (reverse chars))
+	    (iter (cons (read-char*) chars))))))
+
+  ;; reads a character after the #\ has been read.
+  (define (read-character)
+    (let ((c (peek-char*)))
+      (cond ((eof-object? c) (error "EOF inside a character"))
+	    ((char-alphabetic? c)
+	     (let ((name (read-some-chars char-alphabetic?)))
+	       (cond ((= 1 (string-length name)) (string-ref name 0))
+		     ((string-ci=? name "space") #\space)
+		     ((string-ci=? name "newline") #\newline)
+		     (else (error "Unknown named character: " name)))))
+	    (else (read-char*)))))
+
+  (define (read-number first-char)
+    (let ((str (string-append (string first-char)
+			      (read-some-chars not-delimiter?))))
+      (or (string->number str)
+	  (error "Malformed number: " str))))
+
+  (define char-standard-case
+    (if (char=? #\a (string-ref (symbol->string 'a) 0))
+	char-downcase
+	char-upcase))
+
+  (define (string-standard-case str)
+    (let* ((len (string-length str))
+	   (new (make-string len)))
+      (do ((i 0 (+ i 1)))
+	  ((= i len) new)
+	(string-set! new i (char-standard-case (string-ref str i))))))
+
+  (define (read-identifier)
+    (string->symbol (string-standard-case (read-some-chars not-delimiter?))))
+
+  (define (read-part-spec)
+    (let ((n (string->number (read-some-chars char-numeric?))))
+      (let ((c (read-char*)))
+	(case c
+	  ((#\=) (cons 'decl n))
+	  ((#\#) (cons 'use n))
+	  (else (error "Malformed shared part specifier"))))))
+
+  ;; Tokens: strings, characters, numbers, booleans, and
+  ;; identifiers/symbols are represented as themselves.
+  ;; Single-character tokens are represented as (CHAR), the
+  ;; two-character tokens #( and ,@ become (#\#) and (#\@).
+  ;; #NN= and #NN# become (decl . NN) and (use . NN).
+  (define (read-optional-token)
+    (eat-intertoken-space)
+    (let ((c (peek-char*)))
+      (case c
+	((#\( #\) #\' #\`) (read-char*) (list c))
+	((#\,)
+	 (read-char*)
+	 (if (looking-at? #\@)
+	     (begin (read-char*) '(#\@))
+	     '(#\,)))
+	((#\") (read-string))
+	((#\.)
+	 (read-char*)
+	 (cond ((delimiter? (peek-char*)) '(#\.))
+	       ((not (looking-at? #\.)) (read-number #\.))
+	       ((begin (read-char*) (looking-at? #\.)) (read-char*) '...)
+	       (else (error "Malformed token starting with \"..\""))))
+	((#\+) (read-char*) (if (delimiter? (peek-char*)) '+ (read-number c)))
+	((#\-) (read-char*) (if (delimiter? (peek-char*)) '- (read-number c)))
+	((#\#)
+	 (read-char*)
+	 (let ((c (peek-char*)))
+	   (case c
+	     ((#\() (read-char*) '(#\#))
+	     ((#\\) (read-char*) (read-character))
+	     ((#\t #\T) (read-char*) #t)
+	     ((#\f #\F) (read-char*) #f)
+	     (else (cond ((eof-object? c) (error "EOF inside a # token"))
+			 ((char-numeric? c) (read-part-spec))
+			 (else (read-number #\#)))))))
+	(else (cond ((eof-object? c) c)
+		    ((char-numeric? c) (read-char*) (read-number c))
+		    (else (read-identifier)))))))
+
+  (define (read-token)
+    (let ((tok (read-optional-token)))
+      (if (eof-object? tok)
+	  (error "EOF where token was required")
+	  tok)))
+
+  ;; Parts-alist maps the number of each part to a thunk that returns the part.
+  (define parts-alist '())
+
+  (define (add-part-to-alist! n thunk)
+    (set! parts-alist (cons (cons n thunk) parts-alist)))
+
+  ;; Read-object returns a datum that may contain some thunks, which
+  ;; need to be replaced with their return values.
+  (define (read-object)
+    (finish-reading-object (read-token)))
+
+  ;; Like read-object, but may return EOF.
+  (define (read-optional-object)
+    (finish-reading-object (read-optional-token)))
+
+  (define (finish-reading-object first-token)
+    (if (not (pair? first-token))
+	first-token
+	(if (char? (car first-token))
+	    (case (car first-token)
+	      ((#\() (read-list-tail))
+	      ((#\#) (list->vector (read-list-tail)))
+	      ((#\. #\)) (error (string-append "Unexpected \"" first-token "\"")))
+	      (else
+	       (list (caadr (assv (car first-token)
+				  '((#\' 'x) (#\, ,x) (#\` `x) (#\@ ,@x))))
+		     (read-object))))
+	    ;; We need to specially handle chains of declarations in
+	    ;; order to allow #1=#2=x and #1=(#2=#1#) and not to allow
+	    ;; #1=#2=#1# nor #1=#2=#1=x.
+	    (let ((starting-alist parts-alist))
+	      (let read-decls ((token first-token))
+		(if (and (pair? token) (symbol? (car token)))
+		    (let ((n (cdr token)))
+		      (case (car token)
+			((use)
+			 ;; To use a part, it must have been
+			 ;; declared before this chain started.
+			 (cond ((assv n starting-alist) => cdr)
+			       (else (error "Use of undeclared part " n))))
+			((decl)
+			 (if (assv n parts-alist)
+			     (error "Double declaration of part " n))
+			 ;; Letrec enables us to make deferred
+			 ;; references to an object before it exists.
+			 (letrec ((obj (begin
+					 (add-part-to-alist! n (lambda () obj))
+					 (read-decls (read-token)))))
+			   obj))))
+		    (finish-reading-object token)))))))
+
+  (define (read-list-tail)
+    (let ((token (read-token)))
+      (if (not (pair? token))
+	  (cons token (read-list-tail))
+	  (case (car token)
+	    ((#\)) '())
+	    ((#\.) (let* ((obj (read-object))
+			  (tok (read-token)))
+		     (if (and (pair? tok) (char=? #\) (car tok)))
+			 obj
+			 (error "Extra junk after a dot"))))
+	    (else (let ((obj (finish-reading-object token)))
+		    (cons obj (read-list-tail))))))))
+
+  ;; Unthunk.
+  ;; To deference a part that was declared using another part,
+  ;; e.g. #2=#1#, may require multiple dethunkings.  We were careful
+  ;; in finish-reading-object to ensure that this won't loop forever:
+  (define (unthunk thunk)
+    (let ((x (thunk)))
+      (if (procedure? x) (unthunk x) x)))
+
+  (let ((obj (read-optional-object)))
+    (let fill-in-parts ((obj obj))
+      (cond ((pair? obj)
+	     (if (procedure? (car obj))
+		 (set-car! obj (unthunk (car obj)))
+		 (fill-in-parts (car obj)))
+	     (if (procedure? (cdr obj))
+		 (set-cdr! obj (unthunk (cdr obj)))
+		 (fill-in-parts (cdr obj))))
+	    ((vector? obj)
+	     (let ((len (vector-length obj)))
+	       (do ((i 0 (+ i 1)))
+		   ((= i len))
+		 (let ((elt (vector-ref obj i)))
+		   (if (procedure? elt)
+		       (vector-set! obj i (unthunk elt))
+		       (fill-in-parts elt))))))))
+    obj))
+
+</PRE>
+
+
+<H1>Copyright</H1>
+<p>Copyright (C) Ray Dillinger 2003. All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a
+    href="mailto:srfi-editors@srfi.schemers.org">David Rush</a></address>
+<!-- Created: Tue Sep 29 19:20:08 EDT 1998 -->
+<!-- hhmts start -->
+Last modified: Wed Apr  2 19:58:58 BST 2003
+<!-- hhmts end -->
+  </body>
+</html>
+

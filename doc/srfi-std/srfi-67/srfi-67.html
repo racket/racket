@@ -1,0 +1,2240 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from srfi-67.tex by tex2page, v 2004-09-11
+(running on MzScheme 299.200, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+SRFI 67: Compare Procedures
+</title>
+<link rel="stylesheet" type="text/css" href="srfi-67-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div align=right class=navigation><i>[Go to <a href="srfi-67.html#node_index_start">index</a></span>]</i></div><p></p>
+
+
+<h1 class=title align=center><br><br>SRFI 67: Compare Procedures</h1>
+<p></p>
+<div align=center>
+
+<br>
+<table>
+<tr align="center">
+  <td>Sebastian Egner</td>
+  <td>&nbsp;&nbsp;</td>
+  <td>Jens Axel S&oslash;gaard</td>
+</tr>
+<tr>
+  <td> <a href="mailto:sebastian.egner-at-philips.com">sebastian.egner-at-philips.com</a> </td>
+  <td>&nbsp;&nbsp;</td>
+  <td><a href="mailto:jensaxel-at-soegaard.net">jensaxel-at-soegaard.net</a> </td>
+</tr>
+</table>
+<p>
+Other formats are available at srfi.schemers.org:
+<ul>
+<li><a href="http://srfi.schemers.org/srfi-67/srfi-67.ps">The SRFI 67 Document (Postscript)</a></li>
+<li><a href="http://srfi.schemers.org/srfi-67/srfi-67.pdf">The SRFI 67 Document (PDF)</a></li>
+<li><a href="http://srfi.schemers.org/srfi-67/srfi-67.dvi">The SRFI 67 Document (TeX-DVI)</a></li>
+</ul>
+&nbsp;<br>
+<p>December 3, 2005</p>
+</div>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+ </p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<p>                    </p>
+<a name="node_sec_Temp_1"></a>
+<h1><a href="#node_toc_node_sec_Temp_1">Contents</a></h1>
+<p><a name="node_toc_start"></a></p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_1"></a><a href="#node_sec_1">1&nbsp;&nbsp;Abstract and Rationale</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_2"></a><a href="#node_sec_2">2&nbsp;&nbsp;Introduction</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_3"></a><a href="#node_sec_3">3&nbsp;&nbsp;Terminology and Conventions</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_4"></a><a href="#node_sec_4">4&nbsp;&nbsp;Specification</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.1"></a><a href="#node_sec_4.1">4.1&nbsp;&nbsp;Comparing atoms</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2"></a><a href="#node_sec_4.2">4.2&nbsp;&nbsp;Comparing lists and vectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3"></a><a href="#node_sec_4.3">4.3&nbsp;&nbsp;Comparing pairs and improper lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.4"></a><a href="#node_sec_4.4">4.4&nbsp;&nbsp;The default compare procedure</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.5"></a><a href="#node_sec_4.5">4.5&nbsp;&nbsp;Constructing compare procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.6"></a><a href="#node_sec_4.6">4.6&nbsp;&nbsp;Using compare procedures</a><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_5"></a><a href="#node_sec_5">5&nbsp;&nbsp;The theory of compare functions</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_6"></a><a href="#node_sec_6">6&nbsp;&nbsp;Design Rationale</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_7"></a><a href="#node_sec_7">7&nbsp;&nbsp;Related work</a></b><br>
+</p>
+<p><b>
+&nbsp; &nbsp; <a name="node_toc_node_sec_8"></a><a href="#node_sec_8">8&nbsp;&nbsp;Reference implementation</a></b><br>
+</p>
+<p>
+</p>
+<p>
+Copyright (c) 2005 Sebastian Egner and Jens Axel S&oslash;gaard.</p>
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+``Software''), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.</p>
+<p>
+THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+</p>
+<p>
+</p>
+<p>
+</p>
+<a name="node_sec_1"></a>
+<h1><a href="#node_toc_node_sec_1">1&nbsp;&nbsp;Abstract and Rationale</a></h1>
+<p>This SRFI can be seen as an extension of the standard procedures
+<tt>=</tt>, <tt>&lt;</tt>, <tt>char&lt;?</tt> etc. of 
+R<sup>5</sup>RS  -- or even as a replacement.
+The primary design aspect in this SRFI is the separation of
+<em>representing</em> a total order and <em>using it.</em>
+For representing the order, we have chosen for truly 3-way
+comparisons. 
+For using it we provide an extensive set of
+operations, each of which accepts a procedure used for comparison.
+Since these compare procedures are often optional,
+comparing built-in types is as convenient as 
+R<sup>5</sup>RS ,
+sometimes more convenient: 
+For example, testing if the integer index <em>i</em> lies in the
+integer range {0, <tt>...</tt>, <em>n</em> <tt>-</tt> 1} can be written as
+<tt>(&lt;=/&lt;? 0 i n)</tt>, implicitly invoking <tt>default-compare</tt>.</p>
+<p>
+As soon as new total orders are required,
+the infrastructure provided by this SRFI is far more
+convenient and often even more efficient than building
+each total order from scratch.</p>
+<p>
+Moreover, in case Scheme users and implementors find this
+mechanism useful and adopt it,
+the benefit of having a uniform interface to total orders
+to be used in data structures will manifest itself.
+Most concretely, a new sorting procedure in the spirit of
+this SRFI would have the interface
+<tt>(my-sort [ <i>compare</i> ] <i>xs</i>)</tt>,
+using <tt>default-compare</tt> if the optional <i>compare</i>
+was not provided.
+Then <tt>my-sort</tt> could be defined using the entire
+infrastructure of this SRFI: 
+Efficient 2- and 3-way branching,
+testing for chains and pairwise inequality,
+min/max, and general order statistics.</p>
+<p>
+</p>
+<a name="node_sec_2"></a>
+<h1><a href="#node_toc_node_sec_2">2&nbsp;&nbsp;Introduction</a></h1>
+<p>This SRFI defines a mechanism for comparing Scheme values
+with respect to a total order (aka linear order) [<a href="#node_bib_1">1</a>].
+The mechanism provides operations for:
+</p>
+<ol>
+<li><p>comparing objects of the built-in types,
+</p>
+<li><p>using a total order in situations that arise in programs,
+</p>
+<li><p>facilitating the definition of a new total order.
+</p>
+</ol><p>
+In the following, these aspects will briefly be illustrated.</p>
+<p>
+Traditionally, a total order is represented in Scheme by an
+order predicate, like <tt>&lt;</tt> or <tt>char&lt;?</tt>.
+For the purpose of this SRFI, however, a total order is 
+represented by a Scheme-procedure comparing its two arguments 
+and returning either <tt>-1</tt>, <tt>0</tt>, or <tt>1</tt> depending
+on whether the first argument is considered smaller, equal, 
+or greater than the second argument respectively.
+Examples of such compare procedures include
+<tt>(lambda (x y) (sign (- x y)))</tt> for comparing real numbers,
+but also <tt>(lambda (x y) 0)</tt> comparing anything.
+For most built-in types specified in the 
+Revised<sup>5</sup> Report on the Algorithmic Language Scheme
+(
+R<sup>5</sup>RS , [<a href="#node_bib_3">3</a>]) compare procedures are specified in
+Sections&nbsp;<a href="#node_sec_4.1">4.1</a>, <a href="#node_sec_4.2">4.2</a>, and <a href="#node_sec_4.3">4.3</a> of this SRFI.
+An axiomatic definition of ``compare procedure''
+is given in Section&nbsp;<a href="#node_sec_5">5</a>.</p>
+<p>
+The primary reason for using 3-valued compare procedures
+instead of (2-valued) order predicates is efficiency:
+When comparison is computationally expensive,
+it is wasteful if <em>two</em> predicates are evaluated
+where a single 3-valued comparison would suffice.
+This point is discussed in greater detail in Section&nbsp;<a href="#node_sec_6">6</a>.</p>
+<p>
+But dealing directly with 3-valued comparisons in
+the application program is inconvenient and obscures intention:
+For testing <tt>x</tt> &lt; <tt>y</tt> one would have 
+to write <tt>(eqv? (compare x y) -1)</tt>.
+For this reason, an operation <tt>&lt;?</tt> is supplied which allows
+to phrase the same test as <tt>(&lt;? compare x y)</tt>.
+This is an example of mapping the three possible outcomes of
+a comparison into the two boolean values {<tt>#<em>f</em></tt>, <tt>#<em>t</em></tt>}.
+Since <tt>&lt;?</tt> takes the total order as an explicit parameter,
+a comfortably large arsenal of tests can be made available
+for each and every total order (Section&nbsp;<a href="#node_sec_4.6">4.6</a>).
+This deviates from the approach of 
+R<sup>5</sup>RS , in which there are
+only five operations ( = , &lt;, &gt;, <u>&lt;</u>, <u>&gt;</u>) -- and for each
+total order (<tt>real</tt>/<tt>number</tt>, <tt>char</tt>, <tt>char-ci</tt>, <tt>string</tt>,
+<tt>string-ci</tt>) a complete set of these five operation is provided.</p>
+<p>
+But still, using <tt>&lt;?</tt> would be inconvenient if the compare
+procedure would have to be supplied explicitly every time.
+For this reason, the parameter <tt>compare</tt> is often made
+optional in this SRFI -- and the procedure <tt>default-compare</tt> is
+used whenever no compare procedure is passed explicitly.
+<tt>Default-compare</tt> (Section&nbsp;<a href="#node_sec_4.4">4.4</a>) defines
+<em>some</em> resonable total order on the built-in types of 
+R<sup>5</sup>RS .</p>
+<p>
+For the third aspect of this SRFI, defining compare procedures,
+special control structures (macros) are 
+provided (Section&nbsp;<a href="#node_sec_4.5">4.5</a>).
+These control structures can be used in the definition of
+a (potentially recursive) compare procedure.
+This is best explained by an extended example.</p>
+<p>
+</p>
+<a name="node_sec_Temp_2"></a>
+<h4><a href="#node_toc_node_sec_Temp_2">Example</a></h4>
+<p>Assume there is a type <tt>length</tt> representing physical length.
+The type has an accessor procedure <tt>meters</tt> returning the length
+in meters (a real number).
+A compare procedure for lengths can then be defined in terms of
+<tt>real-compare</tt> (Section&nbsp;<a href="#node_sec_4.1">4.1</a>) as:
+</p>
+<tt>&nbsp;&nbsp;(define&nbsp;(length-compare&nbsp;length1&nbsp;length2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(real-compare&nbsp;(meters&nbsp;length1)&nbsp;(meters&nbsp;length2)))<br>
+</tt><p>
+Now, <tt>(&lt;? length-compare x y)</tt> tests if 
+length <tt>x</tt> is shorter than length <tt>y</tt>.
+Also, <tt>(&lt;=/&lt;? length-compare a x b)</tt> tests 
+if length <tt>x</tt> lies between length <tt>a</tt> (incl.) and 
+length <tt>b</tt> (excl.)
+The expression <tt>(min-compare length-compare x y z)</tt>
+is a shortest of the lengths <tt>x</tt>, <tt>y</tt>, and <tt>z</tt>.
+Likewise, <tt>(chain&lt;? length-compare x1 x2 x3 x4)</tt> test
+if the lengths <tt>x1 x2 x3 x3</tt> are strictly increasing,
+and so on (refer to Section&nbsp;<a href="#node_sec_4.6">4.6</a>).</p>
+<p>
+Furthermore, assume there is another type <tt>box</tt> representing a physical box.
+The type has procedures <tt>width</tt>, <tt>height</tt>, and <tt>depth</tt>
+accessing the dimension (each giving a <tt>length</tt>).
+A compare procedure for boxes, comparing first by width then
+by height and then by depth, can be defined using the control
+structure <tt>refine-compare</tt> (Section&nbsp;<a href="#node_sec_4.5">4.5</a>) as:
+</p>
+<tt>&nbsp;&nbsp;(define&nbsp;(box-compare&nbsp;box1&nbsp;box2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(refine-compare&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(length-compare&nbsp;(width&nbsp;&nbsp;box1)&nbsp;(width&nbsp;&nbsp;box2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(length-compare&nbsp;(height&nbsp;box1)&nbsp;(height&nbsp;box2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(length-compare&nbsp;(depth&nbsp;&nbsp;box1)&nbsp;(depth&nbsp;&nbsp;box2))))<br>
+</tt><p>
+This time, <tt>(&lt;? box-compare b1 b2)</tt> tests if box <tt>b1</tt>
+is smaller than box <tt>b2</tt> -- in the sense of the order defined. 
+Of course, all the other tests, minimum, maximum etc. are available, too.</p>
+<p>
+As a final complication, assume that there is also a type <tt>bowl</tt>
+with accessors <tt>radius</tt> (a <tt>length</tt>) and <tt>open?</tt> (a boolean).
+Bowls are to be compared first by whether they are open or closed,
+and then by radius.
+However, bowls and boxes also need to be compared to each other,
+ordered such that a bowl is considered ``smaller'' than a box.
+(There are type-test predicates <tt>box?</tt> and <tt>bowl?</tt>).
+Using the control structure <tt>select-compare</tt>
+(Section&nbsp;<a href="#node_sec_4.5">4.5</a>) this can be expressed as:
+</p>
+<tt>(define&nbsp;(container-compare&nbsp;c1&nbsp;c2)<br>
+&nbsp;&nbsp;(select-compare&nbsp;c1&nbsp;c2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bowl?&nbsp;(boolean-compare&nbsp;(open?&nbsp;&nbsp;c1)&nbsp;(open?&nbsp;&nbsp;c2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(length-compare&nbsp;&nbsp;(radius&nbsp;c1)&nbsp;(radius&nbsp;c2)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(box?&nbsp;&nbsp;(box-compare&nbsp;c1&nbsp;c2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;&quot;neither&nbsp;bowls&nbsp;nor&nbsp;boxes&quot;&nbsp;c1&nbsp;c2)))<br>
+</tt><p>
+This is an example of ``hierarchical extension'' of compare
+procedures, as explained in Section&nbsp;<a href="#node_sec_5">5</a>.
+Also note the implicit use of <tt>refine-compare</tt> in
+the <tt>bowl?</tt>-case.</p>
+<p>
+The preceeding example illustrates the main functionality of this SRFI.
+For other examples, refer to Section&nbsp;<a href="#node_sec_4.4">4.4</a>,
+and to the file <tt>examples.scm</tt> included in the reference
+implementation.</p>
+<p>
+</p>
+<a name="node_sec_3"></a>
+<h1><a href="#node_toc_node_sec_3">3&nbsp;&nbsp;Terminology and Conventions</a></h1>
+<p>A <em>compare procedure</em> is a Scheme-procedure of two
+arguments returning an exact integer in { <tt>-</tt> 1,0,1}
+such that the valid input values are ordered according
+to some total order.
+A compare procedure, together with a set of Scheme values
+to which it is applicable, represents a compare function
+as defined in Section&nbsp;<a href="#node_sec_5">5</a>.</p>
+<p>
+A <em>comparison</em> is either an expression applying
+a compare procedure to two values, or the result of such
+an expression.</p>
+<p>
+Each operation (macro or procedure) processing the value of 
+a comparison checks if the value is indeed an exact integer 
+in the set { <tt>-</tt> 1,0,1}.
+If this is not the case, an error is signalled.</p>
+<p>
+Compare procedures expecting certain types of argument
+should raise an error in case the arguments are not
+of this type.
+For most compare procedures specified in this SRFI,
+this behavior is required.
+A compare procedure <i>compare</i> can be used for 
+type-checking value <i>x</i> by evaluating
+<tt>(<i>compare</i> <i>x</i> <i>x</i>)</tt>,
+in case that is desired.
+This is useful in procedures like <tt>chain&lt;?</tt> which
+guarantee to check each argument unconditionally.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="node_sec_4"></a>
+<h1><a href="#node_toc_node_sec_4">4&nbsp;&nbsp;Specification</a></h1>
+<p></p>
+<a name="node_sec_4.1"></a>
+<h2><a href="#node_toc_node_sec_4.1">4.1&nbsp;&nbsp;Comparing atoms</a></h2>
+<p></p>
+<p>
+In this section, compare procedures for most of the atomic
+types of 
+R<sup>5</sup>RS  are defined: 
+Booleans, characters, strings, symbols, and numbers.</p>
+<p>
+As a general naming convention, a procedure named
+</p>
+<div align=center><table><tr><td>
+
+<em>type</em><tt>-compare-</tt><em>order</em>
+</td></tr></table></div>
+<p>
+compares two object of the type <em>type</em> with
+respect to a total order for which <em>order</em> is
+a mnemonic hint (e.g. <tt>-ci</tt> for case-insensitive).
+Of course, <tt>-</tt><em>order</em> may be absent if there is
+just one order or the order is obvious.
+It is an error if a compare procedure accepting objects of a
+certain type is called with one or two arguments not of that type.</p>
+<p>
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_2"></a>boolean-compare<i> <i>bool<sub>1</sub></i> <i>bool<sub>2</sub></i></i>)</tt>&nbsp;</div>
+Compares two booleans, ordered by <tt>#f</tt> &lt; <tt>#t</tt>.
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+A non-<tt>#f</tt> value is <em>not</em> interpreted as a ``true value,''
+but rather an error will be signalled.
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_4"></a>char-compare<i>    <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_6"></a>char-compare-ci<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i></i>)</tt>&nbsp;</div>
+Compare characters as <tt>char&lt;=?</tt> and <tt>char-ci&lt;=?</tt> respectively.
+The suffix <tt>-ci</tt> means ``case insensitive.''
+<br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_8"></a>string-compare<i>    <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_10"></a>string-compare-ci<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i></i>)</tt>&nbsp;</div>
+Compare strings as <tt>string&lt;=</tt> and <tt>string-ci&lt;=?</tt>.
+The suffix <tt>-ci</tt> means ``case insensitive.''
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>Compare-string</tt> could be defined as<p>
+</p>
+<tt>&nbsp;&nbsp;(define&nbsp;(string-compare&nbsp;string1&nbsp;string2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(vector-compare-as-list&nbsp;char-compare&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string1&nbsp;string2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;string-length&nbsp;string-ref))<br>
+</tt>
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_12"></a>symbol-compare<i> <i>symbol<sub>1</sub></i> <i>symbol<sub>2</sub></i></i>)</tt>&nbsp;</div>
+Compares symbols as <tt>string&lt;=</tt> on the names returned by <tt>symbol-&gt;string</tt>.<br>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_14"></a>integer-compare<i>  <i>x</i> <i>y</i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_16"></a>rational-compare<i> <i>x</i> <i>y</i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_18"></a>real-compare<i>     <i>x</i> <i>y</i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_20"></a>complex-compare<i>  <i>x</i> <i>y</i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_22"></a>number-compare<i>   <i>x</i> <i>y</i></i>)</tt>&nbsp;</div>
+Compare two numbers.
+It is an error if an argument is not of the type specified
+by the name of the procedure.<p>
+Complex numbers are ordered lexicographically on pairs (<em>r</em><em>e</em>, <em>i</em><em>m</em>).
+For objects representing real numbers sign(<em>x</em>  <tt>-</tt>  <em>y</em>) is computed.
+The ordering for values satisfying <tt>real?</tt> or <tt>complex?</tt>
+but not representing a real or complex number should be consistent with
+procedures <tt>=</tt> and <tt>&lt;</tt> of 
+R<sup>5</sup>RS ,
+and apart from that it is unspecified.</p>
+<p>
+Numerical compare procedures are compatible with the 
+R<sup>5</sup>RS 
+numerical tower in the following sense:
+If <em>S</em> is a subtype of the numerical type <em>T</em>
+and <em>x</em>, <em>y</em> can be represented both in <em>S</em> and in <em>T</em>,
+then <tt>compare-</tt><em>S</em> and <tt>compare-</tt><em>T</em> compute the same result.
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Floating point formats usually include several symbolic values not
+simply representing rational numbers.
+For example, the IEEE 754 standard defines -0, -Inf, +Inf,
+and NaN (&quot;not a number&quot;) for continuing a calculation in the presence
+of error conditions.
+The behavior of the numerical comparison operation is unspecified
+in case an argument is one of the special symbols.
+</blockquote><em>Warning:</em> 
+The propagation of inexactness can lead to surprises.
+In a Scheme system propagating inexactness in
+complex numbers (such as PLT, version 208):<p>
+</p>
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(complex-compare&nbsp;(make-rectangular&nbsp;(/&nbsp;1&nbsp;3)&nbsp;&nbsp;1.)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-rectangular&nbsp;(/&nbsp;1&nbsp;3)&nbsp;-1))&nbsp;<br>
+&nbsp;&nbsp;===&gt;&nbsp;-1<br>
+</tt>At first glance, one might expect the first complex number to be
+larger, because the numbers are equal on their real parts and the
+first imaginary part (<tt>1.</tt>) is larger than the second (<tt>-1</tt>).
+Closer inspection reveals that the decimal dot causes the first
+real part to be made inexact upon construction of the complex number,
+and since <tt>(exact-&gt;inexact (/ 1 3))</tt> is less than <tt>(/ 1 3)</tt>
+in the underlying floating point format used,
+the real parts decide the comparison of the complex numbers.
+
+<br>
+ 
+<a name="node_sec_4.2"></a>
+<h2><a href="#node_toc_node_sec_4.2">4.2&nbsp;&nbsp;Comparing lists and vectors</a></h2>
+<p></p>
+<p>
+In this section compare procedures are defined for Scheme
+lists and vectors -- and for objects that can be accessed
+like lists or like vectors.</p>
+<p>
+An object <em>x</em> can be <em>accessed like a vector</em> if
+there are procedures <tt>size</tt> and <tt>ref</tt> such that
+<tt>(size <em>x</em>)</tt> is a non-negative integer <em>n</em> 
+indicating the number of elements, and <tt>(ref <em>x</em> <em>i</em>)</tt>
+is the <em>i</em>-th element of <em>x</em> for <em>i</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> {0, <tt>...</tt>, <em>n</em> <tt>-</tt> 1}.
+The default vector access procedures are <tt>vector-length</tt>
+and <tt>vector-ref</tt>.</p>
+<p>
+An object <em>x</em> can be <em>accessed like a (proper) list</em>
+if there are procedures <tt>empty?</tt>, <tt>head</tt>, and <tt>tail</tt>
+such that <tt>(empty? <em>x</em>)</tt> is a boolean indicating that
+there are no elements in <em>x</em>, <tt>(head <em>x</em>)</tt> is the
+first element of <em>x</em>, and <tt>(tail <em>x</em>)</tt> is an object
+representing the residual elements of <em>x</em>.
+The default list access procedures are <tt>null?</tt>,
+<tt>car</tt>, and <tt>cdr</tt>.</p>
+<p>
+Independent of the way the elements are accessed,
+the natural ordering of vectors and lists differs:
+Sequences are <em>compared as vectors</em> if
+shorter sequences are smaller than longer sequences,
+and sequences of the same size are compared lexicographically.
+Sequences are <em>compared as lists</em> if the empty
+sequence is smallest, and two non-empty sequences are
+compared by their first elements, and only if the first
+elements are equal the residual sequences are compared, 
+recursively.
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_24"></a>vector-compare<i> [ <i>compare</i> ] <i>x</i> <i>y</i> [ <i>size</i> <i>ref</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_26"></a>vector-compare-as-list<i> [ <i>compare</i> ] <i>x</i> <i>y</i> [ <i>size</i> <i>ref</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_28"></a>list-compare<i> [ <i>compare</i> ] <i>x</i> <i>y</i> [ <i>empty?</i> <i>head</i> <i>tail</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_30"></a>list-compare-as-vector<i> [ <i>compare</i> ] <i>x</i> <i>y</i> [ <i>empty?</i> <i>head</i> <i>tail</i> ]</i>)</tt>&nbsp;</div>
+
+Compare two sequences <i>x</i> and <i>y</i>,
+using <i>compare</i> for comparing elements.
+The result is an exact integer in { <tt>-</tt> 1, 0, 1}.
+If <i>compare</i> is not supplied, <tt>default-compare</tt> is used.<p>
+The procedure named <em>access</em><tt>-compare-as-</tt><em>order</em>
+accesses the objects like <em>access</em> and compares them with
+respect to the order given by <em>order</em>.
+The names <em>type</em><tt>-compare</tt> are abbreviations for
+<em>type</em><tt>-compare-as-</tt><em>type</em>.</p>
+<p>
+Examples:</p>
+<p>
+</p>
+<tt>&nbsp;&nbsp;(list-compare&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'(2)&nbsp;'(1&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+&nbsp;&nbsp;(list-compare-as-vector&nbsp;'(2)&nbsp;'(1&nbsp;2))&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;-1<br>
+&nbsp;&nbsp;(vector-compare&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'#(2)&nbsp;'#(1&nbsp;2))&nbsp;&nbsp;===&gt;&nbsp;-1<br>
+&nbsp;&nbsp;(vector-compare-as-list&nbsp;'#(2)&nbsp;'#(1&nbsp;2))&nbsp;&nbsp;===&gt;&nbsp;&nbsp;1<br>
+</tt>
+<br>
+<p>
+</p>
+<a name="node_sec_4.3"></a>
+<h2><a href="#node_toc_node_sec_4.3">4.3&nbsp;&nbsp;Comparing pairs and improper lists</a></h2>
+<p></p>
+<p>
+In this section, compare procedures for Scheme
+pairs and (possibly) improper lists are defined.</p>
+<p>
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_32"></a>pair-compare-car<i> <i>compare</i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_34"></a>pair-compare-cdr<i> <i>compare</i></i>)</tt>&nbsp;</div>
+Construct a compare procedure on pairs which only uses
+the car (only the cdr, respectively), and ignores the other.
+One could define<p>
+</p>
+<tt>&nbsp;&nbsp;(define&nbsp;(pair-compare-car&nbsp;compare)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y)&nbsp;(compare&nbsp;(car&nbsp;x)&nbsp;(car&nbsp;y))))<br>
+</tt>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Pair-compare-car</tt> can be used to turn a search data 
+structure (e.g. a heap) into a dictionary:
+Store <tt>(key . value)</tt> pairs and compare them using the
+compare procedure <tt>(pair-compare-car compare-key)</tt>.
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_36"></a>pair-compare<i> <i>compare-car</i> <i>compare-cdr</i> <i>pair<sub>1</sub></i> <i>pair<sub>2</sub></i></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_38"></a>pair-compare<i> [ <i>compare</i> ] <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+Compares two pairs, or (possibly improper) lists.<p>
+The 4-ary form compares two pairs <i>pair<sub>1</sub></i> <i>pair<sub>2</sub></i>
+by comparing their cars using <i>compare-car</i>, 
+and if the cars are equal the cdrs are compared
+using <i>compare-cdr</i>.</p>
+<p>
+The 3-ary form compares two objects by type using the ordering
+of types
+</p>
+<div align=center><table><tr><td>
+
+<i>null</i> &lt; <i>pair</i> &lt; <i>neither-null-nor-pair</i>.
+</td></tr></table></div>
+<p>
+Two objects of type <i>neither-null-nor-pair</i> are compared
+using <i>compare</i>. 
+Two pairs are compared by using <i>compare</i> on the cars,
+and if the cars are equal by recursing on the cdrs.</p>
+<p>
+The 2-ary form uses <tt>default-compare</tt> for <i>compare</i>.</p>
+<p>
+</p>
+<tt>&nbsp;&nbsp;&nbsp;(pair-compare&nbsp;'()&nbsp;'foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+&nbsp;&nbsp;&nbsp;(pair-compare&nbsp;'()&nbsp;'(1&nbsp;.&nbsp;2)))&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+&nbsp;&nbsp;&nbsp;(pair-compare&nbsp;'(1&nbsp;.&nbsp;2)&nbsp;'foo)&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+&nbsp;&nbsp;&nbsp;(pair-compare&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;===&gt;&nbsp;&nbsp;-1<br>
+</tt>
+<br>
+<p>
+</p>
+<a name="node_sec_4.4"></a>
+<h2><a href="#node_toc_node_sec_4.4">4.4&nbsp;&nbsp;The default compare procedure</a></h2>
+<p></p>
+<p>
+It is convenient to have a compare procedure readily available
+for comparing most built-in types.</p>
+<p>
+</p>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_40"></a>default-compare<i> <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i></i>)</tt>&nbsp;</div>
+compares its arguments by type using the ordering
+<div align=center><table><tr><td>
+
+<i>null</i>    &lt; 
+<i>pair</i>    &lt; 
+<i>boolean</i> &lt; 
+<i>char</i>    &lt; 
+<i>string</i>  &lt; 
+<i>symbol</i>  &lt; 
+<i>number</i>  &lt; 
+<i>vector</i>  &lt; 
+<i>other</i>
+</td></tr></table></div>
+<p>
+Two objects of the same type <em>type</em> are 
+compared as <em>type</em><tt>-compare</tt> would,
+if there is such a procedure.
+The type <i>null</i> consists of the empty list <tt>'()</tt>.
+The effect of comparing two <i>other</i> objects or
+of comparing cyclic structures (made from lists or vectors)
+is unspecified. (Implementations are encouraged to add
+comparisons for other built-in types, e.g. records,
+regexps, etc.)
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Default-compare</tt> refines <tt>pair-compare</tt> by splitting
+<i>neither-null-nor-pair</i>.
+</blockquote><blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>Default-compare</tt> could be defined as follows
+(mind the order of the cases!):<p>
+</p>
+<tt>&nbsp;&nbsp;&nbsp;(define&nbsp;(default-compare&nbsp;x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(select-compare&nbsp;x&nbsp;y<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(null?&nbsp;&nbsp;&nbsp;&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(pair?&nbsp;&nbsp;&nbsp;&nbsp;(default-compare&nbsp;(car&nbsp;x)&nbsp;(car&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(default-compare&nbsp;(cdr&nbsp;x)&nbsp;(cdr&nbsp;y)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(boolean?&nbsp;(boolean-compare&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(char?&nbsp;&nbsp;&nbsp;&nbsp;(char-compare&nbsp;&nbsp;&nbsp;&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(string?&nbsp;&nbsp;(string-compare&nbsp;&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(symbol?&nbsp;&nbsp;(symbol-compare&nbsp;&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(number?&nbsp;&nbsp;(number-compare&nbsp;&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(vector?&nbsp;&nbsp;(vector-compare&nbsp;default-compare&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;(error&nbsp;&quot;unrecognized&nbsp;types&quot;&nbsp;x&nbsp;y))))<br>
+</tt></blockquote><br>
+<a name="node_sec_4.5"></a>
+<h2><a href="#node_toc_node_sec_4.5">4.5&nbsp;&nbsp;Constructing compare procedures</a></h2>
+<p></p>
+<p>
+An important goal of this SRFI is to provide a mechanism for defining
+new compare procedures as conveniently as possible.  The syntactic
+extensions defined in this section are the primary utilities for doing
+so.</p>
+<p>
+</p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_42"></a>refine-compare &lt;c<sub>1</sub>&gt; <tt>...</tt>)</tt>&nbsp;</div>
+
+<em>Syntax: </em>The &lt;c<sub><em>i</em></sub>&gt; are expressions.<p>
+<em>Semantics: </em>The arguments &lt;c<sub>1</sub>&gt; <tt>...</tt>are evaluated from left to
+right until a non-zero value is found (which then is the value)
+or until there are no more arguments to evaluate (in which case
+the value is 0).
+It is allowed that there are no arguments at all.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+This macro is the preferred way to define a compare procedure
+as a refinement (refer to Section&nbsp;<a href="#node_sec_5">5</a>). Example:<p>
+</p>
+<tt>(define&nbsp;(compare-rectangle&nbsp;r&nbsp;s)<br>
+&nbsp;&nbsp;(refine-compare&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(compare-length&nbsp;(width&nbsp;&nbsp;r)&nbsp;(width&nbsp;&nbsp;s))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(compare-length&nbsp;(height&nbsp;r)&nbsp;(height&nbsp;s))))<br>
+</tt></blockquote><br>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_44"></a>select-compare &lt;x<sub>1</sub>&gt; &lt;x<sub>2</sub>&gt;
+&lt;clause<sub>1</sub>&gt; <tt>...</tt>)</tt>&nbsp;</div>
+
+<em>Syntax: </em>Each &lt;clause&gt;, with the possible exception of the last, is of the form
+<tt>(&lt;type?&gt;&nbsp;&lt;c<sub>1</sub>&gt;&nbsp;<tt>...</tt>)</tt>
+where &lt;type?&gt; is an expression evaluating to a predicate procedure, 
+and &lt;c<sub><em>i</em></sub>&gt; are expressions evaluating to an exact integer in { <tt>-</tt> 1,0,1}. 
+The last &lt;clause&gt; may be an ``else clause'',
+which has the form 
+<tt>(else&nbsp;&lt;c<sub>1</sub>&gt;&nbsp;<tt>...</tt>).</tt><p>
+<em>Semantics: </em><tt>Select-compare</tt> is a conditional for defining 
+hierarchical extensions and refinements of compare
+procedures (refer to Section&nbsp;<a href="#node_sec_5">5</a>).
+It compares the values of &lt;x<sub>1</sub>&gt; and &lt;x<sub>2</sub>&gt; by
+trying the type tests in order, and applies an implict
+<tt>refine-compare</tt> on the consequences upon a match.</p>
+<p>
+In more detail, evaluation proceeds as follows:
+First &lt;x<sub>1</sub>&gt; and &lt;x<sub>2</sub>&gt; are evaluated in
+unspecified order, resulting in values <em>x</em><sub>1</sub> and <em>x</em><sub>2</sub>, respectively.
+Then the clauses are evaluated one by one, from left to right.</p>
+<p>
+For clause (&lt;type?&gt; &lt;c<sub>1</sub>&gt; <tt>...</tt>),
+first &lt;type?&gt; is evaluated resulting in a 
+predicate procedure <i>type?</i> and then the
+expressions (<i>type?</i> <em>x</em><sub>1</sub>) and (<i>type?</i> <em>x</em><sub>2</sub>)
+are evaluated and interpreted as booleans.
+If both booleans are true then the overall value is
+<tt>(refine-compare &lt;c<sub>1</sub>&gt; <tt>...</tt>)</tt>.
+If only the first is true the result is -1,
+if only the second is true the result is 1,
+and if neither is true the next clause is considered.
+An <tt>else</tt> clause is treated as if both tests
+where true.
+If there are no clauses left, the result is 0.</p>
+<p>
+<tt>Select-compare</tt> evaluates &lt;x<sub>1</sub>&gt; and &lt;x<sub>2</sub>&gt; 
+exactly once, even in the absence of any clauses. 
+Moreover, each &lt;type?&gt; is evaluated at most once and the 
+resulting procedure <i>type?</i> is called at most twice.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+An example of <tt>select-compare</tt> is the definition
+of <tt>default-compare</tt> given above.
+</blockquote><br>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_46"></a>cond-compare &lt;clause<sub>1</sub>&gt; <tt>...</tt>)</tt>&nbsp;</div>
+ <em>Syntax: </em>Each &lt;clause&gt;, with the possible exception of the last, is of the form
+<tt>((&lt;t<sub>1</sub>&gt;&nbsp;&lt;t<sub>2</sub>&gt;)&nbsp;&lt;c<sub>1</sub>&gt;&nbsp;<tt>...</tt>)</tt>
+where &lt;t<sub>1</sub>&gt; and &lt;t<sub>2</sub>&gt; are expressions evaluating to booleans, 
+and &lt;c<sub><em>i</em></sub>&gt; are expressions evaluating to an exact integer in { <tt>-</tt> 1,0,1}. 
+The last &lt;clause&gt; may be an ``else clause'',
+which has the form 
+<tt>(else&nbsp;&lt;c<sub>1</sub>&gt;&nbsp;<tt>...</tt>).</tt><p>
+<em>Semantics: </em><tt>Cond-compare</tt> is another conditional for defining hierarchical
+extensions and refinements of compare procedures 
+(refer to Section&nbsp;<a href="#node_sec_5">5</a>).</p>
+<p>
+Evaluation proceeds as follows:
+The clauses are evaluated one by one, from left to right.
+For clause ((&lt;t<sub>1</sub>&gt; &lt;t<sub>2</sub>&gt;) &lt;c<sub>1</sub>&gt; <tt>...</tt>),
+first &lt;t<sub>1</sub>&gt; and &lt;t<sub>2</sub>&gt; are evaluated and the
+results are interpreted as boolean values.
+If both booleans are true then the overall value is
+<tt>(refine-compare &lt;c<sub>1</sub>&gt; <tt>...</tt>)</tt>.
+If only the first is true the result is -1,
+if only the second is true the result is 1,
+and if neither is true the next clause is considered.
+An <tt>else</tt> clause is treated as if both booleans where true.
+If there are no clauses left (or there are no clauses
+to begin with), the result is 0.</p>
+<p>
+<tt>Cond-compare</tt> evaluates each expression at most once.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>Cond-compare</tt> and <tt>select-compare</tt> only differ
+in the way the type tests are specified.
+Both ways are equivalent, and each way is sometimes
+more convenient than the other.
+</blockquote><br>
+<a name="node_sec_4.6"></a>
+<h2><a href="#node_toc_node_sec_4.6">4.6&nbsp;&nbsp;Using compare procedures</a></h2>
+<p></p>
+<p>
+The facilities defined in this section provide a mechanism for
+using a compare procedure (passed as a parameter) in the 
+different situations arising in applications.</p>
+<p>
+</p>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_48"></a>if3 &lt;c&gt; &lt;less&gt; &lt;equal&gt; &lt;greater&gt;)</tt>&nbsp;</div>
+ <em>Syntax: </em>&lt;c&gt;, &lt;less&gt;, &lt;equal&gt;, and &lt;greater&gt;
+are expressions.  <p>
+<em>Semantics: </em><tt>If3</tt> is the 3-way conditional for comparisons.
+First &lt;c&gt; is evaluated, resulting in value <em>c</em>.
+The value <em>c</em> must be an exact integer in { <tt>-</tt> 1, 0, 1},
+otherwise an error is signalled.
+If <em>c</em>  =   <tt>-</tt> 1 then the value of the <tt>if3</tt>-expression 
+is obtained by evaluating &lt;less&gt;.
+If <em>c</em>  =  0 then &lt;equal&gt; is evaluated.
+If <em>c</em>  =  1 then &lt;greater&gt; is evaluated.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+As an example, the following procedure inserts <tt>x</tt>
+into the sorted list <tt>s</tt>, possibly replacing the
+first equivalent element.<p>
+</p>
+<tt>(define&nbsp;(insert&nbsp;compare&nbsp;x&nbsp;s)<br>
+&nbsp;&nbsp;(if&nbsp;(null?&nbsp;s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if3&nbsp;(compare&nbsp;x&nbsp;(car&nbsp;s))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;x&nbsp;s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;x&nbsp;(cdr&nbsp;s))&nbsp;;&nbsp;replace<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(car&nbsp;s)&nbsp;(insert&nbsp;compare&nbsp;x&nbsp;(cdr&nbsp;s))))))<br>
+</tt></blockquote><blockquote><em>Rationale:&nbsp;&nbsp;</em>
+<tt>If3</tt> is the preferred way of branching on the result of 
+a comparison in case all three branches are different.
+</blockquote><br>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_50"></a>if=?     &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_52"></a>if&lt;?     &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_54"></a>if&gt;?     &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_56"></a>if&lt;=?    &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_58"></a>if&gt;=?    &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<div align=left><u>syntax:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_60"></a>if-not=? &lt;c&gt; &lt;consequent&gt; [ &lt;alternate&gt; ])</tt>&nbsp;</div>
+<em>Syntax: </em>&lt;c&gt;, &lt;consequent&gt;, and &lt;alternate&gt; are expressions.
+If &lt;alternate&gt; is not provided, <tt>(if #f #f)</tt> is used.<p>
+<em>Semantics: </em>These six macros are 2-way conditionals for comparisons.
+First &lt;c&gt; is evaluated, resulting in value <em>c</em>.
+The value <em>c</em> must be an exact integer in { <tt>-</tt> 1, 0, 1},
+otherwise an error is signalled.
+Then, depending on the value of <em>c</em> and the name of the macro,
+either &lt;consequence&gt; or &lt;alternate&gt; is evaluated,
+and the resulting value is the value of the conditional expression.</p>
+<p>
+The branch is chosen according to the following table:
+</p>
+<div align=center><table><tr><td>
+<table border=1><tr><td valign=top ></td><td valign=top >&lt;consequent&gt; </td><td valign=top >&lt;alternate&gt; </td></tr>
+<tr><td valign=top ><tt>if=?</tt>     </td><td valign=top ><em>c</em>  =  0           </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> { <tt>-</tt> 1, 1} </td></tr>
+<tr><td valign=top ><tt>if&lt;?</tt>     </td><td valign=top ><em>c</em>  =   <tt>-</tt> 1          </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> {0, 1}  </td></tr>
+<tr><td valign=top ><tt>if&gt;?</tt>     </td><td valign=top ><em>c</em>  =  1           </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> { <tt>-</tt> 1, 0} </td></tr>
+<tr><td valign=top ><tt>if&lt;=?</tt>    </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> { <tt>-</tt> 1, 0} </td><td valign=top ><em>c</em>  =  1           </td></tr>
+<tr><td valign=top ><tt>if&gt;=?</tt>    </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> {0, 1}  </td><td valign=top ><em>c</em>  =   <tt>-</tt> 1          </td></tr>
+<tr><td valign=top ><tt>if-not=?</tt> </td><td valign=top ><em>c</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> { <tt>-</tt> 1, 1} </td><td valign=top ><em>c</em>  =  0
+</td></tr></table></td></tr></table></div>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The macros <tt>if&lt;=?</tt> etc. are the preferred way of 2-way branching based
+on the result of a comparison.
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_62"></a>=?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_64"></a>&lt;?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_66"></a>&gt;?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_68"></a>&lt;=?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_70"></a>&gt;=?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_72"></a>not=?<i>    [ <i>compare</i> ] [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+If the values <i>x</i> and <i>y</i> are given, test if <i>x</i> and <i>y</i> are in the 
+relation specified by the name of the procedure <i>rel?</i>, with respect to 
+compare procedure <i>compare</i>; otherwise construct a predicate procedure.<p>
+</p>
+<p>
+In the forms <tt>(<i>rel?</i> [ <i>compare</i> ] <i>x</i> <i>y</i>)</tt>,
+the result is a boolean (either <tt>#t</tt> or <tt>#f</tt>)
+depending on <tt>(<i>compare</i> <i>x</i> <i>y</i>)</tt> and
+the test <i>rel?</i> as specified for <tt>if&lt;?</tt> etc.
+If <i>compare</i> is not supplied, <tt>default-compare</tt> is used.</p>
+<p>
+In the form <tt>(<i>rel?</i> [ <i>compare</i> ])</tt>,
+the predicate procedure 
+(lambda (x y) (<i>rel?</i> <i>compare</i> x y)) is constructed.
+Again, if <i>compare</i> is not supplied, <tt>default-compare</tt> is used.</p>
+<p>
+A few examples for illustration
+</p>
+<tt>&nbsp;&nbsp;(&gt;?&nbsp;&quot;laugh&quot;&nbsp;&quot;LOUD&quot;)&nbsp;===&gt;&nbsp;#t<br>
+&nbsp;&nbsp;(&lt;?&nbsp;string-compare-ci&nbsp;&quot;laugh&quot;&nbsp;&quot;LOUD&quot;)&nbsp;===&gt;&nbsp;#t<br>
+&nbsp;&nbsp;(define&nbsp;char&lt;=?&nbsp;(&lt;=?&nbsp;char-compare))<br>
+&nbsp;&nbsp;(sort-by-less&nbsp;'(1&nbsp;a&nbsp;&quot;b&quot;)&nbsp;(&lt;?))&nbsp;===&gt;&nbsp;'(&quot;b&quot;&nbsp;a&nbsp;1)<br>
+&nbsp;&nbsp;(sort-by-less&nbsp;'(1&nbsp;a&nbsp;&quot;b&quot;)&nbsp;(&gt;?))&nbsp;===&gt;&nbsp;'(1&nbsp;a&nbsp;&quot;b&quot;)<br>
+</tt><p>
+</p>
+<em>Warning:</em> 
+A common mistake is writing <tt>(&lt;=? x y z)</tt> 
+where <tt>(&lt;=/&lt;=? x y z)</tt> is meant; 
+this will most likely manifest itself at the time
+the expression <tt>(x y z)</tt> is evaluated.
+<br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_74"></a>&lt;/&lt;?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_76"></a>&lt;/&lt;=?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_78"></a>&lt;=/&lt;?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_80"></a>&lt;=/&lt;=?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_82"></a>&gt;/&gt;?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_84"></a>&gt;/&gt;=?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_86"></a>&gt;=/&gt;?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_88"></a>&gt;=/&gt;=?<i>   [ <i>compare</i> ] [ <i>x</i> <i>y</i> <i>z</i> ]</i>)</tt>&nbsp;</div>
+Test if <i>x</i>, <i>y</i>, and <i>z</i> form a chain with the two relations
+specified by the name of the procedure <i>rel1/rel2?</i>,
+with respect to the compare procedure <i>compare</i>.<p>
+If <i>compare</i> is not provided, <tt>default-compare</tt> is used.
+If <i>x</i> <i>y</i> <i>z</i> are not provided, a predicate
+procedure of three arguments is constructed.
+The order in which the values are compared is unspecified,
+but each value is compared at least once.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>(&lt;=/&lt;? real-compare 0 <i>x</i> 1)</tt> tests if <i>x</i> is a real number
+in the half open interval [0,1).</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_90"></a>chain=?<i>  <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_92"></a>chain&lt;?<i>  <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_94"></a>chain&gt;?<i>  <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_96"></a>chain&lt;=?<i>  <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_98"></a>chain&gt;=?<i>  <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+Test if the values <i>x<sub>1</sub></i> <tt>...</tt>(zero or more values) form
+a chain with respect to the relation specified by the name of
+the procedure, and with respect to the compare procedure <i>compare</i>.
+The result is a boolean (either <tt>#t</tt> or <tt>#f</tt>.)
+The order in which the values are compared is unspecified,
+but each value is compared at least once (even if there is just
+one.)<p>
+A sequence of values <em>x</em><sub>1</sub>, <tt>...</tt>, <em>x</em><sub><em>n</em></sub> forms a chain with respect
+to the relation <i>rel?</i> if <tt>(<i>rel?</i> <i>compare</i> <em>x</em><sub><em>i</em></sub> <em>x</em><sub><em>j</em></sub>)</tt>
+for all 1 <u>&lt;</u> <em>i</em> &lt; <em>j</em> <u>&lt;</u> <em>n</em>.
+In particular, this is the case for <em>n</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> {0,1}.</p>
+<p>
+Since the relations  = , &lt;, &gt;, <u>&lt;</u>, and <u>&gt;</u> are transitive,
+it is sufficient to test <tt>(<i>rel?</i> <i>compare</i> <em>x</em><sub><em>i</em></sub> <em>x</em><sub><em>i</em>+1</sub>)</tt>
+for 1 <u>&lt;</u> <em>i</em> &lt; <em>n</em>.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The reason every <em>x</em><sub><em>i</em></sub> participates in at least one comparison
+is type-checking:
+After testing if the values form a chain, these value may be assumed
+to be of the type comparable by <i>compare</i> -- and this holds
+irrespectively of the number of values, or whether they form a chain.
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_100"></a>pairwise-not=?<i> <i>compare</i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+Tests if the values <i>x<sub>1</sub></i> <tt>...</tt>(zero or more values) are
+pairwise unequal with respect to the compare procedure <i>compare</i>.
+The result is a boolean (either <tt>#t</tt> or <tt>#f</tt>).
+The order in which the values are compared is unspecified,
+but each value is compared at least once (even if there is just one).<p>
+The values <em>x</em><sub>1</sub>, <tt>...</tt>, <em>x</em><sub><em>n</em></sub> are pairwise unequal if 
+<tt>(not=? <i>compare</i> <em>x</em><sub><em>i</em></sub> <em>x</em><sub><em>j</em></sub>)</tt> for all <em>i</em> <img src="srfi-67-Z-G-D-8.png" border="0" alt="[srfi-67-Z-G-D-8.png]"> <em>j</em>.
+In particular, this is the case for <em>n</em> <img src="srfi-67-Z-G-D-4.png" border="0" alt="[srfi-67-Z-G-D-4.png]"> {0,1}.</p>
+<p>
+Since <i>compare</i> defines a total ordering on the values,
+the property can be checked in time <em>O</em>(<em>n</em> log <em>n</em>), and
+implementations are required to do this. (For example by
+first sorting and then comparing adjacent elements).
+</p>
+<br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_102"></a>min-compare<i> <i>compare</i> <i>x<sub>1</sub></i> <i>x<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_104"></a>max-compare<i> <i>compare</i> <i>x<sub>1</sub></i> <i>x<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+A minimum or maximum of the values <i>x<sub>1</sub></i> <i>x<sub>2</sub></i> <tt>...</tt>(one or more values) with respect to the compare procedure <i>compare</i>.<p>
+The result is the first value that is minimal (maximal, respectively).
+The order in which the values are compared is unspecified,
+but each value is compared at least once (even if there is
+just one value).
+</p>
+<br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_106"></a>kth-largest<i> <i>compare</i> <i>k</i> <i>x<sub>0</sub></i> <i>x<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;</div>
+The <em>k</em>-th largest element of values 
+<i>x<sub>0</sub></i> <i>x<sub>1</sub></i> <tt>...</tt>(one or more values)
+with respect to the compare procedure <i>compare</i>.<p>
+More precisely,
+<tt>(kth-largest <i>compare</i> <i>k</i> <i>x<sub>0</sub></i> <tt>...</tt> <i>x<sub><em>n</em><tt>-</tt>1</sub></i>)</tt>
+returns the <tt>(modulo <i>k</i> <em>n</em>)</tt>-th element of the unique sequence
+obtained by stably sorting (<em>x</em><sub>0</sub> <tt>&middot;&middot;&middot;</tt> <em>x</em><sub><em>n</em><tt>-</tt>1</sub>).
+(Recall that a sorting algorithm is <em>stable</em> if it does not
+permute items with equal key, i.e. equivalent w.r.t. <i>compare</i>).</p>
+<p>
+The argument <i>k</i> is an exact integer, and <em>n</em> <u>&gt;</u> 1.
+The order in which the values <em>x</em><sub><em>i</em></sub> are compared is unspecified,
+but each value is compared at least once (even if there is
+just one value).</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The 0-th largest element is the minimum,
+the ( <tt>-</tt> 1)-st largest element is the maximum.
+The median is the (<em>n</em> <tt>-</tt> 1)/2-th largest element if <em>n</em> is odd,
+and the average of the (<em>n</em>/2 <tt>-</tt> 1)-st and <em>n</em>/2-th largest elements
+if <em>n</em> is even.
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_108"></a>compare-by&lt;<i>    <i>lt-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_110"></a>compare-by&gt;<i>    <i>gt-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_112"></a>compare-by&lt;=<i>   <i>le-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_114"></a>compare-by&gt;=<i>   <i>ge-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_116"></a>compare-by=/&lt;<i>  <i>eq-pred</i> <i>lt-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_118"></a>compare-by=/&gt;<i>  <i>eq-pred</i> <i>gt-pred</i> [ <i>x</i> <i>y</i> ]</i>)</tt>&nbsp;</div>
+
+If optional arguments <i>x</i> and <i>y</i> are present then these 
+are compared with respect to the total order defined by the
+predicate(s) given; the result is in { <tt>-</tt> 1,0,1}.
+If <i>x</i> and <i>y</i> are not present then a procedure comparing
+its two arguments using the predicate(s) given is constructed and
+returned.<p>
+The predicate procedures mean the following: 
+<tt>(<i>lt-pred</i> <i>x</i> <i>y</i>)</tt> tests if <em>x</em> &lt; <em>y</em>, 
+<i>le-pred</i> tests for <u>&lt;</u>, 
+<i>gt-pred</i> for &gt;,
+<i>ge-pred</i> for <u>&gt;</u>,
+and <i>eq-pred</i> tests if <em>x</em> and <em>y</em> are equivalent.
+The result returned by a predicate procedure is interpreted
+as a Scheme truth value (i.e. <tt>#f</tt> is false and non-<tt>#f</tt>
+is true).</p>
+<p>
+The purpose of the procedures <tt>compare-by</tt><em>predicate(s)</em>
+is to define a compare procedure from an order predicate,
+and possibly an additional equivalence predicate.
+If an equivalence predicate <i>eq-pred</i> is given, it is called
+<em>before</em> the order predicate because the equivalence may be
+coarser than the total ordering, and it may also be cheaper.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>Char-compare</tt> could be defined in terms of <tt>char&lt;=?</tt> as<p>
+</p>
+<tt>&nbsp;&nbsp;&nbsp;(define&nbsp;char-compare&nbsp;(compare-by&lt;=&nbsp;char&lt;=?))<br>
+</tt>
+</blockquote><br>
+<div align=left><u>procedure:</u>&nbsp;&nbsp;<tt>(<a name="node_idx_120"></a>debug-compare<i> <i>compare</i></i>)</tt>&nbsp;</div>
+Constructs a compare procedure equivalent to <i>compare</i>
+but with debugging code wrapped around the calls to <i>compare</i>.
+The debugging code signals an error if it detects a violation
+of the axioms of a compare function.
+For this it is assumed that <i>compare</i> has no side-effects.<p>
+More specifically, <tt>(debug-compare <i>compare</i>)</tt> evaluates
+to a compare procedure <i>compare<sub>1</sub></i> which checks reflexivity,
+antisymmetry, and transitivity of <i>compare</i> based on the
+arguments on which <i>compare<sub>1</sub></i> is called:</p>
+<p>
+The procedure <i>compare<sub>1</sub></i> checks reflexivity on any value
+passed to <i>compare</i>,
+antisymmetry on any pair of values on which <i>compare</i> is called,
+and transitivity on triples where two of the arguments are from
+the current call to <i>compare<sub>1</sub></i> and the third is a pseudo-random
+selection from the two arguments of the previous call to <i>compare<sub>1</sub></i>.</p>
+<p>
+</p>
+<blockquote><em>Rationale:&nbsp;&nbsp;</em>
+The test coverage is partial and determined pseudo-randomly,
+but the execution time of <i>compare<sub>1</sub></i> is only a constant factor larger
+than the execution time of <i>compare</i>.
+</blockquote><br>
+<p>
+</p>
+<a name="node_sec_5"></a>
+<h1><a href="#node_toc_node_sec_5">5&nbsp;&nbsp;The theory of compare functions</a></h1>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p>
+<b>NOTE:</b> This section of the SRFI-document can be read at 
+<a href="http://srfi.schemers.org/srfi-67/">srfi.schemers.org/srfi-67/</a>.
+It was removed from the
+HelpDesk version due to the math.</p>
+<p>
+The section contains a theoretical justification
+for the concept ``compare function''.
+First an axiomatic definition of compare functions is given.
+Then it is proved that compare functions are just an 
+unconventional way of defining total orders on equivalence
+classes of elements -- and mathematically that
+is all there is to say about compare functions.</p>
+<p>
+At this point, a mathematician may wonder why we
+introduce compare functions in the first place.
+The answer is: Because they are convenient and efficient
+for writing programs involving total orders.</p>
+<p>
+
+</p>
+<p></p>
+<p></p>
+<a name="node_sec_6"></a>
+<h1><a href="#node_toc_node_sec_6">6&nbsp;&nbsp;Design Rationale</a></h1>
+<p></p>
+<p>
+</p>
+<p>
+In this section we present our reasoning behind the design
+decisions made for this SRFI.
+We would like to be explicit on this because we believe
+that design is not about the outcome of decisions but
+about the alternatives considered.
+The section is organized as a Q&amp;A list.</p>
+<p>
+</p>
+<a name="node_sec_Temp_3"></a>
+<h2><a href="#node_toc_node_sec_Temp_3">Order predicates (2-way) or 3-way comparisons?</a></h2>
+<p>It is mathematical tradition to specify a total order
+in terms of a ``less or equal'' (<u>&lt;</u>) relation.
+This usually carries over to programming languages in the
+form of a <tt>&lt;=</tt> predicate procedure.</p>
+<p>
+However, there are inherently <em>three</em> possible relations 
+between two elements <em>x</em> and <em>y</em> with respect to a total order:
+<em>x</em> &lt; <em>y</em>, <em>x</em>  =  <em>y</em>, and <em>x</em> &gt; <em>y</em>.
+(With respect to a partial order there is a fourth:
+<em>x</em> and <em>y</em> are uncomparable.)
+This implies that any mechanism based on 2-valued 
+operations (be it <u>&lt;</u>, or ( = , &lt;), or other)
+has cases in which <em>two</em> expressions must be
+evaluated in order to determine the relation between
+two elements.</p>
+<p>
+In practice, this is a problem if a comparison
+is computationally expensive.
+Examples of this are implicitly defined orders in which the
+order of elements depends on their relative position in some enumeration.
+(Think of comparing graphs by isomorphism type.)
+In this case, each order predicate is as expensive as a
+compare procedure -- implying that a proper 3-way branch
+could be twice as fast as cascaded 2-way branches.
+Hence, there is a potentially considerable loss in performance,
+and it is purely due to the interface for comparisons.</p>
+<p>
+The primary disadvantage of bare 3-way comparisons
+is that they are less convenient, both in use and 
+in their definition.
+Luckily, this problem can be solved quite satisfactorily using
+the syntactic (macro) and procedural abstractions of Scheme
+(refer to Sections&nbsp;<a href="#node_sec_4.5">4.5</a> and <a href="#node_sec_4.6">4.6</a>).</p>
+<p>
+</p>
+<a name="node_sec_Temp_4"></a>
+<h2><a href="#node_toc_node_sec_Temp_4">How to represent the three cases?</a></h2>
+<p>We have considered the following alternatives for representing
+the three possible results of a comparison:
+</p>
+<ol>
+<li><p>the exact integers -1, 0, and 1 (used in this SRFI),
+</p>
+<li><p>the sign of an exact immediate integer,
+</p>
+<li><p>the sign of any Scheme number satisfying <tt>real?</tt>,
+</p>
+<li><p>three different symbols (e.g. <tt>'&lt;</tt>, <tt>'=</tt>, and <tt>'&gt;</tt>),
+</p>
+<li><p>an enumeration type consisting of three elements, and
+</p>
+<li><p>a built-in type with self-evaluating special constants
+(e.g. <tt>#&lt;</tt>, <tt>#=</tt>, and <tt>#&gt;</tt>).
+</p>
+</ol><p>
+The representation acts as an internal interface between 
+programs comparing objects and programs using these comparisons.</p>
+<p>
+The advantage of using only three values is that the 
+representation of each case is uniquely defined.
+In particular, this enables the use of <tt>case</tt>
+instead of <tt>if</tt>, and it ensures portability.
+Portability of numbers is problematic in 
+R<sup>5</sup>RS  due to 
+underspecification and inexactness.</p>
+<p>
+The advantage of using a non-unique (numerical) representation
+is that the result of a computation can sometimes immediately be
+used in a branch, much like the ``non-<tt>#f</tt> means true''-convention.
+However, with the operations in Section&nbsp;<a href="#node_sec_4.6">4.6</a>
+this advantage hardly matters.
+Moreover, the ``non-<tt>#f</tt> means true''-convention is
+a major cause of unexpected program behavior itself.</p>
+<p>
+The advantage of using { <tt>-</tt> 1, 0, 1} over using three 
+symbols is that the integers support additional operations,
+for example they can directly be used in index computations.
+A particularly useful operation is <tt>(* sign (compare x y))</tt>
+which inverts the order relation depending on <tt>sign</tt>
+(either  <tt>-</tt> 1 or 1).
+In addition, the integers are unique -- once it is known that
+comparisons result in integers it is obvious which integers.
+A minor consideration is that Scheme systems usually
+treat small integers as unboxed values, and that integers
+are self-evaluating literals.</p>
+<p>
+The advantage of using three symbols is that they can be
+chosen to be more descriptive.
+For example, it is more instructive to see 
+<tt>(symbol-compare 'foo 'bar)</tt>
+result in <tt>'greater</tt> than in <tt>1</tt>.
+Unfortunately, there is no obvious choice of name for the
+three symbols.
+Amoung the choices that make sense are
+<tt>'less</tt> <tt>'equal</tt> <tt>'greater</tt>,
+or <tt>'lt</tt> <tt>'eq</tt> <tt>'gt</tt>,
+or <tt>'&lt;</tt> <tt>'=</tt> <tt>'&gt;</tt>.
+A disadvantage of using symbols for the three cases is
+that Scheme symbols are ordered, too, and this ordering
+may differ from the desired ordered for the three cases.</p>
+<p>
+Some Scheme implementations provide a mechanism for
+defining enumeration types. 
+For example <tt>define-enumerated-type</tt>
+of Scheme&nbsp;48 can be used to define a type
+<tt>comparison</tt> consisting of three objects, 
+say <tt>lt</tt>, <tt>eq</tt>, <tt>gt</tt>.
+The enumeration can also (directly) be defined on top of 
+SRFI&nbsp;9 (Defining Record Types) [<a href="#node_bib_10">10</a>]
+by defining three new record types, each of which
+having a single instance.
+We regard this approach as preferable over three symbols
+because comparison results have their own type,
+and a sufficiently advanced compiler could use this
+information to eliminate redundant type-checks.</p>
+<p>
+One step further in this direction is the following
+design alternative we have considered:
+Due to the fundamental nature of the type 
+<tt>comparison</tt> for programming,
+it would be worthwhile integrating it into the
+core language of Scheme.
+This could take the following form:
+There are three self-evaluating constants,
+e.g. written <tt>#&lt;</tt> <tt>#=</tt> <tt>#&gt;</tt>,
+and these are the only instances of the type
+<tt>comparison</tt>.
+The type supports two operations:
+<tt>comparison?</tt> and <tt>comparison-compare</tt>.
+Furthermore, <tt>eq?</tt>, <tt>eqv?</tt>,
+and <tt>equal?</tt> need to understand the
+comparison values.
+In other words, <tt>comparison</tt> is designed
+after <tt>boolean</tt>.
+It is unclear, however, which problem this tight integration
+of comparisons into the language is solving.</p>
+<p>
+Given this situation, we have chosen for { <tt>-</tt> 1,0,1},
+while providing facilities for using this conveniently -- in 
+particular it is hardly ever necessary to deal with
+the integers directly.</p>
+<p>
+</p>
+<a name="node_sec_Temp_5"></a>
+<h2><a href="#node_toc_node_sec_Temp_5">How to order complex numbers?</a></h2>
+<p>Mathematically, no total order of the complex numbers exists
+which is compatible with the algebraic or topological structure.
+Nevertheless, it is useful for programming purposes to have
+<em>some</em> total order of complex numbers readily available.</p>
+<p>
+Several total orders on the complex numbers are at least 
+compatible with the natural ordering of real numbers.
+The least surprising of these is lexicographic on (<em>r</em><em>e</em>, <em>i</em><em>m</em>).</p>
+<p>
+</p>
+<p>
+</p>
+<a name="node_sec_Temp_6"></a>
+<h2><a href="#node_toc_node_sec_Temp_6">How to order special floating point symbols?</a></h2>
+<p>Floating point formats often do not only represent rational
+numbers but extend this set by special symbols, for example
++Inf, -Inf, NaN (``Not a number''), and -0.
+How should these symbols be ordered with respect to the
+ordinary numerical values and with respect to each other?
+(Refer to the discussion archive starting with
+<a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00010.html">msg00010</a>.)</p>
+<p>
+Let us briefly recall the purpose of the special symbols.
+The general rationale for introducing special symbols into
+a floating point format is for numerical calculations to 
+continue in the presence of data-dependent errors, 
+while still retaining some meaningful information
+about the result.
+The symbols +Inf and -Inf indicate that the calculation
+has produced a value exceeding the representable range.
+The special symbol -0, indicates that a calculation has
+produced a value of unrepresentable small magnitude,
+but retains the information that the underflow approached
+zero from the negative side (otherwise it would be +0).
+This sign information is useful in the presence of branch-cuts.
+Finally, NaN indicates that the information about the
+value has been lost entirely (example: -Inf + Inf)
+NaN avoids raising an exception and allows carrying on
+with other parts of the calculation.
+It should be noted that several NaNs can exist.
+For example in the IEEE 754 standard many bit patterns
+represent NaN (whatever the interpretation).</p>
+<p>
+As +Inf and -Inf are designed to represent extremal numbers,
+their ordering with respect to real numbers is obvious.
+For signed zeros, the ordering is also obvious.
+However, the notion of two zeros (or even three: -0, 0, and +0)
+is incompatible with the arithmetic structure of the real numbers.
+Hence, in most situations all zeros should be treated as equal,
+even though this can destroy information about results.
+But the alternative design may also make sense in certain
+situations where the full information carried in a floating
+point object is to be retained.</p>
+<p>
+For NaN (or even several NaNs) the situation is even
+more ambiguous because there is not even a natural order
+relation of NaN with the other possible floating point values.
+One design alternative is to raise an error if NaN is to
+participate in a comparison; the reasoning being ``if the
+control flow depends on a NaN you are in trouble anyway''.
+An alternative is to define some order by force; the
+reasoning being ``if an object satisfies <tt>real?</tt>
+then it can be compared with <tt>real-compare</tt>.''
+Neither approach is obviously better than the other.</p>
+<p>
+Given this situation, we have decided to leave the effect of
+using a special floating point value in <tt>real-compare</tt>
+unspecified, in line with the approach of 
+R<sup>5</sup>RS .
+This approach might change once Scheme itself is more
+explicit about floating point representations and
+numerical computation.</p>
+<p>
+</p>
+<a name="node_sec_Temp_7"></a>
+<h2><a href="#node_toc_node_sec_Temp_7">How to define <tt>default-compare</tt>?</a></h2>
+<p>The purpose of <tt>default-compare</tt> is providing <em>some</em>
+well-defined way of comparing two arbitrary Scheme values.
+This can be used in all situations in which the user is 
+unwilling to define a compare procedure explicitly,
+for example because the actual details of the total order
+do not really matter.</p>
+<p>
+As an example, consider the task of dealing
+with sets of sets of integers. 
+In this case, one could simply use sorted lists without
+repetition for representing lists and <tt>default-compare</tt>
+already provides a total order.</p>
+<p>
+However, there are limits as to how <tt>default-compare</tt> can be defined.  
+For example, <tt>default-compare</tt> cannot easily be based on a hash 
+code derived from the pointer representing an object due to the close
+dependency with the garbage collection mechanism.
+Also, we believe it to be more useful to applications if
+<tt>default-compare</tt> is based on type and structure.</p>
+<p>
+Unfortunately, this imposes limits on what can be compared
+using <tt>default-compare</tt> because it is very desireable to
+have a portable reference implementation.
+In particular, portable ways of dealing with circular structures
+are overly costly.</p>
+<p>
+Naturally, the question arises how the types should be ordered.
+For this question it is useful to understand that 
+<tt>boolean-compare</tt> and <tt>pair-compare</tt> both already
+define a total order for all values (at least in priciple).
+Hence, <tt>default-compare</tt> could refine one of them,
+but unfortunately not both at the same time (unless
+<tt>#f</tt> and <tt>'()</tt> are minimum and maximum of the order, 
+respectively).
+Since <tt>pair-compare</tt> is more frequently used than
+<tt>boolean-compare</tt> we base <tt>default-compare</tt>
+on <tt>pair-compare</tt>.
+The other portably comparable types are ordered by
+increasing complexity, which clearly is an arbitrary choice.</p>
+<p>
+</p>
+<a name="node_sec_Temp_8"></a>
+<h2><a href="#node_toc_node_sec_Temp_8">What is the ``lexicographic order''?</a></h2>
+<p>The <em>lexicographic order</em> is a general way of defining
+an ordering for sequences from an ordering of elements:</p>
+<p>
+In the lexicographic order, the empty sequence is the smallest
+sequence of all, and two non-empty sequences are first compared
+by their first element and only if these are equal the residual
+sequences are compared, recursively.</p>
+<p>
+The lexicographic order has its name from its use in a lexicon:
+For example, <em>fun</em> &lt; <em>funloving</em> &lt; <em>jolly</em>.</p>
+<p>
+</p>
+<a name="node_sec_Temp_9"></a>
+<h2><a href="#node_toc_node_sec_Temp_9">What is the ``natural order'' of lists and vectors?</a></h2>
+<p>By ``natural order'' of an abstract data type we mean a total order
+that is defined to match the basic operations operations supported
+by the data type.</p>
+<p>
+The basic access operations with constant execution time 
+for Scheme lists are <tt>null?</tt>, <tt>car</tt>, and <tt>cdr</tt>.
+These are exactly the operations needed for comparing two
+sequences lexicographically.</p>
+<p>
+The constant time access operations for Scheme vectors
+are <tt>vector-length</tt> (size) and <tt>vector-ref</tt> (ref).
+Using these operations, the fundamental ordering of vectors
+is first comparing by size,
+and only if the sizes are equal,
+by comparing the elements lexicographically.</p>
+<p>
+</p>
+<a name="node_sec_Temp_10"></a>
+<h2><a href="#node_toc_node_sec_Temp_10">Why are vectors not ordered lexicographically?</a></h2>
+<p>In this SRFI, lists and strings are ordered
+lexicographically (`LEX') by default, e.g.&nbsp;<tt>&quot;12&quot;</tt> &lt; <tt>&quot;2&quot;</tt>.
+The default order of vectors is first by length and then
+lexicographically (`LENGTH-LEX'), e.g.&nbsp;<tt>#(2)</tt> &lt; <tt>#(1 2)</tt>.
+Alternatively, vectors could be ordered purely lexicographically, too.
+In the extreme, lists, strings, and vectors could even be
+ordered lexicographically as sequences without distinguishing
+the concrete representation,
+implying <tt>&quot;12&quot;</tt> 
+ =  <tt>(#\1 #\2)</tt> 
+ =  <tt>#(#\1 #\2)</tt>.</p>
+<p>
+The choice affects <tt>vector-compare</tt>, <tt>default-compare</tt>,
+and the way orders are interpreted conceptually.
+Moreover, this SRFI introduces the terminology ``ordered as lists'' 
+and ``ordered as vectors'' to refer to the two fundamental
+ways of lifting an order to sequences (LEX and LENGTH-LEX).
+The choice also has implications for any other SRFI 
+introducing container data types (e.g. 66 and 74), 
+in case the author wishes to specify default compare
+procedures compatible with this SRFI.</p>
+<p>
+Summarizing the discussion, there seem to be three major arguments:
+</p>
+<ol>
+<li><p>Conceptually vectors and lists are representations of sequences, 
+and if there is only one ordering for them it should be LEX.
+</p>
+<li><p>LENGTH-LEX is more fundamental and efficient for types
+supporting a constant-time `size' operation.
+</p>
+<li><p>Conceptually strings are ``vectors of characters'' and 
+strings are conventionally ordered LEX by default, 
+so vectors should be ordered LEX as well in order to 
+minimize the potential for confusion.
+</p>
+</ol><p>
+(Please refer to the discussion archive for details, in particular
+<a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00054.html">msg00054</a>.)</p>
+<p>
+We consider 2. the most important due to its mathematical nature,
+followed by 1. because it simplifies the design.
+While this controversial, we think that it is preferable
+to introduce different orders for different data types,
+and not derive every order from a single one for sequences.
+Finally, we consider 3. a weak argument because the default
+ordering of strings is motivated primarily historically for
+ordering written words of (small alphabet) natural languages.</p>
+<p>
+Concerning other vector-like data types, such as those 
+introduced by SRFI 66 and 74, we recommend to define a
+default ordering which appears most natural for the type.
+These can conveniently be named <tt><i>type</i>-as-<i>ordering</i></tt>.
+In cases where the order is of minor importance,
+we recommend to be compatible with this SRFI.</p>
+<p>
+</p>
+<a name="node_sec_Temp_11"></a>
+<h2><a href="#node_toc_node_sec_Temp_11">Why so few higher-order constructions?</a></h2>
+<p>An alternative for the control structures (macros) <tt>refine-compare</tt>,
+<tt>select-compare</tt>, and <tt>cond-compare</tt> is a set of
+higher-order procedures for constructing compare procedures.</p>
+<p>
+We have chosen for control structures instead of higher-order
+procedures for simplicity.
+This becomes particularly evident when a recursive compare procedure,
+e.g. <tt>default-compare</tt>, is to be defined.
+Using <tt>select-compare</tt> it is possible to define <tt>default-compare</tt> simply
+as a procedure calling itself in some branches (refer to the example in
+Section&nbsp;<a href="#node_sec_4.4">4.4</a>).
+In the higher-order approach, the procedure under construction must also
+be able to call itself, with arguments that are application specific.
+Expressing this with a flexible higher-order procedure is much more indirect. </p>
+<p>
+</p>
+<a name="node_sec_Temp_12"></a>
+<h2><a href="#node_toc_node_sec_Temp_12">Why the operations <tt>&lt;?</tt>, <tt>&lt;=?</tt> etc.?</a></h2>
+<p>Programs need both 2-way branching and 3-way branching.
+For 3-way branching, the conditional <tt>if3</tt>
+is provided.</p>
+<p>
+For 2-way branching, the set { <tt>-</tt> 1,0,1} of results of
+a comparison is mapped onto the set {<tt>#f</tt>, <tt>#t</tt>}.
+There are eight functions from a 3-set into a 2-set;
+all six non-constant functions are provided as <tt>=?</tt>,
+<tt>&lt;?</tt>, etc.</p>
+<p>
+The five monotonic functions can be generalized to 
+chains of values.
+In order to make the compare procedure parameter optional
+in the ordinary comparisons, separate operations 
+(<tt>chain&lt;?</tt>, <tt>chain&lt;=?</tt> etc.) are defined for chains.
+For the sixth operation (<tt>not=?</tt>) the generalization
+to pairwise unequality is defined as <tt>pairwise-not=?</tt>.
+This operation can be implemented efficiently because the
+compare procedure also defines a total order.</p>
+<p>
+As chains of length three are still frequently tested in
+programs (think of a range check ``0 <u>&lt;</u> <em>i</em> &lt; <em>n</em>''),
+and often two different relations are combined, 
+there are special operations for chains of length three
+(<tt>&lt;/&lt;?</tt>, <tt>&lt;/&lt;=?</tt>, etc.)</p>
+<p>
+For convenience, the compare procedure argument is
+made optional as often as possible. 
+Unfortunately, this opens up a possibility for mistake:
+Writing <tt>(&lt;=? x y z)</tt> where <tt>(&lt;=/&lt;=? x y z)</tt> is meant.
+Fortunately, the mistake will likely manifest itself at the
+time <tt>(x y z)</tt> is evaluated.</p>
+<p>
+</p>
+<a name="node_sec_Temp_13"></a>
+<h2><a href="#node_toc_node_sec_Temp_13">Why are <tt>&lt;?</tt> etc. procedures, not macros?</a></h2>
+<p>The procedures <tt>&lt;?</tt>, <tt>&lt;/&lt;?</tt>, <tt>chain&lt;?</tt> etc.
+could also have been specified as macros.
+This would have the advantage that they could make full use
+of ``short evaluation'': A chain of comparisons stops as
+soon as one of the comparisons has failed; all remaining
+argument expressions and comparisons need not be evaluated.
+This is potentially more efficient.</p>
+<p>
+The advantage of procedures, on the other hand, is that
+in Scheme they are ``first class citizens,'' meaning that
+they can be passed as arguments and returned from higher-order
+procedures.</p>
+<p>
+Taking this approach one step further, one can even require
+the compare procedures to check the types of all arguments,
+even if the result of the comparison is already known.
+This is what Section&nbsp;6.2.5 of 
+R<sup>5</sup>RS  calls ``transitive``
+behavior of the predicates <tt>=</tt>, <tt>&lt;</tt>, etc.
+For example, <tt>(&lt; 0 x y)</tt> first tests if <tt>x</tt> is positive,
+and only if this is the case <tt>(&lt; x y)</tt> is tested.
+But even if <tt>x</tt> is not positive it is checked that 
+<tt>y</tt> is indeed a <tt>real</tt> -- otherwise an error is raised.
+In ``short evaluation,'' on the contrary, if <tt>x</tt> is not
+positive, <tt>y</tt> can be an arbitrary Scheme value.</p>
+<p>
+Clearly, ``transitive'' tests have an overhead, namely that
+they need to execute potentially redundant type checks.
+Even worse, as types are only known to the compare procedure
+the only way to check the type of a value is to compare it,
+maybe with itself (which should result in 0 by definition
+of a compare procedure).</p>
+<p>
+The advantage of ``transitive'' comparisons is the automatic
+insertion of a type assertion.
+For example, after <tt>(chain&lt;? integer-compare x y z)</tt> 
+has been evaluated, no matter the result, 
+it is known that <tt>x</tt>, <tt>y</tt>, and <tt>z</tt> are integers.
+We consider this advantage sufficiently important to pay the price.</p>
+<p>
+</p>
+<a name="node_sec_Temp_14"></a>
+<h2><a href="#node_toc_node_sec_Temp_14">Why <tt>compare-by&lt;</tt> etc.?</a></h2>
+<p>It is often easier to define an order predicate,
+and possibly a separate equivalence relation,
+than it is to define a compare procedure.
+For this case, <tt>compare&lt;</tt> etc. provide a convenient
+and robust way of constructing the associated compare
+procedure.</p>
+<p>
+As has been learned from writing the reference implementation,
+despite the fact that each of these procedures is just a few
+lines of trivial code, they miraculously attract bugs.</p>
+<p>
+</p>
+<a name="node_sec_Temp_15"></a>
+<h2><a href="#node_toc_node_sec_Temp_15">How do I define a compare function from just an equivalence?</a></h2>
+<p>You better don't.</p>
+<p>
+A compare function defines a total order on equivalence classes,
+and vice versa (refer to Section&nbsp;<a href="#node_sec_5">5</a>).
+Hence, a compare procedure <tt>compare</tt> can be used to
+test equivalence: <tt>(=? compare <em>x</em> <em>y</em>)</tt>.</p>
+<p>
+In reverse, one could be tempted to define a ``compare function''
+<em>c</em> from just an equivalence relation ~ as <em>c</em>(<em>x</em>, <em>y</em>)  =  0
+if <em>x</em> ~ <em>y</em> and <em>c</em>(<em>x</em>, <em>y</em>)  =  1 otherwise.
+However, <em>c</em> is not antisymmetric (unless all objects are equivalent,
+i.e. <em>c</em>(<em>x</em>,<em>y</em>)  =  0 for all <em>x</em>, <em>y</em>) and hence it is not a compare function.
+In fact, there is no way at all of avoiding a total order on the equivalence classes.</p>
+<p>
+This is also reflected in the fact that there are efficient
+(log-time) search data structures based on a total order,
+but we know of no efficient (sublinear worst-case) data
+structures based solely on an equivalence relation.
+The following program takes time and space <em>O</em>(<em>h</em>),
+where <em>h</em> is the number of equivalence classes in use:</p>
+<p>
+</p>
+<tt>(define&nbsp;(equal-&gt;compare&nbsp;equal)<br>
+&nbsp;&nbsp;(let&nbsp;((reps&nbsp;'())&nbsp;(length-reps&nbsp;0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;(index&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;loop&nbsp;((i&nbsp;(-&nbsp;length-reps&nbsp;1))&nbsp;(rs&nbsp;reps))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(null?&nbsp;rs)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((i&nbsp;length-reps))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;reps&nbsp;(cons&nbsp;x&nbsp;reps))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;length-reps&nbsp;(+&nbsp;length-reps&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(equal&nbsp;x&nbsp;(car&nbsp;rs))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(-&nbsp;i&nbsp;1)&nbsp;(cdr&nbsp;rs))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(integer-compare&nbsp;(index&nbsp;x)&nbsp;(index&nbsp;y)))))<br>
+</tt><p>
+If <tt>equal</tt> is an equivalence predicate (i.e. it is reflexive,
+symmetric, and transitive) then <tt>(equal-&gt;compare equal)</tt>
+is a compare procedure for the objects comparable by <tt>equal</tt>.
+The total order defined is unspecified (as it depends on call sequence).</p>
+<p>
+Note that the equivalence predicate <tt>equal</tt> could be defined
+by using a <em>union-find data structure</em>.
+But keep in mind that the equivalence relation represented by <tt>equal</tt>
+must not change while <tt>(equal-&gt;compare equal)</tt> is in use-so the
+union-find data structure must be unite classes. </p>
+<p>
+</p>
+<a name="node_sec_Temp_16"></a>
+<h2><a href="#node_toc_node_sec_Temp_16">How do I switch from 
+R<sup>5</sup>RS  to this SRFI?</a></h2>
+<p>As it happens, the specification of this SRFI is fully
+compatible with the 25 order predicates found in 
+R<sup>5</sup>RS .
+The easiest way of switching is by defining the 
+R<sup>5</sup>RS 
+operations in terms of this SRFI.
+Refer to the file <a href="http://srfi.schemers.org/srfi-67/implementation/r5rs-to-srfi.scm">r5rs-to-srfi.scm</a>
+for the corresponding Scheme-code.</p>
+<p>
+Alternatively, each expression involving a reference to an
+
+R<sup>5</sup>RS  order predicate can be transformed into an equivalent 
+expression using the facilities of this SRFI.
+Be reminded though that this requires an understanding of
+the <em>context</em> of the expression in question,
+in particular variable bindings, macro definitions,
+and the use of <tt>eval</tt>.</p>
+<p>
+However, if the meaning of an expression may be altered,
+it is often possible to increase type safety or simplicity.
+Consider for example the following potential replacements
+of <tt>(and (&lt;= 0 i) (&lt; i n))</tt>:
+</p>
+<tt>&nbsp;&nbsp;(and&nbsp;(&lt;=?&nbsp;real-compare&nbsp;0&nbsp;i)&nbsp;(&lt;?&nbsp;real-compare&nbsp;i&nbsp;n))<br>
+&nbsp;&nbsp;(&lt;=/&lt;?&nbsp;real-compare&nbsp;0&nbsp;i&nbsp;n)&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;always&nbsp;compares&nbsp;<tt>n</tt><br>
+&nbsp;&nbsp;(&lt;=/&lt;?&nbsp;integer-compare&nbsp;0&nbsp;i&nbsp;n)&nbsp;;&nbsp;only&nbsp;integer&nbsp;<tt>i</tt>,&nbsp;<tt>n</tt><br>
+&nbsp;&nbsp;(&lt;=/&lt;?&nbsp;0&nbsp;i&nbsp;n)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;uses&nbsp;<tt>default-compare</tt><br>
+</tt><p>
+Only the first alternative is equivalent to the original
+expression, but the other alternatives might be useful, too,
+depending on the goal.</p>
+<p>
+</p>
+<a name="node_sec_Temp_17"></a>
+<h2><a href="#node_toc_node_sec_Temp_17">Why be so tight with types?</a></h2>
+<p>Most procedures and macros in this SRFI are required to 
+signal an error if an argument is not according to the
+type specified, in particular comparison values must be
+exact integer in { <tt>-</tt> 1,0,1} at all times.
+Alternatively, we could have specified that procedures and
+macros accept values as general as makes sense.</p>
+<p>
+We believe that being tight on types at this fundamental
+level of a language pays off quickly.
+In particular, this will simplify debugging.
+Moreover, static analysis of a program will recognize
+more variables of a known type, which allows for more
+unboxed values and tighter compiled code.
+(Clearly, at the time of this writing this is speculative.)</p>
+<p>
+</p>
+<a name="node_sec_Temp_18"></a>
+<h2><a href="#node_toc_node_sec_Temp_18">Is there a performance penalty for this SRFI?</a></h2>
+<p>Yes and no.</p>
+<p>
+The focus of the reference implementation is correctness and 
+portability; performance will very likely suffer due to the
+overhead of internal procedure calls and type-checking.</p>
+<p>
+But as the word ``SRFI'' suggests, this document is a ``request
+for implementation,'' meaning we would love to see this SRFI
+being implemented efficiently by the implementation experts of
+particular Scheme systems.
+In practice, this means that most of the operations defined
+here, if not all, are supported natively.</p>
+<p>
+In this case, there is no performance penalty for using the
+mechanisms of this SRFI -- using this SRFI might even be faster
+due to explicit 3-way branching and better typing.</p>
+<p>
+</p>
+<a name="node_sec_Temp_19"></a>
+<h2><a href="#node_toc_node_sec_Temp_19">Why are there optional leading arguments?</a></h2>
+<p>Some operations have an optional first argument.
+This is in contrast to common practice in Scheme to
+put optional arguments after mandatory arguments.</p>
+<p>
+The leading optional argument is always the argument
+<i>compare</i>, representing the total order to be used.
+If it is missing <tt>default-compare</tt> is used.</p>
+<p>
+In the cases where we have chosen to make <i>compare</i>
+optional it is for the sake of brevity, e.g. in <tt>(&lt;? x y)</tt>
+instead of enforcing <tt>(&lt;? default-compare x y)</tt>.
+Although an option introduces potential for confusion
+(e.g. <tt>(&lt;? x y z)</tt> vs. <tt>(&lt;/&lt;? x y z)</tt>),
+we consider it an important feature for interactive use
+and convenient programming
+(e.g. in <tt>(do ((i 0 (+ i 1))) ((=? i n)))</tt>).</p>
+<p>
+Given our decision for optional <i>compare</i>,
+the question arises how to pass the option.
+In the absence of other widely accepted mechanisms for options,
+we can only vary the length of the argument list.
+For historical reasons -- before <tt>case-lambda</tt> of SRFI 16 -- 
+optional arguments are passed at the end of the argument list
+for simplified parsing.
+On the other hand, <tt>(&lt;? compare x y)</tt> is more consistent
+with the rest of the SRFI than <tt>(&lt;? x y compare)</tt>.</p>
+<p>
+Unfortunately, any particular choice here is a compromise,
+and it is also controversial.
+(Please refer to the discussion archive for details, in particular 
+<a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00051.html">msg00051</a>.)
+We have chosen for notational convenience in the common 
+case (optional <i>compare</i>) and for 
+consistency within this SRFI (leading optional argument).</p>
+<p>
+</p>
+<a name="node_sec_Temp_20"></a>
+<h2><a href="#node_toc_node_sec_Temp_20">Why <tt>chain&lt;?</tt> etc. and not a predicate parameter?</a></h2>
+<p>This SRFI specifies the five chain predicates <tt>chain=?</tt>, 
+<tt>chain&lt;?</tt>, <tt>chain&gt;?</tt>, <tt>chain&lt;=?</tt>, and <tt>chain&gt;=?</tt>.
+An alterative is to define a single chain predicate that 
+has the ordering as a parameter.
+(Refer to the discussion archive starting with
+<a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00012.html">msg00012</a>.)</p>
+<p>
+The reason we have chosen for five chain predicates is that
+we use compare procedures to represent orders, not predicate
+procedures.
+There are five possible order relations predicates for which
+a chain test makes sense. (The sixth, <tt>not=?</tt>, is not 
+not transitive and hence requires pairwise testing.)
+The five chain tests are clearly defined and can be
+implemented efficiently, their main overhead being the
+call to the compare procedure.</p>
+<p>
+</p>
+<a name="node_sec_Temp_21"></a>
+<h2><a href="#node_toc_node_sec_Temp_21">Why not more higher-order procedures?</a></h2>
+<p>In this SRFI <tt>min-compare</tt> accepts a compare procedure as
+a first mandatory argument, applying the minimum operation to
+the list of all other arguments.
+An alternative is to have <tt>min-compare</tt> accept only
+the compare procedure (possibly optional) and returing a
+procedure computing the minimum of all its arguments
+(with respect to the compare procedure.)
+In a similar fashion other operations can specified as
+higher-order procedures.</p>
+<p>
+We have avoided higher-order procedures in this SRFI
+for simplicity and efficiency.
+As said repeatedly, compare procedures are the main
+vehicle to transport total orders from the code site
+definine an order to the code site using an order.
+Moreover, most operations made available through this 
+SRFI appear rather infrequently in programs, so either
+way there is little to be gained.
+Finally, dealing with higher-order procedures often
+involves writing more parentheses and the more simple-minded
+Scheme systems will create many short-lived closures.</p>
+<p>
+</p>
+<a name="node_sec_Temp_22"></a>
+<h2><a href="#node_toc_node_sec_Temp_22">Why do <tt>&lt;?</tt> etc. have so many options?</a></h2>
+<p>The procedures <tt>=?</tt>, <tt>&lt;?</tt> etc. accept an optional
+compare procedure but also two optional arguments to compare.
+This could be made simpler by not specifying some of
+the cases, or by specifying different procedures for the
+different functions.</p>
+<p>
+The operations <tt>&lt;?</tt> etc. are the primary mechanism
+for using compare procedures.
+As such they should be versatile and concise.</p>
+<p>
+Our original design had two mandatory arguments for
+objects to compare and an optional argument for the
+compare procedure, i.e. it provides a parametric
+comparison <tt>(&lt;? compare x y)</tt> of two objects.
+Amir Livne Bar-On then raised the issue of
+having better support for a higher-order style of
+programming, i.e. <tt>((&lt;? compare) x y)</tt>.
+(Refer to <a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00012.html">msg00012</a>.)</p>
+<p>
+However, in Scheme the higher-order style is 
+less convenient than it is in curried programming 
+languages like Haskell or ML.
+In practice this manifests itself as follows:
+The most basic and frequent case of comparing
+atomic objects with respect to the default ordering would
+read <tt>((&lt;=?) x y)</tt>, 
+which is just two parentheses short of optimal.</p>
+<p>
+Fortunately, Dave Mason proposed a syntax for resolving
+the apparent alternative parametric test vs. higher order style.
+(Refer to
+<a href="http://srfi.schemers.org/srfi-67/mail-archive/msg00014.html">msg00014</a>.)
+By combining both functionalities into a single procedure,
+the user can choose the style at any moment.
+</p>
+<a name="node_sec_7"></a>
+<h1><a href="#node_toc_node_sec_7">7&nbsp;&nbsp;Related work</a></h1>
+<p>The use of compare procedures is not new; 
+defining control structures (<tt>if3</tt>, <tt>select-compare</tt> etc.)
+for dealing with them efficiently, however, seems to be new
+(at least we have not seen it before).</p>
+<p>
+Total ordering in 
+R<sup>5</sup>RS  is represented by typed order
+predicates, such as <tt>&lt;=</tt>, <tt>char&lt;=?</tt> etc.
+Although a ``less or equal''-predicate is sufficient to define
+a total order, 
+R<sup>5</sup>RS  defines a complete set of compare
+predicates (that is  = , &lt;, &gt;, <u>&lt;</u>, and <u>&lt;</u>) for
+the sake of convenience and readability.
+There are 25 procedures related to total orders in 
+R<sup>5</sup>RS .
+These are named 
+(<tt>=</tt>|<tt>&lt;</tt>|<tt>&gt;</tt>|<tt>&lt;=</tt>|<tt>&gt;=</tt>) and 
+(<tt>char</tt>|<tt>string</tt>)[<tt>-ci</tt>](<tt>=</tt>|<tt>&lt;</tt>|<tt>&gt;</tt>|<tt>&lt;=</tt>|<tt>&gt;=</tt>)<tt>?</tt>.</p>
+<p>
+The traditional approach in Scheme to equivalence (``Are two 
+values treated as equal?'') is the fixed set of predicates
+<tt>eq?</tt>, <tt>eqv?</tt>, and <tt>equal?</tt>.
+Historically, this approach was motivated by the desire to
+compare only pointers and avoid structural recursion.
+This SRFI provides the generalization to arbitrary equivalence
+relations, provided the equivalence classes are totally ordered.</p>
+<p>
+The Ruby programming language [<a href="#node_bib_4">4</a>] provides a method 
+<tt>&lt;=&gt;</tt> which is a compare procedure in the sense of this SRFI.
+By (re-)defining this method a total order can be defined 
+for the instances of a class, when compared against other objects. 
+All 2-way comparisons are based on <tt>&lt;=&gt;</tt>,
+but in Ruby essentially every method can be overloaded.</p>
+<p>
+In the Haskell&nbsp;98 programming language [<a href="#node_bib_6">6</a>] order
+predicates and compare functions coexist.
+The type <tt>Ordering</tt> [<a href="#node_bib_6">6</a>,&nbsp;Sect&nbsp;6.1.8] is an 
+enumeration of the three symbolic constants 
+<tt>LT</tt>, <tt>EQ</tt>, <tt>GT</tt>.
+The type class <tt>Ord</tt> [<a href="#node_bib_6">6</a>,&nbsp;Sect&nbsp;6.3.2] asserts
+the presence of a total order for a type, provided
+the type class <tt>Eq</tt> [<a href="#node_bib_6">6</a>,&nbsp;Sect&nbsp;6.3.1] also
+asserts the presence of an equivalence.
+Since the default definition of the method <tt>compare</tt>
+is in terms of the methods <tt>==</tt> and <tt>&lt;=</tt>,
+and vice versa, it can be chosen easily how to provide
+the total order without affecting its pattern of use.
+</p>
+<p>
+The C function <tt>strcmp</tt> [<a href="#node_bib_7">7</a>] of the ``string.h''-library acts as a compare procedure
+in the sense of this SRFI,
+although it is specified to return an integer of
+which only the sign matters.
+Python [<a href="#node_bib_5">5</a>] has a built-in function <tt>cmp</tt>
+which is a compare procedure in the sense of this SRFI.</p>
+<p>
+In SRFI-32 (Sort libraries) [<a href="#node_bib_13">13</a>] the total orders
+used for sorting are represented by a ``less than'' procedure.
+The discussion archive [<a href="#node_bib_13">13</a>] contains a short
+discussion thread on the use of 3-value comparisons under
+the aspect whether they can be used to improve the sorting
+algorithm itself.</p>
+<p>
+In the <tt>Galore.plt</tt> library of data structures for PLT Scheme,
+total orders are represented by the signature definition
+<tt>(define-signature 
+order^ (elm= elm&lt; elm&lt;=))</tt>.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="node_sec_8"></a>
+<h1><a href="#node_toc_node_sec_8">8&nbsp;&nbsp;Reference implementation</a></h1>
+<p>The reference implementation is contained in the
+file
+<a href="http://srfi.schemers.org/srfi-67/implementation/compare.scm">compare.scm</a>;
+it is implemented in 
+R<sup>5</sup>RS 
+(including hygienic macros) together with 
+SRFI-16 (<tt>case-lambda</tt>) [<a href="#node_bib_9">9</a>]
+SRFI-23 (<tt>error</tt>) [<a href="#node_bib_11">11</a>]
+SRFI-27 (<tt>random-integer</tt>) [<a href="#node_bib_12">12</a>].</p>
+<p>
+Test code and examples are collected in 
+<a href="http://srfi.schemers.org/srfi-67/implementation/examples.scm">examples.scm</a>;
+it requires SRFI-42 (<tt>comprehensions</tt>) [<a href="#node_bib_14">14</a>].
+The reference implementation and the testing code have
+been developed and are known to run under
+PLT/DrScheme 208p1 [<a href="#node_bib_15">15</a>],
+Scheme 48 1.1 [<a href="#node_bib_16">16</a>], and
+Chicken 1.70 [<a href="#node_bib_17">17</a>].</p>
+<p>
+Code defining the order predicates of 
+R<sup>5</sup>RS  in terms
+of this SRFI is in the file 
+<a href="http://srfi.schemers.org/srfi-67/implementation/r5rs-to-srfi.scm">r5rs-to-srfi.scm</a>.
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<p></p>
+<a name="node_sec_Temp_23"></a>
+<h1><a href="#node_toc_node_sec_Temp_23">References</a></h1>
+<p></p>
+<table>
+<tr><td align=right valign=top><a name="node_bib_1"></a>[1]&nbsp;&nbsp;</td><td valign=top>
+E.&nbsp;Weisstein:
+<em>Totally&nbsp;Ordered&nbsp;Set</em>,<br>
+Mathworld at Wolfram Research.<br>
+<a href="http://mathworld.wolfram.com/TotallyOrderedSet.html">TotallyOrderedSet.html</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_2"></a>[2]&nbsp;&nbsp;</td><td valign=top>
+E.&nbsp;Weisstein:
+<em>Equivalence&nbsp;Relation</em>,<br>
+Mathworld at Wolfram Research.<br>
+mathworld.wolfram.com/EquivalenceRelation.html
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_3"></a>[3]&nbsp;&nbsp;</td><td valign=top>
+R.&nbsp;Kelsey, W.&nbsp;Clinger, J.&nbsp;Rees (eds.):
+<em>Revised<sup>5</sup> Report on the Algorithmic Language Scheme</em>,<br>
+Higher-Order and Symbolic Computation, Vol. 11, No. 1, August, 1998.<br>
+<a href="http://www.schemers.org/Documents/Standards/R5RS/">www.schemers.org/Documents/Standards/R5RS/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_4"></a>[4]&nbsp;&nbsp;</td><td valign=top>
+Y.&nbsp;Matsumoto: 
+<em>Programming Ruby.
+The Pragmatic Programmer's Guide.</em><br>
+<a href="http://www.ruby-doc.org/docs/ProgrammingRuby/">www.ruby-doc.org/docs/ProgrammingRuby/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_5"></a>[5]&nbsp;&nbsp;</td><td valign=top>
+G.&nbsp;van Rossum, F.&nbsp;L.&nbsp;Drake, Jr., (ed.):
+<em>Python Library Reference</em>.
+Release 2.4 of 30 November 2004.
+Section 2.1 ``built-in functions''.
+Python Software Foundation.<br>
+<a href="http://docs.python.org/lib/lib.html">http://docs.python.org/lib/lib.html</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_6"></a>[6]&nbsp;&nbsp;</td><td valign=top>
+S. Peyton Jones (ed.):
+<em>Haskell 98 Language and Libraries</em>
+The Revised Report, December 2002.<br>
+<a href="http://www.haskell.org/definition/">http://www.haskell.org/definition/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_7"></a>[7]&nbsp;&nbsp;</td><td valign=top> 
+ANSI-C <em>ISO/IEC 9899:1999</em>, published 1 December.<br>
+<a href="http://www.open-std.org/jtc1/sc22/wg14/www/standards">http://www.open-std.org/jtc1/sc22/wg14/www/standards</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_8"></a>[8]&nbsp;&nbsp;</td><td valign=top>
+J.&nbsp;A.&nbsp;S&oslash;gaard: 
+<em>Data Structures Galore for PLT Scheme</em>.<br>
+<a href="http://planet.plt-scheme.org:80/207.1/docs/soegaard/galore.plt/1/1/doc.txt">http://planet.plt-scheme.org:80/207.1/docs/soegaard/galore.plt/1/1/doc.txt</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_9"></a>[9]&nbsp;&nbsp;</td><td valign=top>
+L.&nbsp;T.&nbsp;Hansen:
+<em>SRFI 16 Syntax for procedures of variable arity.</em><br>
+<a href="http://srfi.schemers.org/srfi-16/">http://srfi.schemers.org/srfi-16/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_10"></a>[10]&nbsp;&nbsp;</td><td valign=top>
+R. Kelsey:
+<em>SRFI 9 Defining record types.</em><br>
+<a href="http://srfi.schemers.org/srfi-9/">http://srfi.schemers.org/srfi-9/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_11"></a>[11]&nbsp;&nbsp;</td><td valign=top>
+S.&nbsp;Houben: 
+<em>SRFI 23 Error reporting mechanism.</em><br>
+<a href="http://srfi.schemers.org/srfi-23/">http://srfi.schemers.org/srfi-23/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_12"></a>[12]&nbsp;&nbsp;</td><td valign=top>
+S.&nbsp;Egner:
+<em>SRFI 27 Sources of random bits.</em><br>
+<a href="http://srfi.schemers.org/srfi-27/">http://srfi.schemers.org/srfi-27/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_13"></a>[13]&nbsp;&nbsp;</td><td valign=top>
+O.&nbsp;Shivers: 
+<em>SRFI 32 Sort libraries</em>.
+Section ``Ordering, comparison functions &amp; stability''
+and mail-archive msg000{23,24,33}.html.
+SRFI has been withdrawn July 17, 2003.<br>
+<a href="http://srfi.schemers.org/srfi-32/">http://srfi.schemers.org/srfi-32/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_14"></a>[14]&nbsp;&nbsp;</td><td valign=top>
+S.&nbsp;Egner:
+<em>SRFI 42 Eager comprehensions.</em><br>
+<a href="http://srfi.schemers.org/srfi-42/">http://srfi.schemers.org/srfi-42/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_15"></a>[15]&nbsp;&nbsp;</td><td valign=top>
+<em>PLT Scheme.</em><br>
+<a href="http://www.plt-scheme.org/">http://www.plt-scheme.org/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_16"></a>[16]&nbsp;&nbsp;</td><td valign=top>
+R.&nbsp;Kelsey, J.&nbsp;Rees:
+<em>Scheme48, version 1.1.</em><br>
+<a href="http://s48.org/">http://s48.org/</a>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_17"></a>[17]&nbsp;&nbsp;</td><td valign=top>
+<em>Chicken, version 1.70.</em><br>
+<a href="http://www.call-with-current-continuation.org/">www.call-with-current-continuation.org</a>.
+</table><p></p>
+
+
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="srfi-67.html#node_toc_node_chap_Temp_24">Alphabetic Index</a></h1>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+
+<a name="node_index_start"></a><p>
+<br>
+<a href="srfi-67.html#node_idx_76">&lt;/&lt;=?</a><br>
+<a href="srfi-67.html#node_idx_74">&lt;/&lt;?</a><br>
+<a href="srfi-67.html#node_idx_80">&lt;=/&lt;=?</a><br>
+<a href="srfi-67.html#node_idx_78">&lt;=/&lt;?</a><br>
+<a href="srfi-67.html#node_idx_68">&lt;=?</a><br>
+<a href="srfi-67.html#node_idx_64">&lt;?</a><br>
+<a href="srfi-67.html#node_idx_62">=?</a><br>
+<a href="srfi-67.html#node_idx_84">&gt;/&gt;=?</a><br>
+<a href="srfi-67.html#node_idx_82">&gt;/&gt;?</a><br>
+<a href="srfi-67.html#node_idx_88">&gt;=/&gt;=?</a><br>
+<a href="srfi-67.html#node_idx_86">&gt;=/&gt;?</a><br>
+<a href="srfi-67.html#node_idx_70">&gt;=?</a><br>
+<a href="srfi-67.html#node_idx_66">&gt;?</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_2">boolean-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_96">chain&lt;=?</a><br>
+<a href="srfi-67.html#node_idx_92">chain&lt;?</a><br>
+<a href="srfi-67.html#node_idx_90">chain=?</a><br>
+<a href="srfi-67.html#node_idx_98">chain&gt;=?</a><br>
+<a href="srfi-67.html#node_idx_94">chain&gt;?</a><br>
+<a href="srfi-67.html#node_idx_4">char-compare</a><br>
+<a href="srfi-67.html#node_idx_6">char-compare-ci</a><br>
+<a href="srfi-67.html#node_idx_108">compare-by&lt;</a><br>
+<a href="srfi-67.html#node_idx_112">compare-by&lt;=</a><br>
+<a href="srfi-67.html#node_idx_116">compare-by=/&lt;</a><br>
+<a href="srfi-67.html#node_idx_118">compare-by=/&gt;</a><br>
+<a href="srfi-67.html#node_idx_110">compare-by&gt;</a><br>
+<a href="srfi-67.html#node_idx_114">compare-by&gt;=</a><br>
+<a href="srfi-67.html#node_idx_20">complex-compare</a><br>
+<a href="srfi-67.html#node_idx_46">cond-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_120">debug-compare</a><br>
+<a href="srfi-67.html#node_idx_40">default-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_60">if-not=?</a><br>
+<a href="srfi-67.html#node_idx_48">if3</a><br>
+<a href="srfi-67.html#node_idx_56">if&lt;=?</a><br>
+<a href="srfi-67.html#node_idx_52">if&lt;?</a><br>
+<a href="srfi-67.html#node_idx_50">if=?</a><br>
+<a href="srfi-67.html#node_idx_58">if&gt;=?</a><br>
+<a href="srfi-67.html#node_idx_54">if&gt;?</a><br>
+<a href="srfi-67.html#node_idx_14">integer-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_106">kth-largest</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_28">list-compare</a><br>
+<a href="srfi-67.html#node_idx_30">list-compare-as-vector</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_104">max-compare</a><br>
+<a href="srfi-67.html#node_idx_102">min-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_72">not=?</a><br>
+<a href="srfi-67.html#node_idx_22">number-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_36">pair-compare</a>, <a href="srfi-67.html#node_idx_38">[2]</a><br>
+<a href="srfi-67.html#node_idx_32">pair-compare-car</a><br>
+<a href="srfi-67.html#node_idx_34">pair-compare-cdr</a><br>
+<a href="srfi-67.html#node_idx_100">pairwise-not=?</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_16">rational-compare</a><br>
+<a href="srfi-67.html#node_idx_18">real-compare</a><br>
+<a href="srfi-67.html#node_idx_42">refine-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_44">select-compare</a><br>
+<a href="srfi-67.html#node_idx_8">string-compare</a><br>
+<a href="srfi-67.html#node_idx_10">string-compare-ci</a><br>
+<a href="srfi-67.html#node_idx_12">symbol-compare</a></p>
+<p>
+<br>
+</p>
+<p></p>
+<p></p>
+<p>
+<br>
+<a href="srfi-67.html#node_idx_24">vector-compare</a><br>
+<a href="srfi-67.html#node_idx_26">vector-compare-as-list</a></p>
+<p>
+</p>
+
+<p>
+</p>
+<p>
+</p>
+
+
+
+
+</body>
+</html>

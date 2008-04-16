@@ -1,0 +1,326 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN""http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+<title>SRFI 34: Exception Handling for Programs</title>
+</head>
+
+<body>
+<H1>Title</H1>
+
+SRFI 34: Exception Handling for Programs
+
+<H1>Authors</H1>
+
+Richard Kelsey and Michael Sperber
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.  It will
+remain in draft until 2002-10-20, or as amended.  to provide input on
+this SRFI, please mail to 
+<a href="mailto:srfi-34@srfi.schemers.org">
+<code>srfi-34@srfi.schemers.org</code></a>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">
+instructions here</a> to subscribe to the list.  You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-34/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-34/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+
+<UL>
+      <LI>Draft: 2002/07/24-2002/10/20</LI>
+      <li>Revised: 2002/09/20</li>
+      <li>Final: 2002/12/1</li>
+      <LI>Fixed reference implementation: 2003/03/10</LI>
+</UL>
+
+<h1>Abstract</h1>
+This SRFI defines exception-handling and exception-raising constructs for Scheme, including<ul><li>a <code>with-exception-handler</code>
+ procedure and a <code>guard</code>
+ form for installing exception-handling procedures,</li>
+<li>a <code>raise</code>
+ procedure for invoking the current exception handler.</li>
+</ul>
+<p>This SRFI is based on (withdrawn) <a href="http://srfi.schemers.org/srfi-12/">SRFI 12: Exception Handling</a>
+by William Clinger, R. Kent Dybvig, Matthew Flatt, and Marc Feeley.</p>
+<h1>Rationale</h1>
+<p>The goals of the exception mechanism specified in this SRFI are to help programmers share code which relies on exception handling, and to be easily added to existing Scheme systems.</p>
+<p>This SRFI is primarily useful in conjunction with one or more companion SRFIs:</p>
+<ul><li>a SRFI specifying exception-describing objects (conditions). An example is <a href="http://srfi.schemers.org/srfi-35">SRFI 35</a>
+ (Conditions).</li>
+<li>a SRFI specifying a set of standard condition types to be raised by the primitives provided by the Scheme implementation, and requiring that certain Scheme primitives indeed raise exceptions within the framework described. An example is <a href="http://srfi.schemers.org/srfi-36">SRFI 36</a>
+ (I/O Conditions).</li>
+<li>a SRFI specifying how computations may be resumed after an exception is raised.</li>
+</ul>
+<h1>Specification</h1>
+<p>Exception handlers are one-argument procedures that determine the action the program takes when an exceptional situation is signalled. The system implicitly maintains a <i>current exception handler</i>.</p>
+<p>The program raises an exception by invoking the current exception handler, passing to it an object encapsulating information about the exception. Any procedure accepting one argument may serve as an exception handler and any object may be used to represent an exception.</p>
+<p>The system maintains the current exception handler as part of  the <i>dynamic environment</i> of the program, akin to the current input or output port, or the context for <code>dynamic-wind</code>. The dynamic environment can be thought of as that part of a continuation that does not specify the destination of any returned values.  It includes the current input and output ports, the <code>dynamic-wind</code>
+ context, and this SRFI's current exception handler.  See the reference implementation for portable definitions of <code>current-dynamic-environment</code>
+ and <code>with-dynamic-environment</code>.</p>
+<p>The initial current exception handler of the program is implementation-dependent. However, it should interrupt the program in some way visible to the user, either by aborting it, invoking a debugger, or some similar action.</p>
+<h2>Establishing Exception Handlers</h2>
+<dl><dt><a name="with-exception-handler"><code>(with-exception-handler </code><var>handler</var>
+ <var>thunk</var><code>)</code></a></dt>
+<dd><p>Returns the result(s) of invoking <var>thunk</var>. <var>Handler</var>
+ must be a procedure that accepts one argument. It is installed as the current exception handler for the dynamic extent (as determined by <code>dynamic-wind</code>) of the invocation of <var>thunk</var>.</p>
+</dd>
+</dl>
+<dl><dt><a name="guard"><code>(guard </code><code>(</code>
+&lt;var&gt; &lt;clause<sub>1</sub>
+&gt; &lt;clause<sub>2</sub>
+&gt; ...<code>)</code>
+ &lt;body&gt;<code>)</code></a> (syntax)</dt>
+<dd><p><em>Syntax:</em>
+ Each &lt;clause&gt; should have the same form as a <code>cond</code>
+ clause</p>
+<p><em>Semantics:</em>
+ Evaluating a <code>guard</code>
+ form evaluates &lt;body&gt; with an exception handler that binds the raised object to &lt;var&gt; and within the scope of that binding evaluates the clauses as if they were the clauses of a <code>cond</code>
+ expression. That implicit <code>cond</code>
+ expression is evaluated with the continuation and dynamic environment of the <code>guard</code>
+ expression. If every &lt;clause&gt;'s &lt;test&gt; evaluates to false and there is no <code>else</code>
+ clause, then <code>raise</code>
+ is re-invoked on the raised object within the dynamic environment of the original call to <code>raise</code>
+ except that the current exception handler is that of the <code>guard</code>
+ expression.</p>
+</dd>
+</dl>
+<h2>Raising Exceptions</h2>
+<dl><dt><a name="raise"><code>(raise </code><var>obj</var><code>)</code></a></dt>
+<dd><p>Invokes the current exception handler on <var>obj</var>. The handler is called in the dynamic environment of the call to <code>raise</code>, except that the current exception handler is that in place for the call to <code>with-exception-handler</code>
+ that installed the handler being called.  The handler's continuation is otherwise unspecified.</p>
+</dd>
+</dl>
+<h1>Examples</h1>
+<pre>(call-with-current-continuation
+ (lambda (k)
+   (with-exception-handler (lambda (x)
+                             (display &quot;condition: &quot;)
+                             (write x)
+                             (newline)
+                             (k 'exception))
+     (lambda ()
+       (+ 1 (raise 'an-error))))))
+PRINTS: condition: an-error
+=&gt; exception
+
+(call-with-current-continuation
+ (lambda (k)
+   (with-exception-handler (lambda (x)
+                             (display &quot;something went wrong&quot;)
+                             (newline)
+                             'dont-care)
+     (lambda ()
+       (+ 1 (raise 'an-error))))))
+PRINTS: something went wrong
+then behaves in an unspecified way
+
+(guard (condition
+         (else
+          (display &quot;condition: &quot;)
+          (write condition)
+          (newline)
+          'exception))
+  (+ 1 (raise 'an-error)))
+PRINTS: condition: an-error
+=&gt; exception
+
+(guard (condition
+         (else
+          (display &quot;something went wrong&quot;)
+          (newline)
+          'dont-care))
+ (+ 1 (raise 'an-error)))
+PRINTS: something went wrong
+=&gt; dont-care
+
+(call-with-current-continuation
+ (lambda (k)
+   (with-exception-handler (lambda (x)
+                             (display &quot;reraised &quot;) (write x) (newline)
+                             (k 'zero))
+     (lambda ()
+       (guard (condition
+                ((positive? condition) 'positive)
+                ((negative? condition) 'negative))
+        (raise 1))))))
+=&gt; positive
+
+(call-with-current-continuation
+ (lambda (k)
+   (with-exception-handler (lambda (x)
+                             (display &quot;reraised &quot;) (write x) (newline)
+                             (k 'zero))
+     (lambda ()
+       (guard (condition
+                ((positive? condition) 'positive)
+                ((negative? condition) 'negative))
+        (raise -1))))))
+=&gt; negative
+
+(call-with-current-continuation
+ (lambda (k)
+   (with-exception-handler (lambda (x)
+                             (display &quot;reraised &quot;) (write x) (newline)
+                             (k 'zero))
+     (lambda ()
+       (guard (condition
+                ((positive? condition) 'positive)
+                ((negative? condition) 'negative))
+        (raise 0))))))
+PRINTS: reraised 0
+=&gt; zero
+
+(guard (condition
+         ((assq 'a condition) =&gt; cdr)
+         ((assq 'b condition)))
+  (raise (list (cons 'a 42))))
+=&gt; 42
+
+(guard (condition
+         ((assq 'a condition) =&gt; cdr)
+         ((assq 'b condition)))
+  (raise (list (cons 'b 23))))
+=&gt; (b . 23)
+</pre><h1>Reference Implementation</h1>
+<p>The reference implementation makes use of <a href="http://srfi.schemers.org/srfi-9/">SRFI 9</a>
+ (&quot;Defining Record Types&quot;), and <a href="http://srfi.schemers.org/srfi-23/">SRFI 23</a>
+ (&quot;Error reporting mechanism&quot;).</p>
+<pre>(define *current-exception-handlers*
+  (list (lambda (condition)
+          (error &quot;unhandled exception&quot; condition))))
+
+(define (with-exception-handler handler thunk)
+  (with-exception-handlers (cons handler *current-exception-handlers*)
+                           thunk))
+
+(define (with-exception-handlers new-handlers thunk)
+  (let ((previous-handlers *current-exception-handlers*))
+    (dynamic-wind
+      (lambda ()
+        (set! *current-exception-handlers* new-handlers))
+      thunk
+      (lambda ()
+        (set! *current-exception-handlers* previous-handlers)))))
+
+(define (raise obj)
+  (let ((handlers *current-exception-handlers*))
+    (with-exception-handlers (cdr handlers)
+      (lambda ()
+        ((car handlers) obj)
+        (error &quot;handler returned&quot;
+               (car handlers)
+               obj)))))
+
+(define-syntax guard
+  (syntax-rules ()
+    ((guard (var clause ...) e1 e2 ...)
+     ((call-with-current-continuation
+       (lambda (guard-k)
+         (with-exception-handler
+          (lambda (condition)
+            ((call-with-current-continuation
+               (lambda (handler-k)
+                 (guard-k
+                  (lambda ()
+                    (let ((var condition))      ; clauses may SET! var
+                      (guard-aux (handler-k (lambda ()
+                                              (raise condition)))
+                                 clause ...))))))))
+          (lambda ()
+            (call-with-values
+             (lambda () e1 e2 ...)
+             (lambda args
+               (guard-k (lambda ()
+                          (apply values args)))))))))))))
+
+(define-syntax guard-aux
+  (syntax-rules (else =&gt;)
+    ((guard-aux reraise (else result1 result2 ...))
+     (begin result1 result2 ...))
+    ((guard-aux reraise (test =&gt; result))
+     (let ((temp test))
+       (if temp 
+           (result temp)
+           reraise)))
+    ((guard-aux reraise (test =&gt; result) clause1 clause2 ...)
+     (let ((temp test))
+       (if temp
+           (result temp)
+           (guard-aux reraise clause1 clause2 ...))))
+    ((guard-aux reraise (test))
+     test)
+    ((guard-aux reraise (test) clause1 clause2 ...)
+     (let ((temp test))
+       (if temp
+           temp
+           (guard-aux reraise clause1 clause2 ...))))
+    ((guard-aux reraise (test result1 result2 ...))
+     (if test
+         (begin result1 result2 ...)
+         reraise))
+    ((guard-aux reraise (test result1 result2 ...) clause1 clause2 ...)
+     (if test
+         (begin result1 result2 ...)
+         (guard-aux reraise clause1 clause2 ...)))))
+</pre><h1>References</h1>
+<ul><li><a href="http://srfi.schemers.org/srfi-12/">SRFI 12: Exception Handling</a>
+by William Clinger, R. Kent Dybvig, Matthew Flatt, and Marc Feeley</li>
+<li><a href="http://srfi.schemers.org/srfi-18/">SRFI 18: Multithreading support</a>
+by Marc Feeley</li>
+<li>Richard Kelsey's <a href="http://www.swiss.ai.mit.edu/ftpdir/scheme-mail/HTML/rrrs-1996/msg00022.html">1996 proposal</a>
+</li>
+<li><a href="http://www.cs.indiana.edu/scheme-repository/doc.proposals.exceptions.html">Proposal for Exception Handling in Scheme</a>
+ by Dan Friedman, Chris Haynes, and Kent Dybvig</li>
+<li>Kent Pitman's <a href="http://world.std.com/~pitman/Papers/Condition-Handling-2001.html">history paper</a>
+</li>
+<li>The <a href="http://www.xanalys.com/software_tools/reference/HyperSpec/Body/09_.htm">Conditions chapter</a>
+ from the <a href="http://www.xanalys.com/software_tools/reference/HyperSpec/Front/index.htm">Common Lisp HyperSpec</a>
+</li>
+<li>The Conditions chapter by Kent M. Pitman in <a href="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/ai-repository/ai/html/cltl/cltl2.html"><i>Common Lisp the Language, 2nd edition</i>
+</a>
+ by Guy L. Steele</li>
+<li>The <a href="http://www.gwydiondylan.org/drm/drm_52.htm#HEADING52-0">Conditions chapter</a>
+ in the <a href="http://www.gwydiondylan.org/drm/drm_1.htm">Dylan Reference Manual</a>
+</li>
+<li>The Exceptions chapter in <a href="http://www-2.cs.cmu.edu/~rwh/smlbook/">Programming in Standard ML</a>
+ by Robert Harper</li>
+</ul>
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) Richard Kelsey, Michael Sperber (2002). All Rights
+Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Francisco Solsona</a></address>
+</body></html>

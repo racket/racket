@@ -68,7 +68,8 @@
                       (if no-number?
                           "*"
                           ""))
-              (when (not (part-style? d 'hidden))
+              (when (not (or (part-style? d 'hidden)
+                             no-number?))
                 (printf "[")
                 (parameterize ([disable-images #t])
                   (render-content (part-title-content d) d ri))

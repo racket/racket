@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN""http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<body>
+<head>
+<title>SRFI 66: Octet Vectors</title>
+</head>
+
+<body>
+<H1>Title</H1>
+
+Octet Vectors
+
+<H1>Authors</H1>
+
+Michael Sperber
+
+<H1>Status</H1>
+
+This SRFI is currently in ``final'' status. To see an explanation of each
+status that a SRFI can hold, see
+<A HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+To
+provide input on this SRFI, please <CODE>
+<A HREF="mailto:srfi-66@srfi.schemers.org">mailto:srfi-66@srfi.schemers.org</A></CODE>.
+See <A HREF="http://srfi.schemers.org/srfi-list-subscribe.html">instructions
+here</A> to subscribe to the list. You can access previous messages via
+<A HREF="http://srfi.schemers.org/srfi-66/mail-archive/maillist.html">the
+archive of the mailing list</A>.
+<P>
+<UL>
+  <LI>Received: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-66/srfi-66.html?rev=1.3">2005/03/11</a></LI>
+  <LI>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-66/srfi-66.html?rev=1.4">2005/04/18</a></LI>
+  <LI>Revised: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-66/srfi-66.html?rev=1.5">2005/06/06</a></LI>
+  <LI>Final: <a href="http://srfi.schemers.org/cgi-bin/viewcvs.cgi/*checkout*/srfi/srfi-66/srfi-66.html?rev=1.6">2005/12/15</a></LI>
+</UL>
+
+<h1>Abstract</h1><p>This SRFI defines a set of procedures for creating, accessing, and manipulating uniform vectors of octets.</p><h1>Rationale</h1><p>A number of applications deal with sequences of octets (often called bytes), most prominently interfaces to C and I/O.  Vectors are typically too space-costly and too slow to work well in these circumstance.  This justifies having a separate type for octet vectors.</p><p>This SRFI is related to <a href="http://srfi.schemers.org/srfi-4/">SRFI 4</a> (Homogeneous numeric vector datatypes), which also provides vectors of octets,  and uses names consistent with it. However, the extension described here does not require any extensions to the syntax of the underlying Scheme system, and provides a slightly richer set of primtives.</p><p>Scheme systems implementing both SRFI 4 and this SRFI should use the same type for <code>u8vector</code> and octet vectors as specified here.</p><h1>Specification</h1><p>Octet vectors are objects of a new type.  This type may or may not be disjoint from the type of regular vectors.  Its elements must be octets, that is, exact integers in the range [0,255].</p><p>As with vectors, the length of a octet vector is the number of elements it contains.  This number is fixed.  A valid index into a octet vector  is an exact, non-negative integer.  The first element of a octet vector  has index 0, the last element has an index one less than the  length of the vector.</p><dl><dt><code>(u8vector? </code><var>obj</var><code>)</code></dt><dd><p>Returns <code>#t</code> if <var>obj</var> is a vector, otherwise returns <code>#f</code>.  Analogous to <code>vector?</code>.</p></dd><dt><code>(make-u8vector </code><var>k</var> <var>fill</var><code>)</code></dt><dd><p>Returns a newly allocated octet vector of <var>k</var> elements.  Each element is initialized to <var>fill</var>.  <var>Fill</var> must be an octet.  Analogous to <code>make-vector</code>.</p></dd><dt><code>(u8vector </code><var>octet</var> ...<code>)</code></dt><dd><p>Returns a newly allocated octet vector  whose elements contain the given arguments, which must all be octets.  Analogous to <code>vector</code>.</p></dd><dt><code>(u8vector-&gt;list </code><var>u8vector</var><code>)</code></dt><dt><code>(list-&gt;u8vector </code><var>octets</var><code>)</code></dt><dd><p><code>u8vector-&gt;list</code>returns a newly allocated list of the elements of <var>u8vector</var> in the same order.Analogous to <code>vector-&gt;list</code>.</p></dd><dd><p><code>List-&gt;u8vector</code> returns a newly allocated octet vector whose elements are the elements of list <var>octets</var>, which must all be octets. Analogous to <code>list-&gt;vector</code>.</p></dd><dt><code>(u8vector-length </code><var>u8vector</var><code>)</code></dt><dd><p>Returns the number of elements in <var>u8vector</var> as an exact integer.  Analogous to <code>vector-length</code>.</p></dd><dt><code>(u8vector-ref </code><var>u8vector</var> <var>k</var><code>)</code></dt><dd><p><var>k</var> must be a valid index of <var>u8vector</var>.  <code>u8vector-ref</code> returns the contents of element <var>k</var> of <var>u8vector</var>.  Analogous to <code>vector-ref</code>.</p></dd><dt><code>(u8vector-set! </code><var>u8vector</var> <var>k</var> <var>octet</var><code>)</code></dt><dd><p><var>k</var> must be a valid index of <var>u8vector</var>.  <code>u8vector-set!</code> stores <var>octet</var> in element <var>k</var> of <var>u8vector</var>.  The number of return values  and the return values are unspecified.  However, the number of return values  is such that it is accepted by a continuation created by <code>begin</code>.  Analogous to <code>vector-set!</code>.</p></dd><dt><code>(u8vector=? </code><var>u8vector-1</var> <var>u8vector-2</var><code>)</code></dt><dd><p>Returns <var>#t</var> if <var>u8vector-1</var> and <var>u8vector-2</var> are equal---that is, if they have the same length and equal elements at all valid indices.</p></dd><dt><code>(u8vector-compare </code><var>u8vector-1</var> <var>u8vector-2</var><code>)</code></dt><dd><p>Compares <var>u8vector-1</var> and <var>u8vector-2</var> and returns a value consistent with the vector ordering specified in <a href="http://srfi.schemers.org/srfi-67/">SRFI 67</a>, i.e. -1 if <var>u8vector-1</var> is smaller than <var>u8vector-2</var>, 0 if they are equal, and 1 if <var>u8vector-1</var> is greater than <var>u8vector-2</var>. Shorter vectors are always smaller than longer ones, and vectors  of equal length are compared lexicographically.</p></dd><dt><code>(u8vector-copy! </code><var>source</var> <var>source-start</var> <var>target</var> <var>target-start</var> <var>n</var><code>)</code></dt><dd><p>Copies data from octet vector <var>source</var> to octet vector <var>target</var>.  <var>Source-start</var>, <var>target-start</var>, and <var>n</var> must be non-negative exact integers that satisfy</p><p>0 &lt;= <var>source-start</var> &lt;= <var>source-start</var> + <var>n</var> &lt;= <code>(u8vector-length <var>source</var>)</code></p><p>0 &lt;= <var>target-start</var> &lt;= <var>target-start</var> + <var>n</var> &lt;= <code>(u8vector-length <var>target</var>)</code></p><p>This copies the octets from <var>source</var> at indices [<var>source-start</var>, <var>source-start</var> + <var>n</var>) to consecutive indices in <var>target</var> starting at <var>target-index</var>.</p><p>This must work even if the memory regions for the source and the target overlap, i.e., the octets at the target location after the copy must be equal to the octets at the source location before the copy.</p><p>The number of return values  and the return values are unspecified.  However, the number of return values  is such that it is accepted by a continuation created by <code>begin</code>.  Analogous to <code>vector-ref</code>.</p></dd><dt><code>(u8vector-copy </code><var>u8vector</var><code>)</code></dt><dd><p>Returns a newly allocated copy of octet vector <var>u8vector</var>.</p></dd></dl><h1>Reference Implementation</h1><p>This reference implementation makes use of <a href="http://srfi.schemers.org/srfi-9/">SRFI 9</a> (Defining Record Types) and <a href="http://srfi.schemers.org/srfi-23/">SRFI 23</a> (Error reporting mechanism) .</p><pre>(define-record-type :u8vector
+  (really-make-u8vector elements)
+  u8vector?
+  (elements u8vector-elements))
+
+(define (ensure-octet thing)
+  (if (not (and (integer? thing)
+		(exact? thing)
+		(&gt;= thing 0)
+		(&lt;= thing 255)))
+      (error &quot;not a octet&quot; thing)))
+
+(define (make-u8vector k fill)
+  (ensure-octet fill)
+  (really-make-u8vector (make-vector k fill)))
+
+(define (list-&gt;u8vector octets)
+  (for-each ensure-octet octets)
+  (really-make-u8vector (apply vector octets)))
+
+(define (u8vector-&gt;list octets)
+  (vector-&gt;list (u8vector-elements octets)))
+  
+(define (u8vector . octets)
+  (list-&gt;u8vector octets))
+
+(define (u8vector-length u8vector)
+  (vector-length (u8vector-elements u8vector)))
+
+(define (u8vector-ref u8vector k)
+  (vector-ref (u8vector-elements u8vector) k))
+
+(define (u8vector-set! u8vector k octet)
+  (ensure-octet octet)
+  (vector-set! (u8vector-elements u8vector) k octet))
+
+(define (u8vector-copy! source source-start target target-start count)
+  (if (&gt;= source-start target-start)
+      (do ((i 0 (+ i 1)))
+	  ((= i count))
+        (u8vector-set! target
+                          (+ target-start i) 
+                          (u8vector-ref source (+ source-start i))))
+      (do ((i (- count 1) (- i 1)))
+	  ((= i -1))
+        (u8vector-set! target
+                          (+ target-start i) 
+                          (u8vector-ref source (+ source-start i))))))
+
+(define (u8vector-copy u8vector)
+  (let* ((size (u8vector-length u8vector))
+	 (copy (make-u8vector size 0)))
+    (u8vector-copy! u8vector 0 copy 0 size)
+    copy))
+
+(define (u8vector=? u8vector-1 u8vector-2)
+  (let ((size (u8vector-length u8vector-1)))
+    (and (= size (u8vector-length u8vector-2))
+	 (let loop ((i 0))
+	   (or (&gt;= i size)
+	       (and (= (u8vector-ref u8vector-1)
+		       (u8vector-ref u8vector-2))
+		    (loop (+ 1 i))))))))
+
+(define (u8vector-compare u8vector-1 u8vector-2)
+  (let ((length-1 (u8vector-length u8vector-1))
+        (length-2 (u8vector-length u8vector-2)))
+    (cond
+      ((&lt; length-1 length-2) -1)
+      ((&gt; length-1 length-2)  1)
+      (else
+       (let loop ((i 0))
+         (if (= i length-1)
+             0
+             (let ((elt-1 (u8vector-ref u8vector-1 i))
+                   (elt-2 (u8vector-ref u8vector-2 i)))
+               (cond ((&lt; elt-1 elt-2) -1)
+                     ((&gt; elt-1 elt-2)  1)
+                     (else (loop (+ i 1)))))))))))
+</pre><h1>References</h1><ul><li><a href="http://srfi.schemers.org/srfi-4/">SRFI 4</a> (Homogeneous numeric vector datatypes)</li><li>The &quot;Byte Vectors&quot; section of <i>The Incomplete Scheme 48 Reference Manual</i> available from <a href="http://www.s48.org/">this page</a>.</li></ul></body><H1>Copyright</H1>
+Copyright (C) Michael Sperber (2005). All Rights Reserved. 
+<p>
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+<p>
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">David Van Horn</a></address>
+</body></html>

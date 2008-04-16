@@ -1,0 +1,681 @@
+<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<!-- Generated from TeX source by tex2page, v 4p4, 
+     (c) Dorai Sitaram, http://www.cs.rice.edu/~dorai/tex2page -->
+<head>
+<title>
+Revised^5 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r5rs-Z-C.css" title=default>
+<meta name=robots content="noindex,follow">
+</head>
+<body>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-9.html">previous</a></span><span>, <a href="r5rs-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+<a name="%_chap_7"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r5rs-Z-H-2.html#%_toc_%_chap_7">Chapter 7</a></div><br>
+<a href="r5rs-Z-H-2.html#%_toc_%_chap_7">Formal syntax and semantics</a></h1>
+<p></p>
+<p>
+This chapter provides formal descriptions of what has already been
+described informally in previous chapters of this report.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_7.1"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1">7.1&nbsp;&nbsp;Formal syntax</a></h2>
+<p></p>
+<p>
+This section provides a formal syntax for Scheme written in an extended
+BNF.</p>
+<p>
+All spaces in the grammar are for legibility.  Case is insignificant;
+for example, <tt>#x1A</tt> and <tt>#X1a</tt> are equivalent.  &lt;empty&gt;
+stands for the empty string.</p>
+<p>
+The following extensions to BNF are used to make the description more
+concise:  &lt;thing&gt;* means zero or more occurrences of
+&lt;thing&gt;; and &lt;thing&gt;<sup>+</sup> means at least one
+&lt;thing&gt;.</p>
+<p>
+</p>
+<a name="%_sec_7.1.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.1">7.1.1&nbsp;&nbsp;Lexical structure</a></h3>
+<p>This section describes how individual tokens<a name="%_idx_674"></a> (identifiers,
+numbers, etc.) are formed from sequences of characters.  The following
+sections describe how expressions and programs are formed from sequences
+of tokens.</p>
+<p>
+&lt;Intertoken space&gt; may occur on either side of any token, but not
+within a token.</p>
+<p>
+Tokens which require implicit termination (identifiers, numbers,
+characters, and dot) may be terminated by any &lt;delimiter&gt;, but not
+necessarily by anything else.</p>
+<p>
+The following five characters are reserved for future extensions to the
+language: <tt><code class=verbatim>[</code> <code class=verbatim>]</code> <code class=verbatim>{</code> <code class=verbatim>}</code> <code class=verbatim>|</code></tt></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-2.gif" border="0"></div>
+<p></p>
+<p>
+
+</p>
+<p>
+
+</p>
+<div align=left><img src="r5rs-Z-G-3.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-4.gif" border="0"></div>
+<p></p>
+<p>
+The following rules for &lt;num <em>R</em>&gt;, &lt;complex <em>R</em>&gt;, &lt;real
+<em>R</em>&gt;, &lt;ureal <em>R</em>&gt;, &lt;uinteger <em>R</em>&gt;, and &lt;prefix <em>R</em>&gt;
+should be replicated for <em>R</em>  =  2, 8, 10,
+and 16.  There are no rules for &lt;decimal 2&gt;, &lt;decimal
+8&gt;, and &lt;decimal 16&gt;, which means that numbers containing
+decimal points or exponents must be in decimal radix.
+</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-5.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-6.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_7.1.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.2">7.1.2&nbsp;&nbsp;External representations</a></h3>
+<p></p>
+<p>
+&lt;Datum&gt; is what the <tt>read</tt> procedure (section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.6.2">6.6.2</a>)
+successfully parses.  Note that any string that parses as an
+&lt;expression&gt; will also parse as a &lt;datum&gt;.  </p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-7.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<a name="%_sec_7.1.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.3">7.1.3&nbsp;&nbsp;Expressions</a></h3>
+<p></p>
+<div align=left><img src="r5rs-Z-G-8.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<a name="%_sec_7.1.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.4">7.1.4&nbsp;&nbsp;Quasiquotations</a></h3>
+<p>The following grammar for quasiquote expressions is not context-free.
+It is presented as a recipe for generating an infinite number of
+production rules.  Imagine a copy of the following rules for <em>D</em>  =  1, 2,
+3, <tt>...</tt>.  <em>D</em> keeps track of the nesting depth.</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-9.gif" border="0"></div>
+<p></p>
+<p>
+In &lt;quasiquotation&gt;s, a &lt;list qq template <em>D</em>&gt; can sometimes
+be confused with either an &lt;unquotation <em>D</em>&gt; or a &lt;splicing
+unquotation <em>D</em>&gt;.  The interpretation as an
+&lt;unquotation&gt; or &lt;splicing
+unquotation <em>D</em>&gt; takes precedence.</p>
+<p>
+</p>
+<a name="%_sec_7.1.5"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.5">7.1.5&nbsp;&nbsp;Transformers</a></h3>
+<p></p>
+<div align=left><img src="r5rs-Z-G-10.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<a name="%_sec_7.1.6"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.1.6">7.1.6&nbsp;&nbsp;Programs and definitions</a></h3>
+<p></p>
+<div align=left><img src="r5rs-Z-G-11.gif" border="0"></div>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<a name="%_sec_7.2"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.2">7.2&nbsp;&nbsp;Formal semantics</a></h2>
+<p></p>
+<p>
+</p>
+<p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</p>
+<p>
+
+
+
+This section provides a formal denotational semantics for the primitive
+expressions of Scheme and selected built-in procedures.  The concepts
+and notation used here are described in&nbsp;[<a href="r5rs-Z-H-14.html#cite{Stoy77}">29</a>]; the notation is
+summarized below:</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-12.gif" border="0"></div>
+<p></p>
+<p>
+The reason that expression continuations take sequences of values instead
+of single values is to simplify the formal treatment of procedure calls
+and multiple return values.</p>
+<p>
+The boolean flag associated with pairs, vectors, and strings will be true
+for mutable objects and false for immutable objects.</p>
+<p>
+The order of evaluation within a call is unspecified.  We mimic that
+here by applying arbitrary permutations <i>permute</i> and <i>unpermute</i>, which must be inverses, to the arguments in a call before
+and after they are evaluated.  This is not quite right since it suggests,
+incorrectly, that the order of evaluation is constant throughout a program (for
+any given number of arguments), but it is a closer approximation to the intended
+semantics than a left-to-right evaluation would be.</p>
+<p>
+The storage allocator <i>new</i> is implementation-dependent, but it must
+obey the following axiom:  if <i>new</i> <img src="r5rs-Z-G-D-2.gif" border="0"> <img src="r5rs-Z-G-D-4.gif" border="0"> <tt><em>L</em></tt>, then
+<img src="r5rs-Z-G-D-2.gif" border="0"> (<i>new</i> <img src="r5rs-Z-G-D-2.gif" border="0"> | <tt><em>L</em></tt>)<img src="r5rs-Z-G-D-7.gif" border="0"> 2  =  <i><em>f</em><em>a</em><em>l</em><em>s</em><em>e</em></i>.</p>
+<p>
+
+
+
+</p>
+<p>
+The definition of <img src="r5rs-Z-G-D-5.gif" border="0"> is omitted because an accurate definition of
+<img src="r5rs-Z-G-D-5.gif" border="0"> would complicate the semantics without being very interesting.</p>
+<p>
+If  P is a program in which all variables are defined before being
+referenced or assigned, then the meaning of  P is
+</p>
+<div align=left><img src="r5rs-Z-G-13.gif" border="0"></div>
+<p>
+where  I* is the sequence of variables defined in  P,  P'
+is the sequence of expressions obtained by replacing every definition
+in  P by an assignment, &lt;undefined&gt; is an expression that evaluates
+to <i>undefined</i>, and
+<img src="r5rs-Z-G-D-6.gif" border="0"> is the semantic function that assigns meaning to expressions.</p>
+<p>
+</p>
+<p>
+</p>
+<a name="%_sec_7.2.1"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.2.1">7.2.1&nbsp;&nbsp;Abstract syntax</a></h3>
+<p>
+
+
+
+
+
+
+
+</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-14.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-15.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<a name="%_sec_7.2.2"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.2.2">7.2.2&nbsp;&nbsp;Domain equations</a></h3>
+<p></p>
+<div align=left><img src="r5rs-Z-G-16.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<a name="%_sec_7.2.3"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.2.3">7.2.3&nbsp;&nbsp;Semantic functions</a></h3>
+<p>
+
+</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-17.gif" border="0"></div>
+<p></p>
+<p>
+
+
+
+</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<p></p>
+<p>
+Definition of <img src="r5rs-Z-G-D-5.gif" border="0"> deliberately omitted.</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-18.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-19.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-20.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-21.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-22.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-23.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-24.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-25.gif" border="0"></div>
+<p></p>
+<p>
+Here and elsewhere, any expressed value other than <i>undefined</i> may
+be used in place of <i>unspecified</i>.</p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-26.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-27.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-28.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-29.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-30.gif" border="0"></div>
+<p></p>
+<p>
+
+</p>
+<a name="%_sec_7.2.4"></a>
+<h3><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.2.4">7.2.4&nbsp;&nbsp;Auxiliary functions</a></h3>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-31.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-32.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-33.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-34.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-35.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-36.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-37.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-38.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-39.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-40.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-41.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-42.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-43.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-44.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-45.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-46.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-47.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-48.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-49.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-50.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-51.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_676"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-52.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_678"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-53.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_680"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-54.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-55.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_682"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-56.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_684"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-57.gif" border="0"></div>
+<p></p>
+<p>
+<a name="%_idx_686"></a>
+</p>
+<div align=left><img src="r5rs-Z-G-58.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-59.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-60.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-61.gif" border="0"></div>
+<p></p>
+<p>
+</p>
+<div align=left><img src="r5rs-Z-G-62.gif" border="0"></div>
+<p></p>
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p></p>
+<a name="%_sec_7.3"></a>
+<h2><a href="r5rs-Z-H-2.html#%_toc_%_sec_7.3">7.3&nbsp;&nbsp;Derived expression types</a></h2>
+<p></p>
+<p>
+This section gives macro definitions for the derived expression types in
+terms of the primitive expression types (literal, variable, call, <tt>lambda</tt>,
+<tt>if</tt>, <tt>set!</tt>).  See section&nbsp;<a href="r5rs-Z-H-9.html#%_sec_6.4">6.4</a> for a possible
+definition of <tt>delay</tt>.</p>
+<p>
+<tt>(define-syntax&nbsp;<tt>cond</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;(else&nbsp;=&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(else&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;=&gt;&nbsp;result))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp&nbsp;(result&nbsp;temp))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;=&gt;&nbsp;result)&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(result&nbsp;temp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test))&nbsp;test)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test)&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...)))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>case</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;(else)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;(key&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clauses&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((atom-key&nbsp;(key&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(case&nbsp;atom-key&nbsp;clauses&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;key<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;key<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((atoms&nbsp;...)&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(memv&nbsp;key&nbsp;'(atoms&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;key<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((atoms&nbsp;...)&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clause&nbsp;clauses&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(memv&nbsp;key&nbsp;'(atoms&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(case&nbsp;key&nbsp;clause&nbsp;clauses&nbsp;...)))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>and</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((and)&nbsp;<tt>#t</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((and&nbsp;test)&nbsp;test)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((and&nbsp;test1&nbsp;test2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test1&nbsp;(and&nbsp;test2&nbsp;...)&nbsp;<tt>#f</tt>))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>or</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((or)&nbsp;<tt>#f</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((or&nbsp;test)&nbsp;test)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((or&nbsp;test1&nbsp;test2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;test1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;x&nbsp;x&nbsp;(or&nbsp;test2&nbsp;...))))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>let</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let&nbsp;((name&nbsp;val)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((lambda&nbsp;(name&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;val&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let&nbsp;tag&nbsp;((name&nbsp;val)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;((tag&nbsp;(lambda&nbsp;(name&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tag)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;val&nbsp;...))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>let*</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*&nbsp;((name1&nbsp;val1)&nbsp;(name2&nbsp;val2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((name1&nbsp;val1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*&nbsp;((name2&nbsp;val2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)))))<br>
+</p>
+</tt>
+<p>
+The following <tt>letrec</tt> macro uses the symbol <tt>&lt;undefined&gt;</tt>
+in place of an expression which returns something that when stored in
+a location makes it an error to try to obtain the value stored in the
+location (no such expression is defined in Scheme).
+A trick is used to generate the temporary names needed to avoid
+specifying the order in which the values are evaluated.
+This could also be accomplished by using an auxiliary macro.</p>
+<p>
+<tt>(define-syntax&nbsp;<tt>letrec</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;((var1&nbsp;init1)&nbsp;...)&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec&nbsp;&quot;generate_temp_names&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(var1&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var1&nbsp;init1)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;&quot;generate_temp_names&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp1&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var1&nbsp;init1)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((var1&nbsp;&lt;undefined&gt;)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp1&nbsp;init1)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;var1&nbsp;temp1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;&quot;generate_temp_names&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(x&nbsp;y&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var1&nbsp;init1)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec&nbsp;&quot;generate_temp_names&quot;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(y&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(newtemp&nbsp;temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var1&nbsp;init1)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body&nbsp;...))))<br>
+</p>
+</tt>
+<p>
+<tt>(define-syntax&nbsp;<tt>begin</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((begin&nbsp;exp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((lambda&nbsp;()&nbsp;exp&nbsp;...)))))<br>
+</p>
+</tt>
+<p>
+The following alternative expansion for <tt>begin</tt> does not make use of
+the ability to write more than one expression in the body of a lambda
+expression.  In any case, note that these rules apply only if the body
+of the <tt>begin</tt> contains no definitions.</p>
+<p>
+<tt>(define-syntax&nbsp;begin<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((begin&nbsp;exp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;exp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((begin&nbsp;exp1&nbsp;exp2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;exp1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;exp2&nbsp;...)))))<br>
+</p>
+</tt>
+<p>
+The following definition
+of <tt>do</tt> uses a trick to expand the variable clauses.
+As with <tt>letrec</tt> above, an auxiliary macro would also work.
+The expression <tt>(if #f #f)</tt> is used to obtain an unspecific
+value.</p>
+<p>
+<tt>(define-syntax&nbsp;<tt>do</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;((var&nbsp;init&nbsp;step&nbsp;...)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test&nbsp;expr&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;command&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((loop<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(var&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;#f&nbsp;#f)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;command<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(do&nbsp;&quot;step&quot;&nbsp;var&nbsp;step&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;init&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;&quot;step&quot;&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;&quot;step&quot;&nbsp;x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y)))<br>
+</p>
+</tt>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p>
+  </p>
+<div class=navigation>[Go to <span><a href="r5rs.html">first</a>, <a href="r5rs-Z-H-9.html">previous</a></span><span>, <a href="r5rs-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r5rs-Z-H-2.html#%_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r5rs-Z-H-15.html#%_index_start">index</a></span>]</div>
+<p></p>
+</body>
+</html>

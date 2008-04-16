@@ -1,0 +1,361 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+    <title>SRFI 31: A special form `rec' for recursive evaluation</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 31: A special form <CODE>rec</CODE> for recursive evaluation
+
+<H1>Author</H1> 
+
+Mirko Luedde &lt;<a href="mailto:Mirko.Luedde@SAP.com">Mirko.Luedde@SAP.com</a>&gt;
+
+<H1>Status</H1>
+ 
+This SRFI is currently in ``final'' status.  To see an explanation of
+each status that a SRFI can hold, see <A
+HREF="http://srfi.schemers.org/srfi-process.html">here</A>.
+
+You can access the discussion via <A
+HREF="http://srfi.schemers.org/srfi-31/mail-archive/maillist.html">the
+archive of the mailing list</A>.
+
+<UL>
+  <LI>Draft: 2002/05/24-2002/08/24</LI>
+  <LI>Revised: 2002/08/12</LI>
+  <LI>Final: 2002/12/02</LI>
+</UL>
+
+<H1>Abstract</H1> 
+
+We propose the implementation of a special form
+called <CODE>rec</CODE>.  This form is a generalization and
+combination of the forms <CODE>rec</CODE> and
+<CODE>named-lambda</CODE> of <A
+href="#[Clinger1985]">[Clinger1985]</A>. It allows the simple and
+non-imperative construction of self-referential expressions.  As an
+important special case, it extends the A. Church form
+<CODE>lambda</CODE> such that it allows the direct definition of
+recursive procedures without using further special forms like
+<CODE>let</CODE> or <CODE>letrec</CODE>, without using advanced
+constructions like the H. B. Curry combinator and, unlike
+<CODE>define</CODE>, without introducing variable bindings into the
+external environment.
+
+<H1>Rationale</H1> 
+
+<H2>General</H2> Among the prominent features of the Scheme
+programming language as defined in <a href="#[KCR1998]">[KCR1998]</a>
+are the following.
+
+<OL>
+
+ <LI>It has simple syntax.</LI>
+ 
+ <LI>It encourages recursive definitions, e.g. by ensuring memory
+     efficient tail recursion.</LI>
+
+ <LI>It supports non-imperative programming.</LI>
+
+</OL>
+
+Nevertheless Scheme does not provide a syntax for recursive
+evaluations with the properties of
+
+<OL>
+
+<LI>being as simple, intuitive and close to the mathematical standard
+notation as possible,</LI>
+
+<LI>allowing general recursion,</LI>
+
+<LI>being non-imperative.</LI>
+
+</OL>
+
+<H2>Example</H2> 
+
+<H3>Problem 1</H3> 
+
+Let us look at the factorial function. In mathematical notation this
+function is expressed as
+
+<PRE> 
+  (F : N |--> 1,            if N = 0; 
+              N * F(N - 1), otherwise).
+</PRE>
+
+This expression is a term and not a definition or proposition.
+
+<P>We investigate some approaches to express the factorial function in
+Scheme.
+
+<UL>
+
+<LI>
+The simplest way perhaps is as
+
+<PRE>
+(define (F N) 
+  (if (zero? N) 1 
+    (* N (F (- N 1)))))
+</PRE>
+
+But this expression is not a term. It binds the factorial function to
+the variable <code>F</code>. The expression itself may not occur in a
+syntactical context where a name of the factorial is required.</LI>
+
+<LI>
+We list several ways to express the factorial as a function term.
+
+<OL>
+
+<LI>
+<PRE>
+(let () 
+  (define (F N)
+    (if (zero? N) 1 
+        (* N (F (- N 1)))))
+    F)
+</PRE>
+</LI>
+
+<LI>
+<PRE>
+(lambda (N) 
+  (let F ( (N N) ) 
+       (if (zero? N) 1 
+	 (* N (F (- N 1))))))
+</PRE>
+</LI>
+
+<LI>
+<PRE>
+(letrec ( (F (lambda (N) 
+	       (if (zero? N) 1 
+		 (* N (F (- N 1)))))) )	F)
+</PRE>
+</LI>
+
+<LI>
+<PRE>
+((lambda (F) 
+   (F F))
+ (lambda (G) 
+   (lambda (N) 
+     (if (zero? N) 1 
+       (* N ((G G) (- N 1)))))))
+</PRE>
+</LI>
+
+</OL>
+
+All these expressions define the factorial anonymously, not binding it
+to a variable. However, all these expressions are more verbose than it
+seems necessary and they are less intuitive than it seems
+desirable. </LI>
+
+</UL>
+
+<H3>Solution 1</H3> 
+
+A solution to our problem was already provided in <A
+href="#[Clinger1985]">[Clinger1985]</A> by the form
+<CODE>named-lambda</CODE>. An even earlier solution with a slightly
+different syntax was implemented in Kent Dybvig's Chez Scheme system.
+
+Using this special form, we can denote the factorial simply by
+
+<PRE>
+(named-lambda (F N) 
+              (if (zero? N) 1 
+                (* N (F (- N 1)))))
+</PRE>
+
+This expression is a function term that denotes the factorial in the
+appropriate brevity.
+
+<P>However, the form <code>named-lambda</code> has been dropped from
+later versions of the Scheme Report. Also it is missing in
+state-of-the-art implementations such as Chez Scheme (6.0a) and MIT
+Scheme (7.7.0). (The latter actually knows a form
+<CODE>named-lambda</CODE> with different semantics).
+
+<H3>Problem 2</H3> 
+
+The constant stream of ones can be defined via
+
+<PRE>(define S (cons 1 (delay S)))</PRE>
+
+As in the case of the factorial, we are able to define the recursive
+object at the price of spending an externally bound name. Remedying
+this with <CODE>let</CODE> or <CODE>letrec</CODE> leads to similar
+objections as above.
+
+<H3>Solution 2</H3> 
+
+This particular case of the self-referential problem was solved by the
+<CODE>rec</CODE> form in <A href="#[Clinger1985]">[Clinger1985]</A>.
+
+This form allows writing
+
+<PRE>(rec S (cons 1 (delay S)))</PRE>
+
+This expression is non-imperative and does not introduce an external
+variable binding.
+
+<P>Also this form has been dropped from later versions of the Scheme
+Report. Moreover, from our point of view this form alone is not
+capable of solving Problem 1. The respective definition would look
+like
+
+<PRE>
+(rec F 
+     (lambda (N) 
+       (if (zero? N) 1 
+	 (* N (F (- N 1))))))
+</PRE>
+
+This again does not seem quite as simple and intuitive as the
+mathematical notation.
+
+<H2>Proposal</H2> 
+
+We therefore propose to implement the <CODE>rec</CODE> special form in
+a generalized way that combines the advantages of the
+<CODE>named-lambda</CODE> and <CODE>rec</CODE> forms.
+
+The factorial function could be written
+<PRE>
+(rec (F N) 
+     (if (zero? N) 1 
+       (* N (F (- N 1)))))
+</PRE>
+
+<H1>Specification</H1>
+
+<H2>Syntax</H2> 
+
+The following production rules are to be added to those of <a
+href="#[KCR1998]">[KCR1998]</a> (we reuse names of non-terminals).
+
+<OL><a name="rec"></a>
+
+<LI><CODE>&lt;derived expression&gt; --&gt; &lt;rec expression&gt;</CODE></LI>
+
+<LI><CODE>&lt;rec expression&gt; --&gt; (rec &lt;variable&gt;
+&lt;expression&gt;)</CODE></LI>
+
+<LI><CODE>&lt;rec expression&gt; --&gt; (rec (&lt;variable&gt;+)
+&lt;body&gt;)</CODE></LI>
+
+</OL>
+
+<H2>Semantics</H2> 
+
+Scheme versions such as <A href="#[KCR1998]">[KCR1998]</A> providing
+<CODE>define-syntax</CODE>, <CODE>syntax-rules</CODE>,
+<CODE>letrec</CODE> and <CODE>lambda</CODE> might implement
+<CODE>rec</CODE> as follows.
+
+<PRE>
+(define-syntax rec
+  (syntax-rules ()
+    ((rec (NAME . VARIABLES) . BODY)
+     (letrec ( (NAME (lambda VARIABLES . BODY)) ) NAME))
+    ((rec NAME EXPRESSION)
+     (letrec ( (NAME EXPRESSION) ) NAME))))
+</PRE>
+
+<H2>Test</H2>
+
+The following session shows in which way <CODE>rec</CODE> allows a
+tail-recursive implementation of the factorial function.
+
+<PRE>
+> (define F (rec (F N)
+		((rec (G K L)
+		   (if (zero? K) L
+		     (G (- K 1) (* K L)))) N 1)))
+> F
+#&lt;procedure&gt;
+> (F 0)
+1
+> (F 10)
+3628800
+</PRE>
+
+<H1>Acknowledgements</H1> 
+
+The author thanks Al Petrofsky for the final solution and Hal Abelson,
+Chris Hanson and others for their input. The work of the maintainers
+of the SRFI forum is highly appreciated.
+
+<H1>Bibliography</H1>
+
+<UL>
+
+<LI>
+<a name="[Clinger1985]">[Clinger1985]</a>
+  EDITOR =	 {Clinger, W.},
+  TITLE =	 {Draft of Report of the October 1984 Workshop on Scheme},
+  JOURNAL =	 {Proceedings Brandeis Workshop Oct.~22--23, 1984},
+  MONTH =	 {Mar},
+  YEAR =	 {1985},
+  URL =
+{<A
+HREF=http://www.swiss.ai.mit.edu/ftpdir/scheme-mail/HTML/rrrs-1985>http://www.swiss.ai.mit.edu/ftpdir/scheme-mail/HTML/rrrs-1985</A>}</LI>
+
+<LI>
+<a name="[KCR1998]">[KCR1998]</a>
+  AUTHOR =	 {Kelsey, R. and Clinger, W. and Rees, J.},
+  TITLE =	 {Revised (5) Report on the Algorithmic Language Scheme},
+  JOURNAL =	 {Higher-Order and Symbolic Computation},
+  VOLUME =	 {11},
+  NUMBER =	 {1},
+  MONTH =	 {Sep},
+  YEAR =	 {1998}
+</LI>
+</UL>
+
+<H1>Copyright</H1>
+
+<p>Copyright (C) Dr. Mirko Luedde (2002). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+<HR>
+
+<ADDRESS>Author: <A href="mailto:Mirko.Luedde@SAP.com">Mirko Luedde</A></ADDRESS>
+
+<ADDRESS>Editor: <A href="mailto:srfi-editors@srfi.schemers.org">Francisco Solsona</A></ADDRESS>
+
+</body>
+
+</html>

@@ -1,0 +1,2132 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN""http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+  <head>
+    <title>SRFI 42: Eager Comprehensions</title>
+  </head>
+
+  <body>
+
+<H1>Title</H1>
+
+SRFI 42: Eager Comprehensions
+
+<H1>Author</H1>
+
+Sebastian Egner
+
+<H1>Status</H1>
+
+<P>This SRFI is currently in ``final'' status. To see an explanation of
+each status that a SRFI can hold, see <a
+href="http://srfi.schemers.org/srfi-process.html">here</a>.
+To comments
+this SRFI, please mail to 
+<a href="mailto:srfi-42@srfi.schemers.org">
+<code>srfi-42@srfi.schemers.org</code></a>.
+See <a href="http://srfi.schemers.org/srfi-list-subscribe.html">
+instructions here</a> to subscribe to the list.  You can access
+the discussion via
+<a href="http://srfi.schemers.org/srfi-42/mail-archive/maillist.html">
+the archive of the mailing list</a>.
+You can access
+post-finalization messages via
+<a href="http://srfi.schemers.org/srfi-42/post-mail-archive/maillist.html">
+the archive of the mailing list</a>.
+</P>
+    <UL> 
+      <LI>Received: 2003/02/20 
+      <LI>Draft: 2003/02/20-2003/04/20
+      <LI>Revised: 2003/07/07
+      <LI>Final: 2003/07/07
+    </UL>
+
+<H1>Abstract</H1>
+
+This SRFI defines a modular and portable mechanism for 
+eager comprehensions extending the algorithmic language Scheme
+<a href="#R5RS">[R5RS]</a>.
+An eager comprehension is a convenient notation
+for one or more nested or parallel loops generating
+a sequence of values, and accumulating this sequence into a result.
+In its most simple form, a comprehension according to this SRFI
+looks like this:
+
+<a name="example1"></a><blockquote><pre><code>(<a href="#list-ec">list-ec</a> (<a href="#:">:</a> i 5) (* i i)) => (0 1 4 9 16)</code>.</pre></blockquote>
+
+Here, <code>i</code> is a local variable that is sequentially 
+bound to the values 0, 1, ..., 4,  and the squares of these 
+numbers are collected in a list.
+The following example illustrates most conventions of this SRFI
+with respect to nesting and syntax:
+
+<a name="example1"></a><blockquote><pre><code>(<a href="#list-ec">list-ec</a> (<a href="#:">:</a> n 1 4) (<a href="#:">:</a> i n) (list n i)) => ((1 0) (2 0) (2 1) (3 0) (3 1) (3 2))</code>.</pre></blockquote>
+
+In the example, the variable <code>n</code> is first bound to 1
+then to 2 and finally to 3, and for each binding of <code>n</code> 
+the variable <code>i</code> is bound to the values 
+0, 1, ..., <code>n</code>-1 in turn.
+The expression <code>(list n i)</code> constructs a two-element list for
+each bindings, and the comprehension <code>list-ec</code> collects
+all these results in a list.<P>
+
+The mechanism defined in this SRFI has the following properties:
+
+<UL>
+
+<LI>
+The set of comprehensions defined for this SRFI is inspired by 
+those procedures and macros of <a href="#R5RS">[R5RS, 6.]</a>
+leading to natural comprehensions such as
+<a href="#list-ec"><code>list-ec</code></a>,
+<a href="#append-ec"><code>append-ec</code></a>,
+<a href="#sum-ec"><code>sum-ec</code></a>,
+<a href="#min-ec"><code>min-ec</code></a>,
+<a href="#every?-ec"><code>every?-ec</code></a>,
+<a href="#do-ec"><code>do-ec</code></a>, and others.
+Some other natural comprehensions (e.g. <code>gcd-ec</code>) have 
+not been included into this SRFI due to their low significance 
+for most applications.
+On the other hand, a few comprehensions 
+(<a href="#fold-ec"><code>fold-ec</code></a>,
+<a href="#fold3-ec"><code>fold3-ec</code></a>)
+not inspired by <a href="#R5RS">[R5RS]</a> have been 
+included due to their broad applicability.
+</LI>
+
+<LI>
+There are typed generators 
+(<a href="#:list"><code>:list</code></a>, <a href="#:list"><code>:string</code></a>, ...)
+expecting certain types of objects for their arguments.
+These generators usually produce code as efficient as
+hand coded <code>do</code>-loops.
+</LI>
+
+<LI>
+There is also the special generator <a href="#:"><code>:</code></a> 
+(read 'run through') 
+dispatching on the value of its argument list at runtime.
+In the examples above, one or two integers were used to define a range.
+The convenience of omitting the type comes at a certain
+performance penalty, both per iteration and during startup of the loop.
+</LI>
+
+<LI>
+Generators can be nested depth-first (as in the example above), 
+run in parallel (with an optional <a href="#vars">index variable</a> 
+or more generally with <a href="#:parallel"><code>:parallel</code></a>),
+and can be stopped early before (<a href="#:while"><code>:while</code></a>)
+or after (<a href="#:until"><code>:until</code></a>)
+producing the current value.
+</LI>
+
+<LI>
+The sequence of values can be filtered 
+(<a href="#if"><code>if</code></a>, <a href="#not"><code>not</code></a>,
+<a href="#and"><code>and</code></a>, <a href="#or"><code>or</code></a>),
+intermediate commands can be evaluated between
+generators (<a href="#begin"><code>begin</code></a>), and
+intermediate variables can be introduced (<a href="#:let"><code>:let</code></a>).
+</LI>
+<LI>
+The mechanism is fully modular.
+This means that no existing macro or procedure needs 
+to be modified when adding
+<a href="#foo-ec">application-specific comprehensions</a>,
+<a href="#:foo">application-specific typed generators</a>,
+or <a href="#:dfoo">application-specific dispatching generators</a>.
+</LI>
+
+<LI>
+Syntactically, this SRFI uses the 
+[<I>outer</I> .. <I>inner</I> | <I>expr</I>] convention,
+meaning that the most right generator (<I>inner</I>) spins fastest
+and is followed by the result expression over which the
+comprehension ranges (<I>expr</I>).
+Refer to the <a href="#convention">Section "Design Rationale"</a>.
+Moreover, the syntax is strictly prefix and the naming
+convention <code>my-comprehension-ec</code>, 
+<code>:my-generator</code> is used systematically.
+</LI>
+
+</UL>
+
+<P>
+
+The remainder of this document is organized as follows.
+In section <a href="#rationale">Rationale</a> a brief
+introduction is given what the motivation is for this SRFI.
+The following section <a href="#specification">Specification</a>
+defines the mechanism.
+Section <a href="#ext-examples">Suggestions for
+Application-specific Extensions</a> presents some ideas
+how extensions using this SRFI could look like.
+The section <a href="#design">Design Rationale</a> contains
+some considerations that went into the design of the
+mechanism as defined in the specification.
+The following section <a href="#related-work">Related Work
+and Acknowledgements</a> briefly reviews other proposals
+related to Scheme and comprehensions or loops.
+Finally, the section <a href="#refimpl">Reference
+Implementation</a> gives source code for a reference
+implementation together with a collection of runnable
+examples and a few examples on extensions.
+
+
+<H1><a name="rationale"></a>Rationale</H1>
+
+The purpose of this SRFI is to provide a compact notation
+for many common cases of loops, in particular those 
+constructing values for further computation.
+The origin of this SRFI is my frustration that
+there is no simple for the list of integers
+from 0 to <I>n</I>-1.
+With this SRFI it is <code>(list-ec (: i n) i)</code>.
+Refer to the collection of examples for the 
+<a href="#refimpl">reference implementation</a>
+what it can be used for, and what it should not be used for.
+To give a practically useful example, 
+the following procedure computes the sorted
+list of all prime numbers below a certain bound
+(you may want to run it yourself to get an idea of
+its efficiency):
+
+<blockquote><pre><code>
+(define (eratosthenes n)          ; primes in {2..n-1} for n >= 1
+  (let ((p? (make-string n #\1)))
+    (do-ec (:range k 2 n)
+           (if (char=? (string-ref p? k) #\1))
+           (:range i (* 2 k) n k)
+           (string-set! p? i #\0) )
+    (list-ec (:range k 2 n) (if (char=? (string-ref p? k) #\1)) k) ))</code></pre></blockquote>
+
+
+Apart from <I>make simple things simple</I>, 
+there is no other paradigm involved for this SRFI.
+In particular, it is not the ambition to implement the
+powerful <I>lazy</I> list comprehensions of other functional
+programming languages in Scheme.
+If you are looking for that you may want to refer to
+<a href="#SRFI40">[SRFI 40]</a>.
+(The usual definition of the stream of all primes does
+in fact also use Eratosthenes' sieve method. 
+It is instructive to compare.)<P>
+
+The main focus of the design of this SRFI is portability under 
+<a href="#R5RS">[R5RS]</a> and modularity for extension.
+Portability is achieved by limiting the features included.
+Modularity for generators is achieved by a special
+implementation technique using <I>Continuation
+Passing Style</I> for macros (which I learned from
+Richard Kelsey's implementation of "Macros for writing loops",
+<a href="#MWL">[MWL]</a>) and by limiting the
+expressive power of generators.
+Modularity for comprehensions requires no additional effort.
+As modularity was a major design goal, I hope many people will
+find it easy to define their own comprehensions and generators.
+As a starting point for doing so, I have included several
+<a href="#ext-examples">suggestions</a> for extensions.<P>
+
+For a detailed motivation of the design decisions,
+please refer to the <a href="#design">Section "Design Rationale"</a>.<P>
+
+<H1><a name="specification"></a>Specification</H1>
+
+A comprehensions is a hygienic referentially transparent macro 
+in the sense of <a href="#R5RS">[R5RS, 4.3.]</a>.
+The macros extend the <code>&lt;expression&gt;</code>-syntax 
+defined in <a href="#R5RS">[R5RS, 7.1.3.]</a>.
+The main syntactic pattern used for defining a comprehension is 
+<code>&lt;qualifier&gt;</code>, representing a generator or a filter.
+It is defined in <a href="#qualifiers">Section "Qualifiers"</a>.<P>
+
+The most important instances of <code>&lt;qualifier&gt;</code> are generators.
+These are defined in <a href="#generators">Section "Generators"</a>.
+Generators come in three flavors,
+as <I>typed generators</I> 
+(<a href="#:list"><code>:list</code></a>, 
+<a href="#:range"><code>:range</code></a> etc.),
+as <I>the dispatching generator</I> <a href="#:"><code>:</code></a> 
+(pronounced as 'run through'),
+and as combined and modified generators 
+(<a href="#:parallel"><code>:parallel</code></a>, 
+<a href="#:while"><code>:while</code></a>, 
+<a href="#:until"><code>:until</code></a>).
+Most generators in this SRFI also support an optional 
+<a href="#vars">index variable</a> counting the
+values being generated.<P>
+
+Finally, it is explained how to add a new 
+<a href="#foo-ec">application-specific comprehension</a>,
+how to add a new <a href="#:foo">application-specific typed generator</a>,
+and how to add a new
+<a href="#:dfoo">application-specific dispatching generator</a>.
+As this concerns code unknown at the time this is being written,
+the explanation should not be taken as
+a <I>specification</I> in the literal sense. 
+It rather suggests a convention to follow in order to
+ensure new comprehensions and generators blend seamlessly with
+the ones defined in this SRFI.<P>
+
+
+<H2><a name="comprehensions"></a>Comprehensions</H2>
+
+<DL>
+<DT><a name="do-ec"></a>
+<code>(do-ec &lt;qualifier&gt;</code>*<code> &lt;command&gt;)</code>
+</DT>
+
+<DD>
+Evaluates the <code>&lt;command&gt;</code> exactly once 
+for each binding in the sequence defined by the qualifiers.
+If there are no qualifiers <code>&lt;command&gt;</code>
+is evaluated exactly once.
+The expression is evaluated for its side-effects only.
+The result of the comprehension is unspecified.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="list-ec"></a>
+<code>(list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The list of values obtained by evaluating
+<code>&lt;expression&gt;</code> once for each binding in the sequence 
+defined by the qualifiers.
+If there are no qualifiers the result is the list with
+the value of <code>&lt;expression&gt;</code>. 
+</DD>
+</DL>
+
+<DL>
+<DT><a name="append-ec"></a>
+<code>(append-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The list obtained by appending all values of <code>&lt;expression&gt;</code>,
+which must all be lists.<BR>
+Think of it as
+<code>(apply append (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="string-ec"></a>
+<code>(string-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The string of all values of <code>&lt;expression&gt;</code>.<BR>
+Think of it as
+<code>(list->string (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="string-append-ec"></a>
+<code>(string-append-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The string obtained by appending all values of <code>&lt;expression&gt;</code>,
+which must all be strings.<BR>
+Think of it as
+<code>(apply string-append (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="vector-ec"></a>
+<code>(vector-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The vector of all values of <code>&lt;expression&gt;</code>.<BR>
+Think of it as
+<code>(list->vector (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="vector-of-length-ec"></a>
+<code>(vector-of-length-ec &lt;k&gt; &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The vector of all values of <code>&lt;expression&gt;</code>,
+of which there must be exactly <code>&lt;k&gt;</code>.
+This comprehension behaves like <code>vector-ec</code>
+but can be implemented more efficiently.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="sum-ec"></a>
+<code>(sum-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The sum of all values of <code>&lt;expression&gt;</code>.<BR>
+Think of it as
+<code>(apply + (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="product-ec"></a>
+<code>(product-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The product of all values of <code>&lt;expression&gt;</code>.<BR>
+Think of it as
+<code>(apply * (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="min-ec"></a><a name="max-ec"></>
+<code>(min-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code><BR>
+<code>(max-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The minimum and maximum of all values of <code>&lt;expression&gt;</code>.
+The sequence of values must be non-empty.
+Think of these as<BR>
+<code>(apply min (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code><BR>
+<code>(apply max (list-ec &lt;qualifier&gt;</code>*<code> &lt;expression&gt;))</code>.<P>
+
+If you want to return a default value in case the sequence is empty
+you may want to consider<BR>
+<code>(fold3-ec 'infinity &lt;qualifier&gt;</code>*<code> &lt;expression&gt; min min)</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="any?-ec"></a>
+<code>(any?-ec &lt;qualifier&gt;</code>*<code> &lt;test&gt;)</code>
+</DT>
+
+<DD>
+Tests whether any value of <code>&lt;test&gt;</code> in the sequence
+of bindings specified by the qualifiers is non-<code>#f</code>.
+If this is the case, <code>#t</code> is returned, otherwise <code>#f</code>.
+If there are no bindings in the sequence specified by the qualifiers
+at all then the result is <code>#f</code>.
+The enumeration of values stops after the first non-<code>#f</code>
+encountered.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="every?-ec"></a>
+<code>(every?-ec &lt;qualifier&gt;</code>*<code> &lt;test&gt;)</code>
+</DT>
+
+<DD>
+Tests whether all values of <code>&lt;test&gt;</code> are non-<code>#f</code>. 
+If this is the case, <code>#t</code> is returned, otherwise <code>#f</code>.
+If the sequence is empty the result is <code>#t</code>.
+Enumeration stops after the first <code>#f</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="first-ec"></a><a name="last-ec"></a><code>
+(first-ec &lt;default&gt; &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)<br>
+(last-ec &nbsp;&lt;default&gt; &lt;qualifier&gt;</code>*<code> &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+The first or last value of <code>&lt;expression&gt;</code> 
+in the sequence of bindings specified by the qualifiers.
+Before enumeration, the result is initialized
+with the value of <code>&lt;default&gt;</code>;
+so this will be the result if the sequence is empty.
+Enumeration is terminated in <code>first-ec</code> 
+when the first value has been computed.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="fold-ec"></a><a name="fold3-ec"></a><code>
+(fold-ec  &nbsp;&lt;x0&gt; &lt;qualifier&gt;</code>*<code> &lt;expression&gt;      &lt;f2&gt;)<br>
+(fold3-ec &lt;x0&gt; &lt;qualifier&gt;</code>*<code> &lt;expression&gt; &lt;f1&gt; &lt;f2&gt;)</code>
+</DT>
+
+<DD>
+Reduces the sequence <I>x</I>[0], <I>x</I>[1], ..., <I>x</I>[<I>n</I>-1]
+of values obtained by evaluating <code>&lt;expression&gt;</code> once
+for each binding as specified by <code>&lt;qualifier&gt;</code>*.
+The arguments <code>&lt;x0&gt;</code>, <code>&lt;f2&gt;</code>, 
+and <code>&lt;f1&gt;</code>, all syntactically equivalent to
+<code>&lt;expression&gt;</code>, specify the reduction process.<P>
+
+The reduction process for <code>fold-ec</code> is defined as follows.
+A reduction variable <code>x</code> is initialized to the value 
+of <code>&lt;x0&gt;</code>,
+and for each <I>k</I> in {0, ..., <I>n</I>-1} the command 
+<code>(set! x (&lt;f2&gt </code><I>x</I>[<I>k</I>]<code> x))</code>
+is evaluated. 
+Finally, <code>x</code> is returned as the value of the comprehension.<P>
+
+The reduction process for <code>fold3-ec</code> is different.
+If and only if <I>n</I> = 0, i.e. the sequence is empty, then 
+<code>&lt;x0&gt;</code> is evaluated and returned as the value 
+of the comprehension.
+Otherwise, a reduction variable <code>x</code> is initialized
+to the value of <code>(&lt;f1&gt </code><I>x</I>[0]<code>)</code>,
+and for each <I>k</I> in {1, ..., <I>n</I>-1} the command 
+<code>(set! x (&lt;f2&gt </code><I>x</I>[<I>k</I>]<code> x))</code>
+is evaluated. 
+Finally, <code>x</code> is returned as the value of the comprehension.<P>
+
+As the order of the arguments suggests,
+<code>&lt;x0&gt;</code> is evaluated outside the scope of the
+qualifiers, whereas the reduction expressions involving
+<code>&lt;f1&gt</code> and <code>&lt;f2&gt</code> are
+inside the scope of the qualifiers (so they may depend on
+any variable introduced by the qualifiers).
+Note that <code>&lt;f2&gt;</code> is evaluated repeatedly,
+with any side-effect or overhead this might have.<P>
+
+The main purpose of these comprehensions is 
+implementing other comprehensions as special cases.
+They are generalizations of the procedures
+<code>fold</code> and <code>reduce</code> in the sense of
+<a href="#SRFI1">[SRFI 1]</a>. 
+(Concerning naming and argument order, please refer to 
+the discussion archive of SRFI 1, in particular
+the posting <a href="#Folds">[Folds]</a>.)
+Note that <code>fold3-ec</code> is defined such that
+<code>&lt;x0&gt;</code> is only evaluated in case the 
+sequence is empty.
+This allows raising an error for the empty sequence, 
+as in the example definition of <code>min-ec</code> below.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="foo-ec"></a>
+<code>&lt;application-specific comprehension&gt;</code>
+</DT>
+
+<DD>
+An important aspect of this SRFI is a modular mechanism 
+to define application-specific comprehensions.
+To create a new comprehension a hygienic macro 
+of this name is defined.
+The macro transforms the new comprehension patterns
+into instances of <a href="#do-ec"><code>do-ec</code></a>, which is the most
+fundamental eager comprehension, or any other comprehension
+already defined.
+For example, the following code defines
+<a href="#list-ec"><code>list-ec</code></a> and
+<a href="#min-ec"><code>min-ec</code></a>
+in terms of <a href="#fold-ec"><code>fold-ec</code></a>
+and <a href="#fold3-ec"><code>fold3-ec</code></a>:
+
+<blockquote><pre><code>
+(define-syntax list-ec
+  (syntax-rules ()
+    ((list-ec etc1 etc ...)
+     (reverse (fold-ec '() etc1 etc ... cons)) )))
+
+(define-syntax min-ec
+  (syntax-rules ()
+    ((min-ec etc1 etc ...)
+     (fold3-ec (min) etc1 etc ... min min) )))</code></pre></blockquote>
+
+Note that the pattern <code>etc1 etc ...</code> matches
+the syntax <code>&lt;qualifier&gt;</code>*<code> &lt;expression&gt;</code>
+without separate access to <code>&lt;qualifier&gt;</code>*<code></code> 
+and <code>&lt;expression&gt;</code>.
+In order to define a comprehension that does need explicit
+access to the <code>&lt;expression&gt;</code>-part, 
+the following method is used.
+First, all qualifiers are collected into a 
+<a href="#nested"><code>nested</code></a>-qualifier, and then the
+'exactly one qualifier'-case is implemented.
+For illustration, the following code defines
+<a href="#fold3-ec"><code>fold3-ec</code></a> in terms of 
+<a href="#do-ec"><code>do-ec</code></a>:
+
+<a name="fold3-ec-example"></a>
+<blockquote><pre><code>
+(define-syntax fold3-ec
+  (syntax-rules (nested)
+    ((fold3-ec x0 (nested q1 ...) q etc1 etc2 etc3 etc ...)
+     (fold3-ec x0 (nested q1 ... q) etc1 etc2 etc3 etc ...) )
+    ((fold3-ec x0 q1 q2 etc1 etc2 etc3 etc ...)
+     (fold3-ec x0 (nested q1 q2) etc1 etc2 etc3 etc ...) )
+    ((fold3-ec x0 expression f1 f2)
+     (fold3-ec x0 (nested) expression f1 f2) )
+
+    ((fold3-ec x0 qualifier expression f1 f2)
+     (let ((result #f) (empty #t))
+       (do-ec qualifier
+              (let ((value expression)) ; don't duplicate code
+                (if empty
+                    (begin (set! result (f1 value))
+                           (set! empty #f) )
+                    (set! result (f2 value result)) )))
+       (if empty x0 result) ))))</code></pre></blockquote>
+
+Finally, observe that the newly defined <code>fold3-ec</code>
+comprehension inherits all types of qualifiers supported by
+<code>do-ec</code>, including all application-specific generators;
+no further definitions are necessary.
+</DD>
+</DL>
+
+
+<H2><a name="qualifiers"></a>Qualifiers</H2>
+
+This section defines the syntax <code>&lt;qualifier&gt;</code>.
+The nesting of qualifiers is from left (outer) to right (inner).
+In other words, the rightmost generator spins fastest.
+The nesting also defines the scope of the variables introduced
+by the generators. 
+This implies that inner generators may depend on the variables
+of outer generators.
+The sequence of enumeration of values is strictly <I>depth first</I>.
+These conventions are illustrated by the 
+first <a href="#example1">example</a>.<P>
+
+The syntax <code>&lt;qualifier&gt;</code> consists of the following alternatives:<P>
+
+
+<DL>
+<DT><a name="generator"></a>
+<code>&lt;generator&gt;</code>
+</DT>
+
+<DD>
+Enumerates a sequence of bindings of one or more variables.
+The scope of the variables starts at the generator and extends
+over all subsequent qualifiers and expressions in the comprehension.
+The <code>&lt;generator&gt;</code>-syntax is defined in 
+<a href="#generators">Section "Generators"</a>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="if"></a>
+<code>(if &lt;test&gt;)</code>
+</DT>
+
+<DD>
+Filters the sequence of bindings by testing if
+<code>&lt;test&gt;</code> evaluates to non-<code>#f</code>.
+Only for those bindings for which this is the case,
+the subsequent qualifiers of the comprehension are evaluated.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="not"></a><a name="and"></a><a name="or"></a><code>
+(not &lt;test&gt;)<br>
+(and &lt;test&gt;</code>*<code>)<br>
+(or  &nbsp;&lt;test&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+Abbreviated notations for filters of the form
+<code>(if (not &lt;test&gt;))</code>,
+<code>(if (and &lt;test&gt;</code>*<code>))</code>, and
+<code>(if (or &lt;test&gt;</code>*<code>))</code>.
+These represent frequent cases of filters.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="begin"></a>
+<code>(begin &lt;sequence&gt;)</code>
+</DT>
+
+<DD>
+Evaluate <code>&lt;sequence&gt;</code>, consisting of
+<code>&lt;command&gt;</code>*<code> &lt;expression&gt;</code>,
+once for each binding of the variables defined by the 
+previous qualifiers in the comprehension.
+Using this qualifier, side effects can be inserted
+into the body of a comprehension.
+</DD>
+</DL>
+
+<DL>
+<DT><a name="nested"></a>
+<code>(nested &lt;qualifier&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+A syntactic construct to group qualifiers.
+The meaning of a qualifier according to the 
+<code>nested</code>-syntax is the same as 
+inserting <code>&lt;qualifier&gt;</code>*
+into the enclosing comprehension.
+This construct can be used to reduce comprehensions with several
+qualifiers into a form with exactly one qualifier.
+</DD>
+</DL>
+
+
+<H2><a name="generators"></a>Generators</H2>
+
+This section defines the syntax <code>&lt;generator&gt;</code>.
+Each generator defines a sequence of bindings through 
+which one or more variables are run.
+The scope of the variables begins after the closing 
+parenthesis of the generator expression and extends
+to the end of the comprehension it is part of.<P>
+
+<a name="vars"></a>The variables defined by the generators 
+are specified using the syntax<P>
+
+<blockquote><pre>
+<code>&lt;vars&gt; --&gt; &lt;variable1&gt;</code> [ <code>(index &lt;variable2&gt;)</code> ],</pre></blockquote>
+
+where <code>&lt;variable1&gt;</code> runs through the values in
+the sequence defined by the generator, and the optional 
+<code>&lt;variable2&gt;</code> is an exact integer-valued 
+index variable counting the values (starting from 0).
+The names of the variables must be distinct.
+The following example illustrates the index variable:<P>
+
+<blockquote><pre><code>
+(list-ec (: x (index i) "abc") (list x i)) => ((#\a 0) (#\b 1) (#\c 2))</code></pre></blockquote>
+
+Unless defined otherwise, all generators make sure that the
+expressions provided for their syntactic arguments are
+evaluated exactly once, before enumeration begins.
+Moreover, it may be assumed that the generators do not
+copy the code provided for their arguments, because that
+could lead to exponential growth in code size.
+Finally, it is possible to assign a value to the variables 
+defined by a generator, but the effect of this assignment 
+is unspecified.<P>
+
+The syntax <code>&lt;generator&gt;</code> consists of the following alternatives:<P>
+
+<DL>
+<DT><a name=":"></a>
+<code>(: &lt;vars&gt; &lt;arg1&gt; &lt;arg&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+First the expressions <code>&lt;arg1&gt; &lt;arg&gt;</code>*
+are evaluated into <I>a</I>[1] <I>a</I>[2] ... <I>a</I>[<I>n</I>]
+and then a global dispatch procedure is used to dispatch on
+the number and types of the arguments and run the resulting
+generator.
+
+<a name=":-dispatch"></a>
+Initially (after loading the SRFI), 
+the following cases are recognized:<P>
+
+<TABLE>
+
+<TR>
+<TD><a href="#:list"><code>:list</code></a>
+<TD>if
+<TD>for all <I>i</I> in {1..<I>n</I>}:
+<code>(list? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:string"><code>:string</code></a>
+<TD>if
+<TD>for all <I>i</I> in {1..<I>n</I>}:
+<code>(string? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:vector"><code>:vector</code></a>
+<TD>if
+<TD>for all <I>i</I> in {1..<I>n</I>}:
+<code>(vector? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:range"><code>:range</code></a>
+<TD>if
+<TD><I>n</I> in {1..3} and 
+for all <I>i</I> in {1..<I>n</I>}:
+<code>(integer? </code><I>a</I>[<I>i</I>]<code>)</code> and
+<code>(exact? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:real-range"><code>:real-range</code></a>
+<TD>if
+<TD><I>n</I> in {1..3} and 
+for all <I>i</I> in {1..<I>n</I>}:
+<code>(real? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:char-range"><code>:char-range</code></a>
+<TD>if
+<TD><I>n</I> = 2 and
+for all <I>i</I> in {1, 2}:
+<code>(char? </code><I>a</I>[<I>i</I>]<code>)</code>.
+</TR>
+
+<TR>
+<TD><a href="#:port"><code>:port</code></a>
+<TD>if
+<TD><I>n</I> in {1,2} and
+<code>(input-port? </code><I>a</I>[1]<code>)</code> and
+<code>(procedure? </code><I>a</I>[2]<code>)</code>.
+</TR>
+
+</TABLE><P>
+
+<a name="make-initial-:-dispatch"></a><a name=":-dispatch-ref"></a><a name=":-dispatch-set!"></a>
+The current dispatcher can be retrieved as 
+<code>(:-dispatch-ref)</code>, a new dispatcher <I>d</I> 
+can be installed by
+<code>(:-dispatch-set! </code><I>d</I><code>)</code>
+yielding an unspecified result,
+and a copy of the initial dispatcher can be obtained as
+<code>(make-initial-:-dispatch)</code>.
+Please refer to the section <a href="#:dfoo-global">below</a>
+for recommendation how to add cases to the dispatcher.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":list"></a><a name=":string"></a><a name=":vector"></a><code>
+(:list   &nbsp;&nbsp;&lt;vars&gt; &lt;arg1&gt; &lt;arg&gt;</code>*<code>)<br>
+(:string &lt;vars&gt; &lt;arg1&gt; &lt;arg&gt;</code>*<code>)<br>
+(:vector &lt;vars&gt; &lt;arg1&gt; &lt;arg&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+Run through one or more lists, strings, or vectors.
+First all expressions in <code>&lt;arg1&gt; &lt;arg&gt;</code>* 
+are evaluated and then all elements of the resulting values
+are enumerated from left to right.
+One can think of it as first appending all arguments and
+then enumerating the combined object.
+As a clarifying example, consider<BR>
+<code>(list-ec (:string c (index i) "a" "b") (cons c i))</code> =>
+<code>((#\a . 0) (#\b . 1))</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":integers"></a>
+<code>(:integers &lt;vars&gt;)</code>
+</DT>
+
+<DD>
+Runs through the sequence 0, 1, 2, ... of non-negative integers.
+This is most useful in combination with 
+<a href="#:parallel"><code>:parallel</code></a>,
+<a href="#:while"><code>:while</code></a>, and 
+<a href="#:until"><code>:until</code></a> or with
+a non-local exit in the body of the comprehension.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":range"></a><code>
+(:range &lt;vars&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;stop&gt;)<br>
+(:range &lt;vars&gt; &lt;start&gt; &lt;stop&gt;)<br>
+(:range &lt;vars&gt; &lt;start&gt; &lt;stop&gt; &lt;step&gt;)</code>
+</DT>
+
+<DD>
+Runs through a range of exact rational numbers.<P>
+
+The form <code>(:range &lt;vars&gt; &lt;stop&gt;)</code>
+evaluates the expression <code>&lt;stop&gt;</code>,
+which must result in an exact integer <I>n</I>, 
+and runs through the finite sequence 0, 1, 2, ..., <I>n</I>-1.
+If <I>n</I> is zero or negative the sequence is empty.<P>
+
+The form <code>(:range &lt;vars&gt; &lt;start&gt; &lt;stop&gt;)</code>
+evaluates the expressions <code>&lt;start&gt;</code> and 
+<code>&lt;stop&gt;</code>,
+which must result in exact integers <I>a</I> and <I>b</I>, 
+and runs through the finite sequence 
+<I>a</I>, <I>a</I>+1, <I>a</I>+2, ..., <I>b</I>-1.
+If <I>b</I> is less or equal <I>a</I> then the sequence is empty.<P>
+
+The form <code>(:range &lt;vars&gt; &lt;start&gt; &lt;stop&gt; &lt;step&gt;)</code>
+first evaluates the expressions <code>&lt;start&gt;</code>, 
+<code>&lt;stop&gt;</code>, and <code>&lt;step&gt;</code>,
+which must result in exact integers <I>a</I>, <I>b</I>, and <I>s</I>
+such that <I>s</I> is unequal to zero.
+Then the sequence
+<I>a</I>, <I>a</I> + <I>s</I>, <I>a</I> + 2 <I>s</I>, ..., <I>a</I> + (<I>n</I>-1) <I>s</I>
+is enumerated where <I>n</I> = ceil((<I>b</I>-<I>a</I>)/<I>s</I>).
+In other words, the sequence starts at <I>a</I>, increments by <I>s</I>,
+and stops when the next value would reach or cross <I>b</I>.
+If <I>n</I> is zero or negative the sequence is empty.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":real-range"></a><code>
+(:real-range &lt;vars&gt; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;stop&gt;)<br>
+(:real-range &lt;vars&gt; &lt;start&gt; &lt;stop&gt;)<br>
+(:real-range &lt;vars&gt; &lt;start&gt; &lt;stop&gt; &lt;step&gt;)</code>
+</DT>
+
+<DD>
+Runs through a range of real numbers using an explicit index variable.
+This form of range enumeration avoids accumulation of rounding errors
+and is the one to use if any of the numbers defining the range is 
+inexact, not an integer, or a bignum of large magnitude.<P>
+
+Providing default value 0 for <code>&lt;start&gt;</code> and
+1 for <code>&lt;step&gt;</code>, the generator first
+evaluates <code>&lt;start&gt;</code>, <code>&lt;stop&gt;</code>,
+and <code>&lt;step&gt;</code>, which must result in reals
+<I>a</I>, <I>b</I>, and <I>s</I> such that 
+<I>n</I> = (<I>b</I>-<I>a</I>)/<I>s</I> is also representable
+as a real.
+Then the sequence 0, 1, 2, ... is enumerated while the
+current value <I>i</I> is less than <I>n</I>, and the
+variable in <code>&lt;vars&gt;</code> is bound to the
+value <I>a</I> + <I>i</I> <I>s</I>.
+If any of the values <I>a</I>, <I>b</I>, or <I>s</I> is
+non-exact then all values in the sequence are non-exact.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":char-range"></a>
+<code>(:char-range &lt;vars&gt; &lt;min&gt; &lt;max&gt;)</code>
+</DT>
+
+<DD>
+Runs through a range of characters.
+First <code>&lt;min&gt;</code> and <code>&lt;max&gt;</code> are
+evaluated, which must result in two characters <I>a</I> and <I>b</I>.
+Then the sequence of characters 
+<I>a</I>, <I>a</I>+1, <I>a</I>+2, ..., <I>b</I>
+is enumerated in the order defined by <code>char&lt;=?</code>
+in the sense of <a href="#R5RS">[R5RS, 6.3.4.]</a>.
+If <I>b</I> is smaller than <I>a</I> then the sequence is empty.
+(Note that <I>b</I> is included in the sequence.)
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":port"></a>
+<code>(:port &lt;vars&gt; &lt;port&gt;)</code><BR>
+<code>(:port &lt;vars&gt; &lt;port&gt; &lt;read-proc&gt;)</code>
+</DT>
+
+<DD>
+Reads from the port until the eof-object is read.
+Providing the default <code>read</code> for 
+<code>&lt;read-proc&gt;</code>, the generator first
+evaluates <code>&lt;port&gt;</code> and 
+<code>&lt;read-proc&gt;</code>, which must result
+in an input port <I>p</I> and a procedure <I>r</I>.
+Then the variable is run through the sequence obtained
+by <code>(</code><I>r</I><code> </code><I>p</I><code>)</code>
+while the result does not satisfy <code>eof-object?</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":dispatched"></a>
+<code>(:dispatched &lt;vars&gt; &lt;dispatch&gt; &lt;arg1&gt; &lt;arg&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+Runs the variables through a sequence defined by <code>&lt;dispatch&gt;</code>
+and <code>&lt;arg1&gt; &lt;arg&gt;</code>*.
+The purpose of <code>:dispatched</code> is implementing
+dispatched generators, in particular the predefined dispatching
+generator <a href="#:"><code>:</code></a>.<P>
+
+The working of <code>:dispatched</code> is as follows.
+First <code>&lt;dispatch&gt;</code> and
+<code>&lt;arg1&gt; &lt;arg&gt;</code>* are evaluated,
+resulting in a procedure <I>d</I> (the 'dispatcher') and 
+the values <I>a</I>[1] <I>a</I>[2] ... <I>a</I>[<I>n</I>].
+Then 
+<code>(</code><I>d</I><code> (list </code><I>a</I>[1] <I>a</I>[2] ... <I>a</I>[<I>n</I>] <code>))</code> 
+is evaluated, resulting in a value <I>g</I>.
+If <I>g</I> is not a procedure then the dispatcher
+did not recognize the argument list and an error is raised.
+Otherwise the 'generator procedure' <I>g</I> is used 
+to run <code>&lt;vars&gt;</code> through a sequence of values.
+The sequence defined by <I>g</I> is obtained by repeated 
+evaluation of <code>(</code><I>g</I> <I>empty</I><code>)</code>
+until the result is <I>empty</I>.
+In other words, <I>g</I> indicates the end of the sequence by
+returning its only argument, for which the caller has provided 
+an object distinct from anything <I>g</I> can produce.
+(Generator procedures are state based, they are no such noble things
+as streams in the sense of <a href="#SRFI40">SRFI 40</a>.)<P>
+
+<a name=":generator-proc"></a>
+The definition of dispatchers is greatly simplified by the
+macro <code>:generator-proc</code> that constructs a generator
+procedure from a typed generator.
+Let <code>(g var arg1 arg ...)</code> be an instance of
+the <code>&lt;generator&gt;</code> syntax, for example an
+<a href="#:foo">application-specific typed generator</a>,
+with a single variable <code>var</code> and no index variable.
+Then
+
+<blockquote><code>
+(:generator-proc (g arg1 arg ...)) => </code><I>g</I>,</blockquote>
+
+where the generator procedure <I>g</I> runs through the list
+<code>(list-ec (g var arg1 arg ...) var)</code>.<P>
+
+<a name=":dfoo"></a>
+<I>Adding an application-specific dispatching generator</I>.
+In order to define a new dispatching generator (say <code>:my</code>)
+first a dispatching procedure (say <code>:my-dispatch</code>) is defined.
+The dispatcher will be called with a single (!) argument
+containing the list of all values to dispatch on.
+To enable informative error messages, the dispatcher should
+return a descriptive object (e.g. a symbol for the module name)
+when it is called with the empty list.
+Otherwise (if there is at least one value to dispatch on),
+the dispatcher must either return a generator procedure
+or <code>#f</code> (= no interest).
+As an example, the following skeleton code defines a dispatcher 
+similar to the initial dispatcher of <a href="#:"><code>:</code></a>:
+
+<pre>
+(define (:my-dispatch args)
+  (case (length args)
+    ((0) 'SRFI-NN)
+    ((1) (let ((a1 (car args)))
+           (cond
+            ((list? a1)
+             (:generator-proc (:list a1)) )
+            ((string? a1)
+             (:generator-proc (:string a1)) )
+            <I>...more unary cases...</I>
+            (else
+             #f ))))
+    ((2) (let ((a1 (car args)) (a2 (cadr args)))
+           (cond
+            ((and (list? a1) (list? a2))
+             (:generator-proc (:list a1 a2)) )
+            <I>...more binary cases...</I>
+            (else
+             #f ))))
+    <I>...more arity cases...</I>
+    (else
+     (cond
+      ((every?-ec (:list a args) (list? a))
+       (:generator-proc (:list (apply append args))) )
+      <I>...more large variable arity cases...</I>
+      (else
+       #f )))))</pre>
+
+Once the dispatcher has been defined, the following macro 
+implements the new dispatching generator:
+
+<pre>
+(define-syntax :my
+  (syntax-rules (index)
+    ((:my cc var (index i) arg1 arg ...)
+     (:dispatched cc var (index i) :my-dispatch arg1 arg ...) )
+    ((:my cc var arg1 arg ...)
+     (:dispatched cc var :my-dispatch arg1 arg ...) )))</pre>
+
+This method of extension yields complete control of the dispatching process.
+Other modules can only add cases to <code>:my</code>
+if they have access to <code>:my-dispatch</code>.<P>
+
+<a name=":dfoo-global"></a>
+<I>Extending the predefined dispatched generator</I>.
+An alternative to adding a new dispatched generators is extending
+the predefined generator <a href="#:"><code>:</code></a>.
+Technically, extending <a href="#:"><code>:</code></a> means
+installing a new global dispatching procedure using
+<a href="#:-dispatch-set!"><code>:-dispatch-set!</code></a>
+as described above.
+
+<a name="dispatch-union"></a>
+In most cases, however, the already installed dispatcher should
+be extended by new cases. 
+The following procedure is a utility for doing so:
+
+<pre>(dispatch-union <I>d1</I> <I>d2</I>) => <I>d</I>,</pre> 
+
+where the new dispatcher <I>d</I> recognizes the union of the
+cases recognized by the dispatchers <I>d1</I> and <I>d2</I>.
+The new dispatcher always tries both component dispatchers
+and raises an error in case of conflict.
+The identification returned by <code>(</code><I>d</I><code>)</code>
+is the concatenation of the component identifications
+<code>(</code><I>d1</I><code>)</code> and 
+<code>(</code><I>d2</I><code>)</code>, enclosed in lists
+if necessary.
+For illustration, consider the following code:
+
+<pre>
+(define (example-dispatch args)
+  (cond
+   ((null? args)
+    'example )
+   ((and (= (length args) 1) (symbol? (car args)) )
+    (:generator-proc (:string (symbol->string (car args)))) )
+   (else
+    #f )))
+
+(:-dispatch-set! (dispatch-union (:-dispatch-ref) example-dispatch))</pre>
+
+After evaluation of this code, the following example will work:
+
+<pre>(list-ec (: c 'abc) c) => (#\a #\b #\c)</pre>
+
+Adding cases to <a href="#:"><code>:</code></a> is particularly useful 
+for frequent cases of interactive input.
+Be warned, however, that the advantage of global extension also carries
+the danger of conflicts, unexpected side-effects, and slow dispatching.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":do"></a><code>
+(:do (&lt;lb&gt;</code>*<code>) &lt;ne1?&gt; (&lt;ls&gt;</code>*<code>))<br>
+(:do (let (&lt;ob&gt;</code>*<code>) &lt;oc&gt;</code>*<code>) (&lt;lb&gt;</code>*<code>) &lt;ne1?&gt; (let (&lt;ib&gt;</code>*<code>) &lt;ic&gt;</code>*<code>) &lt;ne2?&gt; (&lt;ls&gt;</code>*<code>))</code>
+</DT>
+
+<DD>
+Defines a generator in terms of a named-<code>let</code>,
+optionally decorated with inner and outer <code>let</code>s.
+This generator is for defining other generators.
+(In fact, the reference implementation transforms any other
+generator into an instance of fully decorated <code>:do</code>.)
+The generator is a compromise between expressive power 
+(more flexible loops) and fixed structure (necessary
+for merging and modifying generators).
+In the fully decorated form, the syntactic variables 
+<code>&lt;ob&gt;</code> (outer binding),
+<code>&lt;oc&gt;</code> (outer command),
+<code>&lt;lb&gt;</code> (loop binding),
+<code>&lt;ne1?&gt;</code> (not-end1?),
+<code>&lt;ib&gt;</code> (inner binding),
+<code>&lt;ic&gt;</code> (inner command), 
+<code>&lt;ne2?&gt;</code> (not-end2?), and
+<code>&lt;ls&gt;</code> (loop step)
+define the following loop skeleton:
+
+<pre>
+(let (&lt;ob&gt;*)
+  &lt;oc&gt;*
+  (let loop (&lt;lb&gt;*) 
+    (if &lt;ne1?&gt;
+        (let (&lt;ib&gt;*)
+          &lt;ic&gt;*
+          <I>payload</I>
+          (if &lt;ne2?&gt;
+              (loop &lt;ls&gt;*) ))))),</pre>
+
+where <code>&lt;oc&gt;*</code> and
+<code>&lt;ic&gt;*</code> are syntactically
+equivalent to <code>&lt;command&gt;</code>*,
+i.e. they do not begin with a <code>&lt;definition&gt;</code>.
+The latter requirement allows the code generator to
+produce more efficient code for special cases by
+removing empty <code>let</code>-expressions altogether.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":let"></a>
+<code>(:let &lt;vars&gt; &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+Runs through the sequence consisting of the value of 
+<code>&lt;expression&gt;</code>, only.
+This is the same as
+<code>(:list &lt;vars&gt; (list &lt;expression&gt;))</code>.
+If an index variable is specified, its value is 0.
+The <code>:let</code>-generator can be used to introduce 
+an intermediate variable depending on outer generators.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":parallel"></a>
+<code>(:parallel &lt;generator&gt;</code>*<code>)</code>
+</DT>
+
+<DD>
+Runs several generators in parallel.
+This means that the next binding in the sequence is obtained
+by advancing each generator in <code>&lt;generator&gt;</code>*
+by one step.
+The parallel generator terminates when any of its component
+generators terminates.
+The generators share a common scope for the variables 
+they introduce.
+This implies that the names of the variables introduced 
+by the various generators must be distinct.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":while"></a>
+<code>(:while &lt;generator&gt; &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+Runs <code>&lt;generator&gt;</code> while <code>&lt;expression&gt;</code>
+evaluates to non-<code>#f</code>.
+The guarding expression is included in the scope
+of the variables introduced by the generator.<P>
+
+Note the distinction between the filter <code>if</code> and
+the modified generator expressed by <code>:while</code>.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":until"></a>
+<code>(:until &lt;generator&gt; &lt;expression&gt;)</code>
+</DT>
+
+<DD>
+Runs <code>&lt;generator&gt;</code> until after 
+<code>&lt;expression&gt;</code> has evaluated to non-<code>#f</code>.
+The guarding expression is included in the scope
+of the variables introduced by the generator.<P>
+
+Note the distinction between <code>:while</code>, stopping <I>at</I>
+a certain condition, and <code>:until</code>, stopping <I>after</I>
+a certain condition has occurred. The latter implies that the binding
+that has triggered termination has been processed by the comprehension.
+</DD>
+</DL>
+
+<DL>
+<DT><a name=":foo"></a>
+<code>&lt;application-specific typed generator&gt;</code>
+</DT>
+
+<DD>
+An important aspect of this SRFI is a modular mechanism to
+define new typed generators.
+To define a new typed generator a hygienic referentially
+transparent macro of the same name is defined to transform
+the generator pattern into an instance of the 
+<a href="#:do"><code>:do</code></a>-generator.
+The extension is fully modular, meaning that no other
+macro has to be modified to add the new generator.
+This is achieved by defining the new macro in
+<I>Continuation Passing Style</I>, as in <a href="#MWL">[MWL]</a>.<P>
+
+Technically, this works as follows.
+Assume the generator syntax <code>(:mygen &lt;var&gt; &lt;arg&gt;)</code> 
+is to be implemented, for example running the variable <code>&lt;var&gt;</code>
+through the list <code>(reverse &lt;arg&gt;)</code>.
+The following definition implements <code>:mygen</code> 
+in terms of <a href="#:list"><code>:list</code></a> 
+using the additional syntactic variable <code>cc</code> 
+(read <I>current continuation</I>):
+
+<pre>
+(define-syntax :mygen
+  (syntax-rules ()
+    ((:mygen cc var arg)
+     (:list cc var (reverse arg)) )))</pre>
+
+After this definition, any comprehension will accept 
+the <code>:mygen</code>-generator and produce the
+proper code for it.
+This works as follows. 
+When a comprehension sees something of the form
+<code>(g arg ...)</code> in the position of a
+<code>&lt;qualifier&gt;</code> then it will
+transform the entire comprehension into 
+<code>(g (continue ...) arg ...)</code>.
+This effectively 'transfers control' to the 
+macro <code>g</code>, for example <code>:mygen</code>.
+The macro <code>g</code> has full control of
+the transformation, but eventually it should
+transform the expression into
+<code>(:do (continue ...) etc ...)</code>.
+In the <code>:mygen</code>-example this is done
+by the <code>:list</code>-macro.
+The macro <code>:do</code> finally transforms
+into <code>(continue ... (:do etc ...))</code>.
+As <code>continue</code> has been chosen by the
+macro implementing the comprehension, 
+it can regain control and proceed
+with other qualifiers.<P>
+
+In order to ensure consistency of new generators 
+with the ones defined in this SRFI, a few conventions
+are in order.
+Firstly, the generator patterns begin with one or more 
+variables followed by arguments defining the sequence.
+Secondly, each generator except <code>:do</code> 
+can handle an optional index variable.
+This is most easily implemented using
+<a href="#:parallel"><code>:parallel</code></a>
+together with <a href="#:integers"><code>:integers</code></a>.
+In case the payload generator needs an index anyhow
+(e.g. <a href="#:vector"><code>:vector</code></a>)
+it is more efficient to add an index-variable if
+none is given and to implement the indexed case.
+Finally, make sure that no syntactic variable of the
+generator pattern ever gets duplicated in the code
+(to avoid exponential code size in nested application),
+and introduce sufficient intermediate variables to 
+make sure expressions are evaluated at the correct time.
+</DD>
+</DL>
+
+<H1><a name="ext-examples"></a>
+Suggestions for application-specific extensions</H1>
+
+<H3>Arrays in the sense of <a href="#SRFI25">[SRFI25]</a></H3>
+
+In order to create an array from a sequence of elements,
+a comprehension with the following syntax would be useful:
+
+<pre>(array-ec &lt;shape&gt; &lt;qualifier&gt;* &lt;expression&gt;).</pre>
+
+The comprehension constructs a new array of the given shape
+by filling it row-major with the sequence of elements as specified 
+by the qualifiers.
+
+On the generator side, it would be most useful to have a
+generator of the form
+
+<pre>(:array &lt;vars&gt; &lt;arg&gt;),</pre>
+
+running through the elements of the array in row-major.
+For the optional index variable, the extension 
+<code>(index &lt;k1&gt; &lt;k&gt;</code>*<code>)</code>
+could be defined where <code>&lt;k1&gt; &lt;k&gt;</code>*
+are variable names indexing the various dimensions.
+
+
+<H3>Random Numbers in the sense of <a href="#SRFI27">[SRFI27]</a></H3>
+
+In order to create a vector or list of random numbers,
+it would be convenient to have generators of the following form:
+
+<pre>
+(:random-integer [ &lt;range&gt; [ &lt;number&gt; ] ] )
+(:random-real &nbsp;&nbsp;&nbsp;[ &lt;number&gt; ] )</pre>
+
+where <code>&lt;range&gt;</code> (default 2) indicates the range of 
+the integers and <code>&lt;number&gt;</code> (default infinity)
+specifies how many elements are to be generated.
+Derived from these basic generators, one could define several
+other generators for other distributions (e.g. Gaussian).
+
+
+<H3>Bitstrings in the sense of <a href="#SRFI33">[SRFI33]</a></H3>
+
+As eager comprehensions are efficient, they can be useful
+for operations involving strings of bits.
+It could be useful to have the following comprehension:
+
+<pre>(bitwise-ec &lt;qualifier&gt;* &lt;expression&gt;),</pre>
+
+which constructs an integer from bits obtained as values
+of <code>&lt;expression&gt;</code> in the ordering defined
+by <a href="#SRFI33">[SRFI33]</a>.
+In other words, if the sequence of values is 
+<I>x</I>[0], <I>x</I>[1], ..., <I>x</I>[<I>n</I>-1] then
+the result is <I>x</I>[0] + <I>x</I>[1] 2 + ... + <I>x</I>[<I>n</I>-1] 2^(<I>n</I>-1).
+On the generator side, a generator of the form
+
+<pre>(:bitwise &lt;vars&gt; &lt;arg1&gt; &lt;arg&gt;*)</pre>
+
+runs through the sequence of bits obtained by appending the
+binary digits of the integers <code>&lt;arg1&gt; &lt;arg&gt;</code>*.
+
+<H3><a name="srfi40-ec"></a>Streams in the sense of <a href="#SRFI40">[SRFI 40]</a></H3>
+
+It is possible to 'lazify' the eager comprehension 
+<a href="#list-ec"><code>list-ec</code></a>,
+constructing a stream in the sense of <a href="#SRFI40">[SRFI 40]</a>.
+Clearly, such a comprehension (<code>stream-ec</code>)
+is not eager at all since it only runs the loops when results are requested.
+It is also possible to define a <code>:stream</code>-generator with
+the same API as <a href="#:list"><code>:list</code></a> but running
+through streams instead of lists.<P>
+
+For what it is worth, 
+the file <a href="http://srfi.schemers.org/srfi-42/srfi40-ec.scm">srfi40-ec.scm</a> implements
+<code>:stream</code> and <code>stream-ec</code> and gives an example.
+The implementation makes substantial use of 
+<code>call-with-current-continuation</code> to run the loop
+only when necessary.
+In some implementations of Scheme this may involve
+considerable overhead.
+
+<H3>Reading Text Files</H3>
+
+Eager comprehensions can also be used to process files.
+However, bear in mind that an eager comprehension wants
+to read and process the entire file right away.
+Nevertheless, these generators would be useful for
+reading through the lines of a file or through the
+characters of a file:
+
+<pre>
+(:lines-of-file &lt;vars&gt; &lt;file&gt;)
+(:chars-of-file &lt;vars&gt; [ (line &lt;variable1&gt;) ] [ (column &lt;variable2&gt;) ] &lt;file&gt;)</pre>
+
+Here <code>&lt;file&gt;</code> is either an input port
+or a string interpreted as a filename.
+In a similar fashion, generators reading from sockets defined
+by URLs or other communication facilities could be defined.
+
+<H3>The Scheme shell <a href="#SCSH">Scsh</a></H3>
+
+In the Scheme-shell Scsh it could be useful to have certain
+comprehensions and generators. 
+Candidates for comprehensions are
+<code>begin-ec</code>,
+<code>|-ec</code>,
+<code>||-ec</code>, and
+<code>&&-ec</code>.
+Concerning generators, it might be useful to have
+<code>:directory</code> running through the 
+records of a directory, and maybe a 
+sophisticated <code>:file-match</code>-generator
+could enumerate file record in a directory structure.
+Optional variables of the generators could give
+convenient access frequent components of the file records
+(e.g. the filename).
+Another candidate is <code>:env</code> to run through
+the environment associations.
+It is left to other authors and other SRFIs to 
+define a useful set of comprehensions and generators
+for Scsh.
+
+
+<H1><a name="design"></a>Design Rationale</H1>
+
+<H3>What is the difference between eager and lazy comprehensions?</H3>
+
+A lazy comprehension, for example <code>stream-of</code> in the 
+sense of <a href="#SRFI40">[SRFI 40]</a>, constructs an object
+representing a sequence of values. 
+Only at the time these values are needed that they
+are actually produced.
+An eager comprehension, on the other hand, is an instruction to
+run through a certain sequence of values and do something with it,
+for example as in <a href="#do-ec"><code>do-ec</code></a>.
+In other words, it is nothing more sophisticated than a loop,
+potentially with a more convenient notation.
+This also explains why <code>stream-of</code> is the most
+fundamental <I>lazy</I> comprehension, and all others can
+be formulated in terms of it, whereas the most fundamental
+<I>eager</I> comprehension is <code>do-ec</code>.
+
+
+<H3><a name="convention"></a>Why the [<I>outer</I> .. <I>inner</I> | <I>expr</I>] 
+order of qualifiers?</H3>
+
+In principle, there are six possible orders in which the
+qualifiers and the expression of a comprehension can be written.
+We denote the different conventions with a pattern in which
+<I>expr</I> denotes the expression over which the comprehension
+ranges, <I>inner</I> denotes the generator spinning fastest, and
+<I>outer</I> denotes the generator spinning slowest.
+For example, <a href="#Haskell">[Haskell]</a> and 
+<a href="#Python">[Python]</a> use
+[<I>expr</I> | <I>outer</I> .. <I>inner</I>].
+(Probably with sufficient persistence, instances for any
+of the conventions can be found on the Internet.)
+In addition, there is the common mathematical notation 
+'{<I>f</I>(<I>x</I>) | <I>x</I> in <I>X</I>}'.<P>
+
+It is important to understand that the notational convention
+does not only determine the order of enumeration but also the
+scope of the variables introduced by the generators.
+The scope of <I>inner</I> includes <I>expr</I>, and the
+scope of <I>outer</I> should include <I>inner</I> to allow
+inner generates depending on outer generators.
+Eventually, the choice for a particular syntactic convention is
+largely a matter of personal preferences.
+However, there are a few considerations that went into the
+choice made for this SRFI:<P>
+
+1. The mathematical notation is universally known and widely used.
+However, the mathematical notation denotes a <I>set</I> comprehension
+in which the order of the qualifiers is either irrelevant or must
+be deduced from the context.
+For the purpose of eager comprehensions as a programming language 
+construct, the order does matter and a simple convention is a plus.
+For these reasons, the mathematical notation as such is undesirable,
+but its widespread use is in favor of
+[<I>expr</I> | <I>inner</I> .. <I>outer</I>] and
+[<I>expr</I> | <I>outer</I> .. <I>inner</I>].<P>
+
+2. It is desirable to have the scope of the variables increase
+into one direction, as in
+[<I>expr</I> | <I>inner</I> .. <I>outer</I>] and
+[<I>outer</I> .. <I>inner</I> | <I>expr</I>], and
+not change direction, as in
+[<I>expr</I> | <I>outer</I> .. <I>inner</I>]
+where <I>expr</I> is in the scope of <I>inner</I>
+but <I>outer</I> is not.
+This is even more important if the syntax in Scheme
+does not explicitly contain the '|'-separator.<P>
+
+3. More complicated comprehensions with several nested generators
+eventually look like nested loops and Scheme always
+introduces them <I>outer</I> .. <I>inner</I> as in 
+<code>do</code> and named-<code>let</code>.
+This is in favor of 
+[<I>expr</I> | <I>outer</I> .. <I>inner</I>] and
+[<I>outer</I> .. <I>inner</I> | <I>expr</I>].
+Shorter comprehension may look more naturally the
+other way around.<P>
+
+Regarding these contradicting preferences, I regard 
+linearity in scoping (2.) most important, followed by 
+readability for more complicated comprehensions (3.).
+This leads to [<I>outer</I> .. <I>inner</I> | <I>expr</I>].
+An example in Scheme-syntax is
+<code>(list-ec (: x 10) (: y x) (f x y))</code>,
+which looks acceptable to me even without similarity
+to the mathematical notation.
+As a downside, the convention clashes with other the
+convention used in other languages (e.g. Haskell and Python).
+
+
+<H3>You forgot [<I>choose your favorite here</I>]-ec!</H3>
+
+I tried to construct a reasonably useful set of tools
+according to what <a href="#R5RS">[R5RS]</a> specifies.
+Nevertheless, is the choice what to include and what to
+leave out eventually a matter of personal preference.<P>
+
+When 'packing the toolbox' I went for travelling light;
+this SRFI does not include everything imaginable
+or even everything useful.
+I oriented myself at the standard procedures 
+of <a href="#R5RS">[R5RS]</a>,
+with a few omissions and additions.
+A notable omission are <code>gcd-ec</code> and 
+<code>lcm-ec</code> because they are one-liners,
+and more severely, of questionable value in practice.
+A notable addition are
+<a href="#fold-ec"><code>fold-ec</code></a> and
+<a href="#fold3-ec"><code>fold3-ec</code></a>,
+providing a mechanism to define lots of useful one-liners.
+The other notable addition is 
+<a href="#first-ec"><code>first-ec</code></a>, which
+is the fundamental 'early stopping' comprehension.
+It is used to define 
+<a href="#any?-ec"><code>any?-ec</code></a> and
+<a href="#every?-ec"><code>every?-ec</code></a>
+which are among the most frequent comprehensions.<P>
+
+Concerning the generators, the same principle has been used.
+Additions include <a href="#:range"><code>:range</code></a>
+and friends because they are universally needed, and 
+<a href="#:dispatched"><code>:dispatched</code></a> which is
+primarily intended for implementing <a href="#:"><code>:</code></a>.
+
+
+<H3><a name="dovetail"></a>Why is the order of enumeration specified?</H3>
+
+For the purpose of this SRFI, every generator runs through
+its sequence of bindings in a well specified order, and nested 
+generators run through the Cartesian product in the order 
+of nested loops.
+The purpose of this definition is making the sequence as 
+easily predictable as possible.
+
+On the other hand, many mechanisms for <I>lazy</I> comprehensions
+do not specify the order in which the elements are enumerated.
+When it comes to infinite streams, this has the great advantage 
+that a comprehension may interleave an inner and an outer 
+enumeration, a method also known as 'dove-tailing' or 'diagonalizing'.
+Interleaving ensures that any value of the resulting stream is 
+produced after a finite amount of time, even if one or more 
+inner streams are infinite.
+
+<H3>Why both typed and dispatching generators?</H3>
+
+The reason for typed generators is runtime efficiency.
+In fact, the code produced by <code>:range</code> and others
+will run as fast as a hand-coded <code>do</code>-loop.
+The primary purpose of the dispatching generator is convenience.
+It comes at the price of reduced runtime performance,
+both for loop iteration and startup.
+
+<H3>Why the <I>something</I><code>-ec</code> and <code>:</code><I>type</I> naming?</H3>
+
+The purpose of the <code>:</code><I>type</I> convention is to keep 
+many common comprehensions down to one-liners.
+In my opinion, the fundamental nature of eager comprehensions
+justifies a single character naming convention.
+The <I>something</I><code>-ec</code> convention is primarily intended to
+stay away from the widely used <I>something</I><code>-of</code>.
+It reduces confusion and conflict with related mechanisms.
+
+<H3>Why combine variable binding and sequence definition?</H3>
+
+The generators of this SRFI do two different things with
+a single syntactic construct: They define a sequence of values
+to enumerate and they specify a variable (within a certain
+scope) to run through that sequence.
+An alternative is to separate the two, for example as it 
+has been done in 
+<a href="http://srfi.schemers.org/srfi-40/srfi-40.html">SRFI 40</a>.<P>
+
+The reason for combining sequence definition and enumeration
+for the purpose of this SRFI is threefold. 
+Firstly, sequences of values are not explicitly represented as
+objects in the typed generators; the generators merely
+manipulate an internal state.
+Secondly, this SRFI aims at a most concise notation for
+common comprehensions and reduces syntax to the naked minimum.
+Thirdly, this SRFI aims at the highest possible performance for
+typed generators, which is achieved if the state being manipulated
+is represented by the loop variable itself.
+
+<H3>Why is <code>(: &lt;vars&gt;)</code> illegal?</H3>
+
+It is reasonable and easy to define <code>(<a href="#:">:</a> &lt;vars&gt;)</code> 
+as <code>(<a href="#:integers">:integers</a> &lt;vars&gt;)</code>, 
+enumerating the non-negative integers.
+However, it turned out that a frequent mistake in using the
+eager comprehensions is to forget either the variable
+or an argument for the enumeration.
+As this would lead to an infinite loop (not always 
+equally pleasant in interactive sessions), it is not allowed.
+
+<H3>Why is there no <code>:sequential</code>?</H3>
+
+Just like <a href="#:parallel"><code>:parallel</code></a> 
+enumerates generators in
+parallel, a <code>:sequential</code> generator could
+enumerate a concatenation of several generator, starting 
+the next one when the previous has finished.
+The reason for not having such a qualifier is
+that the generators should use all the same variable name
+and there is no hygienic and referentially transparent
+way of enforcing this (or even knowing the variable).
+
+<H3>Why is there no general <code>let</code>-qualifier?</H3>
+
+It is easy to add <code>let</code>, <code>let*</code>, 
+and <code>letrec</code> as cases to <code>&lt;qualifier&gt;</code>.
+This would allow more sophisticated local variables 
+and expressions than possible with 
+<code>(<a href="#:let">:let</a> &lt;vars&gt; &lt;expression&gt;)</code> and
+<code>(<a href="#begin">begin</a> &lt;sequence&gt;</code>*<code>)</code>.
+In particular, a local <code>&lt;definition&gt;</code>
+in the sense of <a href="#R5RS">[R5RS, 7.1.5.]</a> would
+be possible.<P>
+
+There are two reasons for not including <code>let</code> 
+and friends as qualifiers.
+The first reason concerns readability.
+A qualifier of the form 
+<code>(let (&lt;binding spec&gt;</code>*<code>) &lt;body&gt;)</code>
+only makes sense if the scope of the new variables ends at the 
+end of the comprehension, and <I>not</I> already
+after <code>&lt;body&gt;</code>.
+The similarity with ordinary <code>let</code>-expressions 
+would be very confusing.
+The second reason concerns the design rationale.
+If sophisticated <code>let</code>-qualifiers involving
+recursion or local definitions are needed, it is likely 
+that eager comprehensions are being overused.
+In that case it might be better to define a procedure
+for the task.
+So including an invitation to overuse the mechanism would
+be a serious violation of the 
+<I>Keep It Simple and Stupid</I> principle.
+
+<H3>Why is there no <code>:nested</code> generator?</H3>
+
+The specification above defines <a href="#nested"><code>nested</code></a>
+as a qualifier but <a href="#:parallel"><code>:parallel</code></a> 
+as a generator.
+In particular, this makes it impossible to make parallel
+generators from nested ones.<P>
+
+This design simply reflects an implementability limitation.
+All component generators of <code>:parallel</code> are
+transformed into <a href="#:do"><code>:do</code></a>-generators
+and these can be merged into a parallel generator. 
+However, nested generators cannot be merged easily without
+losing the type of the generator, 
+which would seriously hurt modularity and performance.
+
+<H3>Is <code>any?-ec</code> eager?</H3>
+
+Yes, it is still eager because it immediately starts to 
+run through the sequence.<P>
+
+In fact, the reference implementation makes sure 
+<a href="#first-ec"><code>first-ec</code></a>,
+<a href="#any?-ec"><code>any?-ec</code></a>, and
+<a href="#every?-ec"><code>every?-ec</code></a>
+execute efficiently so they can be used conveniently 
+as in 
+<code>(every?-ec (:list x my-list) (pred? x))</code>.
+
+<H3>Why this whole <code>:dispatched</code> business?</H3>
+
+It is specified above that <I>the</I> dispatching generator,
+called <a href="#:"><code>:</code></a>, is just a special case
+of <a href="#:dispatched"><code>:dispatched</code></a> using 
+a global dispatching procedure.
+Alternatively, a simple fixed global mechanism to extend
+<a href="#:"><code>:</code></a> could have been used.
+This is much simpler but does not support the definition
+of new dispatched generators.<P>
+
+The purpose of <a href="#:dispatched"><code>:dispatched</code></a>
+and its utilities
+(<a href="#:generator-proc"><code>:generator-proc</code></a> and
+<a href="#dispatch-union"><code>dispatch-union</code></a>)
+is the following.
+Assume <a href="#:"><code>:</code></a> is to be used inside a
+module but it is essential that no other module can spoil it,
+e.g. by installing a very slow dispatcher.
+The recommended way to proceed in this case is to define a
+local copy of the original dispatching generator 
+<a href="#:"><code>:</code></a>,
+for example with the following code
+
+<pre>
+(define :my-dispatch
+  (make-initial-:-dispatch) )
+
+(define-syntax :my
+  (syntax-rules (index)
+    ((:my cc var (index i) arg1 arg ...)
+     (:dispatched cc var (index i) :my-dispatch arg1 arg ...) )
+    ((:my cc var arg1 arg ...)
+     (:dispatched cc var :my-dispatch arg1 arg ...) ))),</pre>
+
+and to use the new generator <code>:my</code> instead of
+<a href="#:"><code>:</code></a>.<P>
+
+An alternative for the dispatching mechanism as defined in
+this SRFI is the use of parameter objects in the sense of
+<a href="#SRFI39">[SRFI 39]</a>. 
+The dispatching generator would then access a dynamically
+scoped variable to find the dispatcher, allowing full
+control over dispatching.
+However, this approach does not solve the dilemma that it is
+sometimes useful that <a href="#:"><code>:</code></a> is global
+and sometimes undesired.
+The approach specified for this SRFI addresses this dilemma
+by offering options.<P>
+
+Another alternative for dealing with the dispatching
+problem is adding an optional argument to the syntax of
+<a href="#:"><code>:</code></a> through which the dispatcher
+can be passed explicitly.
+However, as <a href="#:"><code>:</code></a> has variable
+arity and the identifier for the variable cannot be
+distinguished from any value for a dispatcher, 
+this is syntactically problematic.
+
+<H3>Why is there no local mechanism for adding to <a href="#:"><code>:</code></a>?</H3>
+
+According to <a href="#R5RS">[R5RS, 7.1.6.]</a> macros can only
+be defined at the level of the <code>&lt;program&gt;</code> syntax.
+This implies that the scope of typed generators cannot easily be
+limited to local scopes.
+As typed and dispatched generators go together,
+there is also no strong need for a limited scope
+of dispatched generators either.
+Furthermore, locally extendable dispatchers are another major 
+headache to those trying to understand other people's code.
+
+<H3>Why are dispatchers unary?</H3>
+
+As defined in <a href="#:dispatched"><code>:dispatched</code></a>,
+a dispatching procedure is called with a single argument being
+the list of values to dispatch on. 
+An alternative is to <code>apply</code> the dispatcher to the
+list of values to dispatch on, which would be more natural in Scheme.<P>
+
+The reason for not using <code>apply</code> is a minor
+improvement in efficiency.
+Every time <code>apply</code> is used on a procedure of variable
+arity, an object containing the argument list is allocated on
+the heap.
+As a dispatcher may call many other dispatchers, this will adds
+to the overhead of dispatching, which is relevant in inner loops.
+
+<H3>Why are there two fold comprehensions?</H3>
+
+The reason for having two fold comprehensions 
+(<a href="#fold-ec"><code>fold-ec</code></a> and
+<a href="#fold3-ec"><code>fold3-ec</code></a>) is efficiency.<P>
+
+Clearly, the more general construction is 
+<a href="#fold3-ec"><code>fold3-ec</code></a> 
+as it allows individual treatment of the empty
+sequence case and the singleton sequence case.
+However, this comes at the price of more book-keeping
+as can be seen from the 
+<a href="#fold3-ec-example">implementation example</a>.
+As the overhead is located within inner loops,
+it makes sense to define another fold comprehension
+for the case where the added flexibility is not needed.
+This is <a href="#fold-ec"><code>fold-ec</code></a>.<P>
+
+The names <code>fold-ec</code> and <code>fold3-ec</code>
+have been chosen for the comprehensions in order to stay
+clear any other 'fold' that may be around.
+
+<H3>Why is <code>:char-range</code> not defined by <code>integer->char</code>?</H3>
+
+The definition of <a href="#:char-range"><code>:char-range</code></a>
+specifies a sequence of adjacent characters ordered by <code>char&lt;=?</code>.
+The reason for not using <code>char->integer</code> and 
+<code>integer->char</code> is the fact that
+<a href="#R5RS">[R5RS, 6.3.4.]</a> leaves it to the implementation
+whether the integers representing characters are consecutive or not.
+In effect, this underspecification is inherited by <code>:char-range</code>.
+
+
+<H1><a name="related-work"></a>Related Work and Acknowledgements</H1>
+
+Several other proposals related to the mechanism specified here exists.
+The following mechanisms are made for and in Scheme (or at least a 
+specific dialect thereof):<P>
+
+First of all, the report <a href="#R5RS">[R5RS]</a> of Scheme itself
+defines two constructs for writing loops: <code>do</code> and 
+named-<code>let</code>.
+Both constructs express a single loop (not nested), 
+possibly with several variables running in parallel,
+based on explicit manipulation of the state variables. 
+For example <code>(do ((x 0 (+ x 1))) ((= x 10)) (display x))</code>
+explicitly mentions how to obtain the next binding of <code>x</code>.<P>
+
+Richard Kelsey's "Macros for writing loops", <a href="#MWL">[MWL]</a>
+are an extension to Scheme48 to simplify the formulation of loops.
+The basic idea is to stick with a <code>do</code>-like syntax for
+more sophisticated loop constructs, not necessarily manipulating
+a state variable explicitly.
+For example, <code>(list* x '(1 2 3))</code> expresses an enumeration
+of the variable <code>x</code> through the list <code>(1 2 3)</code>
+without explicit state manipulation.
+The iteration constructs of <a href="#MWL">[MWL]</a>, named 
+<code>iterate</code> and <code>reduce</code>,
+express a single (not nested) loop (<code>iterate</code>) or 
+comprehension (<code>reduce</code>) with any number of
+parallel enumerations.
+A most important feature of the <a href="#MWL">[MWL]</a>-concept
+is a modular way to add sequence types (generators).
+In effect, the addition of a new sequence type does not
+require a modification of the existing macros.
+This is achieved by carefully limiting the expressive
+power of the loop constructs and by using the macros
+in <I>Continuation Passing Style</I> to call other macros.
+The <a href="#MWL">[MWL]</a>-concept, and its implementation, 
+were most influential for this SRFI.<P>
+
+Another related mechanism is the library of streams recently
+submitted by Phil L. Bewig as <a href="#SRFI40">[SRFI 40]</a>.
+The library contains a data type to represent even
+streams (both car and cdr potentially delayed) and
+defines procedures for manipulating these streams.
+Moreover, the macro <code>stream-of</code> defines a
+lazy comprehension resulting in the stream of values of
+an expression subject to generators and filters.
+A fixed set of generators (lists, vector, string, port,
+and naturally: streams) is supported; extending the
+list of generators requires changing <code>stream-of</code>.
+Nevertheless, modularity is high since it is easy to define
+a procedure producing a stream object and this can be
+used for enumeration.
+The order of enumeration is left unspecified to allow
+interleaving of generators (also refer to 
+<a href="#dovetail">above</a>.)
+Before Phil submitted his SRFIs, we had a short
+discussion in which we clarified the semantic and syntactic
+differences of our approaches.
+It turned out that the mechanisms are sufficiently 
+different not to unify them.
+The most important difference is the design rationale:
+Phil created his library to support the stream-paradigm
+in Scheme, inspired by the work done for Haskell and 
+other lazy languages, and intrigued by the beauty
+of programming with infinite streams.
+My work only aims at a convenient way of expressing 
+frequent patterns of loops in a compact way.
+For what it is worth, section <a href="#srfi40-ec">SRFI40-ec</a>
+contains a suggestion for extending the eager comprehension
+mechanism for SRFI40-streams.<P>
+
+Phil's work on streams and lazy comprehensions in Scheme
+triggered Eli Barzilay to implement a library of eager
+comprehensions for PLT-Scheme, <a href="#Eli">[Eli]</a>.
+The mechanism implemented by Eli is in essence very
+similar to the one proposed in this SRFI, and the two
+efforts have been independent until recently.
+Syntactically, Eli uses infix operators for generators, 
+whereas this SRFI is purely prefix, and Eli uses the 
+[<I>expr</I> | <I>outer</I> .. <I>inner</I>] convention
+for nesting, whereas this SRFI uses the
+[<I>outer</I> .. <I>inner</I> | <I>expr</I>]
+<a href="#convention">convention</a>.
+Semantically, Eli's mechanism defines more flexible
+loops than this SRFI.
+Comprehensions are regarded as generalized collection
+processes like fold and reduce.
+The mechanism in this SRFI is more restricted with respect
+to control flow (there is no general <code>while</code>)
+and more extensive with respect to generators and 
+comprehensions.
+Despite the strong conceptual similarity, the design 
+rationales are different.
+This SRFI focuses on portability and modular extension,
+whatever that may cost in terms of expressive power.<P>
+
+Finally, I would like to thank Mike Sperber for his 
+encouragement to proceed with the SRFI and for several
+discussions of the matter.
+In particular, the dispatching mechanism evolved
+rapidly during discussions with Mike.
+
+
+<H1><a name="refimpl"></a>Implementation</H1>
+
+The reference implementation focuses on portability, 
+performance, readability and simplicity, roughly in this order.
+It is written in <a href="#R5RS">[R5RS]</a>-Scheme 
+(including macros) extended by <a href="#SRFI23">[SRFI 23]</a>
+(<code>error</code>).
+The reference implementation was developed
+under <a href="#Scheme48">Scheme48</a> (0.57),
+<a href="#PLT">PLT</a> (202, 204), and
+<a href="#SCM">SCM</a> (5d7).<P>
+
+The file <a href="http://srfi.schemers.org/srfi-42/ec.scm">ec.scm</a> is the source of
+the reference implementation.
+It also contains comments concerning potential problems.
+Implementors might find the file <a href="http://srfi.schemers.org/srfi-42/design.scm">design.scm</a>
+helpful. 
+It contains alternative implementations of certain comprehensions 
+and generators in order to simplify tuning the implementation
+of this SRFI for different Scheme systems.<P>
+
+The file <a href="http://srfi.schemers.org/srfi-42/examples.scm">examples.scm</a> contains a
+collection of examples, and some code checking their results.
+The purpose of most examples is detecting implementation errors,
+but the section 'Less artificial examples' contains a few
+real-world examples. <P>
+
+The file <a href="http://srfi.schemers.org/srfi-42/timing.scm">timing.scm</a> contains some
+code to measure an idea of performance of the comprehensions.
+A hand-coded <code>do</code>-loop, the typed generator
+<code>(<a href="#:range">:range</a> </code><I>n</I><code>)</code>, 
+and the dispatching generator 
+<code>(<a href="#:">:</a> </code><I>n</I><code>)</code>
+are compared.
+For each loop we compare the time needed
+per iteration and the time needed to construct the loop (the startup delay).
+As a rule of thumb, <code>:range</code> is as fast (or slightly faster) 
+as a hand-coded <code>do</code>-loop per iteration and needs about a 
+third more time for startup (due to type checking of the argument).
+The dispatching generator needs about twice the time per iteration
+(due to calling the generator procedure) and needs about five times
+as long for startup (due to dispatching).<P>
+
+The file <a href="http://srfi.schemers.org/srfi-42/extension.scm">extension.scm</a> contains
+examples for adding new generators and comprehensions.<P>
+
+<H1>References</H1>
+
+<TABLE>
+
+<TR>
+<TD><a name="R5RS">[R5RS]</a>
+<TD>Richard Kelsey, William Clinger, and Jonathan Rees (eds.):
+Revised(5) Report on the Algorithmic Language Scheme of
+20 February 1998.
+Higher-Order and Symbolic Computation, Vol. 11, No. 1, September 1998.
+<a href="http://schemers.org/Documents/Standards/R5RS/">
+http://schemers.org/Documents/Standards/R5RS/</a>.
+</TR>
+
+<TR>
+<TD><a name="MWL">[MWL]</a>
+<TD>Richard Kelsey, Jonathan Rees: 
+The Incomplete Scheme48 Reference Manual for Release 0.57 (July 15, 2001).
+Section "Macros for writing loops".
+<a href="http://s48.org/0.57/manual/s48manual_49.html">http://s48.org/0.57/manual/s48manual_49.html</a>
+</TR>
+
+
+<TR>
+<TD><a name="SRFI1">[SRFI 1]</a>
+<TD>Olin Shivers: List Library.
+<a href="http://srfi.schemers.org/srfi-1/">http://srfi.schemers.org/srfi-1/</a>
+</TR>
+
+<TR>
+<TD><a name="SRFI23">[SRFI 23]</a>
+<TD>Stephan Houben: Error reporting mechanism
+<a href="http://srfi.schemers.org/srfi-23/">http://srfi.schemers.org/srfi-23/</a>
+</TR>
+
+
+<TR>
+<TD><a name="SRFI25">[SRFI 25]</a>
+<TD>Jussi Piitulainen: Multi-dimensional Array Primitives.
+<a href="http://srfi.schemers.org/srfi-25/">http://srfi.schemers.org/srfi-25/</a>
+</TR>
+
+<TR>
+<TD><a name="SRFI27">[SRFI 27]</a>
+<TD>Sebastian Egner: Sources of Random Bits.
+<a href="http://srfi.schemers.org/srfi-27/">http://srfi.schemers.org/srfi-27/</a>
+</TR>
+
+<TR>
+<TD><a name="SRFI33">[SRFI 33]</a>
+<TD>Olin Shivers: Integer Bitwise-operation Library.
+<a href="http://srfi.schemers.org/srfi-33/">http://srfi.schemers.org/srfi-33/</a>
+</TR>
+
+<TR>
+<TD><a name="SRFI39">[SRFI 39]</a>
+<TD>Marc Feeley: Parameter objects.
+<a href="http://srfi.schemers.org/srfi-39/">http://srfi.schemers.org/srfi-39/</a>
+</TR>
+
+<TR>
+<TD><a name="SRFI40">[SRFI 40]</a>
+<TD>Philip L. Bewig: A Library of Streams.
+<a href="http://srfi.schemers.org/srfi-40/">http://srfi.schemers.org/srfi-40/</a>
+</TR>
+
+<TR>
+<TD><a name="Eli">[Eli]</a>
+<TD>Eli Barzilay: Documentation for "misc.ss". 2002.
+<a href="http://www.cs.cornell.edu/eli/Swindle/misc-doc.html#collect">http://www.cs.cornell.edu/eli/Swindle/misc-doc.html#collect</a>
+</TR>
+
+<TR>
+<TD><a name=Folds>[Folds]</a>
+<TD>John David Stone: Folds and reductions.
+Posting in relation to <a href="#SRFI1">[SRFI 1]</a> on 8-Jan-1999.
+<a href="http://srfi.schemers.org/srfi-1/mail-archive/msg00021.html">http://srfi.schemers.org/srfi-1/mail-archive/msg00021.html</a>
+</TR>
+
+<TR>
+<TD><a name="Haskell">[Haskell]</a>
+<TD>Simon L. Peyton Jones, John Hughes: The Haskell 98 Report 1 February 1999.
+Section 3.11 "List Comprehensions".
+<a href="http://www.haskell.org/onlinereport/exps.html#sect3.11">http://www.haskell.org/onlinereport/exps.html#sect3.11</a>
+</TR>
+
+<TR>
+<TD><a name="Python">[Python]</a>
+<TD>Guido van Rossum, Fred L. Drake Jr. (eds.):
+Python Reference Manual.
+Section 5.2.4 "List displays".
+Release 2.2, December 21, 2001.
+<a href="http://python.org/doc/2.2/ref/lists.html">http://python.org/doc/2.2/ref/lists.html</a>
+</TR>
+
+<TR>
+<TD><a name="SICP">[SICP]</a>
+<TD>Harold Abelson, Gerald J. Sussman, Julie Sussman:
+Structure and Interpretation of Computer Programs.
+MIT Press, 1985.
+<a href="http://mitpress.mit.edu/sicp/">http://mitpress.mit.edu/sicp/</a>
+</TR>
+
+<TR>
+<TD><a name="IFPL">[IFPL]</a>
+<TD>Philip Wadler: List Comprehensions (Chapter 7). In:
+Simon L. Peyton Jones: The Implementation of Functional Programming Languages.
+Prentice Hall, 1987.
+</TR>
+
+<TR>
+<TD><a name="Scheme48">[Scheme48]</a>
+<TD>Richard Kelsey, Jonathan Rees: Scheme48 Release 0.57 (July 15, 2001).
+<a href="http://s48.org/">http://s48.org/</a>
+</TR>
+
+<TR>
+<TD><a name="SCM">[SCM]</a>
+<TD>Aubrey Jaffer: SCM Scheme Implementation. Version 5d7 (November 27, 2002).
+<a href="http://www.swiss.ai.mit.edu/~jaffer/SCM.html">http://www.swiss.ai.mit.edu/~jaffer/SCM.html</a>
+</TR>
+
+<TR>
+<TD><a name="PLT">[PLT]</a>
+<TD>PLT People: PLT Scheme, DrScheme Version 203.
+<a href="http://www.plt-scheme.org/">http://www.plt-scheme.org/</a>
+</TR>
+
+<TR>
+<TD><a name="SCSH">[Scsh]</a>
+<TD>Olin Shivers, Brian D. Carlstrom, Martin Gasbichler, Mike Sperber:
+Scsh Reference Manual.
+For scsh release 0.6.3.
+<a href="http://scsh.net/">http://scsh.net/</a>
+</TR>
+
+
+</TABLE>
+
+
+
+<H1>Copyright</H1>
+<p>Copyright (C) Sebastian Egner (2003). All Rights Reserved.</p>
+
+<p>
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+</p>
+<p>
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+</p>
+<p>
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+</p>
+
+
+    <hr>
+    <address>Author: <a href="mailto:sebastian.egner@philips.com">Sebastian Egner</a></address>
+    <address>Editor: <a href="mailto:srfi-editors@srfi.schemers.org">Francisco Solsona</a></address>
+<!-- Created: Tue Feb 4 13:21:00 MST 2003 -->
+<!-- hhmts start -->
+Last modified: Tue Apr  5 10:43:00 CEST 2005
+<!-- hhmts end -->
+
+  </body>
+</html>
