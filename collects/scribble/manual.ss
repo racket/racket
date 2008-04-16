@@ -2296,6 +2296,15 @@
       [(_ super)
        null]))
 
+  (define (flatten-splices l)
+   (let loop ([l l])
+     (cond
+      [(null? l) null]
+      [(splice? (car l))
+       (append (splice-run (car l))
+               (loop (cdr l)))]
+      [else (cons (car l) (loop (cdr l)))])))
+
   (define-syntax *defclass
     (syntax-rules ()
       [(_ *include-class name super (intf ...) body ...)
@@ -2315,7 +2324,7 @@
                                     null
                                     whole-page?
                                     make-class-index-desc)))
-                     (list body ...))))]))
+                     (flatten-splices (list body ...)))))]))
 
   (define-syntax defclass
     (syntax-rules ()

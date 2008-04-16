@@ -8,7 +8,7 @@
   (provide BNF 
            nonterm
            BNF-seq
-           BNF-alt ; single-lie alternatives
+           BNF-alt  BNF-alt/close ; single-line alternatives
            BNF-etc
            BNF-group
            optional kleenestar kleeneplus kleenerange)
@@ -46,6 +46,9 @@
 
   (define (BNF-alt . l)
     (interleave l alt))
+
+  (define (BNF-alt/close . l)
+    (interleave l " | "))
 
   (define BNF-etc "...")
 
