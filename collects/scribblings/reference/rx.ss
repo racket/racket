@@ -260,7 +260,7 @@ Regexp_1|Regexp_2 : <min(n1, n2),max(m1, m2)> iff Regexp_1 : <n1,m1> AND Regexp_
 
 PiecePieces : <n1+n2,m1+m2> iff Piece : <n1,m1> AND Pieces : <n2,m2>
 
-Repeat? : <n,m> iff Repeat : <n,m>
+Repeat? : <0,m> iff Repeat : <n,m>
 Atom* : <0,+inf.0> iff Atom : <n,m> AND n > 0
 
 Atom+ : <1,+inf.0> iff Atom : <n,m> AND n > 0
