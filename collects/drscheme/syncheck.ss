@@ -2317,7 +2317,10 @@ If the namespace does not, they are colored the unbound color.
                          (hash-cons! tail-ht stx-from stx-to-to))))
                    stx-to-tos)))
               stx-tos)))
+          
+          #;
           (when found-one?
+            (printf "\n\n")
             (loop)))))
     
    
