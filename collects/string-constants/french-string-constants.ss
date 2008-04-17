@@ -980,7 +980,7 @@
   (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "Assez gros Scheme")
   (pretty-big-scheme-one-line-summary "Graphique, plus de nombreuses bibliothèques standards")
-  (r5rs-lang-name "Standard (R5RS)")
+  (r5rs-language-name "R5RS")
   (r5rs-one-line-summary "R5RS, de base")
   (expander "Expanseur") ; compression, compresseur, compresser => expansion, expanseur, expanser (expandeur, expander fait trop franglais et expandion n'existe pas)
   (expander-one-line-summary "Expanse les expressions au lieu de les évaluer")

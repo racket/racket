@@ -951,7 +951,7 @@ please adhere to these guidelines:
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (pretty-big-scheme "Pretty Big (MrEd と Advanced Student を含む)")
  (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
- (r5rs-lang-name "Standard (R5RS)")
+ (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "純粋な R5RS")
  (expander "Expander")
  (expander-one-line-summary "式を評価するのではなく展開する")

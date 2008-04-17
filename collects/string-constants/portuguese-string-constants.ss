@@ -905,7 +905,7 @@ please adhere to these guidelines:
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (pretty-big-scheme "Pretty Big (includes MrEd and Advanced)")
  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
- (r5rs-lang-name "Standard (R5RS)")
+ (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, with no frills")
  (expander "Expander")
  (expander-one-line-summary "Expands, rather than evaluates, expressions")

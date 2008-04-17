@@ -633,7 +633,7 @@
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (pretty-big-scheme "Vrij groot (bevat MrEd en Gevorderde)")
  (pretty-big-scheme-one-line-summary "Inclusief syntaxis and functies van de HtDP-talen")
- (r5rs-lang-name "Standaard (R5RS)")
+ (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, kaal")
  (unknown-debug-frame "[onbekend]")
  

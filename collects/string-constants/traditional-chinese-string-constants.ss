@@ -916,7 +916,7 @@
   (how-to-design-programs "程序設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "相當大（包括MrEd和HtDP高級）")
   (pretty-big-scheme-one-line-summary "增加了HtDP(程序設計方法)語言的語法和函數")
-  (r5rs-lang-name "標準(R5RS)")
+  (r5rs-language-name "R5RS")
   (r5rs-one-line-summary "Scheme語言標準第5修改稿")
   (expander "Expander")
   (expander-one-line-summary "展開表達式，而不是求值")

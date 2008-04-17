@@ -887,7 +887,7 @@
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
  (pretty-big-scheme "Kombo (enthält MrEd and Fortgeschritten)")
  (pretty-big-scheme-one-line-summary "Macht Syntax and Prozeduren der HtDP-Sprachen verfügbar")
- (r5rs-lang-name "Standard (R5RS)")
+ (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, ohne alles andere")
  (expander "Expander")
  (expander-one-line-summary "Expandiert Ausdrücke, statt sie auszuwerten")
