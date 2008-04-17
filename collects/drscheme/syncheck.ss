@@ -1421,6 +1421,7 @@ If the namespace does not, they are colored the unbound color.
                             low-tops high-tops
                             templrefs
                             requires require-for-syntaxes require-for-templates require-for-labels)
+      
       (let ([tail-ht (make-hasheq)]
             [maybe-jump
              (λ (vars)
@@ -1435,6 +1436,7 @@ If the namespace does not, they are colored the unbound color.
         
         (let level-loop ([sexp sexp]
                          [high-level? #f])
+          
           (let* ([loop (λ (sexp) (level-loop sexp high-level?))]
                  [varrefs (if high-level? high-varrefs low-varrefs)]
                  [binders (if high-level? high-binders low-binders)]
@@ -1588,12 +1590,7 @@ If the namespace does not, they are colored the unbound color.
                  (annotate-raw-keyword sexp varrefs)
                  ((annotate-require-open user-namespace user-directory) (syntax lang))
                  
-                 (hash-set! requires 
-                            (syntax->datum (syntax lang))
-                            (cons (syntax lang)
-                                  (hash-ref requires 
-                                            (syntax->datum (syntax lang))
-                                            (λ () '()))))
+                 (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
               
               ; top level or module top level only:
@@ -1654,6 +1651,9 @@ If the namespace does not, they are colored the unbound color.
                               (syntax-source sexp)))
                  (void))])))
         (add-tail-ht-links tail-ht)))
+    
+    (define (hash-cons! ht k v)
+      (hash-set! ht k (cons v (hash-ref ht k '()))))
     
     ;; add-disappeared-bindings : syntax id-set -> void
     (define (add-disappeared-bindings stx binders disappaeared-uses)
@@ -2287,25 +2287,55 @@ If the namespace does not, they are colored the unbound color.
     
     ;; hash-table[syntax -o> (listof syntax)] -> void
     (define (add-tail-ht-links tail-ht)
+      (collapse-tail-links tail-ht)
       (hash-for-each
        tail-ht
        (λ (stx-from stx-tos)
          (for-each (λ (stx-to) (add-tail-ht-link stx-from stx-to))
                    stx-tos))))
     
+    ;; hash-table[syntax -o> (listof syntax)] -> void
+    ;; take something like a transitive closure, except
+    ;; only when there are non-original links in between
+    (define (collapse-tail-links tail-ht)
+      (hash-for-each
+       tail-ht
+       (λ (stx-from stx-tos)
+         (for-each
+          (λ (stx-to)
+            (let ([stx-to-tos (hash-ref tail-ht stx-to '())])
+              (for-each
+               (λ (stx-to-to)
+                 (unless (and (add-tail-link? stx-from stx-to) 
+                              (add-tail-link? stx-to stx-to-to))
+                   (hash-cons! tail-ht stx-from stx-to-to)))
+               stx-to-tos)))
+          stx-tos))))
+    
+   
+    
     ;; add-tail-ht-link : syntax syntax -> void
     (define (add-tail-ht-link from-stx to-stx)
+      (when (add-tail-link? from-stx to-stx)
+        (let* ([to-src (find-source-editor to-stx)]
+               [from-src (find-source-editor from-stx)]
+               [from-pos (syntax-position from-stx)]
+               [to-pos (syntax-position to-stx)]
+               [defs-text (get-defs-text)])
+          (send defs-text syncheck:add-tail-arrow
+                from-src (- from-pos 1)
+                to-src (- to-pos 1)))))
+    
+    (define (add-tail-link? from-stx to-stx)
       (let* ([to-src (find-source-editor to-stx)]
              [from-src (find-source-editor from-stx)]
              [defs-text (get-defs-text)])
-        (when (and to-src from-src defs-text)
-          (let ([from-pos (syntax-position from-stx)]
-                [to-pos (syntax-position to-stx)])
-            (when (and from-pos to-pos)
-              (send defs-text syncheck:add-tail-arrow
-                    from-src (- from-pos 1)
-                    to-src (- to-pos 1)))))))
-    
+        (and to-src from-src defs-text
+             (let ([from-pos (syntax-position from-stx)]
+                   [to-pos (syntax-position to-stx)])
+               (and from-pos to-pos)))))
+
+      
     ;; add-to-cleanup-texts : (is-a?/c editor<%>) -> void
     (define (add-to-cleanup-texts ed)
       (let ([ed (find-outermost-editor ed)])
