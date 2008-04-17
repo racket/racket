@@ -357,6 +357,27 @@ background that signals the source location of an error.}
 
 @; ----------------------------------------
 
+@subsection[#:tag "menu:testing"]{@onscreen{Testing}}
+
+This menu is visible when in a language with built-in support for testing;
+presently this includes the @|HtDP| languages and the ProfessorJ languages.
+
+@itemize{
+  @item{@defmenuitem{Enable tests} Allows tests written in the definitions
+   window to be evaluated when the program is run.}
+  @item{@defmenuitem{Disable tests} Stops tests written in the definitions
+   window from evaluating when the program is run; disabling tests freezes
+   contents of any existing test report window.}
+  @item{@defmenuitem{Dock report} Like the dock button on the test report
+   window, this causes all test report windows to merge with the appropriate
+   DrScheme window at the bottom of the frame.}
+  @item{@defmenuitem{Undock report} Like the undock button on the test report
+   window, this causes the test reports attached to appropriate DrScheme tabs
+   to become separate windows.}
+  }
+ 
+@; ----------------------------------------
+
 @subsection{@onscreen{Windows}}
 
 @itemize{
