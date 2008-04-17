@@ -1,0 +1,773 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-2.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_2"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_2">Chapter 2</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_2">Bytevectors</a></h1>
+<p></p>
+<p>
+Many applications deal with blocks of binary data by accessing
+them in various ways&#8212;extracting signed or unsigned numbers of
+various sizes.  Therefore, the <tt>(rnrs bytevectors (6))</tt><a name="node_idx_62"></a>library
+provides a single type for
+blocks of binary data with multiple ways to access that data. It deals
+with integers and floating-point representations 
+in various sizes with specified endianness.</p>
+<p>
+Bytevectors<a name="node_idx_64"></a>are objects of a disjoint
+type. Conceptually, a bytevector represents a sequence of 8-bit
+bytes.  The description of bytevectors uses the term <a name="node_idx_66"></a><em>byte</em>
+for an exact integer object in the interval { <tt>-</tt> 128, <tt>...</tt>, 127} and the
+term <a name="node_idx_68"></a><em>octet</em> for an exact integer object in the interval {0,
+<tt>...</tt>, 255}.  A byte corresponds to its two&#8217;s complement
+representation as an octet.</p>
+<p>
+The length of a bytevector is the number of bytes it contains. This
+number is fixed. A valid index into a bytevector is an exact,
+non-negative integer object less than the length of the bytevector.
+The first byte of a bytevector has index 0;
+the last byte has an index one less than the length of the bytevector.</p>
+<p>
+Generally, the access procedures come in different flavors according
+to the size of the represented integer and the endianness of the
+representation.  The procedures also distinguish signed and unsigned
+representations.
+The signed representations all use two&#8217;s complement.</p>
+<p>
+Like string literals, literals representing bytevectors do not need to
+be quoted:
+</p>
+
+<tt>#vu8(12&nbsp;23&nbsp;123)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;#vu8(12&nbsp;23&nbsp;123)<p></tt></p>
+<p>
+</p>
+<a name="node_sec_2.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.1">2.1&nbsp;&nbsp;Endianness</a></h2>
+<p>Many operations described in this chapter accept an
+<a name="node_idx_70"></a><em>endianness</em> argument.  Endianness describes the encoding of
+exact integer objects as several contiguous bytes in a bytevector&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_4">4</a>]. 
+For this purpose, the binary representation of the integer object is split into
+consecutive bytes.  <a name="node_idx_72"></a>The little-endian
+encoding places the least significant byte of an integer first, with
+the other bytes following in increasing order of significance.
+<a name="node_idx_74"></a>The big-endian encoding places the most
+significant byte of an integer first, with the other bytes following
+in decreasing order of significance. </p>
+<p>
+This terminology also applies to IEEE-754 numbers: IEEE&nbsp;754 describes
+how to represent a floating-point number as an exact integer object, and
+endianness describes how the bytes of such an integer are laid out in
+a bytevector.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Little- and big-endianness are only the most common kinds of
+endianness.  Some architectures distinguish between the endianness
+at different levels of a binary representation.
+</blockquote><p>
+</p>
+<a name="node_sec_2.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.2">2.2&nbsp;&nbsp;General operations</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_76"></a>endianness<i> &lt;endianness symbol&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+The name of &lt;endianness symbol&gt; must be a symbol describing an
+endianness.  An implementation must support at least the symbols
+<tt>big</tt> and <tt>little</tt>, but may support other endianness
+symbols.  <tt>(endianness &lt;endianness symbol&gt;)</tt> evaluates to
+the symbol named &lt;endianness symbol&gt;.  Whenever one of the
+procedures operating on bytevectors accepts an endianness as an
+argument, that argument must be one of these symbols.  It is a syntax
+violation for &lt;endianness symbol&gt; to be anything other than an
+endianness symbol supported by the implementation.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Implementors should use widely accepted designations
+for endianness symbols other than <tt>big</tt> and <tt>little</tt>.
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Only the name of &lt;endianness symbol&gt; is significant.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_78"></a>native-endianness<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the endianness symbol associated implementation&#8217;s preferred
+endianness (usually that of the underlying machine architecture).
+This may be any &lt;endianness symbol&gt;, including a symbol other
+than <tt>big</tt> and <tt>little</tt>.
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_80"></a>bytevector?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a bytevector,
+otherwise returns <tt>#f</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_82"></a>make-bytevector<i> k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_84"></a>make-bytevector<i> k fill</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated bytevector of <i>k</i> bytes.</p>
+<p>
+If the <i>fill</i> argument is missing, the initial contents of the
+returned bytevector are unspecified.</p>
+<p>
+If the <i>fill</i> argument is present, it must be an exact integer
+object in
+the interval { <tt>-</tt> 128, <tt>...</tt> 255} that specifies the initial value
+for the bytes of the bytevector: If <i>fill</i> is positive, it is
+interpreted as an octet; if it is negative, it is interpreted as a byte.
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_86"></a>bytevector-length<i> bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns, as an exact integer object, the number of bytes in <i>bytevector</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_88"></a>bytevector=?<i> <i>bytevector<sub>1</sub></i> <i>bytevector<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>bytevector<sub>1</sub></i> and <i>bytevector<sub>2</sub></i> are equal&#8212;that
+is, if they have the same length and equal bytes at all valid indices.
+It returns <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_90"></a>bytevector-fill!<i> bytevector fill</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;</div>
+
+The <i>fill</i> argument is as in the description of the <tt>make-bytevector</tt> procedure.
+The <tt>bytevector-fill!</tt> procedure stores <i>fill</i> in every element of <i>bytevector</i>
+and returns unspecified values.  Analogous to <tt>vector-fill!</tt>.
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(bytevector-copy! <i>source</i> <i>source-start</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_92"></a><tt><br>
+
+<i>target</i>&nbsp;<i>target-start</i>&nbsp;<i>k</i>)</tt><p>
+<i>Source</i> and <i>target</i> must be bytevectors.
+<i>Source-start</i>, <i>target-start</i>,
+and <i>k</i> must be non-negative exact integer objects that satisfy</p>
+<p>
+</p>
+<div align=left><img src="r6rs-lib-Z-G-1.gif" border="0" alt="[r6rs-lib-Z-G-1.gif]"></div><p>
+where <em>l</em><sub><i>source</i></sub> is the length of <i>source</i> and
+<em>l</em><sub><i>target</i></sub> is the length of <i>target</i>.</p>
+<p>
+The <tt>bytevector-copy!</tt> procedure copies the bytes from <i>source</i> at indices 
+</p>
+<div align=left><img src="r6rs-lib-Z-G-2.gif" border="0" alt="[r6rs-lib-Z-G-2.gif]"></div><p>
+to consecutive indices in <i>target</i> starting at <i>target-index</i>.</p>
+<p>
+This must work even if the memory regions for the source and the target
+overlap, i.e., the bytes at the target location after the copy must be
+equal to the bytes at the source location before the copy.</p>
+<p>
+This returns unspecified values.
+</p>
+
+<tt>(let&nbsp;((b&nbsp;(u8-list-&gt;bytevector&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5&nbsp;6&nbsp;7&nbsp;8))))<br>
+&nbsp;&nbsp;(bytevector-copy!&nbsp;b&nbsp;0&nbsp;b&nbsp;3&nbsp;4)<br>
+&nbsp;&nbsp;(bytevector-&gt;u8-list&nbsp;b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3&nbsp;1&nbsp;2&nbsp;3&nbsp;4&nbsp;8)<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_94"></a>bytevector-copy<i> bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated copy of <i>bytevector</i>.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.3">2.3&nbsp;&nbsp;Operations on bytes and octets</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_96"></a>bytevector-u8-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_98"></a>bytevector-s8-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i> must be a valid index of <i>bytevector</i>.</p>
+<p>
+The <tt>bytevector-u8-ref</tt> procedure returns the byte at index <i>k</i> of <i>bytevector</i>,
+as an octet.</p>
+<p>
+The <tt>bytevector-s8-ref</tt> procedure returns the byte at index <i>k</i> of <i>bytevector</i>,
+as a (signed) byte.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((b1&nbsp;(make-bytevector&nbsp;16&nbsp;-127))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(b2&nbsp;(make-bytevector&nbsp;16&nbsp;255)))<br>
+&nbsp;&nbsp;(list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-s8-ref&nbsp;b1&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-u8-ref&nbsp;b1&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-s8-ref&nbsp;b2&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-u8-ref&nbsp;b2&nbsp;0)))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(-127&nbsp;129&nbsp;-1&nbsp;255)<p></tt>
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_100"></a>bytevector-u8-set!<i> bytevector k octet</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_102"></a>bytevector-s8-set!<i> bytevector k byte</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i> must be a valid index of <i>bytevector</i>.</p>
+<p>
+The <tt>bytevector-u8-set!</tt> procedure stores <i>octet</i> in element <i>k</i> of
+<i>bytevector</i>.</p>
+<p>
+The <tt>bytevector-s8-set!</tt> procedure stores the two&#8217;s-complement representation of
+<i>byte</i> in element <i>k</i> of <i>bytevector</i>.</p>
+<p>
+Both procedures return unspecified values.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((b&nbsp;(make-bytevector&nbsp;16&nbsp;-127)))<br>
+<br>
+&nbsp;&nbsp;(bytevector-s8-set!&nbsp;b&nbsp;0&nbsp;-126)<br>
+&nbsp;&nbsp;(bytevector-u8-set!&nbsp;b&nbsp;1&nbsp;246)<br>
+<br>
+&nbsp;&nbsp;(list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-s8-ref&nbsp;b&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-u8-ref&nbsp;b&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-s8-ref&nbsp;b&nbsp;1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bytevector-u8-ref&nbsp;b&nbsp;1)))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(-126&nbsp;130&nbsp;-10&nbsp;246)<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_104"></a>bytevector-&gt;u8-list<i> bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_106"></a>u8-list-&gt;bytevector<i> list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>List</i> must be a list of octets.</p>
+<p>
+The <tt>bytevector-&gt;u8-list</tt> procedure returns a newly allocated list of the octets of
+<i>bytevector</i> in the same order.</p>
+<p>
+The <tt>u8-list-&gt;bytevector</tt> procedure returns a newly allocated bytevector whose
+elements are the elements of list <i>list</i>, in
+the same order.  It is analogous to <tt>list-&gt;vector</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.4"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.4">2.4&nbsp;&nbsp;Operations on integers of arbitrary size</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_108"></a>bytevector-uint-ref<i> bytevector k endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_110"></a>bytevector-sint-ref<i> bytevector k endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_112"></a>bytevector-uint-set!<i> bytevector k n endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_114"></a>bytevector-sint-set!<i> bytevector k n endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Size</i> must be a positive exact integer object. <i>K</i>, <tt>...</tt>,
+<i>k</i>  +  <i>size</i>  <tt>-</tt>  1 must be valid indices of <i>bytevector</i>.</p>
+<p>
+The <tt>bytevector-uint-ref</tt> procedure retrieves the exact integer object corresponding to the
+unsigned representation of size <i>size</i> and specified by <i>endianness</i>
+at indices <i>k</i>, <tt>...</tt>, <i>k</i>  +  <i>size</i>  <tt>-</tt>  1.</p>
+<p>
+The <tt>bytevector-sint-ref</tt> procedure retrieves the exact integer object corresponding to the two&#8217;s-complement representation of size <i>size</i> and specified by <i>endianness</i> at
+indices <i>k</i>, <tt>...</tt>, <i>k</i>  +  <i>size</i>  <tt>-</tt>  1.</p>
+<p>
+For <tt>bytevector-uint-set!</tt>, <i>n</i> must be an exact
+integer object in the interval {0, <tt>...</tt>, 256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup> <tt>-</tt> 1}.</p>
+<p>
+The <tt>bytevector-uint-set!</tt> procedure stores the unsigned representation of size <i>size</i>
+and specified by <i>endianness</i> into <i>bytevector</i> at indices
+<i>k</i>, <tt>...</tt>, <i>k</i>  +  <i>size</i>  <tt>-</tt>  1.</p>
+<p>
+For <tt>bytevector-sint-set!</tt>, <i>n</i> must be an exact
+integer object in
+the interval { <tt>-</tt> 256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup>/2, <tt>...</tt>,
+256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup>/2 <tt>-</tt> 1}.
+<tt>bytevector-sint-set!</tt> stores the two&#8217;s-complement
+representation of size <i>size</i> and specified by <i>endianness</i>
+into <i>bytevector</i> at indices <i>k</i>, <tt>...</tt>, <i>k</i>  +  <i>size</i>  <tt>-</tt>  1.</p>
+<p>
+The <tt>...</tt><tt>-set!</tt> procedures return unspecified values.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;b&nbsp;(make-bytevector&nbsp;16&nbsp;-127))<br>
+<br>
+(bytevector-uint-set!&nbsp;b&nbsp;0&nbsp;(-&nbsp;(expt&nbsp;2&nbsp;128)&nbsp;3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(endianness&nbsp;little)&nbsp;16)<br>
+<br>
+(bytevector-uint-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;little)&nbsp;16)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;#xfffffffffffffffffffffffffffffffd<br>
+<br>
+(bytevector-sint-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;little)&nbsp;16)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<br>
+<br>
+(bytevector-&gt;u8-list&nbsp;b)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(253&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255)<br>
+<br>
+(bytevector-uint-set!&nbsp;b&nbsp;0&nbsp;(-&nbsp;(expt&nbsp;2&nbsp;128)&nbsp;3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(endianness&nbsp;big)&nbsp;16)<br>
+(bytevector-uint-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;big)&nbsp;16)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;#xfffffffffffffffffffffffffffffffd<br>
+<br>
+(bytevector-sint-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;big)&nbsp;16)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<br>
+<br>
+(bytevector-&gt;u8-list&nbsp;b)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;253))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_116"></a>bytevector-&gt;uint-list<i> bytevector endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_118"></a>bytevector-&gt;sint-list<i> bytevector endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_120"></a>uint-list-&gt;bytevector<i> list endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_122"></a>sint-list-&gt;bytevector<i> list endianness size</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Size</i> must be a positive exact integer object.  For <tt>uint-list-&gt;bytevector</tt>, <i>list</i> must be a list of exact
+integer objects in the interval {0, <tt>...</tt>, 256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup> <tt>-</tt> 1}.  For
+<tt>sint-list-&gt;bytevector</tt>, <i>list</i> must be a list of exact
+integer objects in the interval { <tt>-</tt> 256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup>/2, <tt>...</tt>,
+256<sup>mathit<em>s</em><em>i</em><em>z</em><em>e</em></sup>/2 <tt>-</tt> 1}.  The length of <i>bytevector</i> or,
+respectively, of <i>list</i> must be divisible by <i>size</i>.</p>
+<p>
+These procedures convert between lists of integer objects and their consecutive
+representations according to <i>size</i> and <i>endianness</i> in the
+<i>bytevector</i> objects in the same way as <tt>bytevector-&gt;u8-list</tt> and <tt>u8-list-&gt;bytevector</tt> do for one-byte representations.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((b&nbsp;(u8-list-&gt;bytevector&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;255&nbsp;1&nbsp;2&nbsp;1&nbsp;2))))<br>
+&nbsp;&nbsp;(bytevector-&gt;sint-list&nbsp;b&nbsp;(endianness&nbsp;little)&nbsp;2))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(513&nbsp;-253&nbsp;513&nbsp;513)<br>
+<br>
+(let&nbsp;((b&nbsp;(u8-list-&gt;bytevector&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;255&nbsp;1&nbsp;2&nbsp;1&nbsp;2))))<br>
+&nbsp;&nbsp;(bytevector-&gt;uint-list&nbsp;b&nbsp;(endianness&nbsp;little)&nbsp;2))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(513&nbsp;65283&nbsp;513&nbsp;513)<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.5"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.5">2.5&nbsp;&nbsp;Operations on 16-bit integers</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_124"></a>bytevector-u16-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_126"></a>bytevector-s16-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_128"></a>bytevector-u16-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_130"></a>bytevector-s16-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_132"></a>bytevector-u16-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_134"></a>bytevector-s16-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_136"></a>bytevector-u16-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_138"></a>bytevector-s16-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i> must be a valid index of <i>bytevector</i>; so must
+<i>k</i>  +  1. For <tt>bytevector-u16-set!</tt> and <tt>bytevector-u16-native-set!</tt>, <i>n</i> must be an exact integer object in
+the interval {0, <tt>...</tt>, 2<sup>16</sup> <tt>-</tt> 1}.  For <tt>bytevector-s16-set!</tt>
+and <tt>bytevector-s16-native-set!</tt>, <i>n</i> must be an exact
+integer object in the interval { <tt>-</tt> 2<sup>15</sup>, <tt>...</tt>, 2<sup>15</sup> <tt>-</tt> 1}.</p>
+<p>
+These retrieve and set two-byte representations of numbers at indices
+<i>k</i> and <i>k</i> + 1, according to the endianness specified by
+<i>endianness</i>. The procedures with <tt>u16</tt> in their names deal with the
+unsigned representation; those with <tt>s16</tt> in their names deal
+with the two&#8217;s-complement representation.</p>
+<p>
+The procedures with <tt>native</tt> in their names employ the native
+endianness, and work only at aligned indices:
+<i>k</i> must be a multiple of 2.</p>
+<p>
+The <tt>...</tt><tt>-set!</tt> procedures return unspecified values.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;b<br>
+&nbsp;&nbsp;(u8-list-&gt;bytevector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;253)))<br>
+<br>
+(bytevector-u16-ref&nbsp;b&nbsp;14&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65023<br>
+(bytevector-s16-ref&nbsp;b&nbsp;14&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-513<br>
+(bytevector-u16-ref&nbsp;b&nbsp;14&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65533<br>
+(bytevector-s16-ref&nbsp;b&nbsp;14&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<br>
+<br>
+(bytevector-u16-set!&nbsp;b&nbsp;0&nbsp;12345&nbsp;(endianness&nbsp;little))<br>
+(bytevector-u16-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;12345<br>
+<br>
+(bytevector-u16-native-set!&nbsp;b&nbsp;0&nbsp;12345)<br>
+(bytevector-u16-native-ref&nbsp;b&nbsp;0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;12345<br>
+<br>
+(bytevector-u16-ref&nbsp;b&nbsp;0&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>unspecified</i><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.6"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.6">2.6&nbsp;&nbsp;Operations on 32-bit integers</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_140"></a>bytevector-u32-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_142"></a>bytevector-s32-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_144"></a>bytevector-u32-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_146"></a>bytevector-s32-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_148"></a>bytevector-u32-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_150"></a>bytevector-s32-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_152"></a>bytevector-u32-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_154"></a>bytevector-s32-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i>, <tt>...</tt>, <i>k</i> +  3 must be valid indices of
+<i>bytevector</i>.
+For <tt>bytevector-u32-set!</tt> and <tt>bytevector-u32-native-set!</tt>, <i>n</i> must be an exact integer
+object in
+the interval {0, <tt>...</tt>, 2<sup>32</sup> <tt>-</tt> 1}.  For <tt>bytevector-s32-set!</tt>
+and <tt>bytevector-s32-native-set!</tt>, <i>n</i> must be an exact
+integer object in the interval { <tt>-</tt> 2<sup>31</sup>, <tt>...</tt>, 2<sup>32</sup> <tt>-</tt> 1}.</p>
+<p>
+These retrieve and set four-byte representations of numbers at indices <i>k</i>,
+<tt>...</tt>, <i>k</i> +  3, according to the endianness specified by <i>endianness</i>. The
+procedures with <tt>u32</tt> in their names deal with the unsigned representation;
+those with <tt>s32</tt> with the two&#8217;s-complement representation.</p>
+<p>
+The procedures with <tt>native</tt> in their names employ the native endianness, and
+work only at aligned indices: <i>k</i> must be a multiple of 4.</p>
+<p>
+The <tt>...</tt><tt>-set!</tt> procedures return unspecified values.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;b<br>
+&nbsp;&nbsp;(u8-list-&gt;bytevector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;253)))<br>
+<br>
+(bytevector-u32-ref&nbsp;b&nbsp;12&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4261412863<br>
+(bytevector-s32-ref&nbsp;b&nbsp;12&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-33554433<br>
+(bytevector-u32-ref&nbsp;b&nbsp;12&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4294967293<br>
+(bytevector-s32-ref&nbsp;b&nbsp;12&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.7"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.7">2.7&nbsp;&nbsp;Operations on 64-bit integers</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_156"></a>bytevector-u64-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_158"></a>bytevector-s64-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_160"></a>bytevector-u64-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_162"></a>bytevector-s64-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_164"></a>bytevector-u64-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_166"></a>bytevector-s64-set!<i> bytevector k n endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_168"></a>bytevector-u64-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_170"></a>bytevector-s64-native-set!<i> bytevector k n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i>, <tt>...</tt>, <i>k</i> +  7 must be valid indices of
+<i>bytevector</i>.
+For <tt>bytevector-u64-set!</tt> and <tt>bytevector-u64-native-set!</tt>, <i>n</i> must be an exact integer
+object in
+the interval {0, <tt>...</tt>, 2<sup>64</sup> <tt>-</tt> 1}.  For <tt>bytevector-s64-set!</tt>
+and <tt>bytevector-s64-native-set!</tt>, <i>n</i> must be an exact
+integer object in the interval { <tt>-</tt> 2<sup>63</sup>, <tt>...</tt>, 2<sup>64</sup> <tt>-</tt> 1}.</p>
+<p>
+These retrieve and set eight-byte representations of numbers at
+indices <i>k</i>, <tt>...</tt>, <i>k</i> +  7, according to the endianness
+specified by <i>endianness</i>. The procedures with <tt>u64</tt> in their names deal
+with the unsigned representation; those with <tt>s64</tt> with the
+two&#8217;s-complement representation.</p>
+<p>
+The procedures with <tt>native</tt> in their names employ the native endianness, and
+work only at aligned indices: <i>k</i> must be a multiple of 8.</p>
+<p>
+The <tt>...</tt><tt>-set!</tt> procedures return unspecified values.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;b<br>
+&nbsp;&nbsp;(u8-list-&gt;bytevector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;255&nbsp;253)))<br>
+<br>
+(bytevector-u64-ref&nbsp;b&nbsp;8&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;18302628885633695743<br>
+(bytevector-s64-ref&nbsp;b&nbsp;8&nbsp;(endianness&nbsp;little))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-144115188075855873<br>
+(bytevector-u64-ref&nbsp;b&nbsp;8&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;18446744073709551613<br>
+(bytevector-s64-ref&nbsp;b&nbsp;8&nbsp;(endianness&nbsp;big))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.8"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.8">2.8&nbsp;&nbsp;Operations on IEEE-754 representations</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_172"></a>bytevector-ieee-single-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_174"></a>bytevector-ieee-single-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i>, <tt>...</tt>, <i>k</i> + 3 must be valid indices of
+<i>bytevector</i>.  For <tt>bytevector-ieee-single-native-ref</tt>, <i>k</i> must
+be a multiple of 4.</p>
+<p>
+These procedures return the inexact real number object that best
+represents the IEEE-754 single-precision number represented by the
+four bytes beginning at index
+<i>k</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_176"></a>bytevector-ieee-double-native-ref<i> bytevector k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_178"></a>bytevector-ieee-double-ref<i> bytevector k endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i>, <tt>...</tt>, <i>k</i> + 7 must be valid indices of
+<i>bytevector</i>.  For <tt>bytevector-ieee-double-native-ref</tt>, <i>k</i> must
+be a multiple of 8.</p>
+<p>
+These procedures return the inexact real number object that best
+represents the IEEE-754 double-precision number represented by the
+eight bytes beginning at index <i>k</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_180"></a>bytevector-ieee-single-native-set!<i> bytevector k x</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(bytevector-ieee-single-set! <i>bytevector</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<tt><br>
+
+<i>k</i>&nbsp;<i>x</i>&nbsp;<i>endianness</i>)</tt><p>
+<i>K</i>, <tt>...</tt>, <i>k</i> + 3 must be valid indices of
+<i>bytevector</i>.  For <tt>bytevector-ieee-single-native-set!</tt>, <i>k</i> must
+be a multiple of 4.</p>
+<p>
+These procedures store an IEEE-754 single-precision representation of <i>x</i> into
+elements <i>k</i> through <i>k</i> + 3 of <i>bytevector</i>, and return
+unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_182"></a>bytevector-ieee-double-native-set!<i> bytevector k x</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(bytevector-ieee-double-set! <i>bytevector</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<tt><br>
+
+<i>k</i>&nbsp;<i>x</i>&nbsp;<i>endianness</i>)</tt><p>
+<i>K</i>, <tt>...</tt>, <i>k</i> + 7 must be valid indices of
+<i>bytevector</i>.  For <tt>bytevector-ieee-double-native-set!</tt>, <i>k</i> must
+be a multiple of 8.</p>
+<p>
+These procedures store an IEEE-754 double-precision representation of <i>x</i> into
+elements <i>k</i> through <i>k</i> + 7 of <i>bytevector</i>, and return
+unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_2.9"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_2.9">2.9&nbsp;&nbsp;Operations on strings</a></h2>
+<p>This section describes procedures that convert between strings and
+bytevectors containing Unicode encodings of those strings.  When
+decoding bytevectors, encoding errors are handled as with the <tt>replace</tt> semantics of textual I/O (see
+section&nbsp;<a href="r6rs-lib-Z-H-9.html#node_sec_8.2.4">8.2.4</a>): If an invalid or incomplete
+character encoding is encountered, then the replacement character
+U+FFFD is appended to the string being generated, an appropriate
+number of bytes are ignored, and decoding continues with the following
+bytes.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_184"></a>string-&gt;utf8<i> string</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated (unless empty) bytevector that
+contains the UTF-8 encoding of the given string.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_186"></a>string-&gt;utf16<i> string</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_188"></a>string-&gt;utf16<i> string endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If <i>endianness</i> is specified, it must be the symbol <tt>big</tt> or the symbol <tt>little</tt>.  The <tt>string-&gt;utf16</tt>
+procedure returns a newly allocated (unless empty) bytevector that
+contains the UTF-16BE or UTF-16LE encoding of the given string (with
+no byte-order mark).  If endianness is not specified or is <tt>big</tt>,
+then UTF-16BE is used.  If endianness is <tt>little</tt>, then UTF-16LE
+is used.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_190"></a>string-&gt;utf32<i> string</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_192"></a>string-&gt;utf32<i> string endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If <i>endianness</i> is specified, it must be the symbol <tt>big</tt> or the symbol <tt>little</tt>.  The <tt>string-&gt;utf32</tt>
+procedure returns
+a newly allocated (unless empty) bytevector that contains the UTF-32BE
+or UTF-32LE encoding of the given string (with no byte mark).  If
+endianness is not specified or is <tt>big</tt>, then UTF-32BE is used.
+If endianness is <tt>little</tt>, then UTF-32LE is used.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_194"></a>utf8-&gt;string<i> bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated (unless empty) string whose character
+sequence is encoded by the given bytevector.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_196"></a>utf16-&gt;string<i> bytevector endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(utf16-&gt;string <i>bytevector</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<tt><br>
+
+<i>endianness</i>&nbsp;<i>endianness-mandatory</i>)</tt><p>
+<i>Endianness</i> must be the symbol <tt>big</tt> or
+the symbol <tt>little</tt>. The <tt>utf16-&gt;string</tt> procedure returns
+a newly allocated (unless empty) string whose character sequence is
+encoded by the given bytevector.  <i>Bytevector</i> is decoded
+according to UTF-16BE or UTF-16LE: If <i>endianness-mandatory?</i> is
+absent or <tt>#f</tt>, <tt>utf16-&gt;string</tt> determines the endianness
+according to a UTF-16 BOM at the beginning of <i>bytevector</i> if a
+BOM is present; in this case, the BOM is not decoded as a character.
+Also in this case, if no UTF-16 BOM is present, <i>endianness</i>
+specifies the endianness of the encoding.  If
+<i>endianness-mandatory?</i> is a true value, <i>endianness</i>
+specifies the endianness of the encoding, and any UTF-16 BOM in the
+encoding is decoded as a regular character.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+A UTF-16 BOM is either a sequence of bytes <tt>#</tt>xFE,
+<tt>#</tt>xFF specifying <tt>big</tt> and UTF-16BE, or <tt>#</tt>xFF,
+<tt>#</tt>xFE specifying <tt>little</tt> and UTF-16LE.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_198"></a>utf32-&gt;string<i> bytevector endianness</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(utf32-&gt;string <i>bytevector</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<tt><br>
+
+<i>endianness</i>&nbsp;<i>endianness-mandatory</i>)</tt><p>
+<i>Endianness</i> must be the symbol <tt>big</tt> or
+the symbol <tt>little</tt>. The <tt>utf32-&gt;string</tt> procedure returns
+a newly allocated (unless empty) string whose character sequence is
+encoded by the given bytevector.  <i>Bytevector</i> is decoded
+according to UTF-32BE or UTF-32LE: If <i>endianness-mandatory?</i> is
+absent or <tt>#f</tt>, <tt>utf32-&gt;string</tt> determines the endianness
+according to a UTF-32 BOM at the beginning of <i>bytevector</i> if a
+BOM is present; in this case, the BOM is not decoded as a character.
+Also in this case, if no UTF-32 BOM is present, <i>endianness</i>
+specifies the endianness of the encoding.  If
+<i>endianness-mandatory?</i> is a true value, <i>endianness</i>
+specifies the endianness of the encoding, and any UTF-32 BOM in the
+encoding is decoded as a regular character.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+A UTF-32 BOM is either a sequence of bytes <tt>#</tt>x00,
+<tt>#</tt>x00, <tt>#</tt>xFE, <tt>#</tt>xFF specifying <tt>big</tt> and UTF-32BE, or <tt>#</tt>xFF, <tt>#</tt>xFE,
+<tt>#</tt>x00, <tt>#</tt>x00, specifying <tt>little</tt> and
+UTF-32LE.
+</blockquote>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-2.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

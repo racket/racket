@@ -1,0 +1,227 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-18.html">previous</a></span><span>, <a href="r6rs-Z-H-20.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_E"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_E">Appendix E</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_E">Language changes</a></h1>
+<p></p>
+<p>
+This chapter describes most of the changes that have been made to
+Scheme since the &#8220;Revised<sup>5</sup> Report&#8221;&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_14">14</a>] was published:</p>
+<p>
+</p>
+<ul>
+<li><p>Scheme source code now uses the Unicode character set.
+Specifically, the character set that can be used for identifiers has
+been greatly expanded.
+</p>
+<li><p>Identifiers can now start with the characters <tt>-&gt;</tt>.
+</p>
+<li><p>Identifiers and symbol literals are now case-sensitive.
+</p>
+<li><p>Identifiers and representations of characters, booleans,
+number objects, and <tt>.</tt> must be explicitly delimited.
+</p>
+<li><p><tt><tt>#</tt></tt> is now a delimiter.
+</p>
+<li><p>Bytevector literal syntax has been added.
+</p>
+<li><p>Matched square brackets can be used synonymously with parentheses.
+</p>
+<li><p>The read-syntax abbreviations <tt><tt>#</tt>&#8217;</tt> (for <tt>syntax</tt>), <tt><tt>#</tt><tt>&#8216;</tt></tt> (for <tt>quasisyntax</tt>), <tt><tt>#</tt>,</tt> (for <tt>unsyntax</tt>), and <tt><tt>#</tt>,@</tt>
+(for <tt>unsyntax-splicing</tt> have been added; see section&nbsp;<a href="r6rs-Z-H-7.html#node_sec_4.3.5">4.3.5</a>.)
+</p>
+<li><p><tt><tt>#</tt></tt> can no longer be used in place of digits in number
+representations.
+</p>
+<li><p>The external representation of number objects can now include a
+mantissa width.
+</p>
+<li><p>Literals for NaNs and infinities were added.
+</p>
+<li><p>String and character literals can now use a variety of escape
+sequences.
+</p>
+<li><p>Block and datum comments have been added.
+</p>
+<li><p>The <tt><tt>#</tt>!r6rs</tt> comment for marking report-compliant
+lexical syntax has been added.
+</p>
+<li><p>Characters are now specified to correspond to Unicode scalar
+values.
+</p>
+<li><p>Many of the procedures and syntactic forms of the language are
+now part of the <tt>(rnrs base (6))</tt> library.  Some procedures and
+syntactic forms have been moved to other libraries; see figure&nbsp;<a href="#node_fig_Temp_45">13</a>.</p>
+<p>
+</p>
+<a name="node_fig_Temp_45"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<table border=0><tr><td valign=top >identifier </td><td valign=top >moved to </td></tr>
+<tr><td valign=top ><tt>assoc</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>assv</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>assq</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>call-with-input-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>call-with-output-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-upcase</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-downcase</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-ci=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-ci&lt;?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-ci&gt;?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-ci&lt;=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-ci&gt;=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-alphabetic?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-numeric?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-whitespace?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-upper-case?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>char-lower-case?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>close-input-port</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>close-output-port</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>current-input-port</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>current-output-port</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>display</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>do</tt> </td><td valign=top ><tt>(rnrs control (6))</tt> </td></tr>
+<tr><td valign=top ><tt>eof-object?</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>eval</tt> </td><td valign=top ><tt>(rnrs eval (6))</tt> </td></tr>
+<tr><td valign=top ><tt>delay</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt></td></tr>
+<tr><td valign=top ><tt>exact-&gt;inexact</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt></td></tr>
+<tr><td valign=top ><tt>force</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt>
+</td></tr>
+<tr><td valign=top ><tt>inexact-&gt;exact</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt></td></tr>
+<tr><td valign=top ><tt>member</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>memv</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>memq</tt> </td><td valign=top ><tt>(rnrs lists (6))</tt> </td></tr>
+<tr><td valign=top ><tt>modulo</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>newline</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>null-environment</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>open-input-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>open-output-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>peek-char</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>quotient</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>read</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>read-char</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>remainder</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>scheme-report-environment</tt> </td><td valign=top ><tt>(rnrs r5rs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>set-car!</tt> </td><td valign=top ><tt>(rnrs mutable-pairs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>set-cdr!</tt> </td><td valign=top ><tt>(rnrs mutable-pairs (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-ci=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-ci&lt;?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-ci&gt;?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-ci&lt;=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-ci&gt;=?</tt> </td><td valign=top ><tt>(rnrs unicode (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-set!</tt> </td><td valign=top ><tt>(rnrs mutable-strings (6))</tt> </td></tr>
+<tr><td valign=top ><tt>string-fill!</tt> </td><td valign=top ><tt>(rnrs mutable-strings (6))</tt> </td></tr>
+<tr><td valign=top ><tt>with-input-from-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>with-output-to-file</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>write</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt> </td></tr>
+<tr><td valign=top ><tt>write-char</tt> </td><td valign=top ><tt>(rnrs io simple (6))</tt>
+</td></tr></table>
+</td></tr>
+<tr><td align=left><b>Figure 13:</b>&nbsp;&nbsp;Identifiers moved to libraries</td></tr>
+<tr><td>
+
+</td></tr></table></div><p>
+</p>
+<li><p>The base language has the following new procedures and syntactic
+forms: <tt>letrec*</tt>, <tt>let-values</tt>, <tt>let*-values</tt>, <tt>real-valued?</tt>, <tt>rational-valued?</tt>, <tt>integer-valued?</tt>, <tt>exact</tt>, <tt>inexact</tt>, <tt>finite?</tt>, <tt>infinite?</tt>, <tt>nan?</tt>,
+<tt>div</tt>, <tt>mod</tt>, <tt>div-and-mod</tt>, <tt>div0</tt>, <tt>mod0</tt>, <tt>div0-and-mod0</tt>, <tt>exact-integer-sqrt</tt>, <tt>boolean=?</tt>, <tt>symbol=?</tt>, <tt>string-for-each</tt>, <tt>vector-map</tt>, <tt>vector-for-each</tt>, <tt>error</tt>, <tt>assertion-violation</tt>, <tt>assert</tt>, <tt>call/cc</tt>,
+<tt>identifier-syntax</tt>.
+</p>
+<li><p>The following procedures have been removed: <tt>char-ready?</tt>, <tt>transcript-on</tt>, <tt>transcript-off</tt>,
+<tt>load</tt>.
+</p>
+<li><p>The case-insensitive string comparisons (<tt>string-ci=?</tt>, <tt>string-ci&lt;?</tt>, <tt>string-ci&gt;?</tt>, <tt>string-ci&lt;=?</tt>, <tt>string-ci&gt;=?</tt>) operate on the case-folded versions of the strings
+rather than as the simple lexicographic ordering induced by the
+corresponding character comparison procedures.
+</p>
+<li><p>Libraries have been added to the language.
+</p>
+<li><p>A number of standard libraries are described in a separate
+report&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_24">24</a>].
+</p>
+<li><p>Many situations that &#8220;were an error&#8221; now have defined or
+constrained behavior.  In particular, many are now specified in
+terms of the exception system.
+</p>
+<li><p>The full numerical tower is now required.
+</p>
+<li><p>The semantics for the transcendental functions has been
+specified more fully.
+</p>
+<li><p>The semantics of <tt>expt</tt> for zero bases has been refined.
+</p>
+<li><p>In <tt>syntax-rules</tt> forms, a <tt>_</tt> may be used in place of
+the keyword.
+</p>
+<li><p>The <tt>let-syntax</tt> and <tt>letrec-syntax</tt> no longer introduce a
+new environment for their bodies.
+</p>
+<li><p>For implementations that support NaNs or infinities,
+many arithmetic operations have been specified on
+these values consistently with IEEE&nbsp;754.
+</p>
+<li><p>For implementations that support a distinct -0.0, the semantics
+of many arithmetic operations with regard to -0.0 has been specified
+consistently with IEEE&nbsp;754.
+</p>
+<li><p>Scheme&#8217;s real number objects now have an exact zero as their imaginary part.
+</p>
+<li><p>The specification of <tt>quasiquote</tt> has been extended.  Nested
+quasiquotations work correctly now, and <tt>unquote</tt> and <tt>unquote-splicing</tt> have been extended to several operands.
+</p>
+<li><p>Procedures now may or may not refer to
+locations.  Consequently, <tt>eqv?</tt> is now unspecified in a few
+cases where it was specified before.
+</p>
+<li><p>The mutability of the values of <tt>quasiquote</tt> structures has
+been specified to some degree.
+</p>
+<li><p>The dynamic environment of the <i>before</i> and <i>after</i>
+procedures of <tt>dynamic-wind</tt> is now specified.
+</p>
+<li><p>Various expressions that have only side effects are now allowed
+to return an arbitrary number of values.
+</p>
+<li><p>The order and semantics for macro expansion has been more fully
+specified.
+</p>
+<li><p>Internal definitions are now defined in terms of <tt>letrec*</tt>.
+</p>
+<li><p>The old notion of program structure and Scheme&#8217;s top-level
+environment has been replaced by top-level programs and libraries.
+</p>
+<li><p>The denotational semantics has been replaced by an operational
+semantics based on an earlier semantics for the language of the
+&#8220;Revised<sup>5</sup> Report&#8221;&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_14">14</a>,&nbsp;<a href="r6rs-Z-H-21.html#node_bib_18">18</a>].
+</p>
+</ul><p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-18.html">previous</a></span><span>, <a href="r6rs-Z-H-20.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

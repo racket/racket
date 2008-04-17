@@ -14,6 +14,8 @@
          fxbit-set?
          fxcopy-bit
          fxcopy-bit-field
+         fxbit-field
+         fxbit-count
          fxarithmetic-shift
          fxarithmetic-shift-left
          fxarithmetic-shift-right
@@ -96,6 +98,11 @@
     (raise-type-error 'fxbit-set? "fixnum" n))
   (bitwise-bit-set? n bit))
 
+(define (fxbit-count n)
+  (unless (fixnum? n)
+    (raise-type-error 'fxbit-count "fixnum" n))
+  (bitwise-bit-count n))
+
 (define (fxcopy-bit n pos bit)
   (unless (fixnum? n)
     (raise-type-error 'fxcopy-bit "fixnum" n))
@@ -106,13 +113,21 @@
 
 (define (fxcopy-bit-field n start end m)
   (unless (fixnum? n)
-    (raise-type-error 'fxrotate-bit-field "fixnum" n))
+    (raise-type-error 'fxcopy-bit-field "fixnum" n))
   (unless (and (exact-nonnegative-integer? end)
                (< end (fixnum-width)))
-    (raise-type-error 'fxrotate-bit-field "exact integer in [0, 30]" end))
+    (raise-type-error 'fxcopy-bit-field "exact integer in [0, 30]" end))
   (unless (fixnum? m)
-    (raise-type-error 'fxrotate-bit-field "fixnum" m))
-  (bitwise-bit-field n start end m))
+    (raise-type-error 'fxcopy-bit-field "fixnum" m))
+  (bitwise-copy-bit-field n start end m))
+
+(define (fxbit-field n start end)
+  (unless (fixnum? n)
+    (raise-type-error 'fxbit-field "fixnum" n))
+  (unless (and (exact-nonnegative-integer? end)
+               (< end (fixnum-width)))
+    (raise-type-error 'fxbit-field "exact integer in [0, 30]" end))
+  (bitwise-bit-field n start end))
 
 (define-syntax-rule (define-shifter fxarithmetic-shift r6rs:fxarithmetic-shift
                       lower-bound bounds adjust)

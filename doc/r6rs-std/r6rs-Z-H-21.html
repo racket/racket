@@ -1,0 +1,759 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-20.html">previous</a></span><span class=disable>, next</span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span class=disable><span>; &nbsp;&nbsp;</span>index</span>]</div>
+<p></p>
+<a name="node_chap_Temp_46"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_Temp_46">References</a></h1>
+<p></p>
+<table>
+<p>
+</p>
+<tr><td align=right valign=top><a name="node_bib_1"></a>[1]&nbsp;&nbsp;</td><td valign=top>
+J.&nbsp;W. Backus, F.L. Bauer, J.Green, C.&nbsp;Katz, J.&nbsp;McCarthy&nbsp;P. Naur, A.&nbsp;J. Perlis,
+H.&nbsp;Rutishauser, K.&nbsp;Samuelson, B.&nbsp;Vauquois J.&nbsp;H. Wegstein, A.&nbsp;van Wijngaarden,
+and M.&nbsp;Woodger.
+ Revised report on the algorithmic language Algol 60.
+ <i>Communications of the ACM</i>, 6(1):1&#8211;17, 1963.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_2"></a>[2]&nbsp;&nbsp;</td><td valign=top>
+Alan Bawden and Jonathan Rees.
+ Syntactic closures.
+ In <i>ACM Conference on Lisp and Functional Programming</i>, pages
+86&#8211;95, Snowbird, Utah, 1988. ACM Press.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_3"></a>[3]&nbsp;&nbsp;</td><td valign=top>
+Scott Bradner.
+ Key words for use in RFCs to indicate requirement levels.
+ <a href="http://www.ietf.org/rfc/rfc2119.txt">http://www.ietf.org/rfc/rfc2119.txt</a>, March 1997.
+ RFC 2119.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_4"></a>[4]&nbsp;&nbsp;</td><td valign=top>
+Robert&nbsp;G. Burger and R.&nbsp;Kent Dybvig.
+ Printing floating-point numbers quickly and accurately.
+ In <i>Proc.&nbsp;of the ACM SIGPLAN &#8217;96 Conference on Programming
+Language Design and Implementation</i>, pages 108&#8211;116, Philadelphia, PA, USA,
+May 1996. ACM Press.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_5"></a>[5]&nbsp;&nbsp;</td><td valign=top>
+William Clinger.
+ Proper tail recursion and space efficiency.
+ In Keith Cooper, editor, <i>Proceedings of the 1998 Conference on
+Programming Language Design and Implementation</i>, pages 174&#8211;185, Montreal,
+Canada, June 1998. ACM Press.
+ Volume 33(5) of SIGPLAN Notices.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_6"></a>[6]&nbsp;&nbsp;</td><td valign=top>
+William Clinger and Jonathan Rees.
+ Macros that work.
+ In <i>Proc.&nbsp; 1991 ACM SIGPLAN Symposium on Principles of
+Programming Languages</i>, pages 155&#8211;162, Orlando, Florida, January 1991. ACM
+Press.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_7"></a>[7]&nbsp;&nbsp;</td><td valign=top>
+William&nbsp;D. Clinger.
+ How to read floating point numbers accurately.
+ In <i>Proc.&nbsp;Conference on Programming Language Design and
+Implementation &#8217;90</i>, pages 92&#8211;101, White Plains, New York, USA, June 1990.
+ACM.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_8"></a>[8]&nbsp;&nbsp;</td><td valign=top>
+R.&nbsp;Kent Dybvig.
+ <i>Chez Scheme Version 7 User&#8217;s Guide</i>.
+ Cadence Research Systems, 2005.
+ <a href="http://www.scheme.com/csug7/">http://www.scheme.com/csug7/</a>.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_9"></a>[9]&nbsp;&nbsp;</td><td valign=top>
+R.&nbsp;Kent Dybvig, Robert Hieb, and Carl Bruggeman.
+ Syntactic abstraction in Scheme.
+ <i>Lisp and Symbolic Computation</i>, 1(1):53&#8211;75, 1988.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_10"></a>[10]&nbsp;&nbsp;</td><td valign=top>
+Matthias Felleisen and Matthew Flatt.
+ Programming languages and lambda calculi.
+ <a href="http://www.cs.utah.edu/plt/publications/pllc.pdf">http://www.cs.utah.edu/plt/publications/pllc.pdf</a>, 2003.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_11"></a>[11]&nbsp;&nbsp;</td><td valign=top>
+Matthew Flatt.
+ <i>PLT MzScheme: Language Manual</i>.
+ Rice University, University of Utah, July 2006.
+ <a href="http://download.plt-scheme.org/doc/352/html/mzscheme/">http://download.plt-scheme.org/doc/352/html/mzscheme/</a>.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_12"></a>[12]&nbsp;&nbsp;</td><td valign=top>
+Daniel&nbsp;P. Friedman, Christopher Haynes, Eugene Kohlbecker, and Mitchell Wand.
+ <i>Scheme 84 interim reference manual</i>.
+ Indiana University, January 1985.
+ Indiana University Computer Science Technical Report 153.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_13"></a>[13]&nbsp;&nbsp;</td><td valign=top>
+IEEE standard 754-1985. IEEE standard for binary floating-point arithmetic,
+1985.
+ Reprinted in SIGPLAN Notices, 22(2):9-25, 1987.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_14"></a>[14]&nbsp;&nbsp;</td><td valign=top>
+Richard Kelsey, William Clinger, and Jonathan Rees.
+ Revised<sup>5</sup> report on the algorithmic language Scheme.
+ <i>Higher-Order and Symbolic Computation</i>, 11(1):7&#8211;105, 1998.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_15"></a>[15]&nbsp;&nbsp;</td><td valign=top>
+Eugene&nbsp;E. Kohlbecker, Daniel&nbsp;P. Friedman, Matthias Felleisen, and Bruce Duba.
+ Hygienic macro expansion.
+ In <i>Proceedings of the 1986 ACM Conference on Lisp and
+Functional Programming</i>, pages 151&#8211;161, 1986.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_16"></a>[16]&nbsp;&nbsp;</td><td valign=top>
+Eugene&nbsp;E. Kohlbecker Jr.
+ <i>Syntactic Extensions in the Programming Language Lisp</i>.
+ PhD thesis, Indiana University, August 1986.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_17"></a>[17]&nbsp;&nbsp;</td><td valign=top>
+Jacob Matthews and Robert&nbsp;Bruce Findler.
+ An operational semantics for R5RS Scheme.
+ In J.&nbsp;Michael Ashley and Michael Sperber, editors, <i>Proceedings
+of the Sixth Workshop on Scheme and Functional Programming</i>, pages 41&#8211;54,
+Tallin, Estonia, September 2005.
+ Indiana University Technical Report TR619.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_18"></a>[18]&nbsp;&nbsp;</td><td valign=top>
+Jacob Matthews and Robert&nbsp;Bruce Findler.
+ An operational semantics for Scheme.
+ <i>Journal of Functional Programming</i>, 2007.
+ <a href="http://journals.cambridge.org/action/displayAbstract?fromPage=online&aid=1268564&fulltextType=RA&fileId=S0956796807006478">From
+<a href="http://www.cambridge.org/journals/JFP/">http://www.cambridge.org/journals/JFP/</a></a>.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_19"></a>[19]&nbsp;&nbsp;</td><td valign=top>
+Jacob Matthews, Robert&nbsp;Bruce Findler, Matthew Flatt, and Matthias Felleisen.
+ A visual environment for developing context-sensitive term rewriting
+systems.
+ In <i>Proc.&nbsp;15th Conference on Rewriting Techniques and
+Applications</i>, Aachen, June 2004. Springer-Verlag.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_20"></a>[20]&nbsp;&nbsp;</td><td valign=top>
+MIT Department of Electrical Engineering and Computer Science.
+ <i>Scheme manual, seventh edition</i>, September 1984.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_21"></a>[21]&nbsp;&nbsp;</td><td valign=top>
+Jonathan&nbsp;A. Rees, Norman I.&nbsp;Adams IV, and James&nbsp;R. Meehan.
+ <i>The T manual</i>.
+ Yale University Computer Science Department, fourth edition, January
+1984.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_22"></a>[22]&nbsp;&nbsp;</td><td valign=top>
+Michael Sperber, R.&nbsp;Kent Dybvig, Matthew Flatt, and Anton van Straaten.
+ Revised<sup>6</sup> report on the algorithmic language Scheme
+(Non-Normative appendices).
+ <a href="http://www.r6rs.org/">http://www.r6rs.org/</a>, 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_23"></a>[23]&nbsp;&nbsp;</td><td valign=top>
+Michael Sperber, R.&nbsp;Kent Dybvig, Matthew Flatt, and Anton van Straaten.
+ Revised<sup>6</sup> report on the algorithmic language Scheme
+(Rationale).
+ <a href="http://www.r6rs.org/">http://www.r6rs.org/</a>, 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_24"></a>[24]&nbsp;&nbsp;</td><td valign=top>
+Michael Sperber, R.&nbsp;Kent Dybvig, Matthew Flatt, Anton van Straaten, Richard
+Kelsey, William Clinger, and Jonathan Rees.
+ Revised<sup>6</sup> report on the algorithmic language Scheme
+(Libraries).
+ <a href="http://www.r6rs.org/">http://www.r6rs.org/</a>, 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_25"></a>[25]&nbsp;&nbsp;</td><td valign=top>
+Guy&nbsp;Lewis Steele Jr.
+ <i>Common Lisp: The Language</i>.
+ Digital Press, Burlington, MA, second edition, 1990.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_26"></a>[26]&nbsp;&nbsp;</td><td valign=top>
+Texas Instruments, Inc.
+ <i>TI Scheme Language Reference Manual</i>, November 1985.
+ Preliminary version 1.0.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_27"></a>[27]&nbsp;&nbsp;</td><td valign=top>
+The Unicode Consortium.
+ The Unicode standard, version 5.0.0.
+ defined by: <i>The Unicode Standard, Version 5.0</i> (Boston, MA,
+Addison-Wesley, 2007. ISBN 0-321-48091-0), 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_28"></a>[28]&nbsp;&nbsp;</td><td valign=top>
+William&nbsp;M. Waite and Gerhard Goos.
+ <i>Compiler Construction</i>.
+ Springer-Verlag, 1984.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_29"></a>[29]&nbsp;&nbsp;</td><td valign=top>
+Andrew Wright and Matthias Felleisen.
+ A syntactic approach to type soundness.
+ <i>Information and Computation</i>, 115(1):38&#8211;94, 1994.
+ First appeared as Technical Report TR160, Rice University, 1991.<p>
+</p>
+</table><p>
+
+</p>
+<p>
+</p>
+<p>
+
+</p>
+<p>
+</p>
+<a name="node_chap_Temp_47"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_Temp_47">Index</a></h1>
+<p>
+<a name="node_index_start"></a></p>
+
+<div align=center><table><tr><td>
+
+<span class=large><strong>Alphabetic index of definitions of
+concepts, keywords, and procedures
+</strong></span></td></tr></table></div>
+
+<div style="height: 4.5pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<div class=bigskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+
+
+
+</p>
+<p></p>
+<div class=bigskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+</p>
+<p>
+<tt>#,<tt>@</tt></tt> <a href="r6rs-Z-H-7.html#node_idx_190">7</a>
+<tt><tt>#</tt><tt>\</tt></tt> <a href="r6rs-Z-H-7.html#node_idx_156">7ii</a>
+<tt><tt>#</tt><tt>|</tt></tt> <a href="r6rs-Z-H-7.html#node_idx_140">7iii</a>
+<tt>&amp;</tt> <a href="r6rs-Z-H-9.html#node_idx_262">9</a>
+<tt>&#8217;</tt> <a href="r6rs-Z-H-7.html#node_idx_176">7iv</a>
+<tt>#&#8217;</tt> <a href="r6rs-Z-H-7.html#node_idx_184">7v</a>
+<tt>*</tt> <a href="r6rs-Z-H-14.html#node_idx_496">14</a>
+<tt>*</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_840">15</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_842">15ii</a>
+<tt>+</tt> <a href="r6rs-Z-H-14.html#node_idx_494">14ii</a>
+<tt>+</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_830">15iii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_832">15iv</a>
+<tt>,<tt>@</tt></tt> <a href="r6rs-Z-H-7.html#node_idx_182">7vi</a>
+<tt>,</tt> <a href="r6rs-Z-H-7.html#node_idx_180">7vii</a>
+<tt>#,</tt> <a href="r6rs-Z-H-7.html#node_idx_188">7viii</a>
+<tt>-</tt> <a href="r6rs-Z-H-14.html#node_idx_498">14iii</a>, <a href="r6rs-Z-H-14.html#node_idx_500">14iv</a>
+<tt>-</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_834">15v</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_836">15vi</a>, <a href="r6rs-Z-H-15.html#node_idx_838">15vii</a>
+-0.0 <a href="r6rs-Z-H-6.html#node_idx_100">6</a>
+<tt>...</tt> <a href="r6rs-Z-H-14.html#node_idx_784">14v</a>, <a href="r6rs-Z-H-14.html#node_idx_792">14vi</a>
+<tt>/</tt> <a href="r6rs-Z-H-14.html#node_idx_502">14vii</a>, <a href="r6rs-Z-H-14.html#node_idx_504">14viii</a>
+<tt>/</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_844">15viii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_846">15ix</a>, <a href="r6rs-Z-H-15.html#node_idx_848">15x</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_850">15xi</a>
+<tt>;</tt> <a href="r6rs-Z-H-7.html#node_idx_136">7ix</a>
+<tt>#;</tt> <a href="r6rs-Z-H-7.html#node_idx_138">7x</a>
+<tt>&lt;</tt> <a href="r6rs-Z-H-14.html#node_idx_466">14ix</a>
+<tt>&lt;=</tt> <a href="r6rs-Z-H-14.html#node_idx_470">14x</a>
+<tt>=</tt> <a href="r6rs-Z-H-14.html#node_idx_464">14xi</a>
+<tt>=&gt;</tt> <a href="r6rs-Z-H-14.html#node_idx_378">14xii</a>
+<tt>&gt;</tt> <a href="r6rs-Z-H-14.html#node_idx_468">14xiii</a>
+<tt>&gt;=</tt> <a href="r6rs-Z-H-14.html#node_idx_472">14xiv</a>
+<tt>_</tt> <a href="r6rs-Z-H-14.html#node_idx_788">14xv</a>, <a href="r6rs-Z-H-14.html#node_idx_790">14xvi</a>
+<tt>#&#8216;</tt> <a href="r6rs-Z-H-7.html#node_idx_186">7xi</a>
+<tt>&#8216;</tt> <a href="r6rs-Z-H-7.html#node_idx_178">7xii</a>
+<tt><tt>|</tt><tt>#</tt></tt> <a href="r6rs-Z-H-7.html#node_idx_142">7xiii</a></p>
+<p>
+</p>
+<p>
+<tt>abs</tt> <a href="r6rs-Z-H-14.html#node_idx_506">14xvii</a>
+<tt>acos</tt> <a href="r6rs-Z-H-14.html#node_idx_554">14xviii</a>
+<tt>and</tt> <a href="r6rs-Z-H-14.html#node_idx_388">14xix</a>
+<tt>angle</tt> <a href="r6rs-Z-H-14.html#node_idx_576">14xx</a>
+<tt>append</tt> <a href="r6rs-Z-H-14.html#node_idx_634">14xxi</a>
+<tt>apply</tt> <a href="r6rs-Z-H-14.html#node_idx_752">14xxii</a>
+<tt>apply</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_936">15xii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_938">15xiii</a>, <a href="r6rs-Z-H-15.html#node_idx_940">15xiv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_942">15xv</a>, <a href="r6rs-Z-H-15.html#node_idx_944">15xvi</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_946">15xvii</a>, <a href="r6rs-Z-H-15.html#node_idx_948">15xviii</a>
+argument checking <a href="r6rs-Z-H-8.html#node_idx_226">8</a>
+<tt>asin</tt> <a href="r6rs-Z-H-14.html#node_idx_552">14xxiii</a>
+<tt>assert</tt> <a href="r6rs-Z-H-14.html#node_idx_750">14xxiv</a>
+<tt>assertion-violation</tt> <a href="r6rs-Z-H-14.html#node_idx_748">14xxv</a>
+assignment <a href="r6rs-Z-H-4.html#node_idx_46">4</a>
+<tt>atan</tt> <a href="r6rs-Z-H-14.html#node_idx_556">14xxvi</a>, <a href="r6rs-Z-H-14.html#node_idx_558">14xxvii</a></p>
+<p>
+</p>
+<p>
+<tt>#b</tt> <a href="r6rs-Z-H-7.html#node_idx_126">7xiv</a>, <a href="r6rs-Z-H-7.html#node_idx_160">7xv</a>
+backquote <a href="r6rs-Z-H-14.html#node_idx_774">14xxviii</a>
+<tt>begin</tt> <a href="r6rs-Z-H-14.html#node_idx_418">14xxix</a>, <a href="r6rs-Z-H-14.html#node_idx_420">14xxx</a>
+<tt>begin</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_856">15xix</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_860">15xx</a>, <a href="r6rs-Z-H-15.html#node_idx_976">15xxi</a>
+<tt>begin0</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_862">15xxii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_866">15xxiii</a>, <a href="r6rs-Z-H-15.html#node_idx_980">15xxiv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_984">15xxv</a>, <a href="r6rs-Z-H-15.html#node_idx_988">15xxvi</a>
+binding <a href="r6rs-Z-H-4.html#node_idx_28">4ii</a>, <a href="r6rs-Z-H-8.html#node_idx_206">8ii</a>
+binding construct <a href="r6rs-Z-H-8.html#node_idx_208">8iii</a>
+body <a href="r6rs-Z-H-14.html#node_idx_360">14xxxi</a>
+boolean <a href="r6rs-Z-H-4.html#node_idx_4">4iii</a>
+<tt>boolean=?</tt> <a href="r6rs-Z-H-14.html#node_idx_598">14xxxii</a>
+<tt>boolean?</tt> <a href="r6rs-Z-H-14.html#node_idx_328">14xxxiii</a>, <a href="r6rs-Z-H-14.html#node_idx_596">14xxxiv</a>
+bound <a href="r6rs-Z-H-8.html#node_idx_216">8iv</a></p>
+<p>
+</p>
+<p>
+<tt>caar</tt> <a href="r6rs-Z-H-14.html#node_idx_616">14xxxv</a>
+<tt>cadr</tt> <a href="r6rs-Z-H-14.html#node_idx_618">14xxxvi</a>
+call <a href="r6rs-Z-H-12.html#node_idx_298">12</a>
+<tt>call-with-current-continuation</tt> <a href="r6rs-Z-H-14.html#node_idx_754">14xxxvii</a>
+<tt>call-with-values</tt> <a href="r6rs-Z-H-14.html#node_idx_762">14xxxviii</a>
+<tt>call-with-values</tt> (formal semantics) 
+<a href="r6rs-Z-H-15.html#node_idx_808">15xxvii</a>, <a href="r6rs-Z-H-15.html#node_idx_810">15xxviii</a>
+<tt>call/cc</tt> <a href="r6rs-Z-H-14.html#node_idx_756">14xxxix</a>
+<tt>call/cc</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_960">15xxix</a>
+<tt>car</tt> <a href="r6rs-Z-H-14.html#node_idx_612">14xl</a>
+<tt>car</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_876">15xxx</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_894">15xxxi</a>
+<tt>case</tt> <a href="r6rs-Z-H-14.html#node_idx_384">14xli</a>
+<tt>cdddar</tt> <a href="r6rs-Z-H-14.html#node_idx_620">14xlii</a>
+<tt>cddddr</tt> <a href="r6rs-Z-H-14.html#node_idx_622">14xliii</a>
+<tt>cdr</tt> <a href="r6rs-Z-H-14.html#node_idx_614">14xliv</a>
+<tt>cdr</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_878">15xxxii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_896">15xxxiii</a>
+<tt>ceiling</tt> <a href="r6rs-Z-H-14.html#node_idx_530">14xlv</a>
+<tt>char-&gt;integer</tt> <a href="r6rs-Z-H-14.html#node_idx_670">14xlvi</a>
+<tt>char&lt;=?</tt> <a href="r6rs-Z-H-14.html#node_idx_680">14xlvii</a>
+<tt>char&lt;?</tt> <a href="r6rs-Z-H-14.html#node_idx_676">14xlviii</a>
+<tt>char=?</tt> <a href="r6rs-Z-H-14.html#node_idx_674">14xlix</a>
+<tt>char&gt;=?</tt> <a href="r6rs-Z-H-14.html#node_idx_682">14l</a>
+<tt>char&gt;?</tt> <a href="r6rs-Z-H-14.html#node_idx_678">14li</a>
+<tt>char?</tt> <a href="r6rs-Z-H-14.html#node_idx_336">14lii</a>, <a href="r6rs-Z-H-14.html#node_idx_668">14liii</a>
+character <a href="r6rs-Z-H-4.html#node_idx_8">4iv</a>
+Characters <a href="r6rs-Z-H-14.html#node_idx_658">14liv</a>
+code point <a href="r6rs-Z-H-14.html#node_idx_664">14lv</a>
+comment <a href="r6rs-Z-H-7.html#node_idx_120">7xvi</a>, <a href="r6rs-Z-H-7.html#node_idx_134">7xvii</a>
+<tt>complex?</tt> <a href="r6rs-Z-H-14.html#node_idx_442">14lvi</a>
+<tt>cond</tt> <a href="r6rs-Z-H-14.html#node_idx_376">14lvii</a>
+<tt>condition?</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_822">15xxxiv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_824">15xxxv</a>
+<tt>cons</tt> <a href="r6rs-Z-H-14.html#node_idx_610">14lviii</a>
+<tt>cons</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_872">15xxxvi</a>
+<tt>consi</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_874">15xxxvii</a>
+constant <a href="r6rs-Z-H-8.html#node_idx_244">8v</a>
+continuable exception <a href="r6rs-Z-H-8.html#node_idx_222">8vi</a>
+continuation <a href="r6rs-Z-H-4.html#node_idx_56">4v</a>
+core form <a href="r6rs-Z-H-13.html#node_idx_322">13</a>
+<tt>cos</tt> <a href="r6rs-Z-H-14.html#node_idx_548">14lix</a></p>
+<p>
+</p>
+<p>
+<tt>#d</tt> <a href="r6rs-Z-H-7.html#node_idx_164">7xviii</a>
+datum <a href="r6rs-Z-H-7.html#node_idx_102">7xix</a>, <a href="r6rs-Z-H-7.html#node_idx_114">7xx</a>
+datum value <a href="r6rs-Z-H-4.html#node_idx_52">4vi</a>, <a href="r6rs-Z-H-7.html#node_idx_108">7xxi</a>
+<tt>define</tt> <a href="r6rs-Z-H-14.html#node_idx_352">14lx</a>, <a href="r6rs-Z-H-14.html#node_idx_354">14lxi</a>
+<tt>define-syntax</tt> <a href="r6rs-Z-H-14.html#node_idx_358">14lxii</a>
+definition <a href="r6rs-Z-H-4.html#node_idx_32">4vii</a>, <a href="r6rs-Z-H-8.html#node_idx_210">8vii</a>, 
+<a href="r6rs-Z-H-10.html#node_idx_272">10</a>, <a href="r6rs-Z-H-14.html#node_idx_348">14lxiii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_350">14lxiv</a>, <a href="r6rs-Z-H-14.html#node_idx_356">14lxv</a>
+<tt>denominator</tt> <a href="r6rs-Z-H-14.html#node_idx_526">14lxvi</a>
+derived form <a href="r6rs-Z-H-4.html#node_idx_48">4viii</a>
+<tt>div</tt> <a href="r6rs-Z-H-14.html#node_idx_510">14lxvii</a>
+<tt>div-and-mod</tt> <a href="r6rs-Z-H-14.html#node_idx_508">14lxviii</a>
+<tt>div0</tt> <a href="r6rs-Z-H-14.html#node_idx_516">14lxix</a>
+<tt>div0-and-mod0</tt> <a href="r6rs-Z-H-14.html#node_idx_514">14lxx</a>
+<tt>dot</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_916">15xxxviii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_930">15xxxix</a>
+<tt>dw</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_956">15xl</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_978">15xli</a>
+dynamic environment <a href="r6rs-Z-H-8.html#node_idx_258">8viii</a>
+dynamic extent <a href="r6rs-Z-H-8.html#node_idx_256">8ix</a>
+<tt>dynamic-wind</tt> <a href="r6rs-Z-H-14.html#node_idx_764">14lxxi</a>
+<tt>dynamic-wind</tt> (formal semantics) 
+<a href="r6rs-Z-H-15.html#node_idx_950">15xlii</a>, <a href="r6rs-Z-H-15.html#node_idx_952">15xliii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_954">15xliv</a></p>
+<p>
+</p>
+<p>
+<tt>#e</tt> <a href="r6rs-Z-H-7.html#node_idx_124">7xxii</a>, <a href="r6rs-Z-H-7.html#node_idx_168">7xxiii</a>
+<tt>else</tt> <a href="r6rs-Z-H-14.html#node_idx_380">14lxxii</a>, <a href="r6rs-Z-H-14.html#node_idx_386">14lxxiii</a>
+empty list <a href="r6rs-Z-H-7.html#node_idx_174">7xxiv</a>, <a href="r6rs-Z-H-14.html#node_idx_344">14lxxiv</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_592">14lxxv</a>, <a href="r6rs-Z-H-14.html#node_idx_602">14lxxvi</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_604">14lxxvii</a>, <a href="r6rs-Z-H-14.html#node_idx_626">14lxxviii</a>
+<tt>eq?</tt> <a href="r6rs-Z-H-14.html#node_idx_434">14lxxix</a>
+<tt>equal?</tt> <a href="r6rs-Z-H-14.html#node_idx_436">14lxxx</a>
+equivalence predicate <a href="r6rs-Z-H-14.html#node_idx_426">14lxxxi</a>
+<tt>eqv?</tt> <a href="r6rs-Z-H-14.html#node_idx_428">14lxxxii</a>
+<tt>eqv?</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_902">15xlv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_904">15xlvi</a>, <a href="r6rs-Z-H-15.html#node_idx_906">15xlvii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_908">15xlviii</a>, <a href="r6rs-Z-H-15.html#node_idx_972">15xlix</a>
+<tt>error</tt> <a href="r6rs-Z-H-14.html#node_idx_746">14lxxxiii</a>
+escape procedure <a href="r6rs-Z-H-4.html#node_idx_58">4ix</a>, <a href="r6rs-Z-H-14.html#node_idx_758">14lxxxiv</a>
+escape sequence <a href="r6rs-Z-H-7.html#node_idx_158">7xxv</a>
+<tt>even?</tt> <a href="r6rs-Z-H-14.html#node_idx_482">14lxxxv</a>
+exact <a href="r6rs-Z-H-6.html#node_idx_82">6ii</a>, <a href="r6rs-Z-H-14.html#node_idx_430">14lxxxvi</a>
+<tt>exact</tt> <a href="r6rs-Z-H-14.html#node_idx_462">14lxxxvii</a>
+<tt>exact-integer-sqrt</tt> <a href="r6rs-Z-H-14.html#node_idx_562">14lxxxviii</a>
+<tt>exact?</tt> <a href="r6rs-Z-H-14.html#node_idx_456">14lxxxix</a>
+exactness <a href="r6rs-Z-H-6.html#node_idx_80">6iii</a>
+exceptional situation <a href="r6rs-Z-H-8.html#node_idx_218">8x</a>
+<tt>exp</tt> <a href="r6rs-Z-H-14.html#node_idx_540">14xc</a>
+<tt>export</tt> <a href="r6rs-Z-H-10.html#node_idx_270">10ii</a>
+expression <a href="r6rs-Z-H-4.html#node_idx_22">4x</a>, <a href="r6rs-Z-H-10.html#node_idx_274">10iii</a>
+<tt>expt</tt> <a href="r6rs-Z-H-14.html#node_idx_564">14xci</a>
+external representation <a href="r6rs-Z-H-7.html#node_idx_106">7xxvi</a></p>
+<p>
+</p>
+<p>
+<tt>#f</tt> <a href="r6rs-Z-H-7.html#node_idx_154">7xxvii</a>, <a href="r6rs-Z-H-14.html#node_idx_590">14xcii</a>
+false <a href="r6rs-Z-H-8.html#node_idx_236">8xi</a>
+<tt>finite?</tt> <a href="r6rs-Z-H-14.html#node_idx_484">14xciii</a>
+fixnum <a href="r6rs-Z-H-6.html#node_idx_86">6iv</a>
+flonum <a href="r6rs-Z-H-6.html#node_idx_88">6v</a>
+<tt>floor</tt> <a href="r6rs-Z-H-14.html#node_idx_528">14xciv</a>
+<tt>for-each</tt> <a href="r6rs-Z-H-14.html#node_idx_644">14xcv</a>
+form <a href="r6rs-Z-H-4.html#node_idx_34">4xi</a>, <a href="r6rs-Z-H-7.html#node_idx_110">7xxviii</a></p>
+<p>
+</p>
+<p>
+<tt>gcd</tt> <a href="r6rs-Z-H-14.html#node_idx_520">14xcvi</a></p>
+<p>
+</p>
+<p>
+hole <a href="r6rs-Z-H-15.html#node_idx_800">15l</a>
+hygienic <a href="r6rs-Z-H-12.html#node_idx_318">12ii</a></p>
+<p>
+</p>
+<p>
+<tt>#i</tt> <a href="r6rs-Z-H-7.html#node_idx_122">7xxix</a>, <a href="r6rs-Z-H-7.html#node_idx_170">7xxx</a>
+identifier <a href="r6rs-Z-H-4.html#node_idx_30">4xii</a>, <a href="r6rs-Z-H-7.html#node_idx_118">7xxxi</a>, 
+<a href="r6rs-Z-H-7.html#node_idx_144">7xxxii</a>, <a href="r6rs-Z-H-8.html#node_idx_198">8xii</a>
+<tt>identifier-syntax</tt> <a href="r6rs-Z-H-14.html#node_idx_796">14xcvii</a>
+<tt>if</tt> <a href="r6rs-Z-H-14.html#node_idx_366">14xcviii</a>, <a href="r6rs-Z-H-14.html#node_idx_368">14xcix</a>
+<tt>if</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_852">15li</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_854">15lii</a>
+<tt>imag-part</tt> <a href="r6rs-Z-H-14.html#node_idx_572">14c</a>
+immutable <a href="r6rs-Z-H-8.html#node_idx_248">8xiii</a>
+implementation restriction <a href="r6rs-Z-H-6.html#node_idx_90">6vi</a>, 
+<a href="r6rs-Z-H-8.html#node_idx_224">8xiv</a>
+<tt>import</tt> <a href="r6rs-Z-H-10.html#node_idx_268">10iv</a>
+import level <a href="r6rs-Z-H-10.html#node_idx_288">10v</a>
+improper list <a href="r6rs-Z-H-14.html#node_idx_606">14ci</a>
+inexact <a href="r6rs-Z-H-6.html#node_idx_84">6vii</a>, <a href="r6rs-Z-H-14.html#node_idx_432">14cii</a>
+<tt>inexact</tt> <a href="r6rs-Z-H-14.html#node_idx_460">14ciii</a>
+<tt>inexact?</tt> <a href="r6rs-Z-H-14.html#node_idx_458">14civ</a>
+<tt>infinite?</tt> <a href="r6rs-Z-H-14.html#node_idx_486">14cv</a>
+infinity <a href="r6rs-Z-H-6.html#node_idx_92">6viii</a>
+instance <a href="r6rs-Z-H-10.html#node_idx_278">10vi</a>
+instantiation <a href="r6rs-Z-H-10.html#node_idx_280">10vii</a>
+integer object <a href="r6rs-Z-H-6.html#node_idx_78">6ix</a>
+<tt>integer-&gt;char</tt> <a href="r6rs-Z-H-14.html#node_idx_672">14cvi</a>
+<tt>integer-valued?</tt> <a href="r6rs-Z-H-14.html#node_idx_454">14cvii</a>
+<tt>integer?</tt> <a href="r6rs-Z-H-14.html#node_idx_448">14cviii</a></p>
+<p>
+</p>
+<p>
+keyword <a href="r6rs-Z-H-8.html#node_idx_200">8xv</a>, <a href="r6rs-Z-H-12.html#node_idx_314">12iii</a></p>
+<p>
+</p>
+<p>
+<tt>lambda</tt> <a href="r6rs-Z-H-14.html#node_idx_364">14cix</a>
+<tt>lambda</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_806">15liii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_910">15liv</a>, <a href="r6rs-Z-H-15.html#node_idx_912">15lv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_914">15lvi</a>, <a href="r6rs-Z-H-15.html#node_idx_918">15lvii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_920">15lviii</a>, <a href="r6rs-Z-H-15.html#node_idx_928">15lix</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_932">15lx</a>
+<tt>lcm</tt> <a href="r6rs-Z-H-14.html#node_idx_522">14cx</a>
+<tt>length</tt> <a href="r6rs-Z-H-14.html#node_idx_632">14cxi</a>
+<tt>let</tt> <a href="r6rs-Z-H-14.html#node_idx_394">14cxii</a>, <a href="r6rs-Z-H-14.html#node_idx_766">14cxiii</a>
+<tt>let*</tt> <a href="r6rs-Z-H-14.html#node_idx_398">14cxiv</a>
+<tt>let*-values</tt> <a href="r6rs-Z-H-14.html#node_idx_414">14cxv</a>
+<tt>let-syntax</tt> <a href="r6rs-Z-H-14.html#node_idx_776">14cxvi</a>
+<tt>let-values</tt> <a href="r6rs-Z-H-14.html#node_idx_410">14cxvii</a>
+<tt>letrec</tt> <a href="r6rs-Z-H-14.html#node_idx_402">14cxviii</a>
+<tt>letrec</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_968">15lxi</a>
+<tt>letrec*</tt> <a href="r6rs-Z-H-14.html#node_idx_406">14cxix</a>
+<tt>letrec*</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_970">15lxii</a>
+<tt>letrec-syntax</tt> <a href="r6rs-Z-H-14.html#node_idx_782">14cxx</a>
+level <a href="r6rs-Z-H-10.html#node_idx_286">10viii</a>
+lexeme <a href="r6rs-Z-H-7.html#node_idx_116">7xxxiii</a>
+library <a href="r6rs-Z-H-4.html#node_idx_60">4xiii</a>, <a href="r6rs-Z-H-8.html#node_idx_194">8xvi</a>, 
+<a href="r6rs-Z-H-10.html#node_idx_264">10ix</a>
+<tt>library</tt> <a href="r6rs-Z-H-10.html#node_idx_266">10x</a>
+list <a href="r6rs-Z-H-4.html#node_idx_16">4xiv</a>
+<tt>list</tt> <a href="r6rs-Z-H-14.html#node_idx_630">14cxxi</a>
+<tt>list</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_868">15lxiii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_870">15lxiv</a>
+<tt>list-&gt;string</tt> <a href="r6rs-Z-H-14.html#node_idx_714">14cxxii</a>
+<tt>list-&gt;vector</tt> <a href="r6rs-Z-H-14.html#node_idx_738">14cxxiii</a>
+<tt>list-ref</tt> <a href="r6rs-Z-H-14.html#node_idx_640">14cxxiv</a>
+<tt>list-tail</tt> <a href="r6rs-Z-H-14.html#node_idx_638">14cxxv</a>
+<tt>list?</tt> <a href="r6rs-Z-H-14.html#node_idx_628">14cxxvi</a>
+literal <a href="r6rs-Z-H-12.html#node_idx_292">12iv</a>
+location <a href="r6rs-Z-H-8.html#node_idx_242">8xvii</a>
+<tt>log</tt> <a href="r6rs-Z-H-14.html#node_idx_542">14cxxvii</a>, <a href="r6rs-Z-H-14.html#node_idx_544">14cxxviii</a></p>
+<p>
+</p>
+<p>
+macro <a href="r6rs-Z-H-4.html#node_idx_50">4xv</a>, <a href="r6rs-Z-H-12.html#node_idx_304">12v</a>
+macro keyword <a href="r6rs-Z-H-12.html#node_idx_316">12vi</a>
+macro transformer <a href="r6rs-Z-H-12.html#node_idx_306">12vii</a>, <a href="r6rs-Z-H-14.html#node_idx_780">14cxxix</a>
+macro use <a href="r6rs-Z-H-12.html#node_idx_310">12viii</a>
+<tt>magnitude</tt> <a href="r6rs-Z-H-14.html#node_idx_574">14cxxx</a>
+<tt>make-polar</tt> <a href="r6rs-Z-H-14.html#node_idx_568">14cxxxi</a>
+<tt>make-rectangular</tt> <a href="r6rs-Z-H-14.html#node_idx_566">14cxxxii</a>
+<tt>make-string</tt> <a href="r6rs-Z-H-14.html#node_idx_688">14cxxxiii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_690">14cxxxiv</a>
+<tt>make-vector</tt> <a href="r6rs-Z-H-14.html#node_idx_724">14cxxxv</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_726">14cxxxvi</a>
+<tt>map</tt> <a href="r6rs-Z-H-14.html#node_idx_642">14cxxxvii</a>
+<tt>max</tt> <a href="r6rs-Z-H-14.html#node_idx_490">14cxxxviii</a>
+may <a href="r6rs-Z-H-5.html#node_idx_72">5</a>
+<tt>min</tt> <a href="r6rs-Z-H-14.html#node_idx_492">14cxxxix</a>
+<tt>mod</tt> <a href="r6rs-Z-H-14.html#node_idx_512">14cxl</a>
+<tt>mod0</tt> <a href="r6rs-Z-H-14.html#node_idx_518">14cxli</a>
+must <a href="r6rs-Z-H-5.html#node_idx_64">5ii</a>
+must be <a href="r6rs-Z-H-9.html#node_idx_260">9ii</a>
+must not <a href="r6rs-Z-H-5.html#node_idx_66">5iii</a>
+mutable <a href="r6rs-Z-H-8.html#node_idx_246">8xviii</a></p>
+<p>
+</p>
+<p>
+NaN <a href="r6rs-Z-H-6.html#node_idx_98">6x</a>
+<tt>nan?</tt> <a href="r6rs-Z-H-14.html#node_idx_488">14cxlii</a>
+negative infinity <a href="r6rs-Z-H-6.html#node_idx_96">6xi</a>
+<tt>negative?</tt> <a href="r6rs-Z-H-14.html#node_idx_478">14cxliii</a>
+<tt>not</tt> <a href="r6rs-Z-H-14.html#node_idx_594">14cxliv</a>
+<tt>null</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_884">15lxv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_934">15lxvi</a>
+<tt>null?</tt> <a href="r6rs-Z-H-14.html#node_idx_346">14cxlv</a>, <a href="r6rs-Z-H-14.html#node_idx_624">14cxlvi</a>
+<tt>null?</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_886">15lxvii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_888">15lxviii</a>
+number <a href="r6rs-Z-H-4.html#node_idx_6">4xvi</a>, <a href="r6rs-Z-H-6.html#node_idx_74">6xii</a>
+<tt>number-&gt;string</tt> <a href="r6rs-Z-H-14.html#node_idx_578">14cxlvii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_580">14cxlviii</a>, <a href="r6rs-Z-H-14.html#node_idx_582">14cxlix</a>
+<tt>number?</tt> <a href="r6rs-Z-H-14.html#node_idx_334">14cl</a>, <a href="r6rs-Z-H-14.html#node_idx_440">14cli</a>
+<tt>numerator</tt> <a href="r6rs-Z-H-14.html#node_idx_524">14clii</a>
+numerical types <a href="r6rs-Z-H-6.html#node_idx_76">6xiii</a></p>
+<p>
+</p>
+<p>
+<tt>#o</tt> <a href="r6rs-Z-H-7.html#node_idx_128">7xxxiv</a>, <a href="r6rs-Z-H-7.html#node_idx_162">7xxxv</a>
+object <a href="r6rs-Z-H-4.html#node_idx_2">4xvii</a>
+<tt>odd?</tt> <a href="r6rs-Z-H-14.html#node_idx_480">14cliii</a>
+<tt>or</tt> <a href="r6rs-Z-H-14.html#node_idx_390">14cliv</a></p>
+<p>
+</p>
+<p>
+pair <a href="r6rs-Z-H-4.html#node_idx_14">4xviii</a>, <a href="r6rs-Z-H-14.html#node_idx_600">14clv</a>
+<tt>pair?</tt> <a href="r6rs-Z-H-14.html#node_idx_330">14clvi</a>, <a href="r6rs-Z-H-14.html#node_idx_608">14clvii</a>
+<tt>pair?</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_890">15lxix</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_892">15lxx</a>
+pattern variable <a href="r6rs-Z-H-14.html#node_idx_794">14clviii</a>
+phase <a href="r6rs-Z-H-10.html#node_idx_276">10xi</a>
+positive infinity <a href="r6rs-Z-H-6.html#node_idx_94">6xiv</a>
+<tt>positive?</tt> <a href="r6rs-Z-H-14.html#node_idx_476">14clix</a>
+predicate <a href="r6rs-Z-H-14.html#node_idx_424">14clx</a>
+prefix notation <a href="r6rs-Z-H-4.html#node_idx_24">4xix</a>
+procedure <a href="r6rs-Z-H-4.html#node_idx_20">4xx</a>, <a href="r6rs-Z-H-4.html#node_idx_38">4xxi</a>
+procedure call <a href="r6rs-Z-H-4.html#node_idx_40">4xxii</a>, <a href="r6rs-Z-H-12.html#node_idx_300">12ix</a>
+<tt>procedure?</tt> <a href="r6rs-Z-H-14.html#node_idx_342">14clxi</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_438">14clxii</a>
+<tt>procedure?</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_924">15lxxi</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_926">15lxxii</a>
+proper tail recursion <a href="r6rs-Z-H-8.html#node_idx_250">8xix</a></p>
+<p>
+</p>
+<p>
+<tt>quasiquote</tt> <a href="r6rs-Z-H-14.html#node_idx_768">14clxiii</a>
+<tt>quote</tt> <a href="r6rs-Z-H-14.html#node_idx_362">14clxiv</a></p>
+<p>
+</p>
+<p>
+raise <a href="r6rs-Z-H-8.html#node_idx_220">8xx</a>
+<tt>raise</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_820">15lxxiii</a>
+<tt>raise-continuable</tt> (formal semantics) 
+<a href="r6rs-Z-H-15.html#node_idx_818">15lxxiv</a>
+<tt>rational-valued?</tt> <a href="r6rs-Z-H-14.html#node_idx_452">14clxv</a>
+<tt>rational?</tt> <a href="r6rs-Z-H-14.html#node_idx_446">14clxvi</a>
+<tt>rationalize</tt> <a href="r6rs-Z-H-14.html#node_idx_536">14clxvii</a>
+<tt>real-part</tt> <a href="r6rs-Z-H-14.html#node_idx_570">14clxviii</a>
+<tt>real-valued?</tt> <a href="r6rs-Z-H-14.html#node_idx_450">14clxix</a>
+<tt>real?</tt> <a href="r6rs-Z-H-14.html#node_idx_444">14clxx</a>
+referentially transparent <a href="r6rs-Z-H-12.html#node_idx_320">12x</a>
+region <a href="r6rs-Z-H-8.html#node_idx_212">8xxi</a>, <a href="r6rs-Z-H-14.html#node_idx_374">14clxxi</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_392">14clxxii</a>, <a href="r6rs-Z-H-14.html#node_idx_396">14clxxiii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_400">14clxxiv</a>, <a href="r6rs-Z-H-14.html#node_idx_404">14clxxv</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_408">14clxxvi</a>, <a href="r6rs-Z-H-14.html#node_idx_412">14clxxvii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_416">14clxxviii</a>
+responsibility <a href="r6rs-Z-H-8.html#node_idx_228">8xxii</a>
+<tt>reverse</tt> <a href="r6rs-Z-H-14.html#node_idx_636">14clxxix</a>
+<tt>(rnrs base (6))</tt> <a href="r6rs-Z-H-14.html#node_idx_324">14clxxx</a>
+<tt>round</tt> <a href="r6rs-Z-H-14.html#node_idx_534">14clxxxi</a></p>
+<p>
+</p>
+<p>
+safe libraries <a href="r6rs-Z-H-8.html#node_idx_232">8xxiii</a>
+scalar value <a href="r6rs-Z-H-14.html#node_idx_656">14clxxxii</a>, <a href="r6rs-Z-H-14.html#node_idx_662">14clxxxiii</a>
+<tt>set!</tt> <a href="r6rs-Z-H-14.html#node_idx_372">14clxxxiv</a>
+<tt>set!</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_922">15lxxv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_964">15lxxvi</a>, <a href="r6rs-Z-H-15.html#node_idx_966">15lxxvii</a>
+<tt>set-car!</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_880">15lxxviii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_898">15lxxix</a>
+<tt>set-cdr!</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_882">15lxxx</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_900">15lxxxi</a>
+should <a href="r6rs-Z-H-5.html#node_idx_68">5iv</a>
+should not <a href="r6rs-Z-H-5.html#node_idx_70">5v</a>
+simplest rational <a href="r6rs-Z-H-14.html#node_idx_538">14clxxxv</a>
+<tt>sin</tt> <a href="r6rs-Z-H-14.html#node_idx_546">14clxxxvi</a>
+special form <a href="r6rs-Z-H-4.html#node_idx_44">4xxiii</a>
+splicing <a href="r6rs-Z-H-14.html#node_idx_422">14clxxxvii</a>
+<tt>sqrt</tt> <a href="r6rs-Z-H-14.html#node_idx_560">14clxxxviii</a>
+standard library <a href="r6rs-Z-H-8.html#node_idx_196">8xxiv</a>
+string <a href="r6rs-Z-H-4.html#node_idx_10">4xxiv</a>
+<tt>string</tt> <a href="r6rs-Z-H-14.html#node_idx_692">14clxxxix</a>
+<tt>string-&gt;list</tt> <a href="r6rs-Z-H-14.html#node_idx_712">14cxc</a>
+<tt>string-&gt;number</tt> <a href="r6rs-Z-H-14.html#node_idx_584">14cxci</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_586">14cxcii</a>
+<tt>string-&gt;symbol</tt> <a href="r6rs-Z-H-14.html#node_idx_652">14cxciii</a>
+<tt>string-append</tt> <a href="r6rs-Z-H-14.html#node_idx_710">14cxciv</a>
+<tt>string-copy</tt> <a href="r6rs-Z-H-14.html#node_idx_718">14cxcv</a>
+<tt>string-for-each</tt> <a href="r6rs-Z-H-14.html#node_idx_716">14cxcvi</a>
+<tt>string-length</tt> <a href="r6rs-Z-H-14.html#node_idx_694">14cxcvii</a>
+<tt>string-ref</tt> <a href="r6rs-Z-H-14.html#node_idx_696">14cxcviii</a>
+<tt>string&lt;=?</tt> <a href="r6rs-Z-H-14.html#node_idx_704">14cxcix</a>
+<tt>string&lt;?</tt> <a href="r6rs-Z-H-14.html#node_idx_700">14cc</a>
+<tt>string=?</tt> <a href="r6rs-Z-H-14.html#node_idx_698">14cci</a>
+<tt>string&gt;=?</tt> <a href="r6rs-Z-H-14.html#node_idx_706">14ccii</a>
+<tt>string&gt;?</tt> <a href="r6rs-Z-H-14.html#node_idx_702">14cciii</a>
+<tt>string?</tt> <a href="r6rs-Z-H-14.html#node_idx_338">14cciv</a>, <a href="r6rs-Z-H-14.html#node_idx_686">14ccv</a>
+subform <a href="r6rs-Z-H-4.html#node_idx_36">4xxv</a>, <a href="r6rs-Z-H-7.html#node_idx_112">7xxxvi</a>
+<tt>substring</tt> <a href="r6rs-Z-H-14.html#node_idx_708">14ccvi</a>
+surrogate <a href="r6rs-Z-H-14.html#node_idx_666">14ccvii</a>
+symbol <a href="r6rs-Z-H-4.html#node_idx_12">4xxvi</a>, <a href="r6rs-Z-H-7.html#node_idx_150">7xxxvii</a>
+<tt>symbol-&gt;string</tt> <a href="r6rs-Z-H-14.html#node_idx_648">14ccviii</a>
+<tt>symbol=?</tt> <a href="r6rs-Z-H-14.html#node_idx_650">14ccix</a>
+<tt>symbol?</tt> <a href="r6rs-Z-H-14.html#node_idx_332">14ccx</a>, <a href="r6rs-Z-H-14.html#node_idx_646">14ccxi</a>
+syntactic abstraction <a href="r6rs-Z-H-12.html#node_idx_302">12xi</a>
+syntactic datum <a href="r6rs-Z-H-4.html#node_idx_54">4xxvii</a>, <a href="r6rs-Z-H-7.html#node_idx_104">7xxxviii</a>, 
+<a href="r6rs-Z-H-7.html#node_idx_172">7xxxix</a>
+syntactic keyword <a href="r6rs-Z-H-4.html#node_idx_42">4xxviii</a>, <a href="r6rs-Z-H-7.html#node_idx_148">7xl</a>, 
+<a href="r6rs-Z-H-8.html#node_idx_202">8xxv</a>, <a href="r6rs-Z-H-12.html#node_idx_312">12xii</a>
+syntax violation <a href="r6rs-Z-H-8.html#node_idx_230">8xxvi</a>
+<tt>syntax-rules</tt> <a href="r6rs-Z-H-14.html#node_idx_786">14ccxii</a></p>
+<p>
+</p>
+<p>
+<tt>#t</tt> <a href="r6rs-Z-H-7.html#node_idx_152">7xli</a>, <a href="r6rs-Z-H-14.html#node_idx_588">14ccxiii</a>
+tail call <a href="r6rs-Z-H-8.html#node_idx_254">8xxvii</a>, <a href="r6rs-Z-H-14.html#node_idx_798">14ccxiv</a>
+tail context <a href="r6rs-Z-H-8.html#node_idx_252">8xxviii</a>
+<tt>tan</tt> <a href="r6rs-Z-H-14.html#node_idx_550">14ccxv</a>
+<tt>throw</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_962">15lxxxii</a>
+top-level program <a href="r6rs-Z-H-4.html#node_idx_62">4xxix</a>, <a href="r6rs-Z-H-8.html#node_idx_192">8xxix</a>, 
+<a href="r6rs-Z-H-11.html#node_idx_290">11</a>
+transformer <a href="r6rs-Z-H-12.html#node_idx_308">12xiii</a>, <a href="r6rs-Z-H-14.html#node_idx_778">14ccxvi</a>
+true <a href="r6rs-Z-H-8.html#node_idx_234">8xxx</a>, <a href="r6rs-Z-H-14.html#node_idx_370">14ccxvii</a>, 
+<a href="r6rs-Z-H-14.html#node_idx_382">14ccxviii</a>
+<tt>truncate</tt> <a href="r6rs-Z-H-14.html#node_idx_532">14ccxix</a>
+type <a href="r6rs-Z-H-14.html#node_idx_326">14ccxx</a></p>
+<p>
+</p>
+<p>
+unbound <a href="r6rs-Z-H-8.html#node_idx_214">8xxxi</a>, <a href="r6rs-Z-H-12.html#node_idx_296">12xiv</a>
+Unicode <a href="r6rs-Z-H-14.html#node_idx_654">14ccxxi</a>
+Unicode scalar value <a href="r6rs-Z-H-14.html#node_idx_660">14ccxxii</a>
+<tt>unquote</tt> <a href="r6rs-Z-H-14.html#node_idx_770">14ccxxiii</a>
+<tt>unquote-splicing</tt> <a href="r6rs-Z-H-14.html#node_idx_772">14ccxxiv</a>
+unspecified behavior <a href="r6rs-Z-H-8.html#node_idx_238">8xxxii</a>
+unspecified values <a href="r6rs-Z-H-8.html#node_idx_240">8xxxiii</a></p>
+<p>
+</p>
+<p>
+valid indices <a href="r6rs-Z-H-14.html#node_idx_684">14ccxxv</a>, <a href="r6rs-Z-H-14.html#node_idx_720">14ccxxvi</a>
+<tt>values</tt> <a href="r6rs-Z-H-14.html#node_idx_760">14ccxxvii</a>
+<tt>values</tt> (formal semantics) <a href="r6rs-Z-H-15.html#node_idx_802">15lxxxiii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_804">15lxxxiv</a>, <a href="r6rs-Z-H-15.html#node_idx_826">15lxxxv</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_858">15lxxxvi</a>, <a href="r6rs-Z-H-15.html#node_idx_864">15lxxxvii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_958">15lxxxviii</a>, <a href="r6rs-Z-H-15.html#node_idx_974">15lxxxix</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_982">15xc</a>, <a href="r6rs-Z-H-15.html#node_idx_986">15xci</a>
+variable <a href="r6rs-Z-H-4.html#node_idx_26">4xxx</a>, <a href="r6rs-Z-H-7.html#node_idx_146">7xlii</a>, 
+<a href="r6rs-Z-H-8.html#node_idx_204">8xxxiv</a>, <a href="r6rs-Z-H-12.html#node_idx_294">12xv</a>
+vector <a href="r6rs-Z-H-4.html#node_idx_18">4xxxi</a>
+<tt>vector</tt> <a href="r6rs-Z-H-14.html#node_idx_728">14ccxxviii</a>
+<tt>vector-&gt;list</tt> <a href="r6rs-Z-H-14.html#node_idx_736">14ccxxix</a>
+<tt>vector-fill!</tt> <a href="r6rs-Z-H-14.html#node_idx_740">14ccxxx</a>
+<tt>vector-for-each</tt> <a href="r6rs-Z-H-14.html#node_idx_744">14ccxxxi</a>
+<tt>vector-length</tt> <a href="r6rs-Z-H-14.html#node_idx_730">14ccxxxii</a>
+<tt>vector-map</tt> <a href="r6rs-Z-H-14.html#node_idx_742">14ccxxxiii</a>
+<tt>vector-ref</tt> <a href="r6rs-Z-H-14.html#node_idx_732">14ccxxxiv</a>
+<tt>vector-set!</tt> <a href="r6rs-Z-H-14.html#node_idx_734">14ccxxxv</a>
+<tt>vector?</tt> <a href="r6rs-Z-H-14.html#node_idx_340">14ccxxxvi</a>, <a href="r6rs-Z-H-14.html#node_idx_722">14ccxxxvii</a>
+visit <a href="r6rs-Z-H-10.html#node_idx_282">10xii</a>
+visiting <a href="r6rs-Z-H-10.html#node_idx_284">10xiii</a></p>
+<p>
+</p>
+<p>
+Whitespace <a href="r6rs-Z-H-7.html#node_idx_132">7xliii</a>
+<tt>with-exception-handler</tt> (formal semantics) 
+<a href="r6rs-Z-H-15.html#node_idx_812">15xcii</a>, <a href="r6rs-Z-H-15.html#node_idx_814">15xciii</a>, 
+<a href="r6rs-Z-H-15.html#node_idx_816">15xciv</a>, <a href="r6rs-Z-H-15.html#node_idx_828">15xcv</a></p>
+<p>
+</p>
+<p>
+<tt>#x</tt> <a href="r6rs-Z-H-7.html#node_idx_130">7xliv</a>, <a href="r6rs-Z-H-7.html#node_idx_166">7xlv</a></p>
+<p>
+</p>
+<p>
+<tt>zero?</tt> <a href="r6rs-Z-H-14.html#node_idx_474">14ccxxxviii</a></p>
+<p>
+</p>
+
+<p>
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-20.html">previous</a></span><span class=disable>, next</span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span class=disable><span>; &nbsp;&nbsp;</span>index</span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

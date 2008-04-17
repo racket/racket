@@ -1,0 +1,281 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-19.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-21.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_19"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_19">Chapter 19</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_19">R<sup>5</sup>RS compatibility</a></h1>
+<p></p>
+<p>
+The features described in this chapter are exported from the
+<tt>(rnrs r5rs (6))</tt><a name="node_idx_1284"></a>library and provide some functionality of the
+preceding revision of this report&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_8">8</a>] that was omitted from
+the main part of the current report.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1286"></a>exact-&gt;inexact<i> z</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1288"></a>inexact-&gt;exact<i> z</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are the same as the <tt>inexact</tt> and <tt>exact</tt>
+procedures; see report section&nbsp;on &#8220;Generic conversions&#8221;.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1290"></a>quotient<i> <i>n<sub>1</sub></i> <i>n<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1292"></a>remainder<i> <i>n<sub>1</sub></i> <i>n<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1294"></a>modulo<i> <i>n<sub>1</sub></i> <i>n<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures implement number-theoretic (integer)
+division.  <i>N<sub>2</sub></i> must be non-zero.  All three procedures
+return integer objects.  If <i>n<sub>1</sub></i>/<i>n<sub>2</sub></i> is an integer object:
+</p>
+
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;(quotient&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>n<sub>1</sub></i>/<i>n<sub>2</sub></i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(modulo&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;0<br>
+<p></tt>
+If <i>n<sub>1</sub></i>/<i>n<sub>2</sub></i> is not an integer object:
+</p>
+
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;(quotient&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>n<sub><em>q</em></sub></i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>n<sub><em>r</em></sub></i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(modulo&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>n<sub><em>m</em></sub></i><br>
+<p></tt>
+where <i>n<sub><em>q</em></sub></i> is <i>n<sub>1</sub></i>/<i>n<sub>2</sub></i> rounded towards zero,
+0 &lt; |<i>n<sub><em>r</em></sub></i>| &lt; |<i>n<sub>2</sub></i>|, 0 &lt; |<i>n<sub><em>m</em></sub></i>| &lt; |<i>n<sub>2</sub></i>|,
+<i>n<sub><em>r</em></sub></i> and <i>n<sub><em>m</em></sub></i> differ from <i>n<sub>1</sub></i> by a multiple of <i>n<sub>2</sub></i>,
+<i>n<sub><em>r</em></sub></i> has the same sign as <i>n<sub>1</sub></i>, and
+<i>n<sub><em>m</em></sub></i> has the same sign as <i>n<sub>2</sub></i>.</p>
+<p>
+Consequently, for integer objects <i>n<sub>1</sub></i> and <i>n<sub>2</sub></i> with
+<i>n<sub>2</sub></i> not equal to 0,
+</p>
+
+<tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(=&nbsp;<i>n<sub>1</sub></i>&nbsp;(+&nbsp;(*&nbsp;<i>n<sub>2</sub></i>&nbsp;(quotient&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(remainder&nbsp;<i>n<sub>1</sub></i>&nbsp;<i>n<sub>2</sub></i>)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><p></tt>
+provided all number object involved in that computation are exact.</p>
+<p>
+</p>
+
+<tt>(modulo&nbsp;13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;1<br>
+(remainder&nbsp;13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;1<br>
+<br>
+(modulo&nbsp;-13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;3<br>
+(remainder&nbsp;-13&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<br>
+<br>
+(modulo&nbsp;13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-3<br>
+(remainder&nbsp;13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;1<br>
+<br>
+(modulo&nbsp;-13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<br>
+(remainder&nbsp;-13&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<br>
+<br>
+(remainder&nbsp;-13&nbsp;-4.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1.0<p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+These procedures could be defined in terms of <tt>div</tt> and <tt>mod</tt> (see report section&nbsp;on &#8220;Arithmetic operations&#8221;) as follows (without checking of the
+argument types):
+
+<tt>(define&nbsp;(sign&nbsp;n)<br>
+&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((negative?&nbsp;n)&nbsp;-1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((positive?&nbsp;n)&nbsp;1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;0)))<br>
+<br>
+(define&nbsp;(quotient&nbsp;n1&nbsp;n2)<br>
+&nbsp;&nbsp;(*&nbsp;(sign&nbsp;n1)&nbsp;(sign&nbsp;n2)&nbsp;(div&nbsp;(abs&nbsp;n1)&nbsp;(abs&nbsp;n2))))<br>
+<br>
+(define&nbsp;(remainder&nbsp;n1&nbsp;n2)<br>
+&nbsp;&nbsp;(*&nbsp;(sign&nbsp;n1)&nbsp;(mod&nbsp;(abs&nbsp;n1)&nbsp;(abs&nbsp;n2))))<br>
+<br>
+(define&nbsp;(modulo&nbsp;n1&nbsp;n2)<br>
+&nbsp;&nbsp;(*&nbsp;(sign&nbsp;n2)&nbsp;(mod&nbsp;(*&nbsp;(sign&nbsp;n2)&nbsp;n1)&nbsp;(abs&nbsp;n2))))<br>
+<p></tt>
+</p>
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1296"></a>delay<i> &lt;expression&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+The <tt>delay</tt> construct is used together with the procedure <tt>force</tt> to
+implement <a name="node_idx_1298"></a><em>lazy evaluation</em> or <a name="node_idx_1300"></a><em>call by need</em>.
+<tt>(delay&nbsp;&lt;expression&gt;)</tt> returns an object called a
+<a name="node_idx_1302"></a><em>promise</em> which at some point in the future may be asked (by
+the <tt>force</tt> procedure) to evaluate
+&lt;expression&gt;, and deliver the resulting value.
+The effect of &lt;expression&gt; returning multiple values
+is unspecified.</p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1304"></a>force<i> promise</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Promise</i> must be a promise.
+The <tt>force</tt> procedure forces the value of <i>promise</i>.  If no value has been computed for
+the promise, then a value is computed and returned.  The value of the
+promise is cached (or &#8220;memoized&#8221;) so that if it is forced a second
+time, the previously computed value is returned.</p>
+<p>
+</p>
+
+<tt>(force&nbsp;(delay&nbsp;(+&nbsp;1&nbsp;2)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;3<br>
+(let&nbsp;((p&nbsp;(delay&nbsp;(+&nbsp;1&nbsp;2))))<br>
+&nbsp;&nbsp;(list&nbsp;(force&nbsp;p)&nbsp;(force&nbsp;p)))&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(3&nbsp;3)<br>
+<br>
+(define&nbsp;a-stream<br>
+&nbsp;&nbsp;(letrec&nbsp;((next<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;n&nbsp;(delay&nbsp;(next&nbsp;(+&nbsp;n&nbsp;1)))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(next&nbsp;0)))<br>
+(define&nbsp;head&nbsp;car)<br>
+(define&nbsp;tail<br>
+&nbsp;&nbsp;(lambda&nbsp;(stream)&nbsp;(force&nbsp;(cdr&nbsp;stream))))<br>
+<br>
+(head&nbsp;(tail&nbsp;(tail&nbsp;a-stream)))&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;2<p></tt></p>
+<p>
+Promises are mainly intended for programs written in
+functional style.  The following examples should not be considered to
+illustrate good programming style, but they illustrate the property that
+only one value is computed for a promise, no matter how many times it is
+forced.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;count&nbsp;0)<br>
+(define&nbsp;p<br>
+&nbsp;&nbsp;(delay&nbsp;(begin&nbsp;(set!&nbsp;count&nbsp;(+&nbsp;count&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(&gt;&nbsp;count&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;count<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(force&nbsp;p)))))<br>
+(define&nbsp;x&nbsp;5)<br>
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>a&nbsp;promise</i><br>
+(force&nbsp;p)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;6<br>
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>a&nbsp;promise,&nbsp;still</i><br>
+(begin&nbsp;(set!&nbsp;x&nbsp;10)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(force&nbsp;p))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;6<p></tt></p>
+<p>
+Here is a possible implementation of <tt>delay</tt> and <tt>force</tt>.
+Promises are implemented here as procedures of no arguments,
+and <tt>force</tt> simply calls its argument:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;force<br>
+&nbsp;&nbsp;(lambda&nbsp;(object)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(object)))<p></tt></p>
+<p>
+The expression</p>
+<p>
+</p>
+
+<tt>(delay&nbsp;&lt;expression&gt;)<p></tt></p>
+<p>
+has the same meaning as the procedure call</p>
+<p>
+</p>
+
+<tt>(make-promise&nbsp;(lambda&nbsp;()&nbsp;&lt;expression&gt;))<p></tt></p>
+<p>
+as follows</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;delay<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((delay&nbsp;expression)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-promise&nbsp;(lambda&nbsp;()&nbsp;expression))))),<p></tt></p>
+<p>
+where <tt>make-promise</tt> is defined as follows:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;make-promise<br>
+&nbsp;&nbsp;(lambda&nbsp;(proc)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((result-ready?&nbsp;<tt>#f</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(result&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;result-ready?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((x&nbsp;(proc)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;result-ready?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;(set!&nbsp;result-ready?&nbsp;<tt>#t</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;result&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result))))))))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1306"></a>null-environment<i> n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>N</i> must be the exact integer object 5.  The <tt>null-environment</tt> procedure returns an
+environment specifier suitable for use with <tt>eval</tt> (see
+chapter&nbsp;<a href="r6rs-lib-Z-H-17.html#node_chap_16">16</a>) representing an environment that is empty except
+for the (syntactic) bindings for all keywords described in
+the previous revision of this report&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_8">8</a>], including bindings
+for <tt>=&gt;</tt>, <tt>...</tt>, <tt>else</tt>, and <tt>_</tt> that are the same as those in
+the <tt>(rnrs base (6))</tt> library.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1308"></a>scheme-report-environment<i> n</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>N</i> must be the exact integer object 5.  The <tt>scheme-report-environment</tt> procedure returns
+an environment specifier for an environment that is empty except for
+the bindings for the identifiers described in the previous
+revision of this report&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_8">8</a>], omitting <tt>load</tt>, <tt>interaction-environment</tt>, <tt>transcript-on</tt>, <tt>transcript-off</tt>, and <tt>char-ready?</tt>.  The
+variable bindings have as values the procedures of the same names described in
+this report, and the keyword bindings, including
+<tt>=&gt;</tt>, <tt>...</tt>, <tt>else</tt>, and <tt>_</tt> are the same as those described
+in this report.
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<p>
+
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-19.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-21.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

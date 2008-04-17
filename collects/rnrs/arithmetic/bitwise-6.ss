@@ -6,6 +6,7 @@
          bitwise-not
          bitwise-if
          (rename-out [integer-length bitwise-length])
+         bitwise-bit-count
          bitwise-first-bit-set
          bitwise-bit-set?
          bitwise-copy-bit

@@ -1,0 +1,258 @@
+
+               body {
+               color: black;
+               /*   background-color: #e5e5e5;*/
+               background-color: #ffffff;
+               /*background-color: beige;*/
+               margin-top: 2em;
+               margin-bottom: 2em;
+               /* margin-left: 8%;
+               margin-right: 8%; */
+               }
+
+               @media screen {
+               body {
+               margin-left: 8%;
+               margin-right: 8%;
+               }
+               }
+
+               @media print {
+               body {
+               text-align: justify;
+               }
+               }
+
+               @media print {
+               a:link, a:visited {
+               text-decoration: none;
+               color: black;
+               }
+               }
+
+               @media print {
+               p {
+               text-indent: 2em;
+               margin-top: 1ex;
+               margin-bottom: 0;
+               }
+
+               }
+
+               h1,h2,h3,h4,h5,h6 {
+               margin-top: .8em;
+               margin-bottom: .2em;  /* ?? */
+               }
+               
+
+               .title {
+               font-size: 200%;
+               font-weight: normal;
+               margin-top: 2.8em;
+               text-align: center;
+               }
+
+               .partheading {
+               font-size: 100%;
+               }
+
+               .chapterheading {
+               font-size: 100%;
+               }
+
+               .beginsection {
+               margin-top: 1.8em;
+               font-size: 100%;
+               }
+
+               .tiny {
+               font-size: 40%;
+               }
+
+               .scriptsize {
+               font-size: 60%;
+               }
+
+               .footnotesize {
+               font-size: 75%;
+               }
+
+               .small {
+               font-size: 90%;
+               }
+
+               .normalsize {
+               font-size: 100%;
+               }
+
+               .large {
+               font-size: 120%;
+               }
+
+               .largecap {
+               font-size: 150%;
+               }
+
+               .largeup {
+               font-size: 200%;
+               }
+
+               .huge {
+               font-size: 300%;
+               }
+
+               .hugecap {
+               font-size: 350%;
+               }
+
+               p.noindent {
+               text-indent: 0;
+               }
+
+               pre {
+               margin-left: 2em;
+               }
+
+               blockquote {
+               margin-left: 2em;
+               }
+
+               .smallskip {
+               margin-top: 2pt;
+               margin-bottom: 2pt;
+               min-height: 4pt;
+               }
+
+               .medskip {
+               margin-top: 3pt;
+               margin-bottom: 3pt;
+               min-height: 7pt; 
+               /*margin-top: 1.6em;  
+               margin-bottom: 2.4em;  
+               margin-top: 1em;
+               margin-bottom: 1.5em; */
+               /* top and bottom have to be different so successive \...skips cause more spacing? */
+               }
+
+               .bigskip {
+               margin-top: 4pt;
+               margin-bottom: 4pt;
+               min-height: 13pt;
+               /*margin-top: 2.8em; 
+               margin-bottom: 3.4em; 
+               margin-top: 2.4em;
+               margin-bottom: 1.6em; */
+               }
+
+
+               ol {
+               list-style-type: decimal;
+               }
+
+               ol ol {
+               list-style-type: lower-alpha;
+               }
+
+               ol ol ol {
+               list-style-type: lower-roman;
+               }
+
+               ol ol ol ol {
+               list-style-type: upper-alpha;
+               }
+
+               tt i {
+               font-family: serif;
+               }
+
+               .verbatim em {
+               font-family: serif;
+               }
+
+               /*
+               .verbatim {
+               color: #4d0000;
+               }
+               */
+
+               .scheme em {
+               color: black;
+               font-family: serif;
+               }
+
+               .scheme             {color: #993333} /* background punctuation */
+               .scheme  .selfeval  {color: #006600}
+               .scheme  .keyword   {color: #660000; font-weight: bold}
+               .scheme  .builtin   {color: #660000}
+               .scheme  .global    {color: #660066}
+               .scheme  .variable  {color: #000066}
+               .scheme  .comment   {color: #006666; font-style: oblique}
+
+               .schemeresponse {
+               color: #006600;
+               }
+
+               .navigation {
+               color: #993300;
+               text-align: right;
+               font-size: medium;
+               font-style: italic;
+               }
+
+               @media print {
+               .navigation {
+               display: none;
+               }
+               }
+
+               .disable {
+               /* color: #e5e5e5; */
+               color: gray;
+               }
+
+               .smallcaps {
+               font-size: 75%;
+               }
+
+               .smallprint {
+               color: gray;
+               font-size: 75%;
+               text-align: right;
+               }
+
+               /*
+               .smallprint hr {
+               text-align: left;
+               width: 40%;
+               }
+               */
+
+               .footnoterule {
+               text-align: left;
+               width: 40%;
+               }
+
+               @media print {
+               .footnoterule {
+               margin-top: 2em;
+               }
+               }
+
+               .colophon {
+               color: gray;
+               font-size: 80%;
+               font-style: italic;
+               text-align: right;
+               margin-top: 1em;
+               }
+
+               @media print {
+               .colophon .advertisement {
+               display: none;
+               }
+               }
+
+               .colophon a {
+               color: gray;
+               }
+               

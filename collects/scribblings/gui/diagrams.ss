@@ -87,11 +87,11 @@ DIAG
  
   (define event-diagram
 #<<DIAG
-       event%                                        timer%
-        |- key-event%                                cursor%
+       event%                                 timer%
+        |- key-event%                         cursor%
         |- mouse-event%                    
-        |- scroll-event%                             clipboard<%>
-        |- control-event%                            clipboard-client%
+        |- scroll-event%                      clipboard<%>
+        |- control-event%                     clipboard-client%
 DIAG
 )
 

@@ -1,0 +1,65 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-9.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_9"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_9">Chapter 9</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_9">File system</a></h1>
+<p></p>
+<p>
+This chapter describes the <tt>(rnrs files (6))</tt><a name="node_idx_836"></a>library for
+operations on the file system.  This library, in addition to the
+procedures described here, also exports the I/O condition types
+described in section&nbsp;<a href="r6rs-lib-Z-H-9.html#node_sec_8.1">8.1</a>.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_838"></a>file-exists?<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Filename</i> must be a file name (see
+section&nbsp;<a href="r6rs-lib-Z-H-9.html#node_sec_8.2.1">8.2.1</a>).  The <tt>file-exists?</tt> procedure
+returns <tt>#t</tt> if the named file exists at the time the procedure
+is called, <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_840"></a>delete-file<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Filename</i> must be a file name (see
+section&nbsp;<a href="r6rs-lib-Z-H-9.html#node_sec_8.2.1">8.2.1</a>).  The <tt>delete-file</tt> procedure
+deletes the named file if it exists and can be deleted, and returns
+unspecified values.  If the file does not exist or cannot be deleted,
+an exception with condition type <tt>&amp;i/o-filename</tt> is raised.
+</p>
+<p></p>
+<p>
+   </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-9.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

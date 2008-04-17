@@ -1,0 +1,273 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-5.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_5"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_5">Chapter 5</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_5">Control structures</a></h1>
+<p></p>
+<p>
+This chapter describes the <tt>(rnrs control (6))</tt><a name="node_idx_252"></a>library, which
+provides useful control structures.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_254"></a>when<i> &lt;test&gt; &lt;expression<sub>1</sub>&gt; &lt;expression<sub>2</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_256"></a>unless<i> &lt;test&gt; &lt;expression<sub>1</sub>&gt; &lt;expression<sub>2</sub>&gt; <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+<em>Syntax: </em>&lt;Test&gt; must be an expression.</p>
+<p>
+<em>Semantics: </em>A <tt>when</tt> expression is evaluated by evaluating the
+&lt;test&gt; expression.  If &lt;test&gt; evaluates to a true value,
+the remaining &lt;expression&gt;s are evaluated in order, and the
+results of the last &lt;expression&gt; are returned as the
+results of the entire <tt>when</tt> expression.  Otherwise, the <tt>when</tt> expression returns unspecified values.  An <tt>unless</tt>
+expression is evaluated by evaluating the &lt;test&gt; expression.
+If &lt;test&gt; evaluates to <tt>#f</tt>, the remaining
+&lt;expression&gt;s are evaluated in order, and the results of the
+last &lt;expression&gt; are returned as the results of the
+entire <tt>unless</tt> expression.  Otherwise, the <tt>unless</tt> expression
+returns unspecified values.</p>
+<p>
+The final &lt;expression&gt; is in tail context if the <tt>when</tt> or
+<tt>unless</tt> form is itself in tail context.</p>
+<p>
+</p>
+
+<tt>(when&nbsp;(&gt;&nbsp;3&nbsp;2)&nbsp;&#8217;greater)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;greater<br>
+(when&nbsp;(&lt;&nbsp;3&nbsp;2)&nbsp;&#8217;greater)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<em>unspecified</em><br>
+(unless&nbsp;(&gt;&nbsp;3&nbsp;2)&nbsp;&#8217;less)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<em>unspecified</em><br>
+(unless&nbsp;(&lt;&nbsp;3&nbsp;2)&nbsp;&#8217;less)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;less<br>
+<p></tt></p>
+<p>
+The <tt>when</tt> and <tt>unless</tt> expressions are derived forms.  They
+could be defined by the following macros:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>when</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((when&nbsp;test&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)))))<br>
+<br>
+(define-syntax&nbsp;<tt>unless</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((unless&nbsp;test&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(not&nbsp;test)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)))))<br>
+<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>(do ((&lt;variable<sub>1</sub>&gt; &lt;init<sub>1</sub>&gt; &lt;step<sub>1</sub>&gt;)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_258"></a><tt><tt>...</tt>)<br>
+
+(&lt;test&gt;&nbsp;&lt;expression&gt;&nbsp;<tt>...</tt>)<br>
+
+&lt;command&gt;&nbsp;<tt>...</tt>)</tt><p>
+<em>Syntax: </em>The &lt;init&gt;s, &lt;step&gt;s, &lt;test&gt;s, and &lt;command&gt;s must be
+expressions.  The &lt;variable&gt;s must be pairwise distinct variables.</p>
+<p>
+<em>Semantics: </em>The <tt>do</tt> expression is an iteration construct.  It specifies a set of variables to
+be bound, how they are to be initialized at the start, and how they are
+to be updated on each iteration.</p>
+<p>
+A <tt>do</tt> expression is evaluated as follows:
+The &lt;init&gt; expressions are evaluated (in some unspecified order),
+the &lt;variable&gt;s are bound to fresh locations, the results of the
+&lt;init&gt; expressions are stored in the bindings of the
+&lt;variable&gt;s, and then the iteration phase begins.</p>
+<p>
+Each iteration begins by evaluating &lt;test&gt;; if the result is
+<tt>#f</tt>, then the &lt;command&gt;s
+are evaluated in order for effect, the &lt;step&gt;
+expressions are evaluated in some unspecified order, the
+&lt;variable&gt;s are bound to fresh locations holding the results,
+and the next iteration begins.</p>
+<p>
+If &lt;test&gt; evaluates to a true value, the
+&lt;expression&gt;s are evaluated from left to right and the values of
+the last &lt;expression&gt; are returned.  If no &lt;expression&gt;s
+are present, then the <tt>do</tt> expression returns unspecified values.</p>
+<p>
+The region<a name="node_idx_260"></a>of the binding of a &lt;variable&gt;
+consists of the entire <tt>do</tt> expression except for the &lt;init&gt;s.</p>
+<p>
+A &lt;step&gt; may be omitted, in which case the effect is the
+same as if <tt>(&lt;variable&gt; &lt;init&gt; &lt;variable&gt;)</tt> had
+been written instead of <tt>(&lt;variable&gt; &lt;init&gt;)</tt>.</p>
+<p>
+If a <tt>do</tt> expression appears in a tail context, the
+&lt;expression&gt;s are a &lt;tail sequence&gt; in the sense of report
+section&nbsp;on &#8220;Tail calls and tail contexts&#8221;,
+i.e., the last &lt;expression&gt; is also in a tail context.</p>
+<p>
+</p>
+
+<tt>(do&nbsp;((vec&nbsp;(make-vector&nbsp;5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i&nbsp;0&nbsp;(+&nbsp;i&nbsp;1)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((=&nbsp;i&nbsp;5)&nbsp;vec)<br>
+&nbsp;&nbsp;(vector-set!&nbsp;vec&nbsp;i&nbsp;i))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;#(0&nbsp;1&nbsp;2&nbsp;3&nbsp;4)<br>
+<br>
+(let&nbsp;((x&nbsp;&#8217;(1&nbsp;3&nbsp;5&nbsp;7&nbsp;9)))<br>
+&nbsp;&nbsp;(do&nbsp;((x&nbsp;x&nbsp;(cdr&nbsp;x))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(sum&nbsp;0&nbsp;(+&nbsp;sum&nbsp;(car&nbsp;x))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((null?&nbsp;x)&nbsp;sum)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;25<p></tt></p>
+<p>
+The following definition
+of <tt>do</tt> uses a trick to expand the variable clauses.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>do</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;((var&nbsp;init&nbsp;step&nbsp;...)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test&nbsp;expr&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;command&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((loop<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(var&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt>&nbsp;;&nbsp;avoid&nbsp;empty&nbsp;begin<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;command<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;(do&nbsp;&quot;step&quot;&nbsp;var&nbsp;step&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(loop&nbsp;init&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;&quot;step&quot;&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((do&nbsp;&quot;step&quot;&nbsp;x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y)))<p></tt></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_262"></a>case-lambda<i> &lt;case-lambda clause&gt; <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+<em>Syntax: </em>Each &lt;case-lambda clause&gt; must be of the form
+</p>
+
+<tt>(&lt;formals&gt;&nbsp;&lt;body&gt;)<p></tt></p>
+<p>
+&lt;Formals&gt; must be as in a <tt>lambda</tt> form
+(report section&nbsp;on &#8220;Procedures&#8221;), and &lt;body&gt; is as described in
+report section&nbsp;on &#8220;Bodies and sequences&#8221;.</p>
+<p>
+<em>Semantics: </em>A <tt>case-lambda</tt> expression evaluates to a procedure.
+This procedure, when applied, tries to match its arguments to the
+&lt;case-lambda clause&gt;s in order.  The arguments match a clause if one of the
+following conditions is fulfilled:
+</p>
+<ul>
+<li><p>&lt;Formals&gt; has the form <tt>(&lt;variable&gt; <tt>...</tt>)</tt>
+and the number of arguments is the same as the number of formal
+parameters in &lt;formals&gt;.
+</p>
+<li><p>&lt;Formals&gt; has the form<br>
+<tt>(&lt;variable<sub>1</sub>&gt; <tt>...</tt>&lt;variable<sub><em>n</em></sub>&gt; . &lt;variable<sub><em>n</em>+1</sub>)&gt;
+</tt><br>
+and the number of arguments is at least <em>n</em>.
+</p>
+<li><p>&lt;Formals&gt; has the form <tt>&lt;variable&gt;</tt>.
+</p>
+</ul><p>
+For the first clause matched by the arguments, the variables of the
+&lt;formals&gt; are bound to fresh locations containing the
+argument values in the same arrangement as with <tt>lambda</tt>.</p>
+<p>
+The last expression of a &lt;body&gt; in a <tt>case-lambda
+expression</tt> is in tail context.</p>
+<p>
+If the arguments match none of the clauses, an exception with condition 
+type <tt>&amp;assertion</tt> is raised.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;foo<br>
+&nbsp;&nbsp;(case-lambda&nbsp;<br>
+&nbsp;&nbsp;&nbsp;(()&nbsp;&#8217;zero)<br>
+&nbsp;&nbsp;&nbsp;((x)&nbsp;(list&nbsp;&#8217;one&nbsp;x))<br>
+&nbsp;&nbsp;&nbsp;((x&nbsp;y)&nbsp;(list&nbsp;&#8217;two&nbsp;x&nbsp;y))<br>
+&nbsp;&nbsp;&nbsp;((a&nbsp;b&nbsp;c&nbsp;d&nbsp;.&nbsp;e)&nbsp;(list&nbsp;&#8217;four&nbsp;a&nbsp;b&nbsp;c&nbsp;d&nbsp;e))<br>
+&nbsp;&nbsp;&nbsp;(rest&nbsp;(list&nbsp;&#8217;rest&nbsp;rest))))<br>
+<br>
+(foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;zero<br>
+(foo&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(one&nbsp;1)<br>
+(foo&nbsp;1&nbsp;2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(two&nbsp;1&nbsp;2)<br>
+(foo&nbsp;1&nbsp;2&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(rest&nbsp;(1&nbsp;2&nbsp;3))<br>
+(foo&nbsp;1&nbsp;2&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(four&nbsp;1&nbsp;2&nbsp;3&nbsp;4&nbsp;())<br>
+<p></tt></p>
+<p>
+The <tt>case-lambda</tt> keyword
+can be defined in terms of <tt>lambda</tt> by the following macros:
+</p>
+
+<tt>(define-syntax&nbsp;<tt>case-lambda</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;(fmls&nbsp;b1&nbsp;b2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;fmls&nbsp;b1&nbsp;b2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;(fmls&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;args<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((n&nbsp;(length&nbsp;args)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(case-lambda-help&nbsp;args&nbsp;n<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fmls&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;...))))))<br>
+<br>
+(define-syntax&nbsp;case-lambda-help<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;args&nbsp;n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assertion-violation&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;unexpected&nbsp;number&nbsp;of&nbsp;arguments&quot;))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;args&nbsp;n&nbsp;((x&nbsp;...)&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;more&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(=&nbsp;n&nbsp;(length&nbsp;&#8217;(x&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(apply&nbsp;(lambda&nbsp;(x&nbsp;...)&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;args)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(case-lambda-help&nbsp;args&nbsp;n&nbsp;more&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;args&nbsp;n&nbsp;((x1&nbsp;x2&nbsp;...&nbsp;.&nbsp;r)&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;more&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(&gt;=&nbsp;n&nbsp;(length&nbsp;&#8217;(x1&nbsp;x2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(apply&nbsp;(lambda&nbsp;(x1&nbsp;x2&nbsp;...&nbsp;.&nbsp;r)&nbsp;b1&nbsp;b2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;args)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(case-lambda-help&nbsp;args&nbsp;n&nbsp;more&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;args&nbsp;n&nbsp;(r&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;more&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(apply&nbsp;(lambda&nbsp;r&nbsp;b1&nbsp;b2&nbsp;...)&nbsp;args))))<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-5.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

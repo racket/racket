@@ -14,6 +14,8 @@ is different and what API is provided.
 @section[#:tag "lang-servlets"]{Definition}
 @(require (for-label "dummy-language-servlet.ss")) @; to give a binding context
 
+@defmodule*/no-declare[(web-server/lang)]
+
 @declare-exporting[#:use-sources (web-server/scribblings/dummy-language-servlet)]
 
 A @defterm{Web language servlet} is a module written in the

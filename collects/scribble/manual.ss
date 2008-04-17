@@ -1116,7 +1116,7 @@
                                     0
                                     (+ 1 (loop (car p))))))]
            [prototype-args (lambda (p)
-                             (let ([parse-arg (lambda (v in-optional? depth next-optional? next-special?)
+                             (let ([parse-arg (lambda (v in-optional? depth next-optional? next-special-dots?)
                                                 (let* ([id (if (pair? v)
                                                                (if (keyword? (car v))
                                                                    (cadr v)
@@ -1141,7 +1141,7 @@
                                                                      in-optional?) ; => must be special
                                                                 (and default?
                                                                      (not next-optional?)
-                                                                     (not next-special?)))
+                                                                     (not next-special-dots?)))
                                                             depth)))])
                                (let loop ([p p][last-depth 0])
                                  (append (if (symbol? (car p))
@@ -1168,12 +1168,13 @@
                                                                                cdddr
                                                                                cddr)
                                                                            v)))))
-                                                                 (not (pair? (cadr p))))])
+                                                                 (and (not (pair? (cadr p)))
+                                                                      (not (eq? '_...superclass-args... (cadr p)))))])
                                                (cons a
                                                      (loop (cdr p)
                                                            (and (arg-optional? a)
                                                                 (not (arg-ends-optional? a))))))]))))))]
-           [prototype-size (lambda (args first-combine next-combine)
+           [prototype-size (lambda (args first-combine next-combine special-combine?)
                              (let loop ([s args][combine first-combine])
                                (if (null? s)
                                    0
@@ -1190,7 +1191,13 @@
                                                      (string-length (keyword->string (arg-kw a)))
                                                      3
                                                      (string-length (symbol->string (arg-id a))))
-                                                  (string-length (symbol->string (arg-id a)))))])))))))]
+                                                  (string-length (symbol->string (arg-id a))))
+                                              (if (and special-combine?
+                                                       (pair? (cdr s))
+                                                       (arg-special? (cadr s))
+                                                       (not (eq? '_...superclass-args... (arg-id (cadr s)))))
+                                                  (+ 1 (string-length (symbol->string (arg-id (cadr s)))))
+                                                  0))])))))))]
            [extract-id (lambda (p)
                            (let loop ([p p])
                              (if (symbol? (car p))
@@ -1282,7 +1289,7 @@
                                                       (*sig-elem (sig-id sig) (extract-id prototype))
                                                       (to-element (make-just-context (extract-id prototype)
                                                                                      stx-id))))))])]
-                               [(flat-size) (+ (prototype-size args + +)
+                               [(flat-size) (+ (prototype-size args + + #f)
                                                (prototype-depth prototype)
                                                (element-width tagged))]
                                [(short?) (or (flat-size . < . 40)
@@ -1312,7 +1319,7 @@
                                             res))]
                                [(result-next-line?) ((+ (if short? 
                                                             flat-size
-                                                            (+ (prototype-size args max max)
+                                                            (+ (prototype-size args max max #t)
                                                                (prototype-depth prototype)
                                                                (element-width tagged)))
                                                         (block-width res))
@@ -1379,7 +1386,8 @@
                                        (if (null? args)
                                            null
                                            (let ([dots-next? (or (and (pair? (cdr args))
-                                                                      (arg-special? (cadr args))))])
+                                                                      (arg-special? (cadr args))
+                                                                      (not (eq? '_...superclass-args... (arg-id (cadr args))))))])
                                              (cons (list* (to-flow spacer)
                                                           (if (arg-starts-optional? (car args))
                                                               (to-flow (make-element #f (list spacer "[")))

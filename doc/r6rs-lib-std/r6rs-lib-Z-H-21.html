@@ -1,0 +1,870 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-20.html">previous</a></span><span class=disable>, next</span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span class=disable><span>; &nbsp;&nbsp;</span>index</span>]</div>
+<p></p>
+<a name="node_chap_Temp_3"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_Temp_3">References</a></h1>
+<p></p>
+<table>
+<p>
+</p>
+<tr><td align=right valign=top><a name="node_bib_1"></a>[1]&nbsp;&nbsp;</td><td valign=top>
+Henk&nbsp;P. Barendregt.
+ Introduction to the lambda calculus.
+ <i>Nieuw Archief voor Wisenkunde</i>, 4(2):337&#8211;372, 1984.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_2"></a>[2]&nbsp;&nbsp;</td><td valign=top>
+Alan Bawden.
+ Quasiquotation in Lisp.
+ In Olivier Danvy, editor, <i>Proc.&nbsp; ACM SIGPLAN Workshop on Partial
+Evaluation and Semantics-Based Program Manipulation PEPM &#8217;99</i>, pages 4&#8211;12,
+San Antonio, Texas, USA, January 1999.
+ BRICS Notes Series NS-99-1.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_3"></a>[3]&nbsp;&nbsp;</td><td valign=top>
+William Clinger and Jonathan Rees.
+ Macros that work.
+ In <i>Proc.&nbsp; 1991 ACM SIGPLAN Symposium on Principles of
+Programming Languages</i>, pages 155&#8211;162, Orlando, Florida, January 1991. ACM
+Press.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_4"></a>[4]&nbsp;&nbsp;</td><td valign=top>
+Danny Cohen.
+ On holy wars and a plea for peace.
+ <a href="http://www.ietf.org/rfc/ien/ien137.txt">http://www.ietf.org/rfc/ien/ien137.txt</a>, April 1980.
+ Internet Engineering Note 137.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_5"></a>[5]&nbsp;&nbsp;</td><td valign=top>
+Mark Davis.
+ Unicode Standard Annex #29: Text boundaries.
+ <a href="http://www.unicode.org/reports/tr29/">http://www.unicode.org/reports/tr29/</a>, 2006.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_6"></a>[6]&nbsp;&nbsp;</td><td valign=top>
+R.&nbsp;Kent Dybvig, Robert Hieb, and Carl Bruggeman.
+ Syntactic abstraction in Scheme.
+ <i>Lisp and Symbolic Computation</i>, 1(1):53&#8211;75, 1988.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_7"></a>[7]&nbsp;&nbsp;</td><td valign=top>
+IEEE standard 754-1985. IEEE standard for binary floating-point arithmetic,
+1985.
+ Reprinted in SIGPLAN Notices, 22(2):9-25, 1987.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_8"></a>[8]&nbsp;&nbsp;</td><td valign=top>
+Richard Kelsey, William Clinger, and Jonathan Rees.
+ Revised<sup>5</sup> report on the algorithmic language Scheme.
+ <i>Higher-Order and Symbolic Computation</i>, 11(1):7&#8211;105, 1998.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_9"></a>[9]&nbsp;&nbsp;</td><td valign=top>
+Eugene&nbsp;E. Kohlbecker, Daniel&nbsp;P. Friedman, Matthias Felleisen, and Bruce Duba.
+ Hygienic macro expansion.
+ In <i>Proceedings of the 1986 ACM Conference on Lisp and
+Functional Programming</i>, pages 151&#8211;161, 1986.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_10"></a>[10]&nbsp;&nbsp;</td><td valign=top>
+P.&nbsp;Leach, M.&nbsp;Mealling, and R.&nbsp;Salz.
+ A Universally Unique IDentifier (UUID) URN namespace.
+ <a href="http://www.ietf.org/rfc/rfc4122.txt">http://www.ietf.org/rfc/rfc4122.txt</a>, July 2005.
+ RFC 4122.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_11"></a>[11]&nbsp;&nbsp;</td><td valign=top>
+Michael Sperber, R.&nbsp;Kent Dybvig, Matthew Flatt, Anton van Straaten, Richard
+Kelsey, William Clinger, and Jonathan Rees.
+ Revised<sup>6</sup> report on the algorithmic language Scheme.
+ <a href="http://www.r6rs.org/">http://www.r6rs.org/</a>, 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_12"></a>[12]&nbsp;&nbsp;</td><td valign=top>
+The Unicode Consortium.
+ The Unicode standard, version 5.0.0.
+ defined by: <i>The Unicode Standard, Version 5.0</i> (Boston, MA,
+Addison-Wesley, 2007. ISBN 0-321-48091-0), 2007.<p>
+</p>
+</td></tr>
+<tr><td align=right valign=top><a name="node_bib_13"></a>[13]&nbsp;&nbsp;</td><td valign=top>
+Oscar Waddell.
+ <i>Extending the Scope of Syntactic Abstraction</i>.
+ PhD thesis, Indiana University, August 1999.
+ <a href="http://www.cs.indiana.edu/~owaddell/papers/thesis.ps.gz">http://www.cs.indiana.edu/~owaddell/papers/thesis.ps.gz</a>.<p>
+</p>
+</table><p>
+
+</p>
+<p>
+</p>
+<p>
+
+</p>
+<p>
+</p>
+<a name="node_chap_Temp_4"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_Temp_4">Index</a></h1>
+<p>
+<a name="node_index_start"></a></p>
+
+<div align=center><table><tr><td>
+
+<span class=large><strong>Alphabetic index of definitions of
+concepts, keywords, and procedures
+</strong></span></td></tr></table></div>
+
+<div style="height: 4.5pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<div class=bigskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+
+
+
+</p>
+<p></p>
+<div class=bigskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+</p>
+<p>
+<tt>...</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1128">13</a>, <a href="r6rs-lib-Z-H-13.html#node_idx_1130">13ii</a>
+<tt>=&gt;</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_372">8</a>
+<tt>_</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1126">13iii</a></p>
+<p>
+</p>
+<p>
+accessor <a href="r6rs-lib-Z-H-7.html#node_idx_272">7</a>
+antimark <a href="r6rs-lib-Z-H-13.html#node_idx_1104">13iv</a>
+<tt>&amp;assertion</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_438">8ii</a>
+<tt>assertion-violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_442">8iii</a>
+<tt>assoc</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_234">4</a>
+<tt>assp</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_232">4ii</a>
+<tt>assq</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_238">4iii</a>
+<tt>assv</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_236">4iv</a></p>
+<p>
+</p>
+<p>
+base record type <a href="r6rs-lib-Z-H-7.html#node_idx_276">7ii</a>
+big-endian <a href="r6rs-lib-Z-H-3.html#node_idx_74">3</a>
+binary port <a href="r6rs-lib-Z-H-9.html#node_idx_568">9</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_586">9ii</a>
+<tt>binary-port?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_648">9iii</a>
+bit fields <a href="r6rs-lib-Z-H-12.html#node_idx_852">12</a>
+<tt>bitwise-and</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1066">12ii</a>
+<tt>bitwise-arithmetic-shift</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1088">12iii</a>
+<tt>bitwise-arithmetic-shift-left</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1090">12iv</a>
+<tt>bitwise-arithmetic-shift-right</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1092">12v</a>
+<tt>bitwise-bit-count</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1074">12vi</a>
+<tt>bitwise-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1084">12vii</a>
+<tt>bitwise-bit-set?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1080">12viii</a>
+<tt>bitwise-copy-bit</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1082">12ix</a>
+<tt>bitwise-copy-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1086">12x</a>
+<tt>bitwise-first-bit-set</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1078">12xi</a>
+<tt>bitwise-if</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1072">12xii</a>
+<tt>bitwise-ior</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1068">12xiii</a>
+<tt>bitwise-length</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1076">12xiv</a>
+<tt>bitwise-not</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1064">12xv</a>
+<tt>bitwise-reverse-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1096">12xvi</a>
+<tt>bitwise-rotate-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1094">12xvii</a>
+<tt>bitwise-xor</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1070">12xviii</a>
+<tt>bound-identifier=?</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1140">13v</a>
+<tt>buffer-mode</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_576">9iv</a>
+<tt>buffer-mode?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_578">9v</a>
+byte <a href="r6rs-lib-Z-H-3.html#node_idx_66">3ii</a>
+bytevector <a href="r6rs-lib-Z-H-3.html#node_idx_64">3iii</a>
+<tt>bytevector-&gt;sint-list</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_118">3iv</a>
+<tt>bytevector-&gt;string</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_630">9vi</a>
+<tt>bytevector-&gt;u8-list</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_104">3v</a>
+<tt>bytevector-&gt;uint-list</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_116">3vi</a>
+<tt>bytevector-copy</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_94">3vii</a>
+<tt>bytevector-copy!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_92">3viii</a>
+<tt>bytevector-fill!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_90">3ix</a>
+<tt>bytevector-ieee-double-native-ref</tt> 
+<a href="r6rs-lib-Z-H-3.html#node_idx_176">3x</a>
+<tt>bytevector-ieee-double-native-set!</tt> 
+<a href="r6rs-lib-Z-H-3.html#node_idx_182">3xi</a>
+<tt>bytevector-ieee-double-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_178">3xii</a>
+<tt>bytevector-ieee-single-native-ref</tt> 
+<a href="r6rs-lib-Z-H-3.html#node_idx_172">3xiii</a>
+<tt>bytevector-ieee-single-native-set!</tt> 
+<a href="r6rs-lib-Z-H-3.html#node_idx_180">3xiv</a>
+<tt>bytevector-ieee-single-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_174">3xv</a>
+<tt>bytevector-length</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_86">3xvi</a>
+<tt>bytevector-s16-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_130">3xvii</a>
+<tt>bytevector-s16-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_138">3xviii</a>
+<tt>bytevector-s16-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_126">3xix</a>
+<tt>bytevector-s16-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_134">3xx</a>
+<tt>bytevector-s32-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_146">3xxi</a>
+<tt>bytevector-s32-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_154">3xxii</a>
+<tt>bytevector-s32-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_142">3xxiii</a>
+<tt>bytevector-s32-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_150">3xxiv</a>
+<tt>bytevector-s64-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_162">3xxv</a>
+<tt>bytevector-s64-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_170">3xxvi</a>
+<tt>bytevector-s64-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_158">3xxvii</a>
+<tt>bytevector-s64-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_166">3xxviii</a>
+<tt>bytevector-s8-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_98">3xxix</a>
+<tt>bytevector-s8-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_102">3xxx</a>
+<tt>bytevector-sint-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_110">3xxxi</a>
+<tt>bytevector-sint-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_114">3xxxii</a>
+<tt>bytevector-u16-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_128">3xxxiii</a>
+<tt>bytevector-u16-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_136">3xxxiv</a>
+<tt>bytevector-u16-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_124">3xxxv</a>
+<tt>bytevector-u16-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_132">3xxxvi</a>
+<tt>bytevector-u32-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_144">3xxxvii</a>
+<tt>bytevector-u32-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_152">3xxxviii</a>
+<tt>bytevector-u32-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_140">3xxxix</a>
+<tt>bytevector-u32-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_148">3xl</a>
+<tt>bytevector-u64-native-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_160">3xli</a>
+<tt>bytevector-u64-native-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_168">3xlii</a>
+<tt>bytevector-u64-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_156">3xliii</a>
+<tt>bytevector-u64-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_164">3xliv</a>
+<tt>bytevector-u8-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_96">3xlv</a>
+<tt>bytevector-u8-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_100">3xlvi</a>
+<tt>bytevector-uint-ref</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_108">3xlvii</a>
+<tt>bytevector-uint-set!</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_112">3xlviii</a>
+<tt>bytevector=?</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_88">3xlix</a>
+<tt>bytevector?</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_80">3l</a></p>
+<p>
+</p>
+<p>
+call by need <a href="r6rs-lib-Z-H-20.html#node_idx_1300">20</a>
+<tt>call-with-bytevector-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_724">9vii</a>
+<tt>call-with-input-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_776">9viii</a>
+<tt>call-with-output-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_778">9ix</a>
+<tt>call-with-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_662">9x</a>
+<tt>call-with-string-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_728">9xi</a>
+<tt>case-lambda</tt> <a href="r6rs-lib-Z-H-6.html#node_idx_262">6</a>
+<tt>char-alphabetic?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_22">2</a>
+<tt>char-ci&lt;=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_18">2ii</a>
+<tt>char-ci&lt;?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_14">2iii</a>
+<tt>char-ci=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_12">2iv</a>
+<tt>char-ci&gt;=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_20">2v</a>
+<tt>char-ci&gt;?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_16">2vi</a>
+<tt>char-downcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_6">2vii</a>
+<tt>char-foldcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_10">2viii</a>
+<tt>char-general-category</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_34">2ix</a>
+<tt>char-lower-case?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_30">2x</a>
+<tt>char-numeric?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_24">2xi</a>
+<tt>char-title-case?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_32">2xii</a>
+<tt>char-titlecase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_8">2xiii</a>
+<tt>char-upcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_4">2xiv</a>
+<tt>char-upper-case?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_28">2xv</a>
+<tt>char-whitespace?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_26">2xvi</a>
+<tt>close-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_804">9xii</a>
+<tt>close-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_806">9xiii</a>
+<tt>close-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_660">9xiv</a>
+codec <a href="r6rs-lib-Z-H-9.html#node_idx_580">9xv</a>
+<tt>command-line</tt> <a href="r6rs-lib-Z-H-11.html#node_idx_844">11</a>
+compound condition <a href="r6rs-lib-Z-H-8.html#node_idx_388">8iv</a>
+condition <a href="r6rs-lib-Z-H-8.html#node_idx_390">8v</a>
+<tt>&amp;condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_392">8vi</a>
+<tt>condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_394">8vii</a>
+<tt>condition-accessor</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_402">8viii</a>
+<tt>condition-irritants</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_450">8ix</a>
+<tt>condition-message</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_412">8x</a>
+<tt>condition-predicate</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_400">8xi</a>
+<tt>condition-who</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_458">8xii</a>
+<tt>condition?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_398">8xiii</a>
+<tt>cons*</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_240">4v</a>, <a href="r6rs-lib-Z-H-4.html#node_idx_242">4vi</a>
+constructor descriptor <a href="r6rs-lib-Z-H-7.html#node_idx_326">7iii</a>
+continuable exception <a href="r6rs-lib-Z-H-8.html#node_idx_380">8xiv</a>
+current exception handler <a href="r6rs-lib-Z-H-8.html#node_idx_366">8xv</a>
+<tt>current-error-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_736">9xvi</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_788">9xvii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_794">9xviii</a>
+<tt>current-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_678">9xix</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_784">9xx</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_790">9xxi</a>
+<tt>current-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_734">9xxii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_786">9xxiii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_792">9xxiv</a></p>
+<p>
+</p>
+<p>
+<tt>datum-&gt;syntax</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1146">13vi</a>
+<tt>define-condition-type</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_404">8xvi</a>
+<tt>define-enumeration</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1262">15</a>
+<tt>define-record-type</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_288">7iv</a>
+<tt>delay</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1296">20ii</a>
+<tt>delete-file</tt> <a href="r6rs-lib-Z-H-10.html#node_idx_840">10</a>
+<tt>display</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_828">9xxv</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_830">9xxvi</a>
+<tt>do</tt> <a href="r6rs-lib-Z-H-6.html#node_idx_258">6ii</a></p>
+<p>
+</p>
+<p>
+<tt>else</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_374">8xvii</a>
+end-of-file object <a href="r6rs-lib-Z-H-9.html#node_idx_634">9xxvii</a>
+end-of-line style <a href="r6rs-lib-Z-H-9.html#node_idx_582">9xxviii</a>
+endianness <a href="r6rs-lib-Z-H-3.html#node_idx_70">3li</a>
+<tt>endianness</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_76">3lii</a>
+<tt>enum-set-&gt;list</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1244">15ii</a>
+<tt>enum-set-complement</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1258">15iii</a>
+<tt>enum-set-constructor</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1242">15iv</a>
+<tt>enum-set-difference</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1256">15v</a>
+<tt>enum-set-indexer</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1240">15vi</a>
+<tt>enum-set-intersection</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1254">15vii</a>
+<tt>enum-set-member?</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1246">15viii</a>
+<tt>enum-set-projection</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1260">15ix</a>
+<tt>enum-set-subset?</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1248">15x</a>
+<tt>enum-set-union</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1252">15xi</a>
+<tt>enum-set-universe</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1238">15xii</a>
+<tt>enum-set=?</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1250">15xiii</a>
+enumeration <a href="r6rs-lib-Z-H-15.html#node_idx_1228">15xiv</a>
+enumeration sets <a href="r6rs-lib-Z-H-15.html#node_idx_1230">15xv</a>
+enumeration type <a href="r6rs-lib-Z-H-15.html#node_idx_1234">15xvi</a>
+environment <a href="r6rs-lib-Z-H-17.html#node_idx_1268">17</a>
+<tt>environment</tt> <a href="r6rs-lib-Z-H-17.html#node_idx_1270">17ii</a>
+<tt>eof-object</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_636">9xxix</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_768">9xxx</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_772">9xxxi</a>
+<tt>eof-object?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_638">9xxxii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_770">9xxxiii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_774">9xxxiv</a>
+<tt>eol-style</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_596">9xxxv</a>
+<tt>equal-hash</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1218">14</a>
+equivalence function <a href="r6rs-lib-Z-H-14.html#node_idx_1170">14ii</a>
+<tt>&amp;error</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_426">8xviii</a>
+<tt>error-handling-mode</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_614">9xxxvi</a>
+<tt>error?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_430">8xix</a>
+<tt>eval</tt> <a href="r6rs-lib-Z-H-17.html#node_idx_1266">17iii</a>
+<tt>exact-&gt;inexact</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1286">20iii</a>
+exceptional situation <a href="r6rs-lib-Z-H-8.html#node_idx_384">8xx</a>
+exceptions <a href="r6rs-lib-Z-H-8.html#node_idx_362">8xxi</a>
+<tt>exists</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_206">4vii</a>
+<tt>exit</tt> <a href="r6rs-lib-Z-H-11.html#node_idx_846">11ii</a>, <a href="r6rs-lib-Z-H-11.html#node_idx_848">11iii</a></p>
+<p>
+</p>
+<p>
+field <a href="r6rs-lib-Z-H-7.html#node_idx_266">7v</a>
+<tt>fields</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_290">7vi</a>
+file options <a href="r6rs-lib-Z-H-9.html#node_idx_572">9xxxvii</a>
+<tt>file-exists?</tt> <a href="r6rs-lib-Z-H-10.html#node_idx_838">10ii</a>
+<tt>file-options</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_574">9xxxviii</a>
+<tt>filter</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_208">4viii</a>
+<tt>find</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_202">4ix</a>
+<tt>fixnum-&gt;flonum</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1060">12xix</a>
+<tt>fixnum-width</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_858">12xx</a>
+<tt>fixnum?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_856">12xxi</a>
+<tt>fl*</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_988">12xxii</a>
+<tt>fl+</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_986">12xxiii</a>
+<tt>fl-</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_990">12xxiv</a>, <a href="r6rs-lib-Z-H-12.html#node_idx_992">12xxv</a>
+<tt>fl/</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_994">12xxvi</a>, <a href="r6rs-lib-Z-H-12.html#node_idx_996">12xxvii</a>
+<tt>fl&lt;=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_958">12xxviii</a>
+<tt>fl&lt;?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_956">12xxix</a>
+<tt>fl=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_954">12xxx</a>
+<tt>fl&gt;=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_962">12xxxi</a>
+<tt>fl&gt;?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_960">12xxxii</a>
+<tt>flabs</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_998">12xxxiii</a>
+<tt>flacos</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1038">12xxxiv</a>
+<tt>flasin</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1036">12xxxv</a>
+<tt>flatan</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1040">12xxxvi</a>, <a href="r6rs-lib-Z-H-12.html#node_idx_1042">12xxxvii</a>
+<tt>flceiling</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1018">12xxxviii</a>
+<tt>flcos</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1032">12xxxix</a>
+<tt>fldenominator</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1014">12xl</a>
+<tt>fldiv</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1002">12xli</a>
+<tt>fldiv-and-mod</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1000">12xlii</a>
+<tt>fldiv0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1008">12xliii</a>
+<tt>fldiv0-and-mod0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1006">12xliv</a>
+<tt>fleven?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_974">12xlv</a>
+<tt>flexp</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1024">12xlvi</a>
+<tt>flexpt</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1046">12xlvii</a>
+<tt>flfinite?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_976">12xlviii</a>
+<tt>flfloor</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1016">12xlix</a>
+<tt>flinfinite?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_978">12l</a>
+<tt>flinteger?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_964">12li</a>
+<tt>fllog</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1026">12lii</a>, <a href="r6rs-lib-Z-H-12.html#node_idx_1028">12liii</a>
+<tt>flmax</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_982">12liv</a>
+<tt>flmin</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_984">12lv</a>
+<tt>flmod</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1004">12lvi</a>
+<tt>flmod0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1010">12lvii</a>
+<tt>flnan?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_980">12lviii</a>
+<tt>flnegative?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_970">12lix</a>
+<tt>flnumerator</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1012">12lx</a>
+<tt>flodd?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_972">12lxi</a>
+<tt>flonum?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_950">12lxii</a>
+<tt>flpositive?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_968">12lxiii</a>
+<tt>flround</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1022">12lxiv</a>
+<tt>flsin</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1030">12lxv</a>
+<tt>flsqrt</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1044">12lxvi</a>
+<tt>fltan</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1034">12lxvii</a>
+<tt>fltruncate</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1020">12lxviii</a>
+<tt>flush-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_712">9xxxix</a>
+<tt>flzero?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_966">12lxix</a>
+<tt>fold-left</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_212">4x</a>
+<tt>fold-right</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_214">4xi</a>
+<tt>for-all</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_204">4xii</a>
+<tt>force</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1304">20iv</a>
+<tt>free-identifier=?</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1142">13vii</a>
+<tt>fx*</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_890">12lxx</a>
+<tt>fx*/carry</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_912">12lxxi</a>
+<tt>fx+</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_888">12lxxii</a>
+<tt>fx+/carry</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_908">12lxxiii</a>
+<tt>fx-</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_892">12lxxiv</a>, <a href="r6rs-lib-Z-H-12.html#node_idx_894">12lxxv</a>
+<tt>fx-/carry</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_910">12lxxvi</a>
+<tt>fx&lt;=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_872">12lxxvii</a>
+<tt>fx&lt;?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_868">12lxxviii</a>
+<tt>fx=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_864">12lxxix</a>
+<tt>fx&gt;=?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_870">12lxxx</a>
+<tt>fx&gt;?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_866">12lxxxi</a>
+<tt>fxand</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_916">12lxxxii</a>
+<tt>fxarithmetic-shift</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_938">12lxxxiii</a>
+<tt>fxarithmetic-shift-left</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_940">12lxxxiv</a>
+<tt>fxarithmetic-shift-right</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_942">12lxxxv</a>
+<tt>fxbit-count</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_924">12lxxxvi</a>
+<tt>fxbit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_934">12lxxxvii</a>
+<tt>fxbit-set?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_930">12lxxxviii</a>
+<tt>fxcopy-bit</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_932">12lxxxix</a>
+<tt>fxcopy-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_936">12xc</a>
+<tt>fxdiv</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_898">12xci</a>
+<tt>fxdiv-and-mod</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_896">12xcii</a>
+<tt>fxdiv0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_904">12xciii</a>
+<tt>fxdiv0-and-mod0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_902">12xciv</a>
+<tt>fxeven?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_882">12xcv</a>
+<tt>fxfirst-bit-set</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_928">12xcvi</a>
+<tt>fxif</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_922">12xcvii</a>
+<tt>fxior</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_918">12xcviii</a>
+<tt>fxlength</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_926">12xcix</a>
+<tt>fxmax</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_884">12c</a>
+<tt>fxmin</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_886">12ci</a>
+<tt>fxmod</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_900">12cii</a>
+<tt>fxmod0</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_906">12ciii</a>
+<tt>fxnegative?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_878">12civ</a>
+<tt>fxnot</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_914">12cv</a>
+<tt>fxodd?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_880">12cvi</a>
+<tt>fxpositive?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_876">12cvii</a>
+<tt>fxreverse-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_946">12cviii</a>
+<tt>fxrotate-bit-field</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_944">12cix</a>
+<tt>fxxor</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_920">12cx</a>
+<tt>fxzero?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_874">12cxi</a></p>
+<p>
+</p>
+<p>
+<tt>generate-temporaries</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1150">13viii</a>
+<tt>get-bytevector-all</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_694">9xl</a>
+<tt>get-bytevector-n</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_688">9xli</a>
+<tt>get-bytevector-n!</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_690">9xlii</a>
+<tt>get-bytevector-some</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_692">9xliii</a>
+<tt>get-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_696">9xliv</a>
+<tt>get-datum</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_708">9xlv</a>
+<tt>get-line</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_706">9xlvi</a>
+<tt>get-string-all</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_704">9xlvii</a>
+<tt>get-string-n</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_700">9xlviii</a>
+<tt>get-string-n!</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_702">9xlix</a>
+<tt>get-u8</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_684">9l</a>
+<tt>greatest-fixnum</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_862">12cxii</a>
+<tt>guard</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_370">8xxii</a></p>
+<p>
+</p>
+<p>
+hash function <a href="r6rs-lib-Z-H-14.html#node_idx_1168">14iii</a>
+hashtable <a href="r6rs-lib-Z-H-14.html#node_idx_1166">14iv</a>, <a href="r6rs-lib-Z-H-14.html#node_idx_1172">14v</a>
+<tt>hashtable-clear!</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1204">14vi</a>, 
+<a href="r6rs-lib-Z-H-14.html#node_idx_1206">14vii</a>
+<tt>hashtable-contains?</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1196">14viii</a>
+<tt>hashtable-copy</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1200">14ix</a>, 
+<a href="r6rs-lib-Z-H-14.html#node_idx_1202">14x</a>
+<tt>hashtable-delete!</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1194">14xi</a>
+<tt>hashtable-entries</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1210">14xii</a>
+<tt>hashtable-equivalence-function</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1212">14xiii</a>
+<tt>hashtable-hash-function</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1214">14xiv</a>
+<tt>hashtable-keys</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1208">14xv</a>
+<tt>hashtable-mutable?</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1216">14xvi</a>
+<tt>hashtable-ref</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1190">14xvii</a>
+<tt>hashtable-set!</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1192">14xviii</a>
+<tt>hashtable-size</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1188">14xix</a>
+<tt>hashtable-update!</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1198">14xx</a>
+<tt>hashtable?</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1186">14xxi</a></p>
+<p>
+</p>
+<p>
+<tt>&amp;i/o</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_494">9li</a>
+<tt>&amp;i/o-decoding</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_600">9lii</a>
+<tt>i/o-decoding-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_604">9liii</a>
+<tt>&amp;i/o-encoding</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_606">9liv</a>
+<tt>i/o-encoding-error-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_612">9lv</a>
+<tt>i/o-encoding-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_610">9lvi</a>
+<tt>i/o-error-filename</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_526">9lvii</a>
+<tt>i/o-error-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_558">9lviii</a>
+<tt>i/o-error-position</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_518">9lix</a>
+<tt>i/o-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_498">9lx</a>
+<tt>&amp;i/o-file-already-exists</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_540">9lxi</a>
+<tt>i/o-file-already-exists-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_544">9lxii</a>
+<tt>&amp;i/o-file-does-not-exist</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_546">9lxiii</a>
+<tt>i/o-file-does-not-exist-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_550">9lxiv</a>
+<tt>&amp;i/o-file-is-read-only</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_534">9lxv</a>
+<tt>i/o-file-is-read-only-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_538">9lxvi</a>
+<tt>&amp;i/o-file-protection</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_528">9lxvii</a>
+<tt>i/o-file-protection-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_532">9lxviii</a>
+<tt>&amp;i/o-filename</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_520">9lxix</a>
+<tt>i/o-filename-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_524">9lxx</a>
+<tt>&amp;i/o-invalid-position</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_512">9lxxi</a>
+<tt>i/o-invalid-position-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_516">9lxxii</a>
+<tt>&amp;i/o-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_552">9lxxiii</a>
+<tt>i/o-port-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_556">9lxxiv</a>
+<tt>&amp;i/o-read</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_500">9lxxv</a>
+<tt>i/o-read-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_504">9lxxvi</a>
+<tt>&amp;i/o-write</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_506">9lxxvii</a>
+<tt>i/o-write-error?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_510">9lxxviii</a>
+identifier macro <a href="r6rs-lib-Z-H-13.html#node_idx_1136">13ix</a>
+<tt>identifier?</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1138">13x</a>
+<tt>immutable</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_294">7vii</a>
+immutable record type <a href="r6rs-lib-Z-H-7.html#node_idx_282">7viii</a>
+<tt>&amp;implementation-restriction</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_466">8xxiii</a>
+<tt>implementation-restriction-violation?</tt> 
+<a href="r6rs-lib-Z-H-8.html#node_idx_470">8xxiv</a>
+implicit identifier <a href="r6rs-lib-Z-H-13.html#node_idx_1148">13xi</a>
+<tt>inexact-&gt;exact</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1288">20v</a>
+input port <a href="r6rs-lib-Z-H-9.html#node_idx_564">9lxxix</a>
+<tt>input-port?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_664">9lxxx</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_780">9lxxxi</a>
+<tt>&amp;irritants</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_444">8xxv</a>
+<tt>irritants-condition?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_448">8xxvi</a></p>
+<p>
+</p>
+<p>
+<tt>latin-1-codec</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_590">9lxxxii</a>
+lazy evaluation <a href="r6rs-lib-Z-H-20.html#node_idx_1298">20vi</a>
+<tt>least-fixnum</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_860">12cxiii</a>
+<tt>&amp;lexical</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_472">8xxvii</a>
+<tt>lexical-violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_476">8xxviii</a>
+<tt>list-sort</tt> <a href="r6rs-lib-Z-H-5.html#node_idx_246">5</a>
+little-endian <a href="r6rs-lib-Z-H-3.html#node_idx_72">3liii</a>
+<tt>lookahead-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_698">9lxxxiii</a>
+<tt>lookahead-u8</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_686">9lxxxiv</a></p>
+<p>
+</p>
+<p>
+macro transformer <a href="r6rs-lib-Z-H-13.html#node_idx_1114">13xii</a>
+<tt>make-assertion-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_440">8xxix</a>
+<tt>make-bytevector</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_82">3liv</a>, 
+<a href="r6rs-lib-Z-H-3.html#node_idx_84">3lv</a>
+<tt>make-custom-binary-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_680">9lxxxv</a>
+<tt>make-custom-binary-input/output-port</tt> 
+<a href="r6rs-lib-Z-H-9.html#node_idx_762">9lxxxvi</a>
+<tt>make-custom-binary-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_738">9lxxxvii</a>
+<tt>make-custom-textual-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_682">9lxxxviii</a>
+<tt>make-custom-textual-input/output-port</tt> 
+<a href="r6rs-lib-Z-H-9.html#node_idx_764">9lxxxix</a>
+<tt>make-custom-textual-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_740">9xc</a>
+<tt>make-enumeration</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1236">15xvii</a>
+<tt>make-eq-hashtable</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1174">14xxii</a>, 
+<a href="r6rs-lib-Z-H-14.html#node_idx_1176">14xxiii</a>
+<tt>make-eqv-hashtable</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1178">14xxiv</a>, 
+<a href="r6rs-lib-Z-H-14.html#node_idx_1180">14xxv</a>
+<tt>make-error</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_428">8xxx</a>
+<tt>make-hashtable</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1182">14xxvi</a>, 
+<a href="r6rs-lib-Z-H-14.html#node_idx_1184">14xxvii</a>
+<tt>make-i/o-decoding-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_602">9xci</a>
+<tt>make-i/o-encoding-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_608">9xcii</a>
+<tt>make-i/o-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_496">9xciii</a>
+<tt>make-i/o-file-already-exists-error</tt> 
+<a href="r6rs-lib-Z-H-9.html#node_idx_542">9xciv</a>
+<tt>make-i/o-file-does-not-exist-error</tt> 
+<a href="r6rs-lib-Z-H-9.html#node_idx_548">9xcv</a>
+<tt>make-i/o-file-is-read-only-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_536">9xcvi</a>
+<tt>make-i/o-file-protection-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_530">9xcvii</a>
+<tt>make-i/o-filename-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_522">9xcviii</a>
+<tt>make-i/o-invalid-position-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_514">9xcix</a>
+<tt>make-i/o-port-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_554">9c</a>
+<tt>make-i/o-read-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_502">9ci</a>
+<tt>make-i/o-write-error</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_508">9cii</a>
+<tt>make-implementation-restriction-violation</tt> 
+<a href="r6rs-lib-Z-H-8.html#node_idx_468">8xxxi</a>
+<tt>make-irritants-condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_446">8xxxii</a>
+<tt>make-lexical-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_474">8xxxiii</a>
+<tt>make-message-condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_408">8xxxiv</a>
+<tt>make-no-infinities-violation</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1050">12cxiv</a>
+<tt>make-no-nans-violation</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1056">12cxv</a>
+<tt>make-non-continuable-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_462">8xxxv</a>
+<tt>make-record-constructor-descriptor</tt> 
+<a href="r6rs-lib-Z-H-7.html#node_idx_322">7ix</a>
+<tt>make-record-type-descriptor</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_314">7x</a>
+<tt>make-serious-condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_422">8xxxvi</a>
+<tt>make-syntax-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_480">8xxxvii</a>
+<tt>make-transcoder</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_616">9ciii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_618">9civ</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_620">9cv</a>
+<tt>make-undefined-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_490">8xxxviii</a>
+<tt>make-variable-transformer</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1120">13xiii</a>
+<tt>make-violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_434">8xxxix</a>
+<tt>make-warning</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_416">8xl</a>
+<tt>make-who-condition</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_454">8xli</a>
+mark <a href="r6rs-lib-Z-H-13.html#node_idx_1100">13xiv</a>
+<tt>member</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_226">4xiii</a>
+<tt>memp</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_224">4xiv</a>
+<tt>memq</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_230">4xv</a>
+<tt>memv</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_228">4xvi</a>
+<tt>&amp;message</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_406">8xlii</a>
+<tt>message-condition?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_410">8xliii</a>
+<tt>modulo</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1294">20vii</a>
+<tt>mutable</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_292">7xi</a>
+mutable record type <a href="r6rs-lib-Z-H-7.html#node_idx_284">7xii</a>
+mutator <a href="r6rs-lib-Z-H-7.html#node_idx_274">7xiii</a></p>
+<p>
+</p>
+<p>
+<tt>native-endianness</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_78">3lvi</a>
+<tt>native-eol-style</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_598">9cvi</a>
+<tt>native-transcoder</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_622">9cvii</a>
+<tt>newline</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_824">9cviii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_826">9cix</a>
+<tt>&amp;no-infinities</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1048">12cxvi</a>
+<tt>no-infinities-violation?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1052">12cxvii</a>
+<tt>&amp;no-nans</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1054">12cxviii</a>
+<tt>no-nans-violation?</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1058">12cxix</a>
+<tt>&amp;non-continuable</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_460">8xliv</a>
+<tt>non-continuable-violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_464">8xlv</a>
+nongenerative <a href="r6rs-lib-Z-H-7.html#node_idx_280">7xiv</a>
+<tt>nongenerative</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_304">7xv</a>
+<tt>null-environment</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1306">20viii</a>
+number <a href="r6rs-lib-Z-H-12.html#node_idx_850">12cxx</a></p>
+<p>
+</p>
+<p>
+octet <a href="r6rs-lib-Z-H-3.html#node_idx_68">3lvii</a>
+<tt>opaque</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_302">7xvi</a>
+<tt>open-bytevector-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_672">9cx</a>
+<tt>open-bytevector-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_720">9cxi</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_722">9cxii</a>
+<tt>open-file-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_668">9cxiii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_670">9cxiv</a>
+<tt>open-file-input/output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_758">9cxv</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_760">9cxvi</a>
+<tt>open-file-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_716">9cxvii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_718">9cxviii</a>
+<tt>open-input-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_800">9cxix</a>
+<tt>open-output-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_802">9cxx</a>
+<tt>open-string-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_674">9cxxi</a>
+<tt>open-string-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_726">9cxxii</a>
+output ports <a href="r6rs-lib-Z-H-9.html#node_idx_566">9cxxiii</a>
+<tt>output-port-buffer-mode</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_714">9cxxiv</a>
+<tt>output-port?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_710">9cxxv</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_782">9cxxvi</a></p>
+<p>
+</p>
+<p>
+<tt>parent</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_296">7xvii</a>
+<tt>parent-rtd</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_306">7xviii</a>
+<tt>partition</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_210">4xvii</a>
+pattern variable <a href="r6rs-lib-Z-H-13.html#node_idx_1132">13xv</a>
+<tt>peek-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_812">9cxxvii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_814">9cxxviii</a>
+port <a href="r6rs-lib-Z-H-9.html#node_idx_562">9cxxix</a>
+<tt>port-eof?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_666">9cxxx</a>
+<tt>port-has-port-position?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_652">9cxxxi</a>
+<tt>port-has-set-port-position!?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_656">9cxxxii</a>
+<tt>port-position</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_654">9cxxxiii</a>
+<tt>port-transcoder</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_644">9cxxxiv</a>
+<tt>port?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_642">9cxxxv</a>
+position <a href="r6rs-lib-Z-H-9.html#node_idx_640">9cxxxvi</a>
+promise <a href="r6rs-lib-Z-H-20.html#node_idx_1302">20ix</a>
+protocol <a href="r6rs-lib-Z-H-7.html#node_idx_330">7xix</a>
+<tt>protocol</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_298">7xx</a>
+<tt>put-bytevector</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_744">9cxxxvii</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_746">9cxxxviii</a>
+<tt>put-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_748">9cxxxix</a>
+<tt>put-datum</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_756">9cxl</a>
+<tt>put-string</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_750">9cxli</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_752">9cxlii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_754">9cxliii</a>
+<tt>put-u8</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_742">9cxliv</a></p>
+<p>
+</p>
+<p>
+<tt>quasisyntax</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1154">13xvi</a>
+<tt>quotient</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1290">20x</a></p>
+<p>
+</p>
+<p>
+<tt>raise</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_376">8xlvi</a>
+<tt>raise-continuable</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_378">8xlvii</a>
+<tt>read</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_816">9cxlv</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_818">9cxlvi</a>
+<tt>read-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_808">9cxlvii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_810">9cxlviii</a>
+<tt>real-&gt;flonum</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_952">12cxxi</a>
+record <a href="r6rs-lib-Z-H-7.html#node_idx_264">7xxi</a>
+record constructor <a href="r6rs-lib-Z-H-7.html#node_idx_270">7xxii</a>, <a href="r6rs-lib-Z-H-7.html#node_idx_328">7xxiii</a>
+<tt>record-accessor</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_336">7xxiv</a>
+<tt>record-constructor</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_332">7xxv</a>
+record-constructor descriptor <a href="r6rs-lib-Z-H-7.html#node_idx_324">7xxvi</a>
+<tt>record-constructor-descriptor</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_310">7xxvii</a>
+<tt>record-field-mutable?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_360">7xxviii</a>
+<tt>record-mutator</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_338">7xxix</a>
+<tt>record-predicate</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_334">7xxx</a>
+<tt>record-rtd</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_344">7xxxi</a>
+record-type descriptor <a href="r6rs-lib-Z-H-7.html#node_idx_268">7xxxii</a>, 
+<a href="r6rs-lib-Z-H-7.html#node_idx_316">7xxxiii</a>
+<tt>record-type-descriptor</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_308">7xxxiv</a>
+<tt>record-type-descriptor?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_320">7xxxv</a>
+<tt>record-type-field-names</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_358">7xxxvi</a>
+<tt>record-type-generative?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_352">7xxxvii</a>
+<tt>record-type-name</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_346">7xxxviii</a>
+<tt>record-type-opaque?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_356">7xxxix</a>
+<tt>record-type-parent</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_348">7xl</a>
+<tt>record-type-sealed?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_354">7xli</a>
+<tt>record-type-uid</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_350">7xlii</a>
+<tt>record?</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_342">7xliii</a>
+region <a href="r6rs-lib-Z-H-6.html#node_idx_260">6iii</a>
+<tt>remainder</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1292">20xi</a>
+<tt>remove</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_218">4xviii</a>
+<tt>remp</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_216">4xix</a>
+<tt>remq</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_222">4xx</a>
+<tt>remv</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_220">4xxi</a>
+<tt>(rnrs (6))</tt> <a href="r6rs-lib-Z-H-16.html#node_idx_1264">16</a>
+<tt>(rnrs arithmetic bitwise (6))</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_1062">12cxxii</a>
+<tt>(rnrs arithmetic fixnums (6))</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_854">12cxxiii</a>
+<tt>(rnrs arithmetic flonums (6))</tt> <a href="r6rs-lib-Z-H-12.html#node_idx_948">12cxxiv</a>
+<tt>(rnrs bytevectors (6))</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_62">3lviii</a>
+<tt>(rnrs conditions (6))</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_382">8xlviii</a>
+<tt>(rnrs control (6))</tt> <a href="r6rs-lib-Z-H-6.html#node_idx_252">6iv</a>
+<tt>(rnrs enums (6))</tt> <a href="r6rs-lib-Z-H-15.html#node_idx_1226">15xviii</a>
+<tt>(rnrs exceptions (6))</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_364">8xlix</a>
+<tt>(rnrs files (6))</tt> <a href="r6rs-lib-Z-H-10.html#node_idx_836">10iii</a>
+<tt>(rnrs hashtables (6))</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1164">14xxviii</a>
+<tt>(rnrs io ports (6))</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_560">9cxlix</a>
+<tt>(rnrs io simple (6))</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_766">9cl</a>
+<tt>(rnrs lists (6))</tt> <a href="r6rs-lib-Z-H-4.html#node_idx_200">4xxii</a>
+<tt>(rnrs mutable-pairs (6))</tt> <a href="r6rs-lib-Z-H-18.html#node_idx_1272">18</a>
+<tt>(rnrs mutable-strings (6))</tt> <a href="r6rs-lib-Z-H-19.html#node_idx_1278">19</a>
+<tt>(rnrs programs (6))</tt> <a href="r6rs-lib-Z-H-11.html#node_idx_842">11iv</a>
+<tt>(rnrs r5rs (6))</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1284">20xii</a>
+<tt>(rnrs records inspection (6))</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_340">7xliv</a>
+<tt>(rnrs records procedural (6))</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_312">7xlv</a>
+<tt>(rnrs records syntactic (6))</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_286">7xlvi</a>
+<tt>(rnrs sorting (6))</tt> <a href="r6rs-lib-Z-H-5.html#node_idx_244">5ii</a>
+<tt>(rnrs syntax-case (6))</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1098">13xvii</a>
+<tt>(rnrs unicode (6))</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_2">2xvii</a>
+rtd <a href="r6rs-lib-Z-H-7.html#node_idx_318">7xlvii</a></p>
+<p>
+</p>
+<p>
+<tt>scheme-report-environment</tt> <a href="r6rs-lib-Z-H-20.html#node_idx_1308">20xiii</a>
+sealed <a href="r6rs-lib-Z-H-7.html#node_idx_278">7xlviii</a>
+<tt>sealed</tt> <a href="r6rs-lib-Z-H-7.html#node_idx_300">7xlix</a>
+<tt>&amp;serious</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_420">8l</a>
+<tt>serious-condition?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_424">8li</a>
+<tt>set-car!</tt> <a href="r6rs-lib-Z-H-18.html#node_idx_1274">18ii</a>
+<tt>set-cdr!</tt> <a href="r6rs-lib-Z-H-18.html#node_idx_1276">18iii</a>
+<tt>set-port-position!</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_658">9cli</a>
+simple condition <a href="r6rs-lib-Z-H-8.html#node_idx_386">8lii</a>
+<tt>simple-conditions</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_396">8liii</a>
+<tt>sint-list-&gt;bytevector</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_122">3lix</a>
+<tt>standard-error-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_732">9clii</a>
+<tt>standard-input-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_676">9cliii</a>
+<tt>standard-output-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_730">9cliv</a>
+<tt>string-&gt;bytevector</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_632">9clv</a>
+<tt>string-&gt;utf16</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_186">3lx</a>, 
+<a href="r6rs-lib-Z-H-3.html#node_idx_188">3lxi</a>
+<tt>string-&gt;utf32</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_190">3lxii</a>, 
+<a href="r6rs-lib-Z-H-3.html#node_idx_192">3lxiii</a>
+<tt>string-&gt;utf8</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_184">3lxiv</a>
+<tt>string-ci-hash</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1222">14xxix</a>
+<tt>string-ci&lt;=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_50">2xviii</a>
+<tt>string-ci&lt;?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_46">2xix</a>
+<tt>string-ci=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_44">2xx</a>
+<tt>string-ci&gt;=?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_52">2xxi</a>
+<tt>string-ci&gt;?</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_48">2xxii</a>
+<tt>string-downcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_38">2xxiii</a>
+<tt>string-fill!</tt> <a href="r6rs-lib-Z-H-19.html#node_idx_1282">19ii</a>
+<tt>string-foldcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_42">2xxiv</a>
+<tt>string-hash</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1220">14xxx</a>
+<tt>string-normalize-nfc</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_58">2xxv</a>
+<tt>string-normalize-nfd</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_54">2xxvi</a>
+<tt>string-normalize-nfkc</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_60">2xxvii</a>
+<tt>string-normalize-nfkd</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_56">2xxviii</a>
+<tt>string-set!</tt> <a href="r6rs-lib-Z-H-19.html#node_idx_1280">19iii</a>
+<tt>string-titlecase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_40">2xxix</a>
+<tt>string-upcase</tt> <a href="r6rs-lib-Z-H-2.html#node_idx_36">2xxx</a>
+substitution <a href="r6rs-lib-Z-H-13.html#node_idx_1102">13xviii</a>
+<tt>symbol-hash</tt> <a href="r6rs-lib-Z-H-14.html#node_idx_1224">14xxxi</a>
+<tt>&amp;syntax</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_478">8liv</a>
+<tt>syntax</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1134">13xix</a>
+syntax object <a href="r6rs-lib-Z-H-13.html#node_idx_1110">13xx</a>
+<tt>syntax-&gt;datum</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1144">13xxi</a>
+<tt>syntax-case</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1124">13xxii</a>
+<tt>syntax-violation</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1160">13xxiii</a>, 
+<a href="r6rs-lib-Z-H-13.html#node_idx_1162">13xxiv</a>
+<tt>syntax-violation-form</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_484">8lv</a>
+<tt>syntax-violation-subform</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_486">8lvi</a>
+<tt>syntax-violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_482">8lvii</a></p>
+<p>
+</p>
+<p>
+textual port <a href="r6rs-lib-Z-H-9.html#node_idx_588">9clvi</a>
+textual ports <a href="r6rs-lib-Z-H-9.html#node_idx_570">9clvii</a>
+<tt>textual-port?</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_646">9clviii</a>
+<tt>transcoded-port</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_650">9clix</a>
+transcoder <a href="r6rs-lib-Z-H-9.html#node_idx_584">9clx</a>
+<tt>transcoder-codec</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_624">9clxi</a>
+<tt>transcoder-eol-style</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_626">9clxii</a>
+<tt>transcoder-error-handling-mode</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_628">9clxiii</a>
+transformation procedure <a href="r6rs-lib-Z-H-13.html#node_idx_1116">13xxv</a>
+transformer <a href="r6rs-lib-Z-H-13.html#node_idx_1112">13xxvi</a></p>
+<p>
+</p>
+<p>
+<tt>u8-list-&gt;bytevector</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_106">3lxv</a>
+<tt>uint-list-&gt;bytevector</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_120">3lxvi</a>
+<tt>&amp;undefined</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_488">8lviii</a>
+<tt>undefined-violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_492">8lix</a>
+universe <a href="r6rs-lib-Z-H-15.html#node_idx_1232">15xix</a>
+<tt>unless</tt> <a href="r6rs-lib-Z-H-6.html#node_idx_256">6v</a>
+<tt>unsyntax</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1156">13xxvii</a>
+<tt>unsyntax-splicing</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1158">13xxviii</a>
+<tt>utf-16-codec</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_594">9clxiv</a>
+<tt>utf-8-codec</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_592">9clxv</a>
+<tt>utf16-&gt;string</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_196">3lxvii</a>
+<tt>utf32-&gt;string</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_198">3lxviii</a>
+<tt>utf8-&gt;string</tt> <a href="r6rs-lib-Z-H-3.html#node_idx_194">3lxix</a></p>
+<p>
+</p>
+<p>
+variable transformer <a href="r6rs-lib-Z-H-13.html#node_idx_1118">13xxix</a>, 
+<a href="r6rs-lib-Z-H-13.html#node_idx_1122">13xxx</a>
+<tt>vector-sort</tt> <a href="r6rs-lib-Z-H-5.html#node_idx_248">5iii</a>
+<tt>vector-sort!</tt> <a href="r6rs-lib-Z-H-5.html#node_idx_250">5iv</a>
+<tt>&amp;violation</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_432">8lx</a>
+<tt>violation?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_436">8lxi</a></p>
+<p>
+</p>
+<p>
+<tt>&amp;warning</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_414">8lxii</a>
+<tt>warning?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_418">8lxiii</a>
+<tt>when</tt> <a href="r6rs-lib-Z-H-6.html#node_idx_254">6vi</a>
+<tt>&amp;who</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_452">8lxiv</a>
+<tt>who-condition?</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_456">8lxv</a>
+<tt>with-exception-handler</tt> <a href="r6rs-lib-Z-H-8.html#node_idx_368">8lxvi</a>
+<tt>with-input-from-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_796">9clxvi</a>
+<tt>with-output-to-file</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_798">9clxvii</a>
+<tt>with-syntax</tt> <a href="r6rs-lib-Z-H-13.html#node_idx_1152">13xxxi</a>
+wrap <a href="r6rs-lib-Z-H-13.html#node_idx_1106">13xxxii</a>
+wrapped syntax object <a href="r6rs-lib-Z-H-13.html#node_idx_1108">13xxxiii</a>
+<tt>write</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_832">9clxviii</a>, <a href="r6rs-lib-Z-H-9.html#node_idx_834">9clxix</a>
+<tt>write-char</tt> <a href="r6rs-lib-Z-H-9.html#node_idx_820">9clxx</a>, 
+<a href="r6rs-lib-Z-H-9.html#node_idx_822">9clxxi</a></p>
+<p>
+</p>
+
+<p>
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-20.html">previous</a></span><span class=disable>, next</span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span class=disable><span>; &nbsp;&nbsp;</span>index</span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

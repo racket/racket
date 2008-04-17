@@ -768,15 +768,18 @@ of length @scheme[size-n], the @exnraise[exn:fail:contract].}
 
 
 @defproc[(floating-point-bytes->real [bstr bytes?]
-                                     [big-endian? any/c (system-big-endian?)])
+                                     [big-endian? any/c (system-big-endian?)]
+                                     [start exact-nonnegative-integer? 0]
+                                     [end exact-nonnegative-integer? (bytes-length bstr)])
          (and/c real? inexact?)]{
 
-Converts the IEEE floating-point number encoded in @scheme[bstr] to an
-inexact real number. The @scheme[bstr] must contain either 4 or 8
-bytes. If @scheme[big-endian?] is true, then the first byte's ASCII
-value provides the most significant eight bits of the IEEE
-representation, otherwise the first byte provides the
-least-significant eight bits, and so on.}
+Converts the IEEE floating-point number encoded in @scheme[bstr] from
+position @scheme[start] (inclusive) to @scheme[end] (exclusive) to an
+inexact real number. The difference between @scheme[start] an
+@scheme[end] must be either 4 or 8 bytes. If @scheme[big-endian?] is
+true, then the first byte's ASCII value provides the most significant
+eight bits of the IEEE representation, otherwise the first byte
+provides the least-significant eight bits, and so on.}
 
 
 @defproc[(real->floating-point-bytes [x real?]
@@ -784,22 +787,24 @@ least-significant eight bits, and so on.}
                                      [big-endian? any/c (system-big-endian?)]
                                      [dest-bstr (and/c bytes? 
                                                        (not/c immutable?))
-                                                 (make-bytes size-n)])
+                                                 (make-bytes size-n)]
+                                     [start exact-nonnegative-integer? 0])
           bytes?]{
 
 Converts the real number @scheme[x] to its IEEE representation in a
-byte string of length @scheme[size-n], which must be 4 or 8. If
-@scheme[big-endian?] is true, then the most significant eight bits of
-the number are encoded in the first byte of the resulting byte string,
-otherwise the least-significant bits are encoded in the first
-character, and so on.
+byte string of length @scheme[size-n], which must be @scheme[4] or
+@scheme[8]. If @scheme[big-endian?] is true, then the most significant
+eight bits of the number are encoded in the first byte of the
+resulting byte string, otherwise the least-significant bits are
+encoded in the first character, and so on.
 
 The @scheme[dest-bstr] argument must be a mutable byte string of
 length @scheme[size-n]. The encoding of @scheme[n] is written into
-@scheme[dest-bstr], and @scheme[dest-bstr] is returned as the result.
+@scheme[dest-bstr] starting with byte @scheme[start], and
+@scheme[dest-bstr] is returned as the result.
 
-If @scheme[dest-bstr] is provided and it is not of length
-@scheme[size-n], the @exnraise[exn:fail:contract].}
+If @scheme[dest-bstr] is provided and it has less than @scheme[start]
+plus @scheme[size-n] bytes, the @exnraise[exn:fail:contract].}
 
 
 @defproc[(system-big-endian?) boolean?]{

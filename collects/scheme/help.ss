@@ -74,7 +74,7 @@
         (let ([tag (xref-binding->definition-tag
                     xref
                     (or lb b)
-                    (if lb 'for-label #f))])
+                    (if lb #f 0))])
           (if tag
               (go-to-tag xref tag)
               (error 'help

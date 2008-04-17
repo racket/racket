@@ -29,7 +29,7 @@
   (export define-record-type
 	  record-type-descriptor
 	  record-constructor-descriptor
-          fields mutable immutable parent protocol 
+          fields mutable immutable parent parent-rtd protocol 
           sealed opaque nongenerative)
   (import (for (rnrs base) run expand)
 	  (rnrs records procedural)
@@ -41,7 +41,7 @@
       [(_ id ...) (begin (define-aux id) ...)]))
 
   (define-aux
-    fields mutable immutable parent protocol sealed opaque nongenerative)
+    fields mutable immutable parent parent-rtd protocol sealed opaque nongenerative)
 
   ;; ASSQ at the syntax level
   (define-syntax define-alist-extractor

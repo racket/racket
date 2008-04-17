@@ -1,0 +1,804 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-7.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_7"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_7">Chapter 7</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_7">Exceptions and conditions</a></h1>
+<p></p>
+<p>
+Scheme allows programs to deal with exceptional situations using two
+cooperating facilities: The exception system for raising and handling
+exceptional situations, and the condition system for describing these
+situations.</p>
+<p>
+The exception system allows the program, when it detects an
+exceptional situation, to pass control to an exception handler, and
+to dynamically establish such exception handlers.  Exception
+handlers are always invoked with an object describing the exceptional
+situation.  Scheme&#8217;s condition system provides a standardized taxonomy
+of such descriptive objects, as well as a facility for extending the
+taxonomy.</p>
+<p>
+</p>
+<a name="node_sec_7.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_7.1">7.1&nbsp;&nbsp;Exceptions</a></h2>
+<p>
+<a name="node_idx_362"></a></p>
+<p>
+This section describes Scheme&#8217;s exception-handling and
+exception-raising constructs provided by the <tt>(rnrs exceptions (6))</tt><a name="node_idx_364"></a>library.</p>
+<p>
+Exception handlers are one-argument procedures that determine the
+action the program takes when an exceptional situation is signalled.
+The system implicitly maintains a current exception handler.</p>
+<p>
+<a name="node_idx_366"></a>The program raises an exception
+by invoking the current exception handler, passing it an object
+encapsulating information about the exception. Any procedure accepting
+one argument may serve as an exception handler and any object may be
+used to represent an exception.</p>
+<p>
+The system maintains the current exception handler as part of the
+dynamic environment of the program; see report
+section&nbsp;on &#8220;Dynamic extent and
+dynamic environment&#8221;.</p>
+<p>
+When a program begins its execution, the current
+exception handler is expected to handle all <tt>&amp;serious</tt>
+conditions by interrupting execution, reporting that an
+exception has been raised, and displaying information
+about the condition object that was provided.  The handler
+may then exit, or may provide a choice of other options.
+Moreover, the exception handler is expected to return when
+passed any other non-<tt>&amp;serious</tt> condition.
+Interpretation of these expectations necessarily depends
+upon the nature of the system in which programs are executed,
+but the intent is that users perceive the raising of an
+exception as a controlled escape from the situation that
+raised the exception, not as a crash.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_368"></a>with-exception-handler<i> <i>handler</i> <i>thunk</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Handler</i> must be a procedure and should accept one argument.
+<i>Thunk</i> must be a procedure that accepts zero arguments.  The <tt>with-exception-handler</tt> procedure returns the results of invoking
+<i>thunk</i>.  <i>Handler</i> is installed as the current
+exception handler for the dynamic extent (as determined by <tt>dynamic-wind</tt>) of the invocation of <i>thunk</i>.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions on
+<i>handler</i> to the extent performed by applying it as described
+when it is called as a result of a call to <tt>raise</tt> or <tt>raise-continuable</tt>.
+An
+implementation may check whether <i>handler</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(guard (&lt;variable&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<tt>&nbsp;&nbsp;&nbsp;&lt;cond&nbsp;clause<sub>1</sub>&gt;&nbsp;&lt;cond&nbsp;clause<sub>2</sub>&gt;&nbsp;<tt>...</tt>)<br>
+
+&nbsp;&nbsp;&nbsp;&lt;body&gt;)</tt><br>
+<div align=left><tt>=&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<div align=left><tt>else</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_370"></a><a name="node_idx_372"></a><a name="node_idx_374"></a><p>
+<em>Syntax: </em>Each &lt;cond clause&gt; is as in the specification of <tt>cond</tt>.
+(See report section&nbsp;on &#8220;Derived conditionals&#8221;.)
+<tt>>^</tt> and <tt>else</tt> are the same as in the <tt>(rnrs base (6))</tt> library.</p>
+<p>
+<em>Semantics: </em>Evaluating a <tt>guard</tt> form evaluates &lt;body&gt; with an exception
+handler that binds the raised object to &lt;variable&gt; and within the scope of
+that binding evaluates the clauses as if they were the clauses of a
+<tt>cond</tt> expression. That implicit <tt>cond</tt> expression is evaluated with the
+continuation and dynamic environment of the <tt>guard</tt> expression. If every
+&lt;cond clause&gt;&#8217;s &lt;test&gt; evaluates to <tt>#f</tt> and there
+is no <tt>else</tt> clause, then
+<tt>raise</tt> is re-invoked on the raised object within the dynamic
+environment of the original call to <tt>raise</tt> except that the current
+exception handler is that of the <tt>guard</tt> expression.  </p>
+<p>
+The final expression in a &lt;cond&gt; clause is in a tail context if
+the <tt>guard</tt> expression itself is.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_376"></a>raise<i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Raises a non-continuable exception by invoking the current exception
+handler on <i>obj</i>. The handler is called with a continuation whose
+dynamic environment is that of the call to <tt>raise</tt>, except that
+the current exception handler is the one that was in place when the handler being
+called was installed.  When the handler returns, a non-continuable
+exception with condition type <tt>&amp;non-continuable</tt> is raised in the
+same dynamic environment as the handler.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_378"></a>raise-continuable<i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Raises a <a name="node_idx_380"></a><em>continuable exception</em> by invoking the current exception
+handler on <i>obj</i>. The handler is called with a continuation that
+is equivalent to the continuation of the call to <tt>raise-continuable</tt>, with these two exceptions: (1) the current
+exception handler is the one that was in place 
+when the handler being called was installed, and
+(2) if the handler being called returns, then it will again become the
+current exception handler.  If the handler returns, the values it
+returns become the values returned by the call to
+<tt>raise-continuable</tt>.
+</p>
+<p></p>
+<p>
+</p>
+
+<tt>(guard&nbsp;(con<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((error?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(message-condition?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(condition-message&nbsp;con))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;an&nbsp;error&nbsp;has&nbsp;occurred&quot;))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;error)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((violation?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(message-condition?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(condition-message&nbsp;con))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;the&nbsp;program&nbsp;has&nbsp;a&nbsp;bug&quot;))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;violation))<br>
+&nbsp;&nbsp;(raise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(condition<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-error)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-message-condition&nbsp;&quot;I&nbsp;am&nbsp;an&nbsp;error&quot;))))<br>
+&nbsp;&nbsp;&nbsp;<i>&nbsp;prints:</i>&nbsp;I&nbsp;am&nbsp;an&nbsp;error<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;error<br>
+<br>
+(guard&nbsp;(con<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((error?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(message-condition?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(condition-message&nbsp;con))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;an&nbsp;error&nbsp;has&nbsp;occurred&quot;))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;error))<br>
+&nbsp;&nbsp;(raise<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(condition<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-violation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-message-condition&nbsp;&quot;I&nbsp;am&nbsp;an&nbsp;error&quot;))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;violation</tt>&nbsp;<i>exception</i><br>
+<br>
+(guard&nbsp;(con<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((error?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;error&nbsp;opening&nbsp;file&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt>))<br>
+&nbsp;&nbsp;(call-with-input-file&nbsp;&quot;foo.scm&quot;&nbsp;read))<br>
+&nbsp;&nbsp;&nbsp;<i>&nbsp;prints:</i>&nbsp;error&nbsp;opening&nbsp;file<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+<br>
+(with-exception-handler<br>
+&nbsp;&nbsp;(lambda&nbsp;(con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((not&nbsp;(warning?&nbsp;con))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(raise&nbsp;con))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((message-condition?&nbsp;con)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(condition-message&nbsp;con)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;a&nbsp;warning&nbsp;has&nbsp;been&nbsp;issued&quot;)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;42)<br>
+&nbsp;&nbsp;(lambda&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;(raise-continuable<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(condition<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-warning)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-message-condition<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&quot;should&nbsp;be&nbsp;a&nbsp;number&quot;)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;23)))<br>
+&nbsp;&nbsp;&nbsp;<i>&nbsp;prints:</i>&nbsp;should&nbsp;be&nbsp;a&nbsp;number<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<br>
+<p></tt></p>
+<p>
+</p>
+<a name="node_sec_7.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_7.2">7.2&nbsp;&nbsp;Conditions</a></h2>
+<p></p>
+<p>
+The section describes Scheme&#8217;s <tt>(rnrs conditions (6))</tt><a name="node_idx_382"></a>library 
+for creating and inspecting
+condition types and values. A condition value encapsulates information
+about an exceptional situation<a name="node_idx_384"></a>.
+Scheme also defines a
+number of basic condition types.</p>
+<p>
+Scheme conditions provides two mechanisms to enable communication
+about an exceptional situation: subtyping among condition types allows
+handling code to determine the general nature of an exception even
+though it does not anticipate its exact nature, and compound
+conditions allow an exceptional situation to be described in multiple
+ways.</p>
+<p>
+</p>
+<a name="node_sec_7.2.1"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_7.2.1">7.2.1&nbsp;&nbsp;Condition objects</a></h3>
+<p>Conceptually, there are two different kinds of condition objects:
+<i>simple conditions</i><a name="node_idx_386"></a>and
+<i>compound conditions</i><a name="node_idx_388"></a>.  An object
+that is either a simple condition or a compound condition is 
+simply a <a name="node_idx_390"></a><em>condition</em>.  Compound conditions form a type disjoint
+from the base types described in report
+section&nbsp;on &#8220;Base types&#8221;.  A simple condition
+describes a single aspect of an exceptional situation.  A compound
+condition represents multiple aspects of an exceptional situation as a
+list of simple conditions, its <i>components</i>.  Most of the
+operations described in this section treat a simple condition
+identically to a compound condition with itself as its own sole component.  For a
+subtype <i>t</i> of <tt>&amp;condition</tt>, a <i>condition of type
+<i>t</i></i> is either a record of type <i>t</i> or a compound condition
+containing a component of type <i>t</i>.</p>
+<p>
+</p>
+<p><a name="node_idx_392"></a></p>
+<div align=left><tt><tt>&amp;condition</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+<p>
+Simple conditions are records of subtypes of the <tt>&amp;condition</tt>
+record type.  The <tt>&amp;condition</tt> type has no fields and is neither sealed nor opaque.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_394"></a>condition<i> <i>condition<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>condition</tt>
+procedure returns a condition object with the components of the
+<i>condition</i>s as its components, in the same order, i.e., with the
+components of <i>condition<sub>1</sub></i> appearing first in the same order as in
+<i>condition<sub>1</sub></i>, then with the components of <i>condition<sub>2</sub></i>, and so on.  The
+returned condition is compound if the total number of components is
+zero or greater than one.  Otherwise, it may be compound or simple.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_396"></a>simple-conditions<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>simple-conditions</tt>
+procedure returns a list of the components of <i>condition</i>, in the same
+order as they appeared in the construction of <i>condition</i>.  The
+returned list is immutable.  If the returned list is modified, the
+effect on <i>condition</i> is unspecified.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Because <tt>condition</tt> decomposes its arguments into simple
+conditions, <tt>simple-conditions</tt> always returns a &#8220;flattened&#8221;
+list of simple conditions.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_398"></a>condition?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a (simple or compound) condition,
+otherwise returns <tt>#f</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_400"></a>condition-predicate<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Rtd</i> must be a record-type descriptor of a subtype of
+<tt>&amp;condition</tt>.  The <tt>condition-predicate</tt> procedure returns
+a procedure that takes one argument.  This procedure returns
+<tt>#t</tt> if its argument is a condition of the condition type
+represented by <i>rtd</i>, i.e., if it is either a simple condition of
+that record type (or one of its subtypes) or a compound conditition
+with such a simple condition as one of its components, and <tt>#f</tt>
+otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_402"></a>condition-accessor<i> rtd proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Rtd</i> must be a record-type descriptor of a subtype of
+<tt>&amp;condition</tt>.  <i>Proc</i> should accept
+one argument, a record of the record type of <i>rtd</i>.  The <tt>condition-accessor</tt> procedure returns a procedure that accepts a
+single argument, which must be a condition of the type represented by
+<i>rtd</i>.  This procedure extracts the first component of the
+condition of the type represented by <i>rtd</i>, and returns the result
+of applying <i>proc</i> to that component.
+</p>
+<p></p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;(&amp;cond1&nbsp;make-cond1&nbsp;real-cond1?)<br>
+&nbsp;&nbsp;(parent&nbsp;&amp;condition)<br>
+&nbsp;&nbsp;(fields<br>
+&nbsp;&nbsp;&nbsp;(immutable&nbsp;x&nbsp;real-cond1-x)))<br>
+<br>
+(define&nbsp;cond1?<br>
+&nbsp;&nbsp;(condition-predicate<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(record-type-descriptor&nbsp;&amp;cond1)))<br>
+(define&nbsp;cond1-x<br>
+&nbsp;&nbsp;(condition-accessor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(record-type-descriptor&nbsp;&amp;cond1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;real-cond1-x))<br>
+<br>
+(define&nbsp;foo&nbsp;(make-cond1&nbsp;&#8217;foo))<br>
+<br>
+(condition?&nbsp;foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cond1?&nbsp;foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cond1-x&nbsp;foo)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;foo<br>
+<br>
+(define-record-type&nbsp;(&amp;cond2&nbsp;make-cond2&nbsp;real-cond2?)<br>
+&nbsp;&nbsp;(parent&nbsp;&amp;condition)<br>
+&nbsp;&nbsp;(fields<br>
+&nbsp;&nbsp;&nbsp;(immutable&nbsp;y&nbsp;real-cond2-y)))<br>
+<br>
+(define&nbsp;cond2?<br>
+&nbsp;&nbsp;(condition-predicate<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(record-type-descriptor&nbsp;&amp;cond2)))<br>
+(define&nbsp;cond2-y<br>
+&nbsp;&nbsp;(condition-accessor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(record-type-descriptor&nbsp;&amp;cond2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;real-cond2-y))<br>
+<br>
+(define&nbsp;bar&nbsp;(make-cond2&nbsp;&#8217;bar))<br>
+<br>
+(condition?&nbsp;(condition&nbsp;foo&nbsp;bar))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cond1?&nbsp;(condition&nbsp;foo&nbsp;bar))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cond2?&nbsp;(condition&nbsp;foo&nbsp;bar))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cond1?&nbsp;(condition&nbsp;foo))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(real-cond1?&nbsp;(condition&nbsp;foo))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>unspecified</i><br>
+(real-cond1?&nbsp;(condition&nbsp;foo&nbsp;bar))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(cond1-x&nbsp;(condition&nbsp;foo&nbsp;bar)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;foo<br>
+(cond2-y&nbsp;(condition&nbsp;foo&nbsp;bar)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;bar<br>
+&nbsp;<br>
+(equal?&nbsp;(simple-conditions&nbsp;(condition&nbsp;foo&nbsp;bar))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list&nbsp;foo&nbsp;bar))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+<br>
+(equal?&nbsp;(simple-conditions<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(condition&nbsp;foo&nbsp;(condition&nbsp;bar)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(list&nbsp;foo&nbsp;bar))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><p></tt></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(define-condition-type &lt;condition-type&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<tt><br>
+
+&lt;supertype&gt;<br>
+
+&lt;constructor&gt;&nbsp;&lt;predicate&gt;<br>
+
+&lt;field-spec<sub>1</sub>&gt;&nbsp;<tt>...</tt>)</tt>
+<a name="node_idx_404"></a><p>
+<em>Syntax: </em>&lt;Condition-type&gt;, &lt;supertypes&gt;,
+&lt;constructor&gt;, and &lt;predicate&gt; must all be identifiers.
+Each &lt;field-spec&gt; must be of the form
+</p>
+
+<tt>(&lt;field&gt;&nbsp;&lt;accessor&gt;)<p></tt>
+where both &lt;field&gt; and &lt;accessor&gt; must be identifiers.</p>
+<p>
+<em>Semantics: </em>The <tt>define-condition-type</tt> form expands into a record-type
+definition for a record type &lt;condition-type&gt; (see
+section&nbsp;<a href="r6rs-lib-Z-H-7.html#node_sec_6.2">6.2</a>).  The record type will be
+non-opaque, non-sealed, and its fields will be immutable.
+It will have &lt;supertype&gt; has its parent type.  The remaining
+identifiers will be bound as follows:
+</p>
+<p>
+</p>
+<ul><p>
+</p>
+<li><p>&lt;Constructor&gt; is bound to a default constructor for the
+type (see section&nbsp;<a href="r6rs-lib-Z-H-7.html#node_sec_6.3">6.3</a>): It accepts one
+argument for each of the record type&#8217;s complete set of fields
+(including parent types, with the fields of the parent coming before
+those of the extension in the arguments) and returns a condition
+object initialized to those arguments.</p>
+<p>
+</p>
+<li><p>&lt;Predicate&gt; is bound to a predicate that identifies
+conditions of type &lt;condition-type&gt; or any of its
+subtypes.</p>
+<p>
+</p>
+<li><p>Each &lt;accessor&gt; is bound to a procedure that extracts the
+corresponding field from a condition of type &lt;condition-type&gt;.
+</p>
+</ul><p>
+</p>
+<p></p>
+<p>
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;c&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-c&nbsp;c?<br>
+&nbsp;&nbsp;(x&nbsp;c-x))<br>
+<br>
+(define-condition-type&nbsp;&amp;c1&nbsp;&amp;c<br>
+&nbsp;&nbsp;make-c1&nbsp;c1?<br>
+&nbsp;&nbsp;(a&nbsp;c1-a))<br>
+<br>
+(define-condition-type&nbsp;&amp;c2&nbsp;&amp;c<br>
+&nbsp;&nbsp;make-c2&nbsp;c2?<br>
+&nbsp;&nbsp;(b&nbsp;c2-b))<p></tt></p>
+<p>
+</p>
+
+<tt>(define&nbsp;v1&nbsp;(make-c1&nbsp;&quot;V1&quot;&nbsp;&quot;a1&quot;))<br>
+<br>
+(c?&nbsp;v1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c1?&nbsp;v1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c2?&nbsp;v1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(c-x&nbsp;v1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;V1&quot;<br>
+(c1-a&nbsp;v1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;a1&quot;<p></tt></p>
+<p>
+</p>
+
+<tt>(define&nbsp;v2&nbsp;(make-c2&nbsp;&quot;V2&quot;&nbsp;&quot;b2&quot;))<br>
+<br>
+(c?&nbsp;v2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c1?&nbsp;v2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(c2?&nbsp;v2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c-x&nbsp;v2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;V2&quot;<br>
+(c2-b&nbsp;v2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;b2&quot;<p></tt></p>
+<p>
+</p>
+
+<tt>(define&nbsp;v3&nbsp;(condition<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-c1&nbsp;&quot;V3/1&quot;&nbsp;&quot;a3&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-c2&nbsp;&quot;V3/2&quot;&nbsp;&quot;b3&quot;)))<br>
+<br>
+(c?&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c1?&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c2?&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c-x&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;V3/1&quot;<br>
+(c1-a&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;a3&quot;<br>
+(c2-b&nbsp;v3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;b3&quot;<p></tt></p>
+<p>
+</p>
+
+<tt>(define&nbsp;v4&nbsp;(condition&nbsp;v1&nbsp;v2))<br>
+<br>
+(c?&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c1?&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c2?&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c-x&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;V1&quot;<br>
+(c1-a&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;a1&quot;<br>
+(c2-b&nbsp;v4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;b2&quot;<p></tt></p>
+<p>
+</p>
+
+<tt>(define&nbsp;v5&nbsp;(condition&nbsp;v2&nbsp;v3))<br>
+<br>
+(c?&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c1?&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c2?&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(c-x&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;V2&quot;<br>
+(c1-a&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;a3&quot;<br>
+(c2-b&nbsp;v5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;b2&quot;<p></tt></p>
+<p>
+</p>
+<a name="node_sec_7.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_7.3">7.3&nbsp;&nbsp;Standard condition types</a></h2>
+<p></p>
+<a name="node_fig_Temp_2"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+
+
+<img src="r6rs-lib-Z-G-3.gif" border="0" alt="[r6rs-lib-Z-G-3.gif]">
+
+</td></tr>
+<tr><td align=left><b>Figure 1:</b>&nbsp;&nbsp;Hierarchy of standard condition types</td></tr>
+<tr><td>
+
+</td></tr></table></div><p></p>
+<p>
+</p>
+<p><a name="node_idx_406"></a></p>
+<div align=left><tt><tt>&amp;message</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_408"></a>make-message-condition<i> message</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_410"></a>message-condition?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_412"></a>condition-message<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;message&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-message-condition&nbsp;message-condition?<br>
+&nbsp;&nbsp;(message&nbsp;condition-message))<p></tt>
+It carries a message further describing the nature of the condition to
+humans.  
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_414"></a></p>
+<div align=left><tt><tt>&amp;warning</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_416"></a>make-warning<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_418"></a>warning?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;warning&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-warning&nbsp;warning?)<p></tt>
+This type describes conditions that do not, in
+principle, prohibit immediate continued execution of the program, but
+may interfere with the program&#8217;s execution later.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_420"></a></p>
+<div align=left><tt><tt>&amp;serious</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_422"></a>make-serious-condition<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_424"></a>serious-condition?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;serious&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-serious-condition&nbsp;serious-condition?)<p></tt></p>
+<p>
+This type describes conditions serious enough that they cannot safely
+be ignored. This condition type is primarily intended as a supertype
+of other condition types. 
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_426"></a></p>
+<div align=left><tt><tt>&amp;error</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_428"></a>make-error<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_430"></a>error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;error&nbsp;&amp;serious<br>
+&nbsp;&nbsp;make-error&nbsp;error?)<p></tt>
+This type describes errors, typically caused by something that
+has gone wrong in the interaction of the program with the external
+world or the user.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_432"></a></p>
+<div align=left><tt><tt>&amp;violation</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_434"></a>make-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_436"></a>violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;violation&nbsp;&amp;serious<br>
+&nbsp;&nbsp;make-violation&nbsp;violation?)<p></tt>
+This type describes violations of the language standard or a
+library standard, typically caused by a programming error.
+</p>
+<p>  </p>
+<p>
+</p>
+<p><a name="node_idx_438"></a></p>
+<div align=left><tt><tt>&amp;assertion</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_440"></a>make-assertion-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_442"></a>assertion-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;assertion&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-assertion-violation&nbsp;assertion-violation?)<p></tt>
+This type describes an invalid call to a procedure, either passing an
+invalid number of arguments, or passing an argument of the wrong type.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_444"></a></p>
+<div align=left><tt><tt>&amp;irritants</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_446"></a>make-irritants-condition<i> irritants</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_448"></a>irritants-condition?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_450"></a>condition-irritants<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;irritants&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-irritants-condition&nbsp;irritants-condition?<br>
+&nbsp;&nbsp;(irritants&nbsp;condition-irritants))<p></tt>
+<i>Irritants</i> should be a list of objects.  This
+condition provides additional information about a condition, typically
+the argument list of a procedure that detected an exception.
+Conditions of this type are created by the <tt>error</tt> and <tt>assertion-violation</tt> procedures of report
+section&nbsp;on &#8220;Errors and violations&#8221;.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_452"></a></p>
+<div align=left><tt><tt>&amp;who</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_454"></a>make-who-condition<i> who</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_456"></a>who-condition?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_458"></a>condition-who<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;who&nbsp;&amp;condition<br>
+&nbsp;&nbsp;make-who-condition&nbsp;who-condition?<br>
+&nbsp;&nbsp;(who&nbsp;condition-who))<p></tt>
+<i>Who</i> should be a symbol or string identifying the
+entity reporting the exception.
+Conditions of this type are created by the <tt>error</tt> and <tt>assertion-violation</tt> procedures (report
+section&nbsp;on &#8220;Errors and violations&#8221;), and
+the <tt>syntax-violation</tt> procedure
+(section&nbsp;on &#8220;Syntax violations&#8221;).
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_460"></a></p>
+<div align=left><tt><tt>&amp;non-continuable</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_462"></a>make-non-continuable-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_464"></a>non-continuable-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;non-continuable&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-non-continuable-violation<br>
+&nbsp;&nbsp;non-continuable-violation?)<p></tt>
+This type indicates that an exception handler invoked via
+<tt>raise</tt> has returned.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_466"></a></p>
+<div align=left><tt><tt>&amp;implementation-restriction</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_468"></a>make-implementation-restriction-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_470"></a>implementation-restriction-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;implementation-restriction<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-implementation-restriction-violation<br>
+&nbsp;&nbsp;implementation-restriction-violation?)<p></tt>
+This type describes a violation of an implementation restriction
+allowed by the specification, such as the absence of representations
+for NaNs and infinities.  (See section&nbsp;<a href="r6rs-lib-Z-H-12.html#node_sec_11.3">11.3</a>.)
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_472"></a></p>
+<div align=left><tt><tt>&amp;lexical</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_474"></a>make-lexical-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_476"></a>lexical-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;lexical&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-lexical-violation&nbsp;lexical-violation?)<p></tt>
+This type describes syntax violations at the level of the datum syntax.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_478"></a></p>
+<div align=left><tt><tt>&amp;syntax</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_480"></a>make-syntax-violation<i> form subform</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_482"></a>syntax-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_484"></a>syntax-violation-form<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_486"></a>syntax-violation-subform<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;syntax&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-syntax-violation&nbsp;syntax-violation?<br>
+&nbsp;&nbsp;(form&nbsp;syntax-violation-form)<br>
+&nbsp;&nbsp;(subform&nbsp;syntax-violation-subform))<p></tt></p>
+<p>
+This type describes syntax violations.
+<i>Form</i> should be the erroneous syntax object or a
+datum representing the code of the erroneous form.  <i>Subform</i>
+should be an optional syntax object or
+datum within the erroneous form that more precisely locates the
+violation.  It can be <tt>#f</tt> to indicate the absence of more precise
+information.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_488"></a></p>
+<div align=left><tt><tt>&amp;undefined</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_490"></a>make-undefined-violation<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_492"></a>undefined-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;undefined&nbsp;&amp;violation<br>
+&nbsp;&nbsp;make-undefined-violation&nbsp;undefined-violation?)<p></tt>
+This type describes unbound identifiers in the program.
+</p>
+<p></p>
+<p>
+</p>
+<p>
+     </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-7.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

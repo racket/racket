@@ -1,0 +1,81 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-18.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-20.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_18"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_18">Chapter 18</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_18">Mutable strings</a></h1>
+<p></p>
+<p>
+The <tt>string-set!</tt> procedure provided by the <tt>(rnrs mutable-strings (6))</tt><a name="node_idx_1278"></a>library allows mutating the characters of a string in-place.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1280"></a>string-set!<i> string k char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+</p>
+
+<p class=noindent><em>K</em> must be a valid index of <i>string</i>.
+The <tt>string-set!</tt> procedure stores <i>char</i> in element </p>
+
+<p class=noindent><em>k</em> of <i>string</i>
+and returns unspecified values.  </p>
+<p>
+Passing an immutable string to <tt>string-set!</tt> should cause an exception
+with condition type <tt>&amp;assertion</tt> to be raised.
+</p>
+
+<tt>(define&nbsp;(f)&nbsp;(make-string&nbsp;3&nbsp;<tt>#</tt><tt>\</tt>*))<br>
+(define&nbsp;(g)&nbsp;&quot;***&quot;)<br>
+(string-set!&nbsp;(f)&nbsp;0&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<em>unspecified</em><br>
+(string-set!&nbsp;(g)&nbsp;0&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>unspecified</i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;should&nbsp;raise&nbsp;<tt>&nbsp;&amp;assertion</tt>&nbsp;<i>exception</i><br>
+(string-set!&nbsp;(symbol-&gt;string&nbsp;&#8217;immutable)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt><tt>\</tt>?)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>unspecified</i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;should&nbsp;raise&nbsp;<tt>&nbsp;&amp;assertion</tt>&nbsp;<i>exception</i><p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Implementors should make <tt>string-set!</tt> run in constant
+time.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1282"></a>string-fill!<i> string char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Stores <i>char</i> in every element of the given <i>string</i> and returns unspecified values.  </p>
+<p>
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-18.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-20.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

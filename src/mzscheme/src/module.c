@@ -1046,6 +1046,8 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
     }
     
     b = scheme_bucket_from_table(menv->toplevel, (const char *)srcname);
+    if (!((Scheme_Bucket_With_Home *)b)->home)
+      ((Scheme_Bucket_With_Home *)b)->home = menv;
 
     if (get_bucket)
       return (Scheme_Object *)b;

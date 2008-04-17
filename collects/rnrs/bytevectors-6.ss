@@ -51,6 +51,15 @@
          bytevector-uint-set!
          bytevector-sint-set!
 
+         bytevector-ieee-single-ref
+         bytevector-ieee-single-native-ref
+         bytevector-ieee-single-set!
+         bytevector-ieee-single-native-set!
+         bytevector-ieee-double-ref
+         bytevector-ieee-double-native-ref
+         bytevector-ieee-double-set!
+         bytevector-ieee-double-native-set!
+
          bytevector->uint-list
          bytevector->sint-list
          uint-list->bytevector
@@ -176,6 +185,36 @@
                 bytevector-u64-native-set!
                 bytevector-s64-native-set!)
   (make-integer-ops 8))
+
+(define (make-ieee-ops size)
+  (values
+   ;; -ref
+   (lambda (bytes k endianness)
+     (check-endian endianness)
+     (floating-point-bytes->real bytes (eq? endianness 'big) k (+ k size)))
+   ;; -native-ref
+   (lambda (bytes k)
+     (floating-point-bytes->real bytes (system-big-endian?) k (+ k size)))
+   ;; -set!
+   (lambda (bytes k n endianness)
+     (check-endian endianness)
+     (real->floating-point-bytes n size (eq? endianness 'big) bytes k))
+   ;; -native-set!
+   (lambda (bytes k n)
+     (real->floating-point-bytes n size (system-big-endian?) bytes k)
+     (void))))
+
+(define-values (bytevector-ieee-single-ref
+                bytevector-ieee-single-native-ref
+                bytevector-ieee-single-set!
+                bytevector-ieee-single-native-set!)
+  (make-ieee-ops 4))
+
+(define-values (bytevector-ieee-double-ref
+                bytevector-ieee-double-native-ref
+                bytevector-ieee-double-set!
+                bytevector-ieee-double-native-set!)
+  (make-ieee-ops 8))
 
 ;; ----------------------------------------
 

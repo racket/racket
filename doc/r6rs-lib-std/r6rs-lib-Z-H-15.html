@@ -1,0 +1,322 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-14.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-16.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_14"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_14">Chapter 14</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_14">Enumerations</a></h1>
+<p></p>
+<p>
+This chapter describes the <tt>(rnrs enums (6))</tt><a name="node_idx_1226"></a>library for dealing with enumerated values
+<a name="node_idx_1228"></a>and sets of enumerated values.  Enumerated
+values are represented by ordinary symbols, while finite sets of
+enumerated values form a separate type, known as the
+<a name="node_idx_1230"></a><em>enumeration sets</em>.
+The enumeration sets are further partitioned into sets that
+share the same <a name="node_idx_1232"></a><em>universe</em> and <a name="node_idx_1234"></a><em>enumeration type</em>.
+These universes and enumeration types are created by the
+<tt>make-enumeration</tt> procedure.  Each call to that procedure
+creates a new enumeration type.</p>
+<p>
+This library interprets each enumeration set with respect to
+its specific universe of symbols and enumeration type.
+This facilitates efficient implementation of enumeration sets
+and enables the complement operation.</p>
+<p>
+In the descriptions of the following procedures, <i>enum-set</i>
+ranges over the enumeration sets, which are defined as the subsets
+of the universes that can be defined using <tt>make-enumeration</tt>.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1236"></a>make-enumeration<i> symbol-list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Symbol-list</i> must be a list of symbols.
+The <tt>make-enumeration</tt> procedure
+creates a new enumeration type whose universe consists of
+those symbols (in canonical order of their first appearance
+in the list) and returns that universe as an enumeration
+set whose universe is itself and whose enumeration type is
+the newly created enumeration type.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1238"></a>enum-set-universe<i> enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the set of all symbols that comprise
+the universe of its argument, as an enumeration set.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1240"></a>enum-set-indexer<i> enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a unary procedure that, given a symbol
+that is in the universe of <i>enum-set</i>, returns its 0-origin index
+within the canonical ordering of the symbols in the universe; given a
+value not in the universe, the unary procedure returns <tt>#f</tt>.</p>
+<p>
+</p>
+
+<tt>(let*&nbsp;((e&nbsp;(make-enumeration&nbsp;&#8217;(red&nbsp;green&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(i&nbsp;(enum-set-indexer&nbsp;e)))<br>
+&nbsp;&nbsp;(list&nbsp;(i&nbsp;&#8217;red)&nbsp;(i&nbsp;&#8217;green)&nbsp;(i&nbsp;&#8217;blue)&nbsp;(i&nbsp;&#8217;yellow)))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(0&nbsp;1&nbsp;2&nbsp;<tt>#f</tt>)<p></tt></p>
+<p>
+The <tt>enum-set-indexer</tt> procedure could be defined as follows using the
+<tt>memq</tt> procedure from the <tt>(rnrs lists (6))</tt> library:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;(enum-set-indexer&nbsp;set)<br>
+&nbsp;&nbsp;(let*&nbsp;((symbols&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-universe&nbsp;set)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cardinality&nbsp;(length&nbsp;symbols)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((memq&nbsp;x&nbsp;symbols)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;(lambda&nbsp;(probe)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&nbsp;cardinality&nbsp;(length&nbsp;probe))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;<tt>#f</tt>)))))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1242"></a>enum-set-constructor<i> enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a unary procedure that, given a
+list of symbols that belong to the universe of <i>enum-set</i>, returns
+a subset of that universe that contains exactly the symbols in the
+list.  The values in the list must all belong to the universe.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1244"></a>enum-set-&gt;list<i> enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a list of the symbols that belong to its
+argument, in the canonical order of the universe of <i>enum-set</i>.</p>
+<p>
+</p>
+
+<tt>(let*&nbsp;((e&nbsp;(make-enumeration&nbsp;&#8217;(red&nbsp;green&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;(enum-set-constructor&nbsp;e)))<br>
+&nbsp;&nbsp;(enum-set-&gt;list&nbsp;(c&nbsp;&#8217;(blue&nbsp;red))))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(red&nbsp;blue)<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1246"></a>enum-set-member?<i> symbol enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1248"></a>enum-set-subset?<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1250"></a>enum-set=?<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>enum-set-member?</tt> procedure returns <tt>#t</tt> if its first argument is an
+element of its second argument, <tt>#f</tt> otherwise.</p>
+<p>
+The <tt>enum-set-subset?</tt> procedure returns <tt>#t</tt> if the universe of
+<i>enum-set<sub>1</sub></i> is a subset of the universe of <i>enum-set<sub>2</sub></i>
+(considered as sets of symbols) and every element of <i>enum-set<sub>1</sub></i>
+is a member of <i>enum-set<sub>2</sub></i>.  It returns <tt>#f</tt> otherwise.</p>
+<p>
+The <tt>enum-set=?</tt> procedure returns <tt>#t</tt> if <i>enum-set<sub>1</sub></i>  is a
+subset of <i>enum-set<sub>2</sub></i> and vice versa, as determined by the
+<tt>enum-set-subset?</tt> procedure.  This implies that the universes of
+the two sets are equal as sets of symbols, but does not imply
+that they are equal as enumeration types.  Otherwise, <tt>#f</tt> is
+returned.</p>
+<p>
+</p>
+
+<tt>(let*&nbsp;((e&nbsp;(make-enumeration&nbsp;&#8217;(red&nbsp;green&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;(enum-set-constructor&nbsp;e)))<br>
+&nbsp;&nbsp;(list<br>
+&nbsp;&nbsp;&nbsp;(enum-set-member?&nbsp;&#8217;blue&nbsp;(c&nbsp;&#8217;(red&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;(enum-set-member?&nbsp;&#8217;green&nbsp;(c&nbsp;&#8217;(red&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;(enum-set-subset?&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))&nbsp;e)<br>
+&nbsp;&nbsp;&nbsp;(enum-set-subset?&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))&nbsp;(c&nbsp;&#8217;(blue&nbsp;red)))<br>
+&nbsp;&nbsp;&nbsp;(enum-set-subset?&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))&nbsp;(c&nbsp;&#8217;(red)))<br>
+&nbsp;&nbsp;&nbsp;(enum-set=?&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))&nbsp;(c&nbsp;&#8217;(blue&nbsp;red)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(<tt>#t</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#t</tt>&nbsp;<tt>#t</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#t</tt>)<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1252"></a>enum-set-union<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1254"></a>enum-set-intersection<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1256"></a>enum-set-difference<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Enum-set<sub>1</sub></i> and <i>enum-set<sub>2</sub></i> must be enumeration sets 
+that have the same enumeration type.</p>
+<p>
+The <tt>enum-set-union</tt> procedure returns the union of <i>enum-set<sub>1</sub></i> and <i>enum-set<sub>2</sub></i>.
+The <tt>enum-set-intersection</tt> procedure returns the intersection of <i>enum-set<sub>1</sub></i> and <i>enum-set<sub>2</sub></i>.
+The <tt>enum-set-difference</tt> procedure returns the difference of <i>enum-set<sub>1</sub></i>
+and <i>enum-set<sub>2</sub></i>.</p>
+<p>
+</p>
+
+<tt>(let*&nbsp;((e&nbsp;(make-enumeration&nbsp;&#8217;(red&nbsp;green&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;(enum-set-constructor&nbsp;e)))<br>
+&nbsp;&nbsp;(list&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-union&nbsp;(c&nbsp;&#8217;(blue))&nbsp;(c&nbsp;&#8217;(red))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-intersection&nbsp;(c&nbsp;&#8217;(red&nbsp;green))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-difference&nbsp;(c&nbsp;&#8217;(red&nbsp;green))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;&#8217;(red&nbsp;blue))))))<br>
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;((red&nbsp;blue)&nbsp;(red)&nbsp;(green))<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1258"></a>enum-set-complement<i> enum-set</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <i>enum-set</i>&#8217;s
+complement with respect to its universe.</p>
+<p>
+</p>
+
+<tt>(let*&nbsp;((e&nbsp;(make-enumeration&nbsp;&#8217;(red&nbsp;green&nbsp;blue)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(c&nbsp;(enum-set-constructor&nbsp;e)))<br>
+&nbsp;&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-complement&nbsp;(c&nbsp;&#8217;(red)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(green&nbsp;blue)<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1260"></a>enum-set-projection<i> <i>enum-set<sub>1</sub></i> <i>enum-set<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Projects <i>enum-set<sub>1</sub></i> into the universe
+of <i>enum-set<sub>2</sub></i>, dropping any elements of <i>enum-set<sub>1</sub></i> that do
+not belong to the universe of <i>enum-set<sub>2</sub></i>.  (If <i>enum-set<sub>1</sub></i>
+is a subset of the universe of its second, no elements are
+dropped, and the injection is returned.)</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((e1&nbsp;(make-enumeration<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(red&nbsp;green&nbsp;blue&nbsp;black)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(e2&nbsp;(make-enumeration<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(red&nbsp;black&nbsp;white))))<br>
+&nbsp;&nbsp;(enum-set-&gt;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(enum-set-projection&nbsp;e1&nbsp;e2))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(red&nbsp;black)<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p>
+</p>
+<div align=left><tt>(define-enumeration &lt;type-name&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_1262"></a><tt>(&lt;symbol&gt;&nbsp;<tt>...</tt>)<br>
+
+&lt;constructor-syntax&gt;)</tt><p>
+The <tt>define-enumeration</tt> form defines an enumeration type and
+provides two macros for constructing its members and sets of its
+members.</p>
+<p>
+A <tt>define-enumeration</tt> form is a definition and can appear
+anywhere any other &lt;definition&gt; can appear.</p>
+<p>
+&lt;Type-name&gt; is an identifier that is bound as a syntactic keyword;
+&lt;symbol&gt;&nbsp;<tt>...</tt> are the symbols that comprise the
+universe of the enumeration (in order).</p>
+<p>
+<tt>(&lt;type-name&gt; &lt;symbol&gt;)</tt> checks at macro-expansion
+time whether the name of &lt;symbol&gt; is in the universe associated with
+&lt;type-name&gt;.  If it is, <tt>(&lt;type-name&gt;
+&lt;symbol&gt;)</tt> is equivalent to <tt>&lt;symbol&gt;</tt>.  
+It is a syntax violation if it is not.</p>
+<p>
+&lt;Constructor-syntax&gt; is an identifier that is bound to a
+macro that, given any finite sequence of the symbols in the universe,
+possibly with duplicates, expands into an expression that evaluates
+to the enumeration set of those symbols.</p>
+<p>
+<tt>(&lt;constructor-syntax&gt; &lt;symbol&gt;&nbsp;<tt>...</tt>)</tt> checks at
+macro-expansion time whether every &lt;symbol&gt;&nbsp;<tt>...</tt> is in the
+universe associated with &lt;type-name&gt;.  It is a syntax violation
+if one or more is not.
+Otherwise
+</p>
+
+<tt>(&lt;constructor-syntax&gt;&nbsp;&lt;symbol&gt;&nbsp;<tt>...</tt>)<br>
+<p></tt>
+is equivalent to
+</p>
+
+<tt>((enum-set-constructor&nbsp;(&lt;constructor-syntax&gt;))<br>
+&nbsp;&#8217;(&lt;symbol&gt;&nbsp;<tt>...</tt>)).<br>
+<p></tt></p>
+<p>
+Example:</p>
+<p>
+</p>
+
+<tt>(define-enumeration&nbsp;color<br>
+&nbsp;&nbsp;(black&nbsp;white&nbsp;purple&nbsp;maroon)<br>
+&nbsp;&nbsp;color-set)<br>
+<br>
+(color&nbsp;black)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;black<br>
+(color&nbsp;purpel)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;syntax</tt>&nbsp;<i>exception</i><br>
+(enum-set-&gt;list&nbsp;(color-set))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;()<br>
+(enum-set-&gt;list<br>
+&nbsp;&nbsp;(color-set&nbsp;maroon&nbsp;white))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(white&nbsp;maroon)<br>
+<p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+In <tt>(&lt;type-name&gt; &lt;symbol&gt;)</tt> and <tt>(&lt;constructor-syntax&gt; &lt;symbol&gt;&nbsp;<tt>...</tt>)</tt> forms,
+only the names of the &lt;symbol&gt;s are significant.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p>
+    </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-14.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-16.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

@@ -3,6 +3,7 @@
 (provide make-eq-hashtable
          make-eqv-hashtable
          (rename-out [r6rs:make-hashtable make-hashtable])
+         hashtable?
          hashtable-size
          hashtable-ref
          hashtable-set!

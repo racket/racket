@@ -1,0 +1,317 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-15.html">previous</a></span><span>, <a href="r6rs-Z-H-17.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_B"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_B">Appendix B</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_B">Sample definitions for derived forms</a></h1>
+<p></p>
+<p>
+This appendix contains sample definitions for some of the keywords
+described in this report in terms of simpler forms:</p>
+<p>
+</p>
+<a name="node_sec_Temp_37"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_37"><tt>cond</tt></a></h4>
+<p>The <tt>cond</tt> keyword (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.5">11.4.5</a>) 
+could be defined in terms of <tt>if</tt>, <tt>let</tt> and <tt>begin</tt> using <tt>syntax-rules</tt> as follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>cond</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;(else&nbsp;=&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(else&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;=&gt;&nbsp;result))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp&nbsp;(result&nbsp;temp))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;=&gt;&nbsp;result)&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(result&nbsp;temp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test))&nbsp;test)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test)&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;test))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;temp<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;result1&nbsp;result2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((cond&nbsp;(test&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clause1&nbsp;clause2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;test<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;result1&nbsp;result2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;clause1&nbsp;clause2&nbsp;...)))))<p></tt>
+</p>
+<a name="node_sec_Temp_38"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_38"><tt>case</tt></a></h4>
+<p>The <tt>case</tt> keyword (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.5">11.4.5</a>) could be defined in terms of <tt>let</tt>, <tt>cond</tt>, and
+<tt>memv</tt> (see library chapter&nbsp;on &#8220;List utilities&#8221;) using <tt>syntax-rules</tt> as follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>case</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;(else)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;expr0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((key&nbsp;...)&nbsp;res1&nbsp;res2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;else-res1&nbsp;else-res2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((tmp&nbsp;expr0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((memv&nbsp;tmp&nbsp;&#8217;(key&nbsp;...))&nbsp;res1&nbsp;res2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(else&nbsp;else-res1&nbsp;else-res2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((case&nbsp;expr0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((keya&nbsp;...)&nbsp;res1a&nbsp;res2a&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((keyb&nbsp;...)&nbsp;res1b&nbsp;res2b&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((tmp&nbsp;expr0))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((memv&nbsp;tmp&nbsp;&#8217;(keya&nbsp;...))&nbsp;res1a&nbsp;res2a&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((memv&nbsp;tmp&nbsp;&#8217;(keyb&nbsp;...))&nbsp;res1b&nbsp;res2b&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...)))))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_Temp_39"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_39"><tt>let*</tt></a></h4>
+<p>The <tt>let*</tt> keyword (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.6">11.4.6</a>)
+could be defined in terms of <tt>let</tt>
+using <tt>syntax-rules</tt> as follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>let*</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*&nbsp;((name1&nbsp;expr1)&nbsp;(name2&nbsp;expr2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((name1&nbsp;expr1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*&nbsp;((name2&nbsp;expr2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)))))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_Temp_40"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_40"><tt>letrec</tt></a></h4>
+<p>The <tt>letrec</tt> keyword (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.6">11.4.6</a>)
+could be defined approximately in terms of <tt>let</tt>
+and <tt>set!</tt> using <tt>syntax-rules</tt>, using a helper
+to generate the temporary variables
+needed to hold the values before the assignments are made,
+as follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>letrec</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;((var&nbsp;init)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec-helper<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(var&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var&nbsp;init)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))<br>
+<br>
+(define-syntax&nbsp;letrec-helper<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec-helper<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var&nbsp;init)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((var&nbsp;&lt;undefined&gt;)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((temp&nbsp;init)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;var&nbsp;temp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec-helper<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(x&nbsp;y&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var&nbsp;init)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(letrec-helper<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(y&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(newtemp&nbsp;temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((var&nbsp;init)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))<p></tt></p>
+<p>
+The syntax <tt>&lt;undefined&gt;</tt> represents an expression that
+returns something that, when stored in a location, causes an exception
+with condition type <tt>&amp;assertion</tt> to
+be raised if an attempt to read from or write to the location occurs before the
+assignments generated by the <tt>letrec</tt> transformation take place.
+(No such expression is defined in Scheme.)</p>
+<p>
+A simpler definition using <tt>syntax-case</tt> and <tt>generate-temporaries</tt> is given in library
+chapter&nbsp;on &#8220;<tt>syntax-case</tt>&#8221;.</p>
+<p>
+</p>
+<a name="node_sec_Temp_41"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_41"><tt>letrec*</tt></a></h4>
+<p>The <tt>letrec*</tt> keyword could be defined approximately in terms of
+<tt>let</tt> and <tt>set!</tt>  using <tt>syntax-rules</tt> as follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>letrec*</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((letrec*&nbsp;((var1&nbsp;init1)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((var1&nbsp;&lt;undefined&gt;)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;var1&nbsp;init1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)))))<p></tt></p>
+<p>
+The syntax <tt>&lt;undefined&gt;</tt> is as in the definition of <tt>letrec</tt> above.</p>
+<p>
+</p>
+<a name="node_sec_Temp_42"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_42"><tt>let-values</tt></a></h4>
+<p>The following definition of <tt>let-values</tt> (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.6">11.4.6</a>)
+using <tt>syntax-rules</tt>
+employs a pair of helpers to
+create temporary names for the formals.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;let-values<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values&nbsp;(binding&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values-helper1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(binding&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))<br>
+<br>
+(define-syntax&nbsp;let-values-helper1<br>
+&nbsp;&nbsp;;;&nbsp;map&nbsp;over&nbsp;the&nbsp;bindings<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((id&nbsp;temp)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((id&nbsp;temp)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assocs<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((formals1&nbsp;expr1)&nbsp;(formals2&nbsp;expr2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values-helper2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formals1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assocs<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((formals2&nbsp;expr2)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))<br>
+<br>
+(define-syntax&nbsp;let-values-helper2<br>
+&nbsp;&nbsp;;;&nbsp;create&nbsp;temporaries&nbsp;for&nbsp;the&nbsp;formals<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values-helper2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;temp-formals<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assocs<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(call-with-values<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;expr1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;temp-formals<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values-helper1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;assocs<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values-helper2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(first&nbsp;.&nbsp;rest)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values-helper2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rest<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...&nbsp;newtemp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;...&nbsp;(first&nbsp;newtemp))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let-values-helper2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rest-formal<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(temp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;expr1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(call-with-values<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;expr1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(temp&nbsp;...&nbsp;.&nbsp;newtemp)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values-helper1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;...&nbsp;(rest-formal&nbsp;newtemp))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bindings<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...))))))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_Temp_43"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_43"><tt>let*-values</tt></a></h4>
+<p>The following macro defines <tt>let*-values</tt> in terms of <tt>let</tt>
+and <tt>let-values</tt> using <tt>syntax-rules</tt>:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;let*-values<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*-values&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;body1&nbsp;body2&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let*-values&nbsp;(binding1&nbsp;binding2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let-values&nbsp;(binding1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*-values&nbsp;(binding2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)))))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_Temp_44"></a>
+<h4 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_44"><tt>let</tt></a></h4>
+<p>The <tt>let</tt> keyword could be defined in terms of <tt>lambda</tt> and <tt>letrec</tt>
+using <tt>syntax-rules</tt> as
+follows:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;<tt>let</tt><br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let&nbsp;((name&nbsp;val)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((lambda&nbsp;(name&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;val&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((let&nbsp;tag&nbsp;((name&nbsp;val)&nbsp;...)&nbsp;body1&nbsp;body2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((letrec&nbsp;((tag&nbsp;(lambda&nbsp;(name&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body1&nbsp;body2&nbsp;...)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tag)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;val&nbsp;...))))<p></tt></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-15.html">previous</a></span><span>, <a href="r6rs-Z-H-17.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

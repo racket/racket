@@ -1,0 +1,235 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-11.html">previous</a></span><span>, <a href="r6rs-Z-H-13.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_9"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_9">Chapter 9</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_9">Primitive syntax</a></h1>
+<p>After the <tt>import</tt> form within a <tt>library</tt> form or a top-level
+program, the forms
+that constitute the body of the library or the top-level program
+depend on the libraries that are
+imported. In particular, imported syntactic keywords determine 
+the available syntactic abstractions and whether each form is a 
+definition or expression. A few form types are
+always available independent of imported libraries, however,
+including constant literals, variable references, procedure calls,
+and macro uses.</p>
+<p>
+</p>
+<a name="node_sec_9.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_9.1">9.1&nbsp;&nbsp;Primitive expression types</a></h2>
+<p></p>
+<p>
+The entries in this section all describe expressions, which may occur
+in the place of &lt;expression&gt; syntactic variables.  See
+also section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4">11.4</a>.</p>
+<p>
+</p>
+<a name="node_sec_Temp_14"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_14">Constant literals</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>&lt;number&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<div align=left><tt>&lt;boolean&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<div align=left><tt>&lt;character&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<div align=left><tt>&lt;string&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<div align=left><tt>&lt;bytevector&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<a name="node_idx_292"></a><p>
+An expression consisting of a representation of a number object, a
+boolean, a character, a string, or a bytevector, evaluates &#8220;to
+itself&#8221;.</p>
+<p>
+</p>
+
+<tt>145932&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;145932<br>
+<tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><br>
+&quot;abc&quot;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;&quot;abc&quot;<br>
+#vu8(2&nbsp;24&nbsp;123)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;#vu8(2&nbsp;24&nbsp;123)<p></tt></p>
+<p>
+As noted in section&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.10">5.10</a>, the value of a literal
+expression is immutable.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_Temp_15"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_15">Variable references</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p></p>
+<div align=left><tt>&lt;variable&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+An expression consisting of a variable<a name="node_idx_294"></a>(section&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.2">5.2</a>) is a variable reference if it is not a
+macro use (see below).  The value of
+the variable reference is the value stored in the location to which the
+variable is bound.  It is a syntax violation to reference
+an unbound<a name="node_idx_296"></a>variable.</p>
+<p>
+The following example examples assumes the base library
+has been imported:
+</p>
+
+<tt>(define&nbsp;x&nbsp;28)<br>
+x&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;28<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_Temp_16"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_16">Procedure calls</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(&lt;operator&gt; &lt;operand<sub>1</sub>&gt; <tt>...</tt>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+A procedure call consists of expressions for the procedure to be
+called and the arguments to be passed to it, with enclosing
+parentheses.  A form in an expression context is a procedure call if
+&lt;operator&gt; is not an identifier bound as a syntactic keyword
+(see section&nbsp;<a href="#node_sec_9.2">9.2</a> below).</p>
+<p>
+When a procedure call is evaluated, the operator and operand
+expressions are evaluated (in an unspecified order) and the resulting
+procedure is passed the resulting
+arguments.<a name="node_idx_298"></a><a name="node_idx_300"></a></p>
+<p>
+The following examples assume the <tt>(rnrs base (6))</tt> library
+has been imported:
+</p>
+
+<tt>(+&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;7<br>
+((if&nbsp;<tt>#f</tt>&nbsp;+&nbsp;*)&nbsp;3&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;12<p></tt>
+If the value of &lt;operator&gt; is not a procedure, an exception with
+condition type <tt>&amp;assertion</tt> is raised.  Also, if &lt;operator&gt;
+does not accept as many arguments as there are &lt;operand&gt;s, an
+exception with condition type <tt>&amp;assertion</tt> is raised.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em> In contrast to other dialects of Lisp, the order of
+evaluation is unspecified, and the operator expression and the operand
+expressions are always evaluated with the same evaluation rules.<p>
+Although the order of evaluation is otherwise unspecified, the effect of
+any concurrent evaluation of the operator and operand expressions is
+constrained to be consistent with some sequential order of evaluation.
+The order of evaluation may be chosen differently for each procedure call.
+</p>
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em> In many dialects of Lisp, the form <tt>()</tt> is a legitimate expression.  In Scheme, expressions written as
+list/pair forms must have at
+least one subexpression, so <tt>()</tt> is not a syntactically valid
+expression.
+</blockquote><p>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_9.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_9.2">9.2&nbsp;&nbsp;Macros</a></h2>
+<p></p>
+<p>
+Libraries and top-level programs can define and use new kinds of derived expressions and
+definitions called <em>syntactic abstractions</em> or
+<em>macros</em>.<a name="node_idx_302"></a><a name="node_idx_304"></a>A syntactic abstraction is created by binding a keyword to a
+<em>macro transformer</em> or, simply, <em>transformer</em>.
+<a name="node_idx_306"></a><a name="node_idx_308"></a>The transformer determines
+how a use of the macro (called a <a name="node_idx_310"></a><em>macro use</em>)
+is transcribed into a more primitive form.</p>
+<p>
+Most macro uses have the form:
+</p>
+
+<tt>(&lt;keyword&gt;&nbsp;&lt;datum&gt;&nbsp;<tt>...</tt>)<p></tt>where &lt;keyword&gt; is an identifier that uniquely determines the
+kind of form.  This identifier is called the <em>syntactic
+keyword</em><a name="node_idx_312"></a>, or simply <em>keyword</em><a name="node_idx_314"></a>, of the macro<a name="node_idx_316"></a>.
+The number of &lt;datum&gt;s and the syntax
+of each depends on the syntactic abstraction.</p>
+<p>
+Macro uses can also take the form of improper lists, singleton
+identifiers, or <tt>set!</tt> forms, where the second subform of the
+<tt>set!</tt> is the keyword (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.19">11.19</a>)
+library section&nbsp;on &#8220;<tt>make-variable-transformer</tt>&#8221;):
+</p>
+
+<tt>(&lt;keyword&gt;&nbsp;&lt;datum&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;datum&gt;)<br>
+&lt;keyword&gt;<br>
+(set!&nbsp;&lt;keyword&gt;&nbsp;&lt;datum&gt;)<p></tt></p>
+<p>
+The <tt>define-syntax</tt>, <tt>let-syntax</tt> and <tt>letrec-syntax</tt>
+forms, described in sections&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.2.2">11.2.2</a> and <a href="r6rs-Z-H-14.html#node_sec_11.18">11.18</a>,
+create bindings for keywords, associate them with macro transformers,
+and control the scope within which they are visible.</p>
+<p>
+The <tt>syntax-rules</tt> and <tt>identifier-syntax</tt> forms, described in
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.19">11.19</a>, create transformers via a pattern
+language.  Moreover, the <tt>syntax-case</tt> form, described in library
+chapter&nbsp;on &#8220;<tt>syntax-case</tt>&#8221;, 
+allows creating transformers via arbitrary Scheme code.</p>
+<p>
+Keywords occupy the same name space as variables.
+That is, within the same
+scope, an identifier can be bound as a variable or keyword, or neither, but
+not both, and local bindings of either kind may shadow other bindings of
+either kind.</p>
+<p>
+Macros defined using <tt>syntax-rules</tt> and <tt>identifier-syntax</tt>
+are &#8220;hygienic&#8221; and &#8220;referentially transparent&#8221; and thus preserve
+Scheme&#8217;s lexical scoping&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_16">16</a>,&nbsp;<a href="r6rs-Z-H-21.html#node_bib_15">15</a>,&nbsp;<a href="r6rs-Z-H-21.html#node_bib_2">2</a>,&nbsp;<a href="r6rs-Z-H-21.html#node_bib_6">6</a>,&nbsp;<a href="r6rs-Z-H-21.html#node_bib_9">9</a>]:
+<a name="node_idx_318"></a><a name="node_idx_320"></a></p>
+<p>
+</p>
+<ul>
+<li><p>If a macro transformer inserts a binding for an identifier
+(variable or keyword) not appearing in the macro use, the identifier is in effect renamed
+throughout its scope to avoid conflicts with other identifiers.</p>
+<p>
+</p>
+<li><p>If a macro transformer inserts a free reference to an
+identifier, the reference refers to the binding that was visible
+where the transformer was specified, regardless of any local
+bindings that may surround the use of the macro.
+</p>
+</ul><p></p>
+<p>
+Macros defined using the <tt>syntax-case</tt> facility are also
+hygienic unless <tt>datum-&gt;syntax</tt>
+(see library section&nbsp;on &#8220;Syntax-object and datum conversions&#8221;) is used.</p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-11.html">previous</a></span><span>, <a href="r6rs-Z-H-13.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

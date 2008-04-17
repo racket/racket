@@ -27,7 +27,7 @@ with a @litchar{> } prompt:
 }
 
 @margin-note{For information on GNU Readline support, see
-@schememodname[readline/rep].}
+@schememodname[readline].}
 
 To initialize the @tech{REPL}'s environment, @exec{mzscheme} first
 requires the @schememodname[scheme/init] module, which provides all of
@@ -40,15 +40,14 @@ If any command-line arguments are provided (other than configuration
 options), add @Flag{i} or @DFlag{repl} to re-enable the
 @tech{REPL}. For example,
 
-@commandline{mzscheme -q -i}
+@commandline{mzscheme -e '(display "hi\n")' }
 
-disables loading of @scheme[(find-system-path 'init-file)], but still
-presents a @tech{REPL}.
+displays ``hi'' on start-up, but still presents a @tech{REPL}.
 
-Furthermore, if module-requiring flags appear before
-@Flag{i}/@DFlag{repl}, they cancel the automatic requiring of
-@schememodname[scheme/init]. This behavior can be used to initialize
-the @tech{REPL}'s environment with a different language. For example,
+If module-requiring flags appear before @Flag{i}/@DFlag{repl}, they
+cancel the automatic requiring of @schememodname[scheme/init]. This
+behavior can be used to initialize the @tech{REPL}'s environment with
+a different language. For example,
 
 @commandline{mzscheme -l scheme/base -i}
 

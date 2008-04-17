@@ -40,7 +40,7 @@
     ;; The phase-level argument is used only when `stx/binding'
     ;; is an identifier.
     ;;
-    ;; Note: documentation key currently don't distinguish different
+    ;; Note: documentation keys currently don't distinguish different
     ;; phase definitions of an identifier from a source module.
     ;; That is, there's no way to document (define x ....) differently
     ;; from (define-for-syntax x ...). This isn't a problem in practice,

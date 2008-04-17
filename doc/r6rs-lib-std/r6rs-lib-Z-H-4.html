@@ -1,0 +1,456 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-3.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_3"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_3">Chapter 3</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_3">List utilities</a></h1>
+<p></p>
+<p>
+This chapter describes the <tt>(rnrs lists (6))</tt><a name="node_idx_200"></a>library, which
+contains various useful procedures that operate on lists.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_202"></a>find<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument
+and return a single value.  <i>Proc</i> should not mutate <i>list</i>.
+The <tt>find</tt> procedure applies <i>proc</i> to the elements of
+<i>list</i> in order.  If <i>proc</i> returns a true value for an
+element, <tt>find</tt> immediately returns that element.  If <i>proc</i>
+returns <tt>#f</tt> for all elements of the list, <tt>find</tt> returns
+<tt>#f</tt>.  <i>Proc</i> is always called in the same dynamic environment
+as <tt>find</tt> itself.</p>
+<p>
+</p>
+
+<tt>(find&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4<br>
+(find&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;5&nbsp;1&nbsp;5&nbsp;9))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check that <i>list</i> is a chain of
+pairs up to the found element, or that it is indeed a list if no
+element is found.  It should not check that it is a chain of pairs
+beyond the found element.  The implementation must check the restrictions on
+<i>proc</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_204"></a>for-all<i> proc <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt> <i>list<sub><em>n</em></sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_206"></a>exists<i> proc <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt> <i>list<sub><em>n</em></sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <i>list</i>s should all have the same length, and
+<i>proc</i> should accept <em>n</em> arguments and
+return a single value.
+<i>Proc</i> should not mutate the <i>list</i> arguments.</p>
+<p>
+For natural numbers <em>i</em>  =  0, 1, <tt>...</tt>, the <tt>for-all</tt> procedure
+successively applies <i>proc</i> to arguments <em>x</em><sub><em>i</em></sub><sup>1</sup> <tt>...</tt> <em>x</em><sub><em>i</em></sub><sup><em>n</em></sup>,
+where <em>x</em><sub><em>i</em></sub><sup><em>j</em></sup> is the <em>i</em>th element of <i>list<sub><em>j</em></sub></i>, until <tt>#f</tt> is
+returned.  If <i>proc</i> returns true values for all but the last
+element of <i>list<sub>1</sub></i>, <tt>for-all</tt> performs a tail call of <i>proc</i>
+on the <em>k</em>th elements, where <em>k</em> is the length of <i>list<sub>1</sub></i>.  If <i>proc</i>
+returns <tt>#f</tt> on any set of elements, <tt>for-all</tt> returns
+<tt>#f</tt> after the first such application of <i>proc</i>.
+If the <i>list</i>s are all empty, <tt>for-all</tt> returns <tt>#t</tt>.</p>
+<p>
+For natural numbers <em>i</em>  =  0, 1, <tt>...</tt>, the <tt>exists</tt> procedure
+applies <i>proc</i> successively to arguments <em>x</em><sub><em>i</em></sub><sup>1</sup> <tt>...</tt> <em>x</em><sub><em>i</em></sub><sup><em>n</em></sup>,
+where <em>x</em><sub><em>i</em></sub><sup><em>j</em></sup> is the <em>i</em>th element of <i>list<sub><em>j</em></sub></i>, until a true value is
+returned.  If <i>proc</i> returns <tt>#f</tt> for all but the last
+elements of the <i>list</i>s, <tt>exists</tt> performs a tail call of
+<i>proc</i> on the <em>k</em>th elements, where <em>k</em> is the length of
+<i>list<sub>1</sub></i>.
+If <i>proc</i> returns a true value on any set of elements, <tt>exists</tt> returns that value after the first such application of
+<i>proc</i>.  If the <i>list</i>s
+are all empty, <tt>exists</tt> returns <tt>#f</tt>.</p>
+<p>
+<i>Proc</i> is always called in the same dynamic environment 
+as <tt>for-all</tt> or, respectively, <tt>exists</tt> itself.</p>
+<p>
+</p>
+
+<tt>(for-all&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(for-all&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;.&nbsp;2))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(for-all&nbsp;even?&nbsp;&#8217;(2&nbsp;4&nbsp;14))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(for-all&nbsp;even?&nbsp;&#8217;(2&nbsp;4&nbsp;14&nbsp;.&nbsp;9))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;<tt>&amp;assertion</tt></tt>&nbsp;<i>exception</i><br>
+(for-all&nbsp;(lambda&nbsp;(n)&nbsp;(and&nbsp;(even?&nbsp;n)&nbsp;n))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(2&nbsp;4&nbsp;14))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;14<br>
+(for-all&nbsp;&lt;&nbsp;&#8217;(1&nbsp;2&nbsp;3)&nbsp;&#8217;(2&nbsp;3&nbsp;4))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(for-all&nbsp;&lt;&nbsp;&#8217;(1&nbsp;2&nbsp;4)&nbsp;&#8217;(2&nbsp;3&nbsp;4))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+<br>
+(exists&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(exists&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;1&nbsp;5&nbsp;9))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(exists&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;1&nbsp;5&nbsp;9&nbsp;.&nbsp;2))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;<tt>&amp;assertion</tt></tt>&nbsp;<i>exception</i><br>
+(exists&nbsp;(lambda&nbsp;(n)&nbsp;(and&nbsp;(even?&nbsp;n)&nbsp;n))&nbsp;&#8217;(2&nbsp;1&nbsp;4&nbsp;14))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;2<br>
+(exists&nbsp;&lt;&nbsp;&#8217;(1&nbsp;2&nbsp;4)&nbsp;&#8217;(2&nbsp;3&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(exists&nbsp;&gt;&nbsp;&#8217;(1&nbsp;2&nbsp;3)&nbsp;&#8217;(2&nbsp;3&nbsp;4))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check that the <i>list</i>s are
+chains of pairs to the extent necessary to determine the return value.
+If this requires traversing the lists entirely, the implementation
+should check that the <i>list</i>s all have the same length.  If not,
+it should not check that the <i>list</i>s are chains of pairs beyond
+the traversal.  The implementation must check the restrictions on
+<i>proc</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_208"></a>filter<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_210"></a>partition<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument
+and return a single value. <i>Proc</i> should not mutate <i>list</i>.</p>
+<p>
+The <tt>filter</tt> procedure applies
+<i>proc</i> to each element of <i>list</i> and returns a list of
+the elements of <i>list</i> for which <i>proc</i> returned a true
+value.  The <tt>partition</tt> procedure also applies <i>proc</i> to
+each element of <i>list</i>, but returns two values, the first one a
+list of the elements of <i>list</i> for which <i>proc</i> returned a
+true value, and the second a list of the elements of <i>list</i> for
+which <i>proc</i> returned <tt>#f</tt>.
+In both cases, the elements of the result list(s) are in the same
+order as they appear in the input list.
+<i>Proc</i> is always called in the same dynamic environment 
+as <tt>filter</tt> or, respectively, <tt>partition</tt> itself.
+If multiple returns occur from <tt>filter</tt> or <tt>partitions</tt>, the return
+values returned by earlier returns are not mutated.</p>
+<p>
+</p>
+
+<tt>(filter&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(4&nbsp;2&nbsp;6)<br>
+<br>
+(partition&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(4&nbsp;2&nbsp;6)&nbsp;(3&nbsp;1&nbsp;1&nbsp;5&nbsp;9)&nbsp;;&nbsp;two&nbsp;values<br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions on <i>proc</i>
+to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_212"></a>fold-left<i> combine nil <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt><i>list<sub><em>n</em></sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <i>list</i>s should all have the same
+length.  <i>Combine</i> must be a procedure.  It should accept one more
+argument than there are <i>list</i>s and return a single value.
+It should not mutate the <i>list</i> arguments.
+The <tt>fold-left</tt> procedure iterates the <i>combine</i> procedure over an
+accumulator value and the elements of the <i>list</i>s from left to
+right, starting with an accumulator value of <i>nil</i>.  More
+specifically, <tt>fold-left</tt> returns <i>nil</i> if the <i>list</i>s are
+empty.  If they are not empty, <i>combine</i> is first applied to
+<i>nil</i> and the respective first elements of the <i>list</i>s in
+order.  The result becomes the new accumulator value, and <i>combine</i>
+is applied to the new accumulator value and the respective next elements
+of the <i>list</i>.  This step is repeated until the end of the list is
+reached; then the accumulator value is returned.
+<i>Combine</i> is always called in the same dynamic environment 
+as <tt>fold-left</tt> itself.</p>
+<p>
+</p>
+
+<tt>(fold-left&nbsp;+&nbsp;0&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;15<br>
+<br>
+(fold-left&nbsp;(lambda&nbsp;(a&nbsp;e)&nbsp;(cons&nbsp;e&nbsp;a))&nbsp;&#8217;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(5&nbsp;4&nbsp;3&nbsp;2&nbsp;1)<br>
+<br>
+(fold-left&nbsp;(lambda&nbsp;(count&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(odd?&nbsp;x)&nbsp;(+&nbsp;count&nbsp;1)&nbsp;count))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5&nbsp;3))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;7<br>
+<br>
+(fold-left&nbsp;(lambda&nbsp;(max-len&nbsp;s)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(max&nbsp;max-len&nbsp;(string-length&nbsp;s)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(&quot;longest&quot;&nbsp;&quot;long&quot;&nbsp;&quot;longer&quot;))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;7<br>
+<br>
+(fold-left&nbsp;cons&nbsp;&#8217;(q)&nbsp;&#8217;(a&nbsp;b&nbsp;c))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;((((q)&nbsp;.&nbsp;a)&nbsp;.&nbsp;b)&nbsp;.&nbsp;c)<br>
+<br>
+(fold-left&nbsp;+&nbsp;0&nbsp;&#8217;(1&nbsp;2&nbsp;3)&nbsp;&#8217;(4&nbsp;5&nbsp;6))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;21<br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation should check that the <i>list</i>s all
+have the same length.  The implementation must check the restrictions
+on <i>combine</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>combine</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_214"></a>fold-right<i> combine nil <i>list<sub>1</sub></i> <i>list<sub>2</sub></i> <tt>...</tt><i>list<sub><em>n</em></sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <i>list</i>s should all have the same
+length.  <i>Combine</i> must be a procedure.  It should accept one more
+argument than there are <i>list</i>s and return a single value.
+<i>Combine</i> should not mutate the <i>list</i> arguments.
+The <tt>fold-right</tt> procedure iterates the <i>combine</i> procedure over
+the elements of the <i>list</i>s from right to left and an accumulator
+value, starting with an accumulator value of <i>nil</i>.  More
+specifically, <tt>fold-right</tt> returns <i>nil</i> if the <i>list</i>s
+are empty.  If they are not empty, <i>combine</i> is first applied to the
+respective last elements of the <i>list</i>s in order and <i>nil</i>.
+The result becomes the new accumulator value, and <i>combine</i> is
+applied to the respective previous elements of the <i>list</i>s and the
+new accumulator value.  This step is repeated until the beginning of the
+list is reached; then the accumulator value is returned.
+<i>Proc</i> is always called in the same dynamic environment 
+as <tt>fold-right</tt> itself.</p>
+<p>
+</p>
+
+<tt>(fold-right&nbsp;+&nbsp;0&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;15<br>
+<br>
+(fold-right&nbsp;cons&nbsp;&#8217;()&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5)<br>
+<br>
+(fold-right&nbsp;(lambda&nbsp;(x&nbsp;l)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(odd?&nbsp;x)&nbsp;(cons&nbsp;x&nbsp;l)&nbsp;l))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(3&nbsp;1&nbsp;1&nbsp;5&nbsp;9&nbsp;5)<br>
+<br>
+(fold-right&nbsp;cons&nbsp;&#8217;(q)&nbsp;&#8217;(a&nbsp;b&nbsp;c))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(a&nbsp;b&nbsp;c&nbsp;q)<br>
+<br>
+(fold-right&nbsp;+&nbsp;0&nbsp;&#8217;(1&nbsp;2&nbsp;3)&nbsp;&#8217;(4&nbsp;5&nbsp;6))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;21<br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation should check that the <i>list</i>s all
+have the same length.  The implementation must check the restrictions
+on <i>combine</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>combine</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_216"></a>remp<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_218"></a>remove<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_220"></a>remv<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_222"></a>remq<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument
+and return a single value.
+<i>Proc</i> should not mutate <i>list</i>.</p>
+<p>
+Each of these procedures returns a list of the elements of <i>list</i>
+that do not satisfy a given condition.  The <tt>remp</tt> procedure
+applies <i>proc</i> to each element of <i>list</i> and returns a
+list of the elements of <i>list</i> for which <i>proc</i> returned
+<tt>#f</tt>.  <i>Proc</i> is always called in the same dynamic environment 
+as <tt>remp</tt> itself.
+The <tt>remove</tt>, <tt>remv</tt>, and <tt>remq</tt> procedures return a list of
+the elements that are not <i>obj</i>.  The <tt>remq</tt> procedure uses <tt>eq?</tt> to
+compare <i>obj</i> with the elements of <i>list</i>, while <tt>remv</tt>
+uses <tt>eqv?</tt> and <tt>remove</tt> uses <tt>equal?</tt>.
+The elements of the result list are in the same
+order as they appear in the input list.
+If multiple returns occur from <tt>remp</tt>, the return
+values returned by earlier returns are not mutated.</p>
+<p>
+</p>
+
+<tt>(remp&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(3&nbsp;1&nbsp;1&nbsp;5&nbsp;9&nbsp;5)<br>
+<br>
+(remove&nbsp;1&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(3&nbsp;4&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5)<br>
+<br>
+(remv&nbsp;1&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(3&nbsp;4&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5)<br>
+<br>
+(remq&nbsp;&#8217;foo&nbsp;&#8217;(bar&nbsp;foo&nbsp;baz))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(bar&nbsp;baz)<br>
+<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions on <i>proc</i>
+to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_224"></a>memp<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_226"></a>member<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_228"></a>memv<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_230"></a>memq<i> obj list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument
+and return a single value.  <i>Proc</i> should not mutate <i>list</i>.</p>
+<p>
+These procedures return the first sublist of <i>list</i> whose car
+satisfies a given condition, where the sublists of <i>lists</i> are the
+lists returned by <tt>(list-tail <i>list</i> <i>k</i>)</tt> for
+<i>k</i> less than the length of <i>list</i>.  The <tt>memp</tt> procedure applies
+<i>proc</i> to the cars of the sublists of <i>list</i> until it
+finds one for which <i>proc</i> returns a true value.
+<i>Proc</i> is always called in the same dynamic environment 
+as <tt>memp</tt> itself.  The <tt>member</tt>, <tt>memv</tt>, and <tt>memq</tt> procedures look for the first occurrence of
+<i>obj</i>.  If <i>list</i> does not contain an element satisfying the
+condition, then <tt>#f</tt> (not the empty list) is returned.  The <tt>member</tt> procedure uses <tt>equal?</tt> to compare <i>obj</i> with the elements of
+<i>list</i>, while <tt>memv</tt> uses <tt>eqv?</tt> and <tt>memq</tt> uses
+<tt>eq?</tt>.</p>
+<p>
+</p>
+
+<tt>(memp&nbsp;even?&nbsp;&#8217;(3&nbsp;1&nbsp;4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(4&nbsp;1&nbsp;5&nbsp;9&nbsp;2&nbsp;6&nbsp;5)<br>
+<br>
+(memq&nbsp;&#8217;a&nbsp;&#8217;(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(a&nbsp;b&nbsp;c)<br>
+(memq&nbsp;&#8217;b&nbsp;&#8217;(a&nbsp;b&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(b&nbsp;c)<br>
+(memq&nbsp;&#8217;a&nbsp;&#8217;(b&nbsp;c&nbsp;d))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(memq&nbsp;(list&nbsp;&#8217;a)&nbsp;&#8217;(b&nbsp;(a)&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(member&nbsp;(list&nbsp;&#8217;a)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(b&nbsp;(a)&nbsp;c))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;((a)&nbsp;c)<br>
+(memq&nbsp;101&nbsp;&#8217;(100&nbsp;101&nbsp;102))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>unspecified</i><br>
+(memv&nbsp;101&nbsp;&#8217;(100&nbsp;101&nbsp;102))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(101&nbsp;102)<p></tt> </p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check that <i>list</i> is a chain of
+pairs up to the found element, or that it is indeed a list if no
+element is found.  It should not check that it is a chain of pairs
+beyond the found element.  The implementation must check the restrictions on
+<i>proc</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_232"></a>assp<i> proc alist</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_234"></a>assoc<i> obj alist</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_236"></a>assv<i> obj alist</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_238"></a>assq<i> obj alist</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Alist</i> (for &#8220;association list&#8221;) should be a list of pairs.
+<i>Proc</i> should accept one argument
+and return a single value.  <i>Proc</i> should not mutate <i>alist</i>.</p>
+<p>
+These procedures find the first pair in <i>alist</i>
+whose car field satisfies a given condition, and returns that pair
+without traversing <i>alist</i> further.
+If no pair in <i>alist</i> satisfies the condition, then <tt>#f</tt>
+is returned.  The <tt>assp</tt> procedure successively applies
+<i>proc</i> to the car fields of <i>alist</i> and looks for a pair
+for which it returns a true value.
+<i>Proc</i> is always called in the same dynamic environment 
+as <tt>assp</tt> itself.  The <tt>assoc</tt>, <tt>assv</tt>, and <tt>assq</tt> procedures look for a pair that has <i>obj</i> as its car.  The
+<tt>assoc</tt> procedure uses 
+<tt>equal?</tt> to compare <i>obj</i> with the car fields of the pairs in
+<i>alist</i>, while <tt>assv</tt> uses <tt>eqv?</tt> and <tt>assq</tt> uses
+<tt>eq?</tt>.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check that <i>alist</i> is a chain of
+pairs containing pairs up to the found pair, or that it is indeed a
+list of pairs if no element is found.  It should not check that it is
+a chain of pairs beyond the found element.  The implementation must
+check the restrictions on <i>proc</i> to the extent performed by
+applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;d&nbsp;&#8217;((3&nbsp;a)&nbsp;(1&nbsp;b)&nbsp;(4&nbsp;c)))<br>
+<br>
+(assp&nbsp;even?&nbsp;d)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(4&nbsp;c)<br>
+(assp&nbsp;odd?&nbsp;d)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(3&nbsp;a)<br>
+<br>
+(define&nbsp;e&nbsp;&#8217;((a&nbsp;1)&nbsp;(b&nbsp;2)&nbsp;(c&nbsp;3)))<br>
+(assq&nbsp;&#8217;a&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(a&nbsp;1)<br>
+(assq&nbsp;&#8217;b&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(b&nbsp;2)<br>
+(assq&nbsp;&#8217;d&nbsp;e)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(assq&nbsp;(list&nbsp;&#8217;a)&nbsp;&#8217;(((a))&nbsp;((b))&nbsp;((c))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(assoc&nbsp;(list&nbsp;&#8217;a)&nbsp;&#8217;(((a))&nbsp;((b))&nbsp;((c))))&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;((a))<br>
+(assq&nbsp;5&nbsp;&#8217;((2&nbsp;3)&nbsp;(5&nbsp;7)&nbsp;(11&nbsp;13)))&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>unspecified</i><br>
+(assv&nbsp;5&nbsp;&#8217;((2&nbsp;3)&nbsp;(5&nbsp;7)&nbsp;(11&nbsp;13)))&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(5&nbsp;7)<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_240"></a>cons*<i> <i>obj<sub>1</sub></i> <tt>...</tt> <i>obj<sub><em>n</em></sub></i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_242"></a>cons*<i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If called with at least two arguments, <tt>cons*</tt> returns a freshly
+allocated chain of pairs whose cars are <i>obj<sub>1</sub></i>, <tt>...</tt>,
+<i>obj<sub><em>n</em></sub></i>, and whose last cdr is <i>obj</i>.  If called with only one
+argument, <tt>cons*</tt> returns that argument.</p>
+<p>
+</p>
+
+<tt>(cons*&nbsp;1&nbsp;2&nbsp;&#8217;(3&nbsp;4&nbsp;5))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5)<br>
+(cons*&nbsp;1&nbsp;2&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;.&nbsp;3)<br>
+(cons*&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p>
+    </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-3.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

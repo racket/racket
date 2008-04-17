@@ -1,0 +1,326 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-8.html">previous</a></span><span>, <a href="r6rs-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_6"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_6">Chapter 6</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_6">Entry format</a></h1>
+<p></p>
+<p>
+The chapters that describe bindings in the base library and the standard
+libraries are organized
+into entries.  Each entry describes one language feature or a group of
+related features, where a feature is either a syntactic construct or a
+built-in procedure.  An entry begins with one or more header lines of the form</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt><i>template</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;<i>category</i>&nbsp;</div>
+<p>
+The <i>category</i> defines the kind of binding described by the entry,
+typically either &#8220;syntax&#8221; or &#8220;procedure&#8221;.
+An entry may specify various restrictions on subforms or arguments.
+For background on this, see section&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.4">5.4</a>.</p>
+<p>
+</p>
+<a name="node_sec_6.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.1">6.1&nbsp;&nbsp;Syntax entries</a></h2>
+<p>If <i>category</i> is &#8220;syntax&#8221;, the entry describes a 
+special syntactic construct, and the template gives the syntax of the
+forms of the construct.  
+The template is written in a notation similar to a right-hand
+side of the BNF rules in chapter&nbsp;<a href="r6rs-Z-H-7.html#node_chap_4">4</a>, and describes
+the set of forms equivalent to the forms matching the
+template as syntactic data.  Some &#8220;syntax&#8221; entries carry a
+suffix (<tt>expand</tt>), specifying that the syntactic keyword of the
+construct is exported with level
+1.  Otherwise, the syntactic keyword is exported with level 0; see
+section&nbsp;<a href="r6rs-Z-H-10.html#node_sec_7.2">7.2</a>.</p>
+<p>
+Components of the form described by a template are designated
+by syntactic variables, which are written using angle brackets, for
+example, &lt;expression&gt;, &lt;variable&gt;.  Case is insignificant
+in syntactic variables.  Syntactic variables
+stand for other forms, or
+sequences of them.  A syntactic variable may refer to a non-terminal
+in the grammar for syntactic data (see section&nbsp;<a href="r6rs-Z-H-7.html#node_sec_4.3.1">4.3.1</a>),
+in which case only forms matching
+that non-terminal are permissible in that position.
+For example, &lt;identifier&gt; stands for a form which must be an
+identifier.
+Also,
+&lt;expression&gt; stands for any form which is a
+syntactically valid expression.  Other non-terminals that are used in
+templates are defined as part of the specification.</p>
+<p>
+The notation
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;thing<sub>1</sub>&gt; <tt>...</tt>
+</p>
+<p>
+indicates zero or more occurrences of a &lt;thing&gt;, and
+</p>
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;thing<sub>1</sub>&gt; &lt;thing<sub>2</sub>&gt; <tt>...</tt>
+</p>
+<p>
+indicates one or more occurrences of a &lt;thing&gt;.</p>
+<p>
+It is the programmer&#8217;s responsibility to ensure that each component of
+a form has the shape specified by a template.  Descriptions of syntax
+may express other restrictions on the components of a form.
+Typically, such a restriction is formulated as a phrase of the form
+&#8220;&lt;x&gt; must be<a name="node_idx_260"></a>a <tt>...</tt>&#8221;.  Again, these
+specify the programmer&#8217;s responsibility.  It is the implementation&#8217;s
+responsibility to check that these restrictions are satisfied, as long
+as the macro transformers involved in expanding the form terminate.
+If the implementation detects that a component does not meet the
+restriction, an exception with condition type <tt>&amp;syntax</tt> is raised.</p>
+<p>
+</p>
+<a name="node_sec_6.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.2">6.2&nbsp;&nbsp;Procedure entries</a></h2>
+<p>If <i>category</i> is &#8220;procedure&#8221;, then the entry describes a procedure, and
+the header line gives a template for a call to the procedure.  Parameter
+names in the template are <i>italicized</i>.  Thus the header line</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>(vector-ref <i>vector</i> <i>k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+indicates that the built-in procedure <tt>vector-ref</tt> takes
+two arguments, a vector <i>vector</i> and an exact non-negative integer
+object <i>k</i> (see below).  The header lines</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>(make-vector <i>k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(make-vector <i>k</i> <i>fill</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+indicate that the <tt>make-vector</tt> procedure takes
+either one or two arguments.  The parameter names are
+case-insensitive: <i>Vector</i> is the same as <i>vector</i>.</p>
+<p>
+As with syntax templates, an ellipsis <tt>...</tt> at the end of a header
+line, as in</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>(= <i>z<sub>1</sub></i> <i>z<sub>2</sub></i> <i>z<sub>3</sub></i> <tt>...</tt>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+indicates that the procedure takes arbitrarily many arguments of the
+same type as specified for the last parameter name.  In this case,
+<tt>=</tt> accepts two or more arguments that must all be complex
+number objects.</p>
+<p>
+
+A procedure that detects an argument that it is not specified to
+handle must raise an exception with condition type
+<tt>&amp;assertion</tt>.  Also, the argument specifications are exhaustive: if the
+number of arguments provided in a procedure call does not match 
+any number of arguments accepted by the procedure, an exception with
+condition type <tt>&amp;assertion</tt> must be raised.</p>
+<p>
+For succinctness, the report follows the convention
+that if a parameter name is also the name of a type, then the corresponding argument must be of the named type.
+For example, the header line for <tt>vector-ref</tt> given above dictates that the
+first argument to <tt>vector-ref</tt> must be a vector.  The following naming
+conventions imply type restrictions:</p>
+<p>
+</p>
+<table border=0><tr><td valign=top ><i>obj</i></td><td valign=top >any object</td></tr>
+<tr><td valign=top ><i>z</i></td><td valign=top >complex number object</td></tr>
+<tr><td valign=top ><i>x</i></td><td valign=top >real number object</td></tr>
+<tr><td valign=top ><i>y</i></td><td valign=top >real number object</td></tr>
+<tr><td valign=top ><i>q</i></td><td valign=top >rational number object</td></tr>
+<tr><td valign=top ><i>n</i></td><td valign=top >integer object</td></tr>
+<tr><td valign=top ><i>k</i></td><td valign=top >exact non-negative integer object</td></tr>
+<tr><td valign=top ><i>bool</i></td><td valign=top >boolean (<tt>#f</tt> or <tt>#t</tt>)</td></tr>
+<tr><td valign=top ><i>octet</i></td><td valign=top >exact integer object in {0, <tt>...</tt>, 255}</td></tr>
+<tr><td valign=top ><i>byte</i></td><td valign=top >exact integer object in { <tt>-</tt> 128, <tt>...</tt>, 127}</td></tr>
+<tr><td valign=top ><i>char</i></td><td valign=top >character (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.11">11.11</a>)</td></tr>
+<tr><td valign=top ><i>pair</i></td><td valign=top >pair (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.9">11.9</a>)</td></tr>
+<tr><td valign=top ><i>vector</i></td><td valign=top >vector (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.13">11.13</a>)</td></tr>
+<tr><td valign=top ><i>string</i></td><td valign=top >string (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.12">11.12</a>)</td></tr>
+<tr><td valign=top ><i>condition</i></td><td valign=top >condition (see library section&nbsp;on &#8220;Conditions&#8221;)</td></tr>
+<tr><td valign=top ><i>bytevector</i></td><td valign=top >bytevector (see library chapter&nbsp;on &#8220;Bytevectors&#8221;)</td></tr>
+<tr><td valign=top ><i>proc</i></td><td valign=top >procedure (see section&nbsp;<a href="r6rs-Z-H-4.html#node_sec_1.6">1.6</a>)
+</td></tr></table>
+<p>
+Other type restrictions are expressed through parameter-naming
+conventions that are described in specific chapters.  For example,
+library chapter&nbsp;on &#8220;Arithmetic&#8221; uses a number of special
+parameter variables for the various subsets of the numbers.</p>
+<p>
+With the listed type restrictions, it is the programmer&#8217;s responsibility to
+ensure that the corresponding argument is of the specified type.
+It is the implementation&#8217;s responsibility to check for
+that type.</p>
+<p>
+A parameter called <i>list</i> means that it is the
+programmer&#8217;s responsibility to pass an argument that is a list (see
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.9">11.9</a>).  It is the implementation&#8217;s responsibility
+to check that the argument is appropriately structured for the
+operation to perform its function, to the extent that this is possible
+and reasonable.  The implementation must at least check that the
+argument is either an empty list or a pair.</p>
+<p>
+Descriptions of procedures may express other restrictions on the
+arguments of a procedure.  Typically, such a restriction is formulated
+as a phrase of the form &#8220;<i>x</i> must be a <tt>...</tt>&#8221; (or otherwise
+using the word &#8220;must&#8221;).</p>
+<p>
+</p>
+<a name="node_sec_6.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.3">6.3&nbsp;&nbsp;Implementation responsibilities</a></h2>
+<p>In addition to the restrictions implied by naming conventions, an
+entry may list additional explicit restrictions.
+These explicit restrictions usually describe both the
+programmer&#8217;s responsibilities, who must ensure that the subforms of a
+form are appropriate, or that an appropriate
+argument is passed, and the implementation&#8217;s responsibilities, which
+must check that subform adheres to the specified restrictions (if
+macro expansion terminates), or if the argument is appropriate.  A description
+may explicitly list the implementation&#8217;s responsibilities for some
+arguments or subforms in a paragraph labeled &#8220;<i>Implementation
+responsibilities</i>&#8221;.  In this case, the responsibilities specified
+for these subforms or arguments in the rest of the description are only for the
+programmer.  A paragraph describing implementation responsibility does not
+affect the implementation&#8217;s responsibilities for checking subforms or arguments not
+mentioned in the paragraph.</p>
+<p>
+</p>
+<a name="node_sec_6.4"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.4">6.4&nbsp;&nbsp;Other kinds of entries</a></h2>
+<p>If <i>category</i> is something other than &#8220;syntax&#8221; and
+&#8220;procedure&#8221;, then the entry describes a non-procedural value, and
+the <i>category</i> describes the type of that value.  The header line</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>&amp;who</tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+<br>
+indicates that <tt>&amp;who</tt> is a condition type.  The header line<p>
+</p>
+
+<p class=noindent></p>
+<div align=left><tt>unquote</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+<br>
+indicates that <tt>unquote</tt> is a syntax binding that may occur
+only as part of specific surrounding expressions.  Any use as an
+independent syntactic construct or identifier is a syntax violation.
+As with &#8220;syntax&#8221; entries, some &#8220;auxiliary syntax&#8221; entries  carry a
+suffix (<tt>expand</tt>), specifying that the syntactic keyword of the
+construct is exported with level 1.
+<a name="node_sec_6.5"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.5">6.5&nbsp;&nbsp;Equivalent entries</a></h2>
+<p>The description of an entry occasionally states that it is <i>the
+same</i> as another entry.  This means that both entries are
+equivalent.  Specifically, it means that if both entries have the same
+name and are thus exported from different libraries, the entries from
+both libraries can be imported under the same name without conflict.</p>
+<p>
+</p>
+<a name="node_sec_6.6"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.6">6.6&nbsp;&nbsp;Evaluation examples</a></h2>
+<p>The symbol &#8220;&rArr;&#8221; used in program examples can be read
+&#8220;evaluates to&#8221;.  For example,</p>
+<p>
+</p>
+
+<tt>(*&nbsp;5&nbsp;8)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;40<p></tt></p>
+<p>
+means that the expression <tt>(* 5 8)</tt> evaluates to the object <tt>40</tt>.
+Or, more precisely:  the expression given by the sequence of characters
+&#8220;<tt>(* 5 8)</tt>&#8221; evaluates, in an environment that imports the relevant library, to an object
+that may be represented externally by the sequence of characters &#8220;<tt>40</tt>&#8221;.  See section&nbsp;<a href="r6rs-Z-H-7.html#node_sec_4.3">4.3</a> for a discussion of external
+representations of objects.</p>
+<p>
+The &#8220;&rArr;&#8221; symbol is also used when the evaluation of an
+expression causes a violation.  For example,</p>
+<p>
+</p>
+
+<tt>(integer-&gt;char&nbsp;<tt>#</tt>xD800)&nbsp;&nbsp;<tt>&nbsp;&amp;assertion</tt>&nbsp;<i>exception</i><p></tt>
+means that the evaluation of the expression <tt>(integer-&gt;char
+<tt>#</tt>xD800)</tt> must raise an exception with condition type
+<tt>&amp;assertion</tt>.</p>
+<p>
+Moreover, the &#8220;&rArr;&#8221; symbol is also used to explicitly say that
+the value of an expression in unspecified.  For example:
+</p>
+
+<tt>(eqv?&nbsp;&quot;&quot;&nbsp;&quot;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<i>unspecified</i><p></tt></p>
+<p>
+Mostly, examples merely illustrate the behavior specified in the
+entry.  In some cases, however, they disambiguate otherwise ambiguous
+specifications and are thus normative.  Note that, in some cases,
+specifically in the case of inexact number objects, the return value is only
+specified conditionally or approximately.  For example:
+</p>
+
+<tt>(atan&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-1.5707963267948965&nbsp;;&nbsp;approximately<p></tt></p>
+<p>
+</p>
+<a name="node_sec_6.7"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_6.7">6.7&nbsp;&nbsp;Naming conventions</a></h2>
+<p>By convention, the names of procedures that store values into previously
+allocated locations (see section&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.10">5.10</a>) usually end in
+&#8220;<tt>!</tt>&#8221;.</p>
+<p>
+By convention, &#8220;<tt>-&gt;</tt>&#8221; appears within the names of procedures that
+take an object of one type and return an analogous object of another type.
+For example, <tt>list-&gt;vector</tt> takes a list and returns a vector whose
+elements are the same as those of the list.</p>
+<p>
+By convention, the names of predicates&#8212;procedures that always return
+a boolean value&#8212;end in &#8220;<tt>?</tt>&#8221; when the name contains any
+letters; otherwise, the predicate&#8217;s name does not end with a question
+mark.</p>
+<p>
+By convention, the components of compound names are separated by &#8220;<tt>-</tt>&#8221;
+In particular, prefixes that are actual words or can be pronounced as
+though they were actual words are followed by a hyphen, except when
+the first character following the hyphen would be something other than
+a letter, in which case the hyphen is omitted.  Short,
+unpronounceable prefixes (&#8220;<tt>fx</tt>&#8221; and &#8220;<tt>fl</tt>&#8221;) are not
+followed by a hyphen.</p>
+<p>
+By convention, the names of condition types start with
+&#8220;<tt>&amp;</tt>&#8221;<a name="node_idx_262"></a>.</p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-8.html">previous</a></span><span>, <a href="r6rs-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

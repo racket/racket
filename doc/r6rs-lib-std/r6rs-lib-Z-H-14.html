@@ -1,0 +1,357 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-13.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-15.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_13"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_13">Chapter 13</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_13">Hashtables</a></h1>
+<p></p>
+<p>
+The <tt>(rnrs hashtables (6))</tt><a name="node_idx_1164"></a>library provides a set of operations on
+hashtables.
+A <a name="node_idx_1166"></a><em>hashtable</em> is a data structure that associates keys with values.
+Any object can be used as a key, provided a <a name="node_idx_1168"></a><em>hash function</em>
+and a suitable <a name="node_idx_1170"></a><em>equivalence function</em> is available.  A hash function is a
+procedure that maps
+keys to exact integer objects.
+It is the programmer&#8217;s responsibility to ensure that the hash function
+is compatible with the equivalence function,
+which is a procedure that accepts two keys and returns true if they
+are equivalent and <tt>#f</tt> otherwise.
+Standard hashtables for arbitrary objects based on the <tt>eq?</tt> and 
+<tt>eqv?</tt> predicates (see report section&nbsp;on &#8220;Equivalence predicates&#8221;) are provided.  
+Also, hash functions for arbitrary objects, strings, and symbols are provided.</p>
+<p>
+This section uses the <i>hashtable</i> parameter name for arguments
+that must be hashtables, and the <i>key</i> parameter name for
+arguments that must be hashtable keys.</p>
+<p>
+</p>
+<a name="node_sec_13.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_13.1">13.1&nbsp;&nbsp;Constructors</a></h2>
+<p><a name="node_idx_1172"></a></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1174"></a>make-eq-hashtable<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1176"></a>make-eq-hashtable<i> <i>k</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated mutable hashtable that accepts
+arbitrary objects as keys,
+and compares those keys with <tt>eq?</tt>. If an argument is given, the initial 
+capacity of the hashtable is set to approximately <i>k</i> elements.</p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1178"></a>make-eqv-hashtable<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1180"></a>make-eqv-hashtable<i> <i>k</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a newly allocated mutable hashtable that accepts
+arbitrary objects as keys,
+and compares those keys with <tt>eqv?</tt>.
+If an argument is given, the initial 
+capacity of the hashtable is set to approximately <i>k</i> elements.</p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1182"></a>make-hashtable<i> <i>hash-function</i> <i>equiv</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1184"></a>make-hashtable<i> <i>hash-function</i> <i>equiv</i> <i>k</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Hash-function</i> and <i>equiv</i> must be procedures.
+<i>Hash-function</i> should accept a key as an argument and should return a 
+non-negative exact integer object.
+<i>Equiv</i> should accept two keys as arguments and return a single
+value.
+Neither procedure should mutate the hashtable returned by <tt>make-hashtable</tt>.
+The <tt>make-hashtable</tt> procedure returns a newly allocated mutable
+hashtable using <i>hash-function</i> 
+as the hash function and <i>equiv</i> as the equivalence function used to 
+compare keys.
+If a third argument is given, the 
+initial capacity of the hashtable is set to approximately <i>k</i> elements.</p>
+<p>
+Both <i>hash-function</i> and <i>equiv</i> should behave like pure functions
+on the domain of keys.  For example, the <tt>string-hash</tt>
+and <tt>string=?</tt> procedures are permissible only if all
+keys are strings and the contents of those strings are never
+changed so long as any of them continues to serve as a key in
+the hashtable.  Furthermore, any pair of keys for which
+<i>equiv</i> returns true should
+be hashed to the same exact integer objects by 
+<i>hash-function</i>.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions on
+<i>hash-function</i> and <i>equiv</i> to the extent performed by
+applying them as described.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Hashtables are allowed to cache the results of calling the
+hash function and equivalence function, so programs cannot
+rely on the hash function being called for every lookup or
+update.  Furthermore any hashtable operation may call the
+hash function more than once.
+</blockquote><p>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_13.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_13.2">13.2&nbsp;&nbsp;Procedures</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1186"></a>hashtable?<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>hashtable</i> is a hashtable,
+<tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1188"></a>hashtable-size<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the number of keys contained in <i>hashtable</i> as an exact
+integer object.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1190"></a>hashtable-ref<i> <i>hashtable</i> <i>key</i> <i>default</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the value in <i>hashtable</i> associated with <i>key</i>.
+If <i>hashtable</i> does not contain an association for <i>key</i>,
+<i>default</i> is returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1192"></a>hashtable-set!<i> <i>hashtable</i> <i>key</i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Changes <i>hashtable</i> to associate <i>key</i> with <i>obj</i>,
+adding a new association or replacing any existing association for <i>key</i>,
+and returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1194"></a>hashtable-delete!<i> <i>hashtable</i> <i>key</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Removes any association for <i>key</i> within <i>hashtable</i> and
+returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1196"></a>hashtable-contains?<i> <i>hashtable</i> <i>key</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>hashtable</i> contains an association
+for <i>key</i>, <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1198"></a>hashtable-update!<i> <i>hashtable</i> <i>key</i> <i>proc</i> <i>default</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument,
+should return a single value, and should not mutate <i>hashtable</i>.
+The <tt>hashtable-update!</tt> procedure applies <i>proc</i> to the value in <i>hashtable</i>
+associated with <i>key</i>, 
+or to <i>default</i> if <i>hashtable</i> does not contain an
+association for <i>key</i>.
+The <i>hashtable</i> is then changed to associate <i>key</i>
+with the value returned by <i>proc</i>.</p>
+<p>
+The behavior of <tt>hashtable-update!</tt> is equivalent to the
+following code, but may be implemented 
+more efficiently in cases where the implementation can
+avoid multiple lookups of the same key:
+</p>
+
+<tt>(hashtable-set!<br>
+&nbsp;&nbsp;hashtable&nbsp;key<br>
+&nbsp;&nbsp;(proc&nbsp;(hashtable-ref<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hashtable&nbsp;key&nbsp;default)))<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1200"></a>hashtable-copy<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1202"></a>hashtable-copy<i> <i>hashtable</i> <i>mutable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a copy of <i>hashtable</i>.  If the
+<i>mutable</i> argument is provided and is true, the returned hashtable is mutable;
+otherwise it is immutable.</p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1204"></a>hashtable-clear!<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1206"></a>hashtable-clear!<i> <i>hashtable</i> <i>k</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Removes all associations from <i>hashtable</i> and returns unspecified values.</p>
+<p>
+If a second argument is given, the current
+capacity of the hashtable is reset to approximately <i>k</i> elements.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1208"></a>hashtable-keys<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a vector of all keys in <i>hashtable</i>.
+The order of the vector is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1210"></a>hashtable-entries<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns two values, a vector of the keys in <i>hashtable</i>, and a
+vector of the corresponding values.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((h&nbsp;(make-eqv-hashtable)))<br>
+&nbsp;&nbsp;(hashtable-set!&nbsp;h&nbsp;1&nbsp;&#8217;one)<br>
+&nbsp;&nbsp;(hashtable-set!&nbsp;h&nbsp;2&nbsp;&#8217;two)<br>
+&nbsp;&nbsp;(hashtable-set!&nbsp;h&nbsp;3&nbsp;&#8217;three)<br>
+&nbsp;&nbsp;(hashtable-entries&nbsp;h))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt>(1&nbsp;2&nbsp;3)&nbsp;<tt>#</tt>(one&nbsp;two&nbsp;three)<br>
+;&nbsp;two&nbsp;return&nbsp;values<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_13.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_13.3">13.3&nbsp;&nbsp;Inspection</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1212"></a>hashtable-equivalence-function<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the equivalence function used by
+<i>hashtable</i> to compare keys.  For hashtables
+created with <tt>make-eq-hashtable</tt> and <tt>make-eqv-hashtable</tt>,
+returns <tt>eq?</tt> and <tt>eqv?</tt> respectively.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1214"></a>hashtable-hash-function<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the hash function used by <i>hashtable</i>.
+For hashtables created by <tt>make-eq-hashtable</tt> 
+or <tt>make-eqv-hashtable</tt>, <tt>#f</tt> is returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1216"></a>hashtable-mutable?<i> <i>hashtable</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>hashtable</i> is mutable, otherwise <tt>#f</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_13.4"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_13.4">13.4&nbsp;&nbsp;Hash functions</a></h2>
+<p>The <tt>equal-hash</tt>, <tt>string-hash</tt>, and <tt>string-ci-hash</tt>
+procedures of this section are acceptable as the hash functions of
+a hashtable only if the keys on which they are called are not mutated
+while they remain in use as keys in the hashtable.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1218"></a>equal-hash<i> <i>obj</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns an integer hash value for <i>obj</i>, based on
+its structure and current contents.  This hash function is suitable
+for use with <tt>equal?</tt> as an equivalence function.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Like <tt>equal?</tt>, the <tt>equal-hash</tt> procedure must always
+terminate, even if its arguments contain cycles.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1220"></a>string-hash<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns an integer hash value for <i>string</i>, based on
+its current contents.
+This hash function is suitable
+for use with <tt>string=?</tt> as an equivalence function.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1222"></a>string-ci-hash<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns an integer hash value for <i>string</i> based on
+its current contents, ignoring case.
+This hash function is suitable
+for use with <tt>string-ci=?</tt> as an equivalence function.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1224"></a>symbol-hash<i> <i>symbol</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns an integer hash value for <i>symbol</i>.
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-13.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-15.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

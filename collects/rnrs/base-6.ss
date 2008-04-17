@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base
-                     r6rs/private/identifier-syntax)
+(require (for-syntax r6rs/private/base-for-syntax
+                     scheme/base)
          r6rs/private/qq-gen
          r6rs/private/conds
          (prefix-in r5rs: r5rs)

@@ -1,0 +1,1175 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-6.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_6"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_6">Chapter 6</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_6">Records</a></h1>
+<p>
+<a name="node_idx_264"></a>This section describes abstractions for creating new data types
+representing records.</p>
+<p>
+A record is a compound data structure with a fixed number of
+components, called <i>fields</i><a name="node_idx_266"></a>.  Each record has
+an associated type specified by a <a name="node_idx_268"></a><em>record-type descriptor</em>,
+which is an object that specifies the fields of the record and various
+other properties that all records of that type share.  Record objects
+are created by a <a name="node_idx_270"></a><em>record constructor</em>, a procedure that
+creates a fresh record object and initializes its fields to values.
+Records of different types can be distinguished from each other and
+from other types of objects by <i>record predicates</i>. A record predicate
+returns <tt>#t</tt> when passed a record of the type specified by the
+record-type descriptor and <tt>#f</tt> otherwise.
+An <a name="node_idx_272"></a><em>accessor</em> extracts from a record
+the component associated with a field, and a <a name="node_idx_274"></a><em>mutator</em>
+changes the component to a different value.</p>
+<p>
+Record types can be extended via single inheritance, allowing record
+types to model hierarchies that occur in applications like algebraic
+data types as well as single-inheritance class systems.  If a record
+type <i>t</i> extends another record type <i>p</i>, each record of type
+<i>t</i> is also a record of type <i>p</i>, and the predicate,
+accessors, and mutators applicable to a record of type <i>p</i> are
+also applicable to a record of type <i>t</i>.  The extension
+relationship is transitive in the sense that a type extends its
+parent&#8217;s parent, if any, and so on.  A record type that does not
+extend another record type is called a <a name="node_idx_276"></a><em>base record type</em>.</p>
+<p>
+A
+record type can be <a name="node_idx_278"></a><em>sealed</em> to prevent it from being
+extended.  Moreover, a record type can be <a name="node_idx_280"></a><em>nongenerative</em>,
+i.e., it is globally identified by a &#8220;uid&#8221;, and new, compatible
+definitions of a nongenerative record type with the same uid as a
+previous always yield the same record type.</p>
+<p>
+The record mechanism spans three libraries:</p>
+<p>
+</p>
+<ul>
+<li><p>the <tt>(rnrs records syntactic (6))</tt> library,
+a syntactic layer for defining a record type and
+associated constructor, predicate, accessor, and mutators,
+</p>
+<li><p>the <tt>(rnrs records procedural (6))</tt> library,
+a procedural layer for creating and manipulating record types and creating
+constructors, predicates, accessors, and mutators;
+</p>
+<li><p>the <tt>(rnrs records inspection (6))</tt> library,
+a set of inspection procedures.
+</p>
+</ul><p>
+The inspection procedures allow programs to obtain from a record
+instance a descriptor for the type and from there obtain access to the
+fields of the record instance. This facility allows the creation of
+portable printers and inspectors.  A program may prevent access to a
+record&#8217;s type&#8212;and thereby protect the information stored in the
+record from the inspection mechanism&#8212;by declaring the type opaque.
+Thus, opacity as presented here can be used to enforce abstraction
+barriers.</p>
+<p>
+Any of the standard types mentioned in this report may or may not be
+implemented as an opaque record type.  Thus, it may be possible to use
+inspection on objects of the standard types.</p>
+<p>
+The procedural layer is particularly useful for writing interpreters
+that construct host-compatible record types.  It may also serve as a
+target for expansion of the syntactic layers.  The
+record operations provided through the procedural layer may, however, be
+less efficient than the operations provided through the
+syntactic layer, which is designed to allow expand-time determination
+of record-instance sizes and field offsets.  Therefore, alternative implementations
+of syntactic record-type definition should, when possible, expand into
+the syntactic layer rather than the procedural layer.</p>
+<p>
+The syntactic layer is used more commonly and therefore described
+first.  This chapter uses the <i>rtd</i> and
+<i>constructor-descriptor</i> parameter names for arguments that must
+be record-type descriptors and constructor descriptors, respectively
+(see section&nbsp;<a href="#node_sec_6.3">6.3</a>).</p>
+<p>
+</p>
+<a name="node_sec_6.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_6.1">6.1&nbsp;&nbsp;Mutability and equivalence of records</a></h2>
+<p></p>
+<p>
+The fields of a record type are designated <i>mutable</i> or
+<i>immutable</i>.  Correspondingly, a record type with no mutable
+field is called <i>immutable</i><a name="node_idx_282"></a><a name="node_idx_284"></a>, and all records of that type
+are immutable objects.  All other record types are <i>mutable</i>,
+and so are their records.</p>
+<p>
+Each call to a record constructor returns a new record with a fresh
+location (see report section&nbsp;on &#8220;Storage
+model&#8221;).  Consequently, for two records <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i>,
+the return value of <tt>(eqv? <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i>)</tt>, as well as the
+return value of <tt>(eq? <i>obj<sub>1</sub></i> <i>obj<sub>2</sub></i>)</tt>, adheres to
+the following criteria (see report
+section&nbsp;on &#8220;Equivalence predicates&#8221;):</p>
+<p>
+</p>
+<ul>
+<li><p>If <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> have different record types (i.e.,
+their record-type descriptors are not <tt>eqv?</tt>), <tt>eqv?</tt>
+returns <tt>#f</tt>.
+</p>
+<li><p>If <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both records of the
+same record type, and are the results of two separate calls to
+record constructors, then <tt>eqv?</tt> returns <tt>#f</tt>.
+</p>
+<li><p>If <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both the result of a single call to a
+record constructor, then <tt>eqv?</tt> returns <tt>#t</tt>.
+</p>
+<li><p>If <i>obj<sub>1</sub></i> and <i>obj<sub>2</sub></i> are both records of the same
+record type, where applying an accessor to both yields results
+for which <tt>eqv?</tt> returns <tt>#f</tt>, then <tt>eqv?</tt> returns <tt>#f</tt>.
+</p>
+</ul><p></p>
+<p>
+</p>
+<a name="node_sec_6.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_6.2">6.2&nbsp;&nbsp;Syntactic layer</a></h2>
+<p></p>
+<p>
+The syntactic layer is provided by the <tt>(rnrs records
+syntactic (6))</tt><a name="node_idx_286"></a>library.  Some details of the specification are
+explained in terms of the specification of the procedural layer below.</p>
+<p>
+The record-type-defining form <tt>define-record-type</tt> is a definition and
+can appear anywhere any other &lt;definition&gt; can appear.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_288"></a>define-record-type<i> &lt;name spec&gt; &lt;record clause&gt;*</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_290"></a><div align=left><tt>fields</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_292"></a><div align=left><tt>mutable</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_294"></a><div align=left><tt>immutable</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_296"></a><div align=left><tt>parent</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_298"></a><div align=left><tt>protocol</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_300"></a><div align=left><tt>sealed</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_302"></a><div align=left><tt>opaque</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_304"></a><div align=left><tt>nongenerative</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_306"></a><div align=left><tt>parent-rtd</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+<p>
+A <tt>define-record-type</tt> form defines a record type along with
+associated constructor descriptor and constructor, predicate, field
+accessors, and field mutators. The <tt>define-record-type</tt> form expands into
+a set of definitions in the environment where <tt>define-record-type</tt>
+appears; hence, it is possible to refer to the bindings (except for
+that of the record type itself) recursively.</p>
+<p>
+The &lt;name spec&gt; specifies the names of the record type,
+constructor, and predicate. It must take one of the following
+forms:</p>
+<p>
+</p>
+
+<tt>(&lt;record&nbsp;name&gt;&nbsp;&lt;constructor&nbsp;name&gt;&nbsp;&lt;predicate&nbsp;name&gt;)<br>
+&lt;record&nbsp;name&gt;<p></tt></p>
+<p>
+&lt;Record name&gt;, &lt;constructor name&gt;, and &lt;predicate
+name&gt; must all be identifiers.</p>
+<p>
+&lt;Record name&gt;, taken as a symbol, becomes the name of the record
+type. (See the description of <tt>make-record-type-descriptor</tt>
+below.)
+Additionally, it is bound by this definition to an expand-time or run-time
+representation of the record type and can be used as parent name in
+syntactic record-type definitions that extend this definition. It can
+also be used as a handle to gain access to the underlying record-type
+descriptor and constructor descriptor (see <tt>record-type-descriptor</tt> and <tt>record-constructor-descriptor</tt>
+below).</p>
+<p>
+&lt;Constructor name&gt; is defined by this definition to be a
+constructor for the defined record type, with a protocol specified by
+the <tt>protocol</tt> clause, or, in its absence, using a default protocol. For
+details, see the description of the <tt>protocol</tt> clause below.</p>
+<p>
+&lt;Predicate name&gt; is defined by this definition to a predicate
+for the defined record type.</p>
+<p>
+The second form of &lt;name spec&gt; is an abbreviation for the first
+form, where the name of the constructor is generated by prefixing the
+record name with <tt>make-</tt>, and the predicate name is generated by
+adding a question mark (<tt>?</tt>) to the end of the record name. For
+example, if the record name is <tt>frob</tt>, the name of the
+constructor is <tt>make-frob</tt>, and the predicate name is
+<tt>frob?</tt>.</p>
+<p>
+Each &lt;record clause&gt; must take one of the following forms; it is
+a syntax violation if multiple &lt;record clause&gt;s of the same kind appear in a
+<tt>define-record-type</tt> form.</p>
+<p>
+<tt>(fields &lt;field spec&gt;*)</tt></p>
+<p>
+Each &lt;field spec&gt; has one of the following forms</p>
+<p>
+</p>
+
+<tt>(immutable&nbsp;&lt;field&nbsp;name&gt;&nbsp;&lt;accessor&nbsp;name&gt;)<br>
+(mutable&nbsp;&lt;field&nbsp;name&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;accessor&nbsp;name&gt;&nbsp;&lt;mutator&nbsp;name&gt;)<br>
+(immutable&nbsp;&lt;field&nbsp;name&gt;)<br>
+(mutable&nbsp;&lt;field&nbsp;name&gt;)<br>
+&lt;field&nbsp;name&gt;<p></tt></p>
+<p>
+&lt;Field name&gt;, &lt;accessor name&gt;, and &lt;mutator name&gt;
+must all be identifiers. The first form declares an immutable field
+called &lt;field name&gt;, with the corresponding accessor named
+&lt;accessor name&gt;. The second form declares a mutable field called
+&lt;field name&gt;, with the corresponding accessor named
+&lt;accessor name&gt;, and with the corresponding mutator named
+&lt;mutator name&gt;.</p>
+<p>
+If &lt;field spec&gt; takes the third or fourth form, the accessor
+name is generated by appending the record name and field name with a
+hyphen separator, and the mutator name (for a mutable field) is
+generated by adding a <tt>-set!</tt> suffix to the accessor name. For
+example, if the record name is <tt>frob</tt> and the field name is <tt>widget</tt>, the accessor name is <tt>frob-widget</tt> and the mutator name
+is <tt>frob-widget-set!</tt>.</p>
+<p>
+If &lt;field spec&gt; is just a &lt;field name&gt; form, it is an
+abbreviation for <tt>(immutable &lt;field name&gt;)</tt>.</p>
+<p>
+The &lt;field name&gt;s become, as symbols, the names of the fields in
+the record-type descriptor being created, in the same order.</p>
+<p>
+The <tt>fields</tt> clause may be absent; this is equivalent to an empty
+<tt>fields</tt> clause.</p>
+<p>
+<tt>(parent &lt;parent name&gt;)</tt></p>
+<p>
+Specifies that the record type is to have parent type &lt;parent
+name&gt;, where &lt;parent name&gt; is the &lt;record name&gt; of a
+record type previously defined using <tt>define-record-type</tt>. 
+The record-type definition
+associated with &lt;parent name&gt; must not be sealed.
+If
+no <tt>parent</tt> clause and no <tt>parent-rtd</tt> (see below) clause
+is present, the record type is a base type.  </p>
+<p>
+<tt>(protocol &lt;expression&gt;)</tt></p>
+<p>
+&lt;Expression&gt; is evaluated in the same environment as the
+<tt>define-record-type</tt> form, and must evaluate to a protocol appropriate
+for the record type being defined.</p>
+<p>
+The protocol is used to create a record-constructor descriptor as
+described below.  If no <tt>protocol</tt> clause is specified, a
+constructor descriptor is still created using a default protocol.  The
+clause can be absent only if the record type being defined has no parent
+type, or if the parent definition does not specify a protocol.</p>
+<p>
+<tt>(sealed <tt>#t</tt>)</tt><br>
+<tt>(sealed <tt>#f</tt>)</tt></p>
+<p>
+If this option is specified with operand <tt>#t</tt>, the defined record
+type is sealed, i.e., no extensions of the record type can be created.
+If this option is specified with operand <tt>#f</tt>, or is absent, the
+defined record type is not sealed.</p>
+<p>
+<tt>(opaque <tt>#t</tt>)</tt><br>
+<tt>(opaque <tt>#f</tt>)</tt></p>
+<p>
+If this option is specified with operand <tt>#t</tt>, or if an opaque
+parent record type is specified, the defined record type is opaque.
+Otherwise, the defined record type is not opaque.  See the
+specification of <tt>record-rtd</tt> below for details.</p>
+<p>
+<tt>(nongenerative &lt;uid&gt;)</tt><br>
+<tt>(nongenerative)</tt></p>
+<p>
+This specifies that the record type is nongenerative with uid
+&lt;uid&gt;, which must be an &lt;identifier&gt;.
+If &lt;uid&gt; is absent, a unique uid is generated at macro-expansion time.
+If two record-type definitions specify the same <i>uid</i>, then
+the record-type definitions should be equivalent, i.e.,
+the implied arguments to <tt>make-record-type-descriptor</tt>
+must be equivalent as described under <tt>make-record-type-descriptor</tt>.  See section&nbsp;<a href="#node_sec_6.3">6.3</a>.
+If this condition is not met, it is either considered a syntax violation or
+an exception with condition type <tt>&amp;assertion</tt> is raised.
+If the condition is met, a single record type is generated for both
+definitions.</p>
+<p>
+In the absence of a <tt>nongenerative</tt> clause, a new record type is
+generated every time a <tt>define-record-type</tt> form is evaluated:</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((f&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(define-record-type&nbsp;r&nbsp;<tt>...</tt>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;x&nbsp;r?&nbsp;(make-r&nbsp;<tt>...</tt>)))))<br>
+&nbsp;&nbsp;((f&nbsp;<tt>#t</tt>)&nbsp;(f&nbsp;<tt>#f</tt>)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+<p></tt></p>
+<p>
+<tt>(parent-rtd &lt;parent rtd&gt; &lt;parent cd&gt;)</tt></p>
+<p>
+Specifies that the record type is to have its parent type specified by
+&lt;parent rtd&gt;, which should be an expression evaluating to a
+record-type descriptor, and &lt;parent cd&gt;, which should be an
+expression evaluating to a constructor descriptor (see below).  The
+record-type definition associated with the value of &lt;parent rtd&gt;
+must not be sealed.  Moreover, a record-type definition must not have
+both a <tt>parent</tt> and a <tt>parent-rtd</tt> clause.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The syntactic layer is designed to allow record-instance sizes and field
+offsets to be determined at expand time, i.e., by a macro definition of
+<tt>define-record-type</tt>, as long as the parent (if any) is known.
+Implementations that take advantage of this may generate less
+efficient constructor, accessor, and mutator code when the
+<tt>parent-rtd</tt> clause is used, since the type of the parent is
+generally not known until run time.
+The <tt>parent</tt> clause should therefore be used instead when possible.
+</blockquote><p>
+All bindings created by <tt>define-record-type</tt> (for the record type,
+the constructor, the predicate, the accessors, and the
+mutators) must have names that are pairwise distinct.</p>
+<p>
+The constructor created by a <tt>define-record-type</tt> form is a
+procedure as follows:
+</p>
+<ul>
+<li><p>If there is no <tt>parent</tt> clause and no <tt>protocol</tt> clause,
+the constructor accepts as many arguments as there are fields, in
+the same order as they appear in the <tt>fields</tt> clause, and
+returns a record object with the fields initialized to the
+corresponding arguments.
+</p>
+<li><p>If there is no <tt>parent</tt> or <tt>parent-rtd</tt> clause and a
+<tt>protocol</tt> clause,
+the protocol expression must evaluate to a procedure that accepts a
+single argument.  The protocol procedure is called once during the
+evaluation of the <tt>define-record-type</tt> form with a
+procedure <i>p</i> as its argument.  It should return a procedure,
+which will become the constructor bound to &lt;constructor name&gt;.
+The procedure <i>p</i> accepts as many arguments as there are fields,
+in the same order as they appear in the <tt>fields</tt> clause, and
+returns a record object with the fields initialized to the
+corresponding arguments.</p>
+<p>
+The constructor returned by the protocol procedure can accept an
+arbitrary number of arguments, and should call <i>p</i> once to
+construct a record object, and return that record object.</p>
+<p>
+For example, the following protocol expression for a record-type
+definition with three fields creates a constructor that accepts 
+values for all fields, and initialized them in the reverse order of
+the arguments:
+</p>
+
+<tt>&nbsp;<br>
+(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;(lambda&nbsp;(v1&nbsp;v2&nbsp;v3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;v3&nbsp;v2&nbsp;v1)))<p></tt></p>
+<p>
+</p>
+<li><p>If there is both a <tt>parent</tt> clause and a <tt>protocol</tt>
+clause, then the protocol procedure is called once with a procedure
+<i>n</i> as its argument.  As in the previous case, the protocol
+procedure should return a procedure, which will become the
+constructor bound to &lt;constructor name&gt;.  However, <i>n</i> is
+different from <i>p</i> in the previous case: It accepts arguments
+corresponding to the arguments of the constructor of the parent
+type.  It then returns a procedure <i>p</i> that accepts as many
+arguments as there are (additional) fields in this type, in the same order as in
+the <tt>fields</tt> clause, and returns a record object with the fields
+of the parent record types initialized according to their
+constructors and the arguments to <i>n</i>, and the fields of
+this record type initialized to its arguments of <i>p</i>.</p>
+<p>
+The constructor returned by the protocol procedure can accept an
+arbitrary number of arguments, and should call <i>n</i> once to
+construct the procedure <i>p</i>, and call <i>p</i> once to create the
+record object, and finally return that record object.</p>
+<p>
+For example, the following protocol expression assumes that the
+constructor of the parent type takes three arguments:
+</p>
+
+<tt>(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;(lambda&nbsp;(v1&nbsp;v2&nbsp;v3&nbsp;x1&nbsp;x2&nbsp;x3&nbsp;x4)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((p&nbsp;(n&nbsp;v1&nbsp;v2&nbsp;v3)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;x1&nbsp;x2&nbsp;x3&nbsp;x4))))<p></tt>
+The resulting constructor accepts seven arguments, and initializes
+the fields of the parent types according to the constructor of the
+parent type, with <tt>v1</tt>, <tt>v2</tt>, and <tt>v3</tt> as arguments.  It
+also initializes the fields of this record type to the values of <tt>x1</tt>, <tt>...</tt>, <tt>x4</tt>.</p>
+<p>
+</p>
+<li><p>If there is a <tt>parent</tt> clause, but no <tt>protocol</tt> clause,
+then the parent type must not have a
+<tt>protocol</tt> clause itself.  The constructor bound to
+&lt;constructor name&gt; is a procedure that accepts arguments corresponding to the 
+parent types&#8217; constructor first, and then one argument for each field in the same
+order as in the <tt>fields</tt> clause. The constructor
+returns a record object with the fields initialized to the corresponding
+arguments.
+</p>
+<li><p>If there is a <tt>parent-rtd</tt> clause, then the constructor is
+as with a <tt>parent</tt> clause, except that the constructor of the
+parent type is determined by the constructor descriptor of the <tt>parent-rtd</tt> clause.
+</p>
+</ul><p></p>
+<p>
+A protocol may perform other actions consistent with the requirements
+described above, including mutation of the new record or other side
+effects, before returning the record.
+</p>
+<p></p>
+<p>
+Any definition that takes advantage of implicit naming for the
+constructor, predicate, accessor, and mutator names can be rewritten
+trivially to a definition that specifies all names explicitly. For
+example, the implicit-naming record definition:</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;frob<br>
+&nbsp;&nbsp;(fields&nbsp;(mutable&nbsp;widget))<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)&nbsp;(p&nbsp;(make-widget&nbsp;n))))))<p></tt></p>
+<p>
+is equivalent to the following explicit-naming record definition.</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;(frob&nbsp;make-frob&nbsp;frob?)<br>
+&nbsp;&nbsp;(fields&nbsp;(mutable&nbsp;widget<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frob-widget<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;frob-widget-set!))<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)&nbsp;(p&nbsp;(make-widget&nbsp;n))))))<p></tt></p>
+<p>
+Also, the implicit-naming record definition:</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;point&nbsp;(fields&nbsp;x&nbsp;y))<p></tt></p>
+<p>
+is equivalent to the following explicit-naming record
+definition:</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;(point&nbsp;make-point&nbsp;point?)<br>
+&nbsp;&nbsp;(fields&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(immutable&nbsp;x&nbsp;point-x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(immutable&nbsp;y&nbsp;point-y)))<p></tt></p>
+<p>
+With implicit naming, it is still possible to specify some of
+the names explicitly; for example, the following overrides the choice
+of accessor and mutator names for the widget field.</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;frob<br>
+&nbsp;&nbsp;(fields&nbsp;(mutable&nbsp;widget&nbsp;getwid&nbsp;setwid!))<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)&nbsp;(p&nbsp;(make-widget&nbsp;n))))))<p></tt></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_308"></a>record-type-descriptor<i> &lt;record name&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+Evaluates to the record-type descriptor (see below) associated with the type
+specified by &lt;record name&gt;.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>   
+The <tt>record-type-descriptor</tt> procedure works on both opaque and non-opaque record
+types.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_310"></a>record-constructor-descriptor<i> &lt;record name&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+Evaluates to the record-constructor descriptor (see below) associated with
+&lt;record name&gt;.
+</p>
+<p></p>
+<p>
+The following example uses the <tt>record?</tt> procedure from the 
+<tt>(rnrs records inspection (6))</tt> library (section
+<a href="#node_sec_6.4">6.4</a>):</p>
+<p>
+</p>
+
+<tt>(define-record-type&nbsp;(point&nbsp;make-point&nbsp;point?)<br>
+&nbsp;&nbsp;(fields&nbsp;(immutable&nbsp;x&nbsp;point-x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mutable&nbsp;y&nbsp;point-y&nbsp;set-point-y!))<br>
+&nbsp;&nbsp;(nongenerative<br>
+&nbsp;&nbsp;&nbsp;&nbsp;point-4893d957-e00b-11d9-817f-00111175eb9e))<br>
+<br>
+(define-record-type&nbsp;(cpoint&nbsp;make-cpoint&nbsp;cpoint?)<br>
+&nbsp;&nbsp;(parent&nbsp;point)<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y&nbsp;c)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((n&nbsp;x&nbsp;y)&nbsp;(color-&gt;rgb&nbsp;c)))))<br>
+&nbsp;&nbsp;(fields<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(mutable&nbsp;rgb&nbsp;cpoint-rgb&nbsp;cpoint-rgb-set!)))<br>
+<br>
+(define&nbsp;(color-&gt;rgb&nbsp;c)<br>
+&nbsp;&nbsp;(cons&nbsp;&#8217;rgb&nbsp;c))<br>
+<br>
+(define&nbsp;p1&nbsp;(make-point&nbsp;1&nbsp;2))<br>
+(define&nbsp;p2&nbsp;(make-cpoint&nbsp;3&nbsp;4&nbsp;&#8217;red))<br>
+<br>
+(point?&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(point?&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(point?&nbsp;(vector))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(point?&nbsp;(cons&nbsp;&#8217;a&nbsp;&#8217;b))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(cpoint?&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(cpoint?&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(point-x&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<br>
+(point-y&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;2<br>
+(point-x&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;3<br>
+(point-y&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4<br>
+(cpoint-rgb&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(rgb&nbsp;.&nbsp;red)<br>
+<br>
+(set-point-y!&nbsp;p1&nbsp;17)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>unspecified</i><br>
+(point-y&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;17)<br>
+<br>
+(record-rtd&nbsp;p1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(record-type-descriptor&nbsp;point)<br>
+<br>
+(define-record-type&nbsp;(ex1&nbsp;make-ex1&nbsp;ex1?)<br>
+&nbsp;&nbsp;(protocol&nbsp;(lambda&nbsp;(p)&nbsp;(lambda&nbsp;a&nbsp;(p&nbsp;a))))<br>
+&nbsp;&nbsp;(fields&nbsp;(immutable&nbsp;f&nbsp;ex1-f)))<br>
+<br>
+(define&nbsp;ex1-i1&nbsp;(make-ex1&nbsp;1&nbsp;2&nbsp;3))<br>
+(ex1-f&nbsp;ex1-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3)<br>
+<br>
+(define-record-type&nbsp;(ex2&nbsp;make-ex2&nbsp;ex2?)<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)&nbsp;(lambda&nbsp;(a&nbsp;.&nbsp;b)&nbsp;(p&nbsp;a&nbsp;b))))<br>
+&nbsp;&nbsp;(fields&nbsp;(immutable&nbsp;a&nbsp;ex2-a)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(immutable&nbsp;b&nbsp;ex2-b)))<br>
+<br>
+(define&nbsp;ex2-i1&nbsp;(make-ex2&nbsp;1&nbsp;2&nbsp;3))<br>
+(ex2-a&nbsp;ex2-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<br>
+(ex2-b&nbsp;ex2-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(2&nbsp;3)<br>
+<br>
+(define-record-type&nbsp;(unit-vector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;make-unit-vector<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unit-vector?)<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y&nbsp;z)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((length&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(sqrt&nbsp;(+&nbsp;(*&nbsp;x&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;y&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;z&nbsp;z)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;(/&nbsp;x&nbsp;length)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(/&nbsp;y&nbsp;length)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(/&nbsp;z&nbsp;length))))))<br>
+&nbsp;&nbsp;(fields&nbsp;(immutable&nbsp;x&nbsp;unit-vector-x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(immutable&nbsp;y&nbsp;unit-vector-y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(immutable&nbsp;z&nbsp;unit-vector-z)))<br>
+<br>
+(define&nbsp;*ex3-instance*&nbsp;<tt>#f</tt>)<br>
+<br>
+(define-record-type&nbsp;ex3<br>
+&nbsp;&nbsp;(parent&nbsp;cpoint)<br>
+&nbsp;&nbsp;(protocol<br>
+&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y&nbsp;t)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((r&nbsp;((n&nbsp;x&nbsp;y&nbsp;&#8217;red)&nbsp;t)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;*ex3-instance*&nbsp;r)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;r))))<br>
+&nbsp;&nbsp;(fields&nbsp;<br>
+&nbsp;&nbsp;&nbsp;(mutable&nbsp;thickness))<br>
+&nbsp;&nbsp;(sealed&nbsp;<tt>#t</tt>)&nbsp;(opaque&nbsp;<tt>#t</tt>))<br>
+<br>
+(define&nbsp;ex3-i1&nbsp;(make-ex3&nbsp;1&nbsp;2&nbsp;17))<br>
+(ex3?&nbsp;ex3-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(cpoint-rgb&nbsp;ex3-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(rgb&nbsp;.&nbsp;red)<br>
+(ex3-thickness&nbsp;ex3-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;17<br>
+(ex3-thickness-set!&nbsp;ex3-i1&nbsp;18)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>unspecified</i><br>
+(ex3-thickness&nbsp;ex3-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;18<br>
+*ex3-instance*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;ex3-i1<br>
+<br>
+(record?&nbsp;ex3-i1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><p></tt></p>
+<p>
+</p>
+<a name="node_sec_6.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_6.3">6.3&nbsp;&nbsp;Procedural layer</a></h2>
+<p></p>
+<p>
+The procedural layer is provided by the <tt>(rnrs records
+procedural (6))</tt><a name="node_idx_312"></a>library.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-record-type-descriptor <i>name</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_314"></a><tt><br>
+
+<i>parent</i>&nbsp;<i>uid</i>&nbsp;<i>sealed?</i>&nbsp;<i>opaque?</i>&nbsp;<i>fields</i>)</tt><p>
+Returns a <a name="node_idx_316"></a><em>record-type descriptor</em>, or <a name="node_idx_318"></a><em>rtd</em>,
+representing a record type distinct from all built-in types and
+other record types.</p>
+<p>
+The <i>name</i> argument must be a symbol. It names the record type,
+and is intended purely for informational purposes and may be used for printing by
+the underlying Scheme system.</p>
+<p>
+The <i>parent</i> argument must be either <tt>#f</tt> or an rtd. If it is an
+rtd, the returned record type, <i>t</i>, extends the record type
+<i>p</i> represented by <i>parent</i>.  An exception with
+condition type <tt>&amp;assertion</tt> is raised if <i>parent</i> is sealed (see below).</p>
+<p>
+The <i>uid</i> argument must be either <tt>#f</tt> or a symbol.
+If <i>uid</i> is a symbol, the record-creation operation is
+<em>nongenerative</em> i.e., a new record type is created only
+if no previous call to <tt>make-record-type-descriptor</tt>
+was made with the <i>uid</i>.
+If <i>uid</i> is <tt>#f</tt>, the record-creation operation is
+<em>generative</em>, i.e., a new record type is created even if
+a previous call to <tt>make-record-type-descriptor</tt> was
+made with the same arguments.</p>
+<p>
+If <tt>make-record-type-descriptor</tt> is
+called twice with the same <i>uid</i> symbol, the parent
+arguments in the two calls must be <tt>eqv?</tt>, the <i>fields</i>
+arguments <tt>equal?</tt>, the <i>sealed?</i> arguments boolean-equivalent
+(both <tt>#f</tt> or both true), and the <i>opaque?</i> arguments
+boolean-equivalent.
+If these conditions are not met, an exception with condition type
+<tt>&amp;assertion</tt> is raised when the second call occurs.
+If they are met, the second call returns, without creating a new
+record type, the same record-type descriptor
+(in the sense of <tt>eqv?</tt>) as the first call.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>   
+Users are encouraged to use symbol names
+constructed using the UUID namespace&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_10">10</a>] (for example, using the
+record-type name as a prefix) for the uid argument.
+</blockquote><p>
+The <i>sealed?</i> flag must be a boolean. If true, the returned record type
+is sealed, i.e., it cannot be extended.</p>
+<p>
+The <i>opaque?</i> flag must be a boolean. If true, the record type
+is opaque.
+If passed an instance of the record type,
+<tt>record?</tt> returns
+<tt>#f</tt>.  Moreover, if <tt>record-rtd</tt> (see &#8220;Inspection&#8221; below)
+is called with an instance of the record type, 
+an exception with condition type <tt>&amp;assertion</tt> is raised.
+The record type is also opaque if an opaque parent is
+supplied.  If <i>opaque?</i> is <tt>#f</tt> and an opaque parent is not
+supplied, the record is not opaque.</p>
+<p>
+The <i>fields</i> argument must be a vector of field specifiers. Each
+field specifier must be a list of the form <tt>(mutable <i>name</i>)</tt>
+or a list of the form <tt>(immutable <i>name</i>)</tt>.
+Each name must be a symbol and names the corresponding field of the record
+type; the names need not be distinct.  A field identified as mutable may
+be modified, whereas, when a program attempts to obtain a mutator for a field identified
+as immutable, an exception with condition type <tt>&amp;assertion</tt> is raised.
+Where field order is relevant, e.g., for record construction and field
+access, the fields are considered to be ordered as specified, although
+no particular order is required for the actual representation of a
+record instance.</p>
+<p>
+The specified fields are added to the parent fields, if any, to determine
+the complete set of fields of the returned record type.
+If <i>fields</i> is modified after <tt>make-record-type-descriptor</tt>
+has been called, the effect on the returned
+rtd is unspecified.</p>
+<p>
+A generative record-type descriptor created by a call to <tt>make-record-type-descriptor</tt> is not <tt>eqv?</tt> to any record-type
+descriptor (generative or nongenerative) created by another call to
+<tt>make-record-type-descriptor</tt>. A generative record-type descriptor
+is <tt>eqv?</tt>  only to itself, i.e., <tt>(eqv? <i>rtd<sub>1</sub></i> <i>rtd<sub>2</sub></i>)</tt> iff
+<tt>(eq? <i>rtd<sub>1</sub></i> <i>rtd<sub>2</sub></i>)</tt>.
+Also, two nongenerative record-type descriptors are <tt>eqv?</tt> iff they were
+created by calls to <tt>make-record-type-descriptor</tt> with the same
+uid arguments.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_320"></a>record-type-descriptor?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the argument is a record-type descriptor,
+<tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-record-constructor-descriptor <i>rtd</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_322"></a><tt><br>
+
+<i>parent-constructor-descriptor</i>&nbsp;<i>protocol</i>)</tt><p>
+Returns a <a name="node_idx_324"></a><em>record-constructor descriptor</em> (or
+<a name="node_idx_326"></a><em>constructor descriptor</em> for short) that specifies a <a name="node_idx_328"></a><em>record
+constructor</em> (or <i>constructor</i> for short),
+that can be used to construct record values of the type
+specified by <i>rtd</i>, and which can be obtained
+via <tt>record-constructor</tt>.   A constructor descriptor can
+also be used to create other constructor descriptors for subtypes of
+its own record type.  <i>Rtd</i> must be a record-type
+descriptor.  <i>Protocol</i><a name="node_idx_330"></a>must be a procedure or <tt>#f</tt>.
+If it is <tt>#f</tt>, a default <i>protocol</i> procedure is supplied.</p>
+<p>
+If <i>protocol</i> is a procedure, it is handled analogously to the
+protocol expression in a <tt>define-record-type</tt> form.</p>
+<p>
+If <i>rtd</i> is a base record type and <i>protocol</i> is a procedure,
+<i>parent-constructor-descriptor</i> must be <tt>#f</tt>.  In this case,
+<i>protocol</i> is called by <tt>record-constructor</tt> with a single
+argument <i>p</i>.  <i>P</i> is a procedure that expects one argument
+for every field of <i>rtd</i> and returns a record with the fields of
+<i>rtd</i> initialized to these arguments.  The procedure returned by
+<i>protocol</i> should call <i>p</i> once with the number of arguments
+<i>p</i> expects and return the resulting record as shown in the simple
+example below:
+</p>
+
+<tt>(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;(lambda&nbsp;(v1&nbsp;v2&nbsp;v3)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;v1&nbsp;v2&nbsp;v3)))<p></tt>
+Here, the call to <tt>p</tt> returns a record whose fields are
+initialized with the values of <tt>v1</tt>, <tt>v2</tt>, and <tt>v3</tt>.  The
+expression above is equivalent to <tt>(lambda (p) p)</tt>.  Note that the
+procedure returned by <i>protocol</i> is otherwise unconstrained;
+specifically, it can take any number of arguments.</p>
+<p>
+</p>
+<div class=medskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+</p>
+<p>
+If <i>rtd</i> is an extension of another record type <i>parent-rtd</i>
+and <i>protocol</i> is a procedure, <i>parent-constructor-descriptor</i>
+must be a constructor descriptor of <i>parent-rtd</i> or <tt>#f</tt>.  If
+<i>parent-constructor-descriptor</i> is a constructor descriptor,
+<i>protocol</i> it is called by <tt>record-constructor</tt> with a single
+argument <i>n</i>, which is a procedure that accepts the same number of
+arguments as the constructor of <i>parent-constructor-descriptor</i>
+and returns a procedure <i>p</i> that, when called, constructs the
+record itself. The <i>p</i> procedure expects one argument for every
+field of <i>rtd</i> (not including parent fields) and returns a record
+with the fields of <i>rtd</i> initialized to these arguments, and the
+fields of <i>parent-rtd</i> and its parents initialized as specified by
+<i>parent-constructor-descriptor</i>.</p>
+<p>
+The procedure returned by <i>protocol</i> should call <i>n</i> once with
+the number of arguments <i>n</i> expects, call the procedure <i>p</i> it
+returns once with the number of arguments <i>p</i> expects and return the
+resulting record.  A simple <i>protocol</i> in this case might be
+written as follows:
+</p>
+
+<tt>(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;(lambda&nbsp;(v1&nbsp;v2&nbsp;v3&nbsp;x1&nbsp;x2&nbsp;x3&nbsp;x4)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((p&nbsp;(n&nbsp;v1&nbsp;v2&nbsp;v3)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;x1&nbsp;x2&nbsp;x3&nbsp;x4))))<p></tt>
+This passes arguments <tt>v1</tt>, <tt>v2</tt>, <tt>v3</tt> to <i>n</i> for 
+<i>parent-constructor-descriptor</i> and calls <tt>p</tt>
+with <tt>x1</tt>, <tt>...</tt>, <tt>x4</tt> to initialize the fields of <i>rtd</i> itself.</p>
+<p>
+Thus, the constructor descriptors for a record type form a sequence of
+protocols parallel to the sequence of record-type parents. Each
+constructor descriptor in the chain determines the field values for the
+associated record type.
+Child record constructors need not know the number or contents of parent
+fields, only the number of arguments accepted by the parent constructor.</p>
+<p>
+<i>Protocol</i> may be <tt>#f</tt>, specifying a default constructor that
+accepts one argument for each field of <i>rtd</i> (including the
+fields of its parent type, if any).  Specifically, if <i>rtd</i> is a
+base type, the default <i>protocol</i> procedure behaves as if it were
+<tt>(lambda (p) p)</tt>.  If <i>rtd</i> is an extension of another type,
+then <i>parent-constructor-descriptor</i> must be either <tt>#f</tt> or
+itself specify a default constructor, and the default
+<i>protocol</i> procedure behaves as if it were:
+</p>
+
+<tt>(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;(lambda&nbsp;(<i>v<sub>1</sub></i>&nbsp;<tt>...</tt>&nbsp;<i>v<sub><em>j</em></sub></i>&nbsp;<i>x<sub>1</sub></i>&nbsp;<tt>...</tt>&nbsp;<i>x<sub><em>k</em></sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((p&nbsp;(n&nbsp;<i>v<sub>1</sub></i>&nbsp;<tt>...</tt>&nbsp;<i>v<sub><em>j</em></sub></i>)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;<i>x<sub>1</sub></i>&nbsp;<tt>...</tt>&nbsp;<i>x<sub><em>k</em></sub></i>))))<p></tt>
+The resulting constructor accepts one argument for each of the record
+type&#8217;s complete set of fields (including those of the parent record
+type, the parent&#8217;s parent record type, etc.) and returns a record with
+the fields initialized to those arguments, with the field values for
+the parent coming before those of the extension in the argument list.
+(In the example, <em>j</em> is the complete number of fields of the parent
+type, and <em>k</em> is the number of fields of <i>rtd</i> itself.)</p>
+<p>
+If <i>rtd</i> is an extension of another record type, and
+<i>parent-constructor-descriptor</i> or the <i>protocol</i> of
+<i>parent-constructor-descriptor</i> is <tt>#f</tt>, <i>protocol</i> must
+also be <tt>#f</tt>, and a default constructor descriptor as
+described above is also assumed.</p>
+<p>
+<em>Implementation responsibilities: </em>If <i>protocol</i> is a procedure, the implementation must
+check the restrictions on it to the extent performed by applying it as
+described when the constructor is called.
+An
+implementation may check whether <i>protocol</i> is an appropriate argument
+before applying it.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;rtd1<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&#8217;rtd1&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&#8217;<tt>#</tt>((immutable&nbsp;x1)&nbsp;(immutable&nbsp;x2))))<br>
+<br>
+(define&nbsp;rtd2<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&#8217;rtd2&nbsp;rtd1&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&#8217;<tt>#</tt>((immutable&nbsp;x3)&nbsp;(immutable&nbsp;x4))))<br>
+<br>
+(define&nbsp;rtd3<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&#8217;rtd3&nbsp;rtd2&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&#8217;<tt>#</tt>((immutable&nbsp;x5)&nbsp;(immutable&nbsp;x6))))<br>
+<br>
+(define&nbsp;protocol1<br>
+&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(a&nbsp;b&nbsp;c)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;(+&nbsp;a&nbsp;b)&nbsp;(+&nbsp;b&nbsp;c)))))<br>
+<br>
+(define&nbsp;protocol2<br>
+&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(a&nbsp;b&nbsp;c&nbsp;d&nbsp;e&nbsp;f)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((p&nbsp;(n&nbsp;a&nbsp;b&nbsp;c)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;(+&nbsp;d&nbsp;e)&nbsp;(+&nbsp;e&nbsp;f))))))<br>
+<br>
+(define&nbsp;protocol3<br>
+&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(a&nbsp;b&nbsp;c&nbsp;d&nbsp;e&nbsp;f&nbsp;g&nbsp;h&nbsp;i)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((p&nbsp;(n&nbsp;a&nbsp;b&nbsp;c&nbsp;d&nbsp;e&nbsp;f)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;(+&nbsp;g&nbsp;h)&nbsp;(+&nbsp;h&nbsp;i))))))<br>
+<br>
+(define&nbsp;cd1<br>
+&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;rtd1&nbsp;<tt>#f</tt>&nbsp;protocol1))<br>
+<br>
+(define&nbsp;cd2<br>
+&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;rtd2&nbsp;cd1&nbsp;protocol2))<br>
+<br>
+(define&nbsp;cd3<br>
+&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;rtd3&nbsp;cd2&nbsp;protocol3))<br>
+<br>
+(define&nbsp;make-rtd1&nbsp;(record-constructor&nbsp;cd1))<br>
+<br>
+(define&nbsp;make-rtd2&nbsp;(record-constructor&nbsp;cd2))<br>
+<br>
+(define&nbsp;make-rtd3&nbsp;(record-constructor&nbsp;cd3))<br>
+<br>
+(make-rtd3&nbsp;1&nbsp;2&nbsp;3&nbsp;4&nbsp;5&nbsp;6&nbsp;7&nbsp;8&nbsp;9)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;<br>
+&nbsp;&nbsp;&lang;record&nbsp;with&nbsp;fields&nbsp;initialized&nbsp;to&nbsp;3,&nbsp;5,&nbsp;9,&nbsp;11,&nbsp;15,&nbsp;17&rang;<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_332"></a>record-constructor<i> constructor-descriptor</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Calls the <i>protocol</i> of <i>constructor-descriptor</i> (as described for
+<tt>make-record-constructor-descriptor</tt>) and returns the resulting
+constructor <i>constructor</i> for records of the record type
+associated with <i>constructor-descriptor</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_334"></a>record-predicate<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a procedure that, given an object <i>obj</i>, returns
+<tt>#t</tt>
+if <i>obj</i> is a record of the type represented by
+<i>rtd</i>, and <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_336"></a>record-accessor<i> rtd k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i> must be a valid field index of <i>rtd</i>.  The <tt>record-accessor</tt> procedure returns a one-argument procedure whose
+argument must be a record of the type represented by <i>rtd</i>.  This
+procedure returns the value of the selected field of that record.</p>
+<p>
+The field selected corresponds to the <i>k</i>th element
+(0-based) of the <i>fields</i> argument to the invocation of <tt>make-record-type-descriptor</tt> that created <i>rtd</i>. Note that
+<i>k</i> cannot be used to specify a field of any type <i>rtd</i> extends.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_338"></a>record-mutator<i> rtd k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>K</i> must be a valid field index of <i>rtd</i>.  The <tt>record-mutator</tt> procedure returns a two-argument procedure whose
+arguments must be a record record <i>r</i> of the type represented by
+<i>rtd</i> and an object <i>obj</i>.  This procedure stores <i>obj</i>
+within the field of <i>r</i> specified by <i>k</i>. The <i>k</i> argument
+is as in <tt>record-accessor</tt>. If <i>k</i> specifies an immutable
+field, an exception with condition type <tt>&amp;assertion</tt> is raised.
+The mutator returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+
+<tt>(define&nbsp;:point<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;point&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;<tt>#</tt>((mutable&nbsp;x)&nbsp;(mutable&nbsp;y))))<br>
+<br>
+(define&nbsp;:point-cd<br>
+&nbsp;&nbsp;(make-record-constructor-descriptor&nbsp;:point&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>))<br>
+<br>
+(define&nbsp;make-point&nbsp;(record-constructor&nbsp;:point-cd))<br>
+<br>
+(define&nbsp;point?&nbsp;(record-predicate&nbsp;:point))<br>
+(define&nbsp;point-x&nbsp;(record-accessor&nbsp;:point&nbsp;0))<br>
+(define&nbsp;point-y&nbsp;(record-accessor&nbsp;:point&nbsp;1))<br>
+(define&nbsp;point-x-set!&nbsp;(record-mutator&nbsp;:point&nbsp;0))<br>
+(define&nbsp;point-y-set!&nbsp;(record-mutator&nbsp;:point&nbsp;1))<br>
+<br>
+(define&nbsp;p1&nbsp;(make-point&nbsp;1&nbsp;2))<br>
+(point?&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(point-x&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<br>
+(point-y&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;2<br>
+(point-x-set!&nbsp;p1&nbsp;5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<em>unspecified</em><br>
+(point-x&nbsp;p1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;5<br>
+<br>
+(define&nbsp;:point2<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&#8217;point2&nbsp;:point&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;&#8217;<tt>#</tt>((mutable&nbsp;x)&nbsp;(mutable&nbsp;y))))<br>
+<br>
+(define&nbsp;make-point2<br>
+&nbsp;&nbsp;(record-constructor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(make-record-constructor-descriptor&nbsp;:point2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>)))<br>
+(define&nbsp;point2?&nbsp;(record-predicate&nbsp;:point2))<br>
+(define&nbsp;point2-xx&nbsp;(record-accessor&nbsp;:point2&nbsp;0))<br>
+(define&nbsp;point2-yy&nbsp;(record-accessor&nbsp;:point2&nbsp;1))<br>
+<br>
+(define&nbsp;p2&nbsp;(make-point2&nbsp;1&nbsp;2&nbsp;3&nbsp;4))<br>
+(point?&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(point-x&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<br>
+(point-y&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;2<br>
+(point2-xx&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;3<br>
+(point2-yy&nbsp;p2)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4<br>
+<br>
+(define&nbsp;:point-cd/abs<br>
+&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;:point&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;(lambda&nbsp;(new)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(new&nbsp;(abs&nbsp;x)&nbsp;(abs&nbsp;y))))))<br>
+<br>
+(define&nbsp;make-point/abs<br>
+&nbsp;&nbsp;(record-constructor&nbsp;:point-cd/abs))<br>
+<br>
+(point-x&nbsp;(make-point/abs&nbsp;-1&nbsp;-2)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<br>
+(point-y&nbsp;(make-point/abs&nbsp;-1&nbsp;-2)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;2<br>
+<br>
+(define&nbsp;:cpoint<br>
+&nbsp;&nbsp;(make-record-type-descriptor<br>
+&nbsp;&nbsp;&nbsp;&#8217;cpoint&nbsp;:point<br>
+&nbsp;&nbsp;&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt>&nbsp;<tt>#f</tt><br>
+&nbsp;&nbsp;&nbsp;&#8217;<tt>#</tt>((mutable&nbsp;rgb))))<br>
+<br>
+(define&nbsp;make-cpoint<br>
+&nbsp;&nbsp;(record-constructor<br>
+&nbsp;&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;:cpoint&nbsp;:point-cd<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y&nbsp;c)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((p&nbsp;x&nbsp;y)&nbsp;(color-&gt;rgb&nbsp;c)))))))<br>
+<br>
+(define&nbsp;make-cpoint/abs<br>
+&nbsp;&nbsp;(record-constructor<br>
+&nbsp;&nbsp;&nbsp;(make-record-constructor-descriptor<br>
+&nbsp;&nbsp;&nbsp;&nbsp;:cpoint&nbsp;:point-cd/abs<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y&nbsp;c)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((p&nbsp;x&nbsp;y)&nbsp;(color-&gt;rgb&nbsp;c)))))))<br>
+<br>
+(define&nbsp;cpoint-rgb<br>
+&nbsp;&nbsp;(record-accessor&nbsp;:cpoint&nbsp;0))<br>
+<br>
+(define&nbsp;(color-&gt;rgb&nbsp;c)<br>
+&nbsp;&nbsp;(cons&nbsp;&#8217;rgb&nbsp;c))<br>
+<br>
+(cpoint-rgb&nbsp;(make-cpoint&nbsp;-1&nbsp;-3&nbsp;&#8217;red)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(rgb&nbsp;.&nbsp;red)<br>
+(point-x&nbsp;(make-cpoint&nbsp;-1&nbsp;-3&nbsp;&#8217;red))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-1<br>
+(point-x&nbsp;(make-cpoint/abs&nbsp;-1&nbsp;-3&nbsp;&#8217;red))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1<p></tt></p>
+<p>
+</p>
+<a name="node_sec_6.4"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_6.4">6.4&nbsp;&nbsp;Inspection</a></h2>
+<p></p>
+<p>
+The <tt>(rnrs records inspection (6))</tt><a name="node_idx_340"></a>library
+provides procedures for inspecting records and their
+record-type descriptors. These procedures are designed to allow the
+writing of portable printers and inspectors.</p>
+<p>
+On the one hand, <tt>record?</tt> and <tt>record-rtd</tt> treat records of opaque
+record types as if they were not records. On the other hand, the
+inspection procedures that operate on record-type descriptors
+themselves are not affected by opacity. In other words, opacity
+controls whether a program can obtain an rtd from a record. If the
+program has access to the original rtd via <tt>make-record-type-descriptor</tt> or <tt>record-type-descriptor</tt>, it can
+still make use of the inspection procedures.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_342"></a>record?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a record, and its record type is
+not opaque, and returns <tt>#f</tt> otherwise.  
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_344"></a>record-rtd<i> record</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the rtd representing the type of <i>record</i> if the type is not
+opaque. The rtd of the most precise type is returned; that is, the
+type <i>t</i> such that <i>record</i> is of type <i>t</i> but not of any
+type that extends <i>t</i>.  If the type is opaque, an exception is
+raised with condition type <tt>&amp;assertion</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_346"></a>record-type-name<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the name of the record-type descriptor <i>rtd</i>.
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_348"></a>record-type-parent<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the parent of the record-type descriptor <i>rtd</i>, or
+<tt>#f</tt> if it has none.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_350"></a>record-type-uid<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the uid of the record-type descriptor rtd, or <tt>#f</tt> if it has none.
+(An implementation may assign a generated uid to a record type even if the
+type is generative, so the return of a uid does not necessarily imply that
+the type is nongenerative.)
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_352"></a>record-type-generative?<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>rtd</i> is generative, and <tt>#f</tt> if not.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_354"></a>record-type-sealed?<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the record-type descriptor is
+sealed, and <tt>#f</tt> if not.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_356"></a>record-type-opaque?<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the the record-type descriptor is
+opaque, and <tt>#f</tt> if not.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_358"></a>record-type-field-names<i> rtd</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a vector of symbols naming the fields of the type represented by <i>rtd</i>
+(not including the fields of parent types) where the fields are ordered as
+described under <tt>make-record-type-descriptor</tt>.  The returned
+vector may be immutable.
+If the returned vector is modified, the effect on 
+<i>rtd</i> is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_360"></a>record-field-mutable?<i> rtd k</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the field specified by
+<i>k</i> of the type represented by <i>rtd</i> is mutable, and
+<tt>#f</tt> if not.  <i>K</i> is as in <tt>record-accessor</tt>.
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-6.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

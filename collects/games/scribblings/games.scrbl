@@ -20,7 +20,7 @@ installed as sub-collections of the @filepath{games} collection (see
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "new-games"]{Implementing new Games}
+@section[#:tag "new-games"]{Implementing New Games}
 
 The game-starting console inspects the sub-collections of the
 @filepath{games} collection. If a sub-collection has an

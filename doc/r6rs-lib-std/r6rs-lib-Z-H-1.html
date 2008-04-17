@@ -1,0 +1,198 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-2.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_Temp_1"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+Contents</h1>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+                    <a name="node_toc_start"></a></p>
+
+<p class=noindent></p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_1"></a><a href="r6rs-lib-Z-H-2.html#node_chap_1">1&nbsp;&nbsp;Unicode</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.1"></a><a href="r6rs-lib-Z-H-2.html#node_sec_1.1">1.1&nbsp;&nbsp;Characters</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.2"></a><a href="r6rs-lib-Z-H-2.html#node_sec_1.2">1.2&nbsp;&nbsp;Strings</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_2"></a><a href="r6rs-lib-Z-H-3.html#node_chap_2">2&nbsp;&nbsp;Bytevectors</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.1"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.1">2.1&nbsp;&nbsp;Endianness</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.2"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.2">2.2&nbsp;&nbsp;General operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.3"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.3">2.3&nbsp;&nbsp;Operations on bytes and octets</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.4"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.4">2.4&nbsp;&nbsp;Operations on integers of arbitrary size</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.5"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.5">2.5&nbsp;&nbsp;Operations on 16-bit integers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.6"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.6">2.6&nbsp;&nbsp;Operations on 32-bit integers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.7"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.7">2.7&nbsp;&nbsp;Operations on 64-bit integers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.8"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.8">2.8&nbsp;&nbsp;Operations on IEEE-754 representations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_2.9"></a><a href="r6rs-lib-Z-H-3.html#node_sec_2.9">2.9&nbsp;&nbsp;Operations on strings</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_3"></a><a href="r6rs-lib-Z-H-4.html#node_chap_3">3&nbsp;&nbsp;List utilities</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_4"></a><a href="r6rs-lib-Z-H-5.html#node_chap_4">4&nbsp;&nbsp;Sorting</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_5"></a><a href="r6rs-lib-Z-H-6.html#node_chap_5">5&nbsp;&nbsp;Control structures</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_6"></a><a href="r6rs-lib-Z-H-7.html#node_chap_6">6&nbsp;&nbsp;Records</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.1"></a><a href="r6rs-lib-Z-H-7.html#node_sec_6.1">6.1&nbsp;&nbsp;Mutability and equivalence of records</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.2"></a><a href="r6rs-lib-Z-H-7.html#node_sec_6.2">6.2&nbsp;&nbsp;Syntactic layer</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.3"></a><a href="r6rs-lib-Z-H-7.html#node_sec_6.3">6.3&nbsp;&nbsp;Procedural layer</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.4"></a><a href="r6rs-lib-Z-H-7.html#node_sec_6.4">6.4&nbsp;&nbsp;Inspection</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_7"></a><a href="r6rs-lib-Z-H-8.html#node_chap_7">7&nbsp;&nbsp;Exceptions and conditions</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.1"></a><a href="r6rs-lib-Z-H-8.html#node_sec_7.1">7.1&nbsp;&nbsp;Exceptions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.2"></a><a href="r6rs-lib-Z-H-8.html#node_sec_7.2">7.2&nbsp;&nbsp;Conditions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.2.1"></a><a href="r6rs-lib-Z-H-8.html#node_sec_7.2.1">7.2.1&nbsp;&nbsp;Condition objects</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.3"></a><a href="r6rs-lib-Z-H-8.html#node_sec_7.3">7.3&nbsp;&nbsp;Standard condition types</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_8"></a><a href="r6rs-lib-Z-H-9.html#node_chap_8">8&nbsp;&nbsp;I/O</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.1"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.1">8.1&nbsp;&nbsp;Condition types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2">8.2&nbsp;&nbsp;Port I/O</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.1"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.1">8.2.1&nbsp;&nbsp;File names</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.2"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.2">8.2.2&nbsp;&nbsp;File options</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.3"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.3">8.2.3&nbsp;&nbsp;Buffer modes</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.4"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.4">8.2.4&nbsp;&nbsp;Transcoders</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.5"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.5">8.2.5&nbsp;&nbsp;End-of-file object</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.6"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.6">8.2.6&nbsp;&nbsp;Input and output ports</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.7"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.7">8.2.7&nbsp;&nbsp;Input ports</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.8"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.8">8.2.8&nbsp;&nbsp;Binary input</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.9"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.9">8.2.9&nbsp;&nbsp;Textual input</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.10"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.10">8.2.10&nbsp;&nbsp;Output ports</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.11"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.11">8.2.11&nbsp;&nbsp;Binary output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.12"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.12">8.2.12&nbsp;&nbsp;Textual output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2.13"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.2.13">8.2.13&nbsp;&nbsp;Input/output ports</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.3"></a><a href="r6rs-lib-Z-H-9.html#node_sec_8.3">8.3&nbsp;&nbsp;Simple I/O</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_9"></a><a href="r6rs-lib-Z-H-10.html#node_chap_9">9&nbsp;&nbsp;File system</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_10"></a><a href="r6rs-lib-Z-H-11.html#node_chap_10">10&nbsp;&nbsp;Command-line access and exit values</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_11"></a><a href="r6rs-lib-Z-H-12.html#node_chap_11">11&nbsp;&nbsp;Arithmetic</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.1"></a><a href="r6rs-lib-Z-H-12.html#node_sec_11.1">11.1&nbsp;&nbsp;Bitwise operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.2"></a><a href="r6rs-lib-Z-H-12.html#node_sec_11.2">11.2&nbsp;&nbsp;Fixnums</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.3"></a><a href="r6rs-lib-Z-H-12.html#node_sec_11.3">11.3&nbsp;&nbsp;Flonums</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4"></a><a href="r6rs-lib-Z-H-12.html#node_sec_11.4">11.4&nbsp;&nbsp;Exact bitwise arithmetic</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_12"></a><a href="r6rs-lib-Z-H-13.html#node_chap_12">12&nbsp;&nbsp;<tt>syntax-case</tt></a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.1"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.1">12.1&nbsp;&nbsp;Hygiene</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.2"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.2">12.2&nbsp;&nbsp;Syntax objects</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.3"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.3">12.3&nbsp;&nbsp;Transformers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.4"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.4">12.4&nbsp;&nbsp;Parsing input and producing output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.5"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.5">12.5&nbsp;&nbsp;Identifier predicates</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.6"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.6">12.6&nbsp;&nbsp;Syntax-object and datum conversions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.7"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.7">12.7&nbsp;&nbsp;Generating lists of temporaries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.8"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.8">12.8&nbsp;&nbsp;Derived forms and procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_12.9"></a><a href="r6rs-lib-Z-H-13.html#node_sec_12.9">12.9&nbsp;&nbsp;Syntax violations</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_13"></a><a href="r6rs-lib-Z-H-14.html#node_chap_13">13&nbsp;&nbsp;Hashtables</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_13.1"></a><a href="r6rs-lib-Z-H-14.html#node_sec_13.1">13.1&nbsp;&nbsp;Constructors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_13.2"></a><a href="r6rs-lib-Z-H-14.html#node_sec_13.2">13.2&nbsp;&nbsp;Procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_13.3"></a><a href="r6rs-lib-Z-H-14.html#node_sec_13.3">13.3&nbsp;&nbsp;Inspection</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_13.4"></a><a href="r6rs-lib-Z-H-14.html#node_sec_13.4">13.4&nbsp;&nbsp;Hash functions</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_14"></a><a href="r6rs-lib-Z-H-15.html#node_chap_14">14&nbsp;&nbsp;Enumerations</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_15"></a><a href="r6rs-lib-Z-H-16.html#node_chap_15">15&nbsp;&nbsp;Composite library</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_16"></a><a href="r6rs-lib-Z-H-17.html#node_chap_16">16&nbsp;&nbsp;<tt>eval</tt></a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_17"></a><a href="r6rs-lib-Z-H-18.html#node_chap_17">17&nbsp;&nbsp;Mutable pairs</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_18"></a><a href="r6rs-lib-Z-H-19.html#node_chap_18">18&nbsp;&nbsp;Mutable strings</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_19"></a><a href="r6rs-lib-Z-H-20.html#node_chap_19">19&nbsp;&nbsp;R<sup>5</sup>RS compatibility</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_Temp_4"></a><a href="r6rs-lib-Z-H-21.html#node_chap_Temp_4">Alphabetic index of definitions of
+concepts, keywords, and procedures</a></b><br>
+</p>
+<p>
+</p>
+<p>
+</p>
+<p>
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-2.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

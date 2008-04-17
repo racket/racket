@@ -7,6 +7,8 @@
                     setup/option-unit
                     setup/option-sig
                     setup/dirs
+                    setup/main-collects
+                    setup/xref scribble/xref
                     ;; setup/infotab -- no bindings from this are used
                     setup/getinfo
                     setup/plt-installer
@@ -1048,3 +1050,54 @@ An @deftech{unpackable} is one of the following:
 @defproc[(reset-relevant-directories-state!) void?]{
    Resets the cache used by @scheme[find-relevant-directories].}
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "main-collects"]{Paths Relative to @filepath{collects}}
+
+@defmodule[setup/main-collects]
+
+@defproc[(path->main-collects-relative [path (or bytes? path-string?)])
+         (or/c path? (cons/c 'collects (listof bytes?)))]{
+
+Checks whether @scheme[path] has a prefix that matches the prefix to
+the main @filepath{collects} directory as determined by
+@scheme[(find-collects-dir)]. If so, the result is a list starting
+with @scheme['collects] and containing the remaining path elements as
+byte strings. If not, the path is returned as-is.
+
+The @scheme[path] argument should be a complete path. Applying
+@scheme[simplify-path] before @scheme[path->main-collects-relative] is
+usually a good idea.
+
+For historical reasons, @scheme[path] can be a byte string, which is
+converted to a path using @scheme[bytes->path].}
+
+@defproc[(main-collects-relative->path [rel (or/c path? 
+                                                  (cons/c 'collects 
+                                                          (or/c (listof bytes?) bytes?)))])
+         path?]{
+
+
+The inverse of @scheme[path->main-collects-relative]: if @scheme[rel]
+is a pair that starts with @scheme['collects], then it is converted
+back to a path relative to @scheme[(find-collects-dir)].
+
+For historical reasons, a single byte string is allowed in place of a
+list of byte strings after @scheme['collects], in which case it is
+assumed to be a relative path after conversion with
+@scheme[bytes->path].
+
+Also for historical reasons, if @scheme[rel] is any kind of value other
+than specified in the contract above, it is returned as-is.}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "xref"]{Cross-References for Installed Manuals}
+
+@defmodule[setup/xref]
+
+@defproc[(load-collections-xref [on-load (-> any/c) (lambda () (void))])
+         xref?]{
+
+Like @scheme[load-xref], but automatically find all cross-reference files for
+manuals that have been installed with @exec{setup-plt}.}

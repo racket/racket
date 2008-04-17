@@ -1,0 +1,597 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-9.html">previous</a></span><span>, <a href="r6rs-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_7"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_7">Chapter 7</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_7">Libraries</a></h1>
+<p>
+<a name="node_idx_264"></a>Libraries are parts of a program that can be distributed
+independently.
+The library system supports macro definitions within libraries,
+macro exports, and distinguishes the phases in which definitions
+and imports are needed.  This chapter defines the notation for
+libraries and a semantics for library expansion and execution.</p>
+<p>
+</p>
+<a name="node_sec_7.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_7.1">7.1&nbsp;&nbsp;Library form</a></h2>
+<p></p>
+<p>
+A library definition must have the following form:<a name="node_idx_266"></a><a name="node_idx_268"></a><a name="node_idx_270"></a></p>
+<p>
+</p>
+
+<tt>(library&nbsp;&lt;library&nbsp;name&gt;<br>
+&nbsp;&nbsp;(export&nbsp;&lt;export&nbsp;spec&gt;&nbsp;<tt>...</tt>)<br>
+&nbsp;&nbsp;(import&nbsp;&lt;import&nbsp;spec&gt;&nbsp;<tt>...</tt>)<br>
+&nbsp;&nbsp;&lt;library&nbsp;body&gt;)<p></tt></p>
+<p>
+A library declaration contains the following elements:</p>
+<p>
+</p>
+<ul>
+<li><p>The &lt;library&nbsp;name&gt; specifies the name of the library
+(possibly with version).
+</p>
+<li><p>The <tt>export</tt> subform specifies a list of exports, which name
+a subset of the bindings defined within or imported into the
+library.
+</p>
+<li><p>The <tt>import</tt> subform specifies the imported bindings as a
+list of import dependencies, where each dependency specifies:
+</p>
+<ul>
+<li><p>the imported library&#8217;s name, and, optionally, constraints on its
+version,
+</p>
+<li><p>the relevant levels, e.g., expand or run time (see
+section&nbsp;<a href="#node_sec_7.2">7.2</a>, and
+</p>
+<li><p>the subset of the library&#8217;s exports to make available within the
+importing library, and the local names to use within the importing
+library for each of the library&#8217;s exports.
+</p>
+</ul><p>
+</p>
+<li><p>The &lt;library body&gt; is the library body, consisting of a
+sequence of definitions followed by a sequence of expressions.  The
+definitions may be both for local (unexported) and exported
+bindings, and the expressions are initialization expressions to be evaluated
+for their effects.
+</p>
+</ul><p></p>
+<p>
+An identifier can be imported with the same local name from two or
+more libraries or for two levels from the same library only if the
+binding exported by each library is the same (i.e., the binding is
+defined in one library, and it arrives through the imports only by
+exporting and re-exporting).  Otherwise, no identifier can be imported
+multiple times, defined multiple times, or both defined and imported.
+No identifiers are visible within a library except for those
+explicitly imported into the library or defined within the library.</p>
+<p>
+A &lt;library name&gt; uniquely identifies a library within an
+implementation, and is globally visible in the <tt>import</tt> clauses
+(see below) of all other libraries within an implementation.
+A &lt;library name&gt; has the following form:</p>
+<p>
+</p>
+
+<tt>(&lt;identifier<sub>1</sub>&gt;&nbsp;&lt;identifier<sub>2</sub>&gt;&nbsp;<tt>...</tt>&nbsp;&lt;version&gt;)<p></tt></p>
+<p>
+where &lt;version&gt; is empty or has the following form:
+</p>
+
+<tt>(&lt;sub-version&gt;&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+Each &lt;sub-version&gt; must represent an exact nonnegative integer object.
+An empty &lt;version&gt; is equivalent to <tt>()</tt>.</p>
+<p>
+An &lt;export&nbsp;spec&gt; names a set of imported and locally defined bindings to
+be exported, possibly with different
+external names.  An &lt;export&nbsp;spec&gt; must have one of the
+following forms:</p>
+<p>
+</p>
+
+<tt>&lt;identifier&gt;<br>
+(rename&nbsp;(&lt;identifier<sub>1</sub>&gt;&nbsp;&lt;identifier<sub>2</sub>&gt;)&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+In an &lt;export&nbsp;spec&gt;, an &lt;identifier&gt; names a single binding defined
+within or imported into the library, where the external name for the export is
+the same as the name of the binding within the library. 
+A <tt>rename</tt> spec exports the binding named by 
+&lt;identifier<sub>1</sub>&gt; in each <tt>(&lt;identifier<sub>1</sub>&gt;
+&lt;identifier<sub>2</sub>&gt;)</tt> pairing, using &lt;identifier<sub>2</sub>&gt; as the
+external name.</p>
+<p>
+Each &lt;import&nbsp;spec&gt; specifies a set of bindings to be imported into
+the library, the levels at which they are to be available, and the local
+names by which they are to be known.  An &lt;import spec&gt; must
+be one of the following:
+</p>
+
+<tt>&lt;import&nbsp;set&gt;<br>
+(for&nbsp;&lt;import&nbsp;set&gt;&nbsp;&lt;import&nbsp;level&gt;&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+An &lt;import level&gt;  is one of the following:
+</p>
+
+<tt>run<br>
+expand<br>
+(meta&nbsp;&lt;level&gt;)<p></tt></p>
+<p>
+where &lt;level&gt; represents an exact integer object.</p>
+<p>
+As an &lt;import level&gt;, <tt>run</tt> is an abbreviation for <tt>(meta 0)</tt>, and <tt>expand</tt> is an abbreviation for <tt>(meta 1)</tt>.
+Levels and phases are discussed in section&nbsp;<a href="#node_sec_7.2">7.2</a>.</p>
+<p>
+An &lt;import&nbsp;set&gt; names a set of bindings from another library and
+possibly specifies local names for the imported bindings.  It must be
+one of the following:</p>
+<p>
+</p>
+
+<tt>&lt;library&nbsp;reference&gt;<br>
+(library&nbsp;&lt;library&nbsp;reference&gt;)<br>
+(only&nbsp;&lt;import&nbsp;set&gt;&nbsp;&lt;identifier&gt;&nbsp;<tt>...</tt>)<br>
+(except&nbsp;&lt;import&nbsp;set&gt;&nbsp;&lt;identifier&gt;&nbsp;<tt>...</tt>)<br>
+(prefix&nbsp;&lt;import&nbsp;set&gt;&nbsp;&lt;identifier&gt;)<br>
+(rename&nbsp;&lt;import&nbsp;set&gt;&nbsp;(&lt;identifier<sub>1</sub>&gt;&nbsp;&lt;identifier<sub>2</sub>&gt;)&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+A &lt;library&nbsp;reference&gt; identifies a library by its 
+name and optionally by its version.  It has one of the following forms:</p>
+<p>
+</p>
+
+<tt>(&lt;identifier<sub>1</sub>&gt;&nbsp;&lt;identifier<sub>2</sub>&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;identifier<sub>1</sub>&gt;&nbsp;&lt;identifier<sub>2</sub>&gt;&nbsp;<tt>...</tt>&nbsp;&lt;version&nbsp;reference&gt;)<p></tt></p>
+<p>
+A &lt;library&nbsp;reference&gt; whose first &lt;identifier&gt; is
+<tt>for</tt>, <tt>library</tt>, <tt>only</tt>, <tt>except</tt>, <tt>prefix</tt>, or <tt>rename</tt> is
+permitted only within a <tt>library</tt> &lt;import&nbsp;set&gt;.
+The &lt;import&nbsp;set&gt; <tt>(library &lt;library&nbsp;reference&gt;)</tt> is
+otherwise equivalent to &lt;library&nbsp;reference&gt;.</p>
+<p>
+A &lt;library&nbsp;reference&gt; with no &lt;version&nbsp;reference&gt;
+(first form above) is equivalent to a &lt;library&nbsp;reference&gt; with a
+&lt;version&nbsp;reference&gt; of <tt>()</tt>.</p>
+<p>
+A &lt;version&nbsp;reference&gt; specifies a set of &lt;version&gt;s that
+it matches.  The &lt;library&nbsp;reference&gt; identifies all libraries of
+the same name and whose version is matched by the
+&lt;version&nbsp;reference&gt;.  A &lt;version&nbsp;reference&gt; has
+the following form:
+</p>
+
+<tt>(&lt;sub-version&nbsp;reference<sub>1</sub>&gt;&nbsp;<tt>...</tt>&nbsp;&lt;sub-version&nbsp;reference<sub><em>n</em></sub>&gt;)<br>
+(and&nbsp;&lt;version&nbsp;reference&gt;&nbsp;<tt>...</tt>)<br>
+(or&nbsp;&lt;version&nbsp;reference&gt;&nbsp;<tt>...</tt>)<br>
+(not&nbsp;&lt;version&nbsp;reference&gt;)<p></tt>
+A &lt;version reference&gt; of the first form matches a &lt;version&gt;
+with at least <em>n</em> elements, whose &lt;sub-version reference&gt;s match
+the corresponding &lt;sub-version&gt;s.  An <tt>and</tt> &lt;version
+reference&gt; matches a version if all &lt;version references&gt;
+following the <tt>and</tt> match it.  Correspondingly, an <tt>or</tt> &lt;version reference&gt; matches a version if one of
+&lt;version references&gt; following the <tt>or</tt> matches it,
+and a <tt>not</tt> &lt;version reference&gt; matches a version if the
+&lt;version reference&gt; following it does not match it.</p>
+<p>
+A &lt;sub-version reference&gt; has one of the following forms:</p>
+<p>
+</p>
+
+<tt>&lt;sub-version&gt;<br>
+(&gt;=&nbsp;&lt;sub-version&gt;)<br>
+(&lt;=&nbsp;&lt;sub-version&gt;)<br>
+(and&nbsp;&lt;sub-version&nbsp;reference&gt;&nbsp;<tt>...</tt>)<br>
+(or&nbsp;&lt;sub-version&nbsp;reference&gt;&nbsp;<tt>...</tt>)<br>
+(not&nbsp;&lt;sub-version&nbsp;reference&gt;)<p></tt></p>
+<p>
+A &lt;sub-version reference&gt; of the first form matches a
+&lt;sub-version&gt; if it is equal to it.  A <tt>&gt;=</tt>
+&lt;sub-version reference&gt; of the first form matches a sub-version
+if it is greater or equal to the &lt;sub-version&gt; following it;
+analogously for <tt>&lt;=</tt>.  An <tt>and</tt> &lt;sub-version reference&gt;
+matches a sub-version if all of the subsequent &lt;sub-version
+reference&gt;s match it.  Correspondingly, an <tt>or</tt>
+&lt;sub-version reference&gt; matches a sub-version if one of the
+subsequent &lt;sub-version reference&gt;s matches it, and a <tt>not</tt>
+&lt;sub-version reference&gt; matches a sub-version if the subsequent
+&lt;sub-version reference&gt; does not match it.</p>
+<p>
+Examples:</p>
+<p>
+</p>
+<div align=left><img src="r6rs-Z-G-1.gif" border="0" alt="[r6rs-Z-G-1.gif]"></div><p>
+</p>
+<p>
+When more than one library is identified by a library reference, the
+choice of libraries is determined in some implementation-dependent manner.</p>
+<p>
+To avoid problems such as incompatible types and replicated state,
+implementations should prohibit the two libraries whose library names
+consist of the same sequence of identifiers but whose versions do not
+match to co-exist in the same program.</p>
+<p>
+By default, all of an imported library&#8217;s exported bindings are made
+visible within an importing library using the names given to the bindings
+by the imported library.
+The precise set of bindings to be imported and the names of those
+bindings can be adjusted with the <tt>only</tt>, <tt>except</tt>,
+<tt>prefix</tt>, and <tt>rename</tt> forms as described below.</p>
+<p>
+</p>
+<ul>
+<li><p>An <tt>only</tt> form produces a subset of the bindings from another
+&lt;import&nbsp;set&gt;, including only the listed
+&lt;identifier&gt;s.
+The included &lt;identifier&gt;s must be in
+the original &lt;import&nbsp;set&gt;.
+</p>
+<li><p>An <tt>except</tt> form produces a subset of the bindings from another
+&lt;import&nbsp;set&gt;, including all but the listed
+&lt;identifier&gt;s.
+All of the excluded &lt;identifier&gt;s must be in
+the original &lt;import&nbsp;set&gt;.
+</p>
+<li><p>A <tt>prefix</tt> form adds the &lt;identifier&gt; prefix to each
+name from another &lt;import&nbsp;set&gt;.
+</p>
+<li><p>A <tt>rename</tt> form, <tt>(rename (&lt;identifier<sub>1</sub>&gt; &lt;identifier<sub>2</sub>&gt;) <tt>...</tt>)</tt>,
+removes the bindings for <tt>&lt;identifier<sub>1</sub>&gt; <tt>...</tt></tt> to form an
+intermediate &lt;import&nbsp;set&gt;, then adds the bindings back for the
+corresponding <tt>&lt;identifier<sub>2</sub>&gt; <tt>...</tt></tt> to form the final
+&lt;import&nbsp;set&gt;.
+Each &lt;identifier<sub>1</sub>&gt; must be in the original &lt;import&nbsp;set&gt;,
+each &lt;identifier<sub>2</sub>&gt; must not be in the intermediate &lt;import&nbsp;set&gt;,
+and the &lt;identifier<sub>2</sub>&gt;s must be distinct.
+</p>
+</ul><p>
+It is a syntax violation if a constraint given above is not met.</p>
+<p>
+
+The &lt;library&nbsp;body&gt; of a <tt>library</tt> form consists of forms
+that are classified as 
+<i>definitions</i><a name="node_idx_272"></a>or
+<i>expressions</i><a name="node_idx_274"></a>.  Which forms belong to
+which class depends on the imported libraries and the result of
+expansion&#8212;see chapter&nbsp;<a href="r6rs-Z-H-13.html#node_chap_10">10</a>.  Generally, forms that
+are not 
+definitions (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.2">11.2</a> for definitions available
+through the base library) are expressions.</p>
+<p>
+A &lt;library&nbsp;body&gt; is like a &lt;body&gt; (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.3">11.3</a>) except that
+a &lt;library&nbsp;body&gt;s need not include any expressions.  It must
+have the following form:</p>
+<p>
+</p>
+
+<tt>&lt;definition&gt;&nbsp;<tt>...</tt>&nbsp;&lt;expression&gt;&nbsp;<tt>...</tt><p></tt></p>
+<p>
+When <tt>begin</tt>, <tt>let-syntax</tt>, or <tt>letrec-syntax</tt> forms
+occur in a top-level body prior to the first
+expression, they are spliced into the body; see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.7">11.4.7</a>.
+Some or all of the body, including portions wrapped in <tt>begin</tt>,
+<tt>let-syntax</tt>, or <tt>letrec-syntax</tt>
+forms, may be specified by a syntactic abstraction
+(see section&nbsp;<a href="r6rs-Z-H-12.html#node_sec_9.2">9.2</a>).</p>
+<p>
+The transformer expressions and bindings are evaluated and created
+from left to right, as described in chapter&nbsp;<a href="r6rs-Z-H-13.html#node_chap_10">10</a>.
+The expressions of variable definitions are evaluated
+from left to right, as if in an implicit <tt>letrec*</tt>,
+and the body expressions are also evaluated from left to right
+after the expressions of the variable definitions.
+A fresh location is created for each exported variable and initialized
+to the value of its local counterpart.
+The effect of returning twice to the continuation of the last body
+expression is unspecified.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The names <tt>library</tt>, <tt>export</tt>, <tt>import</tt>,
+<tt>for</tt>, <tt>run</tt>, <tt>expand</tt>, <tt>meta</tt>,
+<tt>import</tt>, <tt>export</tt>, <tt>only</tt>, <tt>except</tt>, <tt>prefix</tt>, <tt>rename</tt>, <tt>and</tt>, <tt>or</tt>, <tt>not</tt>, <tt>&gt;=</tt>, and <tt>&lt;=</tt>
+appearing in the library syntax are part of the
+syntax and are not reserved, i.e., the same names can be used for other
+purposes within the library or even exported from or imported 
+into a library with different meanings, without affecting their
+use in the <tt>library</tt> form.
+</blockquote><p>
+Bindings defined with a library are not visible in code
+outside of the library, unless the bindings are explicitly exported from the
+library. 
+An exported macro may, however, <em>implicitly export</em> an otherwise
+unexported identifier defined within or imported into the library.
+That is, it may insert a reference to that identifier into the output code
+it produces.</p>
+<p>
+ 
+All explicitly exported variables are immutable in both the
+exporting and importing libraries. 
+It is thus a syntax violation if an
+explicitly exported variable appears on the left-hand side of a <tt>set!</tt>
+expression, either in the exporting or importing libraries.</p>
+<p>
+All implicitly exported variables are also immutable in both the
+exporting and importing libraries.
+It is thus a syntax violation if a
+variable appears on the left-hand side of a <tt>set!</tt>
+expression in any code produced by an exported macro outside of the
+library in which the variable is defined.
+It is also a syntax violation if a
+reference to an assigned variable appears in any code produced by
+an exported macro outside of the library in which the variable is defined,
+where an assigned variable is one that appears on the left-hand
+side of a <tt>set!</tt> expression in the exporting library.</p>
+<p>
+All other variables defined within a library are mutable.</p>
+<p>
+</p>
+<a name="node_sec_7.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_7.2">7.2&nbsp;&nbsp;Import and export levels</a></h2>
+<p></p>
+<p>
+Expanding a library may require run-time information from another
+library.  For example, if a macro transformer calls a
+procedure from library <em>A</em>, then the library <em>A</em> must be
+instantiated before expanding any use of the macro in library <em>B</em>.  Library <em>A</em> may
+not be
+needed when library <em>B</em> is eventually run as part of a program, or it
+may be needed for run time of library <em>B</em>, too.  The library
+mechanism distinguishes these times by phases, which are explained in
+this section.</p>
+<p>
+Every library can be characterized by expand-time information (minimally,
+its imported libraries, a list of the exported keywords, a list of the
+exported variables, and code to evaluate the transformer expressions) and
+run-time information (minimally, code to evaluate the variable definition
+right-hand-side expressions, and code to evaluate the body expressions).
+The expand-time information must be available to expand references to
+any exported binding, and the run-time information must be available to
+evaluate references to any exported variable binding.</p>
+<p>
+<a name="node_idx_276"></a>A <em>phase</em> is a time at which the expressions within a library are
+evaluated.
+Within a library body, top-level expressions and
+the right-hand sides of <tt>define</tt> forms are evaluated at run time,
+i.e., phase 0, and the right-hand
+sides of <tt>define-syntax</tt> forms are evaluated at expand time, i.e.,
+phase 1.
+When <tt>define-syntax</tt>,
+<tt>let-syntax</tt>, or <tt>letrec-syntax</tt>
+forms appear within code evaluated at phase <em>n</em>, the right-hand sides
+are evaluated at phase <em>n</em> + 1.</p>
+<p>
+These phases are relative to the phase in which the library itself is
+used.
+An <a name="node_idx_278"></a><em>instance</em> of a library corresponds to an evaluation of its
+variable definitions and expressions in a particular phase relative to another
+library&#8212;a process called <a name="node_idx_280"></a><em>instantiation</em>.
+For example, if a top-level expression in a library <em>B</em> refers to
+a variable export from another library <em>A</em>, then it refers to the export from an
+instance of <em>A</em> at phase 0 (relative to the phase of <em>B</em>).
+But if a phase 1 expression within <em>B</em> refers to the same binding from
+<em>A</em>, then it refers to the export from an instance of <em>A</em> at phase 1
+(relative to the phase of <em>B</em>).</p>
+<p>
+A <a name="node_idx_282"></a><em>visit</em> of a library corresponds to the evaluation of its syntax
+definitions in a particular phase relative to another
+library&#8212;a process called <a name="node_idx_284"></a><em>visiting</em>. 
+For example, if a top-level expression in a library <em>B</em> refers to
+a macro export from another library <em>A</em>, then it refers to the export from a
+visit of <em>A</em> at phase 0 (relative to the phase of <em>B</em>), which corresponds
+to the evaluation of the macro&#8217;s transformer expression at phase 1.</p>
+<p>
+<a name="node_idx_286"></a><a name="node_idx_288"></a>A <em>level</em> is a lexical property of an identifier that determines
+in which phases it can be referenced. The level for each identifier
+bound by a definition within a library is 0; that is, the identifier
+can be referenced only at phase 0 within the library.
+The level for each imported binding is determined by the enclosing <tt>for</tt> form of the <tt>import</tt> in the importing library, in
+addition to the levels of the identifier in the exporting
+library. Import and export levels are combined by pairwise addition of
+all level combinations.  For example, references to an imported
+identifier exported for levels <em>p</em><sub><em>a</em></sub> and <em>p</em><sub><em>b</em></sub> and imported for levels
+<em>q</em><sub><em>a</em></sub>, <em>q</em><sub><em>b</em></sub>, and <em>q</em><sub><em>c</em></sub> are valid at levels <em>p</em><sub><em>a</em></sub> + <em>q</em><sub><em>a</em></sub>, <em>p</em><sub><em>a</em></sub> + <em>q</em><sub><em>b</em></sub>,
+<em>p</em><sub><em>a</em></sub> + <em>q</em><sub><em>c</em></sub>, <em>p</em><sub><em>b</em></sub> + <em>q</em><sub><em>a</em></sub>, <em>p</em><sub><em>b</em></sub> + <em>q</em><sub><em>b</em></sub>, and <em>p</em><sub><em>b</em></sub> + <em>q</em><sub><em>c</em></sub>. An &lt;import&nbsp;set&gt;
+without an enclosing <tt>for</tt> is equivalent to <tt>(for
+&lt;import&nbsp;set&gt; run)</tt>, which is the same as <tt>(for
+&lt;import&nbsp;set&gt; (meta 0))</tt>.</p>
+<p>
+The export level of an exported binding is 0 for all bindings
+that are defined within the exporting library. The export levels of a
+reexported binding, i.e., an export imported from another library, are the
+same as the effective import levels of that binding within the reexporting
+library.</p>
+<p>
+For the libraries defined in the library report, the export level is
+0 for nearly all bindings. The exceptions are <tt>syntax-rules</tt>,
+<tt>identifier-syntax</tt>, <tt>...</tt>, and <tt>_</tt> from the
+<tt>(rnrs base (6))</tt> library, which are exported with level 1, <tt>set!</tt> from the <tt>(rnrs base (6))</tt> library, which is exported with
+levels 0 and 1, and all bindings from the composite
+<tt>(rnrs (6))</tt> library (see library
+chapter&nbsp;on &#8220;Composite library&#8221;), which are
+exported with levels 0 and 1.</p>
+<p>
+Macro expansion within a library can introduce a reference to an
+identifier that is not explicitly imported into the library. In that
+case, the phase of the reference must match the identifier&#8217;s level as
+shifted by the difference between the phase of the source library
+(i.e., the library that supplied the identifier&#8217;s lexical context) and
+the library that encloses the reference. For example, suppose that
+expanding a library invokes a macro transformer, and the evaluation of
+the macro transformer refers to an identifier that is exported from
+another library (so the phase-1 instance of the library is used);
+suppose further that the value of the binding is a syntax object
+representing an identifier with only a level-<em>n</em> binding; then, the
+identifier must be used only at phase <em>n</em> + 1 in the
+library being expanded. This combination of levels and phases is why
+negative levels on identifiers can be useful, even though libraries
+exist only at non-negative phases.</p>
+<p>
+If any of a library&#8217;s definitions are referenced at phase 0 in the
+expanded form of a program, then an instance of the referenced library
+is created for phase 0 before the program&#8217;s definitions and
+expressions are evaluated. This rule applies transitively: if the
+expanded form of one library references at phase 0 an identifier
+from another library, then before the referencing library is
+instantiated at phase <em>n</em>, the referenced library must be instantiated
+at phase <em>n</em>. When an identifier is referenced at any phase <em>n</em>
+greater than 0, in contrast, then the defining library is
+instantiated at phase <em>n</em> at some unspecified time before the
+reference is evaluated. Similarly, when a macro keyword is referenced at
+phase <em>n</em> during the expansion of a library, then the
+defining library is visited at phase <em>n</em> at some unspecified time
+before the reference is evaluated.</p>
+<p>
+An implementation may distinguish instances/visits of a library for
+different phases or to use an instance/visit at any phase as an instance/visit at
+any other phase. An implementation may further
+expand each <tt>library</tt> form with distinct
+visits of libraries in any phase and/or instances of
+libraries in phases above 0. An implementation may
+create instances/visits of more libraries at more phases than required to
+satisfy references. When an identifier appears as an expression in a
+phase that is inconsistent with the identifier&#8217;s level, then an
+implementation may raise an exception either at expand time or run
+time, or it may allow the reference. Thus, a library whose meaning depends on whether the
+instances of a library are distinguished or shared across phases or
+<tt>library</tt> expansions may be unportable.</p>
+<p>
+</p>
+<a name="node_sec_7.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_7.3">7.3&nbsp;&nbsp;Examples</a></h2>
+<p>Examples for various &lt;import&nbsp;spec&gt;s and &lt;export&nbsp;spec&gt;s:</p>
+<p>
+</p>
+
+<tt>(library&nbsp;(stack)<br>
+&nbsp;&nbsp;(export&nbsp;make&nbsp;push!&nbsp;pop!&nbsp;empty!)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs))<br>
+<br>
+&nbsp;&nbsp;(define&nbsp;(make)&nbsp;(list&nbsp;&#8217;()))<br>
+&nbsp;&nbsp;(define&nbsp;(push!&nbsp;s&nbsp;v)&nbsp;(set-car!&nbsp;s&nbsp;(cons&nbsp;v&nbsp;(car&nbsp;s))))<br>
+&nbsp;&nbsp;(define&nbsp;(pop!&nbsp;s)&nbsp;(let&nbsp;([v&nbsp;(caar&nbsp;s)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set-car!&nbsp;s&nbsp;(cdar&nbsp;s))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v))<br>
+&nbsp;&nbsp;(define&nbsp;(empty!&nbsp;s)&nbsp;(set-car!&nbsp;s&nbsp;&#8217;())))<br>
+<br>
+(library&nbsp;(balloons)<br>
+&nbsp;&nbsp;(export&nbsp;make&nbsp;push&nbsp;pop)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs))<br>
+<br>
+&nbsp;&nbsp;(define&nbsp;(make&nbsp;w&nbsp;h)&nbsp;(cons&nbsp;w&nbsp;h))<br>
+&nbsp;&nbsp;(define&nbsp;(push&nbsp;b&nbsp;amt)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(-&nbsp;(car&nbsp;b)&nbsp;amt)&nbsp;(+&nbsp;(cdr&nbsp;b)&nbsp;amt)))<br>
+&nbsp;&nbsp;(define&nbsp;(pop&nbsp;b)&nbsp;(display&nbsp;&quot;Boom!&nbsp;&quot;)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;(*&nbsp;(car&nbsp;b)&nbsp;(cdr&nbsp;b)))&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(newline)))<br>
+<br>
+(library&nbsp;(party)<br>
+&nbsp;&nbsp;;;&nbsp;Total&nbsp;exports:<br>
+&nbsp;&nbsp;;;&nbsp;make,&nbsp;push,&nbsp;push!,&nbsp;make-party,&nbsp;pop!<br>
+&nbsp;&nbsp;(export&nbsp;(rename&nbsp;(balloon:make&nbsp;make)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(balloon:push&nbsp;push))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;push!<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;make-party<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(rename&nbsp;(party-pop!&nbsp;pop!)))<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(only&nbsp;(stack)&nbsp;make&nbsp;push!&nbsp;pop!)&nbsp;;&nbsp;not&nbsp;empty!<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(prefix&nbsp;(balloons)&nbsp;balloon:))<br>
+<br>
+&nbsp;&nbsp;;;&nbsp;Creates&nbsp;a&nbsp;party&nbsp;as&nbsp;a&nbsp;stack&nbsp;of&nbsp;balloons,<br>
+&nbsp;&nbsp;;;&nbsp;starting&nbsp;with&nbsp;two&nbsp;balloons<br>
+&nbsp;&nbsp;(define&nbsp;(make-party)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;([s&nbsp;(make)])&nbsp;;&nbsp;from&nbsp;stack<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(push!&nbsp;s&nbsp;(balloon:make&nbsp;10&nbsp;10))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(push!&nbsp;s&nbsp;(balloon:make&nbsp;12&nbsp;9))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;s))<br>
+&nbsp;&nbsp;(define&nbsp;(party-pop!&nbsp;p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(balloon:pop&nbsp;(pop!&nbsp;p))))<br>
+<br>
+<br>
+(library&nbsp;(main)<br>
+&nbsp;&nbsp;(export)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs)&nbsp;(party))<br>
+<br>
+&nbsp;&nbsp;(define&nbsp;p&nbsp;(make-party))<br>
+&nbsp;&nbsp;(pop!&nbsp;p)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;displays&nbsp;&quot;Boom!&nbsp;108&quot;<br>
+&nbsp;&nbsp;(push!&nbsp;p&nbsp;(push&nbsp;(make&nbsp;5&nbsp;5)&nbsp;1))<br>
+&nbsp;&nbsp;(pop!&nbsp;p))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;displays&nbsp;&quot;Boom!&nbsp;24&quot;<p></tt></p>
+<p>
+Examples for macros and phases:</p>
+<p>
+</p>
+
+<tt>(library&nbsp;(my-helpers&nbsp;id-stuff)<br>
+&nbsp;&nbsp;(export&nbsp;find-dup)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs))<br>
+<br>
+&nbsp;&nbsp;(define&nbsp;(find-dup&nbsp;l)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(pair?&nbsp;l)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;loop&nbsp;((rest&nbsp;(cdr&nbsp;l)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(null?&nbsp;rest)&nbsp;(find-dup&nbsp;(cdr&nbsp;l))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(bound-identifier=?&nbsp;(car&nbsp;l)&nbsp;(car&nbsp;rest))&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(car&nbsp;rest)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[else&nbsp;(loop&nbsp;(cdr&nbsp;rest))])))))<br>
+<br>
+(library&nbsp;(my-helpers&nbsp;values-stuff)<br>
+&nbsp;&nbsp;(export&nbsp;mvlet)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs)&nbsp;(for&nbsp;(my-helpers&nbsp;id-stuff)&nbsp;expand))<br>
+<br>
+&nbsp;&nbsp;(define-syntax&nbsp;mvlet<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(stx)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;stx&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;[(id&nbsp;...)&nbsp;expr]&nbsp;body0&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(find-dup&nbsp;(syntax&nbsp;(id&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(call-with-values<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;()&nbsp;expr)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(id&nbsp;...)&nbsp;body0&nbsp;body&nbsp;...)))]))))<br>
+<br>
+(library&nbsp;(let-div)<br>
+&nbsp;&nbsp;(export&nbsp;let-div)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(my-helpers&nbsp;values-stuff)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(rnrs&nbsp;r5rs))<br>
+<br>
+&nbsp;&nbsp;(define&nbsp;(quotient+remainder&nbsp;n&nbsp;d)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;([q&nbsp;(quotient&nbsp;n&nbsp;d)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(values&nbsp;q&nbsp;(-&nbsp;n&nbsp;(*&nbsp;q&nbsp;d)))))<br>
+&nbsp;&nbsp;(define-syntax&nbsp;let-div<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;n&nbsp;d&nbsp;(q&nbsp;r)&nbsp;body0&nbsp;body&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mvlet&nbsp;[(q&nbsp;r)&nbsp;(quotient+remainder&nbsp;n&nbsp;d)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body0&nbsp;body&nbsp;...)])))<p></tt></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-9.html">previous</a></span><span>, <a href="r6rs-Z-H-11.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

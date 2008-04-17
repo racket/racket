@@ -1,0 +1,428 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-7.html">previous</a></span><span>, <a href="r6rs-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_5"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_5">Chapter 5</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_5">Semantic concepts</a></h1>
+<p></p>
+<p>
+</p>
+<a name="node_sec_5.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.1">5.1&nbsp;&nbsp;Programs and libraries</a></h2>
+<p>A Scheme program consists of a <i>top-level program<a name="node_idx_192"></a></i>
+together with a set of <i>libraries<a name="node_idx_194"></a></i>, each
+of which defines a part of the program connected to the others through
+explicitly specified exports and imports.  A library consists of a set
+of export and import specifications and a body, which consists of
+definitions, and expressions.
+A top-level program is similar to a library, but
+has no export specifications.
+Chapters&nbsp;<a href="r6rs-Z-H-10.html#node_chap_7">7</a> and <a href="r6rs-Z-H-11.html#node_chap_8">8</a>
+describe the syntax and semantics of libraries and top-level programs,
+respectively. 
+Chapter&nbsp;<a href="r6rs-Z-H-14.html#node_chap_11">11</a> describes a base
+library that defines many of the constructs traditionally associated with
+Scheme.
+A separate report&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_24">24</a>]
+describes the various <i>standard libraries</i><a name="node_idx_196"></a>provided by a Scheme system.</p>
+<p>
+The division between the base library and the other standard libraries is
+based on use, not on construction.  In particular, some facilities
+that are typically implemented as &#8220;primitives&#8221; by a compiler or the
+run-time system rather than in terms of other standard procedures
+or syntactic forms are not part of the base library, but are defined in
+separate libraries.  Examples include the fixnums and flonums libraries,
+the exceptions and conditions libraries, and the libraries for
+records.</p>
+<p>
+</p>
+<a name="node_sec_5.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.2">5.2&nbsp;&nbsp;Variables, keywords, and regions</a></h2>
+<p>
+</p>
+<p>
+Within the body of a library or top-level program,
+an identifier<a name="node_idx_198"></a>may name a kind of syntax, or it may name
+a location where a value can be stored.  An identifier that names a kind
+of syntax is called a <em>keyword</em><a name="node_idx_200"></a>, or <em>syntactic keyword</em><a name="node_idx_202"></a>,
+and is said to be <em>bound</em> to that kind of syntax (or, in the case of a
+syntactic abstraction, a <em>transformer</em> that translates the syntax into more
+primitive forms; see section&nbsp;<a href="r6rs-Z-H-12.html#node_sec_9.2">9.2</a>).  An identifier that names a
+location is called a <em>variable</em><a name="node_idx_204"></a>and is said to be
+<em>bound</em> to that location.  
+At each point within a top-level program or a library, a specific, fixed set
+of identifiers is bound.  The set of these identifiers, the set of <i>visible
+bindings</i><a name="node_idx_206"></a>, is
+known as the <em>environment</em> in effect at that point.</p>
+<p>
+Certain forms are used to create syntactic abstractions
+and to bind keywords to transformers for those new syntactic abstractions, while other
+forms create new locations and bind variables to those
+locations.  Collectively, these forms are called <em>binding
+constructs</em>.<a name="node_idx_208"></a>Some binding constructs take the form of
+<i>definitions</i><a name="node_idx_210"></a>, while others are
+expressions.
+With the exception of exported library bindings, a binding created
+by a definition is visible only within the body in which the
+definition appears, e.g., the body of a library, top-level program,
+or <tt>lambda</tt> expression.
+Exported library bindings are also visible within the bodies of
+the libraries and top-level programs that import them (see
+chapter&nbsp;<a href="r6rs-Z-H-10.html#node_chap_7">7</a>).</p>
+<p>
+Expressions that bind variables include the <tt>lambda</tt>,
+<tt>let</tt>, <tt>let*</tt>, <tt>letrec</tt>, <tt>letrec*</tt>, <tt>let-values</tt>,
+and <tt>let*-values</tt> forms from the base library (see
+sections&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.2">11.4.2</a>, <a href="r6rs-Z-H-14.html#node_sec_11.4.6">11.4.6</a>).
+Of these, <tt>lambda</tt> is the most fundamental.
+Variable definitions appearing within the body of 
+such an expression, or within the bodies of a library or top-level
+program, are treated as a set of
+<tt>letrec*</tt> bindings.
+In addition, for library bodies, 
+the variables exported from the library can be referenced by
+importing libraries and top-level programs.</p>
+<p>
+Expressions that bind keywords include the <tt>let-syntax</tt> and <tt>letrec-syntax</tt> forms (see
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.18">11.18</a>).  A <tt>define</tt> form (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.2.1">11.2.1</a>) is a
+definition that creates a variable binding (see 
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.2">11.2</a>), and a <tt>define-syntax</tt> form is
+a definition that creates a keyword binding (see
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.2.2">11.2.2</a>).</p>
+<p>
+Scheme is a statically scoped language with
+block structure.  To each place in a top-level program or library body where an identifier is bound 
+there corresponds a <a name="node_idx_212"></a><em>region</em> of code within which
+the binding is visible.  The region is determined by the particular
+binding construct that establishes the binding; if the binding is
+established by a <tt>lambda</tt> expression, for example, then its region
+is the entire <tt>lambda</tt> expression.  Every mention of an identifier
+refers to the binding of the identifier that establishes the
+innermost of the regions containing the use.  If a use of an
+identifier appears in a place where none of the surrounding expressions
+contains a binding for the identifier, the use may refer to a
+binding established by a definition or import at the top of the
+enclosing library or top-level program
+(see chapter&nbsp;<a href="r6rs-Z-H-10.html#node_chap_7">7</a>).
+If there is no binding for the identifier,
+it is said to be <a name="node_idx_214"></a><em>unbound</em>.<a name="node_idx_216"></a></p>
+<p>
+</p>
+<a name="node_sec_5.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.3">5.3&nbsp;&nbsp;Exceptional situations</a></h2>
+<p></p>
+<p>
+<a name="node_idx_218"></a>A variety of exceptional situations
+are distinguished in this report, among them violations of syntax,
+violations of a procedure&#8217;s specification, violations of
+implementation restrictions, and exceptional situations in the
+environment.  When an exceptional situation is detected by the
+implementation, an <i>exception is raised</i><a name="node_idx_220"></a>,
+which means that a special procedure called the <i>current
+exception handler</i> is called.  A program can also raise an
+exception, and override the current exception handler; see
+library section&nbsp;on &#8220;Exceptions&#8221;.</p>
+<p>
+When an exception is raised, an object is provided that
+describes the nature of the exceptional situation.  The report uses
+the condition system described in library section&nbsp;on &#8220;Conditions&#8221; to
+describe exceptional situations, classifying them by condition types.</p>
+<p>
+Some exceptional situations allow continuing the program if the
+exception handler takes appropriate action.  The corresponding
+exceptions are called <i>continuable</i><a name="node_idx_222"></a>.
+For most of the exceptional situations described in this report,
+portable programs cannot rely upon the exception being continuable
+at the place where the situation was detected.
+For those exceptions, the exception handler that is invoked by the
+exception should not return.
+In some cases, however, continuing is permissible, and the
+handler may return.  See library section&nbsp;on &#8220;Exceptions&#8221;.</p>
+<p>
+Implementations must raise an exception
+when they are unable to continue correct execution
+of a correct program due to some <a name="node_idx_224"></a><em>implementation restriction</em>.  For
+example, an implementation that does not support infinities
+must raise an exception with condition type
+<tt>&amp;implementation-restriction</tt> when it evaluates an expression
+whose result would be an infinity.</p>
+<p>
+Some possible implementation restrictions such as the lack of
+representations for NaNs and infinities (see
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.7.2">11.7.2</a>) are anticipated by this report,
+and implementations typically must raise an exception of the
+appropriate condition type if they encounter such a situation.</p>
+<p>
+This report uses the phrase &#8220;an exception is raised&#8221; synonymously
+with &#8220;an exception must be raised&#8221;.
+This report uses the phrase &#8220;an exception with condition type <i>t</i>&#8221;
+to indicate that the object provided with the
+exception is a condition object of the specified type.
+The phrase &#8220;a continuable exception is raised&#8221; indicates an
+exceptional situation that permits the exception handler to return.</p>
+<p>
+</p>
+<a name="node_sec_5.4"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.4">5.4&nbsp;&nbsp;Argument checking</a></h2>
+<p></p>
+<p>
+<a name="node_idx_226"></a>Many procedures specified in this report or as part of a
+standard library restrict the arguments they accept.
+Typically, a procedure accepts only specific numbers and types of arguments.
+Many syntactic forms similarly restrict the values to which one or
+more of their subforms can evaluate.
+These restrictions imply responsibilities<a name="node_idx_228"></a>for
+both the programmer and the implementation.
+Specifically, the programmer is responsible for ensuring
+that the values indeed adhere to the restrictions described
+in the specification.  The implementation must check
+that the restrictions in the specification are indeed met, to the
+extent that it is reasonable, possible, and necessary to allow the
+specified operation to complete successfully.  The implementation&#8217;s
+responsibilities are specified in more detail in
+chapter&nbsp;<a href="r6rs-Z-H-9.html#node_chap_6">6</a> and throughout the report.</p>
+<p>
+Note that it is not always possible for an implementation to completely check
+the restrictions set forth in a specification.  For example, if an
+operation is specified to accept a procedure with specific properties,
+checking of these properties is undecidable in general.  Similarly,
+some operations accept both lists and procedures that are
+called by these operations.  Since lists can be mutated by the procedures
+through the <tt>(rnrs mutable-pairs (6))</tt> library (see library
+chapter&nbsp;on &#8220;Mutable pairs&#8221;), an argument that is a list
+when the operation starts may become a non-list during the execution of the operation.
+Also, the procedure might escape to a different continuation,
+preventing the operation from performing more checks.
+Requiring the operation to check that the argument is a list after
+each call to such a procedure would be impractical.  Furthermore, some
+operations that accept lists only need to traverse these lists
+partially to perform their function; requiring the implementation to
+traverse the remainder of the list to verify that all specified
+restrictions have been met might
+violate reasonable performance assumptions.  For these reasons, the
+programmer&#8217;s obligations may exceed the checking obligations of the
+implementation.</p>
+<p>
+When an implementation detects a violation of a restriction for an
+argument, it must raise an exception with condition type
+<tt>&amp;assertion</tt> in a way consistent with the safety of execution as
+described in section&nbsp;<a href="#node_sec_5.6">5.6</a>.</p>
+<p>
+</p>
+<a name="node_sec_5.5"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.5">5.5&nbsp;&nbsp;Syntax violations</a></h2>
+<p>The subforms of a special form usually need to obey certain syntactic
+restrictions.  As forms may be subject to macro expansion, which may
+not terminate, the question of whether they obey the specified
+restrictions is undecidable in general.</p>
+<p>
+When macro expansion terminates, however, implementations must detect
+violations of the syntax.  A <a name="node_idx_230"></a><em>syntax violation</em> is an error
+with respect to the syntax of library bodies, top-level bodies,
+or the &#8220;syntax&#8221; entries in the
+specification of the base library or the standard libraries.
+Moreover, attempting to assign to an immutable variable (i.e., the
+variables exported by a library; see
+section&nbsp;<a href="r6rs-Z-H-10.html#node_sec_7.1">7.1</a>) is also
+considered a syntax violation.</p>
+<p>
+If a top-level or library form in a program is not syntactically
+correct, then the implementation must raise an exception with
+condition type <tt>&amp;syntax</tt>, and execution of that top-level program
+or library must not be allowed to begin.</p>
+<p>
+</p>
+<a name="node_sec_5.6"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.6">5.6&nbsp;&nbsp;Safety</a></h2>
+<p></p>
+<p>
+The standard libraries whose exports are described by this document
+are said to be <a name="node_idx_232"></a><em>safe libraries</em>.  Libraries and top-level
+programs that import only from safe libraries are also said to be safe.</p>
+<p>
+As defined by this document, the Scheme programming language
+is safe in the following sense:
+The execution of a safe top-level program
+cannot go so badly wrong as to crash or to continue to
+execute while behaving in ways that are
+inconsistent with the semantics described in this document,
+unless an exception is raised.</p>
+<p>
+Violations of an implementation restriction must raise an
+exception with condition type <tt>&amp;implementation-restriction</tt>,
+as must all
+violations and errors that would otherwise threaten system
+integrity in ways that might result in execution that is
+inconsistent with the semantics described in this document.</p>
+<p>
+The above safety properties are guaranteed only for top-level programs
+and libraries that are said to be safe.  In particular,
+implementations may provide access to unsafe libraries in ways that
+cannot guarantee safety.</p>
+<p>
+</p>
+<a name="node_sec_5.7"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.7">5.7&nbsp;&nbsp;Boolean values</a></h2>
+<p></p>
+<p>
+Although there is a separate boolean type, any Scheme value can be
+used as a boolean value for the purpose of a conditional test.  In a
+conditional test, all values count as true in such a test except for
+<tt>#f</tt>.  This report uses the word &#8220;true&#8221; to refer to any
+Scheme value except <tt>#f</tt>, and the word &#8220;false&#8221; to refer to
+<tt>#f</tt>. <a name="node_idx_234"></a><a name="node_idx_236"></a></p>
+<p>
+</p>
+<a name="node_sec_5.8"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.8">5.8&nbsp;&nbsp;Multiple return values</a></h2>
+<p></p>
+<p>
+A Scheme expression can evaluate to an arbitrary finite number of
+values.  These values are passed to the expression&#8217;s continuation.</p>
+<p>
+Not all continuations accept any number of values. For example, a continuation that
+accepts the argument to a procedure call is guaranteed to accept
+exactly one value.  The effect of passing some other number of values
+to such a continuation is unspecified.  The <tt>call-with-values</tt>
+procedure
+described in section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.15">11.15</a> makes it possible to create
+continuations that accept specified numbers of return values.
+If the number of
+return values passed to a continuation created by a call to
+<tt>call-with-values</tt> is not accepted by its consumer
+that was passed in that call, then an exception is raised.
+A more complete description of the number of values accepted by
+different continuations and the consequences of passing an unexpected
+number of values is given in the description of the <tt>values</tt>
+procedure in section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.15">11.15</a>.</p>
+<p>
+A number of forms in the base library have sequences of expressions
+as subforms that are evaluated sequentially, with the return values of
+all but the last expression being discarded.  The continuations
+discarding these values accept any number of values.</p>
+<p>
+</p>
+<a name="node_sec_5.9"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.9">5.9&nbsp;&nbsp;Unspecified behavior</a></h2>
+<p>If an expression is said to &#8220;return unspecified values&#8221;,
+then the expression must evaluate without raising an exception, but
+the values returned depend on the implementation; this report
+explicitly does not say how many or what values should be returned.
+Programmers should not rely on a specific number of return values or
+the specific values themselves.
+<a name="node_idx_238"></a><a name="node_idx_240"></a></p>
+<p>
+</p>
+<a name="node_sec_5.10"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.10">5.10&nbsp;&nbsp;Storage model</a></h2>
+<p></p>
+<p>
+Variables and objects such as pairs, vectors, bytevectors, strings,
+hashtables, and records implicitly
+refer to locations<a name="node_idx_242"></a>or sequences of locations.  A string, for
+example, contains as many locations as there are characters in the string. 
+(These locations need not correspond to a full machine word.) A new value may be
+stored into one of these locations using the <tt>string-set!</tt> procedure, but
+the string contains the same locations as before.</p>
+<p>
+An object fetched from a location, by a variable reference or by
+a procedure such as <tt>car</tt>, <tt>vector-ref</tt>, or <tt>string-ref</tt>, is
+equivalent in the sense of <tt>eqv?</tt> (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.5">11.5</a>)
+to the object last stored in the location before the fetch.</p>
+<p>
+Every location is marked to show whether it is in use.
+No variable or object ever refers to a location that is not in use.
+Whenever this report speaks of storage being allocated for a variable
+or object, what is meant is that an appropriate number of locations are
+chosen from the set of locations that are not in use, and the chosen
+locations are marked to indicate that they are now in use before the variable
+or object is made to refer to them.</p>
+<p>
+It is desirable for constants<a name="node_idx_244"></a>(i.e. the values of
+literal expressions) to reside in read-only memory.  To express this,
+it is convenient to imagine that every object that refers to locations
+is associated with a flag telling whether that object is
+mutable<a name="node_idx_246"></a>or immutable<a name="node_idx_248"></a>.  Literal
+constants, the strings returned by <tt>symbol-&gt;string</tt>, records with
+no mutable fields, and other values explicitly designated as immutable
+are immutable objects, while all objects created by the other
+procedures listed in this report are mutable.  An attempt to store a
+new value into a location referred to by an immutable object
+should raise an exception with condition type <tt>&amp;assertion</tt>.</p>
+<p>
+</p>
+<a name="node_sec_5.11"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.11">5.11&nbsp;&nbsp;Proper tail recursion</a></h2>
+<p></p>
+<p>
+Implementations of Scheme must be
+<em>properly tail-recursive</em><a name="node_idx_250"></a>.
+Procedure calls that occur in certain syntactic
+contexts called <i>tail contexts</i><a name="node_idx_252"></a>are <i>tail calls</i><a name="node_idx_254"></a>.  A Scheme implementation is
+properly tail-recursive if it supports an unbounded number of active
+tail calls.  A call is <em>active</em> if the called procedure may still
+return.  Note that this includes regular returns as well as returns
+through continuations captured earlier by
+<tt>call-with-current-continuation</tt> that are later invoked.
+In the absence of captured continuations, calls could
+return at most once and the active calls would be those that had not
+yet returned.
+A formal definition of proper tail recursion can be found
+in Clinger&#8217;s paper&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_5">5</a>].  The rules for identifying tail calls
+in constructs from the <tt>(rnrs base (6))</tt> library are described in
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.20">11.20</a>.</p>
+<p>
+</p>
+<a name="node_sec_5.12"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_5.12">5.12&nbsp;&nbsp;Dynamic extent and the dynamic environment</a></h2>
+<p></p>
+<p>
+For a procedure call, the time between when it is initiated and when
+it returns is called its <a name="node_idx_256"></a><em>dynamic extent</em>.  In Scheme, <tt>call-with-current-continuation</tt>
+(section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.15">11.15</a>) allows reentering a
+dynamic extent after its procedure call has returned.  Thus, the
+dynamic extent of a call may not be a single, connected time period.</p>
+<p>
+Some operations described in the report acquire information in
+addition to their explicit arguments from the <a name="node_idx_258"></a><em>dynamic
+environment</em>.  For example, <tt>call-with-current-continuation</tt>
+accesses an implicit context established
+by <tt>dynamic-wind</tt> (section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.15">11.15</a>), and the <tt>raise</tt> procedure (library
+section&nbsp;on &#8220;Exceptions&#8221;) accesses the
+current exception handler.  The operations that modify the dynamic
+environment do so dynamically, for the dynamic extent of a call to a
+procedure like <tt>dynamic-wind</tt> or <tt>with-exception-handler</tt>.
+When such a call returns, the previous dynamic environment is
+restored.  The dynamic environment can be thought of as part of the
+dynamic extent of a call.  Consequently, it is captured by <tt>call-with-current-continuation</tt>, and restored by invoking the escape
+procedure it creates.</p>
+<p>
+   </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-7.html">previous</a></span><span>, <a href="r6rs-Z-H-9.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

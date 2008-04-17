@@ -1,0 +1,96 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-16.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-18.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_16"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_16">Chapter 16</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_16"><tt>eval</tt></a></h1>
+<p></p>
+<p>
+The <tt>(rnrs eval (6))</tt><a name="node_idx_1265.5"></a> library allows a program to create Scheme
+expressions as data at run time and evaluate them.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1266"></a>eval<i> expression environment</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Evaluates <i>expression</i> in the specified environment and returns its value.
+<i>Expression</i> must be a syntactically valid Scheme expression represented as a
+datum value, and <i>environment</i> must be an
+<a name="node_idx_1268"></a><em>environment</em>, which can be created using the <tt>environment</tt> procedure described below.</p>
+<p>
+If the first argument to <tt>eval</tt> is determined not to be a syntactically correct
+expression, then <tt>eval</tt> must raise an exception with condition
+type <tt>&amp;syntax</tt>.  Specifically, if the first argument to <tt>eval</tt> is a definition or a splicing <tt>begin</tt> form containing a
+definition, it must raise an exception with condition type <tt>&amp;syntax</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1270"></a>environment<i> import-spec <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Import-spec</i> must be a datum representing an
+&lt;import spec&gt; (see report
+section&nbsp;on &#8220;Library form&#8221;).
+The <tt>environment</tt> procedure returns an environment corresponding
+to <i>import-spec</i>.</p>
+<p>
+The bindings of the environment represented by the specifier are
+immutable: If <tt>eval</tt> is applied to an expression that is
+determined to contain an
+assignment to one of the variables of the environment, then <tt>eval</tt> must
+raise an exception with a condition type <tt>&amp;assertion</tt>.</p>
+<p>
+</p>
+
+<tt>(library&nbsp;(foo)<br>
+&nbsp;&nbsp;(export)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs))<br>
+&nbsp;&nbsp;(write<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(eval&nbsp;&#8217;(let&nbsp;((x&nbsp;3))&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(environment&nbsp;&#8217;(rnrs)))))&nbsp;<br>
+&nbsp;<i>&nbsp;writes</i>&nbsp;3<br>
+<br>
+(library&nbsp;(foo)<br>
+&nbsp;&nbsp;(export)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs))<br>
+&nbsp;&nbsp;(write<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(eval<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(eval:car&nbsp;(eval:cons&nbsp;2&nbsp;4))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(environment<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(prefix&nbsp;(only&nbsp;(rnrs)&nbsp;car&nbsp;cdr&nbsp;cons&nbsp;null?)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eval:)))))&nbsp;<br>
+&nbsp;<i>&nbsp;writes</i>&nbsp;2<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+    </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-16.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-18.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-10.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_10"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_10">Chapter 10</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_10">Command-line access and exit values</a></h1>
+<p></p>
+<p>
+The procedures described in this section are exported by the
+<tt>(rnrs programs (6))</tt><a name="node_idx_842"></a>library.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_844"></a>command-line<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a nonempty list of strings.
+The first element is an implementation-specific
+name for the running top-level program.  The remaining elements are command-line
+arguments according to the operating system&#8217;s conventions.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_846"></a>exit<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_848"></a>exit<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Exits the running program and communicates an exit value to the 
+operating system.  If no argument is supplied, the <tt>exit</tt>
+procedure should communicate to the operating system that the program 
+exited normally.  If an argument is supplied, the <tt>exit</tt> procedure 
+should translate the argument into an appropriate exit value for the 
+operating system.  If <i>obj</i> is <tt>#f</tt>, the exit is assumed to
+be abnormal.
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-10.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

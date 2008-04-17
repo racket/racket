@@ -1,0 +1,620 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-3.html">previous</a></span><span>, <a href="r6rs-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_1"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_1">Chapter 1</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_1">Overview of Scheme</a></h1>
+<p></p>
+<p>
+This chapter gives an overview of Scheme&#8217;s semantics.
+The purpose of this overview is to explain
+enough about the basic concepts of the language to facilitate
+understanding of the subsequent chapters of the report, which are
+organized as a reference manual.  Consequently, this overview is
+not a complete introduction to the language, nor is it precise
+in all respects or normative in any way.</p>
+<p>
+Following Algol, Scheme is a statically scoped programming
+language.  Each use of a variable is associated with a lexically
+apparent binding of that variable.</p>
+<p>
+Scheme has latent as opposed to manifest types
+[<a href="r6rs-Z-H-21.html#node_bib_28">28</a>].  Types
+are associated with objects<a name="node_idx_2"></a>(also called values) rather than
+with variables.  (Some authors refer to languages with latent types as
+untyped, weakly typed or dynamically typed languages.)  Other languages with
+latent types are Python, Ruby, Smalltalk, and other dialects of Lisp.  Languages
+with manifest types (sometimes referred to as strongly typed or
+statically typed languages) include Algol 60, C, C#, Java, Haskell, and ML.</p>
+<p>
+All objects created in the course of a Scheme computation, including
+procedures and continuations, have unlimited extent.
+No Scheme object is ever destroyed.  The reason that
+implementations of Scheme do not (usually!) run out of storage is that
+they are permitted to reclaim the storage occupied by an object if
+they can prove that the object cannot possibly matter to any future
+computation.  Other languages in which most objects have unlimited
+extent include C#, Java, Haskell, most Lisp dialects, ML, Python,
+Ruby, and Smalltalk.</p>
+<p>
+Implementations of Scheme must be properly tail-recursive.
+This allows the execution of an iterative computation in constant space,
+even if the iterative computation is described by a syntactically
+recursive procedure.  Thus with a properly tail-recursive implementation,
+iteration can be expressed using the ordinary procedure-call
+mechanics, so that special iteration constructs are useful only as
+syntactic sugar.</p>
+<p>
+Scheme was one of the first languages to support procedures as
+objects in their own right.  Procedures can be created dynamically,
+stored in data structures, returned as results of procedures, and so
+on.  Other languages with these properties include Common Lisp,
+Haskell, ML, Ruby, and Smalltalk.</p>
+<p>
+One distinguishing feature of Scheme is that continuations, which
+in most other languages only operate behind the scenes, also have
+&#8220;first-class&#8221; status.  First-class continuations are useful for implementing a
+wide variety of advanced control constructs, including non-local exits,
+backtracking, and coroutines.</p>
+<p>
+In Scheme, the argument expressions of a procedure call are evaluated
+before the procedure gains control, whether the procedure needs the
+result of the evaluation or not.  C, C#, Common Lisp, Python,
+Ruby, and Smalltalk are other languages that always evaluate argument
+expressions before invoking a procedure.  This is distinct from the
+lazy-evaluation semantics of Haskell, or the call-by-name semantics of
+Algol 60, where an argument expression is not evaluated unless its
+value is needed by the procedure.</p>
+<p>
+Scheme&#8217;s model of arithmetic provides a rich set of numerical types
+and operations on them.  Furthermore, it distinguishes <i>exact</i>
+and <i>inexact</i> number objects: Essentially, an exact number
+object corresponds to a number exactly, and an inexact number object
+is the result of a computation that involved rounding or other errors.</p>
+<p>
+</p>
+<a name="node_sec_1.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.1">1.1&nbsp;&nbsp;Basic types</a></h2>
+<p>Scheme programs manipulate <i>objects</i>, which are also referred
+to as <i>values</i>.
+Scheme objects are organized into sets of values called <i>types</i>.
+This section gives an overview of the fundamentally important types of the
+Scheme language.  More types are described in later chapters.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+As Scheme is latently typed, the use of the term <i>type</i> in
+this report differs from the use of the term in the context of other
+languages, particularly those with manifest typing.
+</blockquote><p>
+</p>
+<a name="node_sec_Temp_6"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_6">Booleans</a></h5>
+<p><a name="node_idx_4"></a>A boolean is a truth value, and can be either
+true or false.  In Scheme, the object for &#8220;false&#8221; is written
+<tt>#f</tt>.  The object for &#8220;true&#8221; is written <tt>#t</tt>.  In
+most places where a truth value is expected, however, any object different from
+<tt>#f</tt> counts as true.</p>
+<p>
+</p>
+<a name="node_sec_Temp_7"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_7">Numbers</a></h5>
+<p><a name="node_idx_6"></a>Scheme supports a rich variety of numerical data types, including
+objects representing integers of arbitrary precision, rational numbers, complex numbers, and
+inexact numbers of various kinds.  Chapter&nbsp;<a href="r6rs-Z-H-6.html#node_chap_3">3</a> gives an
+overview of the structure of Scheme&#8217;s numerical tower.</p>
+<p>
+</p>
+<a name="node_sec_Temp_8"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_8">Characters</a></h5>
+<p><a name="node_idx_8"></a>Scheme characters mostly correspond to textual characters.
+More precisely, they are isomorphic to the <i>scalar values</i> of
+the Unicode standard.</p>
+<p>
+</p>
+<a name="node_sec_Temp_9"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_9">Strings</a></h5>
+<p><a name="node_idx_10"></a>Strings are finite sequences of characters with fixed length and thus
+represent arbitrary Unicode texts.</p>
+<p>
+</p>
+<a name="node_sec_Temp_10"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_10">Symbols</a></h5>
+<p><a name="node_idx_12"></a>A symbol is an object representing a string,
+the symbol&#8217;s <i>name</i>.
+Unlike strings, two symbols whose names are spelled the same
+way are never distinguishable.  Symbols are useful for many applications;
+for instance, they may be used the way enumerated values are used in
+other languages.</p>
+<p>
+</p>
+<a name="node_sec_Temp_11"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_11">Pairs and lists</a></h5>
+<p><a name="node_idx_14"></a><a name="node_idx_16"></a>A pair is a data structure with two components.  The most common use
+of pairs is to represent (singly linked) lists, where the first
+component (the &#8220;car&#8221;) represents the first element of the list, and
+the second component (the &#8220;cdr&#8221;) the rest of the list.  Scheme also
+has a distinguished empty list, which is the last cdr in a chain of
+pairs that form a list.</p>
+<p>
+</p>
+<a name="node_sec_Temp_12"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_12">Vectors</a></h5>
+<p><a name="node_idx_18"></a>Vectors, like lists, are linear data structures
+representing finite sequences of arbitrary objects.
+Whereas the elements of a list are accessed
+sequentially through the chain of pairs representing it,
+the elements of a vector are addressed by integer indices.
+Thus, vectors are more appropriate than
+lists for random access to elements.</p>
+<p>
+</p>
+<a name="node_sec_Temp_13"></a>
+<h5 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_13">Procedures</a></h5>
+<p><a name="node_idx_20"></a>Procedures are values in Scheme.</p>
+<p>
+</p>
+<a name="node_sec_1.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.2">1.2&nbsp;&nbsp;Expressions</a></h2>
+<p>The most important elements of Scheme code are
+<a name="node_idx_22"></a><i>expressions</i>.  Expressions can be
+<i>evaluated</i>, producing a <i>value</i>.  (Actually, any number
+of values&#8212;see section&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.8">5.8</a>.)  The most
+fundamental expressions are literal expressions:</p>
+<p>
+</p>
+
+<tt><tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+23&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;23<p></tt></p>
+<p>
+This notation means that the expression <tt>#t</tt> evaluates to
+<tt>#t</tt>, that is, the value for &#8220;true&#8221;,  and that the expression
+<tt>23</tt> evaluates to a number object representing the number 23.</p>
+<p>
+Compound expressions are formed by placing parentheses around their
+subexpressions.  The first subexpression identifies an operation; the
+remaining subexpressions are operands to the operation:
+</p>
+
+<tt>(+&nbsp;23&nbsp;42)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<br>
+(+&nbsp;14&nbsp;(*&nbsp;23&nbsp;42))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;980<p></tt>
+In the first of these examples, <tt>+</tt> is the name of
+the built-in operation for addition, and <tt>23</tt> and <tt>42</tt> are the
+operands.  The expression <tt>(+ 23 42)</tt> reads as &#8220;the sum of 23 and
+42&#8221;.  Compound expressions can be nested&#8212;the second example reads
+as &#8220;the sum of 14 and the product of 23 and 42&#8221;.</p>
+<p>
+As these examples indicate, compound expressions in Scheme are always
+written using the same prefix notation<a name="node_idx_24"></a>.  As
+a consequence, the parentheses are needed to indicate structure.
+Consequently, &#8220;superfluous&#8221; parentheses, which are often permissible in
+mathematical notation and also in many programming languages, are not
+allowed in Scheme.</p>
+<p>
+As in many other languages, whitespace (including line endings) is not
+significant when it separates subexpressions of an expression, and
+can be used to indicate structure.</p>
+<p>
+</p>
+<a name="node_sec_1.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.3">1.3&nbsp;&nbsp;Variables and binding</a></h2>
+<p><a name="node_idx_26"></a><a name="node_idx_28"></a><a name="node_idx_30"></a>Scheme
+allows identifiers to stand for locations containing values.
+These identifiers are called variables.  In many cases, specifically
+when the location&#8217;s value is never modified after its creation, it is
+useful to think of the variable as standing for the value directly.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;((x&nbsp;23)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(y&nbsp;42))<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+In this case, the expression starting with <tt>let</tt> is a binding
+construct.  The parenthesized structure following the <tt>let</tt> lists
+variables alongside expressions: the variable <tt>x</tt> alongside <tt>23</tt>, and the variable <tt>y</tt> alongside <tt>42</tt>.  The <tt>let</tt>
+expression binds <tt>x</tt> to 23, and <tt>y</tt> to 42.  These bindings are
+available in the <i>body</i> of the <tt>let</tt> expression, <tt>(+ x
+y)</tt>, and only there.</p>
+<p>
+</p>
+<a name="node_sec_1.4"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.4">1.4&nbsp;&nbsp;Definitions</a></h2>
+<p><a name="node_idx_32"></a>The variables bound by a <tt>let</tt> expression
+are <i>local</i>, because their bindings are visible only in the
+<tt>let</tt>&#8217;s body.  Scheme also allows creating top-level bindings for
+identifiers as follows:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;x&nbsp;23)<br>
+(define&nbsp;y&nbsp;42)<br>
+(+&nbsp;x&nbsp;y)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+(These are actually &#8220;top-level&#8221; in the body of a top-level program or library;
+see section&nbsp;<a href="#node_sec_1.12">1.12</a> below.)</p>
+<p>
+The first two parenthesized structures are <i>definitions</i>; they
+create top-level bindings, binding <tt>x</tt> to 23 and <tt>y</tt> to 42.
+Definitions are not expressions, and cannot appear in all places
+where an expression can occur.  Moreover, a definition has no value.</p>
+<p>
+Bindings follow the lexical structure of the program:  When several
+bindings with the same name exist, a variable refers to the binding
+that is closest to it, starting with its occurrence in the program
+and going from inside to outside, and referring to a top-level
+binding if no
+local binding can be found along the way:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;x&nbsp;23)<br>
+(define&nbsp;y&nbsp;42)<br>
+(let&nbsp;((y&nbsp;43))<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;66<br>
+<br>
+(let&nbsp;((y&nbsp;43))<br>
+&nbsp;&nbsp;(let&nbsp;((y&nbsp;44))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;x&nbsp;y)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;67<p></tt></p>
+<p>
+</p>
+<a name="node_sec_1.5"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.5">1.5&nbsp;&nbsp;Forms</a></h2>
+<p>While definitions are not expressions, compound expressions and
+definitions exhibit similar syntactic structure:
+</p>
+
+<tt>(define&nbsp;x&nbsp;23)<br>
+(*&nbsp;x&nbsp;2)<p></tt>
+While the first line contains a definition, and the second an
+expression, this distinction depends on the bindings for <tt>define</tt>
+and <tt>*</tt>.  At the purely syntactical level, both are
+<i>forms</i><a name="node_idx_34"></a>, and <i>form</i> is the general name for
+a syntactic part of a Scheme program.  In particular, <tt>23</tt> is a
+<i>subform</i><a name="node_idx_36"></a>of the form <tt>(define x 23)</tt>.</p>
+<p>
+</p>
+<a name="node_sec_1.6"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.6">1.6&nbsp;&nbsp;Procedures</a></h2>
+<p></p>
+<p>
+<a name="node_idx_38"></a>Definitions can also be used to define
+procedures:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;(f&nbsp;x)<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;42))<br>
+<br>
+(f&nbsp;23)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+A procedure is, slightly simplified, an abstraction of an
+expression over objects.  In the example, the first definition defines a procedure
+called <tt>f</tt>.  (Note the parentheses around <tt>f x</tt>, which
+indicate that this is a procedure definition.)  The expression <tt>(f
+23)</tt> is a <a name="node_idx_40"></a>procedure call, meaning,
+roughly, &#8220;evaluate <tt>(+ x 42)</tt> (the body of the procedure) with
+<tt>x</tt> bound to 23&#8221;.</p>
+<p>
+As procedures are objects, they can be passed to other
+procedures:
+</p>
+
+<tt>(define&nbsp;(f&nbsp;x)<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;42))<br>
+<br>
+(define&nbsp;(g&nbsp;p&nbsp;x)<br>
+&nbsp;&nbsp;(p&nbsp;x))<br>
+<br>
+(g&nbsp;f&nbsp;23)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+In this example, the body of <tt>g</tt> is evaluated with <tt>p</tt>
+bound to <tt>f</tt> and <tt>x</tt> bound to 23, which is equivalent
+to <tt>(f 23)</tt>, which evaluates to 65.</p>
+<p>
+In fact, many predefined operations of Scheme are provided not by
+syntax, but by variables whose values are procedures.
+The <tt>+</tt> operation, for example, which receives
+special syntactic treatment in many other languages, is just a regular
+identifier in Scheme, bound to a procedure that adds number objects.  The
+same holds for <tt>*</tt> and many others:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;(h&nbsp;op&nbsp;x&nbsp;y)<br>
+&nbsp;&nbsp;(op&nbsp;x&nbsp;y))<br>
+<br>
+(h&nbsp;+&nbsp;23&nbsp;42)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<br>
+(h&nbsp;*&nbsp;23&nbsp;42)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;966<p></tt></p>
+<p>
+Procedure definitions are not the only way to create procedures.  A
+<tt>lambda</tt> expression creates a new procedure as an object, with no
+need to specify a name:</p>
+<p>
+</p>
+
+<tt>((lambda&nbsp;(x)&nbsp;(+&nbsp;x&nbsp;42))&nbsp;23)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+The entire expression in this example is a procedure call; <tt>(lambda (x) (+ x 42))</tt>, evaluates to a procedure that takes a single
+number object and adds 42 to it.</p>
+<p>
+</p>
+<a name="node_sec_1.7"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.7">1.7&nbsp;&nbsp;Procedure calls and syntactic keywords</a></h2>
+<p>Whereas <tt>(+ 23 42)</tt>, <tt>(f 23)</tt>, and <tt>((lambda (x) (+ x 42))
+23)</tt> are all examples of procedure calls, <tt>lambda</tt> and <tt>let</tt> expressions are not.  This is because <tt>let</tt>, even though
+it is an identifier, is not a variable, but is instead a <i>syntactic
+keyword</i><a name="node_idx_42"></a>.  A form that has a
+syntactic keyword as its first subexpression obeys special rules determined by
+the keyword.  The <tt>define</tt> identifier in a definition is also a
+syntactic keyword.  Hence, definitions are also not procedure calls.</p>
+<p>
+The rules for the <tt>lambda</tt> keyword specify that the first
+subform is a list of parameters, and the remaining subforms are the body of
+the procedure.  In <tt>let</tt> expressions, the first subform is a list
+of binding specifications, and the remaining subforms constitute a body of
+expressions.</p>
+<p>
+Procedure calls can generally be distinguished from these
+<i>special forms</i><a name="node_idx_44"></a>by
+looking for a syntactic keyword in the first position of an
+form: if the first position does not contain a syntactic keyword, the expression
+is a procedure call.  
+(So-called <i>identifier macros</i> allow creating other kinds of
+special forms, but are comparatively rare.)
+The set of syntactic keywords of Scheme is
+fairly small, which usually makes this task fairly simple.
+It is possible, however, to create new bindings for syntactic keywords; see
+section&nbsp;<a href="#node_sec_1.9">1.9</a> below.</p>
+<p>
+</p>
+<a name="node_sec_1.8"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.8">1.8&nbsp;&nbsp;Assignment</a></h2>
+<p>Scheme variables bound by definitions or <tt>let</tt> or <tt>lambda</tt>
+expressions are not actually bound directly to the objects specified in the
+respective bindings, but to locations containing these objects.  The
+contents of these locations can subsequently be modified destructively
+via <i>assignment</i><a name="node_idx_46"></a>:
+</p>
+
+<tt>(let&nbsp;((x&nbsp;23))<br>
+&nbsp;&nbsp;(set!&nbsp;x&nbsp;42)<br>
+&nbsp;&nbsp;x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;42<p></tt></p>
+<p>
+In this case, the body of the <tt>let</tt> expression consists of two
+expressions which are evaluated sequentially, with the value of the
+final expression becoming the value of the entire <tt>let</tt>
+expression.  The expression <tt>(set! x 42)</tt> is an assignment, saying
+&#8220;replace the object in the location referenced by <tt>x</tt> with 42&#8221;.
+Thus, the previous value of <tt>x</tt>, 23, is replaced by 42.</p>
+<p>
+</p>
+<a name="node_sec_1.9"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.9">1.9&nbsp;&nbsp;Derived forms and macros</a></h2>
+<p></p>
+<p>
+Many of the special forms specified in this report
+can be translated into more basic special forms.
+For example, a <tt>let</tt> expression can be translated
+into a procedure call and a <tt>lambda</tt> expression.  The following two
+expressions are equivalent:
+</p>
+
+<tt>(let&nbsp;((x&nbsp;23)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(y&nbsp;42))<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;y))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<br>
+<br>
+((lambda&nbsp;(x&nbsp;y)&nbsp;(+&nbsp;x&nbsp;y))&nbsp;23&nbsp;42)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;65<p></tt></p>
+<p>
+Special forms like <tt>let</tt> expressions are called <i>derived
+forms</i><a name="node_idx_48"></a>because their semantics can be
+derived from that of other kinds of forms by a syntactic
+transformation.  Some procedure definitions are also derived forms.  The
+following two definitions are equivalent:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;(f&nbsp;x)<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;42))<br>
+<br>
+(define&nbsp;f<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;x&nbsp;42)))<p></tt></p>
+<p>
+In Scheme, it is possible for a program to create its own derived
+forms by binding syntactic keywords to macros<a name="node_idx_50"></a>:</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;def<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((def&nbsp;f&nbsp;(p&nbsp;...)&nbsp;body)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;(f&nbsp;p&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body))))<br>
+<br>
+(def&nbsp;f&nbsp;(x)<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;42))<p></tt></p>
+<p>
+The <tt>define-syntax</tt> construct specifies that a parenthesized
+structure matching the pattern <tt>(def f (p ...) body)</tt>, where <tt>f</tt>, <tt>p</tt>, and <tt>body</tt> are pattern variables, is translated to
+<tt>(define (f p ...) body)</tt>.  Thus, the <tt>def</tt> form appearing in
+the example gets translated to:</p>
+<p>
+</p>
+
+<tt>(define&nbsp;(f&nbsp;x)<br>
+&nbsp;&nbsp;(+&nbsp;x&nbsp;42))<p></tt></p>
+<p>
+The ability to create new syntactic keywords makes Scheme extremely
+flexible and expressive, allowing many of the features
+built into other languages to be derived forms in Scheme.</p>
+<p>
+</p>
+<a name="node_sec_1.10"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.10">1.10&nbsp;&nbsp;Syntactic data and datum values</a></h2>
+<p>A subset of the Scheme objects is called <i>datum
+values</i><a name="node_idx_52"></a>. 
+These include booleans, number objects, characters, symbols,
+and strings as well as lists and vectors whose elements are data.  Each
+datum value may be represented in textual form as a
+<i>syntactic datum</i><a name="node_idx_54"></a>, which can be written out
+and read back in without loss of information.
+A datum value may be represented by several different syntactic data.
+Moreover, each datum value
+can be trivially translated to a literal expression in a program by
+prepending a <tt><tt>&#8217;</tt></tt> to a corresponding syntactic datum:</p>
+<p>
+</p>
+
+<tt>&#8217;23&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;23<br>
+&#8217;<tt>#t</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+&#8217;foo&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;foo<br>
+&#8217;(1&nbsp;2&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3)<br>
+&#8217;#(1&nbsp;2&nbsp;3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;#(1&nbsp;2&nbsp;3)<p></tt></p>
+<p>
+The <tt><tt>&#8217;</tt></tt> shown in the previous examples
+is not needed for representations of number objects or booleans.
+The syntactic datum <tt>foo</tt> represents a
+symbol with name &#8220;foo&#8221;, and <tt>&#8217;foo</tt> is a literal expression with
+that symbol as its value.  <tt>(1 2 3)</tt> is a syntactic datum that 
+represents a list with elements 1, 2, and 3, and <tt>&#8217;(1 2 3)</tt> is a literal
+expression with this list as its value.  Likewise, <tt>#(1 2 3)</tt>
+is a syntactic datum that represents a vector with elements 1, 2 and 3, and
+<tt>&#8217;#(1 2 3)</tt> is the corresponding literal.</p>
+<p>
+The syntactic data are a superset of the Scheme forms.  Thus, data
+can be used to represent Scheme forms as data objects.  In
+particular, symbols can be used to represent identifiers.</p>
+<p>
+</p>
+
+<tt>&#8217;(+&nbsp;23&nbsp;42)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(+&nbsp;23&nbsp;42)<br>
+&#8217;(define&nbsp;(f&nbsp;x)&nbsp;(+&nbsp;x&nbsp;42))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(define&nbsp;(f&nbsp;x)&nbsp;(+&nbsp;x&nbsp;42))<p></tt></p>
+<p>
+This facilitates writing programs that operate on Scheme source code,
+in particular interpreters and program transformers.</p>
+<p>
+</p>
+<a name="node_sec_1.11"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.11">1.11&nbsp;&nbsp;Continuations</a></h2>
+<p>Whenever a Scheme expression is evaluated there is a
+<i>continuation</i><a name="node_idx_56"></a>wanting the result of the
+expression.  The continuation represents an entire (default) future
+for the computation.  For example, informally the continuation of <tt>3</tt>
+in the expression
+</p>
+
+<tt>(+&nbsp;1&nbsp;3)<p></tt>
+adds 1 to it.  Normally these ubiquitous continuations are hidden
+behind the scenes and programmers do not think much about them.  On
+rare occasions, however, a programmer may need to deal with
+continuations explicitly.  The <tt>call-with-current-continuation</tt>
+procedure (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.15">11.15</a>) allows
+Scheme programmers to do that by creating a procedure that reinstates
+the current continuation.  The <tt>call-with-current-continuation</tt>
+procedure accepts a procedure, calls it immediately with an argument
+that is an <i>escape procedure</i><a name="node_idx_58"></a>.  This
+escape procedure can then be called with an argument that becomes the
+result of the call to <tt>call-with-current-continuation</tt>.  That is,
+the escape procedure abandons its own continuation, and reinstates the
+continuation of the call to <tt>call-with-current-continuation</tt>.</p>
+<p>
+In the following example, an escape procedure representing the
+continuation that adds 1 to its argument is bound to <tt>escape</tt>, and
+then called with 3 as an argument.  The continuation of the call to
+<tt>escape</tt> is abandoned, and instead the 3 is passed to the
+continuation that adds 1:
+</p>
+
+<tt>(+&nbsp;1&nbsp;(call-with-current-continuation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(escape)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;2&nbsp;(escape&nbsp;3)))))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4<p></tt>
+An escape procedure has unlimited extent: It can be called after the
+continuation it captured has been invoked, and it can be called
+multiple times.  This makes <tt>call-with-current-continuation</tt>
+significantly more powerful than typical non-local control constructs
+such as exceptions in other languages.</p>
+<p>
+</p>
+<a name="node_sec_1.12"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.12">1.12&nbsp;&nbsp;Libraries</a></h2>
+<p></p>
+<p>
+Scheme code can be organized in components called
+<i>libraries</i><a name="node_idx_60"></a>.  Each library contains 
+definitions and expressions.  It can import definitions
+from other libraries and export definitions to other libraries.</p>
+<p>
+The following library called <tt>(hello)</tt> exports a definition called
+<tt>hello-world</tt>,  and imports the base library (see
+chapter&nbsp;<a href="r6rs-Z-H-14.html#node_chap_11">11</a>) and the simple I/O library (see
+library section&nbsp;on &#8220;Simple I/O&#8221;).  The <tt>hello-world</tt> export is a procedure that displays <tt>Hello World</tt>
+on a separate line:
+</p>
+
+<tt>(library&nbsp;(hello)<br>
+&nbsp;&nbsp;(export&nbsp;hello-world)<br>
+&nbsp;&nbsp;(import&nbsp;(rnrs&nbsp;base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(rnrs&nbsp;io&nbsp;simple))<br>
+&nbsp;&nbsp;(define&nbsp;(hello-world)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(display&nbsp;&quot;Hello&nbsp;World&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(newline)))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_1.13"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_1.13">1.13&nbsp;&nbsp;Top-level programs</a></h2>
+<p>A Scheme program is invoked via a <i>top-level
+program</i><a name="node_idx_62"></a>.  Like a library, a top-level
+program contains imports, definitions and expressions, and specifies
+an entry point for execution.  Thus a top-level program defines, via
+the transitive closure of the libraries it imports, a Scheme program.</p>
+<p>
+The following top-level program obtains the first argument from the command line
+via the <tt>command-line</tt> procedure from the <tt>(rnrs programs (6))</tt>
+library (see library chapter&nbsp;on &#8220;Command-line
+access and exit values&#8221;).  It then opens the file using <tt>open-file-input-port</tt> (see library section&nbsp;on &#8220;)&#8221;,
+yielding a <i>port</i>, i.e. a connection to the file as a data
+source, and calls the <tt>get-bytes-all</tt> procedure to obtain the
+contents of the file as binary data.  It then uses <tt>put-bytes</tt> to
+output the contents of the file to standard output:
+</p>
+
+<tt>#!r6rs<br>
+(import&nbsp;(rnrs&nbsp;base)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(rnrs&nbsp;io&nbsp;ports)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(rnrs&nbsp;programs))<br>
+(put-bytes&nbsp;(standard-output-port)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(call-with-port<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(open-file-input-port<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cadr&nbsp;(command-line)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;get-bytes-all))<p></tt></p>
+<p>
+  </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-3.html">previous</a></span><span>, <a href="r6rs-Z-H-5.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

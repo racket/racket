@@ -1,0 +1,108 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-4.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-6.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_4"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_4">Chapter 4</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_4">Sorting</a></h1>
+<p></p>
+<p>
+This chapter describes the <tt>(rnrs sorting (6))</tt><a name="node_idx_244"></a>library for
+sorting lists and vectors.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_246"></a>list-sort<i> proc list</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_248"></a>vector-sort<i> proc vector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept any two elements
+of <i>list</i> or <i>vector</i>, and should not have any side
+effects.  <i>Proc</i> should return a true value when its first argument
+is strictly less than its second, and <tt>#f</tt> otherwise.</p>
+<p>
+The <tt>list-sort</tt> and <tt>vector-sort</tt> procedures perform a stable
+sort of <i>list</i> or <i>vector</i> in ascending order according to
+<i>proc</i>, without changing <i>list</i> or
+<i>vector</i> in any way.  The <tt>list-sort</tt> procedure returns a
+list, and <tt>vector-sort</tt> returns a vector.  The results may be <tt>eq?</tt> to the argument when the argument is already sorted, and the
+result of <tt>list-sort</tt> may share structure with a tail of the
+original list.  The sorting algorithm performs <em>O</em>(<em>n</em> lg <em>n</em>) calls to
+<i>proc</i> where <em>n</em> is the length of <i>list</i> or <i>vector</i>,
+and all arguments passed to <i>proc</i> are elements of the list or
+vector being sorted, but the pairing of arguments and the sequencing
+of calls to <i>proc</i> are not specified.
+If multiple returns occur from <tt>list-sort</tt> or <tt>vector-sort</tt>, the return
+values returned by earlier returns are not mutated.</p>
+<p>
+</p>
+
+<tt>(list-sort&nbsp;&lt;&nbsp;&#8217;(3&nbsp;5&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;3&nbsp;5)<br>
+(vector-sort&nbsp;&lt;&nbsp;&#8217;<tt>#</tt>(3&nbsp;5&nbsp;2&nbsp;1))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt>(1&nbsp;2&nbsp;3&nbsp;5)<p></tt></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions
+on <i>proc</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_250"></a>vector-sort!<i> proc vector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept any two elements
+of the vector, and should not have any side
+effects.  <i>Proc</i> should return a true value when its first
+argument is strictly less than its second, and <tt>#f</tt> otherwise.
+The <tt>vector-sort!</tt> procedure destructively sorts <i>vector</i> in
+ascending order according to <i>proc</i>.  The sorting algorithm
+performs <em>O</em>(<em>n</em><sup>2</sup>) calls to <i>proc</i> where <em>n</em> is the length of
+<i>vector</i>, and all arguments passed to <i>proc</i> are elements
+of the vector being sorted, but the pairing of arguments and the
+sequencing of calls to <i>proc</i> are not specified.  The sorting
+algorithm may be unstable.  The procedure returns unspecified values.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;v&nbsp;(vector&nbsp;3&nbsp;5&nbsp;2&nbsp;1))<br>
+(vector-sort!&nbsp;v)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<em>unspecified</em><br>
+v&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt>(1&nbsp;2&nbsp;3&nbsp;5)<br>
+<p></tt>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions
+on <i>proc</i> to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+    </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-4.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-6.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,851 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-6.html">previous</a></span><span>, <a href="r6rs-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_4"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_4">Chapter 4</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_4">Lexical syntax and datum syntax</a></h1>
+<p></p>
+<p>
+The syntax of Scheme code is organized in three levels:
+</p>
+<ol>
+<li><p>the <i>lexical syntax</i> that describes how a program text is split
+into a sequence of lexemes,
+</p>
+<li><p>the <i>datum syntax</i>, formulated in terms of the lexical
+syntax, that structures the lexeme sequence as a sequence of
+<i>syntactic data<a name="node_idx_102"></a><a name="node_idx_104"></a></i>, where a syntactic datum is
+a recursively structured entity,
+</p>
+<li><p>the <i>program syntax</i> formulated in terms of the read
+syntax, imposing further structure and assigning meaning to
+syntactic data.
+</p>
+</ol><p>
+Syntactic data (also called <i>external
+representations<a name="node_idx_106"></a></i>) double
+as a notation for objects, and Scheme&#8217;s <tt>(rnrs io ports (6))</tt> library
+(library section&nbsp;on &#8220;Port I/O&#8221;)
+provides the <tt>get-datum</tt> and <tt>put-datum</tt> procedures
+for reading and writing syntactic data, converting between their
+textual representation and the corresponding objects. 
+Each syntactic datum represents a corresponding <a name="node_idx_108"></a><em>datum value</em>.
+A syntactic datum can be used in a program to obtain the corresponding
+datum value using <tt>quote</tt> (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.1">11.4.1</a>).</p>
+<p>
+Scheme source code consists of syntactic data and (non-significant) comments.
+Syntactic data in Scheme source code are called
+<i>forms</i><a name="node_idx_110"></a>.
+(A form nested inside another form is
+called a <a name="node_idx_112"></a><em>subform</em>.)
+Consequently, Scheme&#8217;s syntax has the property that any sequence of
+characters that is a form is also a syntactic datum representing
+some object.  This can lead to confusion, since it may not be obvious
+out of context whether a given sequence of characters is intended to
+be a representation of objects or the text of a program.
+It is also a source of power, since it
+facilitates writing programs such as interpreters or compilers that
+treat programs as objects (or vice versa).</p>
+<p>
+A datum value may have several different external representations.
+For example, both &#8220;<tt>#e28.000</tt>&#8221; and
+&#8220;<tt>#x1c</tt>&#8221; are syntactic data representing the exact integer
+object 28, and the syntactic data &#8220;<tt>(8 13)</tt>&#8221;, &#8220;<tt>( 08 13 )</tt>&#8221;, &#8220;<tt>(8 .
+  (13 . ()))</tt>&#8221;
+all represent a list containing the exact integer objects 8 and 13. 
+Syntactic data that represent equal objects (in the sense of <tt>equal?</tt>; see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.5">11.5</a>) are always equivalent 
+as forms of a program.</p>
+<p>
+Because of the close correspondence between syntactic data and datum
+values, this report sometimes uses the term <a name="node_idx_114"></a><em>datum</em> for
+either a syntactic datum or a datum value when the exact meaning
+is apparent from the context.</p>
+<p>
+An implementation must not extend the lexical or datum syntax in
+any way, with one exception: it need not treat the syntax
+<tt><tt>#</tt>!&lt;identifier&gt;</tt>, for any &lt;identifier&gt; (see
+section&nbsp;<a href="#node_sec_4.2.4">4.2.4</a>) that is not <tt>r6rs</tt>, as a syntax
+violation, and it may use specific <tt><tt>#</tt>!</tt>-prefixed
+identifiers as flags indicating that subsequent input contains extensions
+to the standard lexical or datum syntax. 
+The syntax <tt><tt>#</tt>!r6rs</tt> may be used to signify that
+the input afterward is written with the lexical syntax and
+datum syntax described by
+this report.
+<tt><tt>#</tt>!r6rs</tt> is otherwise treated as a comment; see section&nbsp;<a href="#node_sec_4.2.3">4.2.3</a>.</p>
+<p>
+</p>
+<a name="node_sec_4.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.1">4.1&nbsp;&nbsp;Notation</a></h2>
+<p></p>
+<p>
+The formal syntax for Scheme is written in an extended BNF.
+Non-terminals are written using angle brackets.  Case is insignificant
+for non-terminal names.</p>
+<p>
+All spaces in the grammar are for legibility.
+&lt;Empty&gt; stands for the empty string.</p>
+<p>
+The following extensions to BNF are used to make the description more
+concise:  &lt;thing&gt;* means zero or more occurrences of
+&lt;thing&gt;, and &lt;thing&gt;<sup>+</sup> means at least one
+&lt;thing&gt;.</p>
+<p>
+Some non-terminal names refer to the Unicode scalar values of the same
+name: &lt;character tabulation&gt; (U+0009), &lt;linefeed&gt; (U+000A),
+&lt;carriage return&gt; (U+000D), &lt;line tabulation&gt; (U+000B),
+&lt;form feed&gt; (U+000C), &lt;carriage return&gt; (U+000D),
+&lt;space&gt; (U+0020), &lt;next line&gt; (U+0085), &lt;line
+separator&gt; (U+2028), and &lt;paragraph separator&gt; (U+2029).</p>
+<p>
+</p>
+<a name="node_sec_4.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2">4.2&nbsp;&nbsp;Lexical syntax</a></h2>
+<p></p>
+<p>
+The lexical syntax determines how a character sequence is split into a
+sequence of lexemes<a name="node_idx_116"></a>, omitting non-significant portions
+such as comments and whitespace.  The character sequence is assumed to
+be text according to the Unicode standard&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_27">27</a>].  Some of
+the lexemes, such as identifiers, representations of number objects, strings etc., of the lexical
+syntax are syntactic data in the datum syntax, and thus represent objects.
+Besides the formal account of the syntax, this section also describes
+what datum values are represented by these syntactic data.</p>
+<p>
+The lexical syntax, in the description of comments, contains
+a forward reference to &lt;datum&gt;, which is described as part of the
+datum syntax.  Being comments, however, these &lt;datum&gt;s do not play
+a significant role in the syntax.</p>
+<p>
+Case is significant except in representations of booleans, number objects, and
+in hexadecimal numbers specifying Unicode scalar values.  For example, <tt>#x1A</tt>
+and <tt>#X1a</tt> are equivalent.  The identifier <tt>Foo</tt> is, however,
+distinct from the identifier <tt>FOO</tt>.</p>
+<p>
+</p>
+<a name="node_sec_4.2.1"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.1">4.2.1&nbsp;&nbsp;Formal account</a></h3>
+<p></p>
+<p>
+&lt;Interlexeme space&gt; may occur on either side of any lexeme, but not
+within a lexeme.</p>
+<p>
+&lt;Identifier&gt;s, <tt>.</tt>, &lt;number&gt;s, &lt;character&gt;s, and
+&lt;boolean&gt;s, must be terminated by a &lt;delimiter&gt; or by the
+end of the input.</p>
+<p>
+The following two characters are reserved for future extensions to the
+language: <tt><code class=verbatim>{</code> <code class=verbatim>}</code></tt></p>
+<p>
+</p>
+<tt>&lt;lexeme&gt; &rarr; &lt;identifier&gt; | &lt;boolean&gt; | &lt;number&gt;<a name="node_idx_118"></a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;character&gt; | &lt;string&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | ( | ) | <tt>[</tt> | <tt>]</tt> | <tt>#</tt>( | <tt>#</tt>vu8( | <tt>&#8217;</tt> | <tt>&#8216;</tt> | , | ,@ | <strong>.</strong><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | <tt>#</tt><tt>&#8217;</tt> | <tt>#</tt><tt>&#8216;</tt> | <tt>#</tt>, | <tt>#</tt>,@<br>
+&lt;delimiter&gt; &rarr; ( | ) | <tt>[</tt> | <tt>]</tt> | &quot; | ; | <tt>#</tt><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;whitespace&gt;<br>
+&lt;whitespace&gt; &rarr; &lt;character tabulation&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;linefeed&gt; | &lt;line tabulation&gt; | &lt;form feed&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;carriage return&gt; | &lt;next line&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;any character whose category is Zs, Zl, or Zp&gt;<br>
+&lt;line ending&gt; &rarr; &lt;linefeed&gt; | &lt;carriage return&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;carriage return&gt; &lt;linefeed&gt; | &lt;next line&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;carriage return&gt; &lt;next line&gt; | &lt;line separator&gt;<br>
+&lt;comment&gt; &rarr; ;  &lang;all subsequent characters up to a<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;line ending&gt; or &lt;paragraph separator&gt;&rang;<a name="node_idx_120"></a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;nested comment&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | #; &lt;interlexeme space&gt; &lt;datum&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | #!r6rs<br>
+&lt;nested comment&gt; &rarr; #|  &lt;comment text&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &lt;comment cont&gt;* |#<br>
+&lt;comment text&gt; &rarr;  &lang;character sequence not containing<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <tt>#|</tt> or <tt>|#</tt>&rang;<br>
+&lt;comment cont&gt; &rarr; &lt;nested comment&gt; &lt;comment text&gt;<br>
+&lt;atmosphere&gt; &rarr; &lt;whitespace&gt; | &lt;comment&gt;<br>
+&lt;interlexeme space&gt; &rarr; &lt;atmosphere&gt;*</tt><p>
+
+</p>
+<p>
+
+</p>
+<tt>&lt;identifier&gt; &rarr; &lt;initial&gt; &lt;subsequent&gt;*<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;peculiar identifier&gt;<br>
+&lt;initial&gt; &rarr; &lt;constituent&gt; | &lt;special initial&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;inline hex escape&gt;<br>
+&lt;letter&gt; &rarr;  a | b | c | ... | z<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | A | B | C | ... | Z<br>
+&lt;constituent&gt; &rarr; &lt;letter&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lang;any character whose Unicode scalar value is greater than<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;127, and whose category is Lu, Ll, Lt, Lm, Lo, Mn,<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;Nl, No, Pd, Pc, Po, Sc, Sm, Sk, So, or Co&rang;<br>
+&lt;special initial&gt; &rarr; ! | $ | % | <code class=verbatim>&amp;</code> | * | / | : | &lt; | =<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &gt; | ? | <code class=verbatim>^</code> | <code class=verbatim>_</code> | <code class=verbatim>~</code><br>
+&lt;subsequent&gt; &rarr; &lt;initial&gt; | &lt;digit&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;any character whose category is Nd, Mc, or Me&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;special subsequent&gt;<br>
+&lt;digit&gt; &rarr; 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9<br>
+&lt;hex digit&gt; &rarr; &lt;digit&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | a | A | b | B | c | C | d | D | e | E | f | F<br>
+&lt;special subsequent&gt; &rarr; + | - | . | @<br>
+&lt;inline hex escape&gt; &rarr; <tt>\</tt>x&lt;hex scalar value&gt;;<br>
+&lt;hex scalar value&gt; &rarr; &lt;hex digit&gt;<sup>+</sup><br>
+&lt;peculiar identifier&gt; &rarr; + | - | ... | -&gt; &lt;subsequent&gt;*<br>
+&lt;boolean&gt; &rarr; <tt>#t</tt> | #T | <tt>#f</tt> | #F<br>
+&lt;character&gt; &rarr; #<tt>\</tt>&lt;any character&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | #<tt>\</tt>&lt;character name&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | #<tt>\</tt>x&lt;hex scalar value&gt;<br>
+&lt;character name&gt; &rarr; nul | alarm | backspace | tab<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | linefeed | newline | vtab | page | return<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | esc | space | delete<br>
+&lt;string&gt; &rarr; &quot; &lt;string element&gt;* &quot;<br>
+&lt;string element&gt; &rarr; &lt;any character other than <tt>&quot;</tt> or <tt>\</tt>&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | <tt>\</tt>a | <tt>\</tt>b | <tt>\</tt>t | <tt>\</tt>n | <tt>\</tt>v | <tt>\</tt>f | <tt>\</tt>r<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | <tt>\</tt><tt>&quot;</tt> | <tt>\</tt><tt>\</tt><br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | <tt>\</tt>&lt;intraline whitespace&gt;&lt;line ending&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&lt;intraline whitespace&gt;<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;inline hex escape&gt;<br>
+&lt;intraline whitespace&gt; &rarr; &lt;character tabulation&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;any character whose category is Zs&gt;</tt><p>
+A &lt;hex scalar value&gt; represents a Unicode scalar value
+between 0 and <tt>#</tt>x10FFFF, excluding the range
+[<tt>#</tt><em>x</em>D800, <tt>#</tt><em>x</em>DFFF].</p>
+<p>
+The rules for &lt;num <em>R</em>&gt;, &lt;complex <em>R</em>&gt;, &lt;real
+<em>R</em>&gt;, &lt;ureal <em>R</em>&gt;, &lt;uinteger <em>R</em>&gt;, and &lt;prefix <em>R</em>&gt; below
+should be replicated for <em>R</em>  =  2, 8, 10,
+and 16.  There are no rules for &lt;decimal 2&gt;, &lt;decimal
+8&gt;, and &lt;decimal 16&gt;, which means that number representations containing
+decimal points or exponents must be in decimal radix.</p>
+<p>
+</p>
+<tt>&lt;number&gt; &rarr; &lt;num 2&gt; | &lt;num 8&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;num 10&gt; | &lt;num 16&gt;<br>
+&lt;num <em>R</em>&gt; &rarr; &lt;prefix <em>R</em>&gt; &lt;complex <em>R</em>&gt;<br>
+&lt;complex <em>R</em>&gt; &rarr; &lt;real <em>R</em>&gt; | &lt;real <em>R</em>&gt; @ &lt;real <em>R</em>&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;real <em>R</em>&gt; + &lt;ureal <em>R</em>&gt; i | &lt;real <em>R</em>&gt; - &lt;ureal <em>R</em>&gt; i<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;real <em>R</em>&gt; + &lt;naninf&gt; i | &lt;real <em>R</em>&gt; - &lt;naninf&gt; i<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;real <em>R</em>&gt; + i | &lt;real <em>R</em>&gt; - i<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | + &lt;ureal <em>R</em>&gt; i | - &lt;ureal <em>R</em>&gt; i <br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | + &lt;naninf&gt; i | - &lt;naninf&gt; i<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | + i | - i<br>
+&lt;real <em>R</em>&gt; &rarr; &lt;sign&gt; &lt;ureal <em>R</em>&gt;<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | + &lt;naninf&gt; | - &lt;naninf&gt;<br>
+&lt;naninf&gt; &rarr; nan.0 | inf.0<br>
+&lt;ureal <em>R</em>&gt; &rarr; &lt;uinteger <em>R</em>&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;uinteger <em>R</em>&gt; / &lt;uinteger <em>R</em>&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;decimal <em>R</em>&gt; &lt;mantissa width&gt;<br>
+&lt;decimal 10&gt; &rarr; &lt;uinteger 10&gt; &lt;suffix&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | . &lt;digit 10&gt;<sup>+</sup> &lt;suffix&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;digit 10&gt;<sup>+</sup> . &lt;digit 10&gt;* &lt;suffix&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;digit 10&gt;<sup>+</sup> . &lt;suffix&gt;<br>
+&lt;uinteger <em>R</em>&gt; &rarr; &lt;digit <em>R</em>&gt;<sup>+</sup><br>
+&lt;prefix <em>R</em>&gt; &rarr; &lt;radix <em>R</em>&gt; &lt;exactness&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;exactness&gt; &lt;radix <em>R</em>&gt;<br>
+</tt><p>
+</p>
+<tt>&lt;suffix&gt; &rarr; &lt;empty&gt; <br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | &lt;exponent marker&gt; &lt;sign&gt; &lt;digit 10&gt;<sup>+</sup><br>
+&lt;exponent marker&gt; &rarr; e | E | s | S | f | F<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | d | D | l | L<br>
+&lt;mantissa width&gt; &rarr; &lt;empty&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | | &lt;digit 10&gt;<sup>+</sup><br>
+&lt;sign&gt; &rarr; &lt;empty&gt;  | + |  -<br>
+&lt;exactness&gt; &rarr; &lt;empty&gt;<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | #i<a name="node_idx_122"></a>| #I | #e<a name="node_idx_124"></a>| #E<br>
+&lt;radix 2&gt; &rarr; #b<a name="node_idx_126"></a>| #B<br>
+&lt;radix 8&gt; &rarr; #o<a name="node_idx_128"></a>| #O<br>
+&lt;radix 10&gt; &rarr; &lt;empty&gt; | #d | #D<br>
+&lt;radix 16&gt; &rarr; #x<a name="node_idx_130"></a>| #X<br>
+&lt;digit 2&gt; &rarr; 0 | 1<br>
+&lt;digit 8&gt; &rarr; 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7<br>
+&lt;digit 10&gt; &rarr; &lt;digit&gt;<br>
+&lt;digit 16&gt; &rarr; &lt;hex digit&gt;<br>
+</tt><p>
+</p>
+<a name="node_sec_4.2.2"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.2">4.2.2&nbsp;&nbsp;Line endings</a></h3>
+<p></p>
+<p>
+Line endings are significant in Scheme in single-line comments (see
+section&nbsp;<a href="#node_sec_4.2.3">4.2.3</a>) and within string literals.  In
+Scheme source code, any of the line endings in &lt;line ending&gt;
+marks the end of a line.  Moreover, the two-character line endings
+&lt;carriage return&gt; &lt;linefeed&gt; and &lt;carriage return&gt;
+&lt;next line&gt; each count as a single line ending.</p>
+<p>
+In a string literal, a &lt;line ending&gt; not preceded by a <tt><tt>\</tt></tt>
+stands for a linefeed character, which is the standard line-ending
+character of Scheme.</p>
+<p>
+</p>
+<a name="node_sec_4.2.3"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.3">4.2.3&nbsp;&nbsp;Whitespace and comments</a></h3>
+<p></p>
+<p>
+<a name="node_idx_132"></a><em>Whitespace</em> characters are spaces, linefeeds,
+carriage returns, character tabulations, form feeds, line tabulations,
+and any other character whose category is Zs, Zl, or Zp.
+Whitespace is used for improved readability and
+as necessary to separate lexemes from each other.  Whitespace may
+occur between any two lexemes,
+but not within a lexeme.  Whitespace may also occur inside a string,
+where it is significant.</p>
+<p>
+The lexical syntax includes several comment forms. In all cases,
+comments are invisible to Scheme, except that they act as delimiters,
+so, for example, a comment cannot appear in the middle of an
+identifier or representation of a number object.</p>
+<p>
+A semicolon (<tt>;</tt>) indicates the start of a line
+comment.<a name="node_idx_134"></a><a name="node_idx_136"></a>The comment continues to
+the end of the line on which the semicolon appears.</p>
+<p>
+Another way to indicate a comment is to prefix a &lt;datum&gt;
+(cf. section&nbsp;<a href="#node_sec_4.3.1">4.3.1</a>) with <tt>#;</tt><a name="node_idx_138"></a>, possibly with
+&lt;interlexeme space&gt; before the &lt;datum&gt;.  The comment consists of
+the comment prefix <tt>#;</tt> and the &lt;datum&gt; together.  This
+notation is useful for &#8220;commenting out&#8221; sections of code.</p>
+<p>
+Block comments may be indicated with properly nested <tt>#|</tt><a name="node_idx_140"></a><a name="node_idx_142"></a>and <tt>|#</tt> pairs.</p>
+<p>
+</p>
+
+<tt>#|<br>
+&nbsp;&nbsp;&nbsp;The&nbsp;FACT&nbsp;procedure&nbsp;computes&nbsp;the&nbsp;factorial<br>
+&nbsp;&nbsp;&nbsp;of&nbsp;a&nbsp;non-negative&nbsp;integer.<br>
+|#<br>
+(define&nbsp;fact<br>
+&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;base&nbsp;case<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(=&nbsp;n&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#;(=&nbsp;n&nbsp;1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;&nbsp;identity&nbsp;of&nbsp;*<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;n&nbsp;(fact&nbsp;(-&nbsp;n&nbsp;1))))))<p></tt></p>
+<p>
+The lexeme <tt><tt>#</tt>!r6rs</tt>, which signifies that the program text
+that follows is written with the lexical and datum syntax described in this
+report, is also otherwise treated as a comment.</p>
+<p>
+</p>
+<a name="node_sec_4.2.4"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.4">4.2.4&nbsp;&nbsp;Identifiers</a></h3>
+<p></p>
+<p>
+Most identifiers<a name="node_idx_144"></a>allowed by other programming
+languages are also acceptable to Scheme.  In general,
+a sequence of letters, digits, and &#8220;extended alphabetic
+characters&#8221; is
+an identifier when it begins with a character that cannot begin a
+representation of a number object.
+In addition, <tt>+</tt>, <tt>-</tt>, and <tt>...</tt> are identifiers, as is
+a sequence of letters, digits, and extended alphabetic
+characters that begins with the two-character sequence <tt>-&gt;</tt>.
+Here are some examples of identifiers:</p>
+<p>
+</p>
+
+<tt>lambda&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;soup<br>
+list-&gt;vector&nbsp;&nbsp;&nbsp;+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;V17a<br>
+&lt;=&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a34kTMNs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&gt;-<br>
+the-word-recursion-has-many-meanings<p></tt></p>
+<p>
+Extended alphabetic characters may be used within identifiers as if
+they were letters.  The following are extended alphabetic characters:</p>
+<p>
+</p>
+
+<tt>! $&nbsp;%&nbsp;<code class=verbatim>&amp;</code>&nbsp;*&nbsp;+&nbsp;-&nbsp;.&nbsp;/&nbsp;: &lt;&nbsp;=&nbsp;&gt;&nbsp;?&nbsp;@&nbsp;<code class=verbatim>^</code>&nbsp;<code class=verbatim>_</code>&nbsp;<code class=verbatim>~</code>&nbsp;<p></tt></p>
+<p>
+Moreover, all characters whose Unicode scalar values are greater than 127 and
+whose Unicode category is Lu, Ll, Lt, Lm, Lo, Mn, Mc, Me, Nd, Nl, No, Pd,
+Pc, Po, Sc, Sm, Sk, So, or Co can be used within identifiers.
+In addition, any character can be used within an identifier
+when specified via an &lt;inline hex escape&gt;.  For example, the
+identifier <code class=verbatim>H\x65;llo</code> is the same as the identifier
+<code class=verbatim>Hello</code>, and the identifier <code class=verbatim>\x3BB;</code> is the same as the
+identifier &lambda;.</p>
+<p>
+Any identifier may be used as a variable<a name="node_idx_146"></a>or as a
+syntactic keyword<a name="node_idx_148"></a>(see
+sections&nbsp;<a href="r6rs-Z-H-8.html#node_sec_5.2">5.2</a> and&nbsp;<a href="r6rs-Z-H-12.html#node_sec_9.2">9.2</a>) in a Scheme
+program.
+Any identifier may also be used as a syntactic datum, in which case it
+represents a <i>symbol</i><a name="node_idx_150"></a>(see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.10">11.10</a>).</p>
+<p>
+</p>
+<a name="node_sec_4.2.5"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.5">4.2.5&nbsp;&nbsp;Booleans</a></h3>
+<p>The standard boolean objects for true and false have external representations
+<tt>#t</tt> and <tt>#f</tt>.<a name="node_idx_152"></a><a name="node_idx_154"></a></p>
+<p>
+</p>
+<a name="node_sec_4.2.6"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.6">4.2.6&nbsp;&nbsp;Characters</a></h3>
+<p>Characters are represented using the notation
+<tt>#</tt><tt>\</tt>&lt;character&gt;<a name="node_idx_156"></a>or
+<tt>#</tt><tt>\</tt>&lt;character name&gt; or
+<tt>#</tt><tt>\</tt>x&lt;hex scalar value&gt;.</p>
+<p>
+For example:</p>
+<p>
+
+</p>
+<table border=0><tr><td valign=top ><tt>#<tt>\</tt>a</tt>          </td><td valign=top >lower case letter a</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>A</tt>          </td><td valign=top >upper case letter A</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>(</tt>          </td><td valign=top >left parenthesis</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt></tt>           </td><td valign=top >space character</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>nul</tt>        </td><td valign=top >U+0000</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>alarm</tt>      </td><td valign=top >U+0007</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>backspace</tt>  </td><td valign=top >U+0008</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>tab</tt>        </td><td valign=top >U+0009</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>linefeed</tt>   </td><td valign=top >U+000A</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>newline</tt>   </td><td valign=top >U+000A</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>vtab</tt>       </td><td valign=top >U+000B</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>page</tt>       </td><td valign=top >U+000C</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>return</tt>     </td><td valign=top >U+000D</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>esc</tt>        </td><td valign=top >U+001B</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>space</tt>      </td><td valign=top >U+0020</td></tr>
+<tr><td valign=top ></td><td valign=top >preferred way to write a space</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>delete</tt>     </td><td valign=top >U+007F</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>xFF</tt>        </td><td valign=top >U+00FF</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x03BB</tt>      </td><td valign=top >U+03BB</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x00006587</tt>  </td><td valign=top >U+6587</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>&lambda;</tt> </td><td valign=top >U+03BB</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x0001z</tt>     </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>&lambda;x</tt>         </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>alarmx</tt>     </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>alarm x</tt>    </td><td valign=top >U+0007</td></tr>
+<tr><td valign=top ></td><td valign=top >followed by <tt>x</tt></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>Alarm</tt>      </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>alert</tt>      </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>xA</tt>         </td><td valign=top >U+000A</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>xFF</tt>        </td><td valign=top >U+00FF</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>xff</tt>        </td><td valign=top >U+00FF</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x ff</tt>       </td><td valign=top >U+0078</td></tr>
+<tr><td valign=top ></td><td valign=top >followed by another datum, <tt>ff</tt></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x(ff)</tt>      </td><td valign=top >U+0078</td></tr>
+<tr><td valign=top ></td><td valign=top >followed by another datum,</td></tr>
+<tr><td valign=top ></td><td valign=top >a parenthesized <tt>ff</tt></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>(x)</tt>        </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>(x</tt>         </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>((x)</tt>       </td><td valign=top >U+0028</td></tr>
+<tr><td valign=top ></td><td valign=top >followed by another datum,</td></tr>
+<tr><td valign=top ></td><td valign=top >parenthesized <tt>x</tt></td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x00110000</tt>  </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ></td><td valign=top >out of range</td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>x000000001</tt> </td><td valign=top >U+0001  </td></tr>
+<tr><td valign=top ><tt>#<tt>\</tt>xD800</tt>      </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ></td><td valign=top >in excluded range
+</td></tr></table>
+<p>
+(The notation <tt>&amp;lexical</tt> <i>exception</i> means that the line in question is
+a lexical syntax violation.)</p>
+<p>
+Case is significant in <tt>#</tt><tt>\</tt>&lt;character&gt;, and in
+<tt>#</tt><tt>\</tt>&lang;character name&rang;, but not in <tt><tt>#</tt><tt>\</tt>x</tt>&lt;hex scalar value&gt;.  
+A &lt;character&gt; must be followed by a &lt;delimiter&gt; or by the end of the input.
+This rule resolves various ambiguous cases involving named characters,
+requiring, for
+example, the sequence of characters &#8220;<tt><tt>#</tt><tt>\</tt>space</tt>&#8221;
+to be interpreted as the space character rather than as
+the character &#8220;<tt><tt>#</tt><tt>\</tt>s</tt>&#8221; followed
+by the identifier &#8220;<tt>pace</tt>&#8221;.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The <tt><tt>#</tt><tt>\</tt>newline</tt> notation is retained for
+backward compatibility.  Its use is deprecated;
+<tt><tt>#</tt><tt>\</tt>linefeed</tt> should be used instead.
+</blockquote><p>
+</p>
+<a name="node_sec_4.2.7"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.7">4.2.7&nbsp;&nbsp;Strings</a></h3>
+<p>String are represented by sequences of characters enclosed within doublequotes
+(<tt>&quot;</tt>).  Within a string literal, various escape
+sequences<a name="node_idx_158"></a>represent characters other than
+themselves.  Escape sequences always start with a backslash (<tt>\</tt>):</p>
+<p>
+</p>
+<ul>
+<li><p><tt><tt>\</tt>a</tt> : alarm, U+0007
+</p>
+<li><p><tt><tt>\</tt>b</tt> : backspace, U+0008 
+</p>
+<li><p><tt><tt>\</tt>t</tt> : character tabulation, U+0009 
+</p>
+<li><p><tt><tt>\</tt>n</tt> : linefeed, U+000A 
+</p>
+<li><p><tt><tt>\</tt>v</tt> : line tabulation, U+000B 
+</p>
+<li><p><tt><tt>\</tt>f</tt> : formfeed, U+000C 
+</p>
+<li><p><tt><tt>\</tt>r</tt> : return, U+000D 
+</p>
+<li><p><tt><tt>\</tt></tt><code class=verbatim>&quot;</code> : doublequote, U+0022 
+</p>
+<li><p><tt><tt>\</tt><tt>\</tt></tt> : backslash, U+005C 
+</p>
+<li><p><tt><tt>\</tt></tt>&lt;intraline whitespace&gt;&lt;line ending&gt;<br>
+&nbsp;&nbsp;&nbsp;&lt;intraline whitespace&gt; : nothing
+</p>
+<li><p><tt><tt>\</tt>x&lt;hex scalar value&gt;;</tt> : specified character (note the
+terminating semi-colon).
+</p>
+</ul><p></p>
+<p>
+These escape sequences are case-sensitive, except that the alphabetic
+digits of a &lt;hex scalar value&gt; can be uppercase or lowercase.</p>
+<p>
+Any other character in a string after a backslash is a syntax violation. Except
+for a line ending, any
+character outside of an escape sequence and not a doublequote stands
+for itself in the string literal. For example the single-character
+string literal <tt>&quot;&lambda;&quot;</tt> (doublequote, a lower case lambda, doublequote)
+represents the same string as <tt>&quot;<tt>\</tt>x03bb;&quot;</tt>.
+A line ending that does not follow a backslash stands for a linefeed character.</p>
+<p>
+Examples:</p>
+<p>
+</p>
+<table border=0><tr><td valign=top ><tt>&quot;abc&quot;</tt> </td><td valign=top >U+0061, U+0062, U+0063</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x41;bc&quot;</tt> </td><td valign=top ><tt>&quot;Abc&quot;</tt> ; U+0041, U+0062, U+0063</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x41; bc&quot;</tt> </td><td valign=top ><tt>&quot;A bc&quot;</tt></td></tr>
+<tr><td valign=top ></td><td valign=top >U+0041, U+0020, U+0062, U+0063</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x41bc;&quot;</tt> </td><td valign=top >U+41BC</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x41&quot;</tt> </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x;&quot;</tt> </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x41bx;&quot;</tt> </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x00000041;&quot;</tt> </td><td valign=top ><tt>&quot;A&quot;</tt> ; U+0041</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x0010FFFF;&quot;</tt> </td><td valign=top >U+10FFFF</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x00110000;&quot;</tt> </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ></td><td valign=top >out of range</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>x000000001;&quot;</tt> </td><td valign=top >U+0001</td></tr>
+<tr><td valign=top ><tt>&quot;<tt>\</tt>xD800;&quot;</tt> </td><td valign=top ><tt>&amp;lexical</tt> <i>exception</i></td></tr>
+<tr><td valign=top ></td><td valign=top >in excluded range</td></tr>
+<tr><td valign=top ><tt>&quot;A</tt></td></tr>
+<tr><td valign=top ><tt>bc&quot;</tt> </td><td valign=top >U+0041, U+000A, U+0062, U+0063</td></tr>
+<tr><td valign=top ></td><td valign=top >if no space occurs after the <tt>A</tt>
+</td></tr></table>
+<p>
+</p>
+<a name="node_sec_4.2.8"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.2.8">4.2.8&nbsp;&nbsp;Numbers</a></h3>
+<p></p>
+<p>
+The syntax of external representations for number objects is described
+formally by the &lt;number&gt; rule in the formal grammar.
+Case is not significant in external representations of number objects.</p>
+<p>
+A representation of a number object may be written in binary, octal, decimal, or
+hexadecimal by the use of a radix prefix.  The radix prefixes are <tt>#b</tt><a name="node_idx_160"></a>(binary), <tt>#o</tt><a name="node_idx_162"></a>(octal), <tt>#d</tt><a name="node_idx_164"></a>(decimal), and <tt>#x</tt><a name="node_idx_166"></a>(hexadecimal).  With
+no radix prefix, a representation of a number object is assumed to be expressed in decimal.</p>
+<p>
+A representation of a number object may be specified to be either exact or
+inexact by a prefix.  The prefixes are <tt>#e</tt><a name="node_idx_168"></a>for exact, and <tt>#i</tt><a name="node_idx_170"></a>for inexact.  An exactness
+prefix may appear before or after any radix prefix that is used.  If
+the representation of a number object has no exactness prefix, the
+constant is
+inexact if it contains a decimal point, an
+exponent, or
+a nonempty mantissa width;
+otherwise it is exact.</p>
+<p>
+In systems with inexact number objects
+of varying precisions, it may be useful to specify
+the precision of a constant.  For this purpose, representations of
+number objects
+may be written with an exponent marker that indicates the
+desired precision of the inexact
+representation.  The letters <tt>s</tt>, <tt>f</tt>,
+<tt>d</tt>, and <tt>l</tt> specify the use of <i>short</i>, <i>single</i>,
+<i>double</i>, and <i>long</i> precision, respectively.  (When fewer
+than four internal
+inexact
+representations exist, the four size
+specifications are mapped onto those available.  For example, an
+implementation with two internal representations may map short and
+single together and long and double together.)  In addition, the
+exponent marker <tt>e</tt> specifies the default precision for the
+implementation.  The default precision has at least as much precision
+as <i>double</i>, but
+implementations may wish to allow this default to be set by the user.</p>
+<p>
+</p>
+
+<tt>3.1415926535898F0&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Round&nbsp;to&nbsp;single,&nbsp;perhaps&nbsp;3.141593<br>
+0.6L0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Extend&nbsp;to&nbsp;long,&nbsp;perhaps&nbsp;.600000000000000<p></tt></p>
+<p>
+A representation of a number object with nonempty mantissa width,
+<tt><i>x</i>|<i>p</i></tt>, represents the best binary
+floating-point approximation of <i>x</i> using a <i>p</i>-bit significand. 
+For example, <tt>1.1|53</tt> is a
+representation of the best approximation of 1.1 in IEEE double
+precision.
+If <i>x</i> is an external representation of an inexact real number object
+that contains no vertical bar, then its numerical value should be computed
+as though it had a mantissa width of 53 or more.</p>
+<p>
+Implementations that use binary floating-point representations
+of real number objects should represent <tt><i>x</i>|<i>p</i></tt>
+using a <i>p</i>-bit significand if practical, or by a greater
+precision if a <i>p</i>-bit significand is not practical, or
+by the largest available precision if <i>p</i> or more bits
+of significand are not practical within the implementation.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The precision of a significand should not be confused with the
+number of bits used to represent the significand.  In the IEEE
+floating-point standards, for example, the significand&#8217;s most
+significant bit is implicit in single and double precision but
+is explicit in extended precision.  Whether that bit is implicit
+or explicit does not affect the mathematical precision.
+In implementations that use binary floating point, the default
+precision can be calculated by calling the following procedure:<p>
+</p>
+
+<tt>(define&nbsp;(precision)<br>
+&nbsp;&nbsp;(do&nbsp;((n&nbsp;0&nbsp;(+&nbsp;n&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(x&nbsp;1.0&nbsp;(/&nbsp;x&nbsp;2.0)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((=&nbsp;1.0&nbsp;(+&nbsp;1.0&nbsp;x))&nbsp;n)))<br>
+<p></tt>
+</p>
+</blockquote>      <p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+When the underlying floating-point representation is IEEE double
+precision, the <tt>|<i>p</i></tt> suffix should not always be omitted:
+Denormalized floating-point numbers have diminished precision,
+and therefore their external representations should
+carry a <tt>|<i>p</i></tt> suffix with the actual width of the
+significand.
+</blockquote><p>
+The literals <tt>+inf.0</tt> and <tt>-inf.0</tt> represent positive and
+negative infinity, respectively.  The <tt>+nan.0</tt>
+literal represents the NaN that is the result of <tt>(/ 0.0 0.0)</tt>,
+and may represent other NaNs as well.</p>
+<p>
+If <i>x</i> is an external representation of an inexact real number
+object and
+contains no vertical bar and no exponent marker
+other than <tt>e</tt>, the inexact real number object it represents is a flonum
+(see library section&nbsp;on &#8220;Flonums&#8221;).
+Some or all of the other external representations of
+inexact real number objects may also represent flonums, but that is not required by
+this report.</p>
+<p>
+</p>
+<a name="node_sec_4.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3">4.3&nbsp;&nbsp;Datum syntax</a></h2>
+<p></p>
+<p>
+The datum syntax describes the syntax of
+syntactic data<a name="node_idx_172"></a>in terms of a sequence of
+&lt;lexeme&gt;s, as defined in the lexical syntax.</p>
+<p>
+Syntactic data include the lexeme data described in the
+previous section as well as the following constructs for forming
+compound data:
+</p>
+<ul>
+<li><p>pairs and lists, enclosed by <code class=verbatim>( )</code> or <code class=verbatim>[ ]</code> (see
+section&nbsp;<a href="#node_sec_4.3.2">4.3.2</a>)
+</p>
+<li><p>vectors (see section&nbsp;<a href="#node_sec_4.3.3">4.3.3</a>)
+</p>
+<li><p>bytevectors (see section&nbsp;<a href="#node_sec_4.3.4">4.3.4</a>)
+</p>
+</ul><p></p>
+<p>
+</p>
+<a name="node_sec_4.3.1"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3.1">4.3.1&nbsp;&nbsp;Formal account</a></h3>
+<p></p>
+<p>
+The following grammar describes the syntax of syntactic data in terms
+of various kinds of lexemes defined in the grammar in
+section&nbsp;<a href="#node_sec_4.2">4.2</a>:</p>
+<p>
+</p>
+<tt>&lt;datum&gt; &rarr; &lt;lexeme datum&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;compound datum&gt;<br>
+&lt;lexeme datum&gt; &rarr; &lt;boolean&gt; | &lt;number&gt;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  | &lt;character&gt; | &lt;string&gt; |  &lt;symbol&gt;<br>
+&lt;symbol&gt; &rarr; &lt;identifier&gt;<br>
+&lt;compound datum&gt; &rarr; &lt;list&gt; | &lt;vector&gt; | &lt;bytevector&gt;<br>
+&lt;list&gt; &rarr; (&lt;datum&gt;*) | [&lt;datum&gt;*]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;    | (&lt;datum&gt;<sup>+</sup> . &lt;datum&gt;) | [&lt;datum&gt;<sup>+</sup> . &lt;datum&gt;]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;    | &lt;abbreviation&gt;<br>
+&lt;abbreviation&gt; &rarr; &lt;abbrev prefix&gt; &lt;datum&gt;<br>
+&lt;abbrev prefix&gt; &rarr; &#8217; | &#8216; | , | ,@<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;    | #&#8217; | #&#8216; | #, | #,@<br>
+&lt;vector&gt; &rarr; #(&lt;datum&gt;*)<br>
+&lt;bytevector&gt; &rarr; #vu8(&lt;u8&gt;*)<br>
+&lt;u8&gt; &rarr; &lang;any &lt;number&gt; representing an exact<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;integer in {0, <tt>...</tt>, 255}&rang;</tt><p>
+</p>
+<a name="node_sec_4.3.2"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3.2">4.3.2&nbsp;&nbsp;Pairs and lists</a></h3>
+<p></p>
+<p>
+List and pair data, representing pairs and lists of values
+(see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.9">11.9</a>) are represented using parentheses or brackets.
+Matching pairs of brackets that occur in the rules of &lt;list&gt; are
+equivalent to matching pairs of parentheses.</p>
+<p>
+The most general notation for Scheme pairs as syntactic data is
+the &#8220;dotted&#8221; notation <tt>(&lt;datum<sub>1</sub>&gt; . &lt;datum<sub>2</sub>&gt;)</tt> where
+&lt;datum<sub>1</sub>&gt; is the representation of the value of the car field and
+&lt;datum<sub>2</sub>&gt; is the representation of the value of the
+cdr field.  For example <tt>(4 . 5)</tt> is a pair whose car is 4 and whose
+cdr is 5.</p>
+<p>
+A more streamlined notation can be used for lists: the elements of the
+list are simply enclosed in parentheses and separated by spaces.  The
+empty list<a name="node_idx_174"></a>is represented by <tt>()</tt> .  For example,</p>
+<p>
+</p>
+
+<tt>(a&nbsp;b&nbsp;c&nbsp;d&nbsp;e)<p></tt></p>
+<p>
+and</p>
+<p>
+</p>
+
+<tt>(a&nbsp;.&nbsp;(b&nbsp;.&nbsp;(c&nbsp;.&nbsp;(d&nbsp;.&nbsp;(e&nbsp;.&nbsp;())))))<p></tt></p>
+<p>
+are equivalent notations for a list of symbols.</p>
+<p>
+The general rule is that, if a dot is followed by an open parenthesis,
+the dot, open parenthesis, and matching closing parenthesis
+can be omitted in the external representation.</p>
+<p>
+The sequence of characters &#8220;<tt>(4 . 5)</tt>&#8221; is the external representation of a
+pair, not an expression that evaluates to a pair.
+Similarly, the sequence of characters &#8220;<tt>(+ 2 6)</tt>&#8221; is <em>not</em> an
+external representation of the integer 8, even though it <em>is</em> an
+expression (in the language of the <tt>(rnrs base (6))</tt> library)
+evaluating to the integer 8; rather, it is a
+syntactic datum representing a three-element list, the elements of which
+are the symbol <tt>+</tt> and the integers 2 and 6.</p>
+<p>
+</p>
+<a name="node_sec_4.3.3"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3.3">4.3.3&nbsp;&nbsp;Vectors</a></h3>
+<p></p>
+<p>
+Vector data, representing vectors of objects (see
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.13">11.13</a>), are represented using the notation
+<tt>#(&lt;datum&gt; <tt>...</tt>)</tt>.  For example, a vector of length 3
+containing the number object for zero in element 0, the list <tt>(2 2 2 2)</tt> in
+element 1, and the string <tt>&quot;Anna&quot;</tt> in element 2 can be represented as
+follows:</p>
+<p>
+</p>
+
+<tt>#(0&nbsp;(2&nbsp;2&nbsp;2&nbsp;2)&nbsp;&quot;Anna&quot;)<p></tt></p>
+<p>
+This is the external representation of a vector, not an
+expression that evaluates to a vector.</p>
+<p>
+</p>
+<a name="node_sec_4.3.4"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3.4">4.3.4&nbsp;&nbsp;Bytevectors</a></h3>
+<p></p>
+<p>
+Bytevector data, representing bytevectors (see
+library chapter&nbsp;on &#8220;Bytevectors&#8221;), are represented using the notation
+<tt>#vu8(&lt;u8&gt; <tt>...</tt>)</tt>, where the &lt;u8&gt;s represent the octets of
+the bytevector.  For example, a bytevector of length 3 containing the
+octets 2, 24, and 123 can be represented as follows:</p>
+<p>
+</p>
+
+<tt>#vu8(2&nbsp;24&nbsp;123)<p></tt></p>
+<p>
+This is the external representation of a bytevector, and also an
+expression that evaluates to a bytevector.</p>
+<p>
+</p>
+<a name="node_sec_4.3.5"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_4.3.5">4.3.5&nbsp;&nbsp;Abbreviations</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt><tt>&#8217;</tt>&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt><tt>&#8216;</tt>&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>,&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>,<tt>@</tt>&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>#&#8217;&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>#<tt>&#8216;</tt>&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>#,&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+
+<div align=left><tt>#,@&lt;datum&gt;</tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+<p>
+Each of these is an abbreviation:
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_176"></a><tt>&#8217;</tt>&lt;datum&gt;
+for <tt>(quote &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_178"></a><tt>&#8216;</tt>&lt;datum&gt;
+for <tt>(quasiquote &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_180"></a><tt>,</tt>&lt;datum&gt;
+for <tt>(unquote &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_182"></a><tt>,</tt><tt>@</tt>&lt;datum&gt;
+for <tt>(unquote-splicing &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_184"></a><tt>#&#8217;</tt>&lt;datum&gt;
+for <tt>(syntax &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_186"></a><tt>#&#8216;</tt>&lt;datum&gt;
+for <tt>(quasisyntax &lt;datum&gt;)</tt>,
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_188"></a><tt>#,</tt>&lt;datum&gt;
+for <tt>(unsyntax &lt;datum&gt;)</tt>, and
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<a name="node_idx_190"></a><tt>#,@</tt>&lt;datum&gt;
+for <tt>(unsyntax-splicing &lt;datum&gt;)</tt>.
+</p>
+<p></p>
+<p>
+     </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-6.html">previous</a></span><span>, <a href="r6rs-Z-H-8.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

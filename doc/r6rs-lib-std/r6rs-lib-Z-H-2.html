@@ -1,0 +1,346 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-1.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_1"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_1">Chapter 1</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_1">Unicode</a></h1>
+<p></p>
+<p>
+</p>
+<p>
+The procedures exported by the <tt>(rnrs unicode (6))</tt><a name="node_idx_2"></a>library provide access to some aspects
+of the Unicode semantics for characters and strings:
+category information, case-independent comparisons,
+case mappings, and normalization&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_12">12</a>].</p>
+<p>
+Some of the procedures that operate on characters or strings ignore the
+difference between upper case and lower case.  These procedures
+have &#8220;<tt>-ci</tt>&#8221; (for &#8220;case
+insensitive&#8221;) embedded in their names.</p>
+<p>
+</p>
+<a name="node_sec_1.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_1.1">1.1&nbsp;&nbsp;Characters</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_4"></a>char-upcase<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_6"></a>char-downcase<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_8"></a>char-titlecase<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_10"></a>char-foldcase<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures take a character argument and return a character
+result. If the argument is an upper-case or title-case character, and if
+there is a single character that is its lower-case form, then
+<tt>char-downcase</tt> returns that character. If the argument is a lower-case
+or title-case character, and there is a single character that is
+its upper-case form, then <tt>char-upcase</tt> returns that character.
+If the argument is a lower-case
+or upper-case character, and there is a single character that is
+its title-case form, then <tt>char-titlecase</tt> returns that character.
+If the argument is not a title-case character and there is no single
+character that is its title-case form, then <tt>char-titlecase</tt>
+returns the upper-case form of the argument.
+Finally, if the character has a case-folded character,
+then <tt>char-foldcase</tt> returns that character.
+Otherwise the character returned is the same
+as the argument.
+For Turkic characters <u>I</u> (<tt>#<tt>\</tt>x130</tt>)
+and  (<tt>#<tt>\</tt>x131</tt>),
+<tt>char-foldcase</tt> behaves as the identity function; otherwise 
+<tt>char-foldcase</tt> is the
+same as <tt>char-downcase</tt> composed with <tt>char-upcase</tt>.</p>
+<p>
+</p>
+
+<tt>(char-upcase&nbsp;<tt>#</tt><tt>\</tt>i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>I<br>
+(char-downcase&nbsp;<tt>#</tt><tt>\</tt>i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>i<br>
+(char-titlecase&nbsp;<tt>#</tt><tt>\</tt>i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>I<br>
+(char-foldcase&nbsp;<tt>#</tt><tt>\</tt>i)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>i<br>
+<br>
+(char-upcase&nbsp;<tt>#</tt><tt>\</tt>&szlig;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&szlig;<br>
+(char-downcase&nbsp;<tt>#</tt><tt>\</tt>&szlig;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&szlig;<br>
+(char-titlecase&nbsp;<tt>#</tt><tt>\</tt>&szlig;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&szlig;<br>
+(char-foldcase&nbsp;<tt>#</tt><tt>\</tt>&szlig;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&szlig;<br>
+<br>
+(char-upcase&nbsp;<tt>#</tt><tt>\</tt>&Sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&Sigma;<br>
+(char-downcase&nbsp;<tt>#</tt><tt>\</tt>&Sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&sigma;<br>
+(char-titlecase&nbsp;<tt>#</tt><tt>\</tt>&Sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&Sigma;<br>
+(char-foldcase&nbsp;<tt>#</tt><tt>\</tt>&Sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&sigma;<br>
+<br>
+(char-upcase&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&Sigma;<br>
+(char-downcase&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;<br>
+(char-titlecase&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&Sigma;<br>
+(char-foldcase&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#</tt><tt>\</tt>&sigma;<br>
+<p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Note that <tt>char-titlecase</tt> does not always return a title-case
+character.
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+These procedures are consistent with
+Unicode&#8217;s locale-independent mappings from scalar values to
+scalar values for upcase, downcase, titlecase, and case-folding
+operations.  These mappings can be extracted from <tt>UnicodeData.txt</tt> and <tt>CaseFolding.txt</tt> from the Unicode
+Consortium, ignoring Turkic mappings in the latter.<p>
+Note that these character-based procedures are an incomplete
+approximation to case conversion, even ignoring the user&#8217;s locale.
+In general, case mappings require the context of a string, both in
+arguments and in result. The <tt>string-upcase</tt>, <tt>string-downcase</tt>, <tt>string-titlecase</tt>, and <tt>string-foldcase</tt> procedures (section&nbsp;<a href="#node_sec_1.2">1.2</a>)
+perform more general case conversion.
+</p>
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_12"></a>char-ci=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i> <i>char<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_14"></a>char-ci&lt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i> <i>char<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_16"></a>char-ci&gt;?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i> <i>char<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_18"></a>char-ci&lt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i> <i>char<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_20"></a>char-ci&gt;=?<i> <i>char<sub>1</sub></i> <i>char<sub>2</sub></i> <i>char<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures are similar to <tt>char=?</tt>, etc., but operate
+on the case-folded versions of the characters.</p>
+<p>
+</p>
+
+<tt>(char-ci&lt;?&nbsp;<tt>#</tt><tt>\</tt>z&nbsp;<tt>#</tt><tt>\</tt>Z)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(char-ci=?&nbsp;<tt>#</tt><tt>\</tt>z&nbsp;<tt>#</tt><tt>\</tt>Z)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-ci=?&nbsp;<tt>#</tt><tt>\</tt>&sigmaf;&nbsp;<tt>#</tt><tt>\</tt>&sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_22"></a>char-alphabetic?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_24"></a>char-numeric?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_26"></a>char-whitespace?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_28"></a>char-upper-case?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_30"></a>char-lower-case?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_32"></a>char-title-case?<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return <tt>#t</tt> if their arguments are alphabetic,
+numeric, whitespace, upper-case, lower-case, or title-case characters,
+respectively; otherwise they return <tt>#f</tt>.</p>
+<p>
+A character is alphabetic if it has the Unicode &#8220;Alphabetic&#8221;
+property.  A character is numeric if it has the Unicode &#8220;Numeric&#8221;
+property.  A character is whitespace if has the Unicode
+&#8220;White_Space&#8221; property.
+A character is upper case if it has the Unicode
+&#8220;Uppercase&#8221; property, lower case if it has the &#8220;Lowercase&#8221;
+property, and title case if it is in the Lt general category.</p>
+<p>
+</p>
+
+<tt>(char-alphabetic?&nbsp;<tt>#</tt><tt>\</tt>a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-numeric?&nbsp;<tt>#</tt><tt>\</tt>1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-whitespace?&nbsp;<tt>#</tt><tt>\</tt>space)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-whitespace?&nbsp;<tt>#</tt><tt>\</tt>x00A0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-upper-case?&nbsp;<tt>#</tt><tt>\</tt>&Sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-lower-case?&nbsp;<tt>#</tt><tt>\</tt>&sigma;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-lower-case?&nbsp;<tt>#</tt><tt>\</tt>x00AA)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(char-title-case?&nbsp;<tt>#</tt><tt>\</tt>I)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(char-title-case?&nbsp;<tt>#</tt><tt>\</tt>x01C5)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_34"></a>char-general-category<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a symbol representing the
+Unicode general category of <i>char</i>, one of <tt>Lu</tt>, <tt>Ll</tt>, <tt>Lt</tt>,
+<tt>Lm</tt>, <tt>Lo</tt>, <tt>Mn</tt>, <tt>Mc</tt>, <tt>Me</tt>, <tt>Nd</tt>, <tt>Nl</tt>,
+<tt>No</tt>, <tt>Ps</tt>, <tt>Pe</tt>, <tt>Pi</tt>, <tt>Pf</tt>, <tt>Pd</tt>, <tt>Pc</tt>,
+<tt>Po</tt>, <tt>Sc</tt>, <tt>Sm</tt>, <tt>Sk</tt>, <tt>So</tt>, <tt>Zs</tt>, <tt>Zp</tt>,
+<tt>Zl</tt>, <tt>Cc</tt>, <tt>Cf</tt>, <tt>Cs</tt>, <tt>Co</tt>, or <tt>Cn</tt>.</p>
+<p>
+</p>
+
+<tt>(char-general-category&nbsp;#<tt>\</tt>a)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;Ll<br>
+(char-general-category&nbsp;#<tt>\</tt>space)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;Zs<br>
+(char-general-category&nbsp;#<tt>\</tt>x10FFFF)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;Cn&nbsp;&nbsp;<br>
+<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_1.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_1.2">1.2&nbsp;&nbsp;Strings</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_36"></a>string-upcase<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_38"></a>string-downcase<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_40"></a>string-titlecase<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_42"></a>string-foldcase<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures take a string argument and return a string
+result.  They are defined in terms of Unicode&#8217;s locale-independent
+case mappings from Unicode scalar-value sequences to scalar-value sequences.
+In particular, the length of the result string can be different from
+the length of the input string.
+When the specified result is equal in the sense of <tt>string=?</tt> to the
+argument, these procedures may return the argument instead of a newly
+allocated string.</p>
+<p>
+The <tt>string-upcase</tt> procedure converts a string to upper case;
+<tt>string-downcase</tt> converts a string to lower case. The <tt>string-foldcase</tt> procedure converts the string to its case-folded
+counterpart, using the full case-folding mapping, but without the
+special mappings for Turkic languages.  The <tt>string-titlecase</tt>
+procedure converts the first cased character of each word via <tt>char-titlecase</tt>, and downcases all other cased characters.</p>
+<p>
+</p>
+
+<tt>(string-upcase&nbsp;&quot;Hi&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;HI&quot;<br>
+(string-downcase&nbsp;&quot;Hi&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;hi&quot;<br>
+(string-foldcase&nbsp;&quot;Hi&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;hi&quot;<br>
+<br>
+(string-upcase&nbsp;&quot;Stra&szlig;e&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;STRASSE&quot;<br>
+(string-downcase&nbsp;&quot;Stra&szlig;e&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;stra&szlig;e&quot;<br>
+(string-foldcase&nbsp;&quot;Stra&szlig;e&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;strasse&quot;<br>
+(string-downcase&nbsp;&quot;STRASSE&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;strasse&quot;<br>
+<br>
+(string-downcase&nbsp;&quot;&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;&sigma;&quot;<br>
+<br>
+;&nbsp;Chi&nbsp;Alpha&nbsp;Omicron&nbsp;Sigma:<br>
+(string-upcase&nbsp;&quot;<i>XAO</i>&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<i>XAO</i>&Sigma;&quot;&nbsp;<br>
+(string-downcase&nbsp;&quot;<i>XAO</i>&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;&chi;&alpha;<em>o</em>&sigmaf;&quot;<br>
+(string-downcase&nbsp;&quot;<i>XAO</i>&Sigma;&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;&chi;&alpha;<em>o</em>&sigma;&sigmaf;&quot;<br>
+(string-downcase&nbsp;&quot;<i>XAO</i>&Sigma;&nbsp;&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;&chi;&alpha;<em>o</em>&sigmaf;&nbsp;&sigma;&quot;<br>
+(string-foldcase&nbsp;&quot;<i>XAO</i>&Sigma;&Sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;&chi;&alpha;<em>o</em>&sigma;&sigma;&quot;<br>
+(string-upcase&nbsp;&quot;&chi;&alpha;<em>o</em>&sigmaf;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<i>XAO</i>&Sigma;&quot;<br>
+(string-upcase&nbsp;&quot;&chi;&alpha;<em>o</em>&sigma;&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<i>XAO</i>&Sigma;&quot;<br>
+<br>
+(string-titlecase&nbsp;&quot;kNock&nbsp;KNoCK&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;Knock&nbsp;Knock&quot;<br>
+(string-titlecase&nbsp;&quot;who&#8217;s&nbsp;there?&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;Who&#8217;s&nbsp;There?&quot;<br>
+(string-titlecase&nbsp;&quot;r6rs&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;R6Rs&quot;<br>
+(string-titlecase&nbsp;&quot;R6RS&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;R6Rs&quot;<p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The case mappings needed for implementing these procedures
+can be extracted from <tt>UnicodeData.txt</tt>, <tt>SpecialCasing.txt</tt>, <tt>WordBreakProperty.txt</tt> 
+(the &#8220;MidLetter&#8221; property partly defines case-ignorable characters), 
+and <tt>CaseFolding.txt</tt> from the Unicode Consortium.<p>
+Since these procedures are locale-independent, they may not
+be appropriate for some locales.
+</p>
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Word breaking, as needed for the correct casing of &Sigma; and for
+<tt>string-titlecase</tt>, is specified in Unicode Standard Annex
+#29&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_5">5</a>].
+</blockquote><p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_44"></a>string-ci=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i> <i>string<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_46"></a>string-ci&lt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i> <i>string<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_48"></a>string-ci&gt;?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i> <i>string<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_50"></a>string-ci&lt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i> <i>string<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_52"></a>string-ci&gt;=?<i> <i>string<sub>1</sub></i> <i>string<sub>2</sub></i> <i>string<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures are similar to <tt>string=?</tt>, etc., but 
+operate on the case-folded versions of the strings.</p>
+<p>
+</p>
+
+<tt>(string-ci&lt;?&nbsp;&quot;z&quot;&nbsp;&quot;Z&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(string-ci=?&nbsp;&quot;z&quot;&nbsp;&quot;Z&quot;)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(string-ci=?&nbsp;&quot;Stra&szlig;e&quot;&nbsp;&quot;Strasse&quot;)&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(string-ci=?&nbsp;&quot;Stra&szlig;e&quot;&nbsp;&quot;STRASSE&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(string-ci=?&nbsp;&quot;<i>XAO</i>&Sigma;&quot;&nbsp;&quot;&chi;&alpha;<em>o</em>&sigma;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_54"></a>string-normalize-nfd<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_56"></a>string-normalize-nfkd<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_58"></a>string-normalize-nfc<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_60"></a>string-normalize-nfkc<i> <i>string</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures take a string argument and return a string
+result, which is the input string normalized
+to Unicode normalization form D, KD, C, or KC, respectively.
+When the specified result is equal in the sense of <tt>string=?</tt> to the
+argument, these procedures may return the argument instead of a newly
+allocated string.</p>
+<p>
+</p>
+
+<tt>(string-normalize-nfd&nbsp;&quot;<tt>\</tt>xE9;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<tt>\</tt>x65;<tt>\</tt>x301;&quot;<br>
+(string-normalize-nfc&nbsp;&quot;<tt>\</tt>xE9;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<tt>\</tt>xE9;&quot;<br>
+(string-normalize-nfd&nbsp;&quot;<tt>\</tt>x65;<tt>\</tt>x301;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<tt>\</tt>x65;<tt>\</tt>x301;&quot;<br>
+(string-normalize-nfc&nbsp;&quot;<tt>\</tt>x65;<tt>\</tt>x301;&quot;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&quot;<tt>\</tt>xE9;&quot;<p></tt>
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-1.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

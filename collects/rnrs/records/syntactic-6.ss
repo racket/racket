@@ -29,7 +29,7 @@
   (export define-record-type
 	  record-type-descriptor
 	  record-constructor-descriptor
-          fields mutable immutable parent protocol 
+          fields mutable immutable parent parent-rtd protocol 
           sealed opaque nongenerative)
   (import (for (rnrs base (6)) run expand)
           (for (rnrs syntax-case (6)) expand)

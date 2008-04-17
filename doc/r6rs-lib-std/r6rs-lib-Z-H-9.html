@@ -1,0 +1,2090 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-8.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_8"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_8">Chapter 8</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_8">I/O</a></h1>
+<p></p>
+<p>
+This chapter describes Scheme&#8217;s libraries for performing input and output:</p>
+<p>
+</p>
+<ul>
+<li><p>The <tt>(rnrs io ports (6))</tt> library
+(section&nbsp;<a href="#node_sec_8.2">8.2</a>) is an I/O layer for conventional,
+imperative buffered input and output with text and binary
+data.
+</p>
+<li><p>The <tt>(rnrs io simple (6))</tt> library
+(section&nbsp;<a href="#node_sec_8.3">8.3</a>) is a convenience library atop the
+<tt>(rnrs io ports (6))</tt> library for textual I/O, compatible with 
+the traditional Scheme I/O procedures&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_8">8</a>].
+</p>
+</ul><p></p>
+<p>
+Section&nbsp;<a href="#node_sec_8.1">8.1</a> defines a condition-type hierarchy that
+is exported by both the <tt>(rnrs io ports (6))</tt> and
+<tt>(rnrs io simple (6))</tt> libraries.</p>
+<p>
+</p>
+<a name="node_sec_8.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.1">8.1&nbsp;&nbsp;Condition types</a></h2>
+<p></p>
+<p>
+The procedures described in this chapter, when they detect an
+exceptional situation that arises from an &#8220;I/O errors&#8221;, raise an
+exception with condition type <tt>&amp;i/o</tt>.</p>
+<p>
+The condition types and corresponding predicates and accessors are
+exported by both the <tt>(rnrs io ports (6))</tt> and <tt>(rnrs io
+simple (6))</tt> libraries.  They are also exported by the <tt>(rnrs files (6))</tt>
+library described in chapter&nbsp;<a href="r6rs-lib-Z-H-10.html#node_chap_9">9</a>.</p>
+<p>
+</p>
+<p><a name="node_idx_494"></a></p>
+<div align=left><tt><tt>&amp;i/o</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_496"></a>make-i/o-error<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_498"></a>i/o-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o&nbsp;&amp;error<br>
+&nbsp;&nbsp;make-i/o-error&nbsp;i/o-error?)<p></tt>        </p>
+<p>
+This is a supertype for a set of more specific I/O errors.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_500"></a></p>
+<div align=left><tt><tt>&amp;i/o-read</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_502"></a>make-i/o-read-error<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_504"></a>i/o-read-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-read&nbsp;&amp;i/o<br>
+&nbsp;&nbsp;make-i/o-read-error&nbsp;i/o-read-error?)<p></tt></p>
+<p>
+This condition type describes read errors that occurred during an I/O
+operation.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_506"></a></p>
+<div align=left><tt><tt>&amp;i/o-write</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_508"></a>make-i/o-write-error<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_510"></a>i/o-write-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-write&nbsp;&amp;i/o<br>
+&nbsp;&nbsp;make-i/o-write-error&nbsp;i/o-write-error?)<p></tt>
+This condition type describes write errors that occurred during an I/O
+operation.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_512"></a></p>
+<div align=left><tt><tt>&amp;i/o-invalid-position</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_514"></a>make-i/o-invalid-position-error<i> position</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_516"></a>i/o-invalid-position-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_518"></a>i/o-error-position<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-invalid-position&nbsp;&amp;i/o<br>
+&nbsp;&nbsp;make-i/o-invalid-position-error<br>
+&nbsp;&nbsp;i/o-invalid-position-error?<br>
+&nbsp;&nbsp;(position&nbsp;i/o-error-position))<p></tt></p>
+<p>
+This condition type describes attempts to set the file position to an
+invalid position. <i>Position</i> should be the file position that
+the program intended to set. This condition describes a range error, but
+not an assertion violation.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_520"></a></p>
+<div align=left><tt><tt>&amp;i/o-filename</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_522"></a>make-i/o-filename-error<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_524"></a>i/o-filename-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_526"></a>i/o-error-filename<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-filename&nbsp;&amp;i/o<br>
+&nbsp;&nbsp;make-i/o-filename-error&nbsp;i/o-filename-error?<br>
+&nbsp;&nbsp;(filename&nbsp;i/o-error-filename))<p></tt></p>
+<p>
+This condition type describes an I/O error that occurred during an
+operation on a named file.  <i>Filename</i> should be the name of the file.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_528"></a></p>
+<div align=left><tt><tt>&amp;i/o-file-protection</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_530"></a>make-i/o-file-protection-error<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_532"></a>i/o-file-protection-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-file-protection<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;i/o-filename<br>
+&nbsp;&nbsp;make-i/o-file-protection-error<br>
+&nbsp;&nbsp;i/o-file-protection-error?)<p></tt></p>
+<p>
+A condition of this type specifies that an operation tried to operate on a
+named file with insufficient access rights.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_534"></a></p>
+<div align=left><tt><tt>&amp;i/o-file-is-read-only</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_536"></a>make-i/o-file-is-read-only-error<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_538"></a>i/o-file-is-read-only-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-file-is-read-only<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;i/o-file-protection<br>
+&nbsp;&nbsp;make-i/o-file-is-read-only-error<br>
+&nbsp;&nbsp;i/o-file-is-read-only-error?)<p></tt></p>
+<p>
+A condition of this type specifies that an operation tried to operate on a
+named read-only file under the assumption that it is writeable.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_540"></a></p>
+<div align=left><tt><tt>&amp;i/o-file-already-exists</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_542"></a>make-i/o-file-already-exists-error<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_544"></a>i/o-file-already-exists-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-file-already-exists<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;i/o-filename<br>
+&nbsp;&nbsp;make-i/o-file-already-exists-error<br>
+&nbsp;&nbsp;i/o-file-already-exists-error?)<p></tt>
+A condition of this type specifies that an operation tried to operate on an
+existing named file under the assumption that it did not exist.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_546"></a></p>
+<div align=left><tt><tt>&amp;i/o-file-does-not-exist</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_548"></a>make-i/o-file-does-not-exist-error<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_550"></a>i/o-file-does-not-exist-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-file-does-not-exist<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;i/o-filename<br>
+&nbsp;&nbsp;make-i/o-file-does-not-exist-error<br>
+&nbsp;&nbsp;i/o-file-does-not-exist-error?)<p></tt></p>
+<p>
+A condition of this type specifies that an operation tried to operate on an
+non-existent named file under the assumption that it existed.
+</p>
+<p>   </p>
+<p>
+</p>
+<p><a name="node_idx_552"></a></p>
+<div align=left><tt><tt>&amp;i/o-port</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_554"></a>make-i/o-port-error<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_556"></a>i/o-port-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_558"></a>i/o-error-port<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-port&nbsp;&amp;i/o<br>
+&nbsp;&nbsp;make-i/o-port-error&nbsp;i/o-port-error?<br>
+&nbsp;&nbsp;(port&nbsp;i/o-error-port))<p></tt></p>
+<p>
+This condition type specifies the port with which an I/O
+error is associated. 
+<i>Port</i> should be the port.
+Conditions raised by procedures accepting a port as an argument should
+include an <tt>&amp;i/o-port-error</tt> condition.
+</p>
+<p></p>
+<p>
+
+</p>
+<a name="node_sec_8.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2">8.2&nbsp;&nbsp;Port I/O</a></h2>
+<p></p>
+<p>
+The <tt>(rnrs io ports (6))</tt><a name="node_idx_560"></a>library defines an I/O layer for
+conventional, imperative buffered input and output.
+A <a name="node_idx_562"></a><em>port</em> represents a buffered access object
+for a data sink or source or both simultaneously.
+The library allows ports to be created from arbitrary data sources
+and sinks.</p>
+<p>
+The <tt>(rnrs io ports (6))</tt> library distinguishes between <i>input
+ports<a name="node_idx_564"></a></i> and <i>output
+ports<a name="node_idx_566"></a></i>.  An input port is a source for data,
+whereas an output port is a sink for data.  A port may be both an
+input port and an output port; such a port typically provides
+simultaneous read and write access to a file or other data.</p>
+<p>
+The <tt>(rnrs io ports (6))</tt> library also distinguishes between
+<i>binary ports<a name="node_idx_568"></a></i>, which are sources
+or sinks for uninterpreted bytes, and
+<i>textual ports<a name="node_idx_570"></a></i>, which are sources
+or sinks for characters and strings.</p>
+<p>
+This section uses <i>input-port</i>, <i>output-port</i>,
+<i>binary-port</i>, <i>textual-port</i>,
+<i>binary-input-port</i>, <i>textual-input-port</i>,
+<i>binary-output-port</i>, <i>textual-output-port</i>,
+and <i>port</i> as
+parameter names for arguments that must be input ports (or combined
+input/output ports), output ports (or combined input/output ports),
+binary ports, textual ports, binary input ports, textual input ports,
+binary output ports, textual output ports, or any kind of port,
+respectively.</p>
+<p>
+</p>
+<a name="node_sec_8.2.1"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.1">8.2.1&nbsp;&nbsp;File names</a></h3>
+<p></p>
+<p>
+Some of the procedures described in this chapter accept a file name as an
+argument. Valid values for such a file name include strings that name a file
+using the native notation of filesystem paths on an implementation&#8217;s
+underlying operating system, and may include implementation-dependent
+values as well.</p>
+<p>
+A <i>filename</i> parameter name means that the
+corresponding argument must be a file name.</p>
+<p>
+</p>
+<a name="node_sec_8.2.2"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.2">8.2.2&nbsp;&nbsp;File options</a></h3>
+<p></p>
+<p>
+<a name="node_idx_572"></a>When opening a file, the various procedures in this library accept a
+<tt>file-options</tt> object that encapsulates flags to specify how
+the file is to be opened. A <tt>file-options</tt> object is an enum-set
+(see chapter&nbsp;<a href="r6rs-lib-Z-H-15.html#node_chap_14">14</a>) over the symbols constituting
+valid file options.
+A <i>file-options</i> parameter name means that the
+corresponding argument must be a file-options object.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_574"></a>file-options<i> &lt;file-options symbol&gt; <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+Each &lt;file-options symbol&gt; must be a symbol.
+The <tt>file-options</tt> syntax returns a file-options object that 
+encapsulates the
+specified options.</p>
+<p>
+When supplied to an operation that opens a file for output, the
+file-options object returned by <tt>(file-options)</tt> specifies that the
+file is created if it does not exist and an exception with condition type
+<tt>&amp;i/o-file-already-exists</tt> is raised if it does exist.
+The following standard options can be included to modify the default behavior.</p>
+<p>
+</p>
+<ul>   
+<li><p><tt>no-create</tt>
+If the file does not already exist, it is not created;
+instead, an exception with condition type <tt>&amp;i/o-file-does-not-exist</tt>
+is raised.
+If the file already exists, the exception with condition type
+<tt>&amp;i/o-file-already-exists</tt> is not raised
+and the file is truncated to zero length.
+</p>
+<li><p><tt>no-fail</tt>
+If the file already exists, the exception with condition type
+<tt>&amp;i/o-file-already-exists</tt> is not raised,
+even if <tt>no-create</tt> is not included,
+and the file is truncated to zero length.
+</p>
+<li><p><tt>no-truncate</tt>
+If the file already exists and the exception with condition type
+<tt>&amp;i/o-file-already-exists</tt> has been inhibited by inclusion of
+<tt>no-create</tt> or <tt>no-fail</tt>, the file is not truncated, but
+the port&#8217;s current position is still set to the beginning of the
+file.
+</p>
+</ul><p></p>
+<p>
+These options have no effect when a file is opened only for input.
+Symbols
+other than those listed above may be used as &lt;file-options symbol&gt;s;
+they have implementation-specific meaning, if any.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Only the name of &lt;file-options symbol&gt; is significant.
+</blockquote>
+<p>   </p>
+<p>
+</p>
+<a name="node_sec_8.2.3"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.3">8.2.3&nbsp;&nbsp;Buffer modes</a></h3>
+<p>Each port has an associated buffer mode.  For an output port, the
+buffer mode defines when an output operation flushes the buffer
+associated with the output port.  For an input port, the buffer mode
+defines how much data will be read to satisfy read operations.  The
+possible buffer modes are the symbols <tt>none</tt> for no buffering,
+<tt>line</tt> for flushing upon line endings and reading up to line
+endings, or other implementation-dependent behavior,
+and <tt>block</tt> for arbitrary buffering.  This section uses
+the parameter name <i>buffer-mode</i> for arguments that must be
+buffer-mode symbols.</p>
+<p>
+If two ports are connected to the same mutable source, both ports
+are unbuffered, and reading a byte or character from that shared
+source via one of the two ports would change the bytes or characters
+seen via the other port, a lookahead operation on one port will
+render the peeked byte or character inaccessible via the other port,
+while a subsequent read operation on the peeked port will see the
+peeked byte or character even though the port is otherwise unbuffered.</p>
+<p>
+In other words, the semantics of buffering is defined in terms of side
+effects on shared mutable sources, and a lookahead operation has the
+same side effect on the shared source as a read operation.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_576"></a>buffer-mode<i> &lt;buffer-mode symbol&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+&lt;Buffer-mode symbol&gt; must be a symbol whose name is one
+of <tt>none</tt>, <tt>line</tt>, and <tt>block</tt>. The result is the
+corresponding symbol, and specifies the associated buffer mode.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Only the name of &lt;buffer-mode symbol&gt; is significant.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_578"></a>buffer-mode?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the argument is a valid buffer-mode symbol,
+and returns <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.4"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.4">8.2.4&nbsp;&nbsp;Transcoders</a></h3>
+<p></p>
+<p>
+Several different Unicode encoding schemes describe standard ways to
+encode characters and strings as byte sequences and to decode those
+sequences&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_12">12</a>].
+Within this document, a <a name="node_idx_580"></a><em>codec</em> is an immutable Scheme
+object that represents a Unicode or similar encoding scheme.</p>
+<p>
+An <a name="node_idx_582"></a><em>end-of-line style</em> is a symbol that, if it is not <tt>none</tt>, describes how a textual port transcodes representations of
+line endings.</p>
+<p>
+A <a name="node_idx_584"></a><em>transcoder</em> is an immutable Scheme object that combines
+a codec with an end-of-line style and a method for handling
+decoding errors.
+Each transcoder represents some specific bidirectional (but not
+necessarily lossless), possibly stateful translation between byte
+sequences and Unicode characters and strings.
+Every transcoder can operate in the input direction (bytes to characters)
+or in the output direction (characters to bytes). 
+A <i>transcoder</i> parameter name means that the corresponding
+argument must be a transcoder.</p>
+<p>
+A <a name="node_idx_586"></a><em>binary port</em> is a port that supports binary I/O, does not
+have an associated transcoder and does not support textual I/O.  A
+<a name="node_idx_588"></a><em>textual port</em> is a port that supports textual I/O, and does
+not support binary I/O.  A textual port may or may not have an
+associated transcoder.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_590"></a>latin-1-codec<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_592"></a>utf-8-codec<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_594"></a>utf-16-codec<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are predefined codecs for the ISO 8859-1, UTF-8,
+and UTF-16 encoding schemes [<a href="r6rs-lib-Z-H-21.html#node_bib_12">12</a>].</p>
+<p>
+A call to any of these procedures returns a value that is equal in the
+sense of <tt>eqv?</tt> to the result of any other call to the same
+procedure.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_596"></a>eol-style<i> &lt;eol-style symbol&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+&lt;Eol-style symbol&gt; should be a symbol whose name is one
+of <tt>lf</tt>, <tt>cr</tt>, <tt>crlf</tt>, <tt>nel</tt>,
+<tt>crnel</tt>, <tt>ls</tt>, and <tt>none</tt>.  The form evaluates to the
+corresponding symbol.  If the name of <i>eol-style symbol</i> is not
+one of these symbols, the effect and result are
+implementation-dependent; in particular, the result may be an
+eol-style symbol acceptable as an <i>eol-style</i> argument to <tt>make-transcoder</tt>.  Otherwise, an exception is raised.</p>
+<p>
+All eol-style symbols except <tt>none</tt> describe a specific
+line-ending encoding:</p>
+<p>
+</p>
+
+<p class=noindent></p>
+<table border=0><tr><td valign=top ><tt>lf</tt> </td><td valign=top >&lt;linefeed&gt;</td></tr>
+<tr><td valign=top ><tt>cr</tt> </td><td valign=top >&lt;carriage return&gt;</td></tr>
+<tr><td valign=top ><tt>crlf</tt> </td><td valign=top >&lt;carriage return&gt; &lt;linefeed&gt;</td></tr>
+<tr><td valign=top ><tt>nel</tt> </td><td valign=top >&lt;next line&gt;</td></tr>
+<tr><td valign=top ><tt>crnel</tt> </td><td valign=top >&lt;carriage return&gt; &lt;next line&gt;</td></tr>
+<tr><td valign=top ><tt>ls</tt> </td><td valign=top >&lt;line separator&gt;
+</td></tr></table><p>
+For a textual port with a transcoder, and whose transcoder has an eol-style symbol <tt>none</tt>, no conversion occurs.  For a textual input port, any
+eol-style symbol other than <tt>none</tt> means that all of the above
+line-ending encodings are recognized and are translated into a single
+linefeed.  For a textual output port, <tt>none</tt> and <tt>lf</tt> are
+equivalent.  Linefeed characters are encoded according to the
+specified eol-style symbol, and all other characters that participate
+in possible line endings are encoded as is.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Only the name of &lt;eol-style symbol&gt; is significant.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_598"></a>native-eol-style<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the default end-of-line style of the underlying platform, e.g.,
+<tt>lf</tt> on Unix and <tt>crlf</tt> on Windows.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_600"></a></p>
+<div align=left><tt><tt>&amp;i/o-decoding</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_602"></a>make-i/o-decoding-error<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_604"></a>i/o-decoding-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-decoding&nbsp;&amp;i/o-port<br>
+&nbsp;&nbsp;make-i/o-decoding-error&nbsp;i/o-decoding-error?)<p></tt></p>
+<p>
+An exception with this type is raised when one of the operations for
+textual input from a port encounters a sequence of bytes that cannot
+be translated into a character or string by the input direction of the
+port&#8217;s transcoder.</p>
+<p>
+When such an exception is raised, the port&#8217;s position is past
+the invalid encoding.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_606"></a></p>
+<div align=left><tt><tt>&amp;i/o-encoding</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_608"></a>make-i/o-encoding-error<i> port char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_610"></a>i/o-encoding-error?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_612"></a>i/o-encoding-error-char<i> condition</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This condition type could be defined by
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;i/o-encoding&nbsp;&amp;i/o-port<br>
+&nbsp;&nbsp;make-i/o-encoding-error&nbsp;i/o-encoding-error?<br>
+&nbsp;&nbsp;(char&nbsp;i/o-encoding-error-char))<p></tt></p>
+<p>
+An exception with this type is raised when one of the operations for
+textual output to a port encounters a character that cannot be
+translated into bytes by the output direction of the port&#8217;s transcoder.
+<i>Char</i> is the character that could not be encoded.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_614"></a>error-handling-mode<i> &lt;error-handling-mode symbol&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+&lt;Error-handling-mode symbol&gt; should be a symbol whose
+name is one of <tt>ignore</tt>, <tt>raise</tt>, and <tt>replace</tt>. The
+form evaluates to the corresponding symbol.  If
+<i>error-handling-mode symbol</i> is not one of these identifiers,
+effect and result are implementation-dependent: The result may be an
+error-handling-mode symbol acceptable as a <i>handling-mode</i>
+argument to <tt>make-transcoder</tt>.  If it is not acceptable as a
+<i>handling-mode</i> argument to <tt>make-transcoder</tt>, an exception is
+raised.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Only the name of &lt;error-handling-style symbol&gt; is significant.
+</blockquote><p>
+The error-handling mode of a transcoder specifies the behavior
+of textual I/O operations in the presence of encoding or decoding
+errors.</p>
+<p>
+If a textual input operation encounters an invalid or incomplete
+character encoding, and the error-handling mode is <tt>ignore</tt>,
+an appropriate number of bytes of the
+invalid encoding are ignored and decoding continues with the
+following bytes.
+If the error-handling mode is <tt>replace</tt>, the replacement
+character U+FFFD is injected into the data stream, an appropriate
+number of bytes are ignored, and decoding
+continues with the following bytes.
+If the error-handling mode is <tt>raise</tt>, an 
+exception with condition type <tt>&amp;i/o-decoding</tt> is raised.</p>
+<p>
+If a textual output operation encounters a character it cannot encode,
+and the error-handling mode is <tt>ignore</tt>, the character is
+ignored and encoding continues with the next character.
+If the error-handling mode is <tt>replace</tt>, a codec-specific
+replacement character is emitted by the transcoder, and encoding
+continues with the next character.
+The replacement character is U+FFFD for transcoders whose codec
+is one of the Unicode encodings, but is the <tt>?</tt>
+character for the Latin-1 encoding.
+If the error-handling mode is <tt>raise</tt>, an
+exception with condition type <tt>&amp;i/o-encoding</tt> is raised.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_616"></a>make-transcoder<i> codec</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_618"></a>make-transcoder<i> codec eol-style</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_620"></a>make-transcoder<i> codec eol-style handling-mode</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Codec</i> must be a codec; <i>eol-style</i>, if present, an
+eol-style symbol; and <i>handling-mode</i>, if present, an
+error-handling-mode symbol.  <i>Eol-style</i> may be omitted, in
+which case it defaults to the native end-of-line style of the
+underlying platform.  <i>Handling-mode</i> may be omitted, in which
+case it defaults to <tt>replace</tt>.  The result is a transcoder with the
+behavior specified by its arguments.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_622"></a>native-transcoder<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns an implementation-dependent transcoder that represents a
+possibly locale-dependent &#8220;native&#8221; transcoding.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_624"></a>transcoder-codec<i> transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_626"></a>transcoder-eol-style<i> transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_628"></a>transcoder-error-handling-mode<i> transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are accessors for transcoder objects; when applied to a
+transcoder returned by <tt>make-transcoder</tt>, they return the
+<i>codec</i>, <i>eol-style</i>, and <i>handling-mode</i> arguments,
+respectively.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_630"></a>bytevector-&gt;string<i> bytevector transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the string that results from transcoding the
+<i>bytevector</i> according to the input direction of the transcoder.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_632"></a>string-&gt;bytevector<i> string transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the bytevector that results from transcoding the
+<i>string</i> according to the output direction of the transcoder.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.5"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.5">8.2.5&nbsp;&nbsp;End-of-file object</a></h3>
+<p></p>
+<p>
+The end-of-file object is returned by various I/O procedures when they
+reach end of file.<a name="node_idx_634"></a></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_636"></a>eof-object<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the end-of-file object.
+</p>
+
+<tt>(eqv?&nbsp;(eof-object)&nbsp;(eof-object))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><br>
+(eq?&nbsp;(eof-object)&nbsp;(eof-object))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The end-of-file object  is not a datum value, and thus has no external
+representation.
+</blockquote><p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_638"></a>eof-object?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is the end-of-file object, <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.6"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.6">8.2.6&nbsp;&nbsp;Input and output ports</a></h3>
+<p>The operations described in this section are common to input and
+output ports, both binary and textual.  A port may also have an
+associated <a name="node_idx_640"></a><em>position</em> that specifies a particular place
+within its data sink or source, and may also provide operations for
+inspecting and setting that place.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_642"></a>port?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the argument is a port, and returns <tt>#f</tt>
+otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_644"></a>port-transcoder<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the transcoder associated with <i>port</i> if <i>port</i> is
+textual and has an associated transcoder, and returns <tt>#f</tt> if
+<i>port</i> is binary or does not have an associated transcoder.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_646"></a>textual-port?<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_648"></a>binary-port?<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>textual-port?</tt> procedure returns <tt>#t</tt> if <i>port</i> is
+textual, and returns <tt>#f</tt> otherwise.
+The <tt>binary-port?</tt> procedure returns <tt>#t</tt> if <i>port</i> is
+binary, and returns <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_650"></a>transcoded-port<i> binary-port transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>transcoded-port</tt> procedure
+returns a new textual port with the specified <i>transcoder</i>.
+Otherwise the new textual port&#8217;s state is largely the same as
+that of <i>binary-port</i>.
+If <i>binary-port</i> is an input port, the new textual
+port will be an input port and
+will transcode the bytes that have not yet been read from
+<i>binary-port</i>.
+If <i>binary-port</i> is an output port, the new textual
+port will be an output port and
+will transcode output characters into bytes that are
+written to the byte sink represented by <i>binary-port</i>.</p>
+<p>
+As a side effect, however, <tt>transcoded-port</tt>
+closes <i>binary-port</i> in
+a special way that allows the new textual port to continue to
+use the byte source or sink represented by <i>binary-port</i>,
+even though <i>binary-port</i> itself is closed and cannot
+be used by the input and output operations described in this
+chapter.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_652"></a>port-has-port-position?<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_654"></a>port-position<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>port-has-port-position?</tt> procedure returns <tt>#t</tt> if the
+port supports the <tt>port-position</tt> operation, and <tt>#f</tt>
+otherwise.</p>
+<p>
+For a binary port, the <tt>port-position</tt> procedure returns the index
+of the position at which the next byte would be read from or written
+to the port as an exact non-negative integer object.  For a textual
+port, <tt>port-position</tt> returns a value of some implementation-dependent
+type representing the port&#8217;s position; this value may be useful only as
+the <i>pos</i> argument to <tt>set-port-position!</tt>, if the latter is
+supported on the port (see below).</p>
+<p>
+If the port does not support the operation, <tt>port-position</tt> raises
+an exception with condition type <tt>&amp;assertion</tt>.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+For a textual port, the port position may or may not be an integer
+object.  If it is an integer object, the integer object does not
+necessarily correspond to a byte or character position.
+</blockquote>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_656"></a>port-has-set-port-position!?<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_658"></a>set-port-position!<i> port pos</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If <i>port</i> is a binary port, <i>pos</i> should be a
+non-negative exact integer object.  If <i>port</i> is a textual port,
+<i>pos</i> should be the return value of a call to <tt>port-position</tt> on <i>port</i>.</p>
+<p>
+The <tt>port-has-set-port-position!?</tt> procedure returns <tt>#t</tt> if the port
+supports the <tt>set-port-position!</tt> operation, and <tt>#f</tt>
+otherwise.</p>
+<p>
+The <tt>set-port-position!</tt> procedure raises an
+exception with condition type <tt>&amp;assertion</tt>
+if the port does not support the operation, 
+and an exception with condition type <tt>&amp;i/o-invalid-position</tt> if
+<i>pos</i> is not in the range of valid positions of <i>port</i>.
+Otherwise, it sets the current position
+of the port to <i>pos</i>.  If <i>port</i> is an output
+port, <tt>set-port-position!</tt> first flushes <i>port</i>.  (See <tt>flush-output-port</tt>, section&nbsp;<a href="#node_sec_8.2.10">8.2.10</a>.)</p>
+<p>
+If <i>port</i> is a binary output port and the current position is set
+beyond the current end of the data in the underlying data sink, the object is
+not extended until new data is written at that position.
+The contents of any intervening positions are unspecified.
+Binary ports created by <tt>open-file-output-port</tt> and
+<tt>open-file-input/output-port</tt> can always be extended in this manner
+within the limits of the underlying operating system.
+In other cases, attempts to set the port beyond the current end of data
+in the underlying object may result in an exception with condition
+type <tt>&amp;i/o-invalid-position</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_660"></a>close-port<i> port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Closes the port, rendering the port incapable of delivering or
+accepting data. If <i>port</i> is an output port, it is flushed before
+being closed.  This has no effect if the port has already been closed.
+A closed port is still a port.  The <tt>close-port</tt> procedure returns
+unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_662"></a>call-with-port<i> port proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> must accept one argument.
+The <tt>call-with-port</tt> procedure
+calls <i>proc</i> with <i>port</i> as an argument. If
+<i>proc</i> returns, <i>port</i> is closed automatically and
+the values returned by <i>proc</i> are returned. If <i>proc</i> does not
+return, <i>port</i> is not closed automatically, except perhaps when it is
+possible to prove that <i>port</i> will never again be used for an
+input or output operation.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.7"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.7">8.2.7&nbsp;&nbsp;Input ports</a></h3>
+<p>An input port allows the reading of an infinite sequence of bytes
+or characters punctuated
+by end-of-file objects. An input port connected to a finite data
+source ends in an infinite sequence of end-of-file objects.</p>
+<p>
+It is unspecified whether a character encoding consisting of several
+bytes may have an end of file between the bytes.  If, for example,
+<tt>get-char</tt> raises an <tt>&amp;i/o-decoding</tt> exception because the
+character encoding at the port&#8217;s position is incomplete up to the next
+end of file, a subsequent call to <tt>get-char</tt> may successfully
+decode a character if bytes completing the encoding are available
+after the end of file.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_664"></a>input-port?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the argument is an input port (or a combined input
+and output port), and returns <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_666"></a>port-eof?<i> input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt>
+if the <tt>lookahead-u8</tt> procedure (if <i>input-port</i> is a binary port)
+or the <tt>lookahead-char</tt> procedure (if <i>input-port</i> is a textual port)
+would return
+the end-of-file object, and <tt>#f</tt> otherwise.
+The operation may block indefinitely if no data is available
+but the port cannot be determined to be at end of file.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_668"></a>open-file-input-port<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_670"></a>open-file-input-port<i> filename file-options</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(open-file-input-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>)</tt><br>
+<div align=left><tt>(open-file-input-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>&nbsp;<i>maybe-transcoder</i>)</tt><p>
+<i>Maybe-transcoder</i> must be either a transcoder or <tt>#f</tt>.</p>
+<p>
+The <tt>open-file-input-port</tt> procedure returns an
+input port for the named file. The <i>file-options</i> and
+<i>maybe-transcoder</i> arguments are optional.</p>
+<p>
+The <i>file-options</i> argument, which may determine
+various aspects of the returned port (see section&nbsp;<a href="#node_sec_8.2.2">8.2.2</a>),
+defaults to the value of <tt>(file-options)</tt>.</p>
+<p>
+The <i>buffer-mode</i> argument, if supplied,
+must be one of the symbols that name a buffer mode.
+The <i>buffer-mode</i> argument defaults to <tt>block</tt>.</p>
+<p>
+If <i>maybe-transcoder</i> is a transcoder, it becomes the transcoder associated
+with the returned port.</p>
+<p>
+If <i>maybe-transcoder</i> is <tt>#f</tt> or absent,
+the port will be a binary port and will support the
+<tt>port-position</tt> and <tt>set-port-position!</tt>  operations.
+Otherwise the port will be a textual port, and whether it supports
+the <tt>port-position</tt> and <tt>set-port-position!</tt> operations
+is implementation-dependent (and possibly transcoder-dependent).
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_672"></a>open-bytevector-input-port<i> bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(open-bytevector-input-port <i>bytevector</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>maybe-transcoder</i>)</tt><p>
+<i>Maybe-transcoder</i> must be either a transcoder or <tt>#f</tt>.</p>
+<p>
+The <tt>open-bytevector-input-port</tt> procedure returns an input port whose bytes are drawn from 
+<i>bytevector</i>.
+If <i>transcoder</i> is specified, it becomes the transcoder associated
+with the returned port.</p>
+<p>
+If <i>maybe-transcoder</i> is <tt>#f</tt> or absent,
+the port will be a binary port and will support the
+<tt>port-position</tt> and <tt>set-port-position!</tt>  operations.
+Otherwise the port will be a textual port, and whether it supports
+the <tt>port-position</tt> and <tt>set-port-position!</tt> operations
+will be implementation-dependent (and possibly transcoder-dependent).</p>
+<p>
+If <i>bytevector</i> is modified after <tt>open-bytevector-input-port</tt>
+has been called, the effect on the returned
+port is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_674"></a>open-string-input-port<i> string</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a textual input port whose characters are drawn from
+<i>string</i>.  The port may or may not have an associated transcoder;
+if it does, the transcoder is implementation-dependent.
+The port should support the
+<tt>port-position</tt> and <tt>set-port-position!</tt> operations.</p>
+<p>
+If <i>string</i> is modified after <tt>open-string-input-port</tt>
+has been called, the effect on the returned port is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_676"></a>standard-input-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a fresh binary input port connected to standard input.
+Whether the port supports the <tt>port-position</tt> and <tt>set-port-position!</tt> operations is implementation-dependent.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_678"></a>current-input-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This returns a default textual port for input.  Normally, this default port
+is associated with standard input, but can be dynamically re-assigned
+using the <tt>with-input-from-file</tt> procedure from the
+<tt>(rnrs io simple (6))</tt> library (see section&nbsp;<a href="#node_sec_8.3">8.3</a>).
+The port may or may not have an associated transcoder; if it does, the
+transcoder is implementation-dependent.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-binary-input-port <i>id</i> <i>read!</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_680"></a><tt><br>
+
+<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created binary input port whose byte source is
+an arbitrary algorithm represented by the <i>read!</i> procedure.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Read!</i> must be a procedure and should behave as specified
+below; it will be called by operations that perform binary input.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified below.</p>
+<p>
+</p>
+<ul>
+<li><p><tt>(<i>read!</i> <i>bytevector</i> <i>start</i> <i>count</i>)</tt></p>
+<p>
+<i>Start</i> will be a non-negative exact integer object,
+<i>count</i> will be a positive exact integer object,
+and <i>bytevector</i> will be a bytevector whose length is at least
+<i>start</i>  +  <i>count</i>.
+The <i>read!</i> procedure should obtain up to <i>count</i> bytes
+from the byte source, and should write those bytes
+into <i>bytevector</i> starting at index <i>start</i>.
+The <i>read!</i> procedure should return an exact integer object.  This
+integer object should represent the number of bytes that it has read.
+To indicate an end of file, the <i>read!</i>
+procedure should write no bytes and return 0.</p>
+<p>
+</p>
+<li><p><tt>(<i>get-position</i>)</tt></p>
+<p>
+The <i>get-position</i> procedure (if supplied) should return an exact
+integer object representing the current position of
+the input port.  If not supplied, the custom port will not support
+the <tt>port-position</tt> operation.</p>
+<p>
+</p>
+<li><p><tt>(<i>set-position!</i> <i>pos</i>)</tt></p>
+<p>
+<i>Pos</i> will be a non-negative exact integer object.
+The <i>set-position!</i> procedure (if supplied) should set the
+position of the input port to <i>pos</i>.  If not supplied, the custom
+port will not support the <tt>set-port-position!</tt> operation.</p>
+<p>
+</p>
+<li><p><tt>(<i>close</i>)</tt></p>
+<p>
+The <i>close</i> procedure (if supplied) should perform any actions
+that are necessary when the input port is closed.
+</p>
+</ul><p></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the return
+values of <i>read!</i> and <i>get-position</i> only when it actually calls
+them as part of an I/O operation requested by the program.  The
+implementation is not required to check that these procedures
+otherwise behave as described.  If they do not, however, the behavior
+of the resulting port is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-textual-input-port <i>id</i> <i>read!</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_682"></a><tt><br>
+
+<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created textual input port whose character source is
+an arbitrary algorithm represented by the <i>read!</i> procedure.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Read!</i> must be a procedure and should behave as specified
+below; it will be called by operations that perform textual input.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified below.</p>
+<p>
+</p>
+<ul>
+<li><p><tt>(<i>read!</i> <i>string</i> <i>start</i> <i>count</i>)</tt></p>
+<p>
+<i>Start</i> will be a non-negative exact integer object,
+<i>count</i> will be a positive exact integer object,
+and <i>string</i> will be a string whose length is at least
+<i>start</i>  +  <i>count</i>.
+The <i>read!</i> procedure should obtain up to <i>count</i> characters
+from the character source, and should write those characters
+into <i>string</i> starting at index <i>start</i>.
+The <i>read!</i> procedure should return an exact integer object
+representing the number of characters that it has written.
+To indicate an end of file, the <i>read!</i>
+procedure should write no bytes and return 0.</p>
+<p>
+</p>
+<li><p><tt>(<i>get-position</i>)</tt></p>
+<p>
+The <i>get-position</i> procedure (if supplied) should return a single
+value.  The return value should represent the current position of
+the input port.  If not supplied, the custom port will not support
+the <tt>port-position</tt> operation.</p>
+<p>
+</p>
+<li><p><tt>(<i>set-position!</i> <i>pos</i>)</tt></p>
+<p>
+The <i>set-position!</i> procedure (if supplied) should set the
+position of the input port to <i>pos</i> if <i>pos</i> is the return
+value of a call to <i>get-position</i>.  If not supplied, the custom
+port will not support the <tt>set-port-position!</tt> operation.</p>
+<p>
+</p>
+<li><p><tt>(<i>close</i>)</tt></p>
+<p>
+The <i>close</i> procedure (if supplied) should perform any actions
+that are necessary when the input port is closed.
+</p>
+</ul><p></p>
+<p>
+The port may or may not have an an associated transcoder; if it does,
+the transcoder is implementation-dependent.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the return
+values of <i>read!</i> and <i>get-position</i> only when it actually calls
+them as part of an I/O operation requested by the program.  The
+implementation is not required to check that these procedures
+otherwise behave as described.  If they do not, however, the behavior
+of the resulting port is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.8"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.8">8.2.8&nbsp;&nbsp;Binary input</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_684"></a>get-u8<i> binary-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>binary-input-port</i>, blocking as necessary, until a
+byte is available from <i>binary-input-port</i> or until an end of file is reached.
+If a byte becomes available, <tt>get-u8</tt> returns the byte as an octet and
+updates <i>binary-input-port</i> to point just past that byte. If no input
+byte is seen before an end of file is reached, the end-of-file
+object is returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_686"></a>lookahead-u8<i> binary-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>lookahead-u8</tt> procedure is like <tt>get-u8</tt>, but it does not 
+update <i>binary-input-port</i> to point past the byte.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_688"></a>get-bytevector-n<i> binary-input-port count</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Count</i> must be an exact, non-negative integer object representing
+the number of bytes to be read.
+The <tt>get-bytevector-n</tt> procedure reads
+from <i>binary-input-port</i>, blocking as necessary, until <i>count</i>
+bytes are available from <i>binary-input-port</i> or until an end of file is
+reached. If <i>count</i> bytes are available before an end
+of file, <tt>get-bytevector-n</tt> returns a bytevector of size <i>count</i>.
+If fewer bytes are available before an end of file, <tt>get-bytevector-n</tt>
+returns a bytevector
+containing those bytes. In either case, the input port is updated to
+point just past the bytes read.  If an end of file is reached before
+any bytes are available, <tt>get-bytevector-n</tt> returns the end-of-file object.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(get-bytevector-n! <i>binary-input-port</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_690"></a><tt><br>
+
+<i>bytevector</i>&nbsp;<i>start</i>&nbsp;<i>count</i>)</tt><p>
+<i>Count</i> must be an exact, non-negative integer object, representing
+the number of bytes to be read. <i>bytevector</i> must be a bytevector
+with at
+least <i>start</i>  +  <i>count</i> elements.</p>
+<p>
+The <tt>get-bytevector-n!</tt> procedure reads from <i>binary-input-port</i>,
+blocking as necessary, until
+<i>count</i> bytes are available from <i>binary-input-port</i> or until
+an end of file is
+reached. If <i>count</i> bytes are available before an end of file,
+they are written into <i>bytevector</i> starting at index <i>start</i>, and
+the result is <i>count</i>. If fewer bytes are available before
+the next end of file, the available bytes are written into <i>bytevector</i>
+starting at index <i>start</i>, and the result is a number object
+representing the number of bytes actually
+read. In either case, the input port is updated to point just past the
+bytes read. If an end of file is reached before any bytes
+are available, <tt>get-bytevector-n!</tt> returns the end-of-file object.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_692"></a>get-bytevector-some<i> binary-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>binary-input-port</i>, blocking as necessary, until bytes are
+available from <i>binary-input-port</i> or until an end of file is reached.
+If bytes become available,
+<tt>get-bytevector-some</tt> returns a freshly allocated
+bytevector containing the initial available bytes (at least one),
+and it updates <i>binary-input-port</i> to point just past these bytes.
+If no input bytes are seen before an end
+of file is reached, the end-of-file object is returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_694"></a>get-bytevector-all<i> binary-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Attempts to read all bytes until the next end of file, blocking as
+necessary. If one or more bytes are read, <tt>get-bytevector-all</tt> returns
+a bytevector
+containing all bytes up to the next end of file.  Otherwise, <tt>get-bytevector-all</tt> returns the end-of-file object.
+The operation may block indefinitely waiting to see if more bytes
+will become available, even if some bytes are already available.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.9"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.9">8.2.9&nbsp;&nbsp;Textual input</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_696"></a>get-char<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>textual-input-port</i>, blocking as necessary, until a
+complete character is available from <i>textual-input-port</i>,
+or until an end of file is reached.</p>
+<p>
+If a complete character is available before the next end of file, <tt>get-char</tt> returns that character and updates the input port to
+point past the character. If an end of file is
+reached before any character is read, <tt>get-char</tt> returns the
+end-of-file object.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_698"></a>lookahead-char<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The <tt>lookahead-char</tt> procedure is like <tt>get-char</tt>, but it does not 
+update <i>textual-input-port</i> to point past the 
+character.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+With some of the standard transcoders
+described in this document, up to four bytes of lookahead are
+needed. Nonstandard transcoders may need even more lookahead.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_700"></a>get-string-n<i> textual-input-port count</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Count</i> must be an exact, non-negative integer object, representing
+the number of characters to be read.</p>
+<p>
+The <tt>get-string-n</tt> procedure reads
+from <i>textual-input-port</i>, blocking as necessary, until 
+<i>count</i> characters are available, or until an end of
+file is reached.</p>
+<p>
+If <i>count</i> characters are available before end of file, <tt>get-string-n</tt> returns a string consisting of those <i>count</i>
+characters. If fewer characters are available before an end of file,
+but one or more characters can be read,
+<tt>get-string-n</tt> returns a string containing
+those characters. In either case, the input port is updated to point
+just past the characters read. If no characters can be read before an 
+end of file, the end-of-file object is returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_702"></a>get-string-n!<i> textual-input-port string start count</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Start</i> and <i>count</i> must be exact, non-negative
+integer objects, with <i>count</i> representing the number of characters to be read.
+<i>String</i> must be a string with at least <i>start</i>  + 
+<i>count</i> characters.</p>
+<p>
+The <tt>get-string-n!</tt> procedure reads from <i>textual-input-port</i> in the same manner as <tt>get-string-n</tt>.  If <i>count</i> characters are available
+before an end of file, they are written into <i>string</i>
+starting at index <i>start</i>, and <i>count</i> is returned. If fewer
+characters are available before an end of file, but one
+or more can be read, those characters are written into <i>string</i>
+starting at index <i>start</i> and the number of characters actually read is
+returned as an exact integer object. If no characters can be read before an end of file,
+the end-of-file object is returned.
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_704"></a>get-string-all<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>textual-input-port</i> until an end of file, decoding
+characters in the same manner as <tt>get-string-n</tt> and <tt>get-string-n!</tt>.</p>
+<p>
+If characters are available before the end of file, a string
+containing all the characters decoded from that data are returned. If no character
+precedes the end of file, the end-of-file object is
+returned.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_706"></a>get-line<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>textual-input-port</i> up to and including the linefeed
+character or end of file, decoding characters in the same manner as
+<tt>get-string-n</tt> and <tt>get-string-n!</tt>.</p>
+<p>
+If a linefeed character is read, a string
+containing all of the text up to (but not including) the linefeed
+character is returned, and the port is updated to point just past the
+linefeed character. If an end of file is
+encountered before any linefeed character is read, but some characters
+have been read and decoded as characters, a string containing
+those characters is returned. If an end of file is encountered before
+any characters are read, the end-of-file object is
+returned.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The end-of-line style, if not <tt>none</tt>, will cause all line
+endings to be read as linefeed characters.  See
+section&nbsp;<a href="#node_sec_8.2.4">8.2.4</a>.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_708"></a>get-datum<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads an external representation from <i>textual-input-port</i> and returns the
+datum it represents.  The <tt>get-datum</tt> procedure returns the next
+datum that can be parsed from the given <i>textual-input-port</i>, updating
+<i>textual-input-port</i> to point exactly past the end of the external
+representation of the object.</p>
+<p>
+Any &lt;interlexeme space&gt;
+(see report section&nbsp;on &#8220;Lexical syntax&#8221;) in
+the input is first skipped.  If an end of file occurs after the
+&lt;interlexeme space&gt;, the end-of-file object (see
+section&nbsp;<a href="#node_sec_8.2.5">8.2.5</a>) is returned.</p>
+<p>
+If a character inconsistent with an external representation is
+encountered in the input, an exception with condition types
+<tt>&amp;lexical</tt> and <tt>&amp;i/o-read</tt> is raised.
+Also, if the end of file is encountered
+after the beginning of an external representation, but the external
+representation is incomplete and therefore cannot be parsed, an exception
+with condition types <tt>&amp;lexical</tt> and <tt>&amp;i/o-read</tt> is raised.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.10"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.10">8.2.10&nbsp;&nbsp;Output ports</a></h3>
+<p>An output port is a sink to which bytes or characters are written.
+The written data may control
+external devices or may produce files and other objects that may
+subsequently be opened for input.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_710"></a>output-port?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if the argument is an output port (or a
+combined input and output port), <tt>#f</tt> otherwise.
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_712"></a>flush-output-port<i> output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Flushes any buffered output from the buffer of <i>output-port</i> to the
+underlying file, device, or object. The <tt>flush-output-port</tt>
+procedure returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_714"></a>output-port-buffer-mode<i> output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the symbol that represents the buffer mode of
+<i>output-port</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_716"></a>open-file-output-port<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_718"></a>open-file-output-port<i> filename file-options</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(open-file-output-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>)</tt><br>
+<div align=left><tt>(open-file-output-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>&nbsp;<i>maybe-transcoder</i>)</tt><p>
+<i>Maybe-transcoder</i> must be either a transcoder or <tt>#f</tt>.</p>
+<p>
+The <tt>open-file-output-port</tt> procedure returns an output port for the named file.</p>
+<p>
+The <i>file-options</i> argument, which may determine
+various aspects of the returned port (see section&nbsp;<a href="#node_sec_8.2.2">8.2.2</a>),
+defaults to the value of <tt>(file-options)</tt>.</p>
+<p>
+The <i>buffer-mode</i> argument, if supplied,
+must be one of the symbols that name a buffer mode.
+The <i>buffer-mode</i> argument defaults to <tt>block</tt>.</p>
+<p>
+If <i>maybe-transcoder</i> is a transcoder, it becomes the transcoder
+associated with the port.</p>
+<p>
+If <i>maybe-transcoder</i> is <tt>#f</tt> or absent,
+the port will be a binary port and will support the
+<tt>port-position</tt> and <tt>set-port-position!</tt>  operations.
+Otherwise the port will be a textual port, and whether it supports
+the <tt>port-position</tt> and <tt>set-port-position!</tt> operations
+is implementation-dependent (and possibly transcoder-dependent).
+</p>
+<p>   </p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_720"></a>open-bytevector-output-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_722"></a>open-bytevector-output-port<i> maybe-transcoder</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Maybe-transcoder</i> must be either a transcoder or <tt>#f</tt>.</p>
+<p>
+The <tt>open-bytevector-output-port</tt> procedure returns 
+two values: an output port and an extraction procedure.
+The output port accumulates the bytes written to it for
+later extraction by the procedure.</p>
+<p>
+If <i>maybe-transcoder</i> is a transcoder, it becomes
+the transcoder associated with the port.
+If <i>maybe-transcoder</i> is <tt>#f</tt> or absent,
+the port will be a binary port and will support the
+<tt>port-position</tt> and <tt>set-port-position!</tt>  operations.
+Otherwise the port will be a textual port, and whether it supports
+the <tt>port-position</tt> and <tt>set-port-position!</tt> operations
+is implementation-dependent (and possibly transcoder-dependent).</p>
+<p>
+The extraction procedure takes no arguments.
+When called, it returns a
+bytevector consisting of all the port&#8217;s accumulated bytes (regardless
+of the port&#8217;s current position), removes
+the accumulated bytes from the port, and resets the port&#8217;s position.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_724"></a>call-with-bytevector-output-port<i> proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(call-with-bytevector-output-port <i>proc</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>maybe-transcoder</i>)</tt><p>
+<i>Proc</i> must accept one argument.
+<i>Maybe-transcoder</i> must be either a transcoder or <tt>#f</tt>.</p>
+<p>
+The <tt>call-with-bytevector-output-port</tt> procedure creates an output
+port that accumulates the bytes written to it and calls <i>proc</i> with
+that output port as an argument. Whenever <i>proc</i> returns, a
+bytevector consisting of all of the port&#8217;s accumulated bytes (regardless
+of the port&#8217;s current position) is returned and
+the port is closed.</p>
+<p>
+The transcoder associated with the output port is determined
+as for a call to <tt>open-bytevector-output-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_726"></a>open-string-output-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns two values: a textual output port and an extraction procedure.
+The output port accumulates the characters written to it for
+later extraction by the procedure.</p>
+<p>
+The port may or may not have an associated transcoder; if it does, the
+transcoder is implementation-dependent.  The port should support the <tt>port-position</tt> and <tt>set-port-position!</tt> operations.</p>
+<p>
+The extraction procedure takes no arguments.
+When called, it returns a string consisting of all of the port&#8217;s
+accumulated characters (regardless of the current position),
+removes the accumulated characters from the port, and resets
+the port&#8217;s position.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_728"></a>call-with-string-output-port<i> proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> must accept one argument.
+The <tt>call-with-string-output-port</tt> procedure creates a textual output port that accumulates the
+characters written to it and calls <i>proc</i> with that output port
+as an argument.  Whenever <i>proc</i> returns, a string consisting of all
+of the port&#8217;s accumulated characters (regardless of the port&#8217;s current
+position) is returned and the port is closed.</p>
+<p>
+The port may or may not have an associated transcoder; if it does, the
+transcoder is implementation-dependent.  The port should support the
+<tt>port-position</tt> and <tt>set-port-position!</tt> operations.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_730"></a>standard-output-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_732"></a>standard-error-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a fresh binary output port connected to the standard output or
+standard error respectively.  Whether the port supports the <tt>port-position</tt> and <tt>set-port-position!</tt> operations is
+implementation-dependent.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_734"></a>current-output-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_736"></a>current-error-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These return default textual ports for regular output and error
+output.  Normally, these default ports are associated with standard
+output, and standard error, respectively.  The return value of <tt>current-output-port</tt> can be dynamically re-assigned using the <tt>with-output-to-file</tt> procedure from the <tt>(rnrs io simple (6))</tt>
+library (see section&nbsp;<a href="#node_sec_8.3">8.3</a>).  A port returned by
+one of these procedures may or may not have an associated transcoder;
+if it does, the transcoder is implementation-dependent.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-binary-output-port <i>id</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_738"></a><tt><br>
+
+<i>write!</i>&nbsp;<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created binary output port whose byte sink is
+an arbitrary algorithm represented by the <i>write!</i> procedure.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Write!</i> must be a procedure and should behave as specified
+below; it will be called by operations that perform binary output.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified in the description of
+<tt>make-custom-binary-input-port</tt>.</p>
+<p>
+</p>
+<ul>
+<li><p><tt>(<i>write!</i> <i>bytevector</i> <i>start</i> <i>count</i>)</tt></p>
+<p>
+<i>Start</i> and <i>count</i> will be non-negative exact
+integer objects,
+and <i>bytevector</i> will be a bytevector whose length is at least
+<i>start</i>  +  <i>count</i>.
+The <i>write!</i> procedure should write up to <i>count</i> bytes
+from <i>bytevector</i> starting at index <i>start</i> 
+to the byte sink.
+If <i>count</i> is 0, the <i>write!</i> procedure should
+have the effect of passing an end-of-file object to the byte sink.
+In any case, the <i>write!</i> procedure should return the number of
+bytes that it wrote, as an exact integer object.
+</p>
+</ul><p></p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the return
+values of <i>write!</i> only when it actually calls <i>write!</i> as part of
+an I/O operation requested by the program.  The implementation is not
+required to check that <i>write!</i> otherwise behaves as described.
+If it does not, however, the behavior of the resulting port is
+unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-textual-output-port <i>id</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_740"></a><tt><br>
+
+<i>write!</i>&nbsp;<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created textual output port whose byte sink is
+an arbitrary algorithm represented by the <i>write!</i> procedure.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Write!</i> must be a procedure and should behave as specified
+below; it will be called by operations that perform textual output.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified in the description of
+<tt>make-custom-textual-input-port</tt>.</p>
+<p>
+</p>
+<ul>
+<li><p><tt>(<i>write!</i> <i>string</i> <i>start</i> <i>count</i>)</tt></p>
+<p>
+<i>Start</i> and <i>count</i> will be non-negative exact
+integer objects,
+and <i>string</i> will be a string whose length is at least
+<i>start</i>  +  <i>count</i>.
+The <i>write!</i> procedure should write up to <i>count</i> characters
+from <i>string</i> starting at index <i>start</i> 
+to the character sink.
+If <i>count</i> is 0, the <i>write!</i> procedure should
+have the effect of passing an end-of-file object to the character sink.
+In any case, the <i>write!</i> procedure should return the number of
+characters that it wrote, as an exact integer object.
+</p>
+</ul><p></p>
+<p>
+The port may or may not have an associated transcoder; if it does, the
+transcoder is implementation-dependent.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the return
+values of <i>write!</i> only when it actually calls <i>write!</i> as part of
+an I/O operation requested by the program.  The implementation is not
+required to check that <i>write!</i> otherwise behaves as described.
+If it does not, however, the behavior of the resulting port is
+unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.11"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.11">8.2.11&nbsp;&nbsp;Binary output</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_742"></a>put-u8<i> binary-output-port octet</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Writes <i>octet</i> to the output port and returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_744"></a>put-bytevector<i> binary-output-port bytevector</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_746"></a>put-bytevector<i> binary-output-port bytevector start</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(put-bytevector <i>binary-output-port</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<tt><br>
+
+<i>bytevector</i>&nbsp;<i>start</i>&nbsp;<i>count</i>)</tt><p>
+<i>Start</i> and <i>count</i> must be non-negative exact
+integer objects that default to 0 and <tt>(bytevector-length <i>bytevector</i>)</tt>
+ <tt>-</tt>  <i>start</i>, respectively. <i>Bytevector</i> must have a length of at
+least <i>start</i>  +  <i>count</i>.  The <tt>put-bytevector</tt> procedure writes
+the <i>count</i> bytes of the bytevector <i>bytevector</i> starting at index
+<i>start</i> to the output port.  The <tt>put-bytevector</tt> procedure
+returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.12"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.12">8.2.12&nbsp;&nbsp;Textual output</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_748"></a>put-char<i> textual-output-port char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Writes <i>char</i> to the port. The <tt>put-char</tt> procedure returns
+unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_750"></a>put-string<i> textual-output-port string</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_752"></a>put-string<i> textual-output-port string start</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_754"></a>put-string<i> textual-output-port string start count</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Start</i> and <i>count</i> must be non-negative exact
+integer objects.  <i>String</i> must have a length of at least <i>start</i>  + 
+<i>count</i>.  <i>Start</i> defaults to 0.  <i>Count</i> defaults to
+<tt>(string-length <i>string</i>)</tt>  <tt>-</tt>  <i>start</i>.  The <tt>put-string</tt> procedure writes the
+<i>count</i> characters of <i>string</i> starting at
+index <i>start</i> to the port.  The <tt>put-string</tt> procedure
+returns unspecified values.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_756"></a>put-datum<i> textual-output-port datum</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Datum</i> should be a datum value.  The <tt>put-datum</tt>
+procedure writes an external representation of <i>datum</i> to
+<i>textual-output-port</i>.  The specific external representation is
+implementation-dependent.  However, whenever possible, an
+implementation should produce a representation for which <tt>get-datum</tt>, when reading the representation, will return an object
+equal (in the sense of <tt>equal?</tt>) to <i>datum</i>.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Not all datums may allow producing an external representation for which
+<tt>get-datum</tt> will produce an object that is equal to the
+original.  Specifically, NaNs contained in <i>datum</i> may make
+this impossible.
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The <tt>put-datum</tt> procedure merely writes the external
+representation, but no trailing delimiter.  If <tt>put-datum</tt> is
+used to write several subsequent external representations to an
+output port, care should be taken to delimit them properly so they can
+be read back in by subsequent calls to <tt>get-datum</tt>.
+</blockquote>
+<p></p>
+<p>
+</p>
+<a name="node_sec_8.2.13"></a>
+<h3 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.2.13">8.2.13&nbsp;&nbsp;Input/output ports</a></h3>
+<p><div style="height: -9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt"></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_758"></a>open-file-input/output-port<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_760"></a>open-file-input/output-port<i> filename file-options</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(open-file-input/output-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>)</tt><br>
+<div align=left><tt>(open-file-input/output-port <i>filename</i></tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<tt>&nbsp;&nbsp;&nbsp;<i>file-options</i>&nbsp;<i>buffer-mode</i>&nbsp;<i>transcoder</i>)</tt><p>
+Returns a single port that is both an input port and an
+output port for the named file.
+The optional arguments default as described in the specification
+of <tt>open-file-output-port</tt>.
+If the input/output port supports <tt>port-position</tt> and/or
+<tt>set-port-position!</tt>, the same port position is used
+for both input and output.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-binary-input/output-port</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_762"></a><tt><br>
+
+<i>id</i>&nbsp;<i>read!</i>&nbsp;<i>write!</i>&nbsp;<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created binary input/output port whose
+byte source and sink are
+arbitrary algorithms represented by the <i>read!</i> and <i>write!</i>
+procedures.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Read!</i> and <i>write!</i> must be procedures,
+and should behave as specified for the
+<tt>make-custom-binary-input-port</tt> and
+<tt>make-custom-binary-output-port</tt> procedures.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified in the description of
+<tt>make-custom-binary-input-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(make-custom-textual-input/output-port</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_764"></a><tt><br>
+
+<i>id</i>&nbsp;<i>read!</i>&nbsp;<i>write!</i>&nbsp;<i>get-position</i>&nbsp;<i>set-position!</i>&nbsp;<i>close</i>)</tt><p>
+Returns a newly created textual input/output port whose
+textual source and sink are
+arbitrary algorithms represented by the <i>read!</i> and <i>write!</i>
+procedures.
+<i>Id</i> must be a string naming the new port,
+provided for informational purposes only.
+<i>Read!</i> and <i>write!</i> must be procedures,
+and should behave as specified for the
+<tt>make-custom-textual-input-port</tt> and
+<tt>make-custom-textual-output-port</tt> procedures.</p>
+<p>
+Each of the remaining arguments may be <tt>#f</tt>; if any of
+those arguments is not <tt>#f</tt>, it must be a procedure and
+should behave as specified in the description of
+<tt>make-custom-textual-input-port</tt>.
+</p>
+<p></p>
+<p>
+
+</p>
+<a name="node_sec_8.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_8.3">8.3&nbsp;&nbsp;Simple I/O</a></h2>
+<p></p>
+<p>
+This section describes the <tt>(rnrs io simple (6))</tt><a name="node_idx_766"></a>library, which
+provides a somewhat more convenient interface for performing textual
+I/O on ports.  This library implements most of the 
+I/O procedures of the previous revision of this report&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_8">8</a>].</p>
+<p>
+The ports created by the procedures of this library are textual ports
+associated implementation-dependent transcoders.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_768"></a>eof-object<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_770"></a>eof-object?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are the same as <tt>eof-object</tt> and <tt>eof-object?</tt> from the
+<tt>(rnrs ports (6))</tt> library.<a name="node_idx_772"></a><a name="node_idx_774"></a></p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_776"></a>call-with-input-file<i> filename proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_778"></a>call-with-output-file<i> filename proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument.
+These procedures open the file named by <i>filename</i> for input or
+for output, with no specified file options, and call <i>proc</i> with
+the obtained port as an argument.  If <i>proc</i> returns, the
+port is closed automatically and the values returned by <i>proc</i> are
+returned. If <i>proc</i> does not return, the port is not
+closed automatically, unless it is possible to prove that the port
+will never again be used for an I/O operation.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_780"></a>input-port?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_782"></a>output-port?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are the same as the <tt>input-port?</tt> and <tt>output-port?</tt>
+procedures in the <tt>(rnrs io ports (6))</tt> library.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_784"></a>current-input-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_786"></a>current-output-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_788"></a>current-error-port<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These are the same as the <tt>current-input-port</tt><a name="node_idx_790"></a>, <tt>current-output-port</tt><a name="node_idx_792"></a>, and <tt>current-error-port</tt><a name="node_idx_794"></a>procedures from
+the <tt>(rnrs io ports (6))</tt> library.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_796"></a>with-input-from-file<i> filename thunk</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_798"></a>with-output-to-file<i> filename thunk</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Thunk</i> must be a procedure and must accept zero arguments.  The
+file is opened for input or output using empty file options, and
+<i>thunk</i> is called with no arguments.  During the dynamic extent of
+the call to <i>thunk</i>, the obtained port is made the value returned
+by <tt>current-input-port</tt> or <tt>current-output-port</tt> procedures;
+the previous default values are reinstated when the dynamic extent is
+exited.  When <i>thunk</i> returns, the port is closed automatically.
+The values
+returned by <i>thunk</i> are returned.  If an escape procedure is used
+to escape back into the call to <i>thunk</i> after <i>thunk</i> is
+returned, the behavior is unspecified.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_800"></a>open-input-file<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Opens <i>filename</i> for input, with empty file options, and returns
+the obtained port.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_802"></a>open-output-file<i> filename</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Opens <i>filename</i> for output, with empty file options, and
+returns the obtained port.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_804"></a>close-input-port<i> input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_806"></a>close-output-port<i> output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Closes <i>input-port</i> or <i>output-port</i>, respectively.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_808"></a>read-char<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_810"></a>read-char<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads from <i>textual-input-port</i>,
+blocking as necessary until a character
+is available from <i>textual-input-port</i>,
+or the data that are available cannot
+be the prefix of any valid encoding, or an end of file is reached.</p>
+<p>
+If a complete character is available before the next end of file, <tt>read-char</tt> returns that character, and updates the input port to
+point past that character. If an end of file is
+reached before any data are read, <tt>read-char</tt> returns the
+end-of-file object.</p>
+<p>
+If <i>textual-input-port</i> is omitted, it defaults to the value returned by
+<tt>current-input-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_812"></a>peek-char<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_814"></a>peek-char<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This is the same as <tt>read-char</tt>, but does not consume any data
+from the port.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_816"></a>read<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_818"></a>read<i> textual-input-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Reads an external representation from <i>textual-input-port</i>
+and returns the datum it
+represents.  The <tt>read</tt> procedure operates in the same way as 
+<tt>get-datum</tt>, see section&nbsp;<a href="#node_sec_8.2.9">8.2.9</a>.</p>
+<p>
+If <i>textual-input-port</i> is omitted, it defaults to the value returned by
+<tt>current-input-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_820"></a>write-char<i> char</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_822"></a>write-char<i> char textual-output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Writes an encoding of the character <i>char</i> to the
+<i>textual-output-port</i>, and returns unspecified values.</p>
+<p>
+If <i>textual-output-port</i> is omitted, it defaults to the value returned by
+<tt>current-output-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_824"></a>newline<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_826"></a>newline<i> textual-output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+This is equivalent to using <tt>write-char</tt> to write
+<tt>#<tt>\</tt>linefeed</tt>
+to <i>textual-output-port</i>.</p>
+<p>
+If <i>textual-output-port</i> is omitted, it defaults to the value returned by
+<tt>current-output-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_828"></a>display<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_830"></a>display<i> obj textual-output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Writes a representation of <i>obj</i> to the given <i>textual-output-port</i>.
+Strings that appear in
+the written representation are not enclosed in doublequotes, and no
+characters are escaped within those strings.  Character objects appear
+in the representation as if written by <tt>write-char</tt> instead of by
+<tt>write</tt>.  The <tt>display</tt> procedure returns unspecified values.  The
+<i>textual-output-port</i> argument may be omitted, in which case it defaults
+to the value returned by <tt>current-output-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_832"></a>write<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_834"></a>write<i> obj textual-output-port</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Writes the external representation of <i>obj</i> to <i>textual-output-port</i>.
+The <tt>write</tt>
+procedure operates in the same way as <tt>put-datum</tt>; see
+section&nbsp;<a href="#node_sec_8.2.12">8.2.12</a>.</p>
+<p>
+If <i>textual-output-port</i> is omitted, it defaults to the value returned by
+<tt>current-output-port</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p>
+      </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-8.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-10.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

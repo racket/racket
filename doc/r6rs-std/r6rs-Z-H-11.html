@@ -1,0 +1,106 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-10.html">previous</a></span><span>, <a href="r6rs-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_8"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_8">Chapter 8</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_8">Top-level programs</a></h1>
+<p></p>
+<p>
+A <a name="node_idx_290"></a><em>top-level program</em> specifies an entry point for defining and running
+a Scheme program.  A top-level program specifies a set of libraries to import and
+code to run.  Through the imported libraries, whether directly or through the
+transitive closure of importing, a top-level program defines a complete Scheme
+program.</p>
+<p>
+</p>
+<a name="node_sec_8.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_8.1">8.1&nbsp;&nbsp;Top-level program syntax</a></h2>
+<p></p>
+<p>
+A top-level program is a delimited piece of text, typically a file, that 
+has the following form:
+</p>
+
+<tt>&lt;import&nbsp;form&gt;&nbsp;&lt;top-level&nbsp;body&gt;<p></tt>
+An &lt;import form&gt; has the following form:
+</p>
+
+<tt>(import&nbsp;&lt;import&nbsp;spec&gt;&nbsp;<tt>...</tt>)<p></tt>
+A &lt;top-level body&gt; has the following form:
+</p>
+
+<tt>&lt;top-level&nbsp;body&nbsp;form&gt;&nbsp;<tt>...</tt><p></tt>
+A &lt;top-level body form&gt; is either a &lt;definition&gt; or an
+&lt;expression&gt;.</p>
+<p>
+The &lt;import form&gt; is identical to the import clause in
+libraries (see section&nbsp;<a href="r6rs-Z-H-10.html#node_sec_7.1">7.1</a>), 
+and specifies a set of libraries to import.  A &lt;top-level 
+body&gt; is like a &lt;library body&gt; (see
+section&nbsp;<a href="r6rs-Z-H-10.html#node_sec_7.1">7.1</a>), except that 
+definitions and expressions may occur in any order.  Thus, the syntax
+specified by &lt;top-level body form&gt; refers to the result of macro
+expansion.</p>
+<p>
+When uses of <tt>begin</tt>, <tt>let-syntax</tt>, or <tt>letrec-syntax</tt>
+from the <tt>(rnrs base (6))</tt> library
+occur in a top-level body prior to the first
+expression, they are spliced into the body; see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.7">11.4.7</a>.
+Some or all of the body, including portions wrapped in <tt>begin</tt>,
+<tt>let-syntax</tt>, or <tt>letrec-syntax</tt>
+forms, may be specified by a syntactic abstraction
+(see section&nbsp;<a href="r6rs-Z-H-12.html#node_sec_9.2">9.2</a>).</p>
+<p>
+</p>
+<a name="node_sec_8.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_8.2">8.2&nbsp;&nbsp;Top-level program semantics</a></h2>
+<p>A top-level program is executed by treating the program similarly to a library, and
+evaluating its definitions and expressions.
+The semantics of a top-level body may be roughly explained by
+a simple translation into a library body: 
+Each &lt;expression&gt; that appears before a
+definition in
+the top-level body is converted into a dummy definition 
+</p>
+
+<tt>(define&nbsp;&lt;variable&gt;&nbsp;(begin&nbsp;&lt;expression&gt;&nbsp;&lt;unspecified&gt;))<p></tt>
+where &lt;variable&gt; is a fresh identifier and &lt;unspecified&gt;
+is a side-effect-free expression returning an unspecified value.
+(It is generally impossible to determine which forms are 
+definitions and expressions without concurrently expanding the body, so
+the actual translation is somewhat more complicated; see
+chapter&nbsp;<a href="r6rs-Z-H-13.html#node_chap_10">10</a>.)</p>
+<p>
+On platforms that support it, a top-level program may access its command line 
+by calling the <tt>command-line</tt> procedure (see library 
+section&nbsp;on &#8220;Command-line access and exit values&#8221;).</p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-10.html">previous</a></span><span>, <a href="r6rs-Z-H-12.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

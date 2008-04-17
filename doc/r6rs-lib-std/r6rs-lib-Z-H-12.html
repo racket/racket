@@ -1,0 +1,1200 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-11.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-13.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_11"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_11">Chapter 11</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_11">Arithmetic</a></h1>
+<p>
+<a name="node_idx_850"></a></p>
+<p>
+This chapter describes Scheme&#8217;s libraries for more specialized
+numerical operations: fixnum and flonum arithmetic, as well as bitwise
+operations on exact integer objects.  </p>
+<p>
+</p>
+<a name="node_sec_11.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_11.1">11.1&nbsp;&nbsp;Bitwise operations</a></h2>
+<p>A number of procedures operate on the binary two&#8217;s-complement
+representations of exact integer objects: Bit positions within an
+exact integer object are counted from the right, i.e. bit 0 is the
+least significant bit.  Some procedures allow extracting <a name="node_idx_852"></a><em>bit
+fields</em>, i.e., number objects representing subsequences of the
+binary representation of an exact integer object.  Bit fields are
+always positive, and always defined using a finite number of bits.</p>
+<p>
+</p>
+<a name="node_sec_11.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_11.2">11.2&nbsp;&nbsp;Fixnums</a></h2>
+<p></p>
+<p>
+Every implementation must define its fixnum range as a closed
+interval
+</p>
+<div align=left><img src="r6rs-lib-Z-G-4.gif" border="0" alt="[r6rs-lib-Z-G-4.gif]"></div><p>
+such that <em>w</em> is a (mathematical) integer <em>w</em> &ge; 24.  Every
+mathematical integer within an implementation&#8217;s fixnum range must
+correspond to an exact integer object that is representable within the
+implementation.
+A fixnum is an exact integer object whose value lies within this
+fixnum range.</p>
+<p>
+This section describes the <tt>(rnrs arithmetic fixnums (6))</tt><a name="node_idx_854"></a>library,
+which defines various operations on fixnums.
+Fixnum operations perform integer arithmetic on their fixnum
+arguments, but raise an exception with condition type
+<tt>&amp;implementation-restriction</tt> if the result is not a fixnum.</p>
+<p>
+This section uses <i>fx</i>, <i>fx<sub>1</sub></i>, <i>fx<sub>2</sub></i>, etc., as parameter
+names for arguments that must be fixnums.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_856"></a>fixnum?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is an exact
+integer object within the fixnum range, <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_858"></a>fixnum-width<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_860"></a>least-fixnum<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_862"></a>greatest-fixnum<i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return <em>w</em>,
+ <tt>-</tt> 2<sup><em>w</em><tt>-</tt>1</sup> and 2<sup><em>w</em><tt>-</tt>1</sup>  <tt>-</tt>  1: the
+width, minimum and the maximum value of the fixnum range, respectively.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_864"></a>fx=?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_866"></a>fx&gt;?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_868"></a>fx&lt;?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_870"></a>fx&gt;=?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_872"></a>fx&lt;=?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return <tt>#t</tt> if their arguments are (respectively):
+equal, monotonically increasing, monotonically decreasing,
+monotonically nondecreasing, or monotonically nonincreasing,
+<tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_874"></a>fxzero?<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_876"></a>fxpositive?<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_878"></a>fxnegative?<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_880"></a>fxodd?<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_882"></a>fxeven?<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These numerical predicates test a fixnum for a particular property,
+returning <tt>#t</tt> or <tt>#f</tt>.  The five properties tested by
+these procedures are: whether the number object is zero, greater than zero,
+less than zero, odd, or even.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_884"></a>fxmax<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_886"></a>fxmin<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the maximum or minimum of their arguments.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_888"></a>fx+<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_890"></a>fx*<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the sum or product of their arguments,
+provided that sum or product is a fixnum.  An exception with condition
+type <tt>&amp;implementation-restriction</tt> is raised if
+that sum or product is not a fixnum.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_892"></a>fx-<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_894"></a>fx-<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+With two arguments, this procedure returns the difference
+<i>fx<sub>1</sub></i> <tt>-</tt> <i>fx<sub>2</sub></i>, provided that difference is a fixnum.</p>
+<p>
+With one argument, this procedure returns the additive
+inverse of its argument, provided that integer object is a
+fixnum.</p>
+<p>
+An exception with condition type <tt>&amp;assertion</tt> is raised if the
+mathematically correct result of this procedure is not a fixnum.</p>
+<p>
+</p>
+
+<tt>(fx-&nbsp;(least-fixnum))&nbsp;&nbsp;&nbsp;&nbsp;<tt>&nbsp;&amp;assertion</tt>&nbsp;<i>exception</i><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_896"></a>fxdiv-and-mod<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_898"></a>fxdiv<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_900"></a>fxmod<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_902"></a>fxdiv0-and-mod0<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_904"></a>fxdiv0<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_906"></a>fxmod0<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> must be nonzero.
+These procedures implement number-theoretic integer division and
+return the results of the corresponding mathematical operations
+specified in report section&nbsp;on &#8220;Integer division&#8221;.</p>
+<p>
+</p>
+
+<tt>(fxdiv&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>&nbsp;<i>fx<sub>2</sub></i><br>
+(fxmod&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>&nbsp;<i>fx<sub>2</sub></i><br>
+(fxdiv-and-mod&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>&nbsp;<i>fx<sub>2</sub></i>,&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>&nbsp;<i>fx<sub>2</sub></i><br>
+;&nbsp;two&nbsp;return&nbsp;values<br>
+(fxdiv0&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>sb0&nbsp;<i>fx<sub>2</sub></i><br>
+(fxmod0&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>sb0&nbsp;<i>fx<sub>2</sub></i><br>
+(fxdiv0-and-mod0&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>sb0&nbsp;<i>fx<sub>2</sub></i>,&nbsp;<i>fx<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>sb0&nbsp;<i>fx<sub>2</sub></i><br>
+;&nbsp;two&nbsp;return&nbsp;values<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_908"></a>fx+/carry<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the two fixnum results of the following computation:
+</p>
+
+<tt>(let*&nbsp;((s&nbsp;(+&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>&nbsp;<i>fx<sub>3</sub></i>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s0&nbsp;(mod0&nbsp;s&nbsp;(expt&nbsp;2&nbsp;(fixnum-width))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s1&nbsp;(div0&nbsp;s&nbsp;(expt&nbsp;2&nbsp;(fixnum-width)))))<br>
+&nbsp;&nbsp;(values&nbsp;s0&nbsp;s1))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_910"></a>fx-/carry<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the two fixnum results of the following computation:
+</p>
+
+<tt>(let*&nbsp;((d&nbsp;(-&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>&nbsp;<i>fx<sub>3</sub></i>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(d0&nbsp;(mod0&nbsp;d&nbsp;(expt&nbsp;2&nbsp;(fixnum-width))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(d1&nbsp;(div0&nbsp;d&nbsp;(expt&nbsp;2&nbsp;(fixnum-width)))))<br>
+&nbsp;&nbsp;(values&nbsp;d0&nbsp;d1))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_912"></a>fx*/carry<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the two fixnum results of the following computation:
+</p>
+
+<tt>(let*&nbsp;((s&nbsp;(+&nbsp;(*&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)&nbsp;<i>fx<sub>3</sub></i>))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s0&nbsp;(mod0&nbsp;s&nbsp;(expt&nbsp;2&nbsp;(fixnum-width))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s1&nbsp;(div0&nbsp;s&nbsp;(expt&nbsp;2&nbsp;(fixnum-width)))))<br>
+&nbsp;&nbsp;(values&nbsp;s0&nbsp;s1))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_914"></a>fxnot<i> <i>fx</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the unique fixnum that is congruent
+mod 2<sup><em>w</em></sup> to the one&#8217;s-complement of <i>fx</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_916"></a>fxand<i> <i>fx<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_918"></a>fxior<i> <i>fx<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_920"></a>fxxor<i> <i>fx<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the fixnum that is the bit-wise &#8220;and&#8221;,
+&#8220;inclusive or&#8221;, or &#8220;exclusive or&#8221; of the two&#8217;s complement
+representations of their arguments.  If they are passed only one
+argument, they return that argument.  If they are passed no arguments,
+they return the fixnum (either  <tt>-</tt> 1 or 0) that acts as identity for the
+operation.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_922"></a>fxif<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the fixnum that is the bit-wise &#8220;if&#8221; of the two&#8217;s complement
+representations of its arguments, i.e. for each bit, if it is 1 in
+<i>fx<sub>1</sub></i>, the corresponding bit in <i>fx<sub>2</sub></i> becomes the value of
+the corresponding bit in the result, and if it is 0, the corresponding
+bit in <i>fx<sub>3</sub></i> becomes the corresponding bit in the value of the
+result.  This is the fixnum result of the following computation:
+</p>
+
+<tt>(fxior&nbsp;(fxand&nbsp;<i>fx<sub>1</sub></i>&nbsp;<i>fx<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxand&nbsp;(fxnot&nbsp;<i>fx<sub>1</sub></i>)&nbsp;<i>fx<sub>3</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_924"></a>fxbit-count<i> <i>fx</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If <i>fx</i> is non-negative, this procedure returns the
+number of 1 bits in the two&#8217;s complement representation of <i>fx</i>.
+Otherwise it returns the result of the following computation:
+</p>
+
+<tt>(fxnot&nbsp;(fxbit-count&nbsp;(fxnot&nbsp;<i>ei</i>)))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_926"></a>fxlength<i> <i>fx</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the number of bits needed to represent <i>fx</i> if it is
+positive, and the number of bits needed to represent <tt>(fxnot
+<i>fx</i>)</tt> if it is negative, which is the fixnum result of the
+following computation:
+</p>
+
+<tt>(do&nbsp;((result&nbsp;0&nbsp;(+&nbsp;result&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bits&nbsp;(if&nbsp;(fxnegative?&nbsp;<i>fx</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxnot&nbsp;<i>fx</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>fx</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-right&nbsp;bits&nbsp;1)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((fxzero?&nbsp;bits)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_928"></a>fxfirst-bit-set<i> <i>fx</i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the index of the least significant 1 bit in
+the two&#8217;s complement representation of <i>fx</i>.  If 
+<i>fx</i> is 0, then  <tt>-</tt> 1 is returned.
+</p>
+
+<tt>(fxfirst-bit-set&nbsp;0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<br>
+(fxfirst-bit-set&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;0<br>
+(fxfirst-bit-set&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;2<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_930"></a>fxbit-set?<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> must be non-negative and less than <tt>(fixnum-width)</tt>.  The <tt>fxbit-set?</tt> procedure returns
+<tt>#t</tt> if the <i>fx<sub>2</sub></i>th bit is 1 in the two&#8217;s complement
+representation of <i>fx<sub>1</sub></i>, and <tt>#f</tt> otherwise.  This is the
+fixnum result of the following computation:
+</p>
+
+<tt>(not<br>
+&nbsp;&nbsp;(fxzero?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(fxand&nbsp;<i>fx<sub>1</sub></i><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left&nbsp;1&nbsp;<i>fx<sub>2</sub></i>))))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_932"></a>fxcopy-bit<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> must be non-negative and less than <tt>(fixnum-width)</tt>. <i>Fx<sub>3</sub></i> must be 0 or
+1.  The <tt>fxcopy-bit</tt> procedure returns the result of replacing
+the <i>fx<sub>2</sub></i>th bit of <i>fx<sub>1</sub></i> by <i>fx<sub>3</sub></i>, which is
+the result of the following computation:
+</p>
+
+<tt>(let*&nbsp;((mask&nbsp;(fxarithmetic-shift-left&nbsp;1&nbsp;<i>fx<sub>2</sub></i>)))<br>
+&nbsp;&nbsp;(fxif&nbsp;mask<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left&nbsp;<i>fx<sub>3</sub></i>&nbsp;<i>fx<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>fx<sub>1</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_934"></a>fxbit-field<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> and <i>fx<sub>3</sub></i> must be non-negative and less than
+<tt>(fixnum-width)</tt>.  Moreover, <i>fx<sub>2</sub></i> must be less than or
+equal to <i>fx<sub>3</sub></i>.  The <tt>fxbit-field</tt> procedure returns the
+number represented by the bits at the positions from <i>fx<sub>2</sub></i> (inclusive) to
+<i>fx<sub>3</sub></i> (exclusive), which is
+the fixnum result of the following computation:
+</p>
+
+<tt>(let*&nbsp;((mask&nbsp;(fxnot<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left&nbsp;-1&nbsp;<i>fx<sub>3</sub></i>))))<br>
+&nbsp;&nbsp;(fxarithmetic-shift-right&nbsp;(fxand&nbsp;<i>fx<sub>1</sub></i>&nbsp;mask)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>fx<sub>2</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_936"></a>fxcopy-bit-field<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <i>fx<sub>4</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> and <i>fx<sub>3</sub></i> must be non-negative and less than
+<tt>(fixnum-width)</tt>.  Moreover, <i>fx<sub>2</sub></i> must be less than or
+equal to <i>fx<sub>3</sub></i>.  The <tt>fxcopy-bit-field</tt> procedure returns
+the result of replacing in <i>fx<sub>1</sub></i> the bits at positions from
+<i>fx<sub>2</sub></i> (inclusive) to <i>fx<sub>3</sub></i> (exclusive) by the corresponding bits in <i>fx<sub>4</sub></i>, which
+is the fixnum result of the following computation:
+</p>
+
+<tt>(let*&nbsp;((to&nbsp;&nbsp;&nbsp;&nbsp;<i>fx<sub>1</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(start&nbsp;<i>fx<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(end&nbsp;&nbsp;&nbsp;<i>fx<sub>3</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(from&nbsp;&nbsp;<i>fx<sub>4</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask1&nbsp;(fxarithmetic-shift-left&nbsp;-1&nbsp;start))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask2&nbsp;(fxnot<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left&nbsp;-1&nbsp;end)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask&nbsp;(fxand&nbsp;mask1&nbsp;mask2)))<br>
+&nbsp;&nbsp;(fxif&nbsp;mask<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left&nbsp;from&nbsp;start)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_938"></a>fxarithmetic-shift<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+The absolute value of <i>fx<sub>2</sub></i> must be less than 
+<tt>(fixnum-width)</tt>.  If
+</p>
+
+<tt>(floor&nbsp;(*&nbsp;<i>fx<sub>1</sub></i>&nbsp;(expt&nbsp;2&nbsp;<i>fx<sub>2</sub></i>)))<p></tt>
+is a fixnum, then that fixnum is returned.  Otherwise an exception
+with condition type <tt>&amp;implementation-restriction</tt> is
+raised.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_940"></a>fxarithmetic-shift-left<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_942"></a>fxarithmetic-shift-right<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> must be non-negative, and less than <tt>(fixnum-width)</tt>.
+The <tt>fxarithmetic-shift-left</tt> procedure behaves the same as <tt>fxarithmetic-shift</tt>, and <tt>(fxarithmetic-shift-right <i>fx<sub>1</sub></i>
+<i>fx<sub>2</sub></i>)</tt> behaves the same as <tt>(fxarithmetic-shift <i>fx<sub>1</sub></i>
+(fx- <i>fx<sub>2</sub></i>))</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_944"></a>fxrotate-bit-field<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i> <i>fx<sub>4</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i>, <i>fx<sub>3</sub></i>, and <i>fx<sub>4</sub></i> must be non-negative
+and less than <tt>(fixnum-width)</tt>.  <i>Fx<sub>2</sub></i> must be less than or
+equal to <i>fx<sub>3</sub></i>. <i>Fx<sub>4</sub></i> must be less than the difference
+between <i>fx<sub>3</sub></i> and <i>fx<sub>2</sub></i>.  The <tt>fxrotate-bit-field</tt>
+procedure returns the result of cyclically permuting in <i>fx<sub>1</sub></i> the
+bits at positions from <i>fx<sub>2</sub></i> (inclusive) to <i>fx<sub>3</sub></i>
+(exclusive) by <i>fx<sub>4</sub></i> bits
+towards the more significant bits, which is the result of the
+following computation:
+</p>
+
+<tt>(let*&nbsp;((n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>fx<sub>1</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(start&nbsp;<i>fx<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(end&nbsp;&nbsp;&nbsp;<i>fx<sub>3</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(count&nbsp;<i>fx<sub>4</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(width&nbsp;(fx-&nbsp;end&nbsp;start)))<br>
+&nbsp;&nbsp;(if&nbsp;(fxpositive?&nbsp;width)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*&nbsp;((count&nbsp;(fxmod&nbsp;count&nbsp;width))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxbit-field&nbsp;n&nbsp;start&nbsp;end))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-left<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field0&nbsp;count))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxarithmetic-shift-right<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field0&nbsp;(fx-&nbsp;width&nbsp;count)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field&nbsp;(fxior&nbsp;field1&nbsp;field2)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fxcopy-bit-field&nbsp;n&nbsp;start&nbsp;end&nbsp;field))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n))<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_946"></a>fxreverse-bit-field<i> <i>fx<sub>1</sub></i> <i>fx<sub>2</sub></i> <i>fx<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Fx<sub>2</sub></i> and <i>fx<sub>3</sub></i> must be non-negative and less than
+<tt>(fixnum-width)</tt>.  Moreover, <i>fx<sub>2</sub></i> must be less than or
+equal to <i>fx<sub>3</sub></i>.  The <tt>fxreverse-bit-field</tt> procedure
+returns
+the fixnum obtained from <i>fx<sub>1</sub></i> by reversing the
+order of the bits at positions from <i>fx<sub>2</sub></i> (inclusive) to
+<i>fx<sub>3</sub></i> (exclusive).
+</p>
+
+<tt>(fxreverse-bit-field&nbsp;<tt>#</tt>b1010010&nbsp;1&nbsp;4)&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;88&nbsp;;&nbsp;<tt>#</tt>b1011000<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_11.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_11.3">11.3&nbsp;&nbsp;Flonums</a></h2>
+<p></p>
+<p>
+This section describes the <tt>(rnrs arithmetic flonums (6))</tt><a name="node_idx_948"></a>library.</p>
+<p>
+This section uses <i>fl</i>, <i>fl<sub>1</sub></i>, <i>fl<sub>2</sub></i>, etc., as
+parameter names for arguments that must be flonums, and <i>ifl</i>
+as a name for arguments that 
+must be integer-valued flonums, i.e., flonums for which the
+<tt>integer-valued?</tt> predicate returns true.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_950"></a>flonum?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is a flonum, <tt>#f</tt> otherwise.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_952"></a>real-&gt;flonum<i> x</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the best flonum representation of
+<i>x</i>.</p>
+<p>
+The value returned is a flonum that is numerically closest to the
+argument.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+If flonums are represented in binary floating point, then
+implementations should break ties by preferring
+the floating-point representation whose least significant bit is
+zero.
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_954"></a>fl=?<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <i>fl<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_956"></a>fl&lt;?<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <i>fl<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_958"></a>fl&lt;=?<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <i>fl<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_960"></a>fl&gt;?<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <i>fl<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_962"></a>fl&gt;=?<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <i>fl<sub>3</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return <tt>#t</tt> if their arguments are (respectively):
+equal, monotonically increasing, monotonically decreasing,
+monotonically nondecreasing, or monotonically nonincreasing,
+<tt>#f</tt> otherwise.  These
+predicates must be transitive.</p>
+<p>
+</p>
+
+<tt>(fl=&nbsp;+inf.0&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><br>
+(fl=&nbsp;-inf.0&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(fl=&nbsp;-inf.0&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><br>
+(fl=&nbsp;0.0&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#t</tt><br>
+(fl&lt;&nbsp;0.0&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(fl=&nbsp;+nan.0&nbsp;<i>fl</i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><br>
+(fl&lt;&nbsp;+nan.0&nbsp;<i>fl</i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;<tt>#f</tt><p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_964"></a>flinteger?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_966"></a>flzero?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_968"></a>flpositive?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_970"></a>flnegative?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_972"></a>flodd?<i> ifl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_974"></a>fleven?<i> ifl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_976"></a>flfinite?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_978"></a>flinfinite?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_980"></a>flnan?<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These numerical predicates test a flonum for a particular property,
+returning <tt>#t</tt> or <tt>#f</tt>.
+The <tt>flinteger?</tt> procedure tests whether the number object is an integer,
+<tt>flzero?</tt> tests whether
+it is <tt>fl=?</tt> to zero, <tt>flpositive?</tt> tests whether it is greater
+than zero, <tt>flnegative?</tt> tests whether it is less
+than zero, <tt>flodd?</tt> tests whether it is odd, 
+<tt>fleven?</tt> tests whether it is even,
+<tt>flfinite?</tt> tests whether it is not an infinity and not a NaN,
+<tt>flinfinite?</tt> tests whether it is an infinity, and
+<tt>flnan?</tt> tests whether it is a NaN.</p>
+<p>
+</p>
+
+<tt>(flnegative?&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(flfinite?&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(flfinite?&nbsp;5.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><br>
+(flinfinite?&nbsp;5.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#f</tt><br>
+(flinfinite?&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>#t</tt><p></tt></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>(flnegative? -0.0)</tt> must return <tt>#f</tt>,
+else it would lose the correspondence with
+<tt>(fl&lt; -0.0 0.0)</tt>, which is <tt>#f</tt>
+according to IEEE 754&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_7">7</a>].
+</blockquote>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_982"></a>flmax<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_984"></a>flmin<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the maximum or minimum of their arguments.
+They always return a NaN when one or more of the arguments is a NaN.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_986"></a>fl+<i> <i>fl<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_988"></a>fl*<i> <i>fl<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the flonum sum or product of their flonum
+arguments.  In general, they should return the flonum that best
+approximates the mathematical sum or product.  (For implementations
+that represent flonums using IEEE binary floating point, the
+meaning of &#8220;best&#8221; is defined by the IEEE standards.)</p>
+<p>
+</p>
+
+<tt>(fl+&nbsp;+inf.0&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+nan.0<br>
+(fl+&nbsp;+nan.0&nbsp;<i>fl</i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+nan.0<br>
+(fl*&nbsp;+nan.0&nbsp;<i>fl</i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+nan.0<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_990"></a>fl-<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_992"></a>fl-<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_994"></a>fl/<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_996"></a>fl/<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+With two or more arguments, these procedures return the flonum
+difference or quotient of their flonum arguments, associating to the
+left.  With one argument, however, they return the additive or
+multiplicative flonum inverse of their argument.  In general, they
+should return the flonum that best approximates the mathematical
+difference or quotient.  (For implementations that represent flonums
+using IEEE binary floating point, the meaning of &#8220;best&#8221; is
+reasonably well-defined by the IEEE standards.)</p>
+<p>
+</p>
+
+<tt>(fl-&nbsp;+inf.0&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+nan.0<p></tt></p>
+<p>
+For undefined quotients, <tt>fl/</tt> behaves as specified by the
+IEEE standards:</p>
+<p>
+</p>
+
+<tt>(fl/&nbsp;1.0&nbsp;0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;+inf.0<br>
+(fl/&nbsp;-1.0&nbsp;0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-inf.0<br>
+(fl/&nbsp;0.0&nbsp;0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;+nan.0<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_998"></a>flabs<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the absolute value of <i>fl</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1000"></a>fldiv-and-mod<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1002"></a>fldiv<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1004"></a>flmod<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1006"></a>fldiv0-and-mod0<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1008"></a>fldiv0<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1010"></a>flmod0<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures implement number-theoretic integer division and
+return the results of the corresponding mathematical operations
+specified in report section&nbsp;on &#8220;Integer division&#8221;.  For zero divisors, these
+procedures may return a NaN or some unspecified flonum.</p>
+<p>
+</p>
+
+<tt>(fldiv&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>&nbsp;<i>fl<sub>2</sub></i><br>
+(flmod&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>&nbsp;<i>fl<sub>2</sub></i><br>
+(fldiv-and-mod&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em>&nbsp;<i>fl<sub>2</sub></i>,&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em>&nbsp;<i>fl<sub>2</sub></i><br>
+;&nbsp;two&nbsp;return&nbsp;values<br>
+(fldiv0&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em><sub>0</sub>&nbsp;<i>fl<sub>2</sub></i><br>
+(flmod0&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em><sub>0</sub>&nbsp;<i>fl<sub>2</sub></i><br>
+(fldiv0-and-mod0&nbsp;<i>fl<sub>1</sub></i>&nbsp;<i>fl<sub>2</sub></i>)&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>d</em><em>i</em><em>v</em><sub>0</sub>&nbsp;<i>fl<sub>2</sub></i>,&nbsp;<i>fl<sub>1</sub></i>&nbsp;<em>m</em><em>o</em><em>d</em><sub>0</sub>&nbsp;<i>fl<sub>2</sub></i><br>
+;&nbsp;two&nbsp;return&nbsp;values<p></tt></p>
+<p>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1012"></a>flnumerator<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1014"></a>fldenominator<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the numerator or denominator of <i>fl</i>
+as a flonum; the result is computed as if <i>fl</i> was represented as
+a fraction in lowest terms.  The denominator is always positive.  The
+denominator of 0.0 is defined to be 1.0.
+</p>
+
+<tt>(flnumerator&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+inf.0<br>
+(flnumerator&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-inf.0<br>
+(fldenominator&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;1.0<br>
+(fldenominator&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;1.0<br>
+(flnumerator&nbsp;0.75)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;3.0&nbsp;;&nbsp;probably<br>
+(fldenominator&nbsp;0.75)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;4.0&nbsp;;&nbsp;probably<p></tt></p>
+<p>
+Implementations should implement following behavior:</p>
+<p>
+</p>
+
+<tt>(flnumerator&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-0.0<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1016"></a>flfloor<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1018"></a>flceiling<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1020"></a>fltruncate<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1022"></a>flround<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return integral flonums for flonum arguments that are
+not infinities or NaNs.  For such arguments, <tt>flfloor</tt> returns the
+largest integral flonum not larger than <i>fl</i>.  The <tt>flceiling</tt>
+procedure
+returns the smallest integral flonum not smaller than <i>fl</i>.
+The <tt>fltruncate</tt> procedure returns the integral flonum closest to <i>fl</i> whose
+absolute value is not larger than the absolute value of <i>fl</i>.
+The <tt>flround</tt> procedure returns the closest integral flonum to <i>fl</i>,
+rounding to even when <i>fl</i> represents a number halfway between two integers.</p>
+<p>
+Although infinities and NaNs are not integer objects, these procedures return
+an infinity when given an infinity as an argument, and a NaN when
+given a NaN:</p>
+<p>
+</p>
+
+<tt>(flfloor&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+inf.0<br>
+(flceiling&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-inf.0<br>
+(fltruncate&nbsp;+nan.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+nan.0<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1024"></a>flexp<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1026"></a>fllog<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1028"></a>fllog<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1030"></a>flsin<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1032"></a>flcos<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1034"></a>fltan<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1036"></a>flasin<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1038"></a>flacos<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1040"></a>flatan<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1042"></a>flatan<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures compute the usual transcendental functions.  
+The <tt>flexp</tt> procedure computes the base-<em>e</em> exponential of <i>fl</i>.
+The <tt>fllog</tt> procedure with a single argument computes the natural logarithm of
+<i>fl</i> (not the base ten logarithm); <tt>(fllog <i>fl<sub>1</sub></i>
+<i>fl<sub>2</sub></i>)</tt> computes the base-<i>fl<sub>2</sub></i> logarithm of <i>fl<sub>1</sub></i>.
+The <tt>flasin</tt>, <tt>flacos</tt>, and <tt>flatan</tt> procedures compute arcsine,
+arccosine, and arctangent, respectively.  <tt>(flatan <i>fl<sub>1</sub></i>
+<i>fl<sub>2</sub></i>)</tt> computes the arc tangent of <i>fl<sub>1</sub></i>/<i>fl<sub>2</sub></i>.</p>
+<p>
+See report
+section&nbsp;on &#8220;Transcendental functions&#8221; for the underlying
+mathematical operations.  In the event that these operations do not
+yield a real result for the given arguments, the result may be a NaN,
+or may be some unspecified flonum.</p>
+<p>
+Implementations that use IEEE binary floating-point arithmetic 
+should follow the relevant standards for these procedures.</p>
+<p>
+</p>
+
+<tt>(flexp&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;+inf.0<br>
+(flexp&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;0.0<br>
+(fllog&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;+inf.0<br>
+(fllog&nbsp;0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-inf.0<br>
+(fllog&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<i>unspecified</i><br>
+;&nbsp;if&nbsp;-0.0&nbsp;is&nbsp;distinguished<br>
+(fllog&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;+nan.0<br>
+(flatan&nbsp;-inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-1.5707963267948965<br>
+;&nbsp;approximately<br>
+(flatan&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;1.5707963267948965<br>
+;&nbsp;approximately<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1044"></a>flsqrt<i> fl</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the principal square root of <i>fl</i>. For  <tt>-</tt> 0.0,
+<tt>flsqrt</tt> should return  <tt>-</tt> 0.0; for other negative arguments,
+the result may be a NaN or some unspecified flonum.</p>
+<p>
+</p>
+
+<tt>(flsqrt&nbsp;+inf.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;+inf.0<br>
+(flsqrt&nbsp;-0.0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-0.0<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1046"></a>flexpt<i> <i>fl<sub>1</sub></i> <i>fl<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Either <i>fl<sub>1</sub></i> should be non-negative, or, if <i>fl<sub>1</sub></i> is
+negative, <i>fl<sub>2</sub></i> should be an integer object.
+The <tt>flexpt</tt> procedure returns <i>fl<sub>1</sub></i> raised to the power <i>fl<sub>2</sub></i>.  If <i>fl<sub>1</sub></i> is
+negative and <i>fl<sub>2</sub></i> is not an integer object, the result may be a
+NaN, or may be some unspecified flonum.  If <i>fl<sub>1</sub></i> is zero, then
+the result is zero.
+</p>
+<p></p>
+<p>
+</p>
+<p><a name="node_idx_1048"></a></p>
+<div align=left><tt><tt>&amp;no-infinities</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1050"></a>make-no-infinities-violation<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1052"></a>no-infinities-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<a name="node_idx_1054"></a><div align=left><tt><tt>&amp;no-nans</tt></tt>&nbsp;&nbsp;&nbsp;&nbsp;condition type&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1056"></a>make-no-nans-violation<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1058"></a>no-nans-violation?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These condition types could be defined by the following code:</p>
+<p>
+</p>
+
+<tt>(define-condition-type&nbsp;&amp;no-infinities<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;implementation-restriction<br>
+&nbsp;&nbsp;make-no-infinities-violation<br>
+&nbsp;&nbsp;no-infinities-violation?)<br>
+<br>
+(define-condition-type&nbsp;&amp;no-nans<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&amp;implementation-restriction<br>
+&nbsp;&nbsp;make-no-nans-violation&nbsp;no-nans-violation?)<p></tt></p>
+<p>
+These types describe that a program has executed an arithmetic
+operations that is specified to return an infinity or a NaN,
+respectively, on a Scheme implementation that is not able to represent
+the infinity or NaN.  (See report section&nbsp;on &#8220;Representability of infinities and NaNs&#8221;.)
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1060"></a>fixnum-&gt;flonum<i> fx</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns a flonum that is numerically closest to <i>fx</i>.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The result of this procedure may not be
+numerically equal to <i>fx</i>, because the fixnum precision
+may be greater than the flonum precision.
+</blockquote>
+<p></p>
+<p>
+</p>
+<a name="node_sec_11.4"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_11.4">11.4&nbsp;&nbsp;Exact bitwise arithmetic</a></h2>
+<p></p>
+<p>
+This section describes the <tt>(rnrs arithmetic bitwise (6))</tt><a name="node_idx_1062"></a>library.  The exact bitwise arithmetic provides generic operations on
+exact integer objects.  This section uses <i>ei</i>, <i>ei<sub>1</sub></i>, <i>ei<sub>2</sub></i>, etc.,
+as parameter names that must be exact integer objects.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1064"></a>bitwise-not<i> ei</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the exact integer object whose two&#8217;s complement representation is the
+one&#8217;s complement of the two&#8217;s complement representation of <i>ei</i>.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1066"></a>bitwise-and<i> <i>ei<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1068"></a>bitwise-ior<i> <i>ei<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1070"></a>bitwise-xor<i> <i>ei<sub>1</sub></i> <tt>...</tt></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+These procedures return the exact integer object that is the bit-wise
+&#8220;and&#8221;, &#8220;inclusive or&#8221;, or &#8220;exclusive or&#8221; of the two&#8217;s complement
+representations of their arguments.  If they are passed only one
+argument, they return that argument.  If they are passed no arguments,
+they return the integer object (either  <tt>-</tt> 1 or 0) that acts as identity for
+the operation.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1072"></a>bitwise-if<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the exact integer object that is the bit-wise &#8220;if&#8221; of the two&#8217;s complement
+representations of its arguments, i.e. for each bit, if it is 1 in
+<i>ei<sub>1</sub></i>, the corresponding bit in <i>ei<sub>2</sub></i> becomes the value of
+the corresponding bit in the result, and if it is 0, the corresponding
+bit in <i>ei<sub>3</sub></i> becomes the corresponding bit in the value of the
+result.
+This is the result of the following computation:
+</p>
+
+<tt>(bitwise-ior&nbsp;(bitwise-and&nbsp;<i>ei<sub>1</sub></i>&nbsp;<i>ei<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-and&nbsp;(bitwise-not&nbsp;<i>ei<sub>1</sub></i>)&nbsp;<i>ei<sub>3</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1074"></a>bitwise-bit-count<i> ei</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+If <i>ei</i> is non-negative, this procedure returns the number of
+1 bits in the two&#8217;s complement representation of <i>ei</i>.
+Otherwise it returns the result of the following computation:
+</p>
+
+<tt>(bitwise-not&nbsp;(bitwise-bit-count&nbsp;(bitwise-not&nbsp;<i>ei</i>)))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1076"></a>bitwise-length<i> ei</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the number of bits needed to represent <i>ei</i> if it is
+positive, and the number of bits needed to represent <tt>(bitwise-not
+<i>ei</i>)</tt> if it is negative, which is the exact integer object that
+is the result of the following computation:
+</p>
+
+<tt>(do&nbsp;((result&nbsp;0&nbsp;(+&nbsp;result&nbsp;1))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bits&nbsp;(if&nbsp;(negative?&nbsp;<i>ei</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-not&nbsp;<i>ei</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>ei</i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift&nbsp;bits&nbsp;-1)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;((zero?&nbsp;bits)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1078"></a>bitwise-first-bit-set<i> ei</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the index of the least significant 1
+bit in the two&#8217;s complement representation of <i>ei</i>.
+If <i>ei</i> is 0, then  <tt>-</tt> 1 is returned.
+</p>
+
+<tt>(bitwise-first-bit-set&nbsp;0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<br>
+(bitwise-first-bit-set&nbsp;1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;0<br>
+(bitwise-first-bit-set&nbsp;-4)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;2<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1080"></a>bitwise-bit-set?<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> must be non-negative.
+The <tt>bitwise-bit-set?</tt> procedure returns
+<tt>#t</tt> if the <i>ei<sub>2</sub></i>th bit is 1 in the two&#8217;s complement
+representation of <i>ei<sub>1</sub></i>, and <tt>#f</tt>
+otherwise.  This is the result of the following computation:
+</p>
+
+<tt>(not&nbsp;(zero?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-and<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;1&nbsp;<i>ei<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>ei<sub>1</sub></i>)))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1082"></a>bitwise-copy-bit<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> must be non-negative, and <i>ei<sub>3</sub></i>
+must be either 0 or 1.
+The <tt>bitwise-copy-bit</tt> procedure returns the result of replacing
+the <i>ei<sub>2</sub></i>th bit of <i>ei<sub>1</sub></i> by the <i>ei<sub>2</sub></i>th bit of <i>ei<sub>3</sub></i>, which is
+the result of the following computation:
+</p>
+
+<tt>(let*&nbsp;((mask&nbsp;(bitwise-arithmetic-shift-left&nbsp;1&nbsp;<i>ei<sub>2</sub></i>)))<br>
+&nbsp;&nbsp;(bitwise-if&nbsp;mask<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;<i>ei<sub>3</sub></i>&nbsp;<i>ei<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>ei<sub>1</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1084"></a>bitwise-bit-field<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> and <i>ei<sub>3</sub></i> must be non-negative, and
+<i>ei<sub>2</sub></i> must be less than or equal to <i>ei<sub>3</sub></i>.
+The <tt>bitwise-bit-field</tt> procedure returns the
+number represented by the bits at the positions from <i>ei<sub>2</sub></i>
+(inclusive) to <i>ei<sub>3</sub></i> (exclusive), which is
+the result of the following computation:
+</p>
+
+<tt>(let&nbsp;((mask<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-not<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;-1&nbsp;<i>ei<sub>3</sub></i>))))<br>
+&nbsp;&nbsp;(bitwise-arithmetic-shift-right<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-and&nbsp;<i>ei<sub>1</sub></i>&nbsp;mask)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<i>ei<sub>2</sub></i>))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1086"></a>bitwise-copy-bit-field<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i> <i>ei<sub>4</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> and <i>ei<sub>3</sub></i> must be non-negative,
+and <i>ei<sub>2</sub></i> must be less than or equal to <i>ei<sub>3</sub></i>.
+The <tt>bitwise-copy-bit-field</tt> procedure returns
+the result of replacing in <i>ei<sub>1</sub></i> the bits at positions from
+<i>ei<sub>2</sub></i> (inclusive) to <i>ei<sub>3</sub></i> (exclusive) by the corresponding bits in <i>ei<sub>4</sub></i>, which
+is the fixnum result of the following computation:
+</p>
+
+<tt>(let*&nbsp;((to&nbsp;&nbsp;&nbsp;&nbsp;<i>ei<sub>1</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(start&nbsp;<i>ei<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(end&nbsp;&nbsp;&nbsp;<i>ei<sub>3</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(from&nbsp;&nbsp;<i>ei<sub>4</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;-1&nbsp;start))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask2<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-not<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;-1&nbsp;end)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mask&nbsp;(bitwise-and&nbsp;mask1&nbsp;mask2)))<br>
+&nbsp;&nbsp;(bitwise-if&nbsp;mask<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-arithmetic-shift-left&nbsp;from<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;start)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;to))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1088"></a>bitwise-arithmetic-shift<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns the result of the following computation:
+</p>
+
+<tt>(floor&nbsp;(*&nbsp;<i>ei<sub>1</sub></i>&nbsp;(expt&nbsp;2&nbsp;<i>ei<sub>2</sub></i>)))<p></tt></p>
+<p>
+Examples:
+</p>
+
+<tt>(bitwise-arithmetic-shift&nbsp;-6&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<br>
+(bitwise-arithmetic-shift&nbsp;-5&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-3<br>
+(bitwise-arithmetic-shift&nbsp;-4&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-2<br>
+(bitwise-arithmetic-shift&nbsp;-3&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-2<br>
+(bitwise-arithmetic-shift&nbsp;-2&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-1<br>
+(bitwise-arithmetic-shift&nbsp;-1&nbsp;-1)&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;-1<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1090"></a>bitwise-arithmetic-shift-left<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1092"></a>bitwise-arithmetic-shift-right<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> must be non-negative.  The <tt>bitwise-arithmetic-shift-left</tt> procedure returns the same result as <tt>bitwise-arithmetic-shift</tt>, and
+</p>
+
+<tt>(bitwise-arithmetic-shift-right&nbsp;<i>ei<sub>1</sub></i>&nbsp;<i>ei<sub>2</sub></i>)<p></tt>
+returns the same result as 
+</p>
+
+<tt>(bitwise-arithmetic-shift&nbsp;<i>ei<sub>1</sub></i>&nbsp;(-&nbsp;<i>ei<sub>2</sub></i>)).<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1094"></a>bitwise-rotate-bit-field<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i> <i>ei<sub>4</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i>, <i>ei<sub>3</sub></i>, <i>ei<sub>4</sub></i> must be non-negative, 
+<i>ei<sub>2</sub></i> must be less than or equal to <i>ei<sub>3</sub></i>, and
+<i>ei<sub>4</sub></i> must be non-negative.
+procedure returns the result of cyclically permuting in <i>ei<sub>1</sub></i> the
+bits at positions from <i>ei<sub>2</sub></i> (inclusive) to <i>ei<sub>3</sub></i> (exclusive) by <i>ei<sub>4</sub></i> bits
+towards the more significant bits, which is the result of the
+following computation:
+</p>
+
+<tt>(let*&nbsp;((n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<i>ei<sub>1</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(start&nbsp;<i>ei<sub>2</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(end&nbsp;&nbsp;&nbsp;<i>ei<sub>3</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(count&nbsp;<i>ei<sub>4</sub></i>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(width&nbsp;(-&nbsp;end&nbsp;start)))<br>
+&nbsp;&nbsp;(if&nbsp;(positive?&nbsp;width)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let*&nbsp;((count&nbsp;(mod&nbsp;count&nbsp;width))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-bit-field&nbsp;n&nbsp;start&nbsp;end))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field1&nbsp;(bitwise-arithmetic-shift-left<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field0&nbsp;count))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field2&nbsp;(bitwise-arithmetic-shift-right<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field0<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&nbsp;width&nbsp;count)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(field&nbsp;(bitwise-ior&nbsp;field1&nbsp;field2)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(bitwise-copy-bit-field&nbsp;n&nbsp;start&nbsp;end&nbsp;field))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1096"></a>bitwise-reverse-bit-field<i> <i>ei<sub>1</sub></i> <i>ei<sub>2</sub></i> <i>ei<sub>3</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Ei<sub>2</sub></i> and <i>ei<sub>3</sub></i> must be non-negative, and
+<i>ei<sub>2</sub></i> must be less than or equal to <i>ei<sub>3</sub></i>.  The <tt>bitwise-reverse-bit-field</tt> procedure returns
+the result obtained from <i>ei<sub>1</sub></i> by reversing the
+order of the bits at positions from <i>ei<sub>2</sub></i> (inclusive) to
+<i>ei<sub>3</sub></i> (exclusive).
+</p>
+
+<tt>(bitwise-reverse-bit-field&nbsp;<tt>#</tt>b1010010&nbsp;1&nbsp;4)&nbsp;&nbsp;&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;88&nbsp;;&nbsp;<tt>#</tt>b1011000<p></tt>
+</p>
+<p></p>
+<p>
+   </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-11.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-13.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

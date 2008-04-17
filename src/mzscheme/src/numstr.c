@@ -97,14 +97,14 @@ void scheme_init_numstr(Scheme_Env *env)
 						      3, 6),
 			     env);
   scheme_add_global_constant("floating-point-bytes->real", 
-			     scheme_make_folding_prim(bytes_to_real,
+			     scheme_make_prim_w_arity(bytes_to_real,
 						      "floating-point-bytes->real",
-						      1, 2, 1),
+						      1, 4),
 			     env);
   scheme_add_global_constant("real->floating-point-bytes",
 			     scheme_make_prim_w_arity(real_to_bytes,
 						      "real->floating-point-bytes",
-						      2, 4),
+						      2, 5),
 			     env);
   scheme_add_global_constant("system-big-endian?",
 			     scheme_make_prim_w_arity(system_big_endian_p,
@@ -1944,17 +1944,31 @@ static Scheme_Object *integer_to_bytes(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
 {
-  int slen;
+  long offset = 0, slen;
   char *str, buf[8];
   int bigend = MZ_IS_BIG_ENDIAN;
 
   if (!SCHEME_BYTE_STRINGP(argv[0]))
-    slen = 0;
-  else
+    scheme_wrong_type("integer-bytes->integer", "byte string", 0, argc, argv);
+
+  if (argc > 2) {
+    long start, finish;
+
+    scheme_get_substring_indices("integer-bytes->integer", argv[0],
+                                 argc, argv,
+                                 2, 3, &start, &finish);
+
+    offset = start;
+    slen = finish - start;
+  } else {
+    offset = 0;
     slen = SCHEME_BYTE_STRLEN_VAL(argv[0]);
+  }
 
   if ((slen != 4) && (slen != 8))
-    scheme_wrong_type("floating-point-bytes->real", "byte string (4 or 8 bytes)", 0, argc, argv);
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "floating-point-bytes->real: length is not 2, 4, or 8 bytes: %ld",
+                     slen);
 
   str = SCHEME_BYTE_STR_VAL(argv[0]);
 
@@ -1964,16 +1978,18 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
   if (bigend != MZ_IS_BIG_ENDIAN) {
     int i;
     for (i = 0; i < slen; i++) {
-      buf[slen - i - 1] = str[i];
+      buf[slen - i - 1] = str[offset + i];
     }
-    str = (char *)buf;
+  } else {
+    memcpy(buf, str + offset, slen);
   }
+  str = buf;
 
   switch(slen) {
   case 4:
     {
       float f;
-      f = *(float *)str;
+      memcpy(&f, buf, sizeof(float));
 #ifdef MZ_USE_SINGLE_FLOATS
       return scheme_make_float(f);
 #else
@@ -1984,7 +2000,6 @@ static Scheme_Object *bytes_to_real (int argc, Scheme_Object *argv[])
   default:
     {
       double d;
-      /* don't use `double' cast, due to possible alignment problems: */
       memcpy(&d, str, sizeof(double));
       return scheme_make_double(d);
     }
@@ -1998,6 +2013,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
   int size;
   int bigend = MZ_IS_BIG_ENDIAN;
   double d;
+  long offset = 0;
 
   n = argv[0];
   if (!SCHEME_REALP(n))
@@ -2013,28 +2029,40 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
   if (argc > 2)
     bigend = SCHEME_TRUEP(argv[2]);
 
-  if (argc > 3)
+  if (argc > 3) {
     s = argv[3];
-  else
+
+    if (!SCHEME_MUTABLE_BYTE_STRINGP(s))
+      scheme_wrong_type("real->floating-point-bytes", "mutable byte string", 3, argc, argv);
+    
+    if (argc > 4) {
+      long start, finish;
+      
+      scheme_get_substring_indices("real->floating-point-bytes", s,
+                                   argc, argv,
+                                   4, 5, &start, &finish);
+      
+      offset = start;
+    } else
+      offset = 0;
+  } else
     s = scheme_make_sized_byte_string("12345678", size, 1);
   
-  if (!SCHEME_MUTABLE_BYTE_STRINGP(s))
-    scheme_wrong_type("real->floating-point-bytes", "mutable byte string", 3, argc, argv);
-
-  if (size != SCHEME_BYTE_STRLEN_VAL(s)) {
+  if (offset + size > SCHEME_BYTE_STRLEN_VAL(s)) {
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		     "real->floating-point-bytes: string size %d does not match indicated %d-byte length: %V",
-		     SCHEME_BYTE_STRLEN_VAL(s), size, s);
+                     "real->floating-point-bytes: byte string is %ld bytes,"
+                     " which is shorter than starting position %ld plus size %ld",
+                     SCHEME_BYTE_STRLEN_VAL(s), offset, size);
     return NULL;
   }
 
   d = scheme_get_val_as_double(n);
   
-  if (size == 4)
-    *(float *)(SCHEME_BYTE_STR_VAL(s)) = (float)(d);
-  else {
-    /* Don't use `double' cast, due to alignment problems */
-    memcpy(SCHEME_BYTE_STR_VAL(s), &d, sizeof(double));
+  if (size == 4) {
+    float f = d;
+    memcpy(SCHEME_BYTE_STR_VAL(s) + offset, &f, sizeof(float));
+  } else {
+    memcpy(SCHEME_BYTE_STR_VAL(s) + offset, &d, sizeof(double));
   }
 
   if (bigend != MZ_IS_BIG_ENDIAN) {
@@ -2044,10 +2072,10 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
     str = SCHEME_BYTE_STR_VAL(s);
     
     for (i = 0; i < size; i++) {
-      buf[size - i - 1] = str[i];
+      buf[size - i - 1] = str[offset + i];
     }
     for (i = 0; i < size; i++) {
-      str[i] = buf[i];
+      str[offset + i] = buf[i];
     }
   }
 

@@ -1,0 +1,962 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-14.html">previous</a></span><span>, <a href="r6rs-Z-H-16.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_A"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_A">Appendix A</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_A">Formal semantics</a></h1>
+<p>
+</p>
+<p>
+This appendix presents a non-normative, formal, operational semantics for Scheme, that is based on an earlier semantics&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_18">18</a>]. It does not cover the entire language. The notable missing features are the macro system, I/O, and the numerical tower. The precise list of features included is given in section&nbsp;<a href="#node_sec_A.2">A.2</a>.</p>
+<p>
+The core of the specification is a single-step term rewriting relation that indicates how an (abstract) machine behaves. In general, the report is not a complete specification, giving implementations freedom to behave differently, typically to allow optimizations. This underspecification shows up in two ways in the semantics. </p>
+<p>
+The first is reduction rules that reduce to special &#8220;<b>unknown:</b> <i>string</i>&#8221; states (where the string provides a description of the unknown state). The intention is that rules that reduce to such states can be replaced with arbitrary reduction rules. The precise specification of how to replace those rules is given in section&nbsp;<a href="#node_sec_A.12">A.12</a>.</p>
+<p>
+The other is that the single-step relation relates one program to
+multiple different programs, each corresponding to a legal transition
+that an abstract machine might take. Accordingly we use the transitive
+closure of the single step relation &rarr;<sup>*</sup> to define the
+semantics, <img src="r6rs-Z-G-D-11.gif" border="0" alt="[r6rs-Z-G-D-11.gif]">, as a function from programs (<img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">)
+to sets of observable results (<img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]">):
+</p>
+<div align=center><table><tr><td>
+
+<table border=0><tr><td valign=top ><img src="r6rs-Z-G-D-11.gif" border="0" alt="[r6rs-Z-G-D-11.gif]"> : <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]"> ---&rarr; 2<sup><img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]"></sup> </td></tr>
+<tr><td valign=top ><img src="r6rs-Z-G-D-11.gif" border="0" alt="[r6rs-Z-G-D-11.gif]">(<img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">)  =  { <img src="r6rs-Z-G-D-15.gif" border="0" alt="[r6rs-Z-G-D-15.gif]">(<img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]">) | <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]"> &rarr;<sup>*</sup> <img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]"> }
+</td></tr></table>
+</td></tr></table></div>
+
+where the function <img src="r6rs-Z-G-D-15.gif" border="0" alt="[r6rs-Z-G-D-15.gif]"> turns an answer (<img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]">) from the semantics into an observable result. Roughly, <img src="r6rs-Z-G-D-15.gif" border="0" alt="[r6rs-Z-G-D-15.gif]"> is the identity function on simple base values, and returns a special tag for more complex values, like procedure and pairs.<p>
+So, an implementation conforms to the semantics if, for every program <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">, the implementation produces one of the results in <img src="r6rs-Z-G-D-11.gif" border="0" alt="[r6rs-Z-G-D-11.gif]">(<img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">) or, if the implementation loops forever, then there is an infinite reduction sequence starting at <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">, assuming that the reduction relation &rarr; has been adjusted to replace the <b>unknown:</b> states.</p>
+<p>
+The precise definitions of <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">, <img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]">, <img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]">, and <img src="r6rs-Z-G-D-15.gif" border="0" alt="[r6rs-Z-G-D-15.gif]"> are also given in section&nbsp;<a href="#node_sec_A.2">A.2</a>.</p>
+<p>
+To help understand the semantics and how it behaves, we have
+implemented it in PLT Redex. The implementation is available at the
+report&#8217;s website: <a href="http://www.r6rs.org/">http://www.r6rs.org/</a>. All of the reduction
+rules and the metafunctions shown in the figures in this semantics
+were generated automatically from the source code.</p>
+<p>
+</p>
+<a name="node_sec_A.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.1">A.1&nbsp;&nbsp;Background</a></h2>
+<p>We assume the reader has a basic familiarity with context-sensitive
+reduction semantics. Readers unfamiliar with this system may wish to
+consult Felleisen and Flatt&#8217;s monograph&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_10">10</a>] or Wright
+and Felleisen&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_29">29</a>] for a thorough introduction,
+including the relevant technical background, or an introduction to PLT
+Redex&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_19">19</a>] for a somewhat lighter one.</p>
+<p>
+As a rough guide, we define the operational semantics of a language
+via a relation on program terms, where the relation corresponds to a
+single step of an abstract machine. The relation is defined using
+evaluation contexts, namely terms with a distinguished place in them,
+called <em>holes</em><a name="node_idx_800"></a>, where the next step of evaluation
+occurs. We say that a term <em>e</em> decomposes into an evaluation
+context <em>E</em> and another term <em>e</em>&prime; if <em>e</em> is the
+same as <em>E</em> but with the hole replaced by <em>e</em>&prime;. We write
+<em>E</em>[<em>e</em>&prime;] to indicate the term obtained by replacing the hole in
+<em>E</em> with <em>e</em>&prime;.</p>
+<p>
+For example, assuming that we have defined a grammar containing
+non-terminals for evaluation contexts (<em>E</em>), expressions
+(<em>e</em>), variables (<em>x</em>), and values (<em>v</em>), we
+would write:
+</p>
+<div align=left><img src="r6rs-Z-G-6.gif" border="0" alt="[r6rs-Z-G-6.gif]"></div><p>
+to define the &beta;<sub><em>v</em></sub> rewriting rule (as a part of the &rarr;
+single step relation). We use the names of the non-terminals (possibly
+with subscripts) in a rewriting rule to restrict the application of
+the rule, so it applies only when some term produced by that grammar
+appears in the corresponding position in the term. If the same
+non-terminal with an identical subscript appears multiple times, the
+rule only applies when the corresponding terms are structurally
+identical (nonterminals without subscripts are not constrained to
+match each other). Thus, the occurrence of <em>E</em><sub>1</sub> on both the
+left-hand and right-hand side of the rule above means that the context
+of the application expression does not change when using this rule.
+The ellipses are a form of Kleene star, meaning that zero or more
+occurrences of terms matching the pattern proceeding the ellipsis may
+appear in place of the the ellipsis and the pattern preceding it. We
+use the notation { <em>x</em><sub>1</sub> <tt>&middot;&middot;&middot;</tt> mapsto <em>v</em><sub>1</sub> <tt>&middot;&middot;&middot;</tt> } <em>e</em><sub>1</sub> for
+capture-avoiding substitution; in this case it means that each
+<em>x</em><sub>1</sub> is replaced with the corresponding <em>v</em><sub>1</sub> in
+<em>e</em><sub>1</sub>. Finally, we write side-conditions in parentheses beside
+a rule; the side-condition in the above rule indicates that the number
+of <em>x</em><sub>1</sub>s must be the same as the number of <em>v</em><sub>1</sub>s.
+Sometimes we use equality in the side-conditions; when we do it merely
+means simple term equality, i.e., the two terms must have the
+same syntactic shape.</p>
+<p>
+ 
+</p>
+<a name="node_fig_Temp_22"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<div align=left><img src="r6rs-Z-G-7.gif" border="0" alt="[r6rs-Z-G-7.gif]"></div></td></tr><tr><td>
+<p>
+</p>
+</td></tr></table></div>
+
+
+</td></tr>
+<tr><td align=left><b>Figure 2:</b>&nbsp;&nbsp;Grammar for programs and observables</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+Making the evaluation context <em>E</em> explicit in the rule allows
+us to define relations that manipulate their context. As a simple
+example, we can add another rule that signals a violation when a
+procedure is applied to the wrong number of arguments by discarding
+the evaluation context on the right-hand side of a rule:
+</p>
+<div align=left><img src="r6rs-Z-G-8.gif" border="0" alt="[r6rs-Z-G-8.gif]"></div><p>
+Later we take advantage of the explicit evaluation context in more
+sophisticated ways.</p>
+<p>
+</p>
+<a name="node_sec_A.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.2">A.2&nbsp;&nbsp;Grammar</a></h2>
+<p></p>
+<p>
+</p>
+<a name="node_fig_Temp_23"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p>
+</p>
+<div align=center><table><tr><td>
+
+<div align=left><img src="r6rs-Z-G-9.gif" border="0" alt="[r6rs-Z-G-9.gif]"></div></td></tr><tr><td>
+<p>
+</p>
+</td></tr></table></div>
+
+
+</td></tr>
+<tr><td align=left><b>Figure 2:</b>&nbsp;&nbsp;Grammar for evaluation contexts</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+Figure&nbsp;<a href="#node_fig_Temp_22">2</a> shows the grammar for the subset of the
+report this semantics models. Non-terminals are written in
+<i>italics</i> or in a calligraphic font (<img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">
+<img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]">, <img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]">, and <img src="r6rs-Z-G-D-13.gif" border="0" alt="[r6rs-Z-G-D-13.gif]">) and literals are 
+written in a <tt>monospaced</tt> font.</p>
+<p>
+The <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]"> non-terminal represents possible program states. The
+first alternative is a program with a store and an expression. 
+The second alternative is an uncaught exception, and the third is
+used to indicate a place where the model does not completely specify
+the behavior of the primitives it models (see section&nbsp;<a href="#node_sec_A.12">A.12</a> for details of those situations). 
+The <img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]"> non-terminal
+represents a final result of a program. It is just like <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">
+except that expression has been reduced to some sequence of values.</p>
+<p>
+The <img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]"> and <img src="r6rs-Z-G-D-13.gif" border="0" alt="[r6rs-Z-G-D-13.gif]"> non-terminals specify the observable results of a program. Each <img src="r6rs-Z-G-D-12.gif" border="0" alt="[r6rs-Z-G-D-12.gif]"> is either a sequence of values that correspond to the values produced by the program that terminates normally, or a tag indicating an uncaught exception was raised, or <tt>unknown</tt> if the program encounters a situation the semantics does not cover. The <img src="r6rs-Z-G-D-13.gif" border="0" alt="[r6rs-Z-G-D-13.gif]"> non-terminal specifies what the observable results are for a particular value: a pair, the empty list, a symbol, a self-quoting value (<tt>#t</tt>, <tt>#f</tt>, and numbers), a condition, or a procedure.</p>
+<p>
+The <i>sf</i> non-terminal generates individual elements of the
+store. The store holds all of the mutable state of a program. It is
+explained in more detail along with the rules that manipulate it.</p>
+<p>
+Expressions (mathit<em>e</em><em>s</em>) include quoted data, <tt>begin</tt> expressions, <tt>begin0</tt> expressions<a name="node_call_footnote_Temp_24"></a><sup><small><a href="#node_footnote_Temp_24">1</a></small></sup>, application expressions, <tt>if</tt> expressions, <tt>set!</tt>
+expressions, variables, non-procedure values (<i>nonproc</i>), primitive
+procedures (<i>pproc</i>), lambda expressions, <tt>letrec</tt> and <tt>letrec*</tt> expressions. </p>
+<p>
+The last few expression forms are only generated for intermediate states (<tt>dw</tt> for <tt>dynamic-wind</tt>, <tt>throw</tt> for continuations, <tt>unspecified</tt> for the result of the assignment operators, <tt>handlers</tt> for exception handlers, and <tt>l!</tt> and <tt>reinit</tt> for <tt>letrec</tt>), and should not appear in an initial program. Their use is described in the relevant sections of this appendix.</p>
+<p>
+The <i>f</i> non-terminal describes the formals for <tt>lambda</tt> expressions. (The <tt>dot</tt> is used instead of a period for procedures that accept an arbitrary number of arguments, in order to avoid meta-circular confusion in our PLT Redex model.) </p>
+<p>
+The <i>s</i> non-terminal covers all datums, which can be either non-empty sequences (<i>seq</i>), the empty sequence, self-quoting values (<i>sqv</i>), or symbols. Non-empty sequences are either just a sequence of datums, or they are terminated with a dot followed by either a symbol or a self-quoting value. Finally the self-quoting values are numbers and the booleans <tt>#t</tt> and <tt>#f</tt>.</p>
+<p>
+The <i>p</i> non-terminal represents programs that have no quoted
+data. Most of the reduction rules rewrite <i>p</i> to <i>p</i>,
+rather than <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]"> to <img src="r6rs-Z-G-D-10.gif" border="0" alt="[r6rs-Z-G-D-10.gif]">, since quoted data is first
+rewritten into calls to the list construction functions before
+ordinary evaluation proceeds. In parallel to <i>es</i>, <i>e</i> represents
+expressions that have no quoted expressions.</p>
+<p>
+</p>
+<a name="node_fig_Temp_25"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<div align=left><img src="r6rs-Z-G-11.gif" border="0" alt="[r6rs-Z-G-11.gif]"></div></td></tr><tr><td>
+<p>
+</p>
+</td></tr><tr><td>
+<p>
+</p>
+<div align=left><img src="r6rs-Z-G-12.gif" border="0" alt="[r6rs-Z-G-12.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 3:</b>&nbsp;&nbsp;Quote</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The values (<em>v</em>) are divided into four categories:
+</p>
+<ul>
+<li><p>Non-procedures (<i>nonproc</i>) include pair pointers
+(<tt>pp</tt>), the empty list (<tt>null</tt>), symbols, self-quoting values
+(<i>sqv</i>), and conditions. Conditions represent
+the report&#8217;s condition values, but here just contain a message and
+are otherwise inert.
+</p>
+<li><p>User procedures (<tt>(</tt><tt>lambda</tt> <i>f</i> <i>e</i> <i>e</i> <tt>&middot;&middot;&middot;</tt><tt>)</tt>) include multi-arity lambda expressions and lambda expressions with dotted parameter lists,
+</p>
+<li><p>Primitive procedures (<i>pproc</i>) include</p>
+<p>
+</p>
+<ul>
+<li><p>arithmetic procedures
+(<i>aproc</i>): <tt>+</tt>, <tt>-</tt>, <tt>/</tt>, and <tt>*</tt>, 
+</p>
+<li><p>procedures of one
+argument (<i>proc1</i>): <tt>null?</tt>, <tt>pair?</tt>, <tt>car</tt>, <tt>cdr</tt>,
+<tt>call/cc</tt>, <tt>procedure?</tt>, <tt>condition?</tt>, <tt>unspecified?</tt>, <tt>raise</tt>, and <tt>raise-continuable</tt>, 
+</p>
+<li><p>procedures of
+two arguments (<i>proc2</i>): <tt>cons</tt>, <tt>set-car!</tt>, <tt>set-cdr!</tt>, <tt>eqv?</tt>,
+and <tt>call-with-values</tt>, 
+</p>
+<li><p>as well as <tt>list</tt>, <tt>dynamic-wind</tt>,
+<tt>apply</tt>, <tt>values</tt>, and <tt>with-exception-handler</tt>.
+</p>
+</ul><p>
+</p>
+<li><p>Finally, continuations are represented as <tt>throw</tt> expressions
+whose body consists of the context where the continuation was
+grabbed.
+</p>
+</ul><p>
+The next three set of non-terminals in figure&nbsp;<a href="#node_fig_Temp_22">2</a> represent pairs (<i>pp</i>), which are divided into immutable pairs (<i>ip</i>) and mutable pairs (<i>mp</i>). The final set of non-terminals in figure&nbsp;<a href="#node_fig_Temp_22">2</a>, <i>sym</i>,
+<i>x</i>, and <em>n</em> represent symbols, variables, and
+numbers respectively. The non-terminals <i>ip</i>, <i>mp</i>, and <i>sym</i> are all assumed to all be disjoint. Additionally, the variables <em>x</em> are assumed not to include any keywords or primitive operations, so any program variables whose names coincide with them must be renamed before the semantics can give the meaning of that program.</p>
+<p>
+</p>
+<a name="node_fig_Temp_26"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_802"></a><a name="node_idx_804"></a><a name="node_idx_806"></a><a name="node_idx_808"></a><a name="node_idx_810"></a><div align=left><img src="r6rs-Z-G-13.gif" border="0" alt="[r6rs-Z-G-13.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 4:</b>&nbsp;&nbsp;Multiple values and call-with-values</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The set of non-terminals for evaluation contexts is shown in
+figure&nbsp;<a href="#node_fig_Temp_23">2</a>. The <i>P</i> non-terminal controls where
+evaluation happens in a program that does not contain any quoted data.
+The <em>E</em> and <em>F</em> evaluation contexts are for expressions.  They are factored in
+that manner so that the <i>PG</i>, <i>G</i>, and <i>H</i> evaluation contexts can
+re-use <i>F</i> and have fine-grained control over the context to support
+exceptions and <tt>dynamic-wind</tt>. The starred and circled variants,
+<em>E</em><sup>&lowast;</sup>, <em>E</em><sup><small>o</small></sup>, <em>F</em><sup>&lowast;</sup>, and <em>F</em><sup><small>o</small></sup> dictate where a single value is
+promoted to multiple values and where multiple values are demoted to a
+single value. The <i>U</i> context is used to manage the report&#8217;s underspecification of the results of <tt>set!</tt>, <tt>set-car!</tt>, and <tt>set-cdr!</tt> (see section&nbsp;<a href="#node_sec_A.12">A.12</a> for details). Finally, the <i>S</i> context is where quoted expressions can be simplified. The precise use of the evaluation contexts is explained along with the relevant rules.</p>
+<p>
+To convert the answers (<img src="r6rs-Z-G-D-14.gif" border="0" alt="[r6rs-Z-G-D-14.gif]">)  of the semantics into observable results, we use these two functions:
+</p>
+<div align=left><img src="r6rs-Z-G-14.gif" border="0" alt="[r6rs-Z-G-14.gif]"></div><p>
+
+</p>
+<div align=left><img src="r6rs-Z-G-15.gif" border="0" alt="[r6rs-Z-G-15.gif]"></div><p>
+
+They eliminate the store, and replace complex values with simple tags that indicate only the kind of value that was produced or, if no values were produced, indicates that either an uncaught exception was raised, or that the program reached a state that is not specified by the semantics.</p>
+<p>
+</p>
+<a name="node_sec_A.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.3">A.3&nbsp;&nbsp;Quote</a></h2>
+<p></p>
+<p>
+The first reduction rules that apply to any program is the 
+rules in figure&nbsp;<a href="#node_fig_Temp_25">3</a> that eliminate quoted expressions. 
+The first two rules erase the quote for quoted expressions that do not introduce any pairs.
+The last two rules lift quoted datums to the top of the expression so
+they are evaluated only once, and turn the datums into calls to either <tt>cons</tt> or <tt>consi</tt>, via the metafunctions mathscr<em>Q</em><sub><em>i</em></sub> and mathscr<em>Q</em><sub><em>m</em></sub>.</p>
+<p>
+Note that the left-hand side of the [6qcons] and [6qconsi] rules are identical, meaning that if one rule applies to a term, so does the other rule. 
+Accordingly, a quoted expression may be lifted out into a sequence of <tt>cons</tt> expressions, which create mutable pairs, or into a sequence of <tt>consi</tt> expressions, which create immutable pairs (see section&nbsp;<a href="#node_sec_A.7">A.7</a> for the rules on how that happens).</p>
+<p>
+These rules apply before any other because of the contexts in which they, and all of the other rules, apply. In particular, these rule applies in the
+<i>S</i> context. Figure&nbsp;<a href="#node_fig_Temp_23">2</a> shows that the
+<i>S</i> context allows this reduction to apply in
+any subexpression of an <i>e</i>, as long as all of the
+subexpressions to the left have no quoted expressions in them,
+although expressions to the right may have quoted expressions.
+Accordingly, this rule applies once for each quoted expression in the
+program, moving out to the beginning of the program.
+The rest of the rules apply in contexts that do not contain any quoted
+expressions, ensuring that these rules convert all quoted data
+into lists before those rules apply.</p>
+<p>
+Although the identifier <i>qp</i> does not have a subscript, the semantics of PLT Redex&#8217;s &#8220;fresh&#8221; declaration takes special care to ensures that the <i>qp</i> on the right-hand side of the rule is indeed the same as the one in the side-condition.</p>
+<p>
+</p>
+<a name="node_fig_Temp_27"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_812"></a><a name="node_idx_814"></a><a name="node_idx_816"></a><a name="node_idx_818"></a><a name="node_idx_820"></a><a name="node_idx_822"></a><a name="node_idx_824"></a><a name="node_idx_826"></a><a name="node_idx_828"></a><div align=left><img src="r6rs-Z-G-16.gif" border="0" alt="[r6rs-Z-G-16.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 5:</b>&nbsp;&nbsp;Exceptions</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+</p>
+<a name="node_sec_A.4"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.4">A.4&nbsp;&nbsp;Multiple values</a></h2>
+<p>The basic strategy for multiple values is to add a rule that demotes
+(<tt> <em>v</em><em>a</em><em>l</em><em>u</em><em>e</em><em>s</em></tt>&nbsp;<em>v</em>) to <em>v</em> and another rule that promotes
+<em>v</em> to (<tt> <em>v</em><em>a</em><em>l</em><em>u</em><em>e</em><em>s</em></tt>&nbsp;<em>v</em>). If we allowed these rules to apply
+in an arbitrary evaluation context, however, we would get infinite
+reduction sequences of endless alternation between promotion and
+demotion. So, the semantics allows demotion only in a context
+expecting a single value and allows promotion only in a context
+expecting multiple values. We obtain this behavior with a small
+extension to the Felleisen-Hieb framework (also present in the
+operational model for R<sup>5</sup>RS&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_17">17</a>]).
+We extend the notation so that
+holes have names (written with a subscript), and the context-matching
+syntax may also demand a hole of a particular name (also written with
+a subscript, for instance <em>E</em>[<em>e</em>]<sub>&lowast;</sub>).  The extension
+allows us to give different names to the holes in which multiple
+values are expected and those in which single values are expected, and
+structure the grammar of contexts accordingly.</p>
+<p>
+To exploit this extension, we use three kinds of holes in the
+evaluation context grammar in figure&nbsp;<a href="#node_fig_Temp_23">2</a>. The
+ordinary hole [&nbsp;] appears where the usual kinds of
+evaluation can occur. The hole [&nbsp;]<sub>&lowast;</sub> appears in contexts that
+allow multiple values and [&nbsp;]<sub><small>o</small></sub> appears in
+contexts that expect a single value. Accordingly, the rule
+[6promote] only applies in [&nbsp;]<sub>&lowast;</sub> contexts, and 
+[6demote] only applies in [&nbsp;]<sub><small>o</small></sub> contexts.</p>
+<p>
+To see how the evaluation contexts are organized to ensure that
+promotion and demotion occur in the right places, consider the <i>F</i>,
+<em>F</em><sup>&lowast;</sup> and <em>F</em><sup><small>o</small></sup> evaluation contexts. The <em>F</em><sup>&lowast;</sup> and <em>F</em><sup><small>o</small></sup>
+evaluation contexts are just the same as <i>F</i>, except that they allow
+promotion to multiple values and demotion to a single value,
+respectively. So, the <i>F</i> evaluation context, rather than being
+defined in terms of itself, exploits <em>F</em><sup>&lowast;</sup> and <em>F</em><sup><small>o</small></sup> to dictate
+where promotion and demotion can occur. For example, <i>F</i> can be
+<tt>(</tt><tt> <em>i</em><em>f</em></tt>&nbsp;<em>F</em><sup><small>o</small></sup>&nbsp;<em>e</em>&nbsp;<em>e</em><tt>)</tt> meaning that demotion from
+<tt>(</tt><tt> <em>v</em><em>a</em><em>l</em><em>u</em><em>e</em><em>s</em></tt>&nbsp;<em>v</em><tt>)</tt> to
+<em>v</em> can occur in the test of an <tt>if</tt> expression.
+Similarly, <em>F</em> can be <tt>(</tt><tt> <em>b</em><em>e</em><em>g</em><em>i</em><em>n</em></tt>&nbsp;<em>F</em><sup>&lowast;</sup>&nbsp;<em>e</em>&nbsp;<em>e</em>&nbsp;<tt>&middot;&middot;&middot;</tt><tt>)</tt> meaning that
+<em>v</em> can be promoted to <tt>(</tt><tt> <em>v</em><em>a</em><em>l</em><em>u</em><em>e</em><em>s</em></tt>&nbsp;<em>v</em><tt>)</tt> in the first subexpression of a <tt>begin</tt>.</p>
+<p>
+In general, the promotion and demotion rules simplify the definitions
+of the other rules. For instance, the rule for <tt>if</tt> does not
+need to consider multiple values in its first subexpression.
+Similarly, the rule for <tt>begin</tt> does not need to consider the
+case of a single value as its first subexpression.</p>
+<p>
+</p>
+<a name="node_fig_Temp_28"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_830"></a><a name="node_idx_832"></a><a name="node_idx_834"></a><a name="node_idx_836"></a><a name="node_idx_838"></a><a name="node_idx_840"></a><a name="node_idx_842"></a><a name="node_idx_844"></a><a name="node_idx_846"></a><a name="node_idx_848"></a><a name="node_idx_850"></a><div align=left><img src="r6rs-Z-G-17.gif" border="0" alt="[r6rs-Z-G-17.gif]"></div></td></tr><tr><td>
+<p>
+
+<a name="node_idx_852"></a><a name="node_idx_854"></a><a name="node_idx_856"></a><a name="node_idx_858"></a><a name="node_idx_860"></a><a name="node_idx_862"></a><a name="node_idx_864"></a><a name="node_idx_866"></a></p>
+<div align=left><img src="r6rs-Z-G-18.gif" border="0" alt="[r6rs-Z-G-18.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 6:</b>&nbsp;&nbsp;Arithmetic and basic forms</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The other two rules in
+figure&nbsp;<a href="#node_fig_Temp_26">4</a> handle
+<tt>call-with-values</tt>. The evaluation contexts for
+<tt>call-with-values</tt> (in the <em>F</em> non-terminal) allow
+evaluation in the body of a procedure that has been passed as the first
+argument to <tt>call-with-values</tt>, as long as the second argument
+has been reduced to a value. Once evaluation inside that procedure
+completes, it will produce multiple values (since it is an <em>F</em><sup>&lowast;</sup>
+position), and the entire <tt>call-with-values</tt> expression reduces
+to an application of its second argument to those values, via the rule
+[6cwvd]. Finally, in the
+case that the first argument to <tt>call-with-values</tt> is a value,
+but is not of the form <tt>(</tt><tt> <em>l</em><em>a</em><em>m</em><em>b</em><em>d</em><em>a</em></tt>&nbsp;<tt>()</tt>&nbsp;<em>e</em><tt>)</tt>, the rule
+[6cwvw] wraps it in a thunk to trigger evaluation.</p>
+<p>
+</p>
+<a name="node_fig_Temp_29"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_868"></a><a name="node_idx_870"></a><a name="node_idx_872"></a><a name="node_idx_874"></a><a name="node_idx_876"></a><a name="node_idx_878"></a><a name="node_idx_880"></a><a name="node_idx_882"></a><a name="node_idx_884"></a><a name="node_idx_886"></a><a name="node_idx_888"></a><a name="node_idx_890"></a><a name="node_idx_892"></a><a name="node_idx_894"></a><a name="node_idx_896"></a><a name="node_idx_898"></a><a name="node_idx_900"></a><div align=left><img src="r6rs-Z-G-19.gif" border="0" alt="[r6rs-Z-G-19.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 7:</b>&nbsp;&nbsp;Lists</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+</p>
+<a name="node_sec_A.5"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.5">A.5&nbsp;&nbsp;Exceptions</a></h2>
+<p>The workhorses for the exception system are </p>
+<div class=mathdisplay align=left><table><tr><td><tt>(</tt><tt> <em>h</em><em>a</em><em>n</em><em>d</em><em>l</em><em>e</em><em>r</em><em>s</em></tt>&nbsp;<i>proc</i>&nbsp;<tt>&middot;&middot;&middot;</tt>&nbsp;<i>e</i><tt>)</tt></td></tr></table></div>
+<p class=noindent> expressions and the <i>G</i> and <i>PG</i> evaluation contexts (shown in figure&nbsp;<a href="#node_fig_Temp_23">2</a>). 
+The <tt>handlers</tt> expression records the
+active exception handlers (<i>proc</i> <tt>&middot;&middot;&middot;</tt>) in some expression (<i>e</i>). The
+intention is that only the nearest enclosing <tt>handlers</tt> expression
+is relevant to raised exceptions, and the <em>G</em> and <i>PG</i> evaluation
+contexts help achieve that goal. They are just like their counterparts
+<i>E</i> and <i>P</i>, except that <tt>handlers</tt> expressions cannot occur on the
+path to the hole, and the exception system rules take advantage of
+that context to find the closest enclosing handler.</p>
+<p>
+To see how the contexts work together with <tt>handler</tt>
+expressions, consider the left-hand side of the [6xunee]
+rule in figure&nbsp;<a href="#node_fig_Temp_27">5</a>.
+It matches expressions that have a call to <tt>raise</tt> or
+<tt>raise-continuable</tt> (the non-terminal <i>raise*</i> matches
+both exception-raising procedures) in a <i>PG</i>
+evaluation context. Since the <i>PG</i> context does not contain any
+<tt>handlers</tt> expressions, this exception cannot be caught, so
+this expression reduces to a final state indicating the uncaught
+exception. The rule [6xuneh] also signals an uncaught
+exception, but it covers the case where a <tt>handlers</tt> expression
+has exhausted all of the handlers available to it. The rule applies to
+expressions that have a <tt>handlers</tt> expression (with no
+exception handlers) in an arbitrary evaluation context where a call to
+one of the exception-raising functions is nested in the
+<tt>handlers</tt> expression. The use of the <i>G</i> evaluation
+context ensures that there are no other <tt>handler</tt> expressions
+between this one and the raise.</p>
+<p>
+The next two rules cover call to the procedure <tt>with-exception-handler</tt>.
+The [6xwh1] rule applies when there are no <tt>handler</tt>
+expressions. It constructs a new one and applies <i>v</i><sub>2</sub> as a
+thunk in the <tt>handler</tt> body. If there already is a handler
+expression, the [6xwhn] applies. It collects the current
+handlers and adds the new one into a new <tt>handlers</tt> expression
+and, as with the previous rule, invokes the second argument to
+<tt>with-exception-handlers</tt>.</p>
+<p>
+The next two rules cover exceptions that are raised in the context of
+a <tt>handlers</tt> expression. If a continuable exception is raised,
+[6xrc] applies. It takes the most recently installed
+handler from the nearest enclosing <tt>handlers</tt> expression and
+applies it to the argument to <tt>raise-continuable</tt>, but in a
+context where the exception handlers do not include that latest
+handler. The [6xr] rule behaves similarly, except it
+raises a new exception if the handler returns. The new exception is
+created with the <tt>make-cond</tt> special form.</p>
+<p>
+</p>
+<a name="node_fig_Temp_30"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_902"></a><a name="node_idx_904"></a><a name="node_idx_906"></a><a name="node_idx_908"></a><div align=left><img src="r6rs-Z-G-20.gif" border="0" alt="[r6rs-Z-G-20.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 8:</b>&nbsp;&nbsp;Eqv</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The <tt>make-cond</tt> special form is a stand-in for the report&#8217;s
+conditions. It does not evaluate its argument (note its absence from
+the <em>E</em> grammar in figure&nbsp;<a href="#node_fig_Temp_23">2</a>). That argument
+is just a literal string describing the context in which the exception
+was raised. The only operation on conditions is <tt>condition?</tt>,
+whose semantics are given by the two rules [6ct] and
+[6cf].</p>
+<p>
+Finally, the rule [6xdone] drops a <tt>handlers</tt> expression
+when its body is fully evaluated, and the rule [6weherr]
+raises an exception when <tt>with-exception-handler</tt> is supplied with
+incorrect arguments.</p>
+<p>
+</p>
+<a name="node_sec_A.6"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.6">A.6&nbsp;&nbsp;Arithmetic and basic forms</a></h2>
+<p>This model does not include the report&#8217;s arithmetic, but does include
+an idealized form in order to make experimentation with other features
+and writing test suites for the model simpler.
+Figure&nbsp;<a href="#node_fig_Temp_28">6</a> shows the reduction rules for the
+primitive procedures that implement addition, subtraction,
+multiplication, and division. They defer to their mathematical
+analogues. In addition, when the subtraction or divison operator are
+applied to no arguments, or when division receives a zero as a
+divisor, or when any of the arithmetic operations receive a
+non-number, an exception is raised.</p>
+<p>
+The bottom half of figure&nbsp;<a href="#node_fig_Temp_28">6</a> shows the rules for
+<tt>if</tt>, <tt>begin</tt>, and <tt>begin0</tt>. The relevant
+evaluation contexts are given by the <em>F</em> non-terminal.</p>
+<p>
+The evaluation contexts for <tt>if</tt> only allow evaluation in its
+test expression. Once that is a value, the rules reduce
+an <tt>if</tt> expression to its consequent if the test is not
+<tt>#f</tt>, and to its alternative if it is <tt>#f</tt>.</p>
+<p>
+The <tt>begin</tt> evaluation contexts allow evaluation in the first
+subexpression of a begin, but only if there are two or more
+subexpressions. In that case, once the first expression has been fully
+simplified, the reduction rules drop its value. If there is only a
+single subexpression, the <tt>begin</tt> itself is dropped.</p>
+<p>
+
+</p>
+<a name="node_fig_Temp_31"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_910"></a><a name="node_idx_912"></a><a name="node_idx_914"></a><a name="node_idx_916"></a><a name="node_idx_918"></a><a name="node_idx_920"></a><a name="node_idx_922"></a><a name="node_idx_924"></a><a name="node_idx_926"></a><a name="node_idx_928"></a><a name="node_idx_930"></a><a name="node_idx_932"></a><div align=left><img src="r6rs-Z-G-21.gif" border="0" alt="[r6rs-Z-G-21.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 9:</b>&nbsp;&nbsp;Procedures &amp; application</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+Like the <tt>begin</tt> evaluation contexts, the <tt>begin0</tt>
+evaluation contexts allow evaluation of the first subexpression of a
+<tt>begin0</tt> expression when there are two or more subexpressions.
+The <tt>begin0</tt> evaluation contexts also allow evaluation in the
+second subexpression of a <tt>begin0</tt> expression, as long as the first
+subexpression has been fully simplified. The [6begin0n] rule for
+<tt>begin0</tt> then drops a fully simplified second subexpression.
+Eventually, there is only a single expression in the <tt>begin0</tt>,
+at which point the [begin01] rule fires, and removes the
+<tt>begin0</tt> expression.</p>
+<p>
+</p>
+<a name="node_sec_A.7"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.7">A.7&nbsp;&nbsp;Lists</a></h2>
+<p></p>
+<p>
+The rules in figure&nbsp;<a href="#node_fig_Temp_29">7</a> handle lists. The first two rules handle <tt>list</tt> by reducing it to a succession of calls to <tt>cons</tt>, followed by <tt>null</tt>.</p>
+<p>
+The next two rules, [6cons] and [6consi], allocate new <tt>cons</tt> cells.
+They both move <tt>(</tt><tt> <em>c</em><em>o</em><em>n</em><em>s</em></tt>&nbsp;<em>v</em><sub>1</sub>&nbsp;<em>v</em><sub>2</sub><tt>)</tt> into the store, bound to a fresh
+pair pointer (see also section&nbsp;<a href="#node_sec_A.3">A.3</a> for a description of &#8220;fresh&#8221;). 
+The [6cons] uses a <i>mp</i> variable, to indicate the pair is mutable, and the [6consi] uses a <i>ip</i> variable to indicate the pair is immutable.</p>
+<p>
+The rules [6car] and [6cdr] extract the components of a pair from the store when presented with a pair pointer (the <i>pp</i> can be either <i>mp</i> or <i>ip</i>, as shown in figure&nbsp;<a href="#node_fig_Temp_22">2</a>).</p>
+<p>
+The rules [6setcar] and [6setcdr] handle assignment of mutable pairs. 
+They replace the contents of the appropriate location in the store with the new value, and reduce to <tt>unspecified</tt>. See section&nbsp;<a href="#node_sec_A.12">A.12</a> for an explanation of how <tt>unspecified</tt> reduces.</p>
+<p>
+</p>
+<a name="node_fig_Temp_32"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p>
+</p>
+<div align=center><table><tr><td>
+
+<div align=left><img src="r6rs-Z-G-22.gif" border="0" alt="[r6rs-Z-G-22.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 9:</b>&nbsp;&nbsp;Variable-assignment relation</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The next four rules handle the <tt>null?</tt> predicate and the <tt>pair?</tt> predicate, and the final four rules raise exceptions when <tt>car</tt>, <tt>cdr</tt>, <tt>set-car!</tt> or <tt>set-cdr!</tt> receive non pairs.</p>
+<p>
+</p>
+<a name="node_sec_A.8"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.8">A.8&nbsp;&nbsp;Eqv</a></h2>
+<p>The rules for <tt>eqv?</tt> are shown in figure&nbsp;<a href="#node_fig_Temp_30">8</a>. The first two rules cover most of the behavior of <tt>eqv?</tt>. 
+The first says that when the two arguments to <tt>eqv?</tt> are syntactically identical, then <tt>eqv?</tt> produces <tt>#t</tt> and the second says that when the arguments are not syntactically identical, then <tt>eqv?</tt> produces <tt>#f</tt>. 
+The structure of <i>v</i> has been carefully designed so that simple term equality corresponds closely to <tt>eqv?</tt>&#8217;s behavior. 
+For example, pairs are represented as pointers into the store and <tt>eqv?</tt> only compares those pointers.</p>
+<p>
+The side-conditions on those first two rules ensure that they do not apply when simple term equality does not match the behavior of <tt>eqv?</tt>. There are two situations where it does not match: comparing two conditions and comparing two procedures. For the first, the report does not specify <tt>eqv?</tt>&#8217;s behavior, except to say that it must return a boolean, so the remaining two rules ([6eqct], and [6eqcf]) allow such comparisons to return <tt>#t</tt> or <tt>#f</tt>. Comparing two procedures is covered in section&nbsp;<a href="#node_sec_A.12">A.12</a>. </p>
+<p>
+</p>
+<a name="node_sec_A.9"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.9">A.9&nbsp;&nbsp;Procedures and application</a></h2>
+<p>In evaluating a procedure call, the report leaves
+unspecified the order in which arguments are evaluated. So, our reduction system allows multiple, different reductions to occur, one for each possible order of evaluation.</p>
+<p>
+To capture unspecified evaluation order but allow only evaluation that
+is consistent with some sequential ordering of the evaluation of an
+application&#8217;s subexpressions, we use non-deterministic choice to first pick
+a subexpression to reduce only when we have not already committed to
+reducing some other subexpression. To achieve that effect, we limit
+the evaluation of application expressions to only those that have a
+single expression that is not fully reduced, as shown in the
+non-terminal <em>F</em>, in figure&nbsp;<a href="#node_fig_Temp_23">2</a>. To evaluate
+application expressions that have more than two arguments to evaluate,
+the rule [6mark] picks one of the subexpressions of an
+application that is not fully simplified and lifts it out in its own
+application, allowing it to be evaluated. Once one of the lifted
+expressions is evaluated, the [6appN] substitutes its value
+back into the original application.</p>
+<p>
+The [6appN] rule also handles other applications whose
+arguments are finished by substituting the first argument for
+the first formal parameter in the expression. Its side-condition uses
+the relation in figure&nbsp;<a href="#node_fig_Temp_32">9</a> to ensure that there are no
+<tt>set!</tt> expressions with the parameter <em>x</em><sub>1</sub> as a target.
+If there is such an assignment, the [6appN!] rule applies (see also section&nbsp;<a href="#node_sec_A.3">A.3</a> for a description of &#8220;fresh&#8221;).
+Instead of directly substituting the actual parameter for the formal
+parameter, it creates a new location in the store, initially bound the
+actual parameter, and substitutes a variable standing for that
+location in place of the formal parameter. The store, then, handles
+any eventual assignment to the parameter. Once all of the parameters
+have been substituted away, the rule [6app0] applies and
+evaluation of the body of the procedure begins.</p>
+<p>
+At first glance, the rule [6appN] appears superfluous, since it seems like the rules could just reduce first by [6appN!] and then look up the variable when it is evaluated. 
+There are two reasons why we keep the [6appN], however. 
+The first is purely conventional: reducing applications via substitution is taught to us at an early age and is commonly used in rewriting systems in the literature.
+The second reason is more technical:  the
+[6mark] rule requires that [6appN] be applied once <i>e</i><sub><em>i</em></sub> has been reduced to a value. [6appN!] would
+lift the value into the store and put a variable reference into the application, leading to another use of [6mark], and another use of [6appN!], which continues forever.</p>
+<p>
+The rule [6&mu;app] handles a well-formed application of a function with a dotted parameter lists. 
+It such an application into an application of an
+ordinary procedure by constructing a list of the extra arguments. Similarly, the rule [6&mu;app1] handles an application of a procedure that has a single variable as its parameter list.</p>
+<p>
+The rule [6var] handles variable lookup in the store and [6set] handles variable assignment.</p>
+<p>
+The next two rules [6proct] and [6procf] handle applications of <tt>procedure?</tt>, and the remaining rules cover applications of non-procedures and arity violations.</p>
+<p>
+</p>
+<a name="node_fig_Temp_33"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p>
+</p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_934"></a><a name="node_idx_936"></a><a name="node_idx_938"></a><a name="node_idx_940"></a><a name="node_idx_942"></a><a name="node_idx_944"></a><a name="node_idx_946"></a><a name="node_idx_948"></a><div align=left><img src="r6rs-Z-G-23.gif" border="0" alt="[r6rs-Z-G-23.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+<div align=left><img src="r6rs-Z-G-24.gif" border="0" alt="[r6rs-Z-G-24.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 9:</b>&nbsp;&nbsp;Apply</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The rules in figure&nbsp;<a href="#node_fig_Temp_33">9</a> 
+cover <tt>apply</tt>. 
+The first rule, [6applyf], covers the case where the last argument to
+<tt>apply</tt> is the empty list, and simply reduces by erasing the
+empty list and the <tt>apply</tt>. The second rule, [6applyc]
+covers a well-formed application of <tt>apply</tt> where <tt>apply</tt>&#8217;s final argument is a pair. It
+reduces by extracting the components of the pair from the store and
+putting them into the application of <tt>apply</tt>. Repeated
+application of this rule thus extracts all of the list elements passed
+to <tt>apply</tt> out of the store. </p>
+<p>
+The remaining five rules cover the
+various violations that can occur when using <tt>apply</tt>. The first one covers the case where <tt>apply</tt> is supplied with a cyclic list. The next four cover applying a
+non-procedure, passing a non-list as the last argument, and supplying
+too few arguments to <tt>apply</tt>.</p>
+<p>
+</p>
+<a name="node_sec_A.10"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.10">A.10&nbsp;&nbsp;Call/cc and dynamic wind</a></h2>
+<p></p>
+<a name="node_fig_Temp_34"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_950"></a><a name="node_idx_952"></a><a name="node_idx_954"></a><a name="node_idx_956"></a><a name="node_idx_958"></a><a name="node_idx_960"></a><a name="node_idx_962"></a><div align=left><img src="r6rs-Z-G-25.gif" border="0" alt="[r6rs-Z-G-25.gif]"></div></td></tr><tr><td>
+<p>
+ <br>
+</p>
+<div align=left><img src="r6rs-Z-G-26.gif" border="0" alt="[r6rs-Z-G-26.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 10:</b>&nbsp;&nbsp;Call/cc and dynamic wind</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The specification of <tt>dynamic-wind</tt> uses 
+<tt>(</tt><tt> <em>d</em><em>w</em></tt>&nbsp;<em>x</em>&nbsp;<em>e</em>&nbsp;<em>e</em>&nbsp;<em>e</em><tt>)</tt>
+expressions to record which dynamic-wind <i>thunk</i>s are active at
+each point in the computation. Its first argument is an identifier
+that is globally unique and serves to identify invocations of
+<tt>dynamic-wind</tt>, in order to avoid exiting and re-entering the
+same dynamic context during a continuation switch. The second, third,
+and fourth arguments are calls to some <i>before</i>, <i>thunk</i>, and
+<i>after</i> procedures from a call to <tt>dynamic-wind</tt>. Evaluation only
+occurs in the middle expression; the <tt>dw</tt> expression only
+serves to record which <i>before</i> and <i>after</i> procedures need to be run during a
+continuation switch. Accordingly, the reduction rule for an
+application of <tt>dynamic-wind</tt> reduces to a call to the
+<i>before</i> procedure, a <tt>dw</tt> expression and a call to the
+<i>after</i> procedure, as
+shown in rule [6wind] in
+figure&nbsp;<a href="#node_fig_Temp_34">10</a>. The next two rules cover
+abuses of the <tt>dynamic-wind</tt> procedure: calling it with
+non-procedures, and calling it with the wrong number of arguments. The
+[6dwdone] rule erases a <tt>dw</tt> expression when its second
+argument has finished evaluating.</p>
+<p>
+The next two rules cover <tt>call/cc</tt>. The rule
+[6call/cc] creates a new continuation. It takes the context
+of the <tt>call/cc</tt> expression and packages it up into a
+<tt>throw</tt> expression that represents the continuation. The
+<tt>throw</tt> expression uses the fresh variable <em>x</em> to record
+where the application of <tt>call/cc</tt> occurred in the context for
+use in the [6throw] rule when the continuation is applied.
+That rule takes the arguments of the continuation, wraps them with a
+call to <tt>values</tt>, and puts them back into the place where the
+original call to <tt>call/cc</tt> occurred, replacing the current
+context with the context returned by the mathscr<em>T</em> metafunction.</p>
+<p>
+The mathscr<em>T</em> (for &#8220;trim&#8221;) metafunction accepts two <em>D</em> contexts and
+builds a context that matches its second argument, the destination
+context, except that additional calls to the <i>before</i> and
+<i>after</i> procedures
+from <tt>dw</tt> expressions in the context have been added.</p>
+<p>
+The first clause of the mathscr<em>T</em> metafunction exploits the
+<em>H</em> context, a context that contains everything except
+<tt>dw</tt> expressions. It ensures that shared parts of the
+<tt>dynamic-wind</tt> context are ignored, recurring deeper into the
+two expression contexts as long as the first <tt>dw</tt> expression in
+each have matching identifiers (<em>x</em><sub>1</sub>). The final rule is a
+catchall; it only applies when all the others fail and thus applies
+either when there are no <tt>dw</tt>s in the context, or when the
+<tt>dw</tt> expressions do not match. It calls the two other
+metafunctions defined in figure&nbsp;<a href="#node_fig_Temp_34">10</a> and
+puts their results together into a <tt>begin</tt> expression.</p>
+<p>
+The mathscr<em>R</em> metafunction extracts all of the <i>before</i>
+procedures from its argument and the mathscr<em>S</em> metafunction extracts all of the <i>after</i> procedures from its argument. They each construct new contexts and exploit
+<em>H</em> to work through their arguments, one <tt>dw</tt> at a time.
+In each case, the metafunctions are careful to keep the right
+<tt>dw</tt> context around each of the procedures in case a continuation
+jump occurs during one of their evaluations. 
+Since mathscr<em>R</em>,
+receives the destination context, it keeps the intermediate
+parts of the context in its result.
+In contrast
+mathscr<em>S</em> discards all of the context except the <tt>dw</tt>s,
+since that was the context where the call to the
+continuation occurred.</p>
+<p>
+</p>
+<a name="node_sec_A.11"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.11">A.11&nbsp;&nbsp;Letrec</a></h2>
+<p></p>
+<a name="node_fig_Temp_35"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_964"></a><a name="node_idx_966"></a><a name="node_idx_968"></a><a name="node_idx_970"></a><div align=left><img src="r6rs-Z-G-27.gif" border="0" alt="[r6rs-Z-G-27.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 11:</b>&nbsp;&nbsp;Letrec and letrec*</td></tr>
+<tr><td>
+
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+Figre&nbsp;<a href="#node_fig_Temp_35">11</a> shows the rules that handle <tt>letrec</tt> and <tt>letrec*</tt> and the supplementary expressions that they produce, <tt>l!</tt> and <tt>reinit</tt>. As a first approximation, both <tt>letrec</tt> and <tt>letrec*</tt> reduce by allocating locations in the store to hold the values of the init expressions, initializing those locations to <tt>bh</tt> (for &#8220;black hole&#8221;), evaluating the init expressions, and then using <tt>l!</tt> to update the locations in the store with the value of the init expressions. They also use <tt>reinit</tt> to detect when an init expression in a letrec is reentered via a continuation.</p>
+<p>
+Before considering how <tt>letrec</tt> and <tt>letrec*</tt> use <tt>l!</tt> and <tt>reinit</tt>, first consider how <tt>l!</tt> and <tt>reinit</tt> behave. The first two rules in figure&nbsp;<a href="#node_fig_Temp_35">11</a> cover <tt>l!</tt>. It behaves very much like <tt>set!</tt>, but it initializes both ordinary variables, and variables that are current bound to the black hole (<tt>bh</tt>).</p>
+<p>
+The next two rules cover ordinary <tt>set!</tt> when applied to a variable
+that is currently bound to a black hole. This situation can arise when
+the program assigns to a variable before letrec initializes it, eg
+<code class=verbatim>(letrec ((x (set! x 5))) x)</code>. The report specifies that either
+an implementation should perform the assignment, as reflected in the
+[6setdt] rule or it raise an exception, as reflected in the [6setdte] rule.</p>
+<p>
+The [6dt] rule covers the case where a variable is referred
+to before the value of a init expression is filled in, which must
+always raise an exception.</p>
+<p>
+A <tt>reinit</tt> expression is used to detect a program that captures a continuation in an initialization expression and returns to it, as shown in the three rules [6init], [6reinit], and [6reinite]. The <tt>reinit</tt> form accepts an identifier that is bound in the store to a boolean as its argument. Those are identifiers are initially <tt>#f</tt>. When <tt>reinit</tt> is evaluated, it checks the value of the variable and, if it is still <tt>#f</tt>, it changes it to <tt>#t</tt>. If it is already <tt>#t</tt>, then <tt>reinit</tt> either just does nothing, or it raises an exception, in keeping with the two legal behaviors of <tt>letrec</tt> and <tt>letrec*</tt>. </p>
+<p>
+The last two rules in figure&nbsp;<a href="#node_fig_Temp_35">11</a> put together <tt>l!</tt> and <tt>reinit</tt>. The [6letrec] rule reduces a <tt>letrec</tt> expression to an application expression, in order to capture the unspecified order of evaluation of the init expressions. Each init expression is wrapped in a <tt>begin0</tt> that records the value of the init and then uses <tt>reinit</tt> to detect continuations that return to the init expression. Once all of the init expressions have been evaluated, the procedure on the right-hand side of the rule is invoked, causing the value of the init expression to be filled in the store, and evaluation continues with the body of the original <tt>letrec</tt> expression.</p>
+<p>
+The [6letrec*] rule behaves similarly, but uses a <tt>begin</tt> expression rather than an application, since the init expressions are evaluated from left to right. Moreover, each init expression is filled into the store as it is evaluated, so that subsequent init expressions can refer to its value.</p>
+<p>
+</p>
+<a name="node_sec_A.12"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_A.12">A.12&nbsp;&nbsp;Underspecification</a></h2>
+<p></p>
+<p>
+</p>
+<a name="node_fig_Temp_36"></a>
+<div class=figure align=left><table width=100%><tr><td align=left>
+<p class=noindent></p>
+<p></p>
+<div align=center><table><tr><td>
+
+<a name="node_idx_972"></a><a name="node_idx_974"></a><a name="node_idx_976"></a><a name="node_idx_978"></a><a name="node_idx_980"></a><a name="node_idx_982"></a><a name="node_idx_984"></a><a name="node_idx_986"></a><a name="node_idx_988"></a><div align=left><img src="r6rs-Z-G-28.gif" border="0" alt="[r6rs-Z-G-28.gif]"></div></td></tr><tr><td>
+<p>
+
+</p>
+</td></tr></table></div>
+
+</td></tr>
+<tr><td align=left><b>Figure 12:</b>&nbsp;&nbsp;Explicitly unspecified behavior</td></tr>
+<tr><td>
+
+<p class=noindent></p>
+<p></p>
+</td></tr></table></div><p></p>
+<p>
+The rules in figure&nbsp;<a href="#node_fig_Temp_36">12</a> cover aspects of the
+semantics that are explicitly unspecified. Implementations can replace
+the rules [6ueqv], [6uval] and with different rules that cover the left-hand sides and, as long as they follow the informal specification, any replacement is valid. Those three situations correspond to the case when <tt>eqv?</tt> applied to two procedures and when multiple values are used in a single-value context.</p>
+<p>
+The remaining rules in figure&nbsp;<a href="#node_fig_Temp_36">12</a> cover the results from the assignment operations, <tt>set!</tt>, <tt>set-car!</tt>, and <tt>set-cdr!</tt>. An implementation does not adjust those rules, but instead renders them useless by adjusting the rules that insert <tt>unspecified</tt>: [6setcar], [6setcdr], [6set], and [6setd]. Those rules can be adjusted by replacing <tt>unspecified</tt> with any number of values in those rules.</p>
+<p>
+So, the remaining rules just specify the minimal behavior that we know that a value or values must have and otherwise reduce to an <b>unknown:</b> state. The rule [6udemand] drops <tt>unspecified</tt> in the <tt>U</tt> context. See figure&nbsp;<a href="#node_fig_Temp_23">2</a> for the precise definition of <tt>U</tt>, but intuitively it is a context that is only a single expression layer deep that contains expressions whose value depends on the value of their subexpressions, like the first subexpression of a <tt>if</tt>. Following that are rules that discard <tt>unspecified</tt> in expressions that discard the results of some of their subexpressions. The [6ubegin] shows how <tt>begin</tt> discards its first expression when there are more expressions to evaluate. The next two rules, [6uhandlers] and [6udw] propagate <tt>unspecified</tt> to their context, since they also return any number of values to their context. Finally, the two <tt>begin0</tt> rules preserve <tt>unspecified</tt> until the rule [6begin01] can return it to its context.</p>
+<p>
+</p>
+<p>
+ </p>
+<p></p>
+<div class=footnoterule><hr></div><p></p>
+<div class=footnote><p><a name="node_footnote_Temp_24"></a><sup><small><a href="#node_call_footnote_Temp_24">1</a></small></sup>  <tt>begin0</tt> is not part of the standard, but we include it
+to make the rules for <tt>dynamic-wind</tt> and <tt>letrec</tt> easier to read. Although
+we model it directly, it can be defined in terms of other forms we
+model here that do come from the standard:
+</p>
+<div align=left><img src="r6rs-Z-G-10.gif" border="0" alt="[r6rs-Z-G-10.gif]"></div><p>
+</p>
+</div>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-14.html">previous</a></span><span>, <a href="r6rs-Z-H-16.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

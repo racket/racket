@@ -1,0 +1,221 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-12.html">previous</a></span><span>, <a href="r6rs-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_10"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_10">Chapter 10</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_10">Expansion process</a></h1>
+<p></p>
+<p>
+Macro uses (see section&nbsp;<a href="r6rs-Z-H-12.html#node_sec_9.2">9.2</a>) are expanded into <i>core
+forms</i><a name="node_idx_322"></a>at the start of evaluation (before compilation or interpretation)
+by a syntax <em>expander</em>.
+The set of core forms is implementation-dependent, as is the
+representation of these forms in the expander&#8217;s output.
+If the expander encounters a syntactic abstraction, it invokes
+the associated transformer to expand the syntactic abstraction, then
+repeats the expansion process for the form returned by the transformer.
+If the expander encounters a core form, it recursively
+processes its subforms that are in expression or definition context,
+if any, and reconstructs the form from the
+expanded subforms.
+Information about identifier bindings is maintained during expansion
+to enforce lexical scoping for variables and keywords.</p>
+<p>
+To handle definitions, the expander processes the initial
+forms in a &lt;body&gt; (see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.3">11.3</a>) or
+&lt;library body&gt; (see section&nbsp;<a href="r6rs-Z-H-10.html#node_sec_7.1">7.1</a>)
+from left to
+right.  How the expander processes each form encountered 
+depends upon the kind of form.</p>
+<p>
+</p>
+<dl><dt></dt><dd>
+</dd><dt><b>macro use</b></dt><dd>
+The expander invokes the associated transformer to transform the macro
+use, then recursively performs whichever of these actions are appropriate
+for the resulting form.<p>
+</p>
+</dd><dt><b><tt>define-syntax</tt> form</b></dt><dd>
+The expander expands and evaluates the right-hand-side expression and binds the
+keyword to the resulting transformer.<p>
+</p>
+</dd><dt><b><tt>define</tt> form</b></dt><dd>
+The expander records the fact that the defined identifier is a variable but defers
+expansion of the right-hand-side expression until after all of the
+definitions have been processed.<p>
+</p>
+</dd><dt><b><tt>begin</tt> form</b></dt><dd>
+The expander splices the subforms into the list of body forms it is
+processing.  (See section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.4.7">11.4.7</a>.)<p>
+</p>
+</dd><dt><b><tt>let-syntax</tt> or <tt>letrec-syntax</tt> form</b></dt><dd>
+The expander splices the inner body forms into the list of (outer) body forms it is
+processing, arranging for the keywords bound by the <tt>let-syntax</tt>
+and <tt>letrec-syntax</tt> to be visible only in the inner body forms.<p>
+</p>
+</dd><dt><b>expression, i.e., nondefinition</b></dt><dd>
+The expander completes the expansion of the deferred right-hand-side expressions
+and the current and remaining expressions in the body, and then
+creates the equivalent of a <tt>letrec*</tt> form from the defined variables,
+expanded right-hand-side expressions, and expanded body expressions.
+</dd></dl><p></p>
+<p>
+For the right-hand side of the definition of a variable, expansion is
+deferred until after all of the definitions have been seen.  Consequently,
+each keyword and variable reference within the right-hand side
+resolves to the local binding, if any.</p>
+<p>
+A definition in the sequence of forms must not define any identifier whose
+binding is used to determine the meaning of the undeferred portions of the
+definition or any definition that precedes it in the sequence of forms.
+For example, the bodies of the following expressions violate this
+restriction.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;()<br>
+&nbsp;&nbsp;(define&nbsp;define&nbsp;17)<br>
+&nbsp;&nbsp;(list&nbsp;define))<br>
+<br>
+(let-syntax&nbsp;([def0&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;x)&nbsp;(define&nbsp;x&nbsp;0)])])<br>
+&nbsp;&nbsp;(let&nbsp;([z&nbsp;3])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(def0&nbsp;z)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;def0&nbsp;list)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(list&nbsp;z)))<br>
+<br>
+(let&nbsp;()<br>
+&nbsp;&nbsp;(define-syntax&nbsp;foo<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(e)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(+&nbsp;1&nbsp;2)))<br>
+&nbsp;&nbsp;(define&nbsp;+&nbsp;2)<br>
+&nbsp;&nbsp;(foo))<p></tt></p>
+<p>
+The following do not violate the restriction.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;([x&nbsp;5])<br>
+&nbsp;&nbsp;(define&nbsp;lambda&nbsp;list)<br>
+&nbsp;&nbsp;(lambda&nbsp;x&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(5&nbsp;5)<br>
+<br>
+(let-syntax&nbsp;([def0&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;x)&nbsp;(define&nbsp;x&nbsp;0)])])<br>
+&nbsp;&nbsp;(let&nbsp;([z&nbsp;3])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;def0&nbsp;list)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(def0&nbsp;z)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(list&nbsp;z)))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;(3)<br>
+<br>
+(let&nbsp;()<br>
+&nbsp;&nbsp;(define-syntax&nbsp;foo<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(e)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;([+&nbsp;-])&nbsp;(+&nbsp;1&nbsp;2))))<br>
+&nbsp;&nbsp;(define&nbsp;+&nbsp;2)<br>
+&nbsp;&nbsp;(foo))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;&nbsp;-1<p></tt></p>
+<p>
+The implementation should treat a violation of the restriction as a
+syntax violation.</p>
+<p>
+</p>
+<p>
+Note that this algorithm does not directly reprocess any form.
+It requires a single left-to-right pass over the definitions followed by a
+single pass (in any order) over the body expressions and deferred
+right-hand sides.</p>
+<p>
+Example:</p>
+<p>
+</p>
+
+<tt>(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;(define-syntax&nbsp;defun<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-rules&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;x&nbsp;a&nbsp;e)&nbsp;(define&nbsp;x&nbsp;(lambda&nbsp;a&nbsp;e))]))<br>
+&nbsp;&nbsp;(defun&nbsp;even?&nbsp;(n)&nbsp;(or&nbsp;(=&nbsp;n&nbsp;0)&nbsp;(odd?&nbsp;(-&nbsp;n&nbsp;1))))<br>
+&nbsp;&nbsp;(define-syntax&nbsp;odd?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-rules&nbsp;()&nbsp;[(_&nbsp;n)&nbsp;(not&nbsp;(even?&nbsp;n))]))<br>
+&nbsp;&nbsp;(odd?&nbsp;(if&nbsp;(odd?&nbsp;x)&nbsp;(*&nbsp;x&nbsp;x)&nbsp;x)))<p></tt></p>
+<p>
+In the example, the definition of <tt>defun</tt> is encountered first, and the keyword
+<tt>defun</tt> is associated with the transformer resulting from
+the expansion and evaluation of the corresponding right-hand side.
+A use of <tt>defun</tt> is encountered next and expands into a
+<tt>define</tt> form.
+Expansion of the right-hand side of this define form is deferred.
+The definition of <tt>odd?</tt> is next and results in the association
+of the keyword <tt>odd?</tt> with the transformer resulting from
+expanding and evaluating the corresponding right-hand side.
+A use of <tt>odd?</tt> appears next and is expanded; the resulting
+call to <tt>not</tt> is recognized as an expression
+because <tt>not</tt> is bound as a variable.
+At this point, the expander completes the expansion of the current
+expression (the call to <tt>not</tt>) and the deferred right-hand side of the
+<tt>even?</tt> definition;
+the uses of <tt>odd?</tt> appearing in these expressions are expanded
+using the transformer associated with the keyword <tt>odd?</tt>.
+The final output is the equivalent of</p>
+<p>
+</p>
+
+<tt>(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;(letrec*&nbsp;([even?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(or&nbsp;(=&nbsp;n&nbsp;0)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(even?&nbsp;(-&nbsp;n&nbsp;1)))))])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(even?&nbsp;(if&nbsp;(not&nbsp;(even?&nbsp;x))&nbsp;(*&nbsp;x&nbsp;x)&nbsp;x)))))<p></tt></p>
+<p>
+although the structure of the output is implementation-dependent.</p>
+<p>
+Because definitions and expressions can be interleaved in a
+&lt;top-level body&gt; (see chapter&nbsp;<a href="r6rs-Z-H-11.html#node_chap_8">8</a>),
+the expander&#8217;s processing of a &lt;top-level body&gt; is somewhat
+more complicated.
+It behaves as described above for a &lt;body&gt; or
+&lt;library body&gt; with the following exceptions:
+When the expander finds a nondefinition,
+it defers its expansion and continues scanning for definitions.
+Once it reaches the end of the set of forms, it processes the
+deferred right-hand-side and body expressions, then
+generates the equivalent of a <tt>letrec*</tt> form from the defined variables,
+expanded right-hand-side expressions, and expanded body expressions.
+For each body expression &lt;expression&gt; that appears before a variable definition
+in the body, a dummy binding is created at the corresponding place within
+the set of <tt>letrec*</tt> bindings, with a fresh temporary variable on the
+left-hand side and the equivalent of <tt>(begin &lt;expression&gt;
+&lt;unspecified&gt;)</tt>,
+where &lt;unspecified&gt; is a side-effect-free expression returning
+an unspecified value,
+on the right-hand side, so that
+left-to-right evaluation order is preserved.
+The <tt>begin</tt> wrapper allows &lt;expression&gt; to evaluate to an
+arbitrary number of values.</p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-12.html">previous</a></span><span>, <a href="r6rs-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

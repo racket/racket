@@ -1,0 +1,227 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-2.html">previous</a></span><span>, <a href="r6rs-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_Temp_3"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_Temp_3">Introduction</a></h1>
+<p>
+</p>
+<p>
+</p>
+<p>
+Programming languages should be designed not by piling feature on top of
+feature, but by removing the weaknesses and restrictions that make additional
+features appear necessary.  Scheme demonstrates that a very small number
+of rules for forming expressions, with no restrictions on how they are
+composed, suffice to form a practical and efficient programming language
+that is flexible enough to support most of the major programming
+paradigms in use today.</p>
+<p>
+Scheme
+was one of the first programming languages to incorporate first-class
+procedures as in the lambda calculus, thereby proving the usefulness of
+static scope rules and block structure in a dynamically typed language.
+Scheme was the first major dialect of Lisp to distinguish procedures
+from lambda expressions and symbols, to use a single lexical
+environment for all variables, and to evaluate the operator position
+of a procedure call in the same way as an operand position.  By relying
+entirely on procedure calls to express iteration, Scheme emphasized the
+fact that tail-recursive procedure calls are essentially gotos that
+pass arguments.  Scheme was the first widely used programming language to
+embrace first-class escape procedures, from which all previously known
+sequential control structures can be synthesized.  A subsequent
+version of Scheme introduced the concept of exact and inexact number objects,
+an extension of Common Lisp&#8217;s generic arithmetic.
+More recently, Scheme became the first programming language to support
+hygienic macros, which permit the syntax of a block-structured language
+to be extended in a consistent and reliable manner.</p>
+<p>
+</p>
+<a name="node_sec_Temp_4"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_4">Guiding principles</a></h3>
+<p>To help guide the standardization effort, the editors have adopted a
+set of principles, presented below.
+Like the Scheme language defined in <i>Revised<sup>5</sup> Report on the Algorithmic Language Scheme</i>&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_14">14</a>], the language described
+in this report is intended to:</p>
+<p>
+</p>
+<ul>
+<li><p>allow programmers to read each other&#8217;s code, and allow
+development of portable programs that can be executed in any
+conforming implementation of Scheme;</p>
+<p>
+</p>
+<li><p>derive its power from simplicity, a small number of generally
+useful core syntactic forms and procedures, and no unnecessary
+restrictions on how they are composed;</p>
+<p>
+</p>
+<li><p>allow programs to define new procedures and new hygienic
+syntactic forms;</p>
+<p>
+</p>
+<li><p>support the representation of program source code as data;</p>
+<p>
+</p>
+<li><p>make procedure calls powerful enough to express any form of
+sequential control, and allow programs to perform non-local control
+operations without the use of global program transformations;</p>
+<p>
+</p>
+<li><p>allow interesting, purely functional programs to run indefinitely
+without terminating or running out of memory on finite-memory
+machines;</p>
+<p>
+</p>
+<li><p>allow educators to use the language to teach programming
+effectively, at various levels and with a variety of pedagogical
+approaches; and</p>
+<p>
+</p>
+<li><p>allow researchers to use the language to explore the design,
+implementation, and semantics of programming languages.
+</p>
+</ul><p></p>
+<p>
+In addition, this report is intended to:</p>
+<p>
+</p>
+<ul>
+<li><p>allow programmers to create and distribute substantial programs
+and libraries, e.g., implementations of Scheme Requests for
+Implementation, that run without
+modification in a variety of Scheme implementations;</p>
+<p>
+</p>
+<li><p>support procedural, syntactic, and data abstraction more fully
+by allowing programs to define hygiene-bending and hygiene-breaking
+syntactic abstractions and new unique datatypes along with
+procedures and hygienic macros in any scope;</p>
+<p>
+</p>
+<li><p>allow programmers to rely on a level of automatic run-time type
+and bounds checking sufficient to ensure type safety; and</p>
+<p>
+</p>
+<li><p>allow implementations to generate efficient code, without
+requiring programmers to use implementation-specific operators or
+declarations.
+</p>
+</ul><p></p>
+<p>
+While it was possible to write portable programs in Scheme as
+described in <i>Revised<sup>5</sup> Report on the Algorithmic Language Scheme</i>, and indeed portable Scheme programs were written
+prior to this report, many Scheme programs were not, primarily because
+of the lack of substantial standardized libraries and the
+proliferation of implementation-specific language additions.</p>
+<p>
+In general, Scheme should include building blocks that allow a wide
+variety of libraries to be written, include commonly used user-level
+features to enhance portability and readability of library and
+application code, and exclude features that are less commonly used and
+easily implemented in separate libraries.</p>
+<p>
+The language described in this report is intended to also be backward
+compatible with programs written in Scheme as described in <i>Revised<sup>5</sup> Report on the Algorithmic Language Scheme</i> to
+the extent possible without compromising the above principles and
+future viability of the language.  With respect to future viability,
+the editors have operated under the assumption that many more Scheme
+programs will be written in the future than exist in the present, so
+the future programs are those with which we should be most concerned.</p>
+<p>
+</p>
+<a name="node_sec_Temp_5"></a>
+<h3 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_Temp_5">Acknowledgements</a></h3>
+<p>Many people contributed significant help to this revision of the
+report.  Specifically, we thank Aziz Ghuloum and Andr&eacute; van Tonder for
+contributing reference implementations of the library system.  We
+thank Alan Bawden, John Cowan, Sebastian Egner, Aubrey Jaffer, Shiro
+Kawai, Bradley Lucier, and Andr&eacute; van Tonder for contributing insights on
+language design.  Marc Feeley, Martin Gasbichler, Aubrey Jaffer, Lars T Hansen,
+Richard Kelsey, Olin Shivers, and Andr&eacute; van Tonder wrote SRFIs that
+served as direct input to the report.  Marcus Crestani, David Frese, 
+Aziz Ghuloum, Arthur A. Gleckler, Eric Knauel, Jonathan Rees, and Andr&eacute;
+van Tonder thoroughly proofread early versions of the report.</p>
+<p>
+We would also like to thank the following people for their
+help in creating this report: Lauri Alanko,
+Eli Barzilay, Alan Bawden, Brian C. Barnes, Per Bothner, Trent Buck,
+Thomas Bushnell, Taylor Campbell, Ludovic Court&egrave;s, Pascal Costanza,
+John Cowan, Ray Dillinger, Jed Davis, J.A. &#8220;Biep&#8221; Durieux, Carl Eastlund,
+Sebastian Egner, Tom Emerson, Marc Feeley, Matthias Felleisen, Andy
+Freeman, Ken Friedenbach, Martin Gasbichler, Arthur A. Gleckler, Aziz
+Ghuloum, Dave Gurnell, Lars T Hansen, Ben Harris, Sven Hartrumpf, Dave
+Herman, Nils M. Holm, Stanislav Ievlev, James Jackson, Aubrey Jaffer,
+Shiro Kawai, Alexander Kjeldaas, Eric Knauel, Michael Lenaghan, Felix Klock,
+Donovan Kolbly, Marcin Kowalczyk, Thomas Lord, Bradley Lucier, Paulo
+J. Matos, Dan Muresan, Ryan Newton, Jason Orendorff, Erich Rast, Jeff
+Read, Jonathan Rees, Jorgen Sch&auml;fer, Paul Schlie, Manuel Serrano,
+Olin Shivers, Jonathan Shapiro, Jens Axel S&oslash;gaard, Jay Sulzberger,
+Pinku Surana, Mikael Tillenius, Sam Tobin-Hochstadt, David Van Horn,
+Andr&eacute; van Tonder, Reinder Verlinde, Alan Watson, Andrew Wilcox, Jon
+Wilson, Lynn Winebarger, Keith Wright, and Chongkai Zhu.</p>
+<p>
+We would like to thank the following people for their help in creating
+the previous revisions of this report: Alan Bawden, Michael
+Blair, George Carrette, Andy Cromarty, Pavel Curtis, Jeff Dalton, Olivier Danvy,
+Ken Dickey, Bruce Duba, Marc Feeley,
+Andy Freeman, Richard Gabriel, Yekta G&uuml;rsel, Ken Haase, Robert
+Hieb, Paul Hudak, Morry Katz, Chris Lindblad, Mark Meyer, Jim Miller, Jim Philbin,
+John Ramsdell, Mike Shaff, Jonathan Shapiro, Julie Sussman,
+Perry Wagle, Daniel Weise, Henry Wu, and Ozan Yigit.</p>
+<p>
+We thank Carol Fessenden, Daniel
+Friedman, and Christopher Haynes for permission to use text from the Scheme 311
+version 4 reference manual.  We thank Texas Instruments, Inc.&nbsp;for permission to
+use text from the <em>TI Scheme Language Reference Manual</em>&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_26">26</a>].
+We gladly acknowledge the influence of manuals for MIT Scheme&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_20">20</a>],
+T&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_21">21</a>], Scheme 84&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_12">12</a>], Common Lisp&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_25">25</a>],
+Chez Scheme&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_8">8</a>], PLT&nbsp;Scheme&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_11">11</a>],
+and Algol 60&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_1">1</a>].</p>
+<p>
+We also thank Betty Dexter for the extreme effort she put into
+setting this report in T<small>E</small>X, and Donald Knuth for designing the program
+that caused her troubles.</p>
+<p>
+The Artificial Intelligence Laboratory of the
+Massachusetts Institute of Technology, the Computer Science
+Department of Indiana University, the Computer and Information
+Sciences Department of the University of Oregon, and the NEC Research
+Institute supported the preparation of this report.  Support for the MIT
+work was provided in part by
+the Advanced Research Projects Agency of the Department of Defense under Office
+of Naval Research contract N00014-80-C-0505.  Support for the Indiana
+University work was provided by NSF grants NCS 83-04567 and NCS
+83-03325.</p>
+<p>
+   </p>
+<p><div style="height: 9.0pt"></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+ </p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-2.html">previous</a></span><span>, <a href="r6rs-Z-H-4.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

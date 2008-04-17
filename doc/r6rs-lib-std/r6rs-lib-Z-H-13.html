@@ -1,0 +1,1222 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs-lib.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+r6rs-lib
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-lib-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-12.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_12"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_12">Chapter 12</a></div><br>
+<a href="r6rs-lib-Z-H-1.html#node_toc_node_chap_12"><tt>syntax-case</tt></a></h1>
+<p></p>
+<p>
+</p>
+<p>
+The <tt>(rnrs syntax-case (6))</tt><a name="node_idx_1098"></a>library
+provides
+support for writing low-level macros
+in a high-level style, with automatic syntax checking, input
+destructuring, output restructuring, maintenance of lexical scoping
+and referential transparency (hygiene), and support for controlled
+identifier capture.</p>
+<p>
+</p>
+<a name="node_sec_12.1"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.1">12.1&nbsp;&nbsp;Hygiene</a></h2>
+<p></p>
+<p>
+</p>
+<p>
+Barendregt&#8217;s <em>hygiene condition</em>&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_1">1</a>] for the
+lambda calculus is an informal notion that requires the free variables of
+an expression <em>N</em> that is to be substituted into another expression <em>M</em> not to
+be captured by bindings in <em>M</em> when such capture is not intended.
+Kohlbecker, et al&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_9">9</a>] propose a corresponding
+<em>hygiene condition for macro expansion</em> that applies in all situations
+where capturing is not explicit:
+&#8220;Generated identifiers that become binding instances in
+the completely expanded program must only bind variables that
+are generated at the same transcription step&#8221;.
+In the terminology of this document, the &#8220;generated identifiers&#8221; are
+those introduced by a transformer rather than those present in the form
+passed to the transformer, and a &#8220;macro transcription step&#8221; corresponds
+to a single call by the expander to a transformer.
+Also, the hygiene condition applies to all introduced bindings rather than
+to introduced variable bindings alone.</p>
+<p>
+This leaves open what happens to an introduced identifier that appears
+outside the scope of a binding introduced by the same call.
+Such an identifier refers to the lexical binding in effect where it
+appears (within a <tt>syntax</tt> &lt;template&gt;;
+see section&nbsp;<a href="#node_sec_12.4">12.4</a>) inside the transformer body or one of
+the helpers it calls.
+This is essentially the referential transparency property described
+by Clinger and Rees&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_3">3</a>].
+Thus, the hygiene condition can be restated as follows:</p>
+<p>
+</p>
+<blockquote>
+
+<p class=noindent>A binding for an identifier introduced into the output of a transformer
+call from the expander must capture only references to the identifier
+introduced into the output of the same transformer call.
+A reference to an identifier introduced into the output of a transformer
+refers to the closest enclosing binding for the introduced identifier or,
+if it appears outside of any enclosing binding for the introduced
+identifier, the closest enclosing lexical binding where the identifier
+appears (within a <tt>syntax</tt> &lt;template&gt;)
+inside the transformer body or one of the helpers it calls.
+</p>
+</blockquote><p>
+Explicit captures are handled via <tt>datum-&gt;syntax</tt>; see
+section&nbsp;<a href="#node_sec_12.6">12.6</a>.</p>
+<p>
+Operationally, the expander can maintain hygiene with the help of
+<em>marks<a name="node_idx_1100"></a></em> and <em>substitutions<a name="node_idx_1102"></a></em>.
+Marks are applied selectively by the expander to the output of each
+transformer it invokes, and substitutions are applied to the portions
+of each binding form that are supposed to be within the scope of the bound
+identifiers.
+Marks are used to distinguish like-named identifiers that are
+introduced at different times (either present in the source or introduced
+into the output of a particular transformer call), and substitutions are
+used to map identifiers to their expand-time values.</p>
+<p>
+Each time the expander encounters a macro use, it applies an
+<a name="node_idx_1104"></a><em>antimark</em> to the input form, invokes the associated transformer,
+then applies a fresh mark to the output.
+Marks and antimarks cancel, so the portions of the input that appear in
+the output are effectively left unmarked, while the portions of the output
+that are introduced are marked with the fresh mark.</p>
+<p>
+Each time the expander encounters a binding form it creates a set of
+substitutions, each mapping one of the (possibly marked) bound identifiers
+to information about the binding.
+(For a <tt>lambda</tt> expression, the expander might map each bound
+identifier to a representation of the formal parameter in the output of
+the expander.
+For a <tt>let-syntax</tt> form, the expander might map each bound
+identifier to the associated transformer.)
+These substitutions are applied to the portions of the input form in
+which the binding is supposed to be visible.</p>
+<p>
+Marks and substitutions together form a <a name="node_idx_1106"></a><em>wrap</em> that is layered on the
+form being processed by the expander and pushed down toward the leaves as
+necessary.
+A wrapped form is referred to as a <a name="node_idx_1108"></a><em>wrapped syntax object</em>.
+Ultimately, the wrap may rest on a leaf that represents an identifier, in
+which case the wrapped syntax object is also referred to
+as an <em>identifier</em>.
+An identifier contains a name along with the wrap.
+(Names are typically represented by symbols.)</p>
+<p>
+When a substitution is created to map an identifier to an expand-time
+value, the substitution records the name of the identifier and
+the set of marks that have been applied to that identifier, along
+with the associated expand-time value.
+The expander resolves identifier references by looking for the latest
+matching substitution to be applied to the identifier, i.e., the outermost
+substitution in the wrap whose name and marks match the name and
+marks recorded in the substitution.
+The name matches if it is the same name (if using symbols, then by
+<tt>eq?</tt>), and the marks match if the marks recorded with the
+substitution are the same as those that appear <em>below</em> the
+substitution in the wrap, i.e., those that were applied <em>before</em> the
+substitution.
+Marks applied after a substitution, i.e., appear over the substitution in
+the wrap, are not relevant and are ignored.</p>
+<p>
+An algebra that defines how marks and substitutions work more precisely is
+given in section&nbsp;2.4 of Oscar Waddell&#8217;s PhD thesis&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_13">13</a>].</p>
+<p>
+</p>
+<a name="node_sec_12.2"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.2">12.2&nbsp;&nbsp;Syntax objects</a></h2>
+<p></p>
+<p>
+A <a name="node_idx_1110"></a><em>syntax object</em> is a representation of a Scheme form that contains
+contextual information about the form in addition to its structure.
+This contextual information is used by the expander to maintain
+lexical scoping and may also be used by an implementation to maintain
+source-object correlation&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_6">6</a>].</p>
+<p>
+A syntax object may be wrapped, as described in section&nbsp;<a href="#node_sec_12.1">12.1</a>.
+It may also be unwrapped, fully or partially, i.e., consist of list and
+vector structure with wrapped syntax objects or nonsymbol values at the
+leaves.
+More formally, a syntax object is:</p>
+<p>
+</p>
+<ul>
+<li><p>a pair of syntax objects,
+</p>
+<li><p>a vector of syntax objects,
+</p>
+<li><p>a nonpair, nonvector, nonsymbol value, or
+</p>
+<li><p>a wrapped syntax object.
+</p>
+</ul><p></p>
+<p>
+The distinction between the terms &#8220;syntax object&#8221; and &#8220;wrapped syntax
+object&#8221; is important.
+For example, when invoked by the expander, a transformer
+(section&nbsp;<a href="#node_sec_12.3">12.3</a>) must accept a wrapped syntax object but
+may return any syntax object, including an unwrapped syntax object.</p>
+<p>
+Syntax objects representing identifiers are always wrapped and are distinct
+from other types of values.
+Wrapped syntax objects that are not identifiers may or may not be distinct
+from other types of values.</p>
+<p>
+</p>
+<a name="node_sec_12.3"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.3">12.3&nbsp;&nbsp;Transformers</a></h2>
+<p></p>
+<p>
+In <tt>define-syntax</tt> (report
+section&nbsp;on &#8220;Syntax definitions&#8221;), <tt>let-syntax</tt>, and <tt>letrec-syntax</tt> forms (report
+section&nbsp;on &#8220;Binding constructs for syntactic
+keywords&#8221;), a binding for a syntactic keyword is an expression
+that evaluates to a <a name="node_idx_1112"></a><em>transformer</em><a name="node_idx_1114"></a>.</p>
+<p>
+A transformer is a <a name="node_idx_1116"></a><em>transformation procedure</em> or a
+<a name="node_idx_1118"></a><em>variable transformer</em>.
+A transformation procedure is a procedure that must accept one
+argument, a wrapped syntax object (section&nbsp;<a href="#node_sec_12.2">12.2</a>)
+representing the input, and return a syntax object
+(section&nbsp;<a href="#node_sec_12.2">12.2</a>) representing the output.
+The transformer is called by the expander whenever a reference to
+a keyword with which it has been associated is found.
+If the keyword appears in the car of a list-structured
+input form, the transformer receives the entire list-structured
+form, and its output replaces the entire form.
+Except with variable transformers (see below),
+if the keyword is found in any other definition or expression
+context, the transformer receives a wrapped syntax object representing
+just the keyword reference, and its output replaces just the reference.
+Except with variable transformers, an exception with condition
+type <tt>&amp;syntax</tt> is raised if the keyword appears on the left-hand side
+of a <tt>set!</tt> expression.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1120"></a>make-variable-transformer<i> proc</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Proc</i> should accept one argument,
+a wrapped syntax object, and return a syntax object.</p>
+<p>
+The <tt>make-variable-transformer</tt> procedure creates a
+<a name="node_idx_1122"></a><em>variable transformer</em>.
+A variable transformer is like an ordinary transformer except
+that, if a keyword associated with a variable transformer appears on
+the left-hand side of a <tt>set!</tt> expression, an exception is
+not raised.
+Instead, <i>proc</i> is called with a
+wrapped syntax object representing the entire <tt>set!</tt> expression as
+its argument, and its return value replaces the entire <tt>set!</tt>
+expression.</p>
+<p>
+<em>Implementation responsibilities: </em>The implementation must check the restrictions on <i>proc</i>
+only to the extent performed by applying it as described.
+An
+implementation may check whether <i>proc</i> is an appropriate argument
+before applying it.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_12.4"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.4">12.4&nbsp;&nbsp;Parsing input and producing output</a></h2>
+<p></p>
+<p>
+Transformers can destructure their input with <tt>syntax-case</tt> and rebuild
+their output with <tt>syntax</tt>.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(syntax-case &lt;expression&gt; (&lt;literal&gt; <tt>...</tt>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_1124"></a><tt>&nbsp;&nbsp;&nbsp;&lt;syntax-case&nbsp;clause&gt;&nbsp;<tt>...</tt>)</tt><br>
+<div align=left><tt>_</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<div align=left><tt>...</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+<a name="node_idx_1126"></a><a name="node_idx_1128"></a><p>
+<em>Syntax: </em>Each &lt;literal&gt; must be an identifier.
+Each &lt;syntax-case clause&gt; must take one of the following two forms.</p>
+<p>
+</p>
+
+<tt>(&lt;pattern&gt;&nbsp;&lt;output&nbsp;expression&gt;)<br>
+(&lt;pattern&gt;&nbsp;&lt;fender&gt;&nbsp;&lt;output&nbsp;expression&gt;)<p></tt></p>
+<p>
+&lt;Fender&gt; and &lt;output expression&gt; must be
+&lt;expression&gt;s.</p>
+<p>
+A &lt;pattern&gt; is an identifier, constant, or one of the following.</p>
+<p>
+</p>
+
+<tt>(&lt;pattern&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;pattern&gt;&nbsp;&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;pattern&gt;)<br>
+(&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;&lt;pattern&gt;&nbsp;&lt;ellipsis&gt;&nbsp;&lt;pattern&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;&lt;pattern&gt;&nbsp;&lt;ellipsis&gt;&nbsp;&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;pattern&gt;)<br>
+#(&lt;pattern&gt;&nbsp;<tt>...</tt>)<br>
+#(&lt;pattern&gt;&nbsp;<tt>...</tt>&nbsp;&lt;pattern&gt;&nbsp;&lt;ellipsis&gt;&nbsp;&lt;pattern&gt;&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+An &lt;ellipsis&gt; is the identifier &#8220;<tt>...</tt>&#8221; (three periods).<a name="node_idx_1130"></a></p>
+<p>
+An identifier appearing within a &lt;pattern&gt; may be an underscore
+(&nbsp;<tt>_</tt>&nbsp;), a literal identifier listed in the list of literals
+<tt>(&lt;literal&gt; <tt>...</tt>)</tt>, or an ellipsis (&nbsp;<tt>...</tt>&nbsp;).
+All other identifiers appearing within a &lt;pattern&gt; are
+<i>pattern variables<a name="node_idx_1132"></a></i>.
+It is a syntax violation if an ellipsis or underscore appears in <tt>(&lt;literal&gt; <tt>...</tt>)</tt>.</p>
+<p>
+<tt>_</tt> and <tt>...</tt> are the same as in the <tt>(rnrs base (6))</tt> library.</p>
+<p>
+Pattern variables match arbitrary input subforms and
+are used to refer to elements of the input.
+It is a syntax violation if the same pattern variable appears more than once in a
+&lt;pattern&gt;.</p>
+<p>
+Underscores also match arbitrary input subforms but are not pattern variables
+and so cannot be used to refer to those elements.
+Multiple underscores may appear in a &lt;pattern&gt;.</p>
+<p>
+A literal identifier matches an input subform if and only if the input
+subform is an identifier and either both its occurrence in the input
+expression and its occurrence in the list of literals have the same
+lexical binding, or the two identifiers have the same name and both have
+no lexical binding.</p>
+<p>
+A subpattern followed by an ellipsis can match zero or more elements of
+the input.</p>
+<p>
+More formally, an input form <em>F</em> matches a pattern <em>P</em> if and only if
+one of the following holds:</p>
+<p>
+</p>
+<ul>
+<li><p><em>P</em> is an underscore (&nbsp;<tt>_</tt>&nbsp;).</p>
+<p>
+</p>
+<li><p><em>P</em> is a pattern variable.</p>
+<p>
+</p>
+<li><p><em>P</em> is a literal identifier
+and <em>F</em> is an equivalent identifier in the
+sense of <tt>free-identifier=?</tt>
+(section&nbsp;<a href="#node_sec_12.5">12.5</a>).</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt>
+and <em>F</em> is a list of <em>n</em> elements that match <em>P</em><sub>1</sub> through
+<em>P</em><sub><em>n</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub> . <em>P</em><sub><em>x</em></sub>)</tt>
+and <em>F</em> is a list or improper list of <em>n</em> or more elements
+whose first <em>n</em> elements match <em>P</em><sub>1</sub> through <em>P</em><sub><em>n</em></sub>
+and
+whose <em>n</em>th cdr matches <em>P</em><sub><em>x</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>k</em></sub> <em>P</em><sub><em>e</em></sub> &lt;ellipsis&gt; <em>P</em><sub><em>m</em>+1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt>,
+where &lt;ellipsis&gt; is the identifier <tt>...</tt>
+and <em>F</em> is a proper list of <em>n</em>
+elements whose first <em>k</em> elements match <em>P</em><sub>1</sub> through <em>P</em><sub><em>k</em></sub>,
+whose next <em>m</em> <tt>-</tt> <em>k</em> elements each match <em>P</em><sub><em>e</em></sub>,
+and
+whose remaining <em>n</em> <tt>-</tt> <em>m</em> elements match <em>P</em><sub><em>m</em>+1</sub> through <em>P</em><sub><em>n</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>k</em></sub> <em>P</em><sub><em>e</em></sub> &lt;ellipsis&gt; <em>P</em><sub><em>m</em>+1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub> . <em>P</em><sub><em>x</em></sub>)</tt>,
+where &lt;ellipsis&gt; is the identifier <tt>...</tt>
+and <em>F</em> is a list or improper list of <em>n</em>
+elements whose first <em>k</em> elements match <em>P</em><sub>1</sub> through <em>P</em><sub><em>k</em></sub>,
+whose next <em>m</em> <tt>-</tt> <em>k</em> elements each match <em>P</em><sub><em>e</em></sub>,
+whose next <em>n</em> <tt>-</tt> <em>m</em> elements match <em>P</em><sub><em>m</em>+1</sub> through <em>P</em><sub><em>n</em></sub>,
+and 
+whose <em>n</em>th and final cdr matches <em>P</em><sub><em>x</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>#(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt>
+and <em>F</em> is a vector of <em>n</em> elements that match <em>P</em><sub>1</sub> through
+<em>P</em><sub><em>n</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is of the form
+<tt>#(<em>P</em><sub>1</sub> <tt>...</tt> <em>P</em><sub><em>k</em></sub> <em>P</em><sub><em>e</em></sub> &lt;ellipsis&gt; <em>P</em><sub><em>m</em>+1</sub> <tt>...</tt> <em>P</em><sub><em>n</em></sub>)</tt>,
+where &lt;ellipsis&gt; is the identifier <tt>...</tt>
+and <em>F</em> is a vector of <em>n</em> or more elements
+whose first <em>k</em> elements match <em>P</em><sub>1</sub> through <em>P</em><sub><em>k</em></sub>,
+whose next <em>m</em> <tt>-</tt> <em>k</em> elements each match <em>P</em><sub><em>e</em></sub>,
+and
+whose remaining <em>n</em> <tt>-</tt> <em>m</em> elements match <em>P</em><sub><em>m</em>+1</sub> through <em>P</em><sub><em>n</em></sub>.</p>
+<p>
+</p>
+<li><p><em>P</em> is a pattern datum (any nonlist, nonvector, nonsymbol
+datum) and <em>F</em> is equal to <em>P</em> in the sense of the
+<tt>equal?</tt> procedure.
+</p>
+</ul><p></p>
+<p>
+<em>Semantics: </em>A <tt>syntax-case</tt> expression first evaluates &lt;expression&gt;.
+It then attempts to match
+the &lt;pattern&gt; from the first &lt;syntax-case clause&gt; against the resulting value,
+which is unwrapped as necessary to perform the match.
+If the pattern matches the value and no
+&lt;fender&gt; is present,
+&lt;output expression&gt; is evaluated and its value returned as the
+value of the <tt>syntax-case</tt> expression.
+If the pattern does not match the value, <tt>syntax-case</tt> tries
+the second &lt;syntax-case clause&gt;, then the third, and so on.
+It is a syntax violation if the value does not match any of the patterns.</p>
+<p>
+If the optional &lt;fender&gt; is present, it serves as an additional
+constraint on acceptance of a clause.
+If the &lt;pattern&gt; of a given &lt;syntax-case clause&gt; matches the input value,
+the corresponding &lt;fender&gt; is evaluated.
+If &lt;fender&gt; evaluates to a true value, the clause is accepted;
+otherwise, the clause is rejected as if the pattern had failed to match
+the value.
+Fenders are logically a part of the matching process, i.e., they
+specify additional matching constraints beyond the basic structure of
+the input.</p>
+<p>
+Pattern variables contained within a clause&#8217;s
+&lt;pattern&gt; are bound to the corresponding pieces of the input
+value within the clause&#8217;s &lt;fender&gt; (if present) and
+&lt;output expression&gt;.
+Pattern variables can be referenced only within <tt>syntax</tt>
+expressions (see below).
+Pattern variables occupy the same name space as program variables and
+keywords.</p>
+<p>
+If the <tt>syntax-case</tt> form is in tail context, the &lt;output
+expression&gt;s are also in tail position.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1134"></a>syntax<i> &lt;template&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+<tt>#&#8217;&lt;template&gt;</tt> is equivalent to <tt>(syntax
+&lt;template&gt;)</tt>.
+</blockquote><p>
+A <tt>syntax</tt> expression is similar to a <tt>quote</tt> expression
+except that (1) the values of pattern variables appearing within
+&lt;template&gt; are inserted into &lt;template&gt;, (2) contextual
+information associated both with the input and with the template is
+retained in the output to support lexical scoping, and (3) the value
+of a <tt>syntax</tt> expression is a syntax object.</p>
+<p>
+A &lt;template&gt; is a pattern variable, an identifier that
+is not a pattern
+variable, a pattern datum, or one of the following.</p>
+<p>
+</p>
+
+<tt>(&lt;subtemplate&gt;&nbsp;<tt>...</tt>)<br>
+(&lt;subtemplate&gt;&nbsp;<tt>...</tt>&nbsp;.&nbsp;&lt;template&gt;)<br>
+#(&lt;subtemplate&gt;&nbsp;<tt>...</tt>)<p></tt></p>
+<p>
+A &lt;subtemplate&gt; is a &lt;template&gt; followed by zero or more ellipses.</p>
+<p>
+The value of a <tt>syntax</tt> form is a copy of &lt;template&gt; in which
+the pattern variables appearing within the template are replaced with
+the input subforms to which they are bound.
+Pattern data and identifiers that are not pattern variables
+or ellipses are copied directly into the output.
+A subtemplate followed by an ellipsis expands
+into zero or more occurrences of the subtemplate.
+Pattern variables that occur in subpatterns followed by one or more
+ellipses may occur only in subtemplates that are
+followed by (at least) as many ellipses.
+These pattern variables are replaced in the output by the input
+subforms to which they are bound, distributed as specified.
+If a pattern variable is followed by more ellipses in the subtemplate
+than in the associated subpattern, the input form is replicated as
+necessary.
+The subtemplate must contain at least one pattern variable from a
+subpattern followed by an ellipsis, and for at least one such pattern
+variable, the subtemplate must be followed by exactly as many ellipses as
+the subpattern in which the pattern variable appears.
+(Otherwise, the expander would not be able to determine how many times the
+subform should be repeated in the output.)
+It is a syntax violation if the constraints of this paragraph are not met.</p>
+<p>
+A template of the form
+<tt>(&lt;ellipsis&gt; &lt;template&gt;)</tt> is identical to &lt;template&gt;, except that
+ellipses within the template have no special meaning.
+That is, any ellipses contained within &lt;template&gt; are
+treated as ordinary identifiers.
+In particular, the template <tt>(... ...)</tt> produces a single
+ellipsis.
+This allows macro uses to expand into forms containing
+ellipses.</p>
+<p>
+
+The output produced by <tt>syntax</tt> is wrapped or unwrapped according to
+the following rules.</p>
+<p>
+</p>
+<ul>
+<li><p>the copy of <tt>(&lt;t<sub>1</sub>&gt; .  &lt;t<sub>2</sub>&gt;)</tt> is a pair if &lt;t<sub>1</sub>&gt;
+or &lt;t<sub>2</sub>&gt; contain any pattern variables,
+</p>
+<li><p>the copy of <tt>(&lt;t&gt; &lt;ellipsis&gt;)</tt> is a list if &lt;t&gt;
+contains any pattern variables,
+</p>
+<li><p>the copy of <tt>#(&lt;t<sub>1</sub>&gt; ... &lt;t<sub><em>n</em></sub>&gt;)</tt> is a vector if any of
+&lt;t<sub>1</sub>&gt;,&nbsp;<tt>...</tt>,&nbsp;&lt;t<sub><em>n</em></sub>&gt; contain any pattern variables, and
+</p>
+<li><p>the copy of any portion of &lt;t&gt; not containing any pattern variables
+is a wrapped syntax object.
+</p>
+</ul><p></p>
+<p>
+The input subforms inserted in place of the pattern variables are wrapped
+if and only if the corresponding input subforms are wrapped.
+</p>
+<p></p>
+<p>
+The following definitions of <tt>or</tt> illustrate <tt>syntax-case</tt>
+and <tt>syntax</tt>.
+The second is equivalent to the first but uses the <tt>#&#8217;</tt>
+prefix instead of the full <tt>syntax</tt> form.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;or<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_)&nbsp;(syntax&nbsp;<tt>#f</tt>)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e)&nbsp;(syntax&nbsp;e)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e1&nbsp;e2&nbsp;e3&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax&nbsp;(let&nbsp;([t&nbsp;e1])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;t&nbsp;t&nbsp;(or&nbsp;e2&nbsp;e3&nbsp;...))))])))<br>
+<br>
+(define-syntax&nbsp;or<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_)&nbsp;#&#8217;<tt>#f</tt>]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e)&nbsp;#&#8217;e]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e1&nbsp;e2&nbsp;e3&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([t&nbsp;e1])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;t&nbsp;t&nbsp;(or&nbsp;e2&nbsp;e3&nbsp;...)))])))<p></tt></p>
+<p>
+The examples below define <em>identifier macros<a name="node_idx_1136"></a></em>, macro uses
+supporting keyword references that do not necessarily appear in the first
+position of a list-structured form.
+The second example uses <tt>make-variable-transformer</tt> to handle the case
+where the keyword appears on the left-hand side of a
+<tt>set!</tt> expression.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;p&nbsp;(cons&nbsp;4&nbsp;5))<br>
+(define-syntax&nbsp;p.car<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;.&nbsp;rest)&nbsp;#&#8217;((car&nbsp;p)&nbsp;.&nbsp;rest)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[_&nbsp;&nbsp;#&#8217;(car&nbsp;p)])))<br>
+p.car&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;4<br>
+(set!&nbsp;p.car&nbsp;15)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;syntax</tt>&nbsp;<i>exception</i><br>
+<br>
+(define&nbsp;p&nbsp;(cons&nbsp;4&nbsp;5))<br>
+(define-syntax&nbsp;p.car<br>
+&nbsp;&nbsp;(make-variable-transformer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;(set!)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(set!&nbsp;_&nbsp;e)&nbsp;#&#8217;(set-car!&nbsp;p&nbsp;e)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;.&nbsp;rest)&nbsp;#&#8217;((car&nbsp;p)&nbsp;.&nbsp;rest)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[_&nbsp;&nbsp;#&#8217;(car&nbsp;p)]))))<br>
+(set!&nbsp;p.car&nbsp;15)<br>
+p.car&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;15<br>
+p&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(15&nbsp;5)<p></tt></p>
+<p>
+</p>
+<a name="node_sec_12.5"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.5">12.5&nbsp;&nbsp;Identifier predicates</a></h2>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1138"></a>identifier?<i> obj</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Returns <tt>#t</tt> if <i>obj</i> is an identifier, i.e., a
+syntax object representing an identifier, and <tt>#f</tt> otherwise.</p>
+<p>
+The <tt>identifier?</tt> procedure is often used within a fender to verify
+that certain subforms of an input form are identifiers, as in the
+definition of <tt>rec</tt>, which creates self-contained
+recursive objects, below.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;rec<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;x&nbsp;e)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(identifier?&nbsp;#&#8217;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(letrec&nbsp;([x&nbsp;e])&nbsp;x)])))<br>
+<br>
+(map&nbsp;(rec&nbsp;fact<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(n)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(=&nbsp;n&nbsp;0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(*&nbsp;n&nbsp;(fact&nbsp;(-&nbsp;n&nbsp;1))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8217;(1&nbsp;2&nbsp;3&nbsp;4&nbsp;5))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(1&nbsp;2&nbsp;6&nbsp;24&nbsp;120)<br>
+&nbsp;<br>
+(rec&nbsp;5&nbsp;(lambda&nbsp;(x)&nbsp;x))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;syntax</tt>&nbsp;<i>exception</i><p></tt>
+</p>
+<p></p>
+<p>
+The procedures <tt>bound-identifier=?</tt> and <tt>free-identifier=?</tt>
+each take two identifier arguments and return <tt>#t</tt> if their
+arguments are equivalent and <tt>#f</tt> otherwise.
+These predicates are used to compare identifiers according to their
+<em>intended use</em> as free references or bound identifiers in a given
+context.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1140"></a>bound-identifier=?<i> <i>id<sub>1</sub></i> <i>id<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Id<sub>1</sub></i> and <i>id<sub>2</sub></i> must be identifiers.
+The procedure <tt>bound-identifier=?</tt> returns <tt>#t</tt> if a
+binding for one would capture a reference to the other in the output of
+the transformer, assuming that the reference appears within the scope of
+the binding, and <tt>#f</tt> otherwise.
+In general, two identifiers are <tt>bound-identifier=?</tt> only if
+both are present in the original program or both are introduced by the
+same transformer application
+(perhaps implicitly&#8212;see <tt>datum-&gt;syntax</tt>).
+Operationally, two identifiers are
+considered equivalent by <tt>bound-identifier=?</tt> if and only if they
+have the same name and same marks (section&nbsp;<a href="#node_sec_12.1">12.1</a>).</p>
+<p>
+The <tt>bound-identifier=?</tt> procedure can be used for detecting
+duplicate identifiers in a binding construct or for other
+preprocessing of a binding construct that requires detecting instances
+of the bound identifiers.
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1142"></a>free-identifier=?<i> <i>id<sub>1</sub></i> <i>id<sub>2</sub></i></i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Id<sub>1</sub></i> and <i>id<sub>2</sub></i> must be identifiers.
+The <tt>free-identifier=?</tt> procedure returns <tt>#t</tt> if and
+only if the two identifiers would resolve to the same binding if both were
+to appear in the output of a transformer outside of any bindings inserted
+by the transformer.
+(If neither of two like-named identifiers resolves to a binding, i.e., both
+are unbound, they are considered to resolve to the same binding.)
+Operationally, two identifiers are considered equivalent by
+<tt>free-identifier=?</tt> if and only the topmost matching
+substitution for each maps to the same binding (section&nbsp;<a href="#node_sec_12.1">12.1</a>)
+or the identifiers have the same name and no matching substitution.</p>
+<p>
+The <tt>syntax-case</tt> and <tt>syntax-rules</tt> forms internally use
+<tt>free-identifier=?</tt> to compare identifiers listed in the literals
+list against input identifiers.</p>
+<p>
+</p>
+
+<tt>(let&nbsp;([fred&nbsp;17])<br>
+&nbsp;&nbsp;(define-syntax&nbsp;a<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;id)&nbsp;<tt>#</tt>&#8217;(b&nbsp;id&nbsp;fred)])))<br>
+&nbsp;&nbsp;(define-syntax&nbsp;b<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;id1&nbsp;id2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt>&#8216;(list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt>,(free-identifier=?&nbsp;<tt>#</tt>&#8217;id1&nbsp;<tt>#</tt>&#8217;id2)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt>,(bound-identifier=?&nbsp;<tt>#</tt>&#8217;id1&nbsp;<tt>#</tt>&#8217;id2))])))<br>
+&nbsp;&nbsp;(a&nbsp;fred))&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(<tt>#t</tt>&nbsp;<tt>#f</tt>)<p></tt></p>
+<p>
+The following definition of unnamed <tt>let</tt>
+uses <tt>bound-identifier=?</tt> to detect duplicate identifiers.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;let<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;unique-ids?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(ls)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(or&nbsp;(null?&nbsp;ls)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(let&nbsp;notmem?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;([x&nbsp;(car&nbsp;ls)]&nbsp;[ls&nbsp;(cdr&nbsp;ls)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(or&nbsp;(null?&nbsp;ls)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(not&nbsp;(bound-identifier=?<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x&nbsp;(car&nbsp;ls)))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(notmem?&nbsp;x&nbsp;(cdr&nbsp;ls)))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(unique-ids?&nbsp;(cdr&nbsp;ls))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;((i&nbsp;v)&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(unique-ids?&nbsp;#&#8217;(i&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;((lambda&nbsp;(i&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...)&nbsp;v&nbsp;...)])))<p></tt></p>
+<p>
+The argument <tt>#&#8217;(i ...)</tt> to <tt>unique-ids?</tt> is guaranteed
+to be a list by the rules given in the description of <tt>syntax</tt>
+above.</p>
+<p>
+With this definition of <tt>let</tt>:</p>
+<p>
+</p>
+
+<tt>(let&nbsp;([a&nbsp;3]&nbsp;[a&nbsp;4])&nbsp;(+&nbsp;a&nbsp;a))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;syntax</tt>&nbsp;<i>exception</i><p></tt></p>
+<p>
+However,</p>
+<p>
+</p>
+
+<tt>(let-syntax<br>
+&nbsp;&nbsp;([dolet&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;b)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([a&nbsp;3]&nbsp;[b&nbsp;4])&nbsp;(+&nbsp;a&nbsp;b))]))])<br>
+&nbsp;&nbsp;(dolet&nbsp;a))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;7<p></tt></p>
+<p>
+since the identifier <tt>a</tt> introduced by <tt>dolet</tt>
+and the identifier <tt>a</tt> extracted from the input form are not
+<tt>bound-identifier=?</tt>.</p>
+<p>
+The following definition of <tt>case</tt> is equivalent to the one in
+section&nbsp;<a href="#node_sec_12.4">12.4</a>.
+Rather than including <tt>else</tt> in the literals list as before,
+this version explicitly tests for <tt>else</tt> using
+<tt>free-identifier=?</tt>.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;case<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e0&nbsp;[(k&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...]&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[else-key&nbsp;else-e1&nbsp;else-e2&nbsp;...])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(identifier?&nbsp;#&#8217;else-key)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(free-identifier=?&nbsp;#&#8217;else-key&nbsp;#&#8217;else))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([t&nbsp;e0])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(memv&nbsp;t&nbsp;&#8217;(k&nbsp;...))&nbsp;e1&nbsp;e2&nbsp;...]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[else&nbsp;else-e1&nbsp;else-e2&nbsp;...]))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e0&nbsp;[(ka&nbsp;...)&nbsp;e1a&nbsp;e2a&nbsp;...]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(kb&nbsp;...)&nbsp;e1b&nbsp;e2b&nbsp;...]&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([t&nbsp;e0])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(memv&nbsp;t&nbsp;&#8217;(ka&nbsp;...))&nbsp;e1a&nbsp;e2a&nbsp;...]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(memv&nbsp;t&nbsp;&#8217;(kb&nbsp;...))&nbsp;e1b&nbsp;e2b&nbsp;...]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...))])))<p></tt></p>
+<p>
+With either definition of <tt>case</tt>, <tt>else</tt> is not
+recognized as an auxiliary
+keyword if an enclosing lexical binding for <tt>else</tt> exists.
+For example,</p>
+<p>
+</p>
+
+<tt>(let&nbsp;([else&nbsp;<tt>#f</tt>])<br>
+&nbsp;&nbsp;(case&nbsp;0&nbsp;[else&nbsp;(write&nbsp;&quot;oops&quot;)]))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;<tt>&nbsp;&amp;syntax</tt>&nbsp;<i>exception</i><p></tt></p>
+<p>
+since <tt>else</tt> is bound
+lexically and is
+therefore not the same <tt>else</tt> that appears in the definition of
+<tt>case</tt>.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_12.6"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.6">12.6&nbsp;&nbsp;Syntax-object and datum conversions</a></h2>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1144"></a>syntax-&gt;datum<i> syntax-object</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+Strips all syntactic information from a syntax
+object and returns the corresponding Scheme datum.
+</p>
+<p></p>
+<p>
+Identifiers stripped in this manner are converted to their symbolic
+names, which can then be compared with <tt>eq?</tt>.
+Thus, a predicate <tt>symbolic-identifier=?</tt> might be defined as follows.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;symbolic-identifier=?<br>
+&nbsp;&nbsp;(lambda&nbsp;(x&nbsp;y)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(eq?&nbsp;(syntax-&gt;datum&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-&gt;datum&nbsp;y))))<p></tt></p>
+<p>
+</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1146"></a>datum-&gt;syntax<i> template-id datum</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<p></p>
+<p>
+<i>Template-id</i> must be a
+template identifier and <i>datum</i> should be a datum value.
+The <tt>datum-&gt;syntax</tt> procedure returns a syntax-object representation of <i>datum</i> that
+contains the same contextual information as
+<i>template-id</i>, with the effect that the
+syntax object behaves
+as if it were introduced into the code when
+<i>template-id</i> was introduced.</p>
+<p>
+The <tt>datum-&gt;syntax</tt> procedure allows a transformer to &#8220;bend&#8221; lexical
+scoping rules by creating <i>implicit
+identifiers<a name="node_idx_1148"></a></i>
+that behave as if they were present in the input form,
+thus permitting the definition of macros
+that introduce visible bindings for or references to
+identifiers that do not appear explicitly in the input form.
+For example, the following defines a <tt>loop</tt> expression that
+uses this controlled form of identifier capture to
+bind the variable <tt>break</tt> to an escape procedure
+within the loop body.
+(The derived <tt>with-syntax</tt> form is like <tt>let</tt> but binds
+pattern variables&#8212;see section&nbsp;<a href="#node_sec_12.8">12.8</a>.)</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;loop<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(k&nbsp;e&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(with-syntax<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;([break&nbsp;(datum-&gt;syntax&nbsp;#&#8217;k&nbsp;&#8217;break)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(call-with-current-continuation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(break)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;f&nbsp;()&nbsp;e&nbsp;...&nbsp;(f)))))])))<br>
+<br>
+(let&nbsp;((n&nbsp;3)&nbsp;(ls&nbsp;&#8217;()))<br>
+&nbsp;&nbsp;(loop<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(=&nbsp;n&nbsp;0)&nbsp;(break&nbsp;ls))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;ls&nbsp;(cons&nbsp;&#8217;a&nbsp;ls))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;n&nbsp;(-&nbsp;n&nbsp;1))))&nbsp;<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rArr;&nbsp;(a&nbsp;a&nbsp;a)<p></tt></p>
+<p>
+Were <tt>loop</tt> to be defined as</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;loop<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(call-with-current-continuation<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(break)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;f&nbsp;()&nbsp;e&nbsp;...&nbsp;(f))))])))<p></tt></p>
+<p>
+the variable <tt>break</tt> would not be visible in <tt>e <tt>...</tt></tt>.</p>
+<p>
+The datum argument <i>datum</i> may also represent an arbitrary
+Scheme form, as demonstrated by the following definition of
+<tt>include</tt>.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;include<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(define&nbsp;read-file<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(fn&nbsp;k)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;([p&nbsp;(open-file-input-port&nbsp;fn)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;f&nbsp;([x&nbsp;(get-datum&nbsp;p)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(eof-object?&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;(close-port&nbsp;p)&nbsp;&#8217;())<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cons&nbsp;(datum-&gt;syntax&nbsp;k&nbsp;x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(f&nbsp;(get-datum&nbsp;p))))))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(k&nbsp;filename)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;([fn&nbsp;(syntax-&gt;datum&nbsp;#&#8217;filename)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(with-syntax&nbsp;([(exp&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(read-file&nbsp;fn&nbsp;#&#8217;k)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(begin&nbsp;exp&nbsp;...)))])))<p></tt></p>
+<p>
+<tt>(include &quot;filename&quot;)</tt> expands into a <tt>begin</tt> expression
+containing the forms found in the file named by
+<tt>&quot;filename&quot;</tt>.
+For example, if the file <tt>flib.ss</tt> contains
+<tt>(define f (lambda (x) (g (* x x))))</tt>, and the file
+<tt>glib.ss</tt> contains
+<tt>(define g (lambda (x) (+ x x)))</tt>,
+the expression</p>
+<p>
+</p>
+
+<tt>(let&nbsp;()<br>
+&nbsp;&nbsp;(include&nbsp;&quot;flib.ss&quot;)<br>
+&nbsp;&nbsp;(include&nbsp;&quot;glib.ss&quot;)<br>
+&nbsp;&nbsp;(f&nbsp;5))<p></tt></p>
+<p>
+evaluates to <tt>50</tt>.</p>
+<p>
+The definition of <tt>include</tt> uses <tt>datum-&gt;syntax</tt> to convert
+the objects read from the file into syntax objects in the proper
+lexical context, so that identifier references and definitions within
+those expressions are scoped where the <tt>include</tt> form appears.</p>
+<p>
+Using <tt>datum-&gt;syntax</tt>, it is even possible to break hygiene
+entirely and write macros in the style of old Lisp macros.
+The <tt>lisp-transformer</tt> procedure defined below creates a transformer
+that converts its input into a datum, calls the programmer&#8217;s procedure on
+this datum, and converts the result back into a syntax object scoped
+where the original macro use appeared.</p>
+<p>
+</p>
+
+<tt>(define&nbsp;lisp-transformer<br>
+&nbsp;&nbsp;(lambda&nbsp;(p)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(kwd&nbsp;.&nbsp;rest)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(datum-&gt;syntax&nbsp;#&#8217;kwd<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(p&nbsp;(syntax-&gt;datum&nbsp;x)))]))))<p></tt></p>
+<p>
+</p>
+<a name="node_sec_12.7"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.7">12.7&nbsp;&nbsp;Generating lists of temporaries</a></h2>
+<p></p>
+<p>
+Transformers can introduce a fixed number of identifiers into their
+output simply by naming each identifier.
+In some cases, however, the number of identifiers to be introduced depends
+upon some characteristic of the input expression.
+A straightforward definition of <tt>letrec</tt>, for example,
+requires as many
+temporary identifiers as there are binding pairs in the
+input expression.
+The procedure <tt>generate-temporaries</tt> is used to construct
+lists of temporary identifiers.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1150"></a>generate-temporaries<i> l</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>L</i> must be be a list or syntax object representing a list-structured
+form; its contents are not important.
+The number of temporaries generated is the number of elements in <i>l</i>.
+Each temporary is guaranteed to be unique, i.e., different from all other
+identifiers.</p>
+<p>
+A definition of <tt>letrec</tt> equivalent to the one using
+<tt>syntax-rules</tt> given in report
+appendix&nbsp;on &#8220;Sample definitions for
+derived forms&#8221; is shown below.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;letrec<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;((i&nbsp;e)&nbsp;...)&nbsp;b1&nbsp;b2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(with-syntax<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(((t&nbsp;...)&nbsp;(generate-temporaries&nbsp;#&#8217;(i&nbsp;...))))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;((i&nbsp;&lt;undefined&gt;)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;((t&nbsp;e)&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(set!&nbsp;i&nbsp;t)&nbsp;...<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;()&nbsp;b1&nbsp;b2&nbsp;...))))))))<p></tt></p>
+<p>
+This version uses <tt>generate-temporaries</tt> instead of recursively defined
+helper to generate the necessary temporaries.
+</p>
+<p></p>
+<p>
+</p>
+<a name="node_sec_12.8"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.8">12.8&nbsp;&nbsp;Derived forms and procedures</a></h2>
+<p></p>
+<p>
+The forms and procedures described in this section can be defined in
+terms of the forms and procedures described in earlier sections of
+this chapter.</p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(with-syntax ((&lt;pattern&gt; &lt;expression&gt;) <tt>...</tt>) &lt;body&gt;)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_1152"></a><p>
+The <tt>with-syntax</tt> form is used to bind pattern variables,
+just as <tt>let</tt> is used to bind variables.
+This allows a transformer to construct its output in separate
+pieces, then put the pieces together.</p>
+<p>
+Each &lt;pattern&gt; is identical in form to a <tt>syntax-case</tt> pattern.
+The value of each &lt;expression&gt; is computed and destructured according
+to the corresponding &lt;pattern&gt;, and pattern variables within
+the &lt;pattern&gt; are bound as with <tt>syntax-case</tt> to the
+corresponding portions of the value within &lt;body&gt;.</p>
+<p>
+The <tt>with-syntax</tt> form may be defined in terms of <tt>syntax-case</tt> as
+follows.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;with-syntax<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((_&nbsp;((p&nbsp;e0)&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax&nbsp;(syntax-case&nbsp;(list&nbsp;e0&nbsp;...)&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((p&nbsp;...)&nbsp;(let&nbsp;()&nbsp;e1&nbsp;e2&nbsp;...))))))))<p></tt></p>
+<p>
+The following definition of <tt>cond</tt> demonstrates the use of
+<tt>with-syntax</tt> to support transformers that employ recursion
+internally to construct their output.
+It handles all <tt>cond</tt> clause variations and takes care to produce
+one-armed <tt>if</tt> expressions where appropriate.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;cond<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;c1&nbsp;c2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;f&nbsp;([c1&nbsp;#&#8217;c1]&nbsp;[c2*&nbsp;#&#8217;(c2&nbsp;...)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;c2*&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;c1&nbsp;(else&nbsp;=&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(else&nbsp;e1&nbsp;e2&nbsp;...)&nbsp;#&#8217;(begin&nbsp;e1&nbsp;e2&nbsp;...)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0)&nbsp;#&#8217;e0]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0&nbsp;=&gt;&nbsp;e1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([t&nbsp;e0])&nbsp;(if&nbsp;t&nbsp;(e1&nbsp;t)))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(if&nbsp;e0&nbsp;(begin&nbsp;e1&nbsp;e2&nbsp;...))])]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(c2&nbsp;c3&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(with-syntax&nbsp;([rest&nbsp;(f&nbsp;#&#8217;c2&nbsp;#&#8217;(c3&nbsp;...))])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;c1&nbsp;(=&gt;)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0)&nbsp;#&#8217;(let&nbsp;([t&nbsp;e0])&nbsp;(if&nbsp;t&nbsp;t&nbsp;rest))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0&nbsp;=&gt;&nbsp;e1)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(let&nbsp;([t&nbsp;e0])&nbsp;(if&nbsp;t&nbsp;(e1&nbsp;t)&nbsp;rest))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(e0&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(if&nbsp;e0&nbsp;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rest)]))]))])))<p></tt>
+</p>
+<p></p>
+<p>
+</p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1154"></a>quasisyntax<i> &lt;template&gt;</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;syntax&nbsp;</div>
+
+<a name="node_idx_1156"></a><div align=left><tt>unsyntax</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+
+<a name="node_idx_1158"></a><div align=left><tt>unsyntax-splicing</tt>&nbsp;&nbsp;&nbsp;&nbsp;auxiliary syntax&nbsp;</div>
+<p>
+The <tt>quasisyntax</tt> form is similar to <tt>syntax</tt>, but it allows parts
+of the quoted text to be evaluated, in a manner similar to the operation
+of <tt>quasiquote</tt> (report section&nbsp;on &#8220;Quasiquotation&#8221;).</p>
+<p>
+Within a <tt>quasisyntax</tt> <i>template</i>, subforms of
+<tt>unsyntax</tt> and <tt>unsyntax-splicing</tt> forms are evaluated,
+and everything else is treated as ordinary template material, as
+with <tt>syntax</tt>.
+The value of each <tt>unsyntax</tt> subform is inserted into the output
+in place of the <tt>unsyntax</tt> form, while the value of each
+<tt>unsyntax-splicing</tt> subform is spliced into the surrounding list
+or vector structure.
+Uses of <tt>unsyntax</tt> and <tt>unsyntax-splicing</tt> are valid only within
+<tt>quasisyntax</tt> expressions.</p>
+<p>
+A <tt>quasisyntax</tt> expression may be nested, with each <tt>quasisyntax</tt>
+introducing a new level of syntax quotation and each <tt>unsyntax</tt> or
+<tt>unsyntax-splicing</tt> taking away a level of quotation.
+An expression nested within <em>n</em> <tt>quasisyntax</tt> expressions must
+be within <em>n</em> <tt>unsyntax</tt> or <tt>unsyntax-splicing</tt> expressions to
+be evaluated.</p>
+<p>
+As noted in report section&nbsp;on &#8220;Abbreviations&#8221;,
+<tt>#&#8216;&lt;template&gt;</tt> is equivalent to <tt>(quasisyntax
+&lt;template&gt;)</tt>, <tt>#,&lt;template&gt;</tt> is equivalent to <tt>(unsyntax
+&lt;template&gt;)</tt>, and <tt>#,@&lt;template&gt;</tt> is equivalent to <tt>(unsyntax-splicing
+&lt;template&gt;)</tt>.</p>
+<p>
+The <tt>quasisyntax</tt> keyword can be used in place of <tt>with-syntax</tt> in many
+cases.
+For example, the definition of <tt>case</tt> shown under the description
+of <tt>with-syntax</tt> above can be rewritten using <tt>quasisyntax</tt>
+as follows.</p>
+<p>
+</p>
+
+<tt>(define-syntax&nbsp;case<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e&nbsp;c1&nbsp;c2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8216;(let&nbsp;([t&nbsp;e])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#,(let&nbsp;f&nbsp;([c1&nbsp;#&#8217;c1]&nbsp;[cmore&nbsp;#&#8217;(c2&nbsp;...)])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(null?&nbsp;cmore)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;c1&nbsp;(else)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(else&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(begin&nbsp;e1&nbsp;e2&nbsp;...)]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[((k&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8217;(if&nbsp;(memv&nbsp;t&nbsp;&#8217;(k&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;e1&nbsp;e2&nbsp;...))])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;c1&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[((k&nbsp;...)&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&#8216;(if&nbsp;(memv&nbsp;t&nbsp;&#8217;(k&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(begin&nbsp;e1&nbsp;e2&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#,(f&nbsp;(car&nbsp;cmore)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cdr&nbsp;cmore)))]))))])))<p></tt></p>
+<p>
+Uses of <tt>unsyntax</tt> and <tt>unsyntax-splicing</tt> with zero or more than
+one subform are valid only in splicing (list or vector) contexts.
+<tt>(unsyntax <i>template</i> <tt>...</tt>)</tt> is equivalent to
+<tt>(unsyntax <i>template</i>) <tt>...</tt></tt>, and
+<tt>(unsyntax-splicing <i>template</i> <tt>...</tt>)</tt> is equivalent to
+<tt>(unsyntax-splicing <i>template</i>) <tt>...</tt></tt>.
+These forms are primarily useful as intermediate forms in the output
+of the <tt>quasisyntax</tt> expander.</p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Uses of <tt>unsyntax</tt> and <tt>unsyntax-splicing</tt> with 
+zero or more than one subform enable certain 
+idioms&nbsp;[<a href="r6rs-lib-Z-H-21.html#node_bib_2">2</a>], such as <tt>#,@#,@</tt>, which has the
+effect of a doubly indirect splicing when used within a doubly nested
+and doubly evaluated <tt>quasisyntax</tt> expression, as with the
+nested <tt>quasiquote</tt> examples shown in
+section&nbsp;on &#8220;Quasiquotation&#8221;.
+</blockquote>
+<p></p>
+<p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+Any <tt>syntax-rules</tt> form can be expressed with
+<tt>syntax-case</tt> by making the <tt>lambda</tt> expression and
+<tt>syntax</tt> expressions explicit, and
+<tt>syntax-rules</tt> may be defined in terms of <tt>syntax-case</tt>
+as follows.<p>
+</p>
+
+<tt>(define-syntax&nbsp;syntax-rules<br>
+&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;(lit&nbsp;...)&nbsp;[(k&nbsp;.&nbsp;p)&nbsp;t]&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(for-all&nbsp;identifier?&nbsp;<tt>#</tt>&#8217;(lit&nbsp;...&nbsp;k&nbsp;...))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<tt>#</tt>&#8217;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;(lit&nbsp;...)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;.&nbsp;p)&nbsp;<tt>#</tt>&#8217;t]&nbsp;...))])))<p></tt>
+</p>
+</blockquote><p>
+</p>
+<blockquote><em>Note:&nbsp;&nbsp;</em>
+The <tt>identifier-syntax</tt> form of the base library (see
+report section&nbsp;on &#8220;Macro transformers&#8221;) may be defined in terms of <tt>syntax-case</tt>, <tt>syntax</tt>, and <tt>make-variable-transformer</tt> as
+follows.<p>
+</p>
+
+<tt>(define-syntax&nbsp;identifier-syntax<br>
+&nbsp;&nbsp;(syntax-rules&nbsp;(set!)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;e)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[id&nbsp;(identifier?&nbsp;#&#8217;id)&nbsp;#&#8217;e]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;x&nbsp;(...&nbsp;...))&nbsp;#&#8217;(e&nbsp;x&nbsp;(...&nbsp;...))]))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[(_&nbsp;(id&nbsp;exp1)&nbsp;((set!&nbsp;var&nbsp;val)&nbsp;exp2))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(and&nbsp;(identifier?&nbsp;#&#8217;id)&nbsp;(identifier?&nbsp;#&#8217;var))<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(make-variable-transformer<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(lambda&nbsp;(x)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax-case&nbsp;x&nbsp;(set!)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(set!&nbsp;var&nbsp;val)&nbsp;#&#8217;exp2]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(id&nbsp;x&nbsp;(...&nbsp;...))&nbsp;#&#8217;(exp1&nbsp;x&nbsp;(...&nbsp;...))]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[id&nbsp;(identifier?&nbsp;#&#8217;id)&nbsp;#&#8217;exp1])))]))<p></tt>
+</p>
+</blockquote><p>
+</p>
+<a name="node_sec_12.9"></a>
+<h2 class=section><a href="r6rs-lib-Z-H-1.html#node_toc_node_sec_12.9">12.9&nbsp;&nbsp;Syntax violations</a></h2>
+<p></p>
+<p></p>
+<div align=left><tt>(<a name="node_idx_1160"></a>syntax-violation<i> who message form</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+
+<div align=left><tt>(<a name="node_idx_1162"></a>syntax-violation<i> who message form subform</i>)</tt>&nbsp;&nbsp;&nbsp;&nbsp;procedure&nbsp;</div>
+<p>
+<i>Who</i> must be <tt>#f</tt> or a string or a symbol.
+<i>Message</i> must be a string.
+<i>Form</i> must be a syntax object or a datum value.
+<i>Subform</i> must be a syntax object or a datum value.
+The <tt>syntax-violation</tt> procedure raises an exception, reporting 
+a syntax violation.  
+<i>Who</i> should describe the macro transformer that
+detected the exception.  The <i>message</i> argument should describe
+the violation.
+<i>Form</i> should be the erroneous source syntax
+object or a datum value representing a form. The optional
+<i>subform</i> argument should be a syntax
+object or datum value representing a form that more precisely locates the
+violation.</p>
+<p>
+If <i>who</i> is <tt>#f</tt>, <tt>syntax-violation</tt> attempts to
+infer an appropriate value for the condition object (see below) as
+follows:  When <i>form</i> is either an identifier or a
+list-structured syntax object containing an identifier as its first element, then
+the inferred value is the identifier&#8217;s symbol.
+Otherwise, no value for <i>who</i> is provided as part of the
+condition object.</p>
+<p>
+The condition object provided with the exception (see
+chapter&nbsp;<a href="r6rs-lib-Z-H-8.html#node_chap_7">7</a>) has the following condition types:
+</p>
+<ul>
+<li><p>If <i>who</i> is not <tt>#f</tt> or can be inferred, the condition has condition type
+<tt>&amp;who</tt>, with <i>who</i> as the value of its field.  In
+that case, <i>who</i> should identify the procedure or entity that
+detected the exception.  If it is <tt>#f</tt>, the condition does not
+have condition type <tt>&amp;who</tt>.
+</p>
+<li><p>The condition has condition type <tt>&amp;message</tt>, with
+<i>message</i> as the value of its field.
+</p>
+<li><p>The condition has condition type <tt>&amp;syntax</tt> 
+with <i>form</i> and <i>subform</i> as the value of its fields.
+If <i>subform</i> is not provided, the value of the subform
+field is <tt>#f</tt>.
+</p>
+</ul><p>
+</p>
+<p></p>
+<p>
+ </p>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs-lib.html">first</a>, <a href="r6rs-lib-Z-H-12.html">previous</a></span><span>, <a href="r6rs-lib-Z-H-14.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-lib-Z-H-1.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-lib-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

@@ -167,11 +167,16 @@
 (define (section-index . elems)
   (make-part-index-decl (map element->string elems) elems))
 
+(define (clean-up s)
+  ;; Remove leading spaces, which might appear there due to images or something
+  ;;  else that gets dropped in string form.
+  (regexp-replace* #rx"^ +" s ""))
+
 (define (record-index word-seq element-seq tag content)
   (make-index-element #f
                       (list (make-target-element #f content `(idx ,tag)))
                       `(idx ,tag)
-                      word-seq
+                      (map clean-up word-seq)
                       element-seq
                       #f))
 

@@ -1,0 +1,221 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-5.html">previous</a></span><span>, <a href="r6rs-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_3"></a>
+<h1 class=chapter>
+<div class=chapterheading><a href="r6rs-Z-H-2.html#node_toc_node_chap_3">Chapter 3</a></div><br>
+<a href="r6rs-Z-H-2.html#node_toc_node_chap_3">Numbers</a></h1>
+<p>
+<a name="node_idx_74"></a></p>
+<p>
+This chapter describes Scheme&#8217;s model for numbers.  It is important to
+distinguish between the mathematical numbers, the Scheme objects that
+attempt to model them, the machine representations used to implement
+the numbers, and notations used to write numbers.  In this report, the
+term <i>number</i> refers to a mathematical number, and the term
+<i>number object</i> refers to a Scheme object representing a
+number.  This report uses the types <i>complex</i>, <i>real</i>,
+<i>rational</i>, and <i>integer</i> to refer to both mathematical
+numbers and number objects.  The <i>fixnum</i> and <i>flonum</i> types
+refer to special subsets of the number objects, as determined by
+common machine representations, as explained below.</p>
+<p>
+</p>
+<a name="node_sec_3.1"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.1">3.1&nbsp;&nbsp;Numerical tower</a></h2>
+<p>
+<a name="node_idx_76"></a></p>
+<p>
+Numbers may be arranged into a tower of subsets in which each level
+is a subset of the level above it:
+</p>
+<p>
+         number <br>
+&nbsp;&nbsp;&nbsp; complex <br>
+&nbsp;&nbsp;&nbsp; real <br>
+&nbsp;&nbsp;&nbsp; rational <br>
+&nbsp;&nbsp;&nbsp; integer 
+</p>
+<p></p>
+<p>
+For example, 5 is an integer.  Therefore 5 is also a rational,
+a real, and a complex.  The same is true of the number objects
+that model 5.  </p>
+<p>
+Number objects are organized as a corresponding tower of subtypes
+defined by the predicates <tt>number?</tt>, <tt>complex?</tt>, <tt>real?</tt>,
+<tt>rational?</tt>, and <tt>integer?</tt>; see section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.7.4.1">11.7.4.1</a>.
+Integer number objects are also called <i>integer
+objects</i><a name="node_idx_78"></a>.</p>
+<p>
+There is no simple relationship between the subset that contains a
+number and its representation inside a computer.  For example, the
+integer 5 may have several representations.  Scheme&#8217;s numerical
+operations treat number objects as abstract data, as independent of
+their representation as possible.  Although an implementation of
+Scheme may use many different representations for numbers, this should
+not be apparent to a casual programmer writing simple programs.</p>
+<p>
+</p>
+<a name="node_sec_3.2"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.2">3.2&nbsp;&nbsp;Exactness</a></h2>
+<p></p>
+<p>
+<a name="node_idx_80"></a>It is useful to distinguish between number objects
+that are known to correspond to a number exactly, and those number
+objects whose computation involved rounding or other errors.  For
+example, index operations into data structures may need to know the index
+exactly, as may some operations on polynomial coefficients in a symbolic algebra
+system.  On the other hand, the results of measurements are inherently
+inexact, and irrational numbers may be approximated by rational and
+therefore inexact approximations.  In order to catch uses of numbers
+known only inexactly where exact numbers are required, Scheme
+explicitly distinguishes <a name="node_idx_82"></a><em>exact</em> from <a name="node_idx_84"></a><em>inexact</em> number objects.  This
+distinction is orthogonal to the dimension of type.</p>
+<p>
+A
+number object is exact if it is the value of an exact numerical
+literal or was derived from exact number objects using only exact
+operations.  Exact number objects correspond to mathematical numbers
+in the obvious way.</p>
+<p>
+Conversely, a number object is inexact if it is the value of an
+inexact numerical literal, or was derived from inexact number objects,
+or was derived using inexact operations.  Thus inexactness is
+contagious.</p>
+<p>
+Exact arithmetic is reliable in the following sense: If exact number
+objects are passed to any of the arithmetic procedures described in
+section&nbsp;<a href="r6rs-Z-H-14.html#node_sec_11.7.1">11.7.1</a>, and an exact number object is
+returned, then the result is mathematically correct.  This is
+generally not true of computations involving inexact number objects
+because approximate methods such as floating-point arithmetic may be
+used, but it is the duty of each implementation to make the result as
+close as practical to the mathematically ideal result.</p>
+<p>
+</p>
+<a name="node_sec_3.3"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.3">3.3&nbsp;&nbsp;Fixnums and flonums</a></h2>
+<p>A <a name="node_idx_86"></a><em>fixnum</em> is an exact integer object that lies
+within a certain implementation-dependent subrange of the
+exact integer objects. (Library section on &#8220;Fixnums&#8221; describes a
+library for computing with fixnums.)
+Likewise, every implementation must
+designate a subset of its inexact real number objects as <a name="node_idx_88"></a><em>flonum</em>s, and
+to convert certain external representations into flonums.  
+(Library section on &#8220;Flonums&#8221; describes a library for
+computing with flonums.)  Note that
+this does not imply that an implementation must use
+floating-point representations.</p>
+<p>
+</p>
+<a name="node_sec_3.4"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.4">3.4&nbsp;&nbsp;Implementation requirements</a></h2>
+<p><a name="node_idx_90"></a></p>
+<p>
+Implementations of Scheme must support number objects for
+the entire tower of subtypes given in section&nbsp;<a href="#node_sec_3.1">3.1</a>.
+Moreover, implementations must support exact integer 
+objects and exact rational number objects of practically unlimited
+size and precision, and to implement certain procedures (listed in
+<a href="r6rs-Z-H-14.html#node_sec_11.7.1">11.7.1</a>) so they always return exact results when
+given exact arguments.  (&#8220;Practically unlimited&#8221; means that the size
+and precision of these numbers should only be limited by the size of
+the available memory.)</p>
+<p>
+Implementations may support only a limited range of inexact number
+objects of any type, subject to the requirements of this section.  For
+example, an implementation may limit the range of the inexact real
+number objects (and therefore the range of inexact integer and
+rational number objects) to the dynamic range of the flonum format.
+Furthermore the gaps between the inexact integer objects and
+rationals are likely to be very large in such an implementation as the
+limits of this range are approached.</p>
+<p>
+An implementation may use floating point and other approximate 
+representation strategies for inexact numbers.
+This report recommends, but does not require, that the IEEE 
+floating-point standards be followed by implementations that use
+floating-point representations, and that implementations using
+other representations should match or exceed the precision achievable
+using these floating-point standards&nbsp;[<a href="r6rs-Z-H-21.html#node_bib_13">13</a>].</p>
+<p>
+In particular, implementations that use floating-point representations
+must follow these rules: A floating-point result must be represented
+with at least as much precision as is used to express any of the
+inexact arguments to that operation.
+Potentially inexact operations such as <tt>sqrt</tt>, when
+applied to exact arguments, should produce exact answers whenever possible
+(for example the square root of an exact 4 ought to be an exact 2).
+However, this is not required.
+If, on the other hand, an exact number object is operated upon so as to produce an
+inexact result (as by <tt>sqrt</tt>), and if the result is represented in
+floating point, then the most precise floating-point format available
+must be used; but if the result is represented in some other way then
+the representation must have at least as much precision as the most
+precise floating-point format available.</p>
+<p>
+It is the programmer&#8217;s responsibility to avoid using inexact number
+objects with magnitude or significand too large to be represented in
+the implementation.</p>
+<p>
+</p>
+<a name="node_sec_3.5"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.5">3.5&nbsp;&nbsp;Infinities and NaNs</a></h2>
+<p>Some Scheme implementations, specifically those that follow the IEEE
+floating-point standards, distinguish special number objects called
+<a name="node_idx_92"></a><a name="node_idx_94"></a><em>positive infinity</em>, <a name="node_idx_96"></a><em>negative
+infinity</em>, and <a name="node_idx_98"></a><em>NaN</em>.</p>
+<p>
+Positive infinity is regarded as an inexact real (but not rational) number
+object that represents an indeterminate number greater than the
+numbers represented by all rational number objects.  Negative infinity
+is regarded as an inexact real (but not rational) number object that represents
+an indeterminate number less than the numbers represented by all
+rational numbers.</p>
+<p>
+A NaN is regarded as an inexact real (but not rational) number object so
+indeterminate that it might represent any real number, including
+positive or negative infinity, and might even be greater than positive
+infinity or less than negative infinity.</p>
+<p>
+</p>
+<a name="node_sec_3.6"></a>
+<h2 class=section><a href="r6rs-Z-H-2.html#node_toc_node_sec_3.6">3.6&nbsp;&nbsp;Distinguished -0.0</a></h2>
+<p><a name="node_idx_100"></a>Some Scheme implementations, specifically those that follow the IEEE
+floating-point standards, distinguish between number objects for 0.0
+and  <tt>-</tt> 0.0, i.e., positive and negative inexact zero.  This report
+will sometimes specify the behavior of certain arithmetic operations
+on these number objects.  These specifications are marked with &#8220;if
+ <tt>-</tt> 0.0 is distinguished&#8221; or &#8220;implementations that distinguish
+ <tt>-</tt> 0.0&#8221;.</p>
+<p>
+ </p>
+<p>
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-5.html">previous</a></span><span>, <a href="r6rs-Z-H-7.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span><a href="r6rs-Z-H-2.html#node_toc_start">contents</a></span><span><span>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>

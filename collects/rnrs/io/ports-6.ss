@@ -22,8 +22,8 @@
          transcoder-eol-style
          transcoder-error-handling-mode
          native-transcoder
-         ;bytevector->string
-         ;string->bytevector
+         bytevector->string
+         string->bytevector
          eof-object
          eof-object?
          port?
@@ -938,3 +938,40 @@
   (make-make-custom-input/output-port
    make-custom-textual-input-port
    make-custom-textual-output-port))
+
+(define (bytevector->string bv t)
+  (unless (transcoder? t)
+    (raise-type-error 'bytevector->string "transcoder" t))
+  (let ([p #f])
+    (dynamic-require
+     (lambda () 
+       (set! p (open-bytevector-input-port bv t)))
+     (lambda ()
+       (apply
+        string-append
+        (let loop ()
+          (let ([s (get-string-n p)])
+            (if (eof-object? s)
+                null
+                (cons s (loop)))))))
+     (lambda () (close-input-port p)))))
+                   
+(define (string->bytevector s t)
+  (unless (transcoder? t)
+    (raise-type-error 'string->bytevector "transcoder" t))
+  (let ([p #f]
+        [result #f])
+    (dynamic-require
+     (lambda () 
+       (set!-values (p result) (open-bytevector-output-port t)))
+     (lambda ()
+       (put-string s p)
+       (result))
+     (lambda () (close-output-port p)))))
+
+
+                     
+
+
+
+

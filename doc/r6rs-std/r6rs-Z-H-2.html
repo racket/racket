@@ -1,0 +1,257 @@
+<!doctype html public "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+
+Generated from r6rs.tex by tex2page, v 20070803
+(running on MzScheme 371, unix), 
+(c) Dorai Sitaram, 
+http://www.ccs.neu.edu/~dorai/tex2page/tex2page-doc.html
+
+-->
+<head>
+<title>
+Revised^6 Report on the Algorithmic Language Scheme
+</title>
+<link rel="stylesheet" type="text/css" href="r6rs-Z-S.css" title=default>
+<meta name=robots content="index,follow">
+</head>
+<body>
+<div id=slidecontent>
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-1.html">previous</a></span><span>, <a href="r6rs-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+<p></p>
+<a name="node_chap_Temp_2"></a>
+<h1 class=chapter>
+<div class=chapterheading>&nbsp;</div><br>
+Contents</h1>
+<p></p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+                    
+<a name="node_toc_start"></a></p>
+
+<p class=noindent></p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_Temp_3"></a><a href="r6rs-Z-H-3.html#node_chap_Temp_3">Introduction</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_1"></a><a href="r6rs-Z-H-4.html#node_chap_1">1&nbsp;&nbsp;Overview of Scheme</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.1"></a><a href="r6rs-Z-H-4.html#node_sec_1.1">1.1&nbsp;&nbsp;Basic types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_6"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_6">Booleans</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_7"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_7">Numbers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_8"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_8">Characters</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_9"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_9">Strings</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_10"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_10">Symbols</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_11"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_11">Pairs and lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_12"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_12">Vectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_Temp_13"></a><a href="r6rs-Z-H-4.html#node_sec_Temp_13">Procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.2"></a><a href="r6rs-Z-H-4.html#node_sec_1.2">1.2&nbsp;&nbsp;Expressions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.3"></a><a href="r6rs-Z-H-4.html#node_sec_1.3">1.3&nbsp;&nbsp;Variables and binding</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.4"></a><a href="r6rs-Z-H-4.html#node_sec_1.4">1.4&nbsp;&nbsp;Definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.5"></a><a href="r6rs-Z-H-4.html#node_sec_1.5">1.5&nbsp;&nbsp;Forms</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.6"></a><a href="r6rs-Z-H-4.html#node_sec_1.6">1.6&nbsp;&nbsp;Procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.7"></a><a href="r6rs-Z-H-4.html#node_sec_1.7">1.7&nbsp;&nbsp;Procedure calls and syntactic keywords</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.8"></a><a href="r6rs-Z-H-4.html#node_sec_1.8">1.8&nbsp;&nbsp;Assignment</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.9"></a><a href="r6rs-Z-H-4.html#node_sec_1.9">1.9&nbsp;&nbsp;Derived forms and macros</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.10"></a><a href="r6rs-Z-H-4.html#node_sec_1.10">1.10&nbsp;&nbsp;Syntactic data and datum values</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.11"></a><a href="r6rs-Z-H-4.html#node_sec_1.11">1.11&nbsp;&nbsp;Continuations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.12"></a><a href="r6rs-Z-H-4.html#node_sec_1.12">1.12&nbsp;&nbsp;Libraries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_1.13"></a><a href="r6rs-Z-H-4.html#node_sec_1.13">1.13&nbsp;&nbsp;Top-level programs</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_2"></a><a href="r6rs-Z-H-5.html#node_chap_2">2&nbsp;&nbsp;Requirement levels</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_3"></a><a href="r6rs-Z-H-6.html#node_chap_3">3&nbsp;&nbsp;Numbers</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.1"></a><a href="r6rs-Z-H-6.html#node_sec_3.1">3.1&nbsp;&nbsp;Numerical tower</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.2"></a><a href="r6rs-Z-H-6.html#node_sec_3.2">3.2&nbsp;&nbsp;Exactness</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.3"></a><a href="r6rs-Z-H-6.html#node_sec_3.3">3.3&nbsp;&nbsp;Fixnums and flonums</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.4"></a><a href="r6rs-Z-H-6.html#node_sec_3.4">3.4&nbsp;&nbsp;Implementation requirements</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.5"></a><a href="r6rs-Z-H-6.html#node_sec_3.5">3.5&nbsp;&nbsp;Infinities and NaNs</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_3.6"></a><a href="r6rs-Z-H-6.html#node_sec_3.6">3.6&nbsp;&nbsp;Distinguished -0.0</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_4"></a><a href="r6rs-Z-H-7.html#node_chap_4">4&nbsp;&nbsp;Lexical syntax and datum syntax</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.1"></a><a href="r6rs-Z-H-7.html#node_sec_4.1">4.1&nbsp;&nbsp;Notation</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2"></a><a href="r6rs-Z-H-7.html#node_sec_4.2">4.2&nbsp;&nbsp;Lexical syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.1"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.1">4.2.1&nbsp;&nbsp;Formal account</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.2"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.2">4.2.2&nbsp;&nbsp;Line endings</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.3"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.3">4.2.3&nbsp;&nbsp;Whitespace and comments</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.4"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.4">4.2.4&nbsp;&nbsp;Identifiers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.5"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.5">4.2.5&nbsp;&nbsp;Booleans</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.6"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.6">4.2.6&nbsp;&nbsp;Characters</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.7"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.7">4.2.7&nbsp;&nbsp;Strings</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.2.8"></a><a href="r6rs-Z-H-7.html#node_sec_4.2.8">4.2.8&nbsp;&nbsp;Numbers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3"></a><a href="r6rs-Z-H-7.html#node_sec_4.3">4.3&nbsp;&nbsp;Datum syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3.1"></a><a href="r6rs-Z-H-7.html#node_sec_4.3.1">4.3.1&nbsp;&nbsp;Formal account</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3.2"></a><a href="r6rs-Z-H-7.html#node_sec_4.3.2">4.3.2&nbsp;&nbsp;Pairs and lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3.3"></a><a href="r6rs-Z-H-7.html#node_sec_4.3.3">4.3.3&nbsp;&nbsp;Vectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3.4"></a><a href="r6rs-Z-H-7.html#node_sec_4.3.4">4.3.4&nbsp;&nbsp;Bytevectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_4.3.5"></a><a href="r6rs-Z-H-7.html#node_sec_4.3.5">4.3.5&nbsp;&nbsp;Abbreviations</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_5"></a><a href="r6rs-Z-H-8.html#node_chap_5">5&nbsp;&nbsp;Semantic concepts</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.1"></a><a href="r6rs-Z-H-8.html#node_sec_5.1">5.1&nbsp;&nbsp;Programs and libraries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.2"></a><a href="r6rs-Z-H-8.html#node_sec_5.2">5.2&nbsp;&nbsp;Variables, keywords, and regions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.3"></a><a href="r6rs-Z-H-8.html#node_sec_5.3">5.3&nbsp;&nbsp;Exceptional situations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.4"></a><a href="r6rs-Z-H-8.html#node_sec_5.4">5.4&nbsp;&nbsp;Argument checking</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.5"></a><a href="r6rs-Z-H-8.html#node_sec_5.5">5.5&nbsp;&nbsp;Syntax violations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.6"></a><a href="r6rs-Z-H-8.html#node_sec_5.6">5.6&nbsp;&nbsp;Safety</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.7"></a><a href="r6rs-Z-H-8.html#node_sec_5.7">5.7&nbsp;&nbsp;Boolean values</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.8"></a><a href="r6rs-Z-H-8.html#node_sec_5.8">5.8&nbsp;&nbsp;Multiple return values</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.9"></a><a href="r6rs-Z-H-8.html#node_sec_5.9">5.9&nbsp;&nbsp;Unspecified behavior</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.10"></a><a href="r6rs-Z-H-8.html#node_sec_5.10">5.10&nbsp;&nbsp;Storage model</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.11"></a><a href="r6rs-Z-H-8.html#node_sec_5.11">5.11&nbsp;&nbsp;Proper tail recursion</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_5.12"></a><a href="r6rs-Z-H-8.html#node_sec_5.12">5.12&nbsp;&nbsp;Dynamic extent and the dynamic environment</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_6"></a><a href="r6rs-Z-H-9.html#node_chap_6">6&nbsp;&nbsp;Entry format</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.1"></a><a href="r6rs-Z-H-9.html#node_sec_6.1">6.1&nbsp;&nbsp;Syntax entries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.2"></a><a href="r6rs-Z-H-9.html#node_sec_6.2">6.2&nbsp;&nbsp;Procedure entries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.3"></a><a href="r6rs-Z-H-9.html#node_sec_6.3">6.3&nbsp;&nbsp;Implementation responsibilities</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.4"></a><a href="r6rs-Z-H-9.html#node_sec_6.4">6.4&nbsp;&nbsp;Other kinds of entries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.5"></a><a href="r6rs-Z-H-9.html#node_sec_6.5">6.5&nbsp;&nbsp;Equivalent entries</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.6"></a><a href="r6rs-Z-H-9.html#node_sec_6.6">6.6&nbsp;&nbsp;Evaluation examples</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_6.7"></a><a href="r6rs-Z-H-9.html#node_sec_6.7">6.7&nbsp;&nbsp;Naming conventions</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_7"></a><a href="r6rs-Z-H-10.html#node_chap_7">7&nbsp;&nbsp;Libraries</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.1"></a><a href="r6rs-Z-H-10.html#node_sec_7.1">7.1&nbsp;&nbsp;Library form</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.2"></a><a href="r6rs-Z-H-10.html#node_sec_7.2">7.2&nbsp;&nbsp;Import and export levels</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_7.3"></a><a href="r6rs-Z-H-10.html#node_sec_7.3">7.3&nbsp;&nbsp;Examples</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_8"></a><a href="r6rs-Z-H-11.html#node_chap_8">8&nbsp;&nbsp;Top-level programs</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.1"></a><a href="r6rs-Z-H-11.html#node_sec_8.1">8.1&nbsp;&nbsp;Top-level program syntax</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_8.2"></a><a href="r6rs-Z-H-11.html#node_sec_8.2">8.2&nbsp;&nbsp;Top-level program semantics</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_9"></a><a href="r6rs-Z-H-12.html#node_chap_9">9&nbsp;&nbsp;Primitive syntax</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_9.1"></a><a href="r6rs-Z-H-12.html#node_sec_9.1">9.1&nbsp;&nbsp;Primitive expression types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_9.2"></a><a href="r6rs-Z-H-12.html#node_sec_9.2">9.2&nbsp;&nbsp;Macros</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_10"></a><a href="r6rs-Z-H-13.html#node_chap_10">10&nbsp;&nbsp;Expansion process</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_11"></a><a href="r6rs-Z-H-14.html#node_chap_11">11&nbsp;&nbsp;Base library</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.1">11.1&nbsp;&nbsp;Base types</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.2">11.2&nbsp;&nbsp;Definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.2.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.2.1">11.2.1&nbsp;&nbsp;Variable definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.2.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.2.2">11.2.2&nbsp;&nbsp;Syntax definitions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.3"></a><a href="r6rs-Z-H-14.html#node_sec_11.3">11.3&nbsp;&nbsp;Bodies</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4"></a><a href="r6rs-Z-H-14.html#node_sec_11.4">11.4&nbsp;&nbsp;Expressions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.1">11.4.1&nbsp;&nbsp;Quotation</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.2">11.4.2&nbsp;&nbsp;Procedures</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.3"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.3">11.4.3&nbsp;&nbsp;Conditionals</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.4"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.4">11.4.4&nbsp;&nbsp;Assignments</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.5"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.5">11.4.5&nbsp;&nbsp;Derived conditionals</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.6"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.6">11.4.6&nbsp;&nbsp;Binding constructs</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.4.7"></a><a href="r6rs-Z-H-14.html#node_sec_11.4.7">11.4.7&nbsp;&nbsp;Sequencing</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.5"></a><a href="r6rs-Z-H-14.html#node_sec_11.5">11.5&nbsp;&nbsp;Equivalence predicates</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.6"></a><a href="r6rs-Z-H-14.html#node_sec_11.6">11.6&nbsp;&nbsp;Procedure predicate</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7"></a><a href="r6rs-Z-H-14.html#node_sec_11.7">11.7&nbsp;&nbsp;Arithmetic</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.1">11.7.1&nbsp;&nbsp;Propagation of exactness and inexactness</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.2">11.7.2&nbsp;&nbsp;Representability of infinities and NaNs</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.3"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.3">11.7.3&nbsp;&nbsp;Semantics of common operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.3.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.3.1">11.7.3.1&nbsp;&nbsp;Integer division</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.3.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.3.2">11.7.3.2&nbsp;&nbsp;Transcendental functions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.4"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.4">11.7.4&nbsp;&nbsp;Numerical operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.4.1"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.4.1">11.7.4.1&nbsp;&nbsp;Numerical type predicates</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.4.2"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.4.2">11.7.4.2&nbsp;&nbsp;Generic conversions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.4.3"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.4.3">11.7.4.3&nbsp;&nbsp;Arithmetic operations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.7.4.4"></a><a href="r6rs-Z-H-14.html#node_sec_11.7.4.4">11.7.4.4&nbsp;&nbsp;Numerical Input and Output</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.8"></a><a href="r6rs-Z-H-14.html#node_sec_11.8">11.8&nbsp;&nbsp;Booleans</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.9"></a><a href="r6rs-Z-H-14.html#node_sec_11.9">11.9&nbsp;&nbsp;Pairs and lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.10"></a><a href="r6rs-Z-H-14.html#node_sec_11.10">11.10&nbsp;&nbsp;Symbols</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.11"></a><a href="r6rs-Z-H-14.html#node_sec_11.11">11.11&nbsp;&nbsp;Characters</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.12"></a><a href="r6rs-Z-H-14.html#node_sec_11.12">11.12&nbsp;&nbsp;Strings</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.13"></a><a href="r6rs-Z-H-14.html#node_sec_11.13">11.13&nbsp;&nbsp;Vectors</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.14"></a><a href="r6rs-Z-H-14.html#node_sec_11.14">11.14&nbsp;&nbsp;Errors and violations</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.15"></a><a href="r6rs-Z-H-14.html#node_sec_11.15">11.15&nbsp;&nbsp;Control features</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.16"></a><a href="r6rs-Z-H-14.html#node_sec_11.16">11.16&nbsp;&nbsp;Iteration</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.17"></a><a href="r6rs-Z-H-14.html#node_sec_11.17">11.17&nbsp;&nbsp;Quasiquotation</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.18"></a><a href="r6rs-Z-H-14.html#node_sec_11.18">11.18&nbsp;&nbsp;Binding constructs for syntactic keywords</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.19"></a><a href="r6rs-Z-H-14.html#node_sec_11.19">11.19&nbsp;&nbsp;Macro transformers</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_11.20"></a><a href="r6rs-Z-H-14.html#node_sec_11.20">11.20&nbsp;&nbsp;Tail calls and tail contexts</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_A"></a><a href="r6rs-Z-H-15.html#node_chap_A">A&nbsp;&nbsp;Formal semantics</a></b><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.1"></a><a href="r6rs-Z-H-15.html#node_sec_A.1">A.1&nbsp;&nbsp;Background</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.2"></a><a href="r6rs-Z-H-15.html#node_sec_A.2">A.2&nbsp;&nbsp;Grammar</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.3"></a><a href="r6rs-Z-H-15.html#node_sec_A.3">A.3&nbsp;&nbsp;Quote</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.4"></a><a href="r6rs-Z-H-15.html#node_sec_A.4">A.4&nbsp;&nbsp;Multiple values</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.5"></a><a href="r6rs-Z-H-15.html#node_sec_A.5">A.5&nbsp;&nbsp;Exceptions</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.6"></a><a href="r6rs-Z-H-15.html#node_sec_A.6">A.6&nbsp;&nbsp;Arithmetic and basic forms</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.7"></a><a href="r6rs-Z-H-15.html#node_sec_A.7">A.7&nbsp;&nbsp;Lists</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.8"></a><a href="r6rs-Z-H-15.html#node_sec_A.8">A.8&nbsp;&nbsp;Eqv</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.9"></a><a href="r6rs-Z-H-15.html#node_sec_A.9">A.9&nbsp;&nbsp;Procedures and application</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.10"></a><a href="r6rs-Z-H-15.html#node_sec_A.10">A.10&nbsp;&nbsp;Call/cc and dynamic wind</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.11"></a><a href="r6rs-Z-H-15.html#node_sec_A.11">A.11&nbsp;&nbsp;Letrec</a><br>
+&nbsp; &nbsp; &nbsp; &nbsp; <a name="node_toc_node_sec_A.12"></a><a href="r6rs-Z-H-15.html#node_sec_A.12">A.12&nbsp;&nbsp;Underspecification</a><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_B"></a><a href="r6rs-Z-H-16.html#node_chap_B">B&nbsp;&nbsp;Sample definitions for derived forms</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_C"></a><a href="r6rs-Z-H-17.html#node_chap_C">C&nbsp;&nbsp;Additional material</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_D"></a><a href="r6rs-Z-H-18.html#node_chap_D">D&nbsp;&nbsp;Example </a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_E"></a><a href="r6rs-Z-H-19.html#node_chap_E">E&nbsp;&nbsp;Language changes</a></b><br>
+</p>
+<p></p>
+
+<p class=noindent><b>
+&nbsp; &nbsp; <a name="node_toc_node_chap_Temp_47"></a><a href="r6rs-Z-H-21.html#node_chap_Temp_47">Alphabetic index of definitions of
+concepts, keywords, and procedures</a></b><br>
+</p>
+<p>
+</p>
+<p>
+
+
+</p>
+<div class=smallskip></div>
+<p style="margin-top: 0pt; margin-bottom: 0pt">
+<div align=right class=navigation>[Go to <span><a href="r6rs.html">first</a>, <a href="r6rs-Z-H-1.html">previous</a></span><span>, <a href="r6rs-Z-H-3.html">next</a></span> page<span>; &nbsp;&nbsp;</span><span class=disable>contents</span><span><span class=disable>; &nbsp;&nbsp;</span><a href="r6rs-Z-H-21.html#node_index_start">index</a></span>]</div>
+</p>
+<p></p>
+</div>
+</body>
+</html>
