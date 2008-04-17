@@ -2297,20 +2297,28 @@ If the namespace does not, they are colored the unbound color.
     ;; hash-table[syntax -o> (listof syntax)] -> void
     ;; take something like a transitive closure, except
     ;; only when there are non-original links in between
+    ;; (this still has the cubic complexity in the worst case,
+    ;;  but running it on syncheck.ss it takes no time)
     (define (collapse-tail-links tail-ht)
-      (hash-for-each
-       tail-ht
-       (λ (stx-from stx-tos)
-         (for-each
-          (λ (stx-to)
-            (let ([stx-to-tos (hash-ref tail-ht stx-to '())])
-              (for-each
-               (λ (stx-to-to)
-                 (unless (and (add-tail-link? stx-from stx-to) 
-                              (add-tail-link? stx-to stx-to-to))
-                   (hash-cons! tail-ht stx-from stx-to-to)))
-               stx-to-tos)))
-          stx-tos))))
+      (let loop ()
+        (let ([found-one? #f])
+          (hash-for-each
+           tail-ht
+           (λ (stx-from stx-tos)
+             (for-each
+              (λ (stx-to)
+                (let ([stx-to-tos (hash-ref tail-ht stx-to '())])
+                  (for-each
+                   (λ (stx-to-to)
+                     (unless (and (add-tail-link? stx-from stx-to) 
+                                  (add-tail-link? stx-to stx-to-to))
+                       (unless (memq stx-to-to (hash-ref tail-ht stx-from '()))
+                         (set! found-one? #t)
+                         (hash-cons! tail-ht stx-from stx-to-to))))
+                   stx-to-tos)))
+              stx-tos)))
+          (when found-one?
+            (loop)))))
     
    
     
