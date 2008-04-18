@@ -191,7 +191,8 @@
                        [else (send (car m) restore) (r-loop (cdr m))]))))]
               [else (send testing-menu delete)])))
         
-        (drscheme:language:register-capability 'tests:test-menu (flat-contract boolean?) #f)
+        (unless (drscheme:language:capability-registered? 'tests:test-menu)
+          (drscheme:language:register-capability 'tests:test-menu (flat-contract boolean?) #f))
         (super-instantiate ())
         ))
 
