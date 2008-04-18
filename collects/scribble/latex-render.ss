@@ -382,7 +382,7 @@
         ;; FIXME: isn't local to the section
         (make-toc-paragraph null))
 
-      (define/override (local-table-of-contents part ri)
+      (define/override (local-table-of-contents part ri style)
         (make-paragraph null))
 
       ;; ----------------------------------------

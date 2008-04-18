@@ -9,6 +9,8 @@
 
 @guideintro["numbers"]{numbers}
 
+@local-table-of-contents[]
+
 All numbers are @deftech{complex numbers}. Some of them are
 @deftech{real numbers}, and all of the real numbers that can be
 represented are also @deftech{rational numbers}, except for

@@ -5,3 +5,5 @@
 (define clean (list (build-path "compiled" "native" (system-library-subpath))
                     "compiled"))
 (define compile-omit-paths '("examples"))
+
+(define scribblings '(("scribblings/sgl.scrbl" (multi-page))))

@@ -407,61 +407,65 @@
 
     ;; ----------------------------------------
 
-    (define/private (do-table-of-contents part ri delta quiet)
+    (define/private (do-table-of-contents part ri delta quiet depth)
       (make-table #f (generate-toc part
                                    ri
                                    (+ delta
                                       (length (collected-info-number
                                                (part-collected-info part ri))))
                                    #t
-                                   quiet)))
+                                   quiet
+                                   depth)))
 
     (define/public (table-of-contents part ri)
-      (do-table-of-contents part ri -1 not))
+      (do-table-of-contents part ri -1 not +inf.0))
 
-    (define/public (local-table-of-contents part ri)
-      (table-of-contents part ri))
+    (define/public (local-table-of-contents part ri style)
+      (do-table-of-contents part ri -1 not (if (eq? style 'immediate-only) 
+                                               1
+                                               +inf.0)))
 
     (define/public (quiet-table-of-contents part ri)
-      (do-table-of-contents part ri 1 (lambda (x) #t)))
+      (do-table-of-contents part ri 1 (lambda (x) #t) +inf.0))
 
-    (define/private (generate-toc part ri base-len skip? quiet)
+    (define/private (generate-toc part ri base-len skip? quiet depth)
       (let* ([number (collected-info-number (part-collected-info part ri))]
              [subs
-              (if (quiet (and (part-style? part 'quiet)
-                              (not (= base-len (sub1 (length number))))))
-                (apply append (map (lambda (p)
-                                     (generate-toc p ri base-len #f quiet))
-                                   (part-parts part)))
-                null)])
+              (if (and (quiet (and (part-style? part 'quiet)
+                                   (not (= base-len (sub1 (length number))))))
+                       (positive? depth))
+                  (apply append (map (lambda (p)
+                                       (generate-toc p ri base-len #f quiet (sub1 depth)))
+                                     (part-parts part)))
+                  null)])
         (if skip?
-          subs
-          (let ([l (cons
-                    (list (make-flow
-                           (list
-                            (make-paragraph
+            subs
+            (let ([l (cons
+                      (list (make-flow
                              (list
-                              (make-element
-                               'hspace
-                               (list (make-string (* 2 (- (length number)
-                                                          base-len))
-                                                  #\space)))
-                              (make-link-element
-                               (if (= 1 (length number)) "toptoclink" "toclink")
-                               (append
-                                (format-number
-                                 number
-                                 (list (make-element 'hspace '(" "))))
-                                (or (part-title-content part) '("???")))
-                               (car (part-tags part))))))))
-                    subs)])
-            (if (and (= 1 (length number))
-                     (or (not (car number)) ((car number) . > . 1)))
-              (cons (list (make-flow
-                           (list (make-paragraph
-                                  (list (make-element 'hspace (list "")))))))
-                    l)
-              l)))))
+                              (make-paragraph
+                               (list
+                                (make-element
+                                 'hspace
+                                 (list (make-string (* 2 (- (length number)
+                                                            base-len))
+                                                    #\space)))
+                                (make-link-element
+                                 (if (= 1 (length number)) "toptoclink" "toclink")
+                                 (append
+                                  (format-number
+                                   number
+                                   (list (make-element 'hspace '(" "))))
+                                  (or (part-title-content part) '("???")))
+                                 (car (part-tags part))))))))
+                      subs)])
+              (if (and (= 1 (length number))
+                       (or (not (car number)) ((car number) . > . 1)))
+                  (cons (list (make-flow
+                               (list (make-paragraph
+                                      (list (make-element 'hspace (list "")))))))
+                        l)
+                  l)))))
 
     ;; ----------------------------------------
 

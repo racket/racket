@@ -6,7 +6,7 @@
 Each of the built-in datatypes comes with a set of procedures for
 manipulating members of the datatype.
 
-@local-table-of-contents[]
+@local-table-of-contents[#:style 'immediate-only]
 
 @; ------------------------------------------------------------
 

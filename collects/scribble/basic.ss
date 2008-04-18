@@ -170,13 +170,13 @@
 (define (clean-up s)
   ;; Remove leading spaces, which might appear there due to images or something
   ;;  else that gets dropped in string form.
-  (regexp-replace* #rx"^ +" s ""))
+  (regexp-replace #rx"^ +" s ""))
 
 (define (record-index word-seq element-seq tag content)
   (make-index-element #f
                       (list (make-target-element #f content `(idx ,tag)))
                       `(idx ,tag)
-                      (map clean-up word-seq)
+                      word-seq
                       element-seq
                       #f))
 
@@ -191,7 +191,7 @@
 (define (as-index . s)
   (let ([key (make-generated-tag)]
         [content (decode-content s)])
-    (record-index (list (content->string content))
+    (record-index (list (clean-up (content->string content)))
                   (if (= 1 (length content))
                       content
                       (list (make-element #f content)))
@@ -294,7 +294,7 @@
    (lambda (renderer part ri)
      (send renderer table-of-contents part ri))))
 
-(define (local-table-of-contents)
+(define (local-table-of-contents #:style [style #f])
   (make-delayed-block
    (lambda (renderer part ri)
-     (send renderer local-table-of-contents part ri))))
+     (send renderer local-table-of-contents part ri style))))

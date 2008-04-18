@@ -4,6 +4,8 @@
                      slideshow/step
                      slideshow/slides-to-picts))
 
+@(define d=> @elem['rarr])
+
 @title[#:style 'toc]{Making Slides}
 
 @declare-exporting[slideshow/base slideshow]
@@ -102,6 +104,7 @@ Creates title text. Returns @scheme[((current-titlet) str)].}
 @defproc[(para [#:width width real? (current-para-width)]
                [#:align align (one-of/c 'left 'center 'right) 'left]
                [#:fill? fill? any/c #t]
+               [#:decode? decode? any/c #t]
                [element (flat-rec-contract elem/c
                           (or/c string? pict? (listof elem/c)))] ...)
          pict?]{
@@ -111,11 +114,23 @@ and that is exactly @scheme[width] units if @scheme[fill?] is true. If
 @scheme[fill?] is @scheme[#f], then the result pict is as wide as the
 widest line.
 
-Each list @scheme[element]s are sliced into the sequence of string and
-pict elements. Strings are split at spaces for word-wrapping to fit
-the page, and a space is added between elements. If a string element
-starts with a punctuation mark (e.g., a comma), however, no space is
-added before the string.
+Each list within @scheme[element]s is spliced into the sequence of
+string and pict elements. If @scheme[decode?] is true, then strings
+among the @scheme[element]s are decoded by performing the following
+substitutions: @litchar["---"] @d=> @litchar["\u2014"], @litchar["--"]
+@d=> @litchar["\u2013"], @litchar["``"] @d=> @litchar["\u201C"],
+@litchar["''"] @d=> @litchar["\u201D"], @litchar["'"] @d=>
+@litchar["\u2019"].
+
+Strings are split at spaces for word-wrapping to fit the page, and a
+space is added between elements. If a string element starts with one
+of the following punctuation marks (after decoding), however, no space
+is added before the string:
+
+@t{
+ @hspace[2] @litchar{-} @litchar{'} @litchar{,} @litchar{.} @litchar{ } @litchar{:} 
+ @litchar{;} @litchar{?} @litchar{!} @litchar{)} @litchar["\u201D"] @litchar["\u2019"]
+}
 
 The @scheme[align] argument specifies how to align lines within the
 paragraph.
@@ -128,6 +143,7 @@ See the spacing between lines is determined by the
                [#:bullet blt pict? bullet]
                [#:align align (one-of/c 'left 'center 'right) 'left]
                [#:fill? fill? any/c #t]
+               [#:decode? decode? any/c #t]
                [element (flat-rec-contract elem/c
                           (or/c string? pict? (listof elem/c)))] ...)
          pict?]{
@@ -143,6 +159,7 @@ paragraph.}
                   [#:bullet blt pict? o-bullet]
                   [#:align align (one-of/c 'left 'center 'right) 'left]
                   [#:fill? fill? any/c #t]
+                  [#:decode? decode? any/c #t]
                   [element (flat-rec-contract elem/c
                              (or/c string? pict? (listof elem/c)))] ...)
          pict?]{

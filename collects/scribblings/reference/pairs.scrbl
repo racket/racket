@@ -44,6 +44,8 @@
 
 @title[#:tag "pairs"]{Pairs and Lists}
 
+@local-table-of-contents[]
+
 A @deftech{pair} combines exactly two values. The first value is
 accessed with the @scheme[car] procedure, and the second value is
 accessed with the @scheme[cdr] procedure. Pairs are not mutable (but
@@ -532,12 +534,13 @@ must merely start with a chain of at least @scheme[pos] pairs.
 @; Note: this is exactly the same description as the one for string-append*
 
 Like @scheme[append], but the last argument is used as a list of
-arguments for @scheme[append], so @scheme[(append* x ... xs)] is the
-same as @scheme[(apply append x ... xs)].  In other words, the
+arguments for @scheme[append], so @scheme[(append* lst ... lsts)] is the
+same as @scheme[(apply append lst ... lsts)].  In other words, the
 relationship between @scheme[append] and @scheme[append*] is similar
 to the one between @scheme[list] and @scheme[list*].
 
 @examples[#:eval list-eval
+  (append* '(a) '(b) '((c) (d)))
   (cdr (append* (map (lambda (x) (list ", " x))
                      '("Alpha" "Beta" "Gamma"))))
 ]}

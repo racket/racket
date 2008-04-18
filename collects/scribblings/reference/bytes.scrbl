@@ -5,6 +5,8 @@
 
 @guideintro["bytestrings"]{byte strings}
 
+@local-table-of-contents[]
+
 A @pidefterm{byte string} is a fixed-length arary of bytes. A
  @pidefterm{byte} is an exact integer between @scheme[0] and
  @scheme[255] inclusive.

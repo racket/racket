@@ -10,6 +10,8 @@
 @section-index["strings" "pattern matching"]
 @section-index["input ports" "pattern matching"]
 
+@local-table-of-contents[]
+
 Regular expressions are specified as strings or byte strings, using
 the same pattern language as the Unix utility @exec{egrep} or Perl. A
 string-specified pattern produces a character regexp matcher, and a

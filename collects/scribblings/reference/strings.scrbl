@@ -5,6 +5,8 @@
 
 @guideintro["strings"]{strings}
 
+@local-table-of-contents[]
+
 A @pidefterm{string} is a fixed-length array of
 @seclink["characters"]{characters}.
 
@@ -365,18 +367,20 @@ allocated string).}
 
 @note-lib[scheme/string]
 @(define string-eval (make-base-eval))
-@interaction-eval[#:eval string-eval (require scheme/string)]
+@interaction-eval[#:eval string-eval (require scheme/string scheme/list)]
 
 @defproc[(string-append* [str string?] ... [strs (listof string?)]) string?]{
 @; Note: this is exactly the same description as the one for append*
 
-Like @scheme[string-append], but the last argument is used as a list of
-arguments for @scheme[string-append], so @scheme[(string-append* x ... xs)] is the
-same as @scheme[(apply string-append x ... xs)].  In other words, the
-relationship between @scheme[string-append] and @scheme[string-append*] is similar
-to the one between @scheme[list] and @scheme[list*].
+Like @scheme[string-append], but the last argument is used as a list
+of arguments for @scheme[string-append], so @scheme[(string-append*
+str ... strs)] is the same as @scheme[(apply string-append str
+... strs)].  In other words, the relationship between
+@scheme[string-append] and @scheme[string-append*] is similar to the
+one between @scheme[list] and @scheme[list*].
 
 @examples[#:eval string-eval
+  (string-append* "a" "b" '("c" "d"))
   (string-append* (cdr (append* (map (lambda (x) (list ", " x))
                                      '("Alpha" "Beta" "Gamma")))))
 ]}

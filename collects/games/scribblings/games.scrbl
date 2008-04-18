@@ -5,7 +5,7 @@
                      games/show-help
                      games/show-scribbling))
 
-@title{@bold{Games}}
+@title{@bold{Games}: Fun Examples}
 
 The @exec{PLT Games} executable (or @exec{plt-games} under Unix) lets
 you select one of the games distributed by PLT or other games

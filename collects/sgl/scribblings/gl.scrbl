@@ -1,0 +1,1641 @@
+#lang scribble/doc
+@(require "common.ss"
+          scribble/bnf
+          scribble/eval
+          (for-syntax scheme/base))
+
+@title[#:tag "gl"]{C-Style OpenGL}
+
+@defmodule[sgl/gl]
+
+The @schememodname[sgl/gl] module provides a direct interface to the
+system's GL library closely following the conventions of the
+C-language OpenGL API.  It provides a binding for each @tt{#defined}
+constant (these start with @schemeidfont{GL_}) and for the functions
+in the GL 1.5 and GLU 1.3 specifications, except for the following:
+
+@itemize[#:style "compact"
+ @item{Vertex arrays           (GL 1.5, Section 2.8)}
+ @item{Buffer objects          (GL 1.5, Section 2.9)}
+ @item{@tt{glGetPointerv}      (GL 1.5, Section 6.1.11)}
+ @item{Buffer object queries   (GL 1.5, Section 6.1.13)}
+ @item{Polygon tessellation    (GLU 1.3, Section 5)}
+ @item{@tt{gluQuadricCallback} (GLU 1.3, Section 6.2)}
+ @item{NURBS                   (GLU 1.3, Section 7)}
+]
+
+If one of the provided functions is not present on your system
+(e.g. if your system supports only GL 1.3), then the corresponding
+@schememodname[sgl/gl] function raises a run-time exception when
+invoked.
+
+The functions provided by @schememodname[sgl/gl] perform comparable
+checking to their C-language counterparts; they check the types of
+their arguments, but do not check the length of array arguments.  The
+following details the kinds of Scheme values that can be provided for
+each primitive OpenGL type:
+
+@itemize[
+
+ @item{@as-index{@tt{GLbyte}},
+       @as-index{@tt{GLshort}},
+       @as-index{@tt{GLint}}:
+       exact integer in the proper range}
+
+ @item{@as-index{@tt{GLubyte}},
+       @as-index{@tt{GLushort}},
+       @as-index{@tt{GLuint}}:
+       exact non-negative integer in the proper range}
+
+ @item{@as-index{@tt{GLsizei}},
+       @as-index{@tt{GLenum}},
+       @as-index{@tt{GLbitfield}}:
+       exact non-negative integer in the proper range}
+
+ @item{@as-index{@tt{GFfloat}},
+       @as-index{@tt{GLdouble}}:
+       real number}
+
+ @item{@as-index{@tt{GFclampf}},
+       @as-index{@tt{GLclampd}}:
+       real number}
+
+ @item{@as-index{@tt{GLboolean}}: any value, where @scheme[#f] means
+       @as-index{@tt{GL_FALSE}} and all other values mean
+       @as-index{@tt{GL_TRUE}}; do not use @scheme[GL_FALSE] or
+       @scheme[GL_TRUE], since they are bound to integers, both will
+       end up being converted to GL_TRUE.}
+
+]
+				    
+OpenGL functions that take vector arguments accept @scheme[cvector]
+values. The type of the @scheme[cvector] is checked; for example,
+@tt{glVertex3fv} expects a vector of @tt{GLfloats}, so
+@scheme[glVertex3fv] accepts only a @scheme[cvector] containing reals.
+See also @schememodname[sgl/gl-vectors]. Functions that accept arrays
+of type @tt{void*} accept any @scheme[cvector]; you must ensure that
+you supply the proper kind of vector, as in the C-language OpenGL API.
+
+@as-examples[
+@schemeblock[
+(require sgl/gl
+         sgl/gl-vectors)
+(glBegin GL_TRIANGLES)
+(glVertex3i 1 2 3)
+(glVertex4fv (gl-float-vector 1 2 3 4))
+(glEnd)
+]]
+
+@(define-syntax-rule (def-C-gl (id ...) body ...)
+   @deftogether[(
+    @defthing[id procedure?] ...
+   ) body ...])
+
+@def-C-gl[(
+   glPixelMapfv
+   glPixelMapuiv
+   glPixelMapusv
+   glDeleteTextures
+   glDeleteQueries
+)]{
+
+These functions do not take a size argument, because it is derived
+from the length of the argument vector.}
+
+@def-C-gl[(
+   glGenTextures
+   glGenQueries
+)]{
+
+These functions do not take vector arguments.  Instead, they allocate
+a vector of the requested size and return it.}
+
+@def-C-gl[(
+   glAreTexturesResident
+)]{
+
+This function takes in a @tt{GLuint} vector and textures, and it
+returns 2 values: the specified boolean and a boolean vector of
+residences.}
+
+@def-C-gl[(
+   glGetBooleanv
+   glGetIntegerv
+   glGetFloatv
+   glGetDoublev
+   glGetLightfv
+   glGetLightiv
+   glGetMaterialfv
+   glGetMaterialiv
+   glGetTexEnvfv
+   glGetTexEnviv
+   glGetTexGendv
+   glGetTexGenfv
+   glGetTexGeniv
+   glGetTexParameterfv
+   glGetTexParameteriv
+   glGetTexLevelParameterfv
+   glGetTexLevelParameteriv
+   glGetPixelMapfv
+   glGetPixelMapuiv
+   glGetPixelMapusv
+   glGetMapdv
+   glGetMapfv
+   glGetMapiv
+   glGetBufferParameteriv
+   glGetConvolutionParameterfv
+   glGetConvolutionParameteriv
+   glGetHistogramParameterfv
+   glGetHistogramParameteriv
+   glGetMinmaxParameterfv
+   glGetMinmaxParameteriv
+   glGetQueryiv
+   glGetQueryObjectiv
+   glGetQueryObjectuiv
+)]{
+
+Instead of taking a vector argument, these function take an integer argument
+that specifies the size of the vector that is returned.}
+
+@def-C-gl[(
+   glGetClipPlane
+)]{
+
+This function does not take a vector argument and returns a @tt{GLdouble} vector of
+length 4.}
+
+@def-C-gl[(
+   glGetString
+   gluCheckExtension
+   gluErrorString
+   gluGetString
+)]{
+These functions deal with strings instead of @tt{GLubyte} vectors.}
+
+@def-C-gl[(
+   gluProject
+   gluUnProject
+   gluUnProject4
+)]{
+
+Instead of taking pointers to @tt{GLdoubles} for return values, these
+function directly return @tt{GLdouble} vectors.}
+
+@def-C-gl[(
+   glSelectBuffer
+   glFeedbackBuffer
+)]{
+
+These functions do not take vectors, instead they return a
+@scheme[selection-buffer-object] or @scheme[feedback-buffer-object].
+The @scheme[select-buffer->gl-uint-vector] and
+@scheme[feedback-buffer->gl-float-vector] functions copy the contents
+of the buffer into a vector.  Because the OpenGL library writes to the
+buffer-object on OpenGL function calls after @tt{glSelectBuffer} or
+@tt{glFeedbackBuffer} has returned, if the buffer is garbage collected
+before OpenGL is finished writing to it, the entire Scheme system can
+crash.  The @scheme[gl-process-selection] function in
+@schememodname[sgl] helps interpret the results of @tt{glSelectBuffer}
+in a Scheme-friendly format.}
+
+@def-C-gl[(
+glAccum
+glActiveTexture
+glAlphaFunc
+glBegin
+glBeginQuery
+glBindTexture
+glBitmap
+glBlendColor
+glBlendEquation
+glBlendFunc
+glBlendFuncSeparate
+glCallList
+glCallLists
+glClear
+glClearAccum
+glClearColor
+glClearDepth
+glClearIndex
+glClearStencil
+glClipPlane
+glColor3b
+glColor3bv
+glColor3d
+glColor3dv
+glColor3f
+glColor3fv
+glColor3i
+glColor3iv
+glColor3s
+glColor3sv
+glColor3ub
+glColor3ubv
+glColor3ui
+glColor3uiv
+glColor3us
+glColor3usv
+glColor4b
+glColor4bv
+glColor4d
+glColor4dv
+glColor4f
+glColor4fv
+glColor4i
+glColor4iv
+glColor4s
+glColor4sv
+glColor4ub
+glColor4ubv
+glColor4ui
+glColor4uiv
+glColor4us
+glColor4usv
+glColorMask
+glColorMaterial
+glColorSubTable
+glColorTable
+glColorTableParameterfv
+glColorTableParameteriv
+glCompressedTexImage1D
+glCompressedTexImage2D
+glCompressedTexImage3D
+glCompressedTexSubImage1D
+glCompressedTexSubImage2D
+glCompressedTexSubImage3D
+glConvolutionFilter1D
+glConvolutionFilter2D
+glConvolutionParameterf
+glConvolutionParameterfv
+glConvolutionParameteri
+glConvolutionParameteriv
+glCopyColorSubTable
+glCopyColorTable
+glCopyConvolutionFilter1D
+glCopyConvolutionFilter2D
+glCopyPixels
+glCopyTexImage1D
+glCopyTexImage2D
+glCopyTexSubImage1D
+glCopyTexSubImage2D
+glCopyTexSubImage3D
+glCullFace
+glDeleteLists
+glDepthFunc
+glDepthMask
+glDepthRange
+glDisable
+glDrawBuffer
+glDrawPixels
+glEdgeFlag
+glEdgeFlagv
+glEnable
+glEnd
+glEndList
+glEndQuery
+glEvalCoord1d
+glEvalCoord1dv
+glEvalCoord1f
+glEvalCoord1fv
+glEvalCoord2d
+glEvalCoord2dv
+glEvalCoord2f
+glEvalCoord2fv
+glEvalMesh1
+glEvalMesh2
+glEvalPoint1
+glEvalPoint2
+glFinish
+glFlush
+glFogCoordd
+glFogCoorddv
+glFogCoordf
+glFogCoordfv
+glFogf
+glFogfv
+glFogi
+glFogiv
+glFrontFace
+glFrustum
+glGenLists
+glGetColorTable
+glGetCompressedTexImage
+glGetConvolutionFilter
+glGetError
+glGetHistogram
+glGetMinmax
+glGetPolygonStipple
+glGetSeparableFilter
+glGetTexImage
+glHint
+glHistogram
+glIndexMask
+glIndexd
+glIndexdv
+glIndexf
+glIndexfv
+glIndexi
+glIndexiv
+glIndexs
+glIndexsv
+glIndexub
+glIndexubv
+glInitNames
+glIsBuffer
+glIsEnabled
+glIsList
+glIsQuery
+glIsTexture
+glLightModelf
+glLightModelfv
+glLightModeli
+glLightModeliv
+glLightf
+glLightfv
+glLighti
+glLightiv
+glLineStipple
+glLineWidth
+glListBase
+glLoadIdentity
+glLoadMatrixd
+glLoadMatrixf
+glLoadName
+glLoadTransposeMatrixd
+glLoadTransposeMatrixf
+glLogicOp
+glMap1d
+glMap1f
+glMap2d
+glMap2f
+glMapGrid1d
+glMapGrid1f
+glMapGrid2d
+glMapGrid2f
+glMaterialf
+glMaterialfv
+glMateriali
+glMaterialiv
+glMatrixMode
+glMinmax
+glMultMatrixd
+glMultMatrixf
+glMultTransposeMatrixd
+glMultTransposeMatrixf
+glMultiTexCoord1d
+glMultiTexCoord1dv
+glMultiTexCoord1f
+glMultiTexCoord1fv
+glMultiTexCoord1i
+glMultiTexCoord1iv
+glMultiTexCoord1s
+glMultiTexCoord1sv
+glMultiTexCoord2d
+glMultiTexCoord2dv
+glMultiTexCoord2f
+glMultiTexCoord2fv
+glMultiTexCoord2i
+glMultiTexCoord2iv
+glMultiTexCoord2s
+glMultiTexCoord2sv
+glMultiTexCoord3d
+glMultiTexCoord3dv
+glMultiTexCoord3f
+glMultiTexCoord3fv
+glMultiTexCoord3i
+glMultiTexCoord3iv
+glMultiTexCoord3s
+glMultiTexCoord3sv
+glMultiTexCoord4d
+glMultiTexCoord4dv
+glMultiTexCoord4f
+glMultiTexCoord4fv
+glMultiTexCoord4i
+glMultiTexCoord4iv
+glMultiTexCoord4s
+glMultiTexCoord4sv
+glNewList
+glNormal3b
+glNormal3bv
+glNormal3d
+glNormal3dv
+glNormal3f
+glNormal3fv
+glNormal3i
+glNormal3iv
+glNormal3s
+glNormal3sv
+glOrtho
+glPassThrough
+glPixelStoref
+glPixelStorei
+glPixelTransferf
+glPixelTransferi
+glPixelZoom
+glPointParameterf
+glPointParameterfv
+glPointParameteri
+glPointParameteriv
+glPointSize
+glPolygonMode
+glPolygonOffset
+glPolygonStipple
+glPopAttrib
+glPopClientAttrib
+glPopMatrix
+glPopName
+glPushAttrib
+glPushClientAttrib
+glPushMatrix
+glPushName
+glRasterPos2d
+glRasterPos2dv
+glRasterPos2f
+glRasterPos2fv
+glRasterPos2i
+glRasterPos2iv
+glRasterPos2s
+glRasterPos2sv
+glRasterPos3d
+glRasterPos3dv
+glRasterPos3f
+glRasterPos3fv
+glRasterPos3i
+glRasterPos3iv
+glRasterPos3s
+glRasterPos3sv
+glRasterPos4d
+glRasterPos4dv
+glRasterPos4f
+glRasterPos4fv
+glRasterPos4i
+glRasterPos4iv
+glRasterPos4s
+glRasterPos4sv
+glReadBuffer
+glReadPixels
+glRectd
+glRectdv
+glRectf
+glRectfv
+glRecti
+glRectiv
+glRects
+glRectsv
+glRenderMode
+glResetHistogram
+glResetMinmax
+glRotated
+glRotatef
+glSampleCoverage
+glScaled
+glScalef
+glScissor
+glSecondaryColor3b
+glSecondaryColor3bv
+glSecondaryColor3d
+glSecondaryColor3dv
+glSecondaryColor3f
+glSecondaryColor3fv
+glSecondaryColor3i
+glSecondaryColor3iv
+glSecondaryColor3s
+glSecondaryColor3sv
+glSecondaryColor3ub
+glSecondaryColor3ubv
+glSecondaryColor3ui
+glSecondaryColor3uiv
+glSecondaryColor3us
+glSecondaryColor3usv
+glSeparableFilter2D
+glShadeModel
+glStencilFunc
+glStencilMask
+glStencilOp
+glTexCoord1d
+glTexCoord1dv
+glTexCoord1f
+glTexCoord1fv
+glTexCoord1i
+glTexCoord1iv
+glTexCoord1s
+glTexCoord1sv
+glTexCoord2d
+glTexCoord2dv
+glTexCoord2f
+glTexCoord2fv
+glTexCoord2i
+glTexCoord2iv
+glTexCoord2s
+glTexCoord2sv
+glTexCoord3d
+glTexCoord3dv
+glTexCoord3f
+glTexCoord3fv
+glTexCoord3i
+glTexCoord3iv
+glTexCoord3s
+glTexCoord3sv
+glTexCoord4d
+glTexCoord4dv
+glTexCoord4f
+glTexCoord4fv
+glTexCoord4i
+glTexCoord4iv
+glTexCoord4s
+glTexCoord4sv
+glTexEnvf
+glTexEnvfv
+glTexEnvi
+glTexEnviv
+glTexGend
+glTexGendv
+glTexGenf
+glTexGenfv
+glTexGeni
+glTexGeniv
+glTexImage1D
+glTexImage2D
+glTexImage3D
+glTexParameterf
+glTexParameterfv
+glTexParameteri
+glTexParameteriv
+glTexSubImage1D
+glTexSubImage2D
+glTexSubImage3D
+glTranslated
+glTranslatef
+glVertex2d
+glVertex2dv
+glVertex2f
+glVertex2fv
+glVertex2i
+glVertex2iv
+glVertex2s
+glVertex2sv
+glVertex3d
+glVertex3dv
+glVertex3f
+glVertex3fv
+glVertex3i
+glVertex3iv
+glVertex3s
+glVertex3sv
+glVertex4d
+glVertex4dv
+glVertex4f
+glVertex4fv
+glVertex4i
+glVertex4iv
+glVertex4s
+glVertex4sv
+glViewport
+glWindowPos2d
+glWindowPos2dv
+glWindowPos2f
+glWindowPos2fv
+glWindowPos2i
+glWindowPos2iv
+glWindowPos2s
+glWindowPos2sv
+glWindowPos3d
+glWindowPos3dv
+glWindowPos3f
+glWindowPos3fv
+glWindowPos3i
+glWindowPos3iv
+glWindowPos3s
+glWindowPos3sv
+gluBuild1DMipmapLevels
+gluBuild1DMipmaps
+gluBuild2DMipmapLevels
+gluBuild2DMipmaps
+gluBuild3DMipmapLevels
+gluBuild3DMipmaps
+gluCylinder
+gluDisk
+gluLookAt
+gluNewQuadric
+gluOrtho2D
+gluPartialDisk
+gluPerspective
+gluPickMatrix
+gluQuadricDrawStyle
+gluQuadricNormals
+gluQuadricOrientation
+gluQuadricTexture
+gluScaleImage
+gluSphere
+)]{
+
+These functions are all direct translations of the C OpenGL API.}
+
+@(define-syntax def-one-thing
+   (syntax-rules ()
+    [(_ [id pred]) @defthing[id pred]]
+    [(_ id) @defthing[id exact-integer?]]))
+
+@(define-syntax-rule (def-C-const (decl ...) body ...)
+  @deftogether[(
+   @def-one-thing[decl] ...
+  ) body ...])
+
+@def-C-const[(
+  GL_FALSE 
+  GL_TRUE 
+  GL_BYTE 
+  GL_UNSIGNED_BYTE 
+  GL_SHORT 
+  GL_UNSIGNED_SHORT 
+  GL_INT 
+  GL_UNSIGNED_INT 
+  GL_FLOAT 
+  GL_DOUBLE 
+  GL_2_BYTES 
+  GL_3_BYTES 
+  GL_4_BYTES 
+  GL_POINTS 
+  GL_LINES 
+  GL_LINE_LOOP 
+  GL_LINE_STRIP 
+  GL_TRIANGLES 
+  GL_TRIANGLE_STRIP 
+  GL_TRIANGLE_FAN 
+  GL_QUADS 
+  GL_QUAD_STRIP 
+  GL_POLYGON 
+  GL_VERTEX_ARRAY 
+  GL_NORMAL_ARRAY 
+  GL_COLOR_ARRAY 
+  GL_INDEX_ARRAY 
+  GL_TEXTURE_COORD_ARRAY 
+  GL_EDGE_FLAG_ARRAY 
+  GL_VERTEX_ARRAY_SIZE 
+  GL_VERTEX_ARRAY_TYPE 
+  GL_VERTEX_ARRAY_STRIDE 
+  GL_NORMAL_ARRAY_TYPE 
+  GL_NORMAL_ARRAY_STRIDE 
+  GL_COLOR_ARRAY_SIZE 
+  GL_COLOR_ARRAY_TYPE 
+  GL_COLOR_ARRAY_STRIDE 
+  GL_INDEX_ARRAY_TYPE 
+  GL_INDEX_ARRAY_STRIDE 
+  GL_TEXTURE_COORD_ARRAY_SIZE 
+  GL_TEXTURE_COORD_ARRAY_TYPE 
+  GL_TEXTURE_COORD_ARRAY_STRIDE 
+  GL_EDGE_FLAG_ARRAY_STRIDE 
+  GL_VERTEX_ARRAY_POINTER 
+  GL_NORMAL_ARRAY_POINTER 
+  GL_COLOR_ARRAY_POINTER 
+  GL_INDEX_ARRAY_POINTER 
+  GL_TEXTURE_COORD_ARRAY_POINTER 
+  GL_EDGE_FLAG_ARRAY_POINTER 
+  GL_V2F 
+  GL_V3F 
+  GL_C4UB_V2F 
+  GL_C4UB_V3F 
+  GL_C3F_V3F 
+  GL_N3F_V3F 
+  GL_C4F_N3F_V3F 
+  GL_T2F_V3F 
+  GL_T4F_V4F 
+  GL_T2F_C4UB_V3F 
+  GL_T2F_C3F_V3F 
+  GL_T2F_N3F_V3F 
+  GL_T2F_C4F_N3F_V3F 
+  GL_T4F_C4F_N3F_V4F 
+  GL_MATRIX_MODE 
+  GL_MODELVIEW 
+  GL_PROJECTION 
+  GL_TEXTURE 
+  GL_POINT_SMOOTH 
+  GL_POINT_SIZE 
+  GL_POINT_SIZE_GRANULARITY 
+  GL_POINT_SIZE_RANGE 
+  GL_LINE_SMOOTH 
+  GL_LINE_STIPPLE 
+  GL_LINE_STIPPLE_PATTERN 
+  GL_LINE_STIPPLE_REPEAT 
+  GL_LINE_WIDTH 
+  GL_LINE_WIDTH_GRANULARITY 
+  GL_LINE_WIDTH_RANGE 
+  GL_POINT 
+  GL_LINE 
+  GL_FILL 
+  GL_CW 
+  GL_CCW 
+  GL_FRONT 
+  GL_BACK 
+  GL_POLYGON_MODE 
+  GL_POLYGON_SMOOTH 
+  GL_POLYGON_STIPPLE 
+  GL_EDGE_FLAG 
+  GL_CULL_FACE 
+  GL_CULL_FACE_MODE 
+  GL_FRONT_FACE 
+  GL_POLYGON_OFFSET_FACTOR 
+  GL_POLYGON_OFFSET_UNITS 
+  GL_POLYGON_OFFSET_POINT 
+  GL_POLYGON_OFFSET_LINE 
+  GL_POLYGON_OFFSET_FILL 
+  GL_COMPILE 
+  GL_COMPILE_AND_EXECUTE 
+  GL_LIST_BASE 
+  GL_LIST_INDEX 
+  GL_LIST_MODE 
+  GL_NEVER 
+  GL_LESS 
+  GL_EQUAL 
+  GL_LEQUAL 
+  GL_GREATER 
+  GL_NOTEQUAL 
+  GL_GEQUAL 
+  GL_ALWAYS 
+  GL_DEPTH_TEST 
+  GL_DEPTH_BITS 
+  GL_DEPTH_CLEAR_VALUE 
+  GL_DEPTH_FUNC 
+  GL_DEPTH_RANGE 
+  GL_DEPTH_WRITEMASK 
+  GL_DEPTH_COMPONENT 
+  GL_LIGHTING 
+  GL_LIGHT0 
+  GL_LIGHT1 
+  GL_LIGHT2 
+  GL_LIGHT3 
+  GL_LIGHT4 
+  GL_LIGHT5 
+  GL_LIGHT6 
+  GL_LIGHT7 
+  GL_SPOT_EXPONENT 
+  GL_SPOT_CUTOFF 
+  GL_CONSTANT_ATTENUATION 
+  GL_LINEAR_ATTENUATION 
+  GL_QUADRATIC_ATTENUATION 
+  GL_AMBIENT 
+  GL_DIFFUSE 
+  GL_SPECULAR 
+  GL_SHININESS 
+  GL_EMISSION 
+  GL_POSITION 
+  GL_SPOT_DIRECTION 
+  GL_AMBIENT_AND_DIFFUSE 
+  GL_COLOR_INDEXES 
+  GL_LIGHT_MODEL_TWO_SIDE 
+  GL_LIGHT_MODEL_LOCAL_VIEWER 
+  GL_LIGHT_MODEL_AMBIENT 
+  GL_FRONT_AND_BACK 
+  GL_SHADE_MODEL 
+  GL_FLAT 
+  GL_SMOOTH 
+  GL_COLOR_MATERIAL 
+  GL_COLOR_MATERIAL_FACE 
+  GL_COLOR_MATERIAL_PARAMETER 
+  GL_NORMALIZE 
+  GL_CLIP_PLANE0 
+  GL_CLIP_PLANE1 
+  GL_CLIP_PLANE2 
+  GL_CLIP_PLANE3 
+  GL_CLIP_PLANE4 
+  GL_CLIP_PLANE5 
+  GL_ACCUM_RED_BITS 
+  GL_ACCUM_GREEN_BITS 
+  GL_ACCUM_BLUE_BITS 
+  GL_ACCUM_ALPHA_BITS 
+  GL_ACCUM_CLEAR_VALUE 
+  GL_ACCUM 
+  GL_ADD 
+  GL_LOAD 
+  GL_MULT 
+  GL_RETURN 
+  GL_ALPHA_TEST 
+  GL_ALPHA_TEST_REF 
+  GL_ALPHA_TEST_FUNC 
+  GL_BLEND 
+  GL_BLEND_SRC 
+  GL_BLEND_DST 
+  GL_ZERO 
+  GL_ONE 
+  GL_SRC_COLOR 
+  GL_ONE_MINUS_SRC_COLOR 
+  GL_SRC_ALPHA 
+  GL_ONE_MINUS_SRC_ALPHA 
+  GL_DST_ALPHA 
+  GL_ONE_MINUS_DST_ALPHA 
+  GL_DST_COLOR 
+  GL_ONE_MINUS_DST_COLOR 
+  GL_SRC_ALPHA_SATURATE 
+  GL_FEEDBACK 
+  GL_RENDER 
+  GL_SELECT 
+  GL_2D 
+  GL_3D 
+  GL_3D_COLOR 
+  GL_3D_COLOR_TEXTURE 
+  GL_4D_COLOR_TEXTURE 
+  GL_POINT_TOKEN 
+  GL_LINE_TOKEN 
+  GL_LINE_RESET_TOKEN 
+  GL_POLYGON_TOKEN 
+  GL_BITMAP_TOKEN 
+  GL_DRAW_PIXEL_TOKEN 
+  GL_COPY_PIXEL_TOKEN 
+  GL_PASS_THROUGH_TOKEN 
+  GL_FEEDBACK_BUFFER_POINTER 
+  GL_FEEDBACK_BUFFER_SIZE 
+  GL_FEEDBACK_BUFFER_TYPE 
+  GL_SELECTION_BUFFER_POINTER 
+  GL_SELECTION_BUFFER_SIZE 
+  GL_FOG 
+  GL_FOG_MODE 
+  GL_FOG_DENSITY 
+  GL_FOG_COLOR 
+  GL_FOG_INDEX 
+  GL_FOG_START 
+  GL_FOG_END 
+  GL_LINEAR 
+  GL_EXP 
+  GL_EXP2 
+  GL_LOGIC_OP 
+  GL_INDEX_LOGIC_OP 
+  GL_COLOR_LOGIC_OP 
+  GL_LOGIC_OP_MODE 
+  GL_CLEAR 
+  GL_SET 
+  GL_COPY 
+  GL_COPY_INVERTED 
+  GL_NOOP 
+  GL_INVERT 
+  GL_AND 
+  GL_NAND 
+  GL_OR 
+  GL_NOR 
+  GL_XOR 
+  GL_EQUIV 
+  GL_AND_REVERSE 
+  GL_AND_INVERTED 
+  GL_OR_REVERSE 
+  GL_OR_INVERTED 
+  GL_STENCIL_TEST 
+  GL_STENCIL_WRITEMASK 
+  GL_STENCIL_BITS 
+  GL_STENCIL_FUNC 
+  GL_STENCIL_VALUE_MASK 
+  GL_STENCIL_REF 
+  GL_STENCIL_FAIL 
+  GL_STENCIL_PASS_DEPTH_PASS 
+  GL_STENCIL_PASS_DEPTH_FAIL 
+  GL_STENCIL_CLEAR_VALUE 
+  GL_STENCIL_INDEX 
+  GL_KEEP 
+  GL_REPLACE 
+  GL_INCR 
+  GL_DECR 
+  GL_NONE 
+  GL_LEFT 
+  GL_RIGHT 
+  GL_FRONT_LEFT 
+  GL_FRONT_RIGHT 
+  GL_BACK_LEFT 
+  GL_BACK_RIGHT 
+  GL_AUX0 
+  GL_AUX1 
+  GL_AUX2 
+  GL_AUX3 
+  GL_COLOR_INDEX 
+  GL_RED 
+  GL_GREEN 
+  GL_BLUE 
+  GL_ALPHA 
+  GL_LUMINANCE 
+  GL_LUMINANCE_ALPHA 
+  GL_ALPHA_BITS 
+  GL_RED_BITS 
+  GL_GREEN_BITS 
+  GL_BLUE_BITS 
+  GL_INDEX_BITS 
+  GL_SUBPIXEL_BITS 
+  GL_AUX_BUFFERS 
+  GL_READ_BUFFER 
+  GL_DRAW_BUFFER 
+  GL_DOUBLEBUFFER 
+  GL_STEREO 
+  GL_BITMAP 
+  GL_COLOR 
+  GL_DEPTH 
+  GL_STENCIL 
+  GL_DITHER 
+  GL_RGB 
+  GL_RGBA 
+  GL_MAX_LIST_NESTING 
+  GL_MAX_ATTRIB_STACK_DEPTH 
+  GL_MAX_MODELVIEW_STACK_DEPTH 
+  GL_MAX_NAME_STACK_DEPTH 
+  GL_MAX_PROJECTION_STACK_DEPTH 
+  GL_MAX_TEXTURE_STACK_DEPTH 
+  GL_MAX_EVAL_ORDER 
+  GL_MAX_LIGHTS 
+  GL_MAX_CLIP_PLANES 
+  GL_MAX_TEXTURE_SIZE 
+  GL_MAX_PIXEL_MAP_TABLE 
+  GL_MAX_VIEWPORT_DIMS 
+  GL_MAX_CLIENT_ATTRIB_STACK_DEPTH 
+  GL_ATTRIB_STACK_DEPTH 
+  GL_CLIENT_ATTRIB_STACK_DEPTH 
+  GL_COLOR_CLEAR_VALUE 
+  GL_COLOR_WRITEMASK 
+  GL_CURRENT_INDEX 
+  GL_CURRENT_COLOR 
+  GL_CURRENT_NORMAL 
+  GL_CURRENT_RASTER_COLOR 
+  GL_CURRENT_RASTER_DISTANCE 
+  GL_CURRENT_RASTER_INDEX 
+  GL_CURRENT_RASTER_POSITION 
+  GL_CURRENT_RASTER_TEXTURE_COORDS 
+  GL_CURRENT_RASTER_POSITION_VALID 
+  GL_CURRENT_TEXTURE_COORDS 
+  GL_INDEX_CLEAR_VALUE 
+  GL_INDEX_MODE 
+  GL_INDEX_WRITEMASK 
+  GL_MODELVIEW_MATRIX 
+  GL_MODELVIEW_STACK_DEPTH 
+  GL_NAME_STACK_DEPTH 
+  GL_PROJECTION_MATRIX 
+  GL_PROJECTION_STACK_DEPTH 
+  GL_RENDER_MODE 
+  GL_RGBA_MODE 
+  GL_TEXTURE_MATRIX 
+  GL_TEXTURE_STACK_DEPTH 
+  GL_VIEWPORT 
+  GL_AUTO_NORMAL 
+  GL_MAP1_COLOR_4 
+  GL_MAP1_GRID_DOMAIN 
+  GL_MAP1_GRID_SEGMENTS 
+  GL_MAP1_INDEX 
+  GL_MAP1_NORMAL 
+  GL_MAP1_TEXTURE_COORD_1 
+  GL_MAP1_TEXTURE_COORD_2 
+  GL_MAP1_TEXTURE_COORD_3 
+  GL_MAP1_TEXTURE_COORD_4 
+  GL_MAP1_VERTEX_3 
+  GL_MAP1_VERTEX_4 
+  GL_MAP2_COLOR_4 
+  GL_MAP2_GRID_DOMAIN 
+  GL_MAP2_GRID_SEGMENTS 
+  GL_MAP2_INDEX 
+  GL_MAP2_NORMAL 
+  GL_MAP2_TEXTURE_COORD_1 
+  GL_MAP2_TEXTURE_COORD_2 
+  GL_MAP2_TEXTURE_COORD_3 
+  GL_MAP2_TEXTURE_COORD_4 
+  GL_MAP2_VERTEX_3 
+  GL_MAP2_VERTEX_4 
+  GL_COEFF 
+  GL_DOMAIN 
+  GL_ORDER 
+  GL_FOG_HINT 
+  GL_LINE_SMOOTH_HINT 
+  GL_PERSPECTIVE_CORRECTION_HINT 
+  GL_POINT_SMOOTH_HINT 
+  GL_POLYGON_SMOOTH_HINT 
+  GL_DONT_CARE 
+  GL_FASTEST 
+  GL_NICEST 
+  GL_SCISSOR_TEST 
+  GL_SCISSOR_BOX 
+  GL_MAP_COLOR 
+  GL_MAP_STENCIL 
+  GL_INDEX_SHIFT 
+  GL_INDEX_OFFSET 
+  GL_RED_SCALE 
+  GL_RED_BIAS 
+  GL_GREEN_SCALE 
+  GL_GREEN_BIAS 
+  GL_BLUE_SCALE 
+  GL_BLUE_BIAS 
+  GL_ALPHA_SCALE 
+  GL_ALPHA_BIAS 
+  GL_DEPTH_SCALE 
+  GL_DEPTH_BIAS 
+  GL_PIXEL_MAP_S_TO_S_SIZE 
+  GL_PIXEL_MAP_I_TO_I_SIZE 
+  GL_PIXEL_MAP_I_TO_R_SIZE 
+  GL_PIXEL_MAP_I_TO_G_SIZE 
+  GL_PIXEL_MAP_I_TO_B_SIZE 
+  GL_PIXEL_MAP_I_TO_A_SIZE 
+  GL_PIXEL_MAP_R_TO_R_SIZE 
+  GL_PIXEL_MAP_G_TO_G_SIZE 
+  GL_PIXEL_MAP_B_TO_B_SIZE 
+  GL_PIXEL_MAP_A_TO_A_SIZE 
+  GL_PIXEL_MAP_S_TO_S 
+  GL_PIXEL_MAP_I_TO_I 
+  GL_PIXEL_MAP_I_TO_R 
+  GL_PIXEL_MAP_I_TO_G 
+  GL_PIXEL_MAP_I_TO_B 
+  GL_PIXEL_MAP_I_TO_A 
+  GL_PIXEL_MAP_R_TO_R 
+  GL_PIXEL_MAP_G_TO_G 
+  GL_PIXEL_MAP_B_TO_B 
+  GL_PIXEL_MAP_A_TO_A 
+  GL_PACK_ALIGNMENT 
+  GL_PACK_LSB_FIRST 
+  GL_PACK_ROW_LENGTH 
+  GL_PACK_SKIP_PIXELS 
+  GL_PACK_SKIP_ROWS 
+  GL_PACK_SWAP_BYTES 
+  GL_UNPACK_ALIGNMENT 
+  GL_UNPACK_LSB_FIRST 
+  GL_UNPACK_ROW_LENGTH 
+  GL_UNPACK_SKIP_PIXELS 
+  GL_UNPACK_SKIP_ROWS 
+  GL_UNPACK_SWAP_BYTES 
+  GL_ZOOM_X 
+  GL_ZOOM_Y 
+  GL_TEXTURE_ENV 
+  GL_TEXTURE_ENV_MODE 
+  GL_TEXTURE_1D 
+  GL_TEXTURE_2D 
+  GL_TEXTURE_WRAP_S 
+  GL_TEXTURE_WRAP_T 
+  GL_TEXTURE_MAG_FILTER 
+  GL_TEXTURE_MIN_FILTER 
+  GL_TEXTURE_ENV_COLOR 
+  GL_TEXTURE_GEN_S 
+  GL_TEXTURE_GEN_T 
+  GL_TEXTURE_GEN_MODE 
+  GL_TEXTURE_BORDER_COLOR 
+  GL_TEXTURE_WIDTH 
+  GL_TEXTURE_HEIGHT 
+  GL_TEXTURE_BORDER 
+  GL_TEXTURE_COMPONENTS 
+  GL_TEXTURE_RED_SIZE 
+  GL_TEXTURE_GREEN_SIZE 
+  GL_TEXTURE_BLUE_SIZE 
+  GL_TEXTURE_ALPHA_SIZE 
+  GL_TEXTURE_LUMINANCE_SIZE 
+  GL_TEXTURE_INTENSITY_SIZE 
+  GL_NEAREST_MIPMAP_NEAREST 
+  GL_NEAREST_MIPMAP_LINEAR 
+  GL_LINEAR_MIPMAP_NEAREST 
+  GL_LINEAR_MIPMAP_LINEAR 
+  GL_OBJECT_LINEAR 
+  GL_OBJECT_PLANE 
+  GL_EYE_LINEAR 
+  GL_EYE_PLANE 
+  GL_SPHERE_MAP 
+  GL_DECAL 
+  GL_MODULATE 
+  GL_NEAREST 
+  GL_REPEAT 
+  GL_CLAMP 
+  GL_S 
+  GL_T 
+  GL_R 
+  GL_Q 
+  GL_TEXTURE_GEN_R 
+  GL_TEXTURE_GEN_Q 
+  GL_VENDOR 
+  GL_RENDERER 
+  GL_VERSION 
+  GL_EXTENSIONS 
+  GL_NO_ERROR 
+  GL_INVALID_VALUE 
+  GL_INVALID_ENUM 
+  GL_INVALID_OPERATION 
+  GL_STACK_OVERFLOW 
+  GL_STACK_UNDERFLOW 
+  GL_OUT_OF_MEMORY 
+  GL_CURRENT_BIT 
+  GL_POINT_BIT 
+  GL_LINE_BIT 
+  GL_POLYGON_BIT 
+  GL_POLYGON_STIPPLE_BIT 
+  GL_PIXEL_MODE_BIT 
+  GL_LIGHTING_BIT 
+  GL_FOG_BIT 
+  GL_DEPTH_BUFFER_BIT 
+  GL_ACCUM_BUFFER_BIT 
+  GL_STENCIL_BUFFER_BIT 
+  GL_VIEWPORT_BIT 
+  GL_TRANSFORM_BIT 
+  GL_ENABLE_BIT 
+  GL_COLOR_BUFFER_BIT 
+  GL_HINT_BIT 
+  GL_EVAL_BIT 
+  GL_LIST_BIT 
+  GL_TEXTURE_BIT 
+  GL_SCISSOR_BIT 
+  GL_ALL_ATTRIB_BITS 
+  GL_PROXY_TEXTURE_1D 
+  GL_PROXY_TEXTURE_2D 
+  GL_TEXTURE_PRIORITY 
+  GL_TEXTURE_RESIDENT 
+  GL_TEXTURE_BINDING_1D 
+  GL_TEXTURE_BINDING_2D 
+  GL_TEXTURE_INTERNAL_FORMAT 
+  GL_ALPHA4 
+  GL_ALPHA8 
+  GL_ALPHA12 
+  GL_ALPHA16 
+  GL_LUMINANCE4 
+  GL_LUMINANCE8 
+  GL_LUMINANCE12 
+  GL_LUMINANCE16 
+  GL_LUMINANCE4_ALPHA4 
+  GL_LUMINANCE6_ALPHA2 
+  GL_LUMINANCE8_ALPHA8 
+  GL_LUMINANCE12_ALPHA4 
+  GL_LUMINANCE12_ALPHA12 
+  GL_LUMINANCE16_ALPHA16 
+  GL_INTENSITY 
+  GL_INTENSITY4 
+  GL_INTENSITY8 
+  GL_INTENSITY12 
+  GL_INTENSITY16 
+  GL_R3_G3_B2 
+  GL_RGB4 
+  GL_RGB5 
+  GL_RGB8 
+  GL_RGB10 
+  GL_RGB12 
+  GL_RGB16 
+  GL_RGBA2 
+  GL_RGBA4 
+  GL_RGB5_A1 
+  GL_RGBA8 
+  GL_RGB10_A2 
+  GL_RGBA12 
+  GL_RGBA16 
+  GL_CLIENT_PIXEL_STORE_BIT 
+  GL_CLIENT_VERTEX_ARRAY_BIT 
+  GL_ALL_CLIENT_ATTRIB_BITS 
+  GL_CLIENT_ALL_ATTRIB_BITS 
+  
+  GL_UNSIGNED_BYTE_3_3_2 
+  GL_UNSIGNED_SHORT_4_4_4_4 
+  GL_UNSIGNED_SHORT_5_5_5_1 
+  GL_UNSIGNED_INT_8_8_8_8 
+  GL_UNSIGNED_INT_10_10_10_2 
+  GL_RESCALE_NORMAL 
+  GL_TEXTURE_BINDING_3D 
+  GL_PACK_SKIP_IMAGES 
+  GL_PACK_IMAGE_HEIGHT 
+  GL_UNPACK_SKIP_IMAGES 
+  GL_UNPACK_IMAGE_HEIGHT 
+  GL_TEXTURE_3D 
+  GL_PROXY_TEXTURE_3D 
+  GL_TEXTURE_DEPTH 
+  GL_TEXTURE_WRAP_R 
+  GL_MAX_3D_TEXTURE_SIZE 
+  GL_UNSIGNED_BYTE_2_3_3_REV 
+  GL_UNSIGNED_SHORT_5_6_5 
+  GL_UNSIGNED_SHORT_5_6_5_REV 
+  GL_UNSIGNED_SHORT_4_4_4_4_REV 
+  GL_UNSIGNED_SHORT_1_5_5_5_REV 
+  GL_UNSIGNED_INT_8_8_8_8_REV 
+  GL_UNSIGNED_INT_2_10_10_10_REV 
+  GL_BGR 
+  GL_BGRA 
+  GL_MAX_ELEMENTS_VERTICES 
+  GL_MAX_ELEMENTS_INDICES 
+  GL_CLAMP_TO_EDGE 
+  GL_TEXTURE_MIN_LOD 
+  GL_TEXTURE_MAX_LOD 
+  GL_TEXTURE_BASE_LEVEL 
+  GL_TEXTURE_MAX_LEVEL 
+  GL_LIGHT_MODEL_COLOR_CONTROL 
+  GL_SINGLE_COLOR 
+  GL_SEPARATE_SPECULAR_COLOR 
+  GL_SMOOTH_POINT_SIZE_RANGE 
+  GL_SMOOTH_POINT_SIZE_GRANULARITY 
+  GL_SMOOTH_LINE_WIDTH_RANGE 
+  GL_SMOOTH_LINE_WIDTH_GRANULARITY 
+  GL_ALIASED_POINT_SIZE_RANGE 
+  GL_ALIASED_LINE_WIDTH_RANGE 
+  
+  GL_CONSTANT_COLOR 
+  GL_ONE_MINUS_CONSTANT_COLOR 
+  GL_CONSTANT_ALPHA 
+  GL_ONE_MINUS_CONSTANT_ALPHA 
+  GL_BLEND_COLOR 
+  GL_FUNC_ADD 
+  GL_MIN 
+  GL_MAX 
+  GL_BLEND_EQUATION 
+  GL_FUNC_SUBTRACT 
+  GL_FUNC_REVERSE_SUBTRACT 
+  GL_CONVOLUTION_1D 
+  GL_CONVOLUTION_2D 
+  GL_SEPARABLE_2D 
+  GL_CONVOLUTION_BORDER_MODE 
+  GL_CONVOLUTION_FILTER_SCALE 
+  GL_CONVOLUTION_FILTER_BIAS 
+  GL_REDUCE 
+  GL_CONVOLUTION_FORMAT 
+  GL_CONVOLUTION_WIDTH 
+  GL_CONVOLUTION_HEIGHT 
+  GL_MAX_CONVOLUTION_WIDTH 
+  GL_MAX_CONVOLUTION_HEIGHT 
+  GL_POST_CONVOLUTION_RED_SCALE 
+  GL_POST_CONVOLUTION_GREEN_SCALE 
+  GL_POST_CONVOLUTION_BLUE_SCALE 
+  GL_POST_CONVOLUTION_ALPHA_SCALE 
+  GL_POST_CONVOLUTION_RED_BIAS 
+  GL_POST_CONVOLUTION_GREEN_BIAS 
+  GL_POST_CONVOLUTION_BLUE_BIAS 
+  GL_POST_CONVOLUTION_ALPHA_BIAS 
+  GL_HISTOGRAM 
+  GL_PROXY_HISTOGRAM 
+  GL_HISTOGRAM_WIDTH 
+  GL_HISTOGRAM_FORMAT 
+  GL_HISTOGRAM_RED_SIZE 
+  GL_HISTOGRAM_GREEN_SIZE 
+  GL_HISTOGRAM_BLUE_SIZE 
+  GL_HISTOGRAM_ALPHA_SIZE 
+  GL_HISTOGRAM_LUMINANCE_SIZE 
+  GL_HISTOGRAM_SINK 
+  GL_MINMAX 
+  GL_MINMAX_FORMAT 
+  GL_MINMAX_SINK 
+  GL_TABLE_TOO_LARGE 
+  GL_COLOR_MATRIX 
+  GL_COLOR_MATRIX_STACK_DEPTH 
+  GL_MAX_COLOR_MATRIX_STACK_DEPTH 
+  GL_POST_COLOR_MATRIX_RED_SCALE 
+  GL_POST_COLOR_MATRIX_GREEN_SCALE 
+  GL_POST_COLOR_MATRIX_BLUE_SCALE 
+  GL_POST_COLOR_MATRIX_ALPHA_SCALE 
+  GL_POST_COLOR_MATRIX_RED_BIAS 
+  GL_POST_COLOR_MATRIX_GREEN_BIAS 
+  GL_POST_COLOR_MATRIX_BLUE_BIAS 
+  GL_POST_COLOR_MATRIX_ALPHA_BIAS 
+  GL_COLOR_TABLE 
+  GL_POST_CONVOLUTION_COLOR_TABLE 
+  GL_POST_COLOR_MATRIX_COLOR_TABLE 
+  GL_PROXY_COLOR_TABLE 
+  GL_PROXY_POST_CONVOLUTION_COLOR_TABLE 
+  GL_PROXY_POST_COLOR_MATRIX_COLOR_TABLE 
+  GL_COLOR_TABLE_SCALE 
+  GL_COLOR_TABLE_BIAS 
+  GL_COLOR_TABLE_FORMAT 
+  GL_COLOR_TABLE_WIDTH 
+  GL_COLOR_TABLE_RED_SIZE 
+  GL_COLOR_TABLE_GREEN_SIZE 
+  GL_COLOR_TABLE_BLUE_SIZE 
+  GL_COLOR_TABLE_ALPHA_SIZE 
+  GL_COLOR_TABLE_LUMINANCE_SIZE 
+  GL_COLOR_TABLE_INTENSITY_SIZE 
+  GL_CONSTANT_BORDER 
+  GL_REPLICATE_BORDER 
+  GL_CONVOLUTION_BORDER_COLOR 
+
+ GL_TEXTURE0 
+ GL_TEXTURE1 
+ GL_TEXTURE2 
+ GL_TEXTURE3 
+ GL_TEXTURE4 
+ GL_TEXTURE5 
+ GL_TEXTURE6 
+ GL_TEXTURE7 
+ GL_TEXTURE8 
+ GL_TEXTURE9 
+ GL_TEXTURE10 
+ GL_TEXTURE11 
+ GL_TEXTURE12 
+ GL_TEXTURE13 
+ GL_TEXTURE14 
+ GL_TEXTURE15 
+ GL_TEXTURE16 
+ GL_TEXTURE17 
+ GL_TEXTURE18 
+ GL_TEXTURE19 
+ GL_TEXTURE20 
+ GL_TEXTURE21 
+ GL_TEXTURE22 
+ GL_TEXTURE23 
+ GL_TEXTURE24 
+ GL_TEXTURE25 
+ GL_TEXTURE26 
+ GL_TEXTURE27 
+ GL_TEXTURE28 
+ GL_TEXTURE29 
+ GL_TEXTURE30 
+ GL_TEXTURE31 
+ GL_ACTIVE_TEXTURE 
+ GL_CLIENT_ACTIVE_TEXTURE 
+ GL_MAX_TEXTURE_UNITS 
+ GL_TRANSPOSE_MODELVIEW_MATRIX 
+ GL_TRANSPOSE_PROJECTION_MATRIX 
+ GL_TRANSPOSE_TEXTURE_MATRIX 
+ GL_TRANSPOSE_COLOR_MATRIX 
+ GL_MULTISAMPLE 
+ GL_SAMPLE_ALPHA_TO_COVERAGE 
+ GL_SAMPLE_ALPHA_TO_ONE 
+ GL_SAMPLE_COVERAGE 
+ GL_SAMPLE_BUFFERS 
+ GL_SAMPLES 
+ GL_SAMPLE_COVERAGE_VALUE 
+ GL_SAMPLE_COVERAGE_INVERT 
+ GL_MULTISAMPLE_BIT 
+ GL_NORMAL_MAP 
+ GL_REFLECTION_MAP 
+ GL_TEXTURE_CUBE_MAP 
+ GL_TEXTURE_BINDING_CUBE_MAP 
+ GL_TEXTURE_CUBE_MAP_POSITIVE_X 
+ GL_TEXTURE_CUBE_MAP_NEGATIVE_X 
+ GL_TEXTURE_CUBE_MAP_POSITIVE_Y 
+ GL_TEXTURE_CUBE_MAP_NEGATIVE_Y 
+ GL_TEXTURE_CUBE_MAP_POSITIVE_Z 
+ GL_TEXTURE_CUBE_MAP_NEGATIVE_Z 
+ GL_PROXY_TEXTURE_CUBE_MAP 
+ GL_MAX_CUBE_MAP_TEXTURE_SIZE 
+ GL_COMPRESSED_ALPHA 
+ GL_COMPRESSED_LUMINANCE 
+ GL_COMPRESSED_LUMINANCE_ALPHA 
+ GL_COMPRESSED_INTENSITY 
+ GL_COMPRESSED_RGB 
+ GL_COMPRESSED_RGBA 
+ GL_TEXTURE_COMPRESSION_HINT 
+ GL_TEXTURE_COMPRESSED_IMAGE_SIZE 
+ GL_TEXTURE_COMPRESSED 
+ GL_NUM_COMPRESSED_TEXTURE_FORMATS 
+ GL_COMPRESSED_TEXTURE_FORMATS 
+ GL_CLAMP_TO_BORDER 
+ GL_COMBINE 
+ GL_COMBINE_RGB 
+ GL_COMBINE_ALPHA 
+ GL_SOURCE0_RGB 
+ GL_SOURCE1_RGB 
+ GL_SOURCE2_RGB 
+ GL_SOURCE0_ALPHA 
+ GL_SOURCE1_ALPHA 
+ GL_SOURCE2_ALPHA 
+ GL_OPERAND0_RGB 
+ GL_OPERAND1_RGB 
+ GL_OPERAND2_RGB 
+ GL_OPERAND0_ALPHA 
+ GL_OPERAND1_ALPHA 
+ GL_OPERAND2_ALPHA 
+ GL_RGB_SCALE 
+ GL_ADD_SIGNED 
+ GL_INTERPOLATE 
+ GL_SUBTRACT 
+ GL_CONSTANT 
+ GL_PRIMARY_COLOR 
+ GL_PREVIOUS 
+ GL_DOT3_RGB 
+ GL_DOT3_RGBA 
+  
+ GL_BLEND_DST_RGB 
+ GL_BLEND_SRC_RGB 
+ GL_BLEND_DST_ALPHA 
+ GL_BLEND_SRC_ALPHA 
+ GL_POINT_SIZE_MIN 
+ GL_POINT_SIZE_MAX 
+ GL_POINT_FADE_THRESHOLD_SIZE 
+ GL_POINT_DISTANCE_ATTENUATION 
+ GL_GENERATE_MIPMAP 
+ GL_GENERATE_MIPMAP_HINT 
+ GL_DEPTH_COMPONENT16 
+ GL_DEPTH_COMPONENT24 
+ GL_DEPTH_COMPONENT32 
+ GL_MIRRORED_REPEAT 
+ GL_FOG_COORDINATE_SOURCE 
+ GL_FOG_COORDINATE 
+ GL_FRAGMENT_DEPTH 
+ GL_CURRENT_FOG_COORDINATE 
+ GL_FOG_COORDINATE_ARRAY_TYPE 
+ GL_FOG_COORDINATE_ARRAY_STRIDE 
+ GL_FOG_COORDINATE_ARRAY_POINTER 
+ GL_FOG_COORDINATE_ARRAY 
+ GL_COLOR_SUM 
+ GL_CURRENT_SECONDARY_COLOR 
+ GL_SECONDARY_COLOR_ARRAY_SIZE 
+ GL_SECONDARY_COLOR_ARRAY_TYPE 
+ GL_SECONDARY_COLOR_ARRAY_STRIDE 
+ GL_SECONDARY_COLOR_ARRAY_POINTER 
+ GL_SECONDARY_COLOR_ARRAY 
+ GL_MAX_TEXTURE_LOD_BIAS 
+ GL_TEXTURE_FILTER_CONTROL 
+ GL_TEXTURE_LOD_BIAS 
+ GL_INCR_WRAP 
+ GL_DECR_WRAP 
+ GL_TEXTURE_DEPTH_SIZE 
+ GL_DEPTH_TEXTURE_MODE 
+ GL_TEXTURE_COMPARE_MODE 
+ GL_TEXTURE_COMPARE_FUNC 
+ GL_COMPARE_R_TO_TEXTURE 
+  
+  GL_BUFFER_SIZE 
+  GL_BUFFER_USAGE 
+  GL_QUERY_COUNTER_BITS 
+  GL_CURRENT_QUERY 
+  GL_QUERY_RESULT 
+  GL_QUERY_RESULT_AVAILABLE 
+  GL_ARRAY_BUFFER 
+  GL_ELEMENT_ARRAY_BUFFER 
+  GL_ARRAY_BUFFER_BINDING 
+  GL_ELEMENT_ARRAY_BUFFER_BINDING 
+  GL_VERTEX_ARRAY_BUFFER_BINDING 
+  GL_NORMAL_ARRAY_BUFFER_BINDING 
+  GL_COLOR_ARRAY_BUFFER_BINDING 
+  GL_INDEX_ARRAY_BUFFER_BINDING 
+  GL_TEXTURE_COORD_ARRAY_BUFFER_BINDING 
+  GL_EDGE_FLAG_ARRAY_BUFFER_BINDING 
+  GL_SECONDARY_COLOR_ARRAY_BUFFER_BINDING 
+  GL_FOG_COORDINATE_ARRAY_BUFFER_BINDING 
+  GL_WEIGHT_ARRAY_BUFFER_BINDING 
+  GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING 
+  GL_READ_ONLY 
+  GL_WRITE_ONLY 
+  GL_READ_WRITE 
+  GL_BUFFER_ACCESS 
+  GL_BUFFER_MAPPED 
+  GL_BUFFER_MAP_POINTER 
+  GL_STREAM_DRAW 
+  GL_STREAM_READ 
+  GL_STREAM_COPY 
+  GL_STATIC_DRAW 
+  GL_STATIC_READ 
+  GL_STATIC_COPY 
+  GL_DYNAMIC_DRAW 
+  GL_DYNAMIC_READ 
+  GL_DYNAMIC_COPY 
+  GL_SAMPLES_PASSED 
+  GL_FOG_COORD_SRC
+  GL_FOG_COORD
+  GL_CURRENT_FOG_COORD
+  GL_FOG_COORD_ARRAY_TYPE
+  GL_FOG_COORD_ARRAY_STRIDE
+  GL_FOG_COORD_ARRAY_POINTER
+  GL_FOG_COORD_ARRAY
+  GL_FOG_COORD_ARRAY_BUFFER_BINDING
+  GL_SRC0_RGB
+  GL_SRC1_RGB
+  GL_SRC2_RGB
+  GL_SRC0_ALPHA
+  GL_SRC1_ALPHA
+  GL_SRC2_ALPHA
+
+  GLU_FALSE
+  GLU_TRUE
+  GLU_VERSION
+  GLU_EXTENSIONS
+  GLU_INVALID_ENUM
+  GLU_INVALID_VALUE
+  GLU_OUT_OF_MEMORY
+  GLU_INVALID_OPERATION
+  GLU_OUTLINE_POLYGON
+  GLU_OUTLINE_PATCH
+  GLU_NURBS_ERROR
+  GLU_ERROR
+  GLU_NURBS_BEGIN
+  GLU_NURBS_BEGIN_EXT
+  GLU_NURBS_VERTEX
+  GLU_NURBS_VERTEX_EXT
+  GLU_NURBS_NORMAL
+  GLU_NURBS_NORMAL_EXT
+  GLU_NURBS_COLOR
+  GLU_NURBS_COLOR_EXT
+  GLU_NURBS_TEXTURE_COORD
+  GLU_NURBS_TEX_COORD_EXT
+  GLU_NURBS_END
+  GLU_NURBS_END_EXT
+  GLU_NURBS_BEGIN_DATA
+  GLU_NURBS_BEGIN_DATA_EXT
+  GLU_NURBS_VERTEX_DATA
+  GLU_NURBS_VERTEX_DATA_EXT
+  GLU_NURBS_NORMAL_DATA
+  GLU_NURBS_NORMAL_DATA_EXT
+  GLU_NURBS_COLOR_DATA
+  GLU_NURBS_COLOR_DATA_EXT
+  GLU_NURBS_TEXTURE_COORD_DATA
+  GLU_NURBS_TEX_COORD_DATA_EXT
+  GLU_NURBS_END_DATA
+  GLU_NURBS_END_DATA_EXT
+  GLU_NURBS_ERROR1
+  GLU_NURBS_ERROR2
+  GLU_NURBS_ERROR3
+  GLU_NURBS_ERROR4
+  GLU_NURBS_ERROR5
+  GLU_NURBS_ERROR6
+  GLU_NURBS_ERROR7
+  GLU_NURBS_ERROR8
+  GLU_NURBS_ERROR9
+  GLU_NURBS_ERROR10
+  GLU_NURBS_ERROR11
+  GLU_NURBS_ERROR12
+  GLU_NURBS_ERROR13
+  GLU_NURBS_ERROR14
+  GLU_NURBS_ERROR15
+  GLU_NURBS_ERROR16
+  GLU_NURBS_ERROR17
+  GLU_NURBS_ERROR18
+  GLU_NURBS_ERROR19
+  GLU_NURBS_ERROR20
+  GLU_NURBS_ERROR21
+  GLU_NURBS_ERROR22
+  GLU_NURBS_ERROR23
+  GLU_NURBS_ERROR24
+  GLU_NURBS_ERROR25
+  GLU_NURBS_ERROR26
+  GLU_NURBS_ERROR27
+  GLU_NURBS_ERROR28
+  GLU_NURBS_ERROR29
+  GLU_NURBS_ERROR30
+  GLU_NURBS_ERROR31
+  GLU_NURBS_ERROR32
+  GLU_NURBS_ERROR33
+  GLU_NURBS_ERROR34
+  GLU_NURBS_ERROR35
+  GLU_NURBS_ERROR36
+  GLU_NURBS_ERROR37
+  GLU_AUTO_LOAD_MATRIX
+  GLU_CULLING
+  GLU_SAMPLING_TOLERANCE
+  GLU_DISPLAY_MODE
+  GLU_PARAMETRIC_TOLERANCE
+  GLU_SAMPLING_METHOD
+  GLU_U_STEP
+  GLU_V_STEP
+  GLU_NURBS_MODE
+  GLU_NURBS_MODE_EXT
+  GLU_NURBS_TESSELLATOR
+  GLU_NURBS_TESSELLATOR_EXT
+  GLU_NURBS_RENDERER
+  GLU_NURBS_RENDERER_EXT
+  GLU_OBJECT_PARAMETRIC_ERROR
+  GLU_OBJECT_PARAMETRIC_ERROR_EXT
+  GLU_OBJECT_PATH_LENGTH
+  GLU_OBJECT_PATH_LENGTH_EXT
+  GLU_PATH_LENGTH
+  GLU_PARAMETRIC_ERROR
+  GLU_DOMAIN_DISTANCE
+  GLU_MAP1_TRIM_2
+  GLU_MAP1_TRIM_3
+  GLU_POINT
+  GLU_LINE
+  GLU_FILL
+  GLU_SILHOUETTE
+  GLU_SMOOTH
+  GLU_FLAT
+  GLU_NONE
+  GLU_OUTSIDE
+  GLU_INSIDE
+  GLU_TESS_BEGIN
+  GLU_BEGIN
+  GLU_TESS_VERTEX
+  GLU_VERTEX
+  GLU_TESS_END
+  GLU_END
+  GLU_TESS_ERROR
+  GLU_TESS_EDGE_FLAG
+  GLU_EDGE_FLAG
+  GLU_TESS_COMBINE
+  GLU_TESS_BEGIN_DATA
+  GLU_TESS_VERTEX_DATA
+  GLU_TESS_END_DATA
+  GLU_TESS_ERROR_DATA
+  GLU_TESS_EDGE_FLAG_DATA
+  GLU_TESS_COMBINE_DATA
+  GLU_CW
+  GLU_CCW
+  GLU_INTERIOR
+  GLU_EXTERIOR
+  GLU_UNKNOWN
+  GLU_TESS_WINDING_RULE
+  GLU_TESS_BOUNDARY_ONLY
+  GLU_TESS_TOLERANCE
+  GLU_TESS_ERROR1
+  GLU_TESS_ERROR2
+  GLU_TESS_ERROR3
+  GLU_TESS_ERROR4
+  GLU_TESS_ERROR5
+  GLU_TESS_ERROR6
+  GLU_TESS_ERROR7
+  GLU_TESS_ERROR8
+  GLU_TESS_MISSING_BEGIN_POLYGON
+  GLU_TESS_MISSING_BEGIN_CONTOUR
+  GLU_TESS_MISSING_END_POLYGON
+  GLU_TESS_MISSING_END_CONTOUR
+  GLU_TESS_COORD_TOO_LARGE
+  GLU_TESS_NEED_COMBINE_CALLBACK
+  GLU_TESS_WINDING_ODD
+  GLU_TESS_WINDING_NONZERO
+  GLU_TESS_WINDING_POSITIVE
+  GLU_TESS_WINDING_NEGATIVE
+  GLU_TESS_WINDING_ABS_GEQ_TWO
+  [GLU_TESS_MAX_COORD real?]
+)]{
+All OpenGL-defined constants.}
+
+@defproc[(feedback-buffer->gl-float-vector [buf feedback-buffer-object?])
+         gl-float-vector?]{
+
+Converts a result from @scheme[glFeedbackBuffer] to a vector.}
+
+@defproc[(select-buffer->gl-uint-vector [buf select-buffer-object?])
+         gl-uint-vector?]{
+
+Converts a result from @scheme[glSelectBuffer] to a vector.}

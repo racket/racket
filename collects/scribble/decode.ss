@@ -89,7 +89,7 @@
                (cons (make-index-element
                       #f null (car tags)
                       (list (regexp-replace
-                             #px"^(?:A|An|The)\\s" (content->string title) ""))
+                             #px"^\\s+(?:(?:A|An|The)\\s)?" (content->string title) ""))
                       (list (make-element #f title))
                       (make-part-index-desc))
                      l)
