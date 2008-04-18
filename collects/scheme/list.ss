@@ -13,6 +13,7 @@
          take
 
          append*
+         add-between
          flatten)
 
 (define (first x)
@@ -76,6 +77,30 @@
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case
                [(l . lss) (apply append (apply list* l lss))]))
+
+;; General note: many non-tail recursive, which are just as fast in mzscheme
+
+(define (add-between l x)
+  (cond [(not (list? l)) (raise-type-error 'add-between "list" l)]
+        [(null? l) null]
+        [(null? (cdr l)) l]
+        [else (cons (car l)
+                    (let loop ([l (cdr l)])
+                      (if (null? l)
+                        null
+                        (list* x (car l) (loop (cdr l))))))]))
+
+;; This is nice for symmetry, but confusing to use, and we can get it using
+;; something like (append* (add-between l ls)), or even `flatten' for an
+;; arbitrary nesting.
+;; (define (lists-join ls l)
+;;   (cond [(null? ls) ls]
+;;         [(null? l) ls] ; empty separator
+;;         [else (append (car ls)
+;;                       (let loop ([ls (cdr ls)])
+;;                         (if (null? ls)
+;;                           ls
+;;                           (append l (car ls) (loop (cdr ls))))))]))
 
 (define (flatten orig-sexp)
   (let loop ([sexp orig-sexp] [acc null])

@@ -183,6 +183,13 @@
   (test '(0 1 0 2 0 3) append* (map (lambda (x) (list 0 x)) '(1 2 3)))
   (test '(1 2 3 4 5 6 7 8 9) append* '(1 2 3) '(4 5) '((6 7 8) (9))))
 
+;; ---------- add-between ----------
+(let ()
+  (test '()          add-between '() 1)
+  (test '(9)         add-between '(9) 1)
+  (test '(9 1 8 1 7) add-between '(9 8 7) 1)
+  (test '(9 (1) 8)   add-between '(9 8) '(1)))
+
 ;; ---------- flatten ----------
 (let ()
   (define (all-sexps n)

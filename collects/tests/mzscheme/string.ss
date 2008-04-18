@@ -144,4 +144,12 @@
   (test "0123456789" string-append* "0123456789" '("" ""))
   (test "0123456789" string-append* "01234567" '("8" "9")))
 
+;; ---------- string-join ----------
+(let ()
+  (test ""    string-join '() " ")
+  (test ""    string-join '("") " ")
+  (test " "   string-join '("" "") " ")
+  (test "x y" string-join '("x" "y") " ")
+  (test "x"   string-join '("x") " "))
+
 (report-errs)
