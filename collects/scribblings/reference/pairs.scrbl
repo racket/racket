@@ -531,11 +531,12 @@ must merely start with a chain of at least @scheme[pos] pairs.
            [(append* [lst list?] ... [lsts list?]) any/c])]{
 
 Like @scheme[append], but the last argument is used as a list of
-arguments for @scheme[append].  In other words, the relationship
-between @scheme[append] and @scheme[append*] is similar to the one
-between @scheme[list] and @scheme[list*].
+arguments for @scheme[append], so @scheme[(append* x ... xs)] is the
+same as @scheme[(apply append x ... xs)].  In other words, the
+relationship between @scheme[append] and @scheme[append*] is similar
+to the one between @scheme[list] and @scheme[list*].
 
-@examples[#:eval list-eval 
+@examples[#:eval list-eval
   (cdr (append* (map (lambda (x) (list ", " x))
                      '("Alpha" "Beta" "Gamma"))))
 ]}
