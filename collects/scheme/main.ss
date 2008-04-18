@@ -10,6 +10,7 @@
            scheme/tcp
            scheme/udp
            scheme/list
+           scheme/string
            scheme/function
            scheme/path
            scheme/file
@@ -32,6 +33,7 @@
                          scheme/tcp
                          scheme/udp
                          scheme/list
+                         scheme/string
                          scheme/function
                          scheme/path
                          scheme/file

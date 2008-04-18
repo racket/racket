@@ -529,6 +529,7 @@ must merely start with a chain of at least @scheme[pos] pairs.
 
 @defproc*[([(append* [lst list?] ... [lsts (listof list?)]) list?]
            [(append* [lst list?] ... [lsts list?]) any/c])]{
+@; Note: this is exactly the same description as the one for string-append*
 
 Like @scheme[append], but the last argument is used as a list of
 arguments for @scheme[append], so @scheme[(append* x ... xs)] is the

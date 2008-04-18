@@ -3,8 +3,9 @@
 
 (Section 'string)
 
-;; to add when this library is there: (require scheme/string)
+(require scheme/string)
 
+;; ---------- real->decimal-string ----------
 (test "0." real->decimal-string 0 0)
 (test "0." real->decimal-string 0.0 0)
 (test "1." real->decimal-string 0.6 0)
@@ -19,8 +20,10 @@
 (test "-1.20" real->decimal-string -1.2)
 (test "1.00" real->decimal-string 0.99999999999)
 (test "-1.00" real->decimal-string -0.99999999999)
-(test "1999999999999999859514578049071102439861518336.00" real->decimal-string 2e45)
+(test "1999999999999999859514578049071102439861518336.00"
+      real->decimal-string 2e45)
 
+;; ---------- regexp-quote ----------
 (let ([s (list->string
 	  (let loop ([i 0])
 	    (if (= i 256)
@@ -31,6 +34,7 @@
 	regexp-replace
         (regexp-quote s) s (regexp-replace-quote (string-append "!" s "!"))))
 
+;; ---------- regexp-match* ----------
 (test '("a" "b" "c") regexp-match* "[abc]" "here's a buck")
 (test '("b" "c") regexp-match* "[abc]" "here's a buck" 8)
 (test '("a") regexp-match* "[abc]" "here's a buck" 0 8)
@@ -56,6 +60,7 @@
   (test '(#"a" #"b" #"c") regexp-match* "[abc]" s 0 #f)
   (test eof read-char s))
 
+;; ---------- regexp-match-positions* ----------
 (test '((7 . 8) (9 . 10) (11 . 12))
       regexp-match-positions* "[abc]" "here's a buck")
 (test '((9 . 10) (11 . 12))
@@ -76,6 +81,7 @@
   (test '((7 . 8) (9 . 10) (11 . 12)) regexp-match-positions* "[abc]" s 0 #f)
   (test eof read-char s))
 
+;; ---------- regexp-match-peek-positions* ----------
 (let ([s (open-input-string "here's a buck")])
   (test '((7 . 8) (9 . 10) (11 . 12))
         regexp-match-peek-positions*
@@ -90,6 +96,7 @@
   (test "here's a buck"
         read-string 50 s))
 
+;; ---------- regexp-split ----------
 (test '("here's " " " "u" "k") regexp-split "[abc]" "here's a buck")
 (test '(" " "u" "k")           regexp-split "[abc]" "here's a buck" 8)
 (test '("" "u" "k")            regexp-split "[abc]" "here's a buck" 9)
@@ -125,5 +132,16 @@
 (test '("foo bar" "") regexp-split #rx"$" "foo bar")
 ;; this doesn't work (like in Emacs) because ^ matches the start pos
 ;; (test '("" "foo bar") regexp-split #rx"^" "foo bar")
+
+;; ---------- string-append* ----------
+(let ()
+  (test ""           string-append* '())
+  (test ""           string-append* '(""))
+  (test ""           string-append* '("" ""))
+  (test "0123456789" string-append* '("0123456789"))
+  (test "0123456789" string-append* "0123456789" '())
+  (test "0123456789" string-append* "0123456789" '(""))
+  (test "0123456789" string-append* "0123456789" '("" ""))
+  (test "0123456789" string-append* "01234567" '("8" "9")))
 
 (report-errs)

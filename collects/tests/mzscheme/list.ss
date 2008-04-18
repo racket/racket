@@ -172,6 +172,14 @@
 
 ;; ---------- append* ----------
 (let ()
+  (test '()        append* '())
+  (test '()        append* '(()))
+  (test '()        append* '(() ()))
+  (test '(0 1 2 3) append* '((0 1 2 3)))
+  (test '(0 1 2 3) append* '(0 1 2 3) '())
+  (test '(0 1 2 3) append* '(0 1 2 3) '(()))
+  (test '(0 1 2 3) append* '(0 1 2 3) '(() ()))
+  (test '(0 1 2 3) append* '(0 1) '((2) (3)))
   (test '(0 1 0 2 0 3) append* (map (lambda (x) (list 0 x)) '(1 2 3)))
   (test '(1 2 3 4 5 6 7 8 9) append* '(1 2 3) '(4 5) '((6 7 8) (9))))
 
