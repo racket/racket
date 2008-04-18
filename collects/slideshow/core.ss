@@ -625,10 +625,10 @@
 	   [(null? l) (reverse a)]
 	   [(null? a) (loop (cdr l) (list (car l)))]
 	   [(and (string? (car l)) 
-		 (regexp-match #rx"^[-',. :;?!)]" (car l)))
+		 (regexp-match #rx"^[-',. :;?!“”‘’)]" (car l)))
 	    (let ([m (regexp-match #rx"^([^ ]*) (.*)$" (car l))])
 	      (if m
-		  (if (string? (car a))
+                  (if (string? (car a))
 		      (loop (cdr l)
 			    (list* (caddr m)
 				   (string-append (car a) (cadr m))
