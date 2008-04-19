@@ -529,6 +529,16 @@ must merely start with a chain of at least @scheme[pos] pairs.
  (take 'non-list 0)
 ]}
 
+@defproc[(add-between [lst list?] [v any/c]) list?]{
+
+Returns a list that is made of items from @scheme[lst], with
+@scheme[v] between each two items.
+
+@examples[#:eval list-eval
+  (add-between '(x y z) 'or)
+  (add-between '(x) 'or)
+]}
+
 @defproc*[([(append* [lst list?] ... [lsts (listof list?)]) list?]
            [(append* [lst list?] ... [lsts list?]) any/c])]{
 @; Note: this is exactly the same description as the one for string-append*

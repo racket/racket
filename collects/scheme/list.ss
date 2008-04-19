@@ -13,8 +13,8 @@
          take
 
          append*
-         add-between
-         flatten)
+         flatten
+         add-between)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -78,6 +78,12 @@
   (case-lambda [(ls) (apply append ls)] ; optimize common case
                [(l . lss) (apply append (apply list* l lss))]))
 
+(define (flatten orig-sexp)
+  (let loop ([sexp orig-sexp] [acc null])
+    (cond [(null? sexp) acc]
+          [(pair? sexp) (loop (car sexp) (loop (cdr sexp) acc))]
+          [else (cons sexp acc)])))
+
 ;; General note: many non-tail recursive, which are just as fast in mzscheme
 
 (define (add-between l x)
@@ -101,9 +107,3 @@
 ;;                         (if (null? ls)
 ;;                           ls
 ;;                           (append l (car ls) (loop (cdr ls))))))]))
-
-(define (flatten orig-sexp)
-  (let loop ([sexp orig-sexp] [acc null])
-    (cond [(null? sexp) acc]
-          [(pair? sexp) (loop (car sexp) (loop (cdr sexp) acc))]
-          [else (cons sexp acc)])))
