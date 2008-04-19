@@ -200,4 +200,36 @@
   (test '(9 1 8 1 7) add-between '(9 8 7) 1)
   (test '(9 (1) 8)   add-between '(9 8) '(1)))
 
+;; ---------- remove-duplicates ----------
+(let ()
+  (define rd remove-duplicates)
+  ;; basic 'naive tests
+  (test '() rd '())
+  (test '(a) rd '(a a a a))
+  (test '(a b) rd '(a b))
+  (test '(a b) rd '(a b a b a b))
+  (test '(a b) rd '(a a a b b b))
+  (test '(a b) rd '(a b b a) #:keep 'first)
+  (test '(b a) rd '(a b b a) #:keep 'last)
+  ;; test with 'hash
+  (test '() rd '() #:mode 'hash)
+  (test '(a) rd '(a a a a) #:mode 'hash)
+  (test '(a b) rd '(a b) #:mode 'hash)
+  (test '(a b) rd '(a b a b a b) #:mode 'hash #:ordered? #t)
+  (test '(a b) rd '(a a a b b b) #:mode 'hash #:ordered? #t)
+  (test '(a b) rd '(a b b a) #:keep 'first #:mode 'hash #:ordered? #t)
+  (test '(b a) rd '(a b b a) #:keep 'last #:mode 'hash #:ordered? #t)
+  ;; test with 'sorted
+  (test '() rd '() #:mode 'sorted)
+  (test '(a) rd '(a a a a) #:mode 'sorted)
+  (test '(a b) rd '(a b) #:mode 'sorted)
+  (test '(a b a b a b) rd '(a b a b a b) #:mode 'sorted)
+  (test '(a b) rd '(a a a b b b) #:mode 'sorted)
+  (let ([a1 "a"] [a2 "a"] [b1 "b"] [b2 "b"])
+    (test #t andmap eq? (list a1 b1)
+                        (rd (list a1 a2 b1 b2) #:mode 'sorted #:keep 'first))
+    (test #t andmap eq? (list a2 b2)
+                        (rd (list a1 a2 b1 b2) #:mode 'sorted #:keep 'last)))
+  )
+
 (report-errs)
