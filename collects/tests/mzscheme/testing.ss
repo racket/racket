@@ -101,18 +101,24 @@ transcript.
       (set! number-of-exn-tests (+ number-of-exn-tests (list-ref l 2)))
       (set! errs (append (list-ref l 3) errs)))))
 
-(define (test expect fun . args)
-  (set! number-of-tests (add1 number-of-tests))
-  (printf "~s ==> " (cons fun args))
-  (flush-output)
-  (let ([res (if (procedure? fun) (apply fun args) (car args))])
-    (printf "~s\n" res)
-    (let ([ok? (equal? expect res)])
-      (unless ok?
-        (record-error (list res expect (cons fun args)))
-        (printf "  BUT EXPECTED ~s\n" expect))
-      ok?)))
-
+(define test
+  (let ()
+    (define (test* expect fun args kws kvs)
+      (set! number-of-tests (add1 number-of-tests))
+      (printf "~s ==> " (cons fun args))
+      (flush-output)
+      (let ([res (if (procedure? fun)
+                   (if kws (keyword-apply fun kws kvs args) (apply fun args))
+                   (car args))])
+        (printf "~s\n" res)
+        (let ([ok? (equal? expect res)])
+          (unless ok?
+            (record-error (list res expect (cons fun args)))
+            (printf "  BUT EXPECTED ~s\n" expect))
+          ok?)))
+    (define (test/kw kws kvs expect fun . args) (test* expect fun args kws kvs))
+    (define (test    expect fun         . args) (test* expect fun args #f #f))
+    (make-keyword-procedure test/kw test)))
 
 (define (nonneg-exact? x)
   (and (exact? x)
