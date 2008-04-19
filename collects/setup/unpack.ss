@@ -112,7 +112,7 @@
     (cond
       [(null? v) 'same]
       [(and (pair? v) (symbol? (car v)) (symbol=? (car v) 'same))
-       'same]
+       (list 'same (apply build-path 'same (cdr v)))]
       [(and (pair? v) (string? (car v)))
        (let ([location (string->loc (car v))])
          (list location (apply build-path (cdr v))))]
