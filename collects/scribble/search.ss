@@ -46,6 +46,11 @@
     ;; from (define-for-syntax x ...). This isn't a problem in practice,
     ;; because no one uses the same name for different-phase exported
     ;; bindings.
+    ;;
+    ;; However, we assume that bidings are defined as originating from some
+    ;; module at phase 0. Maybe it's defined at phase 1 and re-exported
+    ;; later for phase 0 (after a require-for-template), in which case the
+    ;; re-exporting module is the one we find.
     (let ([b (cond
               [(identifier? stx/binding)
                (identifier-binding stx/binding phase-level)]
@@ -90,7 +95,7 @@
                    [export-phase (list-ref (car queue) 4)]
                    [queue (cdr queue)])
                (let* ([rmp (module-path-index-resolve mod)]
-                      [eb (and (equal? defn-phase export-phase)
+                      [eb (and (equal? 0 export-phase) ;; look for the phase-0 export; good idea?
                                (list (let ([p (resolved-module-path-name rmp)])
                                        (if (path? p)
                                            (intern-taglet (path->main-collects-relative p))

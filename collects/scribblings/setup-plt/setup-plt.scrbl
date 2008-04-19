@@ -15,6 +15,7 @@
                     setup/plt-installer-sig
                     setup/plt-installer-unit
                     setup/pack
+                    setup/unpack
                     compiler/compiler
                     launcher/launcher
                     compiler/sig
@@ -84,7 +85,7 @@ The @|setup-plt| executable performs two main services:
    should be a function like @scheme[compile]; see the
    @filepath{errortrace} collection for an example.}
 
- @item{@bold{Unpacking single @filepath{.plt} files:} A
+ @item{@bold{Unpacking @filepath{.plt} files:} A
    @filepath{.plt} file is a platform-independent distribution archive
    for software based on PLT Scheme. When one or more file names are
    provided as the command line arguments to @|setup-plt|, the files
@@ -325,37 +326,7 @@ Optional @filepath{info.ss} fields trigger additional actions by
 
 @section[#:tag "setup-plt-plt"]{Running @|setup-plt| from Scheme}
 
-@; ----------------------------------------
-
-@subsection{Installing a Single @filepath{.plt} File}
-
-@local-module[setup/plt-single-installer]{
-
-@defmodule[setup/plt-single-installer]{
-  The @schememodname{setup/plt-single-installer} module provides a function for
-  installing a single @filepath{.plt} file:}
-
-@defproc[(run-single-installer
-          (file path-string?)
-          (get-dir-proc (-> (or/c path-string? false/c)))) void?]{
-   Creates a separate thread and namespace, runs the installer in that
-   thread with the new namespace, and returns when the thread
-   completes or dies. It also creates a custodian
-   (see @secref[#:doc ref-src]{custodians}) to manage the
-   created thread, sets the exit handler for the thread to shut down
-   the custodian, and explicitly shuts down the custodian
-   when the created thread terminates or dies.
-
-   The @scheme[get-dir-proc] procedure is called if the installer needs a
-   target directory for installation, and a @scheme[#f] result means that
-   the user canceled the installation. Typically, @scheme[get-dir-proc] is
-   @scheme[current-directory].}}
-
-@; ----------------------------------------
-
-@subsection[#:tag "setup-plt-unit"]{General Case}
-
-The @scheme[setup/setup-unit] library provides @|setup-plt| in unit
+The @schememodname[setup/setup-unit] library provides @|setup-plt| in unit
 form. The associated @scheme[setup/option-sig] and
 @scheme[setup/option-unit] libraries provides the interface for
 setting options for the run of @|setup-plt|.
@@ -396,7 +367,7 @@ and exports nothing. Invoking @scheme[setup@] starts the setup process.}
 
 @; ----------------------------------------
 
-@subsubsection{Options Unit}
+@subsection{Options Unit}
 
 @defmodule[setup/option-unit]
 
@@ -406,7 +377,7 @@ Imports nothing and exports @scheme[setup-option^].}
 
 @; ----------------------------------------
 
-@subsubsection{Options Signature}
+@subsection{Options Signature}
 
 @defmodule[setup/option-sig]
 
@@ -677,9 +648,38 @@ for making @filepath{.plt} archives:}
    @scheme[file-mode] argument specifies the default mode for packing a file,
    either @scheme['file] or @scheme['file-replace].}
 
-@; ------------------------------------------------------------------------
+@; ----------------------------------------
 
-@subsection[#:tag "unpacking-.plt-archives"]{Unpacking @filepath{.plt} Archives}
+@subsection{Installing a Single @filepath{.plt} File}
+
+The @schememodname[setup/plt-single-installer] module provides a
+function for installing a single @filepath{.plt} file, and
+@schememodname[setup/plt-single-installer] wraps it with a GUI
+interface.
+
+@subsubsection{Non-GUI Installer}
+
+@local-module[setup/plt-single-installer]{
+
+@defmodule[setup/plt-single-installer]
+
+@defproc[(run-single-installer
+          (file path-string?)
+          (get-dir-proc (-> (or/c path-string? false/c)))) void?]{
+   Creates a separate thread and namespace, runs the installer in that
+   thread with the new namespace, and returns when the thread
+   completes or dies. It also creates a custodian
+   (see @secref[#:doc ref-src]{custodians}) to manage the
+   created thread, sets the exit handler for the thread to shut down
+   the custodian, and explicitly shuts down the custodian
+   when the created thread terminates or dies.
+
+   The @scheme[get-dir-proc] procedure is called if the installer needs a
+   target directory for installation, and a @scheme[#f] result means that
+   the user canceled the installation. Typically, @scheme[get-dir-proc] is
+   @scheme[current-directory].}}
+
+@subsubsection[#:tag "gui-unpacking"]{GUI Installer}
 
 @defmodule[setup/plt-installer]{ The
   @schememodname{setup/plt-installer} library in the setup collection
@@ -698,7 +698,8 @@ for making @filepath{.plt} archives:}
   A thunk that is run after a @filepath{.plt} file is installed.}
 
 @defproc[(with-installer-window
-          (do-install ((or/c (is-a?/c dialog%) (is-a?/c frame%)) . -> . void?))
+          (do-install ((or/c (is-a?/c dialog%) (is-a?/c frame%)) 
+                       . -> . void?))
           (cleanup-thunk (-> any)))
          void?]{
   Creates a frame, sets up the current error and output ports, and
@@ -715,18 +716,114 @@ for making @filepath{.plt} archives:}
          void?]{
   The same as the sole export of @schememodname[setup/plt-single-installer], but with a GUI.}
 
-@subsubsection{Unpacking Signature}
+@; ----------------------------------------
+
+@subsubsection{GUI Unpacking Signature}
       
 @defmodule[setup/plt-installer-sig]{
   @defsignature[setup:plt-installer^ ()]{
   Provides two names: @scheme[run-installer] and @scheme[on-installer-run].}
 }
 
-@subsubsection{Unpacking Unit}
+@; ----------------------------------------
+
+@subsubsection{GUI Unpacking Unit}
 
 @defmodule[setup/plt-installer-unit]{
 
 Imports @scheme[mred^] and exports @scheme[setup:plt-installer^]. }
+
+@; ------------------------------------------------------------------------
+
+@subsection[#:tag "unpacking-.plt-archives"]{Unpacking @filepath{.plt} Archives}
+
+@defmodule[setup/unpack]{The @schememodname[setup/unpack]
+library provides raw support for unpacking a @filepath{.plt} file.}
+
+@defproc[(unpack [archive path-string?]
+                 [main-collects-parent-dir path-string? (current-directory)]
+                 [print-status (string? . -> . any) (lambda (x) (printf "~a\n" x))]
+                 [get-target-directory (-> path-string?) (lambda () (current-directory))]
+                 [force? any/c #f]
+                 [get-target-plt-directory
+                  (path-string? 
+                   path-string? 
+                   (listof path-string?) 
+                   . -> . path-string?)
+                  (lambda (_preferred-dir _main-dir _options)
+                    _preferred-dir)])
+          void?]{
+
+Unpacks @scheme[archive]. 
+
+The @scheme[main-collects-parent-dir] argument is passed along to
+@scheme[get-target-plt-directory].
+
+The @scheme[print-status] argument is used to report unpacking
+progress.
+
+The @scheme[get-target-directory] argument is used to get the
+destination directory for unpacking an archive whose content is
+relative to an arbitrary directory.
+
+If @scheme[force?] is true, then version and required-collection
+mismatches (comparing information in the archive to the current
+installation) are ignored.
+
+The @scheme[get-target-plt-directory] function is called to select a
+target for installation for an archive whose is relative to the
+installation. The function should normally return one if its first two
+arguments; the third argument merely contains the first two, but has
+only one element if the first two are the same. If the archive does
+not request installation for all uses, then the first two arguments
+will be different, and the former will be a user-specific location,
+while the second will refer to the main installation.}
+
+@defproc[(fold-plt-archive [archive path-string?]
+                           [on-config-fn (any/c any/c . -> . any/c)]
+                           [on-setup-unit (any/c input-port? any/c . -> . any/c)]
+                           [on-directory (path-string? any/c . -> . any/c)]
+                           [on-file (path-string? input-port? any/c . -> . any/c)]
+                           [initial-value any/c])
+          any/c]{
+
+Traverses the content of @scheme[archive], which must be a
+@filepath{.plt} archive that is created with the default unpacking
+unit and configuration expression. The configuration expression is not
+evaluated, the unpacking unit is not invoked, and not files are
+unpacked to the filesystem. Instead, the information in the archive is
+reported back through @scheme[on-config], @scheme[on-setup-unit],
+@scheme[on-directory], and @scheme[on-file], each of which can build on
+an accumulated value that starts with @scheme[initial-value] and whose
+final value is returned.
+
+The @scheme[on-config-fn] function is called once with an S-expression
+that represents a function to implement configuration information.
+The second argument to @scheme[on-config] is @scheme[initial-value],
+and the function's result is passes on as the last argument to @scheme[on-setup-unit].
+
+The @scheme[on-setup-unit] function is called with the S-expression
+representation of the installation unit, an input port that points to
+the rest of the file, and the accumulated value. This input port is
+the same port that will be used in the rest of processing, so if
+@scheme[on-setup-unit] consumes any data from the port, then that data
+will not be consumed by the remaining functions. (This means that
+on-setup-unit can leave processing in an inconsistent state, which is
+not checked by anything, and therefore could cause an error.)
+The result of @scheme[on-setup-unit] becomes the new accumulated value.
+
+For each directory that would be created by the archive when unpacking
+normally, @scheme[on-directory] is called with the directory path and the
+accumulated value up to that point, and its result is the new
+accumulated value.
+
+For each file that would be created by the archive when unpacking
+normally, @scheme[on-file] is called with the file path, an input port
+containing the contents of the file, and the accumulated value up to
+that point; its result is the new accumulated value. The input port
+can be used or ignored, and parsing of the rest of the file continues
+the same either way. After @scheme[on-file] returns control, however,
+the input port is drained of its content.}
 
 @; ------------------------------------------------------------------------
 
@@ -1022,8 +1119,8 @@ An @deftech{unpackable} is one of the following:
    collections and installed @|PLaneT| packages) whose
    @filepath{info.ss} file defines one or more of the given
    symbols. The result is based on a cache that is computed by
-   @|setup-plt| and stored in the @filepath{info-domain} sub-directory
-   of each collection directory (as determined by the
+   @|setup-plt| and stored in the @indexed-file{info-domain}
+   sub-directory of each collection directory (as determined by the
    @envvar{PLT_COLLECTION_PATHS} environment variable, etc.) and the
    file @filepath{cache.ss} in the user add-on directory.
 
@@ -1101,3 +1198,7 @@ than specified in the contract above, it is returned as-is.}
 
 Like @scheme[load-xref], but automatically find all cross-reference files for
 manuals that have been installed with @exec{setup-plt}.}
+
+@; ----------------------------------------------------------------------
+
+@index-section[]

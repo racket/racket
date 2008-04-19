@@ -5,9 +5,15 @@
 	   mzlib/inflate
 	   mzlib/file
            mzlib/list
+           mzlib/port
 	   net/base64
 	   (lib "getinfo.ss" "setup")
 	   "dirs.ss")
+
+  (provide unpack
+           fold-plt-archive)
+
+  ;; ----------------------------------------
 
   ;; Returns a port and a kill thunk
   (define (port64gz->port p64gz)
@@ -27,6 +33,126 @@
                          (lambda () (gunzip-through-ports base64-out guz-in))
                          (lambda () (close-output-port guz-in)))))])
 	(values guz-out (lambda () (kill-thread 64t) (kill-thread gzt))))))
+  
+  ;; ------------------------------------------------------------
+  
+  ;; fold-plt-archive : path[to .plt file] (sexpr A -> A) (sexpr input-port A -> A) (path A -> A) (path input-port A -> A) A -> A
+  (define (fold-plt-archive filename on-config-fn on-setup-unit on-directory on-file initial-value)
+    (let*-values ([(fip) (open-input-file filename)]
+                  [(ip kill) (port64gz->port fip)])
+      (dynamic-wind
+       void
+       (λ () (fold-plt-archive-port ip on-config-fn on-setup-unit on-directory on-file initial-value))
+       (λ ()
+         (close-input-port fip)
+         (kill)))))
+  
+  ;; fold-plt-archive-port : input-port (sexpr A -> A) (sexpr input-port A -> A) (path A -> A) (path input-port A -> A) A -> A
+  (define (fold-plt-archive-port p on-config-fn on-setup-unit on-directory on-file initial-value)
+    
+    ;; skip past the initial #"PLT" and two sexprs
+    (unless (and (eq? #\P (read-char p))
+                 (eq? #\L (read-char p))
+                 (eq? #\T (read-char p)))
+      (error "not an unpackable distribution archive"))
+    
+    (let* ([config-fn-sexpr (read p)]
+           [_  (when (eof-object? config-fn-sexpr) (error "malformed input"))]
+           [val (on-config-fn config-fn-sexpr initial-value)]
+           
+           [setup-unit (read p)]
+           [_ (when (eof-object? setup-unit) (error "malformed input"))]
+           [val (on-setup-unit setup-unit p val)])
+    
+      ;; read contents of file directly. [on-setup-unit may have consumed all input,
+      ;; but if so this loop will just do nothing.]
+      (let loop ([val val])
+        (let ([kind (read p)])
+          (cond
+            [(eof-object? kind) val]
+            [else
+             (case kind
+               [(dir) 
+                (let* ([v (read p)]
+                       [s (expr->path-descriptor v)])
+                  (unless (relative-path-descriptor? s)
+                    (error "expected a directory name relative path string, got" s))
+                  (let ([next-val (on-directory s val)])
+                    (loop next-val)))]
+               [(file file-replace)
+                (let* ([v (read p)]
+                       [s (expr->path-descriptor v)])
+                  (unless (relative-path-descriptor? s)
+                    (error "expected a file name relative path string, got" s))
+                  (let ([len (read p)])
+                    (unless (and (number? len) (integer? len))
+                      (error "expected a file name size, got" len))
+                    ;; Find starting *
+                    (let loop ()
+                      (let ([c (read-char p)])
+                        (cond [(char=? c #\*) (void)] ; found it
+                              [(char-whitespace? c) (loop)]
+                              [(eof-object? c) (void)] ; signal the error below
+                              [else (error 
+                                     (format "unexpected character setting up ~a, looking for *" s)
+                                     c)])))
+                    (let-values ([(control fp) (protected-limited-input-port p len)])
+                      (let ([next-val (on-file s fp val)])
+                        (exhaust-port control)
+                        (loop next-val)))))]
+               [else (error "unknown file tag" kind)])])))))
+  
+  ;; path-descriptor ::= 'same | (list location path)
+  ;; location        ::= symbol in '(same collects doc lib include)
+
+  ;; expr->path-descriptor : sexpr -> path-descriptor
+  ;; extracts a path-descriptor from an sexpr embedded in a .plt file
+  ;; raises an error if the given sexpr can't be converted to a path descriptor
+  (define (expr->path-descriptor v)
+    (cond
+      [(null? v) 'same]
+      [(and (pair? v) (symbol? (car v)) (symbol=? (car v) 'same))
+       'same]
+      [(and (pair? v) (string? (car v)))
+       (let ([location (string->loc (car v))])
+         (list location (apply build-path (cdr v))))]
+      [else (error "malformed path description: " v)]))
+
+  ;; string->loc : string -> location
+  ;; converts the string into a corresponding location, or raises an error
+  ;; if that is not possible
+  (define (string->loc str)
+    (let ([loc (string->symbol str)])
+      (cond
+        [(memq loc '(collects doc lib include same)) loc]
+        [else (error "unknown path root: " loc)])))
+  
+  ;; relative-path-descriptor? : path-descriptor -> boolean
+  ;; determines if the given path descriptor names a relative file rather
+  ;; than an absolute one
+  (define (relative-path-descriptor? s)
+    (or (eq? s 'same) (relative-path? (cadr s))))
+  
+  ;; protected-limited-output-port input-port n -> (values input-port input-port)
+  ;; returns two input ports. the first reads from the given input port, and the second
+  ;; reads from the first.
+  ;; why would you ever want to do this? So that you can hand out the second, and then
+  ;; regardless of whether the user closes it or not you still have a limited input port
+  ;; you can read to exhaustion.
+  (define (protected-limited-input-port ip limit)
+    (let* ([i2 (make-limited-input-port ip limit #f)]
+           [i3 (make-limited-input-port i2 limit #f)])
+      (values i2 i3)))
+  
+  ;; exhaust-port : input-port -> void
+  ;; consumes all input on the given port
+  (define exhaust-port
+    (let ([nowhere (open-output-nowhere)])
+      (λ (ip) (copy-port ip nowhere))))
+  
+  
+  ;; ------------------------------------------------------------
+  
 
   (define (pretty-name f)
     (with-handlers ([void (lambda (x) f)])
@@ -298,6 +424,4 @@
 
                   ;; Cancelled: no collections
                   null))))
-          (lambda () (kill) (close-input-port p64gz))))))
-
-  (provide unpack))
+          (lambda () (kill) (close-input-port p64gz)))))))
