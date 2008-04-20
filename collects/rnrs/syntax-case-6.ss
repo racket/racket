@@ -13,9 +13,9 @@
          bound-identifier=?
          (rename-out [r6rs:free-identifier=? free-identifier=?]
                      [r6rs:datum->syntax datum->syntax]
-                     [r6rs:syntax->datum syntax->datum])
-         generate-temporaries
-         (rename-out [r6rs:with-syntax with-syntax]
+                     [r6rs:syntax->datum syntax->datum]
+                     [r6rs:generate-temporaries generate-temporaries]
+                     [r6rs:with-syntax with-syntax]
                      [r6rs:quasisyntax quasisyntax])
          unsyntax unsyntax-splicing
          (rename-out [raise-syntax-error syntax-violation]))
@@ -30,6 +30,12 @@
 
 (define (r6rs:syntax->datum stx)
   (convert-pairs (syntax->datum stx)))
+
+(define (r6rs:generate-temporaries l)
+  (list->mlist
+   (generate-temporaries (if (mlist? l)
+                             (mlist->list l)
+                             l))))
 
 (define (make-variable-transformer proc)
   (make-set!-transformer proc))
