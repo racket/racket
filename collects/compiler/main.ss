@@ -82,7 +82,30 @@
      [once-any
       [("-k" "--make")
        ,(lambda (f) 'make-zo)
-       (("Recursively compile Scheme source(s); uses/generates .dep files" ""))]
+       ("Recursively compile Scheme source(s); uses/generates .dep files")]
+      [("--make-collection")
+       ,(lambda (f) 'collection-zos)
+       ((,(format "Makes all Scheme sources in specified collection(s)") ""))]
+      [("--exe")
+       ,(lambda (f name) (exe-output name) 'exe)
+       (,(format "Embed module in MzScheme to create <exe>")
+        "exe")]
+      [("--gui-exe")
+       ,(lambda (f name) (exe-output name) 'gui-exe)
+       (,(format "Embed module in MrEd to create <exe>")
+        "exe")]
+      [("--exe-dir")
+       ,(lambda (f name) (exe-dir-output name) 'exe-dir)
+       ((,(format "Combine executables with support files in <dir>") "")
+        "dir")]
+      [("--collection-plt")
+       ,(lambda (f name) (plt-output name) 'plt-collect)
+       (,(format "Create .plt <archive> containing collections")
+        "archive")]
+      [("--plt")
+       ,(lambda (f name) (plt-output name) 'plt)
+       ((,(format "Create .plt <archive> containing relative files/dirs") "")
+        "archive")]
       [("--cc")
        ,(lambda (f) 'cc)
        (,(format "Compile arbitrary file(s) for an extension: ~a -> ~a"
@@ -100,46 +123,22 @@
                   (extract-suffix append-c-suffix)
                   (extract-suffix append-c-suffix))
          ""))]
-      [("--exe")
-       ,(lambda (f name) (exe-output name) 'exe)
-       (,(format "Embed module in MzScheme to create <exe>")
-        "exe")]
-      [("--gui-exe")
-       ,(lambda (f name) (exe-output name) 'gui-exe)
-       (,(format "Embed module in MrEd to create <exe>")
-        "exe")]
-      [("--exe-dir")
-       ,(lambda (f name) (exe-dir-output name) 'exe-dir)
-       ((,(format "Combine executables with support files in <dir>") "")
-        "dir")]
       [("--c-mods")
        ,(lambda (f name) (mods-output name) 'c-mods)
        ((,(format "Write C-embeddable module bytecode to <file>") "")
         "file")]
-      [("--collection-plt")
-       ,(lambda (f name) (plt-output name) 'plt-collect)
-       (,(format "Create .plt <archive> containing collections")
-        "archive")]
-      [("--plt")
-       ,(lambda (f name) (plt-output name) 'plt)
-       ((,(format "Create .plt <archive> containing relative files/dirs") "")
-        "archive")]
+      [("--expand")
+       ,(lambda (f) 'expand)
+       ((,(format "Write macro-expanded Scheme source(s) to stdout") ""))]
+      [("-z" "--zo")
+       ,(lambda (f) 'zo)
+       ((,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)) ""))]
       [("-e" "--extension")
        ,(lambda (f) 'compile)
        (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-extension-suffix)))]
       [("-c" "--c-source")
        ,(lambda (f) 'compile-c)
-       ((,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-c-suffix))
-         ""))]
-      [("-z" "--zo")
-       ,(lambda (f) 'zo)
-       (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)))]
-      [("--collection-zos")
-       ,(lambda (f) 'collection-zos)
-       ((,(format "Compile specified collection to ~a files" (extract-suffix append-zo-suffix)) ""))]
-      [("--expand")
-       ,(lambda (f) 'expand)
-       (,(format "Write macro-expanded Scheme source(s) to stdout"))]]
+       (,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-c-suffix)))]]
      [help-labels ""]
      [once-any
       [("--3m")
@@ -175,6 +174,74 @@
        (,(format "Output -z to \"compiled\", -e to ~s"
                  (path->string (build-path "compiled" "native"
                                            (system-library-subpath #f)))))]]
+     [help-labels
+      "--------------------- executable configuration flags ------------------------"]
+     [once-each
+      [("--collects-path")
+       ,(lambda (f i)
+          (exe-embedded-collects-path i))
+       ("Set <path> main collects in --[gui-]exe/--exe-dir" "path")]
+      [("--collects-dest")
+       ,(lambda (f i) (exe-embedded-collects-dest i))
+       ("Add --[gui-]exe collection code to <dir>" "dir")]
+      [("--ico")
+       ,(lambda (f i) (exe-aux (cons (cons 'ico i) (exe-aux))))
+       ("Windows icon for --[gui-]exe executable" ".ico-file")]
+      [("--icns")
+       ,(lambda (f i) (exe-aux (cons (cons 'icns i) (exe-aux))))
+       ("Mac OS X icon for --[gui-]exe executable" ".icns-file")]
+      [("--orig-exe")
+       ,(lambda (f) (exe-aux (cons (cons 'original-exe? #t) (exe-aux))))
+       ("Use original executable for --[gui-]exe instead of stub")]]
+     [multi
+      [("++lib")
+       ,(lambda (f l)
+          (exe-embedded-libraries (append (exe-embedded-libraries) (list l))))
+       ("Embed <lib> in --[gui-]exe executable or --c-mods output" "lib")]
+      [("++collects-copy")
+       ,(lambda (f d)
+          (exe-dir-add-collects-dirs (append (exe-dir-add-collects-dirs) (list d))))
+       ("Add collects in <dir> to --exe-dir" "dir")]
+      [("++exf")
+       ,(add-to-param exe-embedded-flags)
+       ("Add flag to embed in --[gui-]exe executable" "flag")]
+      [("--exf")
+       ,(lambda (f v) (exe-embedded-flags (remove v (exe-embedded-flags))))
+       ("Remove flag to embed in --[gui-]exe executable" "flag")]
+      [("--exf-clear")
+       ,(lambda (f) (exe-embedded-flags null))
+       ("Clear flags to embed in --[gui-]exe executable")]
+      [("--exf-show")
+       ,(lambda (f) (printf "Flags to embed: ~s\n" (exe-embedded-flags)))
+       ("Show flag to embed in --[gui-]exe executable")]]
+     [help-labels
+      "----------------------------- .plt archive flags ----------------------------"]
+     [once-each
+      [("--plt-name")
+       ,(lambda (f n) (plt-name n))
+       ("Set the printed <name> describing the archive" "name")]
+      [("--replace")
+       ,(lambda (f) (plt-files-replace #t))
+       ("Files in archive replace existing files when unpacked")]
+      [("--at-plt")
+       ,(lambda (f) (plt-files-plt-relative? #t))
+       ("Files/dirs in archive are relative to user's add-ons directory")]]
+     [once-any
+      [("--all-users")
+       ,(lambda (f) (plt-files-plt-home-relative? #t))
+       ("Files/dirs in archive go to PLT installation if writable")]
+      [("--force-all-users")
+       ,(lambda (f) (plt-files-plt-home-relative? #t) (plt-force-install-dir? #t))
+       ("Files/dirs forced to PLT installation")]]
+     [once-each
+      [("--include-compiled")
+       ,(lambda (f) (plt-include-compiled #t))
+       ("Include \"compiled\" subdirectories in the archive")]]
+     [multi
+      [("++setup")
+       ,(lambda (f c)
+          (plt-setup-collections (append (plt-setup-collections) (list c))))
+       ("Setup <collect> after the archive is unpacked" "collect")]]
      [help-labels
       "------------------- compiler/linker configuration flags ---------------------"]
      [once-each
@@ -256,75 +323,7 @@
                   (expand-for-link-variant (current-extension-preprocess-flags))))
        ("Show C preprocess (xform) flags")]]
      [help-labels
-      "--------------------- executable configuration flags ------------------------"]
-     [once-each
-      [("--collects-path")
-       ,(lambda (f i)
-          (exe-embedded-collects-path i))
-       ("Set <path> main collects in --[gui-]exe/--exe-dir" "path")]
-      [("--collects-dest")
-       ,(lambda (f i) (exe-embedded-collects-dest i))
-       ("Add --[gui-]exe collection code to <dir>" "dir")]
-      [("--ico")
-       ,(lambda (f i) (exe-aux (cons (cons 'ico i) (exe-aux))))
-       ("Windows icon for --[gui-]exe executable" ".ico-file")]
-      [("--icns")
-       ,(lambda (f i) (exe-aux (cons (cons 'icns i) (exe-aux))))
-       ("Mac OS X icon for --[gui-]exe executable" ".icns-file")]
-      [("--orig-exe")
-       ,(lambda (f) (exe-aux (cons (cons 'original-exe? #t) (exe-aux))))
-       ("Use original executable for --[gui-]exe instead of stub")]]
-     [multi
-      [("++lib")
-       ,(lambda (f l)
-          (exe-embedded-libraries (append (exe-embedded-libraries) (list l))))
-       ("Embed <lib> in --[gui-]exe executable" "lib")]
-      [("++collects-copy")
-       ,(lambda (f d)
-          (exe-dir-add-collects-dirs (append (exe-dir-add-collects-dirs) (list d))))
-       ("Add collects in <dir> to --exe-dir" "dir")]
-      [("++exf")
-       ,(add-to-param exe-embedded-flags)
-       ("Add flag to embed in --[gui-]exe executable" "flag")]
-      [("--exf")
-       ,(lambda (f v) (exe-embedded-flags (remove v (exe-embedded-flags))))
-       ("Remove flag to embed in --[gui-]exe executable" "flag")]
-      [("--exf-clear")
-       ,(lambda (f) (exe-embedded-flags null))
-       ("Clear flags to embed in --[gui-]exe executable")]
-      [("--exf-show")
-       ,(lambda (f) (printf "Flags to embed: ~s\n" (exe-embedded-flags)))
-       ("Show flag to embed in --[gui-]exe executable")]]
-     [help-labels
-      "----------------------------- .plt archive flags ----------------------------"]
-     [once-each
-      [("--plt-name")
-       ,(lambda (f n) (plt-name n))
-       ("Set the printed <name> describing the archive" "name")]
-      [("--replace")
-       ,(lambda (f) (plt-files-replace #t))
-       ("Files in archive replace existing files when unpacked")]
-      [("--at-plt")
-       ,(lambda (f) (plt-files-plt-relative? #t))
-       ("Files/dirs in archive are relative to user's add-ons directory")]]
-     [once-any
-      [("--all-users")
-       ,(lambda (f) (plt-files-plt-home-relative? #t))
-       ("Files/dirs in archive go to PLT installation if writable")]
-      [("--force-all-users")
-       ,(lambda (f) (plt-files-plt-home-relative? #t) (plt-force-install-dir? #t))
-       ("Files/dirs forced to PLT installation")]]
-     [once-each
-      [("--include-compiled")
-       ,(lambda (f) (plt-include-compiled #t))
-       ("Include \"compiled\" subdirectories in the archive")]]
-     [multi
-      [("++setup")
-       ,(lambda (f c)
-          (plt-setup-collections (append (plt-setup-collections) (list c))))
-       ("Setup <collect> after the archive is unpacked" "collect")]]
-     [help-labels
-      "----------------------- compiler optimization flags -------------------------"]
+      "-------------------- -c/-e compiler optimization flags ----------------------"]
      [once-each
       [("--no-prop")
        ,(lambda (f) (compiler:option:propagate-constants #f))
@@ -469,7 +468,10 @@
                      (if did-one? "output to" "already up-to-date at")
                      dest))))))]
   [(collection-zos)
-   (apply compile-collection-zos source-files)]
+   (parameterize ([compile-notify-handler 
+                   (lambda (path)
+                     (printf "  making ~s\n" (path->string path)))])
+     (apply compile-collection-zos source-files))]
   [(cc)
    (for ([file source-files])
      (let* ([base (extract-base-filename/c file 'mzc)]

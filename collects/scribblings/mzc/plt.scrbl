@@ -93,7 +93,7 @@ collection:
 
 When packing collections, @|mzc| checks the following fields of each
 collection's @filepath{info.ss} file (see @secref["info.ss" #:doc
-'(lib "scribblings/reference/reference.scrbl")]):
+'(lib "scribblings/setup-plt/setup-plt.scrbl")]):
 
 @itemize{
 
@@ -135,6 +135,12 @@ unpacked, the unpacker will check that the MrEd collection is
 installed (not just MzScheme), and that MrEd has the same version as
 when @filepath{sirmail.plt} was created.
 
+@; ----------------------------------------
+
+@section{Scheme API for Packaging}
+
 Although @|mzc|'s command-line interface is sufficient for most
-purposes, the @schememodname[setup/pack] library provides a more
+purposes, see the @schememodname[setup/pack] library for a more
 general interface for constructing archives.
+
+

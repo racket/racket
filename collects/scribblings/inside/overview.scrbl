@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require "utils.ss")
 
-@title{Overview}
+@title[#:tag "overview"]{Overview}
 
 @section{CGC versus 3m}
 
@@ -223,7 +223,7 @@ which case the @DFlag{xform} step should be skipped.
 
 @; ----------------------------------------------------------------------
 
-@section{Embedding MzScheme into a Program}
+@section[#:tag "embedding"]{Embedding MzScheme into a Program}
 
 @section-index["embedding MzScheme"]
 

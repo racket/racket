@@ -531,8 +531,8 @@ must merely start with a chain of at least @scheme[pos] pairs.
 
 @defproc[(add-between [lst list?] [v any/c]) list?]{
 
-Returns a list that is made of items from @scheme[lst], with
-@scheme[v] between each two items.
+Returns a list with the same elements as @scheme[lst], but with
+@scheme[v] between each pair of items in @scheme[lst].
 
 @examples[#:eval list-eval
   (add-between '(x y z) 'or)

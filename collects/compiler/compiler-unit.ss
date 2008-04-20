@@ -101,7 +101,10 @@
     (make-unprefixed-compiler 'compile-c-extension))
 
   (define (compile-to-zo src dest namespace eval?)
-    ((if eval? (lambda (t) (t)) with-module-reading-parameterization)
+    ((if eval? 
+         (lambda (t) (parameterize ([read-accept-reader #t])
+                       (t)))
+         with-module-reading-parameterization)
      (lambda ()
        (parameterize ([current-namespace namespace])
          (compile-file src dest
@@ -131,7 +134,7 @@
                    f)))
              source-files))
       (for ([f source-files] [b file-bases])
-        (let ([zo (append-zo-suffix b)])
+        (let ([zo (append-zo-suffix f)])
           (compile-to-zo f zo n prefix)))))
 
   (define (compile-directory dir info)
@@ -158,7 +161,7 @@
       (parameterize ([current-directory dir]
                      [current-load-relative-directory dir]
                      ;; Verbose compilation manager:
-                     [manager-trace-handler (lambda (s) (printf "~a\n" s))]
+                     ;; [manager-trace-handler (lambda (s) (printf "~a\n" s))]
                      [manager-compile-notify-handler
                       (lambda (path) ((compile-notify-handler) path))])
         ;; Compile the collection files via make-collection
@@ -174,7 +177,8 @@
         (when (info* 'compile-subcollections (lambda () #f))
           (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
                   dir))
-        (for ([p (directory-list dir)])
+        (for ([p (directory-list dir)]
+              #:when (directory-exists? (build-path dir p)))
           (let ([s (path->string p)])
             ;; this is the same check that setup/setup-unit is doing in
             ;; `make-cc*'
