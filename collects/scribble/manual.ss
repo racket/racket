@@ -1317,11 +1317,12 @@
                                                                      (to-flow (hspace 1))
                                                                      (loop (cdr res))))))))))
                                             res))]
+                               [(tagged+arg-width) (+ (prototype-size args max max #t)
+                                                      (prototype-depth prototype)
+                                                      (element-width tagged))]
                                [(result-next-line?) ((+ (if short? 
                                                             flat-size
-                                                            (+ (prototype-size args max max #t)
-                                                               (prototype-depth prototype)
-                                                               (element-width tagged)))
+                                                            tagged+arg-width)
                                                         (block-width res))
                                                      . >= . (- max-proto-width 7))]
                                [(end) (list (to-flow spacer)
@@ -1332,6 +1333,7 @@
                     (list
                      (list (make-flow
                             (if short?
+                                ;; The single-line case:
                                 (make-table-if-necessary
                                  "prototype"
                                  (list
@@ -1358,31 +1360,38 @@
                                    (if result-next-line?
                                        null
                                        end))))
+                                ;; The multi-line case:
                                 (let ([not-end
                                        (if result-next-line?
                                            (list (to-flow spacer))
                                            (list (to-flow spacer)
                                                  (to-flow spacer)
                                                  (to-flow spacer)
-                                                 (to-flow spacer)))])
+                                                 (to-flow spacer)))]
+                                      [one-ok? (tagged+arg-width . < . 40)])
                                   (list
                                    (make-table
                                     "prototype"
                                     (cons
-                                     (list* (to-flow (make-element
-                                                      #f
-                                                      (list
-                                                       (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\())
-                                                       tagged)))
-                                            (cond
-                                             [(arg-starts-optional? (car args))
-                                              (to-flow (make-element #f (list spacer "[")))]
-                                             [else
-                                              (to-flow spacer)])
-                                            (to-flow
-                                             ((arg->elem #f) (car args)))
-                                            not-end)
-                                     (let loop ([args (cdr args)])
+                                     (cons (to-flow (make-element
+                                                     #f
+                                                     (list
+                                                      (schemeparenfont (make-string (add1 (prototype-depth prototype)) #\())
+                                                      tagged)))
+                                           (if one-ok?
+                                               (list*
+                                                (cond
+                                                 [(arg-starts-optional? (car args))
+                                                  (to-flow (make-element #f (list spacer "[")))]
+                                                 [else
+                                                  (to-flow spacer)])
+                                                (to-flow
+                                                 ((arg->elem #f) (car args)))
+                                                not-end)
+                                               (list* 'cont 'cont not-end)))
+                                     (let loop ([args (if one-ok?
+                                                          (cdr args)
+                                                          args)])
                                        (if (null? args)
                                            null
                                            (let ([dots-next? (or (and (pair? (cdr args))
