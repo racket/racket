@@ -1696,7 +1696,7 @@ MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_st
 
 /* More automatic start-up: */
 typedef int (*Scheme_Main)(Scheme_Env *env, int argc, char **argv);
-MZ_EXTERN int scheme_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv);
+MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv);
 
 
 MZ_EXTERN void scheme_register_static(void *ptr, long size);

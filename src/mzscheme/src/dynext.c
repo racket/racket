@@ -266,14 +266,14 @@ static Scheme_Object *do_load_extension(const char *filename,
 		       "load-extension: bad version %s (not %s) from \"%s\"",
 		       vers, VERSION_AND_VARIANT, filename);
     }
-    
+
     init_f = (Init_Procedure)dlsym(dl, SO_SYMBOL_PREFIX "scheme_initialize");
     if (init_f) {
       reload_f = (Reload_Procedure)dlsym(dl, SO_SYMBOL_PREFIX "scheme_reload");
       if (reload_f)
 	modname_f = (Modname_Procedure)dlsym(dl, SO_SYMBOL_PREFIX "scheme_module_name");
     }
-    
+
     if (!init_f || !reload_f || !modname_f) {
       const char *err;
       err = dlerror();

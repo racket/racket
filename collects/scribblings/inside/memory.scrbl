@@ -85,7 +85,7 @@ times).
 
 With conservative collection, no registration is needed for the global
 or static variables of an embedding program, unless it calls
-@cpp{scheme_setup} or @cppi{scheme_set_stack_base} with a non-zero
+@cpp{scheme_main_setup} or @cppi{scheme_set_stack_base} with a non-zero
 first or second (respectively) argument. In that case, global and
 static variables containing collectable pointers must be registered
 with @cppi{scheme_register_static}. The @cppi{MZ_REGISTER_STATIC}
@@ -686,7 +686,7 @@ Registers an extension's global variable that can contain Scheme
  occur during the registration.}
 
 
-@function[(int scheme_setup
+@function[(int scheme_main_setup
            [int no_auto_statics]
            [Scheme_Main main]
            [int argc]
@@ -704,7 +704,7 @@ typedef int (*Scheme_Main)(Scheme_Env *env,
                            int argc, char **argv);
 }
 
-The result of @var{main} is the result of @cpp{scheme_setup}.
+The result of @var{main} is the result of @cpp{scheme_main_setup}.
 
 If @var{no_auto_statics} is non-zero, then static variables must be
 explicitly registered with the garbage collector; see
@@ -739,7 +739,7 @@ must be the beginning or end of a local-frame registration. Worse, in
 CGC or 3m, if @cpp{real_main} is declared @cpp{static}, the compiler
 may inline it and place variables containing collectable values deeper
 in the stack than @cpp{dummy}. To avoid these problems, use
-@cpp{scheme_setup}, instead.}
+@cpp{scheme_main_setup}, instead.}
 
 @function[(void scheme_set_stack_bounds
            [void* stack_addr]

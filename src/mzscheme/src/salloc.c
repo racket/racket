@@ -88,7 +88,7 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
   use_registered_statics = no_auto_statics;
 }
 
-int scheme_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv)
+int scheme_main_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv)
 {
   void *start_addr = &start_addr;
 

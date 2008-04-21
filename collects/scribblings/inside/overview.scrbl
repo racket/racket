@@ -296,13 +296,13 @@ To embed PLT Scheme CGC in a program, follow these steps:
   installing from source also places this file in the installation's
   @filepath{include} directory.}
 
- @item{Start your main program through the @cpp{scheme_setup}
+ @item{Start your main program through the @cpp{scheme_main_setup}
   trampoline, and put all uses of MzScheme functions inside the
-  function passed to @cpp{scheme_setup}. The @cpp{scheme_setup}
+  function passed to @cpp{scheme_main_setup}. The @cpp{scheme_main_setup}
   function registers the current C stack location with the memory
   manager. It also creates the initial namespace @cpp{Scheme_Env*} by
   calling @cppi{scheme_basic_env} and passing the result to the
-  function provided to @cpp{scheme_setup}.}
+  function provided to @cpp{scheme_main_setup}.}
 
  @item{Configure the namespace by adding module declarations. The
   initial namespace contains declarations only for a few primitive
@@ -390,13 +390,13 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  return scheme_setup(1, run, argc, argv);
+  return scheme_main_setup(1, run, argc, argv);
 }
 }
 
 Under Mac OS X, or under Windows when MzScheme is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
-automatically. In that case, @cppi{scheme_setup} must be called with a
+automatically. In that case, @cppi{scheme_main_setup} must be called with a
 non-zero first argument.
 
 Under Windows (for any other build mode), the garbage collector finds
@@ -404,9 +404,9 @@ static variables in an embedding program by examining all memory
 pages. This strategy fails if a program contains multiple Windows
 threads; a page may get unmapped by a thread while the collector is
 examining the page, causing the collector to crash. To avoid this
-problem, call @cpp{scheme_setup} with a non-zero first argument.
+problem, call @cpp{scheme_main_setup} with a non-zero first argument.
 
-When an embedding application calls @cpp{scheme_setup} with a non-zero
+When an embedding application calls @cpp{scheme_main_setup} with a non-zero
 first argument, it must register each of its static variables with
 @cppi{MZ_REGISTER_STATIC} if the variable can contain a GCable
 pointer. For example, if @cpp{curout} above is made @cpp{static}, then
@@ -414,7 +414,7 @@ pointer. For example, if @cpp{curout} above is made @cpp{static}, then
 @cpp{scheme_get_param}.
 
 When building an embedded MzSchemeCGC to use SenoraGC (SGC) instead of
-the default collector, @cpp{scheme_setup} must be called with a
+the default collector, @cpp{scheme_main_setup} must be called with a
 non-zero first argument.  See @secref["im:memoryalloc"] for more
 information.
 
@@ -454,7 +454,7 @@ In addition, some library details are different:
 
 }
 
-For MzScheme3m, an embedding application must call @cpp{scheme_setup}
+For MzScheme3m, an embedding application must call @cpp{scheme_main_setup}
 with a non-zero first argument.
 
 The simple embedding program from the previous section can be
@@ -520,7 +520,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  return scheme_setup(1, run, argc, argv);
+  return scheme_main_setup(1, run, argc, argv);
 }
 }
 

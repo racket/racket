@@ -1171,8 +1171,7 @@
 								 #f #f ; no module entries
 								 c-port)])
 				   (fprintf c-port
-					    "Scheme_Object * scheme_reload~a(Scheme_Env * env)~n{~n"
-					    compiler:setup-suffix)
+					    "static Scheme_Object * do_scheme_reload(Scheme_Env * env)~n{~n")
 				   (fprintf c-port"~aScheme_Per_Load_Statics *PLS;~n"
 					    vm->c:indent-spaces)
 				   (fprintf c-port 
@@ -1188,9 +1187,17 @@
 				   (fprintf c-port 
 					    "}~n~n")
 
+
 				   (fprintf c-port
-					    "~nvoid scheme_setup~a(Scheme_Env * env)~n{~n"
+					    "Scheme_Object * scheme_reload~a(Scheme_Env * env)~n{~n"
 					    compiler:setup-suffix)
+				   (fprintf c-port"~areturn do_scheme_reload(env);~n"
+					    vm->c:indent-spaces)
+				   (fprintf c-port 
+					    "}~n~n")
+
+				   (fprintf c-port
+					    "~nstatic void do_scheme_setup(Scheme_Env * env)~n{~n")
 				   (fprintf c-port
 					    "~ascheme_set_tail_buffer_size(~a);~n"
 					    vm->c:indent-spaces
@@ -1218,14 +1225,23 @@
 
 				   (fprintf c-port 
 					    "}~n~n")
+
+                                   (fprintf c-port
+					    "~nvoid scheme_setup~a(Scheme_Env * env)~n{~n"
+					    compiler:setup-suffix)
+				   (fprintf c-port
+					    "~ado_scheme_setup(env);~n"
+					    vm->c:indent-spaces)
+				   (fprintf c-port 
+					    "}~n~n")
 				   
 				   (when (string=? "" compiler:setup-suffix)
 				     (fprintf c-port
 					      "~nScheme_Object * scheme_initialize(Scheme_Env * env)~n{~n")
-				     (fprintf c-port "~ascheme_setup~a(env);~n"
+				     (fprintf c-port "~ado_scheme_setup~a(env);~n"
 					      vm->c:indent-spaces
 					      compiler:setup-suffix)
-				     (fprintf c-port "~areturn scheme_reload~a(env);~n"
+				     (fprintf c-port "~areturn do_scheme_reload~a(env);~n"
 					      vm->c:indent-spaces
 					      compiler:setup-suffix)
 				     (fprintf c-port 

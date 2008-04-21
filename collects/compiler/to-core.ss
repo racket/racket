@@ -1,4 +1,4 @@
-(module to-core mzscheme
+(module to-core scheme/base
   (require syntax/kerncase
            syntax/stx
            mzlib/list
@@ -45,25 +45,25 @@
                     [else (list stx)]))
                 l)))
   
-  (define-struct lifted-info (counter id-map slot-map))
+  (define-struct lifted-info ([counter #:mutable] id-map slot-map))
   
   (define (make-vars)
     (make-lifted-info 
      0
      (make-module-identifier-mapping)
-     (make-hash-table 'equal)))
+     (make-hash)))
   
   (define (is-id-ref? v)
     (or (identifier? v)
         (and (stx-pair? v)
              (identifier? (stx-car v))
-             (module-identifier=? #'#%top (stx-car v)))))
+             (free-identifier=? #'#%top (stx-car v)))))
   
   (define (vars-sequence li)
     (let loop ([i 0])
       (if (= i (lifted-info-counter li))
           null
-          (cons (let ([v (hash-table-get (lifted-info-slot-map li) i)])
+          (cons (let ([v (hash-ref (lifted-info-slot-map li) i)])
                   (if (is-id-ref? v)
                       #`(#%variable-reference #,v)
                       v))
@@ -73,7 +73,7 @@
     (let loop ([i 0])
       (if (= i (lifted-info-counter li))
           null
-          (let ([v (hash-table-get (lifted-info-slot-map li) i)])
+          (let ([v (hash-ref (lifted-info-slot-map li) i)])
             (if (is-id-ref? v)
                 (cons #`(#,extract-stx #,vec-id #,i)
                       (loop (add1 i)))
@@ -81,16 +81,16 @@
   
   (define (is-run-time? stx)
     (not (and (stx-pair? stx)
-              (or (module-identifier=? #'define-syntaxes (stx-car stx))
-                  (module-identifier=? #'define-values-for-syntax (stx-car stx))))))
+              (or (free-identifier=? #'define-syntaxes (stx-car stx))
+                  (free-identifier=? #'define-values-for-syntax (stx-car stx))))))
 
   (define (has-symbol? decl magic-sym table)
     (cond
-     [(hash-table-get table decl (lambda () #f))
+     [(hash-ref table decl (lambda () #f))
       ;; cycle/graph
       #f]
      [else
-      (hash-table-put! table decl #t)
+      (hash-set! table decl #t)
       (cond
        [(eq? magic-sym decl)
 	#t]
@@ -108,21 +108,21 @@
     (let ([magic-sym (string->symbol (format "magic~a~a" 
 					     (current-seconds)
 					     (current-milliseconds)))])
-      (if (has-symbol? (map syntax-object->datum decls) magic-sym (make-hash-table))
+      (if (has-symbol? (map syntax->datum decls) magic-sym (make-hasheq))
 	  (generate-magic decls)
 	  magic-sym)))
 
   (define (need-thunk? rhs)
     (not (and (stx-pair? rhs)
-	      (or (module-identifier=? #'lambda (stx-car rhs))
-		  (module-identifier=? #'case-lambda (stx-car rhs))))))
+	      (or (free-identifier=? #'lambda (stx-car rhs))
+		  (free-identifier=? #'case-lambda (stx-car rhs))))))
 
   (define (lift-sequence decls lookup-stx set-stx safe-vector-ref-stx extract-stx 
 			 in-module? simple-constant? stop-properties)
     (let ([ct-vars (make-vars)]
           [rt-vars (make-vars)]
-          [compile-time (datum->syntax-object #f (gensym 'compile-time))]
-          [run-time (datum->syntax-object #f (gensym 'run-time))]
+          [compile-time (datum->syntax #f (gensym 'compile-time))]
+          [run-time (datum->syntax #f (gensym 'run-time))]
 	  [magic-sym (generate-magic decls)]
 	  [magic-indirect (gensym)])
       (let ([ct-converted 
@@ -136,7 +136,7 @@
                                                    in-module?
 						   simple-constant? stop-properties)])
                                (if (and (not in-module?)
-                                        (module-identifier=? #'def #'define-syntaxes))
+                                        (free-identifier=? #'def #'define-syntaxes))
                                    ;; Don't try to name macro procedures, because it
                                    ;;  inteferes with the 0-values hack at the top level
                                    cvted
@@ -284,12 +284,12 @@
        [(and (pair? b)
 	     (eq? '#%kernel (car b)))
 	;; Generate a syntax object that has the right run-time binding:
-	(datum->syntax-object #'here (cadr b) stx stx)]
+	(datum->syntax #'here (cadr b) stx stx)]
        [else #f])))
 
   (define (add-literal/pos stx li)
     (let ([pos (lifted-info-counter li)])
-      (hash-table-put! (lifted-info-slot-map li) pos stx)
+      (hash-set! (lifted-info-slot-map li) pos stx)
       (set-lifted-info-counter! li (add1 pos))
       pos))
   
@@ -322,10 +322,10 @@
       [(_ stx e) (let ([old-s stx]
 		       [new-s (quasisyntax e)])
 		   (syntax-recertify
-		    (datum->syntax-object new-s
-					  (syntax-e new-s)
-					  old-s
-					  old-s)
+		    (datum->syntax new-s
+                                   (syntax-e new-s)
+                                   old-s
+                                   old-s)
 		    new-s
 		    code-insp
 		    #f))]))
