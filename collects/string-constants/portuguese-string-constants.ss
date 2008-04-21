@@ -1176,10 +1176,6 @@ please adhere to these guidelines:
   (profjBoxes-insert-java-interactions "Insert Java Interactions")
 
   ;; Slideshow
-  (slideshow-show-slideshow-panel "Mostrar Painel de Apresentação")
-  (slideshow-hide-slideshow-panel "Esconder Painel de Apresentação")
-  (slideshow-freeze-picts "Congelar estas Imagens")
-  (slideshow-thaw-picts "Mostrar Imagens Debaixo do Ponteiro")
   (slideshow-hide-picts "Show Nested Boxes")
   (slideshow-show-picts "Mostrar Imagens")
   (slideshow-cannot-show-picts "Cannot show picts; run program to cache sizes first")

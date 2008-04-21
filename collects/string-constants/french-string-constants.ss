@@ -1346,10 +1346,6 @@
   (profjBoxes-insert-java-interactions "Insérer des interactions Java")
 
   ;; Slideshow
-  (slideshow-show-slideshow-panel "Montrer la sous-fenêtre Slideshow")
-  (slideshow-hide-slideshow-panel "Cacher la sous-fenêtre Slideshow")
-  (slideshow-freeze-picts "Geler ces images")
-  (slideshow-thaw-picts "Montrer les images sous la souris")
   (slideshow-hide-picts "Montrer les boîtes nichées")
   (slideshow-show-picts "Montrer les images")
   (slideshow-cannot-show-picts "Il est impossible de montrer les images; exécutez d'abord le programme pour calculer les dimensions")

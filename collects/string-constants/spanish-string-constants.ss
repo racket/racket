@@ -1082,10 +1082,6 @@
  (profjBoxes-insert-java-interactions "Insertar Interacciones Java")
 
  ;; Slideshow
- (slideshow-show-slideshow-panel "Mostrar Panel de Slideshow")
- (slideshow-hide-slideshow-panel "Esconder Panel de Slideshow")
- (slideshow-freeze-picts "Congelar Estas Imágenes")
- (slideshow-thaw-picts "Mostrar las Imágenes debajo del Puntero")
  (slideshow-hide-picts "Mostrar Cajas Anidadas")
  (slideshow-show-picts "Mostrar Imágenes")
  (slideshow-cannot-show-picts "No puedo mostrar imágenes; ejecuta el programa para capturar primero sus tamaños")

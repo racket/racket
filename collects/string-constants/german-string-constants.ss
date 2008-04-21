@@ -1254,10 +1254,6 @@
   (profjBoxes-insert-java-interactions "Java-Interactionen einfügen")
 
   ;; Slideshow
-  (slideshow-show-slideshow-panel "Slideshow-Panel zeigen")
-  (slideshow-hide-slideshow-panel "Slideshow Panel")
-  (slideshow-freeze-picts "Diese Picts einfrieren")
-  (slideshow-thaw-picts "Picts unter der Maus zeigen")
   (slideshow-hide-picts "Geschachtelte Kästen anzeigen")
   (slideshow-show-picts "Picts anzeigen")
   (slideshow-cannot-show-picts "Kann die Picts nicht anzeigen; Sie müssen erst das Programm zum Cachen der Größen laufen lassen")

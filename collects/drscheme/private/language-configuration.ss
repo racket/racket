@@ -1386,45 +1386,14 @@
                     (language-position position)
                     (language-numbers numbers))))])
         (add-language
-         (make-simple '(lib "lang/plt-mzscheme.ss")
-                      "plt:mz"
-                      (list (string-constant legacy-languages)
-                            (string-constant plt)
-                            (string-constant mzscheme-w/debug))
-                      (list -1000 -10 1)
-                      #f
-                      (string-constant mzscheme-one-line-summary)
-                      (λ (x) x)))
-        (add-language
-         (make-simple '(lib "lang/plt-mred.ss")
-                      "plt:mred"
-                      (list (string-constant legacy-languages)
-                            (string-constant plt)
-                            (string-constant mred-w/debug))
-                      (list -1000 -10 2)
-                      #t
-                      (string-constant mred-one-line-summary)
-                      (λ (x) x)))
-        (add-language
          (make-simple '(lib "lang/plt-pretty-big.ss")
                       "plt:pretty-big"
                       (list (string-constant legacy-languages)
-                            (string-constant plt)
                             (string-constant pretty-big-scheme))
-                      (list -1000 -10 3)
+                      (list -1000 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
                       (λ (x) x)))
-        (add-language
-         (make-simple '(lib "lang/plt-mzscheme.ss")
-                      "plt:expander"
-                      (list (string-constant legacy-languages)
-                            (string-constant plt)
-                            (string-constant expander))
-                      (list -1000 -10 4)
-                      #t
-                      (string-constant expander-one-line-summary)
-                      add-expand-to-front-end))
         (add-language
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"

@@ -1239,10 +1239,6 @@ please adhere to these guidelines:
   (profjBoxes-insert-java-interactions "Indsæt Java-interaktioner")
   
   ;; Slideshow
-  (slideshow-show-slideshow-panel "Vis diasshow-panel")
-  (slideshow-hide-slideshow-panel "Skjul diasshow-panel")
-  (slideshow-freeze-picts "Frys disse billeder")
-  (slideshow-thaw-picts "Vis billeder under mus")
   (slideshow-hide-picts "Vis indlejrede kasser")
   (slideshow-show-picts "Vis billeder")
   (slideshow-cannot-show-picts "Kan ikke vise billeder; kør programmet for at cache størrelserne først")

@@ -223,7 +223,7 @@
                                        executable-filename))))))))
         
         (super-new
-         (module '(lib "plt-mred.ss" "lang"))
+         (module 'scheme/base)
          (language-position (list "Module"))
          (language-numbers (list -32768)))))
     
