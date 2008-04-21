@@ -1674,7 +1674,7 @@ static Scheme_Object *hash_table_put(int argc, Scheme_Object *argv[])
   Scheme_Object *v = argv[0];
 
   if (!SCHEME_HASHTRP(v)) {
-    scheme_wrong_type("hash-set", "immutable table", 0, argc, argv);
+    scheme_wrong_type("hash-set", "immutable hash", 0, argc, argv);
     return NULL;
   }
   
@@ -1750,7 +1750,7 @@ static Scheme_Object *hash_table_remove_bang(int argc, Scheme_Object *argv[])
 static Scheme_Object *hash_table_remove(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_HASHTRP(argv[0]))
-    scheme_wrong_type("hash-remove", "immutable table", 0, argc, argv);
+    scheme_wrong_type("hash-remove", "immutable hash", 0, argc, argv);
 
   return (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)argv[0], argv[1], NULL);
 }
@@ -2173,7 +2173,7 @@ static Scheme_Object *do_make_hash_placeholder(const char *who, int eq, int argc
 
   ph = scheme_alloc_object();
   ph->type = scheme_table_placeholder_type;
-  SCHEME_IPTR_VAL(ph) = l;
+  SCHEME_IPTR_VAL(ph) = argv[0];
   SCHEME_PINT_VAL(ph) = eq;
 
   return ph;

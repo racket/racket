@@ -7,7 +7,7 @@
 
 @local-table-of-contents[]
 
-A @pidefterm{string} is a fixed-length array of
+A @deftech{string} is a fixed-length array of
 @seclink["characters"]{characters}.
 
 @index['("strings" "immutable")]{A} string can be @defterm{mutable} or

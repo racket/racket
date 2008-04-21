@@ -251,11 +251,12 @@ case, the procedure result of @scheme[clause-transform-expr] is called
 to transform the clause.
 
 When @scheme[id] is used in any other expression position, the result
-of @scheme[expr-transform-expr] is used; if it is an identifier
-@scheme[_other-id], then any use of @scheme[id] is converted to a use
-of @scheme[_other-id]; otherwise,@scheme[expr-transform-expr] must
-produce a procedure that is used as a macro transformer.
-
+of @scheme[expr-transform-expr] is used. If it is a procedure of zero
+arguments, then the result must be an identifier @scheme[_other-id],
+and any use of @scheme[id] is converted to a use of
+@scheme[_other-id]. Otherwise,@scheme[expr-transform-expr] must
+produce a procedure (of one argument) that is used as a macro
+transformer.
 
 When the @scheme[clause-transform-expr] transformer is used, it is
 given a @scheme[_clause] as an argument, where the clause's form is
@@ -298,10 +299,14 @@ spliced into the iteration essentially as follows:
 ]
 
 where @scheme[_body-bindings] and @scheme[_done-expr] are from the
-context of the @scheme[:do-in] use. The actual @scheme[loop] binding
-and call has additional loop arguments to support iterations in
-parallel with the @scheme[:do-in] form, and the other pieces are
-similarly accompanied by pieces form parallel iterations.}
+context of the @scheme[:do-in] use. The identifiers bound by the
+@scheme[for] clause are typically part of the @scheme[([(inner-id ...)
+inner-expr] ...)] section.
+
+The actual @scheme[loop] binding and call has additional loop
+arguments to support iterations in parallel with the @scheme[:do-in]
+form, and the other pieces are similarly accompanied by pieces form
+parallel iterations.}
 
 
 @section{Do Loops}

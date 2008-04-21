@@ -946,6 +946,8 @@ operations that expect textual ports.
              (hashtable-clear! #f "r6rs-lib-Z-H-14.html" "node_idx_1204")
              (equal-hash #f "r6rs-lib-Z-H-14.html" "node_idx_1218")]
 
+A hashtable is a dictionary in the sense of @schememodname[scheme/dict].
+
 @r6rs-module[rnrs/enums-6 (rnrs enums (6))
              "r6rs-lib-Z-H-15.html" "node_idx_1226" "Enumerations"
              (make-enumeration #f "r6rs-lib-Z-H-15.html" "node_idx_1236")

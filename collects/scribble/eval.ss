@@ -195,6 +195,18 @@
                  (hash-set! ht v v2)
                  (set-box! v2 (copy-value (unbox v) ht))
                  v2)]
+     [(hash? v) (let ([ph (make-placeholder #f)])
+                  (hash-set! ht v ph)
+                  (let ([a (hash-map v (lambda (k v)
+                                         (cons (copy-value k ht)
+                                               (copy-value v ht))))])
+                    (placeholder-set!
+                     ph
+                     ((if (hash-eq? v)
+                          make-hasheq-placeholder
+                          make-hash-placeholder)
+                      a)))
+                  ph)]
      [else v]))
             
   (define (strip-comments stx)

@@ -2,6 +2,7 @@
   (require scheme/contract
            scheme/class
            scheme/unit
+           scheme/dict
            scheme/include
            scheme/pretty
            scheme/math
@@ -24,6 +25,7 @@
   (provide (all-from-out scheme/contract
                          scheme/class
                          scheme/unit
+                         scheme/dict
                          scheme/include
                          scheme/pretty
                          scheme/math

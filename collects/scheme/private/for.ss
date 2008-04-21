@@ -74,7 +74,7 @@
                           0
                           proc1 proc2))
       (unless (and (procedure? proc2)
-                   (procedure-arity-includes? proc2 2))
+                   (procedure-arity-includes? proc2 1))
         (raise-type-error 'define-sequence-syntax
                           "procedure (arity 1)"
                           1
@@ -165,7 +165,7 @@
              (let ([xformer (sequence-transformer-ref m 1)]
                    [introducer (make-syntax-introducer)]
                    [certifier (sequence-transformer-ref m 2)])
-               (let ([xformed (xformer orig-stx (introducer (syntax-local-introduce clause)))])
+               (let ([xformed (xformer (introducer (syntax-local-introduce clause)))])
                  (if xformed
                      (expand-clause orig-stx (certify-clause (syntax-local-introduce (introducer xformed)) 
                                                              certifier
@@ -863,7 +863,7 @@
 
   (define-sequence-syntax *in-range
     (lambda () #'in-range)
-    (lambda (orig-stx stx)
+    (lambda (stx)
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ a b step)] #`[(id)
@@ -898,7 +898,7 @@
 
   (define-sequence-syntax *in-naturals
     (lambda () #'in-naturals)
-    (lambda (orig-stx stx)
+    (lambda (stx)
       (let loop ([stx stx])
         (syntax-case stx ()
           [[(id) (_ start)]
@@ -929,7 +929,7 @@
 
   (define-sequence-syntax *in-list
     (lambda () #'in-list)
-    (lambda (orig-stx stx)
+    (lambda (stx)
       (syntax-case stx ()
         [((id) (_ lst-expr))
          #'[(id)
@@ -956,7 +956,7 @@
                                       vector-length-id
                                       in-vector-id
                                       vector-ref-id)
-     (lambda (orig-stx stx)
+     (lambda (stx)
        (with-syntax ([vector? vector?-id]
                      [in-vector in-vector-id]
                      [vector-length vector-length-id]
@@ -1009,7 +1009,7 @@
   
   (define-sequence-syntax *in-indexed
     (lambda () #'in-indexed)
-    (lambda (orig-stx stx)
+    (lambda (stx)
       (syntax-case stx ()
         [((id1 id2) (_ gen-expr))
          #'[(id1 id2) (in-parallel gen-expr (*in-naturals))]]))))

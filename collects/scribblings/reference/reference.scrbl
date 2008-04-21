@@ -27,7 +27,6 @@ languages, where @schememodname[scheme] includes all of
 @table-of-contents[]
 
 @include-section["model.scrbl"]
-@include-section["syntax-model.scrbl"]
 @include-section["syntax.scrbl"]
 @include-section["data.scrbl"]
 @include-section["struct.scrbl"]

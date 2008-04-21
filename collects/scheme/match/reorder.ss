@@ -26,7 +26,7 @@
 
 (define-sequence-syntax in-par
     (lambda () (raise-syntax-error 'in-par "bad"))
-    (lambda (orig-stx stx)
+    (lambda (stx)
       (syntax-case stx ()
         [((id) (_ lst-exprs))
          #'[(id)

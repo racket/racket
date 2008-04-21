@@ -8,10 +8,10 @@
 
 @guideintro["define-struct"]{structure types via @scheme[define-struct]}
 
-A @deftech{structure type} is a record datatype composing a number
-of @idefterm{fields}. A @pidefterm{structure}, an instance of a
-structure type, is a first-class value that contains a value for each
-field of the structure type. A structure instance is created with a
+A @deftech{structure type} is a record datatype composing a number of
+@idefterm{fields}. A @deftech{structure}, an instance of a structure
+type, is a first-class value that contains a value for each field of
+the structure type. A structure instance is created with a
 type-specific @tech{constructor} procedure, and its field values are
 accessed and changed with type-specific @tech{accessor} and
 @tech{mutator} procedures. In addition, each structure type has a

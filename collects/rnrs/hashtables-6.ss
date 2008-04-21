@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(require scheme/dict)
+
 (provide make-eq-hashtable
          make-eqv-hashtable
          (rename-out [r6rs:make-hashtable make-hashtable])
@@ -27,7 +29,23 @@
                           unwrap
                           mutable? 
                           equivalence-function
-                          hash-function))
+                          hash-function)
+  #:property prop:dict
+  (vector (case-lambda
+           [(ht key)
+            (hash-ref (hashtable-ht ht) ((hashtable-wrap ht) key))]
+           [(ht key default)
+            (hash-ref (hashtable-ht ht) ((hashtable-wrap ht) key) default)])
+          (lambda (ht key val) (hashtable-set! ht key val))
+          #f
+          (lambda (ht key) (hashtable-delete! ht key))
+          #f
+          (lambda (ht) (hashtable-size ht))
+          (lambda (ht) (hash-iterate-first (hashtable-ht ht)))
+          (lambda (ht pos) (hash-iterate-next (hashtable-ht ht) pos))
+          (lambda (ht pos) ((hashtable-unwrap ht)
+                            (hash-iterate-key (hashtable-ht ht) pos)))
+          (lambda (ht pos) (hash-iterate-value (hashtable-ht ht) pos))))
 
 (define-struct eqv-box (val)
   #:property prop:equal+hash (list
