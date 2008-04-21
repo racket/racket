@@ -109,71 +109,44 @@
 ;;                           ls
 ;;                           (append l (car ls) (loop (cdr ls))))))]))
 
-(define (remove-duplicates l
-                           #:test [=? equal?]
-                           #:mode [mode 'naive]
-                           #:keep [keep 'first]
-                           #:ordered? [ordered? #t])
-  (unless (list? l) (raise-type-error 'remove-duplicates "list" l))
-  (unless (memq keep '(first last))
-    (raise-type-error 'remove-duplicates "'first or 'last" keep))
-  (case mode
-    ;; plain n^2 list traversal (optimized, since it's a common case)
-    [(naive)
-     (if (eq? 'first keep)
-       (let-syntax ([loop (syntax-rules ()
-                            [(_ search)
-                             (let loop ([l l] [seen null])
-                               (if (null? l)
-                                 l
-                                 (let ([x (car l)] [l (cdr l)])
-                                   (if (search x seen)
-                                     (loop l seen)
-                                     (cons x (loop l (cons x seen)))))))])])
-         (cond [(eq? =? equal?) (loop member)]
-               [(eq? =? eq?)    (loop memq)]
-               [else (loop (lambda (x seen)
-                             (ormap (lambda (y) (=? x y)) seen)))]))
-       (let-syntax ([loop (syntax-rules ()
-                            [(_ search)
-                             (let loop ([l l])
-                               (if (null? l)
-                                 l
-                                 (let ([x (car l)] [l (cdr l)])
-                                   (if (search x l)
-                                     (loop l)
-                                     (cons x (loop l))))))])])
-         (cond [(eq? =? equal?) (loop member)]
-               [(eq? =? eq?)    (loop memq)]
-               [else (loop (lambda (x seen)
-                             (ormap (lambda (y) (=? x y)) seen)))])))]
-    [(hash)
-     (let ([h (make-hash)])
-       (if ordered?
-         (begin (for ([x l]) (hash-set! h x (add1 (hash-ref h x 0))))
-                (filter (if (eq? 'first keep)
-                          (lambda (x) (begin0 (hash-ref h x) (hash-set! h x #f)))
-                          (lambda (x)
-                            (let ([c (sub1 (hash-ref h x))])
-                              (hash-set! h x c)
-                              (eq? 0 c))))
-                        l))
-         ;; note: the hash entries always have the first occurrence as the key
-         ;; and the last one as the value
-         (begin (for ([x l]) (hash-set! h x x))
-                (hash-map h (if (eq? 'first keep)
-                              (lambda (x y) x) (lambda (x y) y))))))]
-    [(sorted)
-     (if (null? l)
-       l
-       (if (eq? 'last keep)
-         (let loop ([l l])
-           (let ([x (car l)] [r (cdr l)])
-             (cond [(null? r) l]
-                   [(=? x (car r)) (loop r)]
-                   [else (cons x (loop r))])))
-         (let loop ([x (car l)] [l (cdr l)])
-           (cond [(null? l) (list x)]
-                 [(=? x (car l)) (loop x (cdr l))]
-                 [else (cons x (loop (car l) (cdr l)))]))))]
-    [else (error 'remove-duplicates "unknown mode: ~e" mode)]))
+;; utility: returns the length for a proper list, #f otherwise; does not handle
+;; circular lists
+(define (length? x)
+  (let loop ([x x] [n 0])
+    (if (pair? x)
+      (loop (cdr x) (add1 n))
+      (and (null? x) n))))
+
+(define (remove-duplicates l [=? equal?])
+  (let ([len (length? l)])
+    (unless len (raise-type-error 'remove-duplicates "list" l))
+    (let ([h (cond [(< len 40) #f]
+                   [(eq? =? eq?) (make-hasheq)]
+                   [(eq? =? equal?) (make-hash)]
+                   [else #f])])
+      (if h
+        ;; Using a hash table when the list is long enough and a using `equal?'
+        ;; or `eq?'.  The length threshold (40) was determined by trying it out
+        ;; with lists of length n holding (random n) numbers.
+        (let loop ([l l])
+          (if (null? l)
+            l
+            (let ([x (car l)] [l (cdr l)])
+              (if (hash-ref h x #f)
+                (loop l)
+                (begin (hash-set! h x #t) (cons x (loop l)))))))
+        ;; plain n^2 list traversal (optimized for common cases)
+        (let-syntax ([loop (syntax-rules ()
+                             [(_ search)
+                              (let loop ([l l] [seen null])
+                                (if (null? l)
+                                  l
+                                  (let ([x (car l)] [l (cdr l)])
+                                    (if (search x seen)
+                                      (loop l seen)
+                                      (cons x (loop l (cons x seen)))))))])])
+          (cond [(eq? =? equal?) (loop member)]
+                [(eq? =? eq?)    (loop memq)]
+                [(eq? =? eqv?)   (loop memv)]
+                [else (loop (lambda (x seen)
+                              (ormap (lambda (y) (=? x y)) seen)))]))))))
