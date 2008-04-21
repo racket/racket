@@ -2,7 +2,7 @@
 
 (require test-engine/scheme-tests)
 
-(define (generate-report) (void))
+(define (generate-report) (test)#;(void))
 
 (provide (all-from-out test-engine/scheme-tests)
          generate-report)

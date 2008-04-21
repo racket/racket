@@ -2,11 +2,12 @@
     
   (require parser-tools/lex
            scheme/unit
-           (lib "combinator-unit.ss" "combinator-parser")
+           combinator-parser/combinator-unit
+           #;(lib "combinator-unit.ss" "combinator-parser")
            "java-signatures.scm"
            mzlib/string)
     
-  (define-signature language-forms^ (program statement expression field interact)) ;value-type method-type))
+  (define-signature language-forms^ (program statement (recurs expression) field interact)) ;value-type method-type))
   
   (define-signature token-proc^ (old-tokens->new))
   
@@ -329,7 +330,7 @@
     
     (define new-class
       (choose ((sequence (new name O_PAREN C_PAREN) id)
-               (sequence (new name O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+               (sequence (new name O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
               "class instantiation"))
     
     (define (new-array type-name)

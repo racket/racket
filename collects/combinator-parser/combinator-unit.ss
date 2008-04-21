@@ -6,6 +6,6 @@
   (provide combinator-parser-tools@
            combinator-parser^ err^
            error-format-parameters^ language-format-parameters^ language-dictionary^
-           terminals)
+           terminals recurs)
   
   )

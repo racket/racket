@@ -18,6 +18,16 @@
                                                   (format "token-~a" (syntax-e e)))))
                                 (syntax->list #'(elt ...)))))]))
   
+  (define-signature-form (recurs stx)
+    (syntax-case stx ()
+      [(_ id ...)
+       (andmap identifier? (syntax->list #'(id ...)))
+       (syntax->list #`(id ...
+                        #,@(map (lambda (e) #`(define-syntaxes 
+                                                (#,(datum->syntax e (string->symbol (format "~a@" (syntax-e e)))))
+                                                (values (syntax-id-rules () [_ #'(eta #,e)]))))
+                                (syntax->list #'(id ...)))))]))
+  
   (define-signature language-dictionary^ (misspelled misscap missclass))
     
   (define-signature combinator-parser-forms^ 
