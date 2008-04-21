@@ -116,11 +116,19 @@ The @(litchar "MZSCHEME") forms are disabled unless the web page is a
 
 @; ----------------------------------------------------------------------
 
+@defclass[hyper-no-show-frame% (hyper-frame-mixin (frame:status-line-mixin frame:basic%)) ()]
+
+@; ----------------------------------------------------------------------
+
 @defmixin[hyper-no-show-frame-mixin (frame%) ()]{
         The same as the @scheme[hyper-frame-mixin], except that it
         doesn't show the frame and the initialization arguments
         are unchanged.
 }
+
+@; ----------------------------------------------------------------------
+
+@defclass[hyper-frame% (hyper-no-show-frame-mixin (frame:status-line-mixin frame:basic%)) ()]
 
 @; ----------------------------------------------------------------------
 
@@ -395,6 +403,10 @@ The @(litchar "MZSCHEME") forms are disabled unless the web page is a
 
 @; ----------------------------------------------------------------------
 
+@defclass[hyper-panel% (hyper-panel-mixin vertical-panel%) ()]
+
+@; ----------------------------------------------------------------------
+
 @defproc[(editor->page [editor (is-a?/c text%)]) any/c]{
         Creates a page record for the given editor,
         suitable for use with the @scheme[set-page] method of 
@@ -457,7 +469,7 @@ Imports @scheme[mred^], @scheme[tcp^], and @scheme[url^], and exports
 
 @defsignature[browser^ ()]{
 
-Includes all of the bindings of the @schememodname[browser/browser]
+Includes all of the bindings of the @schememodname[browser]
 library.}
 
 @; ----------------------------------------------------------------------

@@ -1368,7 +1368,7 @@
                                                  (to-flow spacer)
                                                  (to-flow spacer)
                                                  (to-flow spacer)))]
-                                      [one-ok? (tagged+arg-width . < . 40)])
+                                      [one-ok? (tagged+arg-width . < . 60)])
                                   (list
                                    (make-table
                                     "prototype"
