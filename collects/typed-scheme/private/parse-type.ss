@@ -49,9 +49,10 @@
       [(Instance t)
        (eq? (syntax-e #'Instance) 'Instance)
        (let ([v (parse-type #'t)])
-         (unless (or (Mu? v) (Class? v) (Union? v))
-           (tc-error "Argument to Instance must be a class type, got ~a" v))
-         (make-Instance v))]
+         (if (or (Mu? v) (Class? v) (Union? v))
+             (begin (tc-error/delayed "Argument to Instance must be a class type, got ~a" v)
+                    (make-Instance (Un)))
+             (make-Instance v)))]
       [(Tuple ts ...)
        (or (eq? (syntax-e #'Tuple) 'Tuple)
            (eq? (syntax-e #'Tuple) 'List))
@@ -165,7 +166,8 @@
           (add-type-name-reference #'id)
           (make-Name #'id)]
          [else
-          (tc-error "unbound type ~a" (syntax-e #'id))])]     
+          (tc-error/delayed "unbound type ~a" (syntax-e #'id))
+          Univ])]
 
       [(All . rest) (eq? (syntax-e #'All) 'All) (tc-error "All: bad syntax")]
       [(Opaque . rest) (eq? (syntax-e #'Opaque) 'Opqaue) (tc-error "Opaque: bad syntax")]
