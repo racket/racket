@@ -232,8 +232,7 @@ This command does not unpack or install the named .plt file."
        (for-each 
         (lambda (link) (apply printf "    ~a\t~a\t~a ~a\n" link))
         (cdr module)))
-     (sort (current-linkage)
-           (lambda (a b) (string<? (symbol->string (car a)) (symbol->string (car b)))))))
+     (sort (current-linkage) (lambda (a b) (string<? (car a) (car b))))))
   
   (define (add-hard-link-cmd ownerstr pkgstr majstr minstr pathstr)
     (let* ([maj (read-from-string majstr)]

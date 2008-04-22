@@ -478,8 +478,13 @@ installed package.}
 Holds a listing of all package names and versions installed in the
 local cache.}
 
-@defparam[current-linkage table ((path-string? (string? natural-number/c natural-number/c) ...) ...)]{
-Gives the current linkage table.}
+@defproc[(current-linkage)
+         ((path-string? (string? (string?) natural-number/c natural-number/c) ...) ...)]{
+Returns the current linkage table.
+
+The linkage table is an association between file locations (encoded as path strings)
+and concrete planet package versions. If a require line in the associated file requests a package,
+this table is consulted to determine a particular concrete package to satisfy the request.}
 
 @defproc[(make-planet-archive [directory path-string?]
                               [output-file (or/c path? path-string?) (string-append (path->string name) ".plt")]) 

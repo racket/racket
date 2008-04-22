@@ -196,13 +196,17 @@ subdirectory.
 (define resolver
   (case-lambda
     [(name) (void)]
+    [(spec module-path stx) 
+     (resolver spec module-path stx #t)]
     [(spec module-path stx load?)
      ;; ensure these directories exist
      (make-directory* (PLANET-DIR))
      (make-directory* (CACHE-DIR))
      (establish-diamond-property-monitor)
-     (planet-resolve spec module-path stx load?)]
-    [(spec module-path stx) (resolver spec module-path stx #t)]))
+     (planet-resolve spec
+                     (current-module-declare-name) ;; seems more reliable than module-path in v3.99
+                     stx
+                     load?)]))
 
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
@@ -309,13 +313,13 @@ subdirectory.
 ;; Handles the overall functioning of the resolver
 ;; =============================================================================
 
-;; planet-resolve : PLANET-REQUEST symbol syntax[PLANET-REQUEST] -> symbol
+;; planet-resolve : PLANET-REQUEST (resolved-module-path | #f) syntax[PLANET-REQUEST] -> symbol
 ;; resolves the given request. Returns a name corresponding to the module in
 ;; the correct environment
-(define (planet-resolve spec module-path stx load?)
-  (let-values ([(path pkg) (get-planet-module-path/pkg spec module-path stx)])
+(define (planet-resolve spec rmp stx load?)
+  (let-values ([(path pkg) (get-planet-module-path/pkg spec rmp stx)])
     (when load? (add-pkg-to-diamond-registry! pkg stx))
-    (do-require path (pkg-path pkg) module-path stx load?)))
+    (do-require path (pkg-path pkg) rmp stx load?)))
 
 ;; resolve-planet-path : planet-require-spec -> path
 ;; retrieves the path to the given file in the planet package. downloads and
@@ -324,14 +328,14 @@ subdirectory.
   (let-values ([(path pkg) (get-planet-module-path/pkg spec #f #f)])
     path))
 
-;; get-planet-module-path/pkg :PLANET-REQUEST symbol syntax[PLANET-REQUEST] -> (values path PKG)
+;; get-planet-module-path/pkg :PLANET-REQUEST (resolved-module-path | #f) syntax[PLANET-REQUEST] -> (values path PKG)
 ;; returns the matching package and the file path to the specific request
-(define (get-planet-module-path/pkg spec module-path stx)
-  (request->pkg (spec->req spec stx) module-path stx))
+(define (get-planet-module-path/pkg spec rmp stx)
+  (request->pkg (spec->req spec stx) rmp stx))
 
-;; request->pkg : request symbol syntax[PLANET-REQUEST] -> (values path PKG)
-(define (request->pkg req module-path stx)
-  (let* ([result (get-package module-path (request-full-pkg-spec req))])
+;; request->pkg : request (resolved-module-path | #f) syntax[PLANET-REQUEST] -> (values path PKG)
+(define (request->pkg req rmp stx)
+  (let* ([result (get-package rmp (request-full-pkg-spec req))])
     (cond [(string? result)
            (raise-syntax-error 'require result stx)]
           [(pkg? result)
@@ -353,11 +357,11 @@ subdirectory.
 ;; eventually, and a function that gets to mess with the error message if the
 ;; entire message eventually fails.
 
-;; get-package : module-path FULL-PKG-SPEC -> (PKG | string)
+;; get-package : (resolved-module-path | #f) FULL-PKG-SPEC -> (PKG | string)
 ;; gets the package specified by pspec requested by the module in the given
 ;; module path, or returns a descriptive error message string if that's not
 ;; possible
-(define (get-package module-path pspec)
+(define (get-package rmp pspec)
   (let loop ([getters (*package-search-chain*)]
              [pre-install-updaters '()]
              [post-install-updaters '()]
@@ -375,7 +379,7 @@ subdirectory.
       ;; try the next error reporter. recursive call is in the failure
       ;; continuation
       ((car getters)
-       module-path
+       rmp
        pspec
        (λ (pkg)
          (when (uninstalled-pkg? pkg)
@@ -396,7 +400,7 @@ subdirectory.
 ;; =============================================================================
 
 ;; get/installed-cache : pkg-getter
-(define (get/installed-cache module-spec pkg-spec success-k failure-k)
+(define (get/installed-cache _ pkg-spec success-k failure-k)
   (let ([p (lookup-package pkg-spec)])
     (if p (success-k p) (failure-k void void (λ (x) x)))))
 
@@ -407,13 +411,13 @@ subdirectory.
 ;; get/uninstalled-cache-dummy : pkg-getter
 ;; always fails, but records the package to the uninstalled package cache upon
 ;; the success of some other getter later in the chain.
-(define (get/uninstalled-cache-dummy module-spec pkg-spec success-k failure-k)
+(define (get/uninstalled-cache-dummy _ pkg-spec success-k failure-k)
   (failure-k save-to-uninstalled-pkg-cache! void (λ (x) x)))
 
 ;; get/uninstalled-cache : pkg-getter
 ;; note: this does not yet work with minimum-required-version specifiers if you
 ;; install a package and then use an older mzscheme
-(define (get/uninstalled-cache module-spec pkg-spec success-k failure-k)
+(define (get/uninstalled-cache _ pkg-spec success-k failure-k)
   (let ([p (lookup-package pkg-spec (UNINSTALLED-PACKAGE-CACHE))])
     (if (and p (file-exists? (build-path (pkg-path p)
                                          (pkg-spec-name pkg-spec))))
@@ -457,7 +461,7 @@ subdirectory.
 ;; locally.
 ;; =============================================================================
 
-(define (get/server module-spec pkg-spec success-k failure-k)
+(define (get/server _ pkg-spec success-k failure-k)
   (let ([p (get-package-from-server pkg-spec)])
     (cond
       [(pkg-promise? p) (success-k p)]

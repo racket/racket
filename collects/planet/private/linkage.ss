@@ -2,7 +2,6 @@
   
   (require "planet-shared.ss"
            "../config.ss"
-           mzlib/file
            mzlib/match)
 
   (provide get/linkage
@@ -19,13 +18,13 @@
 
   ;; get/linkage : pkg-getter [see ../resolver.ss]
   ;; getter for the linkage table
-  (define (get/linkage module-specifier pkg-specifier success-k failure-k)
-    (let ([linked-pkg (get-linkage module-specifier pkg-specifier)])
+  (define (get/linkage rmp pkg-specifier success-k failure-k)
+    (let ([linked-pkg (get-linkage rmp pkg-specifier)])
       (if linked-pkg
           (success-k linked-pkg)
           (failure-k 
            void
-           (λ (pkg) (add-linkage! module-specifier pkg-specifier pkg))
+           (λ (pkg) (add-linkage! rmp pkg-specifier pkg))
            (λ (x) x)))))
   
   
@@ -45,12 +44,12 @@
     (unless LT (set! LT (build-hash-table (with-input-from-file (LINKAGE-FILE) read-all))))
     LT)
   
-  ; add-linkage! : (symbol | #f) FULL-PKG-SPEC PKG -> PKG
+  ; add-linkage! : (resolved-module-path | #f) FULL-PKG-SPEC PKG -> PKG
   ; unless the first argument is #f, associates the pair of the first two arguments 
   ; with the last in the linkage table. Returns the given package-location
-  (define (add-linkage! module pkg-spec pkg)
-    (when (and module (current-module-declare-name))
-      (let ((key (get-key module pkg-spec)))
+  (define (add-linkage! rmp pkg-spec pkg)
+    (when rmp
+      (let ((key (get-key rmp pkg-spec)))
         (hash-table-get 
          (get-linkage-table)
          key
@@ -107,69 +106,36 @@
 
 
   
-  ; get-linkage : symbol FULL-PKG-SPEC -> PKG | #f
+  ; get-linkage : (resolved-module-path | #f) FULL-PKG-SPEC -> PKG | #f
   ; returns the already-linked module location, or #f if there is none
-  (define (get-linkage module-specifier pkg-specifier)
-    (let ((pkg-fields (hash-table-get
-                       (get-linkage-table)
-                       (get-key module-specifier pkg-specifier)
-                       (lambda () #f))))
-      (if pkg-fields 
-          (with-handlers ([exn:fail? (lambda (e) #f)])
-            (match-let ([(name route maj min pathbytes) pkg-fields])
-              (make-pkg name route maj min (bytes->path pathbytes))))
-          #f)))
+  (define (get-linkage rmp pkg-specifier)
+    (cond
+      [rmp
+       (let ((pkg-fields (hash-table-get
+                          (get-linkage-table)
+                          (get-key rmp pkg-specifier)
+                          (lambda () #f))))
+         (if pkg-fields 
+             (with-handlers ([exn:fail? (lambda (e) #f)])
+               (match-let ([(name route maj min pathbytes) pkg-fields])
+                 (make-pkg name route maj min (bytes->path pathbytes))))
+             #f))]
+      [else #f]))
   
-  ; get-key : symbol FULL-PKG-SPEC -> LINKAGE-KEY
+  ; get-key : resolved-module-path? FULL-PKG-SPEC -> LINKAGE-KEY
   ; produces a linkage key for the given pair.
-  (define (get-key module-specifier pkg-spec)
-    (list* (get-module-id module-specifier pkg-spec)
+  (define (get-key rmp pkg-spec)
+    (list* (get-module-id rmp)
            (pkg-spec-name pkg-spec)
            (pkg-spec-maj pkg-spec)
            (pkg-spec-minor-lo pkg-spec)
            (pkg-spec-minor-hi pkg-spec)
            (pkg-spec-path pkg-spec)))
   
-  ; get-module-id : TST FULL-PKG-SPEC -> LINKAGE-MODULE-KEY
-  ; gets a unique identifier naming the module that produced the pkg-spec.
-  ; (strategy due to Matthew)
-  (define (get-module-id ms pkg-spec)
-    (cond
-      [(full-filename-identifier? ms) 
-       (module-specifier->key ms)]
-      [(and 
-        (pkg-spec-stx pkg-spec) ;; <-- I don't know about this
-        (syntax-original? (pkg-spec-stx pkg-spec))
-        (path? (syntax-source (pkg-spec-stx pkg-spec))))
-       (path->key (desuffix (syntax-source (pkg-spec-stx pkg-spec))))]
-      [(and (symbol? ms) (current-load-relative-directory))
-       (path->key (build-path 
-                   (current-load-relative-directory)
-                   (symbol->string ms)))]
-      [else #f]))
+  ; get-module-id : resolved-module-path? -> LINKAGE-MODULE-KEY
+  ; key suitable for marshalling that represents the given resolved-module-path
+  (define (get-module-id rmp)
+    (path->string (resolved-module-path-name rmp)))
   
-  
-  ;; ----------------------------------------
-  ;; ALL THE BELOW CODE IN THIS SECTION NEEDS
-  ;; MAJOR MODIFICATION FOR v299
-  
-  ; path? : tst -> bool
-  ;(define path? string?)
-  
-  ; full-filename-identifier? : TST -> bool
-  ; determines if the given value represents a fully-resolved module identifier
-  (define (full-filename-identifier? ms) 
-    (and (symbol? ms)
-         (regexp-match "^\\,.*" (symbol->string ms))))
-  
-  ; module-specifier->key : symbol -> LINKAGE-MODULE-KEY
-  (define (module-specifier->key ms)
-    (string->symbol (substring (symbol->string ms) 1)))
-  
-  ; path->key : string -> LINKAGE-MODULE-KEY
-  (define (path->key p) (string->symbol (path->string p)))
-  
-  ; desuffix : path -> path
-  ; removes the suffix from the given file
-  (define (desuffix file)
-    (path-replace-suffix file #"")))
+  )
+
