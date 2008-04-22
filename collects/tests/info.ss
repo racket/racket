@@ -20,5 +20,6 @@
     "srpersist"
     "stepper"
     "syntax-color"
+    "typed-scheme"
     "units"
     "web-server"))
