@@ -212,7 +212,7 @@ If the PLaneT client doesn't have any previous linkage information, it
 checks its list of already-installed PLaneT packages for one that
 meets the requirement, and uses it if available. Both PLaneT-installed
 packages and packages established through a development link 
-(see @secref["devlinks"])
+(see @secref{devlinks})
 are checked simultaneously at this stage.
 
 @subsection{Acceptable Remote Package}
@@ -245,18 +245,23 @@ command line as
 where @italic{command} is a subcommand from the following list, and
 @exec{arg} is a sequence of arguments determined by that subcommand:
 
+@(define (cmd name desc)
+    @item{@(seclink name (exec name)): @desc})
+
 @itemize{
-  @item{@exec{create}:      create a PLaneT archive from a directory}
-  @item{@exec{install}:     download and install a given package}
-  @item{@exec{remove}:      remove the specified package from the local cache}
-  @item{@exec{show}:        list the packages installed in the local cache}
-  @item{@exec{clearlinks}:  clear the linkage table, allowing upgrades}
-  @item{@exec{fileinject}:  install a local file to the planet cache}
-  @item{@exec{link}:        create a development link}
-  @item{@exec{unlink}:      remove development link associated with the given package}
-  @item{@exec{fetch}:       download a package file without installing it}
-  @item{@exec{url}:         get a URL for the given package}
-  @item{@exec{open}:        unpack the contents of the given package}}
+  @cmd["create"]{create a PLaneT archive from a directory}
+  @cmd["install"]{download and install a given package}
+  @cmd["remove"]{remove the specified package from the local cache}
+  @cmd["show"]{list the packages installed in the local cache}
+  @cmd["clearlinks"]{clear the linkage table, allowing upgrades}
+  @cmd["fileinject"]{install a local file to the planet cache}
+  @cmd["link"]{create a development link}
+  @cmd["unlink"]{remove development link associated with the given package}
+  @cmd["fetch"]{download a package file without installing it}
+  @cmd["url"]{get a URL for the given package}
+  @cmd["open"]{unpack the contents of the given package}
+  @cmd["structure"]{display the structure of a given .plt archive}
+  @cmd["print"]{display a file within of the given .plt archive}}
 
 Each of these commands is described in more detail below. All the
 functionality of the command-line tool is also provided with a programmatic interface by 
@@ -323,14 +328,15 @@ the given file's filename as the its package name, and the given major and minor
 
 Usage:
 @commandline{planet link  <owner> <pkg> <maj> <min> <path>}
-Create a development link between the given package specifier and the
-specified directory name.
+Create a development link (see @secref{devlinks}) between the given
+package specifier and the specified directory name.
 
 @subsection[#:tag "unlink"]{@exec{unlink}}
 
 Usage:
 @commandline{planet unlink <owner> <pkg> <maj> <min>}
-Remove any development link associated with the given package.
+Remove any development link (see @secref{devlinks}) associated with
+the given package.
 
 @subsection[#:tag "fetch"]{@exec{fetch}}
 
@@ -356,6 +362,25 @@ installing.
 
 This command is not necessary for normal use of planet. It is intended to allow
 you to inspect package contents offline without needing to install the package.
+
+@subsection[#:tag "structure"]{@exec{structure}}
+
+Usage:
+@commandline{planet structure <plt-file>}
+Print the structure of the PLaneT archive named by <plt-file> to the standard
+output port.
+
+This command does not unpack or install the named .plt file.
+
+@subsection[#:tag "print"]{@exec{print}}
+
+Usage:
+@commandline{planet print <plt-file> <path>}
+
+Print the contents of the file named by <path>, which must be a relative path
+within the PLaneT archive named by <plt-file>, to the standard output port.
+
+This command does not unpack or install the named .plt file.
 
 @section{Utility Libraries}
 
@@ -476,6 +501,17 @@ into the given directory (creating that path if necessary).}
 		     [min   natural-number/c])
 	 any]{
 Removes the specified package from the local planet cache.}
+
+@defproc[(display-plt-file-structure [plt-file (or/c path-string? path?)])
+         any]{
+Print a tree representing the file and directory structure of the
+PLaneT archive .plt file named by @scheme[plt-file] to @scheme[(current-output-port)].}
+
+@defproc[(display-plt-archived-file [plt-file (or/c path-string? path?)]
+				    [file-to-print string?])
+	 any]{
+Print the contents of the file named @scheme[file-to-print] within the 
+PLaneT archive .plt file named by @scheme[plt-file] to @scheme[(current-output-port)].}
 
 @defproc[(unlink-all) any]{
 Removes the entire linkage table from the system, which will force all

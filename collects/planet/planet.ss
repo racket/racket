@@ -97,7 +97,19 @@ Unpack the contents of the given package into the given directory without instal
 This command is not necessary for normal use of planet. It is intended to allow you to inspect package contents offline without needing to install the package."
       #:args (plt-file target)
       (do-unpack plt-file target)]
-                                       
+     
+     ["structure" "display the structure of a given .plt archive"
+      "\nPrint the structure of the PLaneT archive named by <plt-file> to the standard output port.
+This command does not unpack or install the named .plt file."
+      #:args (plt-file)
+      (do-structure plt-file)]
+     
+     ["print" "display a file within of the given .plt archive"
+      "\nPrint the contents of the file named by <path>, which must be a relative path within the PLaneT archive named by <plt-file>, to the standard output port.
+This command does not unpack or install the named .plt file."
+      #:args (plt-file path)
+      (do-display plt-file path)]
+
      ;; unimplemented so far:
      #;(("-u" "--unlink")
          module
@@ -246,6 +258,18 @@ This command is not necessary for normal use of planet. It is intended to allow 
     (let ([file (normalize-path plt-file)])
       (unpack-planet-archive file target)))
   
+  (define (do-structure plt-file)
+    (unless (file-exists? plt-file)
+      (fail (format "The specified file (~a) does not exist" plt-file))) 
+    (let ([file (normalize-path plt-file)])
+      (display-plt-file-structure file)))
+  
+  (define (do-display plt-file file-to-print)
+    (unless (file-exists? plt-file)
+      (fail (format "The specified file (~a) does not exist" plt-file))) 
+    (let ([file (normalize-path plt-file)])
+      (display-plt-archived-file file file-to-print)))
+  
   ;; ------------------------------------------------------------
   ;; Utility
     
@@ -259,12 +283,6 @@ This command is not necessary for normal use of planet. It is intended to allow 
                [(not ((cadar c) (car a) (car b))) #f]
                [else (loop (cdr a) (cdr b) (cdr c))])))))
   
-  
-  
-            
-            
-
-
   ;; ============================================================
   ;; start the program
   
