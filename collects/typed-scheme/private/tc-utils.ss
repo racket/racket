@@ -1,6 +1,6 @@
 #lang scheme/base
 (provide (all-defined-out))
-(require "syntax-traversal.ss" (for-syntax scheme/base))
+(require "syntax-traversal.ss" (for-syntax scheme/base) scheme/match)
 
 ;; a parameter representing the original location of the syntax being currently checked
 (define current-orig-stx (make-parameter #'here))
@@ -42,14 +42,18 @@
 
 (define-struct err (msg stx) #:prefab)
 
-(define (report-all-errors)  
-  (define stxs
-    (for/list ([e (reverse delayed-errors)])
-      (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e))))
-      (sleep .01)
-      (err-stx e)))
-  (unless (null? stxs)
-    (raise-typecheck-error "Errors encountered" (apply append stxs))))
+(define (report-all-errors)
+  (match (reverse delayed-errors)
+    [(list) (void)]
+    [(list (struct err (msg stx)))
+     (raise-typecheck-error msg stx)]
+    [l
+     (let ([stxs
+            (for/list ([e (reverse delayed-errors)])
+              (sync (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e)))))
+              (err-stx e))])
+       (unless (null? stxs)
+         (raise-typecheck-error "Errors encountered" (apply append stxs))))]))
 
 (define (tc-error/delayed msg #:stx [stx (current-orig-stx)] . rest)
   (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors)))
