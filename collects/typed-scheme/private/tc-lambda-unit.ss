@@ -11,6 +11,7 @@
          "type-utils.ss"
          "effect-rep.ss"
          "tc-utils.ss"
+         "union.ss"
          "resolve-type.ss"
          (lib "plt-match.ss")
          (only-in "type-effect-convenience.ss" [make-arr* make-arr]))
@@ -59,7 +60,7 @@
                   => (lambda (thn/els) (make-arr arg-tys t #f (car thn/els) (cdr thn/els)))]
                  ;; otherwise, the simple case
                  [else (make-arr arg-tys t)])]
-              [t (int-err "bad match - not a tc-result: ~a" t)])))
+              [t (int-err "bad match - not a tc-result: ~a" t)]))))
          (let* ([arg-list (syntax->list #'(args* ...))]
                 [arg-types (map get-type arg-list)])
            (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
