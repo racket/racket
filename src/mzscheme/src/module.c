@@ -238,6 +238,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, Scheme_
                          int eval_exp, int eval_run, Scheme_Object *cycle_list);
 static void finish_expstart_module(Scheme_Env *menv);
 static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *env);
+static void finish_start_module_in_namespace(Scheme_Env *menv, Scheme_Env *env, int eval_run);
 static void eval_module_body(Scheme_Env *menv);
 
 static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
@@ -1277,7 +1278,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
         if (first_iteration) {
           /* Run everything */
           first_iteration = 0;
-          start_module(menv->module, from_env, 0, menv->module->self_modidx, 1, 1, scheme_null);
+          finish_start_module_in_namespace(menv, from_env, 1);
         }
 
 
@@ -3585,7 +3586,7 @@ void scheme_run_module_exptime(Scheme_Env *menv, int set_ns)
   show_done("rne!", menv, 1, 1);
 }
 
-static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_env)
+static void finish_start_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_env, int eval_run)
 {
   Scheme_Cont_Frame_Data cframe;
   Scheme_Config *config;
@@ -3599,10 +3600,15 @@ static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *fr
     scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
   }
 
-  start_module(menv->module, menv, 0, NULL, 1, 0, scheme_null);
+  start_module(menv->module, menv, 0, NULL, 1, eval_run, scheme_null);
 
   if (from_env)
     scheme_pop_continuation_frame(&cframe);
+}
+
+static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_env)
+{
+  return finish_start_module_in_namespace(menv, from_env, 0);
 }
 
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
