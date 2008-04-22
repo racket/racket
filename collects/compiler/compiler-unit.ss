@@ -137,7 +137,7 @@
         (let ([zo (append-zo-suffix f)])
           (compile-to-zo f zo n prefix)))))
 
-  (define (compile-directory dir info)
+  (define (compile-directory dir info #:verbose [verbose? #t])
     (define info* (or info (lambda (key mk-default) (mk-default))))
     (define make (c-dynamic-require 'make/make-unit 'make@))
     (define coll (c-dynamic-require 'make/collection-unit 'make:collection@))
@@ -161,7 +161,9 @@
       (parameterize ([current-directory dir]
                      [current-load-relative-directory dir]
                      ;; Verbose compilation manager:
-                     ;; [manager-trace-handler (lambda (s) (printf "~a\n" s))]
+                     [manager-trace-handler (if verbose?
+                                                (lambda (s) (printf "~a\n" s))
+                                                (manager-trace-handler))]
                      [manager-compile-notify-handler
                       (lambda (path) ((compile-notify-handler) path))])
         ;; Compile the collection files via make-collection
@@ -189,7 +191,8 @@
 
   (define (compile-collection-zos collection . cp)
     (compile-directory (apply collection-path collection cp)
-                       (c-get-info (cons collection cp))))
+                       (c-get-info (cons collection cp))
+                       #:verbose #f))
 
   (define compile-directory-zos compile-directory)
 

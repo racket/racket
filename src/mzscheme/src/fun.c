@@ -84,6 +84,8 @@ Scheme_Object *scheme_procedure_p_proc;
 Scheme_Object *scheme_void_proc;
 Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
 
+Scheme_Object *scheme_reduced_procedure_struct;
+
 Scheme_Object *scheme_tail_call_waiting;
 
 Scheme_Object *scheme_inferred_name_symbol;
@@ -172,8 +174,6 @@ static Scheme_Object *call_with_prompt_proc, *abort_continuation_proc;
 static Scheme_Prompt *available_prompt, *available_cws_prompt, *available_regular_prompt;
 static Scheme_Dynamic_Wind *available_prompt_dw;
 static Scheme_Meta_Continuation *available_prompt_mc;
-
-static Scheme_Object *reduced_procedure_struct;
 
 typedef void (*DW_PrePost_Proc)(void *);
 
@@ -2763,8 +2763,8 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
     return first;
   } else if (type == scheme_proc_struct_type) {
     int is_method;
-    if (reduced_procedure_struct
-        && scheme_is_struct_instance(reduced_procedure_struct, p)) {
+    if (scheme_reduced_procedure_struct
+        && scheme_is_struct_instance(scheme_reduced_procedure_struct, p)) {
       if (a >= 0)
         bign = scheme_make_integer(a);
       if (a == -1)
@@ -2792,6 +2792,8 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, long a, Scheme_Object
             }
             v = SCHEME_CDR(v);
           }
+          return scheme_false;
+        } else if (SCHEME_NULLP(v)) {
           return scheme_false;
         } else {
           return (scheme_bin_eq(v, bign)
@@ -3390,20 +3392,20 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
     scheme_wrong_type("procedure-reduce-arity", "arity", 1, argc, argv);
   }
 
-  if (!reduced_procedure_struct) {
-    REGISTER_SO(reduced_procedure_struct);
+  if (!scheme_reduced_procedure_struct) {
+    REGISTER_SO(scheme_reduced_procedure_struct);
     pr = scheme_get_param(scheme_current_config(), MZCONFIG_INSPECTOR);
     while (((Scheme_Inspector *)pr)->superior->superior) {
       pr = (Scheme_Object *)((Scheme_Inspector *)pr)->superior;
     }
     orig = scheme_builtin_value("prop:procedure");
-    reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
-                                                            NULL,
-                                                            pr,
-                                                            2, 0,
-                                                            scheme_false,
-                                                            scheme_make_integer(0),
-                                                            NULL);
+    scheme_reduced_procedure_struct = scheme_make_proc_struct_type(NULL,
+                                                                   NULL,
+                                                                   pr,
+                                                                   2, 0,
+                                                                   scheme_false,
+                                                                   scheme_make_integer(0),
+                                                                   NULL);
   }
 
   /* Check whether current arity covers the requested arity.  This is
@@ -3525,11 +3527,10 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
 
     if (SCHEME_NULLP(ol)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT_CONTINUATION,
-                       "procedure-reduce-arity: arity of procedre: %V"
-                       " does not include requested arity: %V : %V",
+                       "procedure-reduce-arity: arity of procedure: %V"
+                       " does not include requested arity: %V",
                        argv[0],
-                       argv[1],
-                       ra);
+                       argv[1]);
       return NULL;
     }
 
@@ -3542,7 +3543,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[])
   pr = clone_arity(argv[1]);
   a[1] = pr;
 
-  return scheme_make_struct_instance(reduced_procedure_struct, 2, a);
+  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 2, a);
 }
 
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])

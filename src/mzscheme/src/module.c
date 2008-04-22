@@ -1201,7 +1201,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
   Scheme_Module *m2;
-  int same_namespace, set_env_for_notify = 0, phase;
+  int same_namespace, set_env_for_notify = 0, phase, first_iteration;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
     scheme_wrong_type("namespace-attach-module", "namespace", 0, argc, argv);
@@ -1235,6 +1235,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   future_checkeds = scheme_null;
   future_todos = scheme_null;
   past_to_modchains = scheme_null;
+
+  first_iteration = 1;
 
   /* Check whether todo, or anything it needs, is already declared
      incompatibly. Successive iterations of the outer loop explore
@@ -1271,6 +1273,13 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 				"unknown module (in the source namespace): ",
 				name);
 	}
+
+        if (first_iteration) {
+          /* Run everything */
+          first_iteration = 0;
+          start_module(menv->module, from_env, 0, menv->module->self_modidx, 1, 1, scheme_null);
+        }
+
 
 	/* If to_modchain goes to #f, then our source check has gone
 	   deeper in phases (for-syntax levels) than the target
@@ -1324,7 +1333,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    l = SCHEME_CDR(l);
 	  }
 
-	  /* Have to force laziness in source to ensure sharing: */
+	  /* Have to force laziness in source to ensure sharing. This
+             should be redundant, since we called start_module() for the
+             inital module, but we keep it just in case... */
           if (!menv->ran)
 	    scheme_run_module(menv, 1);
 	  if (menv->lazy_syntax)

@@ -201,7 +201,7 @@ interface @scheme[(class->interface object%)], and is transparent
             public pubment public-final override override-final overment augment augride
             augment-final private inherit inherit/super inherit/inner rename-super
             rename-inner begin lambda case-lambda let-values letrec-values
-            define-values)
+            define-values #%plain-lambda)
 (class* superclass-expr (interface-expr ...)
   class-clause
   ...)
@@ -252,8 +252,9 @@ interface @scheme[(class->interface object%)], and is transparent
   (define-values (id) method-procedure)]
 
 [method-procedure
-  (lambda formals expr ...+)
+  (lambda kw-formals expr ...+)
   (case-lambda (formals expr ...+) ...)
+  (#%plain-lambda formals expr ...+)
   (let-values (((id) method-procedure) ...)
     method-procedure)
   (letrec-values (((id) method-procedure) ...)
@@ -616,24 +617,26 @@ using the @scheme[inner] form. The only difference between
 @scheme[inner] is that @scheme[public-final] prevents the declaration
 of augmenting methods that would be ignored.
 
-@defform*[[(super id arg-expr ...)
-           (super id arg-expr ... . arg-list-expr)]]{
+@defform*[[(super id arg ...)
+           (super id arg ... . arg-list-expr)]]{
 
 Always accesses the superclass method, independent of whether the
 method is overridden again in subclasses. Using the @scheme[super]
-form outside of @scheme[class*] is an syntax error.
+form outside of @scheme[class*] is an syntax error. Each @scheme[arg]
+is as for @scheme[#%app]: either @scheme[_arg-expr] or
+@scheme[_keyword _arg-expr].
 
 The second form is analogous to using @scheme[apply] with a procedure;
 the @scheme[arg-list-expr] must not be a parenthesized expression.}
 
-@defform*[[(inner default-expr id arg-expr ...)
-           (inner default-expr id arg-expr ... . arg-list-expr)]]{
+@defform*[[(inner default-expr id arg ...)
+           (inner default-expr id arg ... . arg-list-expr)]]{
 
 If the object's class does not supply an augmenting method, then
-@scheme[default-expr] is evaluated, and the @scheme[arg-expr]s are not
-evaluated. Otherwise, the augmenting method is called with the
-@scheme[arg-expr] results as arguments, and @scheme[default-expr] is
-not evaluated. If no @scheme[inner] call is evaluated for a particular
+@scheme[default-expr] is evaluated, and the @scheme[arg] expressions
+are not evaluated. Otherwise, the augmenting method is called with the
+@scheme[arg] results as arguments, and @scheme[default-expr] is not
+evaluated. If no @scheme[inner] call is evaluated for a particular
 method, then augmenting methods supplied by subclasses are never
 used. Using the @scheme[inner] form outside of @scheme[class*] is an
 syntax error.
@@ -670,14 +673,14 @@ superclass's implementation at run-time. Methods declared with
 and must be called with the form
 
 @schemeblock[
-(_id (lambda () _default-expr) _arg-expr ...)
+(_id (lambda () _default-expr) _arg ...)
 ]
 
 so that a @scheme[default-expr] is available to evaluate when no
 augmenting method is available. In such a form, @scheme[lambda] is a
-keyword to separate the @scheme[default-expr] from the
-@scheme[arg-expr]. When an augmenting method is available, it receives
-the results of the @scheme[arg-expr]s as arguments.
+literal identifier to separate the @scheme[default-expr] from the
+@scheme[arg]. When an augmenting method is available, it receives the
+results of the @scheme[arg] expressions as arguments.
 
 Methods that are present in the superclass but not declared with
 @scheme[inherit], @scheme[inherit/super], or @scheme[inherit/inner] or
@@ -977,37 +980,39 @@ To allow methods to be applied to lists of arguments, a method
 application can have the following form:
 
 @specsubform[
-(method-id arg-expr ... . arg-list-expr)
+(method-id arg ... . arg-list-expr)
 ]
 
 This form calls the method in a way analogous to @scheme[(apply
-_method-id _arg-expr ... _arg-list-expr)]. The @scheme[arg-list-expr]
+_method-id _arg ... _arg-list-expr)]. The @scheme[arg-list-expr]
 must not be a parenthesized expression.
 
 Methods are called from outside a class with the @scheme[send] and 
 @scheme[send/apply] forms.
 
-@defform*[[(send obj-expr method-id arg-expr ...)
-           (send obj-expr method-id arg-expr ... . arg-list-expr)]]{
+@defform*[[(send obj-expr method-id arg ...)
+           (send obj-expr method-id arg ... . arg-list-expr)]]{
 
 Evaluates @scheme[obj-expr] to obtain an object, and calls the method
 with (external) name @scheme[method-id] on the object, providing the
-@scheme[arg-expr] results as arguments. In the second form,
-@scheme[arg-list-expr] cannot be a parenthesized expression.
+@scheme[arg] results as arguments. Each @scheme[arg] is as for
+@scheme[#%app]: either @scheme[_arg-expr] or @scheme[_keyword
+_arg-expr]. In the second form, @scheme[arg-list-expr] cannot be a
+parenthesized expression.
 
 If @scheme[obj-expr] does not produce an object, the
 @exnraise[exn:fail:contract]. If the object has no public method named
 @scheme[method-id], the @exnraise[exn:fail:object].}
 
-@defform[(send/apply obj-expr method-id arg-expr ... arg-list-expr)]{
+@defform[(send/apply obj-expr method-id arg ... arg-list-expr)]{
 
 Like the dotted form of @scheme[send], but @scheme[arg-list-expr] can
 be any expression.}
 
 
 @defform/subs[(send* obj-expr msg ...)
-              ([msg (method-id arg-expr ...)
-                    (method-id arg-expr ... . arg-list-expr)])]{
+              ([msg (method-id arg ...)
+                    (method-id arg ... . arg-list-expr)])]{
 
 Calls multiple methods (in order) of the same object. Each
 @scheme[msg] corresponds to a use of @scheme[send].
@@ -1122,13 +1127,15 @@ interface, the @exnraise[exn:fail:contract]. If the resulting class or
 interface does not contain a method named @scheme[id], the
 @exnraise[exn:fail:object].}
 
-@defform*[[(send-generic obj-expr generic-expr arg-expr ...)
-           (send-generic obj-expr generic-expr arg-expr ... . arg-list-expr)]]{
+@defform*[[(send-generic obj-expr generic-expr arg ...)
+           (send-generic obj-expr generic-expr arg ... . arg-list-expr)]]{
 
 Calls a method of the object produced by @scheme[obj-expr] as
-indicated by the generic produced by @scheme[generic-expr]. The second
-form is analogous to calling a procedure with @scheme[apply], where
-@scheme[arg-list-expr] is not a parenthesized expression.
+indicated by the generic produced by @scheme[generic-expr]. Each
+@scheme[arg] is as for @scheme[#%app]: either @scheme[_arg-expr] or
+@scheme[_keyword _arg-expr]. The second form is analogous to calling a
+procedure with @scheme[apply], where @scheme[arg-list-expr] is not a
+parenthesized expression.
 
 If @scheme[obj-expr] does not produce a object, or if
 @scheme[generic-expr] does not produce a generic, the

@@ -54,31 +54,23 @@ To document a collection or @|PLaneT| package:
         the whole right-hand side of the definition is already
         quoted).
 
-        @; [Eli] `name' is not needed, but I think it's used by planet
-        As usual, you may want to add a descriptive
-        @schemeidfont{name} field in your @filepath{info.ss}.  If you
-        do not already have an @filepath{info.ss} module, here's a
-        suitable complete module:
+        If you do not already have an @filepath{info.ss} module,
+        here's a suitable complete module:
 
-        @; [Eli] "Some documentation" is probably not a good name
-        @;   since this is supposed to be documentation for a library
         @schememod[
           setup/infotab
-          (define name "Some documentation")
           (define scribblings '(("manual.scrbl" ())))
         ]}
 
-  @item{@; [Eli] If this is following a planet example, then it should
-        @;   have the correct command line here.  (I don't know what
-        @;   it should be though.)
-        Run @exec{setup-plt} to build your documentation. For a
+  @item{Run @exec{setup-plt} to build your documentation. For a
         collection, optionally supply @Flag{l} followed by the
-        collection name to limit the build process to that collection.}
+        collection name to limit the build process to that
+        collection. For a @|PLaneT| package, optionally supply
+        @Flag{P} followed by the package information to limit the
+        build process to that package.}
 
   @item{The generated documentation is normally
         @filepath{doc/manual/index.html} within the collection or
-        @; [Eli] I "fixed" the obvious typo in the following sentence,
-        @;   but it's still weird and should probably be different.
         @|PLaneT| package directory. If the collection is in PLT
         Scheme's main @filepath{collects} directory, however, then the
         documentation is generated as @filepath{manual/index.html} in
@@ -311,12 +303,31 @@ and they declare hyperlink targets for @scheme[scheme]-based
 hyperlinks.
 
 To document a @scheme[my-helper] procedure that is exported by
-@filepath{helper.ss} in the collection that contains
-@filepath{manual.scrbl}, first use @scheme[(require (for-label ....))]
-to import the binding information of @filepath{helper.ss}. Then add a
-@scheme[defmodule] declaration, which connects the @scheme[for-label]
-binding with the module path as seen by a reader. Finally, use
-@scheme[defproc] to document the procedure:
+@filepath{helper.ss} in the @scheme{my-lib} collection that contains
+@filepath{manual.scrbl}:
+
+@itemize[
+
+ @item{Use @scheme[(require (for-label "helper.ss"))] to import the
+       binding information about the bindings of @filepath{helper.ss}
+       for use when typesetting identifiers. A relative reference
+       @scheme["helper.ss"] works since it is relative to the
+       documentation source.}
+
+ @item{Add a @tt|{@defmodule[my-lib/helper]}| declaration, which
+       specifies the library that is being documented within the
+       section. The @scheme[defmodule] form needs an absolute module
+       name @scheme[mylib/helper], instead of a relative reference
+       @scheme["helper.ss"], since the module path given to
+       @scheme[defmodule] appears verbatim in the generated
+       documentation.}
+
+ @item{Use @scheme[defproc] to document the procedure.}
+
+]
+
+Adding these pieces to @filepath{"manual.scrbl"} gives us the
+following:
 
 @; [Eli] This is also using `my-lib/helper' which doesn't work with
 @; planet libraries
@@ -370,7 +381,7 @@ generates:
 
  @item{If you use @scheme[my-helper] in any documentation now, as long
        as that documentation source also has a @scheme[(require
-       (for-label ....))] of @filepath{my-helper.ss}, then the
+       (for-label ....))] of @filepath{helper.ss}, then the
        reference is hyperlinked to the definition above.}
 
 }

@@ -1,7 +1,8 @@
 
-(module classidmap mzscheme
-  (require syntax/stx)
-  (require-for-template mzscheme "class-events.ss")
+(module classidmap scheme/base
+  (require syntax/stx
+           (for-syntax scheme/base)
+           (for-template scheme/base "class-events.ss"))
 
   (define-values (struct:s!t make-s!t s!t? s!t-ref s!t-set!)
     (make-struct-type 'set!-transformer #f 2 0 #f null (current-inspector) 0))
@@ -21,7 +22,7 @@
 
   (define (find the-finder name src)
     (let ([this-id (syntax-local-value (syntax-local-get-shadower the-finder))])
-      (datum->syntax-object this-id name src)))
+      (datum->syntax this-id name src)))
 
   ;; Check Syntax binding info:
   (define (binding from to stx)
@@ -29,16 +30,16 @@
 
 
   (define (make-this-map orig-id the-finder the-obj)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)])
       (mk-set!-trans
        orig-id
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
+	    (free-identifier=? (syntax set!) set!-stx)
 	    (raise-syntax-error 'class "cannot mutate object identifier" stx)]
 	   [(id . args)
-	    (datum->syntax-object 
+	    (datum->syntax 
 	     stx
 	     (cons (find the-finder the-obj stx) (syntax args))
 	     stx)]
@@ -46,14 +47,14 @@
 
   (define (make-field-map trace-flag the-finder the-obj the-binder the-binder-localized
                           field-accessor field-mutator field-pos/null)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
          (with-syntax ([obj-expr (find the-finder the-obj stx)])
            (syntax-case stx ()
              [(set! id expr)
-              (module-identifier=? (syntax set!) set!-stx)
+              (free-identifier=? (syntax set!) set!-stx)
               (with-syntax ([bindings (syntax/loc stx ([obj obj-expr] [id expr]))]
                             [trace (syntax/loc stx (set-event obj (quote id) id))]
                             [set (quasisyntax/loc stx
@@ -82,18 +83,18 @@
                     (syntax/loc stx (let* bindings get))))]))))))
 
   (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
+	    (free-identifier=? (syntax set!) set!-stx)
 	    (raise-syntax-error 'class "cannot mutate method" stx)]
 	   [(id . args)
 	    (binding
 	     the-binder (syntax id)
-	     (datum->syntax-object 
+	     (datum->syntax 
 	      the-finder
 	      (make-method-apply
 	       (list method-accessor (find the-finder the-obj stx))
@@ -109,18 +110,18 @@
   ;; For methods that are dirrectly available via their names
   ;;  (e.g., private methods)
   (define (make-direct-method-map the-finder the-obj the-binder the-binder-localized new-name)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
+	    (free-identifier=? (syntax set!) set!-stx)
 	    (raise-syntax-error 'class "cannot mutate method" stx)]
 	   [(id . args)
 	    (binding
 	     the-binder (syntax id)
-	     (datum->syntax-object 
+	     (datum->syntax 
 	      the-finder
 	      (make-method-apply (find the-finder new-name stx) (find the-finder the-obj stx) (syntax args))
 	      stx))]
@@ -131,18 +132,18 @@
 	     stx)])))))
 
   (define (make-rename-super-map the-finder the-obj the-binder the-binder-localized rename-temp)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
+	    (free-identifier=? (syntax set!) set!-stx)
 	    (raise-syntax-error 'class "cannot mutate super method" stx)]
 	   [(id . args)
 	    (binding
 	     the-binder (syntax id)
-	     (datum->syntax-object 
+	     (datum->syntax 
 	      the-finder
 	      (make-method-apply (find the-finder rename-temp stx) (find the-finder the-obj stx) (syntax args))
 	      stx))]
@@ -153,33 +154,33 @@
 	     stx)])))))
 
   (define (make-rename-inner-map the-finder the-obj the-binder the-binder-localized rename-temp)
-    (let ([set!-stx (datum->syntax-object the-finder 'set!)]
-	  [lambda-stx (datum->syntax-object the-finder 'lambda)])
+    (let ([set!-stx (datum->syntax the-finder 'set!)]
+	  [lambda-stx (datum->syntax the-finder 'lambda)])
       (mk-set!-trans
        the-binder-localized
        (lambda (stx)
 	 (syntax-case stx ()
 	   [(set! id expr)
-	    (module-identifier=? (syntax set!) set!-stx)
+	    (free-identifier=? (syntax set!) set!-stx)
 	    (raise-syntax-error 'class "cannot mutate inner method" stx)]
 	   [(id (lambda () default) . args)
-	    (module-identifier=? (syntax lambda) lambda-stx)
+	    (free-identifier=? (syntax lambda) lambda-stx)
 	    (let ([target (find the-finder the-obj stx)])
 	      (binding
 	       the-binder (syntax id)
-	       (datum->syntax-object 
+	       (datum->syntax 
 		the-finder
 		(make-method-apply (list (find the-finder rename-temp stx) target #'default)
 				   target (syntax args))
 		stx)))]
 	   [(id (lambda largs default) . args)
-	    (module-identifier=? (syntax lambda) lambda-stx)
+	    (free-identifier=? (syntax lambda) lambda-stx)
 	    (raise-syntax-error 
 	     'class 
 	     "misuse of inner method (lambda for default does not take zero arguments)" 
 	     stx)]
 	   [(id (lambda . rest) . args)
-	    (module-identifier=? (syntax lambda) lambda-stx)
+	    (free-identifier=? (syntax lambda) lambda-stx)
 	    (raise-syntax-error 
 	     'class 
 	     "misuse of inner method (ill-formed lambda for default)" 
@@ -196,7 +197,7 @@
 	     stx)])))))
 
   (define (generate-super-call stx the-finder the-obj rename-temp args)
-    (datum->syntax-object 
+    (datum->syntax 
      the-finder
      (make-method-apply (find the-finder rename-temp stx) 
 			(find the-finder the-obj stx) 
@@ -204,10 +205,10 @@
      stx))
 
   (define (generate-inner-call stx the-finder the-obj default-expr rename-temp args)
-    (datum->syntax-object 
+    (datum->syntax 
      the-finder
      (let ([target (find the-finder the-obj stx)])
-       (datum->syntax-object 
+       (datum->syntax 
 	the-finder
 	`(let ([i (,(find the-finder rename-temp stx) ,target)])
 	   (if i
@@ -231,14 +232,14 @@
      (lambda (stx)
        (syntax-case stx ()
 	 [(set! id expr)
-	  (module-identifier=? (syntax set!) set!-stx)
+	  (free-identifier=? (syntax set!) set!-stx)
           (with-syntax ([local-id local-id])
             (syntax/loc stx (set! local-id expr)))]
 	 [(id . args)
           (with-syntax ([local-id local-id]
                         [#%app #%app-stx])
             (syntax/loc stx (#%app local-id . args)))]
-	 [_else (datum->syntax-object
+	 [_else (datum->syntax
                  local-id
                  (syntax-e local-id)
                  stx
@@ -258,7 +259,7 @@
        (syntax-case stx ()
 	 [(set! id expr)
           (and (identifier? (syntax id))
-               (module-identifier=? (syntax set!) set!-stx))
+               (free-identifier=? (syntax set!) set!-stx))
 	  (raise-syntax-error 'with-method "cannot mutate method" stx)]
 	 [(id . args)
           (identifier? (syntax id))
@@ -328,7 +329,7 @@
 
     (with-syntax ([object object-stx]
                   [method method-proc-stx]
-                  [app (if rest-arg? (qstx apply) (qstx #%plain-app))]
+                  [app (if rest-arg? (qstx apply) (qstx #%app))]
                   [args args-stx])
       (if traced?
           (with-syntax ([(mth obj) (generate-temporaries
@@ -346,12 +347,12 @@
                       finalize-call-event))))
           (qstx (app method object . args)))))
 
-  (provide (protect make-this-map make-field-map make-method-map 
-		    make-direct-method-map 
-		    make-rename-super-map make-rename-inner-map
-		    make-init-error-map make-init-redirect super-error-map 
-		    make-with-method-map
-		    flatten-args make-method-call
-		    make-private-name localize
-		    generate-super-call generate-inner-call
-		    generate-class-expand-context class-top-level-context?)))
+  (provide (protect-out make-this-map make-field-map make-method-map 
+                        make-direct-method-map 
+                        make-rename-super-map make-rename-inner-map
+                        make-init-error-map make-init-redirect super-error-map 
+                        make-with-method-map
+                        flatten-args make-method-call
+                        make-private-name localize
+                        generate-super-call generate-inner-call
+                        generate-class-expand-context class-top-level-context?)))

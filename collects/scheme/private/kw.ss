@@ -16,11 +16,16 @@
              new-app
              (rename *make-keyword-procedure make-keyword-procedure)
              keyword-apply
-             procedure-keywords)
+             procedure-keywords
+             procedure-reduce-keyword-arity)
   
   ;; ----------------------------------------
   
   (-define-struct keyword-procedure (proc required allowed))
+  (define-values (struct:keyword-method make-km keyword-method? km-ref km-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-procedure
+                      0 0 #f))
 
   (define (generate-arity-string proc)
     (let-values ([(req allowed) (procedure-keywords proc)]
@@ -42,29 +47,40 @@
                                  (if (null? (cdr req))
                                      (format " and ~a" (car req))
                                      (format " ~a,~a" (car req)
-                                             (loop (cdr req)))))])))])
+                                             (loop (cdr req)))))])))]
+                 [(method-adjust)
+                  (lambda (a)
+                    (if (or (okm? proc)
+                            (keyword-method? proc))
+                        (if (zero? a) 0 (sub1 a))
+                        a))])
+
       (string-append
        (cond
-        [(number? a) (format "~a argument~a" a (if (= a 1) "" "s"))]
+        [(number? a) 
+         (let ([a (method-adjust a)])
+           (format "~a argument~a" a (if (= a 1) "" "s")))]
         [(arity-at-least? a)
-         (let ([a (arity-at-least-value a)])
+         (let ([a (method-adjust (arity-at-least-value a))])
            (format "at least ~a argument~a" a (if (= a 1) "" "s")))]
         [else
          "a different number of arguments"])
        (if (null? req)
            ""
            (format " plus ~a" (keywords-desc "" req)))
-       (let ([others (let loop ([req req][allowed allowed])
-                       (cond
-                        [(null? req) allowed]
-                        [(eq? (car req) (car allowed))
-                         (loop (cdr req) (cdr allowed))]
-                        [else
-                         (cons (car allowed) (loop req (cdr allowed)))]))])
-         (if (null? others)
-             ""
-             (format " plus ~a"
-                     (keywords-desc "optional " others)))))))
+       (if allowed
+           (let ([others (let loop ([req req][allowed allowed])
+                           (cond
+                            [(null? req) allowed]
+                            [(eq? (car req) (car allowed))
+                             (loop (cdr req) (cdr allowed))]
+                            [else
+                             (cons (car allowed) (loop req (cdr allowed)))]))])
+             (if (null? others)
+                 ""
+                 (format " plus ~a"
+                         (keywords-desc "optional " others))))
+           " plus arbitrary keyword arguments"))))
 
   ;; Constructor for a procedure with only optional keywords.
   ;; The `procedure' property dispatches to a procedure in the 
@@ -75,16 +91,24 @@
                       1 0 #f
                       (list (cons prop:arity-string generate-arity-string))
                       (current-inspector) 0))
+
+  ;; A ``method'' (for arity reporting)
+  (define-values (struct:okm make-optional-keyword-method okm? okm-ref okm-set!)
+    (make-struct-type 'procedure
+                      struct:okp
+                      0 0 #f))
   
   ;; Constructor generator for a procedure with a required keyword.
   ;; (This is used with lift-expression, so that the same constructor
   ;;  is used for each evaluation of a keyword lambda.)
   ;; The `procedure' property is a per-type method that has exactly
   ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name fail-proc)
+  (define (make-required name fail-proc method?)
     (let-values ([(s: mk ? -ref -set!)
                   (make-struct-type (string->symbol (format "procedure:~a" name))
-                                    struct:keyword-procedure
+                                    (if method?
+                                        struct:keyword-method
+                                        struct:keyword-procedure)
                                     0 0 #f
                                     (list (cons prop:arity-string generate-arity-string))
                                     (current-inspector) fail-proc)])
@@ -106,7 +130,7 @@
                   #f
                   plain-proc)])])
       make-keyword-procedure))
-
+                         
   (define (keyword-apply proc kws kw-vals . normal-argss)
     (let ([type-error
            (lambda (what which)
@@ -294,7 +318,8 @@
                                                    (lambda (a b) (keyword<? (syntax-e a) (syntax-e b))))]
                                  [sorted-kws (sort (map list kws kw-args kw-arg?s kw-reqs)
                                                    (lambda (a b) (keyword<? (syntax-e (car a))
-                                                                            (syntax-e (car b)))))])
+                                                                            (syntax-e (car b)))))]
+                                 [method? (syntax-property stx 'method-arity-error)])
                             (with-syntax ([(kw-arg ...) kw-args]
                                           [(kw-arg? ...) (let loop ([kw-arg?s kw-arg?s]
                                                                     [kw-reqs kw-reqs])
@@ -318,7 +343,11 @@
                                                           '(null))]
                                           [fail-rest (if (null? (syntax-e #'rest))
                                                          '(null)
-                                                         #'rest)])
+                                                         #'rest)]
+                                          [make-okp (if method?
+                                                        #'make-optional-keyword-method
+                                                        #'make-optional-keyword-procedure)]
+                                          [method? method?])
                               
                               (let ([with-core 
                                      (lambda (result)
@@ -400,7 +429,7 @@
                                                                p))]
                                                  [with-kws (mk-with-kws)])
                                      (syntax/loc stx
-                                       (make-optional-keyword-procedure
+                                       (make-okp
                                         with-kws
                                         null
                                         'kws
@@ -416,7 +445,7 @@
                                                  [mk-id (with-syntax ([n (syntax-local-infer-name stx)]
                                                                       [call-fail (mk-kw-arity-stub)])
                                                           (syntax-local-lift-expression
-                                                           #'(make-required 'n call-fail)))])
+                                                           #'(make-required 'n call-fail method?)))])
                                      (syntax/loc stx
                                        (mk-id
                                         with-kws
@@ -675,7 +704,7 @@
              (values (car required) #f))]
         [(and (pair? required)
               (eq? (car required) (car kws)))
-         (loop (cdr kws) (cdr required) (cdr allowed))]
+         (loop (cdr kws) (cdr required) (and allowed (cdr allowed)))]
         [(not allowed) ; => all keywords are allowed
          (loop (cdr kws) required #f)]
         [(pair? allowed)
@@ -708,7 +737,12 @@
                 (let-values ([(missing-kw extra-kw)
                               (if (keyword-procedure? p)
                                   (check-kw-args p kws)
-                                  (values #f (car kws)))])
+                                  (values #f (car kws)))]
+                             [(n) (if (and (positive? n)
+                                           (or (keyword-method? p)
+                                               (okm? p)))
+                                      (sub1 n)
+                                      n)])
                   (let ([args-str
                          (if (and (null? args)
                                   (null? kws))
@@ -751,8 +785,76 @@
                               (format 
                                (string-append
                                 "procedure application: no case matching ~a non-keyword"
-                                " arguments for: ~e; ~a")
+                                " argument~a for: ~e; ~a")
                                (- n 2)
+                               (if (= 1 (- n 2)) "" "s")
                                p
                                args-str)))
-                      (current-continuation-marks)))))))))))
+                      (current-continuation-marks))))))))))
+
+  ;; setting procedure arity
+  (define (procedure-reduce-keyword-arity proc arity req-kw allowed-kw)
+    (let ([plain-proc (procedure-reduce-arity (if (okp? proc)
+                                                  (okp-ref proc 0) 
+                                                  proc)
+                                              arity)])
+      (define (sorted? kws)
+        (let loop ([kws kws])
+          (cond
+           [(null? kws) #t]
+           [(null? (cdr kws)) #t]
+           [(keyword<? (car kws) (cadr kws)) (loop (cdr kws))]
+           [else #f])))
+      (define (subset? a b)
+        (cond
+         [(null? a) #t]
+         [(null? b) #f]
+         [(eq? (car a) (car b)) (subset? (cdr a) (cdr b))]
+         [(keyword<? (car a) (car b)) #f]
+         [else (subset? a (cdr b))]))
+
+      (unless (and (list? req-kw) (andmap keyword? req-kw)
+                   (sorted? req-kw))
+        (raise-type-error 'procedure-reduce-keyword-arity "sorted list of keywords" 
+                          2 proc arity req-kw allowed-kw))
+      (when allowed-kw
+        (unless (and (list? allowed-kw) (andmap keyword? allowed-kw)
+                     (sorted? allowed-kw))
+          (raise-type-error 'procedure-reduce-keyword-arity "sorted list of keywords or #f" 
+                            2 proc arity req-kw allowed-kw))
+        (unless (subset? req-kw allowed-kw)
+          (raise-mismatch-error 'procedure-reduce-keyword-arity 
+                                "allowed-keyword list does not include all required keywords: "
+                                allowed-kw)))
+      (let ([old-req (if (keyword-procedure? proc)
+                         (keyword-procedure-required proc)
+                         null)]
+            [old-allowed (if (keyword-procedure? proc)
+                             (keyword-procedure-allowed proc)
+                             null)])
+        (unless (subset? old-req req-kw)
+          (raise-mismatch-error 'procedure-reduce-keyword-arity
+                                "cannot reduce required keyword set: "
+                                old-req))
+        (when old-allowed
+          (unless (subset? req-kw old-allowed)
+            (raise-mismatch-error 'procedure-reduce-keyword-arity
+                                  "cannot require keywords not in original allowed set: "
+                                  old-allowed))
+          (unless (or (not allowed-kw)
+                      (subset? allowed-kw old-allowed))
+            (raise-mismatch-error 'procedure-reduce-keyword-arity
+                                  "cannot allow keywords not in original allowed set: "
+                                  old-allowed))))
+      (make-optional-keyword-procedure
+       (procedure-reduce-arity (keyword-procedure-proc proc)
+                               (let loop ([a arity])
+                                 (cond
+                                  [(integer? a) (+ a 2)]
+                                  [(arity-at-least? a)
+                                   (make-arity-at-least (+ (arity-at-least-value a) 2))]
+                                  [else
+                                   (map loop a)])))
+       req-kw
+       allowed-kw
+       plain-proc))))

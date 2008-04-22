@@ -7,6 +7,7 @@
 (load-relative "read.ss")
 (load-relative "macro.ss")
 (load-relative "syntax.ss")
+(load-relative "procs.ss")
 (load-relative "stx.ss")
 (load-relative "module.ss")
 (load-relative "number.ss")

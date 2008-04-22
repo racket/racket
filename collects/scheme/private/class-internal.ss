@@ -179,6 +179,7 @@
 		 (kernel-form-identifier-list)
 		 (list 
                   (quote-syntax #%app) ; scheme/base app, as opposed to #%plain-app
+                  (quote-syntax lambda) ; scheme/base lambda, as opposed to #%plain-lambda
 		  (quote-syntax -init)
 		  (quote-syntax init-rest)
 		  (quote-syntax -field)
@@ -317,6 +318,24 @@
 	      (and (stx-pair? vars)
 		   (identifier? (stx-car vars))
 		   (vars-ok? (stx-cdr vars)))))
+        (define (kw-vars-ok? vars)
+	  (or (identifier? vars)
+	      (stx-null? vars)
+	      (and (stx-pair? vars)
+                   (let ([a (stx-car vars)]
+                         [opt-arg-ok?
+                          (lambda (a)
+                            (or (identifier? a)
+                                (and (stx-pair? a)
+                                     (identifier? (stx-car a))
+                                     (stx-pair? (stx-cdr a))
+                                     (stx-null? (stx-cdr (stx-cdr a))))))])
+                     (or (and (opt-arg-ok? a)
+                              (kw-vars-ok? (stx-cdr vars)))
+                         (and (keyword? (syntax-e a))
+                              (stx-pair? (stx-cdr vars))
+                              (opt-arg-ok? (stx-car (stx-cdr vars)))
+                              (kw-vars-ok? (stx-cdr (stx-cdr vars)))))))))
 	;; mk-name: constructs a method name
 	;; for error reporting, etc.
 	(define (mk-name name)
@@ -332,22 +351,51 @@
 	   #f))
 	;; -- tranform loop starts here --
 	(let loop ([stx orig-stx][can-expand? #t][name name][locals null])
-	  (syntax-case stx (#%plain-lambda case-lambda letrec-values let-values)
-	    [(#%plain-lambda vars body1 body ...)
-	     (vars-ok? (syntax vars))
+	  (syntax-case stx (#%plain-lambda lambda case-lambda letrec-values let-values)
+	    [(lam vars body1 body ...)
+             (or (and (free-identifier=? #'lam #'#%plain-lambda)
+                      (vars-ok? (syntax vars)))
+                 (and (free-identifier=? #'lam #'lambda)
+                      (kw-vars-ok? (syntax vars))))
 	     (if xform?
 		 (with-syntax ([the-obj the-obj]
 			       [the-finder the-finder]
 			       [name (mk-name name)])
-		   (let ([l (syntax/loc stx 
-			      (lambda (the-obj . vars) 
-				(let-syntax ([the-finder (quote-syntax the-obj)])
-				  body1 body ...)))])
-		     (with-syntax ([l (recertify (add-method-property l) stx)])
-		       (syntax/loc stx 
-			 (let ([name l]) name)))))
-		 stx)]
+                   (with-syntax ([vars (if (free-identifier=? #'lam #'lambda)
+                                           (let loop ([vars #'vars])
+                                             (cond
+                                              [(identifier? vars) vars]
+                                              [(syntax? vars)
+                                               (datum->syntax vars
+                                                              (loop (syntax-e vars))
+                                                              vars
+                                                              vars)]
+                                              [(pair? vars)
+                                               (syntax-case (car vars) ()
+                                                 [(id expr)
+                                                  (identifier? #'id)
+                                                  ;; optional argument; need to wrap arg expression
+                                                  (cons
+                                                   (with-syntax ([expr (syntax/loc #'expr
+                                                                         (let-syntax ([the-finder (quote-syntax the-obj)])
+                                                                           (#%expression expr)))])
+                                                     (syntax/loc (car vars)
+                                                       (id expr)))
+                                                   (loop (cdr vars)))]
+                                                 [_ (cons (car vars) (loop (cdr vars)))])]
+                                              [else vars]))
+                                           #'vars)])
+                     (let ([l (syntax/loc stx 
+                                (lambda (the-obj . vars) 
+                                  (let-syntax ([the-finder (quote-syntax the-obj)])
+                                    body1 body ...)))])
+                       (with-syntax ([l (recertify (add-method-property l) stx)])
+                         (syntax/loc stx 
+                           (let ([name l]) name))))))
+                 stx)]
 	    [(#%plain-lambda . _)
+	     (bad "ill-formed lambda expression for method" stx)]
+	    [(lambda . _)
 	     (bad "ill-formed lambda expression for method" stx)]
 	    [(case-lambda [vars body1 body ...] ...)
 	     (andmap vars-ok? (syntax->list (syntax (vars ...))))

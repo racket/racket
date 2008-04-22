@@ -16,7 +16,7 @@
 
 @(define-syntax-rule (def-base base-define base-define-struct
                                base-if base-cond base-case base-top-interaction
-                               base-open-input-file
+                               base-open-input-file base-apply
                                base-free-identifier=? base-free-template-identifier=?
                                base-free-transformer-identifier=? base-free-label-identifier=?)
    (begin
@@ -28,13 +28,14 @@
     (define base-case (scheme case))
     (define base-top-interaction (scheme #%top-interaction))
     (define base-open-input-file (scheme open-input-file))
+    (define base-apply (scheme apply))
     (define base-free-identifier=? (scheme free-identifier=?))
     (define base-free-template-identifier=? (scheme free-template-identifier=?))
     (define base-free-transformer-identifier=? (scheme free-transformer-identifier=?))
     (define base-free-label-identifier=? (scheme free-label-identifier=?))))
 @(def-base base-define base-define-struct
            base-if base-cond base-case base-top-interaction
-           base-open-input-file
+           base-open-input-file base-apply
            base-free-identifier=? base-free-template-identifier=?
            base-free-transformer-identifier=? base-free-label-identifier=?)
 
@@ -194,6 +195,11 @@ The same as @|base-top-interaction| in @schememodname[scheme/base].}
 @; ----------------------------------------
 
 @section{Old Functions}
+
+@defproc[(apply [proc procedure?] [v any/c] ... [lst list?]) any]{
+
+Like @base-apply from @schememodname[scheme/base], but without support
+for keyword arguments.}
 
 @deftogether[(
 @defproc[(open-input-file [file path-string?] [mode (one-of/c 'text 'binary) 'binary])

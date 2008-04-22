@@ -13,7 +13,8 @@
            [regsvr (and winsys-dir (build-path winsys-dir "REGSVR32.EXE"))])
       (cond
        [(not (eq? (system-type) 'windows))
-        (printf "Warning: can't install MysterX on non-Windows machine\n")]
+        ;; (printf "Warning: can't install MysterX on non-Windows machine\n")
+        (void)]
        [(not (andmap file-exists? dll-paths))
         (printf "Warning: MysterX binaries not installed\n")]
        [(not winsys-dir)

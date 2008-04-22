@@ -3453,6 +3453,11 @@ static Scheme_Object *procedure_extract_target(int argc, Scheme_Object **argv)
     scheme_wrong_type("procedure-extract-target", "procedure", 0, argc, argv);
   
   if (SCHEME_PROC_STRUCTP(argv[0])) {
+    /* Don't expose arity reducer: */
+    if (scheme_reduced_procedure_struct
+        && scheme_is_struct_instance(scheme_reduced_procedure_struct, argv[0]))
+      return scheme_false;
+
     v = scheme_extract_struct_procedure(argv[0], -1, NULL, &is_method);
     if (v && !is_method && SCHEME_PROCP(v))
       return v;

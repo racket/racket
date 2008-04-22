@@ -7,21 +7,29 @@
 @scheme[v] is a procedure, @scheme[#f] otherwise.}
 
 
-@defproc[(apply [proc procedure?] [v any/c] ... [lst list?]) any]{
+@defproc[(apply [proc procedure?] 
+                [v any/c] ... [lst list?]
+                [#:<kw> kw-arg any/c] ...) any]{
 
 @guideintro["apply"]{@scheme[apply]}
 
 Applies @scheme[proc] using the content of @scheme[(list* v ... lst)]
-as the (by-position) arguments. The given @scheme[proc] must accept as
-many arguments as the number of @scheme[v]s plus length of
-@scheme[lst], and it must not require any keyword arguments;
-otherwise, the @exnraise[exn:fail:contract]. The given @scheme[proc]
-is called in tail position with respect to the @scheme[apply] call.
+as the (by-position) arguments. The @scheme[#:<kw> kw-arg] sequence is
+also supplied as keyword arguments to @scheme[proc], where
+@scheme[#:<kw>] stands for any keyword.
+
+The given @scheme[proc] must accept as many arguments as the number of
+@scheme[v]s plus length of @scheme[lst], it must accept the supplied
+keyword arguments, and it must not require any other keyword
+arguments; otherwise, the @exnraise[exn:fail:contract]. The given
+@scheme[proc] is called in tail position with respect to the
+@scheme[apply] call.
 
 @examples[
 (apply + '(1 2 3))
 (apply + 1 2 '(3))
 (apply + '())
+(apply sort (list (list '(2) '(1)) <) #:key car)
 ]}
 
 @defproc[(compose [proc procedure?] ...) procedure?]{
@@ -45,28 +53,35 @@ function consumes.
                         [kw-lst (listof keyword?)]
                         [kw-val-lst list?]
                         [v any/c] ...
-                        [lst list?])
+                        [lst list?]
+                        [#:<kw> kw-arg any/c] ...)
          any]{
 
 @guideintro["apply"]{@scheme[keyword-apply]}
 
 Like @scheme[apply], but @scheme[kw-lst] and @scheme[kw-val-lst]
 supply by-keyword arguments in addition to the by-position arguments
-of the @scheme[v]s and @scheme[lst]. The given @scheme[kw-lst] must be
-sorted using @scheme[keyword<?], and no keyword can appear twice in
-@scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
-given @scheme[kw-val-lst] must have the same length as
-@scheme[kw-lst], otherwise, the @exnraise[exn:fail:contract]. The
-given @scheme[proc] must accept all of the keywords in
-@scheme[kw-lst], it must not require any other keywords, and it must
-accept as many by-position arguments as supplied via the @scheme[v]s
-and @scheme[lst]; otherwise, the @exnraise[exn:fail:contract].
+of the @scheme[v]s and @scheme[lst], and in addition to the directly
+supplied keyword arguments in the @scheme[#:<kw> kw-arg] sequence,
+where @scheme[#:<kw>] stands for any keyword.
+
+The given @scheme[kw-lst] must be sorted using @scheme[keyword<?].  No
+keyword can appear twice in @scheme[kw-lst] or in both
+@scheme[kw-list] and as a @scheme[#:<kw>], otherwise, the
+@exnraise[exn:fail:contract]. The given @scheme[kw-val-lst] must have
+the same length as @scheme[kw-lst], otherwise, the
+@exnraise[exn:fail:contract]. The given @scheme[proc] must accept all
+of the keywords in @scheme[kw-lst] plus the @scheme[#:<kw>]s, it must
+not require any other keywords, and it must accept as many by-position
+arguments as supplied via the @scheme[v]s and @scheme[lst]; otherwise,
+the @exnraise[exn:fail:contract].
 
 @defexamples[
 (define (f x #:y y #:z [z 10])
   (list x y z))
 (keyword-apply f '(#:y) '(2) '(1))
 (keyword-apply f '(#:y #:z) '(2 3) '(1))
+(keyword-apply f #:z 7 '(#:y) '(2) '(1))
 ]}
 
 @defproc[(procedure-arity [proc procedure?])
@@ -126,7 +141,13 @@ procedure, it returns a value that is @scheme[equal?] to
 @scheme[arity].
 
 If the @scheme[arity] specification allows arguments that are not
-in @scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].}
+in @scheme[(procedure-arity proc)], the @exnraise[exn:fail:contract].
+
+@examples[
+(define my+ (procedure-reduce-arity + 2))
+(my+ 1 2)
+(my+ 1 2 3)
+]}
 
 @defproc[(procedure-keywords [proc procedure?])
          (values
@@ -154,7 +175,8 @@ list is also in the second list.
          procedure?]{
 
 Returns a procedure that accepts all keyword arguments (without
-requiring any keyword arguments).
+requiring any keyword arguments). See also
+@scheme[procedure-reduce-keyword-arity].
 
 When the result is called with keyword arguments, then @scheme[proc]
 is called; the first argument is a list of keywords sorted by
@@ -175,6 +197,34 @@ obtains its result from @scheme[plain-proc].
 (show #:init 0 1 2 3 #:extra 4)
 ]}
 
+@defproc[(procedure-reduce-keyword-arity [proc procedure?]
+                                         [arity procedure-arity?]
+                                         [required-kws (listof keyword?)]
+                                         [allowed-kws (or/c (listof keyword?)
+                                                            false/c)])
+         procedure?]{
+
+Like @scheme[procedure-reduce-arity], but constrains the keyword
+arguments according to @scheme[required-kws] and @scheme[allowed-kws],
+which must be sorted using @scheme[keyword<?]. If @scheme[allowed-kws]
+is @scheme[#f], then the resulting procedure still accepts any
+keyword, otherwise the keywords in @scheme[required-kws] must be a
+subset of those in @scheme[allowed-kws]. The original @scheme[proc]
+must require no more keywords than the ones listed din
+@scheme[required-kws], and it must allow at least the keywors in
+@scheme[allowed-kws] (or it must allow all keywords if
+@scheme[allowed-kws] is @scheme[#f]).
+
+@defexamples[
+(define orig-show
+  (make-keyword-procedure (lambda (kws kw-args . rest)
+                            (list kws kw-args rest))))
+(define show (procedure-reduce-keyword-arity 
+              orig-show 3 '(#:init) '(#:extra #:init)))
+(show #:init 0 1 2 3 #:extra 4)
+(show 1)
+(show #:init 0 1 2 3 #:extra 4 #:more 7)
+]}
 
 @defstruct[arity-at-least ([value nonnegative-exact-integer?])]{
 
@@ -221,7 +271,8 @@ redundant and disallowed).
 
 @examples[
 (define-struct annotated-proc (base note)
-               #:property prop:procedure (struct-field-index base))
+               #:property prop:procedure 
+                          (struct-field-index base))
 (define plus1 (make-annotated-proc
                 (lambda (x) (+ x 1))
                 "adds 1 to its argument"))
@@ -255,7 +306,9 @@ is disallowed).
                #:mutable
                #:property 
                prop:procedure  
-               (lambda (f n) (set-fish-weight! f (+ n (fish-weight f)))))
+               (lambda (f n) 
+                 (let ([w (fish-weight f)])
+                  (set-fish-weight! f (+ n w)))))
 (define wanda (make-fish 12 'red))
 (fish? wanda)
 (procedure? wanda)
