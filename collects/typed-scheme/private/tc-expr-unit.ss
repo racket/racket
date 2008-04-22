@@ -60,7 +60,7 @@
     [(byte-pregexp? v) -Byte-PRegexp]
     [(byte-regexp? v) -Byte-Regexp]
     [(regexp? v) -Regexp]
-    [else (begin (printf "checking literal : ~a~n" v) Univ)]))
+    [else Univ]))
 
 ;; typecheck an identifier
 ;; the identifier has variable effect
@@ -68,19 +68,21 @@
 (define (tc-id id)
   (let* ([ty (lookup-type/lexical id)]
          [inst (syntax-property id 'type-inst)])
-    (when (and inst
-               (not (Poly? ty)))
-      (tc-error "Cannot instantiate non-polymorphic type ~a" ty))
-    (when (and inst
+    (cond [(and inst
+                (not (Poly? ty)))
+           (tc-error/expr #:return (ret (Un)) "Cannot instantiate non-polymorphic type ~a" ty)]
+          [(and inst
                (not (= (length (syntax->list inst)) (Poly-n ty))))
-      (tc-error "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                ty (Poly-n ty) (length (syntax->list inst))))
-    (let ([ty* (if inst
-                   (begin
-                     (printf/log "Type Instantiation: ~a~n" (syntax-e id))
-                     (instantiate-poly ty (map parse-type (syntax->list inst))))
-                   ty)])
-      (ret ty* (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id))))))
+           (tc-error/expr #:return (ret (Un)) 
+                          "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                          ty (Poly-n ty) (length (syntax->list inst)))]
+          [else
+           (let ([ty* (if inst
+                          (begin
+                            (printf/log "Type Instantiation: ~a~n" (syntax-e id))
+                            (instantiate-poly ty (map parse-type (syntax->list inst))))
+                          ty)])
+             (ret ty* (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id))))])))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
@@ -91,13 +93,12 @@
   (match (list tr1 expected)      
     [(list (tc-result: t1 te1 ee1) t2)
      (unless (subtype t1 t2)
-       (tc-error "Expected ~a, but got ~a" t2 t1))
+       (tc-error/expr "Expected ~a, but got ~a" t2 t1))
      (ret expected)]
     [(list t1 t2)
      (unless (subtype t1 t2)
-       (tc-error "Expected ~a, but got ~a" t2 t1))
-     (ret expected)]
-    [_ (error "bad arguments to check-below")]))
+       (tc-error/expr"Expected ~a, but got ~a" t2 t1))
+     (ret expected)]))
 
 (define (tc-expr/check form expected)
   (parameterize ([current-orig-stx form])
@@ -120,7 +121,7 @@
          (syntax-property form 'typechecker:ignore-some)
          (let ([ty (check-subforms/ignore form)])
            (unless ty
-             (tc-error "internal error: ignore-some"))
+             (int-err "internal error: ignore-some"))
            (check-below ty expected))]
         ;; data
         [(quote #f) (ret (-val #f) (list (make-False-Effect)) (list (make-False-Effect)))]
@@ -133,13 +134,13 @@
          (match-let* ([(tc-result: id-t) (tc-id #'id)]
                       [(tc-result: val-t) (tc-expr #'val)])
            (unless (subtype val-t id-t)
-             (tc-error "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
+             (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
            (ret -Void))]
         ;; top-level variable reference - occurs at top level
         [(#%top . id) (check-below (tc-id #'id) expected)]
         ;; weird
         [(#%variable-reference . _)
-         (tc-error "#%variable-reference is not supported by Typed Scheme")]
+         (tc-error/expr #:return (ret expected) "#%variable-reference is not supported by Typed Scheme")]
         ;; identifiers
         [x (identifier? #'x) (check-below (tc-id #'x) expected)]
         ;; w-c-m
@@ -179,7 +180,7 @@
         [(letrec-values ([(name ...) expr] ...) . body)
          (tc/letrec-values/check #'((name ...) ...) #'(expr ...) #'body form expected)]
         ;; other
-        [_ (tc-error "cannot typecheck unknown form : ~a~n" (syntax->datum form))]
+        [_ (tc-error/expr #:return (ret expected) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]
         ))))
 
 ;; type check form in the current type environment
@@ -197,13 +198,13 @@
        (syntax-property form 'typechecker:with-handlers)
        (let ([ty (check-subforms/with-handlers form)])
          (unless ty
-           (tc-error "internal error: with-handlers"))
+           (int-err "internal error: with-handlers"))
          ty)]
       [stx 
        (syntax-property form 'typechecker:ignore-some)
        (let ([ty (check-subforms/ignore form)])
          (unless ty
-           (tc-error "internal error: ignore-some"))
+           (int-err "internal error: ignore-some"))
          ty)]
       
       ;; data
@@ -238,7 +239,7 @@
        (match-let* ([(tc-result: id-t) (tc-id #'id)]
                     [(tc-result: val-t) (tc-expr #'val)])
          (unless (subtype val-t id-t)
-           (tc-error "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
+           (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
          (ret -Void))]        
       ;; top-level variable reference - occurs at top level
       [(#%top . id) (tc-id #'id)]
@@ -246,7 +247,7 @@
       [(#%expression e) (tc-expr #'e)]
       ;; weird
       [(#%variable-reference . _)
-       (tc-error "do not use #%variable-reference")]
+       (tc-error/expr #:return (ret (Un)) "#%variable-reference is not supported by Typed Scheme")]
       ;; identifiers
       [x (identifier? #'x) (tc-id #'x)]                 
       ;; application        
@@ -268,7 +269,7 @@
        (begin (tc-exprs (syntax->list #'es))
               (tc-expr #'e))]
       ;; other
-      [_ (tc-error "cannot typecheck unknown form : ~a~n" (syntax->datum form))]))
+      [_ (tc-error/expr #:return (ret (Un)) "cannot typecheck unknown form : ~a~n" (syntax->datum form))]))
   
   (parameterize ([current-orig-stx form])
     ;(printf "form: ~a~n" (syntax->datum form))
@@ -287,13 +288,13 @@
      (match (tc-expr method)
        [(tc-result: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
-                           [else (tc-error "send: method ~a not understood by class ~a" s c)])]
+                            [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
                [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)))])
           (if expected
               (begin (check-below ret-ty expected) (ret expected))
               ret-ty))]
-       [(tc-result: t) (int-err "non-symbol methods not yet supported: ~a" t)])]
-    [(tc-result: t) (tc-error "send: expected a class instance, got ~a" t)]))
+       [(tc-result: t) (int-err "non-symbol methods not supported by Typed Scheme: ~a" t)])]
+    [(tc-result: t) (tc-error/expr #:return (or expected (Un)) "send: expected a class instance, got ~a" t)]))
 
 ;; type-check a list of exprs, producing the type of the last one.
 ;; if the list is empty, the type is Void.

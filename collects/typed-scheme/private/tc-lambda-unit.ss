@@ -40,8 +40,13 @@
     [(args* ...)    
      (if (ormap (lambda (e) (not (type-annotation e))) (syntax->list #'(args* ...)))
          (let* ([arg-list (syntax->list #'(args* ...))])
-           (unless (= (length arg-list) (length arg-tys))
-             (tc-error "Expected function with ~a arguments, but got function with ~a arguments" (length arg-tys) (length arg-list)))
+           (let ([arg-list
+                  (if (= (length arg-list) (length arg-tys))
+                      arg-list
+                      (tc-error/expr
+                       #:return (map (lambda _ (Un)) arg-tys)
+                       "Expected function with ~a arguments, but got function with ~a arguments"
+                       (length arg-tys) (length arg-list)))])
            (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
            (with-lexical-env/extend 
             arg-list arg-tys
@@ -172,7 +177,7 @@
                     (tc/mono-lambda formals bodies expected*))])
          ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
          (ret (make-Poly literal-tvars ty))))]
-    [_ (tc-error "Expected a value of type ~a, but got a polymorphic function." expected)]))
+    [_ (tc-error/expr #:return expected "Expected a value of type ~a, but got a polymorphic function." expected)]))
     
 
 ;; form : a syntax object for error reporting

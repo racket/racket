@@ -225,6 +225,8 @@
     (for-each tc-toplevel/pass2 forms)
     ;; check that declarations correspond to definitions
     (check-all-registered-types)
+    ;; report delayed errors
+    (report-all-errors)
     ;; compute the new provides
     (with-syntax
         ([((new-provs ...) ...) (map (generate-prov stx-defs val-defs) provs)])

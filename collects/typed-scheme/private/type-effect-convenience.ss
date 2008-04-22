@@ -6,7 +6,8 @@
          "type-effect-printer.ss"
          "union.ss"
          "subtype.ss"
-         "type-utils.ss"         
+         "type-utils.ss" 
+         "tc-utils.ss"
          scheme/promise
          (for-syntax scheme/base))
 
@@ -223,5 +224,9 @@
                t-new
                (exit t)))]
         [_ (exit t)]))))
+
+(define (tc-error/expr msg #:return [return (Un)] #:stx [stx (current-orig-stx)] . rest)
+  (tc-error/delayed #:stx stx (apply format msg rest))
+  return)
 
 

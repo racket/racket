@@ -96,8 +96,6 @@
 (define (tc/if-onearm tst body) (tc/if-twoarm tst body (syntax/loc body (#%app void))))
 
 (define (tc/if-onearm/check tst body expected)
-  #;(unless (subtype -Void expected)
-      (tc-error "Single-armed if may return void, but void is not allowed in this context"))
   (tc/if-twoarm/check tst body (syntax/loc body (#%app void)) expected))
 
 ;; the main function

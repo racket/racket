@@ -29,21 +29,34 @@
   ;(printf "orig: ~a~n" (syntax-object->datum omodule))
   ;(printf "exp: ~a~n" (syntax-object->datum emodule))
   ;(printf "stx (locate): ~a~n" (syntax-object->datum stx))
-  (if (and omodule emodule stx)
+  (if (and (not (print-syntax?)) omodule emodule stx)
       (look-for-in-orig omodule emodule stx)
       stx))
 
+(define (raise-typecheck-error msg stxs)
+  (raise (make-exn:fail:syntax (string-append "typecheck: " msg)
+                               (current-continuation-marks)
+                               stxs)))
+
+(define delayed-errors null)
+
+(define-struct err (msg stx) #:prefab)
+
+(define (report-all-errors)  
+  (define stxs
+    (for/list ([e (reverse delayed-errors)])
+      (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e))))
+      (sleep .01)
+      (err-stx e)))
+  (unless (null? stxs)
+    (raise-typecheck-error "Errors encountered" (apply append stxs))))
+
+(define (tc-error/delayed msg #:stx [stx (current-orig-stx)] . rest)
+  (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors)))
+
 ;; produce a type error, using the current syntax
-(define (tc-error msg . rest)
-  (define cur-stx 
-    (begin 
-      ;(printf "stx : ~a~n" (current-orig-stx))
-      (if (print-syntax?)
-          (current-orig-stx)
-          (locate-stx (current-orig-stx)))))
-  
-  ;(printf "Aliases: ~a~n" ((current-type-names)))
-  (raise-syntax-error 'typecheck (apply format msg rest) cur-stx cur-stx))
+(define (tc-error msg . rest)  
+  (raise-typecheck-error (apply format msg rest) (list (locate-stx (current-orig-stx)))))
 
 ;; produce a type error, given a particular syntax
 (define (tc-error/stx stx msg . rest)
