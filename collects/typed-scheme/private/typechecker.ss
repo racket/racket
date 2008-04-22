@@ -8,7 +8,7 @@
          "tc-let-unit.ss"
          "tc-expr-unit.ss" "check-subforms-unit.ss")
 
-(provide-signature-elements typechecker^)
+(provide-signature-elements typechecker^ tc-expr^)
 
 (define-values/link-units/infer
   tc-toplevel@ tc-if@ tc-lambda@ tc-app@ tc-let@ tc-expr@ check-subforms@)
