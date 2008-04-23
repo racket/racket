@@ -43,14 +43,22 @@
 
 (define-syntax (export/docs stx)
   (syntax-case stx ()
-    [(_ (id ctc argspec docs ...) ...)
-     #'(begin (fw-doc-form id ctc argspec docs ...) ...)]))
+    [(_ tag docs ...)
+     (let ([reg (regexp (format "^~a:" (syntax->datum #'tag)))])
+       (with-syntax ([((id ctc argspec docs ...) ...)
+                      (filter (λ (x)
+                                (syntax-case x ()
+                                  [(id ctc argspec docs ...)
+                                   (regexp-match reg (format "~a" (syntax->datum #'id)))]))
+                              (syntax->list #'(docs ...)))])
+         #'(begin (fw-doc-form id ctc argspec docs ...) ...)))]))
 
 (define-syntax (conv/export/docs stx)
   (define-struct faux-stx (obj vec) #:prefab)
   (syntax-case stx ()
-    [(id arg)
+    [(id tag arg)
      #`(export/docs
+        tag
         #,@(let loop ([f-stx (syntax->datum #'arg)])
              (cond
                [(faux-stx? f-stx) 
@@ -61,4 +69,6 @@
                [else f-stx])))]))
 
 (define-syntax (def-fw-procs stx)
-  #'(framework-exports/srcloc-preserved conv/export/docs))
+  (syntax-case stx ()
+    [(_ tag)
+     #'(framework-exports/srcloc-preserved conv/export/docs tag)]))

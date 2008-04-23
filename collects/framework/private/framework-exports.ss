@@ -1362,7 +1362,7 @@
                     [else stx]))])
            #`(define-syntax (framework-exports/srcloc-preserved stx)
                (syntax-case stx ()
-                 [(_ id)
-                  #'(id #,marshalled)]))))])))
+                 [(_ id tag)
+                  #'(id tag #,marshalled)]))))])))
 
 (framework-exports make-framework-exports/srcloc-preserved)

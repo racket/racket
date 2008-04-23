@@ -1,0 +1,14 @@
+#lang scribble/doc
+@(require scribble/manual)
+@(require (for-label framework/framework))
+@(require (for-label scheme/gui))
+@title{Pasteboard}
+
+@defclass[pasteboard:basic% (editor:basic-mixin pasteboard%) ()]{}
+@defclass[pasteboard:standard-style-list% (editor:standard-style-list-mixin pasteboard:basic%) ()]{}
+@defclass[pasteboard:keymap% (editor:keymap-mixin pasteboard:standard-style-list%) ()]{}
+@defclass[pasteboard:file% (editor:file-mixin pasteboard:keymap%) ()]{}
+@defclass[pasteboard:backup-autosave% (editor:backup-autosave-mixin pasteboard:file%) ()]{}
+@defclass[pasteboard:info% (editor:info-mixin pasteboard:backup-autosave%) ()]{}
+@(require framework/framework-docs)
+@(def-fw-procs pasteboard)
