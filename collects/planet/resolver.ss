@@ -162,6 +162,21 @@ subdirectory.
 
 #lang mzscheme
 
+(define resolver
+  (case-lambda
+    [(name) (void)]
+    [(spec module-path stx) 
+     (resolver spec module-path stx #t)]
+    [(spec module-path stx load?)
+     ;; ensure these directories exist
+     (make-directory* (PLANET-DIR))
+     (make-directory* (CACHE-DIR))
+     (establish-diamond-property-monitor)
+     (planet-resolve spec
+                     (current-module-declare-name) ;; seems more reliable than module-path in v3.99
+                     stx
+                     load?)]))
+
 (require mzlib/match
          mzlib/file
          mzlib/port
@@ -193,20 +208,7 @@ subdirectory.
 ;; if #f, will not install packages and instead give an error
 (define install? (make-parameter #t))
 
-(define resolver
-  (case-lambda
-    [(name) (void)]
-    [(spec module-path stx) 
-     (resolver spec module-path stx #t)]
-    [(spec module-path stx load?)
-     ;; ensure these directories exist
-     (make-directory* (PLANET-DIR))
-     (make-directory* (CACHE-DIR))
-     (establish-diamond-property-monitor)
-     (planet-resolve spec
-                     (current-module-declare-name) ;; seems more reliable than module-path in v3.99
-                     stx
-                     load?)]))
+
 
 ;; =============================================================================
 ;; DIAMOND PROPERTY STUFF
