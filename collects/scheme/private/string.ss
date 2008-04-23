@@ -140,42 +140,44 @@
 
             (if (and port-success-choose (input-port? string))
               ;; Input port match, get string
-              (let* ([discarded 0]
-                     [leftover-port (and need-leftover? (open-output-bytes))]
-                     [match
-                      (regexp-match
-                       rx string
-                       (if need-leftover? (if skipped? 1 0) start)
-                       (and end (if need-leftover?
-                                  (if skipped? (- end start -1) (- end start))
-                                  end))
-                       (if need-leftover?
-                         leftover-port
-                         (make-output-port
-                          'counter
-                          always-evt
-                          (lambda (s start end flush? breakable?)
-                            (let ([c (- end start)])
-                              (set! discarded (+ c discarded))
-                              c))
-                          void)))]
-                     [leftovers
-                      (and need-leftover?
-                           (if (and (regexp? rx) (string? string))
-                             (get-output-string leftover-port)
-                             (get-output-bytes leftover-port)))])
+              (let ([discarded/leftovers 0])
+                (define match
+                  (if need-leftover?
+                    (let ([leftover-port (open-output-bytes)])
+                      (begin0 (regexp-match
+                               rx string
+                               (if skipped? 1 0)
+                               (and end (if skipped? (- end start -1) (- end start)))
+                               leftover-port)
+                        (set! discarded/leftovers
+                              (if (and (regexp? rx) (string? string))
+                                (get-output-string leftover-port)
+                                (get-output-bytes leftover-port)))))
+                    (regexp-match
+                     rx string start end
+                     (make-output-port
+                      'counter always-evt
+                      (lambda (s start end flush? breakable?)
+                        (let ([c (- end start)])
+                          (set! discarded/leftovers (+ c discarded/leftovers))
+                          c))
+                      void))))
                 (if match
                   (let* ([mlen (bstring-length (car match))]
                          [skip? (zero? mlen)])
-                    (loop (cons (port-success-choose (car match) leftovers) acc)
+                    (loop (cons (port-success-choose (car match)
+                                                     discarded/leftovers)
+                                acc)
                           (if skip? 1 0)
-                          (and end (- end (if need-leftover?
-                                            (+ (bstring-length leftovers) start
-                                               (if skipped? 1 0))
-                                            discarded)
-                                      mlen))
+                          (and end
+                               (- end (if need-leftover?
+                                        (+ (bstring-length discarded/leftovers)
+                                           start
+                                           (if skipped? 1 0))
+                                        discarded/leftovers)
+                                  mlen))
                           skip?))
-                  (port-failure-k acc leftovers)))
+                  (port-failure-k acc discarded/leftovers)))
               ;; String/port match, get positions
               (let ([match ((if peek?
                               regexp-match-peek-positions
