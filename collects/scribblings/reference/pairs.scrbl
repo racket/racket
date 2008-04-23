@@ -612,6 +612,21 @@ but @scheme[pred] is applied to each item in @scheme[lst] only once.
   (partition even? '(1 2 3 4 5 6))
 ]}
 
+@defproc[(append-map [proc (any/c . -> . list?)] [lst list?] ...+)
+         list?]{
+Like @scheme[map], but the resulting lists are appended together.
+This is the same as @scheme[(append* (map proc lst ...))].}
+
+@defproc[(filter-not [proc (any/c . -> . list?)] [lst list?] ...+)
+         list?]{
+Like @scheme[map], but the resulting lists are appended together.
+This is the same as @scheme[(append* (map proc lst ...))].}
+@defproc[(filter-not [proc procedure?] [lst list?])
+         list?]{
+Like @scheme[filter], but the meaning of the @scheme[proc] predicate
+is reversed: the result is a list of all items for which it returns
+@scheme[#f].}
+
 @; ----------------------------------------
 @section{Immutable Cyclic Data}
 

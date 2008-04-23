@@ -21,13 +21,6 @@
 (arity-test foldl 3 -1)
 (arity-test foldr 3 -1)
 
-(test '(1 2 3) filter number? '(1 a 2 b 3 c d))
-(test '() filter string? '(1 a 2 b 3 c d))
-(err/rt-test (filter string? '(1 2 3 . 4)) exn:application:mismatch?)
-(err/rt-test (filter 2 '(1 2 3)))
-(err/rt-test (filter cons '(1 2 3)))
-(arity-test filter 2 2)
-
 (test '(0 1 2) memf add1 '(0 1 2))
 (test '(2 (c 17)) memf number? '((a 1) (0 x) (1 w) 2 (c 17)))
 (test '("ok" (2 .7) c) memf string? '((a 0) (0 a) (1 w) "ok" (2 .7) c))
@@ -227,14 +220,25 @@
     (test long rd (append long (reverse long))) ; keeps first
     (test long rd (append* (map (lambda (x) (list x x)) long)))))
 
-;; ---------- filter-map ----------
+;; ---------- filter and filter-not ----------
 (let ()
-  (define fm filter-map)
-  (test '() fm values '())
-  (test '(1 2 3) fm values '(1 2 3))
-  (test '() fm values '(#f #f #f))
-  (test '(1 2 3) fm values '(#f 1 #f 2 #f 3 #f))
-  (test '(4 8 12) fm (lambda (x) (and (even? x) (* x 2))) '(1 2 3 4 5 6)))
+  (define f filter)
+  (define fn filter-not)
+
+  (test '()              f  number? '())
+  (test '()              fn number? '())
+  (test '(1 2 3)         f  number? '(1 a 2 b 3 c d))
+  (test '(a b c d)       fn number? '(1 a 2 b 3 c d))
+  (test '()              f  string? '(1 a 2 b 3 c d))
+  (test '(1 a 2 b 3 c d) fn string? '(1 a 2 b 3 c d))
+  (err/rt-test (f string? '(1 2 3 . 4)) exn:application:mismatch?)
+  (err/rt-test (fn string? '(1 2 3 . 4)) exn:application:mismatch?)
+  (err/rt-test (f  2 '(1 2 3)))
+  (err/rt-test (fn 2 '(1 2 3)))
+  (err/rt-test (f cons '(1 2 3)))
+  (err/rt-test (fn cons '(1 2 3)))
+  (arity-test f  2 2)
+  (arity-test fn 2 2))
 
 ;; ---------- partition ----------
 (let ()
@@ -245,6 +249,22 @@
   (test '(() (1 2 3 4)) p (lambda (_) #f) '(1 2 3 4))
   (test '((2 4) (1 3)) p even? '(1 2 3 4))
   (test '((1 3) (2 4)) p odd? '(1 2 3 4)))
+
+;; ---------- filter-map ----------
+(let ()
+  (define fm filter-map)
+  (test '() fm values '())
+  (test '(1 2 3) fm values '(1 2 3))
+  (test '() fm values '(#f #f #f))
+  (test '(1 2 3) fm values '(#f 1 #f 2 #f 3 #f))
+  (test '(4 8 12) fm (lambda (x) (and (even? x) (* x 2))) '(1 2 3 4 5 6)))
+
+;; ---------- append-map ----------
+(let ()
+  (define am append-map)
+  (test '() am list '())
+  (test '(1 2 3) am list '(1 2 3))
+  (test '(1 1 2 2 3 3) am (lambda (x) (list x x)) '(1 2 3)))
 
 ;; ---------- check no collisions with srfi/1 ----------
 (test (void)

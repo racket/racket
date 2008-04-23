@@ -16,7 +16,11 @@
          add-between
          remove-duplicates
          filter-map
-         partition)
+         partition
+
+         ;; convenience
+         append-map
+         filter-not)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -200,3 +204,23 @@
       (values (reverse i) (reverse o))
       (let ([x (car l)] [l (cdr l)])
         (if (pred x) (loop l (cons x i) o) (loop l i (cons x o)))))))
+
+(define append-map
+  (case-lambda [(f l) (apply append (map f l))]
+               [(f l1 l2) (apply append (map f l1 l2))]
+               [(f l . ls) (apply append (apply map f l ls))]))
+
+;; this is an exact copy of `filter' in scheme/private/list, with the
+;; `if' branches swapped.
+(define (filter-not f list)
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-type-error 'filter-not "procedure (arity 1)" f))
+  (unless (list? list)
+    (raise-type-error 'filter-not "proper list" list))
+  ;; accumulating the result and reversing it is currently slightly
+  ;; faster than a plain loop
+  (let loop ([l list] [result null])
+    (if (null? l)
+      (reverse result)
+      (loop (cdr l) (if (f (car l)) result (cons (car l) result))))))
