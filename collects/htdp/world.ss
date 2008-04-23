@@ -23,6 +23,7 @@ ones.)
 Matthew
 |#
 
+;; Wed Apr 23 11:42:25 EDT 2008: fixed reverse bug in animation 
 ;; Thu Mar 20 17:15:54 EDT 2008: fixed place-image0, which used shrink off-by-1
 ;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
 ;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
@@ -547,7 +548,7 @@ Matthew
   ;; Nat World -> Void
   ;; effects: init event-history, the-delta, the-world, the-world0
   (define (install-world delta w)
-    (set! event-history '())
+    (reset-event-history)
     (set! the-delta delta)
     (set! the-world w)
     (set! the-world0 w)
@@ -678,8 +679,11 @@ Matthew
   ;;       | (list MOUSE MouseEventType)
   ;; [Listof Evt]
   (define event-history '())
-  ;; reset to '() by big-bang
-  
+
+  ;; -> Void 
+  (define (reset-event-history)
+    (set! event-history '()))
+
   ;; Symbol  Any *-> Void
   (define (add-event type . stuff)
     (set! event-history (cons (cons type stuff) event-history)))
@@ -708,7 +712,7 @@ Matthew
         (send img draw dc 0 0 0 0 w h 0 0 #f)
         bm)
       (define bm (make-bitmap)) 
-      (set! bitmap-list (cons make-bitmap bitmap-list))
+      (set! bitmap-list (cons bm bitmap-list))
       (set! image-count (+ image-count 1))
       (send bm save-file (format "i~a.png" image-count) 'png))
     ;; --- choose place 
@@ -717,7 +721,7 @@ Matthew
              [dd (get-directory "Select directory for images" #f cd)])
         (if dd dd cd)))
     (parameterize ([current-directory target:dir])
-      (let replay ([ev event-history][world the-world0])
+      (let replay ([ev (reverse event-history)][world the-world0])
         (define img (redraw-callback0 world))
         (update-frame (text (format "~a/~a created" image-count total) 18 'red))
         (save-image img)
@@ -725,7 +729,9 @@ Matthew
           [(null? ev) (update-frame (text "creating i-animated.gif" 18 'red))
                       (create-animated-gif (reverse bitmap-list))
                       (update-frame img)]
-          [else (replay (cdr ev) (world-transition world (car ev)))]))))
+          [else
+           (let ([world1 (world-transition world (car ev))])
+             (replay (cdr ev) world1))]))))
 
   ;; [Listof (-> bitmap)] -> Void
   ;; turn the list of thunks into animated gifs 
