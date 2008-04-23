@@ -15,7 +15,9 @@
          append*
          flatten
          add-between
-         remove-duplicates)
+         remove-duplicates
+         filter-map
+         partition)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -141,3 +143,53 @@
               [(eq? =? eqv?)   (loop memv)]
               [else (loop (lambda (x seen)
                             (ormap (lambda (y) (=? x y)) seen)))])))))
+
+(define (filter-map f l . ls)
+  (unless (and (procedure? f) (procedure-arity-includes? f (add1 (length ls))))
+    (raise-type-error
+     'filter-map (format "procedure (arity ~a)" (add1 (length ls))) f))
+  (unless (and (list? l) (andmap list? ls))
+    (raise-type-error
+     'filter-map "proper list"
+     (ormap (lambda (x) (and (not (list? x)) x)) (cons l ls))))
+  (if (pair? ls)
+    (let ([len (length l)])
+      (if (andmap (lambda (l) (= len (length l))) ls)
+        (let loop ([l l] [ls ls])
+          (if (null? l)
+            null
+            (let ([x (apply f (car l) (map car ls))])
+              (if x
+                (cons x (loop (cdr l) (map cdr ls)))
+                (loop (cdr l) (map cdr ls))))))
+        (error 'filter-map "all lists must have same size")))
+    (let loop ([l l])
+      (if (null? l)
+        null
+        (let ([x (f (car l))])
+          (if x (cons x (loop (cdr l))) (loop (cdr l))))))))
+
+;; Originally from srfi-1 -- shares common tail with the input when possible
+;; (define (partition f l)
+;;   (unless (and (procedure? f) (procedure-arity-includes? f 1))
+;;     (raise-type-error 'partition "procedure (arity 1)" f))
+;;   (unless (list? l) (raise-type-error 'partition "proper list" l))
+;;   (let loop ([l l])
+;;     (if (null? l)
+;;       (values null null)
+;;       (let* ([x (car l)] [x? (f x)])
+;;         (let-values ([(in out) (loop (cdr l))])
+;;           (if x?
+;;             (values (if (pair? out) (cons x in) l) out)
+;;             (values in (if (pair? in) (cons x out) l))))))))
+
+;; But that one is slower than this, probably due to value packages
+(define (partition pred l)
+  (unless (and (procedure? pred) (procedure-arity-includes? pred 1))
+    (raise-type-error 'partition "procedure (arity 1)" pred))
+  (unless (list? l) (raise-type-error 'partition "proper list" l))
+  (let loop ([l l] [i '()] [o '()])
+    (if (null? l)
+      (values (reverse i) (reverse o))
+      (let ([x (car l)] [l (cdr l)])
+        (if (pred x) (loop l (cons x i) o) (loop l i (cons x o)))))))

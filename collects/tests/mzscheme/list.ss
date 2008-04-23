@@ -216,6 +216,25 @@
     (test long rd (append long (reverse long))) ; keeps first
     (test long rd (append* (map (lambda (x) (list x x)) long)))))
 
+;; ---------- filter-map ----------
+(let ()
+  (define fm filter-map)
+  (test '() fm values '())
+  (test '(1 2 3) fm values '(1 2 3))
+  (test '() fm values '(#f #f #f))
+  (test '(1 2 3) fm values '(#f 1 #f 2 #f 3 #f))
+  (test '(4 8 12) fm (lambda (x) (and (even? x) (* x 2))) '(1 2 3 4 5 6)))
+
+;; ---------- partition ----------
+(let ()
+  (define (p pred l) (call-with-values (lambda () (partition pred l)) list))
+  (test '(() ()) p (lambda (_) #t) '())
+  (test '(() ()) p (lambda (_) #f) '())
+  (test '((1 2 3 4) ()) p (lambda (_) #t) '(1 2 3 4))
+  (test '(() (1 2 3 4)) p (lambda (_) #f) '(1 2 3 4))
+  (test '((2 4) (1 3)) p even? '(1 2 3 4))
+  (test '((1 3) (2 4)) p odd? '(1 2 3 4)))
+
 ;; ---------- check no collisions with srfi/1 ----------
 (test (void)
       eval '(module foo scheme/base (require scheme/base srfi/1/list))
