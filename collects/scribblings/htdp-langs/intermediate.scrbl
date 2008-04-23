@@ -17,7 +17,7 @@
     (define beg-require (scheme require))))
 @(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
-@title[#:style 'toc]{Intermediate Student}
+@title[#:style 'toc #:tag "intermediate"]{Intermediate Student}
 
 @declare-exporting[lang/htdp-intermediate]
 

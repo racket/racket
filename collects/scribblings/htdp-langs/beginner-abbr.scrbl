@@ -18,7 +18,7 @@
 @(bd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
-@title[#:style 'toc]{Beginning Student with List Abbreviations}
+@title[#:style 'toc #:tag "beginner-abbr"]{Beginning Student with List Abbreviations}
 
 @declare-exporting[lang/htdp-beginner-abbr]
 

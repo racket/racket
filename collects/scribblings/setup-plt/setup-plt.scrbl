@@ -243,7 +243,7 @@ Optional @filepath{info.ss} fields trigger additional actions by
    manuals with the same sorting position are ordered
    alphabetically. For a pair of manuals with sorting numbers
    @scheme[_n] and @scheme[_m], the groups for the manuals are
-   separated by space or a label if @scheme[(truncate (/ _n 10))]and
+   separated by space if @scheme[(truncate (/ _n 10))]and
    @scheme[(truncate (/ _m 10))] are different.}
 
  @item{@scheme[mzscheme-launcher-names] : @scheme[(listof string?)]

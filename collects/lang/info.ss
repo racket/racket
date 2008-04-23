@@ -14,3 +14,5 @@
               (string-constant teaching-languages)
               (string-constant how-to-design-programs)
               (string-constant beginning-student))))
+
+(define scribblings '(("htdp-lib.scrbl")))

@@ -5,7 +5,7 @@
           (for-label lang/htdp-beginner))
 
 
-@title[#:style 'toc]{Beginning Student}
+@title[#:style 'toc #:tag "beginner"]{Beginning Student}
 
 @declare-exporting[lang/htdp-beginner]
 

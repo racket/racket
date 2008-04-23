@@ -31,7 +31,7 @@
 @(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
-@title[#:style 'toc]{Advanced Student}
+@title[#:style 'toc #:tag "advanced"]{Advanced Student}
 
 @declare-exporting[lang/htdp-advanced]
 

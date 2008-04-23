@@ -30,7 +30,7 @@
 @(bbd beg-define beg-define-struct beg-cond beg-if beg-and beg-or beg-check-expect beg-require)
 
 
-@title[#:style 'toc]{Intermediate Student with Lambda}
+@title[#:style 'toc #:tag "intermediate-lam"]{Intermediate Student with Lambda}
 
 @declare-exporting[lang/htdp-intermediate-lambda]
 
