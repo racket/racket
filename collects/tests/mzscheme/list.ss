@@ -216,4 +216,9 @@
     (test long rd (append long (reverse long))) ; keeps first
     (test long rd (append* (map (lambda (x) (list x x)) long)))))
 
+;; ---------- check no collisions with srfi/1 ----------
+(test (void)
+      eval '(module foo scheme/base (require scheme/base srfi/1/list))
+           (make-base-namespace))
+
 (report-errs)
