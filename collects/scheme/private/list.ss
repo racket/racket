@@ -185,13 +185,12 @@
       (raise-type-error 'filter "procedure (arity 1)" f))
     (unless (list? list)
       (raise-type-error 'filter "proper list" list))
-    ;; We use `reverse' because it's easy to
-    ;;  overflow the internal stack using natural recursion.
-    ;;  It's not clear that it matters, though...
+    ;; accumulating the result and reversing it is currently slightly
+    ;; faster than a plain loop
     (let loop ([l list] [result null])
-      (cond
-       [(null? l) (reverse result)]
-       [else (loop (cdr l) (if (f (car l)) (cons (car l) result) result))])))
+      (if (null? l)
+        (reverse result)
+        (loop (cdr l) (if (f (car l)) (cons (car l) result) result)))))
 
   ;; (build-vector n f) returns a vector 0..n-1 where the ith element is (f i).
   ;; The eval order is guaranteed to be: 0, 1, 2, ..., n-1.
