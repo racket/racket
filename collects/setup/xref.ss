@@ -11,23 +11,23 @@
 
 (define (get-dests dir)
   (let* ([i (get-info/full dir)]
-         [scribblings (i 'scribblings)]
-         [categories (i 'doc-categories (lambda ()
-                                          (map (lambda (d) 'library) scribblings)))])
-  (map (lambda (d cat)
-         (and (not (eq? cat 'omit))
-              (not (and (pair? cat) (eq? (car cat) 'omit)))
+         [scribblings (i 'scribblings)])
+  (map (lambda (d)
+         (and (not (and (list? d)
+                        ((length d) . > . 2)
+                        (pair? (list-ref d 2))
+                        (eq? (car (list-ref d 2)) 'omit)))
               (pair? d)
               (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
-                     [name (if (and (pair? (cdr d)) (pair? (cddr d)) (caddr d))
-                               (cadr d)
+                     [name (if (and (pair? (cdr d)) (pair? (cddr d)) 
+                                    (pair? (cdddr d)))
+                               (cadddr d)
                                (let-values ([(base name dir?) (split-path (car d))])
                                  (path-replace-suffix name #"")))])
                 (build-path
                  (doc-path dir name flags)
                  "out.sxref"))))
-       scribblings
-       categories)))
+       scribblings)))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
