@@ -21,9 +21,10 @@
 @include-section["graphing.scrbl"]
 @include-section["gui.scrbl"]
 @include-section["arrow-gui.scrbl"]
+@include-section["elevator.scrbl"]
 
 @;include-section["guess-gui.scrbl"]
-@;include-section["elevator.scrbl"]
+
 
 @;include-section["Simplified Scheme Web Servlets"]
 @;include-section["Scheme Web Servlets"]
