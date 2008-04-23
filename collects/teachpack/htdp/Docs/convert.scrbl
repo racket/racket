@@ -4,7 +4,7 @@
           (for-label scheme 
 	  	     teachpack/htdp/convert))
 
-@title[#:tag "convert"]{Converting Temperaturs: convert.ss}
+@title[#:tag "convert"]{Converting Temperatures: convert.ss}
 
 @declare-exporting[teachpack/htdp/convert]
 
