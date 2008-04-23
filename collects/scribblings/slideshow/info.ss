@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("slideshow.scrbl" (multi-page))))
-(define doc-categories '(tool))
+(define scribblings '(("slideshow.scrbl" (multi-page) (tool))))

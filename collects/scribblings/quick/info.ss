@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("quick.scrbl" ())))
-(define doc-categories '((getting-started 2)))
+(define scribblings '(("quick.scrbl" () (getting-started 9))))

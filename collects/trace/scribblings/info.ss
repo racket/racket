@@ -1,4 +1,4 @@
 #lang setup/infotab
 
 (define name "Calltrace")
-(define scribblings '(("trace.scrbl" ())))
+(define scribblings '(("trace.scrbl" () (tool-library))))

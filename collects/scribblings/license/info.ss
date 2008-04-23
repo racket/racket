@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("license.scrbl")))
-(define doc-categories '(omit))
+(define scribblings '(("license.scrbl" () (omit))))

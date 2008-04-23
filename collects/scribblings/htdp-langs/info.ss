@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("htdp-langs.scrbl" (multi-page))))
-(define doc-categories '((language -1)))
+(define scribblings '(("htdp-langs.scrbl" (multi-page) (language -10))))

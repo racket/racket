@@ -2,7 +2,7 @@
 
 (require string-constants)
 (define name "Lazy Scheme")
-(define scribblings '(("lazy.scrbl")))
+(define scribblings '(("lazy.scrbl" () (language))))
 (define drscheme-language-modules '(("lazy.ss" "lazy")))
 (define drscheme-language-positions
   `((,(string-constant experimental-languages) "Lazy Scheme")))

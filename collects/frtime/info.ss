@@ -2,7 +2,7 @@
 
 (define compile-omit-paths '("demos"))
 
-(define scribblings '(("frtime.scrbl" ())))
+(define scribblings '(("frtime.scrbl" () (language))))
 (define tools      '("frtime-tool.ss"))
 (define tool-icons '(("clock.png" "frtime")))
 (define tool-names '("FrTime Languages"))

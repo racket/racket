@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("dynext.scrbl" (multi-page))))
+(define scribblings '(("dynext.scrbl" (multi-page) (tool-library))))

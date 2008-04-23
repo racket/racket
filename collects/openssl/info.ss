@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("openssl.scrbl")))
+(define scribblings '(("openssl.scrbl" ()  (net-library))))

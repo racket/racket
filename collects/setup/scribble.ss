@@ -55,23 +55,28 @@
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                 depends-all depends-all-main no-depend-on always-run)))
   (define (validate-scribblings-infos infos dir)
-    (define (validate path [flags '()] [name #f])
+    (define (validate path [flags '()] [cat '(library)] [name #f])
       (and (string? path) (relative-path? path)
            (list? flags) (andmap scribblings-flag? flags)
            (or (not name) (and (path-string? name) (relative-path? name) name))
-           (list path flags
+           (and (list? cat)
+                (<= 1 (length cat) 2)
+                (symbol? (car cat))
+                (or (null? (cdr cat))
+                    (real? (cadr cat))))
+           (list path flags cat
                  (or name (let-values ([(_1 name _2) (split-path path)])
                             (path-replace-suffix name #""))))))
     (and (list? infos)
          (let ([infos (map (lambda (i)
-                             (and (list? i) (<= 1 (length i) 3)
+                             (and (list? i) (<= 1 (length i) 4)
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
   (define (get-docs i dir)
     (let ([s (validate-scribblings-infos (i 'scribblings) dir)])
       (if s
-        (map (lambda (d cat)
+        (map (lambda (d)
                (let* ([flags (cadr d)]
                       [under-main?
                        (and (not (memq 'main-doc-root flags))
@@ -81,10 +86,9 @@
                                 (pair? (path->main-collects-relative dir))))])
                  (make-doc dir
                            (build-path dir (car d))
-                           (doc-path dir (caddr d) flags)
-                           flags under-main? cat)))
-             s
-             (i 'doc-categories (lambda () (map (lambda (a) 'library) s))))
+                           (doc-path dir (cadddr d) flags)
+                           flags under-main? (caddr d))))
+             s)
         (begin (fprintf (current-error-port)
                         " bad 'scribblings info: ~e from: ~e\n" s dir)
                null))))

@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("mzlib.scrbl" (multi-page))))
-(define doc-categories '(legacy))
+(define scribblings '(("mzlib.scrbl" (multi-page) (legacy))))

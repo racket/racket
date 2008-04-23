@@ -114,21 +114,38 @@ Optional @filepath{info.ss} fields trigger additional actions by
 
 @itemize{
 
- @item{@scheme[scribblings] : @scheme[(listof (cons/c string? list?))] ---
+ @item{@as-index{@schemeidfont{scribblings}} : @scheme[(listof (cons/c string? list?))] ---
    A list of documents to build. Each document in the list is itself
    represented as a list, where each document's list starts with a
    string that is a collection-relative path to the document's source
    file.
 
+   More precisely a @schemeidfont{scribblings} entry must be a value
+   that can be generated from an expression matching the following
+   @scheme[entry] grammar:
+
+   @schemegrammar*[
+     #:literals (list)
+     [entry (list doc ...)]
+     [doc (list src-string)
+          (list src-string flags)
+          (list src-string flags category)
+          (list src-string flags category name-string)]
+     [flags (list mode-symbol ...)]
+     [category (list category-symbol)
+               (list category-symbol sort-number)]
+   ]
+
    A document's list optionally continues with information on how to
    build the document. If a document's list contains a second item, it
    must be a list of mode symbols (described below). If a document's
-   list contains a third item, it is a name to use for the generated
-   documentation, instead of defaulting to the source file's name sans
-   extension.
+   list contains a third item, it must be a list that categorizes the
+   document (described further below). If a document's list contains a
+   fourth item, it is a name to use for the generated documentation,
+   instead of defaulting to the source file's name (sans extension).
 
-   Each mode symbol can be one of the following, where only
-   @scheme['multi-page] is commonly used:
+   Each mode symbol in @scheme[_flags] can be one of the following,
+   where only @scheme['multi-page] is commonly used:
 
    @itemize{
 
@@ -174,17 +191,12 @@ Optional @filepath{info.ss} fields trigger additional actions by
            that currently has this mode should be the only one with
            the mode.}
 
-    }}
+    }
 
- @item{@scheme[doc-categories] : @scheme[(listof (or/c symbol? (list/c
-   symbol? exact-integer?)))]  --- A list in parallel to the
-   @scheme[scribblings] list that specifies how to show the document
-   in the root table of contents. For each document, the symbol is one
-   of the fixed categories below, and the number determines sorting
-   within the category; documents with the same sorting number are
-   further sorted using the document title.
-
-   A category symbol is one of the following:
+    The @scheme[_category] list specifies how to show the document in
+    the root table of contents. The list must start with a symbol,
+    usually one of the following categories, which are ordered as
+    below in the root documentation page:
 
    @itemize{
 
@@ -196,8 +208,25 @@ Optional @filepath{info.ss} fields trigger additional actions by
 
      @item{@scheme['tool] : Documentation for an executable.}
 
+     @item{@scheme['gui-library] : Documentation for GUI and graphics
+           libraries.}
+
+     @item{@scheme['net-library] : Documentation for networking
+           libraries.}
+
+     @item{@scheme['parsing-library] : Documentation for parsing
+           libraries.}
+
+     @item{@scheme['tool-library] : Documentation for programming-tool
+           libraries (i.e., not important enough for the more
+           prominent @scheme['tool] category).}
+
+     @item{@scheme['interop] : Documentation for interoperability
+           tools and libraries.}
+
      @item{@scheme['library] : Documentation for libraries; this
-           category is the default.}
+           category is the default and used for unrecognized category
+           symbols.}
 
      @item{@scheme['legacy] : Documentation for deprecated libraries,
            languages, and tools.}
@@ -207,7 +236,15 @@ Optional @filepath{info.ss} fields trigger additional actions by
      @item{@scheme['omit] : Documentation that should not be listed on
            the root page.}
 
-   }}
+   }
+
+   If the category list has a second element, it must be a real number
+   that designates the manual's sorting position with the category;
+   manuals with the same sorting position are ordered
+   alphabetically. For a pair of manuals with sorting numbers
+   @scheme[_n] and @scheme[_m], the groups for the manuals are
+   separated by space or a label if @scheme[(truncate (/ _n 10))]and
+   @scheme[(truncate (/ _m 10))] are different.}
 
  @item{@scheme[mzscheme-launcher-names] : @scheme[(listof string?)]
    --- @elemtag["mzscheme-launcher-names"] A list of executable names

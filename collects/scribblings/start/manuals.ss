@@ -26,10 +26,20 @@
                   "Languages")
         (make-sec 'tool
                   "Tools")
-        (make-sec 'library
-                  "Libraries")
+        (make-sec 'gui-library
+                  "GUI and Graphics Libraries")
+        (make-sec 'net-library
+                  "Network Libraries")
+        (make-sec 'parsing-library
+                  "GUI and Graphics Libraries")
+        (make-sec 'tool-library
+                  "Tool Libraries")
         (make-sec 'foreign
                   "Low-Level APIs")
+        (make-sec 'interop
+                  "Interoperability")
+        (make-sec 'library
+                  "Miscellaneous Libraries")
         (make-sec 'legacy
                   "Legacy Languages and Libraries")
         (make-sec 'other
@@ -53,6 +63,25 @@
    null
    (list 'nbsp)))
 
+(define (add-sections cat mk-sep l)
+  (if (null? l)
+      null
+      (let loop ([l l][key (if (equal? "" (caddar l))
+                               (caar l)
+                               +inf.0)])
+        (cond
+         [(null? l) null]
+         [(equal? (caar l) key)
+          (cons (cadar l) (loop (cdr l) key))]
+         [else
+          (let ([lbl (caddar l)] ; currently always ""
+                [l (cons (cadar l) (loop (cdr l) (caar l)))]
+                [sep? (not (= (truncate (/ key 10))
+                              (truncate (/ (caar l) 10))))])
+            (if sep?
+                (cons (mk-sep lbl) l)
+                l))]))))
+
 (define (build-contents all?)
   (let* ([dirs (find-relevant-directories '(scribblings))]
          [infos (map get-info/full dirs)]
@@ -63,44 +92,42 @@
                                  (let ([s (i 'scribblings)])
                                    (apply
                                     append
-                                    (map (lambda (d cat)
+                                    (map (lambda (d)
                                            (if (and (not all?)
                                                     (pair? (cdr d))
                                                     (or (memq 'user-doc (cadr d))
                                                         (memq 'user-doc-root (cadr d))))
                                                null
-                                               (let ([new-cat (if (or (symbol? cat)
-                                                                      (and (list? cat)
-                                                                           (= 2 (length cat))
-                                                                           (symbol? (car cat))
-                                                                           (real? (cadr cat))))
-                                                                  cat
-                                                                  'unknown)])
+                                               (let* ([new-cat (if ((length d) . > . 2)
+                                                                   (caddr d)
+                                                                   '(library))]
+                                                      [sub-cat (and (list? new-cat)
+                                                                    ((length new-cat) . > . 1)
+                                                                    (cadr new-cat))])
                                                  (list
                                                   (list 
                                                    ;; Category
-                                                   (let ([the-cat (if (list? new-cat)
+                                                   (let ([the-cat (if (pair? new-cat)
                                                                       (car new-cat)
-                                                                      new-cat)])
-                                                     (case the-cat
-                                                       [(getting-started language tool library foreign legacy other omit)
-                                                        the-cat]
-                                                       [else 
-                                                        (fprintf (current-error-port)
-                                                                 "WARNING: bad base category: ~e from: ~e\n"
-                                                                 cat
-                                                                 dir)]))
+                                                                      'unknown)])
+                                                     (or (and (eq? the-cat 'omit) the-cat)
+                                                         (ormap (lambda (sec)
+                                                                  (and (eq? the-cat (sec-cat sec))
+                                                                       the-cat))
+                                                                sections)
+                                                         'library))
                                                    ;; Priority
-                                                   (if (list? new-cat)
-                                                       (cadr new-cat)
+                                                   (if (and sub-cat
+                                                            (real? sub-cat))
+                                                       sub-cat
                                                        0)
+                                                   ;; Priority label (not used):
+                                                   ""
                                                    ;; Path
                                                    (if (pair? d)
                                                        (build-path dir (car d))
                                                        (build-path dir "???")))))))
-                                         s
-                                         (i 'doc-categories (lambda ()
-                                                              (map (lambda (i) 'library) s))))))
+                                         s)))
                                  null))
                            infos
                            dirs))]
@@ -126,15 +153,21 @@
                            (list*
                             (plain-line (hspace 1))
                             (plain-line (sec-label sec))
-                            (map
-                             cdr
+                            (add-sections
+                             (sec-cat sec)
+                             (lambda (str)
+                               (plain-line (make-element (if (string=? str "")
+                                                             "sepspace" 
+                                                             "septitle")
+                                                         (list 'nbsp str))))
                              (sort
-                              (map (lambda (doc) (cons (cadr doc)
-                                                       (line  (caddr doc))))
+                              (map (lambda (doc) (list (cadr doc)
+                                                       (line (cadddr doc))
+                                                       (caddr doc)))
                                    docs)
                               (lambda (ad bd)
-                                (let ([a (cadr (paragraph-content (car (flow-paragraphs (cadr ad)))))]
-                                      [b (cadr (paragraph-content (car (flow-paragraphs (cadr bd)))))])
+                                (let ([a (cadr (paragraph-content (car (flow-paragraphs (caadr ad)))))]
+                                      [b (cadr (paragraph-content (car (flow-paragraphs (caadr bd)))))])
                                   (if (= (car ad) (car bd))
                                       (begin
                                         (string-ci<? (element->string a renderer part resolve-info)

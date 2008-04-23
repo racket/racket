@@ -196,6 +196,14 @@ font-weight: bold;
   margin: 0.2em 0.2em 0.2em 0.2em;
 }
 
+.sepspace { 
+  font-size: 40%;
+}
+
+.septitle { 
+  font-size: 70%;
+}
+
 /* ---------------------------------------- */
 /* Inherited methods, left margin */
 

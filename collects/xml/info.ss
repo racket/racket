@@ -6,4 +6,4 @@
 (define tools '(("text-box-tool.ss")))
 (define tool-names '("Text Box"))
 
-(define scribblings '(("xml.scrbl" ())))
+(define scribblings '(("xml.scrbl" () (parsing-library))))

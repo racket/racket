@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("srfi.scrbl" (multi-page))))
+(define scribblings '(("srfi.scrbl" (multi-page) (library 100))))

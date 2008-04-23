@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("cards.scrbl")))
+(define scribblings '(("cards.scrbl" () (gui-library))))

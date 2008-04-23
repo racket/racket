@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("mrlib.scrbl" (multi-page))))
+(define scribblings '(("mrlib.scrbl" (multi-page) (gui-library))))

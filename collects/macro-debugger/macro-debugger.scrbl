@@ -15,7 +15,7 @@
                          macro-debugger/stepper-text))
      the-eval))
 
-@title{Macro debugger}
+@title{@bold{Macro Debugger}}
 
 The macro-debugger collection contains two tools: a stepper for macro
 expansion and a standalone syntax browser. The macro stepper shows the

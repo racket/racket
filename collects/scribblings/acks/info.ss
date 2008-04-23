@@ -1,4 +1,3 @@
 #lang setup/infotab
 
-(define scribblings '(("acks.scrbl")))
-(define doc-categories '(omit))
+(define scribblings '(("acks.scrbl" () (omit))))
