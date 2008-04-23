@@ -1,9 +1,8 @@
 #lang scheme/base
 
 (provide first second third fourth fifth sixth seventh eighth ninth tenth
-         last
 
-         rest
+         last-pair last rest
 
          cons?
          empty
@@ -45,11 +44,19 @@
 (define-lgetter ninth   9)
 (define-lgetter tenth   10)
 
+(define (last-pair l)
+  (if (pair? l)
+    (let loop ([l l] [x (cdr l)])
+      (if (pair? x)
+        (loop x (cdr x))
+        l))
+    (raise-type-error 'last-pair "pair" l)))
+
 (define (last l)
   (if (and (pair? l) (list? l))
-    (let loop ([l l])
-      (if (pair? (cdr l))
-        (loop (cdr l))
+    (let loop ([l l] [x (cdr l)])
+      (if (pair? x)
+        (loop x (cdr x))
         (car l)))
     (raise-type-error 'last "non-empty list" l)))
 

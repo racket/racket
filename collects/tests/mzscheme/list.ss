@@ -40,6 +40,17 @@
 (err/rt-test (assf cons '((1) (2) (3))))
 (err/rt-test (assf string? '((1) (2) (3) . 4)) exn:application:mismatch?)
 
+;; ---------- last, last-pair ----------
+(let ()
+  (test 3        last '(1 2 3))
+  (test '(3)     last-pair '(1 2 3))
+  (err/rt-test  (last '(1 2 3 . 4)))
+  (test '(3 . 4) last-pair '(1 2 3 . 4))
+  (err/rt-test  (last '()))
+  (err/rt-test  (last 1))
+  (err/rt-test  (last-pair '()))
+  (err/rt-test  (last-pair 1)))
+
 ;; ---------- sort ----------
 (test '("a" "b" "c" "c" "d" "e" "f")
       sort

@@ -1,120 +1,111 @@
+#lang mzscheme
 
-(module list mzscheme
+;; The `first', etc. operations in this library
+;;  work on pairs, not lists.
 
-  ;; The `first', etc. operations in this library
-  ;;  work on pairs, not lists.
+(require (only scheme/base
+               foldl
+               foldr
 
-  (require (only scheme/base
-                 foldl
-                 foldr
+               remv
+               remq
+               remove
+               remv*
+               remq*
+               remove*
 
-                 remv
-                 remq
-                 remove
-                 remv*
-                 remq*
-                 remove*
-                 
-                 findf
-                 memf
-                 assf
+               findf
+               memf
+               assf
 
-                 filter
-                 
-                 sort)
-           (only scheme/list
-                 cons?
-                 empty?
-                 empty))
+               filter
 
-  (provide first
-           second
-           third
-           fourth
-           fifth
-           sixth
-           seventh
-           eighth
+               sort)
+         (only scheme/list
+               cons?
+               empty?
+               empty
+               last-pair))
 
-           rest
+(provide first
+         second
+         third
+         fourth
+         fifth
+         sixth
+         seventh
+         eighth
 
-           cons?
-           empty
-           empty?
+         rest
 
-           foldl
-           foldr
+         cons?
+         empty
+         empty?
 
-           last-pair
+         foldl
+         foldr
 
-           remv
-           remq
-           remove
-           remv*
-           remq*
-           remove*
-                 
-           assf
-           memf
-           findf
+         last-pair
 
-           filter
+         remv
+         remq
+         remove
+         remv*
+         remq*
+         remove*
 
-           quicksort ; deprecated
-           mergesort ; deprecated
-           sort
-           merge-sorted-lists)
+         assf
+         memf
+         findf
 
-  ;; a non-destructive version for symmetry with merge-sorted-lists!
-  (define (merge-sorted-lists a b less?)
-    (cond [(null? a) b]
-          [(null? b) a]
-          [else (let loop ([x (car a)] [a (cdr a)] [y (car b)] [b (cdr b)])
-                  ;; The loop handles the merging of non-empty lists.  It has
-                  ;; been written this way to save testing and car/cdring.
-                  (if (less? y x)
-                    (if (null? b)
-                      (list* y x a)
-                      (cons y (loop x a (car b) (cdr b))))
-                    ;; x <= y
-                    (if (null? a)
-                      (list* x y b)
-                      (cons x (loop (car a) (cdr a) y b)))))]))
+         filter
 
-  ;; deprecated!
-  (define quicksort sort)
-  (define mergesort sort)
+         quicksort ; deprecated
+         mergesort ; deprecated
+         sort
+         merge-sorted-lists)
 
-  (define (first x)
-    (unless (pair? x) (raise-type-error 'first "non-empty list" x))
-    (car x))
-  (define-syntax define-lgetter
-    (syntax-rules ()
-      [(_ name npos)
-       (define (name l0)
-         (let loop ([l l0] [pos npos])
-           (if (pair? l)
-             (if (eq? pos 1) (car l) (loop (cdr l) (sub1 pos)))
-             (raise-type-error
-              'name (format "list with ~a or more items" npos) l0))))]))
-  (define-lgetter second  2)
-  (define-lgetter third   3)
-  (define-lgetter fourth  4)
-  (define-lgetter fifth   5)
-  (define-lgetter sixth   6)
-  (define-lgetter seventh 7)
-  (define-lgetter eighth  8)
+;; a non-destructive version for symmetry with merge-sorted-lists!
+(define (merge-sorted-lists a b less?)
+  (cond [(null? a) b]
+        [(null? b) a]
+        [else (let loop ([x (car a)] [a (cdr a)] [y (car b)] [b (cdr b)])
+                ;; The loop handles the merging of non-empty lists.  It has
+                ;; been written this way to save testing and car/cdring.
+                (if (less? y x)
+                  (if (null? b)
+                    (list* y x a)
+                    (cons y (loop x a (car b) (cdr b))))
+                  ;; x <= y
+                  (if (null? a)
+                    (list* x y b)
+                    (cons x (loop (car a) (cdr a) y b)))))]))
 
-  (define (rest x)
-    (unless (pair? x)
-      (raise-type-error 'rest "non-empty list" x))
-    (cdr x))
+;; deprecated!
+(define quicksort sort)
+(define mergesort sort)
 
-  (define (last-pair l)
-    (if (pair? l)
-      (let loop ([l l] [x (cdr l)])
-        (if (pair? x)
-          (loop x (cdr x))
-          l))
-      (raise-type-error 'last-pair "pair" l))))
+(define (first x)
+  (unless (pair? x) (raise-type-error 'first "non-empty list" x))
+  (car x))
+(define-syntax define-lgetter
+  (syntax-rules ()
+    [(_ name npos)
+     (define (name l0)
+       (let loop ([l l0] [pos npos])
+         (if (pair? l)
+           (if (eq? pos 1) (car l) (loop (cdr l) (sub1 pos)))
+           (raise-type-error
+            'name (format "list with ~a or more items" npos) l0))))]))
+(define-lgetter second  2)
+(define-lgetter third   3)
+(define-lgetter fourth  4)
+(define-lgetter fifth   5)
+(define-lgetter sixth   6)
+(define-lgetter seventh 7)
+(define-lgetter eighth  8)
 
+(define (rest x)
+  (unless (pair? x)
+    (raise-type-error 'rest "non-empty list" x))
+  (cdr x))
