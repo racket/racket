@@ -22,3 +22,5 @@ This chapter covers the teachpacks for ``How to Design Programs'' and ``How
  to Design Classes.'' 
 
 @include-section["htdp/Docs/htdp.scrbl"]
+
+@include-section["htdc/Docs/htdc.scrbl"]
