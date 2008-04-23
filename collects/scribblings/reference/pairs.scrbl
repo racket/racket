@@ -618,7 +618,7 @@ but @scheme[pred] is applied to each item in @scheme[lst] only once.
 
 Returns @scheme[(append* (map proc lst ...))].
 
-@examples[
+@examples[#:eval list-eval
  (append-map vector->list '(#(1) #(2 3) #(4)))
 ]}
 
