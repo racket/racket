@@ -22,10 +22,14 @@
 @include-section["gui.scrbl"]
 @include-section["arrow-gui.scrbl"]
 @include-section["elevator.scrbl"]
+@include-section["show-queen.scrbl"]
+
+@;-- what do those do? --
 
 @;include-section["guess-gui.scrbl"]
+@;include-section["lkip-gui.scrbl"]
 
 
 @;include-section["Simplified Scheme Web Servlets"]
 @;include-section["Scheme Web Servlets"]
-@;include-section["queen.scrbl"]
+
