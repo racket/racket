@@ -72,10 +72,10 @@
         ;; default-settings? : -> boolean
         (define/override (default-settings? settings)
           (and (super default-settings? settings)
-               (and (equal? (module-language-settings-collection-paths settings)
-                            '(default))
-                    (eq? (module-language-settings-command-line-args settings)
-                         #()))))
+               (equal? (module-language-settings-collection-paths settings)
+                       '(default))
+               (equal? (module-language-settings-command-line-args settings)
+                       #())))
         
         (define/override (marshall-settings settings)
           (let ([super-marshalled (super marshall-settings settings)])
