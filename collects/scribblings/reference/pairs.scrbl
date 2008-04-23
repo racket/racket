@@ -480,7 +480,8 @@ Like @scheme[assoc], but finds an element using the predicate
 
 @note-lib[scheme/list]
 @(define list-eval (make-base-eval))
-@interaction-eval[#:eval list-eval (require scheme/list)]
+@(interaction-eval #:eval list-eval
+                   (require scheme/list (only-in scheme/function negate)))
 
 @defthing[empty null?]{The empty list.}
 
@@ -511,6 +512,9 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(tenth [lst list?]) any]{Returns the tenth element of the list.}
 
 @defproc[(last [lst list?]) any]{Returns the last element of the list.}
+
+@defproc[(last-pair [p pair?]) pair?]{
+Returns the last pair of a (possibly improper) list.}
 
 @defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) list?]{
 Synonym for @scheme[list-tail].
@@ -564,9 +568,38 @@ pairs are interior nodes, and the resulting list contains all of the
 non-@scheme[null] leaves of the tree in the same order as an inorder
 traversal.
 
-@examples[#:eval list-eval 
+@examples[#:eval list-eval
   (flatten '((a) b (c (d) . e) ()))
   (flatten 'a)
+]}
+
+@defproc[(remove-duplicates [lst list?] [proc procedure? equal?])
+         list?]{
+Returns a list that has all items in @scheme[lst], but without
+duplicate items.  The resulting list is in the same order as
+@scheme[lst], and for any item that occurs multiple times, the first
+one is kept.  @scheme[proc] is used for comparing items.
+
+@examples[#:eval list-eval
+  (remove-duplicates '(a b b a))
+]}
+
+@defproc[(filter-map [proc procedure?] [lst list?] ...+)
+         list?]{
+Like @scheme[map], but the resulting list does not contain any
+@scheme[#f] values.  In other words, @scheme[(filter-map p lst)] is
+like @scheme[(filter (lambda (x) x) (map p lst))], except that it is
+more efficient since no intermediate list is built.}
+
+@defproc[(partition [proc procedure?] [lst list?])
+         list?]{
+Similar to @scheme[filter], except that two values are returned: the
+items that satisfied the given @scheme[proc] predicate, and the items
+that did not satisfy it.  It is slightly more efficient than
+@scheme[(values (filter proc lst) (filter (negate proc lst)))].
+
+@examples[#:eval list-eval
+  (partition even? '(1 2 3 4 5 6))
 ]}
 
 @; ----------------------------------------
