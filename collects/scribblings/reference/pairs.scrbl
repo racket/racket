@@ -281,12 +281,12 @@ Like @scheme[foldl], but the lists are traversed from right to left.
 @; ----------------------------------------
 @section{List Filtering}
 
-@defproc[(filter [proc procedure?] [lst list?])
+@defproc[(filter [pred procedure?] [lst list?])
          list?]{
 
 Returns a list with the elements of @scheme[lst] for which
- @scheme[proc] produces a true value. The predicate @scheme[proc]
- is applied to each element from first to last.}
+ @scheme[pred] produces a true value. The @scheme[pred] procedure is
+ applied to each element from first to last.}
 
 
 @defproc[(remove [v any/c] [lst list?] [proc procedure? equal?])
@@ -612,20 +612,27 @@ but @scheme[pred] is applied to each item in @scheme[lst] only once.
   (partition even? '(1 2 3 4 5 6))
 ]}
 
-@defproc[(append-map [proc (any/c . -> . list?)] [lst list?] ...+)
-         list?]{
-Like @scheme[map], but the resulting lists are appended together.
-This is the same as @scheme[(append* (map proc lst ...))].}
 
-@defproc[(filter-not [proc (any/c . -> . list?)] [lst list?] ...+)
+@defproc[(append-map [proc procedure?] [lst list?] ...+)
          list?]{
-Like @scheme[map], but the resulting lists are appended together.
-This is the same as @scheme[(append* (map proc lst ...))].}
-@defproc[(filter-not [proc procedure?] [lst list?])
+
+Returns @scheme[(append* (map proc lst ...))].
+
+@examples[
+ (append-map vector->list '(#(1) #(2 3) #(4)))
+]}
+
+
+@defproc[(filter-not [pred (any/c . -> . any/c)] [lst list?])
          list?]{
-Like @scheme[filter], but the meaning of the @scheme[proc] predicate
-is reversed: the result is a list of all items for which it returns
-@scheme[#f].}
+
+Like @scheme[filter], but the meaning of the @scheme[pred] predicate
+is reversed: the result is a list of all items for which @scheme[pred]
+returns @scheme[#f].
+
+@examples[#:eval list-eval
+  (filter-not even? '(1 2 3 4 5 6))
+]}
 
 @; ----------------------------------------
 @section{Immutable Cyclic Data}
