@@ -109,44 +109,35 @@
 ;;                           ls
 ;;                           (append l (car ls) (loop (cdr ls))))))]))
 
-;; utility: returns the length for a proper list, #f otherwise; does not handle
-;; circular lists
-(define (length? x)
-  (let loop ([x x] [n 0])
-    (if (pair? x)
-      (loop (cdr x) (add1 n))
-      (and (null? x) n))))
-
 (define (remove-duplicates l [=? equal?])
-  (let ([len (length? l)])
-    (unless len (raise-type-error 'remove-duplicates "list" l))
-    (let ([h (cond [(< len 40) #f]
-                   [(eq? =? eq?) (make-hasheq)]
-                   [(eq? =? equal?) (make-hash)]
-                   [else #f])])
-      (if h
-        ;; Using a hash table when the list is long enough and a using `equal?'
-        ;; or `eq?'.  The length threshold (40) was determined by trying it out
-        ;; with lists of length n holding (random n) numbers.
-        (let loop ([l l])
-          (if (null? l)
-            l
-            (let ([x (car l)] [l (cdr l)])
-              (if (hash-ref h x #f)
-                (loop l)
-                (begin (hash-set! h x #t) (cons x (loop l)))))))
-        ;; plain n^2 list traversal (optimized for common cases)
-        (let-syntax ([loop (syntax-rules ()
-                             [(_ search)
-                              (let loop ([l l] [seen null])
-                                (if (null? l)
-                                  l
-                                  (let ([x (car l)] [l (cdr l)])
-                                    (if (search x seen)
-                                      (loop l seen)
-                                      (cons x (loop l (cons x seen)))))))])])
-          (cond [(eq? =? equal?) (loop member)]
-                [(eq? =? eq?)    (loop memq)]
-                [(eq? =? eqv?)   (loop memv)]
-                [else (loop (lambda (x seen)
-                              (ormap (lambda (y) (=? x y)) seen)))]))))))
+  (unless (list? l) (raise-type-error 'remove-duplicates "list" l))
+  (let ([h (cond [(< (length l) 40) #f]
+                 [(eq? =? eq?) (make-hasheq)]
+                 [(eq? =? equal?) (make-hash)]
+                 [else #f])])
+    (if h
+      ;; Using a hash table when the list is long enough and a using `equal?'
+      ;; or `eq?'.  The length threshold (40) was determined by trying it out
+      ;; with lists of length n holding (random n) numbers.
+      (let loop ([l l])
+        (if (null? l)
+          l
+          (let ([x (car l)] [l (cdr l)])
+            (if (hash-ref h x #f)
+              (loop l)
+              (begin (hash-set! h x #t) (cons x (loop l)))))))
+      ;; plain n^2 list traversal (optimized for common cases)
+      (let-syntax ([loop (syntax-rules ()
+                           [(_ search)
+                            (let loop ([l l] [seen null])
+                              (if (null? l)
+                                l
+                                (let ([x (car l)] [l (cdr l)])
+                                  (if (search x seen)
+                                    (loop l seen)
+                                    (cons x (loop l (cons x seen)))))))])])
+        (cond [(eq? =? equal?) (loop member)]
+              [(eq? =? eq?)    (loop memq)]
+              [(eq? =? eqv?)   (loop memv)]
+              [else (loop (lambda (x seen)
+                            (ormap (lambda (y) (=? x y)) seen)))])))))
