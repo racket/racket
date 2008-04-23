@@ -9,11 +9,11 @@
 
 @include-section["image.scrbl"]
 @include-section["world.scrbl"]
-@;include-section["testing.scrbl"
-@;include-section["convert.scrbl"]
-@;include-section["guess.scrbl"]
+
+@include-section["convert.scrbl"]
+@include-section["guess.scrbl"]
 @;include-section["mastermind.scrbl"]
-@;include-section["draw.scrbl"]
+@include-section["draw.scrbl"]
 @;include-section["hangman.scrbl"]
 @;include-section["arrows.scrbl"]
 @;include-section["documents.scrbl"]
@@ -27,3 +27,6 @@
 @;include-section["Simplified Scheme Web Servlets"
 @;include-section["Scheme Web Servlets"
 @;include-section["queen.scrbl"]
+
+
+@;include-section["testing.scrbl"

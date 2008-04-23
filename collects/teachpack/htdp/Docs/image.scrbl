@@ -23,24 +23,27 @@ shapes. Additional primitives allow for the composition of images.
 @;-----------------------------------------------------------------------------
 @section[#:tag "modes-colors"]{Modes and Colors}
 
-@defthing[Mode (one-of/c 'solid 'outline "solid" "outline")]{A @scheme[Mode]
-is used to specify whether painting a shape fills or outlines the form.}
+@deftech{Mode} @scheme[(one-of/c 'solid 'outline "solid" "outline")]
 
-@deftogether[(
-@defthing[Color (or/c symbol? string? color?)] 
+A @tech{Mode} is used to specify whether painting a shape fills or
+outlines the form.}
+
 @defstruct[color [(red (and/c natural-number/c (<=/c 255)))
 		  (green (and/c natural-number/c (<=/c 255)))
 		  (blue (and/c natural-number/c (<=/c 255)))]]
-@defthing[RGB color?])]{
-A @scheme[Color] is a color-symbol (e.g.,
- @scheme['blue]) or a color-string (e.g., @scheme["blue"]) or an RGB structure.
 
-An @scheme[RGB] describes a color via share of red,
- blue, and green colors (e.g., @scheme[(make-color 100 200 30)]).  
-}
+@deftech{RGB} @scheme[color?]
 
-@defproc[(image-color? [x any]) boolean?]{
- Determines if the input is a valid image color.}
+An @tech{RGB} describes a color via share of red, blue, and green colors
+ (e.g., @scheme[(make-color 100 200 30)]).
+
+@deftech{Color} @scheme[(or/c symbol? string? color?)] 
+
+A @tech{Color} is a color-symbol (e.g., @scheme['blue]) or a color-string
+ (e.g., @scheme["blue"]) or an @tech{RGB} structure.
+
+@defproc[(image-color? [x any]) boolean?]{ Determines if the input is a
+ valid image @tech{Color}.}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "creational"]{Creating Basic Shapes}
@@ -49,19 +52,19 @@ In DrScheme, you can insert images from your file system. Use PNG images
 instead whenever possible for insertions. In addition, you can create basic
 shapes with the following functions.
 
-@defproc[(rectangle [w number?] [h number?] [m Mode] [c Color]) image?]{
+@defproc[(rectangle [w number?] [h number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a @scheme[w] by @scheme[h] rectangle, filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
-@defproc[(circle [r number?] [m Mode] [c Color]) image?]{
+@defproc[(circle [r number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a circle or disk of radius @scheme[r], filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
-@defproc[(ellipse [w number?] [h number?] [m Mode] [c Color]) image?]{
+@defproc[(ellipse [w number?] [h number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a @scheme[w] by @scheme[h] ellipse, filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
-@defproc[(triangle [s number?] [m Mode] [c Color]) image?]{ 
+@defproc[(triangle [s number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{ 
  Creates an upward pointing equilateral
  triangle whose side is @scheme[s] pixels long, filled in according to
  @scheme[m] and painted in color @scheme[c]}
@@ -69,25 +72,25 @@ shapes with the following functions.
 @defproc[(star [n (and/c number? (>=/c 2))]
 	       [outer (and/c number? (>=/c 1))]
 	       [inner (and/c number? (>=/c 1))]
-	       [m Mode]
-	       [c Color]) image?]{
+	       [m (unsyntax @tech{Mode})]
+	       [c (unsyntax @tech{Color})]) image?]{
  Creates a multi-pointed star with @scheme[n] points, an @scheme[outer]
  radius for the max distance of the points to the center, and
  an @scheme[inner] radius for the min distance to the center. }
 
-@defproc[(regular-polygon [s side] [r number?] [m Mode] [c Color] [angle real? 0]) image?]{
+@defproc[(regular-polygon [s side] [r number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})] [angle real? 0]) image?]{
 Creates a regular polygon with @scheme[s] sides inscribed in
 a circle of radius @scheme[r], using mode @scheme[m] and
 color @scheme[c]. If an angle is specified, the polygon is rotated by that
 angle.
 }
 
-@defproc[(line [x number?][y number?] [c Color]) image?]{
+@defproc[(line [x number?][y number?] [c (unsyntax @tech{Color})]) image?]{
  Creates a line colored @scheme[c] from (0,0) to @scheme[(x,y)].
  See @scheme[add-line] below.
 }
 
-@defproc[(text [s string?] [f (and/c number? positive?)] [c Color]) Image]{
+@defproc[(text [s string?] [f (and/c number? positive?)] [c (unsyntax @tech{Color})]) Image]{
  Creates an image of the text @scheme[s] at point size @scheme[f] 
  and painted in color @scheme[c].}
 
@@ -137,7 +140,7 @@ Images can be composed, and images can be found within compositions.
 		   [y number?]
 		   [z number?]
 		   [u number?]
-		   [c Color]) image?]{
+		   [c (unsyntax @tech{Color})]) image?]{
 Creates an image by adding a line (colored @scheme[c]) from @scheme[(x,y)]
 to @scheme[(z,u)] to image @scheme[i].}
 
@@ -209,7 +212,7 @@ and converts a list of colors into an image.
 #reader scribble/comment-reader
 (schemeblock
 ;; -- @scheme[empty]
-;; -- @scheme[(cons Color List-of-color)]
+;; -- @scheme[(cons (unsyntax @tech{Color}) List-of-color)]
 ;; Interpretation: represents a list of colors.
 ))
 
