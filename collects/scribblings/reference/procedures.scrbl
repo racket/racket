@@ -409,11 +409,11 @@ applied.}
 @defproc[(negate [proc procedure?]) procedure?]{
 
 Returns a procedure that is just like @scheme[proc], except that it
-returns the negation of the result.  The resulting procedure has the
-same arity as @scheme[proc].
+returns the @scheme[not] of @scheme[proc]'s result.
 
 @examples[#:eval fun-eval
 (filter (negate symbol?) '(1 a 2 b 3 c))
+(map (negate =) '(1 2 3) '(1 1 1))
 ]}
 
 @defproc*[([(curry [proc procedure?]) procedure?]

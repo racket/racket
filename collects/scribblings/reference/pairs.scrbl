@@ -573,30 +573,40 @@ traversal.
   (flatten 'a)
 ]}
 
-@defproc[(remove-duplicates [lst list?] [proc procedure? equal?])
+@defproc[(remove-duplicates [lst list?] [same? (any/c any/c . -> . any/c) equal?])
          list?]{
+
 Returns a list that has all items in @scheme[lst], but without
-duplicate items.  The resulting list is in the same order as
-@scheme[lst], and for any item that occurs multiple times, the first
-one is kept.  @scheme[proc] is used for comparing items.
+duplicate items, where @scheme[same?] determines whether two elements
+of the list are equivalent.  The resulting list is in the same order
+as @scheme[lst], and for any item that occurs multiple times, the
+first one is kept.
 
 @examples[#:eval list-eval
   (remove-duplicates '(a b b a))
+  (remove-duplicates '(1 2 1.0 0))
+  (remove-duplicates '(1 2 1.0 0) =)
 ]}
 
 @defproc[(filter-map [proc procedure?] [lst list?] ...+)
          list?]{
-Like @scheme[map], but the resulting list does not contain any
-@scheme[#f] values.  In other words, @scheme[(filter-map p lst)] is
-like @scheme[(filter (lambda (x) x) (map p lst))], except that it is
-more efficient since no intermediate list is built.}
 
-@defproc[(partition [proc procedure?] [lst list?])
-         list?]{
+Returns @scheme[(filter (lambda (x) x) (map proc lst ...))], but
+without building the intermediate list.}
+
+
+@defproc[(partition [pred procedure?] [lst list?])
+         (values list? list?)]{
+
 Similar to @scheme[filter], except that two values are returned: the
-items that satisfied the given @scheme[proc] predicate, and the items
-that did not satisfy it.  It is slightly more efficient than
-@scheme[(values (filter proc lst) (filter (negate proc lst)))].
+items for which @scheme[pred] returns a true value, and the items for
+which @scheme[pred] returns @scheme[#f].
+
+The result is the same as
+
+@schemeblock[(values (filter pred lst) (filter (negate pred) lst))]
+
+but @scheme[pred] is applied to each item in @scheme[lst] only once.
 
 @examples[#:eval list-eval
   (partition even? '(1 2 3 4 5 6))
