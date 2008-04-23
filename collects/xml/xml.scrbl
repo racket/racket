@@ -245,9 +245,9 @@ Converts an @tech{X-expression} into XML content.}
 
 Converts an @tech{X-expression} into a string containing XML.}
 
-@defproc[(eliminate-whitespace [tags (listof symbol?)]
-                               [choose (boolean? . -> . any/c)]
-                               [elem element?])
+@defproc[((eliminate-whitespace [tags (listof symbol?)]
+                                [choose (boolean? . -> . any/c)])
+          [elem element?])
          element?]{
 
 Some elements should not contain any text, only other tags, except
