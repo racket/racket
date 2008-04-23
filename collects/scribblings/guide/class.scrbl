@@ -54,7 +54,7 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
     (grow (send other-fish get-size))))
 ]
 
-@interaction-eval[
+@(interaction-eval
 #:eval class-eval
 (define fish%
   (class object%
@@ -66,7 +66,7 @@ public methods @scheme[get-size], @scheme[grow], and @scheme[eat]:
     (define/public (grow amt)
       (set! current-size (+ amt current-size)))
     (define/public (eat other-fish)
-      (grow (send other-fish get-size)))))]
+      (grow (send other-fish get-size))))))
 
 The @scheme[size] initialization argument must be supplied via a named
  argument when instantiating the class through the @scheme[new] form:
@@ -82,9 +82,9 @@ Of course, we can also name the class and its instance:
 (define charlie (new fish% [size 10]))
 ]
 
-@interaction-eval[
+@(interaction-eval
 #:eval class-eval
-(define charlie (new fish% [size 10]))]
+(define charlie (new fish% [size 10])))
 
 In the definition of @scheme[fish%], @scheme[current-size] is a
 private field that starts out with the value of the @scheme[size]

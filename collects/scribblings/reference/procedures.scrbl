@@ -404,7 +404,7 @@ applied.}
 
 @note-lib[scheme/function]
 @(define fun-eval (make-base-eval))
-@interaction-eval[#:eval fun-eval (require scheme/function)]
+@(interaction-eval #:eval fun-eval (require scheme/function))
 
 @defproc[(negate [proc procedure?]) procedure?]{
 

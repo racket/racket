@@ -524,7 +524,7 @@ classes. By convention, the classes are given names that end with
 (send f show #t)
 ]
 
-@mr-interaction-eval[(send f show #f)]
+@(mr-interaction-eval (send f show #f))
 
 The @scheme[new] form creates an instance of a class, where
 initialization arguments like @scheme[label] and @scheme[width] are
@@ -552,12 +552,12 @@ picture into a canvas:
 ]
 
 @centerline{
-@mr-interaction-eval-show[(scale 
-                           (bitmap 
-                            (build-path 
-                             (collection-path "scribblings/quick") 
-                             "art.png"))
-                           0.5)]}
+@(mr-interaction-eval-show (scale
+                            (bitmap
+                             (build-path
+                              (collection-path "scribblings/quick") 
+                              "art.png"))
+                            0.5))}
 
 Each canvas stretches to fill an equal portion of the frame, because
 that's how a frame manages its children by default.

@@ -6,7 +6,7 @@
 
 
 @(define shared-eval (make-base-eval))
-@interaction-eval[#:eval shared-eval (require scheme/shared)]
+@(interaction-eval #:eval shared-eval (require scheme/shared))
 
 @(define maker
    (make-element #f (list

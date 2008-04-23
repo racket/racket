@@ -3,7 +3,7 @@
           scribble/eval)
 
 @(define dict-eval (make-base-eval))
-@interaction-eval[#:eval dict-eval (require scheme/dict)]
+@(interaction-eval #:eval dict-eval (require scheme/dict))
 
 @title[#:tag "dicts"]{Dictionaries}
 

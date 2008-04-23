@@ -13,20 +13,20 @@
 @(define guide @other-manual['(lib "guide.scrbl" "scribblings/guide")])
 
 @(define more-eval (make-base-eval))
-@interaction-eval[#:eval more-eval
-                  (define (show-load re?)
-                    (fprintf (current-error-port) " [~aloading serve.ss]\n" (if re? "re-" "")))]
-@interaction-eval[#:eval more-eval
-                  (define (serve n) void)]
-@interaction-eval[#:eval more-eval
-                  (define (show-break)
-                    (fprintf (current-error-port) "^Cuser break"))]
-@interaction-eval[#:eval more-eval
-                  (define (show-fail n)
-                    (error 'tcp-listen
-                           "listen on ~a failed (address already in use)"
-                           n))]
-@interaction-eval[#:eval more-eval (require xml net/url)]
+@(interaction-eval #:eval more-eval
+                   (define (show-load re?)
+                     (fprintf (current-error-port) " [~aloading serve.ss]\n" (if re? "re-" ""))))
+@(interaction-eval #:eval more-eval
+                   (define (serve n) void))
+@(interaction-eval #:eval more-eval
+                   (define (show-break)
+                     (fprintf (current-error-port) "^Cuser break")))
+@(interaction-eval #:eval more-eval
+                   (define (show-fail n)
+                     (error 'tcp-listen
+                            "listen on ~a failed (address already in use)"
+                            n)))
+@(interaction-eval #:eval more-eval (require xml net/url))
 
 @(define (whole-prog which [last? #f])
   (let ([file (format "step~a.txt" which)])

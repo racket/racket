@@ -3,7 +3,7 @@
           scribble/eval
           "guide-utils.ss")
 
-@interaction-eval[(require (lib "mzlib/for.ss"))]
+@(interaction-eval (require (lib "mzlib/for.ss")))
 
 @title[#:tag "set!"]{Assignment: @scheme[set!]}
 

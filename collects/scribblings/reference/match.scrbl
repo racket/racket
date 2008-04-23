@@ -4,7 +4,7 @@
           scheme/match)
 
 @(define match-eval (make-base-eval))
-@interaction-eval[#:eval match-eval (require scheme/match)]
+@(interaction-eval #:eval match-eval (require scheme/match))
 
 @title[#:tag "match"]{Pattern Matching}
 

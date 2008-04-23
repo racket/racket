@@ -7,7 +7,7 @@
                      scheme/provide-syntax))
 
 @(define stx-eval (make-base-eval))
-@interaction-eval[#:eval stx-eval (require (for-syntax scheme/base))]
+@(interaction-eval #:eval stx-eval (require (for-syntax scheme/base)))
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the

@@ -8,7 +8,7 @@
                               use-at-readtable)))
 
 @(define read-eval (make-base-eval))
-@interaction-eval[#:eval read-eval (require (for-syntax scheme/base))]
+@(interaction-eval #:eval read-eval (require (for-syntax scheme/base)))
 
 @title[#:tag "reader"]{@"@"-Reader}
 

@@ -367,7 +367,7 @@ allocated string).}
 
 @note-lib[scheme/string]
 @(define string-eval (make-base-eval))
-@interaction-eval[#:eval string-eval (require scheme/string scheme/list)]
+@(interaction-eval #:eval string-eval (require scheme/string scheme/list))
 
 @defproc[(string-append* [str string?] ... [strs (listof string?)]) string?]{
 @; Note: this is exactly the same description as the one for append*

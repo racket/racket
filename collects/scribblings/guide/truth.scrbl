@@ -7,7 +7,7 @@
           (for-label scheme/list))
 
 @(define list-eval (make-base-eval))
-@interaction-eval[#:eval list-eval (require scheme/list)]
+@(interaction-eval #:eval list-eval (require scheme/list))
 
 @title{Pairs, Lists, and Scheme Syntax}
 

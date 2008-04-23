@@ -3,7 +3,7 @@
           scheme/math)
 
 @(define math-eval (make-base-eval))
-@interaction-eval[#:eval math-eval (require scheme/math)]
+@(interaction-eval #:eval math-eval (require scheme/math))
 
 @title[#:tag "numbers"]{Numbers}
 

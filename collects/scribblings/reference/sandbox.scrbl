@@ -6,7 +6,7 @@
                      scheme/gui/dynamic))
 
 @(define box-eval (make-base-eval))
-@interaction-eval[#:eval box-eval (require scheme/sandbox)]
+@(interaction-eval #:eval box-eval (require scheme/sandbox))
 
 @title{Sandboxed Evaluation}
 

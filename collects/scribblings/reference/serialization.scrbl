@@ -4,7 +4,7 @@
           (for-label scheme/serialize))
 
 @(define ser-eval (make-base-eval))
-@interaction-eval[#:eval ser-eval (require scheme/serialize)]
+@(interaction-eval #:eval ser-eval (require scheme/serialize))
 
 @title[#:tag "serialization"]{Serialization}
 

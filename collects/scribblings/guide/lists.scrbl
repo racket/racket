@@ -9,7 +9,7 @@
 @(define step @elem{=})
 
 @(define list-eval (make-base-eval))
-@interaction-eval[#:eval list-eval (require scheme/list)]
+@(interaction-eval #:eval list-eval (require scheme/list))
 
 @title{Lists, Iteration, and Recursion}
 

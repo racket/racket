@@ -70,7 +70,7 @@
 
 )
 
-@interaction-eval[#:eval class-eval (require scheme/class)]
+@(interaction-eval #:eval class-eval (require scheme/class))
 
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}

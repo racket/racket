@@ -14,7 +14,7 @@
      (list (list (make-flow (list a))
                  (make-flow (list (make-paragraph (list (hspace 1)))))
                  (make-flow (list b))))))
-@interaction-eval[#:eval io-eval (print-hash-table #t)]
+@(interaction-eval #:eval io-eval (print-hash-table #t))
 
 @title[#:tag "i/o" #:style 'toc]{Input and Output}
 
@@ -39,9 +39,9 @@ examples:
   file for writing, and @scheme[open-input-file] opens a file for
   reading.
 
-@interaction-eval[#:eval io-eval (define old-dir (current-directory))]
-@interaction-eval[#:eval io-eval (current-directory (find-system-path 'temp-dir))]
-@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
+@(interaction-eval #:eval io-eval (define old-dir (current-directory)))
+@(interaction-eval #:eval io-eval (current-directory (find-system-path 'temp-dir)))
+@(interaction-eval #:eval io-eval (when (file-exists? "data") (delete-file "data")))
 
 @examples[
 #:eval io-eval
@@ -81,8 +81,8 @@ with the output port; when the function returns, the port is closed.
                         (read-line in)))
 ]
 
-@interaction-eval[#:eval io-eval (when (file-exists? "data") (delete-file "data"))]
-@interaction-eval[#:eval io-eval (current-directory old-dir)]}
+@(interaction-eval #:eval io-eval (when (file-exists? "data") (delete-file "data")))
+@(interaction-eval #:eval io-eval (current-directory old-dir))}
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  @item{@bold{Strings:} The @scheme[open-output-string] function creates
