@@ -37,6 +37,9 @@
             ;; [beginner-contract contract]
             ;; [beginner-define-data define-data]
             )
+           check-expect
+           check-within
+           check-error
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -91,7 +94,5 @@
    procedures
    in-rator-position-only
    (all-from beginner: lang/private/beginner-funs procedures))
-  
-  (provide (all-from-out test-engine/scheme-tests))
   
   )

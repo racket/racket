@@ -4,7 +4,8 @@
          "debugger-language-interface.ss"
          stepper/private/shared
          scheme/class
-         scheme/contract)
+         scheme/contract
+         test-engine/scheme-tests)
 
 (provide/contract
  [expand-teaching-program (->* (input-port?
@@ -58,7 +59,7 @@
                             ,@(map (λ (x) `(require ,x)) teachpacks)
                             ,@body-exps
                             ,@(if enable-testing?
-                                  (if (null? body-exps) '() '((run-tests) (display-results)))
+                                  (if (null? body-exps) '() `((,#'run-tests) (,#'display-results)))
                                   '()))))
               rep)))]
         [(require)

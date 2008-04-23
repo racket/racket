@@ -145,6 +145,11 @@ but we start with an enumeration of changes:
  - UTF-8 decoding for ports uses #\uFFFD instead of #\? as the
    replacement character for bad encodings.
 
+ - Inside PLT Scheme: the `mzscheme' module is no longer built into
+   the exectable. When embedding PLT Scheme in a larger application,
+   use `mzc --c-mods' to convert a set of modules into embeddable C
+   code (as a static byte array containing bytecode).
+
 ======================================================================
  Porting Advice
 ======================================================================

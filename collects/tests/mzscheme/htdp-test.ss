@@ -134,9 +134,13 @@
   (define test (namespace-variable-value 'test))
   (provide test))
 
+(define (print-eval stx)
+  (printf "~s\n" (syntax->datum stx))
+  (eval stx))
+
 (define (do-htdp-test stx stx-err? exn?)
   (let ([name (gensym 'm)])
-    ((if stx-err? syntax-test eval)
+    ((if stx-err? syntax-test print-eval)
      #`(module #,name 'helper
 	 test
 	 #,current-htdp-lang #%module-begin

@@ -51,6 +51,9 @@
             ;; [advanced-contract contract]
             ;; [advanced-define-data define-data]
             )
+           check-expect
+           check-within
+           check-error
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -62,6 +65,4 @@
    (all-from-except intermediate: lang/htdp-intermediate-lambda procedures
 		    cons list* append)
    (all-from advanced: lang/private/advanced-funs procedures))
-   
-  (provide (all-from-out test-engine/scheme-tests))
   )

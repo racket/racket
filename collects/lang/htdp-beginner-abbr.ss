@@ -36,6 +36,9 @@
             [intermediate-unquote unquote]
             [intermediate-unquote-splicing unquote-splicing]
             [beginner-module-begin #%module-begin])
+           check-expect
+           check-within
+           check-error
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -44,6 +47,5 @@
   (provide-and-document
    procedures
    (all-from beginner: lang/htdp-beginner procedures))
-  
-  (provide (all-from-out test-engine/scheme-tests))
+
   )

@@ -31,7 +31,7 @@
         (make-sec 'net-library
                   "Network Libraries")
         (make-sec 'parsing-library
-                  "GUI and Graphics Libraries")
+                  "Parsing Libraries")
         (make-sec 'tool-library
                   "Tool Libraries")
         (make-sec 'foreign

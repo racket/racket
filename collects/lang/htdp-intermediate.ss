@@ -40,6 +40,9 @@
             ;; [intermediate-contract contract]
             ;; [intermediate-define-data define-data]
             )
+           check-expect
+           check-within
+           check-error
 	   #%datum
            #%top-interaction
 	   empty true false)
@@ -48,5 +51,4 @@
   (provide-and-document
    procedures
    (all-from beginner: lang/private/intermediate-funs procedures))
-  (provide (all-from-out test-engine/scheme-tests))
   )

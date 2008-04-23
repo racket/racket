@@ -604,55 +604,61 @@
     (define (intermediate-pre-lambda/proc stx)
       (beginner-lambda/proc stx))
 
-    (define (check-defined-lambda lam)
-      (syntax-case lam (intermediate-pre-lambda)
-	[(intermediate-pre-lambda arg-seq lexpr ...)
-	 (syntax-case (syntax arg-seq) () [(arg ...) #t][_else #f])
-	 (let ([args (syntax->list (syntax arg-seq))])
-	   (for-each (lambda (arg)
-		       (unless (identifier/non-kw? arg)
-			 (teach-syntax-error
-			  'lambda
-			  lam
-			  arg
-			  "expected a name for a function argument, but found ~a"
-			  (something-else/kw arg))))
-		     args)
-	   (when (null? args)
-	     (teach-syntax-error
-	      'lambda
-	      lam
-	      (syntax arg-seq)
-	      "expected at least one argument name in the sequence after `lambda', but found none"))
-	   (let ([dup (check-duplicate-identifier args)])
-	     (when dup
-	       (teach-syntax-error
-		'lambda
-		lam
-		dup
-		"found an argument name that was used more than once: ~a"
-		(syntax-e dup))))
-	   (check-single-result-expr (syntax->list (syntax (lexpr ...)))
-				     #f
-				     lam
-				     args)
-	   'ok)]
-	;; Bad lambda because bad args:
-	[(intermediate-pre-lambda args . _)
-	 (teach-syntax-error
-	  'lambda
-	  lam
-	  (syntax args)
-	  "expected a sequence of function arguments after `lambda', but found ~a"
-	  (something-else (syntax args)))]
-	;; Bad lambda, no args:
-	[(intermediate-pre-lambda)
-	 (teach-syntax-error
-	  'lambda
-	  lam
-	  (syntax args)
-	  "expected a sequence of function arguments after `lambda', but nothing's there")]
-	[_else 'ok]))
+    (define (check-defined-lambda rhs)
+      (syntax-case rhs ()
+        [(lam . _)
+         (and (identifier? #'lam)
+              (or (module-identifier=? #'lam #'beginner-lambda)
+                  (module-identifier=? #'lam #'intermediate-pre-lambda)))
+         (syntax-case rhs ()
+           [(lam arg-seq lexpr ...)
+            (syntax-case (syntax arg-seq) () [(arg ...) #t][_else #f])
+            (let ([args (syntax->list (syntax arg-seq))])
+              (for-each (lambda (arg)
+                          (unless (identifier/non-kw? arg)
+                            (teach-syntax-error
+                             'lambda
+                             rhs
+                             arg
+                             "expected a name for a function argument, but found ~a"
+                             (something-else/kw arg))))
+                        args)
+              (when (null? args)
+                (teach-syntax-error
+                 'lambda
+                 rhs
+                 (syntax arg-seq)
+                 "expected at least one argument name in the sequence after `lambda', but found none"))
+              (let ([dup (check-duplicate-identifier args)])
+                (when dup
+                  (teach-syntax-error
+                   'lambda
+                   rhs
+                   dup
+                   "found an argument name that was used more than once: ~a"
+                   (syntax-e dup))))
+              (check-single-result-expr (syntax->list (syntax (lexpr ...)))
+                                        #f
+                                        rhs
+                                        args)
+              'ok)]
+           ;; Bad lambda because bad args:
+           [(lam args . _)
+            (teach-syntax-error
+             'lambda
+             rhs
+             (syntax args)
+             "expected a sequence of function arguments after `lambda', but found ~a"
+             (something-else (syntax args)))]
+           ;; Bad lambda, no args:
+           [(lam)
+            (teach-syntax-error
+             'lambda
+             rhs
+             (syntax args)
+             "expected a sequence of function arguments after `lambda', but nothing's there")]
+           [_else 'ok])]
+        [_else 'ok]))
 
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; define-struct (beginner)

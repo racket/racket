@@ -43,9 +43,9 @@ Intermediate Student language for @|htdp|; see
 @; ------------------------------------------------------------
 @section{@italic{HtDP} Intermediate Student with Lambda}
 
-@defmodule[lang/htdp-intermediate-lam]
+@defmodule[lang/htdp-intermediate-lambda]
 
-The @schememodname[lang/htdp-intermediate-lam] module provides the
+The @schememodname[lang/htdp-intermediate-lambda] module provides the
 Intermediate Student with Lambda language for @|htdp|; see
 @htdp-ref["intermediate-lam"].
 
@@ -138,7 +138,7 @@ they can be syntactically restricted to application positions.
   ]]
 }
 
-@defform[(provide-higher-order-procedure id (arg ...))]{
+@defform[(provide-higher-order-primitive id (arg ...))]{
 
   Like @scheme[define-higher-order-primitive], but the function
   @scheme[id] is exported as the primitive operator named
