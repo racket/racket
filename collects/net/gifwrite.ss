@@ -300,7 +300,7 @@
   (provide/doc (proc-doc
                 gif-add-control
                 (([stream image-or-control-ready-gif-stream?]
-                  [disposal (one-of/c 'keep 'restore-bg 'restore-prev)]
+                  [disposal (one-of/c 'any 'keep 'restore-bg 'restore-prev)]
                   [wait-for-input? any/c]
                   [delay dimension?]
                   [transparent (or/c false/c color?)])
