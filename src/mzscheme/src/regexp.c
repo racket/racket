@@ -1814,6 +1814,8 @@ regranges(int parse_flags, int at_start)
       break;
 
     regparse++;
+    if (regparse == regparse_end)
+      break;
   }
 
   regparse = save_regparse;
