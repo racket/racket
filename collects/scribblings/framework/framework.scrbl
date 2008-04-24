@@ -4,8 +4,6 @@
 
 @title{@bold{Framework}: PLT GUI Application Framework}
 
-@index-section[]
-
 @(defmodule framework/framework)
 
 @include-section["framework-application.scrbl"]
@@ -34,3 +32,5 @@
 @include-section["framework-scheme.scrbl"]
 @include-section["framework-text.scrbl"]
 @include-section["framework-version.scrbl"]
+
+@index-section[]

@@ -1473,7 +1473,7 @@ corresponds to the default @tech{module name resolver}.
 
  @defsubform[(file string)]{Similar to the plain @scheme[rel-string]
  case, but @scheme[string] is a path---possibly absolute---using the
- current platform's path conventions.}
+ current platform's path conventions and @scheme[expand-user-path].}
 
  @defsubform*[((planet id)
                (planet string)

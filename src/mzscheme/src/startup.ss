@@ -692,7 +692,7 @@
                                                          file
                                                          (string-append file ".ss"))))))))]
                       [(eq? (car s) 'file)
-                       (path->complete-path (cadr s) (get-dir))])])
+                       (path->complete-path (expand-user-path (cadr s)) (get-dir))])])
                 (unless (or (path? s-parsed)			  
                             (vector? s-parsed))
                   (if stx

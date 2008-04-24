@@ -85,6 +85,8 @@
           (render-flow (part-flow d) d ri #f)
           (for-each (lambda (sec) (render-part sec ri))
                     (part-parts d))
+          (when (part-style? d 'index)
+            (printf "\\onecolumn\n\n"))
           null))
       
       (define/override (render-paragraph p part ri)
