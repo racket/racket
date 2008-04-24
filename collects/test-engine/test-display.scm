@@ -149,7 +149,7 @@
         (string-append
          (cond
            [(symbol? (src-file src)) (string-append " At ")]
-           [(path? (src-file src)) (string-append " In " (src-file src) " at ")]
+           [(path? (src-file src)) (string-append " In " (path->string (src-file src)) " at ")]
            [(is-a? (src-file src) editor<%>) " At "])
          "line " (number->string (src-line src))
          " column " (number->string (src-col src)))))
