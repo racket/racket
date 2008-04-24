@@ -871,7 +871,7 @@
                                    ;; outer bindings:
                                    ([(start) a] [(end) b] [(inc) step])
                                    ;; outer check:
-                                   (unless (and (real? a) (real? b) (real? inc))
+                                   (unless (and (real? start) (real? end) (real? inc))
                                      ;; let `in-range' report the error:
                                      (in-range start end inc))
                                    ;; loop bindings:
