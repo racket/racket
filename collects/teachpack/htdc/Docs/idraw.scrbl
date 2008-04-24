@@ -1,49 +1,56 @@
-{ (define LIBNAME "An Imperative Drawing Library (HtDC)")
-  (include "head.tinc") }
+#lang scribble/doc
 
+@(require scribble/manual (for-label teachpack/htdc/draw))
 
-<p>Add 
-<pre><code>
+@title[#:tag "iJdraw"]{Draw: idraw.*}
+
+Add 
+@verbatim[#:indent 3]{
   import idraw.*
-</code></pre>
+}
 at the top of your Definitions Window to import this library. 
-</p>
 
-<p>This <code>idraw</code> package provides stateful classes and imperative methods
-for a visual world. Here is its class diagram of public fields and methods:
 
-<pre>
-<code>
+This package provides stateful classes and imperative methods for a visual
+world. Here is its class diagram of public fields and methods:
+@verbatim[#:indent 3]{
 import colors.*; 
 import geometry.*; 
 
   +---------------------------------+     
   | abstract World                  |
-  +---------------------------------+       +------------------------------------+
-  | Canvas theCanvas                |------>| Canvas                             |
-  +---------------------------------+       +------------------------------------+
-  | void bigBang(int,int,double)    |       +------------------------------------+
-  | World endOfTime(String)         |       | void show()                        |
-  | World endOfWorld(String)        |       | void close()                       |
-  | abstract void onTick()          |       | void drawCircle(Posn,int,IColor)   |
-  | abstract void onKeyEvent(String)|       | void drawDisk(Posn,int,IColor)     |
-  | abstract void draw()            |       | void drawRect(Posn,int,int,IColor) |
-  +---------------------------------+       | void drawLine(Posn,Posn,IColor)    |
-                                            | void drawString(Posn,String)       |
-                                            +------------------------------------+
-</code>
-</pre>
-</p>
+  +---------------------------------+       
+  | Canvas theCanvas                |---+
+  +---------------------------------+   |   
+  | void bigBang(int,int,double)    |   |   
+  | World endOfTime(String)         |   |   
+  | World endOfWorld(String)        |   |   
+  | abstract void onTick()          |   |   
+  | abstract void onKeyEvent(String)|   |   
+  | abstract void draw()            |   |   
+  +---------------------------------+   |   
+                                        |   
+					v
+          +------------------------------------+
+	  | Canvas                             |
+	  +------------------------------------+
+	  +------------------------------------+
+	  | void show()                        |
+	  | void close()                       |
+	  | void drawCircle(Posn,int,IColor)   |
+	  | void drawDisk(Posn,int,IColor)     |
+	  | void drawRect(Posn,int,int,IColor) |
+	  | void drawLine(Posn,Posn,IColor)    |
+	  | void drawString(Posn,String)       |
+	  +------------------------------------+
+}
 
-<p>The abstract <code>World</code> class in <code>idraw</code> provides the same
-methods as the <code>World</code> class in <a href="./draw.html#world">the
-<code>draw</code> library</a>. Their return values are usually <code>void</code>,
-however, except for <code>endOfTime</code> and <code>endOfWorld</code>, which
-continue to return the last world.</p>
+The abstract @tt{World} class in @tt{idraw} provides the same methods as
+the @tt{World} class in @secref["Jworld"] (@tt{draw} package). Their return
+values are usually @tt{void}, however, except for @tt{endOfTime} and
+@tt{endOfWorld}, which continue to return the last world.
 
-<p>In an analogous manner, the methods in the <code>Canvas</code> class export
-the same methods as the <code>Canvas</code> class in <a
-href="./draw.html#canvas">the <code>draw</code> package</a>. Their return values,
-however, are <code>void</code>.  </p>
+In an analogous manner, the methods in the @tt{Canvas} class export
+the same methods as the @tt{Canvas} class in @secref["canvas"]
+(@tt{draw} package). Again their return values are @tt{void}. 
 
-{(include "foot.tinc")}

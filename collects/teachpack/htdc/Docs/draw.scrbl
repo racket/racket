@@ -1,8 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual)
+@(require scribble/manual (for-label teachpack/htdc/draw))
 
 @title[#:tag "Jdraw"]{Draw: draw.*}
+
+@declare-exporting[teachpack/htdc/draw]
 
 Add 
 @verbatim[#:indent 3]{
@@ -54,10 +56,10 @@ exception.
 The abstract @tt{World} class exports the following methods. 
 
 @; -----------------------------------------------------------------------------
-bigBang(int width,int height,double speed)
+@defthing[bigBang (int width,int height,double speed)]
 
 Initializes the world, associates it with a @tt{width} x
-@tt{height} <a href="#canvas">@tt{Canvas}</a>, displays
+@tt{height} @seclink["canvas"]{@tt{Canvas}}, displays
 this canvas, enables keyevents, and finally starts the clock at a rate of
 one tick per @tt{speed} seconds. If it succeeds with all of its
 actions, the method produces @tt{true}.
@@ -70,18 +72,18 @@ The canvas in @tt{World} is called
 
   @tt{theCanvas}. 
 
-References to a "canvas" in conjunction with the @tt{World} class
+ References to a "canvas" in conjunction with the @tt{World} class
  denote this default canvas. 
 
 @; -----------------------------------------------------------------------------
-endOfTime()
+@defthing[endOfTime ()]
 
 Displays the given message, stops the clock and, if it succeeds, produces
 @tt{true}. After the end of time, events no longer trigger calls
 to @tt{onTick} or @tt{onKeyEvent}. The canvas remains visible. 
 
 @; -----------------------------------------------------------------------------
-endOfWorld(String msg)
+@defthing[endOfWorld (String msg)]
 
 Displays the given message, stops the clock and, if it succeeds, produces the 
 last @tt{World}. After the end of the world,  events no longer trigger calls
@@ -92,14 +94,14 @@ remains visible.
 A derived concrete class must supply definitions for the following methods: 
 
 @; -----------------------------------------------------------------------------
-onTick()
+@defthing[onTick ()]
 
 Invoked for every tick of the clock. Its purpose is to create a
 @tt{World} whose differences with @tt{this} one represent
 what happened during the amount of time it takes the clock to tick.  
 
 @; -----------------------------------------------------------------------------
-onKeyEvent(String key)
+@defthing[onKeyEvent (String key)]
 
 Invoked for every keyboard event associated with the canvas. Its purposes
   is to create a @tt{World} whose differences with
@@ -108,9 +110,9 @@ Invoked for every keyboard event associated with the canvas. Its purposes
   @tt{key}. 
 
 @; -----------------------------------------------------------------------------
-draw()
+@defthing[draw ()]
 
-Invoked <em>after</em> one of the two event handlers has been called. Its
+Invoked @emph{after} one of the two event handlers has been called. Its
 purpose is to present @tt{this World} graphically on its
 canvas. If it succeeds, its result is @tt{true}.
 
@@ -118,6 +120,7 @@ A program may, in principle, start several instances of (subclasses of)
 @tt{World}. If it does, the event handlers are called in a unpredictable
 order. 
 
+@; -----------------------------------------------------------------------------
 @section[#:tag "canvas"]{Canvas}
 
 To create an instance of the @tt{Canvas} class, a program must supply
@@ -126,14 +129,14 @@ height. The canvas is a rectangle, whose borders are parallel to the computer
 screen's borders. A program can use the following methods on instances of
 @tt{Canvas}]
 
-show()
+@defthing[show ()] 
 
 Initializes the canvas to a white area, enables the drawing methods, and
   finally displays the canvas. If it succeeds, it produces
   @tt{true}. Invoking the method a second time without calling
   @tt{close} before has no effect.
 
-close()
+@defthing[close ()]
 
 Hides the canvas and erases the current content.  If it succeeds, it
 produces @tt{true}.
@@ -142,31 +145,31 @@ Closing the Canvas using the display controls does not fully hide the
 canvas; it is still necessary to invoke @tt{close} before
 @tt{show} is re-enabled.
 
-drawCircle(Posn p,int r,IColor c)>
+@defthing[drawCircle (Posn p,int r,IColor c)]
 
 Draws a circle on @tt{this}Canvas] at @tt{p} with radius
 @tt{r} and color @tt{c}.  If it succeeds, it produces
 @tt{true}.
 
-drawDisk(Posn p,int r,IColor c)
+@defthing[drawDisk (Posn p,int r,IColor c)]
 
 Draws a disk on @tt{this}Canvas] at @tt{p} with radius
 @tt{r} and color @tt{c}.  If it succeeds, it produces
 @tt{true}.
 
-drawRect(Posn p,int w,int h,IColor c)
+@defthing[drawRect (Posn p,int w,int h,IColor c)]
 
 Draws a solid rectangle on @tt{this}Canvas] at @tt{p} with
 width @tt{w}, height @tt{h}, and color @tt{c}.  The
 rectangle's lines are parallel to the canvas's borders. If it succeeds, it
 produces @tt{true}.
 
-drawLine(Posn p0,Posn p1,IColor c)
+@defthing[drawLine (Posn p0,Posn p1,IColor c)]
 
 Draws a line on @tt{this}Canvas] from @tt{p0} to
 @tt{p1} using color @tt{c}.  If it succeeds, it produces
 @tt{true}.
 
-drawString(Posn p,String s)
+@defthing[drawString (Posn p,String s)]
 
 Draws the string @tt{s} at @tt{p} on @tt{this}Canvas].  If it succeeds, it produces @tt{true}.

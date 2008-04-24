@@ -8,7 +8,7 @@
 
 @title[#:tag "world"]{Simulations and Animations: world.ss}
 
-@declare-exporting[teachpack/htdp/world]
+@declare-exporting[teachpack/htdp/world #:use-sources (teachpack/htdp/image)]
 
 The teachpack provides two sets of tools. The first allows students to
 create and display a series of animated scenes, i.e., a simulation. The
