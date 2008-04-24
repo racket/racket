@@ -31,6 +31,8 @@
     (make-parameter null))
   (define current-style-file
     (make-parameter #f))
+  (define current-redirect
+    (make-parameter #f))
 
   (define (get-command-line-files argv)
     (command-line
@@ -52,6 +54,8 @@
        (current-dest-name name)]
       [("--style") file "use given .css/.tex file"
        (current-style-file file)]
+      [("--redirect") url "redirect external tag links to <url>"
+       (current-redirect url)]
       [("--info-out") file "write format-specific link information to <file>"
        (current-info-output-file file)]]
      [multi
@@ -74,6 +78,8 @@
       (let ([renderer (new ((current-render-mixin) render%)
                            [dest-dir dir]
                            [style-file (current-style-file)])])
+        (when (current-redirect)
+          (send renderer set-external-tag-path (current-redirect)))
         (send renderer report-output!)
         (let* ([fns (map (lambda (fn)
                            (let-values ([(base name dir?) (split-path fn)])

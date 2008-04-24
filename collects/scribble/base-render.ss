@@ -1,4 +1,3 @@
-
 #lang scheme/base
 
 (require "struct.ss"
@@ -6,7 +5,9 @@
          mzlib/serialize
          scheme/file
          scheme/path
-         setup/main-collects)
+         setup/main-collects
+         setup/path-relativize
+         "render-struct.ss")
 
 (provide render%)
 
@@ -14,7 +15,8 @@
   (class object%
 
     (init-field dest-dir
-                [refer-to-existing-files #f])
+                [refer-to-existing-files #f]
+                [root-path #f])
 
     (define/public (get-dest-directory) dest-dir)
 
@@ -41,20 +43,49 @@
       (set! report-output? #t))
 
     ;; ----------------------------------------
+
+    (define root (make-mobile-root root-path))
+    
+    (define-values (:path->root-relative
+                    :root-relative->path)
+      (if root-path
+          (make-relativize (lambda () root-path)
+                           root
+                           'path->root-relative
+                           'root-relative->path)
+          (values #f #f)))
+
+    (define/public (path->root-relative p)
+      (if root-path
+          (:path->root-relative p)
+          p))
+
+    (define/public (root-relative->path p)
+      (if (and (pair? p)
+               (mobile-root? (car p)))
+          (apply build-path (mobile-root-path (car p))
+                 (map bytes->path-element (cdr p)))
+          p))
+
+    ;; ----------------------------------------
     ;; marshal info
 
     (define/public (get-serialize-version)
-      1)
+      2)
 
     (define/public (serialize-info ri)
       (parameterize ([current-serialize-resolve-info ri])
-        (serialize (collect-info-ht (resolve-info-ci ri)))))
+        (serialize (cons root
+                         (collect-info-ht (resolve-info-ci ri))))))
 
-    (define/public (deserialize-info v ci)
-      (let ([ht (deserialize v)]
+    (define/public (deserialize-info v ci #:root [root-path #f])
+      (let ([root+ht (deserialize v)]
             [in-ht (collect-info-ext-ht ci)])
-        (for ([(k v) ht])
+        (when root-path
+          (set-mobile-root-path! (car root+ht) root-path))
+        (for ([(k v) (cdr root+ht)])
           (hash-set! in-ht k v))))
+
     (define/public (get-defined ci)
       (hash-map (collect-info-ht ci) (lambda (k v) k)))
 

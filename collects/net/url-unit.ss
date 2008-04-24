@@ -72,7 +72,7 @@
             [sa string-append])
         (when (and (equal? scheme "file")
                    (not (url-path-absolute? url)))
-          (raise-mismatch-error "url->string"
+          (raise-mismatch-error 'url->string
                                 "cannot convert relative file URL to a string: "
                                 url))
         (sa (if scheme (sa scheme ":") "")

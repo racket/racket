@@ -9,6 +9,7 @@
            setup/main-collects
            mzlib/list
 	   net/url
+	   net/base64
            scheme/serialize
            (prefix-in xml: xml/xml)
            (for-syntax scheme/base))
@@ -28,18 +29,6 @@
   (define current-no-links (make-parameter #f))
   (define extra-breaking? (make-parameter #f))
   (define current-version (make-parameter (version)))
-
-  (define (path->relative p)
-    (let ([p (path->main-doc-relative p)])
-      (if (path? p)
-          (path->main-collects-relative p)
-          p)))
-
-  (define (relative->path p)
-    (let ([p (main-doc-relative->path p)])
-      (if (path? p)
-          p
-          (main-collects-relative->path p))))
 
   (define (toc-part? d)
     (part-style? d 'toc))
@@ -205,6 +194,29 @@
 
       ;; ----------------------------------------
 
+      (inherit path->root-relative
+               root-relative->path)
+
+      (define (path->relative p)
+        (let ([p (path->main-doc-relative p)])
+          (if (path? p)
+              (let ([p (path->main-collects-relative p)])
+                (if (path? p)
+                    (path->root-relative p)
+                    p))
+              p)))
+      
+      (define (relative->path p)
+        (let ([p (main-doc-relative->path p)])
+          (if (path? p)
+              p
+              (let ([p (main-collects-relative->path p)])
+                (if (path? p)
+                    p
+                    (root-relative->path p))))))
+
+      ;; ----------------------------------------
+
       (define/override (start-collect ds fns ci)
         (map (lambda (d fn)
                (parameterize ([current-output-file fn]
@@ -266,14 +278,23 @@
       
       ;; ----------------------------------------
 
+      (define external-tag-path #f)
+      (define/public (set-external-tag-path p)
+        (set! external-tag-path p))
+
       (define/public (tag->path+anchor ri tag)
-        (let ([dest (resolve-get #f ri tag)])
+        ;; Called externally; not used internally
+        (let-values ([(dest ext?) (resolve-get/ext? #f ri tag)])
           (if dest
-              (values
-               (relative->path (dest-path dest))
-               (if (dest-page? dest)
-                   #f
-                   (anchor-name (dest-anchor dest))))
+              (if (and ext? external-tag-path)
+                  (values
+                   external-tag-path
+                   (format "~a" (serialize tag)))
+                  (values
+                   (relative->path (dest-path dest))
+                   (if (dest-page? dest)
+                       #f
+                       (anchor-name (dest-anchor dest)))))
               (values #f #f))))
 
       ;; ----------------------------------------
@@ -686,17 +707,25 @@
          [(and (link-element? e)
                (not (current-no-links)))
           (parameterize ([current-no-links #t])
-            (let ([dest (resolve-get part ri (link-element-tag e))])
+            (let-values ([(dest ext?) (resolve-get/ext? part ri (link-element-tag e))])
               (if dest
-                  `((a ((href ,(format "~a~a~a" 
-                                       (from-root (relative->path (dest-path dest))
+                  `((a ((href ,(if (and ext? external-tag-path)
+                                   ;; Redirected to search:
+                                   (format "~a;tag=~a"
+                                           external-tag-path
+                                           (base64-encode 
+                                            (string->bytes/utf-8
+                                             (format "~a" (serialize (link-element-tag e))))))
+                                   ;; Normal link:
+                                   (format "~a~a~a"
+                                           (from-root (relative->path (dest-path dest))
                                                   (get-dest-directory))
                                        (if (dest-page? dest)
                                            ""
                                            "#")
                                        (if (dest-page? dest)
                                            ""
-                                           (anchor-name (dest-anchor dest)))))
+                                           (anchor-name (dest-anchor dest))))))
                         ,@(if (string? (element-style e))
                               `((class ,(element-style e)))
                               null))
@@ -792,7 +821,7 @@
                                   null))))])
               `((img ((src ,(let ([p (install-file src)])
                               (if (path? p)
-                                  (url->string (path->url p))
+                                  (url->string (path->url (path->complete-path p)))
                                   p))))
                      ,@sz)))]
            [else (super render-element e part ri)])))
@@ -1036,7 +1065,7 @@
 
   (define (from-root p d)
     (if (not d)
-      (url->string (path->url p))
+      (url->string (path->url (path->complete-path p)))
       (let ([e-d (explode (path->complete-path d (current-directory)))]
             [e-p (explode (path->complete-path p (current-directory)))])
         (let loop ([e-d e-d]

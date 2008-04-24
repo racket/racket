@@ -84,20 +84,21 @@ elements:
        number of distinct structure types represented in the
        serialized data.}
 
- @item{A list @scheme[_s-types] of length @scheme[_s-count], where each
-       element represents a structure type. Each structure type is
-       encoded as a pair. The @scheme[car] of the pair is @scheme[#f]
-       for a structure whose deserialization information is defined at
-       the top level, otherwise it is a quoted @tech{module path} or a byte
-       string (to be converted into a platform-specific path using
-       @scheme[bytes->path]) for a module that exports the structure's
-       deserialization information.  The @scheme[cdr] of the pair is
-       the name of a binding (at the top level or exported from a
-       module) for deserialization information. These two are used
-       with either @scheme[namespace-variable-binding] or
-       @scheme[dynamic-require] to obtain deserialization
-       information. See @scheme[make-deserialization-info] for more
-       information on the binding's value.}
+ @item{A list @scheme[_s-types] of length @scheme[_s-count], where
+       each element represents a structure type. Each structure type
+       is encoded as a pair. The @scheme[car] of the pair is
+       @scheme[#f] for a structure whose deserialization information
+       is defined at the top level, otherwise it is a quoted
+       @tech{module path} or a byte string (to be converted into a
+       platform-specific path using @scheme[bytes->path]) for a module
+       that exports the structure's deserialization information.  The
+       @scheme[cdr] of the pair is the name of a binding (at the top
+       level or exported from a module) for deserialization
+       information. These two are used with either
+       @scheme[namespace-variable-binding] or @scheme[dynamic-require]
+       to obtain deserialization information. See
+       @scheme[make-deserialization-info] for more information on the
+       binding's value. See also @scheme[deserialize-module-guard].}
 
  @item{A non-negative exact integer, @scheme[_g-count] that represents the
        number of graph points contained in the following list.}
@@ -295,6 +296,14 @@ argument to @scheme[deserialize].
 If a value provided to @scheme[serialize] is a simple tree (i.e., no
 sharing), then the fourth and fifth elements in the serialized
 representation will be empty.}
+
+@defparam[deserialize-module-guard guard (module-path? symbol? . -> . void?)]{
+
+A parameter whose value is called by @scheme[deserialize] before
+dynamically loading a module via @scheme[dynamic-require]. The two
+arguments provided to the procedure are the same as the arguments to
+be passed to @scheme[dynamic-require]. The procedure can raise an
+exception to disallow the @scheme[dynamic-require].}
 
 @; ----------------------------------------------------------------------
 

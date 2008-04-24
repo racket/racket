@@ -22,7 +22,8 @@ by @scheme[load-xref], @scheme[#f] otherwise.}
 
 @defproc[(load-xref [sources (listof (-> any/c))]
                     [#:render% using-render% (subclass?/c render%)
-                               (render-mixin render%)])
+                               (render-mixin render%)]
+                    [#:root root-path (or/c path-string? false/c) #f])
          xref?]{
 
 Creates a cross-reference record given a list of functions that each
@@ -33,6 +34,10 @@ its result is ignored.
 Since the format of serialized information is specific to a rendering
 class, the optional @scheme[using-render%] argument accepts the
 relevant class. It default to HTML rendering.
+
+If @scheme[root-path] is not @scheme[#f], then file paths that are
+serialized as relative to an instantiation-supplied @scheme[root-path]
+are deserialized as relative instead to the given @scheme[root-path].
 
 Use @scheme[load-collections-xref] from @schememodname[setup/xref] to
 get all cross-reference information for installed documentation.}
@@ -155,6 +160,16 @@ generated.
 If @scheme[use-existing?] is true, then files referenced during
 rendering (such as image files) are referenced from their existing
 locations, instead of copying to the directory of @scheme[dest].}
+
+
+@defproc[(xref-transfer-info [renderer (is-a?/c render%)]
+                             [ci collect-info?]
+                             [xref xref?])
+         void?]{
+
+Transfers cross-reference information to @scheme[ci], which is the
+initially collected information from @scheme[renderer].}
+                             
 
 
 @defproc[(xref-index [xref xref?]) (listof entry?)]{

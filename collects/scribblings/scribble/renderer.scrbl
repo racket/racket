@@ -45,53 +45,57 @@ object's methods directly.
 
 Represents a renderer.
 
-@defconstructor[([dest-dir path-string?])]{
+@defconstructor[([dest-dir path-string?]
+                 [refer-to-existing-files any/c #f]
+                 [root-path (or/c path-string? false/c) #f])]{
 
 Creates a renderer whose output goes to @scheme[dest-dir].
 
-}
+If @scheme[root-path] is not @scheme[#f], it is normally the same as
+@scheme[dest-dir] or a parent of @scheme[dest-dir]. It causes
+cross-reference information to record destination files relative to
+@scheme[root-path]; when cross-reference information is serialized, it
+can be deserialized via @method[render% deserialize-info] with a
+different root path (indicating that the destination files have
+moved).}
 
 
 @defmethod[(collect [srcs (listof part?)]
                     [dests (listof path-string?)])
            collect-info?]{
 
-Performs the @techlink{collect pass}.
-
-}
+Performs the @techlink{collect pass}.}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
                     [ci collect-info?])
            resolve-info?]{
 
-Performs the @techlink{resolve pass}.
-
-}
+Performs the @techlink{resolve pass}.}
 
 @defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
                    [ri resolve-info?])
            void?]{
 
-Produces the final output.
-
-}
+Produces the final output.}
 
 @defmethod[(serialize-info [ri resolve-info?])
            any/c]{
 
-Serializes the collected info in @scheme[ri].
-
-}
+Serializes the collected info in @scheme[ri].}
 
 @defmethod[(deserialize-info [v any/c]
-                              [ci collect-info?])
+                             [ci collect-info?]
+                             [#:root root-path (or/c path-string? false/c) #f])
            void?]{
 
 Adds the deserialized form of @scheme[v] to @scheme[ci].
 
-}
+If @scheme[root-path] is not @scheme[#f], then file paths that are
+recorded in @scheme[ci] as relative to an instantiation-supplied
+@scheme[root-path] are deserialized as relative instead to the given
+@scheme[root-path].}
 
 }
 
@@ -101,9 +105,9 @@ Adds the deserialized form of @scheme[v] to @scheme[ci].
 
 @defmodule/local[scribble/text-render]{
 
-@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+@defmixin[render-mixin (render%) ()]{
 
-Specializes @scheme[render%] for generating plain text.}}
+Specializes a @scheme[render%] class for generating plain text.}}
 
 @; ----------------------------------------
 
@@ -111,14 +115,26 @@ Specializes @scheme[render%] for generating plain text.}}
 
 @defmodule/local[scribble/html-render]{
 
-@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+@defmixin[render-mixin (render%) ()]{
 
-Specializes @scheme[render%] for generating a single HTML file.}
+Specializes a @scheme[render%] class for generating HTML output.
 
-@defthing[render-multi-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+@defmethod[(set-external-tag-path [url string?]) void?]{
 
-Further specializes @scheme[render%] for generating multiple HTML
-files. The input class must be first extended with @scheme[render-mixin].}}
+Configures the renderer to redirect links to external via
+@scheme[url], adding a @scheme[tag] query element to the end of the
+URL that contains the Base64-encoded, @scheme[print]ed, serialized
+original tag (in the sense of @scheme[link-element]) for the link.}
+
+}
+
+@defmixin[render-multi-mixin (render%) ()]{
+
+Further specializes a rendering class produced by
+@scheme[render-mixin] for generating multiple HTML
+files.}
+
+}
 
 @; ----------------------------------------
 
@@ -126,6 +142,6 @@ files. The input class must be first extended with @scheme[render-mixin].}}
 
 @defmodule/local[scribble/latex-render]{
 
-@defthing[render-mixin ((subclass?/c render%) . -> . (subclass?/c render%))]{
+@defmixin[render-mixin (render%) ()]{
 
-Specializes @scheme[render%] for generating Latex input.}}
+Specializes a @scheme[render%] class for generating Latex input.}}

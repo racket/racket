@@ -130,8 +130,10 @@
                                             e)])
                         (datum->syntax
                          stx
-                         (list (quote-syntax begin)
-                               e
-                               (cons (quote-syntax printing-module-begin)
-                                     (cdr r)))
+                         (if (null? (cdr r))
+                             (list (quote-syntax begin) e)
+                             (list (quote-syntax begin)
+                                   e
+                                   (cons (quote-syntax printing-module-begin)
+                                         (cdr r))))
                          stx)))))))))))

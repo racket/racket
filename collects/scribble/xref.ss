@@ -18,6 +18,7 @@
          xref-binding->definition-tag
          xref-tag->path+anchor
          xref-tag->index-entry
+         xref-transfer-info
          (struct-out entry))
 
 (define-struct entry (words    ; list of strings: main term, sub-term, etc.
@@ -35,7 +36,9 @@
 
 (define-namespace-anchor here)
 
-(define (load-xref sources #:render% [render% (html:render-mixin render%)])
+(define (load-xref sources 
+                   #:render% [render% (html:render-mixin render%)]
+                   #:root [root-path #f])
   (let* ([renderer (new render%
                         [dest-dir (find-system-path 'temp-dir)])]
          [ci (send renderer collect null null)])
@@ -43,7 +46,7 @@
                 (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
                   (let ([v (src)])
                     (when v
-                      (send renderer deserialize-info v ci)))))
+                      (send renderer deserialize-info v ci #:root root-path)))))
               sources)
     (make-xrefs renderer (send renderer resolve null null ci))))
 
@@ -77,6 +80,9 @@
     (if dest-file
         (void)
         (car xs))))
+
+(define (xref-transfer-info renderer ci xrefs)
+  (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs))))
 
 ;; Returns (values <tag-or-#f> <form?>)
 (define xref-binding-tag

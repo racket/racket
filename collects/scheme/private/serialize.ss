@@ -15,7 +15,9 @@
 
 	   ;; The two main routines:
 	   serialize
-	   deserialize)
+	   deserialize
+
+           deserialize-module-guard)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; serialize
@@ -55,6 +57,9 @@
     (if (bytes? p)
 	(bytes->path p)
 	p))
+
+  (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
+                                                     (void))))
   
   (define (mod-to-id info mod-map cache)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
@@ -499,8 +504,10 @@
           (unless (null? l)
             (let* ([path+name (car l)]
                    [des (if (car path+name)
-                            (dynamic-require (unprotect-path (car path+name))
-                                             (cdr path+name))
+                            (let ([p (unprotect-path (car path+name))]
+                                  [sym (cdr path+name)])
+                              ((deserialize-module-guard) p sym)
+                              (dynamic-require p sym))
                             (namespace-variable-value (cdr path+name)))])
               ;; Register maker and struct type:
               (vector-set! mod-map n des))
