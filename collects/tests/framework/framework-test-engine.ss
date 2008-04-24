@@ -19,6 +19,8 @@
 	  (get-output-string p))
 	(format "uncaught exn: ~s" x)))
 
+  (namespace-require 'scheme/gui)
+  
   (thread
    (lambda ()
      (with-handlers ([(lambda (x) #t)
@@ -27,10 +29,11 @@
 				(if (exn? x)
 				    (exn-message x)
 				    (format "~s" x))))])
-       (let ([port (load
+       (let ([port (call-with-input-file
 		    (build-path
 		     (collection-path "tests" "framework")
-		     "receive-sexps-port.ss"))])
+		     "receive-sexps-port.ss")
+                     read)])
 	 (debug-printf mr-tcp "about to connect to ~a~n" port)
 	 (let*-values ([(in out) (tcp-connect "127.0.0.1" port)])
 	   (let loop ()

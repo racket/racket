@@ -1,3 +1,4 @@
+
 (module main mzscheme 
   (require launcher
 	   mzlib/cmdline
@@ -16,19 +17,16 @@
 
   (define all-files
     (map symbol->string
-	 (load
-	  (build-path
-	   (collection-path "tests" "framework")
-	   "README"))))
+         (call-with-input-file (build-path
+                                (collection-path "tests" "framework")
+                                "README")
+	  read)))
 
   (define all? #f)
   (define 3m? #f)
   (define files-to-process null)
   (define command-line-flags
     `((once-each
-       [("--3m")
-        ,(lambda (flag) (use-3m #t))
-        ("Run the tests using a 3m mred")]
        [("-a" "--all")
 	,(lambda (flag)
 	   (set! all? #t))

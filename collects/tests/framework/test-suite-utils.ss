@@ -15,7 +15,6 @@
 
    load-framework-automatically
    shutdown-listener shutdown-mred mred-running?
-   use-3m
    send-sexp-to-mred queue-sexp-to-mred
    test
    wait-for-frame
@@ -33,8 +32,6 @@
    set-only-these-tests!
    get-only-these-tests)
   
-  (define use-3m (make-parameter #f))
-
   (define section-jump void)
   (define (set-section-jump! _s) (set! section-jump _s))
   (define (reset-section-jump!) (set! section-jump #f))
@@ -66,7 +63,7 @@
 
   (define listener
     (let loop ()
-      (let ([port (load port-filename)])
+      (let ([port (call-with-input-file port-filename read)])
 	(with-handlers ([exn:fail?
 			 (lambda (x)
 			   (let ([next (+ port 1)])
@@ -92,14 +89,11 @@
         (lambda ()
           (system*
            (path->string
-            (build-path (collection-path "mzlib")
+            (build-path (collection-path "scheme")
                         'up
                         'up
                         "bin" 
-                        (if (use-3m)
-                            "mred3m"
-                            "mred")))
-           "-mvqt"
+                        "mred"))
            (path->string 
             (build-path (collection-path "tests" "framework")
                         "framework-test-engine.ss")))))]
@@ -161,6 +155,7 @@
     (or (regexp-match re:tcp-read-error (exn-message exn))
 	(regexp-match re:tcp-write-error (exn-message exn))))
 
+  (namespace-require 'scheme/base) ;; in order to make the eval below work right.
   (define (send-sexp-to-mred sexp)
     (let/ec k
       (let ([show-text 

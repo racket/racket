@@ -11,7 +11,7 @@
       '(let ([k (make-object keymap:aug-keymap%)])
          (send k add-function "abc" void)
          (send k map-function "c:k" "abc")
-         (hash-table-map (send k get-map-function-table) list)))))
+         (hash-map (send k get-map-function-table) list)))))
   
   (test
    'keymap:aug-keymap%/get-table/ht
@@ -20,11 +20,11 @@
    (lambda ()
      (send-sexp-to-mred
       '(let ([k (make-object keymap:aug-keymap%)]
-             [ht (make-hash-table)])
+             [ht (make-hasheq)])
          (send k add-function "abc" void)
          (send k map-function "c:k" "abc")
-         (hash-table-put! ht 'c:k "def")
-         (hash-table-map (send k get-map-function-table/ht ht) list)))))
+         (hash-set! ht 'c:k "def")
+         (hash-map (send k get-map-function-table/ht ht) list)))))
   
   (test
    'keymap:aug-keymap%/get-table/chain1
@@ -41,7 +41,7 @@
          (send k2 map-function "c:k" "abc-k2")
          (send k chain-to-keymap k1 #t)
          (send k chain-to-keymap k2 #t)
-         (hash-table-map (send k get-map-function-table) list)))))
+         (hash-map (send k get-map-function-table) list)))))
   
   (test
    'keymap:aug-keymap%/get-table/chain/2
@@ -56,7 +56,7 @@
          (send k add-function "abc-k" void)
          (send k map-function "c:k" "abc-k")
          (send k chain-to-keymap k1 #t)
-         (hash-table-map (send k get-map-function-table) list)))))
+         (hash-map (send k get-map-function-table) list)))))
   
   (define (test-canonicalize name str1 str2)
     (test
