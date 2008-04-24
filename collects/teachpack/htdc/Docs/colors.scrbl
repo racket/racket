@@ -1,17 +1,17 @@
-{ (define LIBNAME "A Colors Library (HtDC)")
-  (include "head.tinc") }
+#lang scribble/doc
 
-<p>Add 
-<pre><code>
+@(require scribble/manual)
+
+@title[#:tag "colors"]{Colors: colors.*}
+
+Add 
+@verbatim[#:indent 3]{
   import colors.*
-</code></pre>
+}
 at the top of your Definitions Window to import this library. 
-</p>
 
-
-<p>This <code>draw</code> package provides classes for representing colors: 
-<pre>
-<code>
+This package provides classes for representing colors: 
+@verbatim[#:indent 3]{
                               +--------+
                               | IColor |
                               +--------+
@@ -24,12 +24,6 @@ at the top of your Definitions Window to import this library.
          +-------+  +-------+ +-------+ +-------+ +-------+  +-------+ 
          | Blue  |  | Green | | Red   | | White | | Yellow|  | Black | 
          +-------+  +-------+ +-------+ +-------+ +-------+  +-------+ 
-</code>
-</pre>
-</p>
+}
 
-<p>The <code>IColor</code> class is abstract. Its variants (subclasses) are
-created with no arguments. 
-</p>
-
-{(include "foot.tinc")}
+@deftech{IColor} is an interface. Its variants are created with no arguments. 
