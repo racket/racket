@@ -3125,9 +3125,12 @@ module browser threading seems wrong.
             (make-object separator-menu-item% (get-show-menu))
             
             (new menu:can-restore-menu-item%
-                 (shortcut (if (eq? (system-type) 'macosx) #f #\m))
+                 (shortcut (if (eq? (system-type) 'macosx) #\r #\m))
                  (label (string-constant split-menu-item-label))
                  (parent (get-show-menu))
+                 (shortcut-prefix (if (eq? (system-type) 'macosx) 
+                                      (cons 'shift (get-default-shortcut-prefix))
+                                      (get-default-shortcut-prefix)))
                  (callback (λ (x y) (split)))
                  (demand-callback (λ (item) (split-demand item))))
             (new menu:can-restore-menu-item% 
