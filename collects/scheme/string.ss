@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide string-append*)
+(provide string-append* string-join)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common case
