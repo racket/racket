@@ -6196,8 +6196,11 @@ static Scheme_Object *read_lang(Scheme_Object *port,
 
   modpath = scheme_intern_symbol(buf);
   if (stxsrc) {
+    long span;
+    span = SPAN(port, name_pos);
     modpath = scheme_make_stx_w_offset(modpath, name_line, name_col, name_pos, 
-                                       SPAN(port, name_pos) - 1, stxsrc, STX_SRCTAG);
+                                       span - ((ch == EOF) ? 0 : 1), 
+                                       stxsrc, STX_SRCTAG);
   }
 
   return do_reader(modpath, port, stxsrc, line, col, pos, ht, indentation, params);
