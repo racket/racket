@@ -4,9 +4,11 @@
 
 @(define struct-eval (make-base-eval))
 
-@title[#:tag "structures"]{Structures}
+@title[#:tag "structures" #:style 'toc]{Structures}
 
 @guideintro["define-struct"]{structure types via @scheme[define-struct]}
+
+@local-table-of-contents[]
 
 A @deftech{structure type} is a record datatype composing a number of
 @idefterm{fields}. A @deftech{structure}, an instance of a structure
@@ -339,6 +341,40 @@ Returns @scheme[#t] if @scheme[v] is a @tech{structure type property
 descriptor} value, @scheme[#f] otherwise.
 
 }
+
+@;------------------------------------------------------------------------
+@section[#:tag "struct-copy"]{Copying and Updating Structures}
+
+@defform[(struct-copy id struct-expr [field-id expr] ...)]{
+
+Creates a new instance of the structure type @scheme[id] with the same
+field values as the structure produced by @scheme[struct-expr], except
+that the value of each supplied @scheme[field-id] is instead
+determined by the corresponding @scheme[expr].
+
+The @scheme[id] must have a @tech{transformer binding} that
+encapsulates information about a structure type (i.e., like the
+initial identifier bound by @scheme[define-struct]), and the binding
+must supply a constructor, a predicate, and all field accessors.
+
+Each @scheme[field-id] is combined with @scheme[id] to form
+@scheme[id]@schemeidfont{-}@scheme[field-id] (using the lexical
+context of @scheme[field-id]), which must be one of the accessor
+bindings in @scheme[id]. The accessor bindings determined by different
+@scheme[field-id]s must be distinct. The order of the
+@scheme[field-id]s need not match the order of the corresponding
+fields in the structure type.
+
+The @scheme[struct-expr] is evaluated first. The result must be an
+instance of the @scheme[id] structure type, otherwise the
+@exnraise[exn:fail:contract]. Next, the field @scheme[expr]s are
+evaluated in order (even if the fields that correspond to the
+@scheme[field-id]s are in a different order). Finally, the new
+structure instance is created.
+
+The result of @scheme[struct-expr] can be an instance of a sub-type of
+@scheme[id], but the resulting copy is an immediate instance of
+@scheme[id] (not the sub-type).}
 
 @;------------------------------------------------------------------------
 @section[#:tag "structutils"]{Structure Utilities}

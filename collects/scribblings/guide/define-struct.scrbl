@@ -37,8 +37,8 @@ used directly:
 posn
 ]
 
-We explain one use of the @scheme[_struct-id] binding in the next
-section, @secref["struct-subtypes"].
+We show two uses of the @scheme[_struct-id] binding below in
+@secref["struct-copy"] and @secref["struct-subtypes"].
 
 Meanwhile, in addition to defining @scheme[_struct-id],
 @scheme[define-struct] also defines a number of identifiers that are
@@ -84,6 +84,36 @@ instance of @scheme[posn], even though @scheme["apple"] and
 @scheme[posn] instances. Enforcing constraints on field values, such
 as requiring them to be numbers, is normally the job of a contract, as
 discussed later in @secref["contracts"].
+
+@; ------------------------------------------------------------
+@section[#:tag "struct-copy"]{Copying and Update}
+
+The @scheme[struct-copy] form clones a structure and optionally
+updates specified fields in the clone. This process is sometimes
+called a @deftech{functional update}, because the result is a
+structure with updated field values. but the original structure is not
+modified.
+
+@specform[
+(struct-copy struct-id struct-expr [field-id expr] ...)
+]
+
+The @scheme[_struct-id] that appears after @scheme[struct-copy] must
+be a structure type name bound by @scheme[define-struct] (i.e., the
+name that cannot be used directly as an expression). The
+@scheme[_struct-expr] must produce an instance of the structure type.
+The result is a new instance of the structure tpe that is like the old
+one, except that the field indicated by each @scheme[_field-id] gets
+the value of the corresponding @scheme[_expr].
+
+@examples[
+#:eval posn-eval 
+(define p1 (make-posn 1 2))
+(define p2 (struct-copy posn p1 [x 3]))
+(list (posn-x p2) (posn-y p2))
+(list (posn-x p1) (posn-x p2))
+]
+
 
 @; ------------------------------------------------------------
 @section[#:tag "struct-subtypes"]{Structure Subtypes}

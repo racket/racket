@@ -79,4 +79,5 @@
              procedure-reduce-keyword-arity
              (rename define-struct* define-struct)
              define-struct/derived
-             struct-field-index))
+             struct-field-index
+             struct-copy))
