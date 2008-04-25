@@ -1,10 +1,11 @@
-#cs
-(module Canvas-native-methods mzscheme
-  (require (lib "htdch/draw/support.scm") mzlib/unit)
+#lang scheme
 
-  (define void-or-true (void))
-  (define (imperative w@t+1 w@t) w@t+1)
+(require (lib "htdch/draw/support.scm")
+         mzlib/unit)
+
+(define void-or-true (void))
+(define (imperative w@t+1 w@t) w@t+1)
   
-  (define-values/invoke-unit/infer canvas-native@)
+(define-values/invoke-unit/infer canvas-native@)
 
-  (provide-signature-elements canvas-native^))
+(provide-signature-elements canvas-native^)
