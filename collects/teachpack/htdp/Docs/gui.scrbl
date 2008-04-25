@@ -18,12 +18,14 @@ window on your computer screen.
 @deftech{GUI-ITEM} A @tech{GUI-Item} is a data representation of an active
 component of a window on your computer screen.
 
+@defproc[(create-window [g (listof (listof (unsyntax @tech{GUI-ITEM})))])  Window]{
+Creates a window from the ``matrix'' of gui items @scheme[g].}
+
+@defproc[(window? [x any/c]) boolean?]{Is the given value a window?}
+
 @defproc[(show-window [w Window]) true]{Shows @scheme[w].}
 
 @defproc[(hide-window [w window]) true]{Hides @scheme[w].}
-
-@defproc[(create-window [g (listof (listof (unsyntax @tech{GUI-ITEM})))])  Window]{
-Creates a window from the ``matrix'' of gui items @scheme[g].}
 
 @defproc[(make-button [label string>][callback (-> event%  boolean)])  (unsyntax @tech{GUI-ITEM})]{Creates a
 button with @scheme[label] and @scheme[callback] function. The latter
@@ -52,8 +54,11 @@ Example 1:
 @(begin
 #reader scribble/comment-reader
 (schemeblock
-> (define w (create-window (list (list (make-button "QUIT" (lambda (e) (hide-window w)))))))
-;; A button appears on the screen. Click on the button and it will disappear.
+> (define w
+    (create-window
+      (list (list (make-button "QUIT" (lambda (e) (hide-window w)))))))
+;; A button appears on the screen.
+;; Click on the button and it will disappear.
 > (show-window w)
 ;; The window disappears. 
 ))
@@ -75,7 +80,8 @@ Example 2:
 (define (respond e)
   (draw-message msg1 (string-append "Hello, " (text-contents text1))))
 
-;; set up window with three "lines": a text field, a message, and two buttons
+;; set up window with three "lines":
+;;    a text field, a message, and two buttons
 ;; fill in text and click OKAY
 (define w 
  (create-window
