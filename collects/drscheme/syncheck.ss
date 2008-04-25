@@ -1448,10 +1448,10 @@ If the namespace does not, they are colored the unbound color.
                     (add-disappeared-uses stx varrefs))])
             (collect-general-info sexp)
             (syntax-case* sexp (#%plain-lambda case-lambda if begin begin0 let-values letrec-values set!
-                                 quote quote-syntax with-continuation-mark 
-                                 #%plain-app #%top #%plain-module-begin
-                                 define-values define-syntaxes define-values-for-syntax module
-                                 #%require #%provide #%expression)
+                                               quote quote-syntax with-continuation-mark 
+                                               #%plain-app #%top #%plain-module-begin
+                                               define-values define-syntaxes define-values-for-syntax module
+                                               #%require #%provide #%expression)
               (if high-level? free-transformer-identifier=? free-identifier=?)
               [(#%plain-lambda args bodies ...)
                (begin
@@ -1642,7 +1642,7 @@ If the namespace does not, they are colored the unbound color.
                  (add-id varrefs sexp))]
               [_
                (begin
-                #;
+                 #;
                  (printf "unknown stx: ~e datum: ~e source: ~e\n"
                          sexp
                          (and (syntax? sexp)
@@ -2363,12 +2363,13 @@ If the namespace does not, they are colored the unbound color.
                 (loop (send enclosing-snip-admin get-editor)))
               ed))))
     
-    ;; find-source : definitions-text source -> editor or false
+    ;; find-source-editor : source -> editor or false
     (define (find-source-editor stx)
       (let ([defs-text (get-defs-text)])
         (and defs-text 
              (let txt-loop ([text defs-text])
                (cond
+                 [(not (syntax-source stx)) #f]
                  [(and (is-a? text fw:text:basic<%>)
                        (send text port-name-matches? (syntax-source stx)))
                   text]
