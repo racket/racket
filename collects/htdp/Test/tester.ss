@@ -1,3 +1,7 @@
+#lang scheme 
+
+(provide test-error)
+
 (define-syntax test-error 
   (lambda (stx)
     (syntax-case stx ()

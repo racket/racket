@@ -1,9 +1,7 @@
-; (load "tester.ss")
-;; by hand, bottom
-
-;; ------------------------------------------------------------------------
-;; testing repl3
-;; teachpack: guess.ss
+;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname guess2) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require (lib "guess.ss" "htdp"))
 
 ;; check-guess3 : digit digit digit number -> symbol
 ;; to determine how three guess digits and target relate to each other 
@@ -33,7 +31,7 @@
 (eq? (check-guess3 1 3 6 631) 'Perfect)
 
 ;; Test with GUI: set lib to guess-lib.ss
-(guess-with-gui-3 check-guess3)
+(check-expect (guess-with-gui-3 check-guess3) true)
 
 ; (define (foo x) x) (guess-with-gui-3 foo) 
 ; (guess-with-gui-3 'a)

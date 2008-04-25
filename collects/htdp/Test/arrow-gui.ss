@@ -1,27 +1,14 @@
-;; TeachPack : arrow-gui.ss, gui.ss
-
-(define msg (make-message (make-string 22 #\space)))
-(create-window (list (list msg)))
-
-#| Language: Intermediate with Lambda 
-;; make-model : sym -> (button% event% -> void)
-(define (make-model2 dir)
-  (lambda (b e)
-    (local ([define _ (view dir)])
-      (draw-message msg (format "~a ~n" (control))))))
-
-(connect 
- (make-model "left")
- (make-model "right")
- (make-model "up")
- (make-model "down"))
-|#
-
-#| Language: Beginner |#
+;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname arrow-gui) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require (lib "arrow-gui.ss" "htdp"))
+(require (lib "gui.ss" "htdp"))
 
 (define (left b e) (draw-message msg "left"))
 (define (right b e) (draw-message msg "right"))
 (define (up b e) (draw-message msg "up"))
 (define (down b e) (draw-message msg "down"))
 
-(connect left right up down)
+(define msg (make-message (make-string 22 #\space)))
+(check-expect (window? (create-window (list (list msg)))) true)
+(check-expect (connect left right up down) true)

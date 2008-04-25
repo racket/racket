@@ -1,3 +1,8 @@
+;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname master) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require (lib "master.ss" "htdp"))
+
 ; (load "tester.ss")
 
 ;; check-guess : color color color color -> symbol
@@ -18,6 +23,6 @@
 (eq? (check-guess 'white 'blue 'blue 'red) 'the_colors_occur)
 (eq? (check-guess 'white 'blue 'red 'green) 'nothing_correct)
 
-(master check-guess)
-; (master 1)
-; (master first)
+(check-expect (master check-guess) true)
+; (check-error (master 1) "master: primitive operator master expects a defined procedure name (usually `compare-guess') in this position")
+; (check-error (master first) ...)

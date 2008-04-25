@@ -1,6 +1,7 @@
-;; test errors by hand in GUI
-(load "tester.ss")
-(require htdp/convert)
+#lang scheme 
+
+(require (lib "testing.ss" "htdp"))
+(require (lib "convert.ss" "htdp"))
 
 ;; f2c : num -> num
 ;; to convert a Fahrenheit temperature into a Celsius temperature 
@@ -33,30 +34,19 @@
 (when (file-exists? OUT) (delete-file OUT))
 (convert-file IN f2c OUT)
 (with-input-from-file OUT check-convert-out)
-    
-(test-error (convert-file IN list OUT))
-;; convert-file: procedure of one argument expected as "convert-gui" argument;
-;; given procedure ...
 
-(test-error (convert-file IN first OUT))
-;; first: expects argument of type <non-empty list>; given 212
+(check-error (convert-file IN list OUT) "convert: The conversion function must produce a number; result: (212)")
 
-(test-error (convert-file IN fx OUT))
-;; convert: The conversion function must produce a number; result: 'xyz
+(check-error (convert-file IN first OUT) "first: expected argument of type <non-empty list>; given 212")
 
-(test-error (convert-file IN f2c 10))
-;; convert-file: expected <string> as third argument, given: 10
+(check-error (convert-file IN fx OUT) "convert: The conversion function must produce a number; result: xyz")
+
+(check-error (convert-file IN f2c 10) "convert-file: expected <string> as third argument, given: 10")
 
 ;; ----------------------------------------------------------------------------
 ;; convert by repl: 
 (convert-repl f2c) 
 ;; type in 0 212 40 into the repl 
-
-(test-error (convert-repl first))
-;; hilight first 
-
-(test-error (convert-repl fx))
-;; signal an error about not returning a number
 
 ;; ----------------------------------------------------------------------------
 ;; convert by GUI 
@@ -72,3 +62,5 @@
 
 ;; TEST BY HAND: (convert-gui fx)
 ;; signal an error about not returning a number
+
+(generate-report)

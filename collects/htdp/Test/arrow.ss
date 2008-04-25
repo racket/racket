@@ -1,7 +1,8 @@
-; (load "tester.ss")
-
-;; TeachPack : arrow.ss, draw.ss
-;; Language: Beginner
+;; The first three lines of this file were inserted by DrScheme. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname arrow) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require (lib "arrow.ss" "htdp"))
+(require (lib "draw.ss" "htdp"))
 
 ;; ---------------------------------------------------------------------
 ;; 
@@ -35,10 +36,11 @@
 ;; TESTS: 
 
 ;; this creates the canvas
-(start 100 50)
+(check-expect (start 100 50) true)
+(check-expect (draw-solid-string (make-posn 5 10) "click on arrow keys") true)
 
 ;; this creates the controller GUI
-(control-left-right (make-posn 10 20) 10 move draw-it)
+(check-expect (control-left-right (make-posn 10 20) 10 move draw-it) true)
 
 ; (load "tester.ss")
 

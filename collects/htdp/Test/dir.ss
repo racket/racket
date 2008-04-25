@@ -1,8 +1,7 @@
 ;; The first three lines of this file were inserted by DrScheme. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname dir) (read-case-sensitive #t) (teachpacks ((lib "dir.ss" "teachpack" "htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "dir.ss" "teachpack" "htdp")))))
-;; TeachPack: dir.ss
-;; Language: Intermediate with Lambda 
+#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname dir) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
+(require (lib "dir.ss" "htdp"))
 
 (define current (create-dir "."))
 (define teachps (create-dir (string-append "/Users/matthias/plt/" "collects/teachpack/htdp")))
@@ -16,8 +15,5 @@
  (map (lambda (x) (format "in Test, not in  Teachpacks: ~s" x))
       (filter (lambda (x) (not (member x teachps-files))) current-files)))
 
-(require htdp/testing)
-
 (check-expect (make-file 'a 1 2) (make-file 'a 1 2))
 
-(generate-report)

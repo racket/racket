@@ -1,7 +1,7 @@
 #lang scheme
 
 (require htdp/error
-         (lib "prim.ss" "lang"))
+         lang/prim)
 
 (provide
  create-dir ; path -> Directory
