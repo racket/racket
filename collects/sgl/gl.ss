@@ -14,8 +14,9 @@
 		   [else (ffi-lib "libGLU")]))
   
   (define (unavailable name)
-    (lambda x
-      (error 'name "unavailable on this system")))
+    (lambda ()
+      (lambda x
+        (error name "unavailable on this system"))))
   
   (define-syntax define-foreign-lib
     (syntax-rules (->)
