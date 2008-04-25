@@ -294,6 +294,7 @@ If the namespace does not, they are colored the unbound color.
             (define tacked-hash-table (make-hasheq))
             (define cursor-location #f)
             (define cursor-text #f)
+            (define cursor-eles #f)
             (define/private (find-poss text left-pos right-pos)
               (let ([xlb (box 0)]
                     [ylb (box 0)]
@@ -385,6 +386,7 @@ If the namespace does not, they are colored the unbound color.
                   (set! arrow-vectors #f)
                   (set! cursor-location #f)
                   (set! cursor-text #f)
+                  (set! cursor-eles #f)
                   (when any-tacked?
                     (invalidate-bitmap-cache))
                   (update-docs-background #f)
@@ -644,6 +646,7 @@ If the namespace does not, they are colored the unbound color.
                      (when (and cursor-location cursor-text)
                        (set! cursor-location #f)
                        (set! cursor-text #f)
+                       (set! cursor-eles #f)
                        (let ([f (get-top-level-window)])
                          (when f
                            (send f update-status-line 'drscheme:check-syntax:mouse-over #f)))
@@ -661,15 +664,18 @@ If the namespace does not, they are colored the unbound color.
                             
                             (let* ([arrow-vector (hash-ref arrow-vectors cursor-text (λ () #f))]
                                    [eles (and arrow-vector (vector-ref arrow-vector cursor-location))])
-                              (update-docs-background eles)
-                              (when eles
-                                (update-status-line eles)
-                                (for-each (λ (ele)
-                                            (cond
-                                              [(arrow? ele)
-                                               (update-arrow-poss ele)]))
-                                          eles)
-                                (invalidate-bitmap-cache))))]
+                              
+                              (unless (equal? cursor-eles eles)
+                                (set! cursor-eles eles)
+                                (update-docs-background eles)
+                                (when eles
+                                  (update-status-line eles)
+                                  (for-each (λ (ele)
+                                              (cond
+                                                [(arrow? ele)
+                                                 (update-arrow-poss ele)]))
+                                            eles)
+                                  (invalidate-bitmap-cache)))))]
                          [else
                           (update-docs-background #f)
                           (let ([f (get-top-level-window)])
@@ -678,6 +684,7 @@ If the namespace does not, they are colored the unbound color.
                           (when (or cursor-location cursor-text)
                             (set! cursor-location #f)
                             (set! cursor-text #f)
+                            (set! cursor-eles #f)
                             (invalidate-bitmap-cache))]))
                      (super on-event event)]
                     [(send event button-down? 'right)
