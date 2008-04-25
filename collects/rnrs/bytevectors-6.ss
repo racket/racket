@@ -281,7 +281,7 @@
   (let ([pos-n (if (negative? n)
                    (+ n (arithmetic-shift 1 (* 8 size)))
                    n)])
-    (bytevector-int-set! 'bytevector-uint-set! bstr k pos-n n endianness size (* size (sub1 8)))))
+    (bytevector-int-set! 'bytevector-sint-set! bstr k pos-n n endianness size (sub1 (* size 8)))))
 
 (define (bytevector->int-list who ref bv endianness size)
   (unless (bytes? bv)

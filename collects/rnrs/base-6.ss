@@ -210,30 +210,22 @@
 ;; until the results matched the examples in R6RS.
 
 (define (div x y)
-  (let ([n (* (numerator x)
-              (denominator y))]
-        [d (* (denominator x)
-              (numerator y))])
-    (if (negative? n)
-        (- (quotient (- (abs d) n 1) d))
-        (quotient n d))))
-
-(define (div0 x y)
   (cond
-   [(zero? y) 0]
-   [(positive? y)
-    (if (negative? x)
-        (- (div (- x) y))
-        (div x y))]
-   [(negative? y)
-    (let ([n (* -2
-                (numerator x)
+   [(rational? y)
+    (let ([n (* (numerator x)
                 (denominator y))]
           [d (* (denominator x)
-                (- (numerator y)))])
-      (if (< n d)
-          (- (quotient (- d n) (* 2 d)))
-          (quotient (+ n d -1) (* 2 d))))]))
+                (numerator y))])
+      (if (negative? n)
+          (- (quotient (- (abs d) n 1) d))
+          (quotient n d)))]
+   [(real? y)
+    ;; infinity or nan
+    (if (equal? y +nan.0)
+        +nan.0
+        1.0)]
+   [else
+    (raise-type-error "real number" y)]))
 
 (define (mod x y)
   (- x (* (div x y) y)))
@@ -242,12 +234,21 @@
   (let ([d (div x y)])
     (values d (- x (* d y)))))
 
-(define (mod0 x y)
-  (- x (* (div0 x y) y)))
-
 (define (div0-and-mod0 x y)
-  (let ([d (div0 x y)])
-    (values d (- x (* d y)))))
+  (let-values ([(d m) (div-and-mod x y)])
+    (if (>= m (/ (abs y) 2))
+        (if (negative? y)
+            (values (sub1 d) (+ m y))
+            (values (add1 d) (- m y)))
+        (values d m))))
+
+(define (div0 x y)
+  (let-values ([(d m) (div0-and-mod0 x y)])
+    d))
+
+(define (mod0 x y)
+  (let-values ([(d m) (div0-and-mod0 x y)])
+    m))
 
 (define-syntax r6rs:/
   ;; R6RS says that division with exact zero is treated like 

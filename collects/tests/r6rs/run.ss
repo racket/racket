@@ -3,6 +3,7 @@
 (import (rnrs)
         (tests r6rs test)
         (tests r6rs base)
+        (tests r6rs reader)
         (tests r6rs unicode)
         (tests r6rs bytevectors)
         (tests r6rs lists)
@@ -27,6 +28,7 @@
 
 (run-base-tests)
 
+(run-reader-tests)
 (run-unicode-tests)
 (run-bytevectors-tests)
 (run-lists-tests)

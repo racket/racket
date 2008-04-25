@@ -55,10 +55,22 @@
 (define-fx * fx* (a b) check)
 (define-fx - fx- [(a) (a b)] check)
 
-(define-fx div-and-mod fxdiv-and-mod (a b) nocheck)
+(provide fxdiv-and-mod
+         fxdiv0-and-mod0)
+(define (fxdiv-and-mod a b)
+  (unless (fixnum? a)
+    (raise-type-error 'fxdiv-and-mod "fixnum" a))
+  (unless (fixnum? b)
+    (raise-type-error 'fxdiv-and-mod "fixnum" b))
+  (div-and-mod a b))
 (define-fx div fxdiv (a b) nocheck)
 (define-fx mod fxmod (a b) nocheck)
-(define-fx div0-and-mod0 fxdiv0-and-mod0 (a b) nocheck)
+(define (fxdiv0-and-mod0 a b)
+  (unless (fixnum? a)
+    (raise-type-error 'fxdiv0-and-mod0 "fixnum" a))
+  (unless (fixnum? b)
+    (raise-type-error 'fxdiv0-and-mod0 "fixnum" b))
+  (div0-and-mod0 a b))
 (define-fx div0 fxdiv0 (a b) nocheck)
 (define-fx mod0 fxmod0 (a b) nocheck)
 
@@ -72,13 +84,13 @@
         (raise-type-error 'fx/carry "fixnum" b))
       (unless (fixnum? a)
         (raise-type-error 'fx/carry "fixnum" b))
-      (let-values ([(d m) (div0-and-mod0 (+ a b c) 
+      (let-values ([(d m) (div0-and-mod0 expr
                                          (arithmetic-shift 1 (fixnum-width)))])
         (values m d)))))
 
 (define-carry fx+/carry (a b c) (+ a b c))
 (define-carry fx-/carry (a b c) (- a b c))
-(define-carry fx*/carry (a b c) (* (+ a b) c))
+(define-carry fx*/carry (a b c) (+ (* a b) c))
 
 (define-fx bitwise-not fxnot (a) nocheck)
 (define-fx bitwise-and fxand (a b ...) nocheck)

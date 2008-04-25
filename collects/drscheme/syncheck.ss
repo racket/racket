@@ -1440,7 +1440,7 @@ If the namespace does not, they are colored the unbound color.
                                    (when (eq? nominal-source-id jump-to-id)
                                      (jump-to id))))))
                            (syntax->list vars))))])
-        
+
         (let level-loop ([sexp sexp]
                          [high-level? #f])
           

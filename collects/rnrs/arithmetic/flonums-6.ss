@@ -49,10 +49,22 @@
 
 (define-fl abs flabs (a) nocheck)
 
-(define-fl div-and-mod fldiv-and-mod (a b) nocheck)
+(provide fldiv-and-mod
+         fldiv0-and-mod0)
+(define (fldiv-and-mod a b)
+  (unless (inexact-real? a)
+    (raise-type-error 'fldiv-and-mod "flonum" a))
+  (unless (inexact-real? b)
+    (raise-type-error 'fldiv-and-mod "flonum" b))
+  (div-and-mod a b))
 (define-fl div fldiv (a b) nocheck)
 (define-fl mod flmod (a b) nocheck)
-(define-fl div0-and-mod0 fldiv0-and-mod0 (a b) nocheck)
+(define (fldiv0-and-mod0 a b)
+  (unless (inexact-real? a)
+    (raise-type-error 'fldiv0-and-mod0 "flonum" a))
+  (unless (inexact-real? b)
+    (raise-type-error 'fldiv0-and-mod0 "flonum" b))
+  (div0-and-mod0 a b))
 (define-fl div0 fldiv0 (a b) nocheck)
 (define-fl mod0 flmod0 (a b) nocheck)
 

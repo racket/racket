@@ -5,6 +5,40 @@
   (import (rnrs)
           (tests r6rs test))
 
+  ;; Originally from Ikarus test suite:
+  (define (fx*/carry-reference fx1 fx2 fx3)
+    (let* ([s (+ (* fx1 fx2) fx3)]
+           [s0 (mod0 s (expt 2 (fixnum-width)))]
+           [s1 (div0 s (expt 2 (fixnum-width)))])
+      (values s0 s1)))
+  (define (fx+/carry-reference fx1 fx2 fx3)
+    (let* ([s (+ (+ fx1 fx2) fx3)]
+           [s0 (mod0 s (expt 2 (fixnum-width)))]
+           [s1 (div0 s (expt 2 (fixnum-width)))])
+      (values s0 s1)))
+  (define (fx-/carry-reference fx1 fx2 fx3)
+    (let* ([s (- (- fx1 fx2) fx3)]
+           [s0 (mod0 s (expt 2 (fixnum-width)))]
+           [s1 (div0 s (expt 2 (fixnum-width)))])
+      (values s0 s1)))
+
+  (define-syntax carry-test
+    (syntax-rules ()
+      [(_ fxop/carry fxop/carry-reference fx1 fx2 fx3)
+       (test (call-with-values (lambda () (fxop/carry fx1 fx2 fx3)) list)
+             (call-with-values (lambda () (fxop/carry-reference fx1 fx2 fx3)) list))]))
+
+  (define-syntax carry-tests
+    (syntax-rules ()
+      [(_ 0 nums)
+       (carry-tests 0 nums nums nums)]
+      [(_ 0 (n ...) ms ps)
+       (begin (carry-tests 1 n ms ps) ...)]
+      [(_ 1 n (m ...) ps)
+       (begin (carry-tests 2 n m ps) ...)]
+      [(_ 2 n m (p ...))
+       (begin (carry-test fx*/carry fx*/carry-reference n m p) ...)]))
+
   (define (run-arithmetic-fixnums-tests)
 
     (test/exn (fx- (least-fixnum)) &implementation-restriction)
@@ -143,6 +177,9 @@
     (test (fx- (greatest-fixnum) 1) (- (greatest-fixnum) 1))
     (test (fx- (greatest-fixnum) (greatest-fixnum)) 0)
     (test (fx- (least-fixnum) (least-fixnum)) 0)
+
+    ;; If you put N numbers here, it expads to N^3 tests!
+    (carry-tests 0 [0 1 2 -1 -2 38734 -3843 2484598 -348732487 (greatest-fixnum) (least-fixnum)])
 
     ;;
     ))

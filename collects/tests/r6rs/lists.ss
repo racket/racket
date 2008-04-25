@@ -6,6 +6,9 @@
           (tests r6rs test))
 
   (define (run-lists-tests)
+    
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;  Tests originally from R6RS
 
     (test (find even? '(3 1 4 1 5 9)) 4)
     (test (find even? '(3 1 5 1 5 9)) #f)
@@ -104,6 +107,45 @@
     (test (cons* 1 2 '(3 4 5)) '(1 2 3 4 5))
     (test (cons* 1 2 3) '(1 2 . 3))
     (test (cons* 1) 1)
+
+    ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;; Tests originally from Ikarus
+
+    (test (for-all even? '(1 2 3 4)) #f)
+    (test (for-all even? '(10 12 14 16)) #t)
+    (test (for-all even? '(2 3 4)) #f)
+    (test (for-all even? '(12 14 16)) #t)
+    (test (for-all (lambda (x) x) '(12 14 16)) 16)
+    (test (for-all (lambda (x) x) '(12 14)) 14)
+    (test (for-all (lambda (x) x) '(12)) 12)
+    (test (for-all (lambda (x) x) '()) #t)
+    (test (for-all even? '(13 . 14)) #f)
+    (test (for-all cons '(1 2 3) '(a b c)) '(3 . c))
+    (test (for-all (lambda (a b) (= a 1)) '(1 2 3) '(a b c)) #f)
+    (test (for-all (lambda (a b) (= a 1)) '(1 2) '(a b c)) #f)
+    (test (fold-left + 0 '(1 2 3 4 5)) 15)
+    (test (fold-left (lambda (a b) (cons b a)) '() '(1 2 3 4 5))
+          '(5 4 3 2 1))
+    (test (fold-left (lambda (count x)
+                       (if (odd? x) 
+                           (+ count 1) 
+                           count))
+                     0 
+                     '(3 1 4 1 5 9 2 6 5 3))
+          7)
+    (test (fold-left cons '(q) '(a b c)) '((((q) . a) . b) . c))
+    (test (fold-left + 0 '(1 2 3) '(4 5 6)) 21)
+    (test (fold-right + 0 '(1 2 3 4 5)) 15)
+    (test (fold-right cons '() '(1 2 3 4 5))
+          '(1 2 3 4 5))
+    (test (fold-right (lambda (x l)
+                        (if (odd? x) 
+                            (cons x l)
+                            l))
+                      '()
+                      '(3 1 4 1 5 9 2 6 5 3))
+          '(3 1 1 5 9 5 3))
+    (test (fold-right + 0 '(1 2 3) '(4 5 6)) 21)
 
     ;;
     ))

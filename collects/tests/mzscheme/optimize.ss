@@ -230,8 +230,10 @@
     (un 0 'abs 0)
     (un 1 'abs 1)
     (un 1 'abs -1)
-    (un (sub1 (expt 2 31)) 'abs (sub1 (expt 2 31)))
-    (un (sub1 (expt 2 31)) 'abs (add1 (expt -2 31)))
+    (un (sub1 (expt 2 30)) 'abs (sub1 (expt 2 30)))
+    (un (expt 2 30) 'abs (- (expt 2 30)))
+    (un (sub1 (expt 2 62)) 'abs (sub1 (expt 2 62)))
+    (un (expt 2 62) 'abs (- (expt 2 62)))
 
     (bin 11 '+ 4 7)
     (bin -3 '+ 4 -7)
