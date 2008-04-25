@@ -3,7 +3,8 @@
   (require mzlib/list
 	   mzlib/contract
            "my-macros.ss"
-           "shared.ss")
+           "shared.ss"
+           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
 
   (define-struct full-mark-struct (source label bindings values))
 
@@ -162,13 +163,15 @@
        (let*-2vals ([kept-vars (binding-set-varref-set-intersect tail-bound free-vars)])
          (if lifting?
              (let*-2vals ([let-bindings (filter (lambda (var) 
-                                                  (case (stepper-syntax-property var 'stepper-binding-type)
-                                                    ((let-bound macro-bound) #t)
-                                                    ((lambda-bound stepper-temp non-lexical) #f)
-                                                    (else (error 'make-debug-info 
-                                                                 "varref ~a's binding-type info was not recognized: ~a"
-                                                                 (syntax-e var)
-                                                                 (stepper-syntax-property var 'stepper-binding-type)))))
+                                                  (and 
+                                                   (case (stepper-syntax-property var 'stepper-binding-type)
+                                                     ((let-bound macro-bound) #t)
+                                                     ((lambda-bound stepper-temp non-lexical) #f)
+                                                     (else (error 'make-debug-info 
+                                                                  "varref ~a's binding-type info was not recognized: ~a"
+                                                                  (syntax-e var)
+                                                                  (stepper-syntax-property var 'stepper-binding-type))))
+                                                   (not (stepper-syntax-property var 'stepper-no-lifting-info))))
                                                 kept-vars)]
                           [lifter-syms (map get-lifted-var let-bindings)])
                          (make-full-mark source label (append kept-vars lifter-syms)))

@@ -173,6 +173,13 @@ stepper-binding-type :
  [ 'let-bound ] : this variable's binding was in a let/*/rec
  [ 'lambda-bound ] : this variable's binding was in a lambda
 
+stepper-no-lifting-info :
+ this label is applied to a let-bound-variable whose binding is not
+ being annotated (because the annotator is skipping inward past it).
+ For such a binding, no corresponding lifting variable is generated,
+ and so the marks shouldn't try to capture it.
+
+ 
 stepper-and/or-clauses-consumed :
  indicates the number of clauses to the left of the one associated
  with a given 'if' in the expansion of an 'and' or 'or'.
