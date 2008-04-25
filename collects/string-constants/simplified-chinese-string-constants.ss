@@ -118,6 +118,8 @@
   (cs-status-expanding-expression "语法检查：扩展表达式")
   (cs-mouse-over-import "绑定~s由~s导入")
   
+  (cs-view-docs "察看~a的文档")
+  
   (cs-lexical-variable "词汇变量")
   (cs-imported-variable "导入变量")
   
@@ -156,6 +158,7 @@
   
   (save "保存")
   (close-anyway "强制关闭")
+  (dont-save "不保存")
   (clear-anyway "强制清空")
   
   ;; menu item title
@@ -917,7 +920,7 @@
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "相当大（包括MrEd和HtDP高级）")
   (pretty-big-scheme-one-line-summary "增加了HtDP(程序设计方法)语言的语法和函数")
-  (r5rs-language-name "R5RS")
+  (r5rs-lang-name "R5RS")
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")
   (expander "Expander")
   (expander-one-line-summary "展开表达式，而不是求值")
@@ -1038,8 +1041,8 @@
   ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
   (version:now-available-at   "可以从这里获取：")
   
-  ;; special menu
-  (special-menu "特殊符号(&P)")
+  ;; insert menu
+  (insert-menu "插入(&I)")
   
   ;; large semi colon letters
   (insert-large-letters... "插入大字...")

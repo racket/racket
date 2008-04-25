@@ -700,6 +700,51 @@ This SRFI's syntax is part of PLT Scheme's default reader and printer.
  (stream-filter #f "stream-filter")
 )]
 
+Superceded by @schememodname[srfi/41].
+
+@; ----------------------------------------
+
+@srfi[41]{Streams}
+
+@redirect[41 '(
+ (stream-null #f "stream-null")
+ (stream-cons #t "stream-cons")
+ (stream? #f "stream?")
+ (stream-null? #f "stream-null?")
+ (stream-pair? #f "stream-pair?")
+ (stream-car #f "stream-car")
+ (stream-cdr #f "stream-cdr")
+ (stream-lambda #t "stream-lambda")
+ (define-stream #t "define-stream")
+ (list->stream #f "list-to-stream")
+ (port->stream #f "port-to-stream")
+ (stream #t "stream")
+ (stream->list #f "stream-to-list")
+ (stream-append #f "stream-append")
+ (stream-concat #f "stream-concat")
+ (stream-constant #f "stream-constant")
+ (stream-drop #f "stream-drop")
+ (stream-drop-while #f "stream-drop-while")
+ (stream-filter #f "stream-filter")
+ (stream-fold #f "stream-fold")
+ (stream-for-each #f "stream-for-each")
+ (stream-from #f "stream-from")
+ (stream-iterate #f "stream-iterate")
+ (stream-length #f "stream-length")
+ (stream-let #t "stream-let")
+ (stream-map #f "stream-map")
+ (stream-match #t "stream-match")
+ (stream-of #t "stream-of")
+ (stream-range #f "stream-range")
+ (stream-ref #f "stream-ref")
+ (stream-reverse #f "stream-reverse")
+ (stream-scan #f "stream-scan")
+ (stream-take #f "stream-take")
+ (stream-take-while #f "stream-take-while")
+ (stream-unfold #f "stream-unfold")
+ (stream-zip #f "stream-zip")
+)]
+
 @; ----------------------------------------
 
 @srfi[42]{Eager Comprehensions}

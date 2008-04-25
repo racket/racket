@@ -117,6 +117,8 @@
   (cs-status-expanding-expression "語法檢查：擴展表達式")
   (cs-mouse-over-import "綁定~s由~s導入")
   
+  (cs-view-docs "察看~a的文檔")
+  
   (cs-lexical-variable "詞彙變量")
   (cs-imported-variable "導入變量")
   
@@ -155,6 +157,7 @@
   
   (save "保存")
   (close-anyway "強制關閉")
+  (dont-save "不保存")
   (clear-anyway "強制清空")
   
   ;; menu item title
@@ -786,7 +789,7 @@
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
   ;;  the "Create Executable..." dialog for the "(module ...)" language.
   (launcher "啟動程序")
-  (launcher-explanatory-label "啟動程序（僅在本機運行，運行原始碼）")
+  (launcher-explanatory-label "啟動程序（僅在本機運行，運行源代碼）")
   (stand-alone "獨立程序")
   (stand-alone-explanatory-label "獨立程序（僅在本機運行，運行編譯代碼）")
   (distribution "可發佈程序")
@@ -916,7 +919,7 @@
   (how-to-design-programs "程序設計方法/How to Design Programs") ;; should agree with MIT Press on this one...
   (pretty-big-scheme "相當大（包括MrEd和HtDP高級）")
   (pretty-big-scheme-one-line-summary "增加了HtDP(程序設計方法)語言的語法和函數")
-  (r5rs-language-name "R5RS")
+  (r5rs-lang-name "R5RS")
   (r5rs-one-line-summary "Scheme語言標準第5修改稿")
   (expander "Expander")
   (expander-one-line-summary "展開表達式，而不是求值")
@@ -1037,8 +1040,8 @@
   ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
   (version:now-available-at   "可以從這裡獲取：")
   
-  ;; special menu
-  (special-menu "特殊符號(&P)")
+  ;; insert menu
+  (insert-menu "插入(&I)")
   
   ;; large semi colon letters
   (insert-large-letters... "插入大字...")
