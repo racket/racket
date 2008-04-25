@@ -103,16 +103,16 @@
          (let ([test-info (namespace-variable-value
                            'test~object #f builder (current-namespace))])
            (when test-info
-             (insert test-info
-                     (lambda ()
-                       (check-values-within
-                        (lambda () test) actual within
-                        (list #,@(list (syntax-source stx)
-                                       (syntax-line stx)
-                                       (syntax-column stx)
-                                       (syntax-position stx)
-                                       (syntax-span stx)))
-                        test-info)))))))]
+             (insert-test test-info
+                          (lambda ()
+                            (check-values-within
+                             (lambda () test) actual within
+                             (list #,@(list #`(quote #,(syntax-source stx))
+                                            (syntax-line stx)
+                                            (syntax-column stx)
+                                            (syntax-position stx)
+                                            (syntax-span stx)))
+                             test-info)))))))]
     [(_ test actual)
      (not (eq? (syntax-local-context) 'expression))
      (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
@@ -145,7 +145,7 @@
                           (lambda ()
                             (check-values-error
                              (lambda () test) error
-                             (list #,@(list (syntax-source stx)
+                             (list #,@(list #`(quote #,(syntax-source stx))
                                             (syntax-line stx)
                                             (syntax-column stx)
                                             (syntax-position stx)
