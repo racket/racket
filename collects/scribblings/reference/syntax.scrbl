@@ -722,7 +722,7 @@ result of @scheme[val-expr]. If no such @scheme[datum] is present, the
 
 For the selected @scheme[case-clause], the results of the last
 @scheme[then-expr], which is in tail position with respect to the
-@scheme[cond] form, are the results for the whole @scheme[cond] form.
+@scheme[case] form, are the results for the whole @scheme[case] form.
 
 A @scheme[case-clause] that starts with @scheme[else] must be the last
 @scheme[case-clause].
