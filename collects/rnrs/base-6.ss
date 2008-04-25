@@ -302,16 +302,18 @@
   (and (regexp-match? rx:number s)
        (string->number (regexp-replace* #rx"[|][0-9]+" s "") radix)))
 
-(define-syntax-rule (make-mapper what for for-each in-val val-length val->list)
+(define-syntax-rule (make-mapper what for for-each in-val val-length val->list list->result)
   (case-lambda
-   [(proc val) (for ([c (in-val val)])
-                 (proc c))]
+   [(proc val) (list->result
+                (for ([c (in-val val)])
+                  (proc c)))]
    [(proc val1 val2) 
     (if (= (val-length val1)
            (val-length val2))
-        (for ([c1 (in-val val1)]
-              [c2 (in-val val2)])
-          (proc c1 c2))
+        (list->result
+         (for ([c1 (in-val val1)]
+               [c2 (in-val val2)])
+           (proc c1 c2)))
         (error 'val-for-each "~as have different lengths: ~e and: ~e"
                what
                val1 val2))]
@@ -323,19 +325,20 @@
                            what
                            val1 s)))
                 vals)
-      (apply for-each 
-             proc 
-             (val->list val1)
-             (map val->list vals)))]))
+      (list->result
+       (apply for-each
+              proc 
+              (val->list val1)
+              (map val->list vals))))]))
 
 (define string-for-each
-  (make-mapper "string" for for-each in-string string-length string->list))
+  (make-mapper "string" for for-each in-string string-length string->list void))
 
 (define vector-for-each
-  (make-mapper "vector" for for-each in-vector vector-length vector->list))
+  (make-mapper "vector" for for-each in-vector vector-length vector->list void))
 
 (define vector-map
-  (make-mapper "vector" for/list map in-vector vector-length vector->list))
+  (make-mapper "vector" for/list map in-vector vector-length vector->list list->vector))
 
 
 (define (r6rs:error who msg . irritants)

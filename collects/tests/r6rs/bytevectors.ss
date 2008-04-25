@@ -8,12 +8,39 @@
   (define (run-bytevectors-tests)
     
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;; Tests originally from R6RS
+    ;; Tests originally from R6RS, plus added
+
+    (test (endianness little) 'little)
+    (test (endianness big) 'big)
+    (test (symbol? (native-endianness)) #t)
+
+    (test (bytevector? #vu8(1 2 3)) #t)
+    (test (bytevector? "123") #f)
+
+    (test (bytevector-length #vu8(1 2 3)) 3)
+    (test (bytevector-length (make-bytevector 10)) 10)
+    (test (bytevector-length (make-bytevector 10 3)) 10)
+    (test (bytevector-u8-ref (make-bytevector 10 3) 0) 3)
+    (test (bytevector-u8-ref (make-bytevector 10 3) 5) 3)
+    (test (bytevector-u8-ref (make-bytevector 10 3) 9) 3)
+    (test (bytevector-u8-ref (make-bytevector 10 255) 9) 255)
+    (test (bytevector-u8-ref (make-bytevector 10 -1) 9) 255)
+    (test (bytevector-u8-ref (make-bytevector 10 -128) 9) 128)
+
+    (let ([v (make-bytevector 5 2)])
+      (test/unspec (bytevector-fill! v -1))
+      (test v #vu8(255 255 255 255 255))
+      (test/unspec (bytevector-fill! v 17))
+      (test v #vu8(17 17 17 17 17))
+      (test/unspec (bytevector-fill! v 255))
+      (test v #vu8(255 255 255 255 255)))
     
     (test (let ((b (u8-list->bytevector '(1 2 3 4 5 6 7 8))))
             (bytevector-copy! b 0 b 3 4)
             (bytevector->u8-list b)) 
           '(1 2 3 1 2 3 4 8))
+
+    (test (bytevector-copy #vu8(1 2 3)) #vu8(1 2 3))
 
     (test (let ((b1 (make-bytevector 16 -127))
                 (b2 (make-bytevector 16 255)))
@@ -35,6 +62,11 @@
              (bytevector-s8-ref b 1)
              (bytevector-u8-ref b 1)))
           '(-126 130 -10 246))
+
+    (test (bytevector->u8-list #vu8(1 2 3)) '(1 2 3))
+    (test (bytevector->u8-list #vu8(255 255 255)) '(255 255 255))
+    (test (u8-list->bytevector '(1 2 3)) #vu8(1 2 3))
+    (test (u8-list->bytevector '()) #vu8())
 
     (let ([b (make-bytevector 16 -127)])
       (test/unspec
@@ -104,7 +136,79 @@
       (test (bytevector-s64-ref b 8 (endianness little)) -144115188075855873)
       (test (bytevector-u64-ref b 8 (endianness big)) 18446744073709551613)
       (test (bytevector-s64-ref b 8 (endianness big)) -3))
-    
+
+    (for-each
+     (lambda (k)
+       (for-each
+        (lambda (n)
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-single-native-set! b k n))
+            (test/approx (bytevector-ieee-single-native-ref b k) n))
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-single-set! b k n 'big))
+            (test/approx (bytevector-ieee-single-ref b k 'big) n))
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-single-set! b k n 'little))
+            (test/approx (bytevector-ieee-single-ref b k 'little) n))
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-double-native-set! b k n))
+            (test/approx (bytevector-ieee-double-native-ref b k) n))
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-double-set! b k n 'big))
+            (test/approx (bytevector-ieee-double-ref b k 'big) n))
+          (let ([b (make-bytevector 12)])
+            (test/unspec (bytevector-ieee-double-set! b k n 'little))
+            (test/approx (bytevector-ieee-double-ref b k 'little) n)))
+        '(1.0 25.78 +inf.0 -inf.0 +nan.0)))
+     '(0 1 2 3 4))
+
+    (test (string->utf8 "apple") #vu8(97 112 112 108 101))
+    (test (string->utf8 "app\x3BB;e") #vu8(97 112 112 206 187 101))
+    (test (string->utf16 "app\x3BB;e" 'little) #vu8(97 0 112 0 112 0 #xBB #x3 101 0))
+    (test (string->utf16 "app\x3BB;e" 'big) #vu8(0 97 0 112 0 112 #x3 #xBB 0 101))
+    (test (string->utf16 "app\x3BB;e") #vu8(0 97 0 112 0 112 #x3 #xBB 0 101))
+    (test (string->utf32 "app\x3BB;e" 'little) #vu8(97 0 0 0 112 0 0 0 112 0 0 0 #xBB #x3 0 0 101 0 0 0))
+    (test (string->utf32 "app\x3BB;e" 'big) #vu8(0 0 0 97 0 0 0 112 0 0 0 112 0 0 #x3 #xBB 0 0 0 101))
+    (test (string->utf32 "app\x3BB;e") #vu8(0 0 0 97 0 0 0 112 0 0 0 112 0 0 #x3 #xBB 0 0 0 101))
+
+    (let ([bv-append
+           (lambda (bv1 bv2)
+             (let ([bv (make-bytevector (+ (bytevector-length bv1)
+                                           (bytevector-length bv2)))])
+               (bytevector-copy! bv1 0 bv 0  (bytevector-length bv1))
+               (bytevector-copy! bv2 0 bv (bytevector-length bv1) (bytevector-length bv2))
+               bv))])
+      (for-each
+       (lambda (str)
+         (test (utf8->string (string->utf8 str)) str)
+         (test (utf16->string (string->utf16 str 'big) 'big) str)
+         (test (utf16->string (string->utf16 str 'little) 'little) str)
+         (test (utf16->string (bv-append #vu8(#xFF #xFE) (string->utf16 str 'little)) 'big) str)
+         (test (utf16->string (bv-append #vu8(#xFE #xFF) (string->utf16 str 'big)) 'little) str)
+         (test (utf16->string (bv-append #vu8(#xFF #xFE) (string->utf16 str 'little)) 'little #t) 
+               (string-append "\xFEFF;" str))
+         (test (utf16->string (bv-append #vu8(#xFE #xFF) (string->utf16 str 'little)) 'little #t) 
+               (string-append "\xFFFE;" str))
+         (test (utf16->string (bv-append #vu8(#xFE #xFF) (string->utf16 str 'big)) 'big #t) 
+               (string-append "\xFEFF;" str))
+         (test (utf16->string (bv-append #vu8(#xFF #xFE) (string->utf16 str 'big)) 'big #t) 
+               (string-append "\xFFFE;" str))
+         (test (utf32->string (string->utf32 str 'big) 'big) str)
+         (test (utf32->string (string->utf32 str 'little) 'little) str)
+         (test (utf32->string (bv-append #vu8(#xFF #xFE 0 0) (string->utf32 str 'little)) 'big) str)
+         (test (utf32->string (bv-append #vu8(0 0 #xFE #xFF) (string->utf32 str 'big)) 'little) str)
+         (test (utf32->string (bv-append #vu8(#xFF #xFE 0 0) (string->utf32 str 'little)) 'little #t) 
+               (string-append "\xFEFF;" str))
+         (test (utf32->string (bv-append #vu8(#xFE #xFF 0 0) (string->utf32 str 'little)) 'little #t) 
+               (string-append "\xFFFE;" str))
+         (test (utf32->string (bv-append #vu8(0 0 #xFE #xFF) (string->utf32 str 'big)) 'big #t) 
+               (string-append "\xFEFF;" str))
+         (test (utf32->string (bv-append #vu8(0 0 #xFF #xFE) (string->utf32 str 'big)) 'big #t) 
+               (string-append "\xFFFE;" str)))
+       (list "apple"
+             "app\x3BB;e"
+             "\x0;\x1;\x80;\xFF;\xD7FF;\xE000;\x10FFFF;")))
+
     ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;; Tests originally from Ikarus
 

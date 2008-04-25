@@ -460,6 +460,41 @@
     (test (exact? 5)                    #t)
     (test (inexact? +inf.0)             #t)
 
+    (test (inexact 2) 2.0)
+    (test (inexact 2.0) 2.0)
+    (test (exact 2) 2)
+    (test (exact 2.0) 2)
+
+    (for-each
+     (lambda (x y)
+       (let ([try-one
+              (lambda (x y)
+                (let ([try-x
+                       (lambda (x x2)
+                         (test (= x x2) #t)
+                         (test (< x x2) #f)
+                         (test (> x x2) #f)
+                         (test (<= x x2) #t)
+                         (test (>= x x2) #t))])
+                  (try-x x x)
+                  (when (exact? x)
+                    (try-x x (inexact x))
+                    (try-x (inexact x) x)))
+                (test (< x y) #t)
+                (test (<= x y) #t)
+                (test (> x y) #f)
+                (test (>= x y) #f)
+                (test (< y x) #f)
+                (test (<= y x) #f)
+                (test (> y x) #t)
+                (test (>= y x) #t))])
+         (try-one x y)
+         (try-one (inexact x) y)
+         (try-one x (inexact y))
+         (try-one (inexact x) (inexact y))))
+     (list 1/2 1 3/2 (expt 2 100) (expt 2 100))
+     (list 1 2 51/20 (expt 2 102) (/ (* 4 (expt 2 100)) 3)))
+
     (test (= +inf.0 +inf.0)            #t)
     (test (= -inf.0 +inf.0)            #f)
     (test (= -inf.0 -inf.0)            #t)
@@ -483,16 +518,35 @@
 
     (test (zero? +0.0)                   #t)
     (test (zero? -0.0)                   #t)
+    (test (zero? 2.0)                    #f)
+    (test (zero? -2.0)                   #f)
     (test (zero? +nan.0)                 #f)
+    (test (positive? 10)                 #t)
+    (test (positive? -10)                #f)
     (test (positive? +inf.0)             #t)
     (test (negative? -inf.0)             #t)
     (test (positive? +nan.0)             #f)
+    (test (negative? 10)                 #f)
+    (test (negative? -10)                #t)
     (test (negative? +nan.0)             #f)
     (test (finite? +inf.0)               #f)
     (test (finite? 5)                    #t)
     (test (finite? 5.0)                  #t)
     (test (infinite? 5.0)                #f)
     (test (infinite? +inf.0)             #t)
+    (test (nan? +nan.0)                  #t)
+    (test (nan? +inf.0)                  #f)
+    (test (nan? 1020.0)                  #f)
+    (test (nan? 1020/3)                  #f)
+
+    (test (odd? 5) #t)
+    (test (odd? 50) #f)
+    (test (odd? 5.0) #t)
+    (test (odd? 50.0) #f)
+    (test (even? 5) #f)
+    (test (even? 50) #t)
+    (test (even? 5.0) #f)
+    (test (even? 50.0) #t)
 
     (test (max 3 4)                               4)
     (test (max 3.9 4)                             4.0)
@@ -506,10 +560,13 @@
     (test (+ 3 4)                                 7)
     (test (+ 3)                                   3)
     (test (+)                                     0)
+    (test (+ 3.0 4)                               7.0)
     (test (+ +inf.0 +inf.0)                       +inf.0)
     (test (+ +inf.0 -inf.0)                       +nan.0)
 
     (test (* 4)                                   4)
+    (test (* 4 3)                                 12)
+    (test (* 4 3.0)                               12.0)
     (test (*)                                     1)
     (test (* 5 +inf.0)                            +inf.0)
     (test (* -5 +inf.0)                           -inf.0)
@@ -553,6 +610,8 @@
     (test (- -0.0 -0.0) 0.0)
     
     (test (/ 3 4 5)                               3/20)
+    (test (/ 2 3)                                 2/3)
+    (test (/ 3 2.0)                               1.5)
     (test (/ 3)                                   1/3)
     (test (/ 0.0)                                 +inf.0)
     (test (/ 1.0 0)                               +inf.0)
@@ -566,7 +625,9 @@
     (test (/ 0.0 0)                               +nan.0)
     (test (/ 0.0 0.0)                             +nan.0)
 
+    (test (abs 7)                                 7)
     (test (abs -7)                                7)
+    (test (abs (- (expt 2 100)))                  (expt 2 100))
     (test (abs -inf.0)                            +inf.0)
 
     (test (div 123 10) 12)
@@ -713,8 +774,10 @@
     (test (lcm 32.0 -36)                          288.0)
     (test (lcm)                                   1)
     
+    (test (numerator 6)                           6)
     (test (numerator (/ 6 4))                     3)
     (test (denominator (/ 6 4))                   2)
+    (test (denominator 6)                         1)
     (test (denominator (inexact (/ 6 4))) 2.0)
 
     (test (floor -4.3)                            -5.0)
@@ -741,8 +804,10 @@
     (test (rationalize +inf.0 +inf.0)             +nan.0)
     (test (rationalize 3 +inf.0)                  0.0)
 
+    (test/approx (exp 1)    2.718281828459045)
     (test (exp +inf.0)                   +inf.0)
     (test (exp -inf.0)                   0.0)
+    (test/approx (log 2.718281828459045) 1.0)
     (test (log +inf.0)                   +inf.0)
     (test (log 0.0)                      -inf.0)
 
@@ -754,11 +819,13 @@
     (test/approx (log -1.0+0.0i) 0.0+3.141592653589793i)
     (test/approx (log -1.0-0.0i) 0.0-3.141592653589793i)
 
+    (test/approx (sqrt 5) 2.23606797749979)
     (test/approx (sqrt -5) 0.0+2.23606797749979i)
 
     (test (sqrt +inf.0)                +inf.0)
     (test (sqrt -inf.0)                +inf.0i)
 
+    (test/values (exact-integer-sqrt 0) 0 0)
     (test/values (exact-integer-sqrt 4) 2 0)
     (test/values (exact-integer-sqrt 5) 2 1)
     
@@ -773,7 +840,9 @@
     (test (expt 0.0 0.0)               1.0)
     
     
+    (test/approx (make-rectangular 1.1 0.0) 1.1+0.0i)
     (test/approx (make-rectangular 1.1 2.2) 1.1+2.2i)
+    (test/approx (make-polar 1.1 0.0) 1.1+0.0i)
     (test/approx (make-polar 1.1 2.2) 1.1@2.2)
 
     (test/approx (real-part 1.1+2.2i)              1.1)
@@ -794,6 +863,22 @@
     (test (magnitude (make-rectangular 1 -inf.0)) +inf.0)
 
     (test/approx (angle -1)   3.141592653589793)
+
+    (for-each 
+     (lambda (n)
+       (test (string->number (number->string n)) n)
+       (test (string->number (number->string n 10 5)) n)
+       (when (exact? n)
+         (test (string->number (number->string n 16) 16) n)
+         (test (string->number (string-append "#x" (number->string n 16))) n)
+         (test (string->number (number->string n 8) 8) n)
+         (test (string->number (string-append "#o" (number->string n 8))) n)
+         (test (string->number (number->string n 2) 2) n)
+         (test (string->number (string-append "#b" (number->string n 2))) n)
+         (test (string->number (number->string n 10) 10) n)
+         (test (string->number (string-append "#d" (number->string n 10))) n)))
+     '(1 2.0 1/2 2e200 1+2i))
+    (test (string->number "nope") #f)
 
     (test (string->number "100")                  100)
     (test (string->number "100" 16)               256)
@@ -884,6 +969,41 @@
     (test (cdr '(1 . 2))           2)
     (test/exn (cdr '()) &assertion)
 
+    (test (cadr '(1 2)) 2)
+    (test (cddr '(1 2)) '())
+    (test (cdar '((1) 2)) '())
+    (test (caar '((1) 2)) 1)
+
+    (test (cadar '((1 2))) 2)
+    (test (cddar '((1 2))) '())
+    (test (cdaar '(((1) 2))) '())
+    (test (caaar '(((1) 2))) 1)
+    (test (caddr '(0 1 2)) 2)
+    (test (cdddr '(0 1 2)) '())
+    (test (cdadr '(0 (1) 2)) '())
+    (test (caadr '(0 (1) 2)) 1)
+
+    (test (cadaar '(((1 2)))) 2)
+    (test (cddaar '(((1 2)))) '())
+    (test (cdaaar '((((1) 2)))) '())
+    (test (caaaar '((((1) 2)))) 1)
+    (test (caddar '((0 1 2))) 2)
+    (test (cdddar '((0 1 2))) '())
+    (test (cdadar '((0 (1) 2))) '())
+    (test (caadar '((0 (1) 2))) 1)
+    (test (cadadr '(- (1 2))) 2)
+    (test (cddadr '(- (1 2))) '())
+    (test (cdaadr '(- ((1) 2))) '())
+    (test (caaadr '(- ((1) 2))) 1)
+    (test (cadddr '(- 0 1 2)) 2)
+    (test (cddddr '(- 0 1 2)) '())
+    (test (cdaddr '(- 0 (1) 2)) '())
+    (test (caaddr '(- 0 (1) 2)) 1)
+
+    (test (null? '())           #t)
+    (test (null? '(1))          #f)
+    (test (null? #f)            #f)
+
     (test (list? '(a b c))      #t)
     (test (list? '())           #t)
     (test (list? '(a . b))      #f)
@@ -905,8 +1025,10 @@
     (test (reverse '(a (b c) d (e (f))))   '((e (f)) d (b c) a))
 
     (test (list-tail '(a b c d) 2)                  '(c d))
+    (test (list-tail '(a b . c) 2)                  'c)
 
     (test (list-ref '(a b c d) 2)                 'c)
+    (test (list-ref '(a b c . d) 2)                 'c)
 
     (test (map cadr '((a b) (d e) (g h)))    '(b e h))
 
@@ -942,6 +1064,10 @@
     (test (symbol? 'nil)           #t)
     (test (symbol? '())            #f)
     (test (symbol? #f)      #f)
+
+    (test (symbol=? 'a 'a)         #t)
+    (test (symbol=? 'a 'A)         #f)
+    (test (symbol=? 'a 'b)         #f)
     
     (test (symbol->string 'flying-fish)     
           "flying-fish")
@@ -963,21 +1089,116 @@
           #t)
 
     ;; 11.11
+    (test (char? #\a) #t)
+    (test (char? 'a) #f)
+    (test (char? 65) #f)
+    
     (test (integer->char 32) #\space)
+    (test (integer->char #xDF) #\xDF)
+    (test (integer->char #x10AAAA) #\x10AAAA)
     (test (char->integer (integer->char 5000))
           5000)
     (test/exn (integer->char #xD800) &assertion)
+    (test (char=? #\z #\xDF) #f)
+    (test (char=? #\z #\z) #t)
+    (test (char<? #\z #\z) #f)
     (test (char<? #\z #\xDF) #t)
+    (test (char<? #\xDF #\z) #f)
     (test (char<? #\z #\Z) #f)
+    (test (char<=? #\z #\z) #t)
+    (test (char<=? #\z #\xDF) #t)
+    (test (char<=? #\xDF #\z) #f)
+    (test (char<=? #\z #\Z) #f)
+    (test (char>? #\z #\z) #f)
+    (test (char>? #\z #\xDF) #f)
+    (test (char>? #\xDF #\z) #t)
+    (test (char>? #\z #\Z) #t)
+    (test (char>=? #\z #\z) #t)
+    (test (char>=? #\z #\xDF) #f)
+    (test (char>=? #\xDF #\z) #t)
+    (test (char>=? #\z #\Z) #t)
 
     ;; 11.12
-    (test (string=? "Stra\xDF;e" "Strasse") #f)
+    (test (string? "apple") #t)
+    (test (string? #vu8(1 2)) #f)
+    (test (string? #\a) #f)
+    (test (string? 77) #f)
 
+    (test (string-length (make-string 10)) 10)
+    (test (string-length (make-string 10 #\a)) 10)
+    (test (string-ref (make-string 10 #\a) 0) #\a)
+    (test (string-ref (make-string 10 #\a) 5) #\a)
+    (test (string-ref (make-string 10 #\a) 9) #\a)
+
+    (test (string=? "Strasse" "Strasse") #t)
+    (test (string=? "Stra\xDF;e" "Strasse") #f)
+    (test (string=? "Strasse" "Strasse" "Stra\xDF;e") #f)
+    (test (string=? "Strasse" "Stra\xDF;e" "Strasse") #f)
+    (test (string=? "Stra\xDF;e" "Strasse" "Strasse") #f)
+    (test (string=? "Strasse" "Strasse" "Strasse") #t)
+
+    (test (string<? "z" "z") #f)
     (test (string<? "z" "\xDF;") #t)
+    (test (string<? "\xDF;" "z") #f)
     (test (string<? "z" "zz") #t)
     (test (string<? "z" "Z") #f)
+    (test (string<=? "z" "\xDF;") #t)
+    (test (string<=? "\xDF;" "z") #f)
+    (test (string<=? "z" "zz") #t)
+    (test (string<=? "z" "Z") #f)
+    (test (string<=? "z" "z") #t)
+
+    (test (string<? "z" "z") #f)
+    (test (string>? "z" "\xDF;") #f)
+    (test (string>? "\xDF;" "z") #t)
+    (test (string>? "z" "zz") #f)
+    (test (string>? "z" "Z") #t)
+    (test (string>=? "z" "\xDF;") #f)
+    (test (string>=? "\xDF;" "z") #t)
+    (test (string>=? "z" "zz") #f)
+    (test (string>=? "z" "Z") #t)
+    (test (string>=? "z" "z") #t)
+
+    (test (substring "apple" 0 3) "app")
+    (test (substring "apple" 1 3) "pp")
+    (test (substring "apple" 3 5) "le")
+
+    (test (string-append "apple") "apple")
+    (test (string-append "apple" "banana") "applebanana")
+    (test (string-append "apple" "banana" "cherry") "applebananacherry")
+
+    (test (string->list "apple") (list #\a #\p #\p #\l #\e))
+    (test (list->string (list #\a #\p #\p #\l #\e)) "apple")
+
+    (let ([accum '()])
+      (test/unspec (string-for-each (lambda (a) (set! accum (cons a accum)))
+                                    "elppa"))
+      (test accum '(#\a #\p #\p #\l #\e))
+      (test/unspec (string-for-each (lambda (a b) (set! accum (cons (list a b) accum)))
+                                    "elppa"
+                                    "ananb"))
+      (test accum '((#\a #\b) (#\p #\n) (#\p #\a) (#\l #\n) (#\e #\a)
+                    #\a #\p #\p #\l #\e))
+      (test/unspec (string-for-each (lambda (a b c) (set! accum c))
+                                    "elppa"
+                                    "ananb"
+                                    "chery"))
+      (test accum #\y))
+
+    (test "apple" (string-copy "apple"))
+    (let ([s "apple"])
+      (test (eq? s (string-copy s)) #f))
 
     ;; 11.13
+    (test (vector? '#(1 2 3)) #t)
+    (test (vector? "apple") #f)
+
+    (test (vector-length (make-vector 10)) 10)
+    (test (vector-length (make-vector 10 'x)) 10)
+    (test (vector-ref (make-vector 10 'x) 0) 'x)
+    (test (vector-ref (make-vector 10 'x) 5) 'x)
+    (test (vector-ref (make-vector 10 'x) 9) 'x)
+
     (test '#(0 (2 2 2 2) "Anna")  (vector 0 '(2 2 2 2) "Anna"))
     (test (vector 'a 'b 'c)       '#(a b c))
     (test (vector-ref '#(1 1 2 3 5 8 13 21) 5)   8)
@@ -992,10 +1213,53 @@
     (test (vector->list '#(dah dah didah))  '(dah dah didah))
     (test (list->vector '(dididit dah))     '#(dididit dah))
 
+    (let ([vec (vector 'x 'y 'z)])
+      (vector-fill! vec 10.1)
+      (test vec '#(10.1 10.1 10.1)))
+
+    (test (vector-map (lambda (x) (+ 1 x)) 
+                      '#(1 2 3))
+          '#(2 3 4))
+    (test (vector-map (lambda (x y) (- x y)) 
+                      '#(3 4 5) 
+                      '#(0 -1 2))
+          '#(3 5 3))
+    (test (vector-map (lambda (x y f) (f (- x y)))
+                      '#(3 4 5) 
+                      '#(0 -1 2)
+                      (vector - * /))
+          '#(-3 5 1/3))
+
+    (let ([accum '()])
+      (test/unspec (vector-for-each (lambda (a) (set! accum (cons a accum)))
+                                    '#(e l p p a)))
+      (test accum '(a p p l e))
+      (test/unspec (vector-for-each (lambda (a b) (set! accum (cons (list a b) accum)))
+                                    '#(e l p p a)
+                                    '#(a n a n b)))
+      (test accum '((a b) (p n) (p a) (l n) (e a)
+                    a p p l e))
+      (test/unspec (vector-for-each (lambda (a b c) (set! accum c))
+                                    '#(e l p p a)
+                                    '#(a n a n b)
+                                    '#(c h e r y)))
+      (test accum 'y))
+
     ;; 11.14
+    (for-each
+     (lambda (error)
+       (test/exn (error 'apple "bad" 'worm) &who)
+       (test/exn (error #f "bad" 'worm) &message)
+       (test/exn (error 'apple "bad" 'worm) &irritants)
+       (test/exn (error 'apple "bad") &irritants))
+     (list error assertion-violation))
+    (test/exn (error 'apple "bad" 'worm) &error)
+    (test/exn (assertion-violation 'apple "bad" 'worm) &assertion)
+
     (test (fac 5) 120)
     (test/exn (fac 4.5) &assertion)
     (test/exn (fac -3) &assertion)
+    (test/exn (fac -3) &message)
 
     ;; 11.15
     (test (apply + (list 3 4))               7)
@@ -1009,10 +1273,22 @@
                        '(54 0 37 -3 245 19))
              #t))
           -3)
+    (test (call/cc
+           (lambda (exit)
+             (for-each (lambda (x)
+                         (if (negative? x)
+                             (exit x)))
+                       '(54 0 37 -3 245 19))
+             #t))
+          -3)
 
     (test (list-length '(1 2 3 4))             4)
 
     (test (list-length '(a b . c))             #f)
+
+    (test/values (values))
+    (test (values 1) 1)
+    (test/values (values 1 2 3) 1 2 3)
 
     (test (call-with-current-continuation procedure?) #t)
 
