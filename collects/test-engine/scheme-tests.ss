@@ -68,7 +68,7 @@
                                                  (syntax-column stx)
                                                  (syntax-position stx)
                                                  (syntax-span stx)))
-                                  test-info)))))
+                                  #,(stepper-syntax-property #`test-info `stepper-no-lifting-info #t))))))
             `stepper-skipto
             (append skipto/third ;; let 
                     skipto/third skipto/second ;; unless (it expands into a begin)
