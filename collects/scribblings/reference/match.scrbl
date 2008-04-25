@@ -44,10 +44,10 @@ In more detail, patterns match as follows:
 
 @itemize{
 
- @item{@scheme[_id], excluding the reserved names @schemeidfont{"_"},
-       @schemeidfont{"..."}, @schemeidfont{".._"},
-       @schemeidfont{".."}@scheme[_k], and
-       @schemeidfont{".."}@scheme[_k] for non-negative integers
+ @item{@scheme[_id], excluding the reserved names @schemeidfont{_},
+       @schemeidfont{...}, @schemeidfont{.._},
+       @schemeidfont{..}@scheme[_k], and
+       @schemeidfont{..}@scheme[_k] for non-negative integers
        @scheme[_k] --- matches anything, and binds @scheme[id] to the
        matching values. If an @scheme[_id] is used multiple times
        within a pattern, the corresponding matches must be the same

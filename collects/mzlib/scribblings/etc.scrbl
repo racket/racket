@@ -12,11 +12,12 @@
 @interaction-eval[#:eval etc-eval (require mzlib/etc)]
 
 @(begin
-  (define-syntax-rule (bind id)
+  (define-syntax-rule (bind id else-id)
     (begin
      (require (for-label scheme/base))
-     (define id (scheme lambda))))
-  (bind base-lambda))
+     (define id (scheme lambda))
+     (define else-id (scheme else))))
+  (bind base-lambda base-else))
 
 @mzlib[#:mode title etc]
 
@@ -108,7 +109,11 @@ data. After @scheme[key-expr] is evaluated, each @scheme[value-expr]
 is evaluated until a value is found that is @scheme[eqv?] to the key
 value; when a matching value is found, the corresponding
 @scheme[body-expr]s are evaluated and the value(s) for the last is the
-result of the entire @scheme[evcase] expression.}
+result of the entire @scheme[evcase] expression.
+
+The @scheme[else] literal is recognized either as unbound (like in the
+@schememodname[mzscheme] language) or bound as @|base-else| from
+@schememodname[scheme/base].}
 
 
 @defproc[(identity [v any/c]) any/c]{

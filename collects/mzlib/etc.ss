@@ -8,6 +8,7 @@
                build-list
                build-vector
                compose)
+         (rename scheme/base base-else else)
          "kw.ss")
 
 (require-for-syntax syntax/kerncase
@@ -136,8 +137,9 @@
      (let ([tests (syntax->list (syntax (test ...)))])
        (with-syntax ([(a-test ...)
                       (map (lambda (t)
-                             (syntax-case t (else)
+                             (syntax-case t (else base-else)
                                [else (syntax #t)]
+                               [base-else (syntax #t)]
                                [_else (with-syntax ([t t])
                                         (syntax (eqv? evcase-v t)))]))
                            tests)])
