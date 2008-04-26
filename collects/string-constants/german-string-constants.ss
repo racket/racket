@@ -133,6 +133,7 @@
  (file-is-not-saved "Die Datei \"~a\" ist nicht gespeichert.")
  (save "Speichern")
  (close-anyway "Trotzdem schließen")
+ (dont-save "Nicht speichern")
  (clear-anyway "Trotzdem löschen")
 
  (log-definitions-and-interactions "Definitionen and Interaktionen protokollieren...")
@@ -492,7 +493,7 @@
  (open-here-menu-item "Hier &öffnen...")
 
  (open-recent-info "Liste kürzlich bearbeiteter Dateien")
- (open-recent-menu-item "Öffne noch einmal")
+ (open-recent-menu-item "Noch einmal öffnen")
  
  (revert-info "Stelle diese Datei wieder her wie zuletzt gespeichert")
  (revert-menu-item "&Wiederherstellen")
