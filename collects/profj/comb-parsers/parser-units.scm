@@ -330,7 +330,7 @@
     
     (define new-class
       (choose ((sequence (new name O_PAREN C_PAREN) id)
-               (sequence (new name O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
+               (sequence (new name O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
               "class instantiation"))
     
     (define (new-array type-name)
@@ -433,7 +433,7 @@
                (sequence (super O_PAREN (comma-sep (eta expression) "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
     
     (define (block repeat?)
-      (let ([body (if repeat? (repeat-greedy statement) statement)])
+      (let ([body (if repeat? (repeat-greedy (eta statement)) (eta statement))])
         (sequence (O_BRACE body C_BRACE) id "block statement")))
     
     (define expression-stmt
