@@ -156,9 +156,7 @@
 
     Must only be called while the tokenizer is started.
   }
-  @defmethod*[(((backward-containing-sexp) void) ((backward-containing-sexp (position natural-number?) (cutoff natural-number?)) (union natural-number? false?)))]{
-
-
+  @defmethod*[(((backward-containing-sexp (position natural-number?) (cutoff natural-number?)) (union natural-number? false?)))]{
 
     Return the starting position of the interior of the (non-atomic)
     s-expression containing position, or \scheme|#f| is there is none.

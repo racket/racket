@@ -5,7 +5,6 @@
 
 @title{@bold{Framework}: PLT GUI Application Framework}
 
-@section{Libraries}
 The framework provides these libraries:
 @itemize{
 
@@ -75,32 +74,24 @@ The precise set of exported names is:
 @scheme[preferences:restore-defaults].
 }}
 
-\setvariable{-> ->d ->* ->*d case->}
-
-\setspecialsymbol{->}{$\longrightarrow$}
-
-\SECTION{GUI Test Suite Utilities}
-
-\label{fw:test}
+@section{GUI Test Suite Utilities}
 
 The framework provides several new primitive functions that simulate
 user actions, which may be used to test applications.  You use these
 primitives and combine them just as regular MzScheme functions.  For
 example, 
-\begin{schemedisplay}
-(begin
-  (test:keystroke #\A)
-  (test:menu-select "File" "Save"))
-\end{schemedisplay}
+@schemeblock[
+(test:keystroke #\A)
+(test:menu-select "File" "Save")
+]
 sends a keystroke event to the window with the keyboard focus and invokes
 the callback function for the ``Save'' menu item from the ``File'' menu.
 This has the same effect as if the user typed the key ``A'', pulled
 down the ``File'' menu and selected ``Save''.
 
 It is possible to load this portion of the framework without loading
-the rest of the framework. See
-\hyperref{the libraries section}{section~}{}{fw:libraries}
-for more details.
+the rest of the framework. Use
+@scheme[(require framework/test)].
 
 Currently, the test engine has primitives for pushing
 buttons, setting check-boxes and choices, sending keystrokes,
@@ -109,8 +100,7 @@ that are also useful in application testing, such as
 traversing a tree of panels, getting the text from a canvas,
 determining if a window is shown, and so on, exist in MrEd.
 
-\subsection{Actions and completeness}
-\label{fw:actions-completeness}
+@subsection{Actions and completeness}
 
 The actions associated with a testing primitive may not have finished 
 when the primitive returns to its caller.  
@@ -200,6 +190,14 @@ You can obtain such an effect in Fvwm and Fvwm95 by using the option:
 \end{verbatim}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+@section{Thanks}
+
+Thanks to Shriram Krishnamurthi, Cormac Flanagan, Matthias
+Felleisen, Ian Barland, Gann Bierner, Richard Cobbe, Dan
+Grossman, Stephanie Weirich, Paul Steckler, Sebastian Good,
+Johnathan Franklin, Mark Krentel, Corky Cartwright, Michael
+Ernst, Kennis Koldewyn, Bruce Duba, and many others for
+their feedback and help.
 
 
 @include-section["framework-application.scrbl"]
@@ -227,15 +225,7 @@ You can obtain such an effect in Fvwm and Fvwm95 by using the option:
 @include-section["framework-preferences.scrbl"]
 @include-section["framework-scheme.scrbl"]
 @include-section["framework-text.scrbl"]
+@include-section["framework-test.scrbl"]
 @include-section["framework-version.scrbl"]
-
-@section{Thanks}
-
-Thanks to Shriram Krishnamurthi, Cormac Flanagan, Matthias
-Felleisen, Ian Barland, Gann Bierner, Richard Cobbe, Dan
-Grossman, Stephanie Weirich, Paul Steckler, Sebastian Good,
-Johnathan Franklin, Mark Krentel, Corky Cartwright, Michael
-Ernst, Kennis Koldewyn, Bruce Duba, and many others for
-their feedback and help.
 
 @index-section[]
