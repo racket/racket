@@ -21,7 +21,7 @@
          (rename-out [raise-syntax-error syntax-violation]))
 
 (define (r6rs:free-identifier=? a b)
-  (free-identifier=? a a))
+  (free-identifier=? a b))
 
 (define (r6rs:datum->syntax id datum)
   (unless (identifier? id)

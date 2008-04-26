@@ -55,19 +55,34 @@
 	      (?k ?default . ?rands))
 	     ((?name/cps ((?tag ?val) . ?rest) ?k . ?rands)
 	      (?k ?val . ?rands))
-	     ((?name/cps ((?another-tag ?val) . ?rest) ?k . ?rands)
+	     ((?name/cps ((?another-tag . ?vals) . ?rest) ?k . ?rands)
 	      (?name/cps ?rest ?k . ?rands))))
-
 	 (define-syntax ?name
 	   (syntax-rules (?tag)
 	     ((?name ())
 	      ?default)
 	     ((?name ((?tag ?val) . ?rest))
 	      ?val)
-	     ((?name ((?another-tag ?val) . ?rest))
+	     ((?name ((?another-tag . ?vals) . ?rest))
 	      (?name ?rest))))))))
 
-  (define-alist-extractor extract-parent extract-parent/cps parent no-record-type)
+  (define-syntax extract-parent/sel 
+    (syntax-rules (parent parent-rtd)
+      ((_ () ?sel) #f)
+      ((_ ((parent ?val) . ?rest) ?sel)
+       (?sel (record-type-descriptor ?val)
+             (record-constructor-descriptor ?val)))
+      ((_ ((parent-rtd ?rtd ?cons) . ?rest) ?sel)
+       (?sel ?rtd ?cons))
+      ((_ ((?another-tag . ?vals) . ?rest) ?sel)
+       (extract-parent/sel ?rest ?sel))))
+  (define-syntax sel-record-type-descriptor
+    (syntax-rules ()
+      [(_ ?rtd ?cons) ?rtd]))
+  (define-syntax sel-record-constructor-descriptor
+    (syntax-rules ()
+      [(_ ?rtd ?cons) ?cons]))
+
   (define-alist-extractor extract-sealed extract-sealed/cps sealed #f)
   (define-alist-extractor extract-opaque extract-opaque/cps opaque #f)
   (define-alist-extractor extract-protocol extract-protocol/cps
@@ -93,13 +108,20 @@
 	 ?clause ...))))
 
   (define-syntax define-record-type-1
-    (syntax-rules (parent protocol sealed nongenerative opaque fields mutable immutable)
+    (syntax-rules (parent parent-rtd protocol sealed nongenerative opaque fields mutable immutable)
       ;; find PARENT clause
       ((define-record-type-1 ?props
 	 ?field-specs
 	 (parent ?parent)
 	 ?clause ...)
        (define-record-type-1 ((parent ?parent) . ?props)
+	 ?field-specs
+	 ?clause ...))
+      ((define-record-type-1 ?props
+	 ?field-specs
+	 (parent-rtd ?parent ?cons)
+	 ?clause ...)
+       (define-record-type-1 ((parent-rtd ?parent ?cons) . ?props)
 	 ?field-specs
 	 ?clause ...))
 
@@ -192,7 +214,7 @@
 
 	 (define $rtd
 	   (make-record-type-descriptor (extract-record-name/cps ?props quote)
-					(extract-parent/cps ?props record-type-descriptor)
+					(extract-parent/sel ?props sel-record-type-descriptor)
 					(extract-nongenerative ?props)
 					(extract-sealed ?props)
 					(extract-opaque ?props)
@@ -201,7 +223,7 @@
 	 (define $constructor-descriptor
 	   (make-record-constructor-descriptor
 	    $rtd
-	    (extract-parent/cps ?props record-constructor-descriptor)
+	    (extract-parent/sel ?props sel-record-constructor-descriptor)
 	    (extract-protocol ?props)))
 
 	 (extract-record-name/cps

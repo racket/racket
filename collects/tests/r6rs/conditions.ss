@@ -5,6 +5,18 @@
   (import (rnrs)
           (tests r6rs test))
 
+
+  (define-syntax test-cond
+    (syntax-rules ()
+      [(_ &c &parent (make arg ...) pred sel ...)
+       (begin
+         (test (pred (make arg ...)) #t)
+         (let ([v (make arg ...)])
+           (test (sel v) arg) ...
+           'ok)
+         (test ((record-predicate &parent) (make arg ...)) #t)
+         (test (record-type-parent &c) &parent))]))
+
   ;; ----------------------------------------
 
   (define-record-type (&cond1 make-cond1 real-cond1?)
@@ -118,7 +130,63 @@
     (test (c1-a v5)      "a3")
     (test (c2-b v5)      "b2")
 
+    (test-cond &message &condition
+               (make-message-condition "message")
+               message-condition?
+               condition-message)
     
+    (test-cond &warning &condition
+               (make-warning)
+               warning?)
+    
+    (test-cond &serious &condition
+               (make-serious-condition)
+               serious-condition?)
+
+    (test-cond &error &serious
+               (make-error)
+               error?)
+
+    (test-cond &violation &serious
+               (make-violation)
+               violation?)
+
+    (test-cond &assertion &violation
+               (make-assertion-violation)
+               assertion-violation?)
+
+    (test-cond &irritants &condition
+               (make-irritants-condition (list 'sand 'salt 'acid))
+               irritants-condition?
+               condition-irritants)
+
+    (test-cond &who &condition
+               (make-who-condition 'new-boss)
+               who-condition?
+               condition-who)
+
+    (test-cond &non-continuable &violation
+               (make-non-continuable-violation)
+               non-continuable-violation?)
+
+    (test-cond &implementation-restriction &violation
+              (make-implementation-restriction-violation)
+              implementation-restriction-violation?)
+
+    (test-cond &lexical &violation
+               (make-lexical-violation)
+               lexical-violation?)
+    
+    (test-cond &syntax &violation
+               (make-syntax-violation '(lambda (x) case) 'case)
+               syntax-violation?
+               syntax-violation-form
+               syntax-violation-subform)
+
+    (test-cond &undefined &violation
+               (make-undefined-violation)
+               undefined-violation?)
+
     ;;
     ))
 

@@ -36,20 +36,184 @@
 	  (rename (r6rs private records-explicit)
 		  (define-record-type define-record-type/explicit)))
 
-  ;; R5RS part of the implementation of DEFINE-RECORD-TYPE for Records SRFI
-
   (define-syntax define-record-type
-    (syntax-rules ()
-      ((define-record-type (?record-name ?constructor-name ?predicate-name)
-	 ?clause ...)
-       (define-record-type-1 ?record-name (?record-name ?constructor-name ?predicate-name)
-	 ()
-	 ?clause ...))
-      ((define-record-type ?record-name
-	 ?clause ...)
-       (define-record-type-1 ?record-name ?record-name
-	 ()
-	 ?clause ...))))
+    ;; Just check syntax, then send off to reference implementation
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ name-spec clause ...)
+         (with-syntax ([(name parts)
+                        (syntax-case #'name-spec ()
+                          [(name cname pname)
+                           (begin
+                             (if (not (identifier? #'name))
+                                 (syntax-violation #f
+                                                   "expected an identifier for the record type name"
+                                                   stx
+                                                   #'name))
+                             (if (not (identifier? #'cname))
+                                 (syntax-violation #f
+                                                   "expected an identifier for the record type constructor name"
+                                                   stx
+                                                   #'cname))
+                             (if (not (identifier? #'pname))
+                                 (syntax-violation #f
+                                                   "expected an identifier for the record type predicate name"
+                                                   stx
+                                                   #'pname))
+                             #'(name (name cname pname)))]
+                          [name
+                           (identifier? #'name)
+                           #'(name name)]
+                          [_
+                           (syntax-violation #f
+                                             (string-append
+                                              "expected either an identifier for the record type name"
+                                              " or a form (<name-id> <constructor-id> <predicate-id>)")
+                                             stx
+                                             #'name-spec)])])
+           (let* ([clauses #'(clause ...)]
+                  [extract (lambda (id)
+                             (let loop ([clauses clauses][found #f])
+                               (cond
+                                [(null? clauses) found]
+                                [(syntax-case (car clauses) ()
+                                   [(tag . body)
+                                    (free-identifier=? #'tag id)])
+                                 (if found
+                                     (syntax-violation #f
+                                                       (string-append "duplicate "
+                                                                      (symbol->string (syntax->datum id))
+                                                                      " clause")
+                                                       stx
+                                                       (car clauses))
+                                     (loop (cdr clauses) (car clauses)))]
+                                [else
+                                 (loop (cdr clauses) found)])))]
+                  [kws (with-syntax ([(kw ...)
+                                      #'(fields mutable immutable parent 
+                                                protocol sealed opaque nongenerative
+                                                parent-rtd)])
+                         #'(kw ...))])
+             (for-each (lambda (clause)
+                         (syntax-case clause ()
+                           [(id . _)
+                            (and (identifier? #'id)
+                                 (let loop ([kws kws])
+                                   (and (not (null? kws))
+                                        (or (free-identifier=? #'id (car kws))
+                                            (loop (cdr kws))))))
+                            'ok]
+                           [_
+                            (syntax-violation #f
+                                              (string-append
+                                               "expected a `mutable', `immutable', `parent',"
+                                               " `protocol', `sealed', `opaque', `nongenerative',"
+                                               " or `parent-rtd' clause")
+                                              stx
+                                              clause)]))
+                       clauses)
+             (if (and (extract #'parent) (extract #'parent-rtd))
+                 (syntax-violation #f
+                                   "cannot specify both `parent' and `parent-rtd'"
+                                   stx))
+             (syntax-case (extract #'fields) ()
+               [#f 'ok]
+               [(_ spec ...)
+                (for-each (lambda (spec)
+                            (syntax-case spec (immutable mutable)
+                              [(immutable id acc-id)
+                               (begin
+                                 (if (not (identifier? #'id))
+                                     (syntax-violation #f
+                                                       "expected a field-name identifier"
+                                                       spec
+                                                       #'id))
+                                 (if (not (identifier? #'acc-id))
+                                     (syntax-violation #f
+                                                       "expected a field-accessor identifier"
+                                                       spec
+                                                       #'acc-id)))]
+                              [(immutable id)
+                               (if (not (identifier? #'id))
+                                   (syntax-violation #f
+                                                     "expected a field-name identifier"
+                                                     spec
+                                                     #'id))]
+                              [(immutable . _)
+                               (syntax-violation #f
+                                                 "expected one or two identifiers"
+                                                 spec)]
+                              [(mutable id acc-id set-id)
+                               (begin
+                                 (if (not (identifier? #'id))
+                                     (syntax-violation #f
+                                                       "expected a field-name identifier"
+                                                       spec
+                                                       #'id))
+                                 (if (not (identifier? #'acc-id))
+                                     (syntax-violation #f
+                                                       "expected a field-accessor identifier"
+                                                       spec
+                                                       #'acc-id))
+                                 (if (not (identifier? #'set-id))
+                                     (syntax-violation #f
+                                                       "expected a field-mutator identifier"
+                                                       spec
+                                                       #'set-id)))]
+                              [(mutable id)
+                               (if (not (identifier? #'id))
+                                   (syntax-violation #f
+                                                     "expected a field-name identifier"
+                                                     spec
+                                                     #'id))]
+                              [(mutable . _)
+                               (syntax-violation #f
+                                                 "expected one or three identifiers"
+                                                 spec)]
+                              [id (identifier? #'id) 'ok]
+                              [_ (syntax-violation #f
+                                                   "expected an identifier, `immutable' form, or `mutable' form for field"
+                                                   stx
+                                                   spec)]))
+                          #'(spec ...))])
+
+             (let ([p (extract #'parent)])
+               (syntax-case p ()
+                 [#f 'ok]
+                 [(_ id) (identifier? #'id) 'ok]
+                 [_ (syntax-violation #f
+                                      "expected a single identifier for the parent record type"
+                                      p)]))
+
+             (let ([p (extract #'parent-rtd)])
+               (syntax-case p ()
+                 [#f 'ok]
+                 [(_ id cons-id) 'ok]
+                 [_ (syntax-violation #f
+                                      "expected two expressions for the parent record type and constructor"
+                                      p)]))
+
+             (syntax-case (extract #'protocol) ()
+               [#f 'ok]
+               [(_ expr) 'ok])
+
+             (syntax-case (extract #'sealed) ()
+               [#f 'ok]
+               [(_ #f) 'ok]
+               [(_ #t) 'ok])
+
+             (syntax-case (extract #'opaque) ()
+               [#f 'ok]
+               [(_ #f) 'ok]
+               [(_ #t) 'ok])
+
+             (syntax-case (extract #'nongenerative) ()
+               [#f 'ok]
+               [(_) 'ok]
+               [(_ id) (identifier? #'id) 'ok])
+
+             #'(define-record-type-1 name parts
+                 () clause ...)))])))
 
   (define-syntax define-record-type-1
     (syntax-rules (fields)
