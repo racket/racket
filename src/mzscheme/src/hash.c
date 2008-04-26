@@ -51,8 +51,6 @@ long PTR_TO_LONG(Scheme_Object *o)
   v = o->keyex;
 
   if (!(v & 0xFFFC)) {
-    if (!keygen)
-      keygen += 4;
     v |= (short)keygen;
 #ifdef OBJHEAD_HAS_HASH_BITS
     /* In 3m mode, we only have 14 bits of hash code in the
@@ -65,6 +63,7 @@ long PTR_TO_LONG(Scheme_Object *o)
     } else
       v &= ~0x4000;
 #endif
+    if (!v) v = 0x1AD0;
     o->keyex = v;
     keygen += 4;
   }
@@ -76,7 +75,8 @@ long PTR_TO_LONG(Scheme_Object *o)
 #endif
     bits = o->type;
 
-  return (bits << 16) | ((v >> 2) & 0xFFFF);
+  /* Note: low two bits will be ignored */
+  return (bits << 16) | (v & 0xFFFF);
 }
 #else
 # define PTR_TO_LONG(p) ((long)(p))
@@ -872,7 +872,7 @@ void scheme_init_hash_key_procs(void)
 
 long scheme_hash_key(Scheme_Object *o)
 {
-  return PTR_TO_LONG(o);
+  return PTR_TO_LONG(o) >> 2;
 }
 
 END_XFORM_SKIP;

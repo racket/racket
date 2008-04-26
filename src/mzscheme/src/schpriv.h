@@ -950,7 +950,7 @@ typedef struct {
    Otherwise, name is a boxed symbol (or #f) to indicate a method. */
 
 #define scheme_make_prim_w_arity2(f, n, mina, maxa, minr, maxr) \
-  scheme_make_prim_w_everything(f, 0, n, mina, maxa, 0, minr, maxr)
+  scheme_make_prim_w_everything(f, 1, n, mina, maxa, 0, minr, maxr)
 
 Scheme_Object *scheme_unclose_case_lambda(Scheme_Object *expr, int jit);
 

@@ -1196,8 +1196,9 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
 
   for (i = ht->size; i--; ) {
     Scheme_Bucket *b = bs[i];
-    if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONST))
+    if (b && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONST)) {
       scheme_hash_set(result, b->val, (Scheme_Object *)b);
+    }
   }
 
   return result;
