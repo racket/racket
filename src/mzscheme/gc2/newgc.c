@@ -556,7 +556,7 @@ void *GC_malloc_one_tagged(size_t s) { return allocate(s, PAGE_TAGGED); }
 void *GC_malloc_one_xtagged(size_t s) { return allocate(s, PAGE_XTAGGED); }
 void *GC_malloc_array_tagged(size_t s) { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s) { return allocate(s, PAGE_ATOMIC); }
-void *GC_malloc_atomic_uncollectable(size_t s) { return malloc(s); }
+void *GC_malloc_atomic_uncollectable(size_t s) { void *p = malloc(s); memset(p, 0, s); return p; }
 void *GC_malloc_allow_interior(size_t s) {return allocate_big(s, PAGE_ARRAY);}
 void *GC_malloc_atomic_allow_interior(size_t s) {return allocate_big(s, PAGE_ATOMIC);}
 void *GC_malloc_tagged_allow_interior(size_t s) {return allocate_big(s, PAGE_TAGGED);}

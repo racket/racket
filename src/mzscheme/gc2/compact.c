@@ -3967,7 +3967,10 @@ void *GC_malloc_atomic(size_t size_in_bytes)
 /* Plain malloc: */
 void *GC_malloc_atomic_uncollectable(size_t size_in_bytes)
 {
-  return malloc(size_in_bytes);
+  void *p;
+  p = malloc(size_in_bytes);
+  memset(p, 0, size_in_bytes);
+  return p;
 }
 
 /******************************************************************************/
