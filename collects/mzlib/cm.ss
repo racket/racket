@@ -101,11 +101,6 @@
   (define (compilation-failure mode path zo-name date-path reason)
     (with-handlers ((exn:fail:filesystem? void))
       (delete-file zo-name))
-    (let ([fail-path (path-add-suffix (get-compilation-path mode path) #".fail")])
-      (with-compile-output 
-       fail-path
-       (lambda (p)
-	 (display reason p))))
     (trace-printf "failure"))
 
   (define (compile-zo mode path read-src-syntax)
@@ -121,7 +116,8 @@
                            (lambda (ex)
                              (compilation-failure
                               mode path zo-name (exn:get-module-code-path ex)
-			      (exn-message ex)))])
+			      (exn-message ex))
+                             (raise ex))])
             (let* ([param
                     ;; Avoid using cm while loading cm-ctime:
                     (parameterize ([use-compiled-file-paths null])
@@ -155,8 +151,8 @@
 		 (with-handlers ((exn:fail?
 				  (lambda (ex)
 				    (close-output-port out)
-				    (try-delete-file zo-name)
-				    (compilation-failure mode path zo-name #f (exn-message ex)))))
+				    (compilation-failure mode path zo-name #f (exn-message ex))
+                                    (raise ex))))
 		   (parameterize ([current-write-relative-directory
 				   (let-values ([(base name dir?) (split-path path)])
 				     (if (eq? base 'relative)
@@ -195,12 +191,11 @@
   (define (append-object-suffix f)
     (path-add-suffix f (system-type 'so-suffix)))
 
-  (define (get-compiled-time mode path w/fail?)
+  (define (get-compiled-time mode path)
     (let*-values  ([(dir name) (get-compilation-dir+name mode path)])
       (first-date
        (lambda () (build-path dir "native" (system-library-subpath) (append-object-suffix name)))
-       (lambda () (build-path dir (path-add-suffix name #".zo")))
-       (and w/fail? (lambda () (build-path dir (path-add-suffix name #".fail")))))))
+       (lambda () (build-path dir (path-add-suffix name #".zo"))))))
 
   (define first-date
     (case-lambda
@@ -222,7 +217,7 @@
           (stamp stamp)
           (else
            (trace-printf "checking: ~a" path)
-           (let ((path-zo-time (get-compiled-time mode path #f))
+           (let ((path-zo-time (get-compiled-time mode path))
                  (path-time 
                   (with-handlers ((exn:fail:filesystem? 
                                    (lambda (ex)
@@ -271,7 +266,7 @@
                                           (main-collects-relative->path p)))
                                     (cdr deps)))
                         (compile-zo mode path read-src-syntax))))))
-                (let ((stamp (get-compiled-time mode path #t)))
+                (let ((stamp (get-compiled-time mode path)))
                   (hash-set! up-to-date path stamp)
                   stamp)))))))))
   
