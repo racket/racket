@@ -3182,7 +3182,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           jit_insn *refc;
           refc = jit_bgei_l(jit_forward(), JIT_R0, (long)scheme_make_integer(0));
           /* watch out for most negative fixnum! */
-          (void)jit_beqi_p(refslow, JIT_R0, (void *)((1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
+          (void)jit_beqi_p(refslow, JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
           jit_rshi_l(JIT_R0, JIT_R0, 1);
           jit_movi_l(JIT_R1, 0);
           jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
