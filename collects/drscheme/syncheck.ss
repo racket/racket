@@ -1347,6 +1347,7 @@ If the namespace does not, they are colored the unbound color.
              [tl-require-for-syntaxes (make-hash)]
              [tl-require-for-templates (make-hash)]
              [tl-require-for-labels (make-hash)]
+             [source-editor-cache (make-hasheq)]
              [expanded-expression
               (λ (user-namespace user-directory sexp jump-to-id)
                 (parameterize ([current-load-relative-directory user-directory])
@@ -1366,11 +1367,13 @@ If the namespace does not, they are colored the unbound color.
                              [require-for-syntaxes (make-hash)]
                              [require-for-templates (make-hash)]
                              [require-for-labels (make-hash)])
-                         (annotate-basic sexp user-namespace user-directory jump-to-id
-                                         low-binders high-binders varrefs high-varrefs low-tops high-tops
-                                         templrefs
-                                         requires require-for-syntaxes require-for-templates require-for-labels) 
-                         (annotate-variables user-namespace
+                          (annotate-basic sexp source-editor-cache
+                                          user-namespace user-directory jump-to-id
+                                          low-binders high-binders varrefs high-varrefs low-tops high-tops
+                                          templrefs
+                                          requires require-for-syntaxes require-for-templates require-for-labels) 
+                         (annotate-variables source-editor-cache
+                                             user-namespace
                                              user-directory
                                              low-binders
                                              high-binders
@@ -1384,7 +1387,8 @@ If the namespace does not, they are colored the unbound color.
                                              require-for-templates
                                              require-for-labels))]
                       [else
-                       (annotate-basic sexp user-namespace user-directory jump-to-id
+                       (annotate-basic sexp source-editor-cache
+                                       user-namespace user-directory jump-to-id
                                        tl-low-binders tl-high-binders
                                        tl-low-varrefs tl-high-varrefs 
                                        tl-low-tops tl-high-tops
@@ -1396,7 +1400,8 @@ If the namespace does not, they are colored the unbound color.
              [expansion-completed
               (λ (user-namespace user-directory)
                 (parameterize ([current-load-relative-directory user-directory])
-                  (annotate-variables user-namespace
+                  (annotate-variables source-editor-cache
+                                      user-namespace
                                       user-directory
                                       tl-low-binders
                                       tl-high-binders
@@ -1416,13 +1421,15 @@ If the namespace does not, they are colored the unbound color.
     (define-struct req/tag (req-stx req-sexp used?))
     
     ;; annotate-basic : syntax 
+    ;;                  hash-table[source-editor-cache]
     ;;                  namespace
     ;;                  string[directory]
     ;;                  syntax[id]
     ;;                  id-set (six of them)
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
-    (define (annotate-basic sexp user-namespace user-directory jump-to-id
+    (define (annotate-basic sexp source-editor-cache
+                            user-namespace user-directory jump-to-id
                             low-binders high-binders 
                             low-varrefs high-varrefs 
                             low-tops high-tops
@@ -1438,7 +1445,7 @@ If the namespace does not, they are colored the unbound color.
                                (when (pair? binding)
                                  (let ([nominal-source-id (list-ref binding 3)])
                                    (when (eq? nominal-source-id jump-to-id)
-                                     (jump-to id))))))
+                                     (jump-to source-editor-cache id))))))
                            (syntax->list vars))))])
 
         (let level-loop ([sexp sexp]
@@ -1539,10 +1546,10 @@ If the namespace does not, they are colored the unbound color.
                  
                  (loop (syntax e)))]
               [(quote datum)
-               ;(color-internal-structure (syntax datum) constant-style-name)
+               ;(color-internal-structure source-editor-cache (syntax datum) constant-style-name)
                (annotate-raw-keyword sexp varrefs)]
               [(quote-syntax datum)
-               ;(color-internal-structure (syntax datum) constant-style-name)
+               ;(color-internal-structure source-editor-cache (syntax datum) constant-style-name)
                (annotate-raw-keyword sexp varrefs)
                (let loop ([stx #'datum])
                  (cond [(identifier? stx)
@@ -1595,7 +1602,7 @@ If the namespace does not, they are colored the unbound color.
               [(module m-name lang (#%plain-module-begin bodies ...))
                (begin
                  (annotate-raw-keyword sexp varrefs)
-                 ((annotate-require-open user-namespace user-directory) (syntax lang))
+                 ((annotate-require-open source-editor-cache user-namespace user-directory) (syntax lang))
                  
                  (hash-cons! requires (syntax->datum (syntax lang)) (syntax lang))
                  (for-each loop (syntax->list (syntax (bodies ...)))))]
@@ -1609,7 +1616,10 @@ If the namespace does not, they are colored the unbound color.
                            (let ([new-specs (map trim-require-prefix
                                                  (syntax->list (syntax (require-specs ...))))])
                              (annotate-raw-keyword sexp varrefs)
-                             (for-each (annotate-require-open user-namespace user-directory) new-specs)
+                             (for-each (annotate-require-open source-editor-cache
+                                                              user-namespace
+                                                              user-directory)
+                                       new-specs)
                              (for-each (add-require-spec requires)
                                        new-specs
                                        (syntax->list (syntax (require-specs ...)))))]))])
@@ -1657,7 +1667,7 @@ If the namespace does not, they are colored the unbound color.
                          (and (syntax? sexp)
                               (syntax-source sexp)))
                  (void))])))
-        (add-tail-ht-links tail-ht)))
+        (add-tail-ht-links source-editor-cache tail-ht)))
     
     (define (hash-cons! ht k v)
       (hash-set! ht k (cons v (hash-ref ht k '()))))
@@ -1702,16 +1712,11 @@ If the namespace does not, they are colored the unbound color.
                                        key
                                        (λ () '()))))))))
     
-    ;; annotate-unused-require : syntax -> void
-    (define (annotate-unused-require req/tag)
-      (unless (req/tag-used? req/tag)
-        (color (req/tag-req-stx req/tag) error-style-name)))
-    
-    
     ;; annotate-variables : namespace directory string id-set[four of them] (listof syntax) (listof syntax) -> void
     ;; colors in and draws arrows for variables, according to their classifications
     ;; in the various id-sets
-    (define (annotate-variables user-namespace
+    (define (annotate-variables source-editor-cache
+                                user-namespace
                                 user-directory
                                 low-binders
                                 high-binders
@@ -1749,7 +1754,7 @@ If the namespace does not, they are colored the unbound color.
         (for-each (λ (vars) 
                     (for-each (λ (var)
                                 (when (syntax-original? var)
-                                  (color-variable var identifier-binding)
+                                  (color-variable source-editor-cache var identifier-binding)
                                   (document-variable var identifier-binding)
                                   (record-renamable-var rename-ht var)))
                               vars))
@@ -1758,9 +1763,10 @@ If the namespace does not, they are colored the unbound color.
         
         (for-each (λ (vars) (for-each 
                              (λ (var)
-                               (color-variable var identifier-binding)
+                               (color-variable source-editor-cache var identifier-binding)
                                (document-variable var identifier-binding)
-                               (connect-identifier var
+                               (connect-identifier source-editor-cache
+                                                   var
                                                    rename-ht
                                                    low-binders
                                                    unused-requires
@@ -1774,9 +1780,10 @@ If the namespace does not, they are colored the unbound color.
         
         (for-each (λ (vars) (for-each 
                              (λ (var)
-                               (color-variable var identifier-transformer-binding)
+                               (color-variable source-editor-cache var identifier-transformer-binding)
                                (document-variable var identifier-transformer-binding)
-                               (connect-identifier var
+                               (connect-identifier source-editor-cache
+                                                   var
                                                    rename-ht
                                                    high-binders
                                                    unused-require-for-syntaxes
@@ -1791,7 +1798,8 @@ If the namespace does not, they are colored the unbound color.
         (for-each (lambda (vars) (for-each
                                   (lambda (var)
                                     ;; no color variable
-                                    (connect-identifier var
+                                    (connect-identifier source-editor-cache
+                                                        var
                                                         rename-ht
                                                         low-binders
                                                         unused-requires
@@ -1800,7 +1808,8 @@ If the namespace does not, they are colored the unbound color.
                                                         user-namespace
                                                         user-directory
                                                         #f)
-                                    (connect-identifier var
+                                    (connect-identifier source-editor-cache
+                                                        var
                                                         rename-ht
                                                         high-binders
                                                         unused-require-for-syntaxes
@@ -1809,7 +1818,8 @@ If the namespace does not, they are colored the unbound color.
                                                         user-namespace
                                                         user-directory
                                                         #f)
-                                    (connect-identifier var
+                                    (connect-identifier source-editor-cache
+                                                        var
                                                         rename-ht
                                                         template-binders ;; dummy; always empty
                                                         unused-require-for-templates
@@ -1818,7 +1828,8 @@ If the namespace does not, they are colored the unbound color.
                                                         user-namespace
                                                         user-directory
                                                         #f)
-                                    (connect-identifier var
+                                    (connect-identifier source-editor-cache
+                                                        var
                                                         rename-ht
                                                         label-binders ;; dummy; always empty
                                                         unused-require-for-labels
@@ -1834,7 +1845,7 @@ If the namespace does not, they are colored the unbound color.
          (λ (vars) 
            (for-each
             (λ (var) 
-              (color/connect-top rename-ht user-namespace user-directory low-binders var))
+              (color/connect-top source-editor-cache rename-ht user-namespace user-directory low-binders var))
             vars))
          (get-idss low-tops))
         
@@ -1842,14 +1853,14 @@ If the namespace does not, they are colored the unbound color.
          (λ (vars) 
            (for-each
             (λ (var) 
-              (color/connect-top rename-ht user-namespace user-directory high-binders var))
+              (color/connect-top source-editor-cache rename-ht user-namespace user-directory high-binders var))
             vars))
          (get-idss high-tops))
         
-        (color-unused require-for-labels unused-require-for-labels)
-        (color-unused require-for-templates unused-require-for-templates)
-        (color-unused require-for-syntaxes unused-require-for-syntaxes)
-        (color-unused requires unused-requires)
+        (color-unused source-editor-cache require-for-labels unused-require-for-labels)
+        (color-unused source-editor-cache require-for-templates unused-require-for-templates)
+        (color-unused source-editor-cache require-for-syntaxes unused-require-for-syntaxes)
+        (color-unused source-editor-cache requires unused-requires)
         (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
         
     ;; record-renamable-var : rename-ht syntax -> void
@@ -1860,14 +1871,15 @@ If the namespace does not, they are colored the unbound color.
                    (cons stx (hash-ref rename-ht key (λ () '()))))))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
-    (define (color-unused requires unused)
+    (define (color-unused source-editor-cache requires unused)
       (hash-for-each
        unused
        (λ (k v)
-         (for-each (λ (stx) (color stx error-style-name))
+         (for-each (λ (stx) (color source-editor-cache stx error-style-name))
                    (hash-ref requires k)))))
     
-    ;; connect-identifier : syntax
+    ;; connect-identifier : hash-table[source-editor-cache]
+    ;;                      syntax
     ;;                      id-set 
     ;;                      (union #f hash-table)
     ;;                      (union #f hash-table)
@@ -1878,12 +1890,13 @@ If the namespace does not, they are colored the unbound color.
     ;;                      boolean
     ;;                   -> void
     ;; adds arrows and rename menus for binders/bindings
-    (define (connect-identifier var rename-ht all-binders unused requires get-binding user-namespace user-directory actual?)
-      (connect-identifier/arrow var all-binders unused requires get-binding user-namespace user-directory actual?)
+    (define (connect-identifier source-editor-cache var rename-ht all-binders unused requires get-binding user-namespace user-directory actual?)
+      (connect-identifier/arrow source-editor-cache var all-binders unused requires get-binding user-namespace user-directory actual?)
       (when (and actual? (get-ids all-binders var))
         (record-renamable-var rename-ht var)))
     
     ;; connect-identifier/arrow : syntax
+    ;;                            hash-table[source-editor-cache]
     ;;                            id-set 
     ;;                            (union #f hash-table)
     ;;                            (union #f hash-table)
@@ -1891,12 +1904,12 @@ If the namespace does not, they are colored the unbound color.
     ;;                            boolean
     ;;                         -> void
     ;; adds the arrows that correspond to binders/bindings
-    (define (connect-identifier/arrow var all-binders unused requires get-binding user-namespace user-directory actual?)
+    (define (connect-identifier/arrow source-editor-cache var all-binders unused requires get-binding user-namespace user-directory actual?)
       (let ([binders (get-ids all-binders var)])
         (when binders
           (for-each (λ (x)
                       (when (syntax-original? x)
-                        (connect-syntaxes x var actual?)))
+                        (connect-syntaxes source-editor-cache x var actual?)))
                     binders))
         
         (when (and unused requires)
@@ -1913,13 +1926,17 @@ If the namespace does not, they are colored the unbound color.
                                                        (syntax->datum req-stx))
                                 (when id
                                   (add-jump-to-definition
+                                   source-editor-cache
                                    var
                                    id
                                    (get-require-filename req-path user-namespace user-directory)))
-                                (add-mouse-over var (fw:gui-utils:format-literal-label (string-constant cs-mouse-over-import)
-                                                            (syntax-e var)
-                                                            req-path))
-                                (connect-syntaxes req-stx var actual?)))
+                                (add-mouse-over source-editor-cache
+                                                var
+                                                (fw:gui-utils:format-literal-label 
+                                                 (string-constant cs-mouse-over-import)
+                                                 (syntax-e var)
+                                                 req-path))
+                                (connect-syntaxes source-editor-cache req-stx var actual?)))
                             req-stxes))))))))
     
     (define (id/require-match? var id req-stx)
@@ -1955,7 +1972,7 @@ If the namespace does not, they are colored the unbound color.
                 (cons mod-path (list-ref binding 3))]))))
     
     ;; color/connect-top : namespace directory id-set syntax -> void
-    (define (color/connect-top rename-ht user-namespace user-directory binders var)
+    (define (color/connect-top source-editor-cache rename-ht user-namespace user-directory binders var)
       (let ([top-bound?
              (or (get-ids binders var)
                  (parameterize ([current-namespace user-namespace])
@@ -1963,12 +1980,12 @@ If the namespace does not, they are colored the unbound color.
                      (namespace-variable-value (syntax-e var) #t (λ () (k #f)))
                      #t)))])
         (if top-bound?
-            (color var lexically-bound-variable-style-name)
-            (color var error-style-name))
-        (connect-identifier var rename-ht binders #f #f identifier-binding user-namespace user-directory #t)))
+            (color source-editor-cache var lexically-bound-variable-style-name)
+            (color source-editor-cache var error-style-name))
+        (connect-identifier source-editor-cache var rename-ht binders #f #f identifier-binding user-namespace user-directory #t)))
     
     ;; color-variable : syntax (union identifier-binding identifier-transformer-binding) -> void
-    (define (color-variable var get-binding)
+    (define (color-variable source-editor-cache var get-binding)
       (let* ([b (get-binding var)]
              [lexical? 
               (or (not b)
@@ -1980,8 +1997,8 @@ If the namespace does not, they are colored the unbound color.
                                 (and (not a)
                                      (not b)))))))])
         (cond
-          [lexical? (color var lexically-bound-variable-style-name)]
-          [(pair? b) (color var imported-variable-style-name)])))
+          [lexical? (color source-editor-cache var lexically-bound-variable-style-name)]
+          [(pair? b) (color source-editor-cache var imported-variable-style-name)])))
     
     ;; add-var : hash-table -> syntax -> void
     ;; adds the variable to the hash table.
@@ -1993,9 +2010,9 @@ If the namespace does not, they are colored the unbound color.
     
     ;; connect-syntaxes : syntax[original] syntax[original] boolean -> void
     ;; adds an arrow from `from' to `to', unless they have the same source loc. 
-    (define (connect-syntaxes from to actual?)
-      (let ([from-source (find-source-editor from)] 
-            [to-source (find-source-editor to)]
+    (define (connect-syntaxes source-editor-cache from to actual?)
+      (let ([from-source (find-source-editor source-editor-cache from)] 
+            [to-source (find-source-editor source-editor-cache to)]
             [defs-text (get-defs-text)])
         (when (and from-source to-source defs-text)
           (let ([pos-from (syntax-position from)]
@@ -2013,11 +2030,11 @@ If the namespace does not, they are colored the unbound color.
                         to-source to-pos-left to-pos-right
                         actual?))))))))
     
-    ;; add-mouse-over : syntax[original] string -> void
+    ;; add-mouse-over : hash-table[source-editor-cache] syntax[original] string -> void
     ;; registers the range in the editor so that a mouse over
     ;; this area shows up in the status line.
-    (define (add-mouse-over stx str)
-      (let* ([source (find-source-editor stx)]
+    (define (add-mouse-over source-editor-cache stx str)
+      (let* ([source (find-source-editor source-editor-cache stx)]
              [defs-text (get-defs-text)])
         (when (and defs-text 
                    source
@@ -2028,12 +2045,12 @@ If the namespace does not, they are colored the unbound color.
             (send defs-text syncheck:add-mouse-over-status
                   source pos-left pos-right str)))))
     
-    ;; add-jump-to-definition : syntax symbol path -> void
+    ;; add-jump-to-definition : hash-table[source-editor-cache] syntax symbol path -> void
     ;; registers the range in the editor so that the
     ;; popup menu in this area allows the programmer to jump
     ;; to the definition of the id.
-    (define (add-jump-to-definition stx id filename)
-      (let ([source (find-source-editor stx)]
+    (define (add-jump-to-definition source-editor-cache stx id filename)
+      (let ([source (find-source-editor source-editor-cache stx)]
             [defs-text (get-defs-text)])
         (when (and source 
                    defs-text
@@ -2080,13 +2097,13 @@ If the namespace does not, they are colored the unbound color.
          orig-stx
          (λ () null)))))
     
-    ;; annotate-require-open : namespace string -> (stx -> void)
+    ;; annotate-require-open : hash-table[source-editor-cache] namespace string -> (stx -> void)
     ;; relies on current-module-name-resolver, which in turn depends on
     ;; current-directory and current-namespace
-    (define (annotate-require-open user-namespace user-directory)
+    (define (annotate-require-open source-editor-cache user-namespace user-directory)
       (λ (require-spec)
         (when (syntax-original? require-spec)
-          (let ([source (find-source-editor require-spec)])
+          (let ([source (find-source-editor source-editor-cache require-spec)])
             (when (and (is-a? source text%)
                        (syntax-position require-spec)
                        (syntax-span require-spec))
@@ -2233,7 +2250,7 @@ If the namespace does not, they are colored the unbound color.
               (add-id id-map f-stx))))))
     
     ;; color-internal-structure : syntax str -> void
-    (define (color-internal-structure stx style-name)
+    (define (color-internal-structure source-editor-cache stx style-name)
       (let ([ht (make-hasheq)]) 
         ;; ht : stx -o> true
         ;; indicates if we've seen this syntax object before
@@ -2248,7 +2265,7 @@ If the namespace does not, they are colored the unbound color.
                (loop (cdr stx) (cdr datum))]
               [(syntax? stx)
                (when (syntax-original? stx)
-                 (color stx style-name))
+                 (color source-editor-cache stx style-name))
                (let ([stx-e (syntax-e stx)]) 
                  (cond
                    [(cons? stx-e)
@@ -2264,9 +2281,9 @@ If the namespace does not, they are colored the unbound color.
                     (loop (unbox stx-e) (unbox datum))]
                    [else (void)]))])))))
     
-    ;; jump-to : syntax -> void
-    (define (jump-to stx)
-      (let ([src (find-source-editor stx)]
+    ;; jump-to : hash-table[source-editor-cache] syntax -> void
+    (define (jump-to source-editor-cache stx)
+      (let ([src (find-source-editor source-editor-cache stx)]
             [pos (syntax-position stx)]
             [span (syntax-span stx)])
         (when (and (is-a? src text%)
@@ -2276,8 +2293,8 @@ If the namespace does not, they are colored the unbound color.
     
     ;; color : syntax[original] str -> void
     ;; colors the syntax with style-name's style
-    (define (color stx style-name)
-      (let ([source (find-source-editor stx)])
+    (define (color source-editor-cache stx style-name)
+      (let ([source (find-source-editor source-editor-cache stx)])
         (when (is-a? source text%)
           (let ([pos (- (syntax-position stx) 1)]
                 [span (syntax-span stx)])
@@ -2293,20 +2310,21 @@ If the namespace does not, they are colored the unbound color.
         (send source change-style style start finish #f)))
     
     ;; hash-table[syntax -o> (listof syntax)] -> void
-    (define (add-tail-ht-links tail-ht)
-      (collapse-tail-links tail-ht)
-      (hash-for-each
-       tail-ht
-       (λ (stx-from stx-tos)
-         (for-each (λ (stx-to) (add-tail-ht-link stx-from stx-to))
-                   stx-tos))))
+    (define (add-tail-ht-links source-editor-cache tail-ht)
+      (begin
+        (collapse-tail-links source-editor-cache tail-ht)
+        (hash-for-each
+         tail-ht
+         (λ (stx-from stx-tos)
+           (for-each (λ (stx-to) (add-tail-ht-link source-editor-cache stx-from stx-to))
+                     stx-tos)))))
     
     ;; hash-table[syntax -o> (listof syntax)] -> void
     ;; take something like a transitive closure, except
     ;; only when there are non-original links in between
     ;; (this still has the cubic complexity in the worst case,
     ;;  but running it on syncheck.ss it takes no time)
-    (define (collapse-tail-links tail-ht)
+    (define (collapse-tail-links source-editor-cache tail-ht)
       (let loop ()
         (let ([found-one? #f])
           (hash-for-each
@@ -2317,8 +2335,8 @@ If the namespace does not, they are colored the unbound color.
                 (let ([stx-to-tos (hash-ref tail-ht stx-to '())])
                   (for-each
                    (λ (stx-to-to)
-                     (unless (and (add-tail-link? stx-from stx-to) 
-                                  (add-tail-link? stx-to stx-to-to))
+                     (unless (and (add-tail-link? source-editor-cache stx-from stx-to) 
+                                  (add-tail-link? source-editor-cache stx-to stx-to-to))
                        (unless (memq stx-to-to (hash-ref tail-ht stx-from '()))
                          (set! found-one? #t)
                          (hash-cons! tail-ht stx-from stx-to-to))))
@@ -2330,30 +2348,29 @@ If the namespace does not, they are colored the unbound color.
             (printf "\n\n")
             (loop)))))
     
-   
-    
     ;; add-tail-ht-link : syntax syntax -> void
-    (define (add-tail-ht-link from-stx to-stx)
-      (when (add-tail-link? from-stx to-stx)
-        (let* ([to-src (find-source-editor to-stx)]
-               [from-src (find-source-editor from-stx)]
-               [from-pos (syntax-position from-stx)]
-               [to-pos (syntax-position to-stx)]
-               [defs-text (get-defs-text)])
-          (send defs-text syncheck:add-tail-arrow
-                from-src (- from-pos 1)
-                to-src (- to-pos 1)))))
+    (define (add-tail-ht-link source-editor-cache from-stx to-stx)
+      (let* ([to-src (find-source-editor source-editor-cache to-stx)]
+             [from-src (find-source-editor source-editor-cache from-stx)]
+             [defs-text (get-defs-text)])
+        (when (and to-src from-src defs-text)
+	  (let ([from-pos (syntax-position from-stx)]
+		[to-pos (syntax-position to-stx)])
+	    (when (and from-pos to-pos)
+	      (send defs-text syncheck:add-tail-arrow
+		    from-src (- from-pos 1)
+		    to-src (- to-pos 1)))))))
     
-    (define (add-tail-link? from-stx to-stx)
-      (let* ([to-src (find-source-editor to-stx)]
-             [from-src (find-source-editor from-stx)]
+    ;; add-tail-link? : syntax syntax -> boolean
+    (define (add-tail-link? source-editor-cache from-stx to-stx)
+      (let* ([to-src (find-source-editor source-editor-cache to-stx)]
+             [from-src (find-source-editor source-editor-cache from-stx)]
              [defs-text (get-defs-text)])
         (and to-src from-src defs-text
              (let ([from-pos (syntax-position from-stx)]
                    [to-pos (syntax-position to-stx)])
                (and from-pos to-pos)))))
-
-      
+    
     ;; add-to-cleanup-texts : (is-a?/c editor<%>) -> void
     (define (add-to-cleanup-texts ed)
       (let ([ed (find-outermost-editor ed)])
@@ -2369,16 +2386,21 @@ If the namespace does not, they are colored the unbound color.
                      [enclosing-snip-admin (send enclosing-snip get-admin)])
                 (loop (send enclosing-snip-admin get-editor)))
               ed))))
-    
+
     ;; find-source-editor : source -> editor or false
-    (define (find-source-editor stx)
+    (define (find-source-editor source-editor-cache stx)
       (let ([defs-text (get-defs-text)])
         (and defs-text 
              (let txt-loop ([text defs-text])
                (cond
                  [(not (syntax-source stx)) #f]
                  [(and (is-a? text fw:text:basic<%>)
+                       (eq? (hash-ref source-editor-cache text #f)
+                            (syntax-source stx)))
+                  text]
+                 [(and (is-a? text fw:text:basic<%>)
                        (send text port-name-matches? (syntax-source stx)))
+                  (hash-set! source-editor-cache text (syntax-source stx))
                   text]
                  [else
                   (let snip-loop ([snip (send text find-first-snip)])
