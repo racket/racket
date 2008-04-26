@@ -86,9 +86,9 @@ which is called every time your program should visualize the current world.
  constraints on this data definition. You can even keep it implicit, even
  if this violates the Design Recipe.
 
-@deftogether[(
-@defproc[(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})]) true]{}
-@defproc[(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})][animated-gif? boolean?]) true]{}
+@defproc*[(
+[(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})]) true]
+[(big-bang [width natural-number/c] [height natural-number/c] [r number?] [world0 (unsyntax @tech{World})][animated-gif? boolean?]) true]
 )]{
    Creates and displays a @scheme[width] x @scheme[height] canvas,
    starts the clock, 
