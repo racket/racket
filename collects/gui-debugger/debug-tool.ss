@@ -799,12 +799,8 @@
                    res) (cdar bindings)]
                 [else (loop (rest bindings))])))
           
-          (define/public (move-up-frame)
-            (set-box! frame-num (add1 (unbox frame-num)))
-            (suspend-gui (get-stack-frames) (get-break-status) #t))
-          
-          (define/public (move-down-frame)
-            (set-box! frame-num (sub1 (unbox frame-num)))
+          (define/public (move-to-frame the-frame-num)
+            (set-box! frame-num the-frame-num)
             (suspend-gui (get-stack-frames) (get-break-status) #t))
           
           (define/public (resume)
@@ -843,13 +839,16 @@
                          end
                          start)))))
           
-          (define/public (get-current-frame-endpoints)
+          (define/public (get-frame-endpoints frame-num)
             (let ([stack-frames (get-stack-frames)])
               (and (cons? stack-frames)
-                   (let* ([src-stx (mark-source (list-ref stack-frames (get-frame-num)))]
+                   (let* ([src-stx (mark-source (list-ref stack-frames frame-num))]
                           [start (syntax-position src-stx)]
                           [end (and start (+ start (syntax-span src-stx) -1))])
                      (list start end)))))
+          
+          (define/public (get-current-frame-endpoints)
+            (get-frame-endpoints (get-frame-num)))
           
           (define (do-in-user-thread thunk)
             (if (get-break-status)
@@ -919,9 +918,8 @@
                 (send (send (get-frame) get-step-button) enable top-of-stack?)
                 (send (send (get-frame) get-step-over-button) enable (can-step-over? frames status))
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
-                (send (send (get-frame) get-up-frame-button) enable (can-move-up-frame? frames))
-                (send (send (get-frame) get-down-frame-button) enable (can-move-down-frame? frames))
                 (send (send (get-frame) get-resume-button) enable #t)
+                (send (get-frame) register-stack-frames frames)
                 ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
                 ;;(printf "status = ~a~n" status)
                 (send status-message set-label
@@ -942,7 +940,8 @@
                                               "??")
                                           (if (= 2 (length status))
                                               (render (cadr status))
-                                              (cons 'values (map (lambda (v) (render v)) (rest status)))))))]))
+                                              (cons 'values (map (lambda (v) (render v)) (rest status)))))))]
+                              [""]))
                           ""))
                 (cond [(get-current-frame-endpoints)
                        => (lambda (start/end)
@@ -965,9 +964,8 @@
             (send (send (get-frame) get-step-over-button) enable #f)
             (send (send (get-frame) get-step-out-button) enable #f)
             (send (send (get-frame) get-resume-button) enable #f)
-            (send (send (get-frame) get-up-frame-button) enable #f)
-            (send (send (get-frame) get-down-frame-button) enable #f)
             (send (send (get-frame) get-status-message) set-label "")
+            (send (get-frame) clear-stack-frames)
             (send (get-defs) invalidate-bitmap-cache))
           
           (define/public suspend
@@ -1079,27 +1077,125 @@
                      this
                      '(ok))))))
           
+          (define max-stack-frames 40)
+          
+          (define/public (register-stack-frames frames)
+            (let loop ([i 0] [frames frames])
+              (when (< i max-stack-frames)
+                (send (list-ref stack-frames i) set-expr
+                      (and (cons? frames) (mark-source (first frames))))
+                (loop (add1 i) (and (cons? frames) (rest frames))))))
+          
+          (define/public (clear-stack-frames)
+            (let loop ([i 0])
+              (when (< i max-stack-frames)
+                (send (list-ref stack-frames i) set-expr #f)
+                (loop (add1 i)))))
+          
+          (define debug-grandparent-panel 'uninitialized-debug-grandparent-panel)
           (define debug-parent-panel 'uninitialized-debug-parent-panel)
           (define debug-panel 'uninitialized-debug-panel)
+          (define stack-view-panel 'uninitialized-stack-view-panel)
+          (define stack-frames 'uninitialized-stack-frames)
+          (define highlight-color (make-object color% 207 255 207))
+          (define mouse-over-frame #f)
+          (define refresh-timer (new timer% [notify-callback
+                                             (lambda ()
+                                               (unless mouse-over-frame
+                                                 (send (get-current-tab) move-to-frame
+                                                       (send (get-current-tab) get-frame-num))))]))
           (define/override (get-definitions/interactions-panel-parent)
-            (set! debug-parent-panel
-                  (make-object vertical-panel%
+            (set! debug-grandparent-panel
+                  (make-object horizontal-panel%
                     (super get-definitions/interactions-panel-parent)))
+            (set! stack-view-panel
+                  (new vertical-panel%
+                       [parent debug-grandparent-panel]
+                       [stretchable-width #f]))
+            (new message% [parent stack-view-panel] [label "Context"]
+                 [font (make-object font% 18 'default 'normal 'bold #t)])
+            (set! stack-frames
+                  (build-list max-stack-frames
+                              (lambda (i)
+                                (new (class message%
+                                       (super-new)
+                                       (inherit set-label get-label)
+                                       (define expr #f)
+                                       (define/public (set-expr expr1)
+                                         (set! expr expr1)
+                                         (set-label
+                                          (cond
+                                            ; should succeed unless the user closes a slave tab during debugging
+                                            [(and expr (filename->defs (syntax-source expr)))
+                                             =>
+                                             (lambda (defs)
+                                               (clean-status
+                                                (if (syntax-position expr)
+                                                    (send defs get-text
+                                                          (sub1 (syntax-position expr))
+                                                          (+ -1 (syntax-position expr) (syntax-span expr)))
+                                                    "??")))]
+                                            [""])))
+                                       (define/override (on-subwindow-event msg evt)
+                                         (case (send evt get-event-type)
+                                           [(enter) (cond
+                                                      [(and expr (filename->defs (syntax-source expr)))
+                                                       => (lambda (defs)
+                                                            (send defs highlight-range
+                                                                  (sub1 (syntax-position expr))
+                                                                  (+ -1 (syntax-position expr)
+                                                                     (syntax-span expr))
+                                                                  highlight-color)
+                                                            (cond
+                                                              [(send defs get-filename)
+                                                               =>
+                                                               (lambda (fn)
+                                                                 (handler:edit-file fn))])
+                                                            (send defs scroll-to-position
+                                                                  (syntax-position expr)))])
+                                                    (when expr
+                                                      (set! mouse-over-frame i))]
+                                           [(leave) (cond
+                                                      [(and expr (filename->defs (syntax-source expr)))
+                                                       => (lambda (defs)
+                                                            (send defs unhighlight-range
+                                                                  (sub1 (syntax-position expr))
+                                                                  (+ -1 (syntax-position expr)
+                                                                     (syntax-span expr))
+                                                                  highlight-color))])
+                                                    (set! mouse-over-frame #f)
+                                                    (when expr
+                                                      (send refresh-timer start 250 #t))]
+                                           [(left-down) (when expr
+                                                          (send (get-current-tab) move-to-frame i))])))
+                                     [parent stack-view-panel]
+                                     [stretchable-width #f]
+                                     [label (make-string 30 #\ )]))))
+            ;; parent of panel with debug buttons
+            (set! debug-parent-panel
+                  (make-object vertical-panel% debug-grandparent-panel))
+            ;; horizontal panel with debug buttons; not vertically stretchable
             (set! debug-panel (instantiate horizontal-panel% ()
                                 (parent debug-parent-panel)
                                 (stretchable-height #f)
                                 (alignment '(center center))
                                 (style '(border))))
+            ;; hide the debug panel and stack view initially
             (send debug-parent-panel change-children (lambda (l) null))
+            (send debug-grandparent-panel change-children (lambda (l) (remq stack-view-panel l)))
             (make-object vertical-panel% debug-parent-panel))
           
           (define/public (hide-debug)
             (when (member debug-panel (send debug-parent-panel get-children))
+              (send debug-grandparent-panel change-children
+                    (lambda (l) (remq stack-view-panel l)))
               (send debug-parent-panel change-children
                     (lambda (l) (remq debug-panel l)))))
           
           (define/public (show-debug)
             (unless (member debug-panel (send debug-parent-panel get-children))
+              (send debug-grandparent-panel change-children
+                    (lambda (l) (append l (list stack-view-panel))))
               (send debug-parent-panel change-children
                     (lambda (l) (cons debug-panel l)))))
           
@@ -1217,30 +1313,12 @@
                  [callback (make-big-step-callback #t)]
                  [enabled #f]))
           
-          (define up-frame-button
-            (new button%
-                 [label ((bitmap-label-maker
-                          "Up"
-                          (build-path (collection-path "gui-debugger" "icons") "up.png")) this)]
-                 [parent debug-panel]
-                 [callback (lambda (btn evt) (send (get-current-tab) move-up-frame))] [enabled #f]))
-          
-          (define down-frame-button
-            (new button%
-                 [label ((bitmap-label-maker
-                          "Down"
-                          (build-path (collection-path "gui-debugger" "icons") "down.png")) this)]
-                 [parent debug-panel]
-                 [callback (lambda (btn evt) (send (get-current-tab) move-down-frame))] [enabled #f]))
-
           (define/public (get-debug-button) debug-button)
           (define/public (get-pause-button) pause-button)
           (define/public (get-resume-button) resume-button)
           (define/public (get-step-button) step-button)
           (define/public (get-step-over-button) step-over-button)
           (define/public (get-step-out-button) step-out-button)
-          (define/public (get-up-frame-button) up-frame-button)
-          (define/public (get-down-frame-button) down-frame-button)
           (define/public (get-status-message) status-message)
           
           (define mouse-over-message
