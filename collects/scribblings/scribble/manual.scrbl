@@ -4,6 +4,9 @@
           (for-syntax scheme/base)
           (for-label scribble/manual-struct))
 
+@(define ellipses (scheme ...))
+@(define ellipses+ (scheme ...+))
+
 @title[#:tag "manual" #:style 'toc]{Manual Forms}
 
 @defmodule[scribble/manual]{The @schememodname[scribble/manual]
@@ -292,7 +295,11 @@ sub-sections.}
                [arg-spec (arg-id contract-expr-datum)
                          (arg-id contract-expr-datum default-expr)
                          (keyword arg-id contract-expr-datum)
-                         (keyword arg-id contract-expr-datum default-expr)])]{
+                         (keyword arg-id contract-expr-datum default-expr)
+                         ellipses
+                         ellipses+]
+               [ellipses #, @ellipses]
+               [ellipses+ #, @ellipses+])]{
 
 Produces a sequence of flow elements (encapsulated in a
 @scheme[splice]) to document a procedure named @scheme[id]. Nesting
@@ -304,7 +311,7 @@ for-label binding) are hyperlinked to this documentation.
 A @scheme[defmodule] or @scheme[declare-exporting] form (or one of the
 variants) in an enclosing section determines the @scheme[id] binding
 that is being defined. The @scheme[id] should also have a for-label
-binding (as introduced by @scheme[(require (for-label ...))]) that
+binding (as introduced by @scheme[(require (for-label ....))]) that
 matches the definition binding; otherwise, the defined @scheme[id]
 will not typeset correctly within the definition.
 
@@ -327,11 +334,14 @@ Each @scheme[arg-spec] must have one of the following forms:
        Like the previous case, but with a default
        value.}
 
-@specsubform[#, @schemeidfont{...}]{ Any number of the preceding argument
-      (normally at the end).}
+@specsubform[#, @ellipses]{Any number of the preceding argument.  This
+       form is normally used at the end, but keyword-based arguments
+       can sensibly appear afterward. See also the documentation for
+       @scheme[append] for a use of @ellipses before the last
+       argument.}
 
-@specsubform[#, @schemeidfont{...+}]{One or more of the preceding argument
-       (normally at the end).}
+@specsubform[#, @ellipses+]{One or more of the preceding argument
+       (normally at the end, like @ellipses).}
 
 The @scheme[result-contract-expr-datum] is typeset via
 @scheme[schemeblock0], and it represents a contract on the procedure's
@@ -390,7 +400,7 @@ determined by the enclosing context).
 The typesetting of @scheme[form-datum] preserves the source layout,
 like @scheme[schemeblock].}
 
-@defform[(defform* maybe-id maybe-literals [form-datum ..+] pre-flow ...)]{
+@defform[(defform* maybe-id maybe-literals [form-datum ...+] pre-flow ...)]{
 
 Like @scheme[defform], but for multiple forms using the same
 @scheme[_id].}
