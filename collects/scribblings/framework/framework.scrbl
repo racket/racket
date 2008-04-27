@@ -9,6 +9,7 @@
 @item{Mode}
 @item{``Cannot parse docs for handler:open-file''}
 @item{Check indexing in preferences:get}
+@item{Warnings in the translation process}
 }
 
 @itemize{
