@@ -55,23 +55,45 @@
   (lambda (stx)
     (syntax-case stx ()
       [(_ id contract desc)
-       (with-syntax ([((arg ...) result)
+       (with-syntax ([(header result)
                       (syntax-case #'contract (->d -> values)
                         [(->d (req ...) () (values [name res] ...))
-                         #'((req ...) (values res ...))]
+                         #'((id req ...) (values res ...))]
                         [(->d (req ...) () [name res])
-                         #'((req ...) res)]
-                        [(-> result)
-                         #'(() result)]
-                        [else
+                         #'((id req ...) res)]
+                        [(->d (req ...) () #:rest rest rest-ctc [name res])
+                         #'((id req ... [rest rest-ctc] (... ...)) res)]
+                        [(->d (req ...) (one more ...) whatever)
                          (raise-syntax-error
                           #f
-                          "unsupported procedure contract form (no argument names)"
+                          (format "unsupported ->d contract form for ~a, optional arguments non-empty, must use proc-doc/names"
+                                  (syntax->datum #'id))
+                          stx
+                          #'contract)]
+                        [(->d whatever ...) 
+                         (raise-syntax-error
+                          #f
+                          (format "unsupported ->d contract form for ~a" (syntax->datum #'id))
+                          stx
+                          #'contract)]
+                        [(-> result)
+                         #'((id) result)]
+                        [(-> whatever ...) 
+                         (raise-syntax-error
+                          #f
+                          (format "unsupported -> contract form for ~a, must use proc-doc/names if there are arguments"
+                                  (syntax->datum #'id))
+                          stx
+                          #'contract)]
+                        [(id whatever ...)
+                         (raise-syntax-error
+                          #f
+                          (format "unsupported ~a contract form (unable to synthesize argument names)" (syntax->datum #'id))
                           stx
                           #'contract)])])
          (values
           #'[id contract]
-          #'(defproc (id arg ...) result . desc)
+          #'(defproc header result . desc)
           #'(scribble/manual)))])))
 
 (define-provide/doc-transformer proc-doc/names
@@ -79,7 +101,7 @@
     (syntax-case stx ()
       [(_ id contract names desc)
        (with-syntax ([header                      
-                      (syntax-case #'(contract names) (->d -> values)
+                      (syntax-case #'(contract names) (->d -> values case->)
                         [((-> ctcs ... result) (arg-names ...))
                          (begin
                            (unless (= (length (syntax->list #'(ctcs ...)))
@@ -102,6 +124,11 @@
                         [((case-> (-> doms ... rng) ...)
                           ((args ...) ...))
                          (begin
+                           (unless (= (length (syntax->list #'((doms ...) ...)))
+                                      (length (syntax->list #'((args ...) ...))))
+                             (raise-syntax-error #f
+                                                 "number of cases and number of arg lists do not have the same size"
+                                                 stx))
                            (for-each
                             (λ (doms args)
                               (unless (= (length (syntax->list doms))
@@ -125,7 +152,18 @@
   (lambda (stx)
     (syntax-case stx (parameter/c)
       [(_ id (parameter/c contract) arg-id desc)
-       (values
-        #'[id (parameter/c contract)]
-        #'(defparam id arg-id contract . desc)
-        #'(scribble/manual))])))
+       (begin
+         (unless (identifier? #'arg-id)
+           (raise-syntax-error 'parameter/doc 
+                               "expected an identifier"
+                               stx
+                               #'arg-id))
+         (unless (identifier? #'id)
+           (raise-syntax-error 'parameter/doc 
+                               "expected an identifier"
+                               stx
+                               #'id))
+         (values
+          #'[id (parameter/c contract)]
+          #'(defparam id arg-id contract . desc)
+          #'(scribble/manual)))])))

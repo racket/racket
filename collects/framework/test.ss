@@ -4,11 +4,6 @@
 (require scribble/srcdoc)
 (require/doc scheme/base scribble/manual)
 
-(define-syntax (provide/contract/docs stx)
-  (syntax-case stx ()
-    [(_ (name contract docs ...) ...)
-     (syntax (provide/contract (name contract) ...))]))
-
 (define (test:top-level-focus-window-has? pred)
   (let ([tlw (get-top-level-focus-window)])
     (and tlw
