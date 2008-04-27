@@ -91,6 +91,9 @@ When showing example evaluations, use the REPL-snapshot style:
 
 See also the @scheme[scribble/eval] library.
 
+Use four dots, @litchar{....}, in place of omitted code, since
+@litchar{...} means repetition.
+
 @section{Typesetting Prose}
 
 Refrain from referring to documentation ``above'' or ``below,'' and
