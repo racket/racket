@@ -974,8 +974,8 @@
   (parameter/c (-> (listof eventspace?)))
   func
   
-  @{This parameter that specifies which 
-         \\hyperref{eventspaces}{eventspace see section~}{}{eventspaceinfo}
+  @{This parameter that specifies which evenspaces
+         (see also @secref[#:doc '(lib "scribblings/gui/gui.scrbl") "eventspaceinfo"])
   are considered when finding the frontmost frame.
   The first case
   sets the parameter to @scheme[func]. The procedure @scheme[func] will be
