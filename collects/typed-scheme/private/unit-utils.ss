@@ -3,7 +3,7 @@
 (require scheme/unit
          (for-syntax
           scheme/base
-          (only-in srfi/1/list s:member)
+          (only-in srfi/1/list s:member s:delete-duplicates)
           scheme/unit-exptime
           scheme/match))
 
@@ -60,8 +60,10 @@
         (values imps* exps*))))
 
   (define (duplicates sigs)
-    (= (length sigs)
-       (length (s:delete-duplicates sigs sig=?))))
+    (for/or ([s sigs]
+             #:when
+             (> 1 (length (for/list ([s* sig]) (sig=? s s*)))))
+            s))
   
   (syntax-case stx (import export)
     ;; here the exports are specified - they ought to be a subset of the allowable exports
@@ -74,9 +76,11 @@
      (andmap identifier? (syntax->list #'units))
      (let*-values ([(units) (syntax->list #'units)]
                    [(imps exps) (imps/exps-from-units units)])
-       (when (duplicates? exps)
-             (raise-syntax-error #f "multiple units export the same signature" stx))
-       (mk imps exps units stx))]))
+       (cond [(duplicates? exps)
+              =>
+              (lambda (d)
+                (raise-syntax-error #f (format "multiple units export the signature ~a" d) stx))]
+             [else (mk (s:delete-duplicates imps) exps units stx)]))]))
 
 
 ;; Tests
