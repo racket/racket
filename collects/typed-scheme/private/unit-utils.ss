@@ -62,7 +62,7 @@
   (define (duplicates? sigs)
     (for/or ([s sigs]
              #:when
-             (> 1 (length (for/list ([s* sigs]) (sig=? s s*)))))
+             (> 1 (length (for/list ([s* sigs]) (free-identifier=? s s*)))))
             s))
   
   (syntax-case stx (import export)
@@ -80,7 +80,8 @@
               =>
               (lambda (d)
                 (raise-syntax-error #f (format "multiple units export the signature ~a" d) stx))]
-             [else (mk (delete-duplicates imps) exps units stx)]))]))
+             [else 
+              (mk (delete-duplicates imps) exps units stx)]))]))
 
 
 ;; Tests
@@ -102,5 +103,7 @@
 (define z 45)
 
 (define-values/link-units/infer (export x^) x@ y@)
+
+;(define-values/link-units/infer x@ y@)
 
 
