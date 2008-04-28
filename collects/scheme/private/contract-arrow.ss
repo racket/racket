@@ -899,15 +899,7 @@ v4 todo:
                                (cond
                                  [(not rng) #f]
                                  [(box? rng) 
-                                  (map (λ (val)
-                                         (keyword-apply
-                                          val
-                                          kwd-args
-                                          kwd-arg-vals
-                                          (append 
-                                           ;; this parameter (if necc.)
-                                           (if (->d-mtd? ->d-stct) (list (car raw-orig-args)) '())
-                                           orig-args)))
+                                  (map (λ (val) (apply val dep-pre-args))
                                        (unbox rng))]
                                  [else rng]))]
                         [rng-underscore? (box? (->d-range ->d-stct))])

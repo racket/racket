@@ -2295,7 +2295,9 @@ If the namespace does not, they are colored the unbound color.
     ;; colors the syntax with style-name's style
     (define (color source-editor-cache stx style-name)
       (let ([source (find-source-editor source-editor-cache stx)])
-        (when (is-a? source text%)
+        (when (and (is-a? source text%)
+                   (syntax-position stx)
+                   (syntax-span stx))
           (let ([pos (- (syntax-position stx) 1)]
                 [span (syntax-span stx)])
             (color-range source pos (+ pos span) style-name)))))

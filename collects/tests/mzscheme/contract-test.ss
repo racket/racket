@@ -1642,6 +1642,22 @@
       x)
    '(ctc body))
   
+  (test/spec-passed/result
+   '->d-underscore4
+   '((contract (->d ([str any/c]) () #:rest rest (listof any/c) [_ any/c])
+               (λ (x . y) (cons x y))
+               'pos 'neg)
+     1 2 3)
+   '(1 2 3))
+  
+  (test/spec-passed/result
+   '->d-underscore5
+   '((contract (->d ([str any/c]) () #:rest rest (listof any/c) [_ any/c])
+               (λ (x . y) (cons x y))
+               'pos 'neg)
+     1 2 3 4 5)
+   '(1 2 3 4 5))
+  
 ;                                               
 ;                                               
 ;                                               

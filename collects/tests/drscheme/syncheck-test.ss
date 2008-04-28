@@ -829,7 +829,7 @@
                     #f)))
   
   (define (run-test)
-    (check-language-level #rx"Graphical")
+    (check-language-level #rx"Pretty")
     (let* ([drs (wait-for-drscheme-frame)]
            [defs (send drs get-definitions-text)]
            [filename (make-temporary-file "syncheck-test~a")])
