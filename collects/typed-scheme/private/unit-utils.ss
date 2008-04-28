@@ -3,7 +3,7 @@
 (require scheme/unit
          (for-syntax
           scheme/base
-          (only-in srfi/1/list s:member s:delete-duplicates)
+          (only-in srfi/1/list s:member delete-duplicates)
           scheme/unit-exptime
           scheme/match))
 
@@ -59,10 +59,10 @@
              [imps* (map datum->sig-elem (filter (lambda (imp) (not (sig-in-sigs? imp exps))) imps))])
         (values imps* exps*))))
 
-  (define (duplicates sigs)
+  (define (duplicates? sigs)
     (for/or ([s sigs]
              #:when
-             (> 1 (length (for/list ([s* sig]) (sig=? s s*)))))
+             (> 1 (length (for/list ([s* sigs]) (sig=? s s*)))))
             s))
   
   (syntax-case stx (import export)
@@ -80,7 +80,7 @@
               =>
               (lambda (d)
                 (raise-syntax-error #f (format "multiple units export the signature ~a" d) stx))]
-             [else (mk (s:delete-duplicates imps) exps units stx)]))]))
+             [else (mk (delete-duplicates imps) exps units stx)]))]))
 
 
 ;; Tests
