@@ -48,16 +48,20 @@
          (bound-identifier=? (cdr sig1) (cdr sig2))))
   
   ;; is imp in the list of exports?
-  (define (imp-in-exps? imp exps)
-    (s:member imp exps sig=?))
+  (define (sig-in-sigs? imp exps)
+    (for/or ([e exps]) (sig=? imp e)))
   
   ;; produce the imports not satisfied by the exports, and all the exports
   ;; exports should not have duplicates
   (define (imps/exps-from-units units)
     (let-values ([(imps exps) (get-all-sigs units)])
       (let* ([exps* (map datum->sig-elem exps)]
-             [imps* (map datum->sig-elem (filter (lambda (imp) (not (imp-in-exps? imp exps))) imps))])
+             [imps* (map datum->sig-elem (filter (lambda (imp) (not (sig-in-sigs? imp exps))) imps))])
         (values imps* exps*))))
+
+  (define (duplicates sigs)
+    (= (length sigs)
+       (length (s:delete-duplicates sigs sig=?))))
   
   (syntax-case stx (import export)
     ;; here the exports are specified - they ought to be a subset of the allowable exports
@@ -70,6 +74,8 @@
      (andmap identifier? (syntax->list #'units))
      (let*-values ([(units) (syntax->list #'units)]
                    [(imps exps) (imps/exps-from-units units)])
+       (when (duplicates? exps)
+             (raise-syntax-error #f "multiple units export the same signature" stx))
        (mk imps exps units stx))]))
 
 
