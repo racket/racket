@@ -19,8 +19,8 @@
 (pdefine: (b) (heap-size [h : (Heap b)]) : number
 	  (cond [(heap-empty? h) 0]
 		[(heap-node? h)                  
-		 (+ 1 (+ (#{heap-size @ b} (heap-node-left h))
-			 (#{heap-size @ b} (heap-node-right h))))]
+		 (+ 1 (+ (heap-size (heap-node-left h))
+			 (heap-size (heap-node-right h))))]
 		;; FIXME - shouldn't need else clause
 		[else (error "Never happens!")]))
 

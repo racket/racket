@@ -1,9 +1,9 @@
+#lang typed-scheme
 ;;; priority-queue.scm  --  Jens Axel Søgaard
 ;;; PURPOSE
 
-					; This file implements priority queues on top of
-					; a heap library.
-#lang typed-scheme
+; This file implements priority queues on top of
+; a heap library.
 (define-type-alias number Number)
 (define-type-alias boolean Boolean)
 (define-type-alias symbol Symbol)
@@ -17,7 +17,7 @@
 (require/typed =? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
 (require/typed <? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
 
-					; a priority-queue is a heap of  (cons <priority> <element>)
+; a priority-queue is a heap of  (cons <priority> <element>)
 
 (define-type-alias (elem a) (cons number a))
 
@@ -25,18 +25,18 @@
 
 (define-type-alias (pqh a) (heap:Heap (elem a)))
 
-					; conveniences
+; conveniences
 (pdefine: (a) (heap [pq : (priority-queue a)]) : (pqh a) (priority-queue-heap pq))
 (pdefine: (a) (pri [p : (elem a)]) : number (car p))
 (pdefine: (a) (elm [p : (elem a)]) : a  (cdr p))
 (pdefine: (a) (make [h : (pqh a)]) : (priority-queue a)  (make-priority-queue h))
 
-					; sort after priority
-					; TODO: and then element?
+; sort after priority
+; TODO: and then element?
 (pdefine: (a) (compare [p1 : (elem a)] [p2 : (elem a)]) : number
 	  (number-compare (pri p1) (pri p2)))
 
-  ;;; OPERATIONS
+;;; OPERATIONS
 
 (define: (num-elems [h : (heap:Heap (cons number number))]) : (list-of (cons number number))
   (heap:elements h))
@@ -78,11 +78,9 @@
 (pdefine: (a) (insert [x : a] [p : number] [pq : (priority-queue a)]) : (priority-queue a)
 	  (make (heap:insert (#{cons :: (case-lambda (a (list-of a) -> (list-of a)) (number a -> (cons number a)))} p x) (heap pq))))
 
-;; FIXME - had to insert extra binding to give the typechecker more help
-;; could have done this with annotation on map, probably
+;; FIXME -- too many annotations needed on cons
 (pdefine: (a) (insert* [xs : (list-of a)] [ps : (list-of number)] [pq : (priority-queue a)]) : (priority-queue a)
-	  (let ([cons #{cons :: (case-lambda (a (list-of a) -> (list-of a)) (number a -> (cons number a)))}])
-	    (make (heap:insert* (map #{cons :: (number a -> (cons number a))} ps xs) (heap pq)))))
+          (make (heap:insert* (map #{#{cons @ number a} :: (number a -> (cons number a))} ps xs) (heap pq))))
 
 (pdefine: (a) (delete-min [pq : (priority-queue a)]) : (priority-queue a)
 	  (let ([h (heap pq)])

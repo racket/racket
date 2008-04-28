@@ -77,7 +77,7 @@
   (define empty 
     (case-lambda
       [()    (make-heap-empty (current-compare))]
-      [(cmp) (make-heap-empty cmp)]))
+      [(#{cmp : comparator}) (make-heap-empty cmp)]))
   
   (define: empty? : (pred heap-empty) heap-empty?)
   
@@ -98,11 +98,8 @@
     (cond
       [(empty? h1) h2]
       [(empty? h2) h1]
-      [else        (let*: (;; added new bindings at simpler types
-                           [h1 : (heap-node a) h1] 
-                           [h2 : (heap-node a) h2] 
-                           [x : a (heap-node-elm h1)] ;; FIXME - FUCK FUCK FUCK - why not x?
-                           [y : a (heap-node-elm h2)])
+      [else        (let* ([x (heap-node-elm h1)]
+                          [y (heap-node-elm h2)])
                           (if<=? ((heap-compare h1) x y)
                                 (make x (heap-node-left h1) (union (heap-node-right h1) h2))
                                 (make y (heap-node-left h2) (union h1 (heap-node-right h2)))))]))
@@ -197,11 +194,8 @@
                     (heap-node-left h))
               (heap-node-right h))))
 
-  ;; FIXME
   (pdefine: (a) (elements [h : (Heap a)]) : (list-of a)
-    (fold (lambda: ([x : a] [l : (list-of a)]) (cons x l))
-          #;#{cons : (a (list-of a) -> (list-of a))} 
-            #{'() :: (list-of a)} h))
+    (fold (lambda: ([x : a] [l : (list-of a)]) (cons x l)) '() h))
   
   (pdefine: (a) (count [x : a] [h : (Heap a)]) : number
     (let ([cmp (heap-compare h)])
@@ -211,16 +205,20 @@
                     s))
             0 h)))
   
+  (pdefine: (a) (-heap . [xs : a]) : (Heap a)
+    (list->heap xs))   
+
+  
   (define: list->heap : (All (a) (case-lambda (comparator (list-of a) -> (Heap a)) ((list-of a) -> (Heap a))))
     ; time: O(n)
     (pcase-lambda:  (a)
       [([l : (list-of a)])     (list->heap (current-compare) l)]
       [([cmp : comparator] [l : (list-of a)])
-       (let* ([e  (empty cmp)]
+       (let* ([e  (#{empty @ a} cmp)]
               [hs (map (lambda: ([x : a]) (insert x e)) l)])
          ; (list heap) -> (list heap)
          ;  merge adjacent pairs of heaps
-         (define: (merge-pairs [hs : (list-of (Heap a))]) : (list-of (Heap a))
+         (define: (merge-pairs [hs : (Listof (Heap a))]) : (list-of (Heap a))
            (cond
              [(or (null? hs)
                   (null? (cdr hs))) hs]
@@ -236,9 +234,6 @@
                  [(null? (cdr hs)) (car hs)]
                  [else             (loop (merge-pairs hs))]))))]))
   
-  ;; FIXME - moved to after list->heap
-  (pdefine: (a) (-heap . [xs : a]) : (Heap a)
-    (list->heap xs))   
 
   
   (pdefine: (a) (insert* [xs : (list-of a)] [h : (Heap a)]) : (Heap a)
