@@ -59,7 +59,12 @@ input ports as it becomes available.}
                                      (-> (one-of/c 'block 'none #f)))
                              false/c)
                        #f]
-          [buffering? any/c #f])
+          [buffering? any/c #f]
+          [on-consume (or/c ((or/c exact-nonnegative-integer? eof-object? 
+                                   procedure? evt?) 
+                             . -> . any)
+                            false/c)
+                      #f])
          input-port?]{
 
 Similar to @scheme[make-input-port], but if the given @scheme[read-in]
@@ -88,7 +93,13 @@ can be called to read more characters than are immediately demanded by
 the user of the new port. If @scheme[buffer] mode is not @scheme[#f],
 then @scheme[buffering?] determines the initial buffer mode, and
 @scheme[buffering?] is enabled after a buffering change only if the
-new mode is @scheme['block].}
+new mode is @scheme['block].
+
+If @scheme[on-consumed] is not @scheme[#f], it is called when data is
+read from the port, as opposed to merely peeked. The argument to
+@scheme[on-consume] is the result value of the port's reading
+procedure, so it can be an integer or any result from
+@scheme[read-in].}
 
 
 @defproc[(make-limited-input-port [in input-port?]

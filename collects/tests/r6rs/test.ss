@@ -21,10 +21,12 @@
   (define-syntax test
     (syntax-rules ()
       [(_ expr expected)
-       (check-test 'expr
-                   (guard (c [#t (make-err c)])
-                          expr)
-                   expected)]))
+       (begin
+         ;; (write 'expr) (newline)
+         (check-test 'expr
+                     (guard (c [#t (make-err c)])
+                            expr)
+                     expected))]))
 
   (define-syntax test/approx
     (syntax-rules ()

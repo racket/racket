@@ -91,7 +91,7 @@
 	  (copy b)
 	  rd))]))
 
-  ;; `make-input-port/read-to-peek' sometimes need to wrap a special-value
+  ;; `make-input-port/read-to-peek' sometimes needs to wrap a special-value
   ;; procedure so that it's only called once when the value is both
   ;; peeked and read.
   (define-values (struct:memoized make-memoized memoized? memoized-ref memoized-set!)
@@ -121,7 +121,8 @@
 		      [count-lines!-proc void] 
 		      [init-position 1]
 		      [buffer-mode-proc #f]
-                      [buffering? #f])
+                      [buffering? #f]
+                      [on-consumed #f])
       (define lock-semaphore (make-semaphore 1))
       (define commit-semaphore (make-semaphore 1))
       (define-values (peeked-r peeked-w) (make-pipe))
@@ -152,6 +153,11 @@
         ;;  our back.
 	(write-byte 0 peeked-w)
 	(read-byte peeked-r))
+      (define (consume-from-peeked s)
+        (let ([n (read-bytes-avail!* s peeked-r)])
+          (when on-consumed
+            (on-consumed n))
+          n))
       (define (read-it-with-lock s)
 	(if use-manager?
 	    (with-manager-lock (lambda () (do-read-it s)))
@@ -164,7 +170,9 @@
 	 s))
       (define (do-read-it s)
 	(if (byte-ready? peeked-r)
-            peeked-r
+            (if on-consumed
+                (consume-from-peeked s)
+                peeked-r)
 	    ;; If nothing is saved from a peeking read,
 	    ;; dispatch to `read', otherwise return
 	    ;; previously peeked data
@@ -179,23 +187,33 @@
                     (if (and (number? r) (positive? r))
                         (begin
                           (write-bytes buf peeked-w 0 r)
-                          peeked-r)
-                        r))
+                          (if on-consumed
+                              (consume-from-peeked s)
+                              peeked-r))
+                        (begin
+                          (when on-consumed
+                            (on-consumed r))
+                          r)))
                   ;; Just read requested amount:
-                  (read s))]
+                  (let ([v (read s)])
+                    (when on-consumed
+                      (on-consumed v))
+                    v))]
 	     [else (if (bytes? (mcar special-peeked))
 		       (let ([b (mcar special-peeked)])
 			 (write-bytes b peeked-w)
 			 (set! special-peeked (mcdr special-peeked))
 			 (when (null? special-peeked)
 			   (set! special-peeked-tail #f))
-			 (read-bytes-avail!* s peeked-r))
-		       (begin0
-			(mcar special-peeked)
+                         (consume-from-peeked s))
+		       (let ([v (mcar special-peeked)])
 			(make-progress)
 			(set! special-peeked (mcdr special-peeked))
+                        (when on-consumed
+                          (on-consumed v))
 			(when (null? special-peeked)
-			  (set! special-peeked-tail #f))))])))
+			  (set! special-peeked-tail #f))
+                        v))])))
       (define (peek-it-with-lock s skip unless-evt)
         (if use-manager?
             (with-manager-lock (lambda () (do-peek-it s skip unless-evt)))

@@ -3,6 +3,7 @@
 (library (tests r6rs io ports)
   (export run-io-ports-tests)
   (import (rnrs)
+          (rnrs mutable-strings (6))
           (tests r6rs test))
 
   (define-syntax test-transcoders
@@ -65,6 +66,37 @@
                #vu8(97 13 #o302 #o205 98))
          (test/exn (string->bytevector "a\x185;b" (make-transcoder (latin-1-codec) 'lf 'raise))
                    &i/o-encoding))]))
+
+  (define-syntax test-positions
+    (syntax-rules ()
+      [(_ make)
+       (begin
+         (let* ([p (make "custom"
+                     (lambda (? start count) 0)
+                     (lambda () 0)
+                     #f
+                     (lambda () 'ok))])
+           (test (port-has-port-position? p) #t)
+           (test (port-has-set-port-position!? p) #f)
+           (test (port-position p) 0)
+           (test/unspec (close-port p)))
+         (let* ([p (make "custom"
+                     (lambda (? start count) 0)
+                     #f
+                     (lambda (pos) 'ok)
+                     (lambda () 'ok))])
+           (test (port-has-port-position? p) #f)
+           (test (port-has-set-port-position!? p) #t)
+           (test/unspec (set-port-position! p 0))
+           (test/unspec (close-port p)))
+         (let* ([p (make "custom"
+                     (lambda (? start count) 0)
+                     #f
+                     #f
+                     (lambda () 'ok))])
+           (test (port-has-port-position? p) #f)
+           (test (port-has-set-port-position!? p) #f)
+           (test/unspec (close-port p))))]))
 
   (define (run-io-ports-tests)
 
@@ -153,6 +185,7 @@
       (test (textual-port? p) #f)
       (test (output-port? p) #t)
       (test (input-port? p) #f)
+      (test/unspec (flush-output-port p))
       (test/unspec (close-port p)))
 
     ;; Don't re-create:
@@ -235,10 +268,13 @@
     ;; Check buffer modes? Just make sure they're accepted:
 
     (let ([p (open-file-output-port "io-tmp1" (file-options no-create) 'line)])
+      (test (output-port-buffer-mode p) 'line)
       (close-port p))
     (let ([p (open-file-output-port "io-tmp1" (file-options no-create) 'block)])
+      (test (output-port-buffer-mode p) 'block)
       (close-port p))
     (let ([p (open-file-output-port "io-tmp1" (file-options no-create) 'none)])
+      (test (output-port-buffer-mode p) 'none)
       (close-port p))
 
     (let ([p (open-file-input-port "io-tmp1" (file-options) 'line)])
@@ -253,6 +289,11 @@
 
     (let ([p (open-file-output-port "io-tmp1" (file-options no-create) 
                                     'block (make-transcoder (latin-1-codec)))])
+      (when (port-has-port-position? p)
+        (test/unspec (port-position p))
+        (when (port-has-set-port-position!? p)
+          (let ([pos (port-position p)])
+            (test/unspec (set-port-position! p pos)))))
       (test (binary-port? p) #f)
       (test (textual-port? p) #t)
       (test/unspec (put-string p "apple"))
@@ -315,18 +356,69 @@
            (lambda (str tr)
              (let ([p (open-file-output-port "io-tmp1" (file-options no-create)
                                              'block tr)])
-               (put-string p str)
-               (close-port p))
-             (let ([p (open-file-input-port "io-tmp1")])
                (dynamic-wind
                    (lambda () 'ok)
-                   (lambda () (get-bytevector-all p))
-                   (lambda () (close-port p)))))])
+                   (lambda () (put-string p str))
+                   (lambda () (close-port p))))
+             (let ([p (open-file-input-port "io-tmp1")])
+               (let ([v (get-bytevector-all p)])
+                 (close-port p)
+                 v)))])
       (test-transcoders bytevector->string-via-file
                         string->bytevector-via-file))
+
+    (let ([test-i+o
+           (lambda (buf)
+             (let ([p (open-file-input/output-port "io-tmp1"
+                                                   (file-options no-fail)
+                                                   buf)])
+               (if (and (port-has-port-position? p)
+                        (port-has-set-port-position!? p))
+                   (begin
+                     (port-position p)
+                     (test (port-position p) 0)
+                     (test/unspec (put-bytevector p #vu8(7 9 11)))
+                     (unless (eq? buf 'none)
+                       (test/unspec (flush-output-port p)))
+                     (test (port-position p) 3)
+                     (test/unspec (set-port-position! p 0))
+                     (test (get-bytevector-n p 2) #vu8(7 9))
+                     (test/unspec (put-bytevector p #vu8(13 15 17)))
+                     (unless (eq? buf 'none)
+                       (test/unspec (flush-output-port p)))
+                     (test/unspec (set-port-position! p 3))
+                     (test (get-bytevector-n p 2) #vu8(15 17)))
+                   (begin
+                     (test/unspec (put-bytevector p #vu8(7 9 11)))
+                     (test (get-u8 p) (eof-object))))
+               (test/unspec (close-port p))))])
+      (test-i+o 'line)
+      (test-i+o 'block)
+      (test-i+o 'none))
+
+    (let ([p (open-file-input/output-port "io-tmp1"
+                                          (file-options no-fail)
+                                          'none
+                                          (make-transcoder (utf-8-codec)))])
+      (test/unspec (put-string p "berry"))
+      (test/unspec (close-port p)))
+    (let ([p (open-file-input/output-port "io-tmp1"
+                                          (file-options no-fail no-truncate)
+                                          'none
+                                          (make-transcoder (utf-8-codec)))])
+      (test (get-string-n p 4) "berr")
+      (test/unspec (put-string p "apple"))
+      (test/unspec (close-port p)))
+    (let ([p (open-file-input/output-port "io-tmp1"
+                                          (file-options no-fail no-truncate)
+                                          'none
+                                          (make-transcoder (utf-8-codec)))])
+      (test (get-string-n p 10) "berrapple")
+      (test/unspec (close-port p)))
+    
     
     (test/unspec (delete-file "io-tmp1"))
-
+    
     ;; ----------------------------------------
     ;; bytevector ports
 
@@ -338,7 +430,7 @@
       (test (lookahead-u8 p) 1)
       (test (get-u8 p) 1)
       (let ([bv (make-bytevector 10 0)])
-        (test/unspec (get-bytevector-n! p bv 1 7))
+        (test (get-bytevector-n! p bv 1 7) 2)
         (test bv #vu8(0 2 3 0 0 0 0 0 0 0)))
       (test (get-bytevector-some p) (eof-object))
       (close-port p))
@@ -354,14 +446,261 @@
       (test (get) #vu8(10 11 12 13 18 16))
       (test (get) #vu8())
       (close-port p))
-      
+
+    (test (call-with-bytevector-output-port
+           (lambda (p)
+             (put-bytevector p #vu8(1 2 3))))
+          #vu8(1 2 3))
+
+    (test (call-with-bytevector-output-port
+           (lambda (p)
+             (put-string p "app\x3BB;e"))
+           (make-transcoder (utf-8-codec)))
+          #vu8(97 112 112 206 187 101))
+
+    (let ([bytevector->string-via-port
+           (lambda (bv tr)
+             (let ([p (open-bytevector-input-port bv tr)])
+               (dynamic-wind
+                   (lambda () 'ok)
+                   (lambda () (get-string-all p))
+                   (lambda () (close-port p)))))]
+          [string->bytevector-via-port
+           (lambda (str tr)
+             (let-values ([(p get) (open-bytevector-output-port tr)])
+               (dynamic-wind
+                   (lambda () 'ok)
+                   (lambda ()
+                     (put-string p str)
+                     (get))
+                   (lambda ()
+                     (close-port p)))))])
+      (test-transcoders bytevector->string-via-port
+                        string->bytevector-via-port))
+
+    ;; ----------------------------------------
+    ;; string ports
+
+    (let ([p (open-string-input-port "app\x3BB;e\r\nban")])
+      (test (input-port? p) #t)
+      (test (binary-port? p) #f)
+      (test (textual-port? p) #t)
+      (test (get-char p) #\a)
+      (test (lookahead-char p) #\p)
+      (test (get-line p) "pp\x3BB;e\r")
+      (let ([s (make-string 10 #\_)])
+        (test (get-string-n! p s 1 9) 3)
+        (test s "_ban______")))
+
+    (let ([p (open-string-input-port "(1 2 3) 4")])
+      (test (get-datum p) '(1 2 3))
+      (close-port p))
+
+    (let-values ([(p get) (open-string-output-port)])
+      (test/unspec (put-string p "app\x3BB;e"))
+      (test (get) "app\x3BB;e")
+      (test (get) "")
+      (close-port p))
+
+    (test (call-with-string-output-port
+           (lambda (p)
+             (test/unspec (put-string p "app\x3BB;y"))))
+          "app\x3BB;y")
+    
+    ;; ----------------------------------------
+    ;; custom ports
+
+    (let* ([pos 0]
+           [p (make-custom-binary-input-port
+               "custom in"
+               (lambda (bv start count)
+                 (if (= pos 16)
+                     0
+                     (begin
+                       (set! pos (+ 1 pos))
+                       (bytevector-u8-set! bv start pos)
+                       1)))
+               (lambda () pos)
+               (lambda (p) (set! pos p))
+               (lambda () 'ok))])
+      (test (port-has-port-position? p) #t)
+      (test (port-has-set-port-position!? p) #t)
+      (test (port-position p) 0)
+      (test (get-bytevector-n p 3) #vu8(1 2 3))
+      (test (port-position p) 3)
+      (test (lookahead-u8 p) 4)
+      (test (lookahead-u8 p) 4)
+      (test (port-position p) 3)
+      (test/unspec (set-port-position! p 10))
+      (get-bytevector-n p 2)
+      (test (get-bytevector-n p 2) #vu8(13 14))
+      (test (get-bytevector-n p 2) #vu8(15 16))
+      (test (get-bytevector-n p 2) (eof-object))
+      (test/unspec (set-port-position! p 2))
+      (test (get-bytevector-n p 3) #vu8(3 4 5))
+      (test/unspec (close-port p)))
+
+    (test-positions make-custom-binary-input-port)
+
+    (let* ([pos 0]
+           [p (make-custom-textual-input-port
+               "custom in"
+               (lambda (bv start count)
+                 (if (= pos 16)
+                     0
+                     (begin
+                       (set! pos (+ 1 pos))
+                       (string-set! bv start (integer->char (+ 96 pos)))
+                       1)))
+               (lambda () pos)
+               (lambda (p) (set! pos p))
+               (lambda () 'ok))])
+      (test (port-position p) 0)
+      (test (get-string-n p 3) "abc")
+      (test (port-position p) 3)
+      (test (lookahead-char p) #\d)
+      (test (lookahead-char p) #\d)
+      (test (port-position p) 3)
+      (test/unspec (set-port-position! p 10))
+      (get-string-n p 2)
+      (test (get-string-n p 2) "mn")
+      (test (get-string-n p 2) "op")
+      (test (get-string-n p 2) (eof-object))
+      (test/unspec (set-port-position! p 2))
+      (test (get-string-n p 3) "cde")
+      (test/unspec (close-port p)))
+
+    (test-positions make-custom-textual-input-port)
+    
+    (let* ([accum '()]
+           [p (make-custom-binary-output-port
+               "custom out"
+               (lambda (bv start count)
+                 (let ([bv2 (make-bytevector count)])
+                   (bytevector-copy! bv start bv2 0 count)
+                   (set! accum (append
+                                (reverse (bytevector->u8-list bv2))
+                                accum))
+                   count))
+               (lambda () (length accum))
+               (lambda (pos) (set! accum (list-tail accum (- (length accum) pos))))
+               (lambda () 'ok))])
+      (test (port-has-port-position? p) #t)
+      (test (port-has-set-port-position!? p) #t)
+      (test (port-position p) 0)
+      (test/unspec (put-bytevector p #vu8(2 4 6)))
+      (test accum '(6 4 2))
+      (test (port-position p) 3)
+      (test/unspec (set-port-position! p 2))
+      (test (port-position p) 2)
+      (test accum '(4 2))
+      (test/unspec (put-bytevector p #vu8(3 7 9 11) 2 1))
+      (test accum '(9 4 2))
+      (test/unspec (close-port p)))
+
+    (test-positions make-custom-binary-output-port)
+
+    (let* ([accum '()]
+           [p (make-custom-textual-output-port
+               "custom out"
+               (lambda (str start count)
+                 (let ([str (substring str start count)])
+                   (set! accum (append
+                                (reverse (string->list str))
+                                accum))
+                   count))
+               (lambda () (length accum))
+               (lambda (pos) (set! accum (list-tail accum (- (length accum) pos))))
+               (lambda () 'ok))])
+      (test (port-has-port-position? p) #t)
+      (test (port-has-set-port-position!? p) #t)
+      (test (port-position p) 0)
+      (test/unspec (put-string p "abc"))
+      (test accum '(#\c #\b #\a))
+      (test (port-position p) 3)
+      (test/unspec (set-port-position! p 2))
+      (test (port-position p) 2)
+      (test accum '(#\b #\a))
+      (test/unspec (put-string p "xyzw" 2 1))
+      (test accum '(#\z #\b #\a))
+      (test/unspec (close-port p)))
+
+    (test-positions make-custom-textual-output-port)
+
+    (let* ([save #f]
+           [p (make-custom-binary-input/output-port
+               "custom in"
+               (lambda (bv start end)
+                 (bytevector-u8-set! bv start 7)
+                 1)
+               (lambda (bv start end)
+                 (set! save (bytevector-u8-ref bv start))
+                 1)
+               #f #f #f)])
+      (test/unspec (put-u8 p 10))
+      (test save 10)
+      (test (get-u8 p) 7)
+      (close-port p))
+    
+    (test-positions (lambda (id r/w get set close)
+                      (make-custom-binary-input/output-port
+                       id r/w r/w get set close)))
+
+    (let* ([save #f]
+           [p (make-custom-textual-input/output-port
+               "custom in"
+               (lambda (str start end)
+                 (string-set! str start #\!)
+                 1)
+               (lambda (str start end)
+                 (set! save (string-ref str start))
+                 1)
+               #f #f #f)])
+      (test/unspec (put-char p #\q))
+      (test save #\q)
+      (test (get-char p) #\!)
+      (close-port p))
+    
+    (test-positions (lambda (id r/w get set close)
+                      (make-custom-textual-input/output-port
+                       id r/w r/w get set close)))
+
+    ;; ----------------------------------------
+    ;; stdin, stderr, stdout
+
+    (let ([p (standard-input-port)])
+      (test (input-port? p) #t)
+      (test (output-port? p) #f)
+      (test (binary-port? p) #t)
+      (test (textual-port? p) #f)
+      (test/unspec (close-port p)))
+
+    (let ([p (standard-output-port)])
+      (test (input-port? p) #f)
+      (test (output-port? p) #t)
+      (test (binary-port? p) #t)
+      (test (textual-port? p) #f)
+      (test/unspec (close-port p)))
+
+    (let ([p (standard-error-port)])
+      (test (input-port? p) #f)
+      (test (output-port? p) #t)
+      (test (binary-port? p) #t)
+      (test (textual-port? p) #f)
+      (test/unspec (close-port p)))
+
+    (test (input-port? (current-input-port)) #t)
+    (test (output-port? (current-input-port)) #f)
+    (test (binary-port? (current-input-port)) #f)
+    (test (textual-port? (current-input-port)) #t)
+
+    (test (input-port? (current-output-port)) #f)
+    (test (output-port? (current-output-port)) #t)
+    (test (binary-port? (current-output-port)) #f)
+    (test (textual-port? (current-output-port)) #t)
 
     ;; ----------------------------------------
     
     ;;
-    )
-
-  #;(run-io-ports-tests)
-  #;(report-test-results)
-  )
+    ))
 

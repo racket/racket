@@ -144,7 +144,7 @@
 
 ;; ----------------------------------------
 
-(define (make-disconnectable-input-port port)
+(define (make-disconnectable-input-port port close?)
   (define disconnected? #f)
   (define (check-disconnect)
     (when disconnected?
@@ -156,17 +156,18 @@
       (check-disconnect)
       (let ([n (read-bytes-avail!* bytes port)])
         (if (eq? n 0)
-            port
+            (wrap-evt port (lambda (v) 0))
             n)))
     (lambda (bytes skip evt)
       (check-disconnect)
       (let ([n (peek-bytes-avail! bytes skip evt port)])
         (if (eq? n 0)
-            port
+            (wrap-evt port (lambda (v) 0))
             n)))
     (lambda ()
       (unless disconnected?
-        (close-input-port port)))
+        (when close?
+          (close-input-port port))))
     (and (port-provides-progress-evts? port)
          (lambda ()
            (check-disconnect)
@@ -189,7 +190,7 @@
      (set! disconnected? #t)
      port)))
 
-(define (make-disconnectable-output-port port)
+(define (make-disconnectable-output-port port close?)
   (define disconnected? #f)
   (define (check-disconnect)
     (when disconnected?
@@ -213,7 +214,8 @@
             (write-bytes-avail* (subbytes bytes start end) port)])))
     (lambda ()
       (unless disconnected?
-        (close-output-port port)))
+        (when close?
+          (close-output-port port))))
     (and (port-writes-special? port)
          (lambda (v can-buffer/block? enable-breaks?)
            (check-disconnect)
@@ -264,7 +266,7 @@
 ;; Textual ports are transcoded
 (define-struct textual-input-port (port transcoder)
   #:property prop:input-port 0)
-(define-struct textual-output-port (port  transcoder)
+(define-struct textual-output-port (port transcoder)
   #:property prop:output-port 0)
 (define-struct (textual-input/output-port textual-input-port) (out-port)
   #:property prop:output-port 0)
@@ -294,17 +296,17 @@
                     (textual-port? (dual-port-in v)))))
       (raise-type-error 'binary-port? "port" v)))
 
-(define (wrap-binary-input-port p get-pos set-pos!)
-  (let-values ([(p disconnect) (make-disconnectable-input-port p)])
+(define (wrap-binary-input-port p get-pos set-pos! close?)
+  (let-values ([(p disconnect) (make-disconnectable-input-port p close?)])
     (make-binary-input-port p disconnect get-pos set-pos!)))
 
-(define (wrap-binary-output-port p get-pos set-pos!)
-  (let-values ([(p disconnect) (make-disconnectable-output-port p)])
+(define (wrap-binary-output-port p get-pos set-pos! close?)
+  (let-values ([(p disconnect) (make-disconnectable-output-port p close?)])
     (make-binary-output-port p disconnect get-pos set-pos!)))
 
-(define (wrap-binary-input/output-port p get-pos set-pos!)
-  (let-values ([(p disconnect) (make-disconnectable-input-port p)]
-               [(out-p out-disconnect) (make-disconnectable-output-port p)])
+(define (wrap-binary-input/output-port p get-pos set-pos! close?)
+  (let-values ([(p disconnect) (make-disconnectable-input-port p #t)]
+               [(out-p out-disconnect) (make-disconnectable-output-port p #t)])
     (make-binary-input/output-port p disconnect get-pos set-pos!
                                    out-p out-disconnect)))
 
@@ -437,9 +439,8 @@
    [(dual-port? p)
     (port-has-set-port-position!? (dual-port-in p))]
    [else
-    ;; FIXME
-    (or (file-stream-port? p)
-        #t)]))
+    ;; we could also allow string ports here
+    (file-stream-port? p)]))
 
 (define (set-port-position! p pos)
   (unless (and (port? p)
@@ -455,7 +456,7 @@
    [(textual-output-port? p)
     (set-port-position! (textual-output-port-port p) pos)]
    [(dual-port? p)
-    (set-port-position! (dual-port-in p))]
+    (set-port-position! (dual-port-in p) pos)]
    [else
     (file-position p pos)]))
 
@@ -497,7 +498,8 @@
         (transcoded-port p maybe-transcoder)
         (wrap-binary-input-port p 
                                 (lambda () (file-position p)) 
-                                (lambda (pos) (file-position p pos))))))
+                                (lambda (pos) (file-position p pos))
+                                #t))))
 
 (define (open-bytevector-input-port bytes [maybe-transcoder #f])
   (unless (bytes? bytes)
@@ -510,7 +512,8 @@
         (transcoded-port p maybe-transcoder)
         (wrap-binary-input-port p
                                 (lambda () (file-position p)) 
-                                (lambda (pos) (file-position p pos))))))
+                                (lambda (pos) (file-position p pos))
+                                #t))))
 
 (define (open-string-input-port str)
   (unless (string? str)
@@ -519,7 +522,8 @@
     (transcoded-port
      (wrap-binary-input-port p
                              (lambda () (file-position p)) 
-                             (lambda (pos) (file-position p pos)))
+                             (lambda (pos) (file-position p pos))
+                             #t)
      utf8-transcoder)))
 
 (define standard-input-port
@@ -527,7 +531,8 @@
     (lambda ()
       (wrap-binary-input-port p
                               (lambda () (file-position p)) 
-                              (lambda (pos) (file-position p pos))))))
+                              (lambda (pos) (file-position p pos))
+                              #f))))
 
 (define input-ports (make-weak-hasheq))
 
@@ -543,18 +548,37 @@
         p2)])))
 
 (define (make-custom-binary-input-port id read! get-position set-position! close)
-  (let ([p (make-input-port/read-to-peek
-            id
-            (lambda (bytes)
-              (let ([v (read! bytes 0 (bytes-length bytes))])
-                (if (zero? v)
-                    eof
-                    v)))
-            #f
-            (or close void))])
+  (let* ([peeked 0]
+         [p (make-input-port/read-to-peek
+             id
+             (lambda (bytes)
+               (let ([v (read! bytes 0 (bytes-length bytes))])
+                 (set! peeked (+ peeked v))
+                 (if (zero? v)
+                     eof
+                     v)))
+             #f
+             (or close void)
+             #f void 1
+             #f #f
+             (lambda (consumed-n)
+               (unless (eof-object? consumed-n)
+                 (set! peeked (- consumed-n 1)))))])
     (wrap-binary-input-port p
-                            get-position
-                            set-position!)))
+                            (and get-position
+                                 (lambda ()
+                                   (let ([v (get-position)])
+                                     (- v peeked))))
+                            (and set-position!
+                                 (lambda (pos)
+                                   ;; flush peeked
+                                   (let loop ()
+                                     (unless (zero? peeked)
+                                       (read-byte-or-special p)
+                                       (loop)))
+                                   ;; set position
+                                   (set-position! pos)))
+                            #t)))
 
 
 (define (make-custom-textual-input-port id read! get-position set-position! close)
@@ -564,19 +588,20 @@
     (let-values ([(in out) (make-pipe)])
       (lambda (bstr offset len)
         (let loop ()
-          (let ([n (read-bytes-avail! bstr in offset len)])
-               (if (zero? n)
-                   (let ([str (make-string (bytes-length bstr))])
-                     (let ([len (read! str 0 (bytes-length bstr))])
-                       (if (zero? len)
-                           eof
-                           (begin
-                             (write-string (substring str 0 len) out)
-                             (loop)))))
-                   n)))))
+          (let ([n (read-bytes-avail!* bstr in offset len)])
+            (if (zero? n)
+                (let ([str (make-string (bytes-length bstr))])
+                  (let ([len (read! str 0 (bytes-length bstr))])
+                    (if (zero? len)
+                        0
+                        (begin
+                          (write-string (substring str 0 len) out)
+                          (loop)))))
+                n)))))
     get-position
     set-position!
-    (or close void))))
+    (or close void))
+   #f))
 
 ;; ----------------------------------------
 
@@ -713,8 +738,9 @@
       (if maybe-transcoder
           (transcoded-port p maybe-transcoder)
           (wrap-binary-port p 
-                            (lambda () (file-position p)) 
-                            (lambda (pos) (file-position p pos)))))))
+                            (and file-position (lambda () (file-position p)))
+                            (and file-position (lambda (pos) (file-position p pos)))
+                            #t)))))
 
 (define (open-file-output-port filename 
                                [options (file-options)]
@@ -738,11 +764,13 @@
                  (transcoded-port p maybe-transcoder)
                  (wrap-binary-output-port p
                                           (lambda () (file-position p)) 
-                                          (lambda (pos) (file-position p pos))))])
+                                          (lambda (pos) (file-position p pos))
+                                          #t))])
     (values
      p2
      (lambda () 
-       (flush-output p2)
+       (unless (port-closed? p2)
+         (flush-output p2))
        (get-output-bytes p #t)))))
 
 (define (call-with-bytevector-output-port proc [maybe-transcoder #f])
@@ -769,7 +797,8 @@
     (lambda ()
       (wrap-binary-output-port p
                                (lambda () (file-position p)) 
-                               (lambda (pos) (file-position p pos))))))
+                               (lambda (pos) (file-position p pos))
+                               #f))))
 
 
 (define standard-error-port
@@ -777,7 +806,8 @@
     (lambda ()
       (wrap-binary-output-port p
                                (lambda () (file-position p)) 
-                               (lambda (pos) (file-position p pos))))))
+                               (lambda (pos) (file-position p pos))
+                               #f))))
 
 (define output-ports (make-weak-hasheq))
 
@@ -810,13 +840,14 @@
     #f
     #f
     void
-    0
+    1
     #f)
    get-position
-   set-position!))
+   set-position!
+   #t))
    
 (define (make-custom-textual-output-port id write! get-position set-position! close)
-  (transcoded-port
+  (make-textual-output-port
    (wrap-binary-output-port
     (make-output-port
      id
@@ -862,11 +893,12 @@
      #f
      #f
      void
-     0
+     1
      #f)
     get-position
-    set-position!)
-   utf8-transcoder))
+    set-position!
+    #t)
+   #f))
 
 ;; ----------------------------------------
 
@@ -943,14 +975,21 @@
   (do-open-file-output-port 'open-file-input/output-port
                             filename 
                             options
-                            buffer-mode
+                            (if (eq? buffer-mode 'line)
+                                'block
+                                buffer-mode)
                             maybe-transcoder
                             (lambda (name #:exists mode)
                               (let-values ([(in out) (open-input-output-file name #:exists mode)])
+                                (file-stream-buffer-mode out buffer-mode)
                                 (make-dual-port in out)))
                             ;; Input and output buffering make `file-position' iffy.
                             (if (eq? buffer-mode 'none)
-                                file-position
+                                (case-lambda
+                                 [(p) (file-position (dual-port-in p))]
+                                 [(p pos) 
+                                  (flush-output p)
+                                  (file-position (dual-port-in p) pos)])
                                 #f)
                             wrap-binary-input/output-port))
 
@@ -1007,10 +1046,3 @@
        (put-string p s)
        (result))
      (lambda () (close-output-port p)))))
-
-
-                     
-
-
-
-
