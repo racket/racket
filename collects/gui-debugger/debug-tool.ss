@@ -85,21 +85,23 @@
       ;; really-long-identifier     => really-lon...
       ;; (<form>)                   => (<form>)
       ;; (<form> <arg1> ... <argn>) => (<form> ...)
-      (define (trim-expr-str str)
-        (let ([starts-with-paren (and (> (string-length str) 0))])
-          (cond
-            [(and starts-with-paren
-                  (or (index-of #\space str)
-                      (index-of #\newline str)
-                      (and (> (string-length str) 14) 10)))
-             ;; non-atomic expr: truncate to (form-name ...)
-             => (lambda (i)
-                  (string-append
-                   (substring str 0 i)
-                   (if starts-with-paren
-                       " ...)"
-                       " ...")))]
-            [str])))
+      (define trim-expr-str
+        (opt-lambda (str [len 10])
+          (let ([starts-with-paren (and (> (string-length str) 0))]
+                [len2 (+ len 4)])
+            (cond
+              [(and starts-with-paren
+                    (or (index-of #\space str)
+                        (index-of #\newline str)
+                        (and (> (string-length str) len2) len)))
+               ;; non-atomic expr: truncate to (form-name ...)
+               => (lambda (i)
+                    (string-append
+                     (substring str 0 i)
+                     (if starts-with-paren
+                         " ...)"
+                         " ...")))]
+              [str]))))
       
       (define (average . values)
         (/ (apply + values) (length values)))
@@ -920,6 +922,7 @@
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
                 (send (send (get-frame) get-resume-button) enable #t)
                 (send (get-frame) register-stack-frames frames)
+                (send (get-frame) register-vars (list-ref frames (get-frame-num)))
                 ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
                 ;;(printf "status = ~a~n" status)
                 (send status-message set-label
@@ -940,7 +943,8 @@
                                               "??")
                                           (if (= 2 (length status))
                                               (render (cadr status))
-                                              (cons 'values (map (lambda (v) (render v)) (rest status)))))))]
+                                              (cons 'values (map (lambda (v) (render v))
+                                                                 (rest status)))))))]
                               [""]))
                           ""))
                 (cond [(get-current-frame-endpoints)
@@ -1077,100 +1081,158 @@
                      this
                      '(ok))))))
           
-          (define max-stack-frames 40)
+          (define expr-positions empty)
+          (define expr-lengths empty)
+          
+          (define/public (register-vars frame)
+            (send variables-text begin-edit-sequence)
+            (send variables-text lock #f)
+            (send variables-text delete 0 (send variables-text last-position))
+            (for-each
+             (lambda (name/value)
+               (send variables-text insert
+                     (format "~a => ~a~n" (syntax-e (first name/value)) (second name/value))))
+             (third (expose-mark frame)))
+            (send variables-text lock #t)
+            (send variables-text end-edit-sequence))
           
           (define/public (register-stack-frames frames)
-            (let loop ([i 0] [frames frames])
-              (when (< i max-stack-frames)
-                (send (list-ref stack-frames i) set-expr
-                      (and (cons? frames) (mark-source (first frames))))
-                (loop (add1 i) (and (cons? frames) (rest frames))))))
+            (let* ([trimmed-exprs
+                    (map (lambda (frame)
+                           (let ([expr (mark-source frame)])
+                             (cond
+                               ; should succeed unless the user closes a slave tab during debugging
+                               [(and expr (filename->defs (syntax-source expr)))
+                                =>
+                                (lambda (defs)
+                                  (trim-expr-str
+                                   (if (syntax-position expr)
+                                       (send defs get-text
+                                             (sub1 (syntax-position expr))
+                                             (+ -1 (syntax-position expr) (syntax-span expr)))
+                                       "??")
+                                   15))]
+                               ["??"])))
+                         frames)]
+                   [trimmed-lengths (map add1 (map string-length trimmed-exprs))]
+                   [positions (foldl + 0 trimmed-lengths)])
+              (send stack-frames begin-edit-sequence)
+              (send stack-frames lock #f)
+              (send stack-frames delete 0 (send stack-frames last-position))
+              (for-each
+               (lambda (trimmed-expr)
+                 (send stack-frames insert (format "~a~n" trimmed-expr)))
+               trimmed-exprs)
+              (send stack-frames lock #t)
+              (send stack-frames end-edit-sequence)))
           
           (define/public (clear-stack-frames)
-            (let loop ([i 0])
-              (when (< i max-stack-frames)
-                (send (list-ref stack-frames i) set-expr #f)
-                (loop (add1 i)))))
+            (send stack-frames begin-edit-sequence)
+            (send stack-frames lock #f)
+            (send stack-frames delete 0 (send stack-frames last-position))
+            (send stack-frames lock #t)
+            (send stack-frames end-edit-sequence))
           
           (define debug-grandparent-panel 'uninitialized-debug-grandparent-panel)
           (define debug-parent-panel 'uninitialized-debug-parent-panel)
           (define debug-panel 'uninitialized-debug-panel)
           (define stack-view-panel 'uninitialized-stack-view-panel)
           (define stack-frames 'uninitialized-stack-frames)
+          (define variables-text 'uninitialized-variables-text)
           (define highlight-color (make-object color% 207 255 207))
+          (define bold-sd (make-object style-delta% 'change-weight 'bold))
+          (define fixed-width-sd (make-object style-delta% 'change-family 'modern))
+          (send bold-sd set-weight-on 'bold)
           (define mouse-over-frame #f)
-          (define refresh-timer (new timer% [notify-callback
-                                             (lambda ()
-                                               (unless mouse-over-frame
-                                                 (send (get-current-tab) move-to-frame
-                                                       (send (get-current-tab) get-frame-num))))]))
           (define/override (get-definitions/interactions-panel-parent)
             (set! debug-grandparent-panel
                   (make-object horizontal-panel%
                     (super get-definitions/interactions-panel-parent)))
             (set! stack-view-panel
-                  (new vertical-panel%
+                  (new panel:vertical-dragable%
                        [parent debug-grandparent-panel]
+                       [min-width 160]
                        [stretchable-width #f]))
-            (new message% [parent stack-view-panel] [label "Context"]
-                 [font (make-object font% 18 'default 'normal 'bold #t)])
             (set! stack-frames
-                  (build-list max-stack-frames
-                              (lambda (i)
-                                (new (class message%
-                                       (super-new)
-                                       (inherit set-label get-label)
-                                       (define expr #f)
-                                       (define/public (set-expr expr1)
-                                         (set! expr expr1)
-                                         (set-label
+                  (new (class text%
+                         (super-new)
+                         (inherit find-line line-start-position line-end-position
+                                  change-style begin-edit-sequence end-edit-sequence
+                                  lock last-position)
+                         (define highlight-defs #f)
+                         (define highlight-start #f)
+                         (define highlight-end #f)
+                         (define mouse-over-frame #f)
+                         (define/override (on-event evt)
+                           (let* ([line (find-line (send evt get-y))]
+                                  [frames (send (get-current-tab) get-stack-frames)]
+                                  [frame (and frames
+                                              (> (length frames) line)
+                                              (list-ref frames line))]
+                                  [expr (and frame (mark-source frame))])
+                             (case (send evt get-event-type)
+                               [(enter motion)
+                                (when (and mouse-over-frame (not (= line mouse-over-frame)))
+                                  ;; motion to different frame: unhighlight old
+                                  (send highlight-defs unhighlight-range
+                                        highlight-start highlight-end highlight-color)
+                                  (set! mouse-over-frame #f)
+                                  (set! highlight-defs #f)
+                                  (set! highlight-start #f)
+                                  (set! highlight-end #f))
+                                (when (and expr (not (eq? mouse-over-frame line)))
+                                  ;; motion to frame: highlight new
+                                  (cond
+                                    [(filename->defs (syntax-source expr))
+                                     => (lambda (defs)
+                                          (set! mouse-over-frame line)
+                                          (set! highlight-defs defs)
+                                          (set! highlight-start (sub1 (syntax-position expr)))
+                                          (set! highlight-end (+ -1 (syntax-position expr)
+                                                                 (syntax-span expr)))
+                                          (send defs highlight-range
+                                                highlight-start highlight-end highlight-color)
                                           (cond
-                                            ; should succeed unless the user closes a slave tab during debugging
-                                            [(and expr (filename->defs (syntax-source expr)))
+                                            [(send defs get-filename)
                                              =>
-                                             (lambda (defs)
-                                               (clean-status
-                                                (if (syntax-position expr)
-                                                    (send defs get-text
-                                                          (sub1 (syntax-position expr))
-                                                          (+ -1 (syntax-position expr) (syntax-span expr)))
-                                                    "??")))]
-                                            [""])))
-                                       (define/override (on-subwindow-event msg evt)
-                                         (case (send evt get-event-type)
-                                           [(enter) (cond
-                                                      [(and expr (filename->defs (syntax-source expr)))
-                                                       => (lambda (defs)
-                                                            (send defs highlight-range
-                                                                  (sub1 (syntax-position expr))
-                                                                  (+ -1 (syntax-position expr)
-                                                                     (syntax-span expr))
-                                                                  highlight-color)
-                                                            (cond
-                                                              [(send defs get-filename)
-                                                               =>
-                                                               (lambda (fn)
-                                                                 (handler:edit-file fn))])
-                                                            (send defs scroll-to-position
-                                                                  (syntax-position expr)))])
-                                                    (when expr
-                                                      (set! mouse-over-frame i))]
-                                           [(leave) (cond
-                                                      [(and expr (filename->defs (syntax-source expr)))
-                                                       => (lambda (defs)
-                                                            (send defs unhighlight-range
-                                                                  (sub1 (syntax-position expr))
-                                                                  (+ -1 (syntax-position expr)
-                                                                     (syntax-span expr))
-                                                                  highlight-color))])
-                                                    (set! mouse-over-frame #f)
-                                                    (when expr
-                                                      (send refresh-timer start 250 #t))]
-                                           [(left-down) (when expr
-                                                          (send (get-current-tab) move-to-frame i))])))
-                                     [parent stack-view-panel]
-                                     [stretchable-width #f]
-                                     [label (make-string 30 #\ )]))))
+                                             (lambda (fn)
+                                               (handler:edit-file fn))])
+                                          (send defs scroll-to-position
+                                                (syntax-position expr)))]))]
+                               [(leave)
+                                (when mouse-over-frame
+                                  ;; motion to different frame: unhighlight old
+                                  (send highlight-defs unhighlight-range
+                                        highlight-start highlight-end highlight-color)
+                                  (set! mouse-over-frame #f)
+                                  (set! highlight-defs #f)
+                                  (set! highlight-start #f)
+                                  (set! highlight-end #f))
+                                (cond
+                                  [(send (get-current-tab) get-frame-num)
+                                   => (lambda (num)
+                                        (send (get-current-tab) move-to-frame num))])]
+                               [(left-down)
+                                (when (and line expr)
+                                  (begin-edit-sequence)
+                                  (lock #f)
+                                  (change-style fixed-width-sd 0 (last-position)
+                                                ;(line-start-position line)
+                                                #;(line-end-position line))
+                                  (lock #t)
+                                  (end-edit-sequence)
+                                  (send (get-current-tab) move-to-frame line))]
+                               [else (void)]))))))
+            (set! variables-text (new text% [auto-wrap #t]))
+            (let ([stack-frames-panel (make-object vertical-panel% stack-view-panel)])
+              (new message% [parent stack-frames-panel]
+                   [label "Stack"])
+              (new editor-canvas% [parent stack-frames-panel] [editor stack-frames] [style '(no-hscroll)]))
+            (let ([variables-panel (make-object vertical-panel% stack-view-panel)])
+              (new message% [parent variables-panel]
+                   [label "Variables"])
+              (new editor-canvas% [parent variables-panel] [editor variables-text]
+                   [style '(no-hscroll)]))
             ;; parent of panel with debug buttons
             (set! debug-parent-panel
                   (make-object vertical-panel% debug-grandparent-panel))
@@ -1281,7 +1343,8 @@
                                             (hash-table-put!
                                              bps pos
                                              (lambda ()
-                                               (and (< (length (continuation-mark-set->list (current-continuation-marks) debug-key)) depth)
+                                               (and (< (length (continuation-mark-set->list
+                                                                (current-continuation-marks) debug-key)) depth)
                                                     (begin
                                                       (hash-table-put! bps pos cur-stat)
                                                       #t))))
