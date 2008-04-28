@@ -59,11 +59,17 @@
              [imps* (map datum->sig-elem (filter (lambda (imp) (not (sig-in-sigs? imp exps))) imps))])
         (values imps* exps*))))
 
+<<<<<<< HEAD:collects/typed-scheme/private/unit-utils.ss
   (define (duplicates? sigs)
     (for/or ([s sigs]
              #:when
              (> 1 (length (for/list ([s* sigs]) (free-identifier=? s s*)))))
             s))
+=======
+  (define (duplicates sigs)
+    (= (length sigs)
+       (length (s:delete-duplicates sigs sig=?))))
+>>>>>>> check for dups:collects/typed-scheme/private/unit-utils.ss
   
   (syntax-case stx (import export)
     ;; here the exports are specified - they ought to be a subset of the allowable exports
@@ -76,12 +82,18 @@
      (andmap identifier? (syntax->list #'units))
      (let*-values ([(units) (syntax->list #'units)]
                    [(imps exps) (imps/exps-from-units units)])
+<<<<<<< HEAD:collects/typed-scheme/private/unit-utils.ss
        (cond [(duplicates? exps)
               =>
               (lambda (d)
                 (raise-syntax-error #f (format "multiple units export the signature ~a" d) stx))]
              [else 
               (mk (delete-duplicates imps) exps units stx)]))]))
+=======
+       (when (duplicates? exps)
+             (raise-syntax-error #f "multiple units export the same signature" stx))
+       (mk imps exps units stx))]))
+>>>>>>> check for dups:collects/typed-scheme/private/unit-utils.ss
 
 
 ;; Tests
