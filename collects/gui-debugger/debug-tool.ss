@@ -1090,8 +1090,16 @@
             (send variables-text delete 0 (send variables-text last-position))
             (for-each
              (lambda (name/value)
-               (send variables-text insert
-                     (format "~a => ~a~n" (syntax-e (first name/value)) (second name/value))))
+               (let ([name (format "~a" (syntax-e (first name/value)))]
+                     [value (format " => ~a~n" (second name/value))])
+                 (send variables-text insert name)
+                 (send variables-text change-style bold-sd
+                       (- (send variables-text last-position) (string-length name))
+                       (send variables-text last-position))
+                 (send variables-text insert value)
+                 (send variables-text change-style normal-sd
+                       (- (send variables-text last-position) (string-length value))
+                       (send variables-text last-position))))
              (third (expose-mark frame)))
             (send variables-text lock #t)
             (send variables-text end-edit-sequence))
@@ -1123,6 +1131,9 @@
                (lambda (trimmed-expr)
                  (send stack-frames insert (format "~a~n" trimmed-expr)))
                trimmed-exprs)
+              (send stack-frames change-style bold-sd
+                    (send stack-frames line-start-position (send (get-current-tab) get-frame-num))
+                    (send stack-frames line-end-position (send (get-current-tab) get-frame-num)))
               (send stack-frames lock #t)
               (send stack-frames end-edit-sequence)))
           
@@ -1141,8 +1152,7 @@
           (define variables-text 'uninitialized-variables-text)
           (define highlight-color (make-object color% 207 255 207))
           (define bold-sd (make-object style-delta% 'change-weight 'bold))
-          (define fixed-width-sd (make-object style-delta% 'change-family 'modern))
-          (send bold-sd set-weight-on 'bold)
+          (define normal-sd (make-object style-delta% 'change-weight 'normal))
           (define mouse-over-frame #f)
           (define/override (get-definitions/interactions-panel-parent)
             (set! debug-grandparent-panel
@@ -1176,10 +1186,7 @@
                                   ;; motion to different frame: unhighlight old
                                   (send highlight-defs unhighlight-range
                                         highlight-start highlight-end highlight-color)
-                                  (set! mouse-over-frame #f)
-                                  (set! highlight-defs #f)
-                                  (set! highlight-start #f)
-                                  (set! highlight-end #f))
+                                  (set! mouse-over-frame #f))
                                 (when (and expr (not (eq? mouse-over-frame line)))
                                   ;; motion to frame: highlight new
                                   (cond
@@ -1204,23 +1211,13 @@
                                   ;; motion to different frame: unhighlight old
                                   (send highlight-defs unhighlight-range
                                         highlight-start highlight-end highlight-color)
-                                  (set! mouse-over-frame #f)
-                                  (set! highlight-defs #f)
-                                  (set! highlight-start #f)
-                                  (set! highlight-end #f))
+                                  (set! mouse-over-frame #f))
                                 (cond
                                   [(send (get-current-tab) get-frame-num)
                                    => (lambda (num)
                                         (send (get-current-tab) move-to-frame num))])]
                                [(left-down)
                                 (when (and line expr)
-                                  (begin-edit-sequence)
-                                  (lock #f)
-                                  (change-style fixed-width-sd 0 (last-position)
-                                                ;(line-start-position line)
-                                                #;(line-end-position line))
-                                  (lock #t)
-                                  (end-edit-sequence)
                                   (send (get-current-tab) move-to-frame line))]
                                [else (void)]))))))
             (set! variables-text (new text% [auto-wrap #t]))
