@@ -103,12 +103,11 @@
 (define z 45)
 
 (define-values/link-units/infer (export x^) x@ y@)
-|#
 (define-signature y^ (y))
  (define-unit x@ (import y^) (export))
  (define-unit z@ (import y^) (export))
  (define-values/link-units/infer x@ z@)
 
 ;(define-values/link-units/infer x@ y@)
-
+|#
 
