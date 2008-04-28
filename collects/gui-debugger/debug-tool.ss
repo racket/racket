@@ -894,6 +894,7 @@
           
           (define (can-step-over? frames status)
             (and (or (not (zero? (get-frame-num))) (eq? status 'entry-break))
+                 (not (empty? frames))
                  (not (eq? (frame->end-breakpoint-status (list-ref frames (get-frame-num))) 'invalid))))
           
           (define (can-step-out? frames status)
@@ -922,7 +923,9 @@
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
                 (send (send (get-frame) get-resume-button) enable #t)
                 (send (get-frame) register-stack-frames frames)
-                (send (get-frame) register-vars (list-ref frames (get-frame-num)))
+                (send (get-frame) register-vars (if (empty? frames)
+                                                    empty
+                                                    (list-ref frames (get-frame-num))))
                 ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
                 ;;(printf "status = ~a~n" status)
                 (send status-message set-label
