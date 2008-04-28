@@ -188,7 +188,9 @@ it defaults to @scheme[0].}
                               [error-bytes (or/c false/c bytes?)]
                               [close? any/c #t]
                               [name any/c (object-name in)]
-                              [convert-newlines? any/c #f])
+                              [convert-newlines? any/c #f]
+                              [enc-error (string? input-port? . -> . any) 
+                                         (lambda (msg port) (error ...))])
          input-port?]{
 
 Produces an input port that draws bytes from @scheme[in], but converts
@@ -201,7 +203,7 @@ are all converted to the UTF-8 encoding of @scheme["\n"].
 If @scheme[error-bytes] is provided and not @scheme[#f], then the
 given byte sequence is used in place of bytes from @scheme[in] that
 trigger conversion errors.  Otherwise, if a conversion is encountered,
-the @exnraise[exn:fail].
+@scheme[enc-error] is called, which must raise an exception.
 
 If @scheme[close?] is true, then closing the result input port also
 closes @scheme[in]. The @scheme[name] argument is used as the name of
@@ -220,7 +222,9 @@ incomplete encoding sequence.)}
                                [error-bytes (or/c false/c bytes?)]
                                [close? any/c #t]
                                [name any/c (object-name out)]
-                               [newline-bytes (or/c false/c bytes?) #f])
+                               [newline-bytes (or/c false/c bytes?) #f]
+                               [enc-error (string? output-port? . -> . any) 
+                                          (lambda (msg port) (error ...))])
          output-port?]{
 
 Produces an output port that directs bytes to @scheme[out], but
@@ -233,8 +237,8 @@ encoding of @scheme["\n"] are first converted to
  
 If @scheme[error-bytes] is provided and not @scheme[#f], then the
 given byte sequence is used in place of bytes send to the output port
-that trigger conversion errors. Otherwise, if a conversion is
-encountered, the @exnraise[exn:fail].
+that trigger conversion errors. Otherwise, @scheme[enc-error] is
+called, which must raise an exception.
 
 If @scheme[close?] is true, then closing the result output port also
 closes @scheme[out]. The @scheme[name] argument is used as the name of

@@ -239,14 +239,14 @@
        #'(begin
            (define enum-universe (make-enumeration-universe (mlist 'sym ...)))
            (define-syntax (type-name stx)
-             (syntax-case stx (sym ...)
+             (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
                [(_ sym) #''sym]
                ...
                [(_ other)
                 (identifier? #'other)
                 (raise-syntax-error #f "not in enumeration" stx #'other)]))
            (define-syntax (bit-value stx)
-             (syntax-case stx (sym ...)
+             (syntax-case* stx (sym ...) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
                [(_ orig sym) #'val]
                ...
                [(_ orig s)

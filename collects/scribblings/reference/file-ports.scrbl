@@ -63,7 +63,7 @@ A @tech{path} value that is the @tech{cleanse}d version of
 
 @defproc[(open-output-file [path path-string?]
                            [#:mode mode-flag (one-of/c 'binary 'text) 'binary]
-                           [#:exists exists-flag (one-of/c 'error 'append 'update
+                           [#:exists exists-flag (one-of/c 'error 'append 'update 'can-update
                                                            'replace 'truncate 
                                                            'must-truncate 'truncate/replace) 'error])
           output-port?]{
@@ -112,6 +112,9 @@ files that already exist:
  @item{@indexed-scheme['update] --- open an existing file without
        truncating it; if the file does not exist, the
        @exnraise[exn:fail:filesystem].}
+
+ @item{@indexed-scheme['can-update] --- open an existing file without
+       truncating it, or create the file if it does not exist.}
 
  @item{@indexed-scheme['append] --- append to the end of the file,
        whether it already exists or not; under Windows,

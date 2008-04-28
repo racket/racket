@@ -343,7 +343,7 @@ static void force_close_output_port(Scheme_Object *port);
 static void force_close_input_port(Scheme_Object *port);
 
 static Scheme_Object *text_symbol, *binary_symbol;
-static Scheme_Object *append_symbol, *error_symbol, *update_symbol;
+static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
 static Scheme_Object *must_truncate_symbol;
 
@@ -377,6 +377,7 @@ scheme_init_port (Scheme_Env *env)
   REGISTER_SO(truncate_symbol);
   REGISTER_SO(truncate_replace_symbol);
   REGISTER_SO(update_symbol);
+  REGISTER_SO(can_update_symbol);
   REGISTER_SO(must_truncate_symbol);
 
   text_symbol = scheme_intern_symbol("text");
@@ -387,6 +388,7 @@ scheme_init_port (Scheme_Env *env)
   truncate_symbol = scheme_intern_symbol("truncate");
   truncate_replace_symbol = scheme_intern_symbol("truncate/replace");
   update_symbol = scheme_intern_symbol("update");
+  can_update_symbol = scheme_intern_symbol("can-update");
   must_truncate_symbol = scheme_intern_symbol("must-truncate");
 
   REGISTER_SO(scheme_none_symbol);
@@ -3718,6 +3720,16 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       e_set++;
     } else if (SAME_OBJ(argv[i], update_symbol)) {
       existsok = 2;
+      must_exist = 1;
+      if (typepos == 1) {
+	mode[2] = mode[1];
+	typepos = 2;
+      }
+      mode[0] = 'r';
+      mode[1] = '+';
+      e_set++;
+    } else if (SAME_OBJ(argv[i], can_update_symbol)) {
+      existsok = 3;
       if (typepos == 1) {
 	mode[2] = mode[1];
 	typepos = 2;
@@ -3760,7 +3772,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   filename = scheme_expand_string_filename(argv[0],
 					   name, NULL,
 					   (SCHEME_GUARD_FILE_WRITE
-					    | ((existsok && (existsok != -1))
+					    | ((existsok && ((existsok == 1) || (existsok == -2)))
 					       ? SCHEME_GUARD_FILE_DELETE
 					       : 0)
 					    /* append mode: */
@@ -3784,9 +3796,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   else if (existsok < 0)
     flags |= O_TRUNC;
 
-  if (existsok > 1)
-    flags -= O_CREAT;
-  else if (existsok > -1)
+  if ((existsok <= 1) && (existsok > -1))
     flags |= O_EXCL;
 
   do {
@@ -3853,6 +3863,8 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     hmode = CREATE_ALWAYS;
   } else if (existsok == 2) {
     hmode = OPEN_EXISTING;
+  } else if (existsok == 3) {
+    hmode = CREATE_NEW;
   }
 
   fd = CreateFileW(WIDE_PATH(filename),

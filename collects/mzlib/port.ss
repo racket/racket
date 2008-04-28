@@ -1193,7 +1193,7 @@
     (cond
      [(and (mcdr c) (= buf-start buf-end))
       ;; No more bytes to convert; provide single
-      ;;  saved byte if it's not #\return, other report 'aborts
+      ;;  saved byte if it's not #\return, otherwise report 'aborts
       (if (eq? (mcdr c) (char->integer #\return))
           (values 0 0 'aborts)
           (begin
@@ -1293,7 +1293,11 @@
   
   (define reencode-input-port
     (opt-lambda (port encoding [error-bytes #f] [close? #f] [name (object-name port)] 
-                      [newline-convert? #f])
+                      [newline-convert? #f]
+                      [decode-error (lambda (msg port)
+                                      (error 'reencode-input-port
+                                             (format "~a: ~e" msg)
+                                             port))])
       (let ([c (let ([c (bytes-open-converter encoding "UTF-8")])
                  (if newline-convert?
                      (mcons c #f)
@@ -1386,9 +1390,8 @@
                                                          bytes-convert)
                                                      c buf buf-start buf-end ready-bytes)])
                   (unless (memq status '(continues complete))
-		    (error 'reencode-input-port-read
-			   "unable to make decoding progress: ~e"
-			   port))
+		    (decode-error "unable to make decoding progress"
+                                  port))
 		  (set! ready-start 0)
 		  (set! ready-end got-c)
 		  (set! buf-start (+ used-c buf-start))
@@ -1407,11 +1410,9 @@
 		  (set! ready-start 0)
 		  (set! ready-end (- (bytes-length error-bytes) cnt))
 		  cnt))
-	      (error
-	       'converting-input-port
-	       "decoding error in input stream: ~e"
-	       port)))
-
+	      (decode-error "decoding error in input stream"
+                            port)))
+        
 	(unless c
 	  (error 'reencode-input-port 
 		 "could not create converter from ~e to UTF-8"
@@ -1437,7 +1438,11 @@
   
   (define reencode-output-port
     (opt-lambda (port encoding [error-bytes #f] [close? #f] [name (object-name port)]
-                      [convert-newlines-to #f])
+                      [convert-newlines-to #f]
+                      [decode-error (lambda (msg port)
+                                      (error 'reencode-input-port
+                                             (format "~a: ~e" msg)
+                                             port))])
       (let ([c (bytes-open-converter "UTF-8" encoding)]
 	    [ready-bytes (make-bytes 1024)]
 	    [ready-start 0]
@@ -1711,17 +1716,15 @@
 		      ;; Raise an exception:
 		      (begin
 			(set! out-start (add1 out-start))
-			(error
-			 'reencode-output-port
-			 "error decoding output to stream: ~e"
+			(decode-error
+			 "error decoding output to stream"
 			 port))))))))
 
 	;; This error is used when decoding wants more bytes to make progress even
 	;;  though we've supplied hundreds of bytes
 	(define (raise-insane-decoding-length)
-	  (error 'reencode-output-port-write
-		 "unable to make decoding progress: ~e"
-		 port))
+          (decode-error "unable to make decoding progress"
+                        port))
 
 	;; Check that a decoder is available:
 	(unless c

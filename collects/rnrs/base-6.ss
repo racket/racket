@@ -3,7 +3,7 @@
 (require (for-syntax r6rs/private/base-for-syntax
                      scheme/base)
          r6rs/private/qq-gen
-         r6rs/private/conds
+         r6rs/private/exns
          (prefix-in r5rs: r5rs)
          (only-in r6rs/private/readtable rx:number)
          scheme/bool)

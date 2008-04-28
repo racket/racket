@@ -252,16 +252,27 @@
   (define (default-protocol rtd)
     (let ((parent (record-type-parent rtd)))
       (if (not parent)
-	  (lambda (p)
-	    (lambda field-values
-	      (apply p field-values)))
-	  (let ((parent-field-count (field-count parent)))
-	    (lambda (p)
-	      (lambda all-field-values
-		(call-with-values
-		    (lambda () (split-at all-field-values parent-field-count))
-		  (lambda (parent-field-values this-field-values)
-		    (apply (apply p parent-field-values) this-field-values)))))))))
+	  (lambda (p) p)
+	  (let ((parent-field-count (field-count parent))
+                (count (field-count rtd)))
+            (lambda (p)
+              (lambda all-field-values
+                (if (= (length all-field-values) count)
+                    (call-with-values
+                        (lambda () (split-at all-field-values parent-field-count))
+                      (lambda (parent-field-values this-field-values)
+                        (apply (apply p parent-field-values) this-field-values)))
+                    (assertion-violation (string->symbol
+                                          (string-append  
+                                           (symbol->string (record-type-name rtd))
+                                           " constructor"))
+                                         (string-append
+                                          "wrong number of arguments (given "
+                                          (number->string (length all-field-values))
+                                          ", expected "
+                                          (number->string count)
+                                          ")")
+                                         all-field-values))))))))
 
   (define (record-constructor-descriptor-rtd desc)
     (typed-vector-ref :record-constructor-descriptor desc 0))
