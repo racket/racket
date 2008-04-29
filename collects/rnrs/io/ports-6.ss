@@ -944,6 +944,24 @@
                               [(eq? c #\newline) 2]
                               [(eq? c #\return) 2]
                               [else 9])))]
+                     [(char? v)
+                      (case v
+                        [(#\x7) 7] ; #\alarm
+                        [(#\x1B) 5] ; #\esc
+                        [(#\x7F) 8] ; #\delete
+                        [else (and (not (char-graphic? v))
+                                   (+ 3
+                                      (if ((char->integer v) . < . #x10000)
+                                          4
+                                          6)))])]
+                     [(bytes? v) (+ 5
+                                    (sub1 (bytes-length v))
+                                    (for/fold ([len 0])
+                                        ([b (in-bytes v)])
+                                      (+ len (cond
+                                              [(b . < . 10) 1]
+                                              [(b . < . 100) 2]
+                                              [else 3]))))]
                      [else #f]))]
                  [pretty-print-print-hook
                   (lambda (v write? p)
@@ -963,7 +981,35 @@
                           (let ([s (format "00000~x" (char->integer c))])
                             (display (substring s (- (string-length s) 6)) p)
                             (write-char #\; p))]))
-                      (write-char #\" p)]))])
+                      (write-char #\" p)]
+                     [(char? v)
+                      (case v
+                        [(#\x7) (display "#\\alarm" p)]
+                        [(#\x1B) (display "#\\esc" p)]
+                        [(#\x7F) (display "#\\delete" p)]
+                        [else 
+                         (display "#\\x" p)
+                         (let ([n (number->string (char->integer v) 16)])
+                           (display (make-string
+                                     (- (if ((string-length n) . <= . 4)
+                                            4
+                                            6)
+                                        (string-length n))
+                                     #\0)
+                                    p)
+                           (display n p))])]
+                     [(bytes? v)
+                      (display "#vu8(" p)
+                      (if (zero? (bytes-length v))
+                          (display ")" p)
+                          (begin
+                            (display (bytes-ref v 0) p)
+                            (for ([b (in-bytes v)]
+                                  [i (in-naturals)])
+                              (unless (zero? i)
+                                (display " " p)
+                                (display b p)))
+                            (display ")" p)))]))])
     (pretty-print v port)))
 
 ;; ----------------------------------------

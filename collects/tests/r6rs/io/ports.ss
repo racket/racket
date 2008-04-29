@@ -98,6 +98,20 @@
            (test (port-has-set-port-position!? p) #f)
            (test/unspec (close-port p))))]))
 
+  (define-syntax test-rw
+    (syntax-rules ()
+      [(_ v)
+       (test (let ([p (open-string-input-port
+                       (call-with-string-output-port
+                        (lambda (p) (put-datum p v))))])
+               (dynamic-wind
+                   (lambda () 'ok)
+                   (lambda () (get-datum p))
+                   (lambda () (close-port p))))
+             v)]))
+
+  ;; ----------------------------------------
+
   (define (run-io-ports-tests)
 
     (test (enum-set->list (file-options)) '())
@@ -700,11 +714,42 @@
     (test (textual-port? (current-output-port)) #t)
 
     ;; ----------------------------------------
+
+    (test-rw 10)
+    (test-rw 10.0)
+    (test-rw 1/2)
+    (test-rw 1+2i)
+    (test-rw 1+2.0i)
+    (test-rw #t)
+    (test-rw #f)
+    (test-rw "apple")
+    (test-rw "app\x3BB;e")
+    (test-rw "app\x1678;e")
+    (test-rw #\a)
+    (test-rw #\x3BB)
+    (test-rw #\nul)
+    (test-rw #\alarm)
+    (test-rw #\backspace)
+    (test-rw #\tab)
+    (test-rw #\linefeed)
+    (test-rw #\newline)
+    (test-rw #\vtab)
+    (test-rw #\page)
+    (test-rw #\return)
+    (test-rw #\esc)
+    (test-rw #\space)
+    (test-rw #\delete)
+    (test-rw #\xFF)
+    (test-rw #\x00006587)
+    (test-rw #\x10FFFF)
+    (test-rw #\x1678)
+    (test-rw #vu8())
+    (test-rw #vu8(1 2 3))
+    (test-rw '#(a))
+    (test-rw '#())
+    (test-rw '#(a 1/2 "str" #vu8(1 2 7)))
+
+    ;; ----------------------------------------
     
     ;;
-    )
-
-  (run-io-ports-tests)
-  (report-test-results)
-  )
-
+    ))
