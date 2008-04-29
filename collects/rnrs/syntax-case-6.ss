@@ -205,7 +205,8 @@
       (mcons (unwrap (car p) (car mapping))
              (unwrap (cdr p) (cdr mapping))))]
    [(vector? mapping)
-    (list->vector (unwrap (vector->list (syntax-e stx)) (vector->list mapping)))]
+    (list->vector (mlist->list (unwrap (vector->list (syntax-e stx)) (vector->list mapping))))]
+   [(null? mapping) null]
    [(box? mapping)
     ;; ellipses
     (let* ([mapping (unbox mapping)]
@@ -254,7 +255,7 @@
             repeats
             (mappend repeats
                      (unwrap rest-stx rest-mapping)))))]
-   [else (error 'unwrap "srtange unwrap mapping: ~e" mapping)]))
+   [else (error 'unwrap "strange unwrap mapping: ~e" mapping)]))
 
 (define-syntax (r6rs:syntax stx)
   (syntax-case stx ()

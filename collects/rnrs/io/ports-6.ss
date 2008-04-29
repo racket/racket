@@ -930,6 +930,19 @@
                  [pretty-print-size-hook
                   (lambda (v write? p)
                     (cond
+                     [(symbol? v)
+                      (let ([s (symbol->string v)])
+                        (and (not (regexp-match rx:id s))
+                             (for/fold ([len 0])
+                                 ([c (in-string s)]
+                                  [pos (in-naturals)])
+                               (+ len 
+                                  (if (or (char-alphabetic? c)
+                                          (and (char-numeric? c)
+                                               (positive? pos)))
+                                      1
+                                      (+ 3 (string-length 
+                                            (number->string (char->integer c) 16))))))))]
                      [(string? v) 
                       (and (for/or ([c (in-string v)])
                                    (not (or (char-graphic? c)
@@ -966,6 +979,17 @@
                  [pretty-print-print-hook
                   (lambda (v write? p)
                     (cond
+                     [(symbol? v)
+                      (for ([c (in-string (symbol->string v))]
+                            [pos (in-naturals)])
+                        (if (or (char-alphabetic? c)
+                                (and (char-numeric? c)
+                                     (positive? pos)))
+                            (display c p)
+                            (begin
+                              (display "\\x" p)
+                              (display (number->string (char->integer c) 16) p)
+                              (display ";" p))))]
                      [(string? v) 
                       (write-char #\" p)
                       (for ([c (in-string v)])

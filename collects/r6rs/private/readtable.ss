@@ -6,6 +6,7 @@
          (for-syntax scheme/base))
 
 (provide with-r6rs-reader-parameters
+         rx:id
          rx:number)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
