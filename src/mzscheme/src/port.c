@@ -4945,6 +4945,7 @@ fd_close_input(Scheme_Input_Port *port)
   }
   if (!fip->refcount || !*fip->refcount) {
     CloseHandle((HANDLE)fip->fd);
+    --scheme_file_open_count;
   }
 #else
   if (!fip->refcount || !*fip->refcount) {
@@ -4952,10 +4953,9 @@ fd_close_input(Scheme_Input_Port *port)
     do {
       cr = close(fip->fd);
     } while ((cr == -1) && (errno == EINTR));
+    --scheme_file_open_count;
   }
 #endif
-
-  --scheme_file_open_count;
 }
 
 static void
@@ -6173,6 +6173,7 @@ fd_close_output(Scheme_Output_Port *port)
   }
   if (!fop->refcount || !*fop->refcount) {
     CloseHandle((HANDLE)fop->fd);
+    --scheme_file_open_count;
   }
 #else
   if (!fop->refcount || !*fop->refcount) {
@@ -6180,10 +6181,9 @@ fd_close_output(Scheme_Output_Port *port)
     do {
       cr = close(fop->fd);
     } while ((cr == -1) && (errno == EINTR));
+    --scheme_file_open_count;
   }
 #endif
-
-  --scheme_file_open_count;
 }
 
 static int fd_output_buffer_mode(Scheme_Port *p, int mode)

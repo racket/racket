@@ -1428,7 +1428,7 @@
 		  (set! ready-start 0)
 		  (set! ready-end (- (bytes-length error-bytes) cnt))
 		  cnt))
-	      (decode-error "decoding error in input stream"
+              (decode-error "decoding error in input stream"
                             port)))
         
 	(unless c
@@ -1733,7 +1733,7 @@
 			(set! ready-end (bytes-length error-bytes)))
 		      ;; Raise an exception:
 		      (begin
-			(set! out-start (add1 out-start))
+			(set! out-start out-end) ;; flush buffer so close can work
 			(decode-error
 			 "error decoding output to stream"
 			 port))))))))
@@ -1756,7 +1756,7 @@
 	 write-it
 	 (lambda ()
 	   ;; Flush output
-	   (write-it #"" 0 0 #f #f)
+           (write-it #"" 0 0 #f #f)
 	   (when close?
 	     (close-output-port port))
 	   (bytes-close-converter c))

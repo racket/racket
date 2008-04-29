@@ -340,7 +340,8 @@
               (test b1 #xFF)
               (test (get-u8 p) #xFE)
               (test (get-u8 p) 97)
-              (test (get-u8 p) 0)))))
+              (test (get-u8 p) 0))))
+      (test/unspec (close-port p)))
 
     (let ([bytevector->string-via-file
            (lambda (bv tr)
@@ -358,7 +359,7 @@
                                              'block tr)])
                (dynamic-wind
                    (lambda () 'ok)
-                   (lambda () (put-string p str))
+                   (lambda () (put-string p str) (flush-output-port p))
                    (lambda () (close-port p))))
              (let ([p (open-file-input-port "io-tmp1")])
                (let ([v (get-bytevector-all p)])
@@ -415,8 +416,7 @@
                                           (make-transcoder (utf-8-codec)))])
       (test (get-string-n p 10) "berrapple")
       (test/unspec (close-port p)))
-    
-    
+
     (test/unspec (delete-file "io-tmp1"))
     
     ;; ----------------------------------------
@@ -702,5 +702,9 @@
     ;; ----------------------------------------
     
     ;;
-    ))
+    )
+
+  (run-io-ports-tests)
+  (report-test-results)
+  )
 
