@@ -334,7 +334,7 @@
               "class instantiation"))
     
     (define (new-array type-name)
-      (sequence (new type-name O_BRACKET expression C_BRACKET (repeat (sequence (O_BRACKET expression C_BRACKET) id)))
+      (sequence (new type-name O_BRACKET (eta expression) C_BRACKET (repeat (sequence (O_BRACKET (eta expression) C_BRACKET) id)))
                 id "array instantiation"))
     
     (define field-access-end
@@ -346,7 +346,7 @@
     (define (array-init-maker contents)
       (sequence (O_BRACE (comma-sep contents "array elements") C_BRACE) id "array initializations"))
     
-    (define array-init 
+    (define array-init
       (letrec ([base-init (array-init-maker (eta expression))]
                [simple-init (array-init-maker 
                              (choose ((eta expression) base-init (eta init)) "array initializations"))]
@@ -362,13 +362,13 @@
     (define simple-method-call
       (choose
        ((sequence ((^ identifier) O_PAREN C_PAREN) id)
-        (sequence ((^ identifier) O_PAREN (comma-sep (eta expression) "arguments sm") C_PAREN) id))
+        (sequence ((^ identifier) O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
        "method invocation"))
     
     (define method-call-end
       (choose
        ((sequence (PERIOD (^ identifier) O_PAREN C_PAREN) id)
-        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep (eta expression) "arguments me") C_PAREN) id))
+        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
        "method invocation"))
     
     (define (assignment asignee op)
@@ -937,7 +937,7 @@
     (define (statement-c interact?)
       (if interact?
           (choose ((return-s #t)
-                   (if-s statement #t)
+                   (if-s (eta statement) #t)
                    (block #t)
                    (for-l (choose ((variable-declaration (array-type (value+name-type prim-type)) expression #t #f "for loop variable")
                                    (comma-sep stmt-expr "initializations")) "for loop initialization") 
@@ -955,7 +955,7 @@
                     assignment-ops)
                    ) "statement")
           (choose ((return-s #t)
-                   (if-s statement #t)
+                   (if-s (eta statement) #t)
                    (variable-declaration (array-type (value+name-type prim-type)) 
                                          (choose (expression array-init) "variable initialization") #t #t "local variable")
                    (block #t)

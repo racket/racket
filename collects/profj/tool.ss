@@ -400,7 +400,7 @@
                      [allow-test (when (eq? level 'full)
                                    (make-object check-box% (string-constant profj-language-config-support-test-language)
                                      testing-prefs (lambda (x y) update-at2)))]
-                     [display-testing 
+                     #;[display-testing 
                       (make-object check-box% (string-constant profj-language-config-testing-enable)
                         testing-prefs (lambda (x y) (update-dt x y)))]
                      [collect-coverage 
@@ -565,8 +565,8 @@
                                           (send allow-testing get-value))
                                       (and (eq? level 'full)
                                            (send allow-test get-value))
-                                      (send display-testing get-value)
-                                      (and (send display-testing get-value)
+                                      #t #;(send display-testing get-value)
+                                      (and #t #;(send display-testing get-value)
                                            (send collect-coverage get-value))
                                       (get-classpath))]
                 [(settings)
@@ -581,8 +581,8 @@
                    (send allow-testing set-value (profj-settings-allow-check? settings)))
                  (when (eq? level 'full)
                    (send allow-test set-value (profj-settings-allow-test? settings)))
-                 (send display-testing set-value (profj-settings-run-tests? settings))
-                 (if (send display-testing get-value)
+                 #;(send display-testing set-value (profj-settings-run-tests? settings))
+                 (if #t #;(send display-testing get-value)
                      (send collect-coverage set-value (profj-settings-coverage? settings))
                      (send collect-coverage enable #f))
                  (install-classpath (profj-settings-classpath settings))])))

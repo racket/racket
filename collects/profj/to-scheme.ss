@@ -377,7 +377,7 @@
             (lambda (def) (send type-recs set-composite-location (id-string (def-name def)) location))
             defs)
            `(file ,(path->string (build-path (string-append (symbol->string (module-name)) ".ss")))))
-         (module-name)))
+         #`(quote #,(module-name))))
     (let* ((translated-defs 
             (map (lambda (d)
                    (cond
@@ -1459,7 +1459,7 @@
                                                    null)
                                 (generate-contract-defs (class-name)))
                       )
-              (make-syntax #f `(module ,name mzscheme (require ,(module-name)) ,provides) #f)))))
+              (make-syntax #f `(module ,name mzscheme (require ,(module-require)) ,provides) #f)))))
 
   ;-----------------------------------------------------------------------------------------------------------------
   ;Member translation functions

@@ -437,7 +437,7 @@ class WeeklyPlanner{
   (interact-test
    'advanced
    (list "(new int[2][])[0]")
-   (list null)
+   (list #\null)
    "multi-dimension array - not all intialized")
   
   (interact-test
@@ -463,7 +463,7 @@ class WeeklyPlanner{
    'advanced
    (list "int[] x = new int[2];" "boolean[] y = new boolean[2];" "char[] z = new char[2];" 
          "Object[] o = new Object[2];" "x[0]" "y[0]" "z[0]" "o[0]")
-   (list '(void) '(void) '(void) '(void) 0 #f #\null null)
+   (list '(void) '(void) '(void) '(void) 0 #f #\null #\null)
    "Array initialization checks")
   
   (interact-test

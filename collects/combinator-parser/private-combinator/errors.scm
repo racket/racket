@@ -126,12 +126,15 @@
                         (collapse-message
                          (add-to-message (car messages) name #f message-to-date))]
                        [else
-                        (collapse-message
-                         (add-to-message 
-                          (msg (format "An error occured in the ~a. Possible errors were: ~n ~a"
-                                       name 
-                                       (alternate-error-list (map err-msg messages))))
-                          name #f message-to-date))]))]
+                        (let ([msg (cond
+                                     [(apply equal? (map err-src messages)) (lambda (m) (make-err m (err-src (car messages))))]
+                                     [else msg])])
+                          (collapse-message
+                           (add-to-message 
+                            (msg (format "An error occured in the ~a. Possible errors were: ~n ~a"
+                                         name 
+                                         (alternate-error-list (map err-msg messages))))
+                            name #f message-to-date)))]))]
                   [else
                    (fail-type->message 
                     (car winners)
@@ -223,16 +226,16 @@
               (narrow-opts chance-may-use chance-used-winners)]
              
              [winners (narrow-opts chance chance-may-winners)])
-        #;(printf "all options: ~a~n" (!!list opts-list))
+        #;(printf "all options: ~a~n" opts-list)
         #;(printf "~a ~a ~a ~a ~n"
-                  (map fail-type-name (map !!! (!!list opts-list)))
-                  (map !!! (map fail-type-chance (!!list opts-list)))
-                  (map !!! (map fail-type-used (!!list opts-list)))
-                  (map !!! (map fail-type-may-use (!!list opts-list))))
+                  (map fail-type-name opts-list)
+                  (map fail-type-chance opts-list)
+                  (map fail-type-used opts-list)
+                  (map fail-type-may-use opts-list))
         #;(printf "composite round: ~a ~a ~n"
-                  (map fail-type-name (map !!! composite-winners))
-                  (map composite (map !!! composite-winners)))
-        #;(printf "final sorting: ~a~n" (map fail-type-name (map !!! winners)))
+                  (map fail-type-name composite-winners)
+                  (map composite composite-winners))
+        #;(printf "final sorting: ~a~n" (map fail-type-name winners))
         winners))
     
     (define (first-n n lst)

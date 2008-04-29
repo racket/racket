@@ -447,18 +447,18 @@
                                       (cond 
                                         [(and (repeat-res? look-back)
                                               (fail-type? (repeat-res-stop look-back))
-                                              (> (fail-type-chance (repeat-res-stop look-back))
-                                                 (fail-type-chance fail)))
+                                              (>= (fail-type-chance (repeat-res-stop look-back))
+                                                  (fail-type-chance fail)))
                                          (repeat-res-stop look-back)]
                                         [(and (choice-res? look-back)
                                               (choice-res-errors look-back)
-                                              (> (fail-type-chance (choice-res-errors look-back))
-                                                 (fail-type-chance fail)))
+                                              (>= (fail-type-chance (choice-res-errors look-back))
+                                                  (fail-type-chance fail)))
                                          (choice-res-errors look-back)]
                                         [(and (res? look-back)
                                               (fail-type? (res-possible-error look-back))
-                                              (> (fail-type-chance (res-possible-error look-back))
-                                                 (fail-type-chance fail)))
+                                              (>= (fail-type-chance (res-possible-error look-back))
+                                                  (fail-type-chance fail)))
                                          (res-possible-error look-back)]
                                         [else #f])]
                                      [(next-ok?)
@@ -505,7 +505,7 @@
                                    (fail-type-name (res-msg old-res))
                                    (and (fail-type? (res-possible-error look-back)) (fail-type-chance (res-possible-error look-back)))
                                    (fail-type-chance (res-msg old-res)))
-                           #;(printf "lookback ~a~n" (res-possible-error look-back)))
+                           (printf "lookback ~a~n" (res-possible-error look-back)))
                          (let* ([seq-fail-maker
                                  (lambda (fail used)
                                    (let-values ([(kind expected found) (get-fail-info fail)])
@@ -532,7 +532,7 @@
                            #;(when pos-fail 
                              (printf "used ~a look-back-ref used ~a ~n"
                                      used (when (res? look-back-ref) (res-used look-back-ref)))
-                             #;(printf "opt-fails ~a~n" opt-fails))
+                             (printf "opt-fails ~a~n" opt-fails))
                            (if pos-fail
                                (make-options-fail (rank-choice (map fail-type-chance opt-fails))
                                                   #f
@@ -700,7 +700,7 @@
             [choice-names (lambda () (map (lambda (o) (o return-name)) opt-list))])
         (opt-lambda (input [last-src (list 0 0 0 0)] [alts 1])
           #;(unless (eq? input return-name) (printf "choice ~a~n" name))
-          #;(printf "possible options are ~a~n" choice-names)
+          #;(printf "possible options are ~a~n" (choice-names))
           (let ([sub-opts (sub1 (+ alts num-choices))])
             (cond
               [(weak-map-get memo-table input #f) (weak-map-get memo-table input)]
