@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual)
-@(require (for-label framework/framework))
+@(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Autosave}
 

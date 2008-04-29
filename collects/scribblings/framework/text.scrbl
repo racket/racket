@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual)
-@(require (for-label framework/framework))
+@(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Text}
 
@@ -112,7 +112,7 @@
     the file is saved, the port name matches when the save file
     is the path as \var{id}. If the file has not been saved, the
     port name matches if the symbol is the same as the result of
-    @method[text:basic<%> port-name-matches].
+    @method[text:basic<%> port-name-matches?].
 
   }
 }
@@ -845,7 +845,7 @@
   @defmethod*[#:mode augment (((on-display-size) void))]{
 
     Adjusts the embedded editor-snip (used for reading input to the
-    @method[text:ports<%> get-in-box-ports]) to match the width of the editor.
+    @method[text:ports<%> get-in-box-port]) to match the width of the editor.
   }
 }
 @definterface[text:input-box<%> (text%)]{

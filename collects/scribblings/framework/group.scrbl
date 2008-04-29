@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual)
-@(require (for-label framework/framework))
+@(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Group}
 
@@ -71,7 +71,7 @@
   @defmethod*[(((set-active-frame (frame (is-a?/c frame:basic<%>))) void))]{
     Sets the active frame in the group.
     This method is called by
-    @method[frame:register-group-mixin on-focus].
+    @method[frame:register-group-mixin on-activate].
 
   }
   @defmethod*[(((insert-frame (frame (is-a?/c frame:basic<%>))) void))]{

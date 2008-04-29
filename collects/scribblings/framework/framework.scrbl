@@ -1,28 +1,37 @@
 #lang scribble/doc
 
+@(require (for-label framework scheme/gui))
 @(require scribble/manual)
-@(defmodule framework/framework)
+@(defmodule framework)
 
 @title{@bold{Framework}: PLT GUI Application Framework}
 
+@bold{TODO:}
 @itemize{
 @item{Mode}
 @item{``Cannot parse docs for handler:open-file''}
 @item{Check indexing in preferences:get}
 @item{Warnings in the translation process}
+@item{Get rid of framework-exports.ss}
 }
+
+------------------------------------------------------------------------------------------
+
+The framework provides a number of mixins, classes and
+functions designed to help you build a complete application
+program on top of the @scheme[scheme/gui] library.
 
 @itemize{
 @item{@bold{Entire Framework}
 
 @itemize{
 
-@item{@scheme[(require framework/framework)]
+@item{@scheme[(require framework)]
 
   This library provides all of the definitions and syntax
   described in this manual.
 }
-@item{@scheme[(require (lib "framework-sig.ss" "framework"))]
+@item{@scheme[(require framework/sig)]
   
   This library provides the signature definitions:
   @scheme[framework^], and
@@ -34,7 +43,7 @@
   signature contains all of the classes defined in this
   manual.
 }
-@item{@scheme[(require (lib "framework-unit.ss" "framework"))]
+@item{@scheme[(require framework/unit)]
 
   This library provides one
   @scheme[unit/sig]: @scheme[framework@]. It exports the signature
@@ -45,19 +54,19 @@
 @item{
  @bold{Test Suite Engine}
 
-@scheme[(require (lib "test.ss" "framework"))]
+@scheme[(require framework/test)]
 
 This library provides all of the definitions beginning with
 @scheme[test:] described in this manual.
 }
 @item{ @bold{GUI Utilities}
-@scheme[(require (lib "gui-utils.ss" "framework"))]
+@scheme[(require framework/gui-utils)]
     
     This libraries provides all of the definitions beginning
     with \scheme{gui-utils:} described in this manual.
 }
 @item{ @bold{Preferences}
-@scheme[(require (lib "preferences.ss" "framework"))]
+@scheme[(require framework/preferences)]
     
   This library provides a subset of the names of the
   \scheme|framework.ss| library, namely those for
@@ -88,6 +97,7 @@ Johnathan Franklin, Mark Krentel, Corky Cartwright, Michael
 Ernst, Kennis Koldewyn, Bruce Duba, and many others for
 their feedback and help.
 
+@include-section["tmp.scrbl"]
 @include-section["application.scrbl"]
 @include-section["autosave.scrbl"]
 @include-section["canvas.scrbl"]

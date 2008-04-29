@@ -108,7 +108,7 @@
                                       (length (syntax->list #'(arg-names ...))))
                              (raise-syntax-error #f "mismatched argument list and domain contract count" stx))
                            #'([(id (arg-names ctcs) ...) result]))]
-
+                        
                         [((->* (mandatory ...) (optional ...) result) 
                           ((mandatory-names ...)
                            ((optional-names optional-default) ...)))
