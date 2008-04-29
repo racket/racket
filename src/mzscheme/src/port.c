@@ -3864,7 +3864,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
   } else if (existsok == 2) {
     hmode = OPEN_EXISTING;
   } else if (existsok == 3) {
-    hmode = CREATE_NEW;
+    hmode = OPEN_ALWAYS;
   }
 
   fd = CreateFileW(WIDE_PATH(filename),
