@@ -187,7 +187,7 @@
           [else (cons (car l) (cons v (intersperse v (cdr l))))]))
   (apply string-append (intersperse between (map (lambda (s) (format "~a" s)) l))))
 
-(define (tc/funapp f-stx args-stx ftype0 argtys)
+(define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match-let* ([(list (tc-result: argtypes arg-thn-effs arg-els-effs) ...) argtys])
     (let outer-loop ([ftype ftype0] 
                      [argtypes argtypes]
@@ -252,16 +252,17 @@
                                        (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer vars argtypes (car doms*) (car rngs*))
+                       (infer vars argtypes (car doms*) (if expected #f (car rngs*)))
                        #;(infer/list (car doms*) argtypes vars))
                   => (lambda (substitution)
-                       (let* ([s (lambda (t) (subst-all substitution t))]
-                              [new-doms* (map s (car doms*))])
-                         (if (andmap subtype argtypes new-doms*)
-                             (ret (subst-all substitution (car rngs*)))
-                             ;; FIXME
-                             ;; should be an error here, something went horribly wrong!!!
-                             (loop (cdr doms*) (cdr rngs*)))))]
+                       (or expected
+                           (let* ([s (lambda (t) (subst-all substitution t))]
+                                  [new-doms* (map s (car doms*))])
+                             (if (andmap subtype argtypes new-doms*)
+                                 (ret (subst-all substitution (car rngs*)))
+                                 ;; FIXME
+                                 ;; should be an error here, something went horribly wrong!!!
+                                 (loop (cdr doms*) (cdr rngs*))))))]
                              #|
                            (printf "subst is:~a~nret is: ~a~nvars is: ~a~nresult is:~a~n" substitution (car rngs*) vars 
                                    (subst-all substitution (car rngs*)))
@@ -280,18 +281,19 @@
          (unless (<= (length dom) (length argtypes))
            (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
          (let ([substitution 
-                (infer/vararg vars argtypes dom rest rng)
-                #;(infer/list/vararg dom rest argtypes vars)])
-           (if substitution
-               (let* ([s (lambda (t) (subst-all substitution t))]
-                      [new-dom (map s dom)]
-                      [new-rest (s rest)])                                  
-                 (unless (subtypes/varargs argtypes new-dom new-rest)
-                   (int-err "Inconsistent substitution - arguments not subtypes"))
-                 (ret (subst-all substitution rng)))
-               (tc-error/expr #:return (ret (Un))
-                              "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
-                              (stringify dom) rest (stringify argtypes))))]
+                (infer/vararg vars argtypes dom rest (if expected #f rng))])
+           (cond 
+             [(and expected substitution) expected]
+             [substitution
+              (let* ([s (lambda (t) (subst-all substitution t))]
+                     [new-dom (map s dom)]
+                     [new-rest (s rest)])                                  
+                (unless (subtypes/varargs argtypes new-dom new-rest)
+                  (int-err "Inconsistent substitution - arguments not subtypes"))
+                (ret (subst-all substitution rng)))]
+             [else (tc-error/expr #:return (ret (Un))
+                                  "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
+                                  (stringify dom) rest (stringify argtypes))]))]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ...))))
          (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
         ;; Union of function types works if we can apply all of them
@@ -420,7 +422,7 @@
      (and (identifier? #'eq?) (comparator? #'eq?))
      (begin
        ;; make sure the whole expression is type correct
-       (tc/funapp #'eq? #'(v1 v2) (tc-expr #'eq?) (map tc-expr (syntax->list #'(v1 v2))))
+       (tc/funapp #'eq? #'(v1 v2) (tc-expr #'eq?) (map tc-expr (syntax->list #'(v1 v2))) expected)
        ;; check thn and els with the eq? info
        (let-values ([(thn-eff els-eff) (tc/eq #'eq? #'v1 #'v2)])
          (ret B thn-eff els-eff)))]
@@ -493,6 +495,6 @@
     [(#%plain-app f args ...) 
      (begin
        ;(printf "default case~n~a~n" (syntax->datum form))
-       (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...)))))]))
+       (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...))) expected))]))
   
 ;(trace tc/app/internal)

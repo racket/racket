@@ -139,6 +139,15 @@
       (singleton (Un) v (var-demote S V))]
      [(S (F: (? (lambda (e) (memq e X)) v)))
       (singleton (var-promote S V) v Univ)]
+     [((Struct: nm p flds proc) (Struct: nm p flds* proc*))
+      (let-values ([(flds flds*)
+                    (cond [(and proc proc*)
+                           (values (cons proc flds) (cons proc* flds*))]
+                          [(or proc proc*)
+                           (fail! S T)]
+                          [else (values flds flds*)])])
+        (cset-meet* X (for/list ([f flds] [f* flds*])
+                        (cgen V X f f*))))]
      [((Pair: a b) (Pair: a* b*))
       (cset-meet (cgen V X a a*) (cgen V X b b*))]
      ;; if we have two mu's, we rename them to have the same variable
@@ -148,6 +157,14 @@
      ;; other mu's just get unfolded
      [(s (? Mu? t)) (cgen V X s (unfold t))]
      [((? Mu? s) t) (cgen V X (unfold s) t)]
+     ;; type application          
+     [((App: (Name: n) args _)
+       (App: (Name: n*) args* _))
+      (unless (free-identifier=? n n*)
+        (fail! S T))
+      (cset-meet* X (for/list ([a args] [a* args*]) (cgen V X a a*)))]
+     [((Vector: e) (Vector: e*))
+      (cset-meet (cgen V X e e*) (cgen V X e* e))]
      [((Function: (list t-arr ...))
        (Function: (list s-arr ...)))
       (=> unmatch)
@@ -173,9 +190,10 @@
                              [ret-mapping (cgen V X t s)])
                          (loop (cdr t-arr) (cdr s-arr)
                                (cset-meet* X (list cset arg-mapping ret-mapping))))])]))]
-     [(_ _) (cond [(subtype S T) empty]
-                  ;; or, nothing worked, and we fail
-                  [else (fail! S T)])])))
+     [(_ _)
+      (cond [(subtype S T) empty]
+            ;; or, nothing worked, and we fail
+            [else (fail! S T)])])))
 
 (define (subst-gen C R)
   (for/list ([(k v) (cset-map C)])
@@ -189,23 +207,27 @@
                  [Covariant S]
                  [Contravariant T]
                  [Invariant (unless (type-equal? S T)
-                              (error "invariant and not equal"))
+                              (fail! S T))
                             S])))])))
 ;; X : variables to infer
 ;; S : actual argument types
 ;; T : formal argument types
-;; R : result type
+;; R : result type or #f
 ;; returns a substitution
+;; if R is #f, we don't care about the substituion
+;; just return a boolean result
 (define (infer X S T R)
   (with-handlers ([exn:infer? (lambda _ #f)])
-    (subst-gen (cset-meet* X (for/list ([s S] [t T]) (cgen null X s t))) R)))
+    (let ([cs (cset-meet* X (for/list ([s S] [t T]) (cgen null X s t)))])
+    (if R
+        (subst-gen cs R)
+        #t))))
 
 ;; like infer, but T-var is the vararg type:
 (define (infer/vararg X S T T-var R)
   (define new-T (extend S T T-var))
-  (if (>= (length S) (length T))
-      #f ;; fail
-      (infer X S new-T R)))
+  (and ((length S) . >= . (length T))
+       (infer X S new-T R)))
 
 ;; Listof[A] Listof[B] B -> Listof[B]
 ;; pads out t to be as long as s
@@ -215,7 +237,7 @@
 (define (infer/simple S T R)
   (infer (fv/list T) S T R))
 
-;(trace var-demote)
+;(trace infer #;cgen #;cset-meet*)
 
 ;(trace cgen)
 

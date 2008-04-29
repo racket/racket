@@ -60,7 +60,8 @@
            [with-handlers
                ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
                  (lambda (e) (tc-error "Internal error: ~a" e))])]
-           [parameterize (;; this parameter is for parsing types
+           [parameterize ([delay-errors? #f]
+                          ;; this parameter is for parsing types
                           [current-tvars initial-tvar-env]
                           ;; this parameter is just for printing types
                           ;; this is a parameter to avoid dependency issues
