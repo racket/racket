@@ -79,6 +79,9 @@
                   (loop (add1 i)))
               #f)))
       
+      (define (safe-min . args)
+        (apply min (filter identity args)))
+      
       ;; trim-expr-str: string -> string
       ;; examples:
       ;; short-id                   => short-id
@@ -87,28 +90,28 @@
       ;; (<form> <arg1> ... <argn>) => (<form> ...)
       (define trim-expr-str
         (opt-lambda (str [len 10])
-          (let ([starts-with-paren (and (> (string-length str) 0))]
-                [len2 (+ len 4)])
-            (cond
-              [(and starts-with-paren
-                    (or (index-of #\space str)
-                        (index-of #\newline str)
-                        (and (> (string-length str) len2) len)))
-               ;; non-atomic expr: truncate to (form-name ...)
-               => (lambda (i)
-                    (string-append
-                     (substring str 0 i)
-                     (if starts-with-paren
-                         " ...)"
-                         " ...")))]
-              [str]))))
+          (let* ([strlen (string-length str)]
+                 [starts-with-paren (and (> strlen 0)
+                                         (char=? (string-ref str 0) #\())]
+                 [len2 (+ len 4)]
+                 [trunc-pos (safe-min (index-of #\space str)
+                                      (index-of #\newline str)
+                                      (and (> strlen len2) len)
+                                      strlen)])
+            (if (>= trunc-pos strlen)
+                str
+                (string-append
+                 (substring str 0 trunc-pos)
+                 (if starts-with-paren
+                     " ...)"
+                     " ..."))))))
       
       (define (average . values)
         (/ (apply + values) (length values)))
       
       (define (truncate-value v size depth)
         (cond
-          [(zero? depth) "..."]
+          [(zero? depth) '...]
           [(and (string? v)
                 (> (string-length v) size))
            (string-append (substring v 0 size) "...")]
@@ -122,7 +125,7 @@
                          (lambda (i)
                            (if (and (= i (sub1 size))
                                     (> size (vector-length v)))
-                               "..."
+                               '...
                                (truncate-value (vector-ref v i) size (sub1 depth)))))]
           [else v]))
       
@@ -314,7 +317,7 @@
                               (format "Print value of ~a to console" id-sym))
                              menu
                              (lambda (item evt)
-                               (send (get-tab) print-to-console (format "~a = ~a" id-sym val))))
+                               (send (get-tab) print-to-console (format "~a = ~s" id-sym val))))
                            (make-object menu-item%
                              (format "(set! ~a ...)" id-sym)
                              menu
@@ -359,15 +362,15 @@
                             (if (cons? stat)
                                 (if (= 2 (length stat))
                                     (render (cadr stat))
-                                    (format "~a" (cons 'values 
+                                    (format "~s" (cons 'values 
                                                        (map (lambda (v) (render v)) (rest stat)))))
                                 "")])
                       (when (cons? stat)
                         (make-object menu-item%
                           "Print return value to console"
                           menu
-                          (lambda _ (send (get-tab) print-to-console (format "return val = ~a"
-                                                                             rendered-value)))))
+                          (lambda _ (send (get-tab) print-to-console (string-append
+                                                                      "return val = " rendered-value)))))
                       (when (not (eq? stat 'break))
                         (make-object menu-item%
                           (if (cons? stat)
@@ -455,7 +458,7 @@
                                 (lookup-var id (list-tail frames (send (get-tab) get-frame-num))
                                             ;; id found
                                             (lambda (val _)
-                                              (format "~a = ~a" (syntax-e id) (render val)))
+                                              (string-append (symbol->string (syntax-e id)) " = " (render val)))
                                             ;; id not found
                                             (lambda () ""))))))))
                  (super on-event event)]
@@ -878,7 +881,7 @@
           (define/public (print-to-console v)
             ;; ==drscheme eventspace thread==
             ;; only when a user thread is suspended
-            (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~a~n" v))))
+            (do-in-user-thread (lambda () (fprintf (current-error-port) " ### DEBUGGER: ~s~n" v))))
           
           (define (frame->end-breakpoint-status frame)
             (let/ec k
@@ -937,17 +940,18 @@
                                =>
                                (lambda (defs)
                                  (clean-status
-                                  (format "~a => ~a"
-                                          (if (syntax-position expr)
-                                              (trim-expr-str
-                                               (send defs get-text
-                                                     (sub1 (syntax-position expr))
-                                                     (+ -1 (syntax-position expr) (syntax-span expr))))
-                                              "??")
-                                          (if (= 2 (length status))
-                                              (render (cadr status))
-                                              (cons 'values (map (lambda (v) (render v))
-                                                                 (rest status)))))))]
+                                  (string-append
+                                   (if (syntax-position expr)
+                                       (trim-expr-str
+                                        (send defs get-text
+                                              (sub1 (syntax-position expr))
+                                              (+ -1 (syntax-position expr) (syntax-span expr))))
+                                       "??")
+                                   " => "
+                                   (if (= 2 (length status))
+                                       (render (cadr status))
+                                       (cons 'values (map (lambda (v) (render v))
+                                                          (rest status)))))))]
                               [""]))
                           ""))
                 (cond [(get-current-frame-endpoints)
@@ -1094,7 +1098,7 @@
             (for-each
              (lambda (name/value)
                (let ([name (format "~a" (syntax-e (first name/value)))]
-                     [value (format " => ~a~n" (second name/value))])
+                     [value (format " => ~s~n" (second name/value))])
                  (send variables-text insert name)
                  (send variables-text change-style bold-sd
                        (- (send variables-text last-position) (string-length name))
@@ -1135,8 +1139,8 @@
                  (send stack-frames insert (format "~a~n" trimmed-expr)))
                trimmed-exprs)
               (send stack-frames change-style bold-sd
-                    (send stack-frames line-start-position (send (get-current-tab) get-frame-num))
-                    (send stack-frames line-end-position (send (get-current-tab) get-frame-num)))
+                    (send stack-frames paragraph-start-position (send (get-current-tab) get-frame-num))
+                    (send stack-frames paragraph-end-position (send (get-current-tab) get-frame-num)))
               (send stack-frames lock #t)
               (send stack-frames end-edit-sequence)))
           
@@ -1171,31 +1175,32 @@
                          (super-new)
                          (inherit find-line line-start-position line-end-position
                                   change-style begin-edit-sequence end-edit-sequence
-                                  lock last-position)
+                                  lock last-position line-paragraph)
                          (define highlight-defs #f)
                          (define highlight-start #f)
                          (define highlight-end #f)
                          (define mouse-over-frame #f)
                          (define/override (on-event evt)
                            (let* ([line (find-line (send evt get-y))]
+                                  [paragraph (line-paragraph line)]
                                   [frames (send (get-current-tab) get-stack-frames)]
                                   [frame (and frames
-                                              (> (length frames) line)
-                                              (list-ref frames line))]
+                                              (> (length frames) paragraph)
+                                              (list-ref frames paragraph))]
                                   [expr (and frame (mark-source frame))])
                              (case (send evt get-event-type)
                                [(enter motion)
-                                (when (and mouse-over-frame (not (= line mouse-over-frame)))
+                                (when (and mouse-over-frame (not (= paragraph mouse-over-frame)))
                                   ;; motion to different frame: unhighlight old
                                   (send highlight-defs unhighlight-range
                                         highlight-start highlight-end highlight-color)
                                   (set! mouse-over-frame #f))
-                                (when (and expr (not (eq? mouse-over-frame line)))
+                                (when (and expr (not (eq? mouse-over-frame paragraph)))
                                   ;; motion to frame: highlight new
                                   (cond
                                     [(filename->defs (syntax-source expr))
                                      => (lambda (defs)
-                                          (set! mouse-over-frame line)
+                                          (set! mouse-over-frame paragraph)
                                           (set! highlight-defs defs)
                                           (set! highlight-start (sub1 (syntax-position expr)))
                                           (set! highlight-end (+ -1 (syntax-position expr)
@@ -1220,8 +1225,8 @@
                                    => (lambda (num)
                                         (send (get-current-tab) move-to-frame num))])]
                                [(left-down)
-                                (when (and line expr)
-                                  (send (get-current-tab) move-to-frame line))]
+                                (when (and paragraph expr)
+                                  (send (get-current-tab) move-to-frame paragraph))]
                                [else (void)]))))))
             (set! variables-text (new text% [auto-wrap #t]))
             (let ([stack-frames-panel (make-object vertical-panel% stack-view-panel)])
