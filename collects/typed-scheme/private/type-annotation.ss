@@ -8,6 +8,7 @@
          get-type/infer
          type-label-symbol
          type-ascrip-symbol
+         type-ascription
          check-type)
 
 (define type-label-symbol 'type-label)
@@ -23,7 +24,7 @@
 
 ;; get the type annotation of this syntax
 ;; syntax -> Maybe[Type]
-(define (type-annotation stx)
+(define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
     (print-size prop)
     (if (syntax? prop)
@@ -32,11 +33,22 @@
   (cond       
     [(syntax-property stx type-label-symbol) => pt]
     [(syntax-property stx type-ascrip-symbol) => pt]
-    [(and (identifier? stx) (lookup-type stx (lambda () #f)))
+    ;; this is so that : annotation works in internal def ctxts
+    [(and let-binding (identifier? stx) (lookup-type stx (lambda () #f)))
      =>
      (lambda (t)
        (maybe-finish-register-type stx)
        t)]
+    [else #f]))
+
+(define (type-ascription stx)
+  (define (pt prop)
+    (print-size prop)
+    (if (syntax? prop)
+        (parse-type prop)
+        (parse-type/id stx prop)))
+  (cond
+    [(syntax-property stx type-ascrip-symbol) => pt]
     [else #f]))
 
 (define (log/ann stx ty)
@@ -72,10 +84,11 @@
                   [else (log/noann stx ty) ty]))
           stx ty)]      
     [(list (list stx) ty)
-     (cond [(type-annotation stx) => (lambda (ann)
-                                       (check-type stx ty ann) 
-                                       (log/extra stx ty ann)
-                                       (list ann))]
+     (cond [(type-annotation stx #:infer #t)
+            => (lambda (ann)
+                 (check-type stx ty ann) 
+                 (log/extra stx ty ann)
+                 (list ann))]
            [else (log/noann stx ty) (list ty)])]
     [else (int-err "wrong type arity - get-type/infer ~a ~a" stxs e-type)]))
 

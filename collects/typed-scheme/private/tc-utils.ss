@@ -55,8 +55,12 @@
        (unless (null? stxs)
          (raise-typecheck-error "Errors encountered" (apply append stxs))))]))
 
+(define delay-errors? (make-parameter #t))
+
 (define (tc-error/delayed msg #:stx [stx (current-orig-stx)] . rest)
-  (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors)))
+  (if (delay-errors?)
+      (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors))
+      (raise-typecheck-error (apply format msg rest) (list (locate-stx stx)))))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)  

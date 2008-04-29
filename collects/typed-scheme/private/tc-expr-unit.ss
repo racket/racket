@@ -78,9 +78,7 @@
                           ty (Poly-n ty) (length (syntax->list inst)))]
           [else
            (let ([ty* (if inst
-                          (begin
-                            (printf/log "Type Instantiation: ~a~n" (syntax-e id))
-                            (instantiate-poly ty (map parse-type (syntax->list inst))))
+                          (instantiate-poly ty (map parse-type (syntax->list inst)))
                           ty)])
              (ret ty* (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id))))])))
 
@@ -142,7 +140,8 @@
         [(#%variable-reference . _)
          (tc-error/expr #:return (ret expected) "#%variable-reference is not supported by Typed Scheme")]
         ;; identifiers
-        [x (identifier? #'x) (check-below (tc-id #'x) expected)]
+        [x (identifier? #'x) 
+           (check-below (tc-id #'x) expected)]
         ;; w-c-m
         [(with-continuation-mark e1 e2 e3)
          (begin (tc-expr/check #'e1 Univ)
@@ -277,8 +276,7 @@
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (cond [(type-annotation form) => (lambda (ann) 
-                                       ;(printf "annotated~n")
+    (cond [(type-ascription form) => (lambda (ann)
                                        (tc-expr/check form ann))]
           [else (internal-tc-expr form)])))
 
