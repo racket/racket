@@ -6,7 +6,7 @@
          "tc-utils.ss"
          "subtype.ss"
          "unify.ss"
-         "infer.ss"
+         "infer-ops.ss"
          "union.ss"
          "type-utils.ss"
          "type-effect-convenience.ss"
@@ -165,7 +165,8 @@
                        doms arg-tys0))]
                  [(and (= (length (car doms*))
                           (length arg-tys))
-                       (infer/list (append (car doms*) (list (make-Listof (car rests*)))) arg-tys0 vars))
+                       (infer vars (append (car doms*) (list (make-Listof (car rests*)))) arg-tys0 (car rngs*))
+                       #;(infer/list (append (car doms*) (list (make-Listof (car rests*)))) arg-tys0 vars))
                   => (lambda (substitution) 
                        (let* ([s (lambda (t) (subst-all substitution t))]
                               [new-doms* (append (map s (car doms*)) (list (make-Listof (s (car rests*)))))])
@@ -251,7 +252,8 @@
                                        (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer/list (car doms*) argtypes vars))
+                       (infer vars argtypes (car doms*) (car rngs*))
+                       #;(infer/list (car doms*) argtypes vars))
                   => (lambda (substitution)
                        (let* ([s (lambda (t) (subst-all substitution t))]
                               [new-doms* (map s (car doms*))])
@@ -277,7 +279,9 @@
                    argtypes)
          (unless (<= (length dom) (length argtypes))
            (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
-         (let ([substitution (infer/list/vararg dom rest argtypes vars)])
+         (let ([substitution 
+                (infer/vararg vars argtypes dom rest rng)
+                #;(infer/list/vararg dom rest argtypes vars)])
            (if substitution
                (let* ([s (lambda (t) (subst-all substitution t))]
                       [new-dom (map s dom)]

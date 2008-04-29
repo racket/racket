@@ -334,6 +334,7 @@
                             (loop (cdr t-arr) (cdr s-arr)
                                   (U mapping (U (U arg-mapping ret-mapping) (U thn-mapping els-mapping)))))])]))]
         ;; arrow types - just add a whole bunch of new constraints
+        #;
         [(list (Function: (list (arr: ts t t-rest t-thn-eff t-els-eff) ...))
                (Function: (list (arr: ss s s-rest s-thn-eff s-els-eff) ...)))
          (=> unmatch)
