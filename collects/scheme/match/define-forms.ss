@@ -9,11 +9,11 @@
 (provide define-forms)
 
 (define-syntax-rule (define-forms parse-id
-                      match match* match-lambda match-lambda* match-let
+                      match match* match-lambda match-lambda* match-lambda** match-let
                       match-let* match-define match-letrec)
   (...
    (begin
-     (provide match match* match-lambda match-lambda* match-let match-let*
+     (provide match match* match-lambda match-lambda* match-lambda** match-let match-let*
               match-define match-letrec)
      (define-syntax (match* stx)
        (syntax-case stx ()
