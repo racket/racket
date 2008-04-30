@@ -154,7 +154,7 @@ symbols.}
 Represents a location in an input stream.}
 
 
-@defstruct[(exn:invalid-xexpr exn) ([code any/c])]{
+@defstruct[(exn:invalid-xexpr exn:fail) ([code any/c])]{
 
 Raised by @scheme[validate-xexpr] when passed an invalid
 @tech{X-expression}. The @scheme[code] fields contains an invalid part
