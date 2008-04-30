@@ -53,7 +53,7 @@
     (raise-type-error 'bitwise-copy-bit "0 or 1" bit))
   (if (eq? bit 1)
       (bitwise-ior b (arithmetic-shift 1 n))
-      (bitwise-xor b (arithmetic-shift 1 n))))
+      (bitwise-and b (bitwise-not (arithmetic-shift 1 n)))))
 
 (define (bitwise-bit-field b start end)
   (unless (exact-nonnegative-integer? start)

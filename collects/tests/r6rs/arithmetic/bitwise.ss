@@ -246,6 +246,62 @@
     (test (bitwise-not #x-1000000000000000000000000)
           79228162514264337593543950335)
 
+    ;; ----------------------------------------
+
+    (test (bitwise-and (expt 2 100) 17) 0)
+    (test (bitwise-and (- (expt 2 100) 1) 17) 17)
+    (test (bitwise-and (- (expt 2 100) 1) (expt 2 90)) (expt 2 90))
+
+    (test (bitwise-xor (expt 2 100) 17) (bitwise-ior (expt 2 100) 17))
+    (test (bitwise-xor (- (expt 2 100) 1) 17) (- (expt 2 100) 18))
+    (test (bitwise-xor (- (expt 2 100) 1) (expt 2 90)) (- (expt 2 100) (expt 2 90) 1))
+
+    (test (bitwise-if (expt 2 100) -1 1) (+ (expt 2 100) 1))
+    (test (bitwise-if (expt 2 100) 1 1) 1)
+    (test (bitwise-if (expt 2 100) (- (expt 2 200) 1) 1) (+ (expt 2 100) 1))
+
+    (test (bitwise-bit-count (expt 2 300)) 1)
+    (test (bitwise-bit-count (- (expt 2 300) 1)) 300)
+    (test (bitwise-bit-count (- (expt 2 300))) -301)
+    
+    (test (bitwise-length (expt 2 300)) 301)
+    (test (bitwise-length (- (expt 2 300) 1)) 300)
+    (test (bitwise-length (- (expt 2 300))) 300)
+
+    (test (bitwise-first-bit-set (expt 2 300)) 300)
+    (test (bitwise-first-bit-set (- (expt 2 300) 1)) 0)
+
+    (test (bitwise-bit-set? (expt 2 300) 300) #t)
+    (test (bitwise-bit-set? (expt 2 300) 0) #f)
+    (test (bitwise-bit-set? (- (expt 2 300) 1) 300) #f)
+    (test (bitwise-bit-set? (- (expt 2 300) 1) 299) #t)
+    (test (bitwise-bit-set? (- (expt 2 300) 1) 298) #t)
+    (test (bitwise-bit-set? (- (expt 2 300) 2) 0) #f)
+    (test (bitwise-bit-set? -1 300) #t)
+    (test (bitwise-bit-set? -1 0) #t)
+    (test (bitwise-bit-set? -2 0) #f)
+
+    (test (bitwise-copy-bit-field (expt 2 300) 300 302 0) 0)
+    (test (bitwise-copy-bit-field (expt 2 300) 300 302 1) (expt 2 300))
+    (test (bitwise-copy-bit-field (expt 2 300) 300 302 2) (expt 2 301))
+    (test (bitwise-copy-bit-field (expt 2 300) 300 302 3) (+ (expt 2 300)
+                                                             (expt 2 301)))
+
+    (test (bitwise-arithmetic-shift (expt 2 300) 1) (expt 2 301))
+    (test (bitwise-arithmetic-shift (expt 2 300) -1) (expt 2 299))
+    (test (bitwise-arithmetic-shift (expt 2 300) 300) (expt 2 600))
+    (test (bitwise-arithmetic-shift (expt 2 300) -300) 1)
+
+    (test (bitwise-arithmetic-shift-left (expt 2 300) 1) (expt 2 301))
+    (test (bitwise-arithmetic-shift-right (expt 2 300) 1) (expt 2 299))
+    (test (bitwise-arithmetic-shift-left (expt 2 300) 300) (expt 2 600))
+    (test (bitwise-arithmetic-shift-right (expt 2 300) 300) 1)
+
+    (test (bitwise-rotate-bit-field (expt 2 300) 299 304 2) (expt 2 302))
+    (test (bitwise-rotate-bit-field (expt 2 300) 299 304 4) (expt 2 299))
+
+    (test (bitwise-reverse-bit-field (expt 2 300) 299 304) (expt 2 302))
+
     ;;
     ))
 

@@ -142,6 +142,6 @@
   (exact->inexact r))
 
 (define (fixnum->flonum fx)
-  (unless (fixnum? fx)
-    (raise-type-error 'fixnum->flonum "fixnum" fx)
-    (exact->inexact fx)))
+  (if (fixnum? fx)
+      (exact->inexact fx)
+      (raise-type-error 'fixnum->flonum "fixnum" fx)))
