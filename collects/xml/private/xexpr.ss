@@ -49,7 +49,7 @@
       ;; ;; ;; ;; ;; ;; ;
       ;; ; xexpr? helpers
 
-      (define-struct (exn:invalid-xexpr exn) (code))
+      (define-struct (exn:invalid-xexpr exn:fail) (code))
 
       ;; correct-xexpr? : any (-> a) (exn -> a) -> a
       (define (correct-xexpr? x true false)
