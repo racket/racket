@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Color}
@@ -231,5 +231,5 @@
   }
 }
 @defclass[color:text-mode% (color:text-mode-mixin mode:surrogate-text%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs color)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^color:")

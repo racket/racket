@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Number Snip}
@@ -11,5 +11,5 @@
     Constructs a number snip from its input.
   }
 }
-@(require framework/framework-docs)
-@(def-fw-procs number-snip)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^number-snip:")

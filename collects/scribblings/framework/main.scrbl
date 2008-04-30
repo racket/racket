@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Main}
 
-@(require framework/framework-docs)
-@(def-fw-procs main)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^main:")

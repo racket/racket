@@ -4,7 +4,6 @@
 @(require (for-label scheme/gui))
 @title{Test}
 
-@(require framework/framework-docs)
 @(defmodule framework/test)
 
 The framework provides several new primitive functions that simulate
@@ -114,5 +113,4 @@ actual mouse.
 
 @section{Test Functions}
 
-@(def-fw-procs test)
 @(include-extracted (lib "test.ss" "framework"))

@@ -20,8 +20,12 @@
 
 (define-syntax (include-extracted stx)
   (syntax-case stx ()
-    [(_ orig-path)
-     (let ([path (resolve-path-spec #'orig-path #'orig-path stx)])
+    [(_ orig-path) #'(include-extracted orig-path #rx"")] ;; this regexp matches everything
+    [(_ orig-path regexp-s)
+     (let ([path (resolve-path-spec #'orig-path #'orig-path stx)]
+           [reg (syntax-e #'regexp-s)])
+       (unless (regexp? reg)
+         (raise-syntax-error #f "expected a literal regular expression as the second argument" stx #'regexp-s))
        (let ([s-exp 
               (parameterize ([current-namespace (make-base-namespace)]
                              [read-accept-reader #t])
@@ -40,7 +44,13 @@
                             (map (lambda (c)
                                    (syntax-case c (#%plain-app void quote-syntax provide/doc)
                                      [(#%plain-app void (quote-syntax (provide/doc spec ...)))
-                                      (syntax->list #'(spec ...))]
+                                      (map
+                                       (λ (x) (syntax-case x () [(docs id) #'docs])) 
+                                       (filter (λ (x)
+                                                 (syntax-case x ()
+                                                   [(stuff id)
+                                                    (regexp-match reg (symbol->string (syntax-e #'id)))]))
+                                               (syntax->list #'(spec ...))))]
                                      [_ null]))
                                  (syntax->list #'(content ...))))]
                           [(req ...)

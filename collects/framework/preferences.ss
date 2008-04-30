@@ -301,52 +301,6 @@ the state transitions / contracts are:
 
 (provide/doc
  (proc-doc/names
-  preferences:snapshot? 
-  (-> any/c boolean?)
-  (arg)
-  @{Determines if its argument is a preferences snapshot.
-               
-               See also 
-               @scheme[preferences:get-prefs-snapshot] and 
-               @scheme[preferences:restore-prefs-snapshot].})
- (proc-doc/names
-  preferences:restore-prefs-snapshot 
-  (-> preferences:snapshot? void?)
-  (snapshot)
-  @{Restores the preferences saved in @scheme[snapshot].
-             
-             See also @scheme[preferences:get-prefs-snapshot].})
- 
- (proc-doc/names
-  preferences:get-prefs-snapshot 
-  (-> preferences:snapshot?)
-  ()
-  @{Caches all of the current values of the preferences and returns them.
-           
-           See also 
-           @scheme[preferences:restore-prefs-snapshot].})
- 
- 
- (proc-doc/names
-  exn:make-unknown-preference 
-  (string? continuation-mark-set? . -> . exn:unknown-preference?)
-  (message continuation-marks)
-  @{Creates an unknown preference exception.})
- (proc-doc/names
-  exn:unknown-preference? 
-  (any/c . -> . boolean?)
-  (exn)
-  @{Determines if a value is an unknown preference exn.})
- 
- (parameter-doc
-  preferences:low-level-put-preferences
-  (parameter/c (-> (listof symbol?) (listof any/c) any))
-  put-preference
-  @{This parameter's value
-         is called when to save preference the preferences. Its interface should 
-         be just like mzlib's @scheme[put-preference].})
- 
- (proc-doc/names
   preferences:get
   (symbol? . -> . any/c)
   (symbol)
@@ -355,8 +309,8 @@ the state transitions / contracts are:
         @scheme[preferences:get] returns the value for the preference
         @scheme[symbol]. It raises
         @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
-        @scheme[exn:unknown-preference]
         if the preference's default has not been set.})
+
  (proc-doc/names
   preferences:set
   (symbol? any/c . -> . void?)
@@ -372,6 +326,7 @@ the state transitions / contracts are:
         It raises
         @index['("exn:unknown-preference")]{@scheme[exn:unknown-preference]}
         if the preference's default has not been set.})
+ 
  (proc-doc/names
   preferences:add-callback
   (->* (symbol? 
@@ -461,4 +416,52 @@ the state transitions / contracts are:
   ()
   @{@scheme[(preferences:restore-defaults)]
            restores the users's configuration to the
-           default preferences.}))
+           default preferences.})
+ 
+ 
+ 
+ (proc-doc/names
+  exn:make-unknown-preference 
+  (string? continuation-mark-set? . -> . exn:unknown-preference?)
+  (message continuation-marks)
+  @{Creates an unknown preference exception.})
+ 
+ (proc-doc/names
+  exn:unknown-preference? 
+  (any/c . -> . boolean?)
+  (exn)
+  @{Determines if a value is an unknown preference exn.})
+ 
+ (parameter-doc
+  preferences:low-level-put-preferences
+  (parameter/c (-> (listof symbol?) (listof any/c) any))
+  put-preference
+  @{This parameter's value
+         is called when to save preference the preferences. Its interface should 
+         be just like mzlib's @scheme[put-preference].})
+ 
+ (proc-doc/names
+  preferences:snapshot? 
+  (-> any/c boolean?)
+  (arg)
+  @{Determines if its argument is a preferences snapshot.
+               
+               See also 
+               @scheme[preferences:get-prefs-snapshot] and 
+               @scheme[preferences:restore-prefs-snapshot].})
+ (proc-doc/names
+  preferences:restore-prefs-snapshot 
+  (-> preferences:snapshot? void?)
+  (snapshot)
+  @{Restores the preferences saved in @scheme[snapshot].
+             
+             See also @scheme[preferences:get-prefs-snapshot].})
+ 
+ (proc-doc/names
+  preferences:get-prefs-snapshot 
+  (-> preferences:snapshot?)
+  ()
+  @{Caches all of the current values of the preferences and returns them.
+           
+           See also 
+           @scheme[preferences:restore-prefs-snapshot].}))

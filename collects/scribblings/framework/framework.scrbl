@@ -2,17 +2,15 @@
 
 @(require (for-label framework scheme/gui))
 @(require scribble/manual)
-@(defmodule framework)
 
 @title{@bold{Framework}: PLT GUI Application Framework}
+@(defmodule framework)
 
 @bold{TODO:}
 @itemize{
 @item{Mode}
-@item{``Cannot parse docs for handler:open-file''}
 @item{Check indexing in preferences:get}
 @item{Warnings in the translation process}
-@item{Get rid of framework-exports.ss}
 }
 
 ------------------------------------------------------------------------------------------
@@ -97,7 +95,6 @@ Johnathan Franklin, Mark Krentel, Corky Cartwright, Michael
 Ernst, Kennis Koldewyn, Bruce Duba, and many others for
 their feedback and help.
 
-@include-section["tmp.scrbl"]
 @include-section["application.scrbl"]
 @include-section["autosave.scrbl"]
 @include-section["canvas.scrbl"]

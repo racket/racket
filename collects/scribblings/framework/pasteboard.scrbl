@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Pasteboard}
@@ -10,5 +10,5 @@
 @defclass[pasteboard:file% (editor:file-mixin pasteboard:keymap%) ()]{}
 @defclass[pasteboard:backup-autosave% (editor:backup-autosave-mixin pasteboard:file%) ()]{}
 @defclass[pasteboard:info% (editor:info-mixin pasteboard:backup-autosave%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs pasteboard)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^pasteboard:")

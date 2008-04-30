@@ -17,7 +17,7 @@
   (syntax-case stx ()
     [(_ form ...)
      (let ([forms (syntax->list #'(form ...))])
-       (with-syntax ([((for-provide/contract for-docs) ...)
+       (with-syntax ([((for-provide/contract for-docs id) ...)
                       (map (lambda (form)
                              (syntax-case form ()
                                [(id . _)
@@ -31,9 +31,10 @@
                                      #'id))
                                   (let* ([i (make-syntax-introducer)]
                                          [i2 (lambda (x) (syntax-local-introduce (i x)))])
-                                    (let-values ([(p/c d req/d) ((provide/doc-transformer-proc t)
-                                                                 (i (syntax-local-introduce form)))])
-                                      (list (i2 p/c) (list (i2 req/d) (i2 d) (i2 (quote-syntax tag)))))))]
+                                    (let-values ([(p/c d req/d id)
+                                                  ((provide/doc-transformer-proc t)
+                                                   (i (syntax-local-introduce form)))])
+                                      (list (i2 p/c) (list (i2 req/d) (i2 d) (i2 (quote-syntax tag))) (i2 id)))))]
                                [_
                                 (raise-syntax-error
                                  #f
@@ -49,7 +50,7 @@
                              (syntax->list #'(for-provide/contract ...)))])
            #'(begin
                p/c ...
-               (void (quote-syntax (provide/doc for-docs ...)))))))]))
+               (void (quote-syntax (provide/doc (for-docs id) ...)))))))]))
 
 (define-provide/doc-transformer proc-doc
   (lambda (stx)
@@ -94,7 +95,8 @@
          (values
           #'[id contract]
           #'(defproc header result . desc)
-          #'(scribble/manual)))])))
+          #'(scribble/manual)
+          #'id))])))
 
 (define-provide/doc-transformer proc-doc/names
   (lambda (stx)
@@ -146,7 +148,8 @@
          (values
           #'[id contract]
           #'(defproc* header . desc)
-          #'(scribble/manual)))])))
+          #'(scribble/manual)
+          #'id))])))
 
 (define-provide/doc-transformer parameter-doc
   (lambda (stx)
@@ -166,4 +169,5 @@
          (values
           #'[id (parameter/c contract)]
           #'(defparam id arg-id contract . desc)
-          #'(scribble/manual)))])))
+          #'(scribble/manual)
+          #'id))])))

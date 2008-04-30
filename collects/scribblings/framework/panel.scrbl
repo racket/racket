@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Panel}
@@ -167,5 +167,5 @@
 }
 @defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin vertical-panel%)) ()]{}
 @defclass[panel:horizontal-dragable% (panel:horizontal-dragable-mixin (panel:dragable-mixin horizontal-panel%)) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs panel)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^panel:")

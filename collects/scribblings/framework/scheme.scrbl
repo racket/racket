@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Scheme}
@@ -269,5 +269,5 @@
 }
 @defclass[scheme:text% (scheme:set-mode-mixin (scheme:text-mixin (text:autocomplete-mixin (mode:host-text-mixin color:text%)))) ()]{}
 @defclass[scheme:text-mode% (scheme:text-mode-mixin color:text-mode%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs scheme)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^scheme:")

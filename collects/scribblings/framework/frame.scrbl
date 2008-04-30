@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Frame}
@@ -2380,5 +2380,5 @@
 @defclass[frame:searchable% (frame:searchable-text-mixin (frame:searchable-mixin frame:text%)) ()]{}
 @defclass[frame:delegate% (frame:delegate-mixin frame:searchable%) ()]{}
 @defclass[frame:pasteboard% (frame:pasteboard-mixin frame:open-here%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs frame)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^frame:")

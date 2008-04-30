@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Text}
@@ -946,5 +946,5 @@
 @defclass[text:backup-autosave% (editor:backup-autosave-mixin text:clever-file-format%) ()]{}
 @defclass[text:searching% (text:searching-mixin text:backup-autosave%) ()]{}
 @defclass[text:info% (text:info-mixin (editor:info-mixin text:searching%)) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs text)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^text:")

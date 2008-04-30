@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Group}
@@ -120,5 +120,5 @@
 
   }
 }
-@(require framework/framework-docs)
-@(def-fw-procs group)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^group:")

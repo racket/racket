@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Keymap}
@@ -41,5 +41,5 @@
   }
 }
 @defclass[keymap:aug-keymap% (keymap:aug-keymap-mixin keymap%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs keymap)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^keymap:")

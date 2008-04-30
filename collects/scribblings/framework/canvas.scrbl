@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Canvas}
@@ -98,5 +98,5 @@
 @defclass[canvas:info% (canvas:info-mixin canvas:basic%) ()]{}
 @defclass[canvas:delegate% (canvas:delegate-mixin canvas:basic%) ()]{}
 @defclass[canvas:wide-snip% (canvas:wide-snip-mixin canvas:basic%) ()]{}
-@(require framework/framework-docs)
-@(def-fw-procs canvas)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^canvas:")

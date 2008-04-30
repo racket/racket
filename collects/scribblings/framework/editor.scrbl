@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual)
+@(require scribble/manual scribble/extract)
 @(require (for-label framework))
 @(require (for-label scheme/gui))
 @title{Editor}
@@ -428,5 +428,5 @@
     @method[frame:info<%> lock-status-changed].
   }
 }
-@(require framework/framework-docs)
-@(def-fw-procs editor)
+
+@(include-extracted (lib "main.ss" "framework") #rx"^editor:")
