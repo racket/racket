@@ -1693,7 +1693,52 @@
       (test s sync s)))
   (go (lambda (f) (f)))
   (go (lambda (f) (dynamic-wind void f void))))
-  
+
+;; ----------------------------------------
+;; Second continuation spans two meta-continuations,
+;;  and cuts the deeper meta-continuation in half:
+
+(test
+ '("x1")
+ 'nested-half
+ (let* ([says null]
+        [say (lambda (s)
+               (set! says (cons s says)))]
+        [a (make-continuation-prompt-tag 'a)]
+        [b (make-continuation-prompt-tag 'b)])
+   (let ([ak
+          (with-continuation-mark 'x "x0"
+            (call-with-continuation-prompt
+             (lambda ()
+               (with-continuation-mark 'y "y0"
+                 (let ([bk (call-with-continuation-prompt
+                            (lambda ()
+                              (let ([f (call-with-composable-continuation
+                                        (lambda (k)
+                                          (lambda () k))
+                                        b)])
+                                (say "bcall")
+                                (begin0
+                                 (f)
+                                 (say "breturn"))))
+                            b)])
+                   (call-with-continuation-prompt
+                    (lambda ()
+                      ((bk (lambda ()
+                             (let ([f (call/cc (lambda (k) (lambda () (lambda () k))) a)])
+                               (begin0
+                                (f)
+                                (say "areturn")))))))
+                    b))))
+             a))])
+     (with-continuation-mark 'x "x1"
+       (call-with-continuation-prompt
+        (lambda ()
+          (ak (lambda () 
+                (lambda ()
+                  (continuation-mark-set->list (current-continuation-marks) 'x)))))
+        a)))))
+
 ;; ----------------------------------------
 ;; Try long chain of composable continuations
 

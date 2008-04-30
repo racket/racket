@@ -1065,7 +1065,7 @@ typedef struct Scheme_Dynamic_Wind {
 
 typedef struct Scheme_Cont {
   Scheme_Object so;
-  char composable, has_prompt_dw;
+  char composable, has_prompt_dw, need_meta_prompt;
   struct Scheme_Meta_Continuation *meta_continuation;
   Scheme_Jumpup_Buf buf;
   Scheme_Dynamic_Wind *dw;
@@ -1179,6 +1179,8 @@ typedef struct Scheme_Meta_Continuation {
   MZ_MARK_POS_TYPE cont_mark_pos;
   long cont_mark_total, cont_mark_offset;
   Scheme_Cont_Mark *cont_mark_stack_copied;
+  /* Continuation (whose cont-mark info is the same as above) */
+  struct Scheme_Cont *cont;
   /* Next: */
   struct Scheme_Meta_Continuation *next;
 } Scheme_Meta_Continuation;

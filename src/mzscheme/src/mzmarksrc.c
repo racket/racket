@@ -381,6 +381,7 @@ meta_cont_proc {
   gcMARK(c->overflow);
   gcMARK(c->next);
   gcMARK(c->cont_mark_stack_copied);
+  gcMARK(c->cont);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Meta_Continuation));
@@ -610,6 +611,7 @@ thread_val {
   gcMARK(pr->t_set_prev);
 
   MARK_cjs(&pr->cjs);
+  gcMARK(pr->decompose);
 
   gcMARK(pr->cell_values);
   gcMARK(pr->init_config);

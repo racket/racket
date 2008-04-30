@@ -7093,6 +7093,8 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         scheme_longjmpup(&overflow->jmp->cont);
       }
     } else {
+      /* The prompt is different than when we captured the continuation,
+         so we need to compose the continuation with the current prompt. */
       p->cjs.jumping_to_continuation = (Scheme_Object *)prompt;
       p->cjs.num_vals = 1;
       p->cjs.val = (Scheme_Object *)c;
@@ -7121,12 +7123,18 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         }
         p->meta_continuation = prompt_mc->next;
         p->stack_start = prompt_mc->overflow->stack_start;
+        p->decompose = prompt_mc->cont;
         scheme_longjmpup(&prompt_mc->overflow->jmp->cont);
       } else if ((!prompt->boundary_overflow_id && !p->overflow)
                  || (prompt->boundary_overflow_id
                      && (prompt->boundary_overflow_id == p->overflow->id))) {
         /* Jump directly to the prompt: destination is in
            scheme_finish_apply_for_prompt() in fun.c. */
+        if (!p->meta_continuation)
+          scheme_signal_error("internal error: no meta-cont for escape");
+        if (p->meta_continuation->pseudo)
+          scheme_signal_error("internal error: trying to jump to a prompt in a meta-cont"
+                              " that starts with a pseudo prompt");
         scheme_drop_prompt_meta_continuations(c->prompt_tag);
         scheme_longjmp(*prompt->prompt_buf, 1);
       } else {

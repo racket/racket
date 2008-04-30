@@ -4364,13 +4364,14 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       break;
     if (!mc->pseudo && SAME_OBJ(mc->prompt_tag, limit_tag))
       break;
-    if (for_composable && mc->pseudo && mc->empty_to_next && mc->next  
+    if (for_composable && mc->pseudo && mc->empty_to_next && mc->next
         && SAME_OBJ(mc->next->prompt_tag, limit_tag)) {
       /* We don't need to keep the compose-introduced
          meta-continuation, because it represents an empty
          continuation relative to the prompt. */
       break;
     }
+    
     naya = MALLOC_ONE_RT(Scheme_Meta_Continuation);
     cnt++;
     memcpy(naya, mc, sizeof(Scheme_Meta_Continuation));
@@ -4395,6 +4396,22 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
           naya->cont_mark_stack_copied = NULL;
       }
       naya->cont_mark_pos_bottom = prompt->boundary_mark_pos;
+      {
+        Scheme_Cont *cnaya;
+        cnaya = MALLOC_ONE_TAGGED(Scheme_Cont);
+        memcpy(cnaya, naya->cont, sizeof(Scheme_Cont));
+
+        naya->cont = cnaya;
+
+        cnaya->cont_mark_total = naya->cont_mark_total;
+        cnaya->cont_mark_offset = naya->cont_mark_offset;
+        cnaya->cont_mark_pos_bottom = naya->cont_mark_pos_bottom;
+        cnaya->cont_mark_stack_copied = naya->cont_mark_stack_copied;
+
+        cnaya->prompt_stack_start = prompt->stack_boundary;
+
+        cnaya->need_meta_prompt = 1;
+      }
     } else {
       if (!mc->cm_caches) {
         mc->cm_shared = 1;
@@ -4431,6 +4448,23 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
   }
 
   return first;
+}
+
+static void sync_meta_cont(Scheme_Meta_Continuation *resume_mc)
+{
+  Scheme_Cont *cnaya;
+
+  cnaya = MALLOC_ONE_TAGGED(Scheme_Cont);
+  memcpy(cnaya, resume_mc->cont, sizeof(Scheme_Cont));
+    
+  resume_mc->cont = cnaya;
+    
+  cnaya->ss.cont_mark_stack += (resume_mc->cont_mark_total - cnaya->cont_mark_total);
+
+  cnaya->cont_mark_total = resume_mc->cont_mark_total;
+  cnaya->cont_mark_offset = resume_mc->cont_mark_offset;
+  cnaya->cont_mark_pos_bottom = resume_mc->cont_mark_pos_bottom;
+  cnaya->cont_mark_stack_copied = resume_mc->cont_mark_stack_copied;
 }
 
 void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Scheme_Object *extra_marks)
@@ -4511,6 +4545,8 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
       base++;
     }
   }
+
+  sync_meta_cont(resume_mc);
 }
 
 Scheme_Saved_Stack *clone_runstack_saved(Scheme_Saved_Stack *saved, Scheme_Object **boundary_start,
@@ -4808,7 +4844,10 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
   } else {
     p->overflow = cont->save_overflow;
   }
-  if (!for_prompt) {
+  if (for_prompt) {
+    if (p->meta_prompt)
+      cont->need_meta_prompt = 1;
+  } else {
     Scheme_Meta_Continuation *mc, *resume_mc;
     if (resume) {
       resume_mc = MALLOC_ONE_RT(Scheme_Meta_Continuation);
@@ -4832,6 +4871,8 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
         resume_mc->cont_mark_offset = cm_cont->cont_mark_offset;
         resume_mc->cont_mark_pos_bottom = cm_cont->cont_mark_pos_bottom;
         resume_mc->cont_mark_stack_copied = cm_cont->cont_mark_stack_copied;
+
+        resume_mc->cont = cm_cont;
 
         resume_mc->cm_caches = 1; /* conservative assumption */
 
@@ -4949,8 +4990,11 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     MZ_CONT_MARK_STACK = 0;
   }
 
-  /* If there's a resume, then set up a meta prompt: */
-  if (resume) {
+  /* If there's a resume, then set up a meta prompt.
+     We also need a meta-prompt if we're returning from a composed
+     continuation to a continuation captured under a meta-prompt,
+     or truncated somewhere along the way. */
+  if (resume || (for_prompt && cont->need_meta_prompt)) {
     Scheme_Prompt *meta_prompt;
 
     meta_prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
@@ -5003,7 +5047,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
     sub_conts = scheme_make_raw_pair((Scheme_Object *)sub_cont, sub_conts);
   }
 
-  if (!shortcut_prompt) {
+  if (!shortcut_prompt) {    
     Scheme_Cont *tc;
     for (tc = cont; tc->buf.cont; tc = tc->buf.cont) {
     }
@@ -5582,6 +5626,7 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
         p->cjs.val = val;
       }
       p->stack_start = resume->stack_start;
+      p->decompose = resume_mc->cont;
       scheme_longjmpup(&resume->jmp->cont);
       return NULL;
     }
@@ -5626,7 +5671,10 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
   /* Grab a continuation so that we capture the current Scheme stack,
      etc.: */
   saved = grab_continuation(p, 1, 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, 0);
-  
+
+  if (p->meta_prompt)
+    saved->prompt_stack_start = p->meta_prompt->stack_boundary;
+
   overflow = MALLOC_ONE_RT(Scheme_Overflow);
 #ifdef MZTAG_REQUIRED
   overflow->type = scheme_rt_overflow;
@@ -5639,11 +5687,15 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
   jmp->type = scheme_rt_overflow_jmp;
 #endif
   overflow->jmp = jmp;
-        
+
+  saved->resume_to = overflow; /* used by eval to jump to current meta-continuation */
+  cont->use_next_cont = saved;
+  saved = NULL;
+  
   scheme_init_jmpup_buf(&overflow->jmp->cont);
   if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, ADJUST_STACK_START(p->stack_start))) {
     /* Returning. (Jumped here from finish_apply_for_prompt,
-       scheme_compose_continuation, or scheme_eval.)
+       scheme_compose_continuation, scheme_eval, or start_child.)
        
        We can return for several reasons:
         1. We got a result value.
@@ -5660,6 +5712,9 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
     Scheme_Meta_Continuation *mc;
 
     p = scheme_current_thread;
+
+    saved = p->decompose;
+    p->decompose = NULL;
 
     if (!p->cjs.jumping_to_continuation) {
       /* Got a result: */
@@ -5681,7 +5736,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
     restore_continuation(saved, p, 1, v, NULL, 0,
                          NULL, NULL,
                          NULL, 0, NULL,
-                         0, !p->cjs.jumping_to_continuation, 
+                         1, !p->cjs.jumping_to_continuation, 
                          NULL, NULL);
 
     p->meta_continuation = mc;
@@ -5710,6 +5765,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
       reset_cjs(&p->cjs);
       /* The current meta-continuation may have changed since capture: */
       saved->meta_continuation = p->meta_continuation;
+      cont->use_next_cont = saved;
       /* Fall though to continuation application below. */
     } else {
       return v;
@@ -5719,8 +5775,6 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
   scheme_current_thread->suspend_break++;
   
   /* Here's where we jump to the target: */
-  saved->resume_to = overflow; /* used by eval to jump to current meta-continuation */
-  cont->use_next_cont = saved;
   cont->resume_to = overflow;
   cont->empty_to_next_mc = (char)empty_to_next_mc;
   scheme_current_thread->stack_start = cont->prompt_stack_start;
@@ -6174,6 +6228,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     p->cjs.is_escape = 1;
 
     p->stack_start = mc->overflow->stack_start;
+    p->decompose = mc->cont;
 
     scheme_longjmpup(&mc->overflow->jmp->cont);
     return NULL;
@@ -7460,6 +7515,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
     rest->cont_mark_total = 0;
     rest->cont_mark_offset = 0;
     rest->cont_mark_stack_copied = NULL;
+    sync_meta_cont(rest);
     rest = rest->next;
   }
 
@@ -7475,6 +7531,7 @@ void scheme_apply_dw_in_meta(Scheme_Dynamic_Wind *dw, int post_part, int meta_de
       rest->cont_mark_stack_copied = cp;
     } else
       rest->cont_mark_stack_copied = NULL;
+    sync_meta_cont(rest);
   }
 
   old_cac = scheme_continuation_application_count;

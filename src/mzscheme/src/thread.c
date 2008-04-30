@@ -2784,10 +2784,13 @@ static void start_child(Scheme_Thread * volatile child,
       if (!SAME_OBJ(p->meta_continuation->prompt_tag, scheme_default_prompt_tag)) {
         scheme_signal_error("thread ended with meta continuation that isn't for the default prompt");
       } else {
-        oflow = p->meta_continuation->overflow;
-        p->meta_continuation = p->meta_continuation->next;
+        Scheme_Meta_Continuation *mc;
+        mc = p->meta_continuation;
+        oflow = mc->overflow;
+        p->meta_continuation = mc->next;
         if (!oflow->eot) {
           p->stack_start = oflow->stack_start;
+          p->decompose = mc->cont;
           scheme_longjmpup(&oflow->jmp->cont);
         }
       }
