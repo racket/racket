@@ -215,7 +215,7 @@
                                           h))))))))]
               [(eq? i 'veclist)
                (and (stx-vector? e #f)
-                    (loop (vector-ref i 1) (vector->list (syntax-e e)) cap))]
+                    (loop (vector-ref pat 1) (vector->list (syntax-e e)) cap))]
               [(eq? i 'vector)
                (and (stx-vector? e (vector-ref pat 1))
                     (let vloop ([p (vector-ref pat 2)][pos 0])
