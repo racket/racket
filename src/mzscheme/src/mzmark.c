@@ -929,8 +929,6 @@ static int cont_proc_MARK(void *p) {
   gcMARK(c->prompt_id);
   gcMARK(c->prompt_buf);
 
-  /* These shouldn't actually persist across a GC, but
-     just in case... */
   gcMARK(c->value);
   gcMARK(c->resume_to);
   gcMARK(c->use_next_cont);
@@ -969,8 +967,6 @@ static int cont_proc_FIXUP(void *p) {
   gcFIXUP(c->prompt_id);
   gcFIXUP(c->prompt_buf);
 
-  /* These shouldn't actually persist across a GC, but
-     just in case... */
   gcFIXUP(c->value);
   gcFIXUP(c->resume_to);
   gcFIXUP(c->use_next_cont);
@@ -1598,7 +1594,7 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->t_set_prev);
 
   MARK_cjs(&pr->cjs);
-  gcMARK(pr->decompose);
+  gcMARK(pr->decompose_mc);
 
   gcMARK(pr->cell_values);
   gcMARK(pr->init_config);
@@ -1699,7 +1695,7 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->t_set_prev);
 
   FIXUP_cjs(&pr->cjs);
-  gcFIXUP(pr->decompose);
+  gcFIXUP(pr->decompose_mc);
 
   gcFIXUP(pr->cell_values);
   gcFIXUP(pr->init_config);

@@ -7123,7 +7123,7 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
         }
         p->meta_continuation = prompt_mc->next;
         p->stack_start = prompt_mc->overflow->stack_start;
-        p->decompose = prompt_mc->cont;
+        p->decompose_mc = prompt_mc;
         scheme_longjmpup(&prompt_mc->overflow->jmp->cont);
       } else if ((!prompt->boundary_overflow_id && !p->overflow)
                  || (prompt->boundary_overflow_id

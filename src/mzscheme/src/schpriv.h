@@ -978,6 +978,8 @@ extern void *scheme_deepest_stack_start;
 # define ADJUST_STACK_START(start) (start ? start : scheme_deepest_stack_start)
 #endif
 
+struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, void *stack_boundary);
+
 void scheme_jmpup_free(Scheme_Jumpup_Buf *);
 void *scheme_enlarge_runstack(long size, void *(*k)());
 int scheme_check_runstack(long size);

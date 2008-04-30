@@ -2790,7 +2790,7 @@ static void start_child(Scheme_Thread * volatile child,
         p->meta_continuation = mc->next;
         if (!oflow->eot) {
           p->stack_start = oflow->stack_start;
-          p->decompose = mc->cont;
+          p->decompose_mc = mc;
           scheme_longjmpup(&oflow->jmp->cont);
         }
       }

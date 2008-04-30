@@ -194,7 +194,10 @@ typedef struct Scheme_Dynamic_Wind_List {
 } Scheme_Dynamic_Wind_List;
 
 static Scheme_Object *cached_beg_stx, *cached_dv_stx, *cached_ds_stx;
-int cached_stx_phase;
+static int cached_stx_phase;
+
+static Scheme_Cont *offstack_cont;
+static Scheme_Overflow *offstack_overflow;
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -221,6 +224,9 @@ scheme_init_fun (Scheme_Env *env)
   REGISTER_SO(cached_dv_stx);
   REGISTER_SO(cached_ds_stx);
   REGISTER_SO(scheme_procedure_p_proc);
+
+  REGISTER_SO(offstack_cont);
+  REGISTER_SO(offstack_overflow);
 
   o = scheme_make_folding_prim(procedure_p, "procedure?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(o) |= SCHEME_PRIM_IS_UNARY_INLINED;
@@ -4050,6 +4056,7 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
   start = MALLOC_N(Scheme_Object*, size);
   saved->runstack_start = start;
   memcpy(saved->runstack_start, runstack, size * sizeof(Scheme_Object *));
+  saved->runstack_offset = (runstack XFORM_OK_MINUS runstack_start);
 
   if (!effective_prompt || (effective_prompt->runstack_boundary_start != runstack_start)) {
 
@@ -4349,6 +4356,87 @@ static void clear_cm_copy_caches(Scheme_Cont_Mark *cp, int cnt)
   }
 }
 
+static Scheme_Saved_Stack *clone_runstack_saved(Scheme_Saved_Stack *saved, Scheme_Object **boundary_start,
+                                                Scheme_Saved_Stack *last)
+{
+  Scheme_Saved_Stack *naya, *first = last, *prev = NULL;
+
+  while (saved) {
+    naya = MALLOC_ONE_RT(Scheme_Saved_Stack);
+    memcpy(naya, saved, sizeof(Scheme_Saved_Stack));
+    if (prev)
+      prev->prev = naya;
+    else
+      first = naya;
+    prev = naya;
+    if (saved->runstack_start == boundary_start)
+      break;
+    saved = saved->prev;
+  }
+  if (prev)
+    prev->prev = last;
+  
+  return first;
+}
+
+static Scheme_Saved_Stack *clone_runstack_copied(Scheme_Saved_Stack *copied, 
+                                                 Scheme_Object **copied_start,
+                                                 Scheme_Saved_Stack *saved, 
+                                                 Scheme_Object **boundary_start,
+                                                 long boundary_offset)
+{
+  Scheme_Saved_Stack *naya, *first = NULL, *prev = NULL, *s;
+
+  if (copied_start == boundary_start) {
+    naya = copied;
+  } else {
+    for (naya = copied->prev, s = saved; 
+         s->runstack_start != boundary_start; 
+         naya = naya->prev, s = s->prev) {
+    }
+  }
+  if ((naya->runstack_offset + naya->runstack_size == boundary_offset)
+      && !naya->prev) {
+    /* no need to prune anything */
+    return copied;
+  }
+
+  s = NULL;
+  while (copied) {
+    naya = MALLOC_ONE_RT(Scheme_Saved_Stack);
+    memcpy(naya, copied, sizeof(Scheme_Saved_Stack));
+    naya->prev = NULL;
+    if (prev)
+      prev->prev = naya;
+    else
+      first = naya;
+    prev = naya;
+    if ((!s && copied_start == boundary_start)
+        || (s && (s->runstack_start == boundary_start))) {
+      long size;
+      Scheme_Object **a;
+      size = boundary_offset - naya->runstack_offset;
+      if (size < 0)
+        scheme_signal_error("negative stack-copy size while pruning");
+      if (size > naya->runstack_size)
+        scheme_signal_error("bigger stack-copy size while pruning: %d vs. %d", size, naya->runstack_size);
+      a = MALLOC_N(Scheme_Object *, size);
+      memcpy(a, naya->runstack_start, size * sizeof(Scheme_Object *));
+      naya->runstack_start = a;
+      naya->runstack_size = size;
+      break;
+    }
+
+    copied = copied->prev;
+    if (!s)
+      s = saved;
+    else
+      s = s->prev;
+  }
+  
+  return first;
+}
+
 static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
                                                  Scheme_Object *limit_tag, int limit_depth,
                                                  Scheme_Meta_Continuation *prompt_cont,
@@ -4378,6 +4466,8 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
     if (SAME_OBJ(mc, prompt_cont)) {
       /* Need only part of this meta-continuation's marks. */
       long delta;
+      void *stack_boundary;
+
       delta = prompt->mark_boundary - naya->cont_mark_offset;
       if (delta) {
         naya->cont_mark_total -= delta;
@@ -4396,8 +4486,18 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
           naya->cont_mark_stack_copied = NULL;
       }
       naya->cont_mark_pos_bottom = prompt->boundary_mark_pos;
-      {
+
+      if ((prompt->boundary_overflow_id && (prompt->boundary_overflow_id == naya->overflow->id))
+          || (!prompt->boundary_overflow_id && !naya->overflow->prev)) {
+        stack_boundary = prompt->stack_boundary;
+      } else {
+        stack_boundary = naya->overflow->stack_start;
+      }
+
+      if (naya->cont) {
         Scheme_Cont *cnaya;
+        Scheme_Saved_Stack *saved;
+
         cnaya = MALLOC_ONE_TAGGED(Scheme_Cont);
         memcpy(cnaya, naya->cont, sizeof(Scheme_Cont));
 
@@ -4408,9 +4508,39 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
         cnaya->cont_mark_pos_bottom = naya->cont_mark_pos_bottom;
         cnaya->cont_mark_stack_copied = naya->cont_mark_stack_copied;
 
-        cnaya->prompt_stack_start = prompt->stack_boundary;
+        cnaya->prompt_stack_start = stack_boundary;
+
+        /* Prune unneeded runstack data */
+        saved = clone_runstack_copied(cnaya->runstack_copied, 
+                                      cnaya->runstack_start,
+                                      cnaya->runstack_saved, 
+                                      prompt->runstack_boundary_start,
+                                      prompt->runstack_boundary_offset);
+        cnaya->runstack_copied = saved;
+
+        /* Prune unneeded buffers */
+        if (prompt->runstack_boundary_start == cnaya->runstack_start)
+          saved = NULL;
+        else
+          saved = clone_runstack_saved(cnaya->runstack_saved, 
+                                       prompt->runstack_boundary_start,
+                                       NULL);
+        cnaya->runstack_saved = saved;
 
         cnaya->need_meta_prompt = 1;
+      }
+      if (naya->overflow && !naya->overflow->eot) {
+        /* Prune unneeded C-stack data */
+        Scheme_Overflow *onaya;
+        Scheme_Overflow_Jmp *jmp;
+        jmp = scheme_prune_jmpup(naya->overflow->jmp, stack_boundary);
+        if (jmp) {
+          onaya = MALLOC_ONE_RT(Scheme_Overflow);
+          memcpy(onaya, naya->overflow, sizeof(Scheme_Overflow));
+          naya->overflow = onaya;
+          onaya->jmp = jmp;
+          onaya->stack_start = stack_boundary;
+        }
       }
     } else {
       if (!mc->cm_caches) {
@@ -4547,29 +4677,6 @@ void prune_cont_marks(Scheme_Meta_Continuation *resume_mc, Scheme_Cont *cont, Sc
   }
 
   sync_meta_cont(resume_mc);
-}
-
-Scheme_Saved_Stack *clone_runstack_saved(Scheme_Saved_Stack *saved, Scheme_Object **boundary_start,
-                                         Scheme_Saved_Stack *last)
-{
-  Scheme_Saved_Stack *naya, *first = last, *prev = NULL;
-
-  while (saved) {
-    naya = MALLOC_ONE_RT(Scheme_Saved_Stack);
-    memcpy(naya, saved, sizeof(Scheme_Saved_Stack));
-    if (prev)
-      prev->prev = naya;
-    else
-      first = naya;
-    prev = naya;
-    if (saved->runstack_start == boundary_start)
-      break;
-    saved = saved->prev;
-  }
-  if (prev)
-    prev->prev = last;
-  
-  return first;
 }
 
 static MZ_MARK_STACK_TYPE exec_dyn_wind_pres(Scheme_Dynamic_Wind_List *dwl,
@@ -4751,7 +4858,10 @@ static Scheme_Cont *grab_continuation(Scheme_Thread *p, int for_prompt, int comp
                               (for_prompt ? p->meta_prompt : prompt));
     cont->runstack_copied = saved;
     if (!for_prompt && prompt) {
-      /* Prune cont->runstack_saved to drop unneeded saves. */
+      /* Prune cont->runstack_saved to drop unneeded saves.
+         (Note that this is different than runstack_copied; 
+          runstack_saved keeps the shared runstack buffers, 
+          not the content.) */
       if (SAME_OBJ(prompt->runstack_boundary_start, MZ_RUNSTACK_START))
         saved = NULL;
       else
@@ -5626,7 +5736,7 @@ Scheme_Object *scheme_finish_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Obje
         p->cjs.val = val;
       }
       p->stack_start = resume->stack_start;
-      p->decompose = resume_mc->cont;
+      p->decompose_mc = resume_mc;
       scheme_longjmpup(&resume->jmp->cont);
       return NULL;
     }
@@ -5689,11 +5799,17 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
   overflow->jmp = jmp;
 
   saved->resume_to = overflow; /* used by eval to jump to current meta-continuation */
-  cont->use_next_cont = saved;
+  offstack_cont = saved;
   saved = NULL;
-  
+
   scheme_init_jmpup_buf(&overflow->jmp->cont);
-  if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, ADJUST_STACK_START(p->stack_start))) {
+
+  offstack_overflow = overflow;
+  overflow = NULL; /* so it's not saved in the continuation */
+
+  if (scheme_setjmpup(&offstack_overflow->jmp->cont, 
+                      offstack_overflow->jmp, 
+                      ADJUST_STACK_START(p->stack_start))) {
     /* Returning. (Jumped here from finish_apply_for_prompt,
        scheme_compose_continuation, scheme_eval, or start_child.)
        
@@ -5709,12 +5825,14 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
            scheme_finish_apply_for_prompt() for those possibilities.
     */
     Scheme_Object *v;
-    Scheme_Meta_Continuation *mc;
+    Scheme_Meta_Continuation *mc, *dmc;
 
     p = scheme_current_thread;
 
-    saved = p->decompose;
-    p->decompose = NULL;
+    dmc = p->decompose_mc;
+    p->decompose_mc = NULL;
+    saved = dmc->cont;
+    overflow = dmc->overflow;
 
     if (!p->cjs.jumping_to_continuation) {
       /* Got a result: */
@@ -5765,16 +5883,21 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
       reset_cjs(&p->cjs);
       /* The current meta-continuation may have changed since capture: */
       saved->meta_continuation = p->meta_continuation;
-      cont->use_next_cont = saved;
       /* Fall though to continuation application below. */
     } else {
       return v;
     }
+  } else {
+    saved = offstack_cont;
+    overflow = offstack_overflow;
+    offstack_cont = NULL;
+    offstack_overflow = NULL;
   }
 
   scheme_current_thread->suspend_break++;
   
   /* Here's where we jump to the target: */
+  cont->use_next_cont = saved;
   cont->resume_to = overflow;
   cont->empty_to_next_mc = (char)empty_to_next_mc;
   scheme_current_thread->stack_start = cont->prompt_stack_start;
@@ -6228,7 +6351,7 @@ Scheme_Object *scheme_compose_continuation(Scheme_Cont *cont, int num_rands, Sch
     p->cjs.is_escape = 1;
 
     p->stack_start = mc->overflow->stack_start;
-    p->decompose = mc->cont;
+    p->decompose_mc = mc;
 
     scheme_longjmpup(&mc->overflow->jmp->cont);
     return NULL;

@@ -361,8 +361,6 @@ cont_proc {
   gcMARK(c->prompt_id);
   gcMARK(c->prompt_buf);
 
-  /* These shouldn't actually persist across a GC, but
-     just in case... */
   gcMARK(c->value);
   gcMARK(c->resume_to);
   gcMARK(c->use_next_cont);
@@ -611,7 +609,7 @@ thread_val {
   gcMARK(pr->t_set_prev);
 
   MARK_cjs(&pr->cjs);
-  gcMARK(pr->decompose);
+  gcMARK(pr->decompose_mc);
 
   gcMARK(pr->cell_values);
   gcMARK(pr->init_config);

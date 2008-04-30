@@ -466,24 +466,26 @@ static void *align_var_stack(void **vs, void *s)
 }
 #define ALIGN_VAR_STACK(vs, s) s = align_var_stack(vs, s)
 
-static void *shift_var_stack(void *s)
+static void *shift_var_stack(void *s, long delta)
 {
 #ifdef STACK_GROWS_UP
   return s;
 #else
-  void **vs = (void **)s;
+  void **vs = (void **)(s + delta);
   long cnt;
   
   /* Set s past end of vs: */
   cnt = ((long *)vs)[1];
-  return (void *)(vs + cnt + 2);
+  return (void *)((void **)s + cnt + 2);
 #endif
 }
-#define PAST_VAR_STACK(s) s = shift_var_stack(s);
+#define PAST_VAR_STACK(s) s = shift_var_stack(s, 0);
+#define PAST_VAR_STACK_DELTA(s, d) s = shift_var_stack(s, d);
 END_XFORM_SKIP;
 #else
 # define ALIGN_VAR_STACK(vs, s) /* empty */
 # define PAST_VAR_STACK(s) /* empty */
+# define PAST_VAR_STACK_DELTA(s, d) /* empty */
 #endif
 
 int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
@@ -548,6 +550,62 @@ int scheme_setjmpup_relative(Scheme_Jumpup_Buf *b, void *base,
   }
 
   return local;
+}
+
+struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, void *stack_boundary)
+{
+  void *cur_end;
+
+  PAST_VAR_STACK_DELTA(stack_boundary,  (void *)get_copy(jmp->cont.stack_copy) - (void *)jmp->cont.stack_from);
+
+#ifdef STACK_GROWS_UP
+  cur_end = (void *)jmp->cont.stack_from;
+#else
+  cur_end = (void *)((char *)jmp->cont.stack_from + jmp->cont.stack_size);
+#endif
+
+  if (stack_boundary != cur_end) {
+    long new_size, delta;
+    Scheme_Overflow_Jmp *naya;
+    void *copy, *base;
+
+# ifdef STACK_GROWS_UP
+    delta = (char *)stack_boundary - (char *)jmp->cont.stack_from;
+    new_size = jmp->cont.stack_size - delta;
+    base = (char *)stack_boundary;
+# else
+    delta = 0;
+    new_size = (long)stack_boundary - (long)jmp->cont.stack_from;
+    base = jmp->cont.stack_from;
+# endif
+
+    if ((new_size < 0) || (new_size > jmp->cont.stack_size))
+      scheme_signal_error("bad C-stack pruigin size: %ld vs. %ld", new_size, jmp->cont.stack_size);
+
+    naya = MALLOC_ONE_RT(Scheme_Overflow_Jmp);
+    memcpy(naya, jmp, sizeof(Scheme_Overflow_Jmp));
+    scheme_init_jmpup_buf(&naya->cont);
+    
+#ifndef MZ_PRECISE_GC
+    copy = make_stack_copy_rec(new_size);
+    naya->cont.stack_copy = copy;
+    set_copy(naya->cont.stack_copy, MALLOC_STACK(new_size));
+#else
+    copy = MALLOC_STACK(new_size);
+    set_copy(naya->cont.stack_copy, copy);
+#endif
+    
+    memcpy(get_copy(copy), 
+           get_copy(jmp->cont.stack_copy) XFORM_OK_PLUS delta,
+           new_size);
+
+    naya->cont.stack_size = naya->cont.stack_max_size = new_size;
+    naya->cont.stack_from = base;
+
+    return naya;
+  }
+
+  return NULL;
 }
 
 void scheme_longjmpup(Scheme_Jumpup_Buf *b)

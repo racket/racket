@@ -924,7 +924,7 @@ typedef struct Scheme_Thread {
 
   mz_jmp_buf *error_buf;
   Scheme_Continuation_Jump_State cjs;
-  struct Scheme_Cont *decompose;
+  struct Scheme_Meta_Continuation *decompose_mc; /* set during a jump */
 
   Scheme_Thread_Cell_Table *cell_values;
   Scheme_Config *init_config;
