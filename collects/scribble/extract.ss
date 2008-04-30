@@ -51,7 +51,17 @@
                              (map (lambda (c)
                                     (syntax-case c (#%require #%plain-app void quote-syntax require/doc)
                                       [(#%require spec ...)
-                                       (syntax->list #'((for-label spec) ...))]
+                                       (let loop ([specs (syntax->list #'(spec ...))])
+                                         (cond
+                                           [(null? specs) '()]
+                                           [else (let ([spec (car specs)])
+                                                   (syntax-case spec (for-syntax for-meta)
+                                                     [(for-syntax . spec) (loop (cdr specs))]
+                                                     [(for-meta . spec) (loop (cdr specs))]
+                                                     [(for-template . spec) (loop (cdr specs))]
+                                                     [(for-label . spec) (loop (cdr specs))]
+                                                     [(just-meta . spec) (loop (cdr specs))]
+                                                     [_ (cons #`(for-label #,spec) (loop (cdr specs)))]))]))]
                                       [(#%plain-app void (quote-syntax (require/doc spec ...)))
                                        (syntax->list #'(spec ...))]
                                       [_ null]))
