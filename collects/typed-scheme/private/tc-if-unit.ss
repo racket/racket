@@ -9,8 +9,8 @@
          "mutated-vars.ss"
          "subtype.ss"
          (only-in "remove-intersect.ss" 
-                  [remove *remove]
-                  restrict)
+                  [remove *remove])
+         "infer-ops.ss"
          "union.ss"
          "type-utils.ss"
          "tc-utils.ss"

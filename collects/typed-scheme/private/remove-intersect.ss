@@ -1,10 +1,10 @@
 #lang scheme/base
 
 (require "type-rep.ss" "unify.ss" "union.ss" "infer.ss" "subtype.ss"
-         "type-utils.ss" "resolve-type.ss" "type-effect-convenience.ss"
+         "type-utils.ss" "resolve-type.ss" "type-effect-convenience.ss"         
          mzlib/plt-match mzlib/trace)
 
-(provide restrict (rename-out [*remove remove]) overlap)
+(provide (rename-out [*remove remove]) overlap)
 
 
 (define (overlap t1 t2)
@@ -42,33 +42,7 @@
      #f]
     [else #t]))
 
-;; this is *definitely* not yet correct
 
-;; NEW IMPL
-;; restrict t1 to be a subtype of t2
-(define (restrict t1 t2)     
-  ;; we don't use union map directly, since that might produce too many elements
-  (define (union-map f l)
-    (match l
-      [(Union: es) 
-       (let ([l (map f es)])
-         ;(printf "l is ~a~n" l)
-         (apply Un l))]))
-  (cond
-    [(subtype t1 t2) t1] ;; already a subtype          
-    [(match t2
-       [(Poly: vars t)
-        (let ([subst (infer t t1 vars)])
-          (and subst (restrict t1 (subst-all subst t1))))]
-       [_ #f])]           
-    [(Union? t1) (union-map (lambda (e) (restrict e t2)) t1)]
-    [(Mu? t1)
-     (restrict (unfold t1) t2)]
-    [(Mu? t2) (restrict t1 (unfold t2))]
-    [(subtype t2 t1) t2] ;; we don't actually want this - want something that's a part of t1
-    [(not (overlap t1 t2)) (Un)] ;; there's no overlap, so the restriction is empty
-    [else t2] ;; t2 and t1 have a complex relationship, so we punt
-    ))
 
 ;(trace restrict)
 

@@ -2,13 +2,13 @@
 
 (require "type-effect-convenience.ss" "type-rep.ss" "effect-rep.ss" "rep-utils.ss"
          "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss"
-         "remove-intersect.ss" "subtype.ss"
+         "subtype.ss" "remove-intersect.ss"
          scheme/match
          mzlib/etc
          mzlib/trace
          scheme/list)
 
-(provide (all-defined-out))
+(provide infer infer/vararg restrict)
 
 (define-values (fail-sym exn:infer?)
   (let ([sym (gensym)])
@@ -115,8 +115,13 @@
     ([a args])
     (cset-meet a c)))
 
-
-
+;; ss and ts have the same length
+(define (cgen-union V X ss ts)
+  ;; first, we remove common elements of ss and ts
+  (let-values ([(ss* ts*)
+                (values (filter (lambda (se) (not (ormap (lambda (t) (type-equal? t se)) ts))) ss)
+                        (filter (lambda (te) (not (ormap (lambda (s) (type-equal? s te)) ss))) ts))])
+    (cgen/list V X ss* ts*)))
 
 (define (cgen V X S T)
   (define empty (empty-cset X))
@@ -127,6 +132,15 @@
      (S T)
      [(a a) empty]
      [(_ (Univ:)) empty]
+     
+     ;; two unions with the same number of elements, so we just try to unify them pairwise
+     #;[((Union: l1) (Union: l2))
+      (=> unmatch)
+      (unless (= (length l1) (length l2))
+        (unmatch))
+      (cgen-union V X l1 l2)]
+     
+     
      [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]
      [(S (Union: es)) (or
                        (for/or 
@@ -146,8 +160,11 @@
                           [(or proc proc*)
                            (fail! S T)]
                           [else (values flds flds*)])])
-        (cset-meet* X (for/list ([f flds] [f* flds*])
-                        (cgen V X f f*))))]
+        (cgen/list X V flds flds*))]
+     [((Name: n) (Name: n*))
+      (if (free-identifier=? n n*)
+          null
+          (fail! S T))]
      [((Pair: a b) (Pair: a* b*))
       (cset-meet (cgen V X a a*) (cgen V X b b*))]
      ;; if we have two mu's, we rename them to have the same variable
@@ -162,9 +179,19 @@
        (App: (Name: n*) args* _))
       (unless (free-identifier=? n n*)
         (fail! S T))
-      (cset-meet* X (for/list ([a args] [a* args*]) (cgen V X a a*)))]
+      (cgen/list X V args args*)]
      [((Vector: e) (Vector: e*))
       (cset-meet (cgen V X e e*) (cgen V X e* e))]
+     [((Box: e) (Box: e*))
+      (cset-meet (cgen V X e e*) (cgen V X e* e))]
+     [((Hashtable: s1 s2) (Hashtable: t1 t2))
+      ;; the key is covariant, the value is invariant
+      (cset-meet* X (list (cgen V X s1 t1) (cgen V X t2 s2) (cgen V X s2 t2)))]
+     [((Syntax: s1) (Syntax: s2))
+      (cgen V X s1 s2)]
+     ;; parameters are just like one-arg functions
+     [((Param: in1 out1) (Param: in2 out2))
+      (cset-meet (cgen V X in2 in1) (cgen V X out1 out2))]
      [((Function: (list t-arr ...))
        (Function: (list s-arr ...)))
       (=> unmatch)
@@ -175,17 +202,13 @@
                       [(list (arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
                        (let ([arg-mapping 
                               (cond [(and t-rest s-rest (= (length ts) (length ss)))
-                                     (cset-meet* X (for/list ([t (cons t-rest ts)] [s (cons s-rest ss)])
-                                                     (cgen V X s t)))]
+                                     (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
                                     [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
-                                     (cset-meet* X (for/list ([t ts] [s ss])
-                                                     (cgen V X s t)))]
+                                     (cgen/list X V ss ts)]
                                     [(and t-rest (not s-rest) (<= (length ts) (length ss)))
-                                     (cset-meet* X (for/list ([s ss] [t (extend ss ts t-rest)])
-                                                             (cgen V X s t)))]
+                                     (cgen/list X V ss (extend ss ts t-rest))]
                                     [(and s-rest (not t-rest) (>= (length ts) (length ss)))
-                                     (cset-meet* X (for/list ([s (extend ts ss s-rest)] [t ts])
-                                                             (cgen V X s t)))]
+                                     (cgen/list X V (extend ts ss s-rest) ts)]
                                     [else (unmatch)])]
                              [ret-mapping (cgen V X t s)])
                          (loop (cdr t-arr) (cdr s-arr)
@@ -209,6 +232,10 @@
                  [Invariant (unless (type-equal? S T)
                               (fail! S T))
                             S])))])))
+
+(define (cgen/list X V S T)
+  (cset-meet* X (for/list ([s S] [t T]) (cgen V X s t))))
+
 ;; X : variables to infer
 ;; S : actual argument types
 ;; T : formal argument types
@@ -218,7 +245,7 @@
 ;; just return a boolean result
 (define (infer X S T R)
   (with-handlers ([exn:infer? (lambda _ #f)])
-    (let ([cs (cset-meet* X (for/list ([s S] [t T]) (cgen null X s t)))])
+    (let ([cs (cgen/list X null S T)])
     (if R
         (subst-gen cs R)
         #t))))
@@ -243,3 +270,31 @@
 
 (define (i s t r)
   (infer/simple (list s) (list t) r))
+
+;; this is *definitely* not yet correct
+
+;; NEW IMPL
+;; restrict t1 to be a subtype of t2
+(define (restrict t1 t2)     
+  ;; we don't use union map directly, since that might produce too many elements
+  (define (union-map f l)
+    (match l
+      [(Union: es) 
+       (let ([l (map f es)])
+         ;(printf "l is ~a~n" l)
+         (apply Un l))]))
+  (cond
+    [(subtype t1 t2) t1] ;; already a subtype          
+    [(match t2
+       [(Poly: vars t)
+        (let ([subst (infer vars (list t1) (list t) t1)])
+          (and subst (restrict t1 (subst-all subst t1))))]
+       [_ #f])]           
+    [(Union? t1) (union-map (lambda (e) (restrict e t2)) t1)]
+    [(Mu? t1)
+     (restrict (unfold t1) t2)]
+    [(Mu? t2) (restrict t1 (unfold t2))]
+    [(subtype t2 t1) t2] ;; we don't actually want this - want something that's a part of t1
+    [(not (overlap t1 t2)) (Un)] ;; there's no overlap, so the restriction is empty
+    [else t2] ;; t2 and t1 have a complex relationship, so we punt
+    ))

@@ -1,5 +1,8 @@
 #lang scheme/base
 
+;; NO LONGER USED
+;; NOT YET REMOVED AS DOCUMENTATION
+
 (require "unify.ss" "type-comparison.ss" "type-rep.ss" "effect-rep.ss" "subtype.ss"
          "planet-requires.ss" "tc-utils.ss" "union.ss"
          "resolve-type.ss"
@@ -9,7 +12,7 @@
          (lib "list.ss"))
 (require (galore))
 
-(provide infer infer/list infer/list/vararg combine table:un exn:infer?)
+#;(provide infer infer/list infer/list/vararg combine table:un exn:infer?)
 
 ;; exn representing failure of inference
 ;; s,t both types
