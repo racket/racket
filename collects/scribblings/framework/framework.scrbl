@@ -6,15 +6,6 @@
 @title{@bold{Framework}: PLT GUI Application Framework}
 @(defmodule framework)
 
-@bold{TODO:}
-@itemize{
-@item{Mode}
-@item{Check indexing in preferences:get}
-@item{Warnings in the translation process}
-}
-
-------------------------------------------------------------------------------------------
-
 The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
 program on top of the @scheme[scheme/gui] library.
