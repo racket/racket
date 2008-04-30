@@ -589,7 +589,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
   return name ## __wrong_type(n2); \
 }
 
-#define GEN_NARY_OP(stat, name, scheme_name, bin_name, ident, TYPEP, type) \
+#define GEN_NARY_OP(stat, name, scheme_name, bin_name, ident, TYPEP, type, single) \
 stat Scheme_Object *name (int argc, Scheme_Object *argv[]); \
 static MZ_INLINE Scheme_Object * \
 name ## __slow (Scheme_Object *ret, int argc, Scheme_Object *argv[])  \
@@ -616,6 +616,7 @@ name (int argc, Scheme_Object *argv[]) \
     if (!TYPEP(b)) { scheme_wrong_type(scheme_name, type, 1, argc, argv); return NULL; } \
     return bin_name(ret, b); \
   } \
+  if (argc == 1) { return single(ret); } \
   return name ## __slow(ret, argc, argv); \
 }
 
