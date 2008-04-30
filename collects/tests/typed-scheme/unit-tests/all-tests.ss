@@ -35,9 +35,7 @@
          type-annotation-tests
          typecheck-tests
          module-tests
-         fv-tests
-         i2-tests
-         combine-tests))))
+         fv-tests))))
 
 
 
@@ -50,9 +48,7 @@
   type-annotation-tests
   typecheck-tests
   module-tests
-  fv-tests
-  i2-tests
-  combine-tests) 
+  fv-tests) 
 
 (define (fast)
   (run     
@@ -64,9 +60,7 @@
    type-annotation-tests
    typecheck-tests
    module-tests
-   fv-tests
-   i2-tests
-   combine-tests))
+   fv-tests))
 
 (define (faster)
   (run     
@@ -76,9 +70,7 @@
    remove-tests
    parse-type-tests
    type-annotation-tests
-   fv-tests
-   i2-tests
-   combine-tests))
+   fv-tests))
 
 ;(go/gui)
 

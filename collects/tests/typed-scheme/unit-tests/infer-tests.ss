@@ -1,12 +1,12 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base))
-(require (private planet-requires type-effect-convenience type-rep unify union infer)
+(require (private planet-requires type-effect-convenience type-rep unify union infer-ops)
          (prefix-in table: (private tables)))
 (require (schemeunit)) 
 
 (define (fv . args) (list))
 
-(provide fv-tests i2-tests combine-tests)
+(provide fv-tests)
 
 (define-syntax-rule (fv-t ty elems ...)
   (let ([ty* ty])
@@ -44,7 +44,7 @@
 (define-syntax-rule (i2-f t1 t2)
   (test-false (format "~a ~a" t1 t2)                   
               (f t1 t2)))
-
+#|
 (define (i2-tests)
   (test-suite "Tests for infer"
               [i2-t (-v a) N ('a N)]
@@ -118,5 +118,5 @@
 (define (s e)
   (sort e (lambda (a b) (string<? (symbol->string (car a)) (symbol->string (car b))))))
 
-
-(define-go fv-tests i2-tests combine-tests)
+|#
+(define-go fv-tests)
