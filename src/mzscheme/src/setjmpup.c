@@ -596,7 +596,7 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
 #endif
     
     memcpy(get_copy(copy), 
-           get_copy(jmp->cont.stack_copy) XFORM_OK_PLUS delta,
+           (char *)get_copy(jmp->cont.stack_copy) XFORM_OK_PLUS delta,
            new_size);
 
     naya->cont.stack_size = naya->cont.stack_max_size = new_size;
