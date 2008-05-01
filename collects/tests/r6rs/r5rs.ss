@@ -4,6 +4,7 @@
   (export run-r5rs-tests)
   (import (rnrs)
           (rnrs r5rs)
+          (rnrs eval)
           (tests r6rs test))
 
   ;; ----------------------------------------
@@ -159,6 +160,21 @@
           2418665909170904891604)
     (test (modulo -536870912238479837489374 -3248732398479823749283)
           -830066489308918857679)
+
+    ;; ----------------------------------------
+
+    (test (exact->inexact 1) 1.0)
+    (test (exact->inexact 1.0) 1.0)
+    (test (inexact->exact 1) 1)
+    (test (inexact->exact 1.0) 1)
+
+    ;; ----------------------------------------
+
+    (test (eval '(cond [#t 1]) (null-environment 5)) 1)
+    (test (eval '(cond [#t => (lambda (x) x)]) (null-environment 5)) #t)
+
+
+    (test (eval '(cons 1 2) (scheme-report-environment 5)) '(1 . 2))
 
     ;;
     ))

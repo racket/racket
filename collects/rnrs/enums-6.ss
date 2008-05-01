@@ -138,11 +138,11 @@
             [v1 (enum-set-val enum1)]
             [v2 (enum-set-val enum2)])
         (for/fold ([sub? #t])
-            (#:when sub?
-                    [(key1 val1) (in-hash (universe-ht (enum-set-uni enum1)))])
-          (or (zero? (bitwise-and v1 val1))
-              (let ([val2 (hash-ref ht2 key1 #f)])
-                (and val2
+            ([(key1 val1) (in-hash (universe-ht (enum-set-uni enum1)))]
+             #:when sub?)
+          (let ([val2 (hash-ref ht2 key1 #f)])
+            (and val2
+                 (or (zero? (bitwise-and v1 val1))
                      (not (zero? (bitwise-and v2 val2))))))))))
 
 (define (enum-set=? enum1 enum2)

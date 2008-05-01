@@ -11,5 +11,3 @@
                      [r5rs:force force]
                      [r5rs:null-environment null-environment]
                      [r5rs:scheme-report-environment scheme-report-environment]))
-         
-                     

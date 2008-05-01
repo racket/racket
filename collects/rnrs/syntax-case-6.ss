@@ -26,6 +26,15 @@
 (define (r6rs:datum->syntax id datum)
   (unless (identifier? id)
     (raise-type-error 'datum->syntax "identifier?" id))
+  (let loop ([d datum])
+    (cond
+     [(syntax? d) (raise-type-error
+                   'datum->syntax
+                   "datum"
+                   datum)]
+     [(pair? d) (loop (car d)) (loop (cdr d))]
+     [(mpair? d) (loop (mcar d)) (loop (mcdr d))]
+     [(vector? d) (for-each loop (vector->list d))]))
   (datum->syntax id (convert-mpairs datum)))
 
 (define (r6rs:syntax->datum stx)

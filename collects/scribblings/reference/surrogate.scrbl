@@ -1,12 +1,11 @@
 #lang scribble/doc
-@(require 
-  scribble/basic
-  scribble/manual
-  (for-label scheme/surrogate
-	     scheme/class))
+@(require "mz.ss"
+          (for-label scheme/surrogate
+                     scheme/class))
 
 @title{Surrogates}
-@(defmodule scheme/surrogate)
+ 
+@note-lib-only[scheme/surrogate]
 
 The @schememodname[scheme/surrogate] library provides an abstraction
 for building an instance of the @deftech{proxy design pattern}. The

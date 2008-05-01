@@ -6,6 +6,16 @@
           (rename (only (rnrs base) cons) (cons kons)) ; for free-identifier=?
           (tests r6rs test))
 
+  (define (unwrap s)
+    (cond
+     [(pair? s) (cons (unwrap (car s)) (unwrap (cdr s)))]
+     [(vector? s) (list->vector (map unwrap (vector->list s)))]
+     [(null? s) s]
+     [(number? s) s]
+     [(string? s) s]
+     [(boolean? s) s]
+     [else (syntax->datum s)]))
+
   ;; ----------------------------------------
   
   (define p (cons 4 5))
@@ -118,20 +128,21 @@
     (test (syntax-case #'(1) () [(1) 'one])  'one)
     (test (syntax-case '(1) () [(x) #'x]) 1)
     (test (syntax-case #'(1) () [(x) (syntax->datum #'x)]) 1)
-    (test (syntax-case '(a) () [(x) #'x]) 'a)
-    (test (syntax-case #'(a) () [(x) (syntax->datum #'x)]) 'a)
-    (test (syntax-case '(a 1 #f "s" #vu8(9) #(5 7)) () 
+    (test (syntax-case '("a") () [(x) #'x]) "a")
+    (test (syntax-case #'("a") () [(x) (syntax->datum #'x)]) "a")
+    (test (syntax-case '(1 #f "s" #vu8(9) #(5 7)) () 
             [(x ...) #'(x ...)]) 
-          '(a 1 #f "s" #vu8(9) #(5 7)))
-    (test (syntax-case #'(a 1 #f "s" #vu8(9) #(5 7)) () 
+          '(1 #f "s" #vu8(9) #(5 7)))
+    (test (syntax-case #'(1 #f "s" #vu8(9) #(5 7)) () 
             [(x ...) (map syntax->datum #'(x ...))]) 
-          '(a 1 #f "s" #vu8(9) #(5 7)))
-    (test (syntax-case '(a b c d) () [(x y . z) #'z]) '(c d))
+          '(1 #f "s" #vu8(9) #(5 7)))
+    (test (syntax-case '(1 2 3 4) () [(x y . z) #'z]) '(3 4))
     (test (syntax-case #'(a b c d) () [(x y . z) (syntax->datum #'z)]) 
           '(c d))
-    (test (syntax-case '(nonesuch 12) (nonesuch) [(nonesuch x) #'x])
+    (test (syntax-case #'(nonesuch 12) (nonesuch) 
+            [(nonesuch x) (syntax->datum #'x)])
           12)
-    (test (syntax-case '(different 12) (nonesuch) 
+    (test (syntax-case #'(different 12) (nonesuch) 
             [(nonesuch x) #'x]
             [_ 'other])
           'other)
@@ -204,7 +215,7 @@
     (test (syntax->datum (datum->syntax #'x '(a b))) '(a b))
     (test (syntax->datum (datum->syntax #'x '(a . b))) '(a . b))
 
-    (test (symbol? (car (syntax->datum (datum->syntax #'x (list #'id))))) #t)
+    (test (number? (car (syntax->datum (datum->syntax #'x (list 1))))) #t)
 
     (test (map identifier? (generate-temporaries '(1 2 3))) '(#t #t #t))
     (test (map identifier? (generate-temporaries #'(1 2 3))) '(#t #t #t))
@@ -242,23 +253,20 @@
             [(x ...) #`(x ...)])
           '(1 2 3))
 
-    (test (syntax->datum
-           (datum->syntax #'x
-            #`(1 2 (unsyntax 3 4 5) 6)))
+
+    (test (unwrap
+           #`(1 2 (unsyntax 3 4 5) 6))
           '(1 2 3 4 5 6))
-    (test (syntax->datum
-           (datum->syntax #'x
-            #`(1 2 (unsyntax-splicing '(3 4) '(5)) 6)))
+    (test (unwrap
+           #`(1 2 (unsyntax-splicing '(3 4) '(5)) 6))
           '(1 2 3 4 5 6))
 
-    (test (syntax->datum
-           (datum->syntax #'x
-            #`#(1 2 (unsyntax-splicing '(3 4) '(5)) 6)))
+    (test (unwrap
+           #`#(1 2 (unsyntax-splicing '(3 4) '(5)) 6))
           '#(1 2 3 4 5 6))
 
-    (test (syntax->datum
-           (datum->syntax #'x
-            #`(1 #`(#,(+ 3 4) #,#,(+ 1 1)))))
+    (test (unwrap
+           #`(1 #`(#,(+ 3 4) #,#,(+ 1 1))))
           '(1 #`(#,(+ 3 4) #,2)))
 
     (test/exn (syntax-violation #f "bad" 7) &syntax)
