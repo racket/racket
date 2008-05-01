@@ -53,22 +53,32 @@
     [(_ test actual)
      (not (eq? (syntax-local-context) 'expression))
      (quasisyntax/loc stx
-       (define #,(gensym 'test)
+       (define #,(stepper-syntax-property #`#,(gensym 'test) 'stepper-hint 'comes-from-check-expect)
          #,(stepper-syntax-property
             #`(let ([test-info (namespace-variable-value
                                 'test~object #f builder (current-namespace))])
                 (when test-info
                   (insert-test test-info
                                (lambda ()
-                                 (check-values-expected
-                                  (lambda () test)
-                                  actual
-                                  (list #,@(list #`(quote #,(syntax-source stx))
-                                                 (syntax-line stx)
-                                                 (syntax-column stx)
-                                                 (syntax-position stx)
-                                                 (syntax-span stx)))
-                                  #,(stepper-syntax-property #`test-info `stepper-no-lifting-info #t))))))
+                                 #,(stepper-syntax-property
+                                    (quasisyntax/loc stx
+                                      (check-values-expected
+                                       (lambda () test)
+                                       actual
+                                       #,(stepper-syntax-property
+                                          #`(list #,@(list #`(quote #,(syntax-source stx))
+                                                           (syntax-line stx)
+                                                           (syntax-column stx)
+                                                           (syntax-position stx)
+                                                           (syntax-span stx)))
+                                          'stepper-skip-completely
+                                          #t)
+                                       #,(stepper-syntax-property
+                                          (stepper-syntax-property #`test-info `stepper-no-lifting-info #t)
+                                          'stepper-hint
+                                          'comes-from-check-expect)))
+                                    'stepper-hint
+                                    'comes-from-check-expect)))))
             `stepper-skipto
             (append skipto/third ;; let 
                     skipto/third skipto/second ;; unless (it expands into a begin)
