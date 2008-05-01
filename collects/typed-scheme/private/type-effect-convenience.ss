@@ -217,6 +217,7 @@
   (let/ec exit
     (let loop ([t* t])
       (match t*
+        [(Value: '()) (-lst Univ)]
         [(Mu: var (Union: (list (Value: '()) (Pair: _ (F: var))))) t*]
         [(Pair: t1 t2)
          (let ([t-new (loop t2)])

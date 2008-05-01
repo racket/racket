@@ -139,6 +139,11 @@
       (unless (= (length l1) (length l2))
         (unmatch))
       (cgen-union V X l1 l2)]
+     #;
+     [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
+      (unless (= n n*)
+        (fail! S T))
+      (cgen V X b b*)]
      
      
      [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]

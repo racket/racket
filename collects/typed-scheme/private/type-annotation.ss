@@ -2,7 +2,8 @@
 
 (require "type-rep.ss" "parse-type.ss" "tc-utils.ss" "subtype.ss" "utils.ss" "union.ss" "resolve-type.ss"
          "type-env.ss")
-(require (lib "plt-match.ss"))
+(require (lib "plt-match.ss")
+         mzlib/trace)
 (provide type-annotation
          get-type
          get-type/infer
@@ -67,7 +68,7 @@
       [(type-annotation stx) => (lambda (x) 
                                   (log/ann stx x)
                                   x)]
-      [(not (syntax-original? stx)) 
+      [(not (syntax-original? stx))
        (tc-error "untyped var: ~a" (syntax-e stx))]
       [else
        (tc-error "no type information on variable ~a" (syntax-e stx))])))

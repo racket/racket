@@ -77,9 +77,13 @@
                  [else (make-arr arg-types t)])]
               [t (int-err "bad match - not a tc-result: ~a" t)]))))]
     [(args* ... . rest)
-     (let ([t (tc/lambda-clause args body)])               
-       (check-below (make-Function (list t)) (make-Function (list (make-arr arg-tys ret-ty rest-ty))))
-       t)]))
+     (begin
+       (unless rest-ty
+         (tc-error "Expected function with ~a arguments and no rest argument,~nbut got function with ~a arguments and a rest argument"
+                   (length arg-tys) (length (syntax->list #'(args* ...)))))
+       (with-lexical-env/extend
+        (list #'rest) (list (-lst rest-ty))
+        (tc/lambda-clause/check #'(args* ...) body arg-tys ret-ty #f)))]))
 
 ;; syntax-list[id] block -> arr
 (define (tc/lambda-clause args body)
@@ -129,7 +133,8 @@
         (match expected          
           [(Mu: _ _) (loop (unfold expected))]
           [(Function: (list (arr: args ret rest _ _))) 
-           (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest)]
+           (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest)
+           expected]
           [t (let ([t (tc/mono-lambda formals bodies #f)])
                (check-below t expected))]))
       (let loop ([formals (syntax->list formals)] 
@@ -168,16 +173,15 @@
 (define (tc/plambda form formals bodies expected)
   (match expected
     [(Poly-names: ns (and expected* (Function: _)))
-     (with-syntax ()
-       (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
-                       (or (and p (map syntax-e (syntax->list p)))
-                           ns))]
-              [literal-tvars tvars]
-              [new-tvars (map make-F literal-tvars)]
-              [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
-                    (tc/mono-lambda formals bodies expected*))])
-         ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
-         (ret (make-Poly literal-tvars ty))))]
+      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
+                      (or (and p (map syntax-e (syntax->list p)))
+                          ns))]
+             [literal-tvars tvars]
+             [new-tvars (map make-F literal-tvars)]
+             [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
+                   (tc/mono-lambda formals bodies expected*))])
+        ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
+        (ret (make-Poly literal-tvars ty)))]
     [_ (tc-error/expr #:return expected "Expected a value of type ~a, but got a polymorphic function." expected)]))
     
 

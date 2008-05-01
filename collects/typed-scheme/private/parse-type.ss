@@ -114,7 +114,10 @@
               [tvar (make-F var)])
          (add-type-name-reference #'mu)           
          (parameterize ([current-tvars (extend-env (list var) (list tvar) (current-tvars))])
-           (make-Mu var (parse-type #'t))))]
+           (let ([t (parse-type #'t)])
+             (if (memq var (fv t))
+                 (make-Mu var t)
+                 t))))]
       [(U ts ...)
        (eq? (syntax-e #'U) 'U)
        (begin

@@ -39,7 +39,7 @@
   (parameterize ([current-orig-stx form])
     (kernel-syntax-case* form #f (define-type-alias-internal define-typed-struct-internal define-type-internal 
                                    define-typed-struct/exec-internal :-internal assert-predicate-internal
-                                   require/typed-internal values :)
+                                   require/typed-internal values)
       ;; forms that are handled in other ways
       [stx 
        (or (syntax-property form 'typechecker:ignore) 
@@ -57,8 +57,9 @@
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
-      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m)) (#%plain-app values)))
-       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m)]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:constructor-return t)) 
+                                (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:constructor-return #'t)]
       ;; define-typed-struct w/ polymorphism
       [(define-values () (begin (quote-syntax (define-typed-struct-internal (vars ...) nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/poly-struct (syntax->list #'(vars ...)) #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]    
@@ -75,6 +76,7 @@
       [(define-values () (begin (quote-syntax (:-internal id ty)) (#%plain-app values)))
        (identifier? #'id)
        (register-type/undefined #'id (parse-type #'ty))]
+            
       
       ;; values definitions
       [(define-values (var ...) expr)

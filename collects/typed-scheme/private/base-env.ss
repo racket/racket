@@ -52,7 +52,7 @@
         [make-lst/elements -pair])
     (make-env
      
-     [string->sexpr (-> -String (-mu x (Un Sym -String N B (-lst x))))]
+     [raise (Univ . -> . (Un))]
      
      (car (make-Poly (list 'a 'b) (cl-> [((-pair (-v a) (-v b))) (-v a)]
                                         [((make-lst (-v a))) (-v a)])))
@@ -95,8 +95,12 @@
      (number? (make-pred-ty N))
      (integer? (make-pred-ty -Integer))
      (boolean? (make-pred-ty B))
-     (add1 (-> N N))
-     (sub1 (-> N N))
+     (add1 (cl->*
+            #;(-> -Integer -Integer)
+            (-> N N)))
+     (sub1 (cl->*
+            #;(-> -Integer -Integer)
+            (-> N N)))
      (eq? (-> Univ Univ B))
      (eqv? (-> Univ Univ B))
      (equal? (-> Univ Univ B))
@@ -179,10 +183,10 @@
      (<= (->* (list N N) N B))
      [> (->* (list N) N B)]
      (zero? (N . -> . B))
-     (* (->* '() N N))
-     (/ (->* (list N) N N))
-     (+ (->* '() N N))
-     (- (->* (list N) N N))
+     (* (cl->* (->* '() -Integer -Integer) (->* '() N N)))
+     (/ (cl->* (->* (list N) N N)))
+     (+ (cl->* (->* '() -Integer -Integer) (->* '() N N)))
+     (- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N)))
      (max (->* (list N) N N))
      (min (->* (list N) N N))
      [values  (make-Poly '(a) (-> (-v a) (-v a)))]
@@ -463,8 +467,8 @@
      
      [make-directory (-> -Path -Void)]
      
-     [hash-table-for-each (-poly (a b c)
-                                 (-> (-HT a b) (-> a b c) -Void))]
+     [hash-for-each (-poly (a b c)
+                           (-> (-HT a b) (-> a b c) -Void))]
      
      [delete-file (-> -Pathlike -Void)]
      [make-namespace (cl->* (-> -Namespace)

@@ -95,7 +95,7 @@
   [HashTable (-poly (a b) (-HT a b))]
   [Promise (-poly (a) (-Promise a))]
   [Pair (-poly (a b) (-pair a b))]
-  [Box (-poly (a) (make-Box a))]
+  [Boxof (-poly (a) (make-Box a))]
   [Syntax Any-Syntax]
   [Identifier Ident]
   )

@@ -248,7 +248,7 @@
                                        "Polymorphic function could not be applied to arguments:~nExpected: ~a ~nActual: ~a" 
                                        (car msg-doms) argtypes)
                         (tc-error/expr #:return (ret (Un))
-                                       "no polymorphic function domain matched - possible domains were: ~n~a~narguments: were ~n~a"
+                                       "no polymorphic function domain matched - possible domains were: ~n~a~narguments were: ~n~a"
                                        (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
                  [(and (= (length (car doms*))
                           (length argtypes))
@@ -322,20 +322,25 @@
     (kernel-syntax-case* b #f (reverse)
       [[(v) (#%plain-app reverse n)]
        (free-identifier=? name #'n)
-       (type-annotation #'v)]
+       (begin ;(printf "found annotation: ~a ~a~n~a~n" (syntax-e name) (syntax-e #'v) (type-annotation #'v))
+              (type-annotation #'v))]
       [_ #f]))
   (kernel-syntax-case* 
-   stx #f (reverse)
-   [(let-values (binding ...) body)
-    (cond [(ormap match? (syntax->list #'(binding ...)))]
-          [else (find #'body)])]
-   [(#%plain-app e ...) (ormap find (syntax->list #'(e ...)))]
-   [(if e1 e2 e3) (ormap find (syntax->list #'(e1 e2 e3)))]
-   [(letrec-values ([(v ...) e] ...) b)
-    (ormap find (syntax->list #'(e ... b)))]
-   [(#%plain-lambda (v ...) e)
-    (find #'e)]
-   [_ #f]))
+      stx #f (reverse letrec-syntaxes+values)
+    [(let-values (binding ...) body)
+     (cond [(ormap match? (syntax->list #'(binding ...)))]
+           [else (find #'body)])]
+    [(#%plain-app e ...) (ormap find (syntax->list #'(e ...)))]
+    [(if e1 e2 e3) (ormap find (syntax->list #'(e1 e2 e3)))]
+    [(letrec-values ([(v ...) e] ...) b)
+     (ormap find (syntax->list #'(e ... b)))]
+    [(letrec-syntaxes+values _ ([(v ...) e] ...) b)
+     (ormap find (syntax->list #'(e ... b)))]
+    [(begin . es)
+     (ormap find (syntax->list #'es))]
+    [(#%plain-lambda (v ...) e)
+     (find #'e)]
+    [_ #f]))
 
 (define (matches? stx)
   (let loop ([stx stx] [ress null] [acc*s null])
@@ -449,7 +454,7 @@
           ;(printf "got here 1~n")
           (not (andmap type-annotation (syntax->list #'(val acc ...))))
           (free-identifier=? #'val #'val*)
-          (andmap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
+          (ormap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
                   (syntax->list #'(acc ...)))
           ;(printf "got here 2~n")
           #;
@@ -462,11 +467,12 @@
             [_ #f]))
      (let* ([ts1 (tc-expr/t #'actual)]
             [ts1 (generalize ts1)]
-            [ann-ts (map (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a)) 
-                         (syntax->list #'(acc ...)))]
-            [ts (cons ts1 ann-ts)])                 
-       ;(printf "doing match case actuals:~a ann-ts: ~a~n" 
-       ;           (syntax->datum #'(actuals ...)) ann-ts)
+            [ann-ts (map (lambda (a ac) (or (find-annotation #'(if (#%plain-app null? val*) thn els) a)
+                                            (generalize (tc-expr/t ac))))
+                         (syntax->list #'(acc ...))
+                         (syntax->list #'(actuals ...)))]
+            [ts (cons ts1 ann-ts)]) 
+       ;(printf "doing match case actuals:~a ann-ts: ~a~n" (syntax->datum #'(actuals ...)) ann-ts)
        ;; check that the actual arguments are ok here
        (map tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
        ;(printf "done here ts = ~a~n" ts)
@@ -487,7 +493,7 @@
           ;(printf "special case 1~n")
           (not (andmap type-annotation (syntax->list #'(args ...))))
           (free-identifier=? #'lp #'lp*))
-     (let ([ts (map tc-expr/t (syntax->list #'actuals))])
+     (let ([ts (map (compose generalize tc-expr/t) (syntax->list #'actuals))])
        ;(printf "special case~n")
        (tc/rec-lambda/check form #'(args ...) #'body #'lp ts expected)
        (ret expected))]
