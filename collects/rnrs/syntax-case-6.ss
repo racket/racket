@@ -33,9 +33,19 @@
 
 (define (r6rs:generate-temporaries l)
   (list->mlist
-   (generate-temporaries (if (mlist? l)
-                             (mlist->list l)
-                             l))))
+   (generate-temporaries (let loop ([l l])
+                           (cond
+                            [(null? l) null]
+                            [(mpair? l) (cons (mcar l)
+                                              (loop (mcdr l)))]
+                            [(syntax? l) (loop (syntax-e l))]
+                            [(pair? l) (cons (car l)
+                                             (loop (cdr l)))]
+                            [else
+                             (raise-type-error
+                              'generate-temporaries
+                              "list or list-structured syntax object"
+                              l)])))))
 
 (define (make-variable-transformer proc)
   (make-set!-transformer proc))
@@ -274,12 +284,140 @@
 ;;  > (with-syntax ([a 10][... 11]) #'(a ...))
 ;;  (10 11)
 
-
 (define-syntax r6rs:with-syntax
   (syntax-rules ()
     [(_ [(p e0) ...] e1 e2 ...)
      (r6rs:syntax-case (mlist e0 ...) ()
        [(p ...) (let () e1 e2 ...)])]))
 
-(define-generalized-qq r6rs:quasisyntax
-  quasisyntax unsyntax unsyntax-splicing convert-mpairs)
+(define-syntax (r6rs:quasisyntax stx)
+  (syntax-case stx ()
+    [(_ tmpl)
+     (let loop ([stx #'tmpl]
+                [src stx]
+                [depth 0]
+                [to-splice? #f]
+                [k (lambda (template pats exprs)
+                     (with-syntax ([(pat ...) pats]
+                                   [(expr ...) exprs]
+                                   [template template])
+                       (syntax/loc stx
+                         (r6rs:with-syntax ([pat expr] ...)
+                                           (r6rs:syntax template)))))])
+       (cond
+        [(and (identifier? stx)
+              (or (free-identifier=? #'unsyntax stx)
+                  (free-identifier=? #'unsyntax-splicing stx)))
+         (raise-syntax-error #f
+                             "misplaced within quasitemplate"
+                             stx)]
+        [(syntax? stx)
+         (loop (syntax-e stx)
+               stx
+               depth
+               to-splice?
+               (lambda (t pats exprs)
+                 (k (if to-splice?
+                        (map (lambda (t)
+                               (datum->syntax stx t stx stx))
+                             t)
+                        (datum->syntax stx t stx stx))
+                    pats
+                    exprs)))]
+        [(pair? stx)
+         (cond
+          [(and (identifier? (car stx))
+                (or (free-identifier=? #'unsyntax (car stx))
+                    (free-identifier=? #'unsyntax-splicing (car stx))))
+           (let ([l (syntax->list (datum->syntax #f (cdr stx)))]
+                 [splice? (free-identifier=? #'unsyntax-splicing (car stx))])
+             (unless l
+               (raise-syntax-error #f
+                                   "bad syntax"
+                                   (datum->syntax src stx src src)))
+             (if (zero? depth)
+                 ;; Escape:
+                 (let ([id (car (generate-temporaries '(un)))])
+                   (when (or splice? (not (= 1 (length l))))
+                     (unless to-splice?
+                       (raise-syntax-error #f
+                                           "not in a splicing context"
+                                           (datum->syntax src stx src src))))
+                   (if (= (length l) 1)
+                       ;; Normal substitution:
+                       (k (if to-splice? 
+                              (if splice?
+                                  (list id (quote-syntax ...))
+                                  (list id))
+                              id)
+                          (list (if splice?
+                                    (list id (quote-syntax ...))
+                                    id))
+                          (list (car l)))
+                       ;; Splicing (or double-splicing) substitution:
+                       (k (if splice?
+                              (list id (quote-syntax ...) (quote-syntax ...))
+                              (list id (quote-syntax ...)))
+                          (list
+                           (if splice?
+                               (list (list id (quote-syntax ...)) (quote-syntax ...))
+                               (list id (quote-syntax ...))))
+                          (list (if splice?
+                                    #`(map convert-mpairs (list . #,(cdr stx)))
+                                    #`(list . #,(cdr stx)))))))
+                 ;; Not an escape -- just decrement depth:
+                 (loop (cdr stx)
+                       src
+                       (sub1 depth)
+                       #f
+                       (lambda (t pats exprs)
+                         (k (let ([v (cons (car stx) t)])
+                              (if to-splice?
+                                  (list v)
+                                  v))
+                            pats
+                            exprs)))))]
+          [(and (identifier? (car stx))
+                (free-identifier=? #'r6rs:quasisyntax (car stx)))
+           (loop (cdr stx)
+                 src
+                 (add1 depth)
+                 #f
+                 (lambda (t pats exprs)
+                   (k (let ([v (cons (car stx) t)])
+                        (if to-splice?
+                            (list v)
+                            v))
+                      pats
+                      exprs)))]
+          [else
+           ;; a pair
+           (loop (car stx)
+                 src
+                 depth
+                 #t
+                 (lambda (a a-pats a-exprs)
+                   (loop (cdr stx)
+                         src
+                         depth
+                         #f
+                         (lambda (b b-pats b-exprs)
+                           (k (let ([v (append a b)])
+                                (if to-splice?
+                                    (list v)
+                                    v))
+                              (append a-pats b-pats)
+                              (append a-exprs b-exprs))))))])]
+        [(vector? stx)
+         (loop (vector->list stx)
+               src
+               depth
+               #f
+               (lambda (t pats exprs)
+                 (k (let ([v (list->vector t)])
+                      (if to-splice?
+                          (list v)
+                          v))
+                    pats
+                    exprs)))]
+        [else (k (if to-splice? (list stx) stx) null null)]))]))

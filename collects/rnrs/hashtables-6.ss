@@ -112,27 +112,30 @@
             tag)))
 
 (define (hashtable-update! ht key proc default)
-  (hashtable-set! ht key (proc (hashtable-ref ht key default))))
+  (if (hashtable-mutable? ht)
+      (hashtable-set! ht key (proc (hashtable-ref ht key default)))
+      (raise-type-error 'hashtable-update! "mutable hashtable" ht)))
 
 (define (hashtable-copy ht [mutable? #f])
   (make-hashtable (hash-copy (hashtable-ht ht))
                   (hashtable-wrap ht)
                   (hashtable-unwrap ht)
                   mutable?
-                  (hashtable-equivalence-function ht)))
+                  (hashtable-equivalence-function ht)
+                  (hashtable-hash-function ht)))
 
 (define (hashtable-clear! ht [k 0])
   (unless (exact-nonnegative-integer? k)
     (raise-type-error 'hashtable-clear! "exact, nonnegative integer" k))
   (if (hashtable-mutable? ht)
-      (set-hashtable-ht! (if (eq? values (hashtable-wrap ht))
-                             (make-hasheq)
-                             (make-hash)))
+      (set-hashtable-ht! ht (if (eq? values (hashtable-wrap ht))
+                                (make-hasheq)
+                                (make-hash)))
       (raise-type-error 'hashtable-clear! "mutable hashtable" ht)))
 
 (define (hashtable-keys ht)
   (let ([unwrap (hashtable-unwrap ht)])
-    (hash-map (hashtable-ht ht) (lambda (a b) (unwrap a)))))
+    (list->vector (hash-map (hashtable-ht ht) (lambda (a b) (unwrap a))))))
 
 (define (hashtable-entries ht)
   (let ([ps (hash-map (hashtable-ht ht) cons)]

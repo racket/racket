@@ -3,6 +3,7 @@
 (library (tests r6rs syntax-case)
   (export run-syntax-case-tests)
   (import (for (rnrs) run expand)
+          (rename (only (rnrs base) cons) (cons kons)) ; for free-identifier=?
           (tests r6rs test))
 
   ;; ----------------------------------------
@@ -110,7 +111,167 @@
              (set! ls (cons 'a ls))
              (set! n (- n 1)))) 
           '(a a a))
+
+    ;; ----------------------------------------
+
+    (test (syntax-case #'1 () [1 'one])  'one)
+    (test (syntax-case #'(1) () [(1) 'one])  'one)
+    (test (syntax-case '(1) () [(x) #'x]) 1)
+    (test (syntax-case #'(1) () [(x) (syntax->datum #'x)]) 1)
+    (test (syntax-case '(a) () [(x) #'x]) 'a)
+    (test (syntax-case #'(a) () [(x) (syntax->datum #'x)]) 'a)
+    (test (syntax-case '(a 1 #f "s" #vu8(9) #(5 7)) () 
+            [(x ...) #'(x ...)]) 
+          '(a 1 #f "s" #vu8(9) #(5 7)))
+    (test (syntax-case #'(a 1 #f "s" #vu8(9) #(5 7)) () 
+            [(x ...) (map syntax->datum #'(x ...))]) 
+          '(a 1 #f "s" #vu8(9) #(5 7)))
+    (test (syntax-case '(a b c d) () [(x y . z) #'z]) '(c d))
+    (test (syntax-case #'(a b c d) () [(x y . z) (syntax->datum #'z)]) 
+          '(c d))
+    (test (syntax-case '(nonesuch 12) (nonesuch) [(nonesuch x) #'x])
+          12)
+    (test (syntax-case '(different 12) (nonesuch) 
+            [(nonesuch x) #'x]
+            [_ 'other])
+          'other)
+    (test (syntax-case '(1 2 3 4) ()
+            [(1 x ...) #'(x ...)])
+          '(2 3 4))
+    (test (syntax-case '(1 2 3 4) ()
+            [(1 x ... 3 4) #'(x ...)])
+          '(2))
+    (test (syntax-case '(1 2 3 4) ()
+            [(1 x ... 2 3 4) #'(x ...)])
+          '())
+    (test (syntax-case '(1 2 3 4) ()
+            [(1 x ... . y) #'y])
+          '())
+    (test (syntax-case '(1 2 3 4 . 5) ()
+            [(1 x ... . y) #'y])
+          '5)
+    (test (syntax-case '(1 2 3 4 . 5) ()
+            [(1 x ... 4 . y) #'y])
+          '5)
+    (test (syntax-case '(1 2 3 4 . 5) ()
+            [(1 x ... 5 . y) #'y]
+            [_ 'no])
+          'no)
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x y 4) (car #'(x y))])
+          '2)
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x y 4) (cadr #'(x y))])
+          '3)
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x y 4) (syntax->datum (cddr #'(x y)))])
+          '())
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 2 3 4) 'match])
+          'match)
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x y 4) #'y])
+          '3)
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x ...) #'(x ...)])
+          '(2 3 4))
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x ... 4) #'(x ...)])
+          '(2 3))
+    (test (syntax-case '#(1 2 3 4) ()
+            [#(1 x ... 2 3 4) #'(x ...)])
+          '())
+    (test (syntax-case #'(1) ()
+            [(_) (syntax->datum #'_)])
+          '_)
+
+    (test (identifier? 'x) #f)
+    (test (identifier? #'x) #t)
+    (test (bound-identifier=? #'x #'x) #t)
+    (test (bound-identifier=? #'x #'y) #f)
+    (test (bound-identifier=? #'cons #'kons) #f)
+    (test (free-identifier=? #'x #'x) #t)
+    (test (free-identifier=? #'x #'y) #f)
+    (test (free-identifier=? #'cons #'kons) #t)
+
+    (test (syntax->datum #'1) 1)
+    (test (syntax->datum #'a) 'a)
+    (test (syntax->datum #'(a b)) '(a b))
+    (test (syntax->datum #'(a . b)) '(a . b))
+
+    (test (syntax->datum (datum->syntax #'x 1)) 1)
+    (test (syntax->datum (datum->syntax #'x 'a)) 'a)
+    (test (syntax->datum (datum->syntax #'x '(a b))) '(a b))
+    (test (syntax->datum (datum->syntax #'x '(a . b))) '(a . b))
+
+    (test (symbol? (car (syntax->datum (datum->syntax #'x (list #'id))))) #t)
+
+    (test (map identifier? (generate-temporaries '(1 2 3))) '(#t #t #t))
+    (test (map identifier? (generate-temporaries #'(1 2 3))) '(#t #t #t))
+    (test (map identifier? (generate-temporaries (cons 1 #'(2 3)))) '(#t #t #t))
+
+    (test (cadr (with-syntax ([x 1]
+                              [y 2])
+                  #'(x y)))
+          2)
+
+    (test (syntax->datum #`(1 2 3)) '(1 2 3))
+    (test (syntax->datum #`1) 1)
     
+    ;; Check wrapping:
+    (test (let ([v #`(1 #,(+ 1 1) 3)])
+            (list (pair? v)
+                  (syntax->datum (car v))
+                  (cadr v)
+                  (syntax->datum (cddr v))))
+          '(#t 1 2 (3)))
+    (test (let ([v #`(1 #,@(list (+ 1 1)) 3)])
+            (list (pair? v)
+                  (syntax->datum (car v))
+                  (cadr v)
+                  (syntax->datum (cddr v))))
+          '(#t 1 2 (3)))
+    (test (let ([v #`(1 #,@(list (+ 1 1) (- 8 1)) 3)])
+            (list (pair? v)
+                  (syntax->datum (car v))
+                  (cadr v)
+                  (caddr v)
+                  (syntax->datum (cdddr v))))
+          '(#t 1 2 7 (3)))
+    (test (syntax-case '(1 2 3) ()
+            [(x ...) #`(x ...)])
+          '(1 2 3))
+
+    (test (syntax->datum
+           (datum->syntax #'x
+            #`(1 2 (unsyntax 3 4 5) 6)))
+          '(1 2 3 4 5 6))
+    (test (syntax->datum
+           (datum->syntax #'x
+            #`(1 2 (unsyntax-splicing '(3 4) '(5)) 6)))
+          '(1 2 3 4 5 6))
+
+    (test (syntax->datum
+           (datum->syntax #'x
+            #`#(1 2 (unsyntax-splicing '(3 4) '(5)) 6)))
+          '#(1 2 3 4 5 6))
+
+    (test (syntax->datum
+           (datum->syntax #'x
+            #`(1 #`(#,(+ 3 4) #,#,(+ 1 1)))))
+          '(1 #`(#,(+ 3 4) #,2)))
+
+    (test/exn (syntax-violation #f "bad" 7) &syntax)
+    (test/exn (syntax-violation 'form "bad" 7) &syntax)
+    (test/exn (syntax-violation #f "bad" #'7) &syntax)
+    (test/exn (syntax-violation #f "bad" #'7 8) &syntax)
+    (test/exn (syntax-violation #f "bad" #'7 #'8) &syntax)
+    (test/exn (syntax-violation #f "bad" 7 #'8) &syntax)
+    (test/exn (syntax-violation 'form "bad" #'7 #'8) &syntax)
+    (test/exn (syntax-violation 'form "bad" 7 #'8) &syntax)
+    (test/exn (syntax-violation 'form "bad" #'7 8) &syntax)
+    (test/exn (syntax-violation 'form "bad" 7 8) &syntax)
+
     ;;
     ))
 
