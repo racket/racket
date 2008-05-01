@@ -1357,50 +1357,53 @@
   (t1 check-expect
       (test-upto-int/lam
        "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
-       `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
-                       ((check-expect (+ 3 4) (hilite 17))))
-         (before-after ((check-expect (hilite (+ 3 4)) 17))
-                       ((check-expect (hilite 7) 17)))
-         (before-after ((finished-test-case) (hilite (+ 4 5)))
-                       ((finished-test-case) (hilite 9))))))
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-expect (+ 3 4) (hilite (+ 8 9))))
+                       (9 (check-expect (+ 3 4) (hilite 17))))
+         (before-after (9 (check-expect (hilite (+ 3 4)) 17))
+                       (9 (check-expect (hilite 7) 17))))))
+  
+  (t1 check-expect-2
+      (test-upto-int/lam
+       "(check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-expect (+ 3 4) (hilite (+ 8 9))))
+                       (9 (check-expect (+ 3 4) (hilite 17))))
+         (before-after (9 (check-expect (hilite (+ 3 4)) 17))
+                       (9 (check-expect (hilite 7) 17)))
+         (before-after (9 (check-expect (hilite (+ 3 1)) 4))
+                       (9 (check-expect (hilite 4) 4))))))
   
   
-  #;(t1 check-expect
-      (test-teachpack-sequence
-       `(htdp/testing)
-       "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
-       `((before-after ((check-expect (+ 3 4) (hilite (+ 8 9))))
-                       ((check-expect (+ 3 4) (hilite 17))))
-         (before-after ((check-expect (hilite (+ 3 4)) 17))
-                       ((check-expect (hilite 7) 17)))
-         (before-after ((finished-test-case) (hilite (+ 4 5)))
-                       ((finished-test-case) (hilite 9))))))
+  
   
   (t1 check-within
-      (test-teachpack-sequence
-       `(htdp/testing)
+      (test-upto-int/lam
        "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (+ 4 5)"
-       `((before-after ((check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
-                       ((check-within (+ 3 4) (hilite 18) (+ 10 90))))
-         (before-after ((check-within (+ 3 4) 18 (hilite (+ 10 90))))
-                       ((check-within (+ 3 4) 18 (hilite 100))))
-         (before-after ((check-within (hilite (+ 3 4)) 18 100))
-                       ((check-within (hilite 7) 18 100)))
-         (before-after ((finished-test-case) (hilite (+ 4 5)))
-                       ((finished-test-case) (hilite 9))))))
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
+                       (9 (check-within (+ 3 4) (hilite 18) (+ 10 90))))
+         (before-after (9 (check-within (+ 3 4) 18 (hilite (+ 10 90))))
+                       (9 (check-within (+ 3 4) 18 (hilite 100))))
+         (before-after (9 (check-within (hilite (+ 3 4)) 18 100))
+                       (9 (check-within (hilite 7) 18 100))))))
 
   (t1 check-error
-      (test-teachpack-sequence
-       `(htdp/testing)
-       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (+ 4 5)"
-       `((before-after ((check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
-                       ((check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
-         (before-after ((check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
-                       ((check-error (+ (hilite 7) (rest empty)) "bogus")))
+      (test-upto-int/lam
+       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "b" "ogus"))))
+                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
+         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
+                       (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
+         (before-after (9 (check-expect (hilite (+ 3 1)) 4))
+                       (9 (check-expect 4 4)))
          #;(before-after ((check-error (+ 7 (hilite (rest empty))) "bogus"))
-                       ((check-error-string "crunch!" "bogus")))
-         (before-after ((finished-test-case) (hilite (+ 4 5)))
-                       ((finished-test-case) (hilite 9))))))
+                       ((check-error-string "crunch!" "bogus"))))))
 
   ; uses set-render-settings!
   ;(reconstruct:set-render-settings! fake-beginner-render-settings)
@@ -1672,8 +1675,9 @@
   (define (ggg)
     (parameterize ([disable-stepper-error-handling #t]
                    #;[display-only-errors #f]
-                   #;[store-steps #f])
-      (run-tests '(check-expect))))
+                   #;[store-steps #f]
+                   [show-all-steps #t])
+      (run-tests '(check-expect check-expect-2 check-within check-error))))
   
 
 
