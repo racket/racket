@@ -557,15 +557,6 @@ the @onscreen{Over} button, it sets a one-time breakpoint and
 continues execution.  In this case, the program stops upon returning
 to the context or raising an unhandled exception.}
 
-    @item{The @as-index{@onscreen{Up} button} is only enabled when
-execution is paused within the context of another expression.  It
-switches the debugger's view to the outer context.}
-
-    @item{The @as-index{@onscreen{Down} button} is only enabled when
-execution is paused and the @onscreen{Up} button has been clicked at
-least once, so the debugger's view is not at the lowest-level
-expression.  It moves the view context inward one level.}
-
 }
 
 If the program is running (not paused), then only the @as-index{Pause}
@@ -630,12 +621,24 @@ enter a new value for the variable.}
 
 }
 
+@subsection{Stack View Pane}
+
+In addition, while execution is paused, the stack view pane at the
+right of the DrScheme frame is active.  The top of the pane shows a
+list of active stack frames.  Mousing over a frame produces a faint
+green highlighting of the corresponding expression.  Clicking on the
+frame selects that frame, which makes its lexical variables visible.
+The selected frame is indicated by a bold font.
+
+The bottom of the pane shows the lexical variables in the selected
+stack frame.
+
 The following screenshot illustrates several aspects of the debugger
 interface.  The red circle before the @scheme[if] is a breakpoint,
 and the green triangle at the end of the @scheme[(fact (sub1 n))] is where
 execution is currently paused.  The expression's return value is
 displayed at the left of the button bar, and the value of @scheme[n]
-is at the right.
+is displayed in the stack view pane.
 
 @image["debugger1.png"]
 
