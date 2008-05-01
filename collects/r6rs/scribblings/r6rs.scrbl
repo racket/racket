@@ -252,7 +252,7 @@ several known ways:
 
  @item{When an identifier bound by @scheme[letrec] or @scheme[letrec*]
        is referenced before it is bound, an exception is not raised;
-       instead, th ereference produces @|undefined-const|.}
+       instead, the reference produces @|undefined-const|.}
 
  @item{The bindings in a namespace produced by @scheme[null-environment]
        or @scheme[scheme-report-environment] correspond to @|r5rs| bindings
