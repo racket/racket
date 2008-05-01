@@ -86,7 +86,8 @@ stepper-hint :
  [ 'from-splice-box ] : expression was expanded from a scheme splice
 		        box (inside an xml box)
  [ 'comes-from-recur ] : expression was expanded from a 'recur'
- [ 'comes-from-check-expect ] : expression was expanded from a 'check-expect'
+ [ 'comes-from-check-expect ] : expression was expanded from a 'check-expect',
+   or this identifier (use or binding) was created by the expansion of a 'check-expect'.
 
 stepper-define-type:
  this is attached to the right-hand sides of defines to indicate what
@@ -99,8 +100,6 @@ stepper-define-type:
 
  [ 'lambda-define ] : this lambda arose from the expansion of
     (define id (lambda (
-
-
 
   (Transferred.)
 
@@ -231,7 +230,7 @@ stepper-fake-exp :
   this expression does not occur directly in the source; reconstruct specially.
   used for begin.
 
-args-of-call [ADDED BY RECONSTRUCTOR] :
+stepper-args-of-call [ADDED BY RECONSTRUCTOR] :
   this reconstructed (...) expression is the result of a call with these args.
   used by the check-expect unwinder to figure out the expected values.
 

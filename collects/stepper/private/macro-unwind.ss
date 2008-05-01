@@ -1,7 +1,7 @@
 (module macro-unwind scheme/base
-  (require (prefix-in kernel: syntax/kerncase)
-           mzlib/etc
-           mzlib/contract
+  (require (only-in syntax/kerncase kernel-syntax-case)
+           scheme/contract
+           scheme/list
 	   "model-settings.ss"
            "shared.ss"
            #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
@@ -51,32 +51,32 @@
          stx))
    
    (define (fall-through stx settings)
-     (kernel:kernel-syntax-case stx #f
-                                [id
-                                 (identifier? stx)
-                                 (or (stepper-syntax-property stx 'stepper-lifted-name)
-                                     stx)]
-                                [(define-values dc ...)
-                                 (unwind-define stx settings)]
-                                [(#%plain-app exp ...)
-                                 (recur-on-pieces #'(exp ...) settings)]
-                                [(quote datum)
-                                 (if (symbol? #'datum)
-                                     stx
-                                     #'datum)]
-                                [(let-values . rest)
-                                 (unwind-mz-let stx settings)]
-                                [(letrec-values . rest)
-                                 (unwind-mz-let stx settings)]
-                                [(#%plain-lambda . rest)
-                                 (recur-on-pieces #'(lambda . rest) settings)]
-                                [(set! var rhs)
-                                 (with-syntax ([unwound-var (or (stepper-syntax-property
-                                                                 #`var 'stepper-lifted-name)
-                                                                #`var)]
-                                               [unwound-body (unwind #`rhs settings)])
-                                   #`(set! unwound-var unwound-body))]
-                                [else (recur-on-pieces stx settings)]))
+     (kernel-syntax-case stx #f
+        [id
+         (identifier? stx)
+         (or (stepper-syntax-property stx 'stepper-lifted-name)
+             stx)]
+        [(define-values dc ...)
+         (unwind-define stx settings)]
+        [(#%plain-app exp ...)
+         (recur-on-pieces #'(exp ...) settings)]
+        [(quote datum)
+         (if (symbol? #'datum)
+             stx
+             #'datum)]
+        [(let-values . rest)
+         (unwind-mz-let stx settings)]
+        [(letrec-values . rest)
+         (unwind-mz-let stx settings)]
+        [(#%plain-lambda . rest)
+         (recur-on-pieces #'(lambda . rest) settings)]
+        [(set! var rhs)
+         (with-syntax ([unwound-var (or (stepper-syntax-property
+                                         #`var 'stepper-lifted-name)
+                                        #`var)]
+                       [unwound-body (unwind #`rhs settings)])
+           #`(set! unwound-var unwound-body))]
+        [else (recur-on-pieces stx settings)]))
    
    (define (unwind stx settings)
      (transfer-info
@@ -89,6 +89,7 @@
                              [(comes-from-or)    (unwind-and/or 'or)]
                              [(comes-from-local) unwind-local]
                              [(comes-from-recur) unwind-recur]
+                             [(comes-from-check-expect) unwind-check-expect]
                              ;;[(comes-from-begin) unwind-begin]
                              [else fall-through])])
               (process stx settings))))
@@ -116,61 +117,55 @@
              [else #`(#,unwound new-argval ...)])))))
    
    (define (unwind-define stx settings)
-     (kernel:kernel-syntax-case stx #f
-                                [(define-values (name . others) body)
-                                 (begin
-                                   (unless (null? (syntax-e #'others))
-                                     (error 'reconstruct
-                                            "reconstruct fails on multiple-values define: ~v\n"
-                                            (syntax->datum stx)))
-                                   (if (eq? (stepper-syntax-property #`body 'stepper-hint) 'comes-from-check-expect)
-                                       (kernel:kernel-syntax-case
-                                        (unwind #`body settings) #f
-                                        [(c-e (lambda () a1) a2 a3)
-                                         #`(check-expect a1 a2)]
-                                        [else #`(c-e body)])
-                                       (let* ([printed-name
-                                               (or (stepper-syntax-property #`name 'stepper-lifted-name)
-                                                   (stepper-syntax-property #'name 'stepper-orig-name)
-                                                   #'name)]
-                                              [unwound-body (unwind #'body settings)]
-                                              ;; see notes in internal-docs.txt
-                                              [define-type (stepper-syntax-property
-                                                            unwound-body 'stepper-define-type)])
-                                         (if define-type
-                                             (kernel:kernel-syntax-case 
-                                              unwound-body #f
-                                              [(lambda arglist lam-body ...)
-                                               (case define-type
-                                                 [(shortened-proc-define)
-                                                  (let ([proc-define-name
-                                                         (stepper-syntax-property
-                                                          unwound-body
-                                                          'stepper-proc-define-name)])
-                                                    (if (or (free-identifier=? proc-define-name
-                                                                               #'name)
-                                                            (and (stepper-syntax-property #'name
-                                                                                          'stepper-orig-name)
-                                                                 (free-identifier=?
-                                                                  proc-define-name
-                                                                  (stepper-syntax-property
-                                                                   #'name 'stepper-orig-name))))
-                                                        #`(define (#,printed-name . arglist)
-                                                            lam-body ...)
-                                                        #`(define #,printed-name
-                                                            #,unwound-body)))]
-                                                 [(lambda-define)
-                                                  #`(define #,printed-name #,unwound-body)]
-                                                 [else (error 'unwind-define
-                                                              "unknown value for syntax property 'stepper-define-type: ~e"
-                                                              define-type)])]
-                                              [else (error 'unwind-define
-                                                           "expr with stepper-define-type is not a lambda: ~e"
-                                                           (syntax->datum unwound-body))])
-                                             #`(define #,printed-name #,unwound-body)))))]
-                                [else (error 'unwind-define
-                                             "expression is not a define-values: ~e"
-                                             (syntax->datum stx))]))
+     (kernel-syntax-case stx #f
+       [(define-values (name . others) body)
+        (begin
+          (unless (null? (syntax-e #'others))
+            (error 'reconstruct
+                   "reconstruct fails on multiple-values define: ~v\n"
+                   (syntax->datum stx)))
+          (let* ([printed-name
+                  (or (stepper-syntax-property #`name 'stepper-lifted-name)
+                      (stepper-syntax-property #'name 'stepper-orig-name)
+                      #'name)]
+                 [unwound-body (unwind #'body settings)]
+                 ;; see notes in internal-docs.txt
+                 [define-type (stepper-syntax-property
+                               unwound-body 'stepper-define-type)])
+            (if define-type
+                (kernel-syntax-case 
+                    unwound-body #f
+                  [(lambda arglist lam-body ...)
+                   (case define-type
+                     [(shortened-proc-define)
+                      (let ([proc-define-name
+                             (stepper-syntax-property
+                              unwound-body
+                              'stepper-proc-define-name)])
+                        (if (or (free-identifier=? proc-define-name
+                                                   #'name)
+                                (and (stepper-syntax-property #'name
+                                                              'stepper-orig-name)
+                                     (free-identifier=?
+                                      proc-define-name
+                                      (stepper-syntax-property
+                                       #'name 'stepper-orig-name))))
+                            #`(define (#,printed-name . arglist)
+                                lam-body ...)
+                            #`(define #,printed-name
+                                #,unwound-body)))]
+                     [(lambda-define)
+                      #`(define #,printed-name #,unwound-body)]
+                     [else (error 'unwind-define
+                                  "unknown value for syntax property 'stepper-define-type: ~e"
+                                  define-type)])]
+                  [else (error 'unwind-define
+                               "expr with stepper-define-type is not a lambda: ~e"
+                               (syntax->datum unwound-body))])
+                #`(define #,printed-name #,unwound-body))))]
+       [else (error 'unwind-define
+                    "expression is not a define-values: ~e"
+                    (syntax->datum stx))]))
    
    (define (unwind-mz-let stx settings)
      (with-syntax ([(label ([(var) rhs] ...) . bodies) stx])
@@ -203,18 +198,18 @@
             #`(new-label ([var rhs2] ...) . new-bodies)]))))
    
    (define (unwind-local stx settings)
-     (kernel:kernel-syntax-case stx #f
-                                ;; at least through intermediate, define-values may not occur in
-                                ;; local.
-                                [(letrec-values ([vars exp] ...) body)
-                                 (with-syntax ([defns (map (lambda (def)
-							     (unwind def settings))
-                                                           (syntax->list
-                                                            #`((define-values vars exp) ...)))])
-                                   #`(local defns #,(unwind #'body settings)))]
-                                [else (error 'unwind-local
-                                             "expected a letrec-values, given: ~e"
-                                             (syntax->datum stx))]))
+     (kernel-syntax-case stx #f
+       ;; at least through intermediate, define-values may not occur in
+       ;; local.
+       [(letrec-values ([vars exp] ...) body)
+        (with-syntax ([defns (map (lambda (def)
+                                    (unwind def settings))
+                                  (syntax->list
+                                   #`((define-values vars exp) ...)))])
+          #`(local defns #,(unwind #'body settings)))]
+       [else (error 'unwind-local
+                    "expected a letrec-values, given: ~e"
+                    (syntax->datum stx))]))
    
    ;(define (unwind-quasiquote-the-cons-application stx settings)
    ;  (syntax-case (recur-on-pieces stx settings) ()
@@ -301,4 +296,15 @@
                              (syntax->datum stx))])
                    null)))])
         #`(#,label . clauses))))
+  
+  (define (unwind-check-expect stx settings)
+    (kernel-syntax-case (fall-through stx settings) #f
+      [(c-e (lambda () a1) a2 a3 a4)
+      #`(check-expect a1 a2)]
+      [(dots1 actual dots2) 
+       (and (eq? (syntax->datum #'dots1) '...)
+            (eq? (syntax->datum #'dots2) '...))
+       (with-syntax ([expected (unwind (third (stepper-syntax-property stx 'stepper-args-of-call)) settings)])
+         #`(check-expect actual expected))]
+      [any #`(c-e any) #;#`(check-expect )]))
 )

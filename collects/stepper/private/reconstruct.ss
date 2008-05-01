@@ -8,11 +8,13 @@
            mzlib/list
            mzlib/etc
 	   mzlib/contract
+           scheme/match
            "marks.ss"
            "model-settings.ss"
            "shared.ss"
            "my-macros.ss"
-           (for-syntax scheme/base))
+           (for-syntax scheme/base)
+           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss"))
 
   (provide/contract 
    [reconstruct-completed (syntax? 
@@ -21,6 +23,7 @@
                            render-settings? 
                            . -> .
                            (vector/c syntax? boolean?))]
+   [hide-completed? (syntax? . -> . boolean?)]
    
    ;; front ends for reconstruct-current
    [reconstruct-left-side (mark-list?
@@ -145,7 +148,9 @@
   (define (skip-step? break-kind mark-list render-settings)
     (case break-kind
       [(result-value-break)
-       #f]
+       (and (pair? mark-list)
+            (let ([expr (mark-source (car mark-list))])
+              (equal? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)))]
       [(result-exp-break)
        ;; skip if clauses that are the result of and/or reductions
        (let ([and/or-clauses-consumed (stepper-syntax-property (mark-source (car mark-list)) 'stepper-and/or-clauses-consumed)])
@@ -180,34 +185,35 @@
     
     (and (pair? mark-list)
          (let ([expr (mark-source (car mark-list))])
-           (or (kernel:kernel-syntax-case expr #f
-                  [id
-                   (identifier? expr)
-                   (case (stepper-syntax-property expr 'stepper-binding-type)
-                       [(lambda-bound) #t]  ; don't halt for lambda-bound vars
-                       [(let-bound)
-                        (varref-skip-step? expr)]
-                       [(non-lexical)
-                        (varref-skip-step? expr)])]
-                  [(#%top . id-stx)
-                   (varref-skip-step? #`id-stx)]
-                  [(#%plain-app . terms)
-                   ; don't halt for proper applications of constructors
-                   (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
-                     (and (procedure? fun-val)
-                          (procedure-arity-includes? 
-                           fun-val
-                           (length (cdr (syntax->list (syntax terms)))))
-                          (or (and (render-settings-constructor-style-printing? render-settings)
-                                   (if (render-settings-abbreviate-cons-as-list? render-settings)
-                                       (eq? fun-val special-list-value)
-                                       (and (eq? fun-val special-cons-value)
-                                            (second-arg-is-list? mark-list))))
-                              ;(model-settings:special-function? 'vector fun-val)
-                              (and (eq? fun-val void)
-                                   (eq? (cdr (syntax->list (syntax terms))) null))
-                              (struct-constructor-procedure? fun-val))))]
-                 [else #f])))))
+           (or (equal? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)
+               (kernel:kernel-syntax-case expr #f
+                                          [id
+                                           (identifier? expr)
+                                           (case (stepper-syntax-property expr 'stepper-binding-type)
+                                             [(lambda-bound) #t]  ; don't halt for lambda-bound vars
+                                             [(let-bound)
+                                              (varref-skip-step? expr)]
+                                             [(non-lexical)
+                                              (varref-skip-step? expr)])]
+                                          [(#%top . id-stx)
+                                           (varref-skip-step? #`id-stx)]
+                                          [(#%plain-app . terms)
+                                           ; don't halt for proper applications of constructors
+                                           (let ([fun-val (lookup-binding mark-list (get-arg-var 0))])
+                                             (and (procedure? fun-val)
+                                                  (procedure-arity-includes? 
+                                                   fun-val
+                                                   (length (cdr (syntax->list (syntax terms)))))
+                                                  (or (and (render-settings-constructor-style-printing? render-settings)
+                                                           (if (render-settings-abbreviate-cons-as-list? render-settings)
+                                                               (eq? fun-val special-list-value)
+                                                               (and (eq? fun-val special-cons-value)
+                                                                    (second-arg-is-list? mark-list))))
+                                                      ;(model-settings:special-function? 'vector fun-val)
+                                                      (and (eq? fun-val void)
+                                                           (eq? (cdr (syntax->list (syntax terms))) null))
+                                                      (struct-constructor-procedure? fun-val))))]
+                                          [else #f])))))
   
   ;; find-special-value finds the value associated with the given name.  Applications of functions
   ;; like 'list' should not be shown as steps, because the before and after steps will be the same.
@@ -427,16 +433,18 @@
                                                    ; for the moment, let-bound vars occur only in and/or :
                                                    (recon-value (lookup-binding mark-list var) render-settings))
                                                   ((let-bound)
-                                                   (stepper-syntax-property var
-                                                                            'stepper-lifted-name
-                                                                            (binding-lifted-name mark-list var)))
+                                                   (if (stepper-syntax-property var 'stepper-no-lifting-info)
+                                                       var
+                                                       (stepper-syntax-property var
+                                                                                'stepper-lifted-name
+                                                                                (binding-lifted-name mark-list var))))
                                                   ((stepper-temp)
                                                    (error 'recon-source-expr "stepper-temp showed up in source?!?"))
                                                   ((non-lexical)
                                                    (error 'recon-source-expr "can't get here: lexical identifier labeled as non-lexical"))
                                                   (else
-                                                   (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a" 
-                                                          (stepper-syntax-property var 'stepper-binding-type)))))]
+                                                   (error 'recon-source-expr "unknown 'stepper-binding-type property: ~a on var: ~a" 
+                                                          (stepper-syntax-property var 'stepper-binding-type) (syntax->datum var)))))]
                                            [else ; top-level-varref
                                             (fixup-name
                                              var)])))]
@@ -571,8 +579,15 @@
          [else
           reconstructed]))))
   
-                                                                                                                
-                                                                                                                
+                                                   
+  ;; hide-completed? : syntax? -> boolean?
+  (define (hide-completed? stx)
+    (syntax-case stx ()
+      [(define-values (v) rhs)
+       (equal? (stepper-syntax-property #'v 'stepper-hint) 'comes-from-check-expect)
+       #t]
+      [else #f]))
+  
                                                                                                                 
                                        ;                     ;                                               ;  
  ; ;;  ;;;    ;;;   ;;;   ; ;;    ;;; ;;;; ; ;; ;   ;   ;;; ;;;;         ;;;  ;   ;  ; ;; ; ;;  ;;;   ; ;;  ;;;;
@@ -722,26 +737,30 @@
                                             ; applications
                                             [(#%plain-app . terms)
                                              (attach-info
-                                              (let* ([sub-exprs (syntax->list (syntax terms))]
-                                                     [arg-temps (build-list (length sub-exprs) get-arg-var)]
-                                                     [arg-vals (map (lambda (arg-temp) 
-                                                                      (lookup-binding mark-list arg-temp))
-                                                                    arg-temps)])
+                                              (match-let* 
+                                                  ([sub-exprs (syntax->list (syntax terms))]
+                                                   [arg-temps (build-list (length sub-exprs) get-arg-var)]
+                                                   [arg-vals (map (lambda (arg-temp) 
+                                                                    (lookup-binding mark-list arg-temp))
+                                                                  arg-temps)]
+                                                   [(vector evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
+                                                                                               (zip sub-exprs arg-vals))]
+                                                   [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
                                                 (case (mark-label (car mark-list))
                                                   ((not-yet-called)
-                                                   (let*-2vals ([(evaluated unevaluated) (split-list (lambda (x) (eq? (cadr x) *unevaluated*))
-                                                                                                     (zip sub-exprs arg-vals))]
-                                                                [rectified-evaluated (map (lx (recon-value _ render-settings)) (map cadr evaluated))])
-                                                               (if (null? unevaluated)
-                                                                   #`(#%plain-app . #,rectified-evaluated)
-                                                                   #`(#%plain-app 
-                                                                      #,@rectified-evaluated
-                                                                      #,so-far 
-                                                                      #,@(map recon-source-current-marks (cdr (map car unevaluated)))))))
+                                                   (if (null? unevaluated)
+                                                       #`(#%plain-app . #,rectified-evaluated)
+                                                       #`(#%plain-app 
+                                                          #,@rectified-evaluated
+                                                          #,so-far 
+                                                          #,@(map recon-source-current-marks (cdr (map car unevaluated))))))
                                                   ((called)
-                                                   (if (eq? so-far nothing-so-far)
-                                                       (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code
-                                                       (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...))))
+                                                   (stepper-syntax-property
+                                                    (if (eq? so-far nothing-so-far)
+                                                        (datum->syntax #'here `(,#'#%plain-app ...)) ; in unannotated code ... can this occur?
+                                                        (datum->syntax #'here `(,#'#%plain-app ... ,so-far ...)))
+                                                    'stepper-args-of-call 
+                                                    rectified-evaluated))
                                                   (else
                                                    (error 'recon-inner "bad label (~v) in application mark in expr: ~a" (mark-label (car mark-list)) exp))))
                                               exp)]

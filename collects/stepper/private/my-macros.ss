@@ -42,6 +42,9 @@
   ;; 
   ;;;;;;;;;;
   
+  
+  ;; honestly, match-let* supersedes all of this, if I ever have time to redo it...
+  
   (provide 2vals let*-2vals 2vals-first 2vals-second 2vals-map apply-to-first-of-2vals)
   
   (define 2vals vector)

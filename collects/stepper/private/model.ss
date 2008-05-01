@@ -39,8 +39,9 @@
 (module model mzscheme
   (require mzlib/contract
            mzlib/etc
-           mzlib/match
+           scheme/match
            mzlib/class
+           scheme/list
            (prefix a: "annotate.ss")
            (prefix r: "reconstruct.ss")
            "shared.ss"
@@ -48,6 +49,7 @@
            "model-settings.ss"
            "macro-unwind.ss"
            "lifting.ss"
+           #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            ;; for breakpoint display
            ;; (commented out to allow nightly testing)
            #;"display-break-stuff.ss")
@@ -169,15 +171,20 @@
         (let* ([mark-list (and mark-set (extract-mark-list mark-set))])
 
           (define (reconstruct-all-completed)
-            (map (match-lambda
-                   [`(,source-thunk ,lifting-indices ,getter)
-                     (match (r:reconstruct-completed
-                             (source-thunk) lifting-indices
-                             getter render-settings)
-                       [#(exp #f) (unwind exp render-settings)]
-                       [#(exp #t) exp])])
-                 finished-exps))
+            (filter-map 
+             (match-lambda
+               [(list source-thunk lifting-indices getter)
+                (let ([source (source-thunk)])
+                  (if (r:hide-completed? source)
+                      #f
+                      (match (r:reconstruct-completed
+                              source lifting-indices
+                              getter render-settings)
+                        [(vector exp #f) (unwind exp render-settings)]
+                        [(vector exp #t) exp])))])
+             finished-exps))
 
+          #;(>>> break-kind)
           #;(fprintf (current-error-port) "break called with break-kind: ~a ..." break-kind)
           (if (r:skip-step? break-kind mark-list render-settings)
             (begin
