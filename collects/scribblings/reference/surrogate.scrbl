@@ -1,11 +1,14 @@
 #lang scribble/doc
-@(require "common.ss"
-          (for-label mzlib/surrogate
-                     mzlib/class))
+@(require 
+  scribble/basic
+  scribble/manual
+  (for-label scheme/surrogate
+	     scheme/class))
 
-@mzlib[#:mode title surrogate]
+@title{Surrogates}
+@(defmodule scheme/surrogate)
 
-The @schememodname[mzlib/surrogate] library provides an abstraction
+The @schememodname[scheme/surrogate] library provides an abstraction
 for building an instance of the @deftech{proxy design pattern}. The
 pattern consists of two objects, a @defterm{host} and a
 @defterm{surrogate} object. The host object delegates method calls to

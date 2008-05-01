@@ -237,10 +237,6 @@ Re-exports @schememodname[scheme/stxparam] and
 
 @; ----------------------------------------------------------------------
 
-@include-section["surrogate.scrbl"]
-
-@; ----------------------------------------------------------------------
-
 @mzlib[tar]
 
 Re-exports @schememodname[file/tar].

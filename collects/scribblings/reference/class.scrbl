@@ -1708,3 +1708,5 @@ Raised for @scheme[class]-related failures, such as attempting to call
 a method that is not supplied by an object.
 
 }
+
+@include-section["surrogate.scrbl"]
