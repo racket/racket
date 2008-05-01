@@ -48,43 +48,47 @@
 ;; (make-expected-error src string scheme-val)
 (define-struct (expected-error check-fail) (message value))
 
+;; make-src-info : syntax? -> syntax?
+;; ... lifting out a shared piece of the annotations.
+;;      Apparently this must textually precede its use.
+(define-for-syntax (make-src-info stx)
+  (with-stepper-syntax-properties (['stepper-skip-completely #t])
+    #`(list #,@(list #`(quote #,(syntax-source stx))
+                     (syntax-line stx)
+                     (syntax-column stx)
+                     (syntax-position stx)
+                     (syntax-span stx)))))
+
 (define-syntax (check-expect stx)
   (syntax-case stx ()
     [(_ test actual)
      (not (eq? (syntax-local-context) 'expression))
+     (with-syntax ([src-info (make-src-info stx)])
      (quasisyntax/loc stx
-       (define #,(stepper-syntax-property #`#,(gensym 'test) 'stepper-hint 'comes-from-check-expect)
+       (define #,(stepper-syntax-property #`#,(gensym 'test) 'stepper-hide-completed #t)
          #,(stepper-syntax-property
             #`(let ([test-info (namespace-variable-value
                                 'test~object #f builder (current-namespace))])
                 (when test-info
                   (insert-test test-info
                                (lambda ()
-                                 #,(stepper-syntax-property
+                                 #,(with-stepper-syntax-properties
+                                    (['stepper-hint 'comes-from-check-expect]
+                                     ['stepper-hide-reduction #t])
                                     (quasisyntax/loc stx
                                       (check-values-expected
                                        (lambda () test)
                                        actual
-                                       #,(stepper-syntax-property
-                                          #`(list #,@(list #`(quote #,(syntax-source stx))
-                                                           (syntax-line stx)
-                                                           (syntax-column stx)
-                                                           (syntax-position stx)
-                                                           (syntax-span stx)))
-                                          'stepper-skip-completely
-                                          #t)
-                                       #,(stepper-syntax-property
-                                          (stepper-syntax-property #`test-info `stepper-no-lifting-info #t)
-                                          'stepper-hint
-                                          'comes-from-check-expect)))
-                                    'stepper-hint
-                                    'comes-from-check-expect)))))
+                                       src-info
+                                       #,(with-stepper-syntax-properties (['stepper-no-lifting-info #t]
+                                                                          ['stepper-hide-reduction #t])
+                                           #'test-info))))))))
             `stepper-skipto
             (append skipto/third ;; let 
                     skipto/third skipto/second ;; unless (it expands into a begin)
                     skipto/cdr skipto/third ;; application of insert-test
                     '(syntax-e cdr cdr syntax-e car) ;; lambda
-                    ))))]
+                    )))))]
     [(_ test)
      (not (eq? (syntax-local-context) 'expression))
      (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
@@ -108,21 +112,31 @@
   (syntax-case stx ()
     [(_ test actual within)
      (not (eq? (syntax-local-context) 'expression))
-     (quasisyntax/loc stx
-       (define #,(gensym 'test-within)
-         (let ([test-info (namespace-variable-value
-                           'test~object #f builder (current-namespace))])
-           (when test-info
-             (insert-test test-info
-                          (lambda ()
-                            (check-values-within
-                             (lambda () test) actual within
-                             (list #,@(list #`(quote #,(syntax-source stx))
-                                            (syntax-line stx)
-                                            (syntax-column stx)
-                                            (syntax-position stx)
-                                            (syntax-span stx)))
-                             test-info)))))))]
+     (with-syntax ([bogus-name (stepper-syntax-property #`#,(gensym 'test-within) 'stepper-hint 'stepper-hide-completed)]
+                   [src-info (make-src-info stx)])
+       (quasisyntax/loc stx
+         (define bogus-name
+           #,(stepper-syntax-property
+              #`(let ([test-info (namespace-variable-value
+                                  'test~object #f builder (current-namespace))])
+                  (when test-info
+                    (insert-test test-info
+                                 (lambda ()
+                                   #,(with-stepper-syntax-properties (['stepper-hint 'comes-from-check-expect]
+                                                                      ['stepper-hide-reduction #t])
+                                       (quasisyntax/loc stx
+                                         (check-values-within
+                                          (lambda () test) actual within
+                                          src-info
+                                          #,(with-stepper-syntax-properties (['stepper-no-lifting-info #t]
+                                                                             ['stepper-hide-reduction #t])
+                                              #'test-info))))))))
+              'stepper-skipto
+              (append skipto/third ;; let 
+                      skipto/third skipto/second ;; unless (it expands into a begin)
+                      skipto/cdr skipto/third ;; application of insert-test
+                      '(syntax-e cdr cdr syntax-e car) ;; lambda
+                      )))))]
     [(_ test actual)
      (not (eq? (syntax-local-context) 'expression))
      (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
@@ -181,6 +195,7 @@
     (when (check-fail? result)
       (send (send test-info get-info) check-failed
             (check->message result) (check-fail-src result)))))
+
 
 (define (error-check pred? actual fmt)
   (unless (pred? actual)
