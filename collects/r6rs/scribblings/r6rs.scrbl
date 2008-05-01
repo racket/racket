@@ -3,11 +3,17 @@
           scribble/bnf
           (for-label setup/dirs
                      rnrs/programs-6
+                     rnrs/base-6
+                     rnrs/unicode-6
+                     rnrs/exceptions-6
+                     rnrs/io/simple-6
+                     rnrs/r5rs-6
                      (only-in scheme/base lib)))
 
 @(define guide-src '(lib "scribblings/guide/guide.scrbl"))
 
 @(define r6rs @elem{R@superscript{6}RS})
+@(define r5rs @elem{R@superscript{5}RS})
 
 @title{@bold{R6RS}: Standard Language}
 
@@ -202,6 +208,62 @@ operations that expect textual ports.
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "conformance"]{@|r6rs| Conformance}
+
+PLT Scheme's @|r6rs| support does not conform with the standard in
+several known ways:
+
+@itemize[
+
+ @item{When @scheme[guard] catches an exception that no clause
+       matches, the exception is re-@scheme[raise]ed without restoring
+       the continuation to the one that raised the exception.
+
+       This difference can be made visible using
+       @scheme[dynamic-wind]. According to @|r6rs|, the following
+       program should print ``in'' and ``out'' twice, but each prints
+       once using PLT Scheme:
+
+      @schemeblock[
+        (guard (exn [(equal? exn 5) 'five])
+           (guard (exn [(equal? exn 6) 'six])
+             (dynamic-wind
+               (lambda () (display "in") (newline))
+               (lambda () (raise 5))
+               (lambda () (display "out") (newline)))))
+
+       ]
+
+       Along similar lines, continuation capture and invocation within
+       an exception handler is restricted. Unless the exception is
+       raised through @scheme[raise-continuable], a handler can escape
+       only through a continuation that is a tail of the current
+       continuation, and a continuation captured within the handler
+       cannot be invoked after control escapes from the raise.}
+
+ @item{Currently, inexact numbers are printed without a precision
+       indicator, and precision indicators are ignored on input (e.g.,
+       @schemevalfont{0.5|7} is read the same as @scheme[0.5]).}
+
+
+ @item{Word boundaries for @scheme[string-downcase],
+       @scheme[string-upcase], and @scheme[string-titlecase] are not
+       determined as specified by Unicode Standard Annex #29.}
+
+ @item{When an identifier bound by @scheme[letrec] or @scheme[letrec*]
+       is referenced before it is bound, an exception is not raised;
+       instead, th ereference produces @|undefined-const|.}
+
+ @item{The bindings in a namespace produced by @scheme[null-environment]
+       or @scheme[scheme-report-environment] correspond to @|r5rs| bindings
+       instead of @|r6rs| bindings. In particular, @scheme[=>], @scheme[else],
+       @scheme[_], and @scheme[...] are not bound.}
+
+]
+
+
+@; ----------------------------------------------------------------------
+
 @section{@|r6rs| Libraries}
 
 @(define (dir-of s)
@@ -237,7 +299,7 @@ operations that expect textual ports.
          (< #f "r6rs-Z-H-14.html" "node_idx_466")
          (<= #f "r6rs-Z-H-14.html" "node_idx_470")
          (= #f "r6rs-Z-H-14.html" "node_idx_464")
-         (=> #f "r6rs-Z-H-14.html" "node_idx_378")
+         (=> #t "r6rs-Z-H-14.html" "node_idx_378")
          (> #f "r6rs-Z-H-14.html" "node_idx_468")
          (>= #f "r6rs-Z-H-14.html" "node_idx_472")
          (abs #f "r6rs-Z-H-14.html" "node_idx_506")
@@ -581,6 +643,8 @@ operations that expect textual ports.
              (guard #t "r6rs-lib-Z-H-8.html" "node_idx_370")
              (else #t "r6rs-lib-Z-H-8.html" "node_idx_374")
              (=> #t "r6rs-lib-Z-H-8.html" "node_idx_372")]
+
+See also @secref["conformance"].
 
 @r6rs-module[rnrs/conditions-6 (rnrs conditions (6))
              "r6rs-lib-Z-H-8.html" "node_idx_382" "Exceptions and Conditions"
@@ -991,6 +1055,8 @@ A hashtable is a dictionary in the sense of @schememodname[scheme/dict].
              (force #f "r6rs-lib-Z-H-20.html" "node_idx_1304")
              (exact->inexact #f "r6rs-lib-Z-H-20.html" "node_idx_1286")
              (delay #t "r6rs-lib-Z-H-20.html" "node_idx_1296")]
+
+See also @secref["conformance"].
 
 @; ----------------------------------------
 
