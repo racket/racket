@@ -41,7 +41,10 @@
  resolve-planet-path
  (struct-out exn:fail:planet)
  display-plt-file-structure
- display-plt-archived-file)
+ display-plt-archived-file
+ get-package-from-cache
+ install-pkg
+ pkg->download-url)
 
 (provide/contract
  [get-package-spec
