@@ -6,6 +6,10 @@
 @title{@bold{Framework}: PLT GUI Application Framework}
 @(defmodule framework)
 
+@itemize{@item{decorated editor snip isn't exported by framework/framework}}
+
+----------------------------------------------------------------------------------------------------
+
 The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
 program on top of the @scheme[scheme/gui] library.
@@ -75,7 +79,13 @@ The precise set of exported names is:
 @scheme[preferences:set-default],
 @scheme[preferences:set-un/marshall], and
 @scheme[preferences:restore-defaults].
-}}
+}
+@item{@bold{Decorated Editor Snip}
+@scheme[(require framework/decorated-editor-snip)]
+
+This library exports an editor snipclass 
+}
+}
 
 @bold{Thanks}
 
