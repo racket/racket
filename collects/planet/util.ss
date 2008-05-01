@@ -251,7 +251,7 @@
     (lambda (p) (regexp-match re (path->bytes p)))))
 
 (define force-package-building? (make-parameter #f))
-(define build-scribble-docs? (make-parameter #t))
+(define build-scribble-docs? (make-parameter #f))
 
 
 ;; ---
