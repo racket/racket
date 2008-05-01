@@ -5,13 +5,16 @@
          
          "private/planet-shared.ss"
          "private/linkage.ss"
+         
          "resolver.ss"
          net/url
          xml/xml
-         mzlib/contract
+         
          mzlib/file
          mzlib/list
          mzlib/etc
+         
+         scheme/contract
          scheme/port
          scheme/path
          
@@ -41,8 +44,15 @@
  display-plt-archived-file)
 
 (provide/contract
+ [get-package-spec
+  (->* (string? string?) (natural-number/c any/c) pkg-spec?)]
+ [download-package 
+  (-> pkg-spec? 
+      (or/c string?
+            (list/c (λ (x) (eq? x #t)) path? natural-number/c natural-number/c)
+            (list/c false/c string?)))]
  [download/install-pkg
-  (-> string? string? natural-number/c natural-number/c (union pkg? false/c))]
+  (-> string? string? natural-number/c natural-number/c (or/c pkg? false/c))]
  [add-hard-link 
   (-> string? string? natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
@@ -51,6 +61,18 @@
   (-> string? string? natural-number/c natural-number/c void?)]
  [erase-pkg
   (-> string? string? natural-number/c natural-number/c void?)])
+
+
+;; get-package-spec : string string [nat | #f] [min-ver-spec | #f] -> pkg?
+;; gets the package that corresponds to the given arguments, which are
+;; values corresponding to the four parts of a package specifier in require syntax
+(define (get-package-spec owner pkg [maj #f] [min #f])
+  (define arg
+    (cond
+      [(not maj) (list owner pkg)]
+      [(not min) (list owner pkg maj)]
+      [else      (list owner pkg maj min)]))
+  (pkg-spec->full-pkg-spec arg #f))
 
 ;; download/install-pkg : string string nat nat -> pkg | #f
 (define (download/install-pkg owner name maj min)
