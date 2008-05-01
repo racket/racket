@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/eval
+          scribble/bnf
           "guide-utils.ss")
 
 @(define piece-eval (make-base-eval))
@@ -105,7 +106,7 @@ using the @scheme[define] form, like this:
 Although you can evaluate the @scheme[define] form in the @tech{REPL},
 definitions are normally a part of a program that you want to keep and
 use later. So, in DrScheme, you'd normally put the definition in the
-top text area---called the @defterm{definitions area}---along with the
+top text area---called the @deftech{definitions area}---along with the
 @hash-lang[] prefix:
 
 @schememod[
@@ -115,13 +116,12 @@ code:blank
   (substring str 0 5))
 ]
 
-If calling @scheme[(piece "howdy universe")] is part of the main action
-of your program, that would go in the definitions area, too. But if it
-was just an example expression that you were using to explore
-@scheme[piece], then you'd more likely leave the definitions area as
-above, click @onscreen{Run}, and then evaluate
-@scheme[(piece "howdy universe")]
-in the @tech{REPL}.
+If calling @scheme[(piece "howdy universe")] is part of the main
+action of your program, that would go in the @tech{definitions area},
+too. But if it was just an example expression that you were using to
+explore @scheme[piece], then you'd more likely leave the
+@tech{definitions area} as above, click @onscreen{Run}, and then
+evaluate @scheme[(piece "howdy universe")] in the @tech{REPL}.
 
 With @exec{mzscheme}, you'd save the above text in a file using your
 favorite editor. If you save it as @filepath{piece.ss}, then after starting
@@ -137,6 +137,52 @@ sequence:
 The @scheme[enter!] function both loads the code and switches the
 evaluation context to the inside of the module, just like DrScheme's
 @onscreen{Run} button.
+
+@; ----------------------------------------------------------------------
+@section{Creating Executables}
+
+If your file (or @tech{definitions area} in DrScheme) contains
+
+@schememod[
+scheme
+
+(define (piece str)
+  (substring str 0 5))
+
+(piece "howdy universe")
+]
+
+then it is a complete program that prints ``howdy'' when run. To
+package this program as an executable, choose one of the following
+options:
+
+@itemize[
+
+ @item{In DrScheme, you can select the @menuitem["Scheme" "Create
+       Executable..."] menu item.}
+
+ @item{From a command-line prompt, run @exec{mzc --exe
+       @nonterm{dest-filename} @nonterm{src-filename}}, where
+       @nonterm{src-filename} contains the program. See @secref[#:doc
+       '(lib "scribblings/mzc/mzc.scrbl") "exe"] for more
+       information.}
+
+ @item{With Unix or Mac OS X, you can turn the program file into an
+       executable script by inserting the line
+
+        @verbatim[#:indent 2]{#! /usr/bin/env mzscheme}
+
+       at the very beginning of the file. Also, change the file
+       permissions to executable using @exec{chmod +x
+       @nonterm{filename}} on the command line.
+
+       The script works as long as @exec{mzscheme} is in the user's
+       executable search path.  Alternately, use a full path to
+       @exec{mzscheme} after @tt{#!}  (with a space between @tt{#!}
+       and the path), in which case the user's executable search path
+       does not matter.}
+
+]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "use-module"]{A Note to Readers with Scheme/Lisp Experience}

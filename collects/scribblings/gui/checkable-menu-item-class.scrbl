@@ -20,7 +20,7 @@ A @scheme[checkable-menu-item%] is a string-labelled menu item that
                  [checked any/c #f]
                  [shortcut-prefix (listof (one-of/c 'alt 'cmd 'meta 'ctl 
                                                     'shift 'option)) 
-                                  (get-default-shortcut-prefix)])] {
+                                  (get-default-shortcut-prefix)])]{
 
 Creates a new menu item in @scheme[parent]. The item is initially
  shown, appended to the end of its parent, and unchecked. The
@@ -62,7 +62,7 @@ Checks or unchecks the menu item.
 @defmethod[(is-checked?)
            boolean?]{
 
-Returns @scheme[#t] if the item is checked, {\#f} otherwise.
+Returns @scheme[#t] if the item is checked, @scheme[#f] otherwise.
 
 }}
 

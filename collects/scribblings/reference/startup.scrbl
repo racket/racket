@@ -102,7 +102,7 @@ the exit status is @scheme[0] or determined by a call to
 
 @; ----------------------------------------------------------------------
 
-@section["mz-cmdline"]{Command Line}
+@section[#:tag "mz-cmdline"]{Command Line}
 
 The MzScheme and MrEd executables recognize the following command-line
 flags:
