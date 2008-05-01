@@ -479,7 +479,7 @@ A program can manipulate image values in various ways, such as using
 the @schememodname[htdp/image] library or as an
 @schememodname[image-snip%] value.
 
-@subsection{XML Boxes and Scheme Boxes}
+@subsection[#:tag "xml-boxes"]{XML Boxes and Scheme Boxes}
 
 DrScheme has special support for XML concrete syntax. The
 @menuitem["Special" "Insert XML Box"] menu item inserts an embedded

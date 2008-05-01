@@ -12,8 +12,8 @@ PLT Scheme programming languages.
 
 @include-section["interface-essentials.scrbl"]
 @include-section["languages.scrbl"]
-@include-section["custom.scrbl"]
 @include-section["interface-ref.scrbl"]
+@include-section["extending.scrbl"]
 
 @; ----------------------------------------------------------------------
 

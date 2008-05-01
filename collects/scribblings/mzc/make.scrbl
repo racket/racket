@@ -234,7 +234,7 @@ A parameter for a procedure of one argument that is called whenever a
 compilation starts. The argument to the procedure is the file's path.}
 
 
-@defparam[manager-compile-trace-handler notify (string? . -> . any)]{
+@defparam[manager-trace-handler notify (string? . -> . any)]{
 
 A parameter for a procedure of one argument that is called to report
  compilation-manager actions, such as checking a file. The argument to

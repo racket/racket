@@ -25,21 +25,7 @@
                  row))
           rows))))
 
-@title[#:tag "custom" #:style 'toc]{Customizing Language Details}
-
-Different languages supported by DrScheme offer different possible
-customizations through the @onscreen{Show Details} button in the
-dialog opened by @menuitem["Language" "Choose Language..."].
-
-This chapter scribes some of the most common customizations that are
-available, though the actual set available depends on each language,
-which is in turn extensible through plug-ins.
-
-@local-table-of-contents[]
-
-@; ----------------------------------------
-
-@section[#:tag "output-syntax"]{Output Syntax}
+@title[#:tag "output-syntax"]{Output Printing Styles}
 
 @section-index["printing format"]
 

@@ -32,21 +32,9 @@ without a @hash-lang[] prefix:
 
 @itemize{
 
- @item{The @as-index{@drlang{Standard (R5RS)} language} contains those
+ @item{The @as-index{@drlang{R5RS} language} contains those
   primitives and syntax defined in the R@superscript{5}RS Scheme
   standard. See the @schememodname[r5rs] library for details.}
-
- @item{The @as-index{@drlang{PLT Textual (MzScheme)} language} starts
-  with the same bindings as the @exec{mzscheme} executable in
-  interactive mode, which means the exports of the
-  @schememodname[scheme/init] library. It also evaluates a program in
-  the same way as @scheme[load], instead of as a module.}
-
- @item{The @as-index{@drlang{PLT Graphical (MrEd)} language} starts
-  with the same bindings as the @exec{mred} executable in interactive
-  mode, which means the exports of the @schememodname[scheme/gui/init]
-  library. Like @drlang{PLT Textual (MzScheme)}, it evaluates a
-  program in the same way as @scheme[load], instead of as a module.}
 
  @item{The @as-index{@defterm{PLT Pretty Big} language} provides a
   language roughly compatible with a language in earlier versions of
@@ -253,10 +241,10 @@ language through the detail section of language-selection dialog.
 @itemize{
 
  @item{@defterm{Constructor-style output} --- See
-       @secref["printing:cons"].}
+       @secref["output-syntax"].}
 
  @item{@defterm{Quasiquote-style output} --- See
-       @secref["printing:quasi"].}
+       @secref["output-syntax"].}
      
    @item{@defterm{Rational number printing} -- In the teaching
      languages, all numbers that have a finite decimal expansion are
@@ -372,4 +360,12 @@ Unless disabled in the language configuration window, expression-level coverage
 
 @section[#:tag "experimental-langs"]{Other Experimental Languages}
 
-...
+For information on @onscreen{Lazy Scheme}, see @other-manual['(lib "lazy/lazy.scrbl")].
+
+For information on @onscreen{FrTime}, see @other-manual['(lib "frtime/frtime.scrbl")].
+
+For information on @onscreen{Algol 60}, see @other-manual['(lib "algol60/algol60.scrbl")].
+
+@; ----------------------------------------
+
+@include-section["printing.scrbl"]
