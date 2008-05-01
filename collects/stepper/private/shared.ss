@@ -7,6 +7,8 @@
            mzlib/match
            srfi/26
            mzlib/class)
+  
+  (require (for-syntax mzlib/list))
 
   ; CONTRACTS
   
@@ -92,6 +94,7 @@
    language-level->name
    
    stepper-syntax-property
+   with-stepper-syntax-properties
 
    skipto/cdr
    skipto/cddr
@@ -101,7 +104,6 @@
    skipto/fourth
    skipto/firstarg)
   
-    
   ;; stepper-syntax-property : like syntax property, but adds properties to an association
   ;; list associated with the syntax property 'stepper-properties
   (define stepper-syntax-property
@@ -117,6 +119,15 @@
                                           (cons (list tag new-val)
                                                 (or (syntax-property stx 'stepper-properties)
                                                     null)))]))
+  
+  ;; with-stepper-syntax-properties : like stepper-syntax-property, but in a "let"-like form
+  (define-syntax (with-stepper-syntax-properties stx)
+    (syntax-case stx ()
+      [(_ ([property val] ...) body)
+       (foldl (lambda (property val b) #`(stepper-syntax-property #,b #,property #,val))
+              #'body
+              (syntax->list #`(property ...))
+              (syntax->list #`(val ...)))]))
   
   ; A step-result is either:
   ; (make-before-after-result finished-exps exp redex reduct)

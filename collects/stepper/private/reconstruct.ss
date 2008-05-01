@@ -150,7 +150,7 @@
       [(result-value-break)
        (and (pair? mark-list)
             (let ([expr (mark-source (car mark-list))])
-              (equal? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)))]
+              (stepper-syntax-property expr 'stepper-hide-reduction)))]
       [(result-exp-break)
        ;; skip if clauses that are the result of and/or reductions
        (let ([and/or-clauses-consumed (stepper-syntax-property (mark-source (car mark-list)) 'stepper-and/or-clauses-consumed)])
@@ -185,7 +185,7 @@
     
     (and (pair? mark-list)
          (let ([expr (mark-source (car mark-list))])
-           (or (equal? (stepper-syntax-property expr 'stepper-hint) 'comes-from-check-expect)
+           (or (stepper-syntax-property expr 'stepper-hide-reduction)
                (kernel:kernel-syntax-case expr #f
                                           [id
                                            (identifier? expr)
@@ -584,8 +584,7 @@
   (define (hide-completed? stx)
     (syntax-case stx ()
       [(define-values (v) rhs)
-       (equal? (stepper-syntax-property #'v 'stepper-hint) 'comes-from-check-expect)
-       #t]
+       (stepper-syntax-property #'v 'stepper-hide-completed)]
       [else #f]))
   
                                                                                                                 

@@ -234,6 +234,11 @@ stepper-args-of-call [ADDED BY RECONSTRUCTOR] :
   this reconstructed (...) expression is the result of a call with these args.
   used by the check-expect unwinder to figure out the expected values.
 
+stepper-hide-completed : don't show the final top-level expression binding
+  for this identifier.
+
+stepper-hide-reduction : don't show the reduction for this term.
+
 STEPPER-HINT COLLISIONS
 
  The major concern with the stepper-hint is that two of them may
