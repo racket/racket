@@ -806,7 +806,7 @@
           
           (define/public (move-to-frame the-frame-num)
             (set-box! frame-num the-frame-num)
-            (suspend-gui (get-stack-frames) (get-break-status) #t))
+            (suspend-gui (get-stack-frames) (get-break-status) #t #t))
           
           (define/public (resume)
             (let ([v (get-break-status)])
@@ -913,7 +913,7 @@
             (> (get-frame-num) 0))
 
           (define/public suspend-gui
-            (opt-lambda (frames status [switch-tabs? #f])
+            (opt-lambda (frames status [switch-tabs? #f] [already-stopped? #f])
               (let ([top-of-stack? (zero? (get-frame-num))]
                     [status-message (send (get-frame) get-status-message)])
                 (set! want-suspend-on-break? #f)
@@ -925,7 +925,7 @@
                 (send (send (get-frame) get-step-over-button) enable (can-step-over? frames status))
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
                 (send (send (get-frame) get-resume-button) enable #t)
-                (send (get-frame) register-stack-frames frames)
+                (send (get-frame) register-stack-frames frames already-stopped?)
                 (send (get-frame) register-vars (if (empty? frames)
                                                     empty
                                                     (list-ref frames (get-frame-num))))
@@ -1111,7 +1111,7 @@
             (send variables-text lock #t)
             (send variables-text end-edit-sequence))
           
-          (define/public (register-stack-frames frames)
+          (define/public (register-stack-frames frames already-stopped?)
             (let* ([trimmed-exprs
                     (map (lambda (frame)
                            (let ([expr (mark-source frame)])
@@ -1133,11 +1133,15 @@
                    [positions (foldl + 0 trimmed-lengths)])
               (send stack-frames begin-edit-sequence)
               (send stack-frames lock #f)
-              (send stack-frames delete 0 (send stack-frames last-position))
-              (for-each
-               (lambda (trimmed-expr)
-                 (send stack-frames insert (format "~a~n" trimmed-expr)))
-               trimmed-exprs)
+              (unless already-stopped?
+                (printf "not already stopped~n")
+                (send stack-frames delete 0 (send stack-frames last-position))
+                (for-each
+                 (lambda (trimmed-expr)
+                   (send stack-frames insert (format "~a~n" trimmed-expr)))
+                 trimmed-exprs))
+              (send stack-frames change-style normal-sd
+                    0 (send stack-frames last-position))
               (send stack-frames change-style bold-sd
                     (send stack-frames paragraph-start-position (send (get-current-tab) get-frame-num))
                     (send stack-frames paragraph-end-position (send (get-current-tab) get-frame-num)))
@@ -1175,19 +1179,23 @@
                          (super-new)
                          (inherit find-line line-start-position line-end-position
                                   change-style begin-edit-sequence end-edit-sequence
-                                  lock last-position line-paragraph)
+                                  lock last-position line-paragraph find-position
+                                  dc-location-to-editor-location)
                          (define highlight-defs #f)
                          (define highlight-start #f)
                          (define highlight-end #f)
                          (define mouse-over-frame #f)
                          (define/override (on-event evt)
-                           (let* ([line (find-line (send evt get-y))]
-                                  [paragraph (line-paragraph line)]
-                                  [frames (send (get-current-tab) get-stack-frames)]
-                                  [frame (and frames
-                                              (> (length frames) paragraph)
-                                              (list-ref frames paragraph))]
-                                  [expr (and frame (mark-source frame))])
+                           (let*-values ([(x y) (dc-location-to-editor-location
+                                                 (send evt get-x) (send evt get-y))]
+                                         [(line) (find-line y)]
+                                         [(pos) (find-position x y)]
+                                         [(paragraph) (line-paragraph line)]
+                                         [(frames) (send (get-current-tab) get-stack-frames)]
+                                         [(frame) (and frames
+                                                       (> (length frames) paragraph)
+                                                       (list-ref frames paragraph))]
+                                         [(expr) (and frame (mark-source frame))])
                              (case (send evt get-event-type)
                                [(enter motion)
                                 (when (and mouse-over-frame (not (= paragraph mouse-over-frame)))
@@ -1400,7 +1408,7 @@
             (if (send new debug?)
                 (let ([status (send new get-break-status)])
                   (if status
-                      (send new suspend-gui (send new get-stack-frames) status)
+                      (send new suspend-gui (send new get-stack-frames) status #f #t)
                       (send new resume-gui))
                   (show-debug))
                 (hide-debug))
