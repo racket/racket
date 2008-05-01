@@ -85,30 +85,41 @@
 
 ;; map is a functional map from vars to c's
 ;; V list of vars
-(define-struct cset (map) #:prefab)
+(define-struct cset (maps) #:prefab)
 
 (define (empty-cset X)
-  (make-cset (for/hash ([x X]) (values x (make-c (Un) x Univ)))))
+  (make-cset (list (for/hash ([x X]) (values x (make-c (Un) x Univ))))))
 
+#;
 (define (lookup cset var)
   (hash-ref (cset-map cset) var (make-c (Un) var Univ)))
 
 (define (insert cs var S T)
   (match cs
-    [(struct cset (map))
-     (make-cset (hash-set map var (make-c S var T)))]))
+    [(struct cset (maps))
+     (make-cset (for/list ([map maps])(hash-set map var (make-c S var T))))]))
 
 (define c-meet
   (match-lambda**
    [((struct c (S X T)) (struct c (S* _ T*)))
-    (make-c (join S S*) X (meet T T*))]))
+    (let ([S (join S S*)] [T (meet T T*)])
+      (unless (subtype S T)
+        (fail! S T))
+      (make-c S X T))]))
     
 
-(define cset-meet
-  (match-lambda**
-   [((struct cset (map1)) (struct cset (map2)))
-    (make-cset (for/hash ([(k v1) map1])                         
-                         (values k (c-meet v1 (hash-ref map2 k)))))]))
+(define (cset-meet x y)
+  (match* (x y)
+   [((struct cset (maps1)) (struct cset (maps2)))
+    (let ([maps (filter values
+                        (for*/list
+                         ([map1 maps1] [map2 maps2])
+                         (with-handlers ([exn:infer? (lambda (_) #f)])
+                           (for/hash ([(k v1) map1])                     
+                                     (values k (c-meet v1 (hash-ref map2 k)))))))])
+      (when (null? maps)
+        (fail! maps1 maps2))
+      (make-cset maps))]))
 
 (define (cset-meet* V args)
   (for/fold ([c (empty-cset V)])
@@ -123,6 +134,10 @@
                         (filter (lambda (te) (not (ormap (lambda (s) (type-equal? s te)) ss))) ts))])
     (cgen/list V X ss* ts*)))
 
+(define (cset-combine l)
+  (let ([mapss (map cset-maps l)])
+    (make-cset (apply append mapss))))
+
 (define (cgen V X S T)
   (define empty (empty-cset X))
   (define (singleton S X T )
@@ -132,6 +147,12 @@
      (S T)
      [(a a) empty]
      [(_ (Univ:)) empty]
+     
+     [((F: (? (lambda (e) (memq e X)) v)) S)
+      (singleton (Un) v (var-demote S V))]
+     [(S (F: (? (lambda (e) (memq e X)) v)))
+      (singleton (var-promote S V) v Univ)]
+
      
      ;; two unions with the same number of elements, so we just try to unify them pairwise
      #;[((Union: l1) (Union: l2))
@@ -147,6 +168,7 @@
      
      
      [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]
+     ;; we might want to use multiple csets here, but I don't think it makes a difference
      [(S (Union: es)) (or
                        (for/or 
                         ([e es]) 
@@ -154,10 +176,7 @@
                             ([exn:infer? (lambda _ #f)])
                           (cgen V X S e)))
                        (fail! S T))]
-     [((F: (? (lambda (e) (memq e X)) v)) S)
-      (singleton (Un) v (var-demote S V))]
-     [(S (F: (? (lambda (e) (memq e X)) v)))
-      (singleton (var-promote S V) v Univ)]
+
      [((Struct: nm p flds proc) (Struct: nm p flds* proc*))
       (let-values ([(flds flds*)
                     (cond [(and proc proc*)
@@ -200,31 +219,32 @@
      [((Function: (list t-arr ...))
        (Function: (list s-arr ...)))
       (=> unmatch)
-      (let loop ([t-arr t-arr] [s-arr s-arr] [cset empty])
-        (cond [(and (null? t-arr) (null? s-arr)) cset]
-              [(or (null? t-arr) (null? s-arr)) (unmatch)]
-              [else (match (list (car t-arr) (car s-arr))
-                      [(list (arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
-                       (let ([arg-mapping 
-                              (cond [(and t-rest s-rest (= (length ts) (length ss)))
-                                     (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
-                                    [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
-                                     (cgen/list X V ss ts)]
-                                    [(and t-rest (not s-rest) (<= (length ts) (length ss)))
-                                     (cgen/list X V ss (extend ss ts t-rest))]
-                                    [(and s-rest (not t-rest) (>= (length ts) (length ss)))
-                                     (cgen/list X V (extend ts ss s-rest) ts)]
-                                    [else (unmatch)])]
-                             [ret-mapping (cgen V X t s)])
-                         (loop (cdr t-arr) (cdr s-arr)
-                               (cset-meet* X (list cset arg-mapping ret-mapping))))])]))]
+      (cset-combine
+       (filter 
+        values ;; only generate the successful csets
+        (for*/list ([t-arr t-arr] [s-arr s-arr])
+                   (with-handlers ([exn:infer? (lambda (_) #f)])
+                     (match* (t-arr s-arr)
+                             [((arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
+                              (let ([arg-mapping 
+                                     (cond [(and t-rest s-rest (= (length ts) (length ss)))
+                                            (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
+                                           [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
+                                            (cgen/list X V ss ts)]
+                                           [(and t-rest (not s-rest) (<= (length ts) (length ss)))
+                                            (cgen/list X V ss (extend ss ts t-rest))]
+                                           [(and s-rest (not t-rest) (>= (length ts) (length ss)))
+                                            (cgen/list X V (extend ts ss s-rest) ts)]
+                                           [else (fail! S T)])]
+                                    [ret-mapping (cgen V X t s)])
+                                (cset-meet arg-mapping ret-mapping))])))))]
      [(_ _)
       (cond [(subtype S T) empty]
             ;; or, nothing worked, and we fail
             [else (fail! S T)])])))
 
 (define (subst-gen C R)
-  (for/list ([(k v) (cset-map C)])
+  (for/list ([(k v) (car (cset-maps C))])
     (match v
       [(struct c (S X T))
        (let ([var (hash-ref (free-vars* R) X Constant)])
@@ -234,9 +254,12 @@
                  [Constant S]
                  [Covariant S]
                  [Contravariant T]
-                 [Invariant (unless (type-equal? S T)
+                 [Invariant 
+                  #; ; don't fail, we just pretend in covariance
+                  (unless (type-equal? S T)
+                              ;(printf "invariant and not equal ~a ~a" S T)
                               (fail! S T))
-                            S])))])))
+                  S])))])))
 
 (define (cgen/list X V S T)
   (cset-meet* X (for/list ([s S] [t T]) (cgen V X s t))))
@@ -269,9 +292,6 @@
 (define (infer/simple S T R)
   (infer (fv/list T) S T R))
 
-;(trace infer #;cgen #;cset-meet*)
-
-;(trace cgen)
 
 (define (i s t r)
   (infer/simple (list s) (list t) r))
@@ -303,3 +323,7 @@
     [(not (overlap t1 t2)) (Un)] ;; there's no overlap, so the restriction is empty
     [else t2] ;; t2 and t1 have a complex relationship, so we punt
     ))
+
+;(trace infer cgen cset-meet* subst-gen)
+
+;(trace cgen)

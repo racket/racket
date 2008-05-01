@@ -96,7 +96,7 @@
      (integer? (make-pred-ty -Integer))
      (boolean? (make-pred-ty B))
      (add1 (cl->*
-            #;(-> -Integer -Integer)
+            (-> -Integer -Integer)
             (-> N N)))
      (sub1 (cl->*
             #;(-> -Integer -Integer)

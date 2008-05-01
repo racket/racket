@@ -246,13 +246,13 @@
                     (if (= 1 (length doms))
                         (tc-error/expr #:return (ret (Un)) 
                                        "Polymorphic function could not be applied to arguments:~nExpected: ~a ~nActual: ~a" 
-                                       (car msg-doms) argtypes)
+                                       (stringify (car msg-doms)) (stringify argtypes))
                         (tc-error/expr #:return (ret (Un))
                                        "no polymorphic function domain matched - possible domains were: ~n~a~narguments were: ~n~a"
                                        (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer vars argtypes (car doms*) (if expected #f (car rngs*)))
+                       (infer (fv/list (car doms*)) argtypes (car doms*) (if expected #f (car rngs*)))
                        #;(infer/list (car doms*) argtypes vars))
                   => (lambda (substitution)
                        (or expected
@@ -262,7 +262,9 @@
                                  (ret (subst-all substitution (car rngs*)))
                                  ;; FIXME
                                  ;; should be an error here, something went horribly wrong!!!
-                                 (loop (cdr doms*) (cdr rngs*))))))]
+                                 (begin 
+                                   (printf "substituion was bad~n")
+                                   (loop (cdr doms*) (cdr rngs*)))))))]
                              #|
                            (printf "subst is:~a~nret is: ~a~nvars is: ~a~nresult is:~a~n" substitution (car rngs*) vars 
                                    (subst-all substitution (car rngs*)))
