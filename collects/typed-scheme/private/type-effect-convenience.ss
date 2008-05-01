@@ -204,6 +204,7 @@
                                                                ns)
                                       ns)])
                                (parameterize ([current-namespace new-ns])
+                                 (namespace-require 'scheme/base)
                                  (namespace-require 'extra-mods) ...
                                  e))
                              ty)]))

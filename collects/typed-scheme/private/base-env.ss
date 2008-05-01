@@ -412,12 +412,12 @@
       string-constants/string-constant]
      ;; make-promise 
      
-     [(cadr (syntax->list (expand #'(delay 3)))) 
+     [(cadr (syntax->list (expand '(delay 3))))
       (-poly (a) (-> (-> a) (-Promise a)))
       scheme/promise]
      ;; qq-append
      
-     [(cadr (syntax->list (expand #'`(,@'() 1)))) 
+     [(cadr (syntax->list (expand '`(,@'() 1)))) 
       (-poly (a b) 
              (cl->*
               (-> (-lst a) (-val '()) (-lst a))

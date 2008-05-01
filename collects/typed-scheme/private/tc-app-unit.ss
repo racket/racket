@@ -303,7 +303,7 @@
          (match-let ([(list (tc-result: ts) ...) (map (lambda (f) (outer-loop 
                                                                    (ret f e1 e2) argtypes arg-thn-effs arg-els-effs args)) fs)])
            (ret (apply Un ts)))]
-        [(tc-result: f-ty _ _) (tc-error #:return (ret (Un)) "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))))
+        [(tc-result: f-ty _ _) (tc-error/expr #:return (ret (Un)) "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))))
 
 ;(trace tc/funapp)
 
