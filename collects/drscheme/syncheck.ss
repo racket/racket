@@ -25,7 +25,7 @@ If the namespace does not, they are colored the unbound color.
          mzlib/list
          syntax/toplevel
          syntax/boundmap
-         mrlib/bitmap-label
+         mrlib/switchable-button
          (prefix-in drscheme:arrow: drscheme/arrow)
          (prefix-in fw: framework/framework)
          mred
@@ -890,10 +890,7 @@ If the namespace does not, they are colored the unbound color.
             
             (super-new)))))
     
-    (define syncheck-bitmap
-      (bitmap-label-maker
-       (string-constant check-syntax)
-       (build-path (collection-path "icons") "syncheck.png")))
+    (define syncheck-bitmap (make-object bitmap% (build-path (collection-path "icons") "syncheck.png") 'png/mask))
     
     (define syncheck-frame<%>
       (interface ()
@@ -1226,10 +1223,11 @@ If the namespace does not, they are colored the unbound color.
                [stretchable-width #f]
                [stretchable-height #f]))
         (define check-syntax-button
-          (new button%
-               (label (syncheck-bitmap this))
+          (new switchable-button%
+               (label (string-constant check-syntax))
+               (bitmap syncheck-bitmap)
                (parent check-syntax-button-parent-panel)
-               (callback (λ (button evt) (syncheck:button-callback)))))
+               (callback (λ (button) (syncheck:button-callback)))))
         (define/public (syncheck:get-button) check-syntax-button)
         (send (get-button-panel) change-children
               (λ (l)

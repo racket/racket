@@ -7,7 +7,7 @@
          scheme/gui
          framework/framework
          drscheme/tool
-         mrlib/bitmap-label
+         mrlib/switchable-button
          string-constants
          "model/trace.ss"
          "model/deriv.ss"
@@ -55,6 +55,11 @@
     (define-local-member-name check-language)
     (define-local-member-name get-debug-button)
     
+    (define macro-debugger-bitmap 
+      (make-object bitmap%
+        (build-path (collection-path "macro-debugger") "view" "icon-small.png")
+        'png/mask))
+    
     (define (macro-debugger-unit-frame-mixin %)
       (class %
         (super-new)
@@ -65,14 +70,11 @@
         (define macro-debug-panel
           (new vertical-pane% (parent (get-button-panel))))
         (define macro-debug-button
-          (new button%
-               (label (make-bitmap-label 
-                       "Macro Stepper"
-                       (build-path (collection-path "macro-debugger") 
-                                   "view"
-                                   "icon-small.png")))
+          (new switchable-button%
+               (label "Macro Stepper")
+               (bitmap macro-debugger-bitmap)
                (parent macro-debug-panel)
-               (callback (lambda (button event) (execute #t)))))
+               (callback (λ (button) (execute #t)))))
 
         (define/override (execute-callback)
           (execute #f))

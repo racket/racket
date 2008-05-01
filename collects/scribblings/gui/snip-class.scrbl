@@ -283,7 +283,7 @@ A drawing context is provided for the purpose of finding font sizes,
  sizing that overrides that device context's current font.
 
 The snip's left and top @techlink{location}s are provided in editor
- coordinates. In a text editor, the y-coordinate is the {\em line's}
+ coordinates. In a text editor, the y-coordinate is the @italic{line's}
  top @techlink{location}; the snip's actual top @techlink{location} is potentially
  undetermined until its height is known.
 

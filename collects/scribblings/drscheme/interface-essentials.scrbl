@@ -16,7 +16,7 @@
 The DrScheme window has three parts: a row of buttons at the top, two
 editing panels in the middle, and a status line at the bottom.
 
-@image["screen-shot.png"]
+@image["example.png"]
 
 The top editing panel, called the @deftech{definitions window}, is for
 defining programs. The above figure shows a program that defines the

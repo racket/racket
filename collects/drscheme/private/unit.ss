@@ -27,6 +27,7 @@ module browser threading seems wrong.
            "drsig.ss"
            "auto-language.ss"
            "insert-large-letters.ss"
+           mrlib/switchable-button
            
            (prefix-in drscheme:arrow: "../arrow.ss")
            
@@ -275,15 +276,9 @@ module browser threading seems wrong.
                      frame
                      program-filename)))])))
     
-    (define make-execute-bitmap 
-      (bitmap-label-maker (string-constant execute-button-label) 
-                          (build-path (collection-path "icons") "run.png")))
-    (define make-save-bitmap 
-      (bitmap-label-maker (string-constant save-button-label) 
-                          (build-path (collection-path "icons") "save.png")))
-    (define make-break-bitmap 
-      (bitmap-label-maker (string-constant break-button-label) 
-                          (build-path (collection-path "icons") "break.png")))
+    (define execute-bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
+    (define break-bitmap (make-object bitmap% (build-path (collection-path "icons") "break.png") 'png/mask))
+    (define save-bitmap (make-object bitmap% (build-path (collection-path "icons") "save.png") 'png/mask))
     
     (define-values (get-program-editor-mixin add-to-program-editor-mixin)
       (let* ([program-editor-mixin
@@ -1152,7 +1147,8 @@ module browser threading seems wrong.
     ;; should only be called by the tab% object
     (define-local-member-name 
       disable-evaluation-in-tab
-      enable-evaluation-in-tab)
+      enable-evaluation-in-tab
+      update-toolbar-visiblity)
     
     (define -frame<%>
       (interface (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1302,35 +1298,84 @@ module browser threading seems wrong.
                                             (parent louter-panel)
                                             (stretchable-height #f)))
             (set! logging-panel (make-object horizontal-panel% logging-parent-panel))
-            (unless toolbar-shown?
+            (unless (toolbar-shown?)
               (send logging-parent-panel change-children (λ (l) '())))
             root))
         
         (inherit show-info hide-info is-info-hidden?)
-        (field [toolbar-shown? (preferences:get 'drscheme:toolbar-shown)]
-               [toolbar-menu-item #f])
+        (field [toolbar-state (preferences:get 'drscheme:toolbar-state)]
+               [toolbar-vertical-menu-item #f]
+               [toolbar-horizontal-menu-item #f]
+               [toolbar-hidden-menu-item #f]
+               [toolbar-menu #f])
         
-        (define/override (on-toolbar-button-click) 
-          (toggle-toolbar-visiblity))
+        ;; returns #t if the toolbar is visible, #f otherwise
+        (define/private (toolbar-shown?) (car toolbar-state))
         
-        (define/private (toggle-toolbar-visiblity)
-          (set! toolbar-shown? (not toolbar-shown?))
-          (preferences:set 'drscheme:toolbar-shown toolbar-shown?)
+        (define/private (change-toolbar-state new-state)
+          (set! toolbar-state new-state)
+          (preferences:set 'drscheme:toolbar-state new-state)
           (update-toolbar-visiblity))
         
-        (define/private (update-toolbar-visiblity)
-          (cond
-            [toolbar-shown?
-             (show-info)
-             (send top-outer-panel change-children (λ (l) (list top-panel)))
-             (send logging-parent-panel change-children (λ (l) (list logging-panel)))
-             (send toolbar-menu-item set-label (string-constant hide-toolbar))]
-            [else
-             (hide-info)
-             (send top-outer-panel change-children (λ (l) '()))
-             (send logging-parent-panel change-children (λ (l) '()))
-             (send toolbar-menu-item set-label (string-constant show-toolbar))])
+        (define/override (on-toolbar-button-click) (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
+        (define/private (set-toolbar-horizontal) (change-toolbar-state (cons #f 'horizontal)))
+        (define/private (set-toolbar-vertical) (change-toolbar-state (cons #f 'vertical)))
+        (define/private (set-toolbar-hidden) (change-toolbar-state (cons #t (cdr toolbar-state))))
+        
+        (define/public (update-toolbar-visiblity)
+          (let* ([hidden? (car (preferences:get 'drscheme:toolbar-state))]
+                 [vertical? (and (not hidden?)
+                                 (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                                      'vertical))]
+                 [horizontal? (and (not hidden?)
+                                   (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                                        'horizontal))])
+            (send toolbar-horizontal-menu-item check horizontal?)
+            (send toolbar-vertical-menu-item check vertical?)
+            (send toolbar-hidden-menu-item check hidden?)
+            
+            (cond
+              [hidden?
+               (hide-info)
+               (send top-outer-panel change-children (λ (l) '()))
+               (send logging-parent-panel change-children (λ (l) '()))]
+              [vertical? (orient/show #t)]
+              [horizontal? (orient/show #f)]))
           (update-defs/ints-resize-corner))
+        
+        (define/private (orient/show vertical?)
+          (begin-container-sequence)
+          (show-info)
+          
+          (let ([bpo (send button-panel get-orientation)])
+            (unless (equal? bpo (not vertical?))
+              (send button-panel set-orientation (not vertical?))
+              
+              ;; have to be careful to avoid reversing the list when the orientation is already proper
+              (send button-panel change-children reverse)))
+            
+          (let loop ([obj button-panel])
+            (cond
+              [(is-a? obj area-container<%>)
+               (for-each loop (send obj get-children))]
+              [(is-a? obj switchable-button%)
+               (send obj set-label-visible (not vertical?))]
+              [else (void)]))
+          (send save-button set-label-visible (not vertical?))
+          (send top-outer-panel stretchable-height vertical?)
+          (send top-outer-panel stretchable-width (not vertical?))
+          (send top-panel set-orientation (not vertical?))
+          (send toolbar/rest-panel set-orientation vertical?)
+          (send toolbar/rest-panel change-children (λ (l)
+                                                     (if vertical?
+                                                         (append (remq top-outer-panel l) (list top-outer-panel))
+                                                         (cons top-outer-panel (remq top-outer-panel l)))))
+          (send top-outer-panel change-children (λ (l) (list top-panel)))
+          (send logging-parent-panel change-children (λ (l) (list logging-panel)))
+          (if vertical? 
+              (send top-panel change-children (λ (x) (remq name-panel x)))
+              (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
+          (end-container-sequence))
         
         (field [remove-show-status-line-callback
                 (preferences:add-callback
@@ -1342,7 +1387,7 @@ module browser threading seems wrong.
           (update-defs/ints-resize-corner/pref (preferences:get 'framework:show-status-line)))
         
         (define/private (update-defs/ints-resize-corner/pref si-pref)
-          (let ([bottom-material? (and toolbar-shown? si-pref)])
+          (let ([bottom-material? (and (toolbar-shown?) si-pref)])
             (let loop ([cs definitions-canvases])
               (cond
                 [(null? cs) (void)]
@@ -2409,7 +2454,7 @@ module browser threading seems wrong.
         (define/public (get-interactions-text) interactions-text)
         
         (define/public (get-definitions/interactions-panel-parent)
-          (get-area-container))
+          toolbar/rest-panel)
         
         (inherit delegated-text-shown? hide-delegated-text show-delegated-text)
         (define/override (add-show-menu-items show-menu)
@@ -2464,13 +2509,27 @@ module browser threading seems wrong.
                             (hide-module-browser)
                             (show-module-browser))))))
           
-          (set! toolbar-menu-item
-                (new menu-item%
-                     (label (string-constant show-toolbar))
-                     (parent show-menu)
-                     (callback
-                      (λ (x y)
-                        (toggle-toolbar-visiblity))))))
+          (set! toolbar-menu (new menu% 
+                                  [parent show-menu]
+                                  [label "Toolbar"]))
+          (set! toolbar-horizontal-menu-item
+                (new checkable-menu-item%
+                     [label "Horizontal Toolbar"]
+                     [parent toolbar-menu]
+                     [callback (λ (x y) (set-toolbar-horizontal))]
+                     [checked #f]))
+          (set! toolbar-vertical-menu-item
+                (new checkable-menu-item%
+                     [label "Vertical Toolbar"]
+                     [parent toolbar-menu]
+                     [callback (λ (x y) (set-toolbar-vertical))]
+                     [checked #f]))
+          (set! toolbar-hidden-menu-item
+                (new checkable-menu-item%
+                     [label "Hidden Toolbar"]
+                     [parent toolbar-menu]
+                     [callback (λ (x y) (set-toolbar-hidden))]
+                     [checked #f])))
         
         
         ;                                                                                                       
@@ -3205,13 +3264,16 @@ module browser threading seems wrong.
         ;   ;                                                 ;                         
         
         
+        (define toolbar/rest-panel (new vertical-panel% [parent (get-area-container)]))
+        
         ;; most contain only top-panel (or nothing)
-        (define top-outer-panel (new horizontal-pane% 
-                                     (parent (get-area-container))
-                                     (stretchable-height #f)))
+        (define top-outer-panel (new horizontal-panel% 
+                                     [parent toolbar/rest-panel]
+                                     [alignment '(right top)]
+                                     [stretchable-height #f]))
         
         [define top-panel (make-object horizontal-panel% top-outer-panel)]
-        [define name-panel (new vertical-pane%
+        [define name-panel (new horizontal-panel%
                                 (parent top-panel)
                                 (alignment '(left center))
                                 (stretchable-width #f)
@@ -3259,13 +3321,13 @@ module browser threading seems wrong.
         [define get-interactions-canvas (λ () interactions-canvas)]
         
         (set! save-button
-              (make-object button% 
-                (make-save-bitmap this)
-                top-panel
-                (λ args
-                  (when definitions-text
-                    (save)
-                    (send definitions-canvas focus)))))
+              (new switchable-button%
+                   [parent top-panel]
+                   [callback (λ (x) (when definitions-text
+                                      (save)
+                                      (send definitions-canvas focus)))]
+                   [bitmap save-bitmap]
+                   [label (string-constant save-button-label)]))
         
         (set! name-message (new drs-name-message% [parent name-panel]))
         (send name-message stretchable-width #t)
@@ -3273,7 +3335,7 @@ module browser threading seems wrong.
         [define teachpack-items null]
         [define break-button (void)]
         [define execute-button (void)]
-        [define button-panel (make-object horizontal-panel% top-panel)]
+        [define button-panel (new horizontal-panel% [parent top-panel] [spacing 2])]
         [define/public get-execute-button (λ () execute-button)]
         [define/public get-break-button (λ () break-button)]
         [define/public get-button-panel (λ () button-panel)]
@@ -3288,16 +3350,18 @@ module browser threading seems wrong.
                                       (frame this))]
         
         (set! execute-button
-              (make-object button%
-                (make-execute-bitmap this)
-                button-panel
-                (λ (button evt) (execute-callback))))
+              (new switchable-button%
+                   [parent button-panel]
+                   [callback (λ (x) (execute-callback))]
+                   [bitmap execute-bitmap]
+                   [label (string-constant execute-button-label)]))
+        
         (set! break-button
-              (make-object button%
-                (make-break-bitmap this) 
-                button-panel
-                (λ (x y)
-                  (send current-tab break-callback))))
+              (new switchable-button%
+                   [parent button-panel]
+                   [callback (λ (x) (send current-tab break-callback))]
+                   [bitmap break-bitmap]
+                   [label (string-constant break-button-label)]))
         
         (send button-panel stretchable-height #f)
         (send button-panel stretchable-width #f) 
@@ -3347,7 +3411,6 @@ module browser threading seems wrong.
                   (list p (- 1 p)))))
         
         (set-label-prefix (string-constant drscheme))
-        (update-toolbar-visiblity)
         (set! newest-frame this)
         (send definitions-canvas focus)))
     
@@ -3699,6 +3762,7 @@ module browser threading seems wrong.
           (unless (eq? (system-type) 'macosx)
             ;; mac os x has a bug where maximizing can make the window too big.
             (send frame maximize (preferences:get 'drscheme:unit-window-max?))))
+        (send frame update-toolbar-visiblity)
         (send frame show #t)
         (set! first-frame? #f)
         frame))))

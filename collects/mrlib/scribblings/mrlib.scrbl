@@ -16,6 +16,7 @@
 @include-section["name-message.scrbl"]
 @include-section["path-dialog.scrbl"]
 @include-section["plot.scrbl"]
+@include-section["switchable-button.scrbl"]
 
 @section{Acknowledgments}
 

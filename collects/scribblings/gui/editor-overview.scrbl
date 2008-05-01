@@ -310,7 +310,7 @@ Each new style is defined in one of two ways:
  @item{A @deftech{join style} is defined in terms of two other styles:
  a base style and a @deftech{shift style}. The meaning of a join style
  is determined by reinterpreting the shift style; in the
- reinterpretation, the base style is used as the {\em root\/} style
+ reinterpretation, the base style is used as the @italic{root} style
  for the shift style. (This is analogous to multi-level
  styles, like the paragraph and character styles in FrameMaker. In
  this analogy, the paragraph style is the base style, and the
@@ -698,7 +698,7 @@ Instances of @scheme[editor<%>] have three levels of internal
 
 }
 
-The internal lock for an editor is {\em not\/} affected by calls to
+The internal lock for an editor is @italic{not} affected by calls to
  @method[editor<%> lock].
 
 Methods that report @techlink{location}-independent information about an

@@ -12,7 +12,8 @@
            (lib "tool.ss" "drscheme")
            "marks.ss"
            syntax/boundmap
-           (lib "bitmap-label.ss" "mrlib")
+           mrlib/switchable-button
+           mrlib/bitmap-label
            "annotator.ss"
            "load-sandbox.ss"
            framework
@@ -1055,6 +1056,32 @@
           
           (super-new)))
       
+      (define debug-bitmap 
+        (make-object bitmap%
+          (build-path (collection-path "gui-debugger" "icons") "icon-small.png")
+          'png/mask))
+      
+      (define make-pause-label
+        (bitmap-label-maker
+         "Pause"
+         (build-path (collection-path "gui-debugger" "icons") "pause.png")))
+      (define make-resume-label 
+        (bitmap-label-maker
+         "Go"
+         (build-path (collection-path "gui-debugger" "icons") "resume.png")))
+      (define make-step-label
+        (bitmap-label-maker
+         "Step"
+         (build-path (collection-path "gui-debugger" "icons") "step.png")))
+      (define make-over-label
+        (bitmap-label-maker
+         "Over"
+         (build-path (collection-path "gui-debugger" "icons") "step-over2.png")))
+      (define make-out-label
+        (bitmap-label-maker
+         "Out"
+         (build-path (collection-path "gui-debugger" "icons") "step-out2.png")))
+      
       (define (debug-unit-frame-mixin super%)
         (class super%
           
@@ -1283,18 +1310,15 @@
               [stretchable-width #t]))
           
           (define debug-button
-            (make-object button%
-              ((bitmap-label-maker
-                (string-constant debug-tool-button-name)
-                (build-path (collection-path "gui-debugger" "icons") "icon-small.png")) this)
-              (make-object vertical-pane% (get-button-panel))
-              (lambda (button evt) (set! debug? #t) (execute-callback))))
+            (new switchable-button%
+                 (label (string-constant debug-tool-button-name))
+                 (bitmap debug-bitmap)
+                 (parent (make-object vertical-pane% (get-button-panel)))
+                 (callback (λ (button) (set! debug? #t) (execute-callback)))))
           
           (define pause-button
             (instantiate button% ()
-              [label ((bitmap-label-maker
-                       "Pause"
-                       (build-path (collection-path "gui-debugger" "icons") "pause.png")) this)]
+              [label (make-pause-label this)]
               [parent debug-panel]
               [callback (lambda (button evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1307,9 +1331,7 @@
           
           (define resume-button
             (instantiate button% ()
-              [label ((bitmap-label-maker
-                       "Go"
-                       (build-path (collection-path "gui-debugger" "icons") "resume.png")) this)]
+              [label (make-resume-label this)]
               [parent debug-panel]
               [callback (lambda (button evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1319,9 +1341,7 @@
           
           (define step-button
             (instantiate button% ()
-              [label ((bitmap-label-maker
-                       "Step"
-                       (build-path (collection-path "gui-debugger" "icons") "step.png")) this)]
+              [label (make-step-label this)]
               [parent debug-panel]
               [callback (lambda (btn evt)
                           (if (send (get-current-tab) get-stack-frames)
@@ -1373,18 +1393,14 @@
           
           (define step-over-button
             (new button%
-                 [label ((bitmap-label-maker
-                          "Over"
-                          (build-path (collection-path "gui-debugger" "icons") "step-over2.png")) this)]
+                 [label (make-over-label this)]
                  [parent debug-panel]
                  [callback (make-big-step-callback #f)]
                  [enabled #f]))
           
           (define step-out-button
             (new button%
-                 [label ((bitmap-label-maker
-                          "Out"
-                          (build-path (collection-path "gui-debugger" "icons") "step-out2.png")) this)]
+                 [label (make-out-label this)]
                  [parent debug-panel]
                  [callback (make-big-step-callback #t)]
                  [enabled #f]))

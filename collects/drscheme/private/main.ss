@@ -53,6 +53,12 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drscheme:toolbar-state 
+                         '(#f . horizontal)
+                         (λ (x) (and (pair? x)
+                                     (boolean? (car x))
+                                     (memq (cdr x) '(horizontal vertical)))))
+
 (preferences:set-default 'drscheme:htdp:last-set-teachpacks
                          '() 
                          (λ (x)

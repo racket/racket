@@ -637,89 +637,95 @@
       
       (sequence (apply super-init args))))
 
+  
+  (define (wx-make-horizontal/vertical-panel% wx-linear-panel% init-horizontal?)
+    (class100 wx-linear-panel% args
+      (inherit major-align minor-align do-align do-get-alignment major-offset minor-offset
+	       spacing border do-graphical-size place-linear-children check-place-children
+               force-redraw)
+      (private-field [horizontal? init-horizontal?])
+      (public [get-orientation (λ () horizontal?)]
+              [set-orientation (λ (h?) 
+                                 (unless (equal? h? horizontal?)
+                                   (set! horizontal? h?)
+                                   (force-redraw)))])
+      (override
+	[alignment (lambda (h v) 
+                     (if horizontal?
+                         (do-align h v 
+                                   (lambda (x) (major-align x)) 
+                                   (lambda (x) (minor-align x)))
+                         (do-align h v 
+                                   (lambda (x) (minor-align x)) 
+                                   (lambda (x) (major-align x)))))]
+	[get-alignment (λ () (do-get-alignment (if horizontal? (λ (x y) x) (λ (x y) y))))]
+        
+	[do-get-graphical-min-size
+	 (lambda ()
+           (if horizontal?
+               (do-graphical-size 
+                (lambda (x-accum kid-info hidden?)
+                  (+ x-accum (child-info-x-min (car kid-info))
+                     (if (or hidden? (null? (cdr kid-info)))
+                         0
+                         (spacing))))
+                (lambda (y-accum kid-info hidden?)
+                  (max y-accum
+                       (+ (child-info-y-min (car kid-info))
+                          (* 2 (border))))))
+               (do-graphical-size
+                (lambda (x-accum kid-info hidden?)
+                  (max x-accum
+                       (+ (child-info-x-min (car kid-info))
+                          (* 2 (border)))))
+                (lambda (y-accum kid-info hidden?)
+                  (+ y-accum (child-info-y-min (car kid-info))
+                     (if (or (null? (cdr kid-info)) hidden?)
+                         0
+                         (spacing)))))))]
+ 
+	[do-place-children
+         (lambda (l w h)
+           (cond
+             [horizontal?
+              (check-place-children l w h)
+              (place-linear-children l w h
+                                     car    ; child-info-x-min
+                                     caddr  ; child-info-x-stretch
+                                     (lambda (s) (major-offset s))
+                                     cadr   ; child-info-y-min
+                                     cadddr ; child-info-y-stretch
+                                     (lambda (s t) (minor-offset s t))
+                                     (lambda (width height) width)
+                                     (lambda (width height) height)
+                                     (lambda (major minor) major)
+                                     (lambda (major minor) minor))]
+             [else
+              (check-place-children l w h)
+              (place-linear-children l w h
+                                     cadr   ; child-info-y-min
+                                     cadddr ; child-info-y-stretch
+                                     (lambda (s) (major-offset s))
+                                     car    ; child-info-x-min
+                                     caddr  ; child-info-x-stretch
+                                     (lambda (s t) (minor-offset s t))
+                                     (lambda (width height) height)
+                                     (lambda (width height) width)
+                                     (lambda (major minor) minor)
+                                     (lambda (major minor) major))]))])
+      (sequence (apply super-init args))))
+  
+  
   ;; horizontal-panel%: a panel which arranges its children in an evenly
   ;; spaced horizontal row.  Items are vertically centered (or stretched
   ;; to fit the dialog box if they are stretchable).  The items are evenly
   ;; spaced horizontally, with any extra space divided evenly among the
   ;; stretchable items. 
-  (define (wx-make-horizontal-panel% wx-linear-panel%)
-    (class100 wx-linear-panel% args
-      (inherit major-align minor-align do-align do-get-alignment major-offset minor-offset
-	       spacing border do-graphical-size place-linear-children check-place-children)
-      (override
-	[alignment (lambda (h v) (do-align h v 
-					   (lambda (x) (major-align x)) 
-					   (lambda (x) (minor-align x))))]
-	[get-alignment (lambda () (do-get-alignment (lambda (x y) x)))]
-	
-	[do-get-graphical-min-size
-	 (lambda ()
-	   (do-graphical-size 
-	    (lambda (x-accum kid-info hidden?)
-	      (+ x-accum (child-info-x-min (car kid-info))
-		 (if (or hidden? (null? (cdr kid-info)))
-		     0
-		     (spacing))))
-	    (lambda (y-accum kid-info hidden?)
-	      (max y-accum
-		   (+ (child-info-y-min (car kid-info))
-		      (* 2 (border)))))))]
-	[do-place-children
-	 (lambda (l w h)
-	   (check-place-children l w h)
-	   (place-linear-children l w h
-				  car    ; child-info-x-min
-				  caddr  ; child-info-x-stretch
-				  (lambda (s) (major-offset s))
-				  cadr   ; child-info-y-min
-				  cadddr ; child-info-y-stretch
-				  (lambda (s t) (minor-offset s t))
-				  (lambda (width height) width)
-				  (lambda (width height) height)
-				  (lambda (major minor) major)
-				  (lambda (major minor) minor)))])
-      (sequence (apply super-init args))))
+  (define (wx-make-horizontal-panel% wx-linear-panel%) (wx-make-horizontal/vertical-panel% wx-linear-panel% #t))
 
   ;; vertical-panel%.  See horizontal-panel%, but reverse
   ;; "horizontal" and "vertical."
-  (define (wx-make-vertical-panel% wx-linear-panel%)
-    (class100 wx-linear-panel% args
-      (inherit major-align minor-align do-align do-get-alignment major-offset minor-offset
-	       spacing border do-graphical-size place-linear-children check-place-children)
-      (override
-	[alignment (lambda (h v) (do-align h v 
-					   (lambda (x) (minor-align x)) 
-					   (lambda (x) (major-align x))))]
-	[get-alignment (lambda () (do-get-alignment (lambda (x y) y)))]
-
-	[do-get-graphical-min-size
-	 (lambda ()
-	   (do-graphical-size
-	    (lambda (x-accum kid-info hidden?)
-	      (max x-accum
-		   (+ (child-info-x-min (car kid-info))
-		      (* 2 (border)))))
-	    (lambda (y-accum kid-info hidden?)
-	      (+ y-accum (child-info-y-min (car kid-info))
-		 (if (or (null? (cdr kid-info)) hidden?)
-		     0
-		     (spacing))))))]
-	
-	[do-place-children
-	 (lambda (l w h)
-	   (check-place-children l w h)
-	   (place-linear-children l w h
-				  cadr   ; child-info-y-min
-				  cadddr ; child-info-y-stretch
-				  (lambda (s) (major-offset s))
-				  car    ; child-info-x-min
-				  caddr  ; child-info-x-stretch
-				  (lambda (s t) (minor-offset s t))
-				  (lambda (width height) height)
-				  (lambda (width height) width)
-				  (lambda (major minor) minor)
-				  (lambda (major minor) major)))])
-      (sequence (apply super-init args))))
+  (define (wx-make-vertical-panel% wx-linear-panel%) (wx-make-horizontal/vertical-panel% wx-linear-panel% #f))
 
   (define wx-panel% (wx-make-panel% wx:panel%))
   (define wx-linear-panel% (wx-make-linear-panel% wx-panel%))

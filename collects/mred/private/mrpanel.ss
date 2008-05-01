@@ -94,8 +94,18 @@
 	       (send (send wx area-parent) add-child wx))))
 	  (send parent after-new-child this)))))
 
-  (define vertical-panel% (class100*/kw panel% () [(parent [style null]) panel%-keywords] (sequence (super-init parent style))))
-  (define horizontal-panel% (class100*/kw panel% () [(parent [style null]) panel%-keywords] (sequence (super-init parent style))))
+  (define vertical-panel% 
+    (class100*/kw panel% () 
+                  [(parent [style null]) panel%-keywords] 
+                  (sequence (super-init parent style))
+                  (public [set-orientation (λ (x) (send (mred->wx this) set-orientation x))]
+                          [get-orientation (λ () (send (mred->wx this) get-orientation))])))
+  (define horizontal-panel% 
+    (class100*/kw panel% () 
+                  [(parent [style null]) panel%-keywords] 
+                  (sequence (super-init parent style))
+                  (public [set-orientation (λ (x) (send (mred->wx this) set-orientation x))]
+                          [get-orientation (λ () (send (mred->wx this) get-orientation))])))
 
   (define list-append append)
 

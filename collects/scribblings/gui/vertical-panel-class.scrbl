@@ -30,8 +30,18 @@ If the @scheme['border] style is specified, the window is created with
  less than its total size). @DeletedStyleNote{panel}
 
 @WindowKWs[] @SubareaKWs[] @AreaContKWs[] @AreaKWs[]
+}
 
+@defmethod[(set-orientation [horizontal? boolean?]) void?]{
+  Sets the orientation of the panel, switching it between
+  the behavior of the @scheme[vertical-panel%] and that of
+  the @scheme[horizontal-panel%].
+}
 
-
-}}
+@defmethod[(get-orientation) boolean?]{
+  Initially returns @scheme[#f], but if 
+  @method[vertical-panel% set-orientation] is called,
+  this method returns whatever the last value passed to it was.
+}
+}
 

@@ -45,7 +45,7 @@ The @scheme[style] argument indicates one or more of the following styles:
  @item{@scheme['resize-corner] --- leaves room for a resize control at the canvas's
                                   bottom right when only one scrollbar is visible}
 
- @item{@scheme['gl] --- {\em obsolete} (every canvas is an OpenGL context where supported)}
+ @item{@scheme['gl] --- @italic{obsolete} (every canvas is an OpenGL context where supported)}
 
  @item{@scheme['no-autoclear] --- prevents automatic erasing of the
  canvas before calls to

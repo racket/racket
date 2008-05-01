@@ -992,7 +992,7 @@
 (define (panel-tests frame% show?)
   (define (panel-test % win?)
     (let* ([frame (make-object frame% "Panel Test" #f 100 100)]
-	   [panel (if %
+           [panel (if %
 		      (make-object % frame)
 		      frame)])
       (let ([go
@@ -1001,6 +1001,8 @@
 	       (if win?
 		   ((if % containee-window-tests window-tests) panel #t #t (and % frame) frame 0)
 		   (area-tests panel #t #t #f))
+               (when (is-a? panel panel%)
+                 (st #t panel get-orientation (is-a? panel horizontal-panel%)))
 	       (container-tests panel win?)
 	       (send frame show #f))])
 	(when (eq? show? 'dialog)
