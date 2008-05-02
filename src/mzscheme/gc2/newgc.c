@@ -1306,8 +1306,8 @@ inline static void register_new_thread(void *t, void *c)
   struct gc_thread_info *work;
 
   work = (struct gc_thread_info *)malloc(sizeof(struct gc_thread_info));
-  work->owner = current_owner((Scheme_Custodian *)c);
   ((Scheme_Thread *)t)->gc_info = work;
+  work->owner = current_owner((Scheme_Custodian *)c);
   work->thread = t;
   work->next = threads;
   threads = work;
