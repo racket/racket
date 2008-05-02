@@ -225,7 +225,8 @@
                                  (cond [end (= mend end)]
                                        [len (= mend len)]
                                        [(input-port? string)
-                                        (eof-object? (peek-byte string))]
+                                        (eof-object?
+                                         (peek-byte string (if peek? mend 0)))]
                                        [else (error "internal error (str)")]))
                           (failure-k acc start end)
                           (if port-success-k
