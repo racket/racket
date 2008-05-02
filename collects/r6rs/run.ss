@@ -33,8 +33,12 @@
 
 (current-command-line-arguments (apply vector-immutable args))
 
-(define (r6rs-read-syntax . args)
-  (datum->syntax #f (apply r6rs:read-syntax args)))
+(define r6rs-read-syntax
+  (case-lambda
+   [() (r6rs-read-syntax (object-name (current-input-port)))]
+   [(name) (r6rs-read-syntax name (current-input-port))]
+   [(name port)
+    (datum->syntax #f (r6rs:read-syntax name port #'r6rs 1 0 1))]))
 
 (define (extract-libraries orig)
   (let loop ([last-pos 0])
