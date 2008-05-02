@@ -11,12 +11,40 @@
 
 (define switchable-button%
   (class canvas%
-    (init-field label bitmap callback)
+    (init-field label 
+                bitmap
+                callback)
+    
+    (define disable-bitmap
+      (let ([alpha-bm (send bitmap get-loaded-mask)])
+        (and alpha-bm
+             (let* ([w (send alpha-bm get-width)]
+                    [h (send alpha-bm get-height)]
+                    [disable-bm (make-object bitmap% w h)]
+                    [pixels (make-bytes (* 4 w h))]
+                    [bdc (make-object bitmap-dc% alpha-bm)])
+               (send bdc get-argb-pixels 0 0 w h pixels)
+               (let loop ([i 0])
+                 (when (< i (* 4 w h))
+                   (bytes-set! pixels i (- 255 (quotient (- 255 (bytes-ref pixels i)) 2)))
+                   (loop (+ i 1))))
+               (send bdc set-bitmap disable-bm)
+               (send bdc set-argb-pixels 0 0 w h pixels)
+               (send bdc set-bitmap #f)
+               disable-bm))))
     
     (inherit get-dc min-width min-height get-client-size refresh)
     
     (define down? #f)
     (define in? #f)
+    (define disabled? #f)
+    
+    (define/override (enable e?)
+      (unless (equal? disabled? (not e?))
+        (set! disabled? (not e?))
+        (refresh)))
+    (define/override (is-enabled?) (not disabled?))
+    
     (define/override (on-event evt)
       (cond
         [(send evt button-down? 'left)
@@ -27,7 +55,8 @@
          (set! down? #f)
          (update-in evt)
          (refresh)
-         (when in?
+         (when (and in?
+                    (not disabled?))
            (callback this))]
         [(send evt entering?)
          (set! in? #t)
@@ -57,6 +86,7 @@
             
             (send dc set-alpha 
                   (cond
+                    [disabled? 0]
                     [in? (if down?
                              .5
                              .2)]
@@ -71,6 +101,9 @@
             (send dc set-alpha alpha)
 	    (send dc set-font normal-control-font)
             
+            (when disabled?
+              (send dc set-alpha .5))
+            
             (cond
               [horizontal? 
                (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
@@ -80,10 +113,19 @@
               [else
                (draw-the-bitmap (- (/ cw 2) (/ (send bitmap get-width) 2))
                                 (- (/ ch 2) (/ (send bitmap get-height) 2)))])
+            
+            
+            #;
+            (when disabled?
+              (send dc set-alpha .5)
+              (send dc set-pen "white" 1 'transparent)
+              (send dc set-brush "white" 'solid)
+              (send dc draw-rectangle 0 0 cw ch))
+            
             (send dc set-pen pen)
             (send dc set-alpha alpha)
             (send dc set-brush brush)))))
-    
+            
     (define/private (draw-the-bitmap x y)
       (send (get-dc)
             draw-bitmap
@@ -91,7 +133,9 @@
             x y
             'solid
             (send the-color-database find-color "black")
-            (send bitmap get-loaded-mask)))
+            (if disabled?
+                disable-bitmap
+                (send bitmap get-loaded-mask))))
     
     (define/public (set-label-visible h?) 
       (unless (equal? horizontal? h?)
@@ -135,7 +179,7 @@
 
   (define b1 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
   (define b2 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
-  (new button% [parent p] [stretchable-width #t] [label "b"])
+  (define b3 (new button% [parent p] [stretchable-width #t] [label "b"]))
   (define swap-button
     (new button% 
          [parent f] 
@@ -144,7 +188,15 @@
           (let ([state #t])
             (λ (a b)
               (set! state (not state))
-              (send b1 set-orientation state)
-              (send b2 set-orientation state)
+              (send b1 set-label-visible state)
+              (send b2 set-label-visible state)
               '(send p set-orientation state)))]))
+  (define disable-button
+    (new button% 
+         [parent f] 
+         [label "disable"]
+         [callback
+          (λ (a b)
+            (send b3 enable (not (send b3 is-enabled?)))
+            (send b1 enable (not (send b1 is-enabled?))))]))
   (send f show #t)) 
