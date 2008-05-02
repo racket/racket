@@ -90,6 +90,8 @@
                              [(comes-from-local) unwind-local]
                              [(comes-from-recur) unwind-recur]
                              [(comes-from-check-expect) unwind-check-expect]
+                             [(comes-from-check-within) unwind-check-within]
+                             [(comes-from-check-error) unwind-check-error]
                              ;;[(comes-from-begin) unwind-begin]
                              [else fall-through])])
               (process stx settings))))
@@ -306,5 +308,30 @@
             (eq? (syntax->datum #'dots2) '...))
        (with-syntax ([expected (unwind (third (stepper-syntax-property stx 'stepper-args-of-call)) settings)])
          #`(check-expect actual expected))]
+      [any #`(c-e any) #;#`(check-expect )]))
+  
+  (define (unwind-check-within stx settings)
+    (kernel-syntax-case (fall-through stx settings) #f
+      [(c-e (lambda () a1) a2 a3 a4 a5)
+      #`(check-within a1 a2 a3)]
+      [(dots1 actual dots2)
+       (and (eq? (syntax->datum #'dots1) '...)
+            (eq? (syntax->datum #'dots2) '...))
+       (let ([args-of-call (stepper-syntax-property stx 'stepper-args-of-call)])
+         (with-syntax ([expected (unwind (third args-of-call) settings)]
+                       [within (unwind (fourth args-of-call) settings)])
+         #`(check-within actual expected within)))]
+      [any #`(c-e any) #;#`(check-expect )]))
+  
+  (define (unwind-check-error stx settings)
+    (kernel-syntax-case (fall-through stx settings) #f
+      [(c-e (lambda () a1) a2 a3 a4)
+      #`(check-error a1 a2)]
+      [(dots1 actual dots2)
+       (and (eq? (syntax->datum #'dots1) '...)
+            (eq? (syntax->datum #'dots2) '...))
+       (let ([args-of-call (stepper-syntax-property stx 'stepper-args-of-call)])
+         (with-syntax ([expected (unwind (third args-of-call) settings)])
+           #`(check-error actual expected)))]
       [any #`(c-e any) #;#`(check-expect )]))
 )

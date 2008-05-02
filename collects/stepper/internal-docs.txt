@@ -86,9 +86,10 @@ stepper-hint :
  [ 'from-splice-box ] : expression was expanded from a scheme splice
 		        box (inside an xml box)
  [ 'comes-from-recur ] : expression was expanded from a 'recur'
- [ 'comes-from-check-expect ] : expression was expanded from a 'check-expect',
-   or this identifier (use or binding) was created by the expansion of a 'check-expect'.
-
+ [ 'comes-from-check-expect ] : expression was expanded from a 'check-expect'
+ [ 'comes-from-check-within ] : ... from a 'check-within'
+ [ 'comes-from-check-error ] : ... from a 'check-error'
+ 
 stepper-define-type:
  this is attached to the right-hand sides of defines to indicate what
  kind of define they came from.
