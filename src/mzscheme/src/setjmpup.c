@@ -471,7 +471,7 @@ static void *shift_var_stack(void *s, long delta)
 #ifdef STACK_GROWS_UP
   return s;
 #else
-  void **vs = (void **)(s + delta);
+  void **vs = (void **)((char *)s + delta);
   long cnt;
   
   /* Set s past end of vs: */
@@ -556,7 +556,7 @@ struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, 
 {
   void *cur_end;
 
-  PAST_VAR_STACK_DELTA(stack_boundary,  (void *)get_copy(jmp->cont.stack_copy) - (void *)jmp->cont.stack_from);
+  PAST_VAR_STACK_DELTA(stack_boundary,  (char *)get_copy(jmp->cont.stack_copy) - (char *)jmp->cont.stack_from);
 
 #ifdef STACK_GROWS_UP
   cur_end = (void *)jmp->cont.stack_from;
