@@ -199,13 +199,21 @@
                          ;; re-match if we get a zero-length match at the
                          ;; beginning, and we can continue
                          [m (if (and (= mstart mend start)
-                                     (cond [end (< start end)]
-                                           [len (< start len)]
-                                           [(input-port? string)
-                                            (not (eof-object?
-                                                  (peek-byte string)))]
-                                           [else (error "internal error (str)")]))
-                              (match rx string (add1 start) end)
+                                     (cond
+                                       [end (< start end)]
+                                       [len (< start len)]
+                                       [(input-port? string)
+                                        (not (eof-object? (peek-byte string)))]
+                                       [else (error "internal error (str)")]))
+                              (if (or peek? (not (input-port? string)))
+                                (match rx string (add1 start) end)
+                                ;; rematching on a port requires adding `start'
+                                ;; offsets
+                                (let ([m (match rx string 1 end)])
+                                  (if (and m (positive? start))
+                                    (list (cons (+ start (caar m))
+                                                (+ start (cdar m))))
+                                    m)))
                               m)])
                     ;; fail if rematch failed
                     (if (not m)
