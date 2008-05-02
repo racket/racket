@@ -123,8 +123,12 @@
                                        rmp
                                        (lambda ()
                                          (let-values ([(valss stxess)
-                                                       (module-compiled-exports
-                                                        (get-module-code (resolved-module-path-name rmp)))])
+                                                       (with-handlers ([exn:fail?
+                                                                        (lambda (exn)
+                                                                          (values null null))])
+                                                         (module-compiled-exports
+                                                          (get-module-code (resolved-module-path-name rmp)
+                                                                           #:choose (lambda (src zo so) 'zo))))])
                                            (let ([t 
                                                   ;; Merge the two association lists:
                                                   (let loop ([base valss]
@@ -164,8 +168,14 @@
                                                                       0)))
                                                           (cadr a))
                                                      rqueue))
-                                       (error 'find-scheme-tag
-                                              "dead end when looking for binding source: ~e"
-                                              id))))
+                                       (begin
+                                         ;; A dead end may not be our fault: the files could
+                                         ;; have changed in inconsistent ways. So just say #f
+                                         ;; for now.
+                                         #;
+                                         (error 'find-scheme-tag
+                                                "dead end when looking for binding source: ~e"
+                                                id)
+                                         #f))))
                                ;; Can't get the module source, so continue with queue:
                                (loop queue rqueue)))))))])))))))
