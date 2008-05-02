@@ -1384,10 +1384,12 @@ module browser threading seems wrong.
                    (update-defs/ints-resize-corner/pref v)))])
         
         (define/private (update-defs/ints-resize-corner)
-          (update-defs/ints-resize-corner/pref (preferences:get 'framework:show-status-line)))
+          (update-defs/ints-resize-corner/pref
+           (preferences:get 'framework:show-status-line)))
         
         (define/private (update-defs/ints-resize-corner/pref si-pref)
-          (let ([bottom-material? (and (toolbar-shown?) si-pref)])
+          (let ([bottom-material? (and (not (car toolbar-state))
+                                       si-pref)])
             (let loop ([cs definitions-canvases])
               (cond
                 [(null? cs) (void)]
