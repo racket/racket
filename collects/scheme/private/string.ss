@@ -129,19 +129,19 @@
             end))
          (reverse
           (let loop ([acc '()] [start start] [end end])
-            (when (and need-leftover? (positive? start) (input-port? string))
-              ;; Skip start chars:
-              (let ([s (make-bytes 4096)])
-                (let loop ([n 0])
-                  (unless (= n start)
-                    (let ([m (read-bytes-avail!
-                              s string 0 (min (- start n) 4096))])
-                      (unless (eof-object? m) (loop (+ n m))))))))
 
             (if (and port-success-choose (input-port? string))
 
               ;; Input port match, get string
-              (let* ([discarded/leftovers 0]
+              (let* ([_ (when (positive? start)
+                          ;; Skip start chars:
+                          (let ([s (make-bytes 4096)])
+                            (let loop ([n 0])
+                              (unless (= n start)
+                                (let ([m (read-bytes-avail!
+                                          s string 0 (min (- start n) 4096))])
+                                  (unless (eof-object? m) (loop (+ n m))))))))]
+                     [discarded/leftovers (if need-leftover? #f 0)]
                      [spitout (if need-leftover?
                                 (open-output-bytes)
                                 (make-output-port
@@ -151,51 +151,41 @@
                                      (set! discarded/leftovers
                                            (+ c discarded/leftovers))
                                      c))
-                                 void))])
-                (define match
-                  (if need-leftover?
-                    (let* ([end (and end (- end start))]
-                           [m (regexp-match rx string 0 end spitout)]
-                           ;; re-match if we get a zero-length match at the
-                           ;; beginning
-                           [m (if (and m ; we have a match
-                                       ;; and it's an empty one
-                                       (zero? (bstring-length (car m)))
-                                       ;; and it's at the beginning
-                                       (zero? (file-position spitout))
-                                       ;; and we still have stuff to match
-                                       ;;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                       (if end
-                                         (< 0 end)
-                                         (not (eof-object? (peek-byte string)))))
-                                (regexp-match rx string 1 end spitout)
-                                m)])
-                      (set! discarded/leftovers (get-output-bytes spitout))
-                      m)
-                    (let ([m (regexp-match rx string start end spitout)])
-                      ;; re-match if we get a zero-length match at the
-                      ;; beginning
-                      (if (and m
-                               (zero? discarded/leftovers)
-                               (zero? (bstring-length (car m))))
-                        (regexp-match rx string (add1 start) (sub1 end) spitout)
-                        m))))
-                (let ([end (and end match
-                                (- end (if need-leftover?
-                                         (+ (bstring-length discarded/leftovers)
-                                            start)
-                                         discarded/leftovers)
-                                   (bstring-length (car match))))])
-                  (if (and match
-                           (or (< 0 (bstring-length (car match)))
+                                 void))]
+                     [end (and end (- end start))]
+                     [m (regexp-match rx string 0 end spitout)]
+                     ;; re-match if we get a zero-length match at the
+                     ;; beginning
+                     [m (if (and m ; we have a match
+                                 ;; and it's an empty one
+                                 (zero? (bstring-length (car m)))
+                                 ;; and it's at the beginning
+                                 (zero? (if need-leftover?
+                                          (file-position spitout)
+                                          discarded/leftovers))
+                                 ;; and we still have stuff to match
+                                 (if end
+                                   (< 0 end)
+                                   (not (eof-object? (peek-byte string)))))
+                          (regexp-match rx string 1 end spitout)
+                          m)]
+                     [m (and m (car m))]
+                     [discarded/leftovers (if need-leftover?
+                                            (get-output-bytes spitout)
+                                            discarded/leftovers)]
+                     [end (and end m
+                               (- end (if need-leftover?
+                                        (bstring-length discarded/leftovers)
+                                        discarded/leftovers)
+                                  (bstring-length m)))])
+                ;; drop matches that are both empty and at the end
+                (if (and m (or (< 0 (bstring-length m))
                                (if end
                                  (< 0 end)
                                  (not (eof-object? (peek-byte string))))))
-                    (loop (cons (port-success-choose (car match)
-                                                     discarded/leftovers)
-                                acc)
-                          0 end)
-                    (port-failure-k acc discarded/leftovers))))
+                  (loop (cons (port-success-choose m discarded/leftovers) acc)
+                        0 end)
+                  (port-failure-k acc discarded/leftovers)))
 
               ;; String/port match, get positions
               (let ([match ((if peek?
