@@ -716,11 +716,12 @@
       (define/private (update-client-width str)
         (let ([dc (get-dc)])
           (let-values ([(cw _4) (get-client-size)]
-                       [(tw _1 _2 _3) (send dc get-text-extent str)])
+                       [(tw _1 _2 _3) (send dc get-text-extent str normal-control-font)])
             (when (< cw tw)
               (min-client-width (inexact->exact (floor tw)))))))
       (define/override (on-paint)
         (let ([dc (get-dc)])
+	  (send dc set-font normal-control-font)
           (let-values ([(cw ch) (get-client-size)]
                        [(tw th _1 _2) (send dc get-text-extent str)])
             (send dc draw-text str 0 (/ (- ch th) 2)))))

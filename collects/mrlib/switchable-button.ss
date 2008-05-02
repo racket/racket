@@ -69,6 +69,7 @@
                   (- cw margin margin)
                   (- ch margin margin))
             (send dc set-alpha alpha)
+	    (send dc set-font normal-control-font)
             
             (cond
               [horizontal? 
@@ -102,7 +103,7 @@
       (let ([dc (get-dc)])
         (cond
           [horizontal?
-           (let-values ([(w h _1 _2) (send dc get-text-extent label)])
+           (let-values ([(w h _1 _2) (send dc get-text-extent label normal-control-font)])
              (do-w/h (+ w gap (send bitmap get-width))
                      (max h (send bitmap get-height))))]
           [else
