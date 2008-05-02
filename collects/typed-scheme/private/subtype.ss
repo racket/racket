@@ -223,12 +223,14 @@
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
                (subtype* A0 parent other)]
               ;; applications and names are structs too
-              [(list (App: (Name: n) args _) other)
+              [(list (App: (Name: n) args stx) other)
                (let ([t (lookup-type-name n)])
                  (unless (Type? t)                     
                    (fail! s t))
                  #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
                            (instantiate-poly t args))
+                 (unless (Poly? t)
+                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))
                  (let ([v (subtype* A0 (instantiate-poly t args) other)])                    
                    #;(printf "val: ~a~n"  v)
                    v))]

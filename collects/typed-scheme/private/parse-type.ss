@@ -162,11 +162,13 @@
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
           (lambda (t)
+            ;(printf "found a type alias ~a~n" #'id)
             (add-type-name-reference #'id)
             t)]
          ;; if it's a type name, we just use the name
          [(lookup-type-name #'id (lambda () #f))
           (add-type-name-reference #'id)
+          ;(printf "found a type name ~a~n" #'id)
           (make-Name #'id)]
          [else
           (tc-error/delayed "unbound type ~a" (syntax-e #'id))
