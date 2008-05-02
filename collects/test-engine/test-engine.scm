@@ -91,8 +91,10 @@
                [(path? (src-file src))
                 (string-append " In " (path->string (src-file src)) " at ")]
                [else " At "])
-         "line " (number->string (src-line src))
-         " column " (number->string (src-col src)))))
+         "line " (cond [(src-line src) => number->string]
+                       [else "(unknown)"])
+         " column " (cond [(src-col src) => number->string]
+                          [else "(unknown)"]))))
 
       (super-instantiate ())))
 
