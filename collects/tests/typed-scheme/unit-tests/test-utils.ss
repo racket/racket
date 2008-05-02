@@ -15,11 +15,12 @@
                                                    (string->symbol 
                                                     (string-append 
                                                      "typed-scheme/private/" 
-                                                     (symbol->string (syntax-e id))))))
+                                                     (symbol->string (syntax-e id))))
+                                                   id id))
                                      (syntax->list #'(id ...)))])
-       #`(combine-in id* ...))])))
+         (syntax/loc stx (combine-in id* ...)))])))
 
-(require (private planet-requires type-comparison utils))
+(require (private planet-requires type-comparison utils type-utils))
 
 (require (schemeunit))
 
@@ -47,12 +48,20 @@
 	    (values (lambda () (run tmps ...))
 		    (lambda () (run/gui tmps ...))))))]))
 
+;; FIXME - check that effects are equal
+(define (tc-result-equal/test? a b)
+  (match* (a b)
+          [((tc-result: t1 thn1 els1) (tc-result: t2 thn2 els2))
+           (and (type-equal? t1 t2)
+                (= (length thn1) (length thn2))
+                (= (length els1) (length els2)))]))
+
 (define-syntax (check-type-equal? stx)
   (syntax-case stx ()
     [(_ nm a b)
-     #`(test-check nm type-equal? a b)]))
+     (syntax/loc stx (test-check nm type-equal? a b))]))
 (define-syntax (check-tc-result-equal? stx)
   (syntax-case stx ()
     [(_ nm a b)
-     #`(test-check nm tc-result-equal? a b)]))
+     (syntax/loc stx (test-check nm tc-result-equal/test? a b))]))
 

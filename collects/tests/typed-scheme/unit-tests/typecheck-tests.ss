@@ -39,11 +39,11 @@
 ;; check that an expression typechecks correctly
 (define-syntax (tc-e stx)
   (syntax-case stx ()
-    [(_ expr ty) #'(tc-e expr ty (list) (list))]
+    [(_ expr ty) (syntax/loc stx (tc-e expr ty (list) (list)))]
     [(_ expr ty eff1 eff2)
-     #`(check-tc-result-equal? (format "~a" 'expr)
-			       (tc-expr/expand expr)
-			       (ret ty eff1 eff2))]))
+     (syntax/loc stx (check-tc-result-equal? (format "~a" 'expr)
+                                             (tc-expr/expand expr)
+                                             (ret ty eff1 eff2)))]))
 
 (require (for-syntax syntax/kerncase))
 
@@ -58,12 +58,12 @@
 			[e (local-expand #'e 'expression '())])))
 
 ;; check that typechecking this expression fails
-(define-syntax (tc-err stx)
-  (syntax-case stx ()
+(define-syntax tc-err
+  (syntax-rules ()
     [(_ expr)
-     #'(test-exn (format "~a" 'expr)
-		 exn:fail:syntax?                     
-		 (lambda () (tc-expr/expand expr)))]))
+     (test-exn (format "~a" 'expr)
+               exn:fail:syntax?                     
+               (lambda () (tc-expr/expand expr)))]))
 
 
 (define (typecheck-tests)
@@ -102,7 +102,7 @@
         [tc-e '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
-        [tc-e #{(lambda: ([l : (list-of a)]) (car l)) PROP typechecker:plambda (a)}
+        [tc-e #{(lambda: ([l : (Listof a)]) (car l)) PROP typechecker:plambda (a)}
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
         [tc-e (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
         [tc-e (let: ([x : Number 5]) x) N (-vet #'x) (-vef #'x)]
@@ -112,7 +112,7 @@
         [tc-e (values 3) -Integer]
         [tc-e (values) (-values (list))]
         [tc-e (values 3 #f) (-values (list -Integer (-val #f)))]
-        [tc-e (map #{values : (symbol -> symbol)} '(a b c)) (make-Listof  Sym)]
+        [tc-e (map #{values @ Symbol} '(a b c)) (make-Listof  Sym)]
         [tc-e (letrec: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                        (fact 20))
               N]
@@ -172,10 +172,10 @@
                     (when (boolean? x) #t))
               -Void]
         
-        [tc-e (let: ([x : Sexp 3])
+        [tc-e (let: ([x : Any 3])
                     (if (list? x)
                         (begin (car x) 1) 2))
-              N]
+              -Integer]
         
         
         [tc-e (let: ([x : (U Number Boolean) 3])
@@ -218,8 +218,8 @@
                  (string-append "foo" (a v))))
          -String]
         
-        [tc-e (apply (plambda: (a) [x : a] x) '(5)) (-lst N)]
-        [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst N)]
+        [tc-e (apply (plambda: (a) [x : a] x) '(5)) (-lst -Integer)]
+        [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -Integer)]
         
         [tc-err ((case-lambda: [([x : Number]) x]
                                [([y : Number] [x : Number]) x])
@@ -294,11 +294,11 @@
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? x sym) 3 x))
-              N]
+              -Integer]
         [tc-e (let* ([sym 'squarf]
                      [x (if (= 1 2) 3 sym)])
                 (if (equal? sym x) 3 x))
-              N]
+              -Integer]
         
         [tc-e (let: ([x : (Listof Symbol)'(a b c)])
                     (cond [(memq 'a x) => car]
@@ -327,7 +327,7 @@
                         (error 'foo)))
               (-pair Univ (-lst Univ))]
         
-        ;[tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) N]
+        [tc-e (cadr (cadr (list 1 (list 1 2 3) 3))) -Integer]
         
         
         
@@ -339,10 +339,10 @@
         [tc-e (let: ([x : Any 1]) (and x (boolean? x))) B
               (list (-rem (-val #f) #'x) (-rest B #'x)) (list)]
         
-        [tc-e (let: ([x : Sexp 3])
-                    (if (and (list? x) (not (null? x))) 
+        [tc-e (let: ([x : Any 3])
+                    (if (and (list? x) (not (null? x)))
                         (begin (car x) 1) 2))
-              N]
+              -Integer]
         
         ;; set! tests
         [tc-e (let: ([x : Any 3])
@@ -394,7 +394,7 @@
         [tc-e (let* ([z 1]
                      [p? (lambda: ([x : Any]) (number? z))])
                 (lambda: ([x : Any]) (if (p? x) 11 12)))
-              (-> Univ N)]
+              (-> Univ -Integer)]
         [tc-e (let* ([z 1]
                      [p? (lambda: ([x : Any]) (number? z))])
                 (lambda: ([x : Any]) (if (p? x) x 12)))
@@ -461,7 +461,7 @@
         [tc-e (let ([app apply]
                     [f (lambda: [x : Number] 3)])
                 (app f (list 1 2 3)))
-              N]
+              -Integer]
         [tc-e ((lambda () (call/cc (lambda: ([k : (Number -> (U))]) (if (read) 5 (k 10))))))
               N]
         
@@ -539,7 +539,7 @@
         [tc-err (let: ([x : Number #f]) (+ 1 x))]
         
         [tc-err
-         (let: ([x : Sexp '(foo)])
+         (let: ([x : Any '(foo)])
                (if (null? x) 1
                    (if (list? x) 
                        (add1 x) 
