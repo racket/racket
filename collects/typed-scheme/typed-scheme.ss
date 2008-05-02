@@ -22,7 +22,7 @@
           "private/effect-rep.ss"
           "private/rep-utils.ss"
           "private/type-contract.ss"
-          "private/nest.ss"
+          scheme/nest
           syntax/kerncase
           scheme/match))
 
@@ -81,8 +81,7 @@
                           (local-expand #`(#%plain-module-begin 
                                            forms ...)
                                         'module-begin 
-                                        null
-                                        #;stop-list)])]
+                                        null)])]
            [with-syntax ([(pmb body2 ...) #'new-mod])]
            [begin (do-time "Local Expand Done")]
            [with-syntax ([after-code (parameterize ([orig-module-stx stx]
