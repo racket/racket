@@ -25,7 +25,6 @@
 (require scheme/private/contract
          scheme/private/contract-guts
          scheme/private/contract-ds
-         scheme/private/contract-opt-guts
          scheme/private/contract-opt
          scheme/private/contract-basic-opters)
 

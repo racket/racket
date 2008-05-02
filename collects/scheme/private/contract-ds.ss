@@ -19,7 +19,6 @@ it around flattened out.
 
 (require "contract-guts.ss"
          "contract-opt.ss"
-         "contract-ds-helpers.ss"
          mzlib/etc)
 (require (for-syntax scheme/base)
          (for-syntax "contract-ds-helpers.ss")

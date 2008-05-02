@@ -12,7 +12,8 @@
 	   net/base64
            scheme/serialize
            (prefix-in xml: xml/xml)
-           (for-syntax scheme/base))
+           (for-syntax scheme/base)
+           "search.ss")
   (provide render-mixin
            render-multi-mixin)
 
@@ -203,8 +204,8 @@
               (let ([p (path->main-collects-relative p)])
                 (if (path? p)
                     (path->root-relative p)
-                    p))
-              p)))
+                    (intern-taglet p)))
+              (intern-taglet p))))
       
       (define (relative->path p)
         (let ([p (main-doc-relative->path p)])

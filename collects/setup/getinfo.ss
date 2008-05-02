@@ -37,9 +37,11 @@
          [(list 'module 'info
                 (or '(lib "infotab.ss" "setup") 'setup/infotab)
                 expr ...)
-          ;; no need to set a reader-guard, since we checked it
+          ;; No need to set a reader-guard, since we checked it
           ;; above (a guard will see other uses of #lang for stuff
-          ;; that is required)
+          ;; that is required). 
+          ;; We are, however, trusting that the bytecode form of the
+          ;; file (if any) matches the source.
           (dynamic-require file '#%info-lookup)]
          [else (err "does not contain a module of the right shape")])))
 

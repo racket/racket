@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "mz.ss")
 
+@(define w (make-will-executor))
+
 @title{@bold{Reference}: PLT Scheme}
 
 This manual defines the core PLT Scheme language and describes its

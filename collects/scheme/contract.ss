@@ -13,7 +13,6 @@ differences from v3:
          "private/contract-arrow.ss"
          "private/contract-guts.ss"
          "private/contract-ds.ss"
-         "private/contract-opt-guts.ss"
          "private/contract-opt.ss"
          "private/contract-basic-opters.ss")
 

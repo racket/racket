@@ -424,21 +424,22 @@
                                                       id)
                                                   (exporting-libraries-libs e)
                                                   (exporting-libraries-source-libs e))]
-                        [tag (list (if sig
-                                       (case sym
-                                         [(def) 'sig-val]
-                                         [(form) 'sig-def])
-                                       sym)
-                                   (append
-                                    (list lib-taglet)
-                                    (if sig (list (syntax-e (sig-id sig))) null)
-                                    (list (syntax-e id))))])
+                        [tag (intern-taglet
+                              (list (if sig
+                                        (case sym
+                                          [(def) 'sig-val]
+                                          [(form) 'sig-def])
+                                        sym)
+                                    (append
+                                     (list lib-taglet)
+                                     (if sig (list (syntax-e (sig-id sig))) null)
+                                     (list (syntax-e id)))))])
                    (if (or sig (not dep?))
                        (list (mk tag))
                        (list (make-target-element
                               #f
                               (list (mk tag))
-                              `(dep ,(list lib-taglet (syntax-e id)))))))
+                              (intern-taglet `(dep ,(list lib-taglet (syntax-e id))))))))
                  content)))
          (lambda () (car content))
          (lambda () (car content))))))
@@ -462,7 +463,7 @@
                      (make-redirect-target-element
                       #f
                       null
-                      (list kind (list taglet id))
+                      (intern-taglet (list kind (list taglet id)))
                       path
                       anchor))])
               (make-element
@@ -1029,14 +1030,15 @@
              (list (make-hover-element
                     #f
                     (list e)
-                    (string-append
-                     "Provided from: "
-                     (let loop ([from from])
-                       (if (null? (cdr from))
-                           (format "~s" (car from))
-                           (format "~s, ~a"
-                                   (car from)
-                                   (loop (cdr from))))))))
+                    (intern-taglet
+                     (string-append
+                      "Provided from: "
+                      (let loop ([from from])
+                        (if (null? (cdr from))
+                            (format "~s" (car from))
+                            (format "~s, ~a"
+                                    (car from)
+                                    (loop (cdr from)))))))))
              (list e))))
      (lambda () e)
      (lambda () e)))

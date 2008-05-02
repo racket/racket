@@ -203,7 +203,10 @@
                                    "serialization failed (wrong resolve info? delayed element never rendered?); ~a"
                                    (exn-message exn)))])
            (vector
-            (make-element #f (delayed-element-content d ri))))))
+            (let ([l (delayed-element-content d ri)])
+              (if (and (pair? l) (null? (cdr l)))
+                  (car l)
+                  (make-element #f l)))))))
      #'deserialize-delayed-element
      #f
      (or (current-load-relative-directory) (current-directory))))

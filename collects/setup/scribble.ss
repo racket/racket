@@ -420,8 +420,10 @@
   expr
   #;
   (begin
-    (printf "... ~a ...\n" what)
-    (time expr)))
+    (collect-garbage) (collect-garbage) (printf "pre: ~a ~s\n" what (current-memory-use))
+    (begin0
+     (time expr)
+     (collect-garbage) (collect-garbage) (printf "post ~a ~s\n" what (current-memory-use)))))
 
 (define (build-again! latex-dest info with-record-error)
   (define doc (info-doc info))

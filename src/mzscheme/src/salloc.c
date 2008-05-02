@@ -1117,10 +1117,11 @@ static void print_tagged_value(const char *prefix,
       char *t2;
       int len2;
 	    
-      sprintf(buffer, "[%ld:%.100s]",
+      sprintf(buffer, "[%ld/%ld:%.100s]",
 	      ((Scheme_Env *)v)->phase,
+              ((Scheme_Env *)v)->mod_phase,
 	      (((Scheme_Env *)v)->module
-	       ? SCHEME_SYM_VAL(((Scheme_Env *)v)->module->modname)
+	       ? scheme_write_to_string(((Scheme_Env *)v)->module->modname, NULL)
 	       : "(toplevel)"));
 	    
       len2 = strlen(buffer);
