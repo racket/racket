@@ -1304,8 +1304,9 @@ module browser threading seems wrong.
         
         (inherit show-info hide-info is-info-hidden?)
         (field [toolbar-state (preferences:get 'drscheme:toolbar-state)]
-               [toolbar-vertical-menu-item #f]
-               [toolbar-horizontal-menu-item #f]
+               [toolbar-top-menu-item #f]
+               [toolbar-left-menu-item #f]
+               [toolbar-right-menu-item #f]
                [toolbar-hidden-menu-item #f]
                [toolbar-menu #f])
         
@@ -1318,20 +1319,25 @@ module browser threading seems wrong.
           (update-toolbar-visiblity))
         
         (define/override (on-toolbar-button-click) (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
-        (define/private (set-toolbar-horizontal) (change-toolbar-state (cons #f 'horizontal)))
-        (define/private (set-toolbar-vertical) (change-toolbar-state (cons #f 'vertical)))
+        (define/private (set-toolbar-left) (change-toolbar-state (cons #f 'left)))
+        (define/private (set-toolbar-right) (change-toolbar-state (cons #f 'right)))
+        (define/private (set-toolbar-top) (change-toolbar-state (cons #f 'top)))
         (define/private (set-toolbar-hidden) (change-toolbar-state (cons #t (cdr toolbar-state))))
         
         (define/public (update-toolbar-visiblity)
           (let* ([hidden? (car (preferences:get 'drscheme:toolbar-state))]
-                 [vertical? (and (not hidden?)
-                                 (eq? (cdr (preferences:get 'drscheme:toolbar-state))
-                                      'vertical))]
-                 [horizontal? (and (not hidden?)
-                                   (eq? (cdr (preferences:get 'drscheme:toolbar-state))
-                                        'horizontal))])
-            (send toolbar-horizontal-menu-item check horizontal?)
-            (send toolbar-vertical-menu-item check vertical?)
+                 [top? (and (not hidden?)
+                            (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                                 'top))]
+                 [right? (and (not hidden?)
+                              (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                                   'right))]
+                 [left? (and (not hidden?)
+                             (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                                  'left))])
+            (send toolbar-left-menu-item check left?)
+            (send toolbar-right-menu-item check right?)
+            (send toolbar-top-menu-item check top?)
             (send toolbar-hidden-menu-item check hidden?)
             
             (cond
@@ -1339,11 +1345,12 @@ module browser threading seems wrong.
                (hide-info)
                (send top-outer-panel change-children (λ (l) '()))
                (send logging-parent-panel change-children (λ (l) '()))]
-              [vertical? (orient/show #t)]
-              [horizontal? (orient/show #f)]))
+              [top? (orient/show #f #t)]
+              [left? (orient/show #t #t)]
+              [right? (orient/show #t #f)]))
           (update-defs/ints-resize-corner))
         
-        (define/private (orient/show vertical?)
+        (define/private (orient/show vertical? bar-at-beginning?)
           (begin-container-sequence)
           (show-info)
           
@@ -1367,9 +1374,9 @@ module browser threading seems wrong.
           (send top-panel set-orientation (not vertical?))
           (send toolbar/rest-panel set-orientation vertical?)
           (send toolbar/rest-panel change-children (λ (l)
-                                                     (if vertical?
-                                                         (append (remq top-outer-panel l) (list top-outer-panel))
-                                                         (cons top-outer-panel (remq top-outer-panel l)))))
+                                                     (if bar-at-beginning?
+                                                         (cons top-outer-panel (remq top-outer-panel l))
+                                                         (append (remq top-outer-panel l) (list top-outer-panel)))))
           (send top-outer-panel change-children (λ (l) (list top-panel)))
           (send logging-parent-panel change-children (λ (l) (list logging-panel)))
           (if vertical? 
@@ -2513,22 +2520,28 @@ module browser threading seems wrong.
           
           (set! toolbar-menu (new menu% 
                                   [parent show-menu]
-                                  [label "Toolbar"]))
-          (set! toolbar-horizontal-menu-item
+                                  [label (string-constant toolbar)]))
+          (set! toolbar-left-menu-item
                 (new checkable-menu-item%
-                     [label "Horizontal Toolbar"]
+                     [label (string-constant toolbar-on-left)]
                      [parent toolbar-menu]
-                     [callback (λ (x y) (set-toolbar-horizontal))]
+                     [callback (λ (x y) (set-toolbar-left))]
                      [checked #f]))
-          (set! toolbar-vertical-menu-item
+          (set! toolbar-top-menu-item
                 (new checkable-menu-item%
-                     [label "Vertical Toolbar"]
+                     [label (string-constant toolbar-on-top)]
                      [parent toolbar-menu]
-                     [callback (λ (x y) (set-toolbar-vertical))]
+                     [callback (λ (x y) (set-toolbar-top))]
+                     [checked #f]))
+          (set! toolbar-right-menu-item
+                (new checkable-menu-item%
+                     [label (string-constant toolbar-on-right)]
+                     [parent toolbar-menu]
+                     [callback (λ (x y) (set-toolbar-right))]
                      [checked #f]))
           (set! toolbar-hidden-menu-item
                 (new checkable-menu-item%
-                     [label "Hidden Toolbar"]
+                     [label (string-constant toolbar-hidden)]
                      [parent toolbar-menu]
                      [callback (λ (x y) (set-toolbar-hidden))]
                      [checked #f])))

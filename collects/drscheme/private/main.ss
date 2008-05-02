@@ -54,10 +54,10 @@
 (application:current-app-name (string-constant drscheme))
 
 (preferences:set-default 'drscheme:toolbar-state 
-                         '(#f . horizontal)
+                         '(#f . top)
                          (λ (x) (and (pair? x)
                                      (boolean? (car x))
-                                     (memq (cdr x) '(horizontal vertical)))))
+                                     (memq (cdr x) '(left top right)))))
 
 (preferences:set-default 'drscheme:htdp:last-set-teachpacks
                          '() 

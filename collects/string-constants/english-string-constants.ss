@@ -799,8 +799,11 @@ please adhere to these guidelines:
  (show-interactions-menu-item-label "Show &Interactions")
  (hide-interactions-menu-item-label "Hide &Interactions")
  (interactions-menu-item-help-string "Show/Hide the interactions window")
- (show-toolbar "Show &Toolbar")
- (hide-toolbar "Hide &Toolbar")
+ (toolbar "Toolbar")
+ (toolbar-on-top "Toolbar On Top")
+ (toolbar-on-left "Toolbar On Left")
+ (toolbar-on-right "Toolbar On Right")
+ (toolbar-hidden "Toolbar Hidden")
 
  ;;; file menu
  (save-definitions-as "Save Definitions &As...")
