@@ -8,21 +8,25 @@
 
 (provide type-annotation-tests)
 
-(define-syntax (tat stx)
-  (syntax-case stx ()
-    [(_ ann-stx ty)
-     #`(check-type-equal? #,(format "~a" (syntax->datum #'ann-stx))  
-                          (type-annotation #'ann-stx)
-			  ty)]))
+(define-syntax-rule (tat ann-stx ty)
+  (check-type-equal? (format "~a" (quote ann-stx))  
+                     (type-ascription (let ([ons (current-namespace)]
+                                            [ns (make-empty-namespace)])
+                                        (parameterize ([current-namespace ns])
+                                          (namespace-attach-module ons 'scheme/base ns)
+                                          (namespace-require 'scheme/base)
+                                          (namespace-require 'typed-scheme/private/prims)
+                                          (expand 'ann-stx))))
+                     ty))
 
 #reader typed-scheme/typed-reader
 (define (type-annotation-tests)
   (test-suite 
    "Type Annotation tests"
    
-   (tat #{foo : Number} N)
+   (tat (ann foo : Number) N)
    (tat foo #f)
-   (tat #{foo : 3} (-val 3))))
+   (tat (ann foo : 3) (-val 3))))
 
 (define-go
   type-annotation-tests)

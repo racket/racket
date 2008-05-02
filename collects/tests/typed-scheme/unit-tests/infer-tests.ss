@@ -1,10 +1,10 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base))
-(require (private planet-requires type-effect-convenience type-rep unify union infer-ops)
+(require (private planet-requires type-effect-convenience type-rep unify union infer-ops type-utils)
          (prefix-in table: (private tables)))
 (require (schemeunit)) 
 
-(define (fv . args) (list))
+
 
 (provide fv-tests)
 

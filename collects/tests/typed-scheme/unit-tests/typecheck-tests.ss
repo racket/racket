@@ -17,7 +17,11 @@
 
 
 
-(provide typecheck-tests tc-expr/expand)
+(provide typecheck-tests g tc-expr/expand)
+
+(define (g) (run typecheck-tests))
+
+(define-namespace-anchor anch)
 
 
 ;; check that a literal typechecks correctly
@@ -30,11 +34,11 @@
 (define-syntax (tc-expr/expand stx)
   (syntax-case stx ()
     [(_ e)
-     (with-syntax ([e* (local-expand #'e 'expression '())])
-       #'(let ([ex #'e*])
+     #`(parameterize ([delay-errors? #f]
+                      [current-namespace (namespace-anchor->namespace anch)])
+         (let ([ex (expand 'e)])
            (find-mutated-vars ex)
-           (parameterize ([delay-errors? #f])
-             (tc-expr ex))))]))
+           (tc-expr ex)))]))
 
 ;; check that an expression typechecks correctly
 (define-syntax (tc-e stx)
@@ -102,7 +106,7 @@
         [tc-e '(#t #f) (-lst* (-val #t) (-val #f))]
         [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
-        [tc-e #{(lambda: ([l : (Listof a)]) (car l)) PROP typechecker:plambda (a)}
+        [tc-e (plambda: (a) ([l : (Listof a)]) (car l))
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
         [tc-e (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
         [tc-e (let: ([x : Number 5]) x) N (-vet #'x) (-vef #'x)]
@@ -417,7 +421,15 @@
         [tc-err ((plambda: (a) ([x : (a -> a)] [y : a]) (x y)) 5)]
         [tc-err ((plambda: (a) ([x : a] [y : a]) x) 5)]
         [tc-err (ann 5 : String)]
+        
+        ;; these don't work because the type annotation gets lost in marshalling
+        #|
         [tc-e (letrec-syntaxes+values () ([(#{x : Number}) (values 1)]) (add1 x)) N]
+        [tc-e (letrec-values ([(#{x : Number}) (values 1)]) (add1 x)) N]
+        [tc-e (letrec ([#{x : Number} (values 1)]) (add1 x)) N]
+        |#
+        
+        [tc-e (letrec: ([x : Number (values 1)]) (add1 x)) N]
         
         [tc-err (let ([x (add1 5)])
                   (set! x "foo")
