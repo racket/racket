@@ -13,6 +13,7 @@
 
 (require
  "extra-procs.ss"
+ "init-envs.ss"
  scheme/promise
  (except-in "type-rep.ss" make-arr)
  (only-in scheme/list cons?)
@@ -38,15 +39,18 @@
 ;; the initial type name environment - just the base types
 (define-syntax (define-tname-env stx)
   (syntax-case stx ()
-    [(_ var provider [nm ty] ...)
+    [(_ var provider initer [nm ty] ...)
      #`(begin
          (define-syntax nm (lambda (stx) (raise-syntax-error 'type-check "type name used out of context" stx))) ...
          (provide nm) ...
          (define-syntax provider (lambda (stx) #'(begin (provide nm) ...)))
          (provide provider)
-         (begin-for-syntax
+         (define-for-syntax (initer)
            (initialize-type-name-env
-            (list (list #'nm ty) ...))))]))
+            (list (list #'nm ty) ...)))
+         (begin-for-syntax 
+           ;(printf "phase is ~a~n" (syntax-local-phase-level))
+           (initer)))]))
 
 (define-syntax (define-other-types stx)
   (syntax-case stx ()
@@ -70,7 +74,7 @@
                   (provide provider requirer))))]))
 
 ;; the initial set of available type names
-(define-tname-env initial-type-names provide-tnames
+(define-tname-env initial-type-names provide-tnames init-tnames
   [Number N]
   [Integer -Integer]
   [Void -Void]

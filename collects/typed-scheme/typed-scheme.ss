@@ -22,6 +22,7 @@
           "private/effect-rep.ss"
           "private/rep-utils.ss"
           "private/type-contract.ss"
+          ;(only-in "private/base-types.ss" init-tnames)
           scheme/nest
           syntax/kerncase
           scheme/match))
@@ -45,6 +46,8 @@
                      [require require]))
 
 (define-for-syntax catch-errors? #f)
+
+;(begin (init-tnames))
 
 
 (define-syntax (module-begin stx)

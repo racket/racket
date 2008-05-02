@@ -118,7 +118,10 @@
             [(-Port) -Sexp]
             [() -Sexp])]
      [ormap (-poly (a b) ((-> a b) (-lst a) . -> . b))]
-     [andmap (-poly (a b) ((-> a b) (-lst a) . -> . b))]
+     [andmap (-poly (a b c d e) 
+                    (cl->*
+                     ((-> a b) (-lst a) . -> . b)
+                     ((-> c d e) (-lst c) (-lst d) . -> . e)))]
      [newline (cl-> [() -Void]
                     [(-Port) -Void])]
      [not (-> Univ B)]
