@@ -326,4 +326,4 @@
 
 ;(trace infer cgen cset-meet* subst-gen)
 
-;(trace cgen)
+;(trace infer subst-gen)

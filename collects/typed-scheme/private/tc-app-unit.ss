@@ -150,28 +150,43 @@
                  [else (loop (cdr doms*) (cdr rngs*) (cdr rests*))]))]                      
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ..1))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
-                                 (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
+                                 (tc-error "Polymorphic argument ~a to polymorphic function in apply not allowed" x)))
                    arg-tys0)
          (let loop ([doms* doms] [rngs* rngs] [rests* rests])
            (cond [(null? doms*)
-                  (if (= 1 (length doms))
-                      (tc-error/expr
-                       #:return (ret (Un))
-                       "polymorphic function domain did not match - domain was: ~a arguments were ~a" 
-                       (car doms) arg-tys0)
-                      (tc-error/expr
-                       #:return (ret (Un))
-                       "no polymorphic function domain matched - domains were: ~a arguments were ~a"
-                       doms arg-tys0))]
+                  (match f-ty 
+                    [(tc-result: (Poly-names: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ..1))))
+                     (cond 
+                       [(null? doms) (int-err "how could doms be null: ~a ~a" doms f-ty)]
+                       [(= 1 (length doms))
+                        (if (car rests)
+                            (tc-error/expr
+                             #:return (ret (Un))
+                             "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
+                             (car doms) (car rests) (stringify arg-tys0))
+                            (tc-error/expr
+                             #:return (ret (Un))
+                             "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
+                             (car doms) (stringify arg-tys0)))]
+                       [else 
+                        (tc-error/expr
+                         #:return (ret (Un))
+                         "no polymorphic function domain matched - ~ndomains were: ~a~narguments were ~a~n"
+                         (stringify 
+                          (for/list ([dom doms] [rest rests])
+                            (if rest
+                                (format "~a rest argument: " (stringify dom) rest)
+                                (stringify dom)))
+                          "\n")
+                         (stringify arg-tys0))])])]
                  [(and (= (length (car doms*))
                           (length arg-tys))
-                       (infer vars (append (car doms*) (list (make-Listof (car rests*)))) arg-tys0 (car rngs*))
-                       #;(infer/list (append (car doms*) (list (make-Listof (car rests*)))) arg-tys0 vars))
+                       (infer vars arg-tys0 (append (car doms*) (list (make-Listof (car rests*)))) (car rngs*)))
                   => (lambda (substitution) 
                        (let* ([s (lambda (t) (subst-all substitution t))]
                               [new-doms* (append (map s (car doms*)) (list (make-Listof (s (car rests*)))))])
                          (unless (andmap subtype arg-tys0 new-doms*)
-                           (int-err "Inconsistent substitution - arguments not subtypes")))                         
+                           (int-err "Inconsistent substitution - arguments not subtypes: ~n~a~n~a~n" arg-tys0 new-doms*)))
                        (ret (subst-all substitution (car rngs*))))]
                  [else (loop (cdr doms*) (cdr rngs*) (cdr rests*))]))]
         [(tc-result: (Poly: vars (Function: '())))
