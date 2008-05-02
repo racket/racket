@@ -186,10 +186,10 @@
      (<= (->* (list N N) N B))
      [> (->* (list N) N B)]
      (zero? (N . -> . B))
-     (* (cl->* #;(->* '() -Integer -Integer) (->* '() N N)))
+     (* (cl->* (->* '() -Integer -Integer) (->* '() N N)))
      (/ (cl->* (->* (list N) N N)))
-     (+ (cl->* #;(->* '() -Integer -Integer) (->* '() N N)))
-     (- (cl->* #;(->* (list -Integer) -Integer -Integer) (->* (list N) N N)))
+     (+ (cl->* (->* '() -Integer -Integer) (->* '() N N)))
+     (- (cl->* (->* (list -Integer) -Integer -Integer) (->* (list N) N N)))
      (max (->* (list N) N N))
      (min (->* (list N) N N))
      [values  (make-Poly '(a) (-> (-v a) (-v a)))]
