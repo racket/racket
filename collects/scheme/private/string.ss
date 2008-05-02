@@ -188,30 +188,37 @@
                   (port-failure-k acc discarded/leftovers)))
 
               ;; String/port match, get positions
-              (let ([match ((if peek?
+              (let* ([match (if peek?
                               regexp-match-peek-positions
-                              regexp-match-positions)
-                            rx string start end)])
-                (if (not match)
+                              regexp-match-positions)]
+                     [m (match rx string start end)])
+                (if (not m)
                   (failure-k acc start end)
-                  (let* ([mstart (caar match)]
-                         [mend   (cdar match)]
+                  (let* ([mstart (caar m)]
+                         [mend   (cdar m)]
                          ;; re-match if we get a zero-length match at the
-                         ;; beginning
-                         [match (if (and (= mstart mend start)
-                                         (< start (or end len +inf.0)))
-                                  ((if peek?
-                                     regexp-match-peek-positions
-                                     regexp-match-positions)
-                                   rx string (add1 start) end)
-                                  match)])
+                         ;; beginning, and we can continue
+                         [m (if (and (= mstart mend start)
+                                     (cond [end (< start end)]
+                                           [len (< start len)]
+                                           [(input-port? string)
+                                            (not (eof-object?
+                                                  (peek-byte string)))]
+                                           [else (error "internal error (str)")]))
+                              (match rx string (add1 start) end)
+                              m)])
                     ;; fail if rematch failed
-                    (if (not match)
+                    (if (not m)
                       (failure-k acc start end)
-                      (let ([mstart (caar match)]
-                            [mend   (cdar match)])
+                      (let ([mstart (caar m)]
+                            [mend   (cdar m)])
                         ;; or if we have a zero-length match at the end
-                        (if (= mstart mend (or end len +inf.0))
+                        (if (and (= mstart mend)
+                                 (cond [end (= mend end)]
+                                       [len (= mend len)]
+                                       [(input-port? string)
+                                        (eof-object? (peek-byte string))]
+                                       [else (error "internal error (str)")]))
                           (failure-k acc start end)
                           (if port-success-k
                             (port-success-k
