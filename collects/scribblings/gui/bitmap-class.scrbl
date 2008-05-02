@@ -51,7 +51,7 @@ When a @scheme[bits] byte string is provided: Creates a monochrome
                             [width (integer-in 1 10000)]
                             [height (integer-in 1 10000)]
                             [pixels (and/c byte-string? mutable?)]
-                            [alpha? any/c @scheme[#f]])
+                            [alpha? any/c #f])
            void?]{
 
 Produces the same result as @xmethod[bitmap-dc% get-argb-pixels], but the

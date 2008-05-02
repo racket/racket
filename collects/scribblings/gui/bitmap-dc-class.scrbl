@@ -51,7 +51,7 @@ Display part of a bitmap with smooth scaling. For most platforms, this
                             [width (integer-in 1 10000)]
                             [height (integer-in 1 10000)]
                             [pixels (and/c bytes? (not/c immutable?))]
-                            [alpha? any/c @scheme[#f]])
+                            [alpha? any/c #f])
            void?]{
 
 Gets a rectangle of pixels in the bitmap, subject to the same rules

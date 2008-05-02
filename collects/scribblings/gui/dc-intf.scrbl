@@ -91,9 +91,9 @@ If the mask bitmap is grayscale and the bitmap to draw is not
  a non-grayscale mask or a monochrome bitmap to draw) produce
  platform-specific results.
 
-The current brush, current pen, and current text settings for the DC
- have no effect on how the bitmap is drawn, but the bitmap is scaled
- if the DC has a scale.
+The current brush, current pen, current text, and current alpha
+ settings for the DC have no effect on how the bitmap is drawn, but
+ the bitmap is scaled if the DC has a scale.
 
 For @scheme[post-script-dc%] output, the mask bitmap is currently
  ignored, and the @scheme['solid] style is treated the same as
