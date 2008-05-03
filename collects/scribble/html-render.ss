@@ -87,6 +87,7 @@
         }
         return r;
       }
+      var search_box = null;
       function initialize_search() {
         var all_links = document.getElementsByTagName("a");
         search_nodes = new Array();
@@ -95,7 +96,7 @@
             all_links[i].flat_text = node_to_text(all_links[i]).toLowerCase();
             search_nodes.push(all_links[i]);
           }
-        var search_box = document.getElementById("search_box");
+        search_box = document.getElementById("search_box");
         if (location.search.length > 0) {
           var paramstrs = location.search.substring(1).split(/[@";"&]/);
           for (var i in paramstrs) {
