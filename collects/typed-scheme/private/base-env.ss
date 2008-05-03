@@ -15,7 +15,7 @@
  "extra-procs.ss"
  scheme/promise
  (except-in "type-rep.ss" make-arr)
- (only-in scheme/list cons?)
+ (only-in scheme/list cons? take drop add-between)
  "type-effect-convenience.ss"
  (only-in "type-effect-convenience.ss" [make-arr* make-arr])
  "union.ss"
@@ -151,6 +151,10 @@
                    [((-> a b c) (-lst a) (-lst b)) -Void]))]
      [foldl (-poly (a b) 
                    ((a b . -> . b) b (make-lst a) . -> . b))]
+     [filter (-poly (a) ((a . -> . B) (-lst a) . -> . (-lst a)))]
+     [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+     [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+     [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
      
      [call-with-values (-poly (a b) (-> (-> a) (-> a b) b))]
      
@@ -199,7 +203,7 @@
      [build-list (-poly (a) (N (N . -> . a) . -> . (-lst a)))]
      [reverse (make-Poly '(a) (-> (make-lst (-v a)) (make-lst (-v a))))]
      [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
-     [length (make-Poly '(a) (-> (make-lst (-v a)) N))]
+     [length (make-Poly '(a) (-> (make-lst (-v a)) -Integer))]
      [memq (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
      [memv (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
      [member 
