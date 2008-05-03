@@ -142,13 +142,16 @@
       (fprintf port "This program should be tested.~n"))
     (define/public (display-results rep event-space)
       (send test-display install-info test-info)
-      
-      (if (and rep event-space)
-        (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace)
-                        event-space])
-          ((dynamic-require 'scheme/gui 'queue-callback)
-           (lambda () (send rep display-test-results test-display))))
-        (send test-display display-results)))
+      (cond
+        [(and rep event-space)
+         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace)
+                         event-space])
+           ((dynamic-require 'scheme/gui 'queue-callback)
+            (lambda () (send rep display-test-results test-display))))]
+        [event-space 
+         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace) event-space])
+           ((dynamic-require 'scheme/gui 'queue-callback) (lambda () (send test-display display-results))))]
+        [else (send test-display display-results)]))
 
     (define/pubment (initialize-test test)
       (inner (void) initialize-test test))

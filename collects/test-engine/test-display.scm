@@ -129,18 +129,19 @@
         (send text insert m))
       (let ((start (send text get-end-position)))
         (send text insert (format-src dest))
-        (send text set-clickback
-              start (send text get-end-position)
-              (lambda (t s e) (highlight-check-error dest src-editor))
-              #f #f)
-        (let ([end (send text get-end-position)]
-              [c (new style-delta%)])
-          (send text insert " ")
-          (send text change-style
-                (make-object style-delta% 'change-underline #t)
-                start end #f)
-          (send c set-delta-foreground "royalblue")
-          (send text change-style c start end #f))))
+        (when (and src-editor current-rep)
+          (send text set-clickback
+                start (send text get-end-position)
+                (lambda (t s e) (highlight-check-error dest src-editor))
+                #f #f)
+          (let ([end (send text get-end-position)]
+                [c (new style-delta%)])
+            (send text insert " ")
+            (send text change-style
+                  (make-object style-delta% 'change-underline #t)
+                  start end #f)
+            (send c set-delta-foreground "royalblue")
+            (send text change-style c start end #f)))))
 
     (define (format-src src)
       (let ([src-file car]
@@ -151,8 +152,10 @@
            [(symbol? (src-file src)) (string-append " At ")]
            [(path? (src-file src)) (string-append " In " (path->string (src-file src)) " at ")]
            [(is-a? (src-file src) editor<%>) " At "])
-         "line " (number->string (src-line src))
-         " column " (number->string (src-col src)))))
+         "line " (cond [(src-line src) => number->string]
+                       [else "(unknown)"])
+         " column " (cond [(src-col src) => number->string]
+                          [else "(unknown)"]))))
 
     (define (highlight-check-error srcloc src-editor)
       (let* ([src-pos cadddr]
