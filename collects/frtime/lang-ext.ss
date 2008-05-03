@@ -834,7 +834,6 @@
            value-now
            value-now/no-copy
            value-now/sync
-           frtime-version
            signal-count
            signal?
 

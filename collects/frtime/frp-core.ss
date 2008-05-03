@@ -26,9 +26,7 @@
   (define snap? (make-parameter #f))
   
   (define named-dependents (make-hash-table))
-  
-  (define frtime-version "0.4b -- Tue Jun 26 17:39:45 2007")
-  
+    
   (define (compose-continuation-mark-sets2 s1 s2)
     s2)
   
@@ -197,7 +195,6 @@
                                    [extra-cont-marks ccm])
                       (current-parameterization))
                     (if cust-sig (append producers (list cust-sig)) producers))])
-         ;(printf "~a custodians~n" (length custs))
          (when (cons? producers)
            (register sig producers))
          (when cust-sig
@@ -223,7 +220,6 @@
                     (if cust-sig (cons cust-sig producers) producers)
                     current-box
                     trigger)])
-         ;(printf "~a custodians~n" (length custs))
          (when (cons? producers)
            (register sig producers))
          (when cust-sig
@@ -246,61 +242,6 @@
      
   (define (proc->signal:unchanged thunk . producers)
     (build-signal make-signal:unchanged thunk producers))
-  
-  ;; mutate! : compound num -> (any -> ())
-  (define (procs->signal:compound ctor mutate! . args)
-    (let ([ccm (effective-continuation-marks)])
-      (do-in-manager
-       (let* ([cust (current-cust)]
-              [cust-sig (and cust (ft-cust-signal cust))]
-              [value (apply ctor (map value-now/no-copy args))]
-              #;[mutators
-                 (foldl
-                  (lambda (arg idx acc)
-                    (if (signal? arg) ; behavior?
-                        (cons (proc->signal
-                               (let ([m (mutate! value idx)])
-                                 (lambda ()
-                                   (let ([v (value-now/no-copy arg)])
-                                     (m v)
-                                     'struct-mutator)))
-                               arg) acc)
-                        acc))
-                  empty args (build-list (length args) identity))]
-                [sig (make-signal:compound
-                      undefined
-                      empty
-                      #f
-                      (lambda () ;mutators
-                        (let loop ([i 0] [args args] [val value])
-                          (if (cons? args)
-                              (let ([fd (value-now/no-copy (car args))])
-                                ((mutate! value i) fd)
-                                (loop (add1 i) (cdr args)
-                                      (if (undefined? fd)
-                                          undefined
-                                          val)))
-                              val)))
-                      (add1 (apply max 0 (cons (safe-signal-depth cust-sig) (map safe-signal-depth args))))
-                      ccm
-                      (parameterize ([uncaught-exception-handler
-                                      (lambda (exn) (exn-handler exn))]
-                                     [extra-cont-marks ccm])
-                        (current-parameterization))
-                      (if cust-sig (cons cust-sig args) args)
-                      (apply ctor args)
-                      (lambda () (apply ctor (map value-now args))))])
-         ;(printf "mutators = ~a~n" mutators)
-         (when (cons? args)
-           (register sig args))
-         (when cust-sig
-           (register (make-non-scheduled sig) cust-sig))
-         (when cust
-           (set-ft-cust-constructed-sigs! cust (cons (make-weak-box sig) (ft-cust-constructed-sigs cust))))
-         (iq-enqueue sig)
-         ;(printf "~n*made a compound [~a]*~n~n" (value-now/no-copy sig))
-         sig))))
-  
   
   
   
@@ -390,17 +331,8 @@
     (do-in-manager-after
      (apply values (map value-now sigs))))
   
-  #;(define-syntax value-now/sync
-      (syntax-rules ()
-        [(_ beh ...)
-         (begin
-           (! man (list 'run-thunk/stabalized (self) (lambda () (list (value-now beh) ...))))
-           (receive [('val v) v]
-                    [('exn e) (raise e)]))]))
-  
   
   (define (kill-signal sig)
-    ;(printf "killing~n")
     (for-each
      (lambda (prod)
        (unregister sig prod))
@@ -408,17 +340,7 @@
     (set-signal-thunk! sig (lambda _ 'really-dead))
     (set-signal-value! sig 'dead)
     (set-signal-dependents! sig empty)
-    (set-signal-producers! sig empty)
-    #;(for-each
-     (lambda (c)
-       (set-ft-cust-constructed-sigs!
-        c
-        (filter (lambda (wbox)
-                   (cond
-                     [(weak-box-value wbox) => (lambda (v) (not (eq? sig v)))]
-                     [else (begin #;(printf "empty weak box~n") #f)]))
-                (ft-cust-constructed-sigs c))))
-     (signal-custodians sig)))
+    (set-signal-producers! sig empty))
   
   
   
@@ -436,16 +358,6 @@
       [0]))
   
   
-  ; *** will have to change significantly to support depth-guided recomputation ***
-  ; Basically, I'll have to check that I'm not introducing a cycle.
-  ; If there is no cycle, then I simply ensure that inf's depth is at least one more than
-  ; sup's.  If this requires an increase to inf's depth, then I need to propagate the
-  ; new depth to inf's dependents.  Since there are no cycles, this step is guaranteed to
-  ; terminate.  When checking for cycles, I should of course stop when I detect a pre-existing
-  ; cycle.
-  ; If there is a cycle, then 'inf' has (and retains) a lower depth than 'sup' (?), which
-  ; indicates the cycle.  Importantly, 'propagate' uses the external message queue whenever
-  ; a dependency crosses an inversion of depth.
   (define fix-depths
     (opt-lambda (inf sup [mem empty])
       (if (memq sup mem)
@@ -603,9 +515,6 @@
                           (cust-killall! cust)
                           (set-ft-cust-constructed-sigs! cust empty)
                           (set-ft-cust-children! cust empty)
-                          #;(for-each kill-signal
-                                    (filter identity
-                                            (map weak-box-value (ft-cust-constructed-sigs cust))))
                           (unregister rtn (unbox current))
                           (set-box! current (pfun (value-now/no-copy bhvr)))
                           (register rtn (unbox current))
@@ -716,22 +625,16 @@
        (let outer ()
          (with-handlers ([exn:fail?
                           (lambda (exn)
-                            (when (and cur-beh
-                                       #;(not (undefined? (signal-value cur-beh))))
-                              ;(when (empty? (continuation-mark-set->list
-                               ;              (exn-continuation-marks exn) 'frtime))
-                              ;(fprintf (current-error-port) "exception while updating ~a~n" cur-beh)
+                            (when cur-beh
                               (set! exn (make-exn:fail
                                          (exn-message exn)
                                          (compose-continuation-mark-sets2
                                           (signal-continuation-marks
                                            cur-beh)
                                           (exn-continuation-marks exn))));)
-                              ;(raise exn)
                               (iq-enqueue (list exceptions (list exn cur-beh)))
                               (when (behavior? cur-beh)
-                                (undef cur-beh)
-                                #;(kill-signal cur-beh)))
+                                (undef cur-beh)))
                             (outer))])
            (set! exn-handler (uncaught-exception-handler))
            (let inner ()
