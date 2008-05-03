@@ -605,8 +605,6 @@
 ;;>   Swindle values in errors, when using `printf' etc.
 (define* (install-swindle-printer)
   (global-port-print-handler write-object)
-  (current-print ; see PR7782
-   (lambda (x) (unless (void? x) (write-object x) (newline))))
   (port-display-handler (current-output-port) display-object)
   (port-display-handler (current-error-port)  display-object)
   (port-write-handler   (current-output-port) write-object)
