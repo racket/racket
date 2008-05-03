@@ -88,7 +88,7 @@
         
         (tc-e 3 -Integer)
         (tc-e "foo" -String)
-        (tc-e (+ 3 4) N)
+        (tc-e (+ 3 4) -Integer)
         [tc-e (lambda: () 3) (-> -Integer)]
         [tc-e (lambda: ([x : Number]) 3) (-> N -Integer)]
         [tc-e (lambda: ([x : Number] [y : Boolean]) 3) (-> N B -Integer)]
@@ -110,7 +110,7 @@
               (make-Poly '(a) (-> (make-Listof  (-v a)) (-v a)))]
         [tc-e (case-lambda: [([a : Number] [b : Number]) (+ a b)]) (-> N N N)]
         [tc-e (let: ([x : Number 5]) x) N (-vet #'x) (-vef #'x)]
-        [tc-e (let-values ([(x) 4]) (+ x 1)) N]
+        [tc-e (let-values ([(x) 4]) (+ x 1)) -Integer]
         [tc-e (let-values ([(#{x : Number} #{y : Boolean}) (values 3 #t)]) (and (= x 1) (not y))) 
               B (list (-rest (-val #f) #'y)) (list)]
         [tc-e (values 3) -Integer]
@@ -135,7 +135,7 @@
         [tc-e (let: ([f : (Number Number -> Number) +]) (f 3 4)) N]
         [tc-e (let: ([+ : (Boolean -> Number) (lambda: ([x : Boolean]) 3)]) (+ #f)) N]
         [tc-e (when #f #t) (Un -Void)]
-        [tc-e (when (number? #f) (+ 4 5)) (Un N -Void)]
+        [tc-e (when (number? #f) (+ 4 5)) (Un -Integer -Void)]
         [tc-e (let: ([x : (Un #f Number) 7])
                     (if x (+ x 1) 3))
               N]
@@ -502,7 +502,7 @@
                 (define y 2)
                 (define z (+ x y))
                 (* x z))
-              N]
+              -Integer]
         
         [tc-e (let ()
                 (define: (f [x : Number]) : Number

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base))
 (require (private planet-requires type-comparison parse-type type-rep
-                  tc-utils type-environments type-alias-env
+                  tc-utils type-environments type-alias-env subtype
                   type-name-env init-envs union type-utils))
 
 (require (rename-in (private type-effect-convenience) [-> t:->])
@@ -11,6 +11,22 @@
 (require (schemeunit))
 
 (provide parse-type-tests)
+
+;; HORRIBLE HACK!
+;; We are solving the following problem:
+;; when we require "base-env.ss" for template, it constructs the type-alias-env
+;; in phase 0 (relative to this module), but populates it with phase -1 identifiers
+;; The identifiers are also bound in this module at phase -1, but the comparison for
+;; the table is phase 0, so they don't compare correctly
+
+;; The solution is to add the identifiers to the table at phase 0.
+;; We do this by going through the table, constructing new identifiers based on the symbol of the old identifier.
+;; This relies on the identifiers being bound at phase 0 in this module (which they are, because we have a
+;; phase 0 require of "base-env.ss").
+(for ([pr (type-alias-env-map cons)])
+  (let ([nm (car pr)]
+        [ty (cdr pr)])
+    (register-resolved-type-alias (datum->syntax #'here (syntax->datum nm)) ty)))
 
 (define-syntax (run-one stx)
   (syntax-case stx ()
@@ -55,10 +71,10 @@
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
    [(Number Number Number .. -> Boolean) ((list N N) N . ->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax
-   [(Un Number Boolean) (Un N B)]
-   [(Un Number Boolean Number) (Un N B)]
-   [(Un Number Boolean 1) (Un N B)]
-   [(All (a) (list-of a)) (-poly (a) (make-Listof  a))]
+   [(U Number Boolean) (Un N B)]
+   [(U Number Boolean Number) (Un N B)]
+   [(U Number Boolean 1) (Un N B)]
+   [(All (a) (Listof a)) (-poly (a) (make-Listof  a))]
    [(case-lambda (Number -> Boolean) (Number Number -> Number)) (cl-> [(N) B]
                                                                       [(N N) N])]
    [1 (-val 1)]
