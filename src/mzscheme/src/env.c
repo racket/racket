@@ -805,6 +805,9 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
 
   menv->module = m;
 
+  scheme_prepare_label_env(env);
+  menv->label_env = env->label_env;
+
   if (new_exp_module_tree) {
     Scheme_Object *p;
     Scheme_Hash_Table *modules;
@@ -823,6 +826,8 @@ void scheme_prepare_exp_env(Scheme_Env *env)
   if (!env->exp_env) {
     Scheme_Env *eenv;
     Scheme_Object *modchain;
+
+    scheme_prepare_label_env(env);
 
     eenv = make_env(NULL, -1, 7);
     eenv->phase = env->phase + 1;
@@ -847,6 +852,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     env->exp_env = eenv;
     eenv->template_env = env;
+    eenv->label_env = env->label_env;
 
     scheme_prepare_env_renames(env, mzMOD_RENAME_TOPLEVEL);
     eenv->rename_set = env->rename_set;
@@ -861,6 +867,8 @@ void scheme_prepare_template_env(Scheme_Env *env)
   if (!env->template_env) {
     Scheme_Env *eenv;
     Scheme_Object *modchain;
+
+    scheme_prepare_label_env(env);
 
     eenv = make_env(NULL, -1, 7);
     eenv->phase = env->phase - 1;
@@ -888,6 +896,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
     env->template_env = eenv;
     eenv->exp_env = env;       
+    eenv->label_env = env->label_env;
 
     if (env->disallow_unbound)
       eenv->disallow_unbound = 1;
@@ -896,13 +905,42 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
 void scheme_prepare_label_env(Scheme_Env *env)
 {
+  if (!env->label_env) {
+    Scheme_Env *lenv;
+    Scheme_Object *modchain;
+    Scheme_Hash_Table *prev_modules;
+
+    lenv = make_env(NULL, -1, 7);
+    lenv->phase = 0;
+    lenv->mod_phase = 0;
+
+    lenv->module = env->module;
+    lenv->module_registry = env->module_registry;
+    lenv->export_registry = env->export_registry;
+    lenv->insp = env->insp;
+
+    modchain = scheme_make_vector(3, scheme_false);    
+    prev_modules = scheme_make_hash_table(SCHEME_hash_ptr);
+    SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)prev_modules;
+    SCHEME_VEC_ELS(modchain)[2] = modchain;
+    SCHEME_VEC_ELS(modchain)[1] = modchain;
+    lenv->modchain = modchain;
+
+    env->label_env = lenv;
+
+    lenv->exp_env = lenv;
+    lenv->label_env = lenv;
+    lenv->template_env = lenv;
+  }
 }
 
 Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Object *modchain)
 {
   /* New env should have the same syntax and globals table, but it lives in
-     a different namespaces. */
+     a different namespace. */
   Scheme_Env *menv2;
+
+  scheme_prepare_label_env(ns);
 
   menv2 = MALLOC_ONE_TAGGED(Scheme_Env);
   menv2->so.type = scheme_namespace_type;
@@ -948,6 +986,8 @@ Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obj
     scheme_prepare_exp_env(menv2);
     menv2->exp_env->toplevel = menv->exp_env->toplevel;
   }
+
+  menv2->label_env = ns->label_env;
 
   return menv2;
 }

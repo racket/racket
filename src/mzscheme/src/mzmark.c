@@ -2065,6 +2065,7 @@ static int namespace_val_MARK(void *p) {
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
+  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 
@@ -2098,6 +2099,7 @@ static int namespace_val_FIXUP(void *p) {
   gcFIXUP(e->syntax);
   gcFIXUP(e->exp_env);
   gcFIXUP(e->template_env);
+  gcFIXUP(e->label_env);
 
   gcFIXUP(e->shadowed_syntax);
 

@@ -822,6 +822,7 @@ namespace_val {
   gcMARK(e->syntax);
   gcMARK(e->exp_env);
   gcMARK(e->template_env);
+  gcMARK(e->label_env);
 
   gcMARK(e->shadowed_syntax);
 

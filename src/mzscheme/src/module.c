@@ -1188,7 +1188,7 @@ static void set_at_depth(Scheme_Object *l, Scheme_Object *n, Scheme_Object *v)
 }
 
 #if 0
-# define LOG_ATTACH(x) x
+# define LOG_ATTACH(x) (x, fflush(stdout))
 #else
 # define LOG_ATTACH(x) /* nothing */
 #endif
@@ -1202,7 +1202,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   Scheme_Hash_Table *checked, *next_checked, *prev_checked;
   Scheme_Object *past_checkeds, *future_checkeds, *future_todos, *past_to_modchains, *past_todos;
   Scheme_Module *m2;
-  int same_namespace, set_env_for_notify = 0, phase, first_iteration;
+  int same_namespace, set_env_for_notify = 0, phase, min_phase = 0, first_iteration;
+  Scheme_Object *nophase_todo;
+  Scheme_Hash_Table *nophase_checked;
 
   if (!SCHEME_NAMESPACEP(argv[0]))
     scheme_wrong_type("namespace-attach-module", "namespace", 0, argc, argv);
@@ -1223,6 +1225,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   todo = scheme_make_pair(name, scheme_null);
   next_phase_todo = scheme_null;
   prev_phase_todo = scheme_null;
+  nophase_todo = scheme_null;
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
   phase = 0;
@@ -1237,12 +1240,17 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   future_todos = scheme_null;
   past_to_modchains = scheme_null;
 
+  nophase_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+
   first_iteration = 1;
 
   /* Check whether todo, or anything it needs, is already declared
      incompatibly. Successive iterations of the outer loop explore
      successive phases (i.e, for-syntax levels). */
   while (!SCHEME_NULLP(todo)) {
+    if (phase < min_phase)
+      min_phase = phase;
+
     if (!checked)
       checked = scheme_make_hash_table(SCHEME_hash_ptr);
     /* This is just a shortcut: */
@@ -1286,7 +1294,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	   deeper in phases (for-syntax levels) than the target
 	   namespace has ever gone, so there's definitely no conflict
 	   at this level in that case. */
-	if (SCHEME_TRUEP(to_modchain)) {
+	if ((phase >= 0) && SCHEME_TRUEP(to_modchain)) {
 	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 	  if (menv2) {
 	    if (!SAME_OBJ(menv->toplevel, menv2->toplevel))
@@ -1337,12 +1345,14 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	  /* Have to force laziness in source to ensure sharing. This
              should be redundant, since we called start_module() for the
              inital module, but we keep it just in case... */
-          if (!menv->ran)
-	    scheme_run_module(menv, 1);
-	  if (menv->lazy_syntax)
-	    finish_expstart_module_in_namespace(menv, from_env);
-          if (!menv->et_ran)
-	    scheme_run_module_exptime(menv, 1);
+          if (phase >= 0) {
+            if (!menv->ran)
+              scheme_run_module(menv, 1);
+            if (menv->lazy_syntax)
+              finish_expstart_module_in_namespace(menv, from_env);
+            if (!menv->et_ran)
+              scheme_run_module_exptime(menv, 1);
+          }
 
 	  l = menv->et_require_names;
 	  while (!SCHEME_NULLP(l)) {
@@ -1359,18 +1369,33 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
           if (l) {
             while (!SCHEME_NULLP(l)) {
               name = scheme_module_resolve(SCHEME_CAR(l), 0);
-              if (phase > 0) {
-                if (!prev_checked)
-                  prev_checked = scheme_make_hash_table(SCHEME_hash_ptr);
-                if (!scheme_hash_get(prev_checked, name)) {
-                  LOG_ATTACH(printf("Add -%d %s (%p)\n", phase-1, scheme_write_to_string(name, 0), prev_checked));
-                  prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
-                  scheme_hash_set(prev_checked, name, scheme_true);
-                }
+              if (!prev_checked)
+                prev_checked = scheme_make_hash_table(SCHEME_hash_ptr);
+              if (!scheme_hash_get(prev_checked, name)) {
+                LOG_ATTACH(printf("Add -%d %s (%p)\n", phase-1, scheme_write_to_string(name, 0), prev_checked));
+                prev_phase_todo = scheme_make_pair(name, prev_phase_todo);
+                scheme_hash_set(prev_checked, name, scheme_true);
               }
               l = SCHEME_CDR(l);
             }
 	  }
+
+          if (!same_namespace) {
+            l = menv->dt_require_names;
+            if (l) {
+              /* Need (phaseless) declaration, only */
+              while (!SCHEME_NULLP(l)) {
+                name = scheme_module_resolve(SCHEME_CAR(l), 0);
+                
+                if (!scheme_hash_get(nophase_checked, name)) {
+                  LOG_ATTACH(printf("Add * %s\n", scheme_write_to_string(name, NULL)));
+                  nophase_todo = scheme_make_pair(name, nophase_todo);
+                  scheme_hash_set(nophase_checked, name, scheme_true);
+                }
+                l = SCHEME_CDR(l);
+              }
+            }
+          }
 
           if (menv->other_require_names) {
             Scheme_Hash_Table *oht;
@@ -1383,16 +1408,11 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 
                 if (scheme_is_negative(lphase)) {
                   lphase = scheme_bin_minus(scheme_make_integer(0), lphase);
-                  if (scheme_bin_gt_eq(scheme_make_integer(phase), lphase)) {
-                    lphase = scheme_bin_minus(lphase, scheme_make_integer(2));
-                    past_todos = extend_list_depth(past_todos, lphase, 0);
-                    past_checkeds = extend_list_depth(past_checkeds, lphase, 1);
-                    todos = past_todos;
-                    checkeds = past_checkeds;
-                  } else {
-                    todos = NULL;
-                    checkeds = NULL;
-                  }
+                  lphase = scheme_bin_minus(lphase, scheme_make_integer(2));
+                  past_todos = extend_list_depth(past_todos, lphase, 0);
+                  past_checkeds = extend_list_depth(past_checkeds, lphase, 1);
+                  todos = past_todos;
+                  checkeds = past_checkeds;
                 } else {
                   lphase = scheme_bin_minus(lphase, scheme_make_integer(2));
                   future_todos = extend_list_depth(future_todos, lphase, 0);
@@ -1410,7 +1430,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
                   while (!SCHEME_NULLP(l)) {
                     name = scheme_module_resolve(SCHEME_CAR(l), 0);
                     if (!scheme_hash_get(a_checked, name)) {
-                      LOG_ATTACH(printf("Add +%d %s (%p)\n", 
+                      LOG_ATTACH(printf("Add +%ld %s (%p)\n", 
                                         SCHEME_INT_VAL(oht->keys[i]), 
                                         scheme_write_to_string(name, 0), a_checked));
                       a_todo = scheme_make_pair(name, a_todo);
@@ -1427,7 +1447,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
         }
       }
     }
-    
+
     do {
       if (SCHEME_PAIRP(prev_phase_todo)) {
 	future_todos = cons(next_phase_todo, future_todos);
@@ -1448,8 +1468,10 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	past_checkeds = SCHEME_CDR(past_checkeds);
 
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
-	to_modchain = SCHEME_CAR(past_to_modchains);
-	past_to_modchains = SCHEME_CDR(past_to_modchains);
+        if (phase > 0) {
+          to_modchain = SCHEME_CAR(past_to_modchains);
+          past_to_modchains = SCHEME_CDR(past_to_modchains);
+        }
 	phase--;
       } else {
 	past_checkeds = scheme_make_raw_pair((Scheme_Object *)prev_checked, past_checkeds);
@@ -1469,9 +1491,11 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	}
 	
 	from_modchain = SCHEME_VEC_ELS(from_modchain)[1];
-	past_to_modchains = cons(to_modchain, past_to_modchains);
-	if (SCHEME_TRUEP(to_modchain))
-	  to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
+        if (phase >= 0) {
+          past_to_modchains = cons(to_modchain, past_to_modchains);
+          if (SCHEME_TRUEP(to_modchain))
+            to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
+        }
 	phase++;
       }
     } while (SCHEME_NULLP(todo) && (SCHEME_PAIRP(next_phase_todo)
@@ -1479,6 +1503,60 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   }
 
   LOG_ATTACH(printf("Done phase: %d\n", phase));
+
+  /* Recursively process phase-#f modules: */
+  while (!SCHEME_NULLP(nophase_todo)) {
+    name = SCHEME_CAR(nophase_todo);
+    nophase_todo = SCHEME_CDR(nophase_todo);      
+
+    if (!SAME_OBJ(name, kernel_modname)) {
+      int i;
+
+      menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
+    
+      LOG_ATTACH(printf("Check #f %s\n", scheme_write_to_string(name, 0)));
+    
+      if (!menv) {
+        scheme_arg_mismatch("namespace-attach-module",
+                            "internal error; unknown module (for label): ",
+                            name);
+      }
+    
+      for (i = -4; 
+           i < (menv->other_require_names ? menv->other_require_names->size : 0); 
+           i++) {
+        switch (i) {
+        case -4:
+          l = menv->require_names;
+          break;
+        case -3:
+          l = menv->et_require_names;
+          break;
+        case -2:
+          l = menv->tt_require_names;
+          break;
+        case -1:
+          l = menv->dt_require_names;
+          break;
+        default:
+          l = menv->other_require_names->vals[i];
+          break;
+        }
+      
+        if (l) {
+          while (!SCHEME_NULLP(l)) {
+            name = scheme_module_resolve(SCHEME_CAR(l), 0);
+            if (!scheme_hash_get(nophase_checked, name)) {
+              LOG_ATTACH(printf("Add .* %s\n", scheme_write_to_string(name, 0)));
+              nophase_todo = scheme_make_pair(name, nophase_todo);
+              scheme_hash_set(nophase_checked, name, scheme_true);
+            }
+            l = SCHEME_CDR(l);
+          }
+        }
+      }
+    }
+  }
   
   phase += 2; /* represents phase at the start of in future_checkeds */
 
@@ -1499,7 +1577,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     future_checkeds = cons((Scheme_Object *)prev_checked, future_checkeds);
     --phase;
   }
-  while (phase > 0) {
+  while (phase > min_phase) {
     prev_checked = (Scheme_Hash_Table *)SCHEME_CAR(past_checkeds);
     future_checkeds = scheme_make_raw_pair((Scheme_Object *)prev_checked, future_checkeds);
     
@@ -1509,9 +1587,51 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
   /* Now all the modules to check are in the future_checkeds
      list of hash tables. */
 
+  /* Transfers phase-#f modules first. */
+  {
+    int i;
+    Scheme_Hash_Table *ht;
+    
+    scheme_prepare_label_env(to_env);
+
+    ht = nophase_checked;
+    for (i = ht->size; i--; ) {
+      if (ht->vals[i]) {
+        name = ht->keys[i];
+        
+        if (!SAME_OBJ(name, kernel_modname)) {
+
+          LOG_ATTACH(printf("Copying no-phase %s\n", scheme_write_to_string(name, NULL)));
+          
+          m2 = (Scheme_Module *)scheme_hash_get(from_env->module_registry, name);
+          scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)m2);
+
+          menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
+          menv2 = scheme_clone_module_env(menv, to_env->label_env, to_env->label_env->modchain);
+          scheme_hash_set(MODCHAIN_TABLE(from_env->label_env->modchain), name, (Scheme_Object *)menv2);
+
+          if (menv->attached)
+            menv2->attached = 1;
+
+          /* Push name onto notify list: */
+          if (!same_namespace)
+            notifies = scheme_make_pair(name, notifies);
+        }
+      }
+    }
+  }
+
   /* Go through that list, this time tranferring module instances */
   from_modchain = from_env->modchain;
   to_modchain = to_env->modchain;
+
+  {
+    int i = phase;
+    while (i < 0) {
+      from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
+      i++;
+    }
+  }
 
   /* Again, outer loop iterates through phases. */
   while (!SCHEME_NULLP(future_checkeds)) {
@@ -1538,7 +1658,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	    if (menv->attached)
 	      menv2->attached = 1;
 
-	    scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
+            if (phase >= 0)
+              scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
 	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv2->module);
 	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv2->module->me);
 	    
@@ -1552,7 +1673,8 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
     
     future_checkeds = SCHEME_CDR(future_checkeds);
     from_modchain = SCHEME_VEC_ELS(from_modchain)[1];
-    to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
+    if (phase >= 0)
+      to_modchain = SCHEME_VEC_ELS(to_modchain)[1];
     phase++;
     /* Preceding scheme_clone_module_env ensures that we don't get a
        #f for to_modchain if there's more to do. */
@@ -2666,7 +2788,7 @@ int same_resolved_modidx(Scheme_Object *a, Scheme_Object *b)
 
 static Scheme_Object *_module_resolve_k(void);
 
-static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx, int load_it)
+static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx, Scheme_Env *env, int load_it)
 {
   if (SCHEME_MODNAMEP(modidx) || SCHEME_FALSEP(modidx))
     return modidx;
@@ -2685,10 +2807,11 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
       {
 	Scheme_Thread *p = scheme_current_thread;
 	p->ku.k.p1 = (void *)base;
+	p->ku.k.p2 = (void *)env;
 	p->ku.k.i1 = load_it;
 	base = scheme_handle_stack_overflow(_module_resolve_k);
       } else {
-	base = _module_resolve(base, NULL, load_it);
+	base = _module_resolve(base, NULL, env, load_it);
       }
     }
 
@@ -2706,7 +2829,26 @@ static Scheme_Object *_module_resolve(Scheme_Object *modidx, Scheme_Object *stx,
                           modidx);
     }
 
-    name = scheme_apply(scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_RESOLVER), 4, a);
+
+    {
+      Scheme_Cont_Frame_Data cframe;
+
+      if (env) {
+        Scheme_Config *config;
+        
+        config = scheme_extend_config(scheme_current_config(),
+                                      MZCONFIG_ENV,
+                                      (Scheme_Object *)env);
+        scheme_push_continuation_frame(&cframe);
+        scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+      }
+      
+      name = scheme_apply(scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_RESOLVER), 4, a);
+
+      if (env) {
+        scheme_pop_continuation_frame(&cframe);
+      }
+    }
     
     if (!SCHEME_MODNAMEP(name)) {
       a[0] = name;
@@ -2723,15 +2865,21 @@ static Scheme_Object *_module_resolve_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *base = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Env *env = (Scheme_Env *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
 
-  return _module_resolve(base, NULL, p->ku.k.i1);
+  return _module_resolve(base, NULL, env, p->ku.k.i1);
 }
 
 Scheme_Object *scheme_module_resolve(Scheme_Object *modidx, int load_it)
 {
-  return _module_resolve(modidx, NULL, load_it);
+  return _module_resolve(modidx, NULL, NULL, load_it);
+}
+
+Scheme_Object *module_resolve_in_namespace(Scheme_Object *modidx, Scheme_Env *env, int load_it)
+{
+  return _module_resolve(modidx, NULL, env, load_it);
 }
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx, 
@@ -3280,18 +3428,36 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
   Scheme_Module *im;
 
   if ((menv->did_eval_exp >= eval_exp + 1)
-      && (menv->did_eval_run >= eval_run + 1))
+      && (menv->did_eval_run >= eval_run + 1)
+      && menv->did_compute)
     return;
 
   if (menv->did_eval_exp < eval_exp + 1)
     menv->did_eval_exp = eval_exp + 1;
   if (menv->did_eval_run < eval_run + 1)
     menv->did_eval_run = eval_run + 1;
+  if (!menv->did_compute)
+    menv->did_compute = 1;
 
   new_cycle_list = scheme_make_pair(menv->module->modname, cycle_list);
+  
+  if (!SCHEME_NULLP(menv->module->dt_requires)) {
+    compute_require_names(menv, scheme_false, env, syntax_idx);
 
-  /* Load dt imports (but don't invoke) */
-  compute_require_names(menv, scheme_false, env, syntax_idx);
+    scheme_prepare_label_env(menv);
+
+    for (l = menv->dt_require_names; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      midx = SCHEME_CAR(l);
+    
+      im = module_load(scheme_module_resolve(midx, 1), env, NULL);
+
+      start_module(im, 
+                   menv->label_env, 0, 
+                   midx,
+                   0, 0,
+                   new_cycle_list);
+    }
+  }
   
   if (!SCHEME_NULLP(menv->module->tt_requires)) {
 
@@ -3324,7 +3490,7 @@ static void chain_start_module(Scheme_Env *menv, Scheme_Env *env, int eval_exp, 
 
   scheme_prepare_exp_env(menv);
   menv->exp_env->link_midx = menv->link_midx;
-    
+  
   if (!SCHEME_NULLP(menv->module->et_requires)) {
     compute_require_names(menv, scheme_make_integer(1), env, syntax_idx);
     
@@ -4156,7 +4322,7 @@ module_execute(Scheme_Object *data)
   Scheme_Env *env;
   Scheme_Env *old_menv;
   Scheme_Object *prefix, *insp;
-  
+
   m = MALLOC_ONE_TAGGED(Scheme_Module);
   memcpy(m, data, sizeof(Scheme_Module));
 
@@ -4851,7 +5017,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
 
   /* load the module for the initial require */
-  iim = module_load(_module_resolve(iidx, m->ii_src, 1), menv, NULL); 
+  iim = module_load(_module_resolve(iidx, m->ii_src, NULL, 1), menv, NULL); 
   start_module(iim, menv, 0, iidx, 1, 0, scheme_null);
 
   {
@@ -7483,7 +7649,7 @@ Scheme_Object *scheme_module_exported_list(Scheme_Object *modpath, Scheme_Env *g
                               (genv->module ? genv->module->self_modidx : scheme_false), 
                               scheme_false);
 
-  modname = _module_resolve(modidx, stx, 1);
+  modname = _module_resolve(modidx, stx, NULL, 1);
 
   m = module_load(modname, genv, "syntax-local-module-exports");
 
@@ -8175,10 +8341,13 @@ void parse_requires(Scheme_Object *form,
 
     if (!skip_one) {
       int start = 1;
+      Scheme_Env *rename_env;
 
       if (SCHEME_FALSEP(mode)) {
         start = 0;
-        env = main_env;
+        scheme_prepare_label_env(main_env);
+        env = main_env->label_env;
+        rename_env = main_env;
       } else if (scheme_is_positive(mode)) {
         Scheme_Object *n = mode;
         env = main_env;
@@ -8187,6 +8356,7 @@ void parse_requires(Scheme_Object *form,
           env = env->exp_env;
           n = scheme_bin_minus(n, scheme_make_integer(1));
         } while (scheme_is_positive(n));
+        rename_env = env;
       } else if (scheme_is_negative(mode)) {
         Scheme_Object *n = mode;
         env = main_env;
@@ -8195,42 +8365,46 @@ void parse_requires(Scheme_Object *form,
           env = env->template_env;
           n = scheme_bin_plus(n, scheme_make_integer(1));
         } while (scheme_is_negative(n));
+        rename_env = env;
       } else {
         env = main_env;
+        rename_env = env;
       }
       
       idx = scheme_make_modidx(scheme_syntax_to_datum(idxstx, 0, NULL), 
                                base_modidx,
                                scheme_false);
 
-      name = _module_resolve(idx, idxstx, 1);
+      name = _module_resolve(idx, idxstx, NULL, 1);
 
       m = module_load(name, env, NULL);
 
       if (start)
         start_module(m, env, 0, idx, 1, always_run ? 1 : 0, scheme_null);
+      else
+        start_module(m, env, 0, idx, 0, 0, scheme_null);
 
       /* Add name to require list, if it's not there: */
-      if (env->module) {
+      if (main_env->module) {
         Scheme_Object *reqs;
         if (SAME_OBJ(mode, scheme_make_integer(0))) {
-          reqs = add_req(scheme_make_pair(idx, scheme_null), env->module->requires);
-          env->module->requires = reqs;
+          reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->requires);
+          main_env->module->requires = reqs;
         } else if (SAME_OBJ(mode, scheme_make_integer(1))) {
-          reqs = add_req(scheme_make_pair(idx, scheme_null), env->module->et_requires);
-          env->module->et_requires = reqs;
+          reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->et_requires);
+          main_env->module->et_requires = reqs;
         } else if (SAME_OBJ(mode, scheme_make_integer(-1))) {
-          reqs = add_req(scheme_make_pair(idx, scheme_null), env->module->tt_requires);
-          env->module->tt_requires = reqs;
+          reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->tt_requires);
+          main_env->module->tt_requires = reqs;
         } else if (SAME_OBJ(mode, scheme_false)) {
-          reqs = add_req(scheme_make_pair(idx, scheme_null), env->module->dt_requires);
-          env->module->dt_requires = reqs;
+          reqs = add_req(scheme_make_pair(idx, scheme_null), main_env->module->dt_requires);
+          main_env->module->dt_requires = reqs;
         } else {
           Scheme_Hash_Table *oht;
-          oht = env->module->other_requires;
+          oht = main_env->module->other_requires;
           if (!oht) {
             oht = scheme_make_hash_table_equal();
-            env->module->other_requires = oht;
+            main_env->module->other_requires = oht;
           }
           reqs = scheme_hash_get(oht, mode);
           if (!reqs)
@@ -8240,7 +8414,7 @@ void parse_requires(Scheme_Object *form,
         }
       }
       
-      add_single_require(m->me, just_mode, mode, idx, env, 
+      add_single_require(m->me, just_mode, mode, idx, rename_env,
                          rn_set, post_ex_rn_set, NULL,
                          exns, onlys, prefix, iname, ename,
                          mark_src, 
