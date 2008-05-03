@@ -1390,6 +1390,17 @@
                        (9 (check-within (+ 3 4) 18 (hilite 100))))
          (before-after (9 (check-within (hilite (+ 3 4)) 18 100))
                        (9 (check-within (hilite 7) 18 100))))))
+  
+  
+  (t1 check-within-bad
+      (test-upto-int/lam
+       "(check-within (+ 3 4) (+ 8 10) 0.01) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) 0.01))
+                       (9 (check-within (+ 3 4) (hilite 18) 0.01)))
+         (before-after (9 (check-within (hilite (+ 3 4)) 18 0.01))
+                       (9 (check-within (hilite 7) 18 0.01))))))
 
   (t1 check-error
       (test-upto-int/lam
@@ -1401,7 +1412,7 @@
          (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
                        (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
          (before-after (9 (check-expect (hilite (+ 3 1)) 4))
-                       (9 (check-expect 4 4)))
+                       (9 (check-expect (hilite 4) 4)))
          #;(before-after ((check-error (+ 7 (hilite (rest empty))) "bogus"))
                        ((check-error-string "crunch!" "bogus"))))))
 
@@ -1673,11 +1684,12 @@
 
   ;; run whatever tests are enabled (intended for interactive use):
   (define (ggg)
-    (parameterize ([disable-stepper-error-handling #t]
+    (parameterize (#;[disable-stepper-error-handling #t]
                    #;[display-only-errors #f]
                    #;[store-steps #f]
-                   [show-all-steps #t])
-      (run-tests '(check-expect check-expect-2 check-within check-error))))
+                   #;[show-all-steps #t])
+      #;(run-tests '(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
+      (run-all-tests)))
   
 
 
