@@ -1774,6 +1774,41 @@
 				   (memq mode '(none))))
 		      ;; Flush output
 		      (write-it #"" 0 0 #f #f)))])))))
+
+  ;; ----------------------------------------
+
+  (define dup-output-port
+    (opt-lambda (p [close? #f])
+      (let ([new (transplant-output-port p 
+                                         (lambda ()
+                                           (port-next-location p))
+                                         (let-values ([(line col pos)
+                                                       (port-next-location p)])
+                                           (or pos
+                                               (file-position p)))
+                                         close?
+                                         (lambda ()
+                                           (port-count-lines! p)))])
+        (port-display-handler new (port-display-handler p))
+        (port-write-handler new (port-write-handler p))
+        new)))
+
+  (define dup-input-port
+    (opt-lambda (p [close? #f])
+      (let ([new (transplant-input-port p 
+                                        (lambda ()
+                                          (port-next-location p))
+                                        (let-values ([(line col pos)
+                                                      (port-next-location p)])
+                                          (or pos
+                                              (file-position p)))
+                                        close?
+                                        (lambda ()
+                                          (port-count-lines! p)))])
+        (port-read-handler new (port-read-handler p))
+        new)))
+
+  ;; ----------------------------------------
   
   (provide open-output-nowhere
 	   make-pipe-with-specials
@@ -1790,6 +1825,8 @@
 	   make-limited-input-port
 	   reencode-input-port
 	   reencode-output-port
+           dup-input-port
+           dup-output-port
 	   strip-shell-command-start)
   
   (provide/contract (read-bytes-avail!-evt (mutable-bytes? input-port-with-progress-evts?

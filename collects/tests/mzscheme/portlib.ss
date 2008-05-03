@@ -666,4 +666,28 @@
 
 ;; --------------------------------------------------
 
+(let-values ([(in out) (make-pipe)])
+  (let ([in2 (dup-input-port in #f)]
+        [out2 (dup-output-port out #f)])
+    (port-count-lines! in2)
+    (test-values (list 1 0 1) (lambda ()
+                                (port-next-location in2)))
+    (display "\"hel\u03BBo\"\n" out)
+    (test "hel\u03BBo" read in2)
+    (test-values (list 1 7 8)
+                 (lambda ()
+                   (port-next-location in2)))
+    (test #\newline read-char in2)
+    (test-values (list 2 0 9) 
+                 (lambda () 
+                   (port-next-location in2)))
+    (close-output-port out2)
+    (test #f char-ready? in2)
+    (close-input-port in2)
+    (display "x " out)
+    (test 'x read in)))
+    
+
+;; --------------------------------------------------
+
 (report-errs)

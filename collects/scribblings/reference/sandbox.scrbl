@@ -2,6 +2,7 @@
 @(require "mz.ss"
           scheme/sandbox
           (for-label scheme/sandbox
+                     scheme/port
                      (only-in scheme/gui make-gui-namespace)
                      scheme/gui/dynamic))
 
@@ -306,9 +307,9 @@ after its output, so using @scheme[current-output-port] for this
 parameter value means that the error port is the same as the
 evaluator's initial output port.
 
-The default is @scheme[current-error-port], which means that the error
-output of the generated evaluator goes to the calling context's error
-port.}
+The default is @scheme[(lambda () (dup-output-port
+(current-error-port)))], which means that the error output of the
+generated evaluator goes to the calling context's error port.}
 
 
 @defboolparam[sandbox-coverage-enabled enabled?]{

@@ -269,6 +269,33 @@ flush or special-write to the output port can hang if the most
 recently written bytes form an incomplete encoding sequence.}
 
 
+@defproc[(dup-input-port [in input-port?]
+                         [close? any/c #f])
+         input-port?]{
+
+Returns an input port that draws directly from @scheme[in]. Closing
+the resulting port closes @scheme[in] only if @scheme[close?] is
+@scheme[#t].
+
+The new port is initialized with the @tech{port read handler} of
+@scheme[in], but setting the handler on the result port does not
+affect reading directly from @scheme[in].}
+
+
+@defproc[(dup-output-port [out output-port?]
+                          [close? any/c #f])
+         output-port?]{
+
+Returns an output port that propagates data directly to
+@scheme[out]. Closing the resulting port closes @scheme[out] only if
+@scheme[close?] is @scheme[#t].
+
+The new port is initialized with the @tech{port display handler} and
+@tech{port write handler} of @scheme[out], but setting the handlers on
+the result port does not affect writing directly to @scheme[out].}
+
+
+
 @defproc[(relocate-input-port [in input-port?]
                               [line (or/c exact-positive-integer? false/c)]
                               [column (or/c exact-nonnegative-integer? false/c)]
