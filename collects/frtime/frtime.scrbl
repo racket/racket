@@ -7,7 +7,7 @@
 	     new-cell set-cell! event-receiver send-event
 	     map-e ==> filter-e =#> accum-e accum-b collect-e collect-b changes hold merge-e
 	     value-now delay-by integral derivative once-e switch when-e lift-strict)
-    (only-in "demos/gui/fred.ss" ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
+    (only-in "gui/fred.ss" ft-frame% ft-message% ft-button% ft-check-box% ft-slider%
 	     ft-text-field% ft-radio-box% ft-choice% ft-list-box%)))
 
 @title[#:tag "frtime"]{@bold{FrTime}: A Language for Reactive Programs}
@@ -153,7 +153,7 @@ included in the basic FrTime language.
 
 @section[#:tag "fred"]{Fred: Functional Reactive Wrapper around MrEd}
 
-@defmodule[frtime/demos/gui/fred]
+@defmodule[frtime/gui/fred]
 
 @defclass[ft-frame% frame% (top-level-window<%>)]{
 
