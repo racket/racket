@@ -142,7 +142,8 @@
       (fprintf port "This program should be tested.~n"))
     (define/public (display-results rep event-space)
       (send test-display install-info test-info)
-      (if event-space
+      
+      (if (and rep event-space)
         (parameterize ([(dynamic-require 'scheme/gui 'current-eventspace)
                         event-space])
           ((dynamic-require 'scheme/gui 'queue-callback)
