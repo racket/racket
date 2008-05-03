@@ -2434,6 +2434,19 @@ regexec(const char *who,
     if (peek) {
       peekskip = portstart;
       dropped = portstart;
+      /* Make sure that's there's not an EOF before peekskip: */
+      if (!SAME_OBJ(peekskip, scheme_make_integer(0))) {
+        char tmp[1];
+        long got;
+        got = scheme_get_byte_string_unless("regexp-match", port, 
+                                            tmp, 0, 1, 1,
+                                            1, scheme_bin_minus(peekskip, scheme_make_integer(1)),
+                                            unless_evt);
+        if (got == EOF) {
+          /* Hit EOF before peekstart, so cannot match */
+          return 0;
+        }
+      }
     } else {
       /* In non-peek port mode, skip over portstart chars: */
       long amt, got;
@@ -2460,7 +2473,7 @@ regexec(const char *who,
 	    if (discard_oport)
 	      scheme_put_byte_string(who, discard_oport, drain, 0, got, 0);
 	    
-	    dropped = scheme_bin_plus(dropped, scheme_make_integer(amt));
+	    dropped = scheme_bin_plus(dropped, scheme_make_integer(got));
 	    delta = scheme_bin_minus(portstart, dropped);
 	    if (scheme_bin_gt(scheme_make_integer(amt), delta))
 	      amt = SCHEME_INT_VAL(delta);

@@ -1054,13 +1054,22 @@
 (test "my cerveza Mi Mi Mi" regexp-replace r2 "mi cerveza Mi Mi Mi" insert)
 (test "my cerveza My Mi Mi" regexp-replace* r2 "mi cerveza Mi Mi Mi" insert)
 (test "bbb" regexp-replace* "a" "aaa" "b")
+(test '(#"") regexp-match "" (open-input-string "123") 3)
+(test '(#"") regexp-match "$" (open-input-string "123") 3)
+(test '(#"") regexp-match-peek "" (open-input-string "123") 3)
 
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
   (test #f regexp-match "e" (open-input-string ""))
   (test #f regexp-match "e" (open-input-string "") (expt 2 100))
   (test #f regexp-match "e" (open-input-string "") (expt 2 100) (expt 2 101))
-  (test '((3 . 4)) regexp-match-positions "e" (open-input-string "eaae") 2 (expt 2 101)))
+  (test #f regexp-match "e" (open-input-string "") (expt 2 100) (expt 2 101))
+  (test '((3 . 4)) regexp-match-positions "e" (open-input-string "eaae") 2 (expt 2 101))
+  (test #f regexp-match "" (open-input-string "123") 4)
+  (test #f regexp-match-positions "" (open-input-string "123") 4)
+  (test #f regexp-match "" (open-input-string "123") 999)
+  (test #f regexp-match-positions "" (open-input-string "123") 999)
+  (test #f regexp-match "" (open-input-string "123") (expt 2 101)))
 (test-weird-offset regexp-match regexp-match-positions)
 (test-weird-offset regexp-match-peek regexp-match-peek-positions)
 

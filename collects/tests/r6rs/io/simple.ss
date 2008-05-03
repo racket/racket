@@ -77,6 +77,10 @@
                      (test (read) (eof-object))
                      (values 70 80 90)))
                  70 80 90)
+
+    (test/unspec
+     (when (file-exists? "io-tmp2")
+       (delete-file "io-tmp2")))
     
     (test (input-port? (current-input-port)) #t)
     (test (binary-port? (current-input-port)) #f)
