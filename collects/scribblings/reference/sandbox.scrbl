@@ -303,9 +303,9 @@ values are allowed:
 
 Like @scheme[sandbox-output], but for the initial
 @scheme[current-error-port] value. An evaluator's error output is set
-after its output, so using @scheme[current-output-port] for this
-parameter value means that the error port is the same as the
-evaluator's initial output port.
+after its output, so using @scheme[current-output-port] (the parameter
+itself, not its value) for this parameter value means that the error
+port is the same as the evaluator's initial output port.
 
 The default is @scheme[(lambda () (dup-output-port
 (current-error-port)))], which means that the error output of the
