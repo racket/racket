@@ -53,9 +53,10 @@
          (apply test (->b res) fun* rx (->b str) args)
          (apply test (->b res) fun* (->b rx) (->b str) args))
        ;; test with a port, and test leftovers
-       (let ([p (open-input-string str)])
-         (apply test (->b res) fun* rx p args)
-         (when left (test left read-string 50 p)))]))
+       (when left
+         (let ([p (open-input-string str)])
+           (apply test (->b res) fun* rx p args)
+           (test left read-string 50 p)))]))
   ;; --------------------
   (t regexp-match*)
   (t '("a" "b" "c") eof "[abc]" " a b c ")
@@ -235,7 +236,20 @@
   (t '((1 . 1) (2 . 3) (4 . 4)) "12 34" " *" "12 34")
   (t '((0 . 1) (2 . 2) (3 . 4) (5 . 5) (6 . 7)) " 12 34 " " *" " 12 34 ")
   (t '((2 . 2) (3 . 4) (5 . 5)) " 12 34 " " *" " 12 34 " 1 6)
-  )
+  ;; finally, some tests for the match* + split property
+  (t (lambda (rx str)
+       (let ([s (regexp-split rx str)]
+             [m (regexp-match* rx str)])
+         (and (pair? s) (= (length s) (add1 (length m)))
+              (apply (if (string? (car s)) string-append bytes-append)
+                     (car s)
+                     (append-map list m (cdr s)))))))
+  (t "12 34" #f   " " "12 34")
+  (t " 12 34 " #f " " " 12 34 ")
+  (t "12 34" #f   " *" "12 34")
+  (t " 12 34 " #f " *" " 12 34 ")
+  (t "12 34" #f   "" "12 34")
+  (t " 12 34 " #f "" " 12 34 "))
 
 ;; ---------- string-append* ----------
 (let ()
