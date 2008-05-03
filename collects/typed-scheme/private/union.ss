@@ -14,11 +14,11 @@
 
 (define empty-union (make-Union null))
 
-(define (flat t) 
+(define (flat t)
   (match t
     [(Union: es) es]
     [_ (list t)]))    
-#;(define (Values-types t) (match t [(Values: ts) ts]))
+
 (define (remove-subtypes ts)
   (let loop ([ts* ts] [result '()])
     (cond [(null? ts*) (reverse result)]
@@ -46,7 +46,7 @@
           (if (andmap Values? types)
               (make-Values (apply map Un (map Values-types types)))
               (int-err "Un: should not take the union of multiple values with some other type: ~a" types))]
-         [else (make-union* #;(remove-subtypes types) (foldr union2 null types))]))]))
+         [else (make-union* #;(remove-subtypes types) (foldr union2 null (remove-subtypes types)))]))]))
 
 #;(defintern (Un-intern args) (lambda (_ args) (apply Un args)) args)
 
