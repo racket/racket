@@ -1383,7 +1383,6 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
           if (!same_namespace) {
             l = menv->dt_require_names;
             if (l) {
-              /* Need (phaseless) declaration, only */
               while (!SCHEME_NULLP(l)) {
                 name = scheme_module_resolve(SCHEME_CAR(l), 0);
                 
@@ -1504,6 +1503,9 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 
   LOG_ATTACH(printf("Done phase: %d\n", phase));
 
+  if (SCHEME_PAIRP(nophase_todo) && !from_env->label_env)
+    scheme_signal_error("internal error: missing label environment");
+
   /* Recursively process phase-#f modules: */
   while (!SCHEME_NULLP(nophase_todo)) {
     name = SCHEME_CAR(nophase_todo);
@@ -1608,7 +1610,7 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 
           menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(from_env->label_env->modchain), name);
           menv2 = scheme_clone_module_env(menv, to_env->label_env, to_env->label_env->modchain);
-          scheme_hash_set(MODCHAIN_TABLE(from_env->label_env->modchain), name, (Scheme_Object *)menv2);
+          scheme_hash_set(MODCHAIN_TABLE(to_env->label_env->modchain), name, (Scheme_Object *)menv2);
 
           if (menv->attached)
             menv2->attached = 1;
@@ -1654,14 +1656,15 @@ static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[])
 	  menv2 = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(to_modchain), name);
 	  if (!menv2) {
 	    /* Clone menv for the new namespace: */
-            menv2 = scheme_clone_module_env(menv, to_env, to_modchain);
-	    if (menv->attached)
-	      menv2->attached = 1;
-
-            if (phase >= 0)
+            if (phase >= 0) {
+              menv2 = scheme_clone_module_env(menv, to_env, to_modchain);
+              if (menv->attached)
+                menv2->attached = 1;
+              
               scheme_hash_set(MODCHAIN_TABLE(to_modchain), name, (Scheme_Object *)menv2);
-	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv2->module);
-	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv2->module->me);
+            }
+	    scheme_hash_set(to_env->module_registry, name, (Scheme_Object *)menv->module);
+	    scheme_hash_set(to_env->export_registry, name, (Scheme_Object *)menv->module->me);
 	    
 	    /* Push name onto notify list: */
 	    if (!same_namespace)

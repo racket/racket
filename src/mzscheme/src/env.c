@@ -745,7 +745,7 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
   Scheme_Bucket_Table *toplevel, *syntax;
   Scheme_Hash_Table *module_registry, *export_registry;
   Scheme_Object *modchain;
-  Scheme_Env *env;
+  Scheme_Env *env, *label_env;
 
   toplevel = scheme_make_bucket_table(toplevel_size, SCHEME_hash_ptr);
   toplevel->with_home = 1;
@@ -755,17 +755,20 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
     modchain = NULL;
     module_registry = NULL;
     export_registry = NULL;
+    label_env = NULL;
   } else {
     syntax = scheme_make_bucket_table(7, SCHEME_hash_ptr);
     if (base) {
       modchain = base->modchain;
       module_registry = base->module_registry;
       export_registry = base->export_registry;
+      label_env = base->label_env;
     } else {
       if (semi < 0) {
 	module_registry = NULL;
 	export_registry = NULL;
 	modchain = NULL;
+        label_env = NULL;
       } else {
 	Scheme_Hash_Table *modules;
 
@@ -777,6 +780,8 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
 	module_registry->iso.so.type = scheme_module_registry_type;
 	
 	export_registry = scheme_make_hash_table(SCHEME_hash_ptr);
+
+        label_env = NULL;
       }
     }
   }
@@ -785,6 +790,8 @@ static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
   env->so.type = scheme_namespace_type;
 
   env->toplevel = toplevel;
+
+  env->label_env = label_env;
 
   if (semi < 1) {
     env->syntax = syntax;
@@ -987,6 +994,7 @@ Scheme_Env *scheme_clone_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obj
     menv2->exp_env->toplevel = menv->exp_env->toplevel;
   }
 
+  scheme_prepare_label_env(ns);
   menv2->label_env = ns->label_env;
 
   return menv2;
