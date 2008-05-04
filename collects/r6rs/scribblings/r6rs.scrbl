@@ -163,6 +163,7 @@ Examples:
 (rnrs io simple (6))  #, @elem{roughly means}  rnrs/io/simple-6
 (rnrs)                #, @elem{roughly means}  rnrs
 (rnrs (6))            #, @elem{roughly means}  rnrs/main-6
+(scheme base)         #, @elem{roughly means}  scheme/base
 ]
 
 When an @|r6rs| library or top-level program refers to another
@@ -183,6 +184,7 @@ Examples (assuming a typical PLT Scheme installation):
 (rnrs io simple (6))  #, @elem{really means}  (lib "rnrs/io/simple-6.ss")
 (rnrs)                #, @elem{really means}  (lib "rnrs/main-6.ss")
 (rnrs (6))            #, @elem{really means}  (lib "rnrs/main-6.ss")
+(scheme base)         #, @elem{really means}  (lib "scheme/base.ss")
 ]
 
 

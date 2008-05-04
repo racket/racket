@@ -210,6 +210,13 @@
     (test (syntax->datum #'(a b)) '(a b))
     (test (syntax->datum #'(a . b)) '(a . b))
 
+    (test (syntax->datum '1) 1)
+    (test (syntax->datum '(a . b)) '(a . b))
+    (test (syntax->datum '(a b)) '(a b))
+    (test (syntax->datum (cons #'a #'b)) '(a . b))
+    (test (syntax->datum (vector #'a #'b)) '#(a b))
+    (test (syntax->datum '#(a b)) '#(a b))
+
     (test (syntax->datum (datum->syntax #'x 1)) 1)
     (test (syntax->datum (datum->syntax #'x 'a)) 'a)
     (test (syntax->datum (datum->syntax #'x '(a b))) '(a b))
@@ -281,5 +288,8 @@
     (test/exn (syntax-violation 'form "bad" 7 8) &syntax)
 
     ;;
-    ))
+    )
+
+  (run-syntax-case-tests)
+  (report-test-results))
 
