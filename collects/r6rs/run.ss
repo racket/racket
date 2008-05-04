@@ -25,6 +25,10 @@
     (install-all-users #t)]
    [("--force") "overwrite existing libraries"
     (install-force #t)]
+   #:multi
+   [("++path") dir "use <dir> as a container of library dirs (i.e., collections)"
+    (current-library-collection-paths (append (current-library-collection-paths)
+                                              (list (path->complete-path dir))))]
    #:handlers
    (case-lambda
     [(x) (values #f null)]
