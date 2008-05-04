@@ -123,10 +123,13 @@ by @scheme[kind], which must be one of the following:
 
  @item{@indexed-scheme['collects-dir] --- a path to the main
  collection of libraries (see @secref["collects"]). If this path is
- relative, it's relative to the directory of @scheme[(find-system-path
- 'exec-file)].  This path is normally embedded in the @exec{mzscheme}
- executable, but it can be overridden by the @DFlag{collects} or
- @Flag{X} command-line flag.}
+ relative, then it is relative to the executable as reported by
+ @scheme[(find-system-path 'exec-file)]---though the latter could be a
+ soft-link or relative to the user's executable search path, so that
+ the two results should be combined with
+ @scheme[find-executable-path].  The @scheme['collects-dir] path is
+ normally embedded in the @exec{mzscheme} executable, but it can be
+ overridden by the @DFlag{collects} or @Flag{X} command-line flag.}
 
  @item{@indexed-scheme['orig-dir] --- the current directory at
  start-up, which can be useful in converting a relative-path result
