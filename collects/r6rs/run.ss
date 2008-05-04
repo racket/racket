@@ -12,6 +12,7 @@
 (define compile-mode (make-parameter #f))
 (define install-all-users (make-parameter #f))
 (define install-force (make-parameter #f))
+(define extra-collection-dirs (make-parameter null))
 
 (define-values (main args)
   (command-line
@@ -27,8 +28,8 @@
     (install-force #t)]
    #:multi
    [("++path") dir "use <dir> as a container of library dirs (i.e., collections)"
-    (current-library-collection-paths (append (current-library-collection-paths)
-                                              (list (path->complete-path dir))))]
+    (extra-collection-dirs (append (extra-collection-dirs)
+                                   (list (path->complete-path dir))))]
    #:handlers
    (case-lambda
     [(x) (values #f null)]
@@ -36,6 +37,10 @@
    '("file" "arg")))
 
 (current-command-line-arguments (apply vector-immutable args))
+
+(unless (null? (extra-collection-dirs))
+    (current-library-collection-paths (append (extra-collection-dirs)
+                                              (current-library-collection-paths))))
 
 (define r6rs-read-syntax
   (case-lambda

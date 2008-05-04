@@ -8,7 +8,9 @@
                      rnrs/exceptions-6
                      rnrs/io/simple-6
                      rnrs/r5rs-6
-                     (only-in scheme/base lib)))
+                     (only-in scheme/base
+                              lib
+                              current-library-collection-paths)))
 
 @(define guide-src '(lib "scribblings/guide/guide.scrbl"))
 
@@ -143,6 +145,22 @@ See @secref["libpaths"] for information on how @|r6rs| library names
 are turned into collection-based module paths, which determines where
 the files are written. Libraries installed by @exec{plt-r6rs
 @DFlag{install}} are automatically compiled to bytecode form.
+
+One final option is to supply a @as-index{@DPFlag{path}} flag to
+@exec{plt-r6rs}. A path added with @DPFlag{path} extends the set of
+directories that are searched to find a collection (i.e., it sets
+@scheme[current-library-collection-paths]). If @nonterm{dir} contains
+@filepath{duck} and @filepath{cow} sub-directories with
+@filepath{duck/feather.sls} and @filepath{cow/bell.sls}, and if each
+file is an @|r6rs| library prefixed with @schememetafont{#!r6rs}, then
+@exec{plt-r6rs ++path @nonterm{dir}} directs the @|r6rs| library
+references @scheme[(duck feather)] and @scheme[(cow bell)] to the
+files. Note that this technique does not support accessing
+@filepath{duck.sls} directly within @nonterm{dir}, since the library
+reference @scheme[(duck)] is treated like @scheme[(duck main)] for
+finding the library, as explained in @secref["libpaths"]. Multiple
+paths can be provided with multiple uses of @DPFlag{path}; the paths
+are search in order, and before the installation's collections.
 
 @; ----------------------------------------
 
