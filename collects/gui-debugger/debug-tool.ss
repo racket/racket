@@ -1,17 +1,13 @@
 (module debug-tool mzscheme
   (require mzlib/etc
            mzlib/list
-           mzlib/string
-           ;mzlib/math
            mzlib/class
            mzlib/unit
            mzlib/contract
            mred
            mzlib/match
-           (prefix drscheme:arrow: (lib "arrow.ss" "drscheme"))
            (lib "tool.ss" "drscheme")
            "marks.ss"
-           syntax/boundmap
            mrlib/switchable-button
            mrlib/bitmap-label
            "annotator.ss"
@@ -241,18 +237,14 @@
             (cond
               [(and id frames (lookup-first-binding
                                (lambda (id2) (module-identifier=? id id2))
-                               frames
-                               (lambda () #f)))
-               =>
-               (lambda (binding)
-                 (sk (mark-binding-value binding)
-                     (lambda (v) (mark-binding-set! binding v))))]
+                               frames (lambda () #f)))
+               => (lambda (binding)
+                    (sk (mark-binding-value binding)
+                        (lambda (v) (mark-binding-set! binding v))))]
               [(and id (send (get-tab) lookup-top-level-var
-                             id
-                             (lambda () #f)))
-               =>
-               (lambda (tlb)
-                 (sk (tlb) tlb))]
+                             id (lambda () #f)))
+               => (lambda (tlb)
+                    (sk (tlb) tlb))]
               [else (fk)]))
           
           ;; mouse-event -> (or (values #f #f) (values pos editor))
@@ -303,30 +295,27 @@
           (define/private (render v)
             (send (get-tab) render v))
           
+          ;; mouse-event% integer -> ()
+          ;; handles a right-click on a position that's not a breakable paren
           (define (debugger-handle-right-click-non-breakable event pos)
             (let* ([frames (send (get-tab) get-stack-frames)]
                    [pos-vec (send (get-tab) get-pos-vec)]
                    [id (robust-vector-ref pos-vec pos)])
               (unless (lookup-var
-                       id
-                       frames
+                       id frames
                        (lambda (val wr)
                          (let ([id-sym (syntax-e id)]
                                [menu (make-object popup-menu% #f)])
                            (make-object menu-item%
-                             (clean-status
-                              (format "Print value of ~a to console" id-sym))
+                             (clean-status (format "Print value of ~a to console" id-sym))
                              menu
                              (lambda (item evt)
                                (send (get-tab) print-to-console (format "~a = ~s" id-sym val))))
-                           (make-object menu-item%
-                             (format "(set! ~a ...)" id-sym)
-                             menu
+                           (make-object menu-item% (format "(set! ~a ...)" id-sym) menu
                              (lambda (item evt)
-                               (let* ([tmp
-                                       (get-text-from-user
-                                        (format "New value for ~a" id-sym) #f #f
-                                        (format "~a" val))])
+                               (let* ([tmp (get-text-from-user
+                                            (format "New value for ~a" id-sym) #f #f
+                                            (format "~a" val))])
                                  (when tmp
                                    (let/ec k
                                      (wr (with-handlers
@@ -368,10 +357,9 @@
                                 "")])
                       (when (cons? stat)
                         (make-object menu-item%
-                          "Print return value to console"
-                          menu
-                          (lambda _ (send (get-tab) print-to-console (string-append
-                                                                      "return val = " rendered-value)))))
+                          "Print return value to console" menu
+                          (lambda _ (send (get-tab) print-to-console
+                                          (string-append "return val = " rendered-value)))))
                       (when (not (eq? stat 'break))
                         (make-object menu-item%
                           (if (cons? stat)
@@ -392,8 +380,7 @@
                                                          (message-box
                                                           "Debugger Error"
                                                           (format "An error occurred: ~a" (exn-message exn))
-                                                          #f
-                                                          '(ok))
+                                                          #f '(ok))
                                                          (k))])
                                                    (read (open-input-string tmp))))
                                                list)))
@@ -442,8 +429,7 @@
                          [(eq? pos mouse-over-pos)]
                          ;; mouse on new breakable pos
                          [(not (eq? (hash-table-get
-                                     breakpoints
-                                     pos (lambda () 'invalid)) 'invalid))
+                                     breakpoints pos (lambda () 'invalid)) 'invalid))
                           (set! mouse-over-pos pos)
                           (invalidate-bitmap-cache)]
                          ;; moved off breakable pos
@@ -453,8 +439,7 @@
                        (let* ([frames (send (get-tab) get-stack-frames)]
                               [pos-vec (send (get-tab) get-pos-vec)]
                               [id (robust-vector-ref pos-vec pos)])
-                         (send (get-tab)
-                               set-mouse-over-msg
+                         (send (get-tab) set-mouse-over-msg
                                (clean-status
                                 (lookup-var id (list-tail frames (send (get-tab) get-frame-num))
                                             ;; id found
@@ -553,8 +538,7 @@
       (define (debug-interactions-text-mixin super%)
         (class super%
           
-          (inherit run-in-evaluation-thread
-                   display-results)
+          (inherit run-in-evaluation-thread)
           
           (super-instantiate ())
           
@@ -627,12 +611,9 @@
                                        [(annotated break-posns)
                                         (annotate-for-single-stepping
                                          (expand-syntax stx)
-                                         break?
-                                         break-before
-                                         break-after
+                                         break? break-before break-after
                                          ; record-bound-identifier
                                          (lambda (type bound binding)
-                                           ;(display-results (list bound))
                                            (cond
                                              [(filename->defs (robust-syntax-source bound))
                                               =>
@@ -653,9 +634,7 @@
                                               (lambda (defs)
                                                 (send (send defs get-tab)
                                                       add-top-level-binding var rd/wr))]
-                                             [else #;(printf "record-top-level failed for ~a~n" var) (void)])
-                                           #;
-                                           (printf "top-level binding: ~a ~a ~a~n" mod var rd/wr))
+                                             [else (void)]))
                                          source)])
                            (hash-table-for-each
                             breakpoints
@@ -698,10 +677,9 @@
                          (lambda (src)
                            (let* ([defs (filename->defs src)]
                                   [src-tab (if defs (send defs get-tab) (get-tab))]
-                                  [breakpoints
-                                   (if src
-                                       (send src-tab get-breakpoints)
-                                       breakpoints)]
+                                  [breakpoints (if src
+                                                   (send src-tab get-breakpoints)
+                                                   breakpoints)]
                                   [single-step? (send tab get-single-step-box)]
                                   [closed? (send src-tab get-closed-box)])
                              (lambda (pos)
@@ -719,11 +697,13 @@
                          (case-lambda
                            [(top-mark ccm val)
                             (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
-                              (car (send (get-tab) suspend oeh (cons top-mark debug-marks) (list 'exit-break val))))]
+                              (car (send (get-tab) suspend oeh (cons top-mark debug-marks)
+                                         (list 'exit-break val))))]
                            [(top-mark ccm . vals) 
                             (let* ([debug-marks (continuation-mark-set->list ccm debug-key)])
                               (apply values
-                                     (send (get-tab) suspend oeh (cons top-mark debug-marks) (cons 'exit-break vals))))])))
+                                     (send (get-tab) suspend oeh (cons top-mark debug-marks)
+                                           (cons 'exit-break vals))))])))
                        (uncaught-exception-handler
                         (lambda (exn)
                           (if (and (exn:break? exn) (send (get-tab) suspend-on-break?))
@@ -793,16 +773,11 @@
           (define/public (add-top-level-binding var rd/wr)
             (set! top-level-bindings (cons (cons var rd/wr) top-level-bindings)))
           (define/public (lookup-top-level-var var failure-thunk)
-            #;
-            (printf "looking for ~a in ~a~n" var top-level-bindings)
             (let loop ([bindings top-level-bindings])
               (cond
                 [(empty? bindings) (failure-thunk)]
-                [(let ([res (or (bound-identifier=? var (caar bindings))
-                                (free-identifier=? var (caar bindings)))])
-                   #;
-                   (printf "~a = ~a -> ~a~n" var (caar bindings) res)
-                   res) (cdar bindings)]
+                [(or (bound-identifier=? var (caar bindings))
+                     (free-identifier=? var (caar bindings))) (cdar bindings)]
                 [else (loop (rest bindings))])))
           
           (define/public (move-to-frame the-frame-num)
@@ -892,7 +867,7 @@
                               (k 'invalid)
                               (+ (syntax-position stx) (syntax-span stx) -1))]
                      [defs (filename->defs src)]
-                     [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) 'invalid)))]
+                     [tab (if defs (send defs get-tab) (k 'invalid))]
                      [bps (send tab get-breakpoints)])
                 (hash-table-get bps pos 'invalid))))
           
@@ -906,12 +881,6 @@
               (and (not (empty? frames))
                    (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
                           (rest frames)))))
-
-          (define (can-move-up-frame? frames)
-            (< (get-frame-num) (sub1 (length frames))))
-          
-          (define (can-move-down-frame? frames)
-            (> (get-frame-num) 0))
 
           (define/public suspend-gui
             (opt-lambda (frames status [switch-tabs? #f] [already-stopped? #f])
@@ -930,29 +899,26 @@
                 (send (get-frame) register-vars (if (empty? frames)
                                                     empty
                                                     (list-ref frames (get-frame-num))))
-                ;;(fprintf (current-error-port) "break: ~a~n" (map expose-mark frames))
-                ;;(printf "status = ~a~n" status)
                 (send status-message set-label
                       (if (and (cons? status) top-of-stack?)
                           (let ([expr (mark-source (first frames))])
                             (cond
                               ; should succeed unless the user closes a slave tab during debugging
                               [(filename->defs (syntax-source expr))
-                               =>
-                               (lambda (defs)
-                                 (clean-status
-                                  (string-append
-                                   (if (syntax-position expr)
-                                       (trim-expr-str
-                                        (send defs get-text
-                                              (sub1 (syntax-position expr))
-                                              (+ -1 (syntax-position expr) (syntax-span expr))))
-                                       "??")
-                                   " => "
-                                   (if (= 2 (length status))
-                                       (render (cadr status))
-                                       (cons 'values (map (lambda (v) (render v))
-                                                          (rest status)))))))]
+                               => (lambda (defs)
+                                    (clean-status
+                                     (string-append
+                                      (if (syntax-position expr)
+                                          (trim-expr-str
+                                           (send defs get-text
+                                                 (sub1 (syntax-position expr))
+                                                 (+ -1 (syntax-position expr) (syntax-span expr))))
+                                          "??")
+                                      " => "
+                                      (if (= 2 (length status))
+                                          (render (cadr status))
+                                          (cons 'values (map (lambda (v) (render v))
+                                                             (rest status)))))))]
                               [""]))
                           ""))
                 (cond [(get-current-frame-endpoints)
@@ -961,9 +927,7 @@
                                    => (lambda (defs)
                                         (cond
                                           [(and switch-tabs? (send defs get-filename))
-                                           =>
-                                           (lambda (fn)
-                                             (handler:edit-file fn))])
+                                           => (lambda (fn) (handler:edit-file fn))])
                                         (send defs scroll-to-position (first start/end)))]))])
                 (send (get-defs) invalidate-bitmap-cache))))
           
@@ -985,46 +949,39 @@
             (opt-lambda (break-handler frames [status #f])
               ;; suspend-sema ensures that we allow only one suspended thread
               ;;  at a time
-              (if (semaphore-try-wait? suspend-sema)
-                  (begin
-                    (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
-                      (queue-callback (lambda () (suspend-gui frames status #t))))
-                    (with-handlers ([exn:break?
-                                     (lambda (exn)
-                                       (let ([wait-sema (make-semaphore)])
-                                         (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
-                                           (queue-callback (lambda () 
-                                                             (resume-gui)
-                                                             (semaphore-post wait-sema))))
-                                         (semaphore-wait wait-sema))
-                                       (semaphore-post suspend-sema)
-                                       (break-handler exn))])
-                      (begin0
-                        (let loop ()
-                          (sync/enable-break resume-ch
-                                             (handle-evt
-                                              in-user-ch
-                                              (lambda (thunk)
-                                                (thunk)
-                                                (loop)))))
-                        (semaphore-post suspend-sema))))
-                  (if (pair? status)
-                      (cdr status)
-                      #f))))
+              (cond
+                [(semaphore-try-wait? suspend-sema)
+                 (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
+                   (queue-callback (lambda () (suspend-gui frames status #t))))
+                 (with-handlers ([exn:break?
+                                  (lambda (exn)
+                                    (let ([wait-sema (make-semaphore)])
+                                      (parameterize ([current-eventspace (send (get-frame) get-eventspace)])
+                                        (queue-callback (lambda () 
+                                                          (resume-gui)
+                                                          (semaphore-post wait-sema))))
+                                      (semaphore-wait wait-sema))
+                                    (semaphore-post suspend-sema)
+                                    (break-handler exn))])
+                   (begin0
+                     (let loop ()
+                       (sync/enable-break
+                        resume-ch (handle-evt in-user-ch (lambda (thunk)
+                                                           (thunk)
+                                                           (loop)))))
+                     (semaphore-post suspend-sema)))]
+                [(pair? status) (cdr status)]
+                [else #f])))
           
           (define/public (prepare-execution debug?)
             (set! want-debug? debug?)
-            (if debug?
-                (send (get-frame) show-debug)
-                (begin
-                  (send (get-frame) hide-debug)
-                  (set! master this)
-                  (for-each
-                   (lambda (t) (send t prepare-execution #f))
-                   slaves)
-                  (set! slaves empty)))
-            (set! current-language-settings
-                  (and debug? (send (get-defs) get-next-settings)))
+            (cond
+              [debug? (send (get-frame) show-debug)]
+              [else (send (get-frame) hide-debug)
+                    (set! master this)
+                    (for-each (lambda (t) (send t prepare-execution #f)) slaves)
+                    (set! slaves empty)])
+            (set! current-language-settings (and debug? (send (get-defs) get-next-settings)))
             (set! single-step? (box #t))
             (set! pos-vec (make-vector (add1 (send (get-defs) last-position)) #f))
             (set! top-level-bindings empty)
@@ -1039,9 +996,7 @@
           (define/augment (on-close)
             (inner (void) on-close)
             (set-box! closed? #t)
-            (for-each
-             (lambda (t) (send t prepare-execution #f))
-             slaves))
+            (for-each (lambda (t) (send t prepare-execution #f)) slaves))
           
           (define/public (hide-debug)
             (send (get-frame) hide-debug))
@@ -1103,17 +1058,17 @@
           (define/override execute-callback
             (lambda ()
               (let* ([tab (get-current-tab)])
-                (if (eq? tab (send tab get-master))
-                    (begin
-                      (send (get-current-tab) prepare-execution debug?)
-                      (set! debug? #f)
-                      (super execute-callback))
-                    (message-box
-                     "Message from Debugger"
-                     (format "This file is involved in a debugging session.  To run/debug this file, finish the session for ~a and close or re-run it."
-                             (send (send (send tab get-master) get-defs) get-filename/untitled-name))
-                     this
-                     '(ok))))))
+                (cond
+                  [(eq? tab (send tab get-master))
+                   (send (get-current-tab) prepare-execution debug?)
+                   (set! debug? #f)
+                   (super execute-callback)]
+                  [else
+                   (message-box
+                    "Message from Debugger"
+                    (format "This file is involved in a debugging session.  To run/debug this file, finish the session for ~a and close or re-run it."
+                            (send (send (send tab get-master) get-defs) get-filename/untitled-name))
+                    this '(ok))]))))
           
           (define expr-positions empty)
           (define expr-lengths empty)
@@ -1145,15 +1100,14 @@
                              (cond
                                ; should succeed unless the user closes a slave tab during debugging
                                [(and expr (filename->defs (syntax-source expr)))
-                                =>
-                                (lambda (defs)
-                                  (trim-expr-str
-                                   (if (syntax-position expr)
-                                       (send defs get-text
-                                             (sub1 (syntax-position expr))
-                                             (+ -1 (syntax-position expr) (syntax-span expr)))
-                                       "??")
-                                   15))]
+                                => (lambda (defs)
+                                     (trim-expr-str
+                                      (if (syntax-position expr)
+                                          (send defs get-text
+                                                (sub1 (syntax-position expr))
+                                                (+ -1 (syntax-position expr) (syntax-span expr)))
+                                          "??")
+                                      15))]
                                ["??"])))
                          frames)]
                    [trimmed-lengths (map add1 (map string-length trimmed-exprs))]
@@ -1161,14 +1115,11 @@
               (send stack-frames begin-edit-sequence)
               (send stack-frames lock #f)
               (unless already-stopped?
-                (printf "not already stopped~n")
                 (send stack-frames delete 0 (send stack-frames last-position))
-                (for-each
-                 (lambda (trimmed-expr)
-                   (send stack-frames insert (format "~a~n" trimmed-expr)))
-                 trimmed-exprs))
-              (send stack-frames change-style normal-sd
-                    0 (send stack-frames last-position))
+                (for-each (lambda (trimmed-expr)
+                            (send stack-frames insert (format "~a~n" trimmed-expr)))
+                          trimmed-exprs))
+              (send stack-frames change-style normal-sd 0 (send stack-frames last-position))
               (send stack-frames change-style bold-sd
                     (send stack-frames paragraph-start-position (send (get-current-tab) get-frame-num))
                     (send stack-frames paragraph-end-position (send (get-current-tab) get-frame-num)))
@@ -1244,11 +1195,8 @@
                                                 highlight-start highlight-end highlight-color)
                                           (cond
                                             [(send defs get-filename)
-                                             =>
-                                             (lambda (fn)
-                                               (handler:edit-file fn))])
-                                          (send defs scroll-to-position
-                                                (syntax-position expr)))]))]
+                                             => (lambda (fn) (handler:edit-file fn))])
+                                          (send defs scroll-to-position (syntax-position expr)))]))]
                                [(leave)
                                 (when mouse-over-frame
                                   ;; motion to different frame: unhighlight old
@@ -1257,22 +1205,18 @@
                                   (set! mouse-over-frame #f))
                                 (cond
                                   [(send (get-current-tab) get-frame-num)
-                                   => (lambda (num)
-                                        (send (get-current-tab) move-to-frame num))])]
+                                   => (lambda (num) (send (get-current-tab) move-to-frame num))])]
                                [(left-down)
                                 (when (and paragraph expr)
                                   (send (get-current-tab) move-to-frame paragraph))]
                                [else (void)]))))))
             (set! variables-text (new text% [auto-wrap #t]))
             (let ([stack-frames-panel (make-object vertical-panel% stack-view-panel)])
-              (new message% [parent stack-frames-panel]
-                   [label "Stack"])
+              (new message% [parent stack-frames-panel] [label "Stack"])
               (new editor-canvas% [parent stack-frames-panel] [editor stack-frames] [style '(no-hscroll)]))
             (let ([variables-panel (make-object vertical-panel% stack-view-panel)])
-              (new message% [parent variables-panel]
-                   [label "Variables"])
-              (new editor-canvas% [parent variables-panel] [editor variables-text]
-                   [style '(no-hscroll)]))
+              (new message% [parent variables-panel] [label "Variables"])
+              (new editor-canvas% [parent variables-panel] [editor variables-text] [style '(no-hscroll)]))
             ;; parent of panel with debug buttons
             (set! debug-parent-panel
                   (make-object vertical-panel% debug-grandparent-panel))
@@ -1321,12 +1265,10 @@
               [label (make-pause-label this)]
               [parent debug-panel]
               [callback (lambda (button evt)
-                          (if (send (get-current-tab) get-stack-frames)
-                              (bell)
-                              (begin
-                                (send (get-current-tab) suspend-on-break? #t)
-                                (send (get-current-tab) break-callback)
-                                (send (get-current-tab) reset-offer-kill))))]
+                          (cond [(send (get-current-tab) get-stack-frames) (bell)]
+                                [else (send (get-current-tab) suspend-on-break? #t)
+                                      (send (get-current-tab) break-callback)
+                                      (send (get-current-tab) reset-offer-kill)]))]
               [enabled #t]))
           
           (define resume-button
@@ -1344,11 +1286,10 @@
               [label (make-step-label this)]
               [parent debug-panel]
               [callback (lambda (btn evt)
-                          (if (send (get-current-tab) get-stack-frames)
-                              (begin
-                                (send (get-current-tab) set-single-step?! #t)
-                                (send (get-current-tab) resume))
-                              (bell)))]
+                          (cond [(send (get-current-tab) get-stack-frames)
+                                 (send (get-current-tab) set-single-step?! #t)
+                                 (send (get-current-tab) resume)]
+                                [else (bell)]))]
               [enabled #f]))
           
           (define (make-big-step-callback out?)
@@ -1366,10 +1307,9 @@
                                               [lpos (or (syntax-position stx) (k #f))]
                                               [pos (+ lpos (syntax-span stx) -1)]
                                               [defs (filename->defs src)]
-                                              [tab (if defs (send defs get-tab) (k (begin #;(printf "no defs for ~a~n" src) #f)))]
+                                              [tab (if defs (send defs get-tab) (k #f))]
                                               [bps (send tab get-breakpoints)]
                                               [cur-stat (hash-table-get bps pos 'invalid)])
-                                         ;(printf "stat for ~a in ~a is ~a~n" pos src cur-stat)
                                          (case cur-stat
                                            [(invalid) #f]
                                            [else
@@ -1385,11 +1325,9 @@
                                    frames
                                    (let ([len (length frames)])
                                      (build-list len (lambda (i) (- len i)))))])
-                (if frames
-                    (begin
-                      (send (get-current-tab) set-single-step?! (not frame))
-                      (send (get-current-tab) resume))
-                    (bell)))))
+                (cond [frames (send (get-current-tab) set-single-step?! (not frame))
+                              (send (get-current-tab) resume)]
+                      [else (bell)]))))
           
           (define step-over-button
             (new button%
@@ -1415,9 +1353,7 @@
           
           (define mouse-over-message
             (instantiate message% ()
-              [label " "]
-              [parent debug-panel]
-              [stretchable-width #t]))
+              [label " "] [parent debug-panel] [stretchable-width #t]))
           
           (define/augment (on-tab-change old new)
             (check-current-language-for-debugger)
