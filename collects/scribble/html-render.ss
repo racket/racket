@@ -964,8 +964,8 @@
       (define/override (get-suffix) #"")
 
       (define/override (get-dest-directory)
-        (or (build-path (or (super get-dest-directory) (current-directory))
-                        (current-subdirectory))
+        (or (and (current-subdirectory)
+                 (build-path (or (super get-dest-directory) (current-directory)) (current-subdirectory)))
             (super get-dest-directory)))
 
       (define/override (derive-filename d)
