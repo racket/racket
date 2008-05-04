@@ -2,7 +2,6 @@
 (require scheme/gui/base
          scheme/class)
 
-(require string-constants/string-constant)
 (provide switchable-button%)
 (define gap 2)
 (define margin 2)
@@ -174,7 +173,7 @@
   (define f (new frame% [label ""]))
   (define p (new horizontal-panel% [parent f] [alignment '(right top)]))
   
-  (define label (string-constant execute-button-label))
+  (define label "Execute")
   (define bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
 
   (define b1 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
