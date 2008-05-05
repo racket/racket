@@ -12,25 +12,15 @@
   (class canvas%
     (init-field label 
                 bitmap
-                callback)
+                callback
+                [alternate-bitmap bitmap])
     
-    (define disable-bitmap
-      (let ([alpha-bm (send bitmap get-loaded-mask)])
-        (and alpha-bm
-             (let* ([w (send alpha-bm get-width)]
-                    [h (send alpha-bm get-height)]
-                    [disable-bm (make-object bitmap% w h)]
-                    [pixels (make-bytes (* 4 w h))]
-                    [bdc (make-object bitmap-dc% alpha-bm)])
-               (send bdc get-argb-pixels 0 0 w h pixels)
-               (let loop ([i 0])
-                 (when (< i (* 4 w h))
-                   (bytes-set! pixels i (- 255 (quotient (- 255 (bytes-ref pixels i)) 2)))
-                   (loop (+ i 1))))
-               (send bdc set-bitmap disable-bm)
-               (send bdc set-argb-pixels 0 0 w h pixels)
-               (send bdc set-bitmap #f)
-               disable-bm))))
+    (define disable-bitmap (make-dull-mask bitmap))
+    
+    (define alternate-disable-bitmap
+      (if (eq? bitmap alternate-bitmap)
+          disable-bitmap
+          (make-dull-mask alternate-bitmap)))
     
     (inherit get-dc min-width min-height get-client-size refresh)
     
@@ -75,7 +65,7 @@
             (set! in? new-in?)
             (refresh)))))
     
-    (define horizontal? #t)
+    (define with-label? #t)
     (define/override (on-paint)
       (let ([dc (get-dc)])
         (let-values ([(cw ch) (get-client-size)])
@@ -104,14 +94,14 @@
               (send dc set-alpha .5))
             
             (cond
-              [horizontal? 
+              [with-label? 
                (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
                  (let ([text-start (+ (/ cw 2) (- (/ tw 2)) (- (/ (send bitmap get-width) 2)))])
                    (send dc draw-text label text-start (- (/ ch 2) (/ th 2)))
                    (draw-the-bitmap (+ text-start tw gap) (- (/ ch 2) (/ (send bitmap get-height) 2)))))]
               [else
-               (draw-the-bitmap (- (/ cw 2) (/ (send bitmap get-width) 2))
-                                (- (/ ch 2) (/ (send bitmap get-height) 2)))])
+               (draw-the-bitmap (- (/ cw 2) (/ (send (if with-label? bitmap alternate-bitmap) get-width) 2))
+                                (- (/ ch 2) (/ (send (if with-label? bitmap alternate-bitmap) get-height) 2)))])
             
             
             #;
@@ -126,32 +116,33 @@
             (send dc set-brush brush)))))
             
     (define/private (draw-the-bitmap x y)
-      (send (get-dc)
-            draw-bitmap
-            bitmap
-            x y
-            'solid
-            (send the-color-database find-color "black")
-            (if disabled?
-                disable-bitmap
-                (send bitmap get-loaded-mask))))
+      (let ([bm (if with-label? bitmap alternate-bitmap)])
+        (send (get-dc)
+              draw-bitmap
+              bm
+              x y
+              'solid
+              (send the-color-database find-color "black")
+              (if disabled?
+                  (if with-label? disable-bitmap alternate-disable-bitmap)
+                  (send bm get-loaded-mask)))))
     
-    (define/public (set-label-visible h?) 
-      (unless (equal? horizontal? h?)
-        (set! horizontal? h?)
+    (define/public (set-label-visible h?)
+      (unless (equal? with-label? h?)
+        (set! with-label? h?)
         (update-sizes)
         (refresh)))
     
     (define/private (update-sizes)
       (let ([dc (get-dc)])
         (cond
-          [horizontal?
+          [with-label?
            (let-values ([(w h _1 _2) (send dc get-text-extent label normal-control-font)])
              (do-w/h (+ w gap (send bitmap get-width))
                      (max h (send bitmap get-height))))]
           [else
-           (do-w/h (send bitmap get-width)
-                   (send bitmap get-height))])))
+           (do-w/h (send alternate-bitmap get-width)
+                   (send alternate-bitmap get-height))])))
     
     (define/private (do-w/h w h)
       (let ([w (floor (inexact->exact w))]
@@ -168,17 +159,38 @@
     (inherit get-graphical-min-size)
     (update-sizes)))
 
+(define (make-dull-mask bitmap)
+  (let ([alpha-bm (send bitmap get-loaded-mask)])
+    (and alpha-bm
+         (let* ([w (send alpha-bm get-width)]
+                [h (send alpha-bm get-height)]
+                [disable-bm (make-object bitmap% w h)]
+                [pixels (make-bytes (* 4 w h))]
+                [bdc (make-object bitmap-dc% alpha-bm)])
+           (send bdc get-argb-pixels 0 0 w h pixels)
+           (let loop ([i 0])
+             (when (< i (* 4 w h))
+               (bytes-set! pixels i (- 255 (quotient (- 255 (bytes-ref pixels i)) 2)))
+               (loop (+ i 1))))
+           (send bdc set-bitmap disable-bm)
+           (send bdc set-argb-pixels 0 0 w h pixels)
+           (send bdc set-bitmap #f)
+           disable-bm))))
+
 #;
 (begin
   (define f (new frame% [label ""]))
   (define p (new horizontal-panel% [parent f] [alignment '(right top)]))
   
-  (define label "Execute")
+  (define label "Run")
   (define bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
-
+  (define foot (make-object bitmap% (build-path (collection-path "icons") "foot.png") 'png/mask))
+  (define foot-up (make-object bitmap% (build-path (collection-path "icons") "foot-up.png") 'png/mask))
+  
   (define b1 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
   (define b2 (new switchable-button% [parent p] [label label] [bitmap bitmap] [callback void]))
-  (define b3 (new button% [parent p] [stretchable-width #t] [label "b"]))
+  (define b3 (new switchable-button% [parent p] [label "Step"] [bitmap foot] [alternate-bitmap foot-up] [callback void]))
+  (define sb (new button% [parent p] [stretchable-width #t] [label "b"]))
   (define swap-button
     (new button% 
          [parent f] 
@@ -189,13 +201,13 @@
               (set! state (not state))
               (send b1 set-label-visible state)
               (send b2 set-label-visible state)
-              '(send p set-orientation state)))]))
+              (send b3 set-label-visible state)))]))
   (define disable-button
     (new button% 
          [parent f] 
          [label "disable"]
          [callback
           (λ (a b)
-            (send b3 enable (not (send b3 is-enabled?)))
+            (send sb enable (not (send sb is-enabled?)))
             (send b1 enable (not (send b1 is-enabled?))))]))
-  (send f show #t)) 
+  (send f show #t))
