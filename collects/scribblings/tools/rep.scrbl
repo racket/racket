@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@(defmodule drscheme/tool-lib)@title{@tt{drscheme:rep}}
+@title{@tt{drscheme:rep}}
 
 @definterface[drscheme:rep:text<%> ()]{
 

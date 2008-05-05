@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@(defmodule drscheme/tool-lib)@title{@tt{drscheme:language}}
+@title{@tt{drscheme:language}}
 
 @definterface[drscheme:language:simple-module-based-language<%> ()]{
 

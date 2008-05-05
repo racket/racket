@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@(defmodule drscheme/tool-lib)@title{@tt{drscheme:frame}}
+@title{@tt{drscheme:frame}}
 
 @defclass[drscheme:frame:name-message% canvas% ()]{
 

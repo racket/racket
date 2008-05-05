@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@(defmodule drscheme/tool-lib)@title{@tt{drscheme:get/extend}}
+@title{@tt{drscheme:get/extend}}
 
 @defclass[drscheme:get/extend:base-unit-frame% (drscheme:debug:profile-unit-frame-mixin) ()]{
 

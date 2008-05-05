@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@(defmodule drscheme/tool-lib)@title{@tt{drscheme:debug}}
+@title{@tt{drscheme:debug}}
 
 @defmixin[drscheme:debug:profile-unit-frame-mixin () ((domain . drscheme:frame:) (domain . drscheme:unit:frame))]{
 
