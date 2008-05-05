@@ -21,6 +21,6 @@ In principle, a teachpack is just a library written in the full language,
 This chapter covers the teachpacks for ``How to Design Programs'' and ``How
  to Design Classes.'' 
 
-@include-section["htdp/Docs/htdp.scrbl"]
+@include-section["htdp/scribblings/htdp.scrbl"]
 
-@include-section["htdc/Docs/htdc.scrbl"]
+@include-section["htdc/scribblings/htdc.scrbl"]
