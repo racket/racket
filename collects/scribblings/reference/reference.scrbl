@@ -1,7 +1,25 @@
 #lang scribble/doc
-@(require "mz.ss")
+@(require "mz.ss"
+          scribble/struct)
 
-@(define w (make-will-executor))
+@(define (scheme-extra-libs)
+  (make-delayed-element
+   (lambda (renderer p ri)
+     (let ([keys (resolve-get-keys p ri (lambda (v)
+                                          (eq? (car v) 'scheme-extra-lib)))])
+      (let ([keys (sort keys string<?
+                        #:key (lambda (k)
+                                (symbol->string (cadr k)))
+                        #:cache-keys? #t)])
+        (let loop ([keys keys])
+          (cond
+            [(null? keys) '("")]
+            [(null? (cdr keys)) (list ", and "
+                                      (resolve-get p ri (car keys)))]
+            [else (list* ", " (resolve-get p ri (car keys))
+                         (loop (cdr keys)))])))))
+   (lambda () "...")
+   (lambda () "...")))
 
 @title{@bold{Reference}: PLT Scheme}
 
@@ -23,8 +41,10 @@ language.
 
 Unless otherwise noted, the bindings defined in this manual are
 exported by the @schememodname[scheme/base] and @schememodname[scheme]
-languages, where @schememodname[scheme] includes all of
-@schememodname[scheme/base].}
+languages.}
+
+@margin-note{The @schememodname[scheme] library combines
+@schememodname[scheme/base]@scheme-extra-libs[].}
 
 @table-of-contents[]
 

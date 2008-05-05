@@ -23,7 +23,11 @@
        (begin
          (declare-exporting lib scheme #:use-sources (src ...))
          (defmodule*/no-declare (lib)
-           (t "The bindings documented in this section are provided by the "
+           (t (make-collect-element
+               #f null
+               (lambda (ci)
+                 (collect-put! ci `(scheme-extra-lib ,'lib) (schememodname lib))))
+              "The bindings documented in this section are provided by the "
               (schememodname lib)
               " and "
               (schememodname scheme)
