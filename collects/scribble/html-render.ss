@@ -617,7 +617,8 @@
                     (if (or parent up-path)
                       (make-target-url
                        (if parent
-                         (if (toc-part? parent)
+                         (if (and (toc-part? parent)
+                                  (part-parent parent ri))
                            (derive-filename parent)
                            "index.html")
                          up-path)
