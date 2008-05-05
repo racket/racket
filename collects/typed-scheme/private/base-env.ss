@@ -16,6 +16,7 @@
  scheme/promise
  (except-in "type-rep.ss" make-arr)
  (only-in scheme/list cons? take drop add-between)
+ '#%paramz
  "type-effect-convenience.ss"
  (only-in "type-effect-convenience.ss" [make-arr* make-arr])
  "union.ss"
