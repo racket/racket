@@ -2,7 +2,8 @@
   (require syntax/kerncase
            syntax/stx
            mzlib/list
-           syntax/boundmap)
+           syntax/boundmap
+           (for-syntax scheme/base))
 
   (provide top-level-to-core)
 
@@ -141,7 +142,7 @@
                                    ;;  inteferes with the 0-values hack at the top level
                                    cvted
                                    #`(let-values ([ids #,cvted])
-                                       (values . ids))))])))
+                                       (#%plain-app values . ids))))])))
                   (filter (lambda (x) (not (is-run-time? x))) decls))]
             [rt-converted
              (map (lambda (stx)
@@ -161,7 +162,7 @@
 			 (if (need-thunk? #'rhs)
 			     #`(lambda () #,converted)
 			     #`(let-values ([ids #,converted])
-				 (values . ids))))]
+				 (#%plain-app values . ids))))]
 		      [else
 		       #`(lambda ()
 			   #,(convert stx #f 
@@ -170,22 +171,26 @@
 				      in-module?
 				      simple-constant? stop-properties))]))
 		  (filter is-run-time? decls))]
-            [ct-rhs #`((let ([magic (car (cons '#,magic-sym 2))])
-                         (if (symbol? magic) 
-                             (lambda (x) (vector
-					  #,@(map (lambda (stx)
-						    (syntax-case stx ()
-						      [(def (id) . _)
-						       #'void]
-						      [(def (id ...) . _)
-						       (with-syntax ([(v ...) (map (lambda (x) #f)
-										   (syntax->list #'(id ...)))])
-							 
-							 #`(lambda () (values v ...)))]))
-						  (filter (lambda (x) (not (is-run-time? x))) decls))))
-                             (car magic)))
-                       (vector #,@(vars-sequence ct-vars)))]
-            [rt-rhs #`((cdr '#,magic-sym) (vector #,@(vars-sequence rt-vars)))]
+            [ct-rhs #`(#%plain-app
+                       (let-values ([(magic) (#%plain-app car (#%plain-app cons '#,magic-sym 2))])
+                         (if (#%plain-app symbol? magic) 
+                             (#%plain-lambda (x) 
+                               (#%plain-app
+                                vector
+                                #,@(map (lambda (stx)
+                                          (syntax-case stx ()
+                                            [(def (id) . _)
+                                             #'void]
+                                            [(def (id ...) . _)
+                                             (with-syntax ([(v ...) (map (lambda (x) #f)
+                                                                         (syntax->list #'(id ...)))])
+                                               
+                                               #`(#%plain-lambda () (#%plain-app values v ...)))]))
+                                        (filter (lambda (x) (not (is-run-time? x))) decls))))
+                             (#%plain-app car magic)))
+                       (#%plain-app vector #,@(vars-sequence ct-vars)))]
+            [rt-rhs #`(#%plain-app (#%plain-app cdr '#,magic-sym)
+                                   (#%plain-app vector #,@(vars-sequence rt-vars)))]
             [just-one-ct? (>= 1 (apply +
                                        (map (lambda (decl)
                                               (syntax-case decl (define-syntaxes define-values-for-syntax)
@@ -204,12 +209,13 @@
                                                 [_else 1]))
                                             decls)))])
         (values
-         #`(cons (lambda (#,compile-time)
+         #`(#%plain-app
+            cons (#%plain-lambda (#,compile-time)
                    #,@(extract-vars ct-vars compile-time extract-stx)
-                   (vector #,@ct-converted))
-                 (lambda (#,run-time)
-                   #,@(extract-vars rt-vars run-time extract-stx)
-                   (vector #,@rt-converted)))
+                   (#%plain-app vector #,@ct-converted))
+            (#%plain-lambda (#,run-time)
+              #,@(extract-vars rt-vars run-time extract-stx)
+              (#%plain-app vector #,@rt-converted)))
          #`(;; Lift require and require-for-syntaxes to the front, so they're ready for
 	    ;;  variable references
 	    #,@(filter (lambda (decl)
@@ -245,26 +251,29 @@
                             [(#%provide . _)
                              (car decls)]
                             [(#%require . _)
-                             #'(void)]
+                             #'(#%plain-app void)]
                             [(define-values (id ...) rhs)
 			     #`(define-values (id ...)
-				 #,(let ([lookup #`(vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos)])
+				 #,(let ([lookup #`(#%plain-app vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos)])
 				     (if (need-thunk? #'rhs)
-					 #`(#,lookup)
+					 #`(#%plain-app #,lookup)
 					 lookup)))]
                             [else
-                             #`((vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos))])
+                             #`(#%plain-app (#%plain-app vector-ref #,(if just-one-rt? rt-rhs run-time) #,rt-pos))])
                           (loop (cdr decls) ct-pos (add1 rt-pos)))]
                    [else
                     (cons (syntax-case (car decls) (define-syntaxes define-values-for-syntax)
                             [(define-syntaxes (id ...) . rhs)
                              #`(define-syntaxes (id ...)
-                                 ((vector-ref #,(if just-one-ct? ct-rhs compile-time) #,ct-pos)))]
+                                 (#%plain-app (#%plain-app vector-ref #,(if just-one-ct? ct-rhs compile-time) #,ct-pos)))]
                             [(define-values-for-syntax (id ...) . rhs)
                              #`(define-values-for-syntax ()
                                  (begin
-                                   (set!-values (id ...) ((vector-ref #,(if just-one-ct? ct-rhs compile-time) #,ct-pos)))
-                                   (values)))])
+                                   (set!-values (id ...) 
+                                                (#%plain-app
+                                                 (#%plain-app vector-ref #,(if just-one-ct? ct-rhs compile-time) 
+                                                              #,ct-pos)))
+                                   (#%plain-app values)))])
                           (loop (cdr decls) (add1 ct-pos) rt-pos))])))
 	 magic-sym))))
 

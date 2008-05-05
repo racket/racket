@@ -11,7 +11,8 @@
 	   syntax/kerncase
 	   syntax/primitives
 	   mzlib/etc
-	   mzlib/list)
+	   mzlib/list
+           (for-syntax scheme/base))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Optimizer
@@ -594,7 +595,7 @@
       (super-instantiate ((void) stx))
       (inherit-field src-stx cert-stxes)
 
-      (define/override (sexpr) (quote-syntax (void)))
+      (define/override (sexpr) (quote-syntax (#%plain-app void)))
 
       (define/override (simplify ctx)
         (if (eq? 'bool (context-need ctx))
@@ -1814,7 +1815,11 @@
 	[(#%require . i) (make-object require/provide% stx)]
 	[(#%provide i ...) (make-object require/provide% stx)]
 
-	[else (error 'parse "unknown expression: ~a" (syntax->datum stx))])))
+        [(#%expression e)
+         (parse (syntax e) env trans? in-module? tables)]
+
+	[else 
+         (error 'parse "unknown expression: ~a" (syntax->datum stx))])))
 
   (define parse (make-parse #f))
   (define parse-top (make-parse #t))

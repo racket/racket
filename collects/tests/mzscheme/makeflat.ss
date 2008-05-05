@@ -25,7 +25,7 @@
 (define line-count 0)
 (define file-count 0)
 
-(define flatp (open-output-file (format "flat~a.ss" flat-number) 'replace))
+(define flatp (open-output-file (format "flat~a.ss" flat-number) #:exists 'replace))
 (define old-eval (current-eval))
 (define old-namespace (current-namespace))
 
@@ -35,7 +35,7 @@
 
 (define (flat-pp v)
   (parameterize ([print-hash-table #t])
-    (pretty-print (if (syntax? v) (syntax-object->datum v) v) flatp))
+    (pretty-print (if (syntax? v) (syntax->datum v) v) flatp))
   (set! line-count (add1 line-count))
   (when (>= line-count lines-per-file)
     (set! line-count 0)
@@ -44,7 +44,7 @@
     (set! flatp
 	  (open-output-file
 	   (format "flat~a.ss" file-count)
-	   'replace))))
+	   #:exists 'replace))))
 
 (define error-test
   (case-lambda
@@ -57,7 +57,7 @@
 		  [(define-syntax . _) #t]
 		  [(define-syntaxes . _) #t]
 		  [_else #f]))
-      (let ([dexpr (syntax-object->datum expr)])
+      (let ([dexpr (syntax->datum expr)])
 	(flat-pp 
 	 `(thunk-error-test (lambda () ,dexpr)
 			    (quote-syntax ,dexpr)

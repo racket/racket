@@ -319,5 +319,6 @@
 	(and v (namespace-variable-value v #t #f ns)))
 
       (define (kernel-modname? modname)
-        (equal? ''#%kernel (let-values ([(name base) (module-path-index-split modname)])
-                             name)))))
+        (and modname
+             (equal? ''#%kernel (let-values ([(name base) (module-path-index-split modname)])
+                                  name))))))

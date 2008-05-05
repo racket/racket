@@ -94,7 +94,7 @@
           (zodiac:set-begin0-form-bodies! ast (cons v (cdr (zodiac:begin0-form-bodies ast))))))
       (define zodiac:set-begin0-form-rest!
 	(lambda (ast v)
-          (zodiac:set-begin0-form-bodies! ast (cons (car (zodiac:begin0-form-bodies ast))
+          (zodiac:set-begin0-form-bodies! ast (list (car (zodiac:begin0-form-bodies ast))
                                                     v))))
       
       ;;----------------------------------------------------------------------------

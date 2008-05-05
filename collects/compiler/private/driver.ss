@@ -73,7 +73,10 @@
 	   dynext/compile-sig
 	   dynext/link-sig
 	   dynext/file-sig
-	   setup/dirs)
+	   setup/dirs
+           (only scheme/base 
+                 define-namespace-anchor 
+                 namespace-anchor->empty-namespace))
 
   (require "../sig.ss"
 	   "sig.ss"
@@ -81,6 +84,8 @@
 	   "../xform.ss")
 
   (provide driver@)
+
+  (define-namespace-anchor anchor)
 
   (define-unit driver@
       (import (prefix compiler:option: compiler:option^)
@@ -250,8 +255,13 @@
 			    opt-expanded)))))
 		   exprs)))))
 
-      (define elaborate-namespace (make-namespace))
-	   
+      (define elaborate-namespace 
+        (let ([ns (make-namespace)])
+          (namespace-attach-module (namespace-anchor->empty-namespace anchor)
+                                   'scheme/base
+                                   ns)
+          ns))
+
       (define has-prefix? #f)
 
       (define (eval-compile-prefix prefix)
@@ -701,7 +711,7 @@
 			   (parameterize ([current-namespace elaborate-namespace]
 					  [current-load-relative-directory input-directory]
 					  [compile-enforce-module-constants #f])
-			     (let ([sources+bytecodes+magics
+                             (let ([sources+bytecodes+magics
 				    (map (lambda (src)
 					   (let-values ([(src bytecode magic-sym)
 							 (top-level-to-core src 
@@ -715,7 +725,7 @@
 						   bytecode magic-sym)))
 					 (block-source s:file-block))])
 			       (set-block-source! s:file-block (map car sources+bytecodes+magics))
-			       (set-block-bytecodes! s:file-block 
+                               (set-block-bytecodes! s:file-block 
 						     (map compile
 							  (map cadr sources+bytecodes+magics)))
 			       (set-block-magics! s:file-block (map caddr sources+bytecodes+magics)))))])
