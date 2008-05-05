@@ -17,7 +17,7 @@
    
    (test-case
     "cache-table? does not recognize hash-tables"
-    (check-false (cache-table? (make-hash-table))))
+    (check-false (cache-table? (make-hash))))
    
    (test-case
     "cache-table-lookup: simple"

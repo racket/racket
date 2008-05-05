@@ -1,7 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         ; XXX Replace with real
-         (lib "sxml.ss" "web-server/tests/tmp/sxml")
+         (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list
          (lib "request-structs.ss" "web-server" "private")

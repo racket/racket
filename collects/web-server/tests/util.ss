@@ -1,8 +1,7 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
          (lib "connection-manager.ss" "web-server" "private")
-         ; XXX Replace with real
-         (only-in (lib "ssax.ss" "web-server/tests/tmp/ssax")
+         (only-in (planet "ssax.ss" ("lizorkin" "ssax.plt" 2 0))
                   ssax:xml->sxml)
          (lib "request-structs.ss" "web-server" "private")
          (lib "web-server-structs.ss" "web-server" "private")
