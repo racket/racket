@@ -14,7 +14,7 @@
 
 @title{@bold{Plugins}: Extending DrScheme}
 
-@section{This Manual}
+@bold{This Manual}
 
 This manual describes DrScheme's tools interface. It assumes
 familiarity with 
@@ -25,7 +25,9 @@ DrScheme, as described in
 and the Framework, as described in
 @(other-manual '(lib "framework/framework.scrbl")).
 
-@section{Thanks}
+@table-of-contents[]
+
+@bold{Thanks}
 
 Thanks especially to 
 Eli Barzilay, 
@@ -478,5 +480,12 @@ the tool shows this part of the GUI for DrScheme.
 
 See @scheme[drscheme:language:register-capability]
 for a list of the capabilities registered by default.
+
+@include-section["get-slash-extend.scrbl"]
+@include-section["unit.scrbl"]
+@include-section["language.scrbl"]
+@include-section["debug.scrbl"]
+@include-section["rep.scrbl"]
+@include-section["frame.scrbl"]
 
 @index-section[]

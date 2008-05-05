@@ -1,0 +1,462 @@
+#lang scribble/doc
+@(require "common.ss")
+@(defmodule drscheme/tool-lib)@title{@tt{drscheme:rep}}
+
+@definterface[drscheme:rep:text<%> ()]{
+
+
+}
+
+
+@defclass[drscheme:rep:text% scheme:text% (drscheme:rep:text<%>)]{
+
+This class implements a read-eval-print loop for DrScheme.  User
+submitted evaluations in DrScheme are evaluated asynchronously, in an
+eventspace created for the user. No evaluations carried out by this
+class affect the implementation that uses it.
+
+
+
+@defconstructor/make[([context (implements @scheme[drscheme:rep:context<%>])])]{
+
+%          %          %%        begin rep-text methods        %          
+
+}
+
+@defmethod[#:mode override 
+           (after-delete)
+           void?]{
+
+Resets any error highlighting in this editor.
+
+
+}
+
+@defmethod[#:mode override 
+           (after-insert)
+           void?]{
+
+Resets any error highlighting in this editor.
+
+
+}
+
+@defmethod[(display-results [results (list-of TST)])
+           void?]{
+
+This displays each of the elements of @scheme[results] in the interactions
+window, expect those elements of @scheme[results] that are void. Those
+are just ignored.
+
+
+}
+
+@defmethod[(do-many-evals [run-loop (((-> void) -> void) -> void)])
+           void?]{
+@methspec{
+
+Use this function to evaluate code or run actions that should mimic
+the user's interactions. For example, DrScheme uses this function to
+evaluate expressions in the definitions window and expressions
+submitted at the prompt.
+
+}
+@methimpl{
+
+The function @scheme[run-loop] is called. It is expected to loop, calling
+it's argument with a thunk that corresponds to the user's
+evaluation. It should call it's argument once for each expression the
+user is evaluating.  It should pass a thunk to it's argument that
+actually does the users's evaluation.
+
+
+}}
+
+@defmethod[(do-many-text-evals [text (is-a?/c text%)]
+                               [start int]
+                               [end int ]
+                               [complete-program? any/c])
+           void?]{
+@methspec{
+
+This function evaluates all of the expressions in a text.
+
+}
+@methimpl{
+
+It evaluates all of the expressions in @scheme[text] starting at
+@scheme[start] and ending at @scheme[end], calling
+@method[drscheme:rep:text% do-many-evals] to handle the evaluation.
+
+The @scheme[complete-program?] argument determines if the
+@method[drscheme:language:language<%> front-end/complete-program] method or the
+@method[drscheme:language:language<%> front-end/interaction] method is called.
+
+
+}}
+
+@defmethod[(get-error-range)
+           (union \#f (list (instanceof @scheme[text:basic%] number number)))]{
+@methspec{
+
+Indicates the highlighted error range. The state for the
+error range is shared across all instances of this class, so
+there can only be one highlighted error region at a time.
+
+}
+@methimpl{
+
+If \scm{\#f}, no region is highlighted. If a list, the first
+element is the editor where the range is highlighted and the
+second and third are the beginning and ending regions,
+respectively.
+
+
+}}
+
+@defmethod[(get-user-custodian)
+           (union \#f custodian)]{
+This is the custodian controlling the user's program.
+
+}
+
+@defmethod[(get-user-eventspace)
+           (union \#f eventspace)]{
+This is the user's eventspace. The result of
+@method[drscheme:rep:text% get-user-thread] is the main thread of this eventspace.
+
+}
+
+@defmethod[(get-user-language-settings)
+           language-settings]{
+Returns the user's language-settings for the most recently
+run program. Consider using
+@method[drscheme:unit:definitions-text<%> get-next-settings] instead, since the user may have selected a new language
+since the program was last run.
+
+}
+
+@defmethod[(get-user-namespace)
+           (union \#f namespace)]{
+Returns the user's namespace. This method
+returns a new namespace each time Run is
+clicked.
+
+}
+
+@defmethod[(get-user-thread)
+           (union \#f thread)]{
+This method returns the thread that the users code runs
+in. It is returns a different result, each time the user
+runs the program.
+
+It is @scheme[#f] before the first time the user click on
+the Run button or the evaluation has been killed.
+
+This thread has all of its parameters initialized according to the
+settings of the current execution.
+See \Mzhyperref{parameters}{mz:parameters}
+for more information about parameters.
+
+}
+
+@defmethod[(highlight-errors [locs (listof (list (instance (implements @scheme[text:basic<%>])) small-integer small-integer))])
+           void?]{
+Call this method to highlight errors associated with this repl.
+See also
+@method[drscheme:rep:text% reset-highlighting], and
+@method[drscheme:rep:text% highlight-errors/exn].
+
+This method highlights a series of dis-contiguous ranges in
+the editor.
+
+It puts the caret at the location of the first error.
+
+}
+
+@defmethod[(highlight-errors/exn [exn exn])
+           void?]{
+
+Highlights the errors associated with the exn (only syntax
+and read errors -- does not extract any information from the
+continuation marks)
+
+See also 
+@method[drscheme:rep:text% highlight-errors].
+
+
+}
+
+@defmethod[(initialize-console)
+           void?]{
+
+This inserts the ``Welcome to DrScheme'' message into the interactions
+buffer, calls
+@method[drscheme:rep:text% reset-console],
+@method[drscheme:rep:text% insert-prompt], and 
+@method[editor<%> clear-undos].
+
+Once the console is initialized, this method calls
+@method[drscheme:language:language<%> first-opened]. Accordingly, this method should not be called to initialize
+a REPL when the user's evaluation is imminent. That is,
+this method should be called when new tabs or new windows
+are created, but not when the Run button is clicked. 
+
+
+}
+
+@defmethod[(insert-prompt)
+           void?]{
+
+Inserts a new prompt at the end of the text.
+
+
+%%                                                                  %%                       drscheme:frame                             %%                                                                  
+
+}
+
+@defmethod[(kill-evaluation)
+           void?]{
+This method is called when the user chooses the kill menu item.
+
+}
+
+@defmethod[#:mode override 
+           (on-close)
+           void?]{
+
+Calls 
+@method[drscheme:rep:text% shutdown].
+
+Calls the super method.
+
+
+}
+
+@defmethod[(queue-output [thnk (-> void?)])
+           void?]{
+@methspec{
+
+This method queues thunks for drscheme's eventspace in a
+special output-related queue.
+
+}
+@methimpl{
+
+%          %          %%      begin console-text methods      %          %% many more methods should be added here....
+
+
+}}
+
+@defmethod[(reset-console)
+           void?]{
+
+Kills the old eventspace, and creates a new
+parameterization for it.
+
+
+}
+
+@defmethod[(reset-highlighting)
+           void?]{
+This method resets the highlighting being displayed for this repl. See also:
+@method[drscheme:rep:text% highlight-errors], and
+@method[drscheme:rep:text% highlight-errors/exn].
+
+}
+
+@defmethod[(run-in-evaluation-thread [f ( -> void)])
+           void?]{
+@methspec{
+
+This function runs it's arguments in the user evaluation thread. This
+thread is the same as the user's eventspace main thread.
+
+See also  
+@method[drscheme:rep:text% do-many-evals].
+
+}
+@methimpl{
+
+Calls @scheme[f], after switching to the user's thread.
+
+
+}}
+
+@defmethod[(shutdown)
+           void?]{
+Shuts down the user's program and all windows. Reclaims any
+resources the program allocated.  It is expected to be
+called from DrScheme's main eventspace thread.
+
+}
+
+@defmethod[(wait-for-io-to-complete)
+           void?]{
+This waits for all pending IO in the rep to finish
+and then returns.
+
+This method must only be called from the main thread in
+DrScheme's eventspace
+
+}
+
+@defmethod[(wait-for-io-to-complete/user)
+           void?]{
+This waits for all pending IO in the rep to finish
+and then returns.
+
+This method must only be called from the main thread
+in the user's eventspace
+
+}}
+
+
+@defmixin[drscheme:rep:drs-bindings-keymap-mixin () ((domain . editor:keymap))]{
+
+This mixin adds some drscheme-specific keybindings to the
+editor it is mixed onto.
+
+
+
+@defmethod[#:mode override 
+           (get-keymaps)
+           (listof (instanceof @scheme[keymap%]))]{
+
+Calls the super method and adds in a keymap with the
+drscheme-specific keybindings:
+
+@itemize{
+@item{f5 - Run}
+
+@item{c:x;o - toggles the focus between the definition and
+interactions windows.}
+}
+
+
+
+}}
+
+
+@definterface[drscheme:rep:context<%> ()]{
+
+Objects that match this interface provide all of the services that the 
+@scheme[drscheme:rep:text%] class needs to connect with it's context.
+
+
+
+@defmethod[(clear-annotations)
+           void?]{
+@methspec{
+
+Call this method to clear any annotations in the text before
+executing or analyzing or other such activities that should
+process the program.
+
+Tools that annotate the program text should augment this
+method to clear their own annotations on the program text.
+
+DrScheme calls this method before a program is run (via the
+Run button).
+
+}
+@methimpl{
+
+Clears any error highlighting in the definitions window.
+
+
+
+}}
+
+@defmethod[(disable-evaluation)
+           void?]{
+Call this method to disable evaluation GUI evaluation while
+some evaluation (or expansion) is taking place on another
+thread.
+
+Override this method if you add a GUI-based mechanism for
+initiating evaluation in the frame.
+
+This method is also called when the user switches tabs.
+
+See also
+@method[drscheme:rep:context<%> enable-evaluation].
+
+}
+
+@defmethod[(enable-evaluation)
+           void?]{
+This method must disable the GUI controls that start
+user-sponsored evaluation. It is called once the user starts
+some evaluation to ensure that only one evaluation proceeds
+at a time.
+
+It is also called when the user switches tabs.
+
+See also
+@method[drscheme:rep:context<%> disable-evaluation].
+
+}
+
+@defmethod[(ensure-rep-shown [rep (is-a?/c @scheme[drscheme:rep:text<%>])])
+           void?]{
+
+This method is called to force the rep window to be visible when, for
+example, an error message is put into the rep. Also ensures
+that the appropriate tab is visible, if necessary.
+
+
+}
+
+@defmethod[(get-breakables)
+           (values (union thread \#f) (union custodian \#f))]{
+Returns the last values passed to
+@method[drscheme:rep:context<%> set-breakables].
+
+}
+
+@defmethod[(get-directory)
+           (union string \#f)]{
+The result of this method is used as the initial directory for the
+user's program to be evaluated in.
+
+}
+
+@defmethod[(needs-execution)
+           (union string? false/c)]{
+This method should return an explanatory string when the
+state of the program that the repl reflects has changed. It
+should return @scheme[#f] otherwise.
+
+}
+
+@defmethod[(reset-offer-kill)
+           void?]{
+The break button typically offers to kill if it has been
+pushed twice in a row. If this method is called, however, it
+ignores any prior clicks.
+
+}
+
+@defmethod[(set-breakables [thread (union thread \#f)]
+                           [custodian (union custodian \#f)])
+           void?]{
+Calling this method with a thread and a custodian means that
+the next time the break button is clicked, it will either
+break the thread or shutdown the custodian.
+
+See also
+@method[drscheme:rep:context<%> get-breakables].
+
+}
+
+@defmethod[(update-running [running? any/c])
+           void?]{
+
+This method should update some display in the gui that
+indicates whether or not evaluation is currently proceeding
+in the user's world.
+
+
+}}
+
