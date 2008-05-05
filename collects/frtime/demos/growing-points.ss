@@ -18,7 +18,7 @@
   (sqrt (+ (sqr (- x1 x2)) (sqr (- y1 y2)))))
 
 ;; How many growing points on one side of the grid of growing points.
-(define GRID-SIZE (make-slider "Width" 1 10 8))
+(define GRID-SIZE (make-slider "Width" 1 12 8))
 
 ;; The distance between the centers of two adjacent growing points.
 (define grid-resolution (make-slider "Resolution" 2 30 20))

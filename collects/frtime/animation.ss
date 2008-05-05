@@ -96,7 +96,11 @@
   (define-struct curve (xmin xmax ymin ymax fn))
   (define-struct polygon (posn-list posn color))
   (define-struct solid-polygon (posn-list posn color))
+  (define-struct image (pos renderer))
   
+  (define (prep-image file)
+    (draw-pixmap-posn file))
+
   (define (make-circle center r color)
     (make-solid-ellipse (make-posn (- (posn-x center) r)
                                    (- (posn-y center) r))
@@ -140,6 +144,10 @@
                  (* 2 radius)
                  (* 2 radius)
                  (if (undefined? color) "black" color))))]
+           [($ image pos renderer)
+            (let ([renderer (v-n renderer)]
+                  [pos (v-n pos)])
+              ((renderer pixmap) pos))]
            [($ solid-ellipse ul w h color)
             (let ([ul (v-n ul)]
                   [w (v-n w)]

@@ -923,7 +923,7 @@
   (define draw-pixmap-posn
     (opt-lambda (filename [type 'unknown/mask])
       (check 'draw-pixmap-posn
-	     (andp string? file-exists?) filename "filename"
+	     string? filename "filename"
 	     (lambda (x) (memq x '(gif xbm xpm bmp pict unknown unknown/mask gif/mask))) type "file type symbol")
       (let* ([bitmap (make-object mred:bitmap% filename type)])
 	(lambda (viewport)

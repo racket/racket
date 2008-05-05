@@ -57,13 +57,11 @@
         (void))
       
       (define (truncate str n)
-        (if (< (string-length str) n)
-            str
-            (if (>= n 3)
-                (string-append
-                 (substring str 0 (- n 3))
-                 "...")
-                (substring str 0 (min n (string-length str))))))
+        (cond [(< (string-length str) n) str]
+              [(>= n 3) (string-append
+                          (substring str 0 (- n 3))
+                          "...")]
+              [else (substring str 0 (min n (string-length str)))]))
       
       (define (clean-status s)
 	(truncate (regexp-replace* #rx"\n" s " ") 200))
@@ -896,9 +894,8 @@
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
                 (send (send (get-frame) get-resume-button) enable #t)
                 (send (get-frame) register-stack-frames frames already-stopped?)
-                (send (get-frame) register-vars (if (empty? frames)
-                                                    empty
-                                                    (list-ref frames (get-frame-num))))
+                (unless (empty? frames)
+                  (send (get-frame) register-vars (list-ref frames (get-frame-num))))
                 (send status-message set-label
                       (if (and (cons? status) top-of-stack?)
                           (let ([expr (mark-source (first frames))])
@@ -941,7 +938,7 @@
             (send (send (get-frame) get-step-out-button) enable #f)
             (send (send (get-frame) get-resume-button) enable #f)
             (send (send (get-frame) get-status-message) set-label "")
-            (send (get-frame) clear-stack-frames)
+            (send (get-frame) clear-stack-frames/vars)
             (send (get-defs) invalidate-bitmap-cache))
           
           (define/public suspend
@@ -1126,12 +1123,17 @@
               (send stack-frames lock #t)
               (send stack-frames end-edit-sequence)))
           
-          (define/public (clear-stack-frames)
+          (define/public (clear-stack-frames/vars)
             (send stack-frames begin-edit-sequence)
             (send stack-frames lock #f)
             (send stack-frames delete 0 (send stack-frames last-position))
             (send stack-frames lock #t)
-            (send stack-frames end-edit-sequence))
+            (send stack-frames end-edit-sequence)
+            (send variables-text begin-edit-sequence)
+            (send variables-text lock #f)
+            (send variables-text delete 0 (send variables-text last-position))
+            (send variables-text lock #t)
+            (send variables-text end-edit-sequence))
           
           (define debug-grandparent-panel 'uninitialized-debug-grandparent-panel)
           (define debug-parent-panel 'uninitialized-debug-parent-panel)

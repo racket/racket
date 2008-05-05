@@ -43,17 +43,14 @@
         (apply fn (map value-now/no-copy args))
         (with-continuation-mark
             'frtime 'lift-active
-          (if (ormap signal? args)
-              (begin
-                #;(when (ormap signal:compound? args)
-                  (printf "attempting to lift ~a over a signal:compound in ~a!~n" fn (map value-now args)))
-                (apply
-                 proc->signal
-                 (apply (if strict? create-strict-thunk create-thunk) fn args)
-                 args))
-              (if (and strict? (ormap undefined? args))
-                  undefined
-                  (apply fn args))))))
+          (cond
+            [(ormap signal? args)
+             (apply
+              proc->signal
+              (apply (if strict? create-strict-thunk create-thunk) fn args)
+              args)]
+            [(and strict? (ormap undefined? args)) undefined]
+            [else (apply fn args)]))))
   
   (define (lift-strict . args)
     (apply lift #t args))

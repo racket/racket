@@ -13,7 +13,7 @@
          frtime/gui)
 
 ;; How many needles on one side of the grid of needles
-(define GRID-SIZE (make-slider "Grid size:" 1 10 8))
+(define GRID-SIZE (make-slider "Grid size:" 1 12 8))
 
 ;; The length of a needle in pixels
 (define NEEDLE-LENGTH 10)

@@ -44,9 +44,9 @@
            #'(lambda (default-proc super-class)
                (class super-class
                  (init (processor default-proc))
-                 (super-new)
                  (define name-e (event-receiver))
                  (define processed-events (processor name-e))
+                 (super-new)
                  ;what about when the super call returns an error?
                  (define/override method-name
                    (lambda args 
