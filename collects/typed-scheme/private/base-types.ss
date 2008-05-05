@@ -1,40 +1,12 @@
 #lang scheme/base
 
-(require (for-template (only-in (lib "list.ss") foldl)
-                       scheme/base
-                       '#%paramz
-                       scheme/promise
-                       string-constants/string-constant
-                       #;'#%more-scheme
-                       #;'#%qq-and-or
-                       (only-in scheme/match/patterns match:error))
-         )
-
-
-(require
- "extra-procs.ss"
- "init-envs.ss"
- scheme/promise
- (except-in "type-rep.ss" make-arr)
- (only-in scheme/list cons?)
- "type-effect-convenience.ss"
- (only-in "type-effect-convenience.ss" [make-arr* make-arr])
- "union.ss"
- string-constants/string-constant
- (only-in scheme/match/patterns match:error)
- "tc-structs.ss")
-
 (require (for-syntax
           scheme/base
           "init-envs.ss"
           (except-in "type-rep.ss" make-arr)
-          (only-in (lib "list.ss") foldl)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
-          "union.ss"
-          string-constants/string-constant
-          (only-in scheme/match/patterns match:error)
-          "tc-structs.ss"))
+          "union.ss"))
 
 ;; the initial type name environment - just the base types
 (define-syntax (define-tname-env stx)
@@ -49,7 +21,7 @@
            (initialize-type-name-env
             (list (list #'nm ty) ...)))
          (begin-for-syntax 
-           ;(printf "phase is ~a~n" (syntax-local-phase-level))
+           ;(printf "running base-types~n")
            (initer)))]))
 
 (define-syntax (define-other-types stx)

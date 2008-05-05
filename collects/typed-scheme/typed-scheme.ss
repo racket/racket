@@ -1,45 +1,29 @@
 #lang scheme/base
 
-(require "private/prims.ss" 
-         "private/init-envs.ss"
-         "private/extra-procs.ss"
-         "private/internal-forms.ss"
-         "private/base-env.ss"
+(require "private/base-env.ss"
          "private/base-types.ss"
          (for-syntax 
           scheme/base
           "private/type-utils.ss"
-          "private/typechecker.ss" 
+          "private/typechecker.ss"
           "private/type-rep.ss"
           "private/provide-handling.ss"
-          "private/type-environments.ss" "private/tc-utils.ss"
-          "private/type-env.ss" "private/type-name-env.ss"
+          "private/type-environments.ss" 
+          "private/tc-utils.ss"
+          "private/type-name-env.ss"
           "private/type-alias-env.ss"
           "private/utils.ss"
-          "private/internal-forms.ss"
-          "private/init-envs.ss"
           "private/type-effect-convenience.ss"
-          "private/effect-rep.ss"
-          "private/rep-utils.ss"
           "private/type-contract.ss"
-          ;(only-in "private/base-types.ss" init-tnames)
           scheme/nest
           syntax/kerncase
           scheme/match))
-
-
-(provide 
- ;; provides syntax such as define: and define-typed-struct
- (all-from-out "private/prims.ss")
- ;; provides some pointless procedures - should be removed
- (all-from-out "private/extra-procs.ss"))
 
 (provide-tnames)
 (provide-extra-tnames)
 
 
 (provide (rename-out [module-begin #%module-begin]
-                     [with-handlers: with-handlers]
                      [top-interaction #%top-interaction]
                      [#%plain-lambda lambda]
                      [#%plain-app #%app]
@@ -63,7 +47,7 @@
            [with-handlers
                ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
                  (lambda (e) (tc-error "Internal error: ~a" e))])]
-           [parameterize ([delay-errors? #f]
+           [parameterize ([delay-errors? #t]
                           ;; this parameter is for parsing types
                           [current-tvars initial-tvar-env]
                           ;; this parameter is just for printing types

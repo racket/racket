@@ -1,39 +1,20 @@
 #lang scheme/base
 
-(require (for-template (only-in (lib "list.ss") foldl)
-                       scheme/base
-                       '#%paramz
-                       scheme/promise
-                       string-constants/string-constant
-                       #;'#%more-scheme
-                       #;'#%qq-and-or
-                       (only-in scheme/match/patterns match:error))
-         )
-
-
+;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
- scheme/promise
- (except-in "type-rep.ss" make-arr)
  (only-in scheme/list cons? take drop add-between)
  '#%paramz
- "type-effect-convenience.ss"
- (only-in "type-effect-convenience.ss" [make-arr* make-arr])
- "union.ss"
- string-constants/string-constant
- (only-in scheme/match/patterns match:error)
- "tc-structs.ss")
+ (only-in scheme/match/patterns match:error))
 
+;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
           "init-envs.ss"
           (except-in "type-rep.ss" make-arr)
-          (only-in (lib "list.ss") foldl)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
           "union.ss"
-          string-constants/string-constant
-          (only-in scheme/match/patterns match:error)
           "tc-structs.ss"))
 
 (define-for-syntax (initialize-others) 
@@ -415,7 +396,7 @@
      [copy-file (-> -Pathlike -Pathlike -Void)]  
      [bytes->string/utf-8 (-> -Bytes -String)]
      ;; language
-     [(expand #'(this-language))
+     [(expand '(this-language))
       Sym
       string-constants/string-constant]
      ;; make-promise 
@@ -501,8 +482,10 @@
                                         (-> (-Syntax Univ) Univ Univ)))]
      )))
 
-(begin-for-syntax (initialize-type-env initial-env)
-                  (initialize-others))
+(begin-for-syntax 
+  ;(printf "running base-env~n")
+  (initialize-type-env initial-env)
+  (initialize-others))
 
 
 

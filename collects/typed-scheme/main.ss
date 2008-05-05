@@ -1,9 +1,10 @@
 #lang s-exp "minimal.ss"
            
-(providing (libs (except scheme/base require #%module-begin #%top-interaction with-handlers lambda #%app))
+(providing (libs (except scheme/base #%module-begin #%top-interaction with-handlers lambda #%app)
+                 (except "private/prims.ss"))
 	   (basics #%module-begin		   		   		   
 		   #%top-interaction
-		   with-handlers
 		   lambda
-		   #%app)
-	   (from scheme require))
+		   #%app))
+
+(provide (rename-out [with-handlers: with-handlers]))

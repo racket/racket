@@ -21,9 +21,9 @@
          "provide-handling.ss"
          "type-alias-env.ss"
          "type-contract.ss"
-         (only-in "prims.ss" :)
+         ;(only-in "prims.ss" :)
          (for-template
-          (only-in "prims.ss" :)
+          ;(only-in "prims.ss" :)
           "internal-forms.ss"
           "tc-utils.ss"
           (lib "contract.ss")

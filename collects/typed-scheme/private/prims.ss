@@ -35,18 +35,10 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (require "require-contract.ss"
          "internal-forms.ss"
-         "planet-requires.ss"           
-         (lib "etc.ss")
          (except-in (lib "contract.ss") ->)
          (only-in (lib "contract.ss") [-> c->])
          (lib "struct.ss")
          "base-types.ss")
-
-
-
-
-
-
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))
 
