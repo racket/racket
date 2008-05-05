@@ -95,8 +95,8 @@
             (send dc draw-rounded-rectangle 
                   margin
                   margin 
-                  (- cw margin margin)
-                  (- ch margin margin))
+                  (max 0 (- cw margin margin))
+                  (max 0 (- ch margin margin)))
             (send dc set-alpha alpha)
 	    (send dc set-font normal-control-font)
             
