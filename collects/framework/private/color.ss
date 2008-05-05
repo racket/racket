@@ -82,39 +82,64 @@ added get-regions
     ;; is over.
     (define force-recolor-after-freeze #f)
     
-    ;; ---------------------- Lexing state ------------------------------
-    
-    ;; The tree of valid tokens, starting at 0
-    (define tokens (new token-tree%))
-    
-    ;; If the tree is completed
-    (define up-to-date? #t)
-    (define/public (get-up-to-date?) up-to-date?)
-    
-    ;; The tree of tokens that have been invalidated by an edit
-    ;; but might still be valid.
-    (define invalid-tokens (new token-tree%))
-    
-    ;; The position right before the invalid-tokens tree
-    (define invalid-tokens-start +inf.0)
-    
-    ;; The position right before the next token to be read
-    (define current-pos 0)
-    
-    ;; The lexer
-    (define get-token #f)
-    
     ;; ---------------------- Parenethesis matching ----------------------
     
     ;; The pairs of matching parens
     (define pairs '())
-    (define parens (new paren-tree% (matches pairs)))
     
-    
+    ;; ---------------------- Lexing state ------------------------------
+
+    (define-struct lexer-state
+      (start-pos 
+       end-pos
+       ;; The tree of valid tokens, starting at start-pos
+       tokens ; = (new token-tree%)
+       ;; If the tree is completed
+       up-to-date? ; #t
+       ;; The tree of tokens that have been invalidated by an edit
+       ;; but might still be valid.
+       invalid-tokens ; = (new token-tree%)
+       ;; The position right before the ainvalid-tokens tree
+       invalid-tokens-start ; = +inf.0
+       ;; The position right before the next token to be read
+       current-pos
+       ;; Paren-matching
+       parens 
+       )
+      #:mutable)
+
+    ;; The lexer
+    (define get-token #f)
+
+    (define/private (make-new-lexer-state start end)
+      (make-lexer-state start
+                        end
+                        (new token-tree%)
+                        #t
+                        (new token-tree%)
+                        +inf.0
+                        0
+                        (new paren-tree% (matches pairs))))
+
+    (define lexer-states (list (make-new-lexer-state 0 'end)))
+
+    (define/public (get-up-to-date?) 
+      (andmap lexer-state-up-to-date? lexer-states))
+
+    (define/private (find-ls pos)
+      (ormap (lambda (ls)
+               (and (<= (lexer-state-start-pos ls)
+                        pos
+                        (let ([end (lexer-state-end-pos ls)])
+                          (if (eq? end 'end)
+                              +inf.0
+                              end)))
+                    ls))
+             lexer-states))
+
     ;; ---------------------- Interactions state ------------------------
-    ;; regions : (listof (list number (union 'end number)))
-    ;; The range of editor positions that should be colored in the buffer
-    (define regions '((0 end)))
+    ;; The positions right before and right after the area to be tokenized
+    
     (inherit last-position)
     
     (define/public (reset-region start end)
@@ -136,43 +161,46 @@ added get-regions
       (let loop ([regions _regions]
                  [pos 0])
         (cond
-          [(null? regions) (void)]
-          [(pair? regions)
-           (let ([region (car regions)])
-             (unless (and (list? region)
-                          (= 2 (length region))
-                          (number? (list-ref region 0))
-                          (or (number? (list-ref region 1))
-                              (and (null? (cdr regions))
-                                   (eq? 'end (list-ref region 1)))))
-               (error 'reset-regions "got a region that is not a list of two numbers (or 'end if it is the last region): ~e, all regions ~e" region regions))
-             
-             (unless (and (<= pos (list-ref region 0))
-                          (or (eq? 'end (list-ref region 1))
-                              (<= (list-ref region 0) (list-ref region 1))))
-               (error 'reset-regions "found regions with numbers out of order ~e" regions))
-             (loop (cdr regions) (list-ref region 1)))]
-          [else
-           (error 'reset-regions "expected a list of regions, got ~e" regions)]))
+         [(null? regions) (void)]
+         [(pair? regions)
+          (let ([region (car regions)])
+            (unless (and (list? region)
+                         (= 2 (length region))
+                         (number? (list-ref region 0))
+                         (or (number? (list-ref region 1))
+                             (and (null? (cdr regions))
+                                  (eq? 'end (list-ref region 1)))))
+              (error 'reset-regions 
+                     "got a region that is not a list of two numbers (or 'end if it is the last region): ~e, all regions ~e" 
+                     region
+                     regions))
+            (unless (and (<= pos (list-ref region 0))
+                         (or (eq? 'end (list-ref region 1))
+                             (<= (list-ref region 0) (list-ref region 1))))
+              (error 'reset-regions "found regions with numbers out of order ~e" regions))
+            (loop (cdr regions) (list-ref region 1)))]
+         [else
+          (error 'reset-regions "expected a list of regions, got ~e" regions)]))
       
-      (let ([old-regions regions])
-        (set! regions _regions)
-        (let loop ([old old-regions]
-                   [new regions])
-          (cond
-            [(and (null? old) (null? new)) (void)]
-            [(null? old) 
-             (do-insert/delete (list-ref (car new) 0) 0)]
-            [(null? new) 
-             (do-insert/delete (list-ref (car old) 0) 0)]
-            [(equal? (car old) (car new))
-             (loop (cdr old) (cdr new))]
-            [else
-             (do-insert/delete (min (list-ref (car old) 0)
-                                    (list-ref (car new) 0))
-                               0)]))))
+      (set! lexer-states
+            (let loop ([old lexer-states]
+                       [new _regions])
+              (cond
+               [(null? new) null]
+               [(and (pair? old)
+                     (equal? (caar new) (lexer-state-start-pos (car old)))
+                     (equal? (cadar new) (lexer-state-end-pos (car old))))
+                (cons (car old)
+                      (loop (cdr old) (cdr new)))]
+               [else
+                (cons (make-new-lexer-state (caar new) (cadar new))
+                      (loop null (cdr new)))]))))
     
-    (define/public (get-regions) regions)
+    (define/public (get-regions) 
+      (map (lambda (ls)
+             (list (lexer-state-start-pos ls)
+                   (lexer-state-end-pos ls)))
+           lexer-states))
     
     ;; ---------------------- Preferences -------------------------------
     (define should-color? #t)
@@ -193,14 +221,17 @@ added get-regions
              get-fixed-style)
     
     (define/private (reset-tokens)
-      (send tokens reset-tree)
-      (send invalid-tokens reset-tree)
-      (set! invalid-tokens-start +inf.0)
-      (set! up-to-date? #t)
+      (for-each
+       (lambda (ls)
+         (send (lexer-state-tokens ls) reset-tree)
+         (send (lexer-state-invalid-tokens ls) reset-tree)
+         (set-lexer-state-invalid-tokens-start! ls +inf.0)
+         (set-lexer-state-up-to-date?! ls #t)
+         (set-lexer-state-current-pos! ls (lexer-state-start-pos ls))
+         (set-lexer-state-parens! ls (new paren-tree% (matches pairs))))
+       lexer-states)
       (set! restart-callback #f)
       (set! force-recolor-after-freeze #f)
-      (set! parens (new paren-tree% (matches pairs)))
-      (set! current-pos 0)
       (set! colors null)
       (when tok-cor
         (coroutine-kill tok-cor))
@@ -215,136 +246,114 @@ added get-regions
         (color)))
     
     ;; Discard extra tokens at the first of invalid-tokens
-    (define/private (sync-invalid)
-      (when (and (not (send invalid-tokens is-empty?))
-                 (< invalid-tokens-start current-pos))
-        (send invalid-tokens search-min!)
-        (let ((length (send invalid-tokens get-root-length)))
-          (send invalid-tokens remove-root!)
-          (set! invalid-tokens-start (+ invalid-tokens-start length)))
-        (sync-invalid)))
+    (define/private (sync-invalid ls)
+      (let ([invalid-tokens (lexer-state-invalid-tokens ls)]
+            [invalid-tokens-start (lexer-state-invalid-tokens-start ls)])
+        (when (and (not (send invalid-tokens is-empty?))
+                   (< invalid-tokens-start
+                      (lexer-state-current-pos ls)))
+          (send invalid-tokens search-min!)
+          (let ((length (send invalid-tokens get-root-length)))
+            (send invalid-tokens remove-root!)
+            (set-lexer-state-invalid-tokens-start! ls (+ invalid-tokens-start length)))
+          (sync-invalid ls))))
     
-    (define/private (re-tokenize in-start-pos enable-suspend)
-      (let port-loop ([regions (skip-early-regions in-start-pos)]
-                      [previous-end in-start-pos])
-        (when previous-end 
-          (let* ([next-start (if (null? regions)
-                                 (last-position)
-                                 (list-ref (car regions) 0))]
-                 [len (- next-start previous-end)])
-            (unless (zero? len)
-              (insert-last-spec! tokens len #f)
-              (send parens add-token #f len))))
-        (unless (null? regions)
-          (let* ([start-pos (list-ref (car regions) 0)]
-                 [end-pos (list-ref (car regions) 1)]
-                 [in (open-input-text-editor this start-pos end-pos (λ (x) #f))])
-            (let loop ()
-              (let-values ([(lexeme type data new-token-start new-token-end) 
-                            (get-token in)])
-                (cond
-                  [(eq? 'eof type)
-                   (port-loop (cdr regions)
-                              (if (eq? 'end end-pos)
-                                  #f
-                                  end-pos))]
-                  [else
-                   (enable-suspend #f)
-                   #;(printf "~a at ~a to ~a~n" 
-                             lexeme 
-                             (+ start-pos (sub1 new-token-start))
-                             (+ start-pos (sub1 new-token-end)))
-                   (let ((len (- new-token-end new-token-start)))
-                     (set! current-pos (+ len current-pos))
-                     (sync-invalid)
-                     (when (should-color-type? type)
-                       (let* ([style-name (token-sym->style type)]
-                              [color (send (get-style-list) find-named-style style-name)]
-                              [sp (+ start-pos (sub1 new-token-start))]
-                              [ep (+ start-pos (sub1 new-token-end))])
-                         (add-color color sp ep)))
-                     ; Using the non-spec version takes 3 times as long as the spec
-                     ; version.  In other words, the new greatly outweighs the tree
-                     ; operations.
-                     ;(insert-last! tokens (new token-tree% (length len) (data type)))
-                     (insert-last-spec! tokens len type)
-                     (send parens add-token data len)
-                     (cond
-                       [(and (not (send invalid-tokens is-empty?))
-                             (= invalid-tokens-start current-pos))
-                        (send invalid-tokens search-max!)
-                        (send parens merge-tree (send invalid-tokens get-root-end-position))
-                        (insert-last! tokens invalid-tokens)
-                        (set! invalid-tokens-start +inf.0)
-                        (enable-suspend #t)
-                        (port-loop (cdr regions)
-                                   (if (eq? 'end end-pos)
-                                       #f
-                                       end-pos))]
-                       [else
-                        (enable-suspend #t)
-                        (loop)]))])))))))
+    (define/private (re-tokenize ls in in-start-pos enable-suspend)
+      (let-values ([(lexeme type data new-token-start new-token-end) 
+                    (get-token in)])
+        (unless (eq? 'eof type)
+          (enable-suspend #f)
+          #;(printf "~a at ~a to ~a~n" lexeme (+ in-start-pos (sub1 new-token-start))
+          (+ in-start-pos (sub1 new-token-end)))
+          (let ((len (- new-token-end new-token-start)))
+            (set-lexer-state-current-pos! ls (+ len (lexer-state-current-pos ls)))
+            (sync-invalid ls)
+            (when (and should-color? (should-color-type? type) (not frozen?))
+              (set! colors
+                    (cons
+                     (let* ([style-name (token-sym->style type)]
+                            (color (send (get-style-list) find-named-style style-name))
+                            (sp (+ in-start-pos (sub1 new-token-start)))
+                            (ep (+ in-start-pos (sub1 new-token-end))))
+                       (λ ()
+                          (change-style color sp ep #f)))
+                     colors)))
+            ;; Using the non-spec version takes 3 times as long as the spec
+            ;; version.  In other words, the new greatly outweighs the tree
+            ;; operations.
+            ;;(insert-last! tokens (new token-tree% (length len) (data type)))
+            (insert-last-spec! (lexer-state-tokens ls) len type)
+            (send (lexer-state-parens ls) add-token data len)
+            (cond
+             ((and (not (send (lexer-state-invalid-tokens ls) is-empty?))
+                   (= (lexer-state-invalid-tokens-start ls)
+                      (lexer-state-current-pos ls)))
+              (send (lexer-state-invalid-tokens ls) search-max!)
+              (send (lexer-state-parens ls) merge-tree
+                    (send (lexer-state-invalid-tokens ls) get-root-end-position))
+              (insert-last! (lexer-state-tokens ls)
+                            (lexer-state-invalid-tokens ls))
+              (set-lexer-state-invalid-tokens-start! ls +inf.0)
+              (enable-suspend #t))
+             (else
+              (enable-suspend #t)
+              (re-tokenize ls in in-start-pos enable-suspend)))))))
     
-    (define/private (add-color color sp ep)
-      (when (and should-color? (not frozen?))
-        (set! colors
-              (cons (λ () (change-style color sp ep #f))
-                    colors))))
-    
-    (define/private (skip-early-regions pos)
-      (let loop ([regions regions])
-        (cond
-          [(null? regions) null]
-          [else (let ([reg (car regions)])
-                  (cond
-                    [(<= pos 
-                         (if (eq? 'end (list-ref reg 1))
-                             (last-position)
-                             (list-ref reg 1)))
-                     (cons (list (max pos (list-ref reg 0))
-                                 (list-ref reg 1))
-                           (cdr regions))]
-                    [else
-                     (loop (cdr regions))]))])))
-    
+    (define/private (do-insert/delete/ls ls edit-start-pos change-length)
+      (unless (lexer-state-up-to-date? ls)
+        (sync-invalid ls))
+      (cond
+       ((lexer-state-up-to-date? ls)
+        (let-values 
+            (((orig-token-start orig-token-end valid-tree invalid-tree)
+              (send (lexer-state-tokens ls) split (- edit-start-pos (lexer-state-start-pos ls)))))
+          (send (lexer-state-parens ls) split-tree orig-token-start)
+          (set-lexer-state-invalid-tokens! ls invalid-tree)
+          (set-lexer-state-tokens! ls valid-tree)
+          (set-lexer-state-invalid-tokens-start!
+           ls
+           (if (send (lexer-state-invalid-tokens ls) is-empty?)
+               +inf.0
+               (+ (lexer-state-start-pos ls) orig-token-end change-length)))
+          (set-lexer-state-current-pos! ls (+ (lexer-state-start-pos ls) orig-token-start))
+          (set-lexer-state-up-to-date?! ls #f)
+          (queue-callback (λ () (colorer-callback)) #f)))
+       ((>= edit-start-pos (lexer-state-invalid-tokens-start ls))
+        (let-values (((tok-start tok-end valid-tree invalid-tree)
+                      (send (lexer-state-invalid-tokens ls) split 
+                            (- edit-start-pos (lexer-state-start-pos ls)))))
+          (set-lexer-state-invalid-tokens! ls invalid-tree)
+          (set-lexer-state-invalid-tokens-start!
+           ls
+           (+ (lexer-state-invalid-tokens-start ls) tok-end change-length))))
+       ((> edit-start-pos (lexer-state-current-pos ls))
+        (set-lexer-state-invalid-tokens-start! 
+         ls 
+         (+ change-length (lexer-state-invalid-tokens-start ls))))
+       (else
+        (let-values (((tok-start tok-end valid-tree invalid-tree)
+                      (send (lexer-state-tokens ls) split 
+                            (- edit-start-pos (lexer-state-start-pos ls)))))
+          (send (lexer-state-parens ls) truncate tok-start)
+          (set-lexer-state-tokens! ls valid-tree)
+          (set-lexer-state-invalid-tokens-start! ls (+ change-length (lexer-state-invalid-tokens-start ls)))
+          (set-lexer-state-current-pos! ls (+ (lexer-state-start-pos ls) tok-start))))))
+
     (define/private (do-insert/delete edit-start-pos change-length)
       (unless (or stopped? force-stop?)
-        (unless up-to-date?
-          (sync-invalid))
-        (cond
-          (up-to-date?
-           (let-values ([(orig-token-start orig-token-end valid-tree invalid-tree)
-                         (send tokens split edit-start-pos)])
-             (send parens split-tree orig-token-start)
-             (set! invalid-tokens invalid-tree)
-             (set! tokens valid-tree)
-             (set! invalid-tokens-start
-                   (if (send invalid-tokens is-empty?)
-                       +inf.0
-                       (+ orig-token-end change-length)))
-             (set! current-pos orig-token-start)
-             (set! up-to-date? #f)
-             (queue-callback (λ () (colorer-callback)) #f)))
-          ((>= edit-start-pos invalid-tokens-start)
-           (let-values (((tok-start tok-end valid-tree invalid-tree)
-                         (send invalid-tokens split edit-start-pos)))
-             (set! invalid-tokens invalid-tree)
-             (set! invalid-tokens-start
-                   (+ invalid-tokens-start tok-end change-length))))
-          ((> edit-start-pos current-pos)
-           (set! invalid-tokens-start (+ change-length invalid-tokens-start)))
-          (else
-           (let-values (((tok-start tok-end valid-tree invalid-tree)
-                         (send tokens split edit-start-pos)))
-             (send parens truncate tok-start)
-             (set! tokens valid-tree)
-             (set! invalid-tokens-start (+ change-length invalid-tokens-start))
-             (set! current-pos tok-start))))))
+        (let ([ls (find-ls edit-start-pos)])
+          (when ls
+            (do-insert/delete/ls ls edit-start-pos change-length)))))
+
+    (define/private (do-insert/delete-all)
+      (for-each (lambda (ls)
+                  (do-insert/delete/ls ls (lexer-state-start-pos ls) 0))
+                lexer-states))
     
     (inherit is-locked? get-revision-number)
     
     (define/private (colorer-driver)
-      (unless up-to-date?
+      (unless (andmap lexer-state-up-to-date? lexer-states)
         #;(printf "revision ~a~n" (get-revision-number))
         (unless (and tok-cor (= rev (get-revision-number)))
           (when tok-cor
@@ -353,19 +362,30 @@ added get-regions
           (set! tok-cor
                 (coroutine
                  (λ (enable-suspend)
-                   (parameterize ((port-count-lines-enabled #t))
-                     (re-tokenize current-pos enable-suspend)))))
+                    (parameterize ((port-count-lines-enabled #t))
+                      (for-each
+                       (lambda (ls)
+                         (re-tokenize ls
+                                      (open-input-text-editor this 
+                                                              (lexer-state-current-pos ls)
+                                                              (lexer-state-end-pos ls)
+                                                              (λ (x) #f))
+                                      (lexer-state-current-pos ls)
+                                      enable-suspend))
+                       lexer-states)))))
           (set! rev (get-revision-number)))
         (with-handlers ((exn:fail?
                          (λ (exn)
-                           (parameterize ((print-struct #t))
-                             ((error-display-handler) 
-                              (format "exception in colorer thread: ~s" exn)
-                              exn))
-                           (set! tok-cor #f))))
+                            (parameterize ((print-struct #t))
+                              ((error-display-handler) 
+                               (format "exception in colorer thread: ~s" exn)
+                               exn))
+                            (set! tok-cor #f))))
           #;(printf "begin lexing~n")
           (when (coroutine-run 10 tok-cor)
-            (set! up-to-date? #t)))
+            (for-each (lambda (ls)
+                        (set-lexer-state-up-to-date?! ls #t))
+                      lexer-states)))
         #;(printf "end lexing~n")
         #;(printf "begin coloring~n")
         ;; This edit sequence needs to happen even when colors is null
@@ -377,19 +397,19 @@ added get-regions
     
     (define/private (colorer-callback)
       (cond
-        ((is-locked?)
-         (set! restart-callback #t))
-        (else
-         (unless (in-edit-sequence?)
-           (colorer-driver))
-         (unless up-to-date?
-           (queue-callback (λ () (colorer-callback)) #f)))))
+       ((is-locked?)
+        (set! restart-callback #t))
+       (else
+        (unless (in-edit-sequence?)
+          (colorer-driver))
+        (unless (andmap lexer-state-up-to-date? lexer-states)
+          (queue-callback (λ () (colorer-callback)) #f)))))
     
     ;; Must not be called when the editor is locked
     (define/private (finish-now)
       (unless stopped?
         (let loop ()
-          (unless up-to-date?
+          (unless (andmap lexer-state-up-to-date? lexer-states)
             (colorer-driver)
             (loop)))))
     
@@ -402,9 +422,12 @@ added get-regions
         (set! token-sym->style token-sym->style-)
         (set! get-token get-token-)
         (set! pairs pairs-)
-        (set! parens (new paren-tree% (matches pairs)))
+        (for-each
+         (lambda (ls)
+           (set-lexer-state-parens! ls (new paren-tree% (matches pairs))))
+         lexer-states)
         ;; (set! timer (current-milliseconds))
-        (do-insert/delete 0 0)))
+        (do-insert/delete-all)))
     
     ;; See docs
     (define/public stop-colorer
@@ -421,9 +444,12 @@ added get-regions
     (define/private (clear-colors)
       (begin-edit-sequence #f #f)
       (for-each
-       (λ (start/end)
-         (change-style (get-fixed-style) (list-ref start/end 0) (list-ref start/end 1) #f))
-       regions)
+       (λ (ls)
+         (change-style (get-fixed-style) 
+                       (lexer-state-start-pos ls) 
+                       (lexer-state-end-pos ls) 
+                       #f))
+       lexer-states)
       (end-edit-sequence))
     
     (define/public (is-frozen?) frozen?)
@@ -444,42 +470,47 @@ added get-regions
         (when frozen?
           (set! frozen? #f)
           (cond
-            (stopped?
-             (stop-colorer))
-            ((or force-recolor-after-freeze recolor?)
-             (cond
-               (retokenize?
-                (let ((tn token-sym->style)
-                      (gt get-token)
-                      (p pairs))
-                  (stop-colorer (not should-color?))
-                  (start-colorer tn gt p)))
-               (else
-                (begin-edit-sequence #f #f)
-                (finish-now)
-                (send tokens for-each
-                      (λ (start len type)
-                        (when (and should-color? (should-color-type? type))
-                          (let ((color (send (get-style-list) find-named-style
-                                             (token-sym->style type)))
-                                (sp start)
-                                (ep (+ start len)))
-                            (change-style color sp ep #f)))))
-                (end-edit-sequence))))))))
+           (stopped?
+            (stop-colorer))
+           ((or force-recolor-after-freeze recolor?)
+            (cond
+             (retokenize?
+              (let ((tn token-sym->style)
+                    (gt get-token)
+                    (p pairs))
+                (stop-colorer (not should-color?))
+                (start-colorer tn gt p)))
+             (else
+              (begin-edit-sequence #f #f)
+              (finish-now)
+              (for-each
+               (lambda (ls)
+                 (let ([tokens (lexer-state-tokens ls)]
+                       [start-pos (lexer-state-start-pos ls)])
+                   (send tokens for-each
+                         (λ (start len type)
+                            (when (and should-color? (should-color-type? type))
+                              (let ((color (send (get-style-list) find-named-style
+                                                 (token-sym->style type)))
+                                    (sp (+ start-pos start))
+                                    (ep (+ start-pos (+ start len))))
+                                (change-style color sp ep #f)))))))
+               lexer-states)
+              (end-edit-sequence))))))))
     
     
     (define/private (toggle-color on?)
       (cond
-        ((and frozen? (not (equal? on? should-color?)))
-         (set! should-color? on?)
-         (set! force-recolor-after-freeze #t))
-        ((and (not should-color?) on?)
-         (set! should-color? on?)
-         (reset-tokens)
-         (do-insert/delete 0 0))
-        ((and should-color? (not on?))
-         (set! should-color? on?)
-         (clear-colors))))
+       ((and frozen? (not (equal? on? should-color?)))
+        (set! should-color? on?)
+        (set! force-recolor-after-freeze #t))
+       ((and (not should-color?) on?)
+        (set! should-color? on?)
+        (reset-tokens)
+        (do-insert/delete-all))
+       ((and should-color? (not on?))
+        (set! should-color? on?)
+        (clear-colors))))
     
     ;; see docs
     (define/public (force-stop-colorer stop?)
@@ -495,33 +526,30 @@ added get-regions
     (define mismatch-color (make-object color% "PINK"))
     (define/private (get-match-color) (preferences:get 'framework:paren-match-color))
     
-    ;; higlight : number number number (or/c color any)
-    ;;   if color is a color, then it uses that color to higlight
-    ;;   Otherwise, it treats it like a boolean, where a true value  
-    ;;   means the normal paren color and #f means an error color. 
-    ;; numbers are expected to have zero be start-pos.
-    (define/private (highlight start end caret-pos color)
-      (let ([off (highlight-range start end
-                                  (if (is-a? color color%)
-                                      color
-                                      (if color mismatch-color (get-match-color)))
-                                  (and (send (icon:get-paren-highlight-bitmap)
-                                             ok?)
-                                       (icon:get-paren-highlight-bitmap))
-                                  (= caret-pos start))])
+    (define/private (highlight ls start end caret-pos error?)
+      (let* ([start-pos (lexer-state-start-pos ls)]
+             [off (highlight-range (+ start-pos start) (+ start-pos end)
+                                   (if error? mismatch-color (get-match-color))
+                                   (and (send (icon:get-paren-highlight-bitmap)
+                                              ok?)
+                                        (icon:get-paren-highlight-bitmap))
+                                   (= caret-pos (+ start-pos start)))])
         (set! clear-old-locations
               (let ([old clear-old-locations])
                 (λ ()
-                  (old)
-                  (off))))))
+                   (old)
+                   (off))))))
     
     (define in-match-parens? #f)
     
     ;; the forward matcher signaled an error because not enough of the
     ;; tree has been built.
-    (define/private (f-match-false-error start end error)
-      (and error (<= error current-pos) (not up-to-date?)))
-    
+    (define/private (f-match-false-error ls start end error)
+      (and error 
+           (<= (+ (lexer-state-start-pos ls) error) 
+               (lexer-state-current-pos ls))
+           (not (lexer-state-up-to-date? ls))))
+
     
     ;; If there is no match because the buffer isn't lexed far enough yet,
     ;; this will do nothing, but the edit sequence for changing the colors 
@@ -539,7 +567,9 @@ added get-regions
                    ;; background thread is going slows it down.
                    ;; The random number slows down how often it
                    ;; tries.
-                   (or just-clear? up-to-date? (= 0 (random 5))))
+                   (or just-clear? 
+                       (andmap lexer-state-up-to-date? lexer-states)
+                       (= 0 (random 5))))
           (set! in-match-parens? #t)
           (begin-edit-sequence #f #f)
           (clear-old-locations)
@@ -548,48 +578,21 @@ added get-regions
                      (not just-clear?))
             (let* ((here (get-start-position)))
               (when (= here (get-end-position))
-                (let-values (((start-f end-f error-f)
-                              (send parens match-forward here)))
-                  (when (and (not (f-match-false-error start-f end-f error-f))
-                             start-f end-f)
-                    (if error-f
-                        (highlight start-f end-f here error-f)
-                        (highlight-nested-region start-f end-f here))))
-                (let-values  (((start-b end-b error-b)
-                               (send parens match-backward here)))
-                  (when (and start-b end-b)
-                    (if error-b
-                        (highlight start-b end-b here error-b)
-                        (highlight-nested-region start-b end-b here)))))))
+                (let ([ls (find-ls here)])
+                  (when ls
+                    (let-values (((start-f end-f error-f)
+                                  (send (lexer-state-parens ls) match-forward 
+                                        (- here (lexer-state-start-pos ls)))))
+                      (when (and (not (f-match-false-error ls start-f end-f error-f))
+                                 start-f end-f)
+                        (highlight ls start-f end-f here error-f)))
+                    (let-values  (((start-b end-b error-b)
+                                   (send (lexer-state-parens ls) match-backward 
+                                         (- here (lexer-state-start-pos ls)))))
+                      (when (and start-b end-b)
+                        (highlight ls start-b end-b here error-b))))))))
           (end-edit-sequence)
           (set! in-match-parens? #f))))
-    
-    ;; highlight-nested-region : number number number -> void
-    ;; colors nested regions of parentheses.
-    (define/private (highlight-nested-region orig-start orig-end here)
-      (let paren-loop ([start orig-start]
-                       [end orig-end]
-                       [depth 0])
-        (when (< depth (vector-length (get-parenthesis-colors)))
-          
-          ;; when there is at least one more color in the vector we'll look
-          ;; for regions to color at that next level
-          (when (< (+ depth 1) (vector-length (get-parenthesis-colors)))
-            (let seq-loop ([inner-sequence-start (+ start 1)])
-              (when (< inner-sequence-start end)
-                (let ([post-whitespace (skip-whitespace inner-sequence-start 'forward #t)])
-                  (let-values ([(start-inner end-inner error-inner)
-                                (send parens match-forward post-whitespace)])
-                    (cond
-                      [(and start-inner end-inner (not error-inner))
-                       (paren-loop start-inner end-inner (+ depth 1))
-                       (seq-loop end-inner)]
-                      [(skip-past-token post-whitespace)
-                       =>
-                       (λ (after-non-paren-thing)
-                         (seq-loop after-non-paren-thing))]))))))
-          
-          (highlight start end here (vector-ref (get-parenthesis-colors) depth)))))
     
     ;; See docs
     (define/public (forward-match position cutoff)
@@ -600,158 +603,158 @@ added get-regions
              (if skip-whitespace? 
                  (skip-whitespace position 'forward #t)
                  position)))
-        (let-values (((start end error)
-                      (send parens match-forward position)))
-          (cond
-            ((f-match-false-error start end error)
-             (colorer-driver)
-             (do-forward-match position cutoff #f))
-            ((and start end (not error))
+        (let ([ls (find-ls position)])
+          (and 
+           ls
+           (let-values (((start end error)
+                         (send (lexer-state-parens ls) match-forward
+                               (- position (lexer-state-start-pos ls)))))
              (cond
-               ((<= end cutoff) end)
-               (else #f)))
-            ((and start end error) #f)
-            (else
-             (skip-past-token position)
-             #;
-             (let-values (((tok-start tok-end)
-                           (begin
-                             (tokenize-to-pos position)
-                             (send tokens search! (- position start-pos))
-                             (values (send tokens get-root-start-position)
-                                     (send tokens get-root-end-position)))))
-               (cond
-                 ((or (send parens is-close-pos? tok-start)
-                      (= (+ start-pos tok-end) position))
-                  #f)
-                 (else
-                  (+ start-pos tok-end)))))))))
-    
-    (define/private (skip-past-token position)
-      (let-values (((tok-start tok-end)
-                    (begin
-                      (tokenize-to-pos position)
-                      (send tokens search! position)
-                      (values (send tokens get-root-start-position)
-                              (send tokens get-root-end-position)))))
-        (cond
-          ((or (send parens is-close-pos? tok-start)
-               (= tok-end position))
-           #f)
-          (else
-           tok-end))))
+              ((f-match-false-error ls start end error)
+               (colorer-driver)
+               (do-forward-match position cutoff #f))
+              ((and start end (not error))
+               (let ((match-pos (+ (lexer-state-start-pos ls) end)))
+                 (cond
+                  ((<= match-pos cutoff) match-pos)
+                  (else #f))))
+              ((and start end error) #f)
+              (else
+               (let-values (((tok-start tok-end)
+                             (begin
+                               (tokenize-to-pos ls position)
+                               (send (lexer-state-tokens ls) search! 
+                                     (- position (lexer-state-start-pos ls)))
+                               (values (send (lexer-state-tokens ls) get-root-start-position)
+                                       (send (lexer-state-tokens ls) get-root-end-position)))))
+                 (cond
+                  ((or (send (lexer-state-parens ls) is-close-pos? tok-start)
+                       (= (+ (lexer-state-start-pos ls) tok-end) position))
+                   #f)
+                  (else
+                   (+ (lexer-state-start-pos ls) tok-end)))))))))))
     
     
     ;; See docs
     (define/public (backward-match position cutoff)
       (let ((x (internal-backward-match position cutoff)))
         (cond
-          ((eq? x 'open) #f)
-          (else x))))
+         ((eq? x 'open) #f)
+         (else x))))
     
     (define/private (internal-backward-match position cutoff)
       (when stopped?
         (error 'backward-match "called on a color:text<%> whose colorer is stopped."))
-      (let ((position (skip-whitespace position 'backward #t)))
-        (let-values (((start end error)
-                      (send parens match-backward position)))
-          (cond
+      (let* ([position (skip-whitespace position 'backward #t)]
+             [ls (find-ls position)]
+             [start-pos (and ls (lexer-state-start-pos ls))])
+        (and
+         ls
+         (let-values (((start end error)
+                       (send (lexer-state-parens ls) match-backward (- position start-pos))))
+           (cond
             ((and start end (not error))
-             (let ((match-pos start))
+             (let ((match-pos (+ start-pos start)))
                (cond
-                 ((>= match-pos cutoff) match-pos)
-                 (else #f))))
+                ((>= match-pos cutoff) match-pos)
+                (else #f))))
             ((and start end error) #f)
             (else
              (let-values (((tok-start tok-end)
                            (begin
-                             (send tokens search!
-                                   (if (> position 0)
-                                       (- position 1)
+                             (send (lexer-state-tokens ls) search!
+                                   (if (> position start-pos)
+                                       (- position start-pos 1)
                                        0))
-                             (values (send tokens get-root-start-position)
-                                     (send tokens get-root-end-position)))))
+                             (values (send (lexer-state-tokens ls) get-root-start-position)
+                                     (send (lexer-state-tokens ls) get-root-end-position)))))
                (cond
-                 ((or (send parens is-open-pos? tok-start)
-                      (= tok-start position))
-                  'open)
-                 (else
-                  tok-start))))))))
+                ((or (send (lexer-state-parens ls) is-open-pos? tok-start)
+                     (= (+ start-pos tok-start) position))
+                 'open)
+                (else
+                 (+ start-pos tok-start))))))))))
     
     ;; See docs
     (define/public (backward-containing-sexp position cutoff)
       (when stopped?
         (error 'backward-containing-sexp "called on a color:text<%> whose colorer is stopped."))
       (let loop ((cur-pos position))
-	(let ((p (internal-backward-match cur-pos cutoff)))
+        (let ((p (internal-backward-match cur-pos cutoff)))
           (cond
-            ((eq? 'open p) cur-pos)
-            ((not p) #f)
-            (else (loop p))))))
+           ((eq? 'open p) cur-pos)
+           ((not p) #f)
+           (else (loop p))))))
     
     ;; Determines whether a position is a 'comment, 'string, etc.
     (define/public (classify-position position)
       (when stopped?
         (error 'classify-position "called on a color:text<%> whose colorer is stopped."))
-      (tokenize-to-pos position)
-      (send tokens search! position)
-      (send tokens get-root-data))
+      (let ([ls (find-ls position)])
+        (and ls
+             (let ([tokens (lexer-state-tokens ls)])
+               (tokenize-to-pos ls position)
+               (send tokens search! (- position (lexer-state-start-pos ls)))
+               (send tokens get-root-data)))))
     
-    (define/private (tokenize-to-pos position)
-      (when (and (not up-to-date?) (<= current-pos position))
+    (define/private (tokenize-to-pos ls position)
+      (when (and (not (lexer-state-up-to-date? ls)) 
+                 (<= (lexer-state-current-pos ls) position))
         (colorer-driver)
-        (tokenize-to-pos position)))
+        (tokenize-to-pos ls position)))
     
     ;; See docs
     (define/public (skip-whitespace position direction comments?)
       (when stopped?
         (error 'skip-whitespace "called on a color:text<%> whose colorer is stopped."))
-      (cond
-	[(and (eq? direction 'forward)
-	      (= position (last-position)))
-	 position]
-	[(and (eq? direction 'backward) (= position 0))
-	 position]
-        [(not (in-colored-region? position))
-         position]
-        [else
-         (tokenize-to-pos position)
-         (send tokens search! (if (eq? direction 'backward) (sub1 position) position))
-         (cond
-           [(or (eq? 'white-space (send tokens get-root-data))
-                (and comments? (eq? 'comment (send tokens get-root-data))))
-            (skip-whitespace (if (eq? direction 'forward)
-                                 (send tokens get-root-end-position)
-                                 (send tokens get-root-start-position))
-                             direction
-                             comments?)]
-           [else position])]))
-    
-    (define/private (in-colored-region? position)
-      (ormap (λ (start/end) (<= (list-ref start/end 0)
-                                position
-                                (if (eq? 'end (list-ref start/end 1))
-                                    (last-position)
-                                    (list-ref start/end 1))))
-             regions))
+      (let ([ls (find-ls position)])
+        (if (not ls) 
+            position
+            (let ([start-pos (lexer-state-start-pos ls)]
+                  [end-pos (lexer-state-end-pos ls)]
+                  [tokens (lexer-state-tokens ls)])
+              (cond
+               ((and (eq? direction 'forward)
+                     (>= position (if (eq? 'end end-pos) (last-position) end-pos)))
+                position)
+               ((and (eq? direction 'backward) (<= position start-pos))
+                position)
+               (else
+                (tokenize-to-pos ls position)
+                (send tokens search! (- (if (eq? direction 'backward) (sub1 position) position)
+                                        start-pos))
+                (cond
+                 ((or (eq? 'white-space (send tokens get-root-data))
+                      (and comments? (eq? 'comment (send tokens get-root-data))))
+                  (skip-whitespace (+ start-pos
+                                      (if (eq? direction 'forward)
+                                          (send tokens get-root-end-position)
+                                          (send tokens get-root-start-position)))
+                                   direction
+                                   comments?))
+                 (else position))))))))
     
     (define/private (get-close-paren pos closers)
       (cond
-        ((null? closers) #f)
-        (else
-         (let* ((c (car closers))
-                (l (string-length c)))
-           (insert c pos)
-           (let ((m (backward-match (+ l pos) 0)))
-             (cond
-               ((and m
-                     (send parens is-open-pos? m)
-                     (send parens is-close-pos? pos))
-                (delete pos (+ l pos))
-                c)
-               (else
-                (delete pos (+ l pos))
-                (get-close-paren pos (cdr closers)))))))))
+       ((null? closers) #f)
+       (else
+        (let* ((c (car closers))
+               (l (string-length c)))
+          (let ([ls (find-ls pos)])
+            (if ls
+                (let ([start-pos (lexer-state-start-pos ls)])
+                  (insert c pos)
+                  (let ((m (backward-match (+ l pos) start-pos)))
+                    (cond
+                     ((and m
+                           (send (lexer-state-parens ls) is-open-pos? (- m start-pos))
+                           (send (lexer-state-parens ls) is-close-pos? (- pos start-pos)))
+                      (delete pos (+ l pos))
+                      c)
+                     (else
+                      (delete pos (+ l pos))
+                      (get-close-paren pos (cdr closers))))))
+                c))))))
     
     (inherit insert delete flash-on on-default-char)
     ;; See docs
@@ -768,21 +771,31 @@ added get-regions
           (when flash?
             (unless stopped?
               (let ((to-pos (backward-match (+ (string-length insert-str) pos) 0)))
-                (when (and to-pos
-                           (send parens is-open-pos? to-pos)
-                           (send parens is-close-pos? pos))
-                  (flash-on to-pos (+ 1 to-pos)))))))))
+                (when to-pos
+                  (let ([ls (find-ls to-pos)])
+                    (when ls
+                      (let ([start-pos (lexer-state-start-pos ls)]
+                            [parens (lexer-state-parens ls)])
+                        (when (and (send parens is-open-pos? (- to-pos start-pos))
+                                   (send parens is-close-pos? (- pos start-pos)))
+                          (flash-on to-pos (+ 1 to-pos)))))))))))))
     
     (define/public (debug-printout)
-      (let* ((x null)
-             (f (λ (a b c) (set! x (cons (list a b c) x)))))
-        (send tokens for-each f)
-        (printf "tokens: ~e~n" (reverse x))
-        (set! x null)
-        (send invalid-tokens for-each f)
-        (printf "invalid-tokens: ~e~n" (reverse x))
-        (printf "current-pos: ~a invalid-tokens-start ~a~n" current-pos invalid-tokens-start)
-        (printf "parens: ~e~n" (car (send parens test)))))
+      (for-each 
+       (lambda (ls)
+         (let* ((x null)
+                (f (λ (a b c) (set! x (cons (list a b c) x)))))
+           (send (lexer-state-tokens ls) for-each f)
+           (printf "tokens: ~e~n" (reverse x))
+           (set! x null)
+           (send (lexer-state-invalid-tokens ls) for-each f)
+           (printf "invalid-tokens: ~e~n" (reverse x))
+           (printf "start-pos: ~a current-pos: ~a invalid-tokens-start ~a~n"
+                   (lexer-state-start-pos ls)
+                   (lexer-state-current-pos ls)
+                   (lexer-state-invalid-tokens-start ls))
+           (printf "parens: ~e~n" (car (send (lexer-state-parens ls) test)))))
+       lexer-states))
     
     ;; ------------------------- Callbacks to Override ----------------------
     
