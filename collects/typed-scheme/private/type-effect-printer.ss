@@ -105,7 +105,7 @@
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(Param: in out) 
      (if (equal? in out)
-         (fp "(Paramter ~a)" in)           
+         (fp "(Parameter ~a)" in)           
          (fp "(Parameter ~a ~a)" in out))]
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
     #;
