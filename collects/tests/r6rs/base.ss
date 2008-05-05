@@ -131,6 +131,9 @@
   (define-syntax p.car 
     (identifier-syntax (car p)))
 
+  (define-syntax kons
+    (identifier-syntax cons))
+
   ;; Not the same as in the report, because we avoid `set-car!':
   (define-syntax p2.car
     (identifier-syntax
@@ -1480,6 +1483,8 @@
     (test/unspec (set! p2.car 15))
     (test p2.car 15)
     (test p '(15 . 5))
+
+    (test (kons 1 2) '(1 . 2))
     
     ;;;
     ))

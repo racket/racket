@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (for-template (only-in scheme/base set!)))
+         (for-template (only-in scheme/base set! #%app)))
 
 (provide identifier-syntax)
 

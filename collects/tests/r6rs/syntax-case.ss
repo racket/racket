@@ -288,8 +288,5 @@
     (test/exn (syntax-violation 'form "bad" 7 8) &syntax)
 
     ;;
-    )
-
-  (run-syntax-case-tests)
-  (report-test-results))
+    ))
 
