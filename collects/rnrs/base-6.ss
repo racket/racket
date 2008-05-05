@@ -344,16 +344,22 @@
 (define (r6rs:error who msg . irritants)
   (raise
    (make-exn:fail:r6rs
-    (format "~a: ~a" who msg)
+    (if who
+        (format "~a: ~a" who msg)
+        msg)
     (current-continuation-marks)
+    msg
     who
     irritants)))
 
 (define (assertion-violation who msg . irritants)
   (raise
    (make-exn:fail:contract:r6rs
-    (format "~a: ~a" who msg)
+    (if who
+        (format "~a: ~a" who msg)
+        msg)
     (current-continuation-marks)
+    msg
     who
     irritants)))
 

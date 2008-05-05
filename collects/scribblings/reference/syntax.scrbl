@@ -338,7 +338,7 @@ corresponds to the default @tech{module name resolver}.
 
     @item{If a single @scheme[rel-string] is provided, and if it
     consists of a single element (i.e., no @litchar{/}) with no file
-    suffix (i.e, no @litchar{.}), then @scheme[rel-string] names a
+    suffix (i.e., no @litchar{.}), then @scheme[rel-string] names a
     @tech{collection}, and @filepath{main.ss} is the library file name.}
 
     @item{If a single @scheme[rel-string] is provided, and if it
@@ -348,9 +348,9 @@ corresponds to the default @tech{module name resolver}.
     no file suffix, @filepath{.ss} is added.}
 
     @item{If a single @scheme[rel-string] is provided, and if it
-    consists of a single element @italic{with} a file suffix (i.e, no
-    @litchar{.}), then @scheme[rel-string] names a file within the
-    @filepath{mzlib} @tech{collection}. (This convention is for
+    consists of a single element @italic{with} a file suffix (i.e,
+    with a @litchar{.}), then @scheme[rel-string] names a file within
+    the @filepath{mzlib} @tech{collection}. (This convention is for
     compatibility with older version of PLT Scheme.)}
 
     @item{Otherwise, when multiple @scheme[rel-string]s are provided,

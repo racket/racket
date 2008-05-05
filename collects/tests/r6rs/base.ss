@@ -1258,6 +1258,31 @@
      (list error assertion-violation))
     (test/exn (error 'apple "bad" 'worm) &error)
     (test/exn (assertion-violation 'apple "bad" 'worm) &assertion)
+    
+    (test (condition-message
+           (guard (v [#t v])
+                  (assertion-violation 'apple "bad" 'worm)))
+          "bad")
+    (test (condition-who
+           (guard (v [#t v])
+                  (assertion-violation 'apple "bad" 'worm)))
+          'apple)
+    (test (condition-irritants
+           (guard (v [#t v])
+                  (assertion-violation 'apple "bad" 'worm)))
+          '(worm))
+    (test (who-condition?
+           (guard (v [#t v])
+                  (assertion-violation #f "bad" 'worm)))
+          #f)
+    (test (error?
+           (guard (v [#t v])
+                  (assertion-violation #f "bad" 'worm)))
+          #f)
+    (test (error?
+           (guard (v [#t v])
+                  (error #f "bad" 'worm)))
+          #t)
 
     (test (fac 5) 120)
     (test/exn (fac 4.5) &assertion)

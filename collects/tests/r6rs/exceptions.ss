@@ -68,6 +68,10 @@
            23)))
      65
      "should be a number")
+
+    (test/exn (with-exception-handler (lambda (x) 0)
+                                      (lambda () (error #f "bad")))
+              &non-continuable)
       
     ;;
     ))

@@ -102,9 +102,15 @@
    [(exn? c)
     (append
      (list
-      (make-message-condition (exn-message c))
+      (make-message-condition (cond
+                               [(exn:fail:r6rs? c)
+                                (exn:fail:r6rs-message c)]
+                               [(exn:fail:contract:r6rs? c)
+                                (exn:fail:contract:r6rs-message c)]
+                               [else (exn-message c)]))
       (make-has-continuation-marks (exn-continuation-marks c)))
-     (if (exn:fail? c)
+     (if (and (exn:fail? c)
+              (not (exn:fail:contract? c)))
          (list (make-error))
          null)     
      (if (exn:fail:contract? c)
@@ -115,16 +121,15 @@
           (if (exn:fail:r6rs-who c)
               (list (make-who-condition (exn:fail:r6rs-who c)))
               null)
-          (list (make-irritants-condition (exn:fail:r6rs-irritants c))))
+          (list (make-irritants-condition (list->mlist (exn:fail:r6rs-irritants c)))))
          null)
      (if (exn:fail:contract:r6rs? c)
          (append
           (if (exn:fail:contract:r6rs-who c)
               (list (make-who-condition (exn:fail:contract:r6rs-who c)))
               null)
-          (list (make-irritants-condition (exn:fail:contract:r6rs-irritants c))))
+          (list (make-irritants-condition (list->mlist (exn:fail:contract:r6rs-irritants c)))))
          null)
-     (list (make-non-continuable-violation))
      (if (or (exn:fail:unsupported? c)
              (exn:fail:contract:divide-by-zero? c))
          (list (make-implementation-restriction-violation))
@@ -153,6 +158,9 @@
          (list (make-i/o-file-does-not-exist-error 
                 (exn:fail:filesystem:exists-not-filename
                  c)))
+         null)
+     (if (exn:fail:contract:non-continuable? c)
+         (list (make-non-continuable-violation))
          null))]
    [else (raise-type-error 'simple-conditions
                            "condition"

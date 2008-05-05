@@ -1,5 +1,7 @@
 #lang scheme/base
 
+(require r6rs/private/exns)
+
 (provide with-exception-handler
          guard else =>
          (rename-out [r6rs:raise raise])
@@ -29,10 +31,10 @@
                 (lambda args
                   ((continuable-continuation exn) (lambda () (apply values args))))
                 (lambda args
-                  (error 'raise
-                         "when handling a non-continuable exception, exception handler returned~a"
-                         (if (null? args)
-                             " (no values)"
+                  (make-exn:fail:contract:non-continuable
+                   (format "raise: when handling a non-continuable exception, exception handler returned~a"
+                          (if (null? args)
+                              " (no values)"
                              (apply
                               string-append
                               ":"
@@ -43,7 +45,8 @@
                                   (list " ...")]
                                  [else
                                   (cons (format " ~e" (car args))
-                                        (loop (cdr args) (sub1 n)))]))))))))))))
+                                        (loop (cdr args) (sub1 n)))])))))
+                   (current-continuation-marks)))))))))
    thunk))
 
 (define (continuable? exn)
