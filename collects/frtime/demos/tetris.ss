@@ -2,9 +2,8 @@
                  cc-superimpose hb-append ht-append pin-over blank
                  dc-for-text-size)
          (lifted texpict/utils filled-rectangle rectangle)
-         frtime/gui/fred
-         (only frtime/frp-core do-in-manager do-in-manager-after)
-         mred)
+         frtime/gui/fred mred
+         (only frtime/frp-core do-in-manager do-in-manager-after))
 
 ;; TODO: layered drawing, pause, game over
 
@@ -14,8 +13,6 @@
 (define size (new-cell 20))
 (define row-width 12)
 
-(define tomato-ev (event-receiver))
-(define tomato (new-cell "tomato"))
 (do-in-manager-after ())
 
 (define list-ref*
@@ -37,31 +34,24 @@
                 (map (lambda (cell) (if (zero? cell) #f (first desc))) ; color
                      row))
               (rest desc)))
-       `(; T shape
-         (,tomato
+       '(("tomato"     ; T shape
           (0 1 0)
           (1 1 1))
-         ; S shape
-         ("orange"
+         ("orange"     ; S shape
           (0 1 1)
           (1 1 0))
-         ; Z shape
-         ("lightblue"
+         ("lightblue"  ; Z shape
           (1 1 0)
           (0 1 1))
-         ; L shape
-         ("lightgreen"
+         ("lightgreen" ; L shape
           (1 1 1)
           (1 0 0))
-         ; reverse L shape
-         ("gray"
+         ("gray"       ; reverse L shape
           (1 1 1)
           (0 0 1))
-         ; I shape
-         ("lavender"
+         ("lavender"   ; I shape
           (1 1 1 1))
-         ; block shape
-         ("purple"
+         ("purple"     ; block shape
           (1 1)
           (1 1)))))
 
