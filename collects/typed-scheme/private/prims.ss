@@ -288,6 +288,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (require-typed-struct stx)
   (syntax-case stx (:)
     [(_ nm ([fld : ty] ...) lib)
+     (identifier? #'nm)
      (with-syntax* ([(struct-info maker pred sel ...) (build-struct-names #'nm (syntax->list #'(fld ...)) #f #t)]
                     [oty #'(Opaque pred)])
                    #'(begin
