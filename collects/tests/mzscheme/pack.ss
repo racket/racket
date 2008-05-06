@@ -60,7 +60,7 @@
 
     (with-output-to-file "unpacked/packed/banana"
       (lambda () (printf "COCONUT\n"))
-      'truncate))
+      #:exists 'truncate))
 
   (parameterize ([current-directory dest])
     (unpack x-plt-str))
