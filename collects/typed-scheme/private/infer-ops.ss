@@ -28,8 +28,8 @@
   (define (inv t) (if (V-in? V t) Univ t))
   (type-case vp T
              [#:F name (if (memq name V) Univ T)]
-             [#:Vector t (inv t)]
-             [#:Box t (inv t)]
+             [#:Vector t (make-Vector (inv t))]
+             [#:Box t (make-Box (inv t))]
              [#:Hashtable k v
                           (if (V-in? V v)
                               Univ
@@ -52,8 +52,8 @@
   (define (inv t) (if (V-in? V t) (Un) t))
   (type-case vd T
              [#:F name (if (memq name V) (Un) T)]
-             [#:Vector t (inv t)]
-             [#:Box t (inv t)]
+             [#:Vector t (make-Vector (inv t))]
+             [#:Box t (make-Box (inv t))]
              [#:Hashtable k v
                           (if (V-in? V v)
                               (Un)
