@@ -271,18 +271,18 @@
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result
-(define (infer X S T R)
-  (with-handlers ([exn:infer? (lambda _ #f)])
+(define (infer X S T R [expected #f])
+  (with-handlers ([exn:infer? (lambda _ #f)])    
     (let ([cs (cgen/list X null S T)])
-    (if R
-        (subst-gen cs R)
-        #t))))
+      (if (not expected)
+          (subst-gen cs R)
+          (cset-meet cs (cgen null X R expected))))))
 
 ;; like infer, but T-var is the vararg type:
-(define (infer/vararg X S T T-var R)
+(define (infer/vararg X S T T-var R [expected #f])
   (define new-T (extend S T T-var))
   (and ((length S) . >= . (length T))
-       (infer X S new-T R)))
+       (infer X S new-T R expected)))
 
 ;; Listof[A] Listof[B] B -> Listof[B]
 ;; pads out t to be as long as s

@@ -87,6 +87,10 @@
 (define (tc-expr/t e) (match (tc-expr e)
                         [(tc-result: t) t]))
 
+(define (tc-expr/check/t e t)
+  (match (tc-expr/check e t)
+    [(tc-result: t) t]))
+
 (define (check-below tr1 expected)
   (match (list tr1 expected)      
     [(list (tc-result: t1 te1 ee1) t2)

@@ -483,7 +483,7 @@
      )))
 
 (begin-for-syntax 
-  ;(printf "running base-env~n")
+  #;(printf "running base-env~n")
   (initialize-type-env initial-env)
   (initialize-others))
 

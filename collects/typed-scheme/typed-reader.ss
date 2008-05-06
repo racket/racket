@@ -1,7 +1,5 @@
 #lang scheme/base
 
-(require (for-template "private/prims.ss"))  
-
 ;; Provides raise-read-error and raise-read-eof-error
 (require syntax/readerr)
 

@@ -22,7 +22,7 @@
   (type-check tc-toplevel-form))
 
 (define-signature tc-expr^
-  (tc-expr tc-expr/check check-below tc-literal tc-exprs tc-exprs/check tc-expr/t #;check-expr))
+  (tc-expr tc-expr/check tc-expr/check/t check-below tc-literal tc-exprs tc-exprs/check tc-expr/t #;check-expr))
 
 (define-signature check-subforms^
   (check-subforms/ignore check-subforms/with-handlers check-subforms/with-handlers/check))

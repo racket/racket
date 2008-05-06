@@ -3,7 +3,7 @@
 
 (require syntax/kerncase
          mzlib/etc
-         mzlib/plt-match
+         scheme/match
          "signatures.ss"
          "tc-structs.ss"
          "type-utils.ss"
@@ -21,11 +21,8 @@
          "provide-handling.ss"
          "type-alias-env.ss"
          "type-contract.ss"
-         ;(only-in "prims.ss" :)
          (for-template
-          ;(only-in "prims.ss" :)
           "internal-forms.ss"
-          "tc-utils.ss"
           (lib "contract.ss")
           scheme/base))
 

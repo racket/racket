@@ -195,12 +195,6 @@
         [f-ty (tc-error/expr #:return (ret (Un))
                              "Type of argument to apply is not a function type: ~n~a" f-ty)]))))
 
-(define (stringify l [between " "])
-  (define (intersperse v l)
-    (cond [(null? l) null]
-          [(null? (cdr l)) l]
-          [else (cons (car l) (cons v (intersperse v (cdr l))))]))
-  (apply string-append (intersperse between (map (lambda (s) (format "~a" s)) l))))
 
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match-let* ([(list (tc-result: argtypes arg-thn-effs arg-els-effs) ...) argtys])
@@ -267,8 +261,7 @@
                                        (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer (fv/list (car doms*)) argtypes (car doms*) (if expected #f (car rngs*)))
-                       #;(infer/list (car doms*) argtypes vars))
+                       (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) expected))
                   => (lambda (substitution)
                        (or expected
                            (let* ([s (lambda (t) (subst-all substitution t))]
@@ -298,7 +291,7 @@
          (unless (<= (length dom) (length argtypes))
            (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
          (let ([substitution 
-                (infer/vararg vars argtypes dom rest (if expected #f rng))])
+                (infer/vararg vars argtypes dom rest rng expected)])
            (cond 
              [(and expected substitution) expected]
              [substitution

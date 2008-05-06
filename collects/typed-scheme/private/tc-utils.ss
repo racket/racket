@@ -7,6 +7,13 @@
 (define orig-module-stx (make-parameter #f))
 (define expanded-module-stx (make-parameter #f))
 
+(define (stringify l [between " "])
+  (define (intersperse v l)
+    (cond [(null? l) null]
+          [(null? (cdr l)) l]
+          [else (cons (car l) (cons v (intersperse v (cdr l))))]))
+  (apply string-append (intersperse between (map (lambda (s) (format "~a" s)) l))))
+
 ;; helper function, not currently used
 (define (find-origin stx)
   (cond [(syntax-property stx 'origin) => (lambda (orig)

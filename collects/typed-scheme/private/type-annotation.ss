@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "type-rep.ss" "parse-type.ss" "tc-utils.ss" "subtype.ss" "utils.ss" "union.ss" "resolve-type.ss"
-         "type-env.ss")
+         "type-env.ss" "type-effect-convenience.ss")
 (require (lib "plt-match.ss")
          mzlib/trace)
 (provide type-annotation
@@ -76,22 +76,34 @@
 ;; get the type annotations on this list of identifiers
 ;; if not all identifiers have annotations, return the supplied inferred type
 ;; list[identifier] type -> list[type]
-(define (get-type/infer stxs e-type)
-  (match (list stxs e-type)
-    [(list '() (Values: '())) (list)]
-    [(list (list stx ...) (Values: (list ty ...)))
-     (map (lambda (stx ty)
-            (cond [(type-annotation stx) => (lambda (ann) (check-type stx ty ann) (log/extra stx ty ann) ann)]
-                  [else (log/noann stx ty) ty]))
-          stx ty)]      
-    [(list (list stx) ty)
+(define (get-type/infer stxs expr tc-expr tc-expr/check)
+  (match stxs
+    ['() 
+     (tc-expr/check expr (-values null))
+     (list)]          
+    [(list stx)
      (cond [(type-annotation stx #:infer #t)
             => (lambda (ann)
-                 (check-type stx ty ann) 
-                 (log/extra stx ty ann)
-                 (list ann))]
-           [else (log/noann stx ty) (list ty)])]
-    [else (int-err "wrong type arity - get-type/infer ~a ~a" stxs e-type)]))
+                 (list (tc-expr/check expr ann)))]
+           [else (list (tc-expr expr))])]
+    [(list stx ...)
+     (let ([anns (for/list ([s stxs]) (type-annotation s #:infer #t))])
+       (if (for/and ([a anns]) a)
+           (begin (tc-expr/check expr (-values anns)) anns)
+           (let ([ty (tc-expr expr)])
+             (match ty
+               [(Values: tys) 
+                (if (not (= (length stxs) (length tys)))
+                    (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
+                                      "Expression should produce ~a values, but produces ~a values of types ~a"
+                                      (length stxs) (length tys) (stringify tys))
+                    (map (lambda (stx ty)
+                           (cond [(type-annotation stx #:infer #t) => (lambda (ann) (check-type stx ty ann) (log/extra stx ty ann) ann)]
+                                 [else (log/noann stx ty) ty]))
+                         stxs tys))]
+               [ty (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
+                                     "Expression should produce ~a values, but produces one values of type "
+                                     (length stxs) ty)]))))]))
 
 
 ;; check that e-type is compatible with ty in context of stx
