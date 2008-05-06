@@ -2964,8 +2964,9 @@ void marshalSchemeValueToVariant (Scheme_Object *val, VARIANTARG *pVariantArg)
 
   else if (SCHEME_VECTORP (val)) {
     SAFEARRAY *sa;
-    pVariantArg->vt = VT_ARRAY | VT_VARIANT;
-    sa = schemeVectorToSafeArray (val);
+    VARTYPE vt;
+    sa = schemeVectorToSafeArray (val, &vt);
+    pVariantArg->vt = vt | VT_ARRAY;
     pVariantArg->parray = sa;
   }
 
@@ -2984,8 +2985,14 @@ void marshalSchemeValue (Scheme_Object *val, VARIANTARG *pVariantArg)
 
   if (pVariantArg->vt & VT_ARRAY) {
     SAFEARRAY *sa;
-    sa = schemeVectorToSafeArray (val);
+    VARTYPE vt;
+    sa = schemeVectorToSafeArray (val, &vt);
     pVariantArg->parray = sa;
+    if (pVariantArg->vt != vt) {
+      char buff[256];
+      sprintf(buff, "Variant argument type 0x%x doesn't agree with array type 0x%x", pVariantArg->vt, vt);
+      scheme_signal_error(buff);
+    }
   }
 
   switch (pVariantArg->vt) {

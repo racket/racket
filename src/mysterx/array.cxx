@@ -272,7 +272,209 @@ BOOL isRegularVector(Scheme_Object *vec) {
   return TRUE;
 }
 
-void doSetArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,
+
+void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
+{
+  char errBuff[256];
+
+  switch (vt) {
+
+  case VT_NULL :
+    return NULL;
+
+  case VT_I1 :
+    return &pVariantArg->cVal;
+
+  case VT_I1 | VT_BYREF :
+    return &pVariantArg->pcVal;
+
+  case VT_UI1 :
+    return &pVariantArg->bVal;
+
+  case VT_UI1 | VT_BYREF :
+    return &pVariantArg->pbVal;
+
+  case VT_I2 :
+    return &(pVariantArg->iVal);
+
+  case VT_I2 | VT_BYREF :
+    return &pVariantArg->piVal;
+
+  case VT_UI2 :
+    return &pVariantArg->uiVal;
+
+  case VT_UI2 | VT_BYREF :
+    return &pVariantArg->puiVal;
+
+  case VT_I4 :
+    return &pVariantArg->lVal;
+
+  case VT_I4 | VT_BYREF :
+    return &pVariantArg->plVal;
+
+  case VT_UI4 :
+    return &pVariantArg->ulVal;
+
+  case VT_UI4 | VT_BYREF :
+    return &pVariantArg->pulVal;
+
+  case VT_INT :
+    return &pVariantArg->intVal;
+
+  case VT_INT | VT_BYREF :
+    return &pVariantArg->pintVal;
+
+  case VT_UINT :
+    return &pVariantArg->uintVal;
+
+  case VT_UINT | VT_BYREF :
+    return &pVariantArg->puintVal;
+
+    // VT_USERDEFINED in the typeDesc indicates an ENUM,
+    // but VT_USERDEFINED is illegal to use in the DISPPARAMS.
+    // The right thing to do is pass it as an INT.  Note that
+    // we have to bash out the variant tag.
+    //  ** NOTE THAT VT_USERDEFINED | VT_BYREF IS NOT
+    //  ** A REFERENCE TO AN INT
+  case VT_USERDEFINED:
+    return &pVariantArg->vt;
+
+  case VT_R4 :
+    return &pVariantArg->fltVal;
+
+  case VT_R4 | VT_BYREF :
+    return &pVariantArg->pfltVal;
+
+  case VT_R8 :
+    return &pVariantArg->dblVal;
+
+  case VT_R8 | VT_BYREF :
+    return &pVariantArg->pdblVal;
+
+  case VT_BSTR :
+    return &pVariantArg->bstrVal;
+
+  case VT_BSTR | VT_BYREF :
+    return &pVariantArg->pbstrVal;
+
+  case VT_CY :
+    return &pVariantArg->cyVal;
+
+  case VT_CY | VT_BYREF :
+    return &pVariantArg->pcyVal;
+
+  case VT_DATE :
+    return &pVariantArg->date;
+
+  case VT_DATE | VT_BYREF :
+    return &pVariantArg->pdate;
+
+  case VT_BOOL :
+    return &pVariantArg->boolVal;
+
+  case VT_BOOL | VT_BYREF :
+    return &pVariantArg->pboolVal;
+
+  case VT_ERROR :
+    return &pVariantArg->scode;
+
+  case VT_ERROR | VT_BYREF :
+    return &pVariantArg->pscode;
+
+  case VT_DISPATCH :
+    return &pVariantArg->pdispVal;
+
+  case VT_DISPATCH | VT_BYREF :
+    return &pVariantArg->ppdispVal;
+
+    // VT_USERDEFINED | VT_BYREF indicates that we should pass
+    // the IUnknown pointer of a COM object.
+    // VT_USERDEFINED | VT_BYREF is illegal in the DISPPARAMS, so
+    // we bash it out to VT_UNKNOWN.
+
+  case VT_USERDEFINED | VT_BYREF :
+    return &pVariantArg->punkVal;
+
+  case VT_VARIANT | VT_BYREF :
+    return &pVariantArg->pvarVal;
+
+  case VT_UNKNOWN :
+    return &pVariantArg->punkVal;
+
+  case VT_UNKNOWN | VT_BYREF :
+    return &pVariantArg->ppunkVal;
+
+  case VT_VARIANT :
+    return pVariantArg;
+
+  case VT_PTR:
+    scheme_signal_error ("unable to marshal VT_PTR");
+    break;
+
+  default :
+    sprintf (errBuff, "Unable to marshal Scheme value into VARIANT: 0x%X",
+             pVariantArg->vt);
+    scheme_signal_error (errBuff);
+  }
+
+  // Make the compiler happy
+  return pVariantArg;
+}
+
+VARTYPE schemeValueToCOMType(Scheme_Object* val)
+{
+  if (SCHEME_CHARP (val))
+    return VT_UI1;
+
+  else if (SCHEME_EXACT_INTEGERP (val))
+    return VT_I4;
+
+#ifdef MZ_USE_SINGLE_FLOATS
+  else if (SCHEME_FLTP (val))
+    return VT_R4;
+#endif
+
+  else if (SCHEME_DBLP (val))
+    return VT_R8;
+
+  else if (SCHEME_STRSYMP (val))
+    return VT_BSTR;
+
+  else if (MX_CYP (val))
+    return VT_CY;
+
+  else if (MX_DATEP (val))
+    return VT_DATE;
+
+  else if (val == scheme_false)
+    return VT_BOOL;
+
+  else if (val == scheme_true)
+    return VT_BOOL;
+
+  else if (MX_SCODEP (val))
+    return VT_ERROR;
+
+  else if (MX_COM_OBJP (val))
+    return VT_DISPATCH;
+
+  else if (MX_IUNKNOWNP (val))
+    return VT_UNKNOWN;
+
+  else if (SCHEME_VECTORP (val))
+    getSchemeVectorType(val);
+
+  else if (scheme_apply (mx_marshal_raw_scheme_objects, 0, NULL) == scheme_false)
+    scheme_signal_error ("Unable to inject Scheme value %V into VARIANT", val);
+
+  else
+    return VT_INT;
+
+  return VT_VARIANT; // If all else fails.
+}
+
+
+void doSetArrayElts(Scheme_Object *vec,VARTYPE elementType,SAFEARRAY *theArray,
 		    long *allIndices,long *currNdx, long offset) {
   VARIANT variant;
   Scheme_Object *elt;
@@ -285,7 +487,7 @@ void doSetArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,
     for (i = 0; i < len; i++) {
       elt = SCHEME_VEC_ELS(vec)[i];
       currNdx[offset] = i;
-      doSetArrayElts(elt,theArray,allIndices,currNdx, offset - 1);
+      doSetArrayElts(elt,elementType,theArray,allIndices,currNdx, offset - 1);
     }
   }
   else {
@@ -293,20 +495,42 @@ void doSetArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,
       elt = SCHEME_VEC_ELS(vec)[i];
       currNdx[offset] = i;
       marshalSchemeValueToVariant(elt,&variant);
-      SafeArrayPutElement(theArray,allIndices,&variant);
+      // I don't think this will ever happen (at least when calling this function from the scheme side).
+      if (variant.vt != elementType) {
+        char errBuff[100];
+        sprintf (errBuff, "Unable to put an element of COM type 0x%x into an array of COM type 0x%x", variant.vt, elementType);
+        scheme_signal_error (errBuff);
+      }
+      SafeArrayPutElement(theArray,allIndices,variantDataPointer(elementType,&variant));
     }
   }
 }
 
-void setArrayElts(Scheme_Object *vec,SAFEARRAY *theArray,long numDims) {
+void setArrayElts(Scheme_Object *vec,VARTYPE elementType,SAFEARRAY *theArray,long numDims) {
   long indices[MAXARRAYDIMS];
 
   memset(indices,0,sizeof(indices));
 
-  doSetArrayElts(vec,theArray,indices,indices, numDims - 1);
+  doSetArrayElts(vec,elementType,theArray,indices,indices, numDims - 1);
 }
 
-SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec) {
+// This doesn't work if we have an integer in a double array (or want a double array but have an integer vector).
+// But it should work if we have doubles and integers (and return a VT_R8 array). Try to subtype it.
+VARTYPE getSchemeVectorType(Scheme_Object *vec) {
+  VARTYPE type;
+  int i, size = SCHEME_VEC_SIZE(vec);
+
+  type = schemeValueToCOMType(SCHEME_VEC_ELS(vec)[0]);
+  if (VT_VARIANT == type) return type;
+
+  for (i = 1; i < size; ++i)
+    if (type != schemeValueToCOMType(SCHEME_VEC_ELS(vec)[i]))
+      return VT_VARIANT;
+
+  return type;
+}
+
+SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec, VARTYPE *vt) {
   SAFEARRAY *theArray;
   SAFEARRAYBOUND *rayBounds;
   int numDims;
@@ -334,9 +558,11 @@ SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec) {
 
   setArrayEltCounts(vec,rayBounds,numDims);
 
-  theArray = SafeArrayCreate(VT_VARIANT,numDims,rayBounds);
+  *vt = getSchemeVectorType(vec);
 
-  setArrayElts(vec,theArray,numDims);
+  theArray = SafeArrayCreate(*vt,numDims,rayBounds);
+
+  setArrayElts(vec,*vt,theArray,numDims);
 
   return theArray;
 

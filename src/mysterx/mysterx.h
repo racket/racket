@@ -626,7 +626,8 @@ void signalCodedEventSinkError(char *,HRESULT);
 // array procedures
 
 Scheme_Object *safeArrayToSchemeVector(SAFEARRAY *);
-SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *);
+SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *, VARTYPE *);
+VARTYPE getSchemeVectorType(Scheme_Object *vec);
 
 extern MYSSINK_TABLE myssink_table;
 extern HINSTANCE hInstance;
@@ -902,6 +903,9 @@ extern unsigned long browserCount;
       scheme_signal_error(buff); }; } while (0)
 
 void *mx_wrap_handler(Scheme_Object *h);
+
+// So array.cxx sees it
+extern Scheme_Object * mx_marshal_raw_scheme_objects;
 
 /* This indirection lets us delayload libmzsch.dll: */
 #define scheme_false (scheme_make_false())
