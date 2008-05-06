@@ -1611,27 +1611,47 @@ If the namespace does not, they are colored the unbound color.
                       (lambda (stx requires)
                         (syntax-case stx ()
                           [(_ require-specs ...)
-                           (let ([new-specs (map trim-require-prefix
-                                                 (syntax->list (syntax (require-specs ...))))])
-                             (annotate-raw-keyword sexp varrefs)
-                             (for-each (annotate-require-open source-editor-cache
-                                                              user-namespace
-                                                              user-directory)
-                                       new-specs)
-                             (for-each (add-require-spec requires)
-                                       new-specs
-                                       (syntax->list (syntax (require-specs ...)))))]))])
+                           (with-syntax ([((require-specs ...) ...)
+                                          (map (lambda (spec)
+                                                 (syntax-case spec (just-meta)
+                                                   [(just-meta m spec ...)
+                                                    #'(spec ...)]
+                                                   [else (list spec)]))
+                                               (syntax->list #'(require-specs ...)))])
+                             (let ([new-specs (map trim-require-prefix
+                                                   (syntax->list (syntax (require-specs ... ...))))])
+                               (annotate-raw-keyword sexp varrefs)
+                               (for-each (annotate-require-open source-editor-cache
+                                                                user-namespace
+                                                                user-directory)
+                                         new-specs)
+                               (for-each (add-require-spec requires)
+                                         new-specs
+                                         (syntax->list (syntax (require-specs ... ...))))))]))])
                  (for-each (lambda (spec)
-                             (syntax-case* spec (for-syntax for-template for-label) (lambda (a b)
-                                                                                      (eq? (syntax-e a) (syntax-e b)))
-                               [(for-syntax specs ...)
-                                (at-phase spec require-for-syntaxes)]
-                               [(for-template specs ...)
-                                (at-phase spec require-for-templates)]
-                               [(for-label specs ...)
-                                (at-phase spec require-for-labels)]
-                               [else
-                                (at-phase (list #f spec) requires)]))
+                             (let loop ([spec spec])
+                               (syntax-case* spec (for-syntax for-template for-label for-meta just-meta) 
+                                             (lambda (a b)
+                                               (eq? (syntax-e a) (syntax-e b)))
+                                 [(just-meta phase specs ...)
+                                  (for-each loop (syntax->list #'(specs ...)))]
+                                 [(for-syntax specs ...)
+                                  (at-phase spec require-for-syntaxes)]
+                                 [(for-meta 1 specs ...)
+                                  (at-phase #'(for-syntax specs ...) require-for-syntaxes)]
+                                 [(for-template specs ...)
+                                  (at-phase spec require-for-templates)]
+                                 [(for-meta -1 specs ...)
+                                  (at-phase #'(for-template specs ...) require-for-templates)]
+                                 [(for-label specs ...)
+                                  (at-phase spec require-for-labels)]
+                                 [(for-meta #f specs ...)
+                                  (at-phase #'(for-label specs ...) require-for-labels)]
+                                 [(for-meta 0 specs ...)
+                                  (at-phase #'(for-run specs ...) requires)]
+                                 [(for-meta . _) (void)]
+                                 [else
+                                  (at-phase (list #f spec) requires)])))
                            (syntax->list #'(require-specs ...))))]
               
               ; module top level only:
@@ -2198,7 +2218,7 @@ If the namespace does not, they are colored the unbound color.
     
     ;; trim-require-prefix : syntax -> syntax
     (define (trim-require-prefix require-spec)
-      (syntax-case* require-spec (only prefix all-except prefix-all-except rename) symbolic-compare?
+      (syntax-case* require-spec (only prefix all-except prefix-all-except rename just-meta) symbolic-compare?
         [(only module-name identifer ...)
          (syntax module-name)]
         [(prefix identifier module-name) 

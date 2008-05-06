@@ -22,10 +22,12 @@
                        ;;             'left    // left arrow key
                        ;;             (list string? string?)))) // menu item select
                        
-                       raw-execute-answer  ;; answer when executing without debugging
-                       raw-load-answer     ;; answer when loading after executing (w/out debugging)
-                       err-execute-answer  ;; answer when executing with debugging
-                       err-load-answer     ;; answer when loading after executing (with debugging)
+                       raw-execute-answer  ;; answer when executing
+                       raw-load-answer     ;; answer when loading
+
+                       error-message ;; (or/c string? false/c)
+                       error-srcloc  ;; (or/c string? false/c)
+                       error-mode    ;; (one-of/c 'read 'syntax 'runtime 'runtime-nested)
                        
                        source-location ;; : (union 'definitions
                        ;;                          'interactions
@@ -60,8 +62,7 @@
      (make-test "1"
                 "1"
                 "1"
-                "1"
-                "1"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -70,8 +71,7 @@
      (make-test "\"a\""
                 "\"a\""
                 "\"a\""
-                "\"a\""
-                "\"a\""
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -80,8 +80,7 @@
      (make-test "1 2"
                 "1\n2"
                 "2"
-                "1\n2"
-                "2"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -90,38 +89,37 @@
      (make-test "\"a\" \"b\""
                 "\"a\"\n\"b\""
                 "\"b\""
-                "\"a\"\n\"b\""
-                "\"b\""
+                #f #f #f
                 'interactions
 		#f
                 void
                 void)
      
      (make-test "("
-                "{bug09.png} read: expected a `)'"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
+                "" ""
                 "read: expected a `)'"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: expected a `)'"
+                "1:0"
+                'read
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
 		#f
                 void
                 void)
      
      (make-test "."
-                "{bug09.png} read: illegal use of \".\""
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
+                "" ""
                 "read: illegal use of \".\""
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: read: illegal use of \".\""
+                "1:0"
+                'read
                 (cons (make-loc 0 0 0) (make-loc 0 1 1))
                 #f
 		void
                 void)
 
      (make-test "(lambda ())"
+                "" ""
                 "lambda: bad syntax in: (lambda ())"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
-                "lambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:0: lambda: bad syntax in: (lambda ())"
+                "1:0"
+                'syntax
                 (cons (make-loc 0 0 0) (make-loc 0 11 11))
 		#f
                 void
@@ -129,38 +127,38 @@
      
      ;; make sure only a single syntax error occurs when in nested begin situation
      (make-test "(begin (lambda ()) (lambda ()))"
+                "" ""
                 "lambda: bad syntax in: (lambda ())"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
-                "lambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:7: lambda: bad syntax in: (lambda ())"
+                "1:7"
+                'syntax
                 (cons (make-loc 0 7 7) (make-loc 0 18 18))
 		#f
                 void
                 void)
      
      (make-test "xx"
+                "" ""
                 "reference to undefined identifier: xx"
-                (add-load-handler-context "reference to undefined identifier: xx")
-                "{bug09.png} reference to undefined identifier: xx"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::1: reference to undefined identifier: xx"
+                "1:0"
+                'runtime
                 (cons (make-loc 0 0 0) (make-loc 0 2 2))
 		#f
                 void
                 void)
      (make-test "(raise 1)"
+                "" ""
                 "uncaught exception: 1"
-                "uncaught exception: 1"
-                "uncaught exception: 1"
-                "uncaught exception: 1"
+                #f
+                'runtime
                 'interactions
                 #f
                 void
                 void)
      (make-test "(raise #f)"
+                "" ""
                 "uncaught exception: #f"
-                "uncaught exception: #f"
-                "uncaught exception: #f"
-                "uncaught exception: #f"
+                #f
+                'runtime
 		'interactions
 		#f
                 void
@@ -169,8 +167,7 @@
      (make-test "(values 1 2)"
                 "1\n2"
                 "1\n2"
-                "1\n2"
-                "1\n2"
+                #f #f #f
 		'interactions
                 #f
                 void
@@ -178,8 +175,7 @@
      (make-test "(list 1 2)"
                 "(1 2)"
                 "(1 2)"
-                "(1 2)"
-                "(1 2)"
+                #f #f #f
 		'interactions
 		#f
                 void
@@ -188,8 +184,7 @@
      (make-test "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"
                 "#(struct:s 1)"
                 "#(struct:s 1)"
-                "#(struct:s 1)"
-                "#(struct:s 1)"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -199,8 +194,7 @@
      (make-test "(define (f) (+ 1 1)) (define + -) (f)"
                 "0"
                 "0"
-                "0"
-                "0"
+                #f #f #f
 		'interactions
                 #f
                 void
@@ -209,8 +203,7 @@
      (make-test "(begin (define-struct a ()) (define-struct (b a) ()))"
 		""
 		""
-                ""
-                ""
+                #f #f #f
 		'interactions
 		#f
                 void
@@ -219,18 +212,17 @@
      (make-test "(begin (values) 1)"
 		"1"
 		"1"
-                "1"
-                "1"
+                #f #f #f
 		'interactions
 		#f
                 void
                 void)
 
      (make-test "(begin xx (printf \"hi\\n\"))"
+                "" ""
                 "reference to undefined identifier: xx"
-                (add-load-handler-context "reference to undefined identifier: xx")
-                "{bug09.png} reference to undefined identifier: xx"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::8: reference to undefined identifier: xx"
+                "1:7"
+                'runtime
                 (cons (make-loc 0 7 7) (make-loc 0 9 9))
 		#f
                 void
@@ -238,13 +230,13 @@
      
      (make-test (string-append
                  "(module m mzscheme (provide e) (define e #'1))\n"
-                 "(module n mzscheme (require-for-syntax m) (provide s) (define-syntax (s stx) e))\n"
-                 "(require n)\n"
+                 "(module n mzscheme (require-for-syntax 'm) (provide s) (define-syntax (s stx) e))\n"
+                 "(require 'n)\n"
                  "s")
+                "" ""
                 "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "{file.gif} repl-test-tmp.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+                "1:43"
+                'syntax
                 (cons (make-loc 0 43 43) (make-loc 0 44 44))
                 #f
                 void
@@ -255,18 +247,17 @@
      (make-test "#!/bin/sh\n1"
                 "1"
                 "1"
-                "1"
-                "1"
+                #f #f #f
 		'interactions
 		#f
                 void
                 void)
 
      (make-test "#!/bin/sh\nxx"
+                "" ""
                 "reference to undefined identifier: xx"
-                (add-load-handler-context "reference to undefined identifier: xx")
-                "{bug09.png} reference to undefined identifier: xx"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::11: reference to undefined identifier: xx"
+                "2:0"
+                'runtime
                 (cons (make-loc 1 0 10) (make-loc 1 2 12))
 		#f
                 void
@@ -277,8 +268,7 @@
      (make-test "    (eval '(values 1 2))"
                 "1\n2"
                 "1\n2"
-                "1\n2"
-                "1\n2"
+                #f #f #f
 		'interactions
                 #f
                 void
@@ -287,27 +277,26 @@
      (make-test "    (eval '(list 1 2))"
                 "(1 2)"
                 "(1 2)"
-                "(1 2)"
-                "(1 2)"
+                #f #f #f
 		'interactions
                 #f
                 void
                 void)
      
      (make-test "    (eval '(lambda ()))"
+                "" ""
                 "lambda: bad syntax in: (lambda ())"
-                "{bug09.png} lambda: bad syntax in: (lambda ())"
-                "{bug09.png} lambda: bad syntax in: (lambda ())"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::5: lambda: bad syntax in: (lambda ())"
+                "1:4"
+                'runtime
                 (cons (make-loc 0 4 4) (make-loc 0 23 23))
                 #f
                 void
                 void)
      (make-test "    (eval 'x)"
+                "" ""
                 "reference to undefined identifier: x"
-                (add-load-handler-context "reference to undefined identifier: x")
-                "{bug09.png} reference to undefined identifier: x"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
+                "1:4"
+                'runtime
 		(cons (make-loc 0 4 4) (make-loc 0 13 13))
 		#f
                 void
@@ -316,8 +305,7 @@
      (make-test "(eval (box 1))"
 		"#&1"
 		"#&1"
-                "#&1"
-                "#&1"
+                #f #f #f
 		'interactions
 		#f
                 void
@@ -326,8 +314,7 @@
      (make-test "(eval '(box 1))"
 		"#&1"
 		"#&1"
-		"#&1"
-		"#&1"
+                #f #f #f
 		'interactions
 		#f
                 void
@@ -335,10 +322,10 @@
      
      ; printer setup test
      (make-test "(car (void))"
+                "" ""
                 "car: expects argument of type <pair>; given #<void>"
-                (add-load-handler-context "car: expects argument of type <pair>; given #<void>")
-                "{bug09.png} car: expects argument of type <pair>; given #<void>"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::1: car: expects argument of type <pair>; given #<void>"
+                "1:0"
+                'runtime
                 (cons (make-loc 0 0 0) (make-loc 0 12 12))
                 #f
                 void
@@ -346,55 +333,55 @@
      
      ;; error in the middle
      (make-test "1 2 ( 3 4"
-                "1\n2\n{bug09.png} read: expected a `)'"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
-                "1\n2\nread: expected a `)'"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: expected a `)'"
-		(cons (make-loc 0 4 4) (make-loc 0 9 9))
+                "1\n2\n" ""
+                "read: expected a `)'"
+                "1:4"
+                'read
+		(cons (make-loc 0 4 4) (make-loc 0 5 5))
 		#f
                 void
                 void)
      (make-test "1 2 . 3 4"
-                "1\n2\n{bug09.png} read: illegal use of \".\""
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
-                "1\n2\nread: illegal use of \".\""
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: read: illegal use of \".\""
+                "1\n2\n" ""
+                "read: illegal use of \".\""
+                "1:4"
+                'read
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
 		#f
                 void
                 void)
      (make-test "1 2 (lambda ()) 3 4"
-                "1\n2\nlambda: bad syntax in: (lambda ())"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
-                "1\n2\nlambda: bad syntax in: (lambda ())"
-                "{file.gif} repl-test-tmp.ss:1:4: lambda: bad syntax in: (lambda ())"
+                "1\n2\n" ""
+                "lambda: bad syntax in: (lambda ())"
+                "1:4"
+                'syntax
 		(cons (make-loc 0 4 4) (make-loc 0 15 15))
                 #f
                 void
                 void)
      (make-test "1 2 x 3 4"
-                "1\n2\nreference to undefined identifier: x"
-                (add-load-handler-context "reference to undefined identifier: x")
-                "1\n2\n{bug09.png} reference to undefined identifier: x"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::5: reference to undefined identifier: x"
+                "1\n2\n" ""
+                "reference to undefined identifier: x"
+                "1:4"
+                'runtime
 		(cons (make-loc 0 4 4) (make-loc 0 5 5))
                 #f
                 void
                 void)
      (make-test "1 2 (raise 1) 3 4"
-                "1\n2\nuncaught exception: 1"
+                "1\n2\n" "" 
                 "uncaught exception: 1"
-                "1\n2\nuncaught exception: 1"
-                "uncaught exception: 1"
+                #f
+                'runtime
 		'interactions
 		#f
                 void
                 void)
      (make-test "1 2 (raise #f) 3 4"
-                "1\n2\nuncaught exception: #f"
+                "1\n2\n" ""
                 "uncaught exception: #f"
-                "1\n2\nuncaught exception: #f"
-                "uncaught exception: #f"
+                #f
+                'runtime
 		'interactions
 		#f
                 void
@@ -403,10 +390,10 @@
      ;; error across separate files
      (make-test
       "(load \"repl-test-tmp2.ss\") (define (g) (+ 1 (car 1))) (f g)"
-      "{bug09.png} car: expects argument of type <pair>; given 1"
-      "{bug09.png} {file.gif} repl-test-tmp.ss:1:27: car: expects argument of type <pair>; given 1"
-      "{bug09.png} car: expects argument of type <pair>; given 1"
-      "{bug09.png} {file.gif} repl-test-tmp.ss::45: car: expects argument of type <pair>; given 1"
+      "" ""
+      "car: expects argument of type <pair>; given 1"
+      "1:44"
+      'runtime-nested
       (cons (make-loc -1 -1 44)
             (make-loc -1 -1 51))
       #f
@@ -420,20 +407,20 @@
      
      ;; new namespace test
      (make-test "(current-namespace (make-namespace))\nif"
+                "" ""
                 "if: bad syntax in: if"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
-                "if: bad syntax in: if"
-                "{file.gif} repl-test-tmp.ss:2:0: if: bad syntax in: if"
+                "2:0"
+                'syntax
 		(cons (make-loc 1 0 37) (make-loc 1 2 39))
 		#f
                 void
                 void)
      
      (make-test "(current-namespace (make-namespace 'empty))\nif"
-                "application: bad syntax in: (#%top-interaction . if)"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-                "application: bad syntax (illegal use of `.') in: (#%top-interaction . if)"
-                "{file.gif} repl-test-tmp.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+                "" ""
+                "compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+                "2:0"
+                'syntax
 		(cons (make-loc 1 0 44) (make-loc 1 0 46))
 		#f
                 void
@@ -443,8 +430,7 @@
      (make-test "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
 		""
                 ""
-                ""
-		""
+                #f #f #f
 		'interactions
 		#f
                 void
@@ -453,10 +439,10 @@
      ;; error escape handler test
      (make-test
       "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (car))\n(lambda () (error-escape-handler old))))\n10))"
+      "" ""
       "car: expects 1 argument, given 0\n15"
-      (add-load-handler-context "car: expects 1 argument, given 0\n15")
-      "{bug09.png} car: expects 1 argument, given 0\n15"
-      "{bug09.png} {file.gif} repl-test-tmp.ss::153: car: expects 1 argument, given 0\n15"
+      "5:19"
+      'runtime
       'definitions
       #f
       void
@@ -468,8 +454,7 @@
      (make-test 'fraction-sum
                 #rx"{number 5/6 \"5/6\" (improper|mixed)}"
                 #rx"{number 5/6 \"5/6\" (improper|mixed)}"
-                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
-                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -479,8 +464,7 @@
      (make-test "(write (list (syntax x)))" 
                 "({embedded \".#<syntax:1:21>\"})"
                 "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-                "({embedded \".#<syntax:1:21>\"})"
-                "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -490,8 +474,7 @@
      (make-test "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
                 "10"
                 "10"
-                "10"
-                "10"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -501,8 +484,7 @@
      (make-test "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
                 ""
                 ""
-                ""
-                ""
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -511,8 +493,7 @@
      (make-test "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
                 "#<syntax:1:96>"
                 "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-                "#<syntax:1:96>"
-                "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -521,8 +502,7 @@
      (make-test "(write-special 1)"
                 "1#t"
                 "1#t"
-                "1#t"
-                "1#t"
+                #f #f #f
                 'interactions
 		#f
                 void
@@ -532,10 +512,10 @@
       ;; the begin/void combo is to make sure that no value printout
       ;; comes and messes up the source location for the error.
       "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (car))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
+      "" ""
       "car: expects 1 argument, given 0"
-      (add-load-handler-context "car: expects 1 argument, given 0")
-      "{bug09.png} car: expects 1 argument, given 0"
-      "{bug09.png} {file.gif} repl-test-tmp.ss::100: car: expects 1 argument, given 0"
+      "6:15"
+      'runtime
       (cons (make-loc 0 99 99) (make-loc 0 104 104))
       #f
       void
@@ -546,8 +526,7 @@
      (make-test "(semaphore-wait (make-semaphore 0))"
                 #rx"user break$"
                 #rx"user break$"
-                #rx"user break$"
-                #rx"user break$"
+                #f #f #f
                 (cons (make-loc 0 0 0) (make-loc 0 35 35))
                 #t
                 void
@@ -556,8 +535,7 @@
      (make-test "(let l()(l))"
                 #rx"user break$"
                 #rx"user break$"
-                #rx"user break$"
-                #rx"user break$"
+                #f #f #f
 		(cons (make-loc 0 8 8) (make-loc 0 11 11))
                 #t
                 void
@@ -567,36 +545,33 @@
      (make-test "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
 		"17"
                 "17"
-                "17"
-                "17"
+                #f #f #f
 		'interactions
 		#f
                 void
                 void)
      (make-test "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
-		"#1(2)"
-                "#1(2)"
-                "#1(2)"
-                "#1(2)"
+		"#(2)"
+                "#(2)"
+                #f #f #f
 		'interactions
 		#f
                 void
                 void)
      (make-test "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
-		"#1(2)"
-                "#1(2)"
-                "#1(2)"
-                "#1(2)"
+		"#(2)"
+                "#(2)"
+                #f #f #f
 		'interactions
 		#f
                 void
                 void)
 
      (make-test "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
+                "" ""
 		"procedure application: expected procedure, given: 3; arguments were: 3"
-                (add-load-handler-context "procedure application: expected procedure, given: 3; arguments were: 3")
-                "{bug09.png} procedure application: expected procedure, given: 3; arguments were: 3"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::74: procedure application: expected procedure, given: 3; arguments were: 3"
+                "3:13"
+                'runtime
 		(cons (make-loc 3 19 73) (make-loc 3 24 78))
 		#f
                 void
@@ -606,8 +581,7 @@
      (make-test "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
                 "right"
                 "right"
-                "right"
-                "right"
+                #f #f #f
                 'interactions
                 #f
                 void
@@ -624,29 +598,27 @@
                           list))
                 "(1 2 3)"
                 "(1 2 3)"
-                "(1 2 3)"
-                "(1 2 3)"
+                #f #f #f
                 'interactions
                 #f
                 void
                 void)
      
      ;; graphical lambda tests
-     (make-test (list "((" '("Special" "Insert λ") "(x) x) 1)")
+     (make-test (list "((" '("Insert" "Insert λ") "(x) x) 1)")
                 "1"
                 "1"
-                "1"
-                "1"
+                #f #f #f
                 'interactions
 		#f
                 void
                 void)
      
-     (make-test (list "(" '("Special" "Insert λ") "())")
+     (make-test (list "(" '("Insert" "Insert λ") "())")
+                "" ""
                 "λ: bad syntax in: (λ ())"
-                "{bug09.png} {file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
-                "λ: bad syntax in: (λ ())"
-                "{file.gif} repl-test-tmp.ss:1:0: λ: bad syntax in: (λ ())"
+                "1:0"
+                'syntax
                 (cons (make-loc 0 0 0) (make-loc 0 5 5))
 		#f
                 void
@@ -654,10 +626,10 @@
      
      ;; thread tests
      (make-test "(begin (thread (lambda () x)) (sleep 1/10))"
+                "" ""
                 "reference to undefined identifier: x"
-                "reference to undefined identifier: x"
-                "{bug09.png} reference to undefined identifier: x"
-                "{bug09.png} {file.gif} repl-test-tmp.ss::27: reference to undefined identifier: x"
+                "1:26"
+                'runtime
                 (cons (make-loc 0 26 26) (make-loc 0 27 27))
                 #f
                 void
@@ -669,8 +641,7 @@
      (make-test "(require (lib \"utils.ss\" \"texpict\"))(disk 3)"
                 "{image}"
                 "{image}"
-                "{image}"
-                "{image}"
+                #f #f #f
                 'interactions
                 #f
                 void
@@ -682,10 +653,9 @@
                     (current-namespace (make-namespace))
                     (namespace-set-variable-value! 'd (disk 3)))
                  'd)
-                "#<struct:pict>"
-                "#<struct:pict>"
-                "#<struct:pict>"
-                "#<struct:pict>"
+                "#<pict>"
+                "#<pict>"
+                #f #f #f
                 'interactions
                 #f
                 void
@@ -699,8 +669,7 @@
                  '(disk 3))
                 "{image}"
                 "{image}"
-                "{image}"
-                "{image}"
+                #f #f #f
                 'interactions
                 #f
                 void
@@ -712,8 +681,7 @@
                  "(list 1 2 3)")
                 "(1 2 3)"
                 "(1 2 3)"
-                "(1 2 3)"
-                "(1 2 3)"
+                #f #f #f
                 'interactions
                 #f
                 void
@@ -733,45 +701,44 @@
        "(display (get-output-string p)))))\n")
       "x in: (lambda ())"
       "x in: (lambda ())"
-      "x in: (lambda ())"
-      "x in: (lambda ())"
+      #f #f #f
       'interactions
       #f
       void 
       void)
      ))
   ;; these tests aren't used at the moment.
+  #;
   (define xml-tests
     (list
           ;; XML tests
      (make-test (list "#!/bin/sh\n" 
-                      '("Special" "Insert XML Box")
+                      '("Insert" "Insert XML Box")
                       "<a>")
                 "(a ())"
                 "(a ())"
-                "(a ())"
-                "(a ())"
+                #f #f #f
 		'interactions
                 #f
                 void
                 void)
 
      (make-test
-      '(("Special" "Insert XML Box")
+      '(("Insert" "Insert XML Box")
         "<a>")
       "(a ())"
       "(a ())"
       #f
       'interactions
       #f
-     #f
+      #f
       void
       void)
      
      (make-test
-      '(("Special" "Insert XML Box")
+      '(("Insert" "Insert XML Box")
         "<a>"
-        ("Special" "Insert Scheme Box")
+        ("Insert" "Insert Scheme Box")
         "1")
       "(a () 1)"
       "(a () 1)"
@@ -783,9 +750,9 @@
       void)
      
      (make-test
-      '(("Special" "Insert XML Box")
+      '(("Insert" "Insert XML Box")
         "<a>"
-        ("Special" "Insert Scheme Splice Box")
+        ("Insert" "Insert Scheme Splice Box")
         "'(1)")
       "(a () 1)"
       "(a () 1)"
@@ -797,9 +764,9 @@
       void)
      
      (make-test
-      '(("Special" "Insert XML Box")
+      '(("Insert" "Insert XML Box")
         "<a>"
-        ("Special" "Insert Scheme Splice Box")
+        ("Insert" "Insert Scheme Splice Box")
         "1")
       "scheme-splice-box: expected a list, found: 1"
       "scheme-splice-box: expected a list, found: 1"
@@ -843,6 +810,9 @@
     (define tmp-load-short-filename "repl-test-tmp.ss")
     (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
     
+    (define tmp-load3-short-filename "repl-test-tmp3.ss")
+    (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
+
     (define short-tmp-load-filename
       (let-values ([(base name dir?) (split-path tmp-load-filename)])
         (path->string name)))
@@ -872,6 +842,11 @@
       (type-in-definitions drscheme-frame "(+ ")
       (test:menu-select "Edit" "Paste")
       (type-in-definitions drscheme-frame " 1/3)"))
+
+    (define (string/rx-append a b)
+      (if (regexp? b)
+          (regexp (string-append (regexp-quote a) (object-name b)))
+          (string-append a b)))
     
     ; given a filename "foo", we perform two operations on the contents 
     ; of the file "foo.ss".  First, we insert its contents into the REPL
@@ -880,12 +855,45 @@
     (define ((run-single-test execute-text-start escape raw?) in-vector)
       ;(printf "\n>> testing ~s\n" (test-program in-vector))
       (let* ([program (test-program in-vector)]
-             [execute-answer (if raw?
-                                 (test-raw-execute-answer in-vector)
-                                 (test-err-execute-answer in-vector))]
-             [load-answer (if raw?
-                              (test-raw-load-answer in-vector)
-                              (test-err-load-answer in-vector))]
+             [execute-answer (let ([base (test-raw-execute-answer in-vector)])
+                               (cond
+                                [(not (test-error-mode in-vector)) base]
+                                [else
+                                 (string/rx-append
+                                  base
+                                  (let ([base (test-error-message in-vector)])
+                                    (cond
+                                     [(not (test-error-srcloc in-vector)) base]
+                                     [raw? (if (eq? 'read (test-error-mode in-vector))
+                                               (string-append backtrace-image-string " " base)
+                                               base)]
+                                     [(eq? 'syntax (test-error-mode in-vector)) base]
+                                     [(eq? 'read (test-error-mode in-vector)) base]
+                                     [else (string-append backtrace-image-string " " base)])))]))]
+             [make-load-answer
+              (lambda (src-file)
+                (let ([base (test-raw-load-answer in-vector)])
+                  (cond
+                   [(not (test-error-mode in-vector)) base]
+                   [else
+                    (string/rx-append
+                     base
+                     (let ([base (test-error-message in-vector)]
+                           [add-src (lambda (s)
+                                      (if src-file
+                                          (string-append file-image-string " "
+                                                         src-file ":"
+                                                         (test-error-srcloc in-vector) ": "
+                                                         s)
+                                          s))])
+                       (cond
+                        [(not (test-error-srcloc in-vector)) base]
+                        [raw? (if (eq? 'runtime (test-error-mode in-vector))
+                                  (add-load-handler-context base)
+                                  (string-append backtrace-image-string " " (add-src base)))]
+                        [else (if (eq? 'syntax (test-error-mode in-vector))
+                                  (add-src base)
+                                  (string-append backtrace-image-string " " (add-src base)))])))])))]
              [source-location (test-source-location in-vector)]
              [setup (test-setup in-vector)]
              [teardown (test-teardown in-vector)]
@@ -923,7 +931,7 @@
         
         (do-execute drscheme-frame #f)
         (when breaking-test?
-          (test:button-push (send drscheme-frame get-break-button)))
+          (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
         (wait-for-execute)
         
         (let* ([execute-text-end (- (get-int-pos) 1)] ;; subtract one to skip last newline
@@ -988,42 +996,54 @@
                                      (- (send interactions-text last-position) 1))))
             (test:keystroke #\return))
           
-          ; in order to erase the state in the namespace already, we clear (but don't save!)
-          ; the definitions and click execute with the empty buffer
-          (test:new-window definitions-canvas)
-          (test:menu-select "Edit" "Select All")
-          (test:menu-select "Edit" "Delete")
-          (do-execute drscheme-frame #f)
-          (wait-for-execute)
+                                        ;
           
-          ; stuff the load command into the REPL 
-          (for-each test:keystroke
-                    (string->list (format "(load ~s)" tmp-load-short-filename)))
+          (let ([load-test
+                 (lambda (short-filename load-answer)
+                   ;; in order to erase the state in the namespace already, we clear (but don't save!)
+                   ;; the definitions and click execute with the empty buffer
+                   (test:new-window definitions-canvas)
+                   (test:menu-select "Edit" "Select All")
+                   (test:menu-select "Edit" "Delete")
+                   (do-execute drscheme-frame #f)
+                   (wait-for-execute)
+
+                   ;; stuff the load command into the REPL 
+                   (for-each test:keystroke
+                             (string->list (format "(load ~s)" short-filename)))
           
-          ; record current text position, then stuff a CR into the REPL
-          (let ([load-text-start (+ 1 (send interactions-text last-position))])
-            
-            (test:keystroke #\return)
-            
-            (when breaking-test?
-              (test:button-push (send drscheme-frame get-break-button)))
-            (wait-for-execute)
-            
-            (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
-                   [received-load 
-                    (fetch-output drscheme-frame load-text-start load-text-end)])
-              
-              ; check load text 
-              (next-test)
-              (unless (cond
-                        [(string? load-answer)
-                         (string=? load-answer received-load)]
-                        [(regexp? load-answer)
-                         (regexp-match load-answer received-load)]
-                        [else #f])
-                (failure)
-                (printf "FAILED load test for ~s\n  expected: ~s\n       got: ~s\n"
-                        program load-answer received-load))))
+                   ;; record current text position, then stuff a CR into the REPL
+                   (let ([load-text-start (+ 1 (send interactions-text last-position))])
+                     
+                     (test:keystroke #\return)
+                     
+                     (when breaking-test?
+                       (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
+                     (wait-for-execute)
+                     
+                     (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
+                            [received-load 
+                             (fetch-output drscheme-frame load-text-start load-text-end)])
+                       
+                       ;; check load text 
+                       (next-test)
+                       (unless (cond
+                                [(string? load-answer)
+                                 (string=? load-answer received-load)]
+                                [(regexp? load-answer)
+                                 (regexp-match load-answer received-load)]
+                                [else #f])
+                         (failure)
+                         (printf "FAILED load test for ~s\n  expected: ~s\n       got: ~s\n"
+                                 program load-answer received-load)))))])
+            (load-test tmp-load-short-filename
+                       (make-load-answer #f))
+            (when (file-exists? tmp-load3-filename)
+              (delete-file tmp-load3-filename))
+            (copy-file tmp-load-filename tmp-load3-filename)
+            (load-test tmp-load3-short-filename
+                       (make-load-answer tmp-load3-short-filename)))
+                       
           
           (teardown)
           
@@ -1043,7 +1063,7 @@
           (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
     
     (define (run-test-in-language-level raw?)
-      (let ([level (list "PLT" (regexp "Graphical"))])
+      (let ([level (list "Pretty Big (includes MrEd and Advanced Student)")])
         (printf "running tests ~a debugging\n" (if raw? "without" "with"))
         (if raw?
             (begin
@@ -1188,8 +1208,8 @@
       (delete-file tmp-load-filename))
     (save-drscheme-window-as tmp-load-filename)
 
-    (run-test-in-language-level #f)
     (run-test-in-language-level #t)
+    (run-test-in-language-level #f)
     (kill-tests)
     (callcc-test)
     (top-interaction-test)

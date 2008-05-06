@@ -212,5 +212,5 @@
                     after-int-output))))))
   
   (define (run-test)
-    (set-language-level! '("(module ...)") #t)
+    (set-language-level! '("Module") #t)
     (for-each single-test tests)))

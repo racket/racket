@@ -788,6 +788,9 @@ int scheme_stx_has_more_certs(Scheme_Object *id, Scheme_Object *certs,
 
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i);
 
+struct Resolve_Prefix;
+void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i);
+
 XFORM_NONGCING Scheme_Object *scheme_phase_index_symbol(int src_phase_index);
 
 Scheme_Object *scheme_explode_syntax(Scheme_Object *stx, Scheme_Hash_Table *ht);

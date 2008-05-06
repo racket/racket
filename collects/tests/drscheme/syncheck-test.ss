@@ -183,7 +183,7 @@
                   ("))"    default-color))
                 (list '((7 8) (19 20))))
      (build-test "object%"
-                '(("object%" lexically-bound-variable)))
+                '(("object%" imported-syntax))) ; used to be lexically-bound-variable
      (build-test "unbound-id"
                 '(("unbound-id" error)))
      (build-test "(define bd 1) bd"
@@ -519,31 +519,31 @@
                   ("d"  constant)
                   (")"  default-color)))
      
-     (build-test "#!"
-                '(("#!" default-color)))
+     (build-test "#! /usr/bin/env"
+                '(("#! /usr/bin/env" default-color)))
      
-     (build-test "#!\n"
-                '(("#!\n" default-color)))
+     (build-test "#! /usr/bin/env\n"
+                '(("#! /usr/bin/env\n" default-color)))
      
-     (build-test "#!\n1"
-                '(("#!\n" default-color)
+     (build-test "#! /usr/bin/env\n1"
+                '(("#! /usr/bin/env\n" default-color)
                   ("1"    constant)))
      
-     (build-test "#!\n1\n1"
-                '(("#!\n" default-color)
+     (build-test "#! /usr/bin/env\n1\n1"
+                '(("#! /usr/bin/env\n" default-color)
                   ("1"    constant)
                   ("\n"   default-color)
                   ("1"    constant)))
      
-     (build-test "#!\n(lambda (x) x)"
-                 '(("#!\n("    default-color)
+     (build-test "#! /usr/bin/env\n(lambda (x) x)"
+                 '(("#! /usr/bin/env\n("    default-color)
                    ("lambda"  imported-syntax)
                    (" ("      default-color)
                    ("x"       lexically-bound-variable)
                    (") "      default-color)
                    ("x"       lexically-bound-variable)
                    (")"       default-color))
-                 (list '((12 13) (15 16))))
+                 (list '((25 26) (28 29))))
      
      (build-test "(module m mzscheme (lambda (x) x) (provide))"
                 '(("("             default-color)
@@ -577,7 +577,9 @@
                   ("set-s-a!"      lexically-bound-variable)
                   (")"             default-color))
                 (list '((10 18) (20 33))))
-     
+
+     ;; Graph input syntax no longer supported
+     #;
      (build-test "(define tordu3 '(a . #0=(b c d . #0#)))"
                 '(("("        default-color)
                   ("define"   imported-syntax)
@@ -603,7 +605,7 @@
                 '(("("       default-color)
                   ("class"   imported-syntax)
                   (" "       default-color)
-                  ("object%" lexically-bound-variable)
+                  ("object%" imported-syntax) ; was lexically-bound-variable
                   (" "       default-color)
                   ("this"    imported)
                   (")"       default-color)))
@@ -811,7 +813,8 @@
                    ("sv" lexically-bound)
                    (" #f #f #f #f))))\n\n#reader'reader\n1\n" default-color))
                  
-                 (list '((77 79) (210 212))
+                 (list '((15 23) (25 32) (58 62) (65 71) (84 104) (106 117) (122 139) (147 157) (205 209))
+                       '((77 79) (210 212))
                        '((73 76) (41 44))))
      
      (make-dir-test "(module m mzscheme (require \"~a/list.ss\") foldl foldl)"
@@ -854,7 +857,7 @@
         [(dir-test? test)
          (type-in-definitions drs (format input (path->string relative)))]
         [else (type-in-definitions drs input)])
-      (test:button-push (send drs syncheck:get-button))
+      (test:run-one (lambda () (send (send drs syncheck:get-button) command)))
       (wait-for-computation drs)
       
       ;; this isn't right -- seems like there is a race condition because

@@ -28,8 +28,9 @@
       (let ([new (make-empty-namespace)]
             [old (variable-reference->empty-namespace (#%variable-reference reflect-var))])
         (namespace-attach-module old 'mzscheme new)
-        (parameterize ([current-namespace new])
-          (namespace-require/copy 'mzscheme))
+        (unless (eq? flag 'empty)
+          (parameterize ([current-namespace new])
+            (namespace-require/copy 'mzscheme)))
         new)]))
 
   (define (free-identifier=?* a b)

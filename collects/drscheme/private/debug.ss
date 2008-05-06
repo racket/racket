@@ -207,7 +207,7 @@ profile todo:
     (define (make-debug-eval-handler oe)
       (let ([debug-tool-eval-handler
              (λ (orig-exp)
-               (if (compiled-expression? (if (syntax? orig-exp)  
+                (if (compiled-expression? (if (syntax? orig-exp)  
                                              (syntax-e orig-exp)  
                                              orig-exp))
                    (oe orig-exp)
@@ -298,18 +298,17 @@ profile todo:
           
           (highlight-errors srcs-to-display cms))))
     
-    ;; display-srcloc-in-error : src-loc -> void
+    ;; display-srcloc-in-error : text% -> src-loc -> void
     ;; prints out the src location information for src-to-display
     ;; as it would appear in an error message
     (define (display-srcloc-in-error src-to-display)
       (let* ([raw-src (srcloc-source src-to-display)]
-             [src (if (and (is-a? raw-src editor<%>)
-                           (not (is-a? raw-src drscheme:unit:definitions-text<%>)))
-                      (let* ([b (box #f)]
-                             [fn (send raw-src get-filename b)])
-                        (and (not (unbox b))
-                             fn))
-                      raw-src)])
+             [src (let ([defns-text (let ([rep (drscheme:rep:current-rep)])
+                                      (and (is-a? rep drscheme:rep:text<%>)
+                                           (send rep get-definitions-text)))])
+                    (and (not (and defns-text
+                                   (send defns-text port-name-matches? raw-src)))
+                         raw-src))])
 
         (when (and (path? src) file-note%)
           (when (port-writes-special? (current-error-port))

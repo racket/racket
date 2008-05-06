@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label mrlib/name-message))
+          (for-label mrlib/switchable-button))
 
 @title{Switchable Button}
 
@@ -30,5 +30,10 @@ If it is not supplied, both modes show the same bitmap.
 @defmethod[(set-label-visible [visible? boolean?]) void?]{
   Sets the visibility of the string part of the label.
 }
+
+@defmethod[(command) void?]{
+
+Calls the button's callback function.}
+
 }
 

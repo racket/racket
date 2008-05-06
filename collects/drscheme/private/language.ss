@@ -1140,9 +1140,10 @@
     (λ () 
       (let ([s (reader (object-name port) port)])
         (if (syntax? s)
-            (with-syntax ([s s]
-                          [t (namespace-syntax-introduce (datum->syntax #f '#%top-interaction))])
-              (syntax (t . s)))
+            (namespace-syntax-introduce
+             (datum->syntax 
+              #f 
+              (cons '#%top-interaction s)))
             s))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

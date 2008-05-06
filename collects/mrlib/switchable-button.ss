@@ -96,6 +96,10 @@
          (refresh)]
         [(send evt moving?)
          (update-in evt)]))
+
+    (define/public (command)
+      (callback this)
+      (void))
     
     (define float-window #f)
     (inherit get-width get-height)
@@ -234,7 +238,7 @@
         (min-width (+ w w-circle-space margin margin))
         (min-height (+ h h-circle-space margin margin))))
     
-    (super-new [style '(transparent)])
+    (super-new [style '(transparent no-focus)])
     (send (get-dc) set-smoothing 'aligned)
     
     (inherit stretchable-width stretchable-height)

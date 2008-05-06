@@ -1731,6 +1731,17 @@ Scheme_Object *scheme_add_rename(Scheme_Object *o, Scheme_Object *rename)
   return (Scheme_Object *)stx;
 }
 
+void scheme_load_delayed_syntax(struct Resolve_Prefix *rp, long i)
+{
+  Scheme_Object *stx;
+  stx = scheme_load_delayed_code(SCHEME_INT_VAL(rp->stxes[i]),
+                                 rp->delay_info);
+  rp->stxes[i] = stx;
+  --rp->delay_refcount;
+  if (!rp->delay_refcount)
+    rp->delay_info = NULL;
+}
+
 Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)
 {
   Scheme_Object *rename;
@@ -1742,15 +1753,8 @@ Scheme_Object *scheme_delayed_rename(Scheme_Object **o, long i)
 
   rp = (Resolve_Prefix *)o[1];
 
-  if (SCHEME_INTP(rp->stxes[i])) {
-    Scheme_Object *stx;
-    stx = scheme_load_delayed_code(SCHEME_INT_VAL(rp->stxes[i]),
-                                   rp->delay_info);
-    rp->stxes[i] = stx;
-    --rp->delay_refcount;
-    if (!rp->delay_refcount)
-      rp->delay_info = NULL;
-  }
+  if (SCHEME_INTP(rp->stxes[i]))
+    scheme_load_delayed_syntax(rp, i);
 
   return scheme_add_rename(rp->stxes[i], rename);
 }

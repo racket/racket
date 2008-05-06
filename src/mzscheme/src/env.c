@@ -4797,7 +4797,7 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
         /* Need to foce this object, so we can write it.
            This should only happen if we're writing back 
            code loaded from bytecode. */
-        scheme_delayed_rename(rp->stxes, i);
+        scheme_load_delayed_syntax(rp, i);
       }
 
       ds = scheme_alloc_small_object();

@@ -166,7 +166,7 @@
      [(frame wait-for-finish?)
       (verify-drscheme-frame-frontmost 'do-execute frame)
       (let ([button (send frame get-execute-button)])
-	(fw:test:button-push button)
+	(fw:test:run-one (lambda () (send button command)))
 	(when wait-for-finish?
 	  (wait-for-computation frame)))]))
   
