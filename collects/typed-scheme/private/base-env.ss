@@ -137,6 +137,9 @@
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
+     [remove* (-poly (a b)
+                     (cl-> [((-lst a) (-lst a)) (-lst a)]
+                           [((-lst a) (-lst b) (a b . -> . B)) (-lst b)]))]
      
      [call-with-values (-poly (a b) (-> (-> a) (-> a b) b))]
      
@@ -188,6 +191,7 @@
      [length (make-Poly '(a) (-> (make-lst (-v a)) -Integer))]
      [memq (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
      [memv (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
+     [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
      [member 
       (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
      
