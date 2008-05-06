@@ -129,7 +129,7 @@
     ;; FIXME - this should not be used
     #;
     [(Scope: sc) (fp "(Scope ~a)" sc)]
-    #;
+    
     [(B: idx) (fp "(B ~a)" idx)]      
     [(Syntax: t) (fp "(Syntax ~a)" t)]
     [(Instance: t) (fp "(Instance ~a)" t)]
