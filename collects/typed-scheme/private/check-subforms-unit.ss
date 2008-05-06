@@ -90,7 +90,7 @@
            (loop #'a)
            (loop #'b))]
         [_ (void)])))
-  expected)
+  (ret expected))
 
 ;; typecheck the expansion of a with-handlers form
 ;; syntax -> type
