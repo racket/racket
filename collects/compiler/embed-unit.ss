@@ -741,8 +741,7 @@
                                                                (bytes-append #"................." (path->bytes program-name))))
                                                             (mod-runtime-paths nc)))
                                                      runtimes))])
-                           rUnTiMe-paths)
-                        'equal)))))
+                           rUnTiMe-paths))))))
           ;; Copy module code:
           (for-each
            (lambda (nc)
