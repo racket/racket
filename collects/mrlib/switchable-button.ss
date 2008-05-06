@@ -8,6 +8,43 @@
 (define w-circle-space 6)
 (define h-circle-space 6)
 
+(define yellow-message%
+  (class canvas%
+    (init-field label)
+    
+    (define/override (on-paint)
+      (let ([dc (get-dc)])
+        (let ([pen (send dc get-pen)]
+              [brush (send dc get-brush)]
+              [font (send dc get-font)])
+          
+          (send dc set-pen "yellow" 1 'transparent)
+          (send dc set-brush "yellow" 'solid)
+          (let-values ([(cw ch) (get-client-size)])
+            (send dc draw-rectangle 0 0 cw ch)
+          
+            (send dc set-font small-control-font)
+            
+            (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
+              (send dc draw-text 
+                    label
+                    (- (/ cw 2) (/ tw 2))
+                    (- (/ ch 2) (/ th 2)))))
+          
+          (send dc set-pen pen)
+          (send dc set-brush brush)
+          (send dc set-font font))))
+        
+    (inherit stretchable-width stretchable-height
+             min-width min-height
+             get-client-size get-dc)
+    (super-new)
+    ;(stretchable-width #f)
+    ;(stretchable-height #f)
+    (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent label small-control-font)])
+      (min-width (floor (inexact->exact (+ tw 4))))
+      (min-height (floor (inexact->exact (+ th 4)))))))
+
 (define switchable-button%
   (class canvas%
     (init-field label 
@@ -27,7 +64,8 @@
     (define down? #f)
     (define in? #f)
     (define disabled? #f)
-    
+    (define with-label? #t)
+  
     (define/override (enable e?)
       (unless (equal? disabled? (not e?))
         (set! disabled? (not e?))
@@ -39,7 +77,8 @@
         [(send evt button-down? 'left)
          (set! down? #t)
          (set! in? #t)
-         (refresh)]
+         (refresh)
+         (update-float #t)]
         [(send evt button-up? 'left)
          (set! down? #f)
          (update-in evt)
@@ -49,12 +88,64 @@
            (callback this))]
         [(send evt entering?)
          (set! in? #t)
+         (update-float #t)
          (refresh)]
         [(send evt leaving?)
          (set! in? #f)
+         (update-float #f)
          (refresh)]
         [(send evt moving?)
          (update-in evt)]))
+    
+    (define float-window #f)
+    (inherit get-width get-height)
+    (define timer (new timer% 
+                       [just-once? #t] 
+                       [notify-callback
+                        (λ ()
+                          (unless with-label?
+                            (unless (equal? (send float-window is-shown?) in?)
+                              (send float-window show in?)))
+                          (set! timer-running? #f))]))
+    (define timer-running? #f)
+    
+    (define/private (update-float new-value?)
+      (cond
+        [with-label?
+         (when float-window
+           (send float-window show #f))]
+        [else
+         (unless (and float-window
+                      (equal? new-value? (send float-window is-shown?)))
+           (cond
+             [in?
+              (unless float-window
+                (set! float-window (new frame% 
+                                        [label ""]
+                                        [style '(no-caption float)]))
+                (new yellow-message% [parent float-window] [label label]))
+              
+              ;; position the floating window
+              (let loop ([window this]
+                         [x 0]
+                         [y 0])
+                (cond
+                  [(not window)
+                   (send float-window move
+                         (floor (+ x (get-width)))
+                         (floor (+ y (- (/ (get-height) 2)
+                                        (/ (send float-window get-height) 2)))))]
+                  [(is-a? window window<%>)
+                   (loop (send window get-parent)
+                         (+ x (send window get-x))
+                         (+ y (send window get-y)))]
+                  [else (loop (send window get-parent) x y)]))
+              (unless timer-running?
+                (set! timer-running? #t)
+                (send timer start 500 #t))]
+             [else
+              (when float-window
+                (send float-window show #f))]))]))
     
     (define/private (update-in evt)
       (let-values ([(cw ch) (get-client-size)])
@@ -63,9 +154,9 @@
                     (<= 0 (send evt get-y) ch))])
           (unless (equal? new-in? in?)
             (set! in? new-in?)
+            (update-float in?)
             (refresh)))))
     
-    (define with-label? #t)
     (define/override (on-paint)
       (let ([dc (get-dc)])
         (let-values ([(cw ch) (get-client-size)])
@@ -103,14 +194,6 @@
                (draw-the-bitmap (- (/ cw 2) (/ (send (if with-label? bitmap alternate-bitmap) get-width) 2))
                                 (- (/ ch 2) (/ (send (if with-label? bitmap alternate-bitmap) get-height) 2)))])
             
-            
-            #;
-            (when disabled?
-              (send dc set-alpha .5)
-              (send dc set-pen "white" 1 'transparent)
-              (send dc set-brush "white" 'solid)
-              (send dc draw-rectangle 0 0 cw ch))
-            
             (send dc set-pen pen)
             (send dc set-alpha alpha)
             (send dc set-brush brush)))))
@@ -131,6 +214,7 @@
       (unless (equal? with-label? h?)
         (set! with-label? h?)
         (update-sizes)
+        (update-float (and with-label? in?))
         (refresh)))
     
     (define/private (update-sizes)
@@ -180,7 +264,8 @@
 #;
 (begin
   (define f (new frame% [label ""]))
-  (define p (new horizontal-panel% [parent f] [alignment '(right top)]))
+  (define vp (new vertical-pane% [parent f]))
+  (define p (new horizontal-panel% [parent vp] [alignment '(right top)]))
   
   (define label "Run")
   (define bitmap (make-object bitmap% (build-path (collection-path "icons") "run.png") 'png/mask))
