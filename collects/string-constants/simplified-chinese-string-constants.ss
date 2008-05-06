@@ -726,8 +726,11 @@
   (show-interactions-menu-item-label "显示交互(&I)")
   (hide-interactions-menu-item-label "隐藏交互(&I)")
   (interactions-menu-item-help-string "显示/隐藏交互窗口")
-  (show-toolbar "显示工具栏(&T)")
-  (hide-toolbar "隐藏工具栏(&T)")
+  (toolbar "工具栏")
+  (toolbar-on-top "顶置工具栏")
+  (toolbar-on-left "左置工具栏")
+  (toolbar-on-right "右置工具栏")
+  (toolbar-hidden "隐藏工具栏")
   
   ;;; file menu
   (save-definitions-as "将定义另存为(&A)")
