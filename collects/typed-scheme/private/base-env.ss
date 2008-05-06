@@ -184,8 +184,8 @@
      [values  (make-Poly '(a) (-> (-v a) (-v a)))]
      [vector-ref 
       (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
-     [build-vector (-poly (a) (N (N . -> . a) . -> . (make-Vector a)))]
-     [build-list (-poly (a) (N (N . -> . a) . -> . (-lst a)))]
+     [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (make-Vector a)))]
+     [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]
      [reverse (make-Poly '(a) (-> (make-lst (-v a)) (make-lst (-v a))))]
      [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
      [length (make-Poly '(a) (-> (make-lst (-v a)) -Integer))]
@@ -246,7 +246,7 @@
      
      [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
      
-     [list-ref (-poly (a) ((-lst a) N . -> . a))]
+     [list-ref (-poly (a) ((-lst a) -Integer . -> . a))]
      [positive? (-> N B)]
      [negative? (-> N B)]
      [odd? (-> N B)]
@@ -257,9 +257,9 @@
      [call/cc (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
      [call/ec (-poly (a b) (((a . -> . (Un)) . -> . b) . -> . (*Un a b)))]
      
-     [quotient (N N . -> . N)]
-     [remainder (N N . -> . N)]
-     [quotient/remainder (N N . -> . (-values (list N N)))]
+     [quotient (-Integer -Integer . -> . -Integer)]
+     [remainder (-Integer -Integer . -> . -Integer)]
+     [quotient/remainder (-Integer -Integer . -> . (-values (list -Integer -Integer)))]
      
      ;; parameter stuff
      
@@ -293,8 +293,8 @@
      
      [number->string (N . -> . -String)]
      
-     [current-milliseconds (-> N)]
-     [modulo (N N . -> . N)]
+     [current-milliseconds (-> -Integer)]
+     [modulo (cl->* (-Integer -Integer . -> . -Integer))]
      
      ;; errors
      
@@ -313,7 +313,7 @@
      [list->vector (-poly (a) (-> (-lst a) (make-Vector a)))]
      [exact? (N . -> . B)]
      [inexact? (N . -> . B)]
-     [expt (N N . -> . N)]
+     [expt (cl->* (-Integer -Integer . -> . -Integer) (N N . -> . N))]
      [vector (-poly (a) (->* (list) a (make-Vector a)))]
      [real? (Univ . -> . B)]
      [real-part (N . -> . N)]
