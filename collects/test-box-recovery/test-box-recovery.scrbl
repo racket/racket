@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-label teachpack/htdp/testing))
+          (for-label lang/htdp-beginner))
 
 @title{Test Box Recovery Tool}
 
