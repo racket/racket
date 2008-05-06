@@ -1,5 +1,5 @@
-(require-for-syntax (lib "unit-compiletime.ss" "mzlib" "private")
-                    (lib "unit-syntax.ss" "mzlib" "private"))
+(require (for-syntax (lib "unit-compiletime.ss" "mzlib" "private")
+                     (lib "unit-syntax.ss" "mzlib" "private")))
 (require "test-harness.ss"
          (lib "unit-compiletime.ss" "mzlib" "private")
          (lib "unit-keywords.ss" "mzlib" "private")

@@ -1,8 +1,8 @@
-(require-for-syntax (lib "unit-compiletime.ss" "mzlib" "private")
-                    (lib "unit-syntax.ss" "mzlib" "private"))
+(require (for-syntax (lib "unit-compiletime.ss" "mzlib" "private")
+                     (lib "unit-syntax.ss" "mzlib" "private")))
 (require "test-harness.ss"
          ;unit
-         mzlib/unit)
+         scheme/unit)
 
 (define-syntax (lookup-sig-mac stx)
   (parameterize ((error-syntax stx))
@@ -1153,7 +1153,6 @@
 (test-syntax-error "struct: bad omission"
   (define-signature x ((struct n () x))))
 
-(require mzlib/plt-match)
 (let ()
   (define-signature sig ((struct s (x y))))
   (test 3
@@ -1182,21 +1181,21 @@
     (test #t (s? (make-s 1))))
 
   (let ((set-s-x! 1))
-    (define-signature sig ((struct s (x y) -setters)))
+    (define-signature sig ((struct s (x y))))
     (test 1
       (invoke-unit
        (compound-unit (import) (export)
                       (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
                             (() (unit (import sig) (export)
                                       set-s-x!) S))))))
-  (let ((s-x 1))
-    (define-signature sig ((struct s (x y) -selectors)))
+  (let ((make-s 1))
+    (define-signature sig ((struct s (x y) #:omit-constructor)))
     (test 1
       (invoke-unit
        (compound-unit (import) (export)
                       (link (((S : sig)) (unit (import) (export sig) (define-struct s (x y))))
                             (() (unit (import sig) (export)
-                                      s-x) S)))))))
+                                      make-s) S)))))))
 
 ;; Dependencies
 
