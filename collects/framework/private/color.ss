@@ -118,7 +118,7 @@ added get-regions
                         #t
                         (new token-tree%)
                         +inf.0
-                        0
+                        start
                         (new paren-tree% (matches pairs))))
 
     (define lexer-states (list (make-new-lexer-state 0 'end)))
@@ -181,7 +181,7 @@ added get-regions
             (loop (cdr regions) (list-ref region 1)))]
          [else
           (error 'reset-regions "expected a list of regions, got ~e" regions)]))
-      
+
       (set! lexer-states
             (let loop ([old lexer-states]
                        [new _regions])
@@ -195,6 +195,7 @@ added get-regions
                [else
                 (cons (make-new-lexer-state (caar new) (cadar new))
                       (loop null (cdr new)))]))))
+
     
     (define/public (get-regions) 
       (map (lambda (ls)
