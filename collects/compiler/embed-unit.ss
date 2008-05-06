@@ -703,7 +703,7 @@
             (write `(module runtime-path-table '#%kernel
                       (#%provide table)
                       (define-values (table)
-                        (make-immutable-hash-table
+                        (make-immutable-hash
                          (let-values ([(rUnTiMe-paths) ; this is a magic name for exe->distribution process
                                        ',(apply append
                                                 (map (lambda (nc)
