@@ -9,7 +9,7 @@
      void?
      `(let ([mred-name ((current-module-name-resolver) 'mred #f #f)]
             [orig-namespace (current-namespace)])
-        (parameterize ([current-namespace (make-namespace)])
+        (parameterize ([current-namespace (make-base-namespace)])
           (namespace-attach-module orig-namespace mred-name)
           (eval '(require (lib ,file "framework")))
           (with-handlers ([(lambda (x) #t)
@@ -38,8 +38,8 @@
    ;; these extra evals let me submit multiple, independent top-level
    ;; expressions in the newly created namespace.
    '(begin (eval '(require mzlib/unit))
-           (eval '(require-for-syntax mzscheme))
-           (eval '(require-for-syntax mzlib/unit-exptime))
+           (eval '(require (for-syntax scheme/base)))
+           (eval '(require (for-syntax scheme/unit-exptime)))
            (eval '(define-syntax (signature->symbols stx)
                     (syntax-case stx ()
                       [(_ sig)

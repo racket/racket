@@ -3,7 +3,7 @@
 
 (require (lib "mred-unit.ss" "mred")
          (lib "mred-sig.ss" "mred")
-         framework/unit
+         framework/framework-unit
          framework/private/sig
          (for-syntax scheme/base)
          scribble/srcdoc)
@@ -36,7 +36,7 @@
  (prefix editor: framework:editor-class^)
  (prefix pasteboard: framework:pasteboard-class^)
  (prefix text: framework:text-class^)
- (prefix color: framework:color-class^)
+ (prefix color: framework:color^)
  (prefix color-prefs: framework:color-prefs-class^)
  (prefix comment-box: framework:comment-box-class^)
  (prefix finder: framework:finder-class^)

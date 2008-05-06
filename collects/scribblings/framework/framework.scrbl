@@ -24,7 +24,7 @@ program on top of the @scheme[scheme/gui] library.
   This library provides all of the definitions and syntax
   described in this manual.
 }
-@item{@scheme[(require framework/sig)]
+@item{@scheme[(require framework/framework-sig)]
   
   This library provides the signature definitions:
   @scheme[framework^], and
@@ -36,7 +36,7 @@ program on top of the @scheme[scheme/gui] library.
   signature contains all of the classes defined in this
   manual.
 }
-@item{@scheme[(require framework/unit)]
+@item{@scheme[(require framework/framework-unit)]
 
   This library provides one
   @scheme[unit/sig]: @scheme[framework@]. It exports the signature
