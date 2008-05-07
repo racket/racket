@@ -40,8 +40,6 @@
              min-width min-height
              get-client-size get-dc)
     (super-new)
-    ;(stretchable-width #f)
-    ;(stretchable-height #f)
     (let-values ([(tw th _1 _2) (send (get-dc) get-text-extent label small-control-font)])
       (min-width (floor (inexact->exact (+ tw 4))))
       (min-height (floor (inexact->exact (+ th 4)))))))
@@ -136,12 +134,21 @@
               (send float-window reflow-container)
 
               ;; position the floating window
-	      (let-values ([(x y) (client->screen (floor (get-width))
+	      (let-values ([(dw dh) (get-display-size)]
+			   [(x y) (client->screen (floor (get-width))
 						  (floor
 						   (- (/ (get-height) 2)
                                                       (/ (send float-window get-height) 2))))]
                            [(dx dy) (get-display-left-top-inset)])
-		 (send float-window move (- x dx) (- y dy)))
+		(let ([rhs-x (- x dx)]
+		      [rhs-y (- y dy)])
+		  (cond
+		    [(< (+ rhs-x (send float-window get-width)) dw)
+		     (send float-window move rhs-x rhs-y)]
+		    [else
+		     (send float-window move
+			   (- rhs-x (send float-window get-width) (get-width))
+			   rhs-y)])))
               (unless timer-running?
                 (set! timer-running? #t)
                 (send timer start 500 #t))]
