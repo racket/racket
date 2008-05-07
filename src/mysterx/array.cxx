@@ -399,9 +399,10 @@ VARTYPE getSchemeVectorType(Scheme_Object *vec) {
 
   type = schemeValueToCOMType(SCHEME_VEC_ELS(vec)[0]);
   if (VT_VARIANT == type) return type;
-  for (i = 1; i < size; ++i)
+  for (i = 1; i < size; ++i) {
     if (type != schemeValueToCOMType(SCHEME_VEC_ELS(vec)[i]))
       return VT_VARIANT;
+  }
   return type;
 }
 
@@ -410,6 +411,7 @@ SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec, VARTYPE *vt) {
   SAFEARRAYBOUND *rayBounds;
   int numDims;
   int i;
+  VARTYPE _vt;
 
   if (SCHEME_VECTORP(vec) == FALSE)
     scheme_signal_error("Can't convert non-vector to SAFEARRAY");
@@ -419,9 +421,10 @@ SAFEARRAY *schemeVectorToSafeArray(Scheme_Object *vec, VARTYPE *vt) {
   if (numDims > MAXARRAYDIMS)
     scheme_signal_error("Too many array dimensions");
   rayBounds = (SAFEARRAYBOUND *)malloc(numDims * sizeof(SAFEARRAYBOUND));
-  for (i = 0; i < numDims; i++) rayBounds[i].lLbound = 0L;
+  for (i = 0; i < numDims; i++) { rayBounds[i].lLbound = 0L; }
   setArrayEltCounts(vec,rayBounds,numDims);
-  *vt = getSchemeVectorType(vec);
+  _vt = getSchemeVectorType(vec);
+  *vt = _vt;
   theArray = SafeArrayCreate(*vt,numDims,rayBounds);
   setArrayElts(vec,*vt,theArray,numDims);
   return theArray;
