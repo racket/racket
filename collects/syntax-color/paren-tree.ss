@@ -34,6 +34,15 @@
         (equal? (hash-table-get open-matches-table open #f)
                 close))
 
+      ;; The tree and invalid-tree splay trees map ranges of text to paren
+      ;; records whose type field is a symbol that indicates which type of
+      ;; (opening or closing) parenthesis begins the range being mapped.
+      ;; The length field indicates how many characters the actual parenthesis
+      ;; is.  In the special case that there is a region that is not preceeded
+      ;; with a parenthesis (that is, the region before the first parenthesis in
+      ;; a buffer), the type will be #f, and the length will be 0.
+      
+      (define-struct paren (type length))
       (define tree (new token-tree%))
       (define invalid-tree (new token-tree%))
       
@@ -51,7 +60,7 @@
                  (send first add-to-root-length (- pos first-end))
                  (insert-first! next (new token-tree%
                                           (length (- first-end pos))
-                                          (data (cons #f 0))))
+                                          (data (make-paren #f 0))))
                  (values first next)))))))
       
       ;; split-tree: natural-number -> void
@@ -63,7 +72,7 @@
           (set! tree l)
           (set! invalid-tree r)))
       
-      ;; merget-tree: natural-number -> void
+      ;; merge-tree: natural-number -> void
       ;; Makes the num-to-keep last positions that have been marked
       ;; invalid valid again.
       (define/public (merge-tree num-to-keep)
@@ -73,22 +82,25 @@
                                                          num-to-keep)))
                       ((data) (send good get-root-data)))
           (when (and data
-                     (not (or (is-open? (car data))
-                              (is-close? (car data)))))
+                     (not (or (is-open? (paren-type data))
+                              (is-close? (paren-type data)))))
             (add-token #f (send good get-root-length))
             (send good remove-root!))
           (insert-last! tree good)))
       
       
-      ;; add-token: symbol * natural-number ->
+      ;; add-token: (union #f symbol) * natural-number ->
       ;; Adds the token to the end of the valid part of the tree.
+      ;; If type is #f, then this is not a parenthesis token.  If it is a symbol, then
+      ;; it should be in one of the pairs in the matches field.
       (define/public (add-token type length)
         (reset-cache)
         (cond
           ((or (send tree is-empty?) (is-open? type) (is-close? type))
            ; Big performance increase using the -spec version.
            ;(insert-last! tree (new token-tree% (length length) (data (cons type length))))
-           (insert-last-spec! tree length (cons type length)))
+           (insert-last-spec! tree length 
+                              (make-paren type (if type length 0))))
           (else
            (send tree search-max!)
            (send tree add-to-root-length length))))
@@ -115,13 +127,13 @@
         (send tree search! pos)
         (cond
           ((and (not (send tree is-empty?))
-                (is-open? (car (send tree get-root-data)))
+                (is-open? (paren-type (send tree get-root-data)))
                 (= (send tree get-root-start-position) pos))
            (let ((end
                   (let/ec ret
                     (do-match-forward (node-right (send tree get-root))
                                       (send tree get-root-end-position)
-                                      (list (car (send tree get-root-data)))
+                                      (list (paren-type (send tree get-root-data)))
                                       ret)
                     #f)))
              (cond
@@ -131,7 +143,7 @@
                 (send tree search-max!)
                 (let ((end (send tree get-root-end-position)))
                   (send tree search! pos)
-                  (values pos (+ pos (cdr (send tree get-root-data))) end))))))
+                  (values pos (+ pos (paren-length (send tree get-root-data))) end))))))
           (else
            (values #f #f #f))))
       
@@ -147,7 +159,7 @@
       (define/public (match-backward pos)
         (define (not-found)
           (send tree search! pos)
-          (values (- pos (cdr (send tree get-root-data))) pos #t))
+          (values (- pos (paren-length (send tree get-root-data))) pos #t))
         (define already (hash-table-get back-cache pos 'todo))
         (cond
           [(not (eq? 'todo already)) (values already pos #f)]
@@ -156,8 +168,8 @@
            (let ([type (send tree get-root-data)])
              (cond
                [(and (not (send tree is-empty?))
-                     (is-close? (car type))
-                     (= (+ (cdr (send tree get-root-data))
+                     (is-close? (paren-type type))
+                     (= (+ (paren-length (send tree get-root-data))
                            (send tree get-root-start-position))
                         pos))
                 (let loop ()
@@ -166,16 +178,16 @@
                       [(= 0 p) (not-found)]
                       [else
                        (send tree search! (sub1 p))
-                       (let ([prev-type (car (send tree get-root-data))]
+                       (let ([prev-type (paren-type (send tree get-root-data))]
                              [prev-start-pos (send tree get-root-start-position)])
                          (cond
-                           [(and (is-open? prev-type) (matches? prev-type (car type)))
+                           [(and (is-open? prev-type) (matches? prev-type (paren-type type)))
                             (hash-table-put! back-cache pos prev-start-pos)
                             (values prev-start-pos pos #f)]
                            [(is-close? prev-type)
                             (let-values ([(new-start new-end new-err)
                                           (match-backward (+ prev-start-pos 
-                                                             (cdr (send tree get-root-data))))])
+                                                             (paren-length (send tree get-root-data))))])
                               (cond
                                 [new-err
                                  (not-found)]
@@ -195,15 +207,15 @@
         (send tree search! (if (> pos 0) (sub1 pos) pos))
         (cond
           ((and (not (send tree is-empty?))
-                (is-close? (car (send tree get-root-data)))
-                (= (+ (cdr (send tree get-root-data))
+                (is-close? (paren-type (send tree get-root-data)))
+                (= (+ (paren-length (send tree get-root-data))
                       (send tree get-root-start-position))
                    pos))
            (let ((end
                   (let/ec ret
                     (do-match-backward (node-left (send tree get-root))
                                        0
-                                       (list (car (send tree get-root-data)))
+                                       (list (paren-type (send tree get-root-data)))
                                        ret)
                     #f)))
              (cond
@@ -211,7 +223,7 @@
                 (values end pos #f))
                (else
                 (send tree search! pos)
-                (values (- pos (cdr (send tree get-root-data))) pos #t)))))
+                (values (- pos (paren-length (send tree get-root-data))) pos #t)))))
           (else
            (values #f #f #f))))
       
@@ -223,7 +235,7 @@
         (let ((d (send tree get-root-data)))
           (and (= (send tree get-root-start-position) pos)
                d
-               (is-open? (car d)))))
+               (is-open? (paren-type d)))))
 
       ;; is-close-pos?: natural-number -> (union #f symbol)
       ;; if the position starts an close, return the corresponding open,
@@ -233,13 +245,13 @@
         (let ((d (send tree get-root-data)))
           (and (= (send tree get-root-start-position) pos)
                d
-               (is-close? (car d)))))
+               (is-close? (paren-type d)))))
       
       (define/private (do-match-forward node top-offset stack escape)
         (cond
           ((not node) stack)
           (else
-           (let* ((type (car (node-token-data node)))
+           (let* ((type (paren-type (node-token-data node)))
                   (left-stack (do-match-forward (node-left node) top-offset stack escape))
                   (new-stack
                    (cond
@@ -251,7 +263,7 @@
                   (start (+ top-offset (node-left-subtree-length node))))
              (cond
                ((null? new-stack)
-                (let ((loc (+ start (cdr (node-token-data node)))))
+                (let ((loc (+ start (paren-length (node-token-data node)))))
                   (escape loc)))
                (else
                 (do-match-forward (node-right node) (+ start (node-token-length node)) new-stack escape)))))))
@@ -261,7 +273,7 @@
         (cond
           ((not node) stack)
           (else
-           (let* ((type (car (node-token-data node)))
+           (let* ((type (paren-type (node-token-data node)))
                   (right-stack (do-match-backward (node-right node)
                                                   (+ top-offset (node-left-subtree-length node)
                                                      (node-token-length node))
@@ -283,9 +295,9 @@
         (let ((v null)
               (i null))
           (send tree for-each (lambda (a b c)
-                                (set! v (cons (list a b c) v))))
+                                (set! v (cons (list a b (cons (paren-type c) (paren-length c))) v))))
           (send invalid-tree for-each (lambda (a b c)
-                                        (set! i (cons (list a b c) i))))
+                                        (set! i (cons (list a b (cons (paren-type c) (paren-length c))) i))))
           (list (reverse v) (reverse i))))
         
       (super-instantiate ())
