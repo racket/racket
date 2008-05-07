@@ -77,6 +77,11 @@ generated from the original file's name:
 
 }
 
+If the definitions window is modified and there is no current file,
+then an autosave file is written to the user's ``documents''
+directory. @margin-note{The ``documents'' directory is determined by
+@scheme[(find-system-path 'doc-dir)].}
+
 @; ----------------------------------------
 
 @section{Preference Files}
