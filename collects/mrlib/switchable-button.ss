@@ -133,6 +133,8 @@
                                         [stretchable-height #f]))
                 (new yellow-message% [parent float-window] [label label]))
 
+              (send float-window reflow-container)
+
               ;; position the floating window
 	      (let-values ([(x y) (client->screen (floor (get-width))
 						  (floor
