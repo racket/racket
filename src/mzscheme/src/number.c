@@ -263,7 +263,7 @@ scheme_init_number (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("exact-positive-integer?", p, env);
 
-  p = scheme_make_folding_prim(fixnum_p, "fixnum?", 1, 1, 1);
+  p = scheme_make_noncm_prim(fixnum_p, "fixnum?", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("fixnum?", p, env);
 
