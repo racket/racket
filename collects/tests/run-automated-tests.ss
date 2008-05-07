@@ -43,7 +43,6 @@
 
 (for ([t tests])
   (define name (cadr t))
-  (define cust (make-custodian))
   (define (echo fmt . args)
     (fprintf (current-error-port) "*** ~a: ~a\n" name (apply format fmt args)))
   (newline (current-error-port))
@@ -61,13 +60,10 @@
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [uncaught-exception-handler
                      (lambda (exn) (abort 1 "error: ~a" (exn-message exn)))]
-                    [current-namespace (make-base-empty-namespace)]
-                    ;; [current-custodian cust] <- makes mzscheme tests stuck
-                    )
+                    [current-namespace (make-base-empty-namespace)])
       (for-each namespace-require (cddr t))
       ((case (car t) [(load) load] [(require) namespace-require])
        (build-path here name))
-      (echo "all tests passed.")))
-  (custodian-shutdown-all cust))
+      (echo "all tests passed."))))
 
 (exit exit-code)
