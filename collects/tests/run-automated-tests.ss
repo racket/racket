@@ -36,16 +36,15 @@
 
 (define-runtime-path here ".")
 
-(define (eprintf fmt . xs)
-  (apply fprintf (current-error-port) fmt xs))
-
 (define exit-code 0)
 
 (for ([t tests])
   (define name (cadr t))
+  (define stderr (current-error-port))
   (define (echo fmt . args)
-    (fprintf (current-error-port) "*** ~a: ~a\n" name (apply format fmt args)))
-  (newline (current-error-port))
+    (fprintf stderr "*** ~a: ~a\n" name (apply format fmt args)))
+  (define orig-exn-handler (uncaught-exception-handler))
+  (newline stderr)
   (echo "running...")
   (let/ec break
     (define (abort n fmt . xs)
@@ -59,7 +58,9 @@
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [uncaught-exception-handler
-                     (lambda (exn) (abort 1 "error: ~a" (exn-message exn)))]
+                     (lambda (exn)
+                       (when (eq? orig-exn-handler (uncaught-exception-handler))
+                         (abort 1 "error: ~a" (exn-message exn))))]
                     [current-namespace (make-base-empty-namespace)])
       (for-each namespace-require (cddr t))
       ((case (car t) [(load) load] [(require) namespace-require])
