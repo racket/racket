@@ -498,19 +498,19 @@
 	(make-ifS $3 $5 $7 (build-src 1) (build-src 7))])
       
       (WhileStatement
-       [(while O_PAREN Expression C_PAREN Statement)
+       [(while O_PAREN Expression C_PAREN Block)
         (make-while $3 $5 (build-src 5))])
       
       (WhileStatementNoShortIf
-       [(while O_PAREN Expression C_PAREN StatementNoShortIf)
+       [(while O_PAREN Expression C_PAREN Block #;StatementNoShortIf)
 	(make-while $3 $5 (build-src 5))])
       
       (DoStatement
-       [(do Statement while O_PAREN Expression C_PAREN SEMI_COLON)
+       [(do Block #;Statement while O_PAREN Expression C_PAREN SEMI_COLON)
 	(make-doS $2 $5 (build-src 7))])
       
       (ForStatement
-       [(for O_PAREN ForInit SEMI_COLON Expression SEMI_COLON ForUpdate C_PAREN Statement)
+       [(for O_PAREN ForInit SEMI_COLON Expression SEMI_COLON ForUpdate C_PAREN Block #;Statement)
 	(make-for $3 $5 $7 $9 (build-src 9))]
        #;[(for O_PAREN ForInit SEMI_COLON SEMI_COLON ForUpdate C_PAREN Statement)
 	(make-for $3 
@@ -521,7 +521,7 @@
 	
       
       (ForStatementNoShortIf
-       [(for O_PAREN ForInit SEMI_COLON Expression SEMI_COLON ForUpdate C_PAREN StatementNoShortIf)
+       [(for O_PAREN ForInit SEMI_COLON Expression SEMI_COLON ForUpdate C_PAREN Block #;StatementNoShortIf)
 	(make-for $3 $5 $7 $9 (build-src 9))]
        [(for O_PAREN ForInit SEMI_COLON SEMI_COLON ForUpdate C_PAREN StatementNoShortIf)
       	(make-for $3 (make-literal 'boolean #t (build-src 4 5)) 

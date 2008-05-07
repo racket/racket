@@ -12,3 +12,4 @@
               (string-constant experimental-languages)
               "ProfessorJ"
               "Beginner")))
+(define scribblings '(("scribblings/htdc.scrbl" (multi-page) (language -10.5))))
