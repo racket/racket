@@ -16,10 +16,11 @@
       (let ([dc (get-dc)])
         (let ([pen (send dc get-pen)]
               [brush (send dc get-brush)]
-              [font (send dc get-font)])
+              [font (send dc get-font)]
+              [yellow (make-object color% 255 255 200)])
           
-          (send dc set-pen "yellow" 1 'transparent)
-          (send dc set-brush "yellow" 'solid)
+          (send dc set-pen yellow 1 'transparent)
+          (send dc set-brush yellow 'solid)
           (let-values ([(cw ch) (get-client-size)])
             (send dc draw-rectangle 0 0 cw ch)
           
@@ -126,9 +127,11 @@
               (unless float-window
                 (set! float-window (new frame% 
                                         [label ""]
-                                        [style '(no-caption float)]))
+                                        [style '(no-caption float)]
+                                        [stretchable-width #f]
+                                        [stretchable-height #f]))
                 (new yellow-message% [parent float-window] [label label]))
-              
+
               ;; position the floating window
               (let loop ([window this]
                          [x 0]
