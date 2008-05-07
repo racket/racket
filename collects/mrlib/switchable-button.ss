@@ -8,6 +8,9 @@
 (define w-circle-space 6)
 (define h-circle-space 6)
 
+(define half-gray (make-object color% 127 127 127))
+(define one-fifth-gray (make-object color% 200 200 200))
+
 (define yellow-message%
   (class canvas%
     (init-field label)
@@ -173,22 +176,30 @@
                 [pen (send dc get-pen)]
                 [brush (send dc get-brush)])
             
-            (send dc set-alpha 
-                  (cond
-                    [disabled? 0]
-                    [in? (if down?
-                             .5
-                             .2)]
-                    [else 0]))
-            (send dc set-pen "black" 1 'transparent)
-            (send dc set-brush "black" 'solid)
-            (send dc draw-rounded-rectangle 
-                  margin
-                  margin 
-                  (max 0 (- cw margin margin))
-                  (max 0 (- ch margin margin)))
-            (send dc set-alpha alpha)
-	    (send dc set-font normal-control-font)
+            ;; Draw background. Use alpha blending if it can work,
+            ;;  otherwise fall back to a suitable color.
+            (let ([color (cond
+                          [disabled? #f]
+                          [in? (if (eq? (send dc get-smoothing) 'aligned)
+                                   (if down? 0.5 0.2)
+                                   (if down?
+                                       half-gray
+                                       one-fifth-gray))]
+                          [else #f])])
+              (when color
+                (send dc set-pen "black" 1 'transparent)
+                (send dc set-brush (if (number? color) "black" color) 'solid)
+                (when (number? color)
+                  (send dc set-alpha color))
+                (send dc draw-rounded-rectangle 
+                      margin
+                      margin 
+                      (max 0 (- cw margin margin))
+                      (max 0 (- ch margin margin)))
+                (when (number? color)
+                  (send dc set-alpha alpha))))
+            
+            (send dc set-font normal-control-font)
             
             (when disabled?
               (send dc set-alpha .5))
