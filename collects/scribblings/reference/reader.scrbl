@@ -364,11 +364,11 @@ then when then reader encounters @litchar["{"] and @litchar["}"], the
 @exnraise{exn:fail:read}.
 
 If the @scheme[read-accept-dot] @tech{parameter} is set to
-@scheme[#f], then a delimited @scheme{.} is not treated specially; it
-is instead parsed as a symbol. If the @scheme[read-accept-infix-dot]
-@tech{parameter} is set to @scheme[#f], then multiple delimited
-@litchar{.}s trigger a @scheme[exn:fail:read], instead of the infix
-conversion.
+@scheme[#f], then a delimited @litchar{.} triggers an
+@scheme[exn:fail:read] exception. If the
+@scheme[read-accept-infix-dot] @tech{parameter} is set to @scheme[#f],
+then multiple delimited @litchar{.}s trigger an @scheme[exn:fail:read]
+exception, instead of the infix conversion.
 
 @section[#:tag "parse-string"]{Reading Strings}
 

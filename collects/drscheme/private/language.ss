@@ -79,6 +79,7 @@
       get-module
       get-transformer-module
       use-namespace-require/copy?
+      use-namespace-require/copy-from-setting?
       config-panel
       
       get-reader
@@ -167,6 +168,8 @@
     (mixin (simple-module-based-language<%>) (module-based-language<%>)
       (define/public (get-transformer-module) 'mzscheme)
       (define/public (use-namespace-require/copy?) #f)
+      (define/public (use-namespace-require/copy-from-setting? setting)
+        (use-namespace-require/copy?))
       (define/public (use-mred-launcher) #t)
       
       (inherit get-module)
@@ -520,7 +523,7 @@
   ;; given a module-based-language, implements a language
   (define module-based-language->language-mixin
     (mixin (module-based-language<%>) (language<%>)
-      (inherit get-module get-transformer-module use-namespace-require/copy?
+      (inherit get-module get-transformer-module use-namespace-require/copy-from-setting?
                get-init-code use-mred-launcher get-reader)
       
       (define/pubment (capability-value s) 
@@ -539,7 +542,7 @@
       (define/public (get-style-delta) #f)
       (define/override (on-execute setting run-in-user-thread)
         (super on-execute setting run-in-user-thread)
-        (initialize-module-based-language (use-namespace-require/copy?)
+        (initialize-module-based-language (use-namespace-require/copy-from-setting? setting)
                                           (get-module)
                                           (get-transformer-module)
                                           run-in-user-thread))
@@ -554,7 +557,7 @@
                                                  (get-transformer-module)
                                                  (get-init-code setting)
                                                  (use-mred-launcher)
-                                                 (use-namespace-require/copy?)))
+                                                 (use-namespace-require/copy-from-setting? setting)))
       (define/public (extra-repl-information _1 _2) (void))
       (define/public (get-reader-module) #f)
       (define/public (get-metadata a b c) #f)
@@ -1125,12 +1128,9 @@
                         (λ (x)
                           (display (exn-message x))
                           (newline))])
-         (namespace-require module-spec)
-         ;; we always do a require to get the provide-for-syntax bindings
-         ;; if copy semantics is wanted, we do a copy next to clobber (some of)
-         ;; the bindings
-         (when use-copy?
-           (namespace-require/copy module-spec))
+         (if use-copy?
+             (namespace-require/copy module-spec)
+             (namespace-require module-spec))
          (when transformer-module-spec
            (namespace-require `(for-syntax ,transformer-module-spec)))))))
   

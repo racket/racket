@@ -3,6 +3,7 @@
   
   (require (only "string.ss" expr->string)
            (only "list.ss" sort)
+           scheme/mpair
 	   "etc.ss"
 	   "pconvert-prop.ss"
            "class.ss")
@@ -145,6 +146,10 @@
                     (unless (build-sub expr)
                       (build (car expr))
                       (build (cdr expr)))]
+                   [(mpair? expr)  
+                    (unless (build-sub expr)
+                      (build (mcar expr))
+                      (build (mcdr expr)))]
                    [(vector? expr) 
                     (unless (build-sub expr)
                       (for-each build (vector->list expr)))]
@@ -171,7 +176,8 @@
   (define print-convert-expr
     (lambda (csi expr unroll-once?)
       (letrec
-          ([share-hash (convert-share-info-share-hash csi)]
+          ([mpair-mode? (is-mpair-mode?)]
+           [share-hash (convert-share-info-share-hash csi)]
            [find-hash
             (lambda (expr)
               (hash-table-get share-hash expr (lambda () #f)))]
@@ -209,18 +215,23 @@
            [use-quasi-quote? (not (constructor-style-printing))]
            [use-read-syntax (quasi-read-style-printing)]
            [doesnt-contain-shared-conses
-            (lambda (input-expr)
-              (letrec ([doesnt-contain-shared-conses
-                        (lambda (expr)
-                          (cond
-                            [(and (pair? expr)
-                                  (shared? expr))
-                             #f]
-                            [(pair? expr)
-                             (doesnt-contain-shared-conses (cdr expr))]
-                            [else #t]))])
-                (let ([answer (doesnt-contain-shared-conses input-expr)])
-                  answer)))]
+            (lambda (expr)
+              (cond
+               [(and (pair? expr)
+                     (shared? expr))
+                #f]
+               [(pair? expr)
+                (doesnt-contain-shared-conses (cdr expr))]
+               [else #t]))]
+           [doesnt-contain-shared-mconses
+            (lambda (expr)
+              (cond
+               [(and (mpair? expr)
+                     (shared? expr))
+                #f]
+               [(mpair? expr)
+                (doesnt-contain-shared-mconses (mcdr expr))]
+               [else #t]))]
            [get-whole/frac
             (lambda (exact-num)
               (let ([split 
@@ -252,10 +263,8 @@
                                                          (zero? frac))))))))
                             (and (symbol? expr)
                                  (not (eq? expr 'quasiquote))
-                                 (not (eq? expr 'quote))
                                  (not (eq? expr 'unquote))
-                                 (not (eq? expr 'quote-syntax))
-                                 (not (eq? expr 'syntax)))
+                                 (not (eq? expr 'unquote-splicing)))
                             (char? expr)
                             (string? expr)
                             (not expr)
@@ -270,21 +279,12 @@
                       (lambda ()
                         (cond
                           [(null? expr) '()]
-                          [(and (pair? expr)
-                                (pair? (cdr expr))
-                                (null? (cddr expr))
-                                (or (eq? (car expr) 'quote)
-                                    (eq? expr 'quasiquote)
-                                    (eq? expr 'quote)
-                                    (eq? expr 'unquote)
-                                    (eq? expr 'quote-syntax)
-                                    (eq? expr 'syntax)))
-                           `(,(car expr) ,(recur (cadr expr)))]
-                          [(and (list? expr)
-                                (doesnt-contain-shared-conses expr))
-                           (map recur expr)]
                           [(pair? expr) 
                            (cons (recur (car expr)) (recur (cdr expr)))]
+                          [(and mpair-mode?
+                                (mpair? expr))
+                           ;; generate pairs, which will be converted back to mpairs later
+                           (cons (recur (mcar expr)) (recur (mcdr expr)))]
                           [(self-quoting? expr) expr]
                           [else `(,'unquote ,((print #f first-time) expr))]))]
                      
@@ -335,6 +335,21 @@
                                 (guard/quasiquote
                                  (lambda ()
                                    `(cons ,(recur (car expr)) ,(recur (cdr expr)))))]
+                               [(and mpair-mode?
+                                     (abbreviate-cons-as-list)
+                                     (mlist? expr)
+                                     (or (and first-time
+                                              (doesnt-contain-shared-mconses (mcdr expr)))
+                                         (doesnt-contain-shared-mconses expr)))
+                                (guard/quasiquote
+                                 (lambda ()
+                                   `(list ,@(map recur (mlist->list expr)))))]
+                               [(mpair? expr)
+                                (if mpair-mode?
+                                    (guard/quasiquote
+                                     (lambda ()
+                                       `(cons ,(recur (mcar expr)) ,(recur (mcdr expr)))))
+                                    `(mcons ,(recur (mcar expr)) ,(recur (mcdr expr))))]
                                [(weak-box? expr) `(make-weak-box ,(recur (weak-box-value expr)))]
                                [(box? expr) `(box ,(recur (unbox expr)))]
                                [(hash-table? expr) `(,(cond
@@ -448,6 +463,9 @@
                                 (quasi-style))
                             (constructor-style)))))))])
         ((print #f unroll-once?) expr))))
+
+  (define (is-mpair-mode?)
+    (not (print-mpair-curly-braces)))
   
   ;; type (improper-list a) = (union (cons (improper-list a) (improper-list a)) null a)
   ;; improper-map : (a -> b) -> (improper-list a) -> (improper-list b)

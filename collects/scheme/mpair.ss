@@ -96,9 +96,22 @@
 (define (mlist? l)
   (cond
    [(null? l) #t]
-   [(mpair? l) (mlist? (mcdr l))]
+   [(mpair? l)
+    (let loop ([turtle l][hare (mcdr l)])
+      (cond
+       [(null? hare) #t]
+       [(eq? hare turtle) #f]
+       [(mpair? hare)
+        (let ([hare (mcdr hare)])
+          (cond
+           [(null? hare) #t]
+           [(eq? hare turtle) #f]
+           [(mpair? hare)
+            (loop (mcdr turtle) (mcdr hare))]
+           [else #f]))]
+       [else #f]))]
    [else #f]))
-
+  
 (define (mlength l)
   (let loop ([l l][len 0])
     (cond

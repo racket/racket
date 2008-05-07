@@ -3625,8 +3625,7 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
 
   if (!quoted_ever && (i == 1) 
       && (readtable_effective_char(params->table, buf[0]) == '.') 
-      && !honu_mode
-      && params->can_read_dot) {
+      && !honu_mode) {
     long xl, xc, xp;
     scheme_tell_all(port, &xl, &xc, &xp);
     scheme_read_err(port, stxsrc, xl, xc, xp,

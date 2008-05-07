@@ -7748,7 +7748,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
   int is_kern, has_context, save_marshal_info = 0;
   Scheme_Object *nominal_modidx, *one_exn, *prnt_iname, *name, *rn, *ename = orig_ename;
   Scheme_Hash_Table *orig_onlys;
-  int k, skip_rename;
+  int k, skip_rename, do_copy_vars;
   
   if (mark_src) {
     /* Check whether there's context for this import (which
@@ -7824,11 +7824,17 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                                                to_phase,
                                                1);
 
+      if (copy_vars)
+        do_copy_vars = !orig_env->module && !orig_env->phase && SAME_OBJ(src_phase_index, scheme_make_integer(0)) && (k == -3);
+      else
+        do_copy_vars = 0;
+
       if (can_save_marshal
           && !exns
           && !prefix
           && !orig_ename
-          && (pt->num_provides || pt->reprovide_kernel)) {
+          && (pt->num_provides || pt->reprovide_kernel)
+          && !do_copy_vars) {
         /* Simple "import everything" whose mappings can be shared via the exporting module: */
         if (!pt->src_modidx)
           pt->src_modidx = me->src_modidx;
@@ -7919,9 +7925,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                data, cki, form, err_src, mark_src, to_phase, src_phase_index, pt->phase_index);
 
           if (!is_kern) {
-            if (copy_vars && (j < var_count) && !orig_env->module 
-                && SAME_OBJ(src_phase_index, scheme_make_integer(0))
-                && !orig_env->phase && !k) {
+            if (do_copy_vars && (j < var_count)) {
               Scheme_Env *menv;
               Scheme_Object *val;
               modidx = scheme_module_resolve(modidx, 1);
@@ -8440,7 +8444,7 @@ void parse_requires(Scheme_Object *form,
                          rn_set, post_ex_rn_set, NULL,
                          exns, onlys, prefix, iname, ename,
                          mark_src, 
-                         unpack_kern, copy_vars && start, 0, can_save_marshal,
+                         unpack_kern, copy_vars, 0, can_save_marshal,
                          all_simple,
                          ck, data,
                          form, err_src, i);

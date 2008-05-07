@@ -73,8 +73,8 @@ wxFrame::wxFrame // Constructor (for frame window)
  ) :
  wxbFrame (windowName, wxScreen::gScreenWindow,
 	   x, y, 
-	   (width < 30) ? 30 : width, 
-	   (height < 40) ? 40 : height, style)
+	   (cStyle & wxNO_CAPTION) ? width : ((width < 30) ? 30 : width), 
+	   (cStyle & wxNO_CAPTION) ? height : ((height < 40) ? 40 : height), style)
 {
   int X, Y, theMacX, theMacY, theMacWidth, theMacHeight;
   Rect theBoundsRect;

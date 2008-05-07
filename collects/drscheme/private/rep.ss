@@ -1052,6 +1052,9 @@ TODO
                         (equal? code #\return)
                         (equal? code #\newline)))
                (super on-local-char key)]
+              [(not prompt-position) 
+               ;; evaluating? just drop the keypress
+               (void)] 
               [(and (< end prompt-position)
                     (= start end)
                     (get-backward-sexp end))

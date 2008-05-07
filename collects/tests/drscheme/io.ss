@@ -185,7 +185,7 @@ add this test:
   
   (define drs-frame (wait-for-drscheme-frame))
   (define interactions-text (send drs-frame get-interactions-text))
-  (set-language-level! (list "PLT" (regexp "Textual")))
+  (set-language-level! (list "Pretty Big (includes MrEd and Advanced Student)"))
   
   (define (run-test)
     (output-err-port-checking) ;; must come first

@@ -218,9 +218,7 @@
 		(list read-accept-dot
 		      (list #t #f)
 		      '(let ([p (open-input-string "(1 . 2)")])
-			 (if (list? (read p))
-                             (error "ack")
-                             'ok))
+			 (read p))
 		      exn:fail?
 		      #f)
 		(list read-accept-quasiquote

@@ -6,6 +6,7 @@
            mzlib/contract
            mzlib/kw
            mzlib/string
+           mzlib/struct
            "drsig.ss"
            string-constants
            mred
@@ -1308,6 +1309,66 @@
                 [else `(expand ',res)]))))
         (super-instantiate ())))
     
+    (define-struct (simple-settings+assume drscheme:language:simple-settings) (no-redef?))
+    (define simple-settings+assume->vector (make-->vector simple-settings+assume))
+
+    (define (assume-mixin %)
+      (class %
+        (define/override (default-settings) 
+          (extend-simple-settings (super default-settings) #t))
+
+        (define/override (marshall-settings settings)
+          (simple-settings+assume->vector settings))
+
+        (define/override (unmarshall-settings printable)
+          (and (vector? printable)
+               (= (vector-length printable) 7)
+               (let ([base
+                      (super unmarshall-settings
+                             (list->vector
+                              (reverse
+                               (cdr (reverse (vector->list printable))))))])
+                 (and base
+                      (extend-simple-settings
+                       base
+                       (and (vector-ref printable 6) #t))))))
+
+        (define/override (config-panel parent)
+          (let ([p (new vertical-panel% [parent parent])])
+            (let ([base-config (super config-panel p)]
+                  [assume-cb (new check-box%
+                                  [parent 
+                                   (new group-box-panel%
+                                        [parent p]
+                                        [label "Initial Bindings"]
+                                        [stretchable-height #f]
+                                        [stretchable-width #f])]
+                                  [label "Assume initial bindings never change"])])
+              (case-lambda
+               [() (extend-simple-settings (base-config)
+                                           (send assume-cb get-value))]
+               [(c)
+                (base-config c)
+                (send assume-cb set-value (simple-settings+assume-no-redef? c))]))))
+
+        (define/override (default-settings? x)
+          (equal? (simple-settings+assume->vector x)
+                  (simple-settings+assume->vector (default-settings))))
+
+        (define/private (extend-simple-settings s no-redef?)
+          (make-simple-settings+assume (drscheme:language:simple-settings-case-sensitive s)
+                                       (drscheme:language:simple-settings-printing-style s)
+                                       (drscheme:language:simple-settings-fraction-style s)
+                                       (drscheme:language:simple-settings-show-sharing s)
+                                       (drscheme:language:simple-settings-insert-newlines s)
+                                       (drscheme:language:simple-settings-annotations s)
+                                       no-redef?))
+
+        (define/override (use-namespace-require/copy-from-setting? s)
+          (not (simple-settings+assume-no-redef? s)))
+
+        (super-new)))
+
     (define (r5rs-mixin %)
       (class %
         (define/override (on-execute setting run-in-user-thread)
@@ -1317,12 +1378,13 @@
              (read-square-bracket-as-paren #f)
              (read-curly-brace-as-paren #f)
              (read-accept-infix-dot #f)
-             (print-pair-curly-braces #t)
              (print-mpair-curly-braces #f)
              (print-vector-length #f))))
         (define/override (get-transformer-module) #f)
+
         (define/override (default-settings) 
-          (drscheme:language:make-simple-settings #f 'write 'mixed-fraction-e #f #t 'debug))
+          (make-simple-settings+assume #f 'write 'mixed-fraction-e #f #t 'debug #t))
+
         (define/override (order-manuals x)
           (values 
            (list #"r5rs" #"drscheme" #"tour" #"help")
@@ -1344,8 +1406,8 @@
                 (λ (%)
                   (class* % (drscheme:language:language<%>)
                     (define/override (get-one-line-summary) one-line-summary)
-                    (define/override (use-namespace-require/copy?) #t)
-                    (inherit get-module get-transformer-module get-init-code)
+                    (inherit get-module get-transformer-module get-init-code
+                             use-namespace-require/copy-from-setting?)
                     (define/augment (capability-value key)
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
@@ -1369,7 +1431,7 @@
                            (get-transformer-module)
                            (get-init-code setting)
                            mred-launcher?
-                           (use-namespace-require/copy?)))))
+                           (use-namespace-require/copy-from-setting? setting)))))
                     (super-new))))]
              [make-simple
               (λ (module id position numbers mred-launcher? one-line-summary extra-mixin)
@@ -1393,7 +1455,7 @@
                       (list -1000 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
-                      (λ (x) x)))
+                      assume-mixin))
         (add-language
          (make-simple '(lib "r5rs/lang.ss")
                       "plt:r5rs"
@@ -1402,7 +1464,7 @@
                       (list -1000 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
-                      r5rs-mixin))
+                      (lambda (%) (r5rs-mixin (assume-mixin %)))))
         
         (add-language
          (make-simple 'mzscheme

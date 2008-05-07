@@ -2,6 +2,14 @@
         Version 4.0
 ------------------------------
 
+  . renamed "(module ...)" language to "Module"
+
+  . dropped "MzScheme" and "MrEd" as seperate languages;
+    try `#lang scheme/load' with the "Module" language
+
+  . changed the "Pretty Big" and "R5RS" to assume by default
+    that pre-defined names will not be redefined
+
   . renamed the get-special-menu method to get-insert-menu
 
   . drscheme:debug:show-backtrace-window

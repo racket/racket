@@ -86,6 +86,13 @@ used; e.g., the pair containing @scheme[1] and @scheme[2] is
 represented as @scheme[`(1 . 2)]. The initial value of the parameter
 is @scheme[#f].
 
+The constructor used for mutable pairs is @schemeidfont{mcons}, unless
+@scheme[print-mpair-curly-braces] is set to @scheme[#f], in which case
+@schemeidfont{cons} and @schemeidfont{list} are used. Similarly, when
+using @scheme[quasiquote] style and @scheme[print-mpair-curly-braces]
+is set to @scheme[#f], mutable pair constructions are represented
+using @schemeidfont{quote}, @schemeidfont{quasiquote}, etc.
+
 See also @scheme[quasi-read-style-printing] and
 @scheme[prop:print-convert-constructor-name].}
 

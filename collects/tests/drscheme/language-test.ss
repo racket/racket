@@ -41,6 +41,7 @@ the settings above should match r5rs
 ;; ; ;; ;;;;    ;;;    ;;; ;
   
 
+  #:
   (define (mred)
     (parameterize ([language (list "PLT" (regexp "Graphical"))])
       (check-top-of-repl)
@@ -61,7 +62,7 @@ the settings above should match r5rs
       
       (test-expression 'xml "(a () (b ()))")
 
-      (test-expression "(define-struct spider (legs))(make-spider 4)" "#<struct:spider>")
+      (test-expression "(define-struct spider (legs))(make-spider 4)" "#<spider>")
       
       (test-expression "(sqrt -1)" "0+1i")
 
@@ -75,7 +76,7 @@ the settings above should match r5rs
       (test-expression "(define (f car) 1)" "")
       (test-expression "(define (f empty) 1)" "")
       
-      (test-expression "call/cc" "#<primitive:call-with-current-continuation>")
+      (test-expression "call/cc" "#<procedure:call-with-current-continuation>")
       
       (test-expression "(error 'a \"~a\" 1)" "{bug09.png} a: 1")
       (test-expression "(error \"a\" \"a\")" "{bug09.png} a \"a\"")
@@ -139,11 +140,9 @@ the settings above should match r5rs
 ;; ; ;; ;;;;;   ;;;    ;;;  ;;; ;;;  ;;;  ;; ; ;;  ;;;  
                                                         
                                                         
-                                                        
-
   
-  (define (mzscheme)
-    (parameterize ([language (list "PLT" (regexp "Textual"))])
+  (define (pretty-big)
+    (parameterize ([language (list "Pretty Big (includes MrEd and Advanced Student)")])
 
       (check-top-of-repl)
 
@@ -160,12 +159,12 @@ the settings above should match r5rs
                        "#f")
       (test-expression "(define x 1)(define x 2)" "")
       
-      (test-expression "(define-struct spider (legs))(make-spider 4)" "#<struct:spider>")
+      (test-expression "(define-struct spider (legs))(make-spider 4)" "#<spider>")
       
       (test-expression "(sqrt -1)" "0+1i")
 
-      (test-expression "class" "{bug09.png} reference to undefined identifier: class")
-      (test-expression "shared" "{bug09.png} reference to undefined identifier: shared")
+      (test-expression "class" (regexp "class: bad syntax in: class"))
+      (test-expression "shared" (regexp "shared: bad syntax in: shared"))
       
       (test-expression "(define (. x y) (* x y))" #rx"read: illegal use of \"\\.\"")
       (test-expression "'(1 . 2)" "(1 . 2)")
@@ -174,7 +173,7 @@ the settings above should match r5rs
       (test-expression "(define (f car) 1)" "")
       (test-expression "(define (f empty) 1)" "")
       
-      (test-expression "call/cc" "#<primitive:call-with-current-continuation>")
+      (test-expression "call/cc" "#<procedure:call-with-current-continuation>")
       
       (test-expression "(error 'a \"~a\" 1)" "{bug09.png} a: 1")
       (test-expression "(error \"a\" \"a\")" "{bug09.png} a \"a\"")
@@ -182,7 +181,7 @@ the settings above should match r5rs
       (test-expression "(time 1)" 
                        #rx"cpu time: [0-9]+ real time: [0-9]+ gc time: [0-9]+\n1")
       
-      (test-expression "true" "{bug09.png} reference to undefined identifier: true")
+      (test-expression "true" "#t")
       (test-expression "mred^" "{bug09.png} reference to undefined identifier: mred^")
       (test-expression "(eq? 'a 'A)" "#f")
       (test-expression "(set! x 1)" "{bug09.png} set!: cannot set undefined identifier: x")
@@ -193,9 +192,7 @@ the settings above should match r5rs
       (test-expression "'(1)" "(1)")
       (test-expression "(define shrd (box 1)) (list shrd shrd)"
                        "(#&1 #&1)")
-      (test-expression 
-       "(local ((define x x)) 1)"
-       #rx"define: not allowed in an expression context")
+      (test-expression "(local ((define x x)) 1)" "1")
       (test-expression "(letrec ([x x]) 1)" "1")
       (test-expression "(if 1 1 1)" "1")
       (test-expression "(+ 1)" "1")
@@ -221,7 +218,7 @@ the settings above should match r5rs
       (test-expression "(list 1)" "(1)")
       (test-expression "(car (list))" "{bug09.png} car: expects argument of type <pair>; given ()")
       
-      (test-expression "argv" "#0()")
+      (test-expression "(current-command-line-arguments)" "#()")
       (test-expression "(define-syntax app syntax-case)" "syntax-case: bad syntax in: syntax-case")))
 
   
@@ -324,7 +321,7 @@ the settings above should match r5rs
 
       (test-expression "(list 1)" "(1)")
       (test-expression "(car (list))"
-                       "{bug09.png} car: expects argument of type <pair>; given ()")
+                       "{bug09.png} mcar: expects argument of type <mutable-pair>; given ()")
 
       (test-expression "argv" "{bug09.png} reference to undefined identifier: argv")
       (test-expression "(define-syntax app syntax-case)" 
@@ -357,7 +354,7 @@ the settings above should match r5rs
       
       (prepare-for-test-expression)
 
-      (test-expression "'|.|" "'|.|")
+      (test-expression "'|.|" "'.")
       (test-expression '("(equal? (list " image ") (list " image "))") 
                        "true")
       
@@ -378,9 +375,8 @@ the settings above should match r5rs
                        "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: shared")
 
-      (test-expression "(define (. x y) (* x y))"
-                       "read: illegal use of \".\"")
-      (test-expression "'(1 . 2)" "read: illegal use of \".\"")
+      (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
+      (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
       
       (test-expression "call/cc"
                        "call/cc: name is not defined, not a parameter, and not a primitive name"
@@ -450,7 +446,9 @@ the settings above should match r5rs
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: argv")
-      (test-expression "(define-syntax app syntax-case)" "")))
+      (test-expression "(define-syntax app syntax-case)"
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name"
+                       "reference to an identifier before its definition: define-syntax")))
   
 
                                                                
@@ -483,7 +481,7 @@ the settings above should match r5rs
       
       (prepare-for-test-expression)
       
-      (test-expression "'|.|" "'|.|")      
+      (test-expression "'|.|" "'.")      
       (test-expression '("(equal? (list " image ") (list " image "))") 
                        "true")
       
@@ -504,8 +502,8 @@ the settings above should match r5rs
                        "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: shared")
 
-      (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
-      (test-expression "'(1 . 2)" "read: illegal use of \".\"")
+      (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
+      (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
       
       (test-expression "call/cc"
                        "call/cc: name is not defined, not a parameter, and not a primitive name"
@@ -576,7 +574,8 @@ the settings above should match r5rs
                        "reference to an identifier before its definition: argv")
       
       (test-expression "(define-syntax app syntax-case)" 
-                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name"
+                       "reference to an identifier before its definition: define-syntax")))
 
 
                                                                                     
@@ -607,7 +606,7 @@ the settings above should match r5rs
       
       (prepare-for-test-expression)
       
-      (test-expression "'|.|" "'|.|")
+      (test-expression "'|.|" "'.")
       (test-expression '("(equal? (list " image ") (list " image "))") 
                        "true")
       
@@ -628,8 +627,8 @@ the settings above should match r5rs
                        "shared: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: shared")
       
-      (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
-      (test-expression "'(1 . 2)" "read: illegal use of \".\"")
+      (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
+      (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
       
       (test-expression "call/cc"
                        "call/cc: name is not defined, not a parameter, and not a primitive name"
@@ -690,8 +689,10 @@ the settings above should match r5rs
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: argv")
+      
       (test-expression "(define-syntax app syntax-case)" 
-                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name"
+                       "reference to an identifier before its definition: define-syntax")))
 
 
                                                                       
@@ -723,7 +724,7 @@ the settings above should match r5rs
       
       (prepare-for-test-expression)
       
-      (test-expression "'|.|" "'|.|")
+      (test-expression "'|.|" "'.")
       (test-expression '("(equal? (list " image ") (list " image "))") 
                        "true")
       (test-expression "(define x 1)(define x 2)"
@@ -805,8 +806,10 @@ the settings above should match r5rs
       (test-expression "argv" 
                        "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: argv")
+      
       (test-expression "(define-syntax app syntax-case)" 
-                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name"
+                       "reference to an identifier before its definition: define-syntax")))
   
 
                                                         
@@ -837,7 +840,7 @@ the settings above should match r5rs
       
       (prepare-for-test-expression)
       
-      (test-expression "'|.|" "'|.|")
+      (test-expression "'|.|" "'.")
       (test-expression '("(equal? (list " image ") (list " image "))") 
                        "true")
       (test-expression "(define x 1)(define x 2)"
@@ -856,8 +859,8 @@ the settings above should match r5rs
 
       (test-expression "shared" "shared: found a use of `shared' that does not follow an open parenthesis")
       
-      (test-expression "(define (. x y) (* x y))" "read: illegal use of \".\"")
-      (test-expression "'(1 . 2)" "read: illegal use of \".\"")
+      (test-expression "(define (. x y) (* x y))"  "read: illegal use of \".\"")
+      (test-expression "'(1 . 2)"  "read: illegal use of \".\"")
       
       (test-expression "call/cc" 
                        "call/cc: name is not defined, not a parameter, and not a primitive name"
@@ -918,8 +921,10 @@ the settings above should match r5rs
       (test-expression "argv"
                        "argv: name is not defined, not a parameter, and not a primitive name"
                        "reference to an identifier before its definition: argv")
+      
       (test-expression "(define-syntax app syntax-case)" 
-                       "define-syntax: name is not defined, not a parameter, and not a primitive name")))
+                       "define-syntax: name is not defined, not a parameter, and not a primitive name"
+                       "reference to an identifier before its definition: define-syntax")))
 
                                                  
                                                  
@@ -982,6 +987,8 @@ the settings above should match r5rs
   (define (check-top-of-repl)
     (let ([drs (wait-for-drscheme-frame)])
       (set-language #t)
+      (with-handlers ([exn:fail? void])
+        (fw:test:menu-select "Testing" "Disable tests"))
       (do-execute drs)
       (let* ([interactions (send drs get-interactions-text)]
              [short-lang (car (last-pair (language)))]
@@ -991,13 +998,16 @@ the settings above should match r5rs
              [line0-expect (format "Welcome to DrScheme, version ~a [3m]." (version:version))]
              [line1-expect 
               (if (string? short-lang)
-                  (format "Language: ~a." short-lang)
+                  (format "Language: ~a" short-lang)
                   short-lang)]
              [line0-got (get-line 0)]
              [line1-got (get-line 1)])
         (unless (and (string=? line0-expect line0-got)
                      (if (string? short-lang)
-                         (string=? line1-expect line1-got)
+                         (string=? line1-expect (substring line1-got
+                                                           0
+                                                           (min (string-length line1-expect)
+                                                                (string-length line1-got))))
                          (regexp-match line1-expect line1-got)))
           (printf "expected lines: ~n  ~a~n  ~a~ngot lines:~n  ~a~n  ~a~n" 
                   line0-expect line1-expect
@@ -1166,12 +1176,12 @@ the settings above should match r5rs
                  (cond
                    [(eq? item 'image)
                     (use-get/put-dialog 
-                     (lambda () (fw:test:menu-select "Special" "Insert Image..."))
-                     (simplify-path (build-path (collection-path "icons") "recycle.gif")))]
+                     (lambda () (fw:test:menu-select "Insert" "Insert Image..."))
+                     (simplify-path (build-path (collection-path "icons") "recycle.png")))]
                    [(string? item)
                     (type-in-definitions drs item)]
                    [(eq? item 'xml)
-                    (fw:test:menu-select "Special" "Insert XML Box")
+                    (fw:test:menu-select "Insert" "Insert XML Box")
                     (for-each fw:test:keystroke (string->list "<a><b>"))]
                    [else (error 'handle-insertion "unknown thing to insert ~s" item)]))]
               [check-expectation
@@ -1246,11 +1256,11 @@ the settings above should match r5rs
                       (printf ">> finished ~a\n" (syntax-object->datum #'arg))))]))
   
   (define (run-test)
-    (go mred)
-    (go mzscheme)
+    ;; (go mred)
+    (go r5rs)
+    (go pretty-big)
     (go beginner)
     (go beginner/abbrev)
     (go intermediate)
     (go intermediate/lambda)
-    (go advanced)
-    (go r5rs)))
+    (go advanced)))

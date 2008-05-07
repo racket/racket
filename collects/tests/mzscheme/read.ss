@@ -1003,9 +1003,12 @@
 
 (parameterize ([current-readtable (make-readtable (current-readtable) #\. #\a #f)])
   (test '|.| read (open-input-string ".")))
+(parameterize ([current-readtable (make-readtable (current-readtable) #\. #\a #f)]
+               [read-accept-dot #f])
+  (test '|.| read (open-input-string ".")))
 (parameterize ([read-accept-dot #f]
                [current-readtable (make-readtable (current-readtable) #\w #\. #f)])
-  (test '|w| read (open-input-string "w")))
+  (err/rt-test (read (open-input-string "w")) exn:fail:read?))
 (parameterize ([current-readtable (make-readtable (current-readtable) #\w #\. #f)])
   (err/rt-test (read (open-input-string "w")) exn:fail:read?))
 
