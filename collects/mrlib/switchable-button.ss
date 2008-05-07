@@ -139,8 +139,9 @@
 	      (let-values ([(x y) (client->screen (floor (get-width))
 						  (floor
 						   (- (/ (get-height) 2)
-                                                      (/ (send float-window get-height) 2))))])
-		 (send float-window move x y))
+                                                      (/ (send float-window get-height) 2))))]
+                           [(dx dy) (get-display-left-top-inset)])
+		 (send float-window move (- x dx) (- y dy)))
               (unless timer-running?
                 (set! timer-running? #t)
                 (send timer start 500 #t))]
