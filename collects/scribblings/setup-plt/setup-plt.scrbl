@@ -231,6 +231,9 @@ Optional @filepath{info.ss} fields trigger additional actions by
      @item{@scheme['legacy] : Documentation for deprecated libraries,
            languages, and tools.}
 
+     @item{@scheme['experimental] : Documentation for an experimental
+           language or library.}
+
      @item{@scheme['other] : Other documentation.}
 
      @item{@scheme['omit] : Documentation that should not be listed on

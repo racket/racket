@@ -40,6 +40,8 @@
                   "Interoperability")
         (make-sec 'library
                   "Miscellaneous Libraries")
+        (make-sec 'experimental
+                  "Experimental Languages and Libraries")
         (make-sec 'legacy
                   "Legacy Languages and Libraries")
         (make-sec 'other
