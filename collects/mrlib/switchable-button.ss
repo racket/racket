@@ -60,7 +60,8 @@
           disable-bitmap
           (make-dull-mask alternate-bitmap)))
     
-    (inherit get-dc min-width min-height get-client-size refresh)
+    (inherit get-dc min-width min-height get-client-size refresh
+	     client->screen)
     
     (define down? #f)
     (define in? #f)
@@ -127,26 +128,17 @@
               (unless float-window
                 (set! float-window (new frame% 
                                         [label ""]
-                                        [style '(no-caption float)]
+                                        [style '(no-caption no-resize-border float)]
                                         [stretchable-width #f]
                                         [stretchable-height #f]))
                 (new yellow-message% [parent float-window] [label label]))
 
               ;; position the floating window
-              (let loop ([window this]
-                         [x 0]
-                         [y 0])
-                (cond
-                  [(not window)
-                   (send float-window move
-                         (floor (+ x (get-width)))
-                         (floor (+ y (- (/ (get-height) 2)
-                                        (/ (send float-window get-height) 2)))))]
-                  [(is-a? window window<%>)
-                   (loop (send window get-parent)
-                         (+ x (send window get-x))
-                         (+ y (send window get-y)))]
-                  [else (loop (send window get-parent) x y)]))
+	      (let-values ([(x y) (client->screen (floor (get-width))
+						  (floor
+						   (- (/ (get-height) 2)
+                                                      (/ (send float-window get-height) 2))))])
+		 (send float-window move x y))
               (unless timer-running?
                 (set! timer-running? #t)
                 (send timer start 500 #t))]
