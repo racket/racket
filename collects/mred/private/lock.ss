@@ -76,7 +76,8 @@
                  (set! old-break-paramz #f)
                  (semaphore-post monitor-sema)
                  (wx:in-atomic-region #f))))
-         lock-tag))]))
+         lock-tag
+         (lambda (t) (t))))]))
 
   (define (as-exit f)
     ;; (unless (eq? monitor-owner (current-thread)) (error 'monitor-exit "not in monitored area"))
