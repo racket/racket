@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:frame}}
+@(defmodule drscheme/tool-lib)
 
 @defclass[drscheme:frame:name-message% canvas% ()]{
 
@@ -31,7 +32,7 @@ hasn't been saved is shown.
 }}}
 
 
-@defmixin[drscheme:frame:mixin (drscheme:frame:<%>) ((domain . drscheme:frame:basics) (domain . frame:text-info) (domain . frame:editor))]{
+@defmixin[drscheme:frame:mixin (drscheme:frame:basics<%> frame:text-info<%> frame:editor<%>) (drscheme:frame:<%>)]{
 
 Provides an implementation of 
 @scheme[drscheme:frame:<%>] 
@@ -39,7 +40,7 @@ Provides an implementation of
 }
 
 
-@defmixin[drscheme:frame:basics-mixin (drscheme:frame:basics<%>) ((domain . frame:standard-menus))]{
+@defmixin[drscheme:frame:basics-mixin (frame:standard-menus<%>) (drscheme:frame:basics<%>)]{
 
 Use this mixin to establish some common menu items across various DrScheme windows.
 

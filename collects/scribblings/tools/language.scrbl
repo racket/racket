@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:language}}
+@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:language:simple-module-based-language<%> ()]{
 
@@ -131,7 +132,7 @@ returns the corresponding init arg.
 }}
 
 
-@defmixin[drscheme:language:simple-module-based-language->module-based-language-mixin (drscheme:language:module-based-language<%>) ((domain . drscheme:language:simple-module-based-language))]{
+@defmixin[drscheme:language:simple-module-based-language->module-based-language-mixin (drscheme:language:simple-module-based-language<%>) (drscheme:language:module-based-language<%>)]{
 
 \index{drscheme:language:simple-settings}
 \label{tools:simple-settings}
@@ -492,7 +493,7 @@ Defaultly returns @scheme[#f].
 }}}
 
 
-@defmixin[drscheme:language:module-based-language->language-mixin (drscheme:language:language<%>) ((domain . drscheme:language:module-based-language))]{
+@defmixin[drscheme:language:module-based-language->language-mixin (drscheme:language:module-based-language<%>) (drscheme:language:language<%>)]{
 
 
 

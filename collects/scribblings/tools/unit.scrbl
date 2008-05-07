@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:unit}}
+@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:unit:tab<%> (drscheme:rep:context<%>)]{
 
@@ -175,7 +176,7 @@ Clears any error highlighting.
 }}
 
 
-@defmixin[drscheme:unit:program-editor-mixin () ((domainc . text) (domain . editor:basic))]{
+@defmixin[drscheme:unit:program-editor-mixin (text% editor:basic<%>) ()]{
 
 This mixes in the ability to reset the highlighting for
 error message when the user modifies the buffer. Use it for
@@ -220,7 +221,7 @@ Passes all arguments to @scheme[super-init].
 }}
 
 
-@defclass[drscheme:unit:frame% (drscheme:frame:mixin drscheme:frame:basics-mixin drscheme:unit:frame<%>) ()]{
+@defclass[drscheme:unit:frame% (drscheme:frame:basics-mixin (drscheme:frame:mixin frame:searchable%)) (drscheme:unit:frame<%>)]{
 
 This frame inserts the Scheme and Language menus into the menu bar as it is initialized.
 
@@ -688,7 +689,7 @@ Note that the capability must be registered separately, via
 }}
 
 
-@defclass[drscheme:unit:definitions-text% (scheme:text-mixin drscheme:unit:program-editor-mixin drscheme:rep:drs-bindings-keymap-mixin drscheme:unit:definitions-text<%>) ()]{
+@defclass[drscheme:unit:definitions-text% (drscheme:rep:drs-bindings-keymap-mixin (drscheme:unit:program-editor-mixin (scheme:text-mixin text:info%))) (drscheme:unit:definitions-text<%>)]{
 
 
 

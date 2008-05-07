@@ -18,4 +18,13 @@ all of the names in the tools library, for use defining keybindings
   (shutdown-splash)
   (define-values/invoke-unit/infer drscheme@)
   (close-splash)
-  (provide-signature-elements drscheme:tool^))
+  (provide-signature-elements drscheme:tool^)
+  
+  (provide drscheme:unit:program-editor-mixin)
+  (define-syntax (drscheme:unit:program-editor-mixin stx)
+    (syntax-case stx ()
+      [(_ a ...)
+       #'((drscheme:unit:get-program-editor-mixin) a ...)]
+      [_ #'(drscheme:unit:get-program-editor-mixin)])))
+
+      

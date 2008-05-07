@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:rep}}
+@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:rep:text<%> ()]{
 
@@ -312,7 +313,7 @@ in the user's eventspace
 }}
 
 
-@defmixin[drscheme:rep:drs-bindings-keymap-mixin () ((domain . editor:keymap))]{
+@defmixin[drscheme:rep:drs-bindings-keymap-mixin (editor:keymap<%>) ()]{
 
 This mixin adds some drscheme-specific keybindings to the
 editor it is mixed onto.
