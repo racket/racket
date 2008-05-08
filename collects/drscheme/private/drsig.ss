@@ -26,35 +26,41 @@
            drscheme:font^
            drscheme:modes^
            drscheme:tool-exports^
-           drscheme:tool^)
+           drscheme:tool^
+	   drscheme:tool-cm^)
   
-  (define-signature drscheme:modes^
+  (define-signature drscheme:modes-cm^
+    ())
+  (define-signature drscheme:modes^ extends drscheme:modes-cm^
     (add-mode
      get-modes
      add-initial-modes
      (struct mode (name surrogate repl-submit matches-language) 
              #:omit-constructor)))
   
-  (define-signature drscheme:font^
+  (define-signature drscheme:font-cm^
+    ())
+  (define-signature drscheme:font^ extends drscheme:font-cm^
     (setup-preferences))
   
-  (define-signature drscheme:debug^
+  (define-signature drscheme:debug-cm^
+    (profile-definitions-text-mixin
+     profile-tab-mixin
+     profile-unit-frame-mixin
+     test-coverage-interactions-text-mixin
+     test-coverage-definitions-text-mixin
+     test-coverage-tab-mixin))
+  (define-signature drscheme:debug^ extends drscheme:debug-cm^
     (make-debug-error-display-handler
      make-debug-error-display-handler/text
      make-debug-eval-handler
      hide-backtrace-window
      print-bug-to-stderr
      
-     profile-definitions-text-mixin
-     profile-tab-mixin
-     profile-unit-frame-mixin
-     profiling-enabled
-     
      test-coverage-enabled
-     test-coverage-interactions-text-mixin
-     test-coverage-definitions-text-mixin
-     test-coverage-tab-mixin
-     
+
+     profiling-enabled
+
      add-prefs-panel
      
      get-error-color
@@ -66,18 +72,23 @@
      
      display-srcloc-in-error
      show-syntax-error-context))
-  
-  (define-signature drscheme:module-language^
+
+  (define-signature drscheme:module-langauge-cm^
+    (module-language<%>))
+  (define-signature drscheme:module-language^ extends drscheme:module-langauge-cm^
     (add-module-language
-     module-language<%>
      module-language-put-file-mixin))
   
-  (define-signature drscheme:get-collection^
+  (define-signature drscheme:get-collection-cm^ ())
+  (define-signature drscheme:get-collection^ extends drscheme:get-collection-cm^
     (get-file/collection))
   
-  (define-signature drscheme:main^ ())
+  (define-signature drscheme:main-cm^ ())
+  (define-signature drscheme:main^ extends drscheme:main-cm^ ())
   
-  (define-signature drscheme:init^
+  (define-signature drscheme:init-cm^
+    ())
+  (define-signature drscheme:init^ extends drscheme:init-cm^
     (original-output-port
      original-error-port
      original-error-display-handler
@@ -89,7 +100,9 @@
      system-namespace
      first-dir))
   
-  (define-signature drscheme:language-configuration^
+  (define-signature drscheme:language-configuration-cm^
+    ())
+  (define-signature drscheme:language-configuration^ extends drscheme:language-configuration-cm^
     (add-language
      get-languages
      (struct language-settings (language settings))
@@ -105,14 +118,18 @@
      add-built-in-languages
      not-a-language-language<%>))
   
-  (define-signature drscheme:tools^
+  (define-signature drscheme:tools-cm^
+    ())
+  (define-signature drscheme:tools^ extends drscheme:tools-cm^
     ((struct successful-tool (spec bitmap name url))
      get-successful-tools
      only-in-phase
      load/invoke-all-tools
      add-prefs-panel))
   
-  (define-signature drscheme:get/extend^
+  (define-signature drscheme:get/extend-cm^
+    ())
+  (define-signature drscheme:get/extend^ extends drscheme:get/extend-cm^
     (extend-tab
      extend-interactions-text
      extend-definitions-text
@@ -126,7 +143,7 @@
      get-definitions-canvas
      get-unit-frame))
   
-  (define-signature drscheme:unit^
+  (define-signature drscheme:unit-cm^
     (tab%
      tab<%>
      frame% 
@@ -134,26 +151,32 @@
      definitions-canvas%
      get-definitions-text%
      definitions-text<%>
-     interactions-canvas%
-     open-drscheme-window
+     interactions-canvas%))
+  (define-signature drscheme:unit^ extends drscheme:unit-cm^
+    (open-drscheme-window
      find-symbol
      get-program-editor-mixin
      add-to-program-editor-mixin
      (struct teachpack-callbacks (get-names remove add))))
   
-  (define-signature drscheme:frame^
+  (define-signature drscheme:frame-cm^
     (<%>
      mixin
      basics-mixin
-     basics<%>
-     create-root-menubar
+     basics<%>))
+  (define-signature drscheme:frame^ extends drscheme:frame-cm^
+    (create-root-menubar
      add-keybindings-item
      planet-spec?))
   
-  (define-signature drscheme:program^
+  (define-signature drscheme:program-cm^
     (frame%))
+  (define-signature drscheme:program^ extends drscheme:program-cm^
+    ())
   
-  (define-signature drscheme:eval^
+  (define-signature drscheme:eval-cm^
+    ())
+  (define-signature drscheme:eval^ extends drscheme:eval-cm^
     (expand-program
      expand-program/multiple
      traverse-program/multiple
@@ -161,38 +184,49 @@
      set-basic-parameters
      get-snip-classes))
   
-  (define-signature drscheme:text^
+  (define-signature drscheme:text-cm^
     (text<%>
      text%))
+  (define-signature drscheme:text^ extends drscheme:text-cm^
+    ())
   
-  (define-signature drscheme:setup^ 
+  (define-signature drscheme:setup-cm^
+    ())
+  (define-signature drscheme:setup^ extends drscheme:setup-cm^ 
     (do-setup))
   
-  (define-signature drscheme:rep^
+  (define-signature drscheme:rep-cm^
     (drs-bindings-keymap-mixin
-     current-rep
+     text%
+     text<%>
+     context<%>))
+  (define-signature drscheme:rep^ extends drscheme:rep-cm^
+    (current-rep
      current-language-settings
      current-value-port
      get-drs-bindings-keymap
      error-delta
      get-welcome-delta 
      get-dark-green-delta
-     drs-autocomplete-mixin
-     text%
-     text<%>
-     context<%>))
+     drs-autocomplete-mixin))
   
-  (define-signature drscheme:app^
+  (define-signature drscheme:app-cm^
+    ())
+  (define-signature drscheme:app^ extends drscheme:app-cm^
     (about-drscheme
      invite-tour
      add-language-items-to-help-menu
      add-important-urls-to-help-menu
      switch-language-to))
   
-  (define-signature drscheme:draw-arrow^
+  (define-signature drscheme:draw-arrow-cm^
+    ())
+  (define-signature drscheme:draw-arrow^ extends drscheme:draw-arrow-cm^
     (draw-arrow))
   
-  (define-signature drscheme:help-desk^
+  (define-signature drscheme:help-desk-cm^
+    ())
+  (define-signature drscheme:help-desk^ extends drscheme:help-desk-cm^
     (goto-help
      goto-tour
      goto-release-notes
@@ -200,7 +234,14 @@
      help-desk
      get-docs))
   
-  (define-signature drscheme:language^
+  (define-signature drscheme:language-cm^
+    (language<%>
+     module-based-language<%>
+     simple-module-based-language<%>
+     simple-module-based-language%
+     simple-module-based-language->module-based-language-mixin
+     module-based-language->language-mixin))
+  (define-signature drscheme:language^ extends drscheme:language-cm^
     (get-default-mixin
      extend-language-interface
      get-language-extensions
@@ -233,28 +274,39 @@
      register-capability
      capability-registered?
      get-capability-default
-     get-capability-contract
-     
-     language<%>
-     module-based-language<%>
-     simple-module-based-language<%>
-     simple-module-based-language%
-     simple-module-based-language->module-based-language-mixin
-     module-based-language->language-mixin))
+     get-capability-contract))
   
-  (define-signature drscheme:multi-file-search^
+  (define-signature drscheme:multi-file-search-cm^
+    ())
+  (define-signature drscheme:multi-file-search^ extends drscheme:multi-file-search-cm^
     (multi-file-search))
   
-  (define-signature drscheme:module-overview^
+  (define-signature drscheme:module-overview-cm^
+    ())
+  (define-signature drscheme:module-overview^ extends drscheme:module-overview-cm^
     (module-overview
      make-module-overview-pasteboard
      fill-pasteboard))
   
-  (define-signature drscheme:tool-exports^
+  (define-signature drscheme:tool-exports-cm^
+    ())
+  (define-signature drscheme:tool-exports^ extends drscheme:tool-exports-cm^
     (phase1 
      phase2))
   
-  (define-signature drscheme:tool^
+  (define-signature drscheme:tool-cm^
+    ((open (prefix drscheme:debug: drscheme:debug-cm^))
+     (open (prefix drscheme:unit: drscheme:unit-cm^))
+     (open (prefix drscheme:rep: drscheme:rep-cm^))
+     (open (prefix drscheme:frame: drscheme:frame-cm^))
+     (open (prefix drscheme:get/extend: drscheme:get/extend-cm^))
+     (open (prefix drscheme:language-configuration: drscheme:language-configuration-cm^))
+     (open (prefix drscheme:language: drscheme:language-cm^))
+     (open (prefix drscheme:help-desk: drscheme:help-desk-cm^))
+     (open (prefix drscheme:eval: drscheme:eval-cm^))
+     (open (prefix drscheme:modes: drscheme:modes-cm^))))
+
+  (define-signature drscheme:tool^ 
     ((open (prefix drscheme:debug: drscheme:debug^))
      (open (prefix drscheme:unit: drscheme:unit^))
      (open (prefix drscheme:rep: drscheme:rep^))
@@ -265,3 +317,4 @@
      (open (prefix drscheme:help-desk: drscheme:help-desk^))
      (open (prefix drscheme:eval: drscheme:eval^))
      (open (prefix drscheme:modes: drscheme:modes^)))))
+  

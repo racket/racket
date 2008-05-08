@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:rep}}
-@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:rep:text<%> ()]{
 
@@ -97,7 +96,7 @@ The @scheme[complete-program?] argument determines if the
 }}
 
 @defmethod[(get-error-range)
-           (union \#f (list (instanceof @scheme[text:basic%] number number)))]{
+           (or/c false/c (list/c (is-a?/c text:basic%) number? number?))]{
 @methspec{
 
 Indicates the highlighted error range. The state for the
@@ -107,7 +106,7 @@ there can only be one highlighted error region at a time.
 }
 @methimpl{
 
-If \scm{\#f}, no region is highlighted. If a list, the first
+If @scheme[#f], no region is highlighted. If a list, the first
 element is the editor where the range is highlighted and the
 second and third are the beginning and ending regions,
 respectively.
@@ -116,13 +115,13 @@ respectively.
 }}
 
 @defmethod[(get-user-custodian)
-           (union \#f custodian)]{
+           (or/c false/c custodian?)]{
 This is the custodian controlling the user's program.
 
 }
 
 @defmethod[(get-user-eventspace)
-           (union \#f eventspace)]{
+           (or/c false/c eventspace?)]{
 This is the user's eventspace. The result of
 @method[drscheme:rep:text% get-user-thread] is the main thread of this eventspace.
 
@@ -138,7 +137,7 @@ since the program was last run.
 }
 
 @defmethod[(get-user-namespace)
-           (union \#f namespace)]{
+           (or/c false/c namespace?)]{
 Returns the user's namespace. This method
 returns a new namespace each time Run is
 clicked.
@@ -146,7 +145,7 @@ clicked.
 }
 
 @defmethod[(get-user-thread)
-           (union \#f thread)]{
+           (or/c false/c thread?)]{
 This method returns the thread that the users code runs
 in. It is returns a different result, each time the user
 runs the program.
@@ -410,21 +409,21 @@ that the appropriate tab is visible, if necessary.
 }
 
 @defmethod[(get-breakables)
-           (values (union thread \#f) (union custodian \#f))]{
+           (values (or/c thread? false/c) (or/c custodian? false/c))]{
 Returns the last values passed to
 @method[drscheme:rep:context<%> set-breakables].
 
 }
 
 @defmethod[(get-directory)
-           (union string \#f)]{
+           (union string false/c)]{
 The result of this method is used as the initial directory for the
 user's program to be evaluated in.
 
 }
 
 @defmethod[(needs-execution)
-           (union string? false/c)]{
+           (or/c string? false/c)]{
 This method should return an explanatory string when the
 state of the program that the repl reflects has changed. It
 should return @scheme[#f] otherwise.
@@ -439,8 +438,8 @@ ignores any prior clicks.
 
 }
 
-@defmethod[(set-breakables [thread (union thread \#f)]
-                           [custodian (union custodian \#f)])
+@defmethod[(set-breakables [thread (or/c thread false/c)]
+                           [custodian (or/c custodian false/c)])
            void?]{
 Calling this method with a thread and a custodian means that
 the next time the break button is clicked, it will either
@@ -461,3 +460,4 @@ in the user's world.
 
 }}
 
+@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:rep:")

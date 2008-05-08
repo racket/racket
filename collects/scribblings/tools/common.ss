@@ -4,10 +4,12 @@
 
 (require scribble/manual
          scribble/basic
+         scribble/extract
          scheme/class
          scheme/contract)
 (provide (all-from-out scribble/manual)
          (all-from-out scribble/basic)
+         (all-from-out scribble/extract)
          (all-from-out scheme/class)
          (all-from-out scheme/contract))
 
@@ -42,6 +44,6 @@
                        void?]
                       [(extend (mixin mixin-contract) (before boolean?))
                        void?])]{
-                                Does stuff.
+                                Adds a new mixin to the class eventually created in DrScheme.
                                 }
-          @defproc[(get) class?]{Returns the class.}))]))
+          @defproc[(get) class?]{Returns the class (with all registered mixins applied).}))]))

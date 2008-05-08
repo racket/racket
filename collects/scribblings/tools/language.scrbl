@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:language}}
-@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:language:simple-module-based-language<%> ()]{
 
@@ -58,7 +57,7 @@ when the user selects this language.
 
 This method must return a procedure that is used to read
 syntax from a port in the same manner as 
-\MzLink{mz:stxobj}{read-syntax}. It is used as the reader
+@scheme[read-syntax]. It is used as the reader
 for this language.
 
 
@@ -74,7 +73,7 @@ for this language.
                       [language-position (cons string (listof string))]
                       [language-numbers (cons number (listof number)) (map (lambda (x) 0) language-position)]
                       [one-line-summary string? ""]
-                      [documentation-reference (union \#f something-else) #f]
+                      [documentation-reference (or/c false/c something-else) #f]
                       [reader (->* () (any/c input-port?) (or/c syntax? eof-object?))]
                       [language-id string?])]{
 
@@ -238,15 +237,15 @@ Sets the structure inspector to a new inspector,
 saving the original inspector for use during printing.
 
 Sets the
-\MzLink{mz:p:global-port-print-handler}{global-port-print-handler}
+@scheme[global-port-print-handler]
 to print based on the settings structure, but without
 any newlines.
 
 If debugging is enabled, it sets the
-\MzLink{mz:p:current-eval}{current-eval}
+@scheme[current-eval]
 handler to one that annotates each evaluated program with 
 debugging annotations. Additionally, it sets the 
-\MzLink{mz:p:error-display-handler}{error-display-handler}
+@scheme[error-display-handler]
 to show the debugging annotations when an error is raised.
 
 See also @secref["mz:simple-settings"] for details of the
@@ -289,7 +288,7 @@ simple-settings structure, this mixins \scm{settings} type.
 
 @defmethod[#:mode override 
            (unmarshall-settings)
-           (union \#f settings)]{
+           (or/c false/c settings)]{
 
 Builds a settings structure from the vector, or @scheme[#f] if
 the vector doesn't match the types of the structure.
@@ -397,7 +396,7 @@ when the user selects this language.
 
 This method must return a procedure that is used to read
 syntax from a port in the same manner as 
-\MzLink{mz:stxobj}{read-syntax}. It is used as the reader
+@scheme[read-syntax]. It is used as the reader
 for this language.
 
 
@@ -457,7 +456,7 @@ This method is the same as
 }
 
 @defmethod[(unmarshall-settings [input writable])
-           (union settings \#f)]{
+           (or/c settings false/c)]{
 This method is the same as
 @method[drscheme:language:language<%> unmarshall-settings].
 
@@ -479,9 +478,9 @@ The result of this method controls how the module is
 attached to the user's namespace. If 
 the method returns @scheme[#t], 
 the mzscheme primitive
-\MzLink{mz:namespaces}{namespace-require/copy}
+@scheme[namespace-require/copy]
 is used and if it returns @scheme[#f],
-\MzLink{mz:namespaces}{namespace-require}
+@scheme[namespace-require]
 is used.
 
 }
@@ -499,7 +498,7 @@ Defaultly returns @scheme[#f].
 
 @defmethod[#:mode override 
            (front-end/complete-program)
-           (-> (union sexp syntax eof))]{
+           (-> (or/c sexp/c syntax? eof-object?))]{
 
 Reads a syntax object, from @scheme[input]. Does not use
 @scheme[settings].
@@ -513,7 +512,7 @@ between this method and
 
 @defmethod[#:mode override 
            (front-end/interaction)
-           (-> (union sexp syntax eof))]{
+           (-> (or/c sexp/c syntax? eof-object?))]{
 
 Reads a syntax object, from @scheme[input]. Does not use
 @scheme[settings].
@@ -541,10 +540,10 @@ Returns the last element of the list returned by
 
 Calls the super method.
 
-Uses \MzLink{mz:namespaces}{namespace-require}
+Uses @scheme[namespace-require]
 to install the result of
 @method[drscheme:language:module-based-language<%> get-module] and
-Uses \MzLink{mz:namespaces}{namespace-transformer-require}
+Uses @scheme[namespace-transformer-require]
 to install the result of 
 @method[drscheme:language:module-based-language<%> get-transformer-module] into the user's namespace.
 
@@ -590,7 +589,7 @@ the current GUI.
 }
 
 @defmethod[(create-executable [settings settings]
-                              [parent (union (instanceof @scheme[dialog%]) (instanceof @scheme[frame%]))]
+                              [parent (or/c (is-a?/c dialog%) (is-a?/c frame%))]
                               [program-filename string?])
            void?]{
 This method creates an executable in the given language. The
@@ -633,7 +632,7 @@ See also
 
 @defmethod[(front-end/complete-program [port port]
                                        [settings settings])
-           (-> (union sexp syntax eof))]{
+           (-> (or/c sexp/c syntax? eof-object?))]{
 @scheme[front-end/complete-program] method reads, parses,
 and optionally compiles a program in the language. The first
 argument contains all of the data to be read (until eof) and
@@ -652,8 +651,8 @@ This method is only called for programs in the definitions
 window. Notably, it is not called for
 programs that are @scheme[load]ed or @scheme[eval]ed.
 See
-\MzLink{mz:p:current-load}{current-load} and 
-\MzLink{mz:p:current-eval}{current-eval}
+@scheme[current-load] and 
+@scheme[current-eval]
 for those.
 
 This method is expected to raise an appropriate exception if
@@ -678,7 +677,7 @@ See also
 
 @defmethod[(front-end/interaction [port input-port]
                                   [settings settings])
-           (-> (union sexp syntax eof))]{
+           (-> (or/c sexp/c syntax? eof-object?))]{
 This method is just like
 @method[drscheme:language:language<%> front-end/complete-program] except that it is called with program fragments, 
 for example the expressions entered in the interactions
@@ -892,54 +891,54 @@ changed from the defaults in MzScheme:
 @item{@scheme[current-custodian] is set to a new custodian.}
 @item{@scheme[current-namespace] has been set to a newly
   created empty namespace.This namespace has the following modules 
-  copied (with \MzLink{mz:namespace-utilities}{@scheme[namespace-attach-module]})
+  copied (with @scheme[namespace-attach-module])
   from DrScheme's original namespace:
   @itemize{
   @item{@scheme['mzscheme]}
   @item{@scheme['(lib "mred.ss" "mred")]}
   }}
 @item{
-  \MzLink{mz:p:read-curly-brace-as-paren}{@scheme[read-curly-brace-as-paren]}
+  @scheme[read-curly-brace-as-paren]
   is @scheme[#t],}
 @item{
-  \MzLink{mz:p:read-square-bracket-as-paren}{@scheme[read-square-bracket-as-paren]}
+  @scheme[read-square-bracket-as-paren]
   is @scheme[#t],}
 @item{The 
-  \MzLink{mz:portwritehandler}{@scheme[port-write-handler]}
+  @scheme[port-write-handler]
   and
-  \MzLink{mz:portwritehandler}{@scheme[port-display-handler]}
+  @scheme[port-display-handler]
   have been set to procedures
   that call 
-  \MzlibLink{mz:mzlibpretty}{@scheme[pretty-print]}
+  @scheme[pretty-print]
   and 
-  \MzlibLink{mz:mzlibpretty}{@scheme[pretty-display]} instead
+  @scheme[pretty-display] instead
   of 
-  \MzLink{mz:readandwrite}{@scheme[write]} and 
+  @scheme[write] and 
   @scheme[display].  When
   @scheme[pretty-print] and 
   @scheme[pretty-display] are
   called by these parameters, the
-  \MzlibLink{mz:mzlibpretty}{@scheme[pretty-print-columns]} parameter is set to
+  @scheme[pretty-print-columns] parameter is set to
   @scheme['infinity], so the output looks just like
   @scheme[write] and 
   @scheme[display]. This is done so that
   special scheme values can be displayed as snips.}
 @item{The
-  \MzLink{mz:mzlibpconvert}{current-print-covert-hook} is to a
+  @scheme[current-print-covert-hook] is to a
   procedure so that @scheme[snip%]s are just returned
   directly to be inserted into the interactions
   @scheme[text%] object.} 
 @item{The output and input ports are set to point to the
   interactions window with these parameters:
-  \MzLink{mz:p:current-input-port}{@scheme[current-input-port]},
-  \MzLink{mz:p:current-output-port}{@scheme[current-output-port]}, and
-  \MzLink{mz:p:current-error-port}{@scheme[current-error-port]}.}
+  @scheme[current-input-port],
+  @scheme[current-output-port], and
+  @scheme[current-error-port].}
 @item{The
 @scheme[event-dispatch-handler]   is set so that DrScheme can perform some initial setup and
   close down around the user's code.}
 @item{The
-  \MzLink{mz:p:current-directory}{@scheme[current-directory]} and
-  \MzLink{mz:p:current-load-relative-directory}{@scheme[current-load-relative-directory]}
+  @scheme[current-directory] and
+  @scheme[current-load-relative-directory]
   are set to the directory where the definitions file is
   saved, or if it isn't saved, to the initial directory where
   DrScheme started up.}
@@ -948,9 +947,9 @@ changed from the defaults in MzScheme:
 
 @item{
 The 
-\MzLink{mz:p:error-print-source-location}{error-print-source-location}
+@scheme[error-print-source-location]
 parameter is set to @scheme[#f] and the 
-\MzLink{mz:p:error-display-handler}{error-display-handler}
+@scheme[error-display-handler]
 is set to a handler that creates an error message from the
 exception record, with font and color information and inserts
 that error message into the definitions window.}
@@ -1009,3 +1008,4 @@ Translates a Scheme value into a settings, returning
 
 }}
 
+@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:language:")

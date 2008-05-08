@@ -13,6 +13,7 @@
 )
 
 @title{@bold{Plugins}: Extending DrScheme}
+@(defmodule drscheme/tool-lib)
 
 @bold{This Manual}
 
@@ -484,8 +485,12 @@ for a list of the capabilities registered by default.
 @include-section["get-slash-extend.scrbl"]
 @include-section["unit.scrbl"]
 @include-section["language.scrbl"]
+@include-section["language-configuration.scrbl"]
 @include-section["debug.scrbl"]
 @include-section["rep.scrbl"]
 @include-section["frame.scrbl"]
+@include-section["help-desk.scrbl"]
+@include-section["eval.scrbl"]
+@include-section["modes.scrbl"]
 
 @index-section[]

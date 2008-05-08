@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:frame}}
-@(defmodule drscheme/tool-lib)
 
 @defclass[drscheme:frame:name-message% canvas% ()]{
 
@@ -12,7 +11,7 @@ side of drscheme's frame.
 
 @defconstructor/make[([parent (instance (implements @scheme[area-container<%>]))])]{}
 
-@defmethod[(set-message [name (union string \#f)]
+@defmethod[(set-message [name (or/c string? false/c)]
                         [short-name string?])
            void?]{
 @methspec{
@@ -267,3 +266,4 @@ Does nothing.
 
 }}}
 
+@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:frame:")

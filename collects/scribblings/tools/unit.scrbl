@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
 @title{@tt{drscheme:unit}}
-@(defmodule drscheme/tool-lib)
 
 @definterface[drscheme:unit:tab<%> (drscheme:rep:context<%>)]{
 
@@ -62,7 +61,7 @@ Enables the Run button, and the Run menu item and unlocks
 
 @defmethod[#:mode override 
            (get-breakables)
-           (values (union thread \#f) (union custodian \#f))]{}
+           (values (or/c thread? false/c) (or/c custodian? false/c))]{}
 
 @defmethod[(get-defs)
            (is-a?/c @scheme[drscheme:rep:text%])]{
@@ -77,7 +76,7 @@ object, but if you change
 
 @defmethod[#:mode override 
            (get-directory)
-           (union string \#f)]{
+           (or/c string? false/c)]{
 
 This is the directory that the file is saved in, or the
 directory DrScheme started up in, if the file has not been
@@ -151,8 +150,8 @@ Calls the definitions text's
            void?]{}
 
 @defmethod[#:mode override 
-           (set-breakables [thread (union thread \#f)]
-                           [custodian (union custodian \#f)])
+           (set-breakables [thread (or/c thread? false/c)]
+                           [custodian (or/c custodian? false/c)])
            void?]{}}
 
 
@@ -841,3 +840,4 @@ Initializes the visibility of the save button.
 
 }
 
+@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:unit:")
