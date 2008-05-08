@@ -10,13 +10,18 @@
   (define-syntax (print-results stx)
     (syntax-case stx ()
       [(_ expr)
-       #'expr
-       #;
+       (not (or (syntax-property #'expr 'stepper-hide-completed)
+                (syntax-property #'expr 'stepper-skip-completely)
+                (syntax-property #'expr 'test-call)))
        (syntax-property
-        #'(#%app call-with-values (lambda () expr)
-                 do-print-results)
-        'stepper-skipto 
-        '(syntax-e cdr cdr car syntax-e cdr cdr car))]))
+        (syntax-property
+         #'(#%app call-with-values (lambda () expr)
+                  do-print-results)
+         'stepper-skipto 
+         '(syntax-e cdr cdr car syntax-e cdr cdr car))
+        'certify-mode
+        'transparent)]
+      [(_ expr) #'expr]))
 
   (define (do-print-results . vs)
     (for-each (current-print) vs)

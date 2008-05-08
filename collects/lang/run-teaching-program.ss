@@ -104,8 +104,6 @@
     [else
      (raise-syntax-error 'htdp-languages "internal error .1")]))
 
-
-
 ;; rewrite-bodies : (listof syntax) (is-a?/c interactions-text<%>) -> syntax
 (define (rewrite-bodies bodies rep)
   (let loop ([bodies bodies])
@@ -125,16 +123,4 @@
            [(#%provide specs ...)
             (loop (cdr bodies))]
            [else 
-            (if (syntax-property body 'test-call)
-                (cons body (loop (cdr bodies)))
-                (let ([new-exp
-                       (with-syntax ([body body]
-                                     [print-results
-                                      (lambda results
-                                        (when rep
-                                          (send rep display-results/void results)))])
-                         (syntax 
-                          (call-with-values
-                           (lambda () body)
-                           print-results)))])
-                  (cons new-exp (loop (cdr bodies)))))]))])))
+            (cons body (loop (cdr bodies)))]))])))
