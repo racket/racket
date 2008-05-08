@@ -892,10 +892,9 @@
             (write `(let () ;; cannot use begin, since it gets flattened to top-level (and re-compiled!)
                       ,@(if use-copy?
                             (list 
-                             `(namespace-require ',module-language-spec)
                              `(namespace-require/copy ',module-language-spec))
                             (list
-                             `(namespace-require ',module-language-spec)))
+                             `(namespace-require/constant ',module-language-spec)))
                       ,@(if transformer-module-language-spec
                             (list `(namespace-require `(for-syntax ,transformer-module-language-spec)))
                             (list))
@@ -1130,7 +1129,7 @@
                           (newline))])
          (if use-copy?
              (namespace-require/copy module-spec)
-             (namespace-require module-spec))
+             (namespace-require/constant module-spec))
          (when transformer-module-spec
            (namespace-require `(for-syntax ,transformer-module-spec)))))))
   

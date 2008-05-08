@@ -1340,10 +1340,10 @@
                                   [parent 
                                    (new group-box-panel%
                                         [parent p]
-                                        [label (string-constant assume-primitives-group-box-label)]
+                                        [label (string-constant enforce-primitives-group-box-label)]
                                         [stretchable-height #f]
                                         [stretchable-width #f])]
-                                  [label (string-constant assume-primitives-check-box-label)])])
+                                  [label (string-constant enforce-primitives-check-box-label)])])
               (case-lambda
                [() (extend-simple-settings (base-config)
                                            (send assume-cb get-value))]

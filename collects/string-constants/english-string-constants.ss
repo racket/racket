@@ -970,8 +970,8 @@ please adhere to these guidelines:
  (use-mixed-fractions "Mixed fractions")
  (use-repeating-decimals "Repeating decimals")
  (decimal-notation-for-rationals "Use decimal notation for rationals")
- (assume-primitives-group-box-label "Initial Bindings")
- (assume-primitives-check-box-label "Assume initial bindings never change")
+ (enforce-primitives-group-box-label "Initial Bindings")
+ (enforce-primitives-check-box-label "Disallow redefinition of initial bindings")
 
   ; used in the bottom left of the drscheme frame 
   ; used the popup menu from the just above; greyed out and only

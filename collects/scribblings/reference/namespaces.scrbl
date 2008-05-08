@@ -183,8 +183,19 @@ current namespace corresponds to a module body.}
          void?]{
 
 Like @scheme[namespace-require] for syntax exported from the module,
-but exported variables are treated differently: the export's current
-value is copied to a top-level variable in the current namespace.}
+but exported variables at @tech{phase level} 0 are treated differently: the
+export's current value is copied to a top-level variable in the
+current namespace.}
+
+
+@defproc[(namespace-require/constant [quoted-raw-require-spec any/c])
+         void?]{
+
+Like @scheme[namespace-require], but for each exported variable at
+@tech{phase level} 0, the export's value is copied to a corresponding
+top-level variable that is made immutable. Despite setting the
+top-level variable, the corresponding identifier is bound as
+imported.}
 
 
 @defproc[(namespace-require/expansion-time [quoted-raw-require-spec any/c])

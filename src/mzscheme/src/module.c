@@ -39,6 +39,7 @@ static Scheme_Object *current_module_name_prefix(int argc, Scheme_Object *argv[]
 static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[]);
+static Scheme_Object *namespace_require_constant(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_require_etonly(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_attach_module(int argc, Scheme_Object *argv[]);
 static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]);
@@ -366,6 +367,11 @@ void scheme_init_module(Scheme_Env *env)
   scheme_add_global_constant("namespace-require/copy",
 			     scheme_make_prim_w_arity(namespace_require_copy,
 						      "namespace-require/copy",
+						      1, 1),
+			     env);
+  scheme_add_global_constant("namespace-require/constant",
+			     scheme_make_prim_w_arity(namespace_require_constant,
+						      "namespace-require/constant",
 						      1, 1),
 			     env);
   scheme_add_global_constant("namespace-require/expansion-time",
@@ -1123,6 +1129,11 @@ Scheme_Object *scheme_namespace_require(Scheme_Object *r)
 static Scheme_Object *namespace_require_copy(int argc, Scheme_Object *argv[])
 {
   return do_namespace_require(NULL, argc, argv, 1, 0);
+}
+
+static Scheme_Object *namespace_require_constant(int argc, Scheme_Object *argv[])
+{
+  return do_namespace_require(NULL, argc, argv, 2, 0);
 }
 
 static Scheme_Object *namespace_require_etonly(int argc, Scheme_Object *argv[])
@@ -7925,14 +7936,31 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
                data, cki, form, err_src, mark_src, to_phase, src_phase_index, pt->phase_index);
 
           if (!is_kern) {
+            int done;
+
             if (do_copy_vars && (j < var_count)) {
               Scheme_Env *menv;
               Scheme_Object *val;
+              Scheme_Bucket *b;
               modidx = scheme_module_resolve(modidx, 1);
               menv = scheme_module_access(modidx, orig_env, 0);
               val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
-              scheme_add_global_symbol(iname, val, orig_env);
-              scheme_shadow(orig_env, iname, 1);
+              b = scheme_global_bucket(iname, orig_env);
+              scheme_set_global_bucket(((copy_vars == 2)
+                                        ? "namespace-require/constant"
+                                        : "namespace-require/copy"),
+                                       b, val, 1);
+              if (copy_vars == 2) {
+                ((Scheme_Bucket_With_Flags *)b)->flags |= GLOB_IS_IMMUTATED;
+                done = 0;
+              } else {
+                scheme_shadow(orig_env, iname, 1);
+                done = 1;
+              }
+            } else
+              done = 0;
+
+            if (done) {
             } else if (!for_unmarshal || !has_context) {
               if (!skip_rename) {
                 if (!save_marshal_info && !has_context && can_save_marshal)

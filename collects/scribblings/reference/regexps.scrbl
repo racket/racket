@@ -309,8 +309,12 @@ Like @scheme[regexp-match], but the result is a list of strings or
 byte strings corresponding to a sequence of matches of
 @scheme[pattern] in @scheme[input]. (Unlike @scheme[regexp-match],
 results for parenthesized sub-patterns in @scheme[pattern] are not
-returned.)  If @scheme[pattern] matches a zero-length string or byte
-sequence along the way, the @exnraise[exn:fail].
+returned.)
+
+If @scheme[pattern] matches a zero-length string or byte sequence, and
+if it is at the beginning or end of the input, then the match does not
+count. Otherwise, one character or byte in the input is skipped before
+attempting another match.
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), @scheme[null] is returned. Otherwise, each item
@@ -522,8 +526,8 @@ strings (if @scheme[pattern] is a string or character regexp and
 @scheme[input] is a string) or byte strings (otherwise) from in
 @scheme[input] that are separated by matches to
 @scheme[pattern]. Adjacent matches are separated with @scheme[""] or
-@scheme[#""]. If @scheme[pattern] matches a zero-length string or byte
-sequence along the way, the @exnraise[exn:fail].
+@scheme[#""]. Zero-length matches are treated the same as in
+@scheme[regexp-match*].
 
 If @scheme[input] contains no matches (in the range @scheme[start-pos]
 to @scheme[end-pos]), the result is a list containing @scheme[input]'s
@@ -613,8 +617,8 @@ Like @scheme[regexp-replace], except that every instance of
 instead of just the first match. Only non-overlapping instances of
 @scheme[pattern] in @scheme[input] are replaced, so instances of
 @scheme[pattern] within inserted strings are @italic{not} replaced
-recursively. If, in the process of repeating matches, @scheme[pattern]
-matches an empty string, the @exnraise[exn:fail].
+recursively. Zero-length matches are treated the same as in
+@scheme[regexp-match*].
 
 @examples[
 (regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi" 

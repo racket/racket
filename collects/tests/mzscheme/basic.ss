@@ -1058,6 +1058,14 @@
 (test '(#"") regexp-match "$" (open-input-string "123") 3)
 (test '(#"") regexp-match-peek "" (open-input-string "123") 3)
 
+(test "1b2b3" regexp-replace* "" "123" "b")
+(test "1b23" regexp-replace* "(?=2)" "123" "b")
+(test "ax\u03BB" regexp-replace* "" "a\u03BB" "x")
+(test "ax\u03BBxb" regexp-replace* "" "a\u03BBb" "x")
+(test #"ax\316x\273xb" regexp-replace* #"" "a\u03BBb" #"x")
+(test "1=2===3" regexp-replace* "2*" "123" (lambda (s) (string-append "=" s "=")))
+(test "1=2===3==4" regexp-replace* "2*" "1234" (lambda (s) (string-append "=" s "=")))
+
 ;; Test weird port offsets:
 (define (test-weird-offset regexp-match regexp-match-positions)
   (test #f regexp-match "e" (open-input-string ""))

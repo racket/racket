@@ -5185,6 +5185,19 @@ static char *build_call_name(const char *n)
   return m;
 }
 
+static int initial_char_len(unsigned char *source, long start, long end)
+{
+  long i;
+
+  for (i = start + 1; i <= end; i++) {
+    if (scheme_utf8_decode_count(source, start, i, NULL, 1, 1)) {
+      return i - start;
+    }
+  }
+
+  return 1;
+}
+
 static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *argv[], int all)
 {
   Scheme_Object *orig;
@@ -5257,21 +5270,39 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
   while (1) {
     int m;
 
-    m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, startp, maybep, endp,
-		NULL, NULL, 0,
-		NULL, 0, 0, NULL, NULL, NULL, NULL);
+    do {
+      m = regexec(name, r, source, srcoffset, sourcelen - srcoffset, startp, maybep, endp,
+                  NULL, NULL, 0,
+                  NULL, 0, 0, NULL, NULL, NULL, NULL);
+
+      if (m && all && (startp[0] == endp[0])) {
+        if (!startp[0] && sourcelen) {
+          int amt;
+
+          if (was_non_byte)
+            amt = initial_char_len((unsigned char *)source, 0, sourcelen);
+          else
+            amt = 1;
+          
+          prefix = scheme_malloc_atomic(amt + 1);
+          prefix_len = amt;
+          memcpy(prefix, source, amt);
+          srcoffset += amt;
+          /* try again */
+        } else {
+          /* if it's the end of the input, the match should fail */
+          if (startp[0] == sourcelen)
+            m = 0;
+          break;
+        }
+      } else
+        break;
+    } while (1);
 
     if (m) {
       char *insert;
       long len, end, startpd, endpd;
 
-      if ((startp[0] == endp[0]) && all) {
-	scheme_arg_mismatch(name, 
-			    "found a zero-width match for pattern: ",
-			    argv[0]);
-	return NULL;
-      }
-      
       if (SCHEME_PROCP(argv[2])) {
         int i;
         Scheme_Object *m, **args, *quick_args[5];
@@ -5363,18 +5394,31 @@ static Scheme_Object *gen_replace(const char *name, int argc, Scheme_Object *arg
       } else {
 	char *naya;
 	long total;
-	
+        int more;
+
+        if (startpd == endpd)  {
+          if (was_non_byte)
+            more = initial_char_len((unsigned char *)source, startpd, sourcelen);
+          else
+            more = 1;
+        } else
+          more = 0;
+
 	total = len + prefix_len + (startpd - srcoffset);
 	
-	naya = (char *)scheme_malloc_atomic(total + 1);
+	naya = (char *)scheme_malloc_atomic(total + more + 1);
 	memcpy(naya, prefix, prefix_len);
 	memcpy(naya + prefix_len, source + srcoffset, startpd - srcoffset);
 	memcpy(naya + prefix_len + (startpd - srcoffset), insert, len);
+        if (more) {
+          memcpy(naya + prefix_len + (endpd - srcoffset) + len, source + startpd, more);
+          total += more;
+        }
 
 	prefix = naya;
 	prefix_len = total;
 
-	srcoffset = endpd;
+	srcoffset = endpd + more;        
       }
     } else if (!prefix) {
       if (was_non_byte)

@@ -467,7 +467,7 @@
 
 (let ([b (identifier-binding (syntax-case (expand #'(module m (lib "lang/htdp-intermediate.ss")
 						      cons)) ()
-			       [(mod m beg (#%mod-beg cons))
+			       [(mod m beg (#%mod-beg (app call-w-vals (lam () cons) prnt)))
 				(let ([s (syntax cons)])
 				  (test 'cons syntax-e s)
 				  s)]))])

@@ -6,7 +6,7 @@
 (define-values (main args)
   (command-line
    #:once-each
-   [("--no-prim") "(slow) disable assumption that primitives are never redefined"
+   [("--no-prim") "allow redefinition of primitives (implies worse performance)"
     (slow #t)]
    #:handlers
    (case-lambda
@@ -16,7 +16,7 @@
 
 (if (slow)
     (namespace-require/copy 'r5rs/init)
-    (namespace-require 'r5rs/init))
+    (namespace-require/constant 'r5rs/init))
 
 (current-command-line-arguments (apply vector-immutable args))
 (if main
