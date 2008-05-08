@@ -12,19 +12,30 @@
   (let-values ([(base name _2) (split-path preferences-file)])
     (build-path base (string-append (path-element->string name) ".save"))))
 
-(define all-files
-  (map symbol->string
-       (call-with-input-file
-           (build-path (collection-path "tests" "framework") "README")
-         read)))
+(define-values (all-files interactive-files)
+  (let* ([files (call-with-input-file
+                    (build-path (collection-path "tests" "framework") "README")
+                  read)]
+         [files (map (lambda (x)
+                       (cond [(symbol? x) (symbol->string x)]
+                             [(pair? x) (cons (car x) (map symbol->string
+                                                           (cdr x)))]
+                             [else (error "bad specs in README")]))
+                     files)]
+         [all (map (lambda (x) (if (pair? x) (cdr x) (list x))) files)]
+         [interactive (map (lambda (x)
+                             (if (and (pair? x) (eq? 'interactive (car x)))
+                               (cdr x) '()))
+                           files)])
+    (values (apply append all) (apply append interactive))))
 
 (define all? #f)
+(define batch? #f) ; non-interactive (implied by no test-file args)
 (define files-to-process null)
 (define command-line-flags
   `((once-each
      [("-a" "--all")
-      ,(lambda (flag)
-         (set! all? #t))
+      ,(lambda (flag) (set! all? #t))
       ("Run all of the tests")])
     (multi
      [("-o" "--only")
@@ -36,7 +47,12 @@
 (parse-command-line
  "framework-test" (current-command-line-arguments) command-line-flags
  (lambda (collected . files)
-   (set! files-to-process (if (or all? (null? files)) all-files files)))
+   (when (null? files) (set! batch? #t))
+   (let ([files (filter (lambda (x) (member x all-files)) files)])
+     (set! files-to-process
+           (cond [all?   all-files]
+                 [batch? (remove* interactive-files all-files)]
+                 [else   files]))))
  `("Names of the tests; defaults to all tests"))
 
 (when (file-exists? preferences-file)
@@ -51,29 +67,28 @@
 
 (for-each
  (lambda (x)
-   (when (member x all-files)
-     (shutdown-mred)
-     (load-framework-automatically #t)
-     (let/ec k
-       (dynamic-wind
-         (lambda ()
-           (set! jumped-out-tests (cons x jumped-out-tests))
-           (set-section-name! x)
-           (set-section-jump! k))
-         (lambda ()
-           (with-handlers ([(lambda (_) #t)
-                            (lambda (exn)
-                              (debug-printf schedule "~a\n"
-                                            (if (exn? exn)
-                                              (exn-message exn)
-                                              exn)))])
-             (debug-printf schedule "beginning ~a test suite\n" x)
-             (dynamic-require `(lib ,x "tests" "framework") #f)
-             (set! jumped-out-tests (remq x jumped-out-tests))
-             (debug-printf schedule "PASSED ~a test suite\n" x)))
-         (lambda ()
-           (reset-section-name!)
-           (reset-section-jump!))))))
+   (shutdown-mred)
+   (load-framework-automatically #t)
+   (let/ec k
+     (dynamic-wind
+       (lambda ()
+         (set! jumped-out-tests (cons x jumped-out-tests))
+         (set-section-name! x)
+         (set-section-jump! k))
+       (lambda ()
+         (with-handlers ([(lambda (_) #t)
+                          (lambda (exn)
+                            (debug-printf schedule "~a\n"
+                                          (if (exn? exn)
+                                            (exn-message exn)
+                                            exn)))])
+           (debug-printf schedule "beginning ~a test suite\n" x)
+           (dynamic-require `(lib ,x "tests" "framework") #f)
+           (set! jumped-out-tests (remq x jumped-out-tests))
+           (debug-printf schedule "PASSED ~a test suite\n" x)))
+       (lambda ()
+         (reset-section-name!)
+         (reset-section-jump!)))))
  files-to-process)
 
 (debug-printf admin "  restoring preferences file ~s to ~s\n"

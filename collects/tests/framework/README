@@ -67,7 +67,7 @@ signal failures when there aren't any.
   | These tests will make sure that the usual checks against a user
   | losing their work are in place.
 
-- interactive tests
+- |# (interactive #| tests
 
   | these tests require intervention by people. Clicking and whatnot
 
@@ -78,4 +78,4 @@ signal failures when there aren't any.
     | These tests will create objects in various configurations and
     | make sure that they are garbage collected
 
-|#)
+|#))
