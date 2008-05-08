@@ -85,7 +85,8 @@ what happens:
 
 @mr-interaction[(circle 10 20)]
 
-Note that DrScheme highlights the source of the error in pink.
+Note that DrScheme highlights in pink the expression that triggered
+the error (but pink highlighting is not shown in this documentation).
 
 In addition to basic picture constructors like @scheme[circle] and
 @scheme[rectangle], there's a @scheme[hc-append] function that

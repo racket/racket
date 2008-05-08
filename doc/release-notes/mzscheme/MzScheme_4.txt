@@ -1,7 +1,8 @@
 
 MzScheme version 4.0 is different from previous versions of MzScheme
-in several significant ways. For porting advice, see "Advice" below,
-but we start with an enumeration of changes:
+in several significant ways. For advice on how to upgrade, see
+"Porting Advice" below, but we start with an enumeration of major
+changes:
 
  - The documentation has been re-organized and re-written. Instead of
    just reference manuals that occasionally provide examples, our
