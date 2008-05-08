@@ -1452,7 +1452,7 @@
                       "plt:pretty-big"
                       (list (string-constant legacy-languages)
                             (string-constant pretty-big-scheme))
-                      (list -1000 3)
+                      (list -200 3)
                       #t
                       (string-constant pretty-big-scheme-one-line-summary)
                       assume-mixin))
@@ -1461,7 +1461,7 @@
                       "plt:r5rs"
                       (list (string-constant legacy-languages)
                             (string-constant r5rs-language-name))
-                      (list -1000 -1000)
+                      (list -200 -1000)
                       #f
                       (string-constant r5rs-one-line-summary)
                       (lambda (%) (r5rs-mixin (assume-mixin %)))))

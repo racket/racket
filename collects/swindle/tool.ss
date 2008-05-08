@@ -20,7 +20,7 @@
               (drscheme:language:simple-module-based-language->module-based-language-mixin
                (class* object%
                        (drscheme:language:simple-module-based-language<%>)
-                 (define/public (get-language-numbers) `(-1000 2000 ,num*))
+                 (define/public (get-language-numbers) `(-200 2000 ,num*))
                  (define/public (get-language-position)
                    (list (string-constant legacy-languages)
                          "Swindle" entry-name*))
