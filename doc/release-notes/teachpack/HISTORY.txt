@@ -1,4 +1,12 @@
 ------------------------------------------------------------------------
+VERSION 4.0				  [Thu May  8 11:03:30 EDT 2008]
+
+* small bug fixes in world
+
+* added matrix.ss (requires a write up)
+
+
+------------------------------------------------------------------------
 VERSION 371				  [Tue Aug  7 17:49:47 EDT 2007]
 
 * changed world.ss so that it exports both add-line from image.ss and
