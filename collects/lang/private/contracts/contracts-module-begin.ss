@@ -6,6 +6,23 @@
 		      syntax/boundmap)
   
   (provide beginner-module-begin intermediate-module-begin advanced-module-begin)
+
+  (define-syntax (print-results stx)
+    (syntax-case stx ()
+      [(_ expr)
+       #'expr
+       #;
+       (syntax-property
+        #'(#%app call-with-values (lambda () expr)
+                 do-print-results)
+        'stepper-skipto 
+        '(syntax-e cdr cdr car syntax-e cdr cdr car))]))
+
+  (define (do-print-results . vs)
+    (for-each (current-print) vs)
+    ;; Returning 0 values avoids any further result printing
+    ;; (even if void values are printed)
+    (values))
   
   (define-syntaxes (beginner-module-begin intermediate-module-begin advanced-module-begin
 					  beginner-continue intermediate-continue advanced-continue)
@@ -18,12 +35,12 @@
 	  (lambda (lostx) 
 	    (filter contract-stx? lostx)))
 	
-					; negate previous
+        ;; negate previous
 	(define extract-not-contracts
 	  (lambda (stx-list) 
 	    (filter (lambda (x) (not (contract-stx? x))) stx-list)))
 	
-					; predicate: is this syntax object a contract expr?
+        ;; predicate: is this syntax object a contract expr?
 	(define contract-stx?
 	  (lambda (stx) 
 	    (syntax-case stx () 
@@ -32,7 +49,7 @@
 		    (module-identifier=? #'contract language-level-contract))]
 	      [_ #f])))
 	
-					; pred: is this syntax obj a define-data?
+        ;; pred: is this syntax obj a define-data?
 	(define define-data-stx?
 	  (lambda (stx)
 	    (syntax-case stx ()
@@ -233,7 +250,7 @@
 		  [(define-values (id ...) . _)
 		   #`(frm (#,e2 . e1s) e3s (id ... . def-ids))]
 		  [_
-		   #`(frm (#,e2 . e1s) e3s def-ids)]))]))))
+		   #`(frm ((print-results #,e2) . e1s) e3s def-ids)]))]))))
       
       (define-values (parse-beginner-contract/func continue-beginner-contract/func)
         (parse-contracts #'beginner-contract #'beginner-define-data #'beginner-continue))
