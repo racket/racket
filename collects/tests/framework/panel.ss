@@ -1,5 +1,5 @@
-(module panel mzscheme
-  (require "test-suite-utils.ss")
+#lang mzscheme
+(require "test-suite-utils.ss")
 
 (test 
  'single-panel
@@ -132,4 +132,3 @@
     (yield semaphore)
     (send f show #f)
     result))
-)

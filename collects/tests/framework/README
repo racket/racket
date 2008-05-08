@@ -1,5 +1,5 @@
 (#|
-		      Framework Test Suite Overview
+                      Framework Test Suite Overview
 
 Each test will rely on the sucessfully completion of all of the ones
 before it. In addition, all test suites rely on the sucessful
@@ -70,7 +70,7 @@ signal failures when there aren't any.
 - interactive tests
 
   | these tests require intervention by people. Clicking and whatnot
-  
+
   - panel:single |# panel.ss #|
 
   - garbage collection: |# mem.ss #|
@@ -78,5 +78,4 @@ signal failures when there aren't any.
     | These tests will create objects in various configurations and
     | make sure that they are garbage collected
 
-	
 |#)

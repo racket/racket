@@ -153,25 +153,25 @@
 	     (lambda (sexp)
 	       
 	       (debug-when messages
-			   (parameterize ([pretty-print-print-line
-					   (let ([prompt "  "]
-						 [old-liner (pretty-print-print-line)])
-					     (lambda (ln port ol cols)
-					       (let ([ov (old-liner ln port ol cols)])
-						 (if ln 
-						     (begin (display prompt port)
-							    (+ (string-length prompt) ov))
-						     ov))))])
-			     (pretty-print sexp)
-			     (newline))))])
+	         (parameterize ([pretty-print-print-line
+                                 (let ([prompt "  "]
+                                       [old-liner (pretty-print-print-line)])
+                                   (lambda (ln port ol cols)
+                                     (let ([ov (old-liner ln port ol cols)])
+                                       (if ln 
+                                         (begin (display prompt port)
+                                                (+ (string-length prompt) ov))
+                                         ov))))])
+                   (pretty-print sexp)
+                   (newline))))])
 	(unless (and in-port
 		     out-port
-		     (with-handlers ([tcp-error?
-				      (lambda (x) #f)])
+		     (with-handlers ([tcp-error? (lambda (x) #f)])
 		       (or (not (char-ready? in-port))
 			   (not (eof-object? (peek-char in-port))))))
 	  (restart-mred))
-	(debug-printf messages "  ~a // ~a: sending to mred:\n" section-name test-name)
+	(debug-printf messages "  ~a // ~a: sending to mred:\n"
+                      section-name test-name)
 	(show-text sexp)
 	(with-handlers ([exn:fail?
 			 (lambda (x)

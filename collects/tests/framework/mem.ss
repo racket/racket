@@ -97,16 +97,14 @@
                                       (send onb get-height)
                                       onb offb)))
 
-        (make-object button% 
-          "Collect" 
-          vp
-          (lambda (x y)
-            (send text erase)
-            (send text insert "Collecting Garbage\n")
-            (collect-garbage)(collect-garbage)(collect-garbage)
-            (collect-garbage)(collect-garbage)(collect-garbage)
-            (collect-garbage)(collect-garbage)(collect-garbage)
-            (update-gui)))
+        (make-object button% "Collect" vp
+                     (lambda (x y)
+                       (send text erase)
+                       (send text insert "Collecting Garbage\n")
+                       (collect-garbage)(collect-garbage)(collect-garbage)
+                       (collect-garbage)(collect-garbage)(collect-garbage)
+                       (collect-garbage)(collect-garbage)(collect-garbage)
+                       (update-gui)))
         (make-object button% "Close" vp (lambda (x y) (send f show #f)))
         (send f show #t)))))
 

@@ -6,13 +6,11 @@
          "debug.ss"
          "test-suite-utils.ss")
 
-(define argv (current-command-line-arguments))
-
 (define preferences-file (find-system-path 'pref-file))
 
 (define old-preferences-file
   (let-values ([(base name _2) (split-path preferences-file)])
-    (build-path base (string-append (path->string name) ".save"))))
+    (build-path base (string-append (path-element->string name) ".save"))))
 
 (define all-files
   (map symbol->string
@@ -21,7 +19,6 @@
          read)))
 
 (define all? #f)
-(define 3m? #f)
 (define files-to-process null)
 (define command-line-flags
   `((once-each
@@ -36,10 +33,11 @@
                                       (or (get-only-these-tests) null))))
       ("Only run test named <test-name>" "test-name")])))
 
-(parse-command-line "framework-test" argv command-line-flags
-                    (lambda (collected . files)
-                      (set! files-to-process (if (or all? (null? files)) all-files files)))
-                    `("Names of the tests; defaults to all tests"))
+(parse-command-line
+ "framework-test" (current-command-line-arguments) command-line-flags
+ (lambda (collected . files)
+   (set! files-to-process (if (or all? (null? files)) all-files files)))
+ `("Names of the tests; defaults to all tests"))
 
 (when (file-exists? preferences-file)
   (debug-printf admin "  saving preferences file ~s to ~s\n"
@@ -63,7 +61,7 @@
            (set-section-name! x)
            (set-section-jump! k))
          (lambda ()
-           (with-handlers ([(lambda (x) #t)
+           (with-handlers ([(lambda (_) #t)
                             (lambda (exn)
                               (debug-printf schedule "~a\n"
                                             (if (exn? exn)
