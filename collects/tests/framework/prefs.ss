@@ -1,6 +1,5 @@
 (module prefs mzscheme
   (require "test-suite-utils.ss"
-	   mzlib/etc
 	   mzlib/list)
   
   (define ((check-eq? x) y) (eq? x y))
@@ -8,11 +7,11 @@
   (define marshalling-pref-sym 'plt:not-a-real-preference-marshalling)
   (define default-test-sym 'plt:not-a-real-preference-default-test)
   
-  (define saved-prefs-file 
+  (define saved-prefs-file
     (let loop ([n 0])
       (let ([candidate
-             (build-path (this-expression-source-directory)
-                         (format "save-prefs.~a" n))])
+             (build-path (find-system-path 'temp-dir)
+                         (format "saved-prefs.~a" n))])
         (if (file-exists? candidate)
             (loop (+ n 1))
             candidate)))) 
