@@ -3831,12 +3831,14 @@ Bool wxWindowDC::SetCairoBrush()
 
 void wxWindowDC::SetAntiAlias(int v)
 {
+#ifdef WX_USE_CAIRO
   if (v != anti_alias) {
     /* In case we go from aligned to not: */
     X->reset_cairo_clip = 1;
   }
     
   wxDC::SetAntiAlias(v);
+#endif
 }
 
 void wxWindowDC::SetAlpha(double d)
