@@ -25,28 +25,27 @@
    (lambda ()
      (with-handlers ([(lambda (x) #t)
 		      (lambda (x)
-			(printf "test suite thread died: ~a~n"
+			(printf "test suite thread died: ~a\n"
 				(if (exn? x)
 				    (exn-message x)
 				    (format "~s" x))))])
        (let ([port (call-with-input-file
-		    (build-path
-		     (collection-path "tests" "framework")
-		     "receive-sexps-port.ss")
+                       (build-path (find-system-path 'temp-dir)
+                                   "framework-tests-receive-sexps-port.ss")
                      read)])
-	 (debug-printf mr-tcp "about to connect to ~a~n" port)
+	 (debug-printf mr-tcp "about to connect to ~a\n" port)
 	 (let*-values ([(in out) (tcp-connect "127.0.0.1" port)])
 	   (let loop ()
-	     (debug-printf mr-tcp "about to read~n")
+	     (debug-printf mr-tcp "about to read\n")
 	     (let ([sexp (read in)])
 	       (if (eof-object? sexp)
 		   (begin
-		     (debug-printf mr-tcp "got eof~n")
+		     (debug-printf mr-tcp "got eof\n")
 		     (close-input-port in)
 		     (close-output-port out)
 		     (exit))
 		   (begin
-		     (debug-printf mr-tcp "got expression to evaluate~n")
+		     (debug-printf mr-tcp "got expression to evaluate\n")
 		     (write
 		      (let ([these-errs (protect (lambda () (begin0 errs (set! errs null))))])
 			(if (null? these-errs)

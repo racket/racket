@@ -52,31 +52,25 @@
   (define load-framework-automatically? #t)
 
   (define initial-port 6012)
-  (define port-filename (build-path
-			 (collection-path "tests" "framework")
-			 "receive-sexps-port.ss"))
+  (define port-filename
+    (build-path (find-system-path 'temp-dir)
+                "framework-tests-receive-sexps-port.ss"))
 
   (unless (file-exists? port-filename)
     (call-with-output-file port-filename
-      (lambda (port)
-	(write initial-port port))))
+      (lambda (port) (write initial-port port))))
 
   (define listener
-    (let loop ()
-      (let ([port (call-with-input-file port-filename read)])
-	(with-handlers ([exn:fail?
-			 (lambda (x)
-			   (let ([next (+ port 1)])
-			     (call-with-output-file port-filename
-			       (lambda (p)
-				 (write next p))
-			       'truncate)
-			     (debug-printf mz-tcp "  tcp-listen failed for port ~a, attempting ~a~n"
-					   port
-					   next)
-			     (loop)))])
-	  (debug-printf mz-tcp "listening to ~a~n" port)
-	  (tcp-listen port)))))
+    (let loop ([port (call-with-input-file port-filename read)])
+      (let ([l (with-handlers ([exn:fail? (lambda (_) #f)])
+                 (tcp-listen port))])
+        (if l
+          (begin (debug-printf mz-tcp "listening to ~a\n" port)
+                 (call-with-output-file port-filename
+                   (lambda (p) (write port p)) 'truncate)
+                 l)
+          (begin (debug-printf mz-tcp "  tcp-listen failed for port ~a\n" port)
+                 (loop (add1 port)))))))
 
   (define in-port #f)
   (define out-port #f)
@@ -95,7 +89,7 @@
         (path->string
          (build-path (collection-path "tests" "framework")
                      "framework-test-engine.ss")))))
-    (debug-printf mz-tcp "accepting listener~n")
+    (debug-printf mz-tcp "accepting listener\n")
     (let-values ([(in out) (tcp-accept listener)])
       (set! in-port in)
       (set! out-port out))
@@ -116,7 +110,7 @@
   (define shutdown-listener
     (lambda ()
       (shutdown-mred)
-      (debug-printf mz-tcp "closing listener~n")
+      (debug-printf mz-tcp "closing listener\n")
       (tcp-close listener)))
 
   (define shutdown-mred
@@ -177,7 +171,7 @@
 		       (or (not (char-ready? in-port))
 			   (not (eof-object? (peek-char in-port))))))
 	  (restart-mred))
-	(debug-printf messages "  ~a // ~a: sending to mred:~n" section-name test-name)
+	(debug-printf messages "  ~a // ~a: sending to mred:\n" section-name test-name)
 	(show-text sexp)
 	(with-handlers ([exn:fail?
 			 (lambda (x)
@@ -214,14 +208,14 @@
 							   (cons char (loop))))
 						     null))))))))])
 		 (read in-port))])
-	  (debug-printf messages "  ~a // ~a: received from mred:~n" section-name test-name)
+	  (debug-printf messages "  ~a // ~a: received from mred:\n" section-name test-name)
 	  (show-text answer)
 	  (unless (or (eof-object? answer)
 		      (and (list? answer)
 			   (= 2 (length answer))
 			   (memq (car answer)
 				 '(error last-error cant-read normal))))
-	    (error 'send-sexp-to-mred "unpected result from mred: ~s~n" answer))
+	    (error 'send-sexp-to-mred "unpected result from mred: ~s\n" answer))
 	  (if (eof-object? answer)
 	      (raise (make-eof-result))
 	      (case (car answer)
@@ -259,7 +253,7 @@
 						 (format "~s" x))))])
 			   (not (passed? result)))])
 	    (when failed
-	      (debug-printf schedule "FAILED ~a:~n  ~s~n" test-name result)
+	      (debug-printf schedule "FAILED ~a:\n  ~s\n" test-name result)
 	      (set! failed-tests (cons (cons section-name test-name) failed-tests))
 	      (case jump
 		[(section) (section-jump)]
