@@ -21,7 +21,8 @@
   (when (file-exists? prefs-file)
     (copy-file prefs-file saved-prefs-file)
     (delete-file prefs-file)
-    (printf "saved preferences file from ~s to ~s\n" prefs-file saved-prefs-file))
+    (debug-printf admin "saved preferences file from ~s to ~s\n"
+                  prefs-file saved-prefs-file))
   
   (shutdown-mred)
   
@@ -103,7 +104,8 @@
                                            'passed))))))
   
   (when (file-exists? saved-prefs-file)
-    (printf "restoring preferences file from ~s to ~s\n" saved-prefs-file prefs-file)
+    (debug-printf admin "restoring preferences file from ~s to ~s\n"
+                  saved-prefs-file prefs-file)
     (when (file-exists? prefs-file)
       (delete-file prefs-file))
     (copy-file saved-prefs-file prefs-file)

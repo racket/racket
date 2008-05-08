@@ -30,7 +30,8 @@
    reset-section-name!
    set-section-name!
    set-only-these-tests!
-   get-only-these-tests)
+   get-only-these-tests
+   debug-printf)
   
   (define section-jump void)
   (define (set-section-jump! _s) (set! section-jump _s))
@@ -149,9 +150,8 @@
   (namespace-require 'scheme/base) ;; in order to make the eval below work right.
   (define (send-sexp-to-mred sexp)
     (let/ec k
-      (let ([show-text 
+      (let ([show-text
 	     (lambda (sexp)
-	       
 	       (debug-when messages
 	         (parameterize ([pretty-print-print-line
                                  (let ([prompt "  "]
