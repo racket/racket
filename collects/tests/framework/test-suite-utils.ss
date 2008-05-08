@@ -83,21 +83,18 @@
 
   (define (restart-mred)
     (shutdown-mred)
-    (case (system-type)
-      [(macosx)
-       (thread
-        (lambda ()
-          (system*
-           (path->string
-            (build-path (collection-path "scheme")
-                        'up
-                        'up
-                        "bin" 
-                        "mred"))
-           (path->string 
-            (build-path (collection-path "tests" "framework")
-                        "framework-test-engine.ss")))))]
-      [else (error 'test-suite-utils.ss "don't know how to start mred")])
+    (thread
+     (lambda ()
+       (system*
+        (path->string
+         (build-path
+          (let-values ([(dir exe _)
+                        (split-path (find-system-path 'exec-file))])
+            dir)
+          (if (eq? 'windows (system-type)) "MrEd.exe" "mred")))
+        (path->string
+         (build-path (collection-path "tests" "framework")
+                     "framework-test-engine.ss")))))
     (debug-printf mz-tcp "accepting listener~n")
     (let-values ([(in out) (tcp-accept listener)])
       (set! in-port in)

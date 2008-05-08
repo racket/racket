@@ -1,3 +1,5 @@
-#!/bin/sh
+#!/bin/bash
 
-exec mred main.ss "$@"
+here="$(dirname "$(readlink -f "$0")")"
+
+exec "$here/../../../bin/mzscheme" "$here/main.ss" "$@"
