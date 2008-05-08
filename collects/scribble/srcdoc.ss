@@ -112,17 +112,51 @@
                            #'([(id (arg-names ctcs) ...) result]))]
                         
                         [((->* (mandatory ...) (optional ...) result) 
-                          ((mandatory-names ...)
-                           ((optional-names optional-default) ...)))
-                         (begin
-                           (unless (= (length (syntax->list #'(mandatory-names ...)))
-                                      (length (syntax->list #'(mandatory ...))))
-                             (raise-syntax-error #f "mismatched mandatory argument list and domain contract count" stx))
-                           (unless (= (length (syntax->list #'(optional-names ...)))
-                                      (length (syntax->list #'(optional ...))))
-                             (raise-syntax-error #f "mismatched mandatory argument list and domain contract count" stx))
-                           #'([(id (mandatory-names mandatory) ... (optional-names optional optional-default) ...)
-                               result]))]
+                          names)
+                         (syntax-case #'names ()
+                           [((mandatory-names ...)
+                             ((optional-names optional-default) ...))
+                            (begin
+                              (unless (= (length (syntax->list #'(mandatory-names ...)))
+                                         (length (syntax->list #'(mandatory ...))))
+                                (raise-syntax-error #f "mismatched mandatory argument list and domain contract count" stx))
+                              (unless (= (length (syntax->list #'(optional-names ...)))
+                                         (length (syntax->list #'(optional ...))))
+                                (raise-syntax-error #f "mismatched mandatory argument list and domain contract count" stx))
+                              #'([(id (mandatory-names mandatory) ... (optional-names optional optional-default) ...)
+                                  result]))]
+                           [(mandatory-names optional-names)
+                            (begin
+                              (syntax-case #'mandatory-names ()
+                                [(mandatory-names ...)
+                                 (andmap identifier? (syntax->list #'(mandatory-names ...)))]
+                                [x
+                                 (raise-syntax-error #f "mandatory names should be a sequence of identifiers" 
+                                                     stx 
+                                                     #'mandatory-names)])
+                              (syntax-case #'optional-names ()
+                                [((x y) ...)
+                                 (andmap identifier? (syntax->list #'(x ... y ...)))]
+                                [((x y) ...)
+                                 (for-each
+                                  (λ (var) 
+                                    (unless (identifier? var)
+                                      (raise-syntax-error #f "expected an identifier in the optional names" stx var)))
+                                  (syntax->list #'(x ... y ...)))]
+                                [(a ...)
+                                 (for-each
+                                  (λ (a)
+                                    (syntax-case stx ()
+                                      [(x y) (void)]
+                                      [other
+                                       (raise-syntax-error #f "expected an sequence of two idenfiers" stx #'other)]))
+                                  (syntax->list #'(a ...)))]))]
+                           [x
+                            (raise-syntax-error
+                             #f
+                             "expected two sequences, one of mandatory names and one of optionals"
+                             stx
+                             #'x)])]
                         [((case-> (-> doms ... rng) ...)
                           ((args ...) ...))
                          (begin
