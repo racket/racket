@@ -11,6 +11,7 @@
            profj/libs/java/lang/Object profj/libs/java/lang/array
            profj/libs/java/lang/String)
   (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss"
+           (lib "test-engine.scm" "test-engine")
            (lib "java-tests.scm" "test-engine")
            (lib "test-coverage.scm" "test-engine")
            (except-in "ast.ss" for) #;"tester.scm"
@@ -791,8 +792,8 @@
                  (lambda ()
                    (test-ext? (profj-settings-allow-check? settings))
                    (testcase-ext? (profj-settings-allow-test? settings))
-                   (tests? (profj-settings-run-tests? settings))
-                   (coverage? (and (tests?) (profj-settings-coverage? settings)))
+                   (test-execute (get-preference 'tests:enable? (lambda () #t)))
+                   (coverage? (and (test-execute) (profj-settings-coverage? settings)))
                    (error-display-handler 
                     (drscheme:debug:make-debug-error-display-handler (error-display-handler)))
                    (let ((old-current-eval (drscheme:debug:make-debug-eval-handler (current-eval))))
@@ -819,41 +820,40 @@
                                    (cond
                                      ((and (not require?) (null? mods) tests-run? (null? extras)) (void))
                                      ((and (not require?) (null? mods) (not tests-run?))
-                                      (when (tests?)
-                                        (let* ([test-engine-obj 
-                                                (make-object (if (testcase-ext?) java-test-base% java-examples-engine%))]
-                                               [tc-info (send test-engine-obj get-info)])
-                                          (namespace-set-variable-value! 'current~test~object% tc-info)
-                                          (send test-engine-obj install-tests 
-                                                (map (lambda (c)
-                                                       (list c (old-current-eval (string->symbol c)) c))
-                                                     (car examples)))
-                                          (when (coverage?)
-                                            (send (send test-engine-obj get-info) add-analysis 
-                                                  (make-object coverage-analysis%)))
-                                          (send test-engine-obj refine-display-class 
-                                                (cond
-                                                  [(and (testcase-ext?) (coverage?)) java-test-coverage-graphics%]
-                                                  [(coverage?) java-examples-coverage-graphics%]
-                                                  [(testcase-ext?) java-test-graphics%]
-                                                  [else java-examples-graphics%]))
-                                          (send test-engine-obj run)
-                                          (send test-engine-obj setup-display (drscheme:rep:current-rep) e)
-                                          (send test-engine-obj summarize-results (current-output-port))
-                                          (let ([test-objs (send test-engine-obj test-objects)])
-                                            (let inner-loop ((os test-objs))
-                                              (unless (null? os)
-                                                (let ((formatted 
-                                                       (format-java-value (car os) (make-format-style #t 'field #f))))
-                                                  (when (< 24 (total-length formatted))
-                                                    (set! formatted 
-                                                          (format-java-value (car os) (make-format-style #t 'field #t))))
-                                                  (let loop ((out formatted))
-                                                    (unless (null? out)
-                                                      (write-special (car out))
-                                                      (loop (cdr out))))
-                                                  (newline))
-                                                (inner-loop (cdr os)))))))
+                                      (let* ([test-engine-obj 
+                                              (make-object (if (testcase-ext?) java-test-base% java-examples-engine%))]
+                                             [tc-info (send test-engine-obj get-info)])
+                                        (namespace-set-variable-value! 'current~test~object% tc-info)
+                                        (send test-engine-obj install-tests 
+                                              (map (lambda (c)
+                                                     (list c (old-current-eval (string->symbol c)) c))
+                                                   (car examples)))
+                                        (when (coverage?)
+                                          (send (send test-engine-obj get-info) add-analysis 
+                                                (make-object coverage-analysis%)))
+                                        (send test-engine-obj refine-display-class 
+                                              (cond
+                                                [(and (testcase-ext?) (coverage?)) java-test-coverage-graphics%]
+                                                [(coverage?) java-examples-coverage-graphics%]
+                                                [(testcase-ext?) java-test-graphics%]
+                                                [else java-examples-graphics%]))
+                                        (send test-engine-obj run)
+                                        (send test-engine-obj setup-display (drscheme:rep:current-rep) e)
+                                        (send test-engine-obj summarize-results (current-output-port))
+                                        (let ([test-objs (send test-engine-obj test-objects)])
+                                          (let inner-loop ((os test-objs))
+                                            (unless (null? os)
+                                              (let ((formatted 
+                                                     (format-java-value (car os) (make-format-style #t 'field #f))))
+                                                (when (< 24 (total-length formatted))
+                                                  (set! formatted 
+                                                        (format-java-value (car os) (make-format-style #t 'field #t))))
+                                                (let loop ((out formatted))
+                                                  (unless (null? out)
+                                                    (write-special (car out))
+                                                    (loop (cdr out))))
+                                                (newline))
+                                              (inner-loop (cdr os))))))
                                       (set! tests-run? #t)
                                       (loop mods extras require?))
                                      ((and (not require?) (null? mods) tests-run?)

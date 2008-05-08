@@ -137,9 +137,11 @@
              (send this display-results display-rep display-event-space)]))))
 
     (define/public (display-success port)
-      (fprintf port "All tests passed!~n"))
+      (unless (test-silence)
+        (fprintf port "All tests passed!~n")))
     (define/public (display-untested port)
-      (fprintf port "This program should be tested.~n"))
+      (unless (test-silence)
+        (fprintf port "This program should be tested.~n")))
     (define/public (display-results rep event-space)
       (send test-display install-info test-info)
       (cond
@@ -164,5 +166,6 @@
 
 (define test-format (make-parameter (lambda (v) (format "~a" v))))
 (define test-execute (make-parameter #t))
+(define test-silence (make-parameter #f))
 
-(provide test-engine% test-display-textual% test-format test-execute)
+(provide test-engine% test-display-textual% test-format test-execute test-silence)

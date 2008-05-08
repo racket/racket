@@ -274,4 +274,4 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test-data test-format test-execute)
+(provide scheme-test-data test-format test-execute test-silence)

@@ -443,7 +443,7 @@ class WeeklyPlanner{
   (interact-test
    'advanced
    (list "int[] x = new int[10];" 
-         "for( int i = 0; i< x.length; i++) x[i]=i;" "x.length" "x[5]")
+         "for( int i = 0; i< x.length; i++) { x[i]=i; }" "x.length" "x[5]")
    (list '(void) '(void) 10 5)
    "Array & for loop")
   
