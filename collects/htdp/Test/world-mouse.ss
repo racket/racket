@@ -1,3 +1,5 @@
+#lang scheme
+
 (require htdp/world)
 
 (with-handlers ((exn? (lambda (x) #t)))

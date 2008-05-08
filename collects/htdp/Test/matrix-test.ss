@@ -1,8 +1,8 @@
 ;; The first three lines of this file were inserted by DrScheme. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname matrix-test) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ())))
-(require (lib "matrix-invisible.ss" "htdp"))
-;(require (lib "matrix.ss" "htdp"))
+;(require (lib "matrix-invisible.ss" "htdp"))
+(require (lib "matrix.ss" "htdp"))
 
 (define r1 '((a00 a01 a02)
              (a10 a11 a12)))
@@ -53,4 +53,4 @@
 ;; --- IMPERATIVE --- 
 (check-expect (matrix-ref m1 0 0) 'a00)
 (define m1-modified (matrix-set! m1 0 0 'xxx)) ;; <-------- uncomment this and the test engine breaks
-; (check-expect (matrix-ref m1 0 0) 'xxx)
+(check-expect (matrix-ref m1 0 0) 'xxx)
