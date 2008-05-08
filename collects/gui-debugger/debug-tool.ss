@@ -895,8 +895,8 @@
                 (send (send (get-frame) get-step-over-button) enable (can-step-over? frames status))
                 (send (send (get-frame) get-step-out-button) enable (can-step-out? frames status))
                 (send (send (get-frame) get-resume-button) enable #t)
-                (send (get-frame) register-stack-frames frames already-stopped?)
-                (unless (empty? frames)
+                (when (cons? frames)
+                  (send (get-frame) register-stack-frames frames already-stopped?)
                   (send (get-frame) register-vars (list-ref frames (get-frame-num))))
                 (send status-message set-label
                       (if (and (cons? status) top-of-stack?)
