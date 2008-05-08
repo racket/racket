@@ -871,14 +871,16 @@
           
           (define (can-step-over? frames status)
             (and (or (not (zero? (get-frame-num))) (eq? status 'entry-break))
+                 frames
                  (not (empty? frames))
                  (not (eq? (frame->end-breakpoint-status (list-ref frames (get-frame-num))) 'invalid))))
           
           (define (can-step-out? frames status)
-            (let ([frames (list-tail frames (get-frame-num))])
-              (and (not (empty? frames))
-                   (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
-                          (rest frames)))))
+            (and frames
+              (let ([frames (list-tail frames (get-frame-num))])
+                (and (not (empty? frames))
+                     (ormap (lambda (f) (not (eq? (frame->end-breakpoint-status f) 'invalid)))
+                            (rest frames))))))
 
           (define/public suspend-gui
             (opt-lambda (frames status [switch-tabs? #f] [already-stopped? #f])
