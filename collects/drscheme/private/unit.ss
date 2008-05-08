@@ -1373,10 +1373,11 @@ module browser threading seems wrong.
           (send top-outer-panel stretchable-width (not vertical?))
           (send top-panel set-orientation (not vertical?))
           (send toolbar/rest-panel set-orientation vertical?)
-          (send toolbar/rest-panel change-children (λ (l)
-                                                     (if bar-at-beginning?
-                                                         (cons top-outer-panel (remq top-outer-panel l))
-                                                         (append (remq top-outer-panel l) (list top-outer-panel)))))
+          (send toolbar/rest-panel change-children
+                (λ (l)
+                  (if bar-at-beginning?
+                      (cons top-outer-panel (remq top-outer-panel l))
+                      (append (remq top-outer-panel l) (list top-outer-panel)))))
           (send top-outer-panel change-children (λ (l) (list top-panel)))
           (send logging-parent-panel change-children (λ (l) (list logging-panel)))
           (if vertical? 
@@ -2268,10 +2269,11 @@ module browser threading seems wrong.
             (send definitions-text set-delegate old-delegate)
             (update-running (send current-tab is-running?))
             (on-tab-change old-tab current-tab)
+            
             (end-container-sequence)
             ;; restore-visible-tab-regions has to be outside the container sequence
             ;; or else things get moved again during the container sequence end
-            (restore-visible-tab-regions))) 
+            (restore-visible-tab-regions)))
         
         (define/pubment (on-tab-change from-tab to-tab)
           (let ([old-enabled (send from-tab get-enabled)]
@@ -3350,7 +3352,12 @@ module browser threading seems wrong.
         [define teachpack-items null]
         [define break-button (void)]
         [define execute-button (void)]
-        [define button-panel (new horizontal-panel% [parent top-panel] [spacing 2])]
+        [define button-panel 
+          (new (class horizontal-panel%
+                 (define/override (after-new-child c)
+                   ;; do this so that new buttons that show up are put in the right mode
+                   (update-toolbar-visiblity))
+                 (super-new [parent top-panel] [spacing 2])))]
         [define/public get-execute-button (λ () execute-button)]
         [define/public get-break-button (λ () break-button)]
         [define/public get-button-panel (λ () button-panel)]
