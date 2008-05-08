@@ -9,10 +9,9 @@ added get-regions
 (require mzlib/class
          mzlib/thread
          mred
-         mzlib/etc
-         (lib "token-tree.ss" "syntax-color")
-         (lib "paren-tree.ss" "syntax-color")
-         (lib "default-lexer.ss" "syntax-color")
+         syntax-color/token-tree
+         syntax-color/paren-tree
+         syntax-color/default-lexer
          string-constants
          "../preferences.ss"
          "sig.ss")
@@ -432,7 +431,7 @@ added get-regions
     
     ;; See docs
     (define/public stop-colorer
-      (opt-lambda ((clear-the-colors #t))
+      (lambda ((clear-the-colors #t))
         (set! stopped? #t)
         (when (and clear-the-colors (not frozen?))
           (clear-colors))
@@ -466,7 +465,7 @@ added get-regions
     
     ;; See docs
     (define/public thaw-colorer
-      (opt-lambda ((recolor? #t)
+      (lambda ((recolor? #t)
                    (retokenize? #f))
         (when frozen?
           (set! frozen? #f)
@@ -561,7 +560,7 @@ added get-regions
     ;; highlight parens, and the parens will be highlighted as soon as
     ;; possible.
     (define/private match-parens
-      (opt-lambda ([just-clear? #f])
+      (lambda ([just-clear? #f])
         ;;(printf "(match-parens ~a)~n" just-clear?)
         (when (and (not in-match-parens?)
                    ;; Trying to match open parens while the
