@@ -519,7 +519,8 @@
                         (if ((string-length str) . <= . len)
                           str
                           (string-append (substring str 0 (max 0 (- len 3)))
-                                         "...")))))))
+                                         "..."))))))
+                 (current-print void))
                void ; kill
                iter)))
 
