@@ -704,7 +704,7 @@ Superceded by @schememodname[srfi/41].
 
 @; ----------------------------------------
 
-@srfi[41]{Streams}
+@srfi[41 #:subdir "srfi-41/"]{Streams}
 
 @redirect[41 '(
  (stream-null #f "stream-null")
