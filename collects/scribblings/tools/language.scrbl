@@ -1008,4 +1008,5 @@ Translates a Scheme value into a settings, returning
 
 }}
 
+@(include-extracted (lib "language-object-contract.ss" "drscheme" "private") #rx"^drscheme:language:")
 @(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:language:")

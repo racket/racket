@@ -15,6 +15,13 @@
 @title{@bold{Plugins}: Extending DrScheme}
 @(defmodule drscheme/tool-lib)
 
+
+@bold{TODO}
+
+@itemize{@item{contract for capability-value method is wrong (commented out version is right, but has circular dependencies)}}
+
+----------------------------------------------------------------------------------------------------
+
 @bold{This Manual}
 
 This manual describes DrScheme's tools interface. It assumes
