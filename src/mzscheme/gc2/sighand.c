@@ -1,6 +1,7 @@
 /* 
    Provides:
       initialize_signal_handler();
+      remove_signal_handler();
    Requires:
       generations_available - mutable int, Windows only
       designate_modified
@@ -128,6 +129,36 @@ static void initialize_signal_handler()
       aveh(TRUE, fault_handler);
     else
       generations_available = 0;
+  }
+# endif
+}
+
+static void remove_signal_handler()
+{
+# ifdef NEED_OSX_MACH_HANDLER
+# endif
+# ifdef NEED_SIGACTION
+  {
+    struct sigaction act, oact;
+    memset(&act, 0, sizeof(sigaction));
+    act.sa_sahandler = SIG_DFL;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = SA_SIGINFO;
+    sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
+  }
+# endif
+# ifdef NEED_SIGWIN
+  if (generations_available) {
+    HMODULE hm;
+    ULONG (WINAPI*rveh)(gcPVECTORED_EXCEPTION_HANDLER);
+
+    hm = LoadLibrary("kernel32.dll");
+    if (hm)
+      rveh = (ULONG (WINAPI*)(gcPVECTORED_EXCEPTION_HANDLER))GetProcAddress(hm, "RemoveVectoredExceptionHandler");
+    else
+      rveh = NULL;
+    if (rveh)
+      rveh(fault_handler);
   }
 # endif
 }

@@ -199,6 +199,8 @@ void scheme_init_getenv(void);
 void scheme_init_foreign(Scheme_Env *env);
 #endif
 
+void scheme_free_dynamic_extensions(void);
+
 /* Type readers & writers for compiled code data */
 typedef Scheme_Object *(*Scheme_Type_Reader)(Scheme_Object *list);
 typedef Scheme_Object *(*Scheme_Type_Writer)(Scheme_Object *obj);
@@ -220,6 +222,7 @@ void scheme_init_exn_config(void);
 #ifdef WINDOWS_PROCESSES
 void scheme_init_thread_memory(void);
 #endif
+void scheme_init_module_resolver(void);
 
 void scheme_finish_kernel(Scheme_Env *env);
 

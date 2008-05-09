@@ -3265,3 +3265,39 @@ void GC_dump_variable_stack(void **var_stack,
 }
 
 #endif
+
+/******************************************************************************/
+/*                              GC free all                                   */
+/******************************************************************************/
+
+void GC_free_all(void)
+{
+  int i;
+  struct mpage *work, *next;
+
+  remove_signal_handler();
+
+  for (work = gen0_big_pages; work; work = next) {
+    next = work->next;
+    free_pages(work->addr, round_to_apage_size(work->size));
+    free_mpage(work);
+  }
+
+  for(i = 0; i < PAGE_TYPES; i++) {
+    for (work = pages[i]; work; work = next) {
+      next = work->next;
+
+      if (work->mprotected)
+        protect_pages(work->addr, 
+                      work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE, 
+                      1);
+
+      pagemap_remove(work);
+      free_backtrace(work);
+      free_pages(work->addr, work->big_page ? round_to_apage_size(work->size) : APAGE_SIZE);
+      free_mpage(work);
+    }
+  }
+
+  flush_freed_pages();
+}

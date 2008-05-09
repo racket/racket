@@ -186,6 +186,8 @@ static Scheme_Custodian *main_custodian;
 static Scheme_Custodian *last_custodian;
 static Scheme_Hash_Table *limited_custodians = NULL;
 
+static Scheme_Object *initial_inspector;
+
 #ifndef MZ_PRECISE_GC
 static int cust_box_count, cust_box_alloc;
 static Scheme_Custodian_Box **cust_boxes;
@@ -1916,6 +1918,15 @@ static void check_current_custodian_allows(const char *who, Scheme_Thread *p)
 		      "the current custodian does not "
 		      "solely manage the specified thread: ",
 		      (Scheme_Object *)p);  
+}
+
+void scheme_free_all(void)
+{
+  scheme_do_close_managed(NULL, NULL);
+  scheme_free_dynamic_extensions();
+#ifdef MZ_PRECISE_GC
+  GC_free_all();
+#endif
 }
 
 /*========================================================================*/
@@ -6439,7 +6450,17 @@ static void make_initial_config(Scheme_Thread *p)
 
   {
     Scheme_Object *ins;
-    ins = scheme_make_initial_inspectors();
+    if (initial_inspector) {
+      ins = initial_inspector;
+    } else {
+      ins = scheme_make_initial_inspectors();
+      /* Keep the initial inspector in case someone resets Scheme (by
+         calling scheme_basic_env() a second time. Using the same
+         inspector after a reset lets us use the same initial module
+         instances. */
+      REGISTER_SO(initial_inspector);
+      initial_inspector = ins;
+    }
     init_param(cells, paramz, MZCONFIG_INSPECTOR, ins);
     init_param(cells, paramz, MZCONFIG_CODE_INSPECTOR, ins);
   }

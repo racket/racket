@@ -259,8 +259,6 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 
 void scheme_init_module(Scheme_Env *env)
 {
-  Scheme_Object *o;
-
   scheme_register_syntax(MODULE_EXPD, 
 			 module_optimize,
 			 module_resolve, module_sfs, module_validate, 
@@ -321,12 +319,7 @@ void scheme_init_module(Scheme_Env *env)
   scheme_install_type_writer(scheme_module_type, write_module);
   scheme_install_type_reader(scheme_module_type, read_module);
 
-  o = scheme_make_prim_w_arity(default_module_resolver,
-			       "default-module-name-resolver",
-			       1, 4);
-  scheme_set_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_RESOLVER, o);
-
-  scheme_set_param(scheme_current_config(), MZCONFIG_CURRENT_MODULE_NAME, scheme_false);
+  scheme_init_module_resolver();
 
   scheme_add_global_constant("current-module-name-resolver", 
 			     scheme_register_parameter(current_module_name_resolver, 
@@ -458,6 +451,22 @@ void scheme_init_module(Scheme_Env *env)
 						      "module-path?",
 						      1, 1),
 			     env);
+}
+
+void scheme_init_module_resolver(void)
+{
+  Scheme_Object *o;
+  Scheme_Config *config;
+
+  config = scheme_current_config();
+
+  o = scheme_make_prim_w_arity(default_module_resolver,
+			       "default-module-name-resolver",
+			       1, 4);
+ 
+  scheme_set_param(config, MZCONFIG_CURRENT_MODULE_RESOLVER, o);
+
+  scheme_set_param(config, MZCONFIG_CURRENT_MODULE_NAME, scheme_false);
 }
 
 void scheme_finish_kernel(Scheme_Env *env)
@@ -786,6 +795,9 @@ void scheme_install_initial_module_set(Scheme_Env *env)
 static Scheme_Object *default_module_resolver(int argc, Scheme_Object **argv)
 {
   Scheme_Object *p = argv[0];
+
+  if (argc == 1)
+    return scheme_void; /* ignore notify */
 
   if (SCHEME_PAIRP(p)
       && SAME_OBJ(SCHEME_CAR(p), quote_symbol)

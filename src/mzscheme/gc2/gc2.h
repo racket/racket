@@ -118,6 +118,12 @@ GC2_EXTERN void GC_gcollect(void);
 /*
    Performs an immediate (full) collection. */
 
+GC2_EXTERN void GC_free_all(void);
+/*
+   Releases all memory, removes all signal handlers, etc.
+   This is mainly useful for unloading a DLL within an embedding
+   program tht will keep running. */
+
 /***************************************************************************/
 /* Allocation                                                              */
 /***************************************************************************/

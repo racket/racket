@@ -180,6 +180,17 @@ static void init_dummy_foreign(Scheme_Env *env)
 }
 #endif
 
+static void boot_module_resolver()
+{
+  Scheme_Object *boot, *a[2];
+  a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
+                          scheme_make_pair(scheme_intern_symbol("#%boot"),
+                                           scheme_null));
+  a[1] = scheme_intern_symbol("boot");
+  boot = scheme_dynamic_require(2, a);
+  scheme_apply(boot, 0, NULL);
+}
+
 Scheme_Env *scheme_basic_env()
 {
   Scheme_Env *env;
@@ -198,6 +209,7 @@ Scheme_Env *scheme_basic_env()
 
     scheme_make_thread();
     scheme_init_error_escape_proc(NULL);
+    scheme_init_module_resolver();
 
     env = scheme_make_empty_env();
     scheme_install_initial_module_set(env);
@@ -210,6 +222,8 @@ Scheme_Env *scheme_basic_env()
 #ifndef NO_SCHEME_EXNS
     scheme_init_exn_config();
 #endif
+
+    boot_module_resolver();
 
     return env;
   }
@@ -387,15 +401,7 @@ Scheme_Env *scheme_basic_env()
 
   scheme_add_embedded_builtins(env);
 
-  {
-    Scheme_Object *boot, *a[2];
-    a[0] = scheme_make_pair(scheme_intern_symbol("quote"),
-                            scheme_make_pair(scheme_intern_symbol("#%boot"),
-                                             scheme_null));
-    a[1] = scheme_intern_symbol("boot");
-    boot = scheme_dynamic_require(2, a);
-    scheme_apply(boot, 0, NULL);
-  }
+  boot_module_resolver();
 
   scheme_save_initial_module_set(env);
 

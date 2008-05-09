@@ -130,7 +130,6 @@ void setupSchemeEnv(Scheme_Env *in_env)
   char exeBuff[260];
   HMODULE mod;
   static BOOL registered;
-  Scheme_Object *nsreq, *a[1];
 
   if (!registered) {
     scheme_register_static(&env,sizeof(env));
@@ -159,9 +158,7 @@ void setupSchemeEnv(Scheme_Env *in_env)
 
   // initialize namespace
 
-  nsreq = scheme_builtin_value("namespace-require");
-  a[0] = scheme_intern_symbol("scheme");
-  scheme_apply(nsreq, 1, a);
+  scheme_namespace_require(scheme_intern_symbol("scheme"));
 
   // set up exception trapping
 

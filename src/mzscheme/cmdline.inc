@@ -100,32 +100,6 @@ static int is_number_arg(const char *s)
   return 1;
 }
 
-static char *protect_quote_backslash(const char *file)
-{
-  int i, c;
-  
-  for (i = c = 0; file[i]; i++) {
-    if ((file[i] == '"') || (file[i] == '\\'))
-      c++;
-  }
-
-  if (c) {
-    char *s;
-  
-    s = (char *)malloc(i + c + 1);
-
-    for (i = c = 0; file[i]; i++) {
-      if ((file[i] == '"') || (file[i] == '\\'))
-	s[c++] = '\\';
-      s[c++] = file[i];
-    }
-    s[c] = 0;
-
-    return s;
-  } else
-    return (char *)file;
-}
-
 static char *make_embedded_load(const char *start, const char *end)
 {
   char *s;

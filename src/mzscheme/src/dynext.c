@@ -508,6 +508,25 @@ Scheme_Object *scheme_load_extension(const char *filename, Scheme_Env *env)
   return load_extension(1, a);
 }
 
+void scheme_free_dynamic_extensions()
+{
+  if (loaded_extensions) {
+    int i;
+    ExtensionData *ed;
+    for (i = 0; i < loaded_extensions->size; i++) {
+      if (loaded_extensions->vals[i]) {
+        ed = (ExtensionData *)loaded_extensions->vals[i];
+#       ifdef UNIX_DYNAMIC_LOAD
+        dlclose(ed->handle);
+#       endif
+#       ifdef WINDOWS_DYNAMIC_LOAD
+        FreeLibrary(ed->handle);
+#       endif
+      }
+    }
+  }
+}
+
 #if defined(CODEFRAGMENT_DYNAMIC_LOAD)
 
 static Boolean get_ext_file_spec(FSSpec *spec, const char *filename)

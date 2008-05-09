@@ -1677,6 +1677,7 @@ MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Objec
 /* Initialization */
 MZ_EXTERN Scheme_Env *scheme_basic_env(void);
 MZ_EXTERN void scheme_reset_overflow(void);
+MZ_EXTERN void scheme_free_all(void);
 
 #ifdef USE_MSVC_MD_LIBRARY
 MZ_EXTERN void GC_pre_init(void);
