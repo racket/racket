@@ -6,6 +6,7 @@
 
 (provide require/doc
          provide/doc
+         thing-doc
          parameter-doc
          proc-doc
          proc-doc/names)
@@ -203,5 +204,21 @@
          (values
           #'[id (parameter/c contract)]
           #'(defparam id arg-id contract . desc)
+          #'(scribble/manual)
+          #'id))])))
+
+(define-provide/doc-transformer thing-doc
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_ id contract desc)
+       (begin
+         (unless (identifier? #'id)
+           (raise-syntax-error 'parameter/doc 
+                               "expected an identifier"
+                               stx
+                               #'id))
+         (values
+          #'[id contract]
+          #'(defthing id contract . desc)
           #'(scribble/manual)
           #'id))])))

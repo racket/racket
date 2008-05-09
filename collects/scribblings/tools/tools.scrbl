@@ -43,7 +43,7 @@ Christian Queinnec,
 PLT at large, and many others for
 their feedback and help.
 
-@section{Implementing DrScheme Tools}
+@section[#:tag "implementing-tools"]{Implementing DrScheme Tools}
 
 Tools are designed for major extensions in DrScheme's
 functionality.  To extend the appearance
