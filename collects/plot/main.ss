@@ -8,7 +8,8 @@
                              shade surface))
          (only-in "plot.ss"
                   mix
-                  derivative gradient make-vec)
+                  derivative gradient make-vec
+                  mesh3d)
          (only-in "fit.ss" fit-int))
 
 (provide plot
@@ -25,7 +26,8 @@
          mix
          derivative
          gradient
-         make-vec)
+         make-vec
+         mesh3d)
 
 (define-syntax-rule (out-fit-struct)
   (begin
@@ -50,8 +52,9 @@
                 #:fgcolor [fgcolor '(0 0 0)]
                 #:bgcolor [bgcolor '(255 255 255)]
                 #:lncolor [lncolor '(255 0 0)]
+                #:out-file [out-file #f]
                 arg-extra ...)
-    (orig:plot data 
+    (orig:plot data
                [width width]
                [height height]
                [x-min x-min]
@@ -64,16 +67,17 @@
                [fgcolor fgcolor]
                [bgcolor bgcolor]
                [lncolor lncolor]
+               [out-file out-file]
                init-extra ...)))
 
 (define-plot plot orig:plot [] [])
 
 (define-plot plot3d orig:plot3d
   [#:z-min [z-min -5]
-           #:z-max [z-max 5]
-           #:z-label [z-label "Z axis"]
-           #:alt [alt 30]
-           #:az [az 45]]
+   #:z-max [z-max 5]
+   #:z-label [z-label "Z axis"]
+   #:alt [alt 30]
+   #:az [az 45]]
   [[z-min z-min]
    [z-max z-max]
    [z-label z-label]
@@ -82,8 +86,8 @@
 
 (define (plot-color? v)
   (memq v '(white black yellow green aqua pink
-                  wheat grey blown blue violet cyan
-                  turquoise magenta salmon red)))
+            wheat grey blown blue violet cyan
+            turquoise magenta salmon red)))
 
 (define (points vecs 
                 #:sym [sym 'square]
@@ -114,11 +118,13 @@
 (define (vector-field f
                       #:width [width 1]
                       #:color [color 'red]
-                      #:style [style 'scaled])
+                      #:style [style 'scaled]
+                      #:samples [samples 20])
   (orig:vector-field f
                      [width width]
                      [color color]
-                     [style style]))
+                     [style style]
+                     [samples samples]))
 
 (define (contour f
                  #:samples [samples 50]

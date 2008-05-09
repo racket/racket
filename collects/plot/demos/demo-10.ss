@@ -1,3 +1,4 @@
+#lang scheme
 (require plot)
 
 (require mzlib/class plot/plot-extend)

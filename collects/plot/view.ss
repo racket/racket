@@ -156,24 +156,23 @@
       ;    (begin0
       ;      (send bmdc get-bitmap)
       ;      (send bmdc set-bitmap #f))))
-           
+
       (super-instantiate ())))
-        
+
   ;; a 2d plot view
-  (define 2d-view% 
+  (define 2d-view%
     (class* plot-view% ()
-      (public 
-        set-labels 
+      (public
+        set-labels
         plot-y-errors
         plot-vector
-        plot-vectors      
+        plot-vectors
         plot-points
         plot-line
         plot-contours
         plot-shades
-        fill
-                )
-      
+        fill)
+
       ; set-labels : string string string -> nothing
       ; sets the x, y and title lables
       (define (set-labels x-label y-label title)

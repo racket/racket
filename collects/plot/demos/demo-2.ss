@@ -1,4 +1,4 @@
+#lang scheme
 (require plot)
-(require mzlib/etc)
 
-(plot (line identity (color 'red)))
+(plot (line (lambda (x) x) #:color 'red))
