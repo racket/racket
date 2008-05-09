@@ -48,17 +48,19 @@
 ;; p : the repeated pattern
 ;; dd : the ... stx
 ;; rest : the syntax for the rest
-(define (dd-parse parse p dd rest)
+(define (dd-parse parse p dd rest #:mutable [mutable? #f])
   (let* ([count (ddk? dd)]
          [min (and (number? count) count)])
-    (make-GSeq (parameterize ([match-...-nesting (add1 (match-...-nesting))])
-                 (list (list (parse p))))
-               (list min)
-               ;; no upper bound
-               (list #f)
-               ;; patterns in p get bound to lists
-               (list #f)
-               (parse rest))))
+    (make-GSeq
+     (parameterize ([match-...-nesting (add1 (match-...-nesting))])
+       (list (list (parse p))))
+     (list min)
+     ;; no upper bound
+     (list #f)
+     ;; patterns in p get bound to lists
+     (list #f)
+     (parse rest)
+     mutable?)))
 
 ;; stx : the syntax object for the whole pattern
 ;; cert : the certifier
@@ -93,18 +95,24 @@
                         [(not (car acc)) (cdr acc)]
                         [else acc])])
         (make-Struct id pred (get-lineage (cert struct-name)) acc
-                     (if (eq? '_ (syntax-e pats))
-                       (map make-Dummy acc)
-                       (let* ([ps (syntax->list pats)])
-                         (unless (= (length ps) (length acc))
-                           (raise-syntax-error
-                            'match
-                            (format "~a structure ~a: expected ~a but got ~a"
-                                    "wrong number for fields for"
-                                    (syntax->datum struct-name) (length acc)
-                                    (length ps))
-                            stx pats))
-                         (map parse ps))))))))
+                     (cond [(eq? '_ (syntax-e pats))                            
+                            (map make-Dummy acc)]
+                           [(syntax->list pats)
+                            =>
+                            (lambda (ps)
+                              (unless (= (length ps) (length acc))
+                                (raise-syntax-error
+                                 'match
+                                 (format "~a structure ~a: expected ~a but got ~a"
+                                         "wrong number for fields for"
+                                         (syntax->datum struct-name) (length acc)
+                                         (length ps))
+                                 stx pats))
+                              (map parse ps))]
+                           [else (raise-syntax-error
+                                  'match
+                                  "improper syntax for struct pattern"
+                                  stx pats)]))))))
 
 (define (trans-match pred transformer pat)
   (make-And (list (make-Pred pred) (make-App transformer pat))))

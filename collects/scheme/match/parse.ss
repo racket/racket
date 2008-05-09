@@ -24,7 +24,7 @@
   (define (parse stx) (parse/cert stx cert))
   (syntax-case* stx (not var struct box cons list vector ? and or quote app
                      regexp pregexp list-rest list-no-order hash-table
-                     quasiquote mcons list*)
+                     quasiquote mcons list* mlist)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander args ...)
      (and (identifier? #'expander)
@@ -104,7 +104,8 @@
                   (cons max (map (lambda _ 1) ps))
                   ;; vars in lp are lists, vars elsewhere are not
                   (cons #f (map (lambda _ #t) ps))
-                  (make-Null (make-Dummy #f))))]
+                  (make-Null (make-Dummy #f))
+                  #f))]
     [(list-no-order p ...)
      (ormap ddk? (syntax->list #'(p ...)))
      (raise-syntax-error
@@ -118,16 +119,26 @@
                   (map (lambda _ 1) ps)
                   ;; all of these patterns get bound to only one thing
                   (map (lambda _ #t) ps)
-                  (make-Null (make-Dummy #f))))]
+                  (make-Null (make-Dummy #f))
+                  #f))]
     [(list) (make-Null (make-Dummy stx))]
+    [(mlist) (make-Null (make-Dummy stx))]
     [(list ..)
+     (ddk? #'..)
+     (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
+    [(mlist ..)
      (ddk? #'..)
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
     [(list p .. . rest)
      (ddk? #'..)
      (dd-parse parse #'p #'.. (syntax/loc stx (list . rest)))]
+    [(mlist p .. . rest)
+     (ddk? #'..)
+     (dd-parse parse #'p #'.. (syntax/loc stx (list . rest)) #:mutable #t)]
     [(list e es ...)
      (make-Pair (parse #'e) (parse (syntax/loc stx (list es ...))))]
+    [(mlist e es ...)
+     (make-MPair (parse #'e) (parse (syntax/loc stx (mlist es ...))))]
     [(list* . rest)
      (parse (syntax/loc stx (list-rest . rest)))]
     [(list-rest e)

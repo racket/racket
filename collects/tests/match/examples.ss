@@ -1,8 +1,10 @@
 #lang scheme/base
 
 (require scheme/match 
+	 scheme/mpair
          (for-syntax scheme/base)
-         (prefix-in m: mzlib/match))
+         (prefix-in m: mzlib/match)
+         (only-in srfi/13 string-contains))
 (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
 
 
@@ -516,6 +518,16 @@
            [(mcons a b) (+ a b)]
            [_ 'no]))
    
+   (comp 3
+         (match (mlist 1 2)
+           [(mlist a b) (+ a b)]
+           [_ 'no]))
+   
+   (comp 3
+         (match (mlist 1 2)
+           [(mlist a ...) (apply + a)]
+           [_ 'no]))
+
    (comp 1
          (match (box 'x) ('#&x 1) (else #f)))
    
@@ -527,6 +539,16 @@
                          [values (lambda _ 'no)])
                 (match 1)
                 'no))
+   
+   (comp 'yes
+         (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]
+                         [values (lambda _ 'no)])
+           (expand #'(let ()
+                       (define-struct foo (bar))
+                       (define the-bar (match (make-foo 42)
+                                         [(struct foo bar) ;; note the bad syntax
+                                          bar]))
+                       0))))
 
    ;; raises error
    (comp 'yes (with-handlers ([exn:fail:syntax? (lambda _ 'yes)]) 

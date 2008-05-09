@@ -307,6 +307,8 @@
                [maxs (GSeq-maxs first)]
                [onces? (GSeq-onces? first)]
                [tail (GSeq-tail first)]
+               [mutable? (GSeq-mutable? first)]
+               [make-Pair (if mutable? make-MPair make-Pair)]
                [k (Row-rhs (car block))]
                [xvar (car (generate-temporaries (list #'x)))]
                [complete-heads-pattern

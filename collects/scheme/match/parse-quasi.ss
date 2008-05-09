@@ -25,7 +25,8 @@
                                (GSeq-mins p1)
                                (GSeq-maxs p1)
                                (GSeq-onces? p1)
-                               (append-pats (GSeq-tail p1) p2))]
+                               (append-pats (GSeq-tail p1) p2)
+                               (GSeq-mutable? p1))]
         [(Null? p1) p2]
         [else (error 'match "illegal input to append-pats")]))
 
@@ -55,7 +56,8 @@
         (list #f)
         ;; patterns in p get bound to lists
         (list #f)
-        (make-Null (make-Dummy #f))))]
+        (make-Null (make-Dummy #f))
+        #f))]
     [(a . b) (make-Pair (pq #'a) (pq #'b))]
     ;; the hard cases
     [#(p ...)

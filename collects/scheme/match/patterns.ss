@@ -84,7 +84,8 @@
 ;; onces? : listof boolean -- is this pattern being bound only once (take the
 ;;                            car of the variables)
 ;; tail : pattern
-(define-struct (GSeq Pat) (headss mins maxs onces? tail) #:transparent)
+;; mutable? : is this for mutable lists?
+(define-struct (GSeq Pat) (headss mins maxs onces? tail mutable?) #:transparent)
 
 ;; match with equal?
 ;; v is a quotable scheme value
