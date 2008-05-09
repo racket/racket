@@ -6,6 +6,8 @@
 @title{@bold{Framework}: PLT GUI Application Framework}
 @(defmodule framework)
 
+@bold{TODO}
+
 @itemize{@item{decorated editor snip isn't exported by framework/framework}}
 
 ----------------------------------------------------------------------------------------------------
