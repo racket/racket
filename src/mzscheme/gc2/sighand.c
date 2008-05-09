@@ -141,7 +141,7 @@ static void remove_signal_handler()
   {
     struct sigaction act, oact;
     memset(&act, 0, sizeof(sigaction));
-    act.sa_sahandler = SIG_DFL;
+    act.sa_handler = SIG_DFL;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_SIGINFO;
     sigaction(USE_SIGACTON_SIGNAL_KIND, &act, &oact);
