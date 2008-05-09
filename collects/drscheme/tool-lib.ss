@@ -24,7 +24,7 @@ all of the names in the tools library, for use defining keybindings
 
 (require (for-syntax scheme/base))
 
-(require/doc drscheme/private/ts drscheme/private/oc scheme/base scribble/manual)
+(require/doc drscheme/private/ts scheme/base scribble/manual)
 
 (shutdown-splash)
 (define-values/invoke-unit/infer drscheme@)
