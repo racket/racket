@@ -264,7 +264,7 @@ void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
   case VT_I1 | VT_BYREF          : return &pVariantArg->pcVal;
   case VT_UI1                    : return &pVariantArg->bVal;
   case VT_UI1 | VT_BYREF         : return &pVariantArg->pbVal;
-  case VT_I2                     : return &(pVariantArg->iVal);
+  case VT_I2                     : return &pVariantArg->iVal;
   case VT_I2 | VT_BYREF          : return &pVariantArg->piVal;
   case VT_UI2                    : return &pVariantArg->uiVal;
   case VT_UI2 | VT_BYREF         : return &pVariantArg->puiVal;
@@ -287,7 +287,7 @@ void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
   case VT_R4 | VT_BYREF          : return &pVariantArg->pfltVal;
   case VT_R8                     : return &pVariantArg->dblVal;
   case VT_R8 | VT_BYREF          : return &pVariantArg->pdblVal;
-  case VT_BSTR                   : return &pVariantArg->bstrVal;
+  case VT_BSTR                   : return pVariantArg->bstrVal;
   case VT_BSTR | VT_BYREF        : return &pVariantArg->pbstrVal;
   case VT_CY                     : return &pVariantArg->cyVal;
   case VT_CY | VT_BYREF          : return &pVariantArg->pcyVal;
@@ -297,7 +297,7 @@ void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
   case VT_BOOL | VT_BYREF        : return &pVariantArg->pboolVal;
   case VT_ERROR                  : return &pVariantArg->scode;
   case VT_ERROR | VT_BYREF       : return &pVariantArg->pscode;
-  case VT_DISPATCH               : return &pVariantArg->pdispVal;
+  case VT_DISPATCH               : return pVariantArg->pdispVal;
   case VT_DISPATCH | VT_BYREF    : return &pVariantArg->ppdispVal;
   // VT_USERDEFINED | VT_BYREF indicates that we should pass the
   // IUnknown pointer of a COM object.
@@ -305,7 +305,7 @@ void* variantDataPointer(VARTYPE vt,VARIANTARG *pVariantArg)
   // bash it out to VT_UNKNOWN.
   case VT_USERDEFINED | VT_BYREF : return &pVariantArg->punkVal;
   case VT_VARIANT | VT_BYREF     : return &pVariantArg->pvarVal;
-  case VT_UNKNOWN                : return &pVariantArg->punkVal;
+  case VT_UNKNOWN                : return pVariantArg->punkVal;
   case VT_UNKNOWN | VT_BYREF     : return &pVariantArg->ppunkVal;
   case VT_VARIANT                : return pVariantArg;
   case VT_PTR :
@@ -366,9 +366,7 @@ void doSetArrayElts(Scheme_Object *vec, VARTYPE elementType, SAFEARRAY *theArray
       elt = SCHEME_VEC_ELS(vec)[i];
       currNdx[offset] = i;
       marshalSchemeValueToVariant(elt,&variant);
-      // I don't think this will ever happen (at least when calling
-      // this function from the scheme side).
-      if (variant.vt != elementType) {
+      if (variant.vt != elementType && elementType != VT_VARIANT) {
         char errBuff[100];
         sprintf(errBuff,
                 "Unable to put an element of COM type 0x%x into an array of COM type 0x%x",
