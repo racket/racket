@@ -1148,7 +1148,7 @@ module browser threading seems wrong.
     (define-local-member-name 
       disable-evaluation-in-tab
       enable-evaluation-in-tab
-      update-toolbar-visiblity)
+      update-toolbar-visibility)
     
     (define -frame<%>
       (interface (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1316,7 +1316,7 @@ module browser threading seems wrong.
         (define/private (change-toolbar-state new-state)
           (set! toolbar-state new-state)
           (preferences:set 'drscheme:toolbar-state new-state)
-          (update-toolbar-visiblity))
+          (update-toolbar-visibility))
         
         (define/override (on-toolbar-button-click) (change-toolbar-state (cons (not (car toolbar-state)) (cdr toolbar-state))))
         (define/private (set-toolbar-left) (change-toolbar-state (cons #f 'left)))
@@ -1324,17 +1324,12 @@ module browser threading seems wrong.
         (define/private (set-toolbar-top) (change-toolbar-state (cons #f 'top)))
         (define/private (set-toolbar-hidden) (change-toolbar-state (cons #t (cdr toolbar-state))))
         
-        (define/public (update-toolbar-visiblity)
-          (let* ([hidden? (car (preferences:get 'drscheme:toolbar-state))]
-                 [top? (and (not hidden?)
-                            (eq? (cdr (preferences:get 'drscheme:toolbar-state))
-                                 'top))]
-                 [right? (and (not hidden?)
-                              (eq? (cdr (preferences:get 'drscheme:toolbar-state))
-                                   'right))]
-                 [left? (and (not hidden?)
-                             (eq? (cdr (preferences:get 'drscheme:toolbar-state))
-                                  'left))])
+        (define/public (update-toolbar-visibility)
+          (let* ([hidden? (toolbar-is-hidden?)]
+                 [left? (toolbar-is-left?)]
+                 [right? (toolbar-is-right?)]
+                 [top? (toolbar-is-top?)])
+            
             (send toolbar-left-menu-item check left?)
             (send toolbar-right-menu-item check right?)
             (send toolbar-top-menu-item check top?)
@@ -1345,45 +1340,66 @@ module browser threading seems wrong.
                (hide-info)
                (send top-outer-panel change-children (λ (l) '()))
                (send logging-parent-panel change-children (λ (l) '()))]
-              [top? (orient/show #f #t)]
-              [left? (orient/show #t #t)]
-              [right? (orient/show #t #f)]))
+              [top? (orient/show #t)]
+              [left? (orient/show #t)]
+              [right? (orient/show #f)]))
           (update-defs/ints-resize-corner))
         
-        (define/private (orient/show vertical? bar-at-beginning?)
-          (begin-container-sequence)
-          (show-info)
-          
-          (let ([bpo (send button-panel get-orientation)])
-            (unless (equal? bpo (not vertical?))
-              (send button-panel set-orientation (not vertical?))
-              
-              ;; have to be careful to avoid reversing the list when the orientation is already proper
-              (send button-panel change-children reverse)))
+        (define/private (toolbar-is-hidden?)
+          (car (preferences:get 'drscheme:toolbar-state)))
+        (define/private (toolbar-is-top?)
+          (and (not (toolbar-is-hidden?))
+               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                    'top)))
+        (define/private (toolbar-is-right?)
+          (and (not (toolbar-is-hidden?))
+               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                    'right)))
+        (define/private (toolbar-is-left?)
+          (and (not (toolbar-is-hidden?))
+               (eq? (cdr (preferences:get 'drscheme:toolbar-state))
+                    'left)))
+        
+        (define/private (orient/show bar-at-beginning?)
+          (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
+            (begin-container-sequence)
+            (show-info)
             
-          (let loop ([obj button-panel])
-            (cond
-              [(is-a? obj area-container<%>)
-               (for-each loop (send obj get-children))]
-              [(is-a? obj switchable-button%)
-               (send obj set-label-visible (not vertical?))]
-              [else (void)]))
-          (send save-button set-label-visible (not vertical?))
-          (send top-outer-panel stretchable-height vertical?)
-          (send top-outer-panel stretchable-width (not vertical?))
-          (send top-panel set-orientation (not vertical?))
-          (send toolbar/rest-panel set-orientation vertical?)
-          (send toolbar/rest-panel change-children
-                (λ (l)
-                  (if bar-at-beginning?
-                      (cons top-outer-panel (remq top-outer-panel l))
-                      (append (remq top-outer-panel l) (list top-outer-panel)))))
-          (send top-outer-panel change-children (λ (l) (list top-panel)))
-          (send logging-parent-panel change-children (λ (l) (list logging-panel)))
-          (if vertical? 
-              (send top-panel change-children (λ (x) (remq name-panel x)))
-              (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
-          (end-container-sequence))
+            (let ([bpo (send button-panel get-orientation)])
+              (unless (equal? bpo (not vertical?))
+                (send button-panel set-orientation (not vertical?))
+                
+                ;; have to be careful to avoid reversing the list when the orientation is already proper
+                (send button-panel change-children reverse)))
+            
+            (orient)
+            
+            (send top-outer-panel stretchable-height vertical?)
+            (send top-outer-panel stretchable-width (not vertical?))
+            (send top-panel set-orientation (not vertical?))
+            (send toolbar/rest-panel set-orientation vertical?)
+            (send toolbar/rest-panel change-children
+                  (λ (l)
+                    (if bar-at-beginning?
+                        (cons top-outer-panel (remq top-outer-panel l))
+                        (append (remq top-outer-panel l) (list top-outer-panel)))))
+            (send top-outer-panel change-children (λ (l) (list top-panel)))
+            (send logging-parent-panel change-children (λ (l) (list logging-panel)))
+            (if vertical? 
+                (send top-panel change-children (λ (x) (remq name-panel x)))
+                (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
+            (end-container-sequence)))
+        
+        (define/private (orient)
+          (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
+            (let loop ([obj button-panel])
+              (cond
+                [(is-a? obj area-container<%>)
+                 (for-each loop (send obj get-children))]
+                [(is-a? obj switchable-button%)
+                 (send obj set-label-visible (not vertical?))]
+                [else (void)]))
+            (send save-button set-label-visible (not vertical?))))
         
         (field [remove-show-status-line-callback
                 (preferences:add-callback
@@ -3354,9 +3370,18 @@ module browser threading seems wrong.
         [define execute-button (void)]
         [define button-panel 
           (new (class horizontal-panel%
+                 
+                 ;; do this so that new buttons that show up are put in the right mode
+                 (define/override (change-children lst)
+                   (let ([ans (super change-children lst)])
+                     (orient)
+                     ans))
+                 (define/override (add-child c)
+                   (super add-child c)
+                   (orient))
                  (define/override (after-new-child c)
-                   ;; do this so that new buttons that show up are put in the right mode
-                   (update-toolbar-visiblity))
+                   (super after-new-child c)
+                   (orient))
                  (super-new [parent top-panel] [spacing 2])))]
         [define/public get-execute-button (λ () execute-button)]
         [define/public get-break-button (λ () break-button)]
@@ -3784,7 +3809,7 @@ module browser threading seems wrong.
           (unless (eq? (system-type) 'macosx)
             ;; mac os x has a bug where maximizing can make the window too big.
             (send frame maximize (preferences:get 'drscheme:unit-window-max?))))
-        (send frame update-toolbar-visiblity)
+        (send frame update-toolbar-visibility)
         (send frame show #t)
         (set! first-frame? #f)
         frame))))
