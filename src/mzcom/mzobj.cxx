@@ -124,11 +124,13 @@ void exitHandler(int) {
   ExitThread(0);
 }
 
-void setupSchemeEnv(void) {
+void setupSchemeEnv(Scheme_Env *in_env)
+{
   char *wrapper;
   char exeBuff[260];
   HMODULE mod;
   static BOOL registered;
+  Scheme_Object *nsreq, *a[1];
 
   if (!registered) {
     scheme_register_static(&env,sizeof(env));
@@ -138,12 +140,28 @@ void setupSchemeEnv(void) {
     registered = TRUE;
   }
 
-  env = scheme_basic_env();
+  env = in_env;
 
   if (env == NULL) {
     ErrorBox("Can't create Scheme environment");
     ExitThread(0);
   }
+
+  // set up collection paths, based on MzScheme startup
+
+  mod = GetModuleHandle("mzcom.exe");
+  GetModuleFileName(mod,exeBuff,sizeof(exeBuff));
+
+  scheme_add_global("mzcom-exe",scheme_make_utf8_string(exeBuff),env);
+  scheme_set_exec_cmd(exeBuff);
+  scheme_set_collects_path(scheme_make_path("collects"));
+  scheme_init_collection_paths(env, scheme_make_null());
+
+  // initialize namespace
+
+  nsreq = scheme_builtin_value("namespace-require");
+  a[0] = scheme_intern_symbol("scheme");
+  scheme_apply(nsreq, 1, a);
 
   // set up exception trapping
 
@@ -155,29 +173,11 @@ void setupSchemeEnv(void) {
   exn_catching_apply = scheme_eval_string(wrapper,env);
   exn_p = scheme_builtin_value("exn?");
   exn_message = scheme_builtin_value("exn-message");
-
-  // set up collection paths, based on MzScheme startup
-
-  mod = GetModuleHandle("mzcom.exe");
-  GetModuleFileName(mod,exeBuff,sizeof(exeBuff));
-
-  scheme_add_global("mzcom-exe",scheme_make_utf8_string(exeBuff),env);
-  scheme_set_exec_cmd(exeBuff);
-
-  {
-    Scheme_Object *clcp, *flcp, *a[1];
-
-    clcp = scheme_builtin_value("current-library-collection-paths");
-    flcp = scheme_builtin_value("find-library-collection-paths");
-
-    if (clcp && flcp) {
-      a[0] = _scheme_apply(flcp, 0, NULL);
-      _scheme_apply(clcp, 1, a);
-    }
-  }
 }
 
-DWORD WINAPI evalLoop(LPVOID args) {
+static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
+{
+  LPVOID args = (LPVOID)_args;
   HRESULT *pHr;
   BOOL doEval;
   UINT len;
@@ -197,14 +197,7 @@ DWORD WINAPI evalLoop(LPVOID args) {
 
   // make sure all MzScheme calls are in this thread
 
-#ifdef MZ_PRECISE_GC
-# define STACK_BASE_ADDR __gc_var_stack__
-#else
-# define STACK_BASE_ADDR NULL
-#endif
-
-  scheme_set_stack_base(STACK_BASE_ADDR,1);
-  setupSchemeEnv();
+  setupSchemeEnv(env);
 
   scheme_set_exit(exitHandler);
   sleepFun = scheme_builtin_value("sleep");
@@ -239,7 +232,7 @@ DWORD WINAPI evalLoop(LPVOID args) {
 
         // reset semaphore signalled
 
-        setupSchemeEnv();
+        setupSchemeEnv(scheme_basic_env());
         ReleaseSemaphore(resetDoneSem,1,NULL);
 
         break;
@@ -302,6 +295,10 @@ DWORD WINAPI evalLoop(LPVOID args) {
   }
 
   return 0;
+}
+
+DWORD WINAPI evalLoop(LPVOID args) {
+  return scheme_main_setup(1, do_evalLoop, 0, (char **)args);
 }
 
 #ifdef MZ_PRECISE_GC
