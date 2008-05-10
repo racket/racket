@@ -694,8 +694,11 @@
  (show-interactions-menu-item-label "&Interaktionen einblenden")
  (hide-interactions-menu-item-label "&Interaktionen ausblenden")
  (interactions-menu-item-help-string "Interaktionsfenster ein-/ausblenden")
- (show-toolbar "&Toolbar einblenden")
- (hide-toolbar "&Toolbar ausblenden")
+ (toolbar "Toolbar")
+ (toolbar-on-top "Toolbar oben")
+ (toolbar-on-left "Toolbar links")
+ (toolbar-on-right "Toolbar rechts")
+ (toolbar-hidden "Toolbar ausblenden")
 
  ;;; file menu
  (save-definitions-as "Definitionen speichern unter...")
@@ -862,6 +865,8 @@
  (use-mixed-fractions "gemischte Brüche")
  (use-repeating-decimals "Dezimalausgabe mit Perioden")
  (decimal-notation-for-rationals "Dezimalnotation für Brüche")
+ (enforce-primitives-group-box-label "Initiale Bindungen")
+ (enforce-primitives-check-box-label "Änderungen von initialen Bindungen verbieten")
 
  ;; used in the bottom left of the drscheme frame as the label
  ;; above the programming language's name
