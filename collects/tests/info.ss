@@ -8,6 +8,7 @@
   '("aligned-pasteboard"
     "honu"
     "match"
+    "macro-debugger"
     "mred"
     "mysterx"
     "mzcom"

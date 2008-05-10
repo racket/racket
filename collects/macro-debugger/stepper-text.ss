@@ -4,8 +4,8 @@
          scheme/pretty
          "model/trace.ss"
          "model/reductions.ss"
+         "model/reductions-config.ss"
          "model/steps.ss"
-         "model/hide.ss"
          "syntax-browser/partition.ss"
          "syntax-browser/pretty-helper.ss")
 (provide expand/step-text
@@ -54,11 +54,12 @@
 
 (define (get-steps stx show?)
   (define deriv (trace stx))
-  (define hderiv
-    (if show? (hide/policy deriv show?) deriv))
+  (define steps
+    (parameterize ((macro-policy show?))
+      (reductions deriv)))
   (define (ok? x)
     (or (rewrite-step? x) (misstep? x)))
-  (filter ok? (reductions hderiv)))
+  (filter ok? steps))
 
 (define (show-step step partition)
   (cond [(step? step)
@@ -116,7 +117,7 @@
     [print-hash-table #f]
     [print-honu #f])
    (pretty-print datum)))
-   
+
 (define (->show-function show)
   (cond [(procedure? show)
          show]
@@ -125,7 +126,7 @@
            (ormap (lambda (x) (free-identifier=? x id))
                   show))]
         [(eq? show #f)
-         #f]
+         (lambda (id) #t)]
         [else
          (error 'expand/trace-text
                 "expected procedure or list of identifiers for macros to show; got: ~e"

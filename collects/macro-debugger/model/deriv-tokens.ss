@@ -41,9 +41,6 @@
    local-post           ; syntax
    exit-local           ; syntax
 
-   enter-local/expr     ; syntax
-   exit-local/expr      ; (cons syntax expanded-expression)
-
    local-bind           ; (list-of identifier)
    enter-bind           ; .
    exit-bind            ; .
@@ -77,6 +74,7 @@
    prim-require-for-template prim-provide
    prim-set!
    prim-expression
+   prim-varref
    ))
 
 ;; ** Signals to tokens
@@ -148,8 +146,6 @@
     (136 . ,token-lift/let-loop)
     (137 . ,token-module-lift-loop)
     (138 . prim-expression)
-    (139 . ,token-enter-local/expr)
-    (140 . ,token-exit-local/expr)
     (141 . ,token-start)
     (142 . ,token-tag)
     (143 . ,token-local-bind)
@@ -158,6 +154,7 @@
     (146 . ,token-opaque)
     (147 . ,token-rename-list)
     (148 . ,token-rename-one)
+    (149 . prim-varref)
     ))
 
 (define (tokenize sig-n val pos)

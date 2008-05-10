@@ -3,7 +3,7 @@
 (require (for-syntax scheme/base)
          scheme/match
          syntax/boundmap
-         "synth-engine.ss")
+         "reductions-config.ss")
 (provide make-policy
          standard-policy
          base-policy

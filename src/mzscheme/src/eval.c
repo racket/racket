@@ -6184,6 +6184,8 @@ scheme_compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	var = SCHEME_STX_CAR(first);
 	v = scheme_stx_track(v, first, var);
 
+        SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer,v);
+
 	link = scheme_make_pair(v, scheme_null);
 	if (is_val) {
 	  if (!start)
@@ -8599,8 +8601,10 @@ static void *expand_k(void)
 	if ((depth >= 0) || as_local)
 	  break;
       } else {
-        if (as_local)
+        if (as_local) {
           obj = add_lifts_as_begin(obj, scheme_null, env);
+          SCHEME_EXPAND_OBSERVE_LIFT_LOOP(erec1.observer,obj);
+        }
 	break;
       }
     } else
@@ -9386,6 +9390,8 @@ local_eval(int argc, Scheme_Object **argv)
   /* Mark names */
   names = scheme_named_map_1(NULL, scheme_add_remove_mark, names,
 			     scheme_current_thread->current_local_mark);
+
+  SCHEME_EXPAND_OBSERVE_RENAME_LIST(observer,names);
 
   /* Initialize environment slots to #f, which means "not syntax". */
   cnt = 0;

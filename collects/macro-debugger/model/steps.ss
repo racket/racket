@@ -3,35 +3,40 @@
 (require "deriv.ss"
          "deriv-util.ss"
          "deriv-find.ss")
-(provide (all-defined-out))
+(provide (struct-out protostep)
+         (struct-out step)
+         (struct-out misstep)
+         (struct-out state)
+         (struct-out bigframe)
+         context-fill
+         state-term
+         step-term1
+         step-term2
+         misstep-term1
+         bigframe-term
+         step-type?
+         step-type->string
+         rewrite-step?
+         rename-step?)
 
-;; A ReductionSequence is a (list-of Reduction)
+;; A ReductionSequence is (listof Step)
+;; A Step is one of
+;;  - (make-step StepType State State)
+;;  - (make-misstep StepType State exn)
+(define-struct protostep (type s1) #:transparent)
+(define-struct (step protostep) (s2) #:transparent)
+(define-struct (misstep protostep) (exn) #:transparent)
 
-;; A ProtoStep is (make-protostep Derivation BigContext StepType Context Definites)
+;; A State is
+;;  (make-state stx stxs Context BigContext (listof id) (listof id) (listof stx) nat/#f)
+(define-struct state (e foci ctx lctx binders uses frontier seq) #:transparent)
 
 ;; A Context is a list of Frames
-;; A Frame is either:
-;;  - (syntax -> syntax)
-;;  - (make-renames syntax syntax)
-;;  - 'phase-up
-(define-struct renames (old new))
-
-;; A Definite is a (list-of identifier)
+;; A Frame is (syntax -> syntax)
 
 ;; A BigContext is (list-of BigFrame)
-;; A BigFrame is (make-bigframe Derivation Context Syntaxes Syntax)
-(define-struct bigframe (deriv ctx foci e))
-
-;; A Reduction is one of 
-;;   - (make-step ... Syntaxes Syntaxes Syntax Syntax)
-;;   - (make-mono ... Syntaxes Syntax)
-;;   - (make-misstep ... Syntax Syntax Exception)
-
-(define-struct protostep (deriv lctx type ctx definites frontier) #:transparent)
-
-(define-struct (step protostep) (foci1 foci2 e1 e2) #:transparent)
-(define-struct (mono protostep) (foci1 e1) #:transparent)
-(define-struct (misstep protostep) (foci1 e1 exn) #:transparent)
+;; A BigFrame is (make-bigframe Context Syntaxes Syntax)
+(define-struct bigframe (ctx foci e))
 
 ;; context-fill : Context Syntax -> Syntax
 (define (context-fill ctx stx)
@@ -39,32 +44,18 @@
     (if (null? ctx)
         stx
         (let ([frame0 (car ctx)])
-          (if (procedure? frame0)
-              (loop (cdr ctx) (frame0 stx))
-              (loop (cdr ctx) stx))))))
+          (loop (cdr ctx) (frame0 stx))))))
 
-;; context-env : Context -> (list-of identifier)
-(define (context-env ctx)
-  (let loop ([ctx ctx] [env null])
-    (if (null? ctx)
-        env
-        (let ([frame0 (car ctx)])
-          (if (renames? frame0)
-              (loop (cdr ctx)
-                    (append (flatten-identifiers (renames-new frame0))
-                            env))
-              (loop (cdr ctx) env))))))
+(define (state-term s)
+  (context-fill (state-ctx s) (state-e s)))
 
 (define (step-term1 s)
-  (context-fill (protostep-ctx s) (step-e1 s)))
+  (state-term (protostep-s1 s)))
 (define (step-term2 s)
-  (context-fill (protostep-ctx s) (step-e2 s)))
-
-(define (mono-term1 s)
-  (context-fill (protostep-ctx s) (mono-e1 s)))
+  (state-term (step-s2 s)))
 
 (define (misstep-term1 s)
-  (context-fill (protostep-ctx s) (misstep-e1 s)))
+  (state-term (protostep-s1 s)))
 
 (define (bigframe-term bf)
   (context-fill (bigframe-ctx bf) (bigframe-e bf)))
@@ -103,6 +94,11 @@
   (cond [(assq x step-type-meanings) => cdr]
         [(string? x) x]
         [else (error 'step-type->string "not a step type: ~s" x)]))
+
+(define step-type?
+  (let ([step-types (map car step-type-meanings)])
+    (lambda (x)
+      (and (memq x step-types) #t))))
 
 (define (rename-step? x)
   (memq (protostep-type x) 

@@ -11,6 +11,9 @@
       (datum->syntax template datum template template)
       datum))
 
+(define (stx->datum x)
+  (syntax->datum (datum->syntax #f x)))
+
 (define-syntax (syntax-copier stx)
   (syntax-case stx ()
     [(syntax-copier hole expr pattern)
@@ -79,6 +82,20 @@
       (cons (car items) (take-if-possible (cdr items) (sub1 n)))
       null))
 
+(define (reverse-take-if-possible items n)
+  (define (loop items n acc)
+    (if (and (pair? items) (positive? n))
+        (loop (cdr items) (sub1 n) (cons (car items) acc))
+        acc))
+  (loop items n null))
+
+(define (reverse-take-until items tail)
+  (define (loop items acc)
+    (if (and (pair? items) (not (eq? items tail)))
+        (loop (cdr items) (cons (car items) acc))
+        null))
+  (loop items null))
+
 ;; stx-improper-length : syntax -> number
 (define (stx-improper-length stx)
   (let loop ([stx stx] [n 0])
@@ -97,3 +114,11 @@
                (cons (car x) (stx->list* (cdr x)))
                (list stx)))]
         [else null]))
+
+
+(define (syntaxish? x)
+  (or (syntax? x)
+      (null? x)
+      (and (pair? x)
+           (syntaxish? (car x))
+           (syntaxish? (cdr x)))))

@@ -20,7 +20,6 @@
          "../model/deriv-find.ss"
          "../model/trace.ss"
          "../model/reductions.ss"
-         "../model/hide.ss"
          "../model/steps.ss"
          "cursor.ss"
          "../util/notify.ss")
@@ -410,21 +409,16 @@
           ;; Strip out mzscheme's top-interactions
           ;; Keep anything that is a non-mzscheme top-interaction
           ;; Drop everything else (not original program)
-          (match deriv
-            [(Wrap mrule (e1 e2 tx next))
-             (match tx
-               [(Wrap transformation (e1 e2 rs ?1 me1 locals ?2 me2 seq))
-                (cond [(ormap (lambda (x) (top-interaction-kw? x))
-                              rs)
-                       ;; Just mzscheme's top-interaction; strip it out
-                       (adjust-deriv/top next)]
-                      [(equal? (map syntax-e rs) '(#%top-interaction))
-                       ;; A *different* top interaction; keep it
-                       deriv]
-                      [else
-                       ;; Not original and not tagged with top-interaction
-                       #f])])]
-            [else #f])))
+          (cond [(not (mrule? deriv)) #f]
+                [(for/or ([x (base-resolves deriv)]) (top-interaction-kw? x))
+                 ;; Just mzscheme's top-interaction; strip it out
+                 (adjust-deriv/top (mrule-next deriv))]
+                [(equal? (map syntax-e (base-resolves deriv)) '(#%top-interaction))
+                 ;; A *different* top interaction; keep it
+                 deriv]
+                [else
+                 ;; Not original and not tagged with top-interaction
+                 #f])))
 
     (define/public (top-interaction-kw? x)
       (free-identifier=? x #'#%top-interaction))

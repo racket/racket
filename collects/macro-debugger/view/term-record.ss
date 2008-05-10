@@ -19,22 +19,22 @@
          "../model/deriv-find.ss"
          "../model/deriv-parser.ss"
          "../model/trace.ss"
+         "../model/reductions-config.ss"
          "../model/reductions.ss"
-         "../model/hide.ss"
          "../model/steps.ss"
-         "debug-format.ss"
+         "../util/notify.ss"
          "cursor.ss"
-         "../util/notify.ss")
+         "debug-format.ss")
 
 (provide term-record%)
 
 ;; Struct for one-by-one stepping
 
-(define-struct (prestep protostep) (foci1 e1))
-(define-struct (poststep protostep) (foci2 e2))
+(define-struct (prestep protostep) ())
+(define-struct (poststep protostep) ())
 
-(define (prestep-term1 s) (context-fill (protostep-ctx s) (prestep-e1 s)))
-(define (poststep-term2 s) (context-fill (protostep-ctx s) (poststep-e2 s)))
+(define (prestep-term1 s) (state-term (protostep-s1 s)))
+(define (poststep-term2 s) (state-term (protostep-s1 s)))
 
 ;; TermRecords
 
@@ -52,11 +52,6 @@
     (define deriv #f)
     (define deriv-hidden? #f)
     (define binders #f)
-
-    (define synth-deriv #f)
-    (define synth-warnings null)
-    (define synth-estx #f)
-    (define synth-oops #f)
 
     (define raw-steps #f)
     (define raw-steps-estx #f)
@@ -79,11 +74,6 @@
       [get-deriv deriv]
       [get-deriv-hidden? deriv-hidden?]
       [get-binders binders])
-    (define-guarded-getters (recache-synth!)
-      [get-synth-deriv synth-deriv]
-      [get-synth-warnings synth-warnings]
-      [get-synth-estx synth-estx]
-      [get-synth-oops synth-oops])
     (define-guarded-getters (recache-raw-steps!)
       [get-definites definites]
       [get-error error]
@@ -108,11 +98,7 @@
     ;; invalidate-synth! : -> void
     ;; Invalidates cached parts that depend on macro-hiding policy
     (define/public (invalidate-synth!)
-      (invalidate-raw-steps!)
-      (set! synth-deriv #f)
-      (set! synth-warnings null)
-      (set! synth-oops #f)
-      (set! synth-estx #f))
+      (invalidate-raw-steps!))
 
     ;; invalidate-deriv! : -> void
     (define/public (invalidate-deriv!)
@@ -154,44 +140,25 @@
 
     ;; recache-synth! : -> void
     (define/private (recache-synth!)
-      (unless (or synth-deriv synth-oops)
-        (recache-deriv!)
-        (when deriv
-          (set! synth-warnings null)
-          (let ([show-macro? (send stepper get-show-macro?)]
-                [force-letrec? (send config get-force-letrec-transformation?)])
-            (with-handlers ([(lambda (e) #t)
-                             (lambda (e)
-                               (set! synth-oops e))])
-              (let ()
-                (define-values (synth-deriv* estx*)
-                  (if show-macro?
-                      (parameterize ((current-hiding-warning-handler
-                                      (lambda (tag args)
-                                        (set! synth-warnings
-                                              (cons (cons tag args)
-                                                    synth-warnings))))
-                                     (force-letrec-transformation
-                                      force-letrec?))
-                        (hide*/policy deriv show-macro?))
-                      (values deriv (wderiv-e2 deriv))))
-                (set! synth-deriv synth-deriv*)
-                (set! synth-estx estx*)))))))
+      (recache-deriv!))
 
     ;; recache-raw-steps! : -> void
     (define/private (recache-raw-steps!)
       (unless (or raw-steps raw-steps-oops)
         (recache-synth!)
-        (when synth-deriv
-          (with-handlers ([(lambda (e) #t)
-                           (lambda (e)
-                             (set! raw-steps-oops e))])
-            (let-values ([(raw-steps* definites* estx* error*)
-                          (reductions+ synth-deriv)])
-              (set! raw-steps raw-steps*)
-              (set! raw-steps-estx estx*)
-              (set! error error*)
-              (set! definites definites*))))))
+        (when deriv
+          (let ([show-macro? (or (send stepper get-show-macro?)
+                                 (lambda (id) #t))])
+            (with-handlers ([(lambda (e) #t)
+                             (lambda (e)
+                               (set! raw-steps-oops e))])
+              (let-values ([(raw-steps* definites* estx* error*)
+                            (parameterize ((macro-policy show-macro?))
+                              (reductions+ deriv))])
+                (set! raw-steps raw-steps*)
+                (set! raw-steps-estx estx*)
+                (set! error error*)
+                (set! definites definites*)))))))
 
     ;; recache-steps! : -> void
     (define/private (recache-steps!)
@@ -216,13 +183,13 @@
     (define/private (reduce:one-by-one rs)
       (let loop ([rs rs])
         (match rs
-          [(cons (struct step (d l t c df fr redex contractum e1 e2)) rs)
-           (list* (make-prestep d l "Find redex" c df fr redex e1)
-                  (make-poststep d l t c df fr contractum e2)
+          [(cons (struct step (type s1 s2)) rs)
+           (list* (make prestep type s1)
+                  (make poststep type s2)
                   (loop rs))]
-          [(cons (struct misstep (d l t c df fr redex e1 exn)) rs)
-           (list* (make-prestep d l "Find redex" c df fr redex e1)
-                  (make-misstep d l t c df fr redex e1 exn)
+          [(cons (struct misstep (type s1 exn)) rs)
+           (list* (make prestep type s1)
+                  (make misstep type s1 exn)
                   (loop rs))]
           ['()
            null])))
@@ -279,32 +246,19 @@
 
     ;; extract-protostep-seq : step -> number/#f
     (define/private (extract-protostep-seq step)
-      (match (protostep-deriv step)
-        [(Wrap mrule (_ _ (Wrap transformation (_ _ _ _ _ _ _ _ seq)) _))
-         seq]
-        [else #f]))
+      ;; FIXME: add back step numbers
+      (state-seq (protostep-s1 step)))
 
     ;; Warnings display
 
     ;; on-get-focus : -> void
     (define/public (on-get-focus)
-      (recache-synth!)
-      (display-warnings))
+      (recache-synth!))
 
     ;; on-lose-focus : -> void
     (define/public (on-lose-focus)
       (when steps (cursor:move-to-start steps))
       (set! steps-position #f))
-
-    ;; display-warnings : -> void
-    (define/private (display-warnings)
-      (let ([warnings-area (send stepper get-warnings-area)])
-        (unless (send config get-suppress-warnings?)
-          (for-each (lambda (tag+args)
-                      (let ([tag (car tag+args)]
-                            [args (cdr tag+args)])
-                        (send warnings-area add-warning tag args)))
-                    synth-warnings))))
 
     ;; Rendering
 
@@ -315,14 +269,12 @@
     ;; display-final-term : -> void
     (define/public (display-final-term)
       (recache-synth!)
-      (cond [(syntax? synth-estx)
-             (add-syntax synth-estx binders definites)]
+      (cond [(syntax? raw-steps-estx)
+             (add-syntax raw-steps-estx binders definites)]
             [(exn? error)
              (add-error error)]
             [raw-steps-oops
-             (add-internal-error "steps" raw-steps-oops #f)]
-            [synth-oops
-             (add-internal-error "hiding" synth-oops #f)]))
+             (add-internal-error "steps" raw-steps-oops #f)]))
 
     ;; display-step : -> void
     (define/public (display-step)
@@ -334,8 +286,6 @@
                    (add-final raw-steps-estx error binders definites)))]
             [raw-steps-oops
              (add-internal-error "steps" raw-steps-oops (wderiv-e1 deriv))]
-            [synth-oops
-             (add-internal-error "hiding" synth-oops (wderiv-e1 deriv))]
             [raw-deriv-oops
              (add-internal-error "derivation" raw-deriv-oops #f)]
             [else
@@ -378,8 +328,6 @@
     (define/public (add-step step binders)
       (cond [(step? step)
              (show-step step binders)]
-            [(mono? step)
-             (show-mono step binders)]
             [(misstep? step)
              (show-misstep step binders)]
             [(prestep? step)
@@ -403,7 +351,8 @@
 
     ;; show-lctx : Step -> void
     (define/private (show-lctx step binders)
-      (define lctx (protostep-lctx step))
+      (define state (protostep-s1 step))
+      (define lctx (state-lctx state))
       (when (pair? lctx)
         (send sbview add-text "\n")
         (for-each (lambda (bf)
@@ -412,15 +361,13 @@
                     (insert-syntax/redex (bigframe-term bf)
                                          (bigframe-foci bf)
                                          binders
-                                         (protostep-definites step)
-                                         (protostep-frontier step)))
+                                         (state-uses state)
+                                         (state-frontier state)))
                   (reverse lctx))))
 
     ;; separator : Step -> void
     (define/private (separator step)
-      (if (not (mono? step))
-          (insert-step-separator (step-type->string (protostep-type step)))
-          (insert-as-separator (step-type->string (protostep-type step)))))
+      (insert-step-separator (step-type->string (protostep-type step))))
 
     ;; separator/small : Step -> void
     (define/private (separator/small step)
@@ -429,56 +376,41 @@
     
     ;; show-step : Step -> void
     (define/private (show-step step binders)
-      (insert-syntax/redex (step-term1 step)
-                           (step-foci1 step)
-                           binders
-                           (protostep-definites step)
-                           (protostep-frontier step))
+      (show-state/redex (protostep-s1 step) binders)
       (separator step)
-      (insert-syntax/contractum (step-term2 step)
-                                (step-foci2 step)
-                                binders
-                                (protostep-definites step)
-                                (protostep-frontier step))
+      (show-state/contractum (step-s2 step) binders)
       (show-lctx step binders))
 
-    ;; show-mono : Step -> void
-    (define/private (show-mono step binders)
-      (separator step)
-      (insert-syntax/redex (mono-term1 step)
-                           null
-                           binders
-                           (protostep-definites step)
-                           (protostep-frontier step))
-      (show-lctx step binders))
+    (define/private (show-state/redex state binders)
+      (insert-syntax/contractum (state-term state)
+                                (state-foci state)
+                                binders
+                                (state-uses state)
+                                (state-frontier state)))
+
+    (define/private (show-state/contractum state binders)
+      (insert-syntax/contractum (state-term state)
+                                (state-foci state)
+                                binders
+                                (state-uses state)
+                                (state-frontier state)))
 
     ;; show-prestep : Step -> void
     (define/private (show-prestep step binders)
       (separator/small step)
-      (insert-syntax/redex (prestep-term1 step)
-                           (prestep-foci1 step)
-                           binders
-                           (protostep-definites step)
-                           (protostep-frontier step))
+      (show-state/redex (protostep-s1 step) binders)
       (show-lctx step binders))
 
     ;; show-poststep : Step -> void
     (define/private (show-poststep step binders)
       (separator/small step)
-      (insert-syntax/contractum (poststep-term2 step)
-                                (poststep-foci2 step)
-                                binders
-                                (protostep-definites step)
-                                (protostep-frontier step))
+      (show-state/contractum (protostep-s1 step) binders)
       (show-lctx step binders))
 
     ;; show-misstep : Step -> void
     (define/private (show-misstep step binders)
-      (insert-syntax/redex (misstep-term1 step)
-                           (misstep-foci1 step)
-                           binders
-                           (protostep-definites step)
-                           (protostep-frontier step))
+      (define state (protostep-s1 step))
+      (show-state/redex state binders)
       (separator step)
       (send sbview add-error-text (exn-message (misstep-exn step)))
       (send sbview add-text "\n")
@@ -486,10 +418,9 @@
         (for-each (lambda (e)
                     (send sbview add-syntax e
                           '#:alpha-table binders
-                          '#:definites (or (protostep-definites step) null)))
+                          '#:definites (or (state-uses state) null)))
                   (exn:fail:syntax-exprs (misstep-exn step))))
       (show-lctx step binders))
-
 
     ;; insert-syntax/color : syntax syntaxes identifiers syntaxes string -> void
     (define/private (insert-syntax/color stx foci binders definites frontier hi-color)

@@ -1541,10 +1541,10 @@ void wxMediaEdit::SetClickbackHilited(wxClickback *click, Bool on)
       for (node = click->unhilite->First(); node; node = node->Next()) {
 	wxChangeRecord *cr;
 	cr = (wxChangeRecord *)node->Data();
-	DELETE_OBJ cr;
+	/* DELETE_OBJ cr; */
       }
   
-      DELETE_OBJ click->unhilite;
+      /* DELETE_OBJ click->unhilite; */
       FlashOff();
     }
     click->hilited = on;

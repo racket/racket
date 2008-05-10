@@ -16,7 +16,6 @@
          "../model/deriv.ss"
          "../model/deriv-util.ss"
          "../model/trace.ss"
-         "../model/hide.ss"
          "../model/steps.ss"
          "cursor.ss"
          "../util/notify.ss")

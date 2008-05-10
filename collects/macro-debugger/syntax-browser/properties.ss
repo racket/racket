@@ -181,7 +181,7 @@
              (display-subkv "  imported from" (mpi->string (list-ref v 2)))
              (display-subkv "  as" (list-ref v 3))
              (when (list-ref v 4)
-               (display "  via define-for-syntax" sub-key-sd))]))
+               (display "  via define-for-syntax\n" sub-key-sd))]))
 
     ;; display-stxobj-info : syntax -> void
     (define/public (display-stxobj-info stx)

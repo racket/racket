@@ -1,6 +1,7 @@
 #lang scheme/base
-(require "model/trace.ss"
-         "model/hide.ss")
+(require "model/trace.ss")
+
+#|
 (provide expand-only
          expand/hide)
 
@@ -22,3 +23,4 @@
       (raise result))
     (let-values ([(_d estx) (hide*/policy deriv show?)])
       estx)))
+|#

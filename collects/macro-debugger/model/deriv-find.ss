@@ -35,23 +35,21 @@
   (define (loop-inner d)
     (match d
       [(? stop-short d) zero]
-      [(Wrap mrule (_ _ tx next))
-       (join (loop tx) (loop next))]
+      [(Wrap mrule (_ _ _ _ _ locals _ _ _ next))
+       (join (loops locals) (loop next))]
       [(Wrap tagrule (_ _ _ next))
        (loop next)]
       [(Wrap lift-deriv (_ _ first lift second))
        (join (loop first) (loop second))]
-      [(Wrap transformation (_ _ _ _ _ locals _ _ _))
-       (loops locals)]
       [(struct local-expansion (_ _ _ _ deriv _ _ _))
        (loop deriv)]
-      [(struct local-bind (_ bindrhs))
+      [(struct local-bind (_ _ _ bindrhs))
        (loop bindrhs)]
       [(Wrap p:define-syntaxes (_ _ _ _ rhs _))
        (loop rhs)]
       [(Wrap p:define-values (_ _ _ _ rhs))
        (loop rhs)]
-      [(Wrap p:#%expression (_ _ _ _ inner))
+      [(Wrap p:#%expression (_ _ _ _ inner _))
        (loop inner)]
       [(Wrap p:if (_ _ _ _ test then else))
        (join (loop test) (loop then) (loop else))]
@@ -75,25 +73,19 @@
        (join (loops rhss) (loop body))]
       [(Wrap p:letrec-values (_ _ _ _ _ rhss body))
        (join (loops rhss) (loop body))]
-      [(Wrap p:letrec-syntaxes+values (_ _ _ _ _ srhss _ vrhss body))
+      [(Wrap p:letrec-syntaxes+values (_ _ _ _ _ srhss _ vrhss body _))
        (join (loops srhss) (loops vrhss) (loop body))]
       [(Wrap p:module (_ _ _ _ _ _ _ check _ _ body _))
        (join (loop check) (loop body))]
       [(Wrap p:#%module-begin (_ _ _ _ _ pass1 pass2 _))
        (join (loops pass1) (loops pass2))]
-      [(Wrap p:rename (_ _ _ _ _ inner))
-       (loop inner)]
-      [(Wrap p:synth (_ _ _ _ subterms _))
-       (loops (map s:subterm-deriv
-                   (filter s:subterm? subterms)))]
-
       [(Wrap lderiv (_ _ _ derivs))
        (loops derivs)]
       [(Wrap bderiv (_ _ pass1 _ pass2))
        (join (loops pass1) (loop pass2))]
-      [(Wrap b:defvals (_ head _))
+      [(Wrap b:defvals (_ head _ _ _))
        (loop head)]
-      [(Wrap b:defstx (_ deriv _ rhs))
+      [(Wrap b:defstx (_ deriv _ _ _ rhs))
        (join (loop deriv) (loop rhs))]
       [(Wrap b:splice (_ head _ _ _))
        (loop head)]
@@ -141,7 +133,6 @@
         (p:let-values? x)
         (p:letrec-values? x)
         (p:letrec-syntaxes+values? x)
-        (p:rename? x)
         (b:defvals? x)
         (b:defstx? x)
         (p:define-values? x)
@@ -168,7 +159,7 @@
            (with-syntax ([(((?vars ?rhs) ...) . ?body) renames])
              #'(?vars ...))
            null)]
-      [(Wrap p:letrec-syntaxes+values (e1 e2 rs ?1 srenames srhss vrenames vrhss body))
+      [(Wrap p:letrec-syntaxes+values (e1 e2 rs ?1 srenames srhss vrenames vrhss body _))
        (cons
         (if srenames
             (with-syntax ([(((?svars ?srhs) ...) ((?vvars ?vrhs) ...) . ?body)
@@ -179,13 +170,13 @@
             (with-syntax ([(((?vvars ?vrhs) ...) . ?body) vrenames])
               #'(?vvars ...))
             null))]
-      [(Wrap b:defvals (rename head ?1))
+      [(Wrap b:defvals (rename head ?1 rename2 ?2))
        (let ([head-e2 (wderiv-e2 head)])
          (if head-e2
              (with-syntax ([(?dv ?vars ?rhs) head-e2])
                #'?vars)
              null))]
-      [(Wrap b:defstx (rename head ?1 rhs))
+      [(Wrap b:defstx (rename head ?1 rename2 ?2 rhs))
        (let ([head-e2 (wderiv-e2 head)])
          (if head-e2
              (with-syntax ([(?ds ?svars ?rhs) head-e2])

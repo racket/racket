@@ -108,6 +108,9 @@ extern Scheme_Object *scheme_get_expand_observe();
         _SCHEME_EXPOBS(observer,124,NULL)
 #define SCHEME_EXPAND_OBSERVE_PRIM_EXPRESSION(obs) \
         _SCHEME_EXPOBS(obs,138,scheme_false)
+#define SCHEME_EXPAND_OBSERVE_PRIM_VARREF(obs) \
+        _SCHEME_EXPOBS(obs,149,scheme_false)
+
 
 #define SCHEME_EXPAND_OBSERVE_VARIABLE(observer,e1,e2)       \
         _SCHEME_EXPOBS(observer,125,scheme_make_pair(e1, e2))

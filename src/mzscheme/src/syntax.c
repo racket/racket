@@ -2001,6 +2001,8 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 static Scheme_Object *
 ref_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
+  SCHEME_EXPAND_OBSERVE_PRIM_VARREF(erec[drec].observer);
+
   /* Error checking: */
   ref_syntax(form, env, erec, drec);
 
@@ -4940,6 +4942,7 @@ single_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
     /* FIXME: this needs EXPAND_OBSERVE callbacks. */
     expr = scheme_stx_track(expr, form, form_name);
     expr = scheme_stx_cert(expr, scheme_false, NULL, form, NULL, 1);
+    SCHEME_EXPAND_OBSERVE_TAG(erec[drec].observer,expr);
     return expr;
   }
 
@@ -5830,6 +5833,10 @@ do_letrec_syntaxes(const char *where,
       if (SCHEME_PAIRP(v))
 	v = scheme_datum_to_syntax(v, forms, scheme_sys_wraps(origenv), 
 				   0, 2);
+
+      if (!((depth >= 0) || (depth == -2))) {
+        SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer,v);
+      }
     }
   } else {
     /* Construct letrec-values expression: */
@@ -5849,6 +5856,8 @@ do_letrec_syntaxes(const char *where,
 	v = SCHEME_STX_CDR(v);
 	v = cons(formname, cons(bindings, v));
 	v = scheme_datum_to_syntax(v, forms, scheme_sys_wraps(origenv), 0, 2);
+      } else {
+        SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer,v);
       }
     }
   }

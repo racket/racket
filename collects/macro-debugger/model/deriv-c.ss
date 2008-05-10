@@ -11,11 +11,15 @@
 ;;   Deriv
 
 ;; A Deriv is one of
-;;   (make-mrule <Node(Stx)> Transformation Deriv)
+;;   MRule
 ;;   PrimDeriv
+
+;; Base = << Node(Stx) Rs ?exn >>
+
 (define-struct (deriv node) () #:transparent)
+(define-struct (base deriv) (resolves ?1) #:transparent)
+
 (define-struct (lift-deriv deriv) (first lift-stx second) #:transparent)
-(define-struct (mrule deriv) (transformation next) #:transparent)
 (define-struct (tagrule deriv) (tagged-stx next) #:transparent)
 
 ;; A DerivLL is one of
@@ -23,9 +27,9 @@
 ;;   Deriv
 (define-struct (lift/let-deriv deriv) (first lift-stx second) #:transparent)
 
-;; A Transformation is
-;;   (make-transformation <Node(Stx)> Rs ?exn ?Stx (list-of LocalAction) ?exn ?Stx Number)
-(define-struct (transformation node) (resolves ?1 me1 locals me2 ?2 seq) #:transparent)
+;; A MRule is
+;;   (make-mrule <Base(Stx)> ?Stx (listof LocalAction) ?exn ?Stx ?Deriv)
+(define-struct (mrule base) (me1 locals me2 ?2 etx next) #:transparent)
 
 ;; A LocalAction is one of
 ;;   (make-local-expansion <Node(Stx)> Stx ?Stx Boolean Deriv)
@@ -33,14 +37,11 @@
 ;;   (make-local-lift Stx Identifier)
 ;;   (make-local-lift-end Stx)
 ;;   (make-local-bind BindSyntaxes)
-(define-struct (local-expansion node) (me1 me2 inner for-stx? lifted opaque)
+(define-struct (local-expansion node) (for-stx? me1 inner lifted me2 opaque)
   #:transparent)
 (define-struct local-lift (expr id) #:transparent)
 (define-struct local-lift-end (decl) #:transparent)
-(define-struct local-bind (names bindrhs) #:transparent)
-
-;; Base = << Node(Stx) Rs ?exn >>
-(define-struct (base deriv) (resolves ?1) #:transparent)
+(define-struct local-bind (names ?1 renames bindrhs) #:transparent)
 
 ;; A PrimDeriv is one of
 (define-struct (prule base) () #:transparent)
@@ -57,12 +58,12 @@
 (define-struct (p:define-syntaxes prule) (rhs ?2) #:transparent)
 (define-struct (p:define-values prule) (rhs) #:transparent)
 
-;;   (make-p:#%expression <Base> Deriv)
+;;   (make-p:#%expression <Base> Deriv ?Stx)
 ;;   (make-p:if <Base> Boolean Deriv Deriv Deriv)
 ;;   (make-p:wcm <Base> Deriv Deriv Deriv)
 ;;   (make-p:set! <Base> Rs Deriv)
 ;;   (make-p:set!-macro <Base> Rs Deriv)
-(define-struct (p:#%expression prule) (inner) #:transparent)
+(define-struct (p:#%expression prule) (inner untag) #:transparent)
 (define-struct (p:if prule) (test then else) #:transparent)
 (define-struct (p:wcm prule) (key mark body) #:transparent)
 (define-struct (p:set! prule) (id-resolves rhs) #:transparent)
@@ -79,12 +80,14 @@
 ;;   (make-p:case-lambda <Base> (list-of CaseLambdaClause))
 ;;   (make-p:let-values <Base> LetRenames (list-of Deriv) BDeriv)
 ;;   (make-p:letrec-values <Base> LetRenames (list-of Deriv) BDeriv)
-;;   (make-p:letrec-syntaxes+values <Base> LSVRenames (list-of BindSyntaxes) (list-of Deriv) BDeriv)
+;;   (make-p:letrec-syntaxes+values <Base> LSVRenames (list-of BindSyntaxes) (list-of Deriv) BDeriv ?Stx)
 (define-struct (p:lambda prule) (renames body) #:transparent)
 (define-struct (p:case-lambda prule) (renames+bodies) #:transparent)
 (define-struct (p:let-values prule) (renames rhss body) #:transparent)
 (define-struct (p:letrec-values prule) (renames rhss body) #:transparent)
-(define-struct (p:letrec-syntaxes+values prule) (srenames sbindrhss vrenames vrhss body) #:transparent)
+(define-struct (p:letrec-syntaxes+values prule)
+  (srenames sbindrhss vrenames vrhss body tag)
+  #:transparent)
 
 ;;   (make-p:stop <Base>)
 ;;   (make-p:unknown <Base>)
@@ -96,6 +99,7 @@
 ;;   (make-p:require-for-syntax <Base>)
 ;;   (make-p:require-for-template <Base>)
 ;;   (make-p:provide <Base>)
+;;   (make-p:#%variable-reference <Base>)
 (define-struct (p::STOP prule) () #:transparent)
 (define-struct (p:stop p::STOP) () #:transparent)
 (define-struct (p:unknown p::STOP) () #:transparent)
@@ -107,13 +111,7 @@
 (define-struct (p:require-for-syntax p::STOP) () #:transparent)
 (define-struct (p:require-for-template p::STOP) () #:transparent)
 (define-struct (p:provide p::STOP) () #:transparent)
-
-;;+  (make-p:rename <Base> Renames Deriv)
-;;+  (make-p:synth <Base> (list-of SynthItem) ?exn)
-(define-struct (p:rename prule) (renames inner) #:transparent)
-(define-struct (p:synth prule) (subterms ?2) #:transparent)
-
-
+(define-struct (p:#%variable-reference p::STOP) () #:transparent)
 
 ;; A LDeriv is
 ;;   (make-lderiv <Node(Stxs)> ?exn (list-of Deriv))
@@ -127,21 +125,18 @@
 ;;   (make-b:error exn)
 ;;   (make-b:expr BlockRenames Deriv)
 ;;   (make-b:splice BlockRenames Deriv ?exn Stxs ?exn)
-;;   (make-b:defvals BlockRenames Deriv ?exn)
-;;   (make-b:defstx BlockRenames Deriv ?exn BindSyntaxes)
-;;i  (make-b:begin BlockRenames Deriv (list-of Deriv))
+;;   (make-b:defvals BlockRenames Deriv ?exn Stx ?exn)
+;;   (make-b:defstx BlockRenames Deriv ?exn Stx ?exn BindSyntaxes)
 (define-struct b:error (?1) #:transparent)
 (define-struct brule (renames) #:transparent)
 (define-struct (b:expr brule) (head) #:transparent)
 (define-struct (b:splice brule) (head ?1 tail ?2) #:transparent)
-(define-struct (b:defvals brule) (head ?1) #:transparent)
-(define-struct (b:defstx brule) (head ?1 bindrhs) #:transparent)
-;;(define-struct (b:begin brule) (head inner) #:transparent)
+(define-struct (b:defvals brule) (head ?1 rename ?2) #:transparent)
+(define-struct (b:defstx brule) (head ?1 rename ?2 bindrhs) #:transparent)
 
 ;; A BindSyntaxes is
 ;;   (make-bind-syntaxes DerivLL ?exn)
 (define-struct bind-syntaxes (rhs ?1) #:transparent)
-
 
 ;; A CaseLambdaClause is
 ;;   (make-clc ?exn CaseLambdaRename BDeriv)
@@ -177,10 +172,3 @@
 ;;   (make-p:require-for-template <Base>)
 ;;   (make-p:provide <Base>)
 ;;   #f
-
-;; A SynthItem is one of
-;;   - (make-s:subterm Path Deriv)
-;;   - (make-s:rename Path Stx Stx)
-(define-struct subitem () #:transparent)
-(define-struct (s:subterm subitem) (path deriv) #:transparent)
-(define-struct (s:rename subitem) (path before after) #:transparent)
