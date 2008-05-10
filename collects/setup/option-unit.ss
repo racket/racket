@@ -1,38 +1,35 @@
+#lang scheme/base
+(require scheme/unit "option-sig.ss")
 
-(module option-unit mzscheme
-  (require mzlib/unit)
+(provide setup:option@)
 
-  (require "option-sig.ss")
+(define-unit setup:option@
+  (import)
+  (export setup-option^)
 
-  (provide setup:option@)
+  (define verbose (make-parameter #f))
+  (define make-verbose (make-parameter #f))
+  (define compiler-verbose (make-parameter #f))
+  (define clean (make-parameter #f))
+  (define compile-mode (make-parameter #f))
+  (define make-zo (make-parameter #t))
+  (define make-launchers (make-parameter #t))
+  (define make-info-domain (make-parameter #t))
+  (define make-docs (make-parameter #t))
+  (define make-user (make-parameter #t))
+  (define make-planet (make-parameter #t))
+  (define call-install (make-parameter #t))
+  (define call-post-install (make-parameter #t))
+  (define pause-on-errors (make-parameter #f))
+  (define force-unpacks (make-parameter #f))
+  (define doc-pdf-dest (make-parameter #f))
 
-  (define-unit setup:option@
-      (import)
-      (export setup-option^)
+  (define specific-collections (make-parameter null))
+  (define specific-planet-dirs (make-parameter null))
 
-      (define verbose (make-parameter #f))
-      (define make-verbose (make-parameter #f))
-      (define compiler-verbose (make-parameter #f))
-      (define clean (make-parameter #f))
-      (define compile-mode (make-parameter #f))
-      (define make-zo (make-parameter #t))
-      (define make-launchers (make-parameter #t))
-      (define make-info-domain (make-parameter #t))
-      (define make-docs (make-parameter #t))
-      (define make-user (make-parameter #t))
-      (define make-planet (make-parameter #t))
-      (define call-install (make-parameter #t))
-      (define call-post-install (make-parameter #t))
-      (define pause-on-errors (make-parameter #f))
-      (define force-unpacks (make-parameter #f))
-      (define doc-pdf-dest (make-parameter #f))
-      
-      (define specific-collections (make-parameter null))
-      (define specific-planet-dirs (make-parameter null))
+  (define archives (make-parameter null))
 
-      (define archives (make-parameter null))
-
-      (define current-target-directory-getter (make-parameter current-directory))
-      (define current-target-plt-directory-getter 
-	(make-parameter 
-	 (lambda (preferred main-collects-parent-dir choices) preferred)))))
+  (define current-target-directory-getter (make-parameter current-directory))
+  (define current-target-plt-directory-getter 
+    (make-parameter
+     (lambda (preferred main-collects-parent-dir choices) preferred))))
