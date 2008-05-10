@@ -34,7 +34,7 @@ itself imports variables that will be propagated to unresolved
 imported variables in the linked units, and re-exports some variables
 from the linked units for further linking.
 
-@note-lib[scheme/unit #:use-sources (mzlib/unit)]{The
+@note-lib[scheme/unit #:use-sources (mzlib/unit)]{ The
 @schememodname[scheme/unit] module name can be used as a language name
 with @schemefont{#lang}; see @secref["single-unit"].}
 
