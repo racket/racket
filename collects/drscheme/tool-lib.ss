@@ -39,8 +39,7 @@ all of the names in the tools library, for use defining keybindings
      #'((drscheme:unit:get-program-editor-mixin) a ...)]
     [_ #'(drscheme:unit:get-program-editor-mixin)]))
 
-(provide drscheme:language:object/c)
-
+(language-object-abstraction drscheme:language:object/c #t)
 
 (provide/doc
 

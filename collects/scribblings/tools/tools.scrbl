@@ -16,12 +16,6 @@
 @(defmodule drscheme/tool-lib)
 
 
-@bold{TODO}
-
-@itemize{@item{contract for capability-value method is wrong (commented out version is right, but has circular dependencies)}}
-
-----------------------------------------------------------------------------------------------------
-
 @bold{This Manual}
 
 This manual describes DrScheme's tools interface. It assumes
@@ -29,9 +23,9 @@ familiarity with
 PLT Scheme, as described in 
 @(other-manual '(lib "scribblings/guide/guide.scrbl")),
 DrScheme, as described in
-@(other-manual '(lib "drscheme/drscheme.scrbl")),
+@(other-manual '(lib "scribblings/drscheme/drscheme.scrbl")),
 and the Framework, as described in
-@(other-manual '(lib "framework/framework.scrbl")).
+@(other-manual '(lib "scribblings/framework/framework.scrbl")).
 
 @table-of-contents[]
 
@@ -385,7 +379,7 @@ implements that method before overriding it:
 ]
 
 To help test your tool, use the 
-@seclink["environment-variables-in-drscheme-manual"]{@tt{PLTONLYTOOL}}
+@seclink["environment-variables" #:doc '(lib "scribblings/drscheme/extending.scrbl")]{@tt{PLTONLYTOOL}}
 environment variable to load it in isolation.
 
 @section{Creating New Kinds of DrScheme Frames}

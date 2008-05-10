@@ -104,7 +104,7 @@ For more examples, see the @filepath{htdp} sub-collection in the
 
 @; ----------------------------------------------------------------------
 
-@section{Environment Variables}
+@section[#:tag "environment-variables"]{Environment Variables}
 
 Several environment variables can affect DrScheme's behavior:
 
