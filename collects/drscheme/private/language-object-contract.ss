@@ -5,7 +5,7 @@
          scheme/class
          scheme/gui/base
          scheme/contract
-         scribblings/tools/recon)
+         "recon.ss")
 (require/doc scheme/base scribble/manual)
 
 (require (for-meta 2 scheme/base))
@@ -88,7 +88,7 @@
                (define id (reconstitute #,ctc provide?))
                #,@(if (syntax-e #'provide?)
                       (list 
-                       #`(require/doc "recon.ss")
+                       #`(require/doc drscheme/private/recon)
                        #`(provide/doc
                           (thing-doc id
                                      contract?

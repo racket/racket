@@ -13,7 +13,6 @@
          [(syntax? stx) (datum->syntax stx (loop (syntax-e stx)))]
          [(pair? stx) (cons (loop (car stx)) (loop (cdr stx)))]
          [(sloc? stx) 
-          (printf "reconstitute ~s\n" (syntax->datum (sloc-loc stx)))
           (datum->syntax #'src
                          (loop (syntax-e (sloc-inside stx)))
                          (syntax->datum (sloc-loc stx)))]
