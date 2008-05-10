@@ -135,7 +135,7 @@
                                        [(memf (lambda (ent) (equal? (mcar ent) no-warning-cache-key)) warning-table)
                                         =>
                                         (lambda (x)
-                                          (let ([ent (mcar x)])
+                                          (let ([ent (car x)])
                                             (set-mcdr! ent (cons (list constant1 value1) (mcdr ent)))))]
                                        [else
                                         (set! warning-table (cons (mcons no-warning-cache-key
