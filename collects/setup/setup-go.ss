@@ -21,27 +21,9 @@
 	 main-collects-parent-dir))))
 
   ;; Converting parse-cmdline results into parameter settings:
-  (define (do-flag name param)
-    (cond [(assq name x-flags) => (lambda (a) (param (cadr a)))]))
-  (define-syntax all-flags
-    (syntax-rules () [(_ f ...) (begin (do-flag 'f f) ...)]))
-  (all-flags clean
-	     make-zo
-	     call-install
-	     call-post-install
-	     make-launchers
-	     verbose
-	     make-verbose
-	     trust-existing-zos
-	     pause-on-errors
-	     force-unpacks
-	     all-users
-	     compile-mode
-             make-docs
-             make-user
-             make-planet
-             doc-pdf-dest)
-
+  (set-flag-params x-flags
+                   ;; these are not defined in option-unit
+                   all-users trust-existing-zos)
   (specific-collections x-specific-collections)
   (archives x-archives)
   (specific-planet-dirs x-specific-planet-packages)

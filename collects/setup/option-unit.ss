@@ -1,28 +1,44 @@
 #lang scheme/base
 (require scheme/unit "option-sig.ss")
 
-(provide setup:option@)
+(provide setup:option@ set-flag-params)
+
+;; a way to define a parameter that is set from an alist of names and values
+(define defined-flag-params (make-parameter '()))
+(define-syntax-rule (define-flag-param name default)
+  (define name
+    (let ([param (make-parameter default)])
+      (defined-flag-params (cons (cons 'name param) (defined-flag-params)))
+      param)))
+(define (set-flag-params* flags flag-params)
+  (for ([name+param flag-params])
+    (cond [(assq (car name+param) flags)
+           => (lambda (x) ((cdr name+param) (cadr x)))])))
+;; this macro is used to actually do the setting, `more ...' is for additional
+;; parameters to set
+(define-syntax-rule (set-flag-params flags more ...)
+  (set-flag-params* flags (list* (cons 'more more) ... (defined-flag-params))))
 
 (define-unit setup:option@
   (import)
   (export setup-option^)
 
-  (define verbose (make-parameter #f))
-  (define make-verbose (make-parameter #f))
-  (define compiler-verbose (make-parameter #f))
-  (define clean (make-parameter #f))
-  (define compile-mode (make-parameter #f))
-  (define make-zo (make-parameter #t))
-  (define make-launchers (make-parameter #t))
-  (define make-info-domain (make-parameter #t))
-  (define make-docs (make-parameter #t))
-  (define make-user (make-parameter #t))
-  (define make-planet (make-parameter #t))
-  (define call-install (make-parameter #t))
-  (define call-post-install (make-parameter #t))
-  (define pause-on-errors (make-parameter #f))
-  (define force-unpacks (make-parameter #f))
-  (define doc-pdf-dest (make-parameter #f))
+  (define-flag-param verbose #f)
+  (define-flag-param make-verbose #f)
+  (define-flag-param compiler-verbose #f)
+  (define-flag-param clean #f)
+  (define-flag-param compile-mode #f)
+  (define-flag-param make-zo #t)
+  (define-flag-param make-launchers #t)
+  (define-flag-param make-info-domain #t)
+  (define-flag-param make-docs #t)
+  (define-flag-param make-user #t)
+  (define-flag-param make-planet #t)
+  (define-flag-param call-install #t)
+  (define-flag-param call-post-install #t)
+  (define-flag-param pause-on-errors #f)
+  (define-flag-param force-unpacks #f)
+  (define-flag-param doc-pdf-dest #f)
 
   (define specific-collections (make-parameter null))
   (define specific-planet-dirs (make-parameter null))
