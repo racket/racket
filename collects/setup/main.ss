@@ -24,8 +24,8 @@
         ns)))
 
   (define-values (flags specific-collections specific-planet-packages archives)
-    ;; Load the command-line parser without using .zos, 
-    ;;  and in its own namespace to avoid poluuting the cm-managed
+    ;; Load the command-line parser without using .zos,
+    ;;  and in its own namespace to avoid poluting the cm-managed
     ;;  namespace later
     (parameterize ([use-compiled-file-paths null]
                    [current-namespace (make-kernel-namespace)])
@@ -37,7 +37,7 @@
     (lambda (flag-name not)
       (let ([a (assq flag-name flags)])
         (and a (not (cadr a))))))
-    
+
   (define-values (print-bootstrapping)
     (lambda ()
       (fprintf (current-error-port) "setup-plt: bootstrapping from source...\n")))
