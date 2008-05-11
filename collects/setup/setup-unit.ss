@@ -544,7 +544,7 @@
     (compiler:option:compile-subcollections #f))
 
   (define (do-install-part part)
-    (when (or (call-install) (and (eq? part 'post) (call-post-install)))
+    (when (if (eq? part 'post) (call-post-install) (call-install))
       (for ([cc ccs-to-compile])
         (let/ec k
           (begin-record-error cc (case part
