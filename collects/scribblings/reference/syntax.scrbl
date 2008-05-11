@@ -571,7 +571,7 @@ multiple symbolic names.}
                [phase-level exact-integer
                             #f]
                [phaseless-spec raw-module-path
-                               (#,(schemeidfont "only") rw-module-path id ...)
+                               (#,(schemeidfont "only") raw-module-path id ...)
                                (#,(schemeidfont "prefix") prefix-id raw-module-path)
                                (#,(schemeidfont "all-except") raw-module-path id ...)
                                (#,(schemeidfont "prefix-all-except") prefix-id 
