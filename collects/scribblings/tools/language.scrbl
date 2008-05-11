@@ -137,13 +137,13 @@ returns the corresponding init arg.
 \label{tools:simple-settings}
 This mixin uses a struct definition for its settings:
 @schemeblock[
-(define-struct drscheme:language:simple-settings (case-sensitive printing-style fraction-style show-sharing insert-newlines annotations))
-;; @scheme[case-sensitive  : boolean]
-;; @scheme[printing-style  : (symbols 'constructor 'quasiquote 'write 'print)]
-;; @scheme[fraction-style  : (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)]
-;; @scheme[show-sharing    : boolean]
-;; @scheme[insert-newlines : boolean]
-;; @scheme[annotations     : (symbols 'none 'debug 'debug/profile 'test-coverage)]
+(define-struct drscheme:language:simple-settings 
+  (case-sensitive  (code:comment : boolean?)
+   printing-style  (code:comment : (symbols 'constructor 'quasiquote 'write 'print))
+   fraction-style  (code:comment : (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e))
+   show-sharing    (code:comment : boolean?)
+   insert-newlines (code:comment : boolean?)
+   annotations))   (code:comment : (symbols 'none 'debug 'debug/profile 'test-coverage))
 ]
 
 The settings in this structure reflect the settings show in
@@ -166,10 +166,10 @@ printouts, or with @scheme[pretty-print] multi-line printouts.
 Constructs a configuration panel that lets the user
 configure all of the settings for this language.
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
-
-
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+for details of the
+simple-settings structure, this mixin's @scheme[settings] type.
 }
 
 @defmethod[#:mode override 
@@ -184,8 +184,9 @@ The defaults for the settings are
 @item{@scheme[insert-newlines] is @scheme[#t]}
 }
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+simple-settings structure, this mixins @scheme[settings] type.
 
 
 }
@@ -221,8 +222,10 @@ Returns @scheme['mzscheme].
 
 Constructs a vector from the structure.
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+for details of the
+simple-settings structure, this mixins @scheme[settings] type.
 
 
 }
@@ -248,8 +251,9 @@ debugging annotations. Additionally, it sets the
 @scheme[error-display-handler]
 to show the debugging annotations when an error is raised.
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixin's \scm{settings} type.
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+simple-settings structure, this mixin's @scheme[settings] type.
 
 
 }
@@ -264,8 +268,9 @@ Restores a super struct inspector to render structs properly.
 (See also
 @method[drscheme:language:simple-module-based-language->module-based-language-mixin% on-execute])
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+simple-settings structure, this mixin's @scheme[settings] type.
 
 
 }
@@ -280,8 +285,10 @@ Restores a super struct inspector to render structs properly.
 (See also
 @method[drscheme:language:simple-module-based-language->module-based-language-mixin% on-execute])
      
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
+See also 
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+for details of the
+simple-settings structure, this mixin's @scheme[settings] type.
 
 
 }
@@ -293,8 +300,9 @@ simple-settings structure, this mixins \scm{settings} type.
 Builds a settings structure from the vector, or @scheme[#f] if
 the vector doesn't match the types of the structure.
 
-See also @secref["mz:simple-settings"] for details of the
-simple-settings structure, this mixins \scm{settings} type.
+See also
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin] for details of the
+simple-settings structure, this mixin's @scheme[settings] type.
 
 
 
@@ -556,7 +564,7 @@ to install the result of
 Implementations of this interface are languages that
 DrScheme supports.
 
-See @secref["mz:adding-languages"] for an overview of
+See @secref["adding-languages"] for an overview of
 adding languages to DrScheme.
 
 
@@ -841,7 +849,7 @@ The style delta that this method returns is used in the
 language dialog and the DrScheme REPL when the language's
 name is printed.
 
-When it is \scm{\#f}, no styling is used.
+When it is @scheme[#f], no styling is used.
 
 If the result is a list, each element is expected to be a
 list of three items, a style-delta, and two numbers. The

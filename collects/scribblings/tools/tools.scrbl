@@ -184,7 +184,7 @@ This tool just opens a few windows to indicate that it has
 been loaded and that the @scheme[phase1] and @scheme[phase2]
 functions have been called.
 
-@section{Adding Languages to DrScheme}
+@section[#:tag "adding-languages"]{Adding Languages to DrScheme}
 @index{adding languages to DrScheme}
 
 @subsection{Adding Module-based Languages to DrScheme}
@@ -379,7 +379,7 @@ implements that method before overriding it:
 ]
 
 To help test your tool, use the 
-@seclink["environment-variables" #:doc '(lib "scribblings/drscheme/extending.scrbl")]{@tt{PLTONLYTOOL}}
+@seclink["environment-variables" #:doc '(lib "scribblings/drscheme/drscheme.scrbl")]{@tt{PLTONLYTOOL}}
 environment variable to load it in isolation.
 
 @section{Creating New Kinds of DrScheme Frames}
