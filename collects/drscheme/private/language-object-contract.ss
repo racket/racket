@@ -81,9 +81,9 @@
                  
                  (capability-value 
                   (->d ([s (and/c symbol? 
-                                  drscheme:language:get-capability-contract)])
+                                  drscheme:language:capability-registered?)])
                        ()
-                       [res (drscheme:language:capability-registered? s)]))))])
+                       [res (drscheme:language:get-capability-contract s)]))))])
            #`(begin
                (define id (reconstitute #,ctc provide?))
                #,@(if (syntax-e #'provide?)
