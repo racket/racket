@@ -137,13 +137,15 @@ returns the corresponding init arg.
 \label{tools:simple-settings}
 This mixin uses a struct definition for its settings:
 @schemeblock[
-(define-struct drscheme:language:simple-settings 
-  (case-sensitive  (code:comment : boolean?)
-   printing-style  (code:comment : (symbols 'constructor 'quasiquote 'write 'print))
-   fraction-style  (code:comment : (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e))
-   show-sharing    (code:comment : boolean?)
-   insert-newlines (code:comment : boolean?)
-   annotations))   (code:comment : (symbols 'none 'debug 'debug/profile 'test-coverage))
+(define-struct drscheme:language:simple-settings
+  (case-sensitive  (code:comment #, @t{boolean?})
+   printing-style  (code:comment #, @t{(symbols 'constructor 'quasiquote 'write 'print)})
+   fraction-style  (code:comment #, @t{(symbols 'mixed-fraction 'mixed-fraction-e})
+                   (code:comment #, @t{         'repeating-decimal 'repeating-decimal-e)})
+   show-sharing    (code:comment #, @t{boolean?})
+   insert-newlines (code:comment #, @t{boolean?})
+   annotations))   (code:comment #, @t{(symbols 'none 'debug 'debug/profile})
+                   (code:comment #, @t{         'test-coverage)})
 ]
 
 The settings in this structure reflect the settings show in
