@@ -618,7 +618,7 @@ patterns analogous @scheme[defproc*].}
 
 Like @scheme[defconstructor], but the constructor is
 annotated to indicate that additional initialization arguments are
-accepted and propagated to the sueprclass.}
+accepted and propagated to the superclass.}
 
 @defform[(defmethod (id arg-spec ...)
                     result-contract-expr-datum
