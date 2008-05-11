@@ -81,15 +81,21 @@ A few other escapes are recognized symbolically:
 
 @itemize{
 
- @item{@scheme[(#,(scheme code:line) datum ...)] typesets as the
-       sequence of @scheme[datum]s (i.e., without the
-       @scheme[code:line] wrapper.}
+ @item{@scheme[(#,(scheme code:line) _datum ...)] typesets as the
+       sequence of @scheme[_datum]s (i.e., without the
+       @scheme[code:line] wrapper).}
 
- @item{@scheme[(#,(scheme code:comment) content-expr)] typesets as a
-       comment whose content (i.e., sequence of elements) is produced
-       by @scheme[content-expr].}
+ @item{@scheme[(#,(scheme code:comment) _datum)] typesets like
+       @scheme[_datum], but colored as a comment and prefixed with a
+       semi-colon. A typical @scheme[_datum] escapes from
+       Scheme-typesetting mode using @scheme[unsyntax] and
+       produces a paragraph using @scheme[t]: 
 
- @item{@schemeidfont{code:blank} typesets as a blank line.}
+       @verbatim[#:indent 2]|{
+         (code:comment #, @t{this is a comment})
+       }|}
+
+ @item{@schemeidfont{code:blank} typesets as a blank space.}
 
 }
 
@@ -965,6 +971,9 @@ Returns @scheme[#t] if @scheme[v] is a bibliography entry created by
 
 @; ------------------------------------------------------------------------
 @section{Miscellaneous}
+
+@defproc[(t [pre-content any/c] ...) paragraph?]{Wraps the
+@tech{decode}d @scheme[pre-content] as a paragraph.}
 
 @defthing[PLaneT string?]{@scheme["PLaneT"] (to help make sure you get
 the letters in the right case).}
