@@ -1,4 +1,4 @@
-(module list frtime
+(module list frtime/frtime-lang-only
   
   (require (lifted mzlib/list sort
                    fifth sixth seventh eighth

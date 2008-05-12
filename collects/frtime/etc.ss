@@ -1,5 +1,5 @@
 
-(module etc frtime
+(module etc frtime/frtime-lang-only
   (require (lib "main-collects.ss" "setup"))
   (require-for-syntax syntax/kerncase
 		      syntax/stx
