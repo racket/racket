@@ -960,6 +960,7 @@ wxFrameWnd::wxFrameWnd(wxWnd *parent, char *WXUNUSED(wclass), wxWindow *wx_win, 
       extendedStyle |= WS_EX_TOPMOST;
     else
       extendedStyle |= WS_EX_PALETTEWINDOW;
+    extendedStyle |= WS_EX_TOOLWINDOW;
   }
 
   icon = NULL;
