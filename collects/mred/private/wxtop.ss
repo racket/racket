@@ -580,12 +580,14 @@
       (sequence
 	(apply super-init parent args))))
 
-  (define (make-top-level-window-glue% %) ; implies make-window-glue%
+  (define (make-top-level-window-glue% style-pos %) ; implies make-window-glue%
     (class100 (make-window-glue% %) (mred proxy . args)
       (inherit is-shown? get-mred queue-visible get-eventspace)
       (private-field 
        [act-date/seconds 0] [act-date/milliseconds 0] [act-on? #f]
-       [activate-refresh-wins null])
+       [activate-refresh-wins null]
+       [floating-window? (and ((length args) . >= . style-pos)
+                              (memq 'float (list-ref args style-pos)))])
       (public 
 	[on-exit (entry-point
 		  (lambda ()
@@ -612,7 +614,8 @@
 			  (set! act-date/seconds (current-seconds))
 			  (set! act-date/milliseconds (current-milliseconds))
 			  (when (and (wx:main-eventspace? (get-eventspace))
-                                     (not (eq? this root-menu-wx-frame)))
+                                     (not (eq? this root-menu-wx-frame))
+                                     (not floating-window?))
 			    (set! active-main-frame (make-weak-box this))))
 			;; Send refresh to subwindows that need it
 			(set! activate-refresh-wins (filter weak-box-value activate-refresh-wins))
@@ -664,6 +667,7 @@
 
   (define wx-frame%
     (make-top-level-window-glue% 
+     6
      (class100 (make-top-container% wx:frame% #f) args
        (private-field
 	[menu-bar #f]
@@ -724,6 +728,7 @@
 
   (define wx-dialog%
     (make-top-level-window-glue% 
+     7
      (class100 (make-top-container% wx:dialog% #t) args
        (sequence
 	 (apply super-init args))))))
