@@ -234,7 +234,7 @@
 
       (VariableDeclarators
        [(VariableDeclarator) (list $1)]
-       [(VariableDeclarators COMMA VariableDeclarator) (cons $3 $1)])
+       #;[(VariableDeclarators COMMA VariableDeclarator) (cons $3 $1)])
       
       (VariableDeclarator
        [(VariableDeclaratorId) $1]

@@ -72,7 +72,7 @@
             [test-class (cadr test)]
             [test-src (caddr test)])
         (send test-info add-test-class test-name test-src)
-        (send test-info add-testcase 'fields test-src)
+        (send test-info add-inits test-name test-src)
         (let ([test-obj (make-object test-class)])
           (send test-info complete-testcase #t)
           (set! test-objs (cons test-obj test-objs))
@@ -115,9 +115,13 @@
       (let ([n (symbol->string name)])
         (regexp-match? "^(?:tst|tet|Test|tes)" n)))))
 
-(define-struct test-stat (name src tests cases) #:mutable)
+;(make-test-stat String [U String Src] [listof tests-data] init-testcase-stat [listof tc-stat])
+(define-struct test-stat (name src tests init cases) #:mutable)
 (define-struct tests-data (c-name methods method-srcs))
-(define-struct testcase-stat (name src pass? checks) #:mutable)
+;(make-tc-stat String [U String Src] [listof check-info])
+(define-struct tc-stat (name src checks) #:mutable)
+(define-struct (testcase-stat tc-stat) (pass?) #:mutable)
+(define-struct (init-testcase-stat tc-stat) () #:mutable)
 
 (define java-test-info%
   (class* test-info-base% ()
@@ -129,7 +133,7 @@
     (define current-test #f)
 
     (define/pubment (add-test-class name src)
-      (set! current-test (make-test-stat name src null null))
+      (set! current-test (make-test-stat name src null #f null))
       (inner (void) add-test-class name src))
 
     (define/public (add-tests-info tests test-methods test-method-srcs)
@@ -146,25 +150,32 @@
     ;add-testcase: (U string 'fields) (U string src) -> void
     ;adds testcase specific information to the info storage
     (define/pubment (add-testcase name src)
-      (set! current-testcase (make-testcase-stat name src #t null))
-      (unless (eq? name 'fields) (add-test))
+      (set! current-testcase (make-testcase-stat name src null #t))
+      (add-test)
       (inner (void) add-testcase name src))
+    
+    (define/pubment (add-inits name src)
+      (set! current-testcase (make-init-testcase-stat name src null))
+      (inner (void) add-inits name src))
 
     (define/pubment (complete-testcase pass?)
-      (set-testcase-stat-pass?! current-testcase pass?)
-      (unless (eq? (testcase-stat-name current-testcase) 'fields)
-        (unless pass? (test-failed (get-current-testcase))))
-      (set-test-stat-cases! current-test (cons current-testcase
-                                               (test-stat-cases current-test)))
+      (cond
+        [(testcase-stat? current-testcase)
+         (set-testcase-stat-pass?! current-testcase pass?)
+         (unless pass? (test-failed (get-current-testcase)))
+         (set-test-stat-cases! current-test (cons current-testcase
+                                                  (test-stat-cases current-test)))]
+        [(init-testcase-stat? current-testcase)
+         (set-test-stat-init! current-test current-testcase)])
       (inner (void) complete-testcase pass?))
     (define/public (get-current-testcase) current-testcase)
 
     (define/augment (check-failed msg src)
       (when current-testcase
-        (set-testcase-stat-checks!
+        (set-tc-stat-checks!
          current-testcase
          (cons (make-failed-check src msg)
-               (testcase-stat-checks current-testcase))))
+               (tc-stat-checks current-testcase))))
       (inner (void) check-failed msg src))
 
     (define/public (format-value value)
@@ -203,7 +214,7 @@
       (inner (void) add-testcase name src))
     (define/augment (complete-testcase pass?)
       (for ([a analyses])
-        (send a de-register-testcase (testcase-stat-src (get-current-testcase))))
+        (send a de-register-testcase (tc-stat-src (get-current-testcase))))
       (inner (void) complete-testcase pass?))
 
     (super-instantiate ())))
@@ -223,10 +234,17 @@
       (send editor insert "\n"))
 
     (define/pubment (insert-testcase-name editor testcase-stat src-editor)
-      (send editor insert (format "~a ~a"
-                                  (testcase-stat-name testcase-stat)
-                                  (if (testcase-stat-pass? testcase-stat)
-                                    "succeeded!" "failed")))
+      (cond
+        [(testcase-stat? testcase-stat)
+         (send editor insert (format "~a ~a"
+                                     (tc-stat-name testcase-stat)
+                                     (if (testcase-stat-pass? testcase-stat)
+                                         "succeeded!" "failed.")))]
+        [(init-testcase-stat? testcase-stat)
+         (send editor insert (format "~a ~a" 
+                                     (tc-stat-name testcase-stat)
+                                     " contained failed checks."))]
+        [else (void)])
       (inner (void) insert-testcase-name editor testcase-stat src-editor)
       (next-line editor))
 
@@ -240,6 +258,12 @@
       (for ([test (send test-info get-test-results)])
         (send editor insert "\n")
         (send this insert-test-name editor test src-editor)
+        (when (and (test-stat-init test)
+                   (not (null? (tc-stat-checks (test-stat-init test)))))
+          (send this insert-testcase-name editor (test-stat-init test) src-editor)
+          (send this display-check-failures (tc-stat-checks (test-stat-init test))
+                editor test-info src-editor)
+          (next-line editor))
         (unless (null? (test-stat-cases test))
           (let* ([run-tests (reverse (test-stat-cases test))]
                  [num-tests (length run-tests)]
@@ -258,10 +282,10 @@
             (next-line editor)
             (for ([testcase run-tests])
               (send this insert-testcase-name editor testcase src-editor)
-              (if (null? (testcase-stat-checks testcase))
+              (if (null? (tc-stat-checks testcase))
                 (send editor insert "All checks succeeded!\n")
                 (send this display-check-failures
-                      (testcase-stat-checks testcase)
+                      (tc-stat-checks testcase)
                       editor test-info src-editor))
               (next-line editor))
             (inner (void) insert-tests editor test-info src-editor)))))))
@@ -325,7 +349,7 @@
 
     (define/augride (insert-testcase-name editor testcase-stat src-editor)
       (insert-covered-button editor coverage-info
-                             (testcase-stat-src testcase-stat)
+                             (tc-stat-src testcase-stat)
                              src-editor #t))
 
     (super-instantiate ())))

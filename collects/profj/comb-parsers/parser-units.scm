@@ -737,7 +737,7 @@
     
     (define statement (statement-c #f))
     
-    (define field (make-field #f (value+name-type prim-type) (eta expression) #t))
+    (define field (make-field #f (value+name-type prim-type) (eta expression) #f))
     
     (define method-sig-no-abs
       (method-signature #f (method-type (value+name-type prim-type)) 
@@ -845,7 +845,7 @@
     
     (define statement (statement-c #f))
     
-    (define field (make-field access-mods (value+name-type prim-type) (eta expression) #t))
+    (define field (make-field access-mods (value+name-type prim-type) (eta expression) #f))
         
     (define method-sig-no-abs
       (method-signature access-mods (method-type (value+name-type prim-type)) 
@@ -975,7 +975,7 @@
     
     (define field (make-field (global-mods access-mods) 
                               (array-type (value+name-type prim-type)) 
-                              (eta (choose (expression array-init) "field initializer")) #t))
+                              (eta (choose (expression array-init) "field initializer")) #f))
     
     (define method-sig-no-abs
       (method-signature (global-mods access-mods) 
@@ -1004,7 +1004,7 @@
        (repeat-greedy (choose ((sequence (method-sig-no-abs SEMI_COLON) id "method header")
                          (make-field (global-mods access-mods) 
                                      (array-type (value+name-type prim-type)) 
-                                     (eta expression) #t))
+                                     (eta expression) #f))
                        "interface member definition"))))
     
     (define class
