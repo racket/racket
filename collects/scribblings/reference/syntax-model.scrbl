@@ -76,7 +76,7 @@ referenced, where a @tech{phase level} normally corresponds to an
 integer (but the special @deftech{label phase level} does not
 correspond to an integer).  @tech{Phase level} 0 corresponds to the
 run time of the enclosing module (or the run time of top-level
-expression). Bindings in @tech{phase level} 0 constitute the
+expressions). Bindings in @tech{phase level} 0 constitute the
 @deftech{base environment}.  @tech{Phase level} 1 corresponds to the
 time during which the enclosing module (or top-level expression) is
 expanded; bindings in @tech{phase level} 1 constitute the

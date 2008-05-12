@@ -496,28 +496,31 @@
                  stx
                  dup-id)))
             (let ([new+olds
-                   (map (lambda (orig-id bind-id)
-                          (let ([import (ormap (lambda (import)
-                                                 (and (free-identifier=? orig-id
-                                                                           (import-local-id import))
-                                                      import))
-                                               imports)])
-                            (unless import
-                              (raise-syntax-error
-                               #f
-                               (format "identifier `~a' not included in nested require spec"
-                                       (syntax-e orig-id))
-                               stx
-                               #'in))
-                            (cons (make-import bind-id
-                                               (import-src-sym import)
-                                               (import-src-mod-path import)
-                                               (import-mode import)
-                                               (import-req-mode import)
-                                               (import-orig-mode import)
-                                               bind-id)
-                                  import)))
-                        orig-ids bind-ids)])
+                   (apply
+                    append
+                    (map (lambda (orig-id bind-id)
+                           (let ([rename-imports (filter (lambda (import)
+                                                           (free-identifier=? orig-id
+                                                                              (import-local-id import)))
+                                                         imports)])
+                             (unless (pair? rename-imports)
+                               (raise-syntax-error
+                                #f
+                                (format "identifier `~a' not included in nested require spec"
+                                        (syntax-e orig-id))
+                                stx
+                                #'in))
+                             (map (lambda (import)
+                                    (cons (make-import bind-id
+                                                       (import-src-sym import)
+                                                       (import-src-mod-path import)
+                                                       (import-mode import)
+                                                       (import-req-mode import)
+                                                       (import-orig-mode import)
+                                                       bind-id)
+                                          import))
+                                  rename-imports)))
+                         orig-ids bind-ids))])
               (let ([leftover-imports 
                      (let ([ht (make-immutable-hash
                                 (map (lambda (v) (cons (cdr v) #f))

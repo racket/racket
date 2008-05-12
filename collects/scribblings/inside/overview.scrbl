@@ -127,17 +127,17 @@ steps:
 
  Alternately, if the extension defines a module (i.e.,
  @cpp{scheme_module_name} returns a symbol), then place the shared
- object in a special directory so that it is detected by the module
- loader when @scheme[require] is used. The special directory is a
- platform-specific path that can be obtained by evaluating
- @scheme[(build-path "compiled" "native" (system-library-subpath))];
- see @scheme[load/use-compiled] for more information.  For example, if
- the shared object's name is @filepath{example.dll}, then
- @scheme[(require "example.ss")] will be redirected to
- @filepath{example.dll} if the latter is placed in the sub-directory
- @scheme[(build-path "compiled" "native" (system-library-subpath))]
- and if @filepath{example.ss} does not exist or has an earlier
- timestamp.
+ object in a special directory with a special name, so that it is
+ detected by the module loader when @scheme[require] is used. The
+ special directory is a platform-specific path that can be obtained by
+ evaluating @scheme[(build-path "compiled" "native"
+ (system-library-subpath))]; see @scheme[load/use-compiled] for more
+ information.  For example, if the shared object's name is
+ @filepath{example_ss.dll}, then @scheme[(require "example.ss")] will
+ be redirected to @filepath{example_ss.dll} if the latter is placed in
+ the sub-directory @scheme[(build-path "compiled" "native"
+ (system-library-subpath))] and if @filepath{example.ss} does not
+ exist or has an earlier timestamp.
 
  Note that @scheme[(load-extension _path)] within a @scheme[module]
  does @italic{not} introduce the extension's definitions into the

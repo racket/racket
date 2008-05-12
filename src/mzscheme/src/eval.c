@@ -5831,10 +5831,21 @@ static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Co
 
       if (env->genv->disallow_unbound) {
 	if (bad || !scheme_lookup_in_table(env->genv->toplevel, (const char *)SCHEME_STX_SYM(c))) {
-	  scheme_wrong_syntax(when, NULL, c, 
-			      (env->genv->phase
-			       ? "unbound variable in module (transformer environment)"
-			       : "unbound variable in module"));
+          GC_CAN_IGNORE const char *reason;
+          if (env->genv->phase == 1) {
+            reason = "unbound variable in module (transformer environment)";
+            /* Check in the run-time environment */
+            if (scheme_lookup_in_table(env->genv->template_env->toplevel, (const char *)SCHEME_STX_SYM(c))) {
+              reason = ("unbound variable in module (in the transformer environment, which does"
+                        " not include the run-time definition)");
+            } else if (env->genv->template_env->syntax
+                       && scheme_lookup_in_table(env->genv->template_env->syntax, (const char *)SCHEME_STX_SYM(c))) {
+              reason = ("unbound variable in module (in the transformer environment, which does"
+                        " not include the macro definition that is visible to run-time expressions)");
+            }
+          } else
+            reason = "unbound variable in module";
+	  scheme_wrong_syntax(when, NULL, c, reason);
 	}
       }
     }

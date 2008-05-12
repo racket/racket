@@ -188,7 +188,7 @@ evaluated. If it evaluates to @scheme[true], the result of the
 @scheme[expr] (often called the ``then'' @scheme[expr]). If the text
 @scheme[expr] evaluates to @scheme[false], the result of the
 @scheme[if] expression is the result of evaluating the third
-@scheme[expr]expression (known as the ``else'' @scheme[expr]). If the
+@scheme[expr] (known as the ``else'' @scheme[expr]). If the
 result of evaluating the test @scheme[expr] is neither @scheme[true]
 nor @scheme[false], it is an error.}
 

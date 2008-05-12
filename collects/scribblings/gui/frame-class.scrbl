@@ -95,7 +95,8 @@ some platforms:
  shares the focus with an active non-floating frame; when this style
  is combined with @scheme['no-caption], then showing the frame does
  not cause the keyboard focus to shift to the window, and under X,
- clicking the frame does not move the focus}
+ clicking the frame does not move the focus; under Windows, a floating
+ frame has no taskbar button}
 
  @item{@scheme['metal] --- draws the frame with a brushed-metal
  background (Mac OS X); this style is ignored when

@@ -32,8 +32,8 @@
       ((beginner-* *) (num num num ... -> num)
        "to compute the product of all of the input numbers")
       ((beginner-/ /) (num num num ... -> num)
-       "to divide the first by the second (and all following) number(s)"
-       "None but the first number can be zero.")
+       "to divide the first by the second (and all following) number(s);"
+       " only the first number can be zero.")
       (max (real real ... -> real)
 	"to determine the largest number")
       (min (real real ... -> real)
@@ -52,7 +52,7 @@
 	"to compute the power of the first to the second number")
       (abs (real -> real)
 	"to compute the absolute value of a real number")
-      (sgn (real -> (union 1 |#i1.0| 0 |#i0.0| -1 |#i-1.0|))
+      (sgn (real -> (union 1 #i1.0 0 #i0.0 -1 #i-1.0))
 	"to compute the sign of a real number")
     
       ;; fancy numeric 
@@ -80,21 +80,21 @@
       (cosh (num -> num)
 	"to compute the hyperbolic cosine of a number")
     
-      (exact? (num -> bool)
+      (exact? (num -> boolean)
 	"to determine whether some number is exact")
     
-      (integer? (any -> bool)
+      (integer? (any -> boolean)
 	"to determine whether some value is an integer (exact or inexact)")
     
-      (zero? (number -> bool)
+      (zero? (number -> boolean)
 	"to determine if some value is zero or not") 
-      (positive? (number -> bool)
+      (positive? (number -> boolean)
 	"to determine if some value is strictly larger than zero")
-      (negative? (number -> bool)
+      (negative? (number -> boolean)
 	"to determine if some value is strictly smaller than zero")      
-      (odd? (integer -> bool)
+      (odd? (integer -> boolean)
 	"to determine if some value is odd or not")
-      (even? (integer -> bool)
+      (even? (integer -> boolean)
 	"to determine if some value is even or not")
 
       (add1 (number -> number)
@@ -108,8 +108,8 @@
       (gcd (int int ... -> int)
 	"to compute the greatest common divisior")
     
-      (rational? (any -> bool)
-	"to determine whether some value is rational number")
+      (rational? (any -> boolean)
+	"to determine whether some value is a rational number")
     
       (numerator (rat -> int)
 	"to compute the numerator of a rational")
@@ -117,10 +117,10 @@
       (denominator (rat -> int)
 	"to compute the denominator of a rational")
     
-      (inexact? (num -> bool)
+      (inexact? (num -> boolean)
 	"to determine whether some number is inexact")
     
-      (real? (any -> bool)
+      (real? (any -> boolean)
 	"to determine whether some value is a real number")
     
       (floor (real -> int)
@@ -132,7 +132,7 @@
       (round (real -> int)
 	"to round a real number to an integer (rounds to even to break ties)")
     
-      (complex? (any -> bool)
+      (complex? (any -> boolean)
 	"to determine whether some value is complex")
     
       (make-polar (real real -> num)
@@ -172,7 +172,7 @@
     
       (current-seconds (-> int)
 	"to compute the current time in seconds elapsed"
-	"(since a platform-specific starting date)")
+	" (since a platform-specific starting date)")
     
       (e real
 	 "Euler's number")
@@ -279,18 +279,18 @@
 	"to compute the number of items on a list")
       (memq (any list -> (union false list))
 	"to determine whether some value is on some list"
-	"(comparing values with eq?)")
+	" (comparing values with eq?)")
       (memv (any list -> (union false list))
 	"to determine whether some value is on the list"
-	"(comparing values with eqv?)")
+	" (comparing values with eqv?)")
       ((beginner-member member) (any list -> (union false list))
 	"to determine whether some value is on the list"
-	"(comparing values with equal?)")
+	" (comparing values with equal?)")
       (reverse (list -> list)
 	"to create a reversed version of a list")
       (assq (X (listof (cons X Y)) -> (union false (cons X Y)))
 	"to determine whether some item is the first item of a pair"
-	"in a list of pairs"))
+	" in a list of pairs"))
 
     ("Posns"
       (make-posn (number number -> posn) "to construct a posn")
@@ -300,7 +300,7 @@
 
     ("Characters"
       (char? (any -> boolean)
-	" ")
+	"to determine whether a value is a character")
       (char=? (char char ... -> boolean)
 	"to determine whether two characters are equal")
       (char<? (char char ... -> boolean)
@@ -309,26 +309,26 @@
 	"to determine whether a character succeeds another")
       (char<=? (char char ... -> boolean)
 	"to determine whether a character precedes another"
-	"(or is equal to it)")
+	" (or is equal to it)")
       (char>=? (char char ... -> boolean)
 	"to determine whether a character succeeds another"
-	"(or is equal to it)")
+	" (or is equal to it)")
     
       (char-ci=? (char char ... -> boolean)
 	"to determine whether two characters are equal"
-	"in a case-insensitive manner")
+	" in a case-insensitive manner")
       (char-ci<? (char char ... -> boolean)
 	"to determine whether a character precedes another"
-	"in a case-insensitive manner")
+	" in a case-insensitive manner")
       (char-ci>? (char char ... -> boolean)
 	"to determine whether a character succeeds another"
-	"in a case-insensitive manner")
+	" in a case-insensitive manner")
       (char-ci<=? (char char ... -> boolean)
 	"to determine whether a character precedes another"
-	"(or is equal to it) in a case-insensitive manner")
+	" (or is equal to it) in a case-insensitive manner")
       (char-ci>=? (char char ... -> boolean)
 	"to determine whether a character succeeds another"
-	"(or is equal to it) in a case-insensitive manner")
+	" (or is equal to it) in a case-insensitive manner")
     
       (char-numeric? (char -> boolean)
 	"to determine whether a character represents a digit")
@@ -339,17 +339,17 @@
 	"to determine whether a character represents space")
       (char-upper-case? (char -> boolean)
 	"to determine whether a character is an"
-	"upper-case character")
+	" upper-case character")
       (char-lower-case? (char -> boolean)
 	"to determine whether a character is a"
-	"lower-case character")
+	" lower-case character")
       (char-upcase (char -> char)
 	"to determine the equivalent upper-case character")
       (char-downcase (char -> char)
 	"to determine the equivalent lower-case character")
       (char->integer (char -> integer)
 	"to lookup the number that corresponds to the"
-	"given character in the ASCII table (if any)"))
+	" given character in the ASCII table (if any)"))
     ("Strings"
       (string? (any -> boolean)
 	"to determine whether a value is a string")
@@ -359,7 +359,7 @@
 	"(string c1 c2 ...) builds a string")
       (make-string (nat char -> string)
 	"to produce a string of given length"
-	"from a single given character")
+	" from a single given character")
       (string-ref (string nat -> char)
 	"to extract the i-the character from a string")
     
@@ -375,40 +375,40 @@
 	"to compare two strings character-wise")
       (string<? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"precedes another")
+	" precedes another")
       (string>? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"succeeds another")
+	" succeeds another")
       (string<=? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"precedes another (or is equal to it)")
+	" precedes another (or is equal to it)")
       (string>=? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"succeeds another (or is equal to it)")
+	" succeeds another (or is equal to it)")
     
       (string-ci=? (string string ... -> boolean)
 	"to compare two strings character-wise"
-	"in a case-insensitive manner")
+	" in a case-insensitive manner")
       (string-ci<? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"precedes another in a case-insensitive manner")
+	" precedes another in a case-insensitive manner")
       (string-ci>? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"succeeds another in a case-insensitive manner")
+	" succeeds another in a case-insensitive manner")
       (string-ci<=? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"precedes another (or is equal to it)"
-	"in a case-insensitive manner")
+	" precedes another (or is equal to it)"
+	" in a case-insensitive manner")
       (string-ci>=? (string string ... -> boolean)
 	"to determine whether one string alphabetically"
-	"succeeds another (or is equal to it)"
-	"in a case-insensitive manner")
+	" succeeds another (or is equal to it)"
+	" in a case-insensitive manner")
     
       (string->symbol (string -> symbol)
-	"to convert a string into symbol")
+	"to convert a string into a symbol")
       (string->number (string -> (union number false))
 	"to convert a string into a number,"
-	"produce false if impossible")
+	" produce false if impossible")
       (string->list (string -> (listof char))
 	"to convert a string into a list of characters")
       (list->string ((listof char) -> string)
