@@ -334,7 +334,9 @@
               "class instantiation"))
     
     (define (new-array type-name)
-      (sequence (new type-name O_BRACKET (eta expression) C_BRACKET (repeat (sequence (O_BRACKET (eta expression) C_BRACKET) id)))
+      (sequence (new type-name O_BRACKET (eta expression) C_BRACKET 
+                     (repeat (sequence (O_BRACKET (eta expression) C_BRACKET) id))
+                     (repeat (sequence (O_BRACKET C_BRACKET) id)))
                 id "array instantiation"))
     
     (define field-access-end

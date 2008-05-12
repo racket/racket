@@ -72,7 +72,9 @@
             [test-class (cadr test)]
             [test-src (caddr test)])
         (send test-info add-test-class test-name test-src)
+        (send test-info add-testcase 'fields test-src)
         (let ([test-obj (make-object test-class)])
+          (send test-info complete-testcase #t)
           (set! test-objs (cons test-obj test-objs))
           (with-handlers ((exn? (lambda (e) (raise e))))
             ((current-eval)
@@ -141,14 +143,17 @@
     (define/public (get-current-test) current-test)
     (define/public (get-test-results) test-class-stats)
 
+    ;add-testcase: (U string 'fields) (U string src) -> void
+    ;adds testcase specific information to the info storage
     (define/pubment (add-testcase name src)
       (set! current-testcase (make-testcase-stat name src #t null))
-      (add-test)
+      (unless (eq? name 'fields) (add-test))
       (inner (void) add-testcase name src))
 
     (define/pubment (complete-testcase pass?)
       (set-testcase-stat-pass?! current-testcase pass?)
-      (unless pass? (test-failed (get-current-testcase)))
+      (unless (eq? (testcase-stat-name current-testcase) 'fields)
+        (unless pass? (test-failed (get-current-testcase))))
       (set-test-stat-cases! current-test (cons current-testcase
                                                (test-stat-cases current-test)))
       (inner (void) complete-testcase pass?))

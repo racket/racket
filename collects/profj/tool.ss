@@ -310,6 +310,7 @@
                          profjWizard:special:java-union
                          drscheme:special:insert-image
                          drscheme:special:insert-large-letters
+                         tests:dock-menu
                          tests:test-menu)) #t]
               [(memq s '(slideshow:special-menu 
                          drscheme:define-popup

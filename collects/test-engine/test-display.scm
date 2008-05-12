@@ -118,6 +118,8 @@
                    src-editor)
         (send editor insert "\n")))
 
+    ;next-line: editor% -> void
+    ;Inserts a newline and a tab into editor
     (define/public (next-line editor) (send editor insert "\n\t"))
 
     ;; make-link: text% (listof (U string snip%)) src editor -> void

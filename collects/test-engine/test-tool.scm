@@ -86,15 +86,11 @@
           (for ([t test-windows]) (send t show #f))
           (let ([ed (send (get-current-tab) get-test-editor)])
             (when ed (display-test-panel ed)))
-          (unless (send undock-menu-item is-enabled?) (swap-dock-items)))
+          (send dock-menu-item swap-labels))
         (define/public (undock-tests)
-          (send test-panel remove)
+          (when (send test-panel is-shown?) (send test-panel remove))
           (for ([t test-windows]) (send t show #t))
-          (unless (send dock-menu-item is-enabled?) (swap-dock-items)))
-
-        (define/private (swap-dock-items)
-          (send dock-menu-item enable (not (send dock-menu-item is-enabled?)))
-          (send undock-menu-item enable (not (send undock-menu-item is-enabled?))))
+          (send dock-menu-item swap-labels))
 
         (define/override (make-root-area-container cls parent)
           (let* ([outer-p (super make-root-area-container
@@ -124,52 +120,76 @@
                  get-insert-menu)
         (define testing-menu 'not-init)
         (define dock-menu-item 'not-init)
-        (define undock-menu-item 'not-init)
+        (define dock-label "Dock Report")
+        (define undock-label "Undock Report")
+        
+        (define dock-menu-item%
+          (class menu:can-restore-menu-item%
+            (inherit set-label)
+            (define docked? #t)
+            (define/public (is-report-docked?) docked?)
+            (define/public (set-docked?! d) (set! docked? d))
+            (define/public (swap-labels)
+              (if docked?
+                  (send this set-label dock-label)
+                  (send this set-label undock-label))
+              (set! docked? (not docked?)))
+            (define/public (dock-report) 
+              (unless docked? (dock-tests) (put-preferences '(test:test-window:docked?) '(#t))))
+            (define/public (undock-report) 
+              (when docked? (undock-tests) (put-preferences '(test:test-window:docked?) '(#f))))
+            (super-instantiate ())))
+        
+        (define/override (add-show-menu-items show-menu)
+          (super add-show-menu-items show-menu)
+          (let ([dock? (get-preference 'test:test-window:docked? (lambda () #t))])
+            (when (eq? dock-menu-item 'not-init)
+              (set! dock-menu-item 
+                    (make-object dock-menu-item% 
+                      (if dock? undock-label dock-label) 
+                      show-menu 
+                      (lambda (_1 _2)
+                        (if (send _1 is-report-docked?)
+                            (send _1 undock-report)
+                            (send _1 dock-report)))))
+              (register-capability-menu-item 'tests:dock-menu show-menu))
+            (send dock-menu-item set-docked?! dock?)))
+        
         (define/private (test-menu-init)
           (let ([menu-bar (get-menu-bar)]
                 [test-label "Testing"]
-                [enable-label "Enable tests"]
-                [disable-label "Disable tests"]
-                [dock-label "Dock report"]
-                [undock-label "Undock report"])
+                [enable-label "Enable Tests"]
+                [disable-label "Disable Tests"])
                 
             (set! testing-menu (make-object (get-menu%) test-label menu-bar))
-            (letrec ([enable-opt
-                      (make-object menu:can-restore-menu-item%
-                        enable-label testing-menu
-                        (lambda (_1 _2)
-                          (when (send _1 is-enabled?)
-                            (send _1 enable #f)
-                            (send disable-opt enable #t)
-                            (put-preferences '(tests:enable?) '(#t)))) #f)]
-                     [disable-opt
-                      (make-object menu:can-restore-menu-item%
-                        disable-label testing-menu
-                        (lambda (_1 _2)
-                          (when (send _1 is-enabled?)
-                            (send _1 enable #f)
-                            (send enable-opt enable #t)
-                            (put-preferences '(tests:enable?) '(#f)))) #f)])
-              (make-object separator-menu-item% testing-menu)
-              (set! dock-menu-item (make-object menu:can-restore-menu-item% 
-                                     dock-label testing-menu
-                                     (lambda (_1 _2)
-                                       (dock-tests)
-                                       (put-preferences '(test:test-window:docked?) '(#t))) #f))
-              (set! undock-menu-item (make-object menu:can-restore-menu-item%
-                                       undock-label testing-menu
-                                       (lambda (_1 _2)
-                                         (when (send _1 is-enabled?)
-                                           (undock-tests)
-                                           (put-preferences '(test:test-window:docked?) '(#f)))) #f))
+            (letrec ([enable-menu-item%
+                      (class menu:can-restore-menu-item%
+                        (define enabled? #t)
+                        (define/public (is-test-enabled?) enabled?)
+                        (define/public (set-test-enabled?! e) (set! enabled? e))
+                        (define/public (enable-tests)
+                          (unless enabled?
+                            (set! enabled? #t)
+                            (send this set-label disable-label)
+                            (put-preferences '(tests:enable?) '(#t))))
+                        (define/public (disable-tests)
+                          (when enabled?
+                            (set! enabled? #f)
+                            (send this set-label enable-label)
+                            (put-preferences '(tests:enable?) '(#f))))
+                        (super-instantiate ()))]
+                     [enable? (get-preference 'tests:enable? (lambda () #t))]
+                     [enable-menu-item (make-object enable-menu-item%
+                                         (if enable? disable-label enable-label)
+                                         testing-menu
+                                         (lambda (_1 _2)
+                                           (if (send _1 is-test-enabled?)
+                                               (send _1 disable-tests)
+                                               (send _1 enable-tests))) #f)])
               
-              (if (get-preference 'tests:enable? (lambda () #t))
-                  (send enable-opt enable #f)
-                  (send disable-opt enable #f))
-              (if (get-preference 'test:test-window:docked? (lambda () #t))
-                  (send dock-menu-item enable #f)
-                  (send undock-menu-item enable #f))
+              (send enable-menu-item set-test-enabled?! enable?)
               (register-capability-menu-item 'tests:test-menu testing-menu))))
+        
         (define/override (language-changed)
           (super language-changed)
           (let* ([settings (send (get-definitions-text) get-next-settings)]
@@ -191,6 +211,9 @@
                        [else (send (car m) restore) (r-loop (cdr m))]))))]
               [else (send testing-menu delete)])))
         
+        (unless (drscheme:language:capability-registered? 'tests:dock-menu)
+          (drscheme:language:register-capability 'tests:dock-menu (flat-contract boolean?) #f))
+          
         (unless (drscheme:language:capability-registered? 'tests:test-menu)
           (drscheme:language:register-capability 'tests:test-menu (flat-contract boolean?) #f))
         (super-instantiate ())

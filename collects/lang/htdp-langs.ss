@@ -533,7 +533,7 @@
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
-              [(tests:test-menu) #t]
+              [(tests:test-menu tests:dock-menu) #t]
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value
                            key)]))
