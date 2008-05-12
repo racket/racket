@@ -6,12 +6,6 @@
 @title{@bold{Framework}: PLT GUI Application Framework}
 @(defmodule framework)
 
-@bold{TODO}
-
-@itemize{@item{decorated editor snip isn't exported by framework/framework}}
-
-----------------------------------------------------------------------------------------------------
-
 The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
 program on top of the @scheme[scheme/gui] library.
@@ -58,13 +52,13 @@ This library provides all of the definitions beginning with
 @scheme[(require framework/gui-utils)]
     
     This libraries provides all of the definitions beginning
-    with \scheme{gui-utils:} described in this manual.
+    with @scheme[gui-utils:] described in this manual.
 }
 @item{ @bold{Preferences}
 @scheme[(require framework/preferences)]
     
   This library provides a subset of the names of the
-  \scheme|framework.ss| library, namely those for
+  @tt{framework.ss} library, namely those for
   manipulating preference settings and is designed to be
   used from mzscheme.
 
@@ -85,7 +79,9 @@ The precise set of exported names is:
 @item{@bold{Decorated Editor Snip}
 @scheme[(require framework/decorated-editor-snip)]
 
-This library exports an editor snipclass 
+This library is here for backwards compatibility. The
+functionality in it has moved into the framework proper, in
+the @secref["editor-snip"] section.
 }
 }
 
@@ -105,6 +101,7 @@ their feedback and help.
 @include-section["color-prefs.scrbl"]
 @include-section["color.scrbl"]
 @include-section["comment-box.scrbl"]
+@include-section["editor-snip.scrbl"]
 @include-section["editor.scrbl"]
 @include-section["exit.scrbl"]
 @include-section["finder.scrbl"]

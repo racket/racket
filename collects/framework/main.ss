@@ -11,12 +11,14 @@
 (require framework/preferences
          framework/test
          framework/gui-utils
-         framework/decorated-editor-snip)
+         framework/decorated-editor-snip
+         framework/private/decorated-editor-snip)
 
 (provide (all-from-out framework/preferences
                        framework/test
                        framework/gui-utils
-                       framework/decorated-editor-snip))
+                       framework/decorated-editor-snip
+                       framework/private/decorated-editor-snip))
 
 (require/doc scheme/base scribble/manual framework/private/mapdesc)
 
@@ -424,9 +426,7 @@
     (parent (finder:dialog-parent-parameter))))
   @{This procedure queries the user for a single filename, using a
          platform-independent dialog box.  Consider using
-         @scheme[finder:put-file] instead of this function.
-         
-         See section @secref{selecting-a-filename} for more information.})
+         @scheme[finder:put-file] instead of this function.})
  
  (proc-doc/names
   finder:common-get-file
@@ -445,9 +445,7 @@
     (parent #f)))
   @{This procedure queries the user for a single filename, using a
          platform-independent dialog box.  Consider using
-         @scheme[finder:get-file] instead of this function.
-         
-         See section @secref{selecting-a-filename} for more information.})
+         @scheme[finder:get-file] instead of this function.})
  
  (proc-doc/names
   finder:std-put-file
@@ -470,9 +468,7 @@
     (parent (finder:dialog-parent-parameter))))
   @{This procedure queries the user for a single filename, using a
          platform-dependent dialog box.  Consider using
-         @scheme[finder:put-file] instead of this function.
-         
-         See section @secref{selecting-a-filename} for more information.})
+         @scheme[finder:put-file] instead of this function.})
  
  (proc-doc/names
   finder:std-get-file
@@ -491,9 +487,7 @@
     (parent #f)))
   @{This procedure queries the user for a single filename, using a
          platform-dependent dialog box.  Consider using
-         @scheme[finder:get-file] instead of this function.
-         
-         See section @secref{selecting-a-filename} for more information.})
+         @scheme[finder:get-file] instead of this function.})
  
  (proc-doc/names
   finder:put-file
@@ -557,9 +551,7 @@
     (filter-msg "That filename does not have the right form.")
     (parent #f)))
   @{This procedure queries the user for a list of filenames, using a
-         platform-independent dialog box.
-         
-         See @secref{selecting-a-filename} for more information.})
+         platform-independent dialog box.})
  
  (proc-doc/names
   frame:setup-size-pref

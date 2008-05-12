@@ -4,7 +4,7 @@
 @(require (for-label scheme/gui))
 @title{Comment Box}
 
-@defclass[comment-box:snip% decorated-editor-snip% (readable-snip<%>)]{
+@defclass[comment-box:snip% editor-snip:decorated% (readable-snip<%>)]{
   This snip implements the comment boxes that you see in
   DrScheme.
 
