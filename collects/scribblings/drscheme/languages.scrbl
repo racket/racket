@@ -288,8 +288,10 @@ A program in the teaching languages should be tested using the check forms --
  @scheme{(check-error value string)}. Tests are evaluated when running the program:
  when there are no tests, a warning appears in the interactions window;
  when all tests succeed, an acknowledgement appears in the interactions window;
- otherwise, a testing window appears to report the results. See @secref["menu:testing"] 
- for details on configuring the report behavior.
+ otherwise, a testing window appears to report the results. See @secref["menu:view"] 
+ for details on configuring the report behavior. 
+ 
+ Tests can be disabled if necessary, see @secref["menu:scheme"] for details.
 
 @; ----------------------------------------
 
@@ -346,8 +348,9 @@ Programs in the teaching languages must be tested, using a class containing the 
  all Example classes are instanstiated and all methods prefixed with the word 'test' 
  are run. When there are no tests, a warning appears in the interactions window; 
  when all tests succeed, an acknowledgement appears in the interactions window;
- otherwise, a testing window appears to report the results. See @secref["menu:testing"] 
- for details on configuring the report behavior. 
+ otherwise, a testing window appears to report the results. See @secref["menu:view"] 
+ for details on configuring the report behavior. Tests can be disabled if necessary,
+ see @secref["menu:scheme"] for details.
  
 Unless disabled in the language configuration window, expression-level coverage 
  information is collected during testing. Selecting the buttons within the report

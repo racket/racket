@@ -1284,7 +1284,7 @@ please adhere to these guidelines:
   (profj-language-config-class "Class")
   (profj-language-config-display-array "Print entire contents of arrays?")
   (profj-language-config-testing-preferences "Testing Preferences") ; Heading for preferences controlling test behavior
-  (profj-language-config-testing-enable "Display testing results on Run?") ; Run should be the word found on the Run button
+  ;(profj-language-config-testing-enable "Display testing results on Run?") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "Collect coverage information for tests?")
   (profj-language-config-support-test-language "Support test Language extension?")
   (profj-language-config-testing-check "Allow check expression?") ; check should not be translated
@@ -1296,10 +1296,11 @@ please adhere to these guidelines:
   (profj-test-name-example-miscapitalized "Class ~a's name contains a miscapitalized example.")
   
    ;; Close testing window and do not run test cases any more
-  (profj-test-results-close-and-disable "Close and Disable Testing")
+  ;(profj-test-results-close-and-disable "Close and Disable Testing")
   ;; Hide docked testing window and do not run test cases any more
-  (profj-test-results-hide-and-disable "Hide and Disable Testing")
-  (profj-test-results-window-title "Test Results")
+  ;(profj-test-results-hide-and-disable "Hide and Disable Testing")
+  ;Renamed below
+  ;(profj-test-results-window-title "Test Results")
   
   (profj-unsupported "Unsupported")
   (profj-executables-unsupported "Sorry - executables are not supported for Java at this time")
@@ -1312,9 +1313,19 @@ please adhere to these guidelines:
   (profj-insert-java-comment-box "Insert Java Comment Box")
   (profj-insert-java-interactions-box "Insert Java Interactions Box")
 
+  ;;The Test engine tool
+  ;;
+  (test-engine-window-title "Test Results")
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "Dock Test Report")
+  (test-engine-undock-report "Undock Test Report")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "Enable Tests")
+  (test-engine-disable-tests "Disable Tests")
+  
   (profjWizward-insert-java-class "Insert Java Class")
   (profjWizard-insert-java-union "Insert Java Union")
-
+  
   ;; The Test Suite Tool
   ;; Errors
   (test-case-empty-error "Empty test case")

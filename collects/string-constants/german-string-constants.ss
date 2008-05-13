@@ -1181,7 +1181,7 @@
   (profj-language-config-class "Klasse")
   (profj-language-config-display-array "Gesamten Inhalt von Arrays ausdrucken?")
   (profj-language-config-testing-preferences "Einstellungen Testen") ; Heading for preferences controlling test behavior
-  (profj-language-config-testing-enable "Testresultate bei Start anzeigen?") ; Run should be the word found on the Run button
+  ;(profj-language-config-testing-enable "Testresultate bei Start anzeigen?") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "Abdeckungsinformationen für Tests sammeln?")
   (profj-language-config-support-test-language "Spracherweiterung \"test\" unterstützen?")
   (profj-language-config-testing-check "Check-Ausdruck zulassen?") ; check should not be translated
@@ -1193,10 +1193,11 @@
   (profj-test-name-example-miscapitalized "Das \"example\" im Namen der Klasse ~a sollte \"Example\" geschrieben werden.")
 
    ;; Close testing window and do not run test cases any more
-  (profj-test-results-close-and-disable "Schließen und Testen deaktivieren")
+  ;(profj-test-results-close-and-disable "Schließen und Testen deaktivieren")
   ;; Hide docked testing window and do not run test cases any more
-  (profj-test-results-hide-and-disable "Ausblenden und Testen deaktivieren")
-  (profj-test-results-window-title "Testresultate")
+  ;(profj-test-results-hide-and-disable "Ausblenden und Testen deaktivieren")
+  ;Renamed below
+  ;(profj-test-results-window-title "Testresultate")
 
   (profj-unsupported "Nicht unterstützt")
   (profj-executables-unsupported "Programmdateien sind für Java bisher noch nicht unterstützt")
@@ -1208,6 +1209,10 @@
 
   (profj-insert-java-comment-box "Java-Kommentarkasten einfügen")
   (profj-insert-java-interactions-box "Java-Interaktions-Kasten einfügen")
+  
+  ;;The test engine tool
+  ;;
+  (test-engine-window-title "Testresultate")
 
   (profjWizward-insert-java-class "Java-Klasse einfügen")
   (profjWizard-insert-java-union "Java-Vereinigung einfügen")

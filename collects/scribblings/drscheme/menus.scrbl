@@ -152,7 +152,7 @@ blinking caret. Each window maintains its own Undo and Redo history.
 
 @; ----------------------------------------
 
-@section{@onscreen{View}}
+@section[#:tag "menu:view"]{@onscreen{View}}
 
 One each of the following show/hide pairs of menu items
 appears at any time.
@@ -193,6 +193,13 @@ appears at any time.
  @item{@defmenuitem{Hide Profile} Hides any profiling
    information currently displayed in the DrScheme window.}
 
+ @item{@defmenuitem{Dock Test Report} Like the dock button on the test report
+   window, this causes all test report windows to merge with the appropriate
+   DrScheme window at the bottom of the frame.}
+  @item{@defmenuitem{Undock Test Report} Like the undock button on the test report
+   window, this causes the test reports attached to appropriate DrScheme tabs
+   to become separate windows.}
+ 
  @item{@defmenuitem{Show Tracing} Shows a trace of functions called since
    the last time @onscreen{Run} was clicked. This menu is useful only if
    you have enabled tracing in the @onscreen{Choose Language...} dialog's
@@ -243,7 +250,7 @@ clears only the corresponding teachpack.
 
 @; ----------------------------------------
 
-@section{@onscreen{Scheme}}
+@section[#:tag "menu:scheme"]{@onscreen{Scheme}}
 
 @itemize{
 
@@ -299,6 +306,17 @@ background that signals the source location of an error.}
   around the text. Uncommenting only removes a @litchar{;} if it
   appears at the start of a line and it only removes the first
   @litchar{;} on each line.}
+           
+ @item{@defmenuitem{Disable Tests} Stops tests written in the definitions
+  window from evaluating when the program is Run. Tests can be enabled
+  using the @defmenuitem{Enable Tests} menu item. Disabling tests freezes
+  the contents of any existing test report window.
+  }
+      
+ @item{@defmenuitem{Enable Tests} Allows tests written in the definitions
+  window to evaluate when the program is Run. Tests can be disabled using
+  the @defmenuitem{Disable Tests} menu item.
+  }
 
 }
 
@@ -351,28 +369,7 @@ background that signals the source location of an error.}
    Slideshow picture. Inside the pict box, insert and arrange Scheme
    boxes that produce picture values.}
 
-}
-
-@; ----------------------------------------
-
-@section[#:tag "menu:testing"]{@onscreen{Testing}}
-
-This menu is visible when in a language with built-in support for testing;
-presently this includes the @|HtDP| languages and the ProfessorJ languages.
-
-@itemize{
-  @item{@defmenuitem{Enable tests} Allows tests written in the definitions
-   window to be evaluated when the program is run.}
-  @item{@defmenuitem{Disable tests} Stops tests written in the definitions
-   window from evaluating when the program is run; disabling tests freezes
-   contents of any existing test report window.}
-  @item{@defmenuitem{Dock report} Like the dock button on the test report
-   window, this causes all test report windows to merge with the appropriate
-   DrScheme window at the bottom of the frame.}
-  @item{@defmenuitem{Undock report} Like the undock button on the test report
-   window, this causes the test reports attached to appropriate DrScheme tabs
-   to become separate windows.}
-  }
+}  
  
 @; ----------------------------------------
 

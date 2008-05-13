@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require scheme/file scheme/class scheme/unit scheme/contract drscheme/tool framework mred)
+(require scheme/file scheme/class scheme/unit scheme/contract drscheme/tool framework mred
+         string-constants)
 (require "test-display.scm")
 (provide tool@)
 
@@ -118,10 +119,9 @@
 
         (inherit get-menu-bar get-menu% register-capability-menu-item get-definitions-text
                  get-insert-menu)
-        (define testing-menu 'not-init)
         (define dock-menu-item 'not-init)
-        (define dock-label "Dock Report")
-        (define undock-label "Undock Report")
+        (define dock-label (string-constant test-engine-dock-report))
+        (define undock-label (string-constant test-engine-undock-report))
         
         (define dock-menu-item%
           (class menu:can-restore-menu-item%
@@ -156,12 +156,11 @@
             (send dock-menu-item set-docked?! dock?)))
         
         (define/private (test-menu-init)
-          (let ([menu-bar (get-menu-bar)]
-                [test-label "Testing"]
-                [enable-label "Enable Tests"]
-                [disable-label "Disable Tests"])
+          (let ([language-menu (send this get-language-menu)]
+                [enable-label (string-constant test-engine-enable-tests)]
+                [disable-label (string-constant test-engine-disable-tests)])
                 
-            (set! testing-menu (make-object (get-menu%) test-label menu-bar))
+            (make-object separator-menu-item% language-menu)
             (letrec ([enable-menu-item%
                       (class menu:can-restore-menu-item%
                         (define enabled? #t)
@@ -181,42 +180,22 @@
                      [enable? (get-preference 'tests:enable? (lambda () #t))]
                      [enable-menu-item (make-object enable-menu-item%
                                          (if enable? disable-label enable-label)
-                                         testing-menu
+                                         language-menu 
                                          (lambda (_1 _2)
                                            (if (send _1 is-test-enabled?)
                                                (send _1 disable-tests)
                                                (send _1 enable-tests))) #f)])
               
               (send enable-menu-item set-test-enabled?! enable?)
-              (register-capability-menu-item 'tests:test-menu testing-menu))))
-        
-        (define/override (language-changed)
-          (super language-changed)
-          (let* ([settings (send (get-definitions-text) get-next-settings)]
-                 [language (drscheme:language-configuration:language-settings-language settings)]
-                 [show-testing (send language capability-value 'tests:test-menu)]
-                 [insert-menu (get-insert-menu)])
-            (when (eq? testing-menu 'not-init) (test-menu-init))
-            (cond
-              [show-testing
-               (let ([menus (send (send testing-menu get-parent) get-items)])
-                 (let d-loop ([m menus]) (unless (null? m) (send (car m) delete) (d-loop (cdr m))))
-                 (let r-loop ([m menus])
-                   (unless (null? m)
-                     (cond
-                       [(eq? (car m) insert-menu)
-                        (send (car m) restore)               
-                        (send testing-menu restore)
-                        (r-loop (cdr m))]
-                       [else (send (car m) restore) (r-loop (cdr m))]))))]
-              [else (send testing-menu delete)])))
-        
+              (register-capability-menu-item 'tests:test-menu language-menu))))
+                
         (unless (drscheme:language:capability-registered? 'tests:dock-menu)
           (drscheme:language:register-capability 'tests:dock-menu (flat-contract boolean?) #f))
           
         (unless (drscheme:language:capability-registered? 'tests:test-menu)
           (drscheme:language:register-capability 'tests:test-menu (flat-contract boolean?) #f))
         (super-instantiate ())
+        (test-menu-init)
         ))
 
     (define (test-tab%-mixin %)

@@ -1236,7 +1236,7 @@ please adhere to these guidelines:
   (profj-language-config-class "クラス")
   (profj-language-config-display-array "配列の要素をすべて表示しますか？")
   (profj-language-config-testing-preferences "テストの環境設定") ; Heading for preferences controlling test behavior
-  (profj-language-config-testing-enable "実行時にテスト結果を表示しますか？") ; Run should be the word found on the Run button
+  ;(profj-language-config-testing-enable "実行時にテスト結果を表示しますか？") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "テストのためのカバレージ情報を収集しますか？")
   (profj-language-config-support-test-language "Support test Language extension?")
   (profj-language-config-testing-check "check 式を使用しますか？") ; check should not be translated
@@ -1248,10 +1248,11 @@ please adhere to these guidelines:
   (profj-test-name-example-miscapitalized "クラス ~a の名前の大小文字が誤っています。")
 
    ;; Close testing window and do not run test cases any more
-  (profj-test-results-close-and-disable "テストを閉じて無効にする")
+  ;(profj-test-results-close-and-disable "テストを閉じて無効にする")
   ;; Hide docked testing window and do not run test cases any more
-  (profj-test-results-hide-and-disable "テストを非表示にして無効にする")
-  (profj-test-results-window-title "テスト結果")
+  ;(profj-test-results-hide-and-disable "テストを非表示にして無効にする")
+  ;Renamed below
+  ;(profj-test-results-window-title "テスト結果")
 
   (profj-unsupported "サポートされていません")
   (profj-executables-unsupported "申し訳ありません。現バージョンでは Java の実行ファイルはサポートされていません")
@@ -1264,6 +1265,10 @@ please adhere to these guidelines:
   (profj-insert-java-comment-box "Java コメント ボックスを挿入")
   (profj-insert-java-interactions-box "Java 対話ボックスを挿入")
 
+  ;;The Test engine tool
+  ;;
+  (test-engine-window-title "テスト結果")
+  
   (profjWizward-insert-java-class "Java クラスを挿入")
   (profjWizard-insert-java-union "Java Union を挿入")
 

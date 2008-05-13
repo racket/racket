@@ -182,7 +182,7 @@
   (class* frame% ()
 
     (super-instantiate
-     ((string-constant profj-test-results-window-title) #f 400 350))
+     ((string-constant test-engine-window-title) #f 400 350))
 
     (define editor #f)
     (define switch-func void)

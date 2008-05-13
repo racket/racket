@@ -1266,7 +1266,7 @@
   (profj-language-config-class "Classe")
   (profj-language-config-display-array "Montrer le contenu des tableaux ?")
   (profj-language-config-testing-preferences "Préférences pour les tests") ; Heading for preferences controlling test behavior
-  (profj-language-config-testing-enable "Montrer le résultat des tests lors de l'exécution ?") ; Run should be the word found on the Run button
+  ;(profj-language-config-testing-enable "Montrer le résultat des tests lors de l'exécution ?") ; Run should be the word found on the Run button
   (profj-language-config-testing-coverage "Collecter l'information de couvrage durant les tests ?")
   (profj-language-config-support-test-language "Supporter l'extension de langage \"test\" ?")
   (profj-language-config-testing-check "Permettre les expressions de type \"check\" ?") ; check should not be translated
@@ -1278,10 +1278,11 @@
   (profj-test-name-example-miscapitalized "Le mot \"example\" dans le nom de classe ~a doit être écrit \"Example\".")
   
   ;; Close testing window and do not run test cases any more
-  (profj-test-results-close-and-disable "Fermer la fenêtre et arrêter l'exécution des tests")
+  ;(profj-test-results-close-and-disable "Fermer la fenêtre et arrêter l'exécution des tests")
   ;; Hide docked testing window and do not run test cases any more
-  (profj-test-results-hide-and-disable "Cacher la fenêtre et arrêter l'exécution des tests")
-  (profj-test-results-window-title "Résultats des tests")
+  ;(profj-test-results-hide-and-disable "Cacher la fenêtre et arrêter l'exécution des tests")
+  ;Renamed below
+  ;(profj-test-results-window-title "Résultats des tests")
 
   (profj-unsupported "Non-supporté")
   (profj-executables-unsupported "Désolé - la création d'exécutables n'est pour l'instant pas supportée pour Java")
@@ -1293,6 +1294,10 @@
 
   (profj-insert-java-comment-box "Insérer une boite à commentaires Java")
   (profj-insert-java-interactions-box "Insérer une boite à interactions Java")
+  
+  ;The Test engine tool
+  ;;
+  (test-engine-window-title "Résultats des tests")
   
   (profjWizward-insert-java-class "Insérer une classe Java")
   (profjWizard-insert-java-union "Insérer un union Java")
