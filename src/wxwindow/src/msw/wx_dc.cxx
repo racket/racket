@@ -437,17 +437,31 @@ void wxDC::DoClipping(HDC dc)
     HRGN rgn;
     rgn = clipping->GetRgn();
     if (rgn) {
-      SelectClipRgn(dc, rgn);
-      OffsetClipRgn(dc, canvas_scroll_dx, canvas_scroll_dy);
+      if (limit_rgn) {
+	HRGN together_rgn;
+	together_rgn = CreateRectRgn(0,0,0,0);
+	CombineRgn(together_rgn, rgn, together_rgn, RGN_COPY);
+	OffsetRgn(together_rgn, canvas_scroll_dx, canvas_scroll_dy);
+	CombineRgn(together_rgn, limit_rgn, together_rgn, RGN_AND);
+	SelectClipRgn(dc, together_rgn);
+	DeleteObject(together_rgn);
+      } else {
+	SelectClipRgn(dc, rgn);
+	OffsetClipRgn(dc, canvas_scroll_dx, canvas_scroll_dy);
+      }
     } else {
       if (!empty_rgn)
 	empty_rgn = CreateRectRgn(0, 0, 0, 0);
       SelectClipRgn(dc, empty_rgn);
     }
   } else {
-    if (!full_rgn)
-      full_rgn = CreateRectRgn(0, 0, 32000, 32000);
-    SelectClipRgn(dc, full_rgn);
+    if (limit_rgn) {
+      SelectClipRgn(dc, limit_rgn);
+    } else {
+      if (!full_rgn)
+	full_rgn = CreateRectRgn(0, 0, 32000, 32000);
+      SelectClipRgn(dc, full_rgn);
+    }
   }
 }
 

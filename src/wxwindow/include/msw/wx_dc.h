@@ -36,6 +36,7 @@ class wxDC: public wxbDC
   int window_ext_x;
   int window_ext_y;
 
+  HRGN limit_rgn;
   int canvas_scroll_dx, canvas_scroll_dy;
 
   wxCanvas *canvas;

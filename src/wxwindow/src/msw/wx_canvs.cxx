@@ -127,6 +127,10 @@ wxCanvas::~wxCanvas (void)
     wxwmReleaseDC(wnd->handle, dc);
     delete wx_dc;
   }
+  if (need_update) {
+    DeleteObject(need_update);
+    need_update = NULL;
+  }
 }
 
 void wxCanvas::GetSize(int *width, int *height)
@@ -669,6 +673,7 @@ BOOL wxCanvasWnd::OnPaint(void)
     
     if (GetUpdateRgn(handle, tRgn, FALSE)) {
       PAINTSTRUCT ps;
+      HRGN need_update;
 
       BeginPaint(handle, &ps);
 
@@ -676,7 +681,14 @@ BOOL wxCanvasWnd::OnPaint(void)
 	 now we queue an event. The need_update flag
          avoids multiple updats with we queue multiple
          events before the first is handled. */
-      ((wxCanvas *)wx_window)->need_update = 1;
+
+      need_update = ((wxCanvas *)wx_window)->need_update;
+      if (!need_update) {
+	need_update = CreateRectRgn(0,0,0,0);
+	((wxCanvas *)wx_window)->need_update = need_update;
+      }
+      CombineRgn(need_update, tRgn, need_update, RGN_OR);
+
       MrEdQueuePaint(wx_window);
 
       EndPaint(handle, &ps);
@@ -694,7 +706,30 @@ BOOL wxCanvasWnd::OnPaint(void)
 void wxCanvas::DoPaint()
 {
   if (need_update) {
-    need_update = 0;
-    OnPaint();
+    RECT r;
+    if (GetRgnBox(need_update, &r) != NULLREGION) {
+      wxDC *dc;
+      HDC hdc;
+      HRGN paint_rgn;
+
+      paint_rgn = CreateRectRgn(0,0,0,0);
+      CombineRgn(paint_rgn, need_update, paint_rgn, RGN_COPY);
+      SetRectRgn(need_update, 0, 0, 0, 0);
+    
+      dc = GetDC();
+      dc->limit_rgn = paint_rgn;
+      hdc = dc->ThisDC(FALSE);
+      dc->DoClipping(hdc);
+      dc->DoneDC(hdc);
+
+      OnPaint();
+
+      dc->limit_rgn = NULL;
+      hdc = dc->ThisDC(FALSE);
+      dc->DoClipping(hdc);
+      dc->DoneDC(hdc);
+
+      DeleteObject(paint_rgn);
+    }
   }
 }
