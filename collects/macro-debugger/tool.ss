@@ -57,9 +57,14 @@
     
     (define macro-debugger-bitmap 
       (make-object bitmap%
-        (build-path (collection-path "macro-debugger") "view" "icon-small.png")
+        (build-path (collection-path "icons") "macro-stepper.png")
         'png/mask))
-    
+
+    (define macro-debugger-up-bitmap
+      (make-object bitmap%
+        (build-path (collection-path "icons") "macro-stepper-narrow.png")
+        'png/mask))
+
     (define (macro-debugger-unit-frame-mixin %)
       (class %
         (super-new)
@@ -73,6 +78,7 @@
           (new switchable-button%
                (label "Macro Stepper")
                (bitmap macro-debugger-bitmap)
+               (alternate-bitmap macro-debugger-up-bitmap)
                (parent macro-debug-panel)
                (callback (λ (button) (execute #t)))))
 
