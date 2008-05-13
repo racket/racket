@@ -673,7 +673,10 @@ BOOL wxCanvasWnd::OnPaint(void)
       BeginPaint(handle, &ps);
 
       /* We used to call wx_window->OnPaint directly;
-	 now we queue an event. */
+	 now we queue an event. The need_update flag
+         avoids multiple updats with we queue multiple
+         events before the first is handled. */
+      ((wxCanvas *)wx_window)->need_update = 1;
       MrEdQueuePaint(wx_window);
 
       EndPaint(handle, &ps);
@@ -686,4 +689,12 @@ BOOL wxCanvasWnd::OnPaint(void)
   }
 
   return retval;
+}
+
+void wxCanvas::DoPaint()
+{
+  if (need_update) {
+    need_update = 0;
+    OnPaint();
+  }
 }

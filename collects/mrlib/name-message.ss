@@ -260,7 +260,7 @@
   
   (define label-width
     (if label
-        (let-values ([(w _1 _2 _3) (send dc get-text-extent label)])
+        (let-values ([(w _1 _2 _3) (send dc get-text-extent label button-label-font)])
           w)
         0))
   

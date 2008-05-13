@@ -321,6 +321,7 @@ class wxWindow: public wxbWindow
   /* Other methods */
   /*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
   virtual void Paint(void);
+  virtual void PaintRgn(RgnHandle rgn);
   virtual void Refresh(void);
   virtual void RefreshIfUpdating(void);
 	

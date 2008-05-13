@@ -487,10 +487,11 @@ static OSStatus paintControlHandler(EventHandlerCallRef inCallRef,
 	  if (wx_window) {
 	    RgnHandle clipRgn;
 	    wxMacDC *mdc;
-
+            int need_reset_user = 0;
+          
 	    GetGWorld(&savep, &savegd);
 	    GetThemeDrawingState(&s);
-
+            
 	    clipRgn = NewRgn();
 	    if (clipRgn)
 	      GetClip(clipRgn);
@@ -501,6 +502,20 @@ static OSStatus paintControlHandler(EventHandlerCallRef inCallRef,
 
 	    wx_window->SetCurrentDC();
             ::TextMode(srcOr); /* for drawing labels */
+
+            if (clipRgn && (wx_window->__type == wxTYPE_MESSAGE)) {
+              /* Need proper clipping for messages, since we draw 
+                 manually and transparently. */
+              RgnHandle r2;
+              r2 = NewRgn();
+              if (r2) {
+                CopyRgn(clipRgn, r2);
+                OffsetRgn(r2, SetOriginX, SetOriginY);
+                SetClip(r2);
+                DisposeRgn(r2);
+                need_reset_user = 1;
+              }
+            }
 #if 0
 	    {
 	      Rect bounds;
@@ -509,7 +524,10 @@ static OSStatus paintControlHandler(EventHandlerCallRef inCallRef,
 	      FrameRect(&bounds);
 	    }
 #endif
-	    wx_window->Paint();
+	    wx_window->PaintRgn(clipRgn);
+
+            if (need_reset_user)
+              mdc->setCurrentUser(NULL);
 
 	    SetGWorld(savep, savegd);
 	    SetThemeDrawingState(s, TRUE);
@@ -1777,6 +1795,11 @@ void wxWindow::OnActivate(Bool flag) // mac platform only
 //-----------------------------------------------------------------------------
 void wxWindow::Paint(void)
 {
+}
+
+void wxWindow::PaintRgn(RgnHandle rgn)
+{
+  Paint();
 }
 
 //-----------------------------------------------------------------------------

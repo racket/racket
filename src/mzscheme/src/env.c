@@ -67,8 +67,11 @@ Scheme_Hash_Table *locals_ht[2];
 Scheme_Env *scheme_initial_env;
 
 /* locals */
-static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size);
 static void make_init_env(void);
+
+static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size);
+static Scheme_Env *make_empty_inited_env(int toplevel_size);
+static Scheme_Env *make_empty_not_inited_env(int toplevel_size);
 
 static Scheme_Object *namespace_identifier(int, Scheme_Object *[]);
 static Scheme_Object *namespace_variable_value(int, Scheme_Object *[]);
@@ -425,7 +428,7 @@ static void make_init_env(void)
   long startt;
 #endif
 
-  env = make_env(NULL, 0, GLOBAL_TABLE_SIZE);
+  env = make_empty_inited_env(GLOBAL_TABLE_SIZE);
 
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
 		   (Scheme_Object *)env);
@@ -739,71 +742,71 @@ void scheme_prepare_env_renames(Scheme_Env *env, int kind)
 
 Scheme_Env *scheme_make_empty_env(void)
 {
-  Scheme_Env *e; 
+  Scheme_Env *e;
 
-  e = make_env(NULL, 0, 7);
+  e = make_empty_inited_env(7);
 
   return e;
 }
 
-static Scheme_Env *make_env(Scheme_Env *base, int semi, int toplevel_size)
+Scheme_Env *make_empty_inited_env(int toplevel_size)
 {
-  Scheme_Bucket_Table *toplevel, *syntax;
-  Scheme_Hash_Table *module_registry, *export_registry;
-  Scheme_Object *modchain;
-  Scheme_Env *env, *label_env;
+  Scheme_Env *env;
+  Scheme_Object *vector;
+  Scheme_Hash_Table* hash_table;
 
-  toplevel = scheme_make_bucket_table(toplevel_size, SCHEME_hash_ptr);
-  toplevel->with_home = 1;
+  env = make_env(NULL, toplevel_size);
 
-  if (semi > 0) {
-    syntax = NULL;
-    modchain = NULL;
-    module_registry = NULL;
-    export_registry = NULL;
-    label_env = NULL;
-  } else {
-    syntax = scheme_make_bucket_table(7, SCHEME_hash_ptr);
-    if (base) {
-      modchain = base->modchain;
-      module_registry = base->module_registry;
-      export_registry = base->export_registry;
-      label_env = base->label_env;
-    } else {
-      if (semi < 0) {
-	module_registry = NULL;
-	export_registry = NULL;
-	modchain = NULL;
-        label_env = NULL;
-      } else {
-	Scheme_Hash_Table *modules;
+  vector = scheme_make_vector(3, scheme_false);
+  hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  SCHEME_VEC_ELS(vector)[0] = (Scheme_Object *)hash_table;
+  env->modchain = vector;
 
-	modules = scheme_make_hash_table(SCHEME_hash_ptr);
-	modchain = scheme_make_vector(3, scheme_false);
-	SCHEME_VEC_ELS(modchain)[0] = (Scheme_Object *)modules;
+  hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  env->module_registry = hash_table;
+  env->module_registry->iso.so.type = scheme_module_registry_type;
 
-	module_registry = scheme_make_hash_table(SCHEME_hash_ptr);
-	module_registry->iso.so.type = scheme_module_registry_type;
-	
-	export_registry = scheme_make_hash_table(SCHEME_hash_ptr);
+  hash_table = scheme_make_hash_table(SCHEME_hash_ptr);
+  env->export_registry = hash_table;
+  env->label_env = NULL;
 
-        label_env = NULL;
-      }
-    }
-  }
+  return env;
+}
+
+Scheme_Env *make_empty_not_inited_env(int toplevel_size)
+{
+  Scheme_Env *e;
+
+  e = make_env(NULL, toplevel_size);
+
+  return e;
+}
+
+static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size)
+{
+  Scheme_Env *env;
+  Scheme_Bucket_Table *bucket_table;
 
   env = MALLOC_ONE_TAGGED(Scheme_Env);
   env->so.type = scheme_namespace_type;
 
-  env->toplevel = toplevel;
+  bucket_table = scheme_make_bucket_table(toplevel_size, SCHEME_hash_ptr);
+  env->toplevel = bucket_table;
+  env->toplevel->with_home = 1;
 
-  env->label_env = label_env;
+  bucket_table = scheme_make_bucket_table(7, SCHEME_hash_ptr);
+  env->syntax = bucket_table;
 
-  if (semi < 1) {
-    env->syntax = syntax;
-    env->modchain = modchain;
-    env->module_registry = module_registry;
-    env->export_registry = export_registry;
+  if (base) {
+    env->modchain = base->modchain;
+    env->module_registry = base->module_registry;
+    env->export_registry = base->export_registry;
+    env->label_env = base->label_env;
+  } else {
+    env->modchain = NULL;
+    env->module_registry = NULL;
+    env->export_registry = NULL;
+    env->label_env = NULL;
   }
 
   return env;
@@ -814,7 +817,7 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree
 {
   Scheme_Env *menv;
 
-  menv = make_env(env, 0, 7);
+  menv = make_env(env, 7);
 
   menv->module = m;
 
@@ -842,7 +845,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
 
     scheme_prepare_label_env(env);
 
-    eenv = make_env(NULL, -1, 7);
+    eenv = make_empty_not_inited_env(7);
     eenv->phase = env->phase + 1;
     eenv->mod_phase = env->mod_phase + 1;
 
@@ -883,7 +886,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
 
     scheme_prepare_label_env(env);
 
-    eenv = make_env(NULL, -1, 7);
+    eenv = make_empty_not_inited_env(7);
     eenv->phase = env->phase - 1;
     eenv->mod_phase = env->mod_phase - 1;
 
@@ -923,7 +926,7 @@ void scheme_prepare_label_env(Scheme_Env *env)
     Scheme_Object *modchain;
     Scheme_Hash_Table *prev_modules;
 
-    lenv = make_env(NULL, -1, 7);
+    lenv = make_empty_not_inited_env(7);
     lenv->phase = 0;
     lenv->mod_phase = 0;
 
@@ -3908,7 +3911,7 @@ static Scheme_Object *do_variable_namespace(const char *who, int tl, int argc, S
       env = env->template_env;
     }
   } else {
-    env = make_env(env, 0, 0);
+    env = make_env(env, 0);
     
     /* rewind modchain to phase 0: */
     while (ph--) {

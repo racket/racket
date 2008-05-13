@@ -2089,11 +2089,9 @@ static void MrEdQueueWindowCallback(wxWindow *wx_window, Scheme_Closed_Prim *scp
 static Scheme_Object *call_on_paint(void *d, int, Scheme_Object **argv)
 {
   wxWindow *w = (wxWindow *)d;
-#ifdef wx_msw
-  w->OnPaint();
-#else
+
   ((wxCanvas *)w)->DoPaint();
-#endif
+
   return scheme_void;
 }
 

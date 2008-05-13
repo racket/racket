@@ -39,6 +39,7 @@ class wxCanvas: public wxbCanvas
   wxBorderArea *canvas_border;
   wxColour *bgcol;
   wxScrollArea* cScrollArea;
+  RgnHandle needs_update;
 
   //=============================================================================
   // Public constructors
@@ -164,6 +165,7 @@ class wxCanvas: public wxbCanvas
   virtual void Paint(void);
   void DoPaint(void);
   virtual void OnPaint(void);
+  virtual void PaintRgn(RgnHandle rgn);
         
   virtual void OnSetFocus(void);
   virtual void OnKillFocus(void);
@@ -179,6 +181,8 @@ class wxCanvas: public wxbCanvas
   wxColor *GetCanvasBackground();
 
   Bool SetAsControl();
+
+  void AddPaintRegion(RgnHandle r);
 
  protected:
   void ChangeToGray(Bool Gray);

@@ -95,6 +95,10 @@ wxCanvas::wxCanvas // Constructor (given parentWindow)
 wxCanvas::~wxCanvas(void)
 {
   if (wx_dc) DELETE_OBJ wx_dc;
+  if (needs_update) {
+    DisposeRgn(needs_update);
+    needs_update = NULL;
+  }
 }
 
 //=============================================================================
@@ -501,8 +505,10 @@ void wxCanvas::SetScrollData
 	scrollRect.right = clientArea->Width();
 	OffsetRect(&scrollRect,SetOriginX,SetOriginY);
 	::ScrollRect(&scrollRect, -dH, -dV, theUpdateRgn);
-	if (!EmptyRgn(theUpdateRgn))
+	if (!EmptyRgn(theUpdateRgn)) {
+          AddPaintRegion(theUpdateRgn);
 	  need_repaint = 1;
+        }
 	::DisposeRgn(theUpdateRgn);
       }
       theDC->auto_device_origin_x += -dH;
@@ -857,6 +863,22 @@ int wxCanvas::GetScrollRange(int dir)
 void wxCanvas::DoPaint(void)
 {
   if (!cHidden) {
+    RgnHandle rgn;
+
+    if (needs_update) {
+      if (EmptyRgn(needs_update))
+        return;
+
+      rgn = NewRgn();
+      if (rgn) {
+        CopyRgn(needs_update, rgn);
+        SetRectRgn(needs_update, 0, 0, 0, 0);
+        wx_dc->onpaint_reg = rgn;
+        wx_dc->SetCanvasClipping();
+      }
+    } else
+      rgn = NULL;
+
     if (!(cStyle & wxTRANSPARENT_WIN)
 	&& !(cStyle & wxNO_AUTOCLEAR)) {
       Rect itemRect;
@@ -873,22 +895,47 @@ void wxCanvas::DoPaint(void)
       EraseRect(&itemRect);
       SetThemeDrawingState(s, TRUE);
     }
-    
+
     OnPaint();
+
+    if (rgn) {
+      wx_dc->onpaint_reg = NULL;
+      wx_dc->SetCanvasClipping();
+      DisposeRgn(rgn);
+    }
   }
 }
 
-void wxCanvas::Paint(void)
+void wxCanvas::AddPaintRegion(RgnHandle rgn)
+{
+  if (!needs_update) {
+    needs_update = NewRgn();
+  }
+
+  if (rgn) {
+    UnionRgn(rgn, needs_update, needs_update);
+  } else {
+    SetRectRgn(needs_update, -32000, -32000, 32000, 32000);
+  }
+}
+
+void wxCanvas::PaintRgn(RgnHandle rgn)
 {
   if (!cHidden) {
     if (cStyle & wxAS_CONTROL) {
       /* Run on-paint atomically */
       MrEdAtomicallyPaint(this);
     } else {
+      AddPaintRegion(rgn);
       /* In wx_frame.cc: */
       wxCallDoPaintOrQueue(this);
     }
   }
+}
+
+void wxCanvas::Paint()
+{
+  PaintRgn(NULL);
 }
 
 void wxCanvas::OnPaint(void)

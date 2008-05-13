@@ -633,22 +633,10 @@ scheme_init_list (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
-#ifndef MZ_PRECISE_GC
-  Scheme_Object *cons;
-#endif
-
-#if 0
-  if (!car || !cdr
-      || (SCHEME_TYPE(car) < 0)
-      || (SCHEME_TYPE(cdr) < 0)
-      || (SCHEME_TYPE(car) >= (_scheme_last_type_ + 10)) /* +10 leaves room of external types */
-      || (SCHEME_TYPE(cdr) >= (_scheme_last_type_ + 10)))
-    *(long *)0x0 = 1;
-#endif
-
 #ifdef MZ_PRECISE_GC
   return GC_malloc_pair(car, cdr);
 #else
+  Scheme_Object *cons;
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
   SCHEME_CAR(cons) = car;
