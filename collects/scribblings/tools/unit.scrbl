@@ -3,61 +3,38 @@
 @title{@tt{drscheme:unit}}
 
 @definterface[drscheme:unit:tab<%> (drscheme:rep:context<%>)]{
-
-
-
-@defmethod[(break-callback)
-           void?]{
+@defmethod[(break-callback) void?]{
 @methspec{
-
 This method is called when the break button is clicked and
 this tab is the active tab.
-
 }
 @methimpl{
-
 By default, breaks any evaluation that may be happening at
 this point.
-
-
 }}
 
-@defmethod[#:mode pubment 
-           (can-close?)
-           boolean?]{
+@defmethod[#:mode pubment (can-close?) boolean?]{
 @methspec{
-
 This method is called to determine if it is okay to close this tab.
-
 }
 @methimpl{
-
 Calls the definitions text's and interactions text's
 @method[editor:basic<%> can-close?] method.
-
-
 }}
 
 @defmethod[#:mode override 
            (disable-evaluation)
            void?]{
-
 Disables the Run button, and the Run menu item and
 @method[editor<%> lock]s the interactions window, and the definitions window.
-
-
 }
 
 @defmethod[#:mode override 
            (enable-evaluation)
            void?]{
-
 Enables the Run button, and the Run menu item and unlocks
 (via the
-@method[editor<%> lock]method) the interactions window and the definitions window.
-
-
-}
+@method[editor<%> lock] method) the interactions window and the definitions window.}
 
 @defmethod[#:mode override 
            (get-breakables)
@@ -553,7 +530,13 @@ items based on the contents of the windows.
 
 @definterface[drscheme:unit:frame<%> ()]{
 
-
+@defmethod[(get-language-menu) (is-a?/c menu%)]{ Returns the
+  language-specific menu. This menu is called the
+  @onscreen{Scheme} menu in the Scheme language but is, in general,
+  controlled by the @scheme['drscheme:language-menu-title] 
+  capability (see @scheme[drscheme:language:register-capability]
+  for details on capabilities).
+ }
 
 @defmethod[(ensure-defs-shown)
            void?]{

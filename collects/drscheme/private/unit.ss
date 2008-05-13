@@ -1170,7 +1170,9 @@ module browser threading seems wrong.
         
         ensure-rep-shown
         ensure-rep-hidden
-        ensure-defs-shown))
+        ensure-defs-shown
+        
+        get-language-menu))
     
     (define frame-mixin
       (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1502,6 +1504,8 @@ module browser threading seems wrong.
                   [new-label (send language capability-value 'drscheme:language-menu-title)])
               (unless (equal? label new-label)
                 (send scheme-menu set-label new-label)))))
+        
+        (define/public (get-language-menu) scheme-menu)
         
         ;; update-save-message : -> void
         ;; sets the save message. If input is #f, uses the frame's
