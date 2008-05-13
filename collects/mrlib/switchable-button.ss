@@ -3,7 +3,7 @@
          scheme/class)
 
 (provide switchable-button%)
-(define gap 2)
+(define gap 4) ;; space between the text and the icon
 (define margin 2)
 (define w-circle-space 6)
 (define h-circle-space 6)
