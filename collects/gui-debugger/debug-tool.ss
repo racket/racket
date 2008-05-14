@@ -132,9 +132,10 @@
               [else
                (send (group:get-the-frame-group) for-each-frame
                      (lambda (frame)
-                       (let* ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))]
-                              [defs (findf (lambda (d) (send d port-name-matches? source)) defss)])
-                         (and defs (k defs)))))
+                       (and (is-a? frame drscheme:unit:frame<%>)
+                            (let* ([defss (map (lambda (t) (send t get-defs)) (send frame get-tabs))]
+                                   [defs (findf (lambda (d) (send d port-name-matches? source)) defss)])
+                              (and defs (k defs))))))
                default]))))
       
       (define (debug-definitions-text-mixin super%)
