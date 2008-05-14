@@ -143,6 +143,27 @@ static short cgf_txFont, cgf_txFace;
 extern "C" void CGContextSetFontRenderingMode(CGContextRef cg, int v);
 
 //-----------------------------------------------------------------------------
+
+static RgnHandle GetCurrentClipRgn(CGrafPtr qdp)
+{
+  RgnHandle clipRgn;
+
+  clipRgn = NewRgn();
+  if (clipRgn) {
+    RgnHandle visRgn;
+    visRgn = NewRgn();
+    if (visRgn) {
+      GetPortClipRegion(qdp, clipRgn);
+      GetPortVisibleRegion(qdp, visRgn);
+      SectRgn(clipRgn, visRgn, clipRgn);
+      DisposeRgn(visRgn);
+    }
+  }
+
+  return clipRgn;
+}
+
+//-----------------------------------------------------------------------------
 void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bool ucs4, int d, double angle)
 {
   FontInfo fontInfo;
@@ -294,6 +315,14 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
 	qdp = cMacDC->macGrafPort();
 	SyncCGContextOriginWithPort(cg, qdp);
 	GetPortBounds(qdp, &portRect);
+        {
+          RgnHandle clipRgn;
+          clipRgn = GetCurrentClipRgn(qdp);
+          if (clipRgn) {
+            ClipCGContextToRegion(cg, &portRect, clipRgn);
+            DisposeRgn(clipRgn);
+          }
+        }
 	CGContextTranslateCTM(cg, 
 			      gdx + (x * user_scale_x) + device_origin_x, 
 			      (portRect.bottom - portRect.top) 
@@ -947,17 +976,7 @@ static double DrawMeasUnicodeText(const char *text, int d, int theStrlen, int uc
 
     if (use_cgctx) {
       /* Make clipping regions match (including BeginUpdate effect) */
-      clipRgn = NewRgn();
-      if (clipRgn) {
-	RgnHandle visRgn;
-	visRgn = NewRgn();
-	if (visRgn) {
-	  GetPortClipRegion(qdp, clipRgn);
-	  GetPortVisibleRegion(qdp, visRgn);
-	  SectRgn(clipRgn, visRgn, clipRgn);
-	  DisposeRgn(visRgn);
-	}
-      }
+      clipRgn = GetCurrentClipRgn(qdp);
     } else
       clipRgn = NULL;
   } else
