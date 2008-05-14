@@ -202,13 +202,13 @@ public:
   void SetGLConfig(wxGLConfig *cfg);
 #endif
 
+  void SetAntiAlias(int v);
+
 #ifdef WX_USE_CAIRO
   void InitCairoDev();
   void ReleaseCairoDev();
   Bool SetCairoPen();
   Bool SetCairoBrush();
-
-  void SetAntiAlias(int v);
 
   void SetAlpha(double d);
 
