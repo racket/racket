@@ -161,6 +161,7 @@
                 [disable-label (string-constant test-engine-disable-tests)])
                 
             (make-object separator-menu-item% language-menu)
+            (register-capability-menu-item 'tests:test-menu language-menu)
             (letrec ([enable-menu-item%
                       (class menu:can-restore-menu-item%
                         (define enabled? #t)
