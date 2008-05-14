@@ -509,7 +509,7 @@ wxCanvasWnd::wxCanvasWnd (wxWnd * parent, wxWindow * wx_win,
 
 static HBRUSH btnface_brush;
 
-BOOL wxCanvasWnd::OnEraseBkgnd (HDC pDC)
+static void DoErase(wxWindow *wx_window, HDC pDC)
 {
   long wstyle;
 
@@ -553,8 +553,13 @@ BOOL wxCanvasWnd::OnEraseBkgnd (HDC pDC)
       SetWindowExtEx(pDC, canvas->wx_dc->window_ext_x, canvas->wx_dc->window_ext_y, NULL);
     }
   }
-  
-  return TRUE;
+}
+
+BOOL wxCanvasWnd::OnEraseBkgnd (HDC pDC)
+{
+  DoErase(wx_window, pDC);
+ 
+  return TRUE;  
 }
 
 void wxCanvas::SetCanvasBackground(wxColor *c)
@@ -708,28 +713,46 @@ void wxCanvas::DoPaint()
   if (need_update) {
     RECT r;
     if (GetRgnBox(need_update, &r) != NULLREGION) {
-      wxDC *dc;
-      HDC hdc;
-      HRGN paint_rgn;
+      if (wstyle & wxTRANSPARENT_WIN) {
+        wxDC *dc;
+        HDC hdc;
+        HRGN paint_rgn;
 
-      paint_rgn = CreateRectRgn(0,0,0,0);
-      CombineRgn(paint_rgn, need_update, paint_rgn, RGN_COPY);
-      SetRectRgn(need_update, 0, 0, 0, 0);
+        paint_rgn = CreateRectRgn(0,0,0,0);
+        CombineRgn(paint_rgn, need_update, paint_rgn, RGN_COPY);
+        SetRectRgn(need_update, 0, 0, 0, 0);
     
-      dc = GetDC();
-      dc->limit_rgn = paint_rgn;
-      hdc = dc->ThisDC(FALSE);
-      dc->DoClipping(hdc);
-      dc->DoneDC(hdc);
+        dc = GetDC();
+        dc->limit_rgn = paint_rgn;
+        hdc = dc->ThisDC(FALSE);
+        dc->DoClipping(hdc);
+        dc->DoneDC(hdc);
 
-      OnPaint();
+        OnPaint();
 
-      dc->limit_rgn = NULL;
-      hdc = dc->ThisDC(FALSE);
-      dc->DoClipping(hdc);
-      dc->DoneDC(hdc);
+        dc->limit_rgn = NULL;
+        hdc = dc->ThisDC(FALSE);
+        dc->DoClipping(hdc);
+        dc->DoneDC(hdc);
 
-      DeleteObject(paint_rgn);
+        DeleteObject(paint_rgn);
+      } else {
+        SetRectRgn(need_update, 0, 0, 0, 0);
+        if (!(wstyle & wxNO_AUTOCLEAR)) {
+          /* The erase through OnEraseBkgnd() was confine to the clipping
+             area. Erase the full area. */
+          wxDC *dc;
+          HDC hdc;
+
+          dc = GetDC();
+          hdc = dc->ThisDC(FALSE);
+
+          DoErase(this, hdc);
+          
+          dc->DoneDC(hdc);
+        }
+        OnPaint();
+      }
     }
   }
 }
