@@ -315,14 +315,6 @@ void wxCanvasDC::DrawText(const char* text, double x, double y, Bool combine, Bo
 	qdp = cMacDC->macGrafPort();
 	SyncCGContextOriginWithPort(cg, qdp);
 	GetPortBounds(qdp, &portRect);
-        {
-          RgnHandle clipRgn;
-          clipRgn = GetCurrentClipRgn(qdp);
-          if (clipRgn) {
-            ClipCGContextToRegion(cg, &portRect, clipRgn);
-            DisposeRgn(clipRgn);
-          }
-        }
 	CGContextTranslateCTM(cg, 
 			      gdx + (x * user_scale_x) + device_origin_x, 
 			      (portRect.bottom - portRect.top) 

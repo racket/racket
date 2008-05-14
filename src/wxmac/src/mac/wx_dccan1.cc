@@ -972,7 +972,7 @@ CGContextRef wxCanvasDC::GetCG()
           if (onpaint_reg) {
             ::CopyRgn(onpaint_reg, clipRgn);
             if (clip_reg)
-              ::SectRgn(current_reg, clip_reg, current_reg);
+              ::SectRgn(clipRgn, clip_reg, clipRgn);
           } else {
             ::CopyRgn(clip_reg, clipRgn);
           }
