@@ -509,7 +509,7 @@ wxCanvasWnd::wxCanvasWnd (wxWnd * parent, wxWindow * wx_win,
 
 static HBRUSH btnface_brush;
 
-static void DoErase(wxWindow *wx_window, HDC pDC)
+static void DoErase(HWND handle, wxWindow *wx_window, HDC pDC)
 {
   long wstyle;
 
@@ -557,7 +557,7 @@ static void DoErase(wxWindow *wx_window, HDC pDC)
 
 BOOL wxCanvasWnd::OnEraseBkgnd (HDC pDC)
 {
-  DoErase(wx_window, pDC);
+  DoErase(handle, wx_window, pDC);
  
   return TRUE;  
 }
@@ -713,6 +713,9 @@ void wxCanvas::DoPaint()
   if (need_update) {
     RECT r;
     if (GetRgnBox(need_update, &r) != NULLREGION) {
+      long wstyle;
+      wstyle = GetWindowStyleFlag();
+
       if (wstyle & wxTRANSPARENT_WIN) {
         wxDC *dc;
         HDC hdc;
@@ -747,7 +750,7 @@ void wxCanvas::DoPaint()
           dc = GetDC();
           hdc = dc->ThisDC(FALSE);
 
-          DoErase(this, hdc);
+          DoErase(GetHWND(), this, hdc);
           
           dc->DoneDC(hdc);
         }
