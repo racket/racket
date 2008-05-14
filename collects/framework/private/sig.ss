@@ -376,7 +376,9 @@
      add-background-preferences-panel
      marshall-style-delta
      unmarshall-style-delta
-     set-default/color-scheme))  
+     set-default/color-scheme
+     white-on-black
+     black-on-white))
   
   (define-signature scheme-class^
     (text<%>

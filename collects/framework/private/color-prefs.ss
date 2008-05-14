@@ -331,11 +331,11 @@
            (new button%
                 [label (string-constant white-on-black-color-scheme)]
                 [parent hp]
-                [callback (λ (x y) (white-on-black))])
+                [callback (λ (x y) (preferences:set 'framework:white-on-black? #t))])
            (new button%
                 [label (string-constant black-on-white-color-scheme)]
                 [parent hp]
-                [callback (λ (x y) (black-on-white))]))))))
+                [callback (λ (x y) (preferences:set 'framework:white-on-black? #f))]))))))
   
   
   (define (build-text-foreground-selection-panel parent pref-sym style-name example-text)
@@ -488,12 +488,8 @@
                   "did not find color ~s in the-color-database"
                   c))]))
   
-  (define (black-on-white)
-    (preferences:set 'framework:white-on-black? #f)
-    (do-colorization cadr))
-  (define (white-on-black)
-    (preferences:set 'framework:white-on-black? #t)
-    (do-colorization caddr))
+  (define (black-on-white) (do-colorization cadr))
+  (define (white-on-black) (do-colorization caddr))
   (define (do-colorization sel)
     (for-each (λ (l) 
                 (let* ([p (car l)]
