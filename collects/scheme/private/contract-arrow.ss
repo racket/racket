@@ -1181,7 +1181,8 @@ v4 todo:
     (λ (ctc)
       (let* ([to-proj (λ (c) ((proj-get c) c))]
              [dom-ctcs (map to-proj (get-case->-dom-ctcs ctc))]
-             [rng-ctcs (map to-proj (get-case->-rng-ctcs ctc))]
+             [rng-ctcs (let ([rngs (get-case->-rng-ctcs ctc)])
+                         (and rngs (map to-proj (get-case->-rng-ctcs ctc))))]
              [rst-ctcs (case->-rst-ctcs ctc)]
              [specs (case->-specs ctc)])
         (λ (pos-blame neg-blame src-info orig-str)
@@ -1233,7 +1234,7 @@ v4 todo:
 (define (build-case-> dom-ctcs rst-ctcs rng-ctcs specs wrapper)
   (make-case-> (map (λ (l) (map (λ (x) (coerce-contract 'case-> x)) l)) dom-ctcs)
                (map (λ (x) (and x (coerce-contract 'case-> x))) rst-ctcs)
-               (map (λ (l) (and l (map (λ (x) (coerce-contract 'case-> x)) l))) rng-ctcs)
+               (and rng-ctcs (map (λ (l) (and l (map (λ (x) (coerce-contract 'case-> x)) l))) rng-ctcs))
                specs
                wrapper))
   
@@ -1246,7 +1247,8 @@ v4 todo:
               (case->-dom-ctcs ctc)
               (case->-rst-ctcs ctc))))
 
-(define (get-case->-rng-ctcs ctc) (apply append (case->-rng-ctcs ctc)))
+(define (get-case->-rng-ctcs ctc)
+  (apply append (map (λ (x) (or x '())) (case->-rng-ctcs ctc))))
 
 
 ;                                                                                 

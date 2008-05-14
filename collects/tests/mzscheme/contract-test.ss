@@ -1786,9 +1786,49 @@
                'neg)
      1 2))
   
+  (test/spec-passed/result
+   'contract-case->9
+   '((contract (case-> (-> integer? any))
+               (lambda (x) 1)
+               'pos
+               'neg)
+     1)
+   1)
+  
+  (test/neg-blame
+   'contract-case->10
+   '((contract (case-> (-> integer? any))
+               (lambda (x) 1)
+               'pos
+               'neg)
+     #f))
+  
+  (test/pos-blame
+   'contract-case->11
+   '(contract (case-> (-> integer? any) (->  integer? integer? any))
+              (lambda (x) 1)
+              'pos
+              'neg))
+  
+  (test/neg-blame
+   'contract-case->12
+   '((contract (case-> (-> integer? any) (-> integer? integer? any))
+               (case-lambda [(x) 1] [(x y) 1])
+               'pos
+               'neg)
+     #f))
   
   (test/spec-passed/result
-   'contract-case->11
+   'contract-case->13
+   '((contract (case-> (-> integer? any) (-> integer? integer? any))
+               (case-lambda [(x) 1] [(x y) 1])
+               'pos
+               'neg)
+     1)
+   1)
+  
+  (test/spec-passed/result
+   'contract-case->14
    '(let ([f 
            (contract (case-> (-> char?) (-> integer? boolean?) (-> symbol? input-port? string?))
                      (case-lambda
