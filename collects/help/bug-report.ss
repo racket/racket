@@ -221,6 +221,7 @@
                                     (editor text))])
                   (send text set-paste-text-only #t)
                   (send text auto-wrap #t)
+                  (send text set-max-undo-history 'forever)
                   (send text set-styles-fixed #t)
                   canvas))
               #t
