@@ -70,8 +70,9 @@ void wxCanvasDC::Init(wxCanvas* the_canvas)
   pixmapWidth = 0;
   pixmapHeight = 0;
 
-  current_reg = NULL ;
-  onpaint_reg = NULL ;
+  current_reg = NULL;
+  onpaint_reg = NULL;
+  clip_reg = NULL;
 
   min_x = 0; min_y = 0; max_x = 0; max_y = 0;
 
@@ -134,6 +135,10 @@ wxCanvasDC::~wxCanvasDC(void)
   if (onpaint_reg) {
     ::DisposeRgn(onpaint_reg);
     onpaint_reg = NULL;
+  }
+  if (clip_reg) {
+    ::DisposeRgn(clip_reg);
+    clip_reg = NULL;
   }
   canvas = NULL;
 
@@ -279,7 +284,7 @@ void wxCanvasDC::SetCanvasClipping(void)
   if (current_reg) {
     ::DisposeRgn(current_reg);
   }
-  if (clipping || onpaint_reg) {
+  if (clipping || onpaint_reg || clip_reg) {
     current_reg = ::NewRgn();
     CheckMemOK(current_reg);
   } else
@@ -287,18 +292,22 @@ void wxCanvasDC::SetCanvasClipping(void)
   
   if (clipping && !clipping->rgn) {
     /* NULL rgn pointer means the empty region */
-    if (!current_reg) {
-      current_reg = ::NewRgn();
-      CheckMemOK(current_reg);
-    }
   } else if (clipping) {
     ::CopyRgn(clipping->rgn, current_reg);
     ::OffsetRgn(current_reg, auto_device_origin_x, auto_device_origin_y); 
     if (onpaint_reg) {
-      ::SectRgn(current_reg, onpaint_reg, current_reg) ;
+      ::SectRgn(current_reg, onpaint_reg, current_reg);
+    }
+    if (clip_reg) {
+      ::SectRgn(current_reg, clip_reg, current_reg);
     }
   } else if (onpaint_reg) {
     ::CopyRgn(onpaint_reg, current_reg);
+    if (clip_reg) {
+      ::SectRgn(current_reg, clip_reg, current_reg);
+    }
+  } else if (clip_reg) {
+    ::CopyRgn(clip_reg, current_reg);
   }
 
   theCurrentUser = cMacDC->currentUser();
@@ -956,11 +965,17 @@ CGContextRef wxCanvasDC::GetCG()
     /* Leave the region empty */
   } else {
     if (clipRgn) {
-      if (onpaint_reg) {
+      if (onpaint_reg || clip_reg) {
 	RgnHandle visRgn;
 	visRgn = NewRgn();
 	if (visRgn) {
-	  ::CopyRgn(onpaint_reg, clipRgn); // GetPortClipRegion(qdp, clipRgn);
+          if (onpaint_reg) {
+            ::CopyRgn(onpaint_reg, clipRgn);
+            if (clip_reg)
+              ::SectRgn(current_reg, clip_reg, current_reg);
+          } else {
+            ::CopyRgn(clip_reg, clipRgn);
+          }
 	  ::OffsetRgn(clipRgn, gdx, gdy);
 	  GetPortVisibleRegion(qdp, visRgn);
 	  SectRgn(clipRgn, visRgn, clipRgn);

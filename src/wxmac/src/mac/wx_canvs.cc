@@ -869,12 +869,20 @@ void wxCanvas::DoPaint(void)
       if (EmptyRgn(needs_update))
         return;
 
-      rgn = NewRgn();
+      if (cStyle & wxTRANSPARENT_WIN)
+        rgn = NewRgn();
+      else
+        rgn = NULL;
       if (rgn) {
         CopyRgn(needs_update, rgn);
         SetRectRgn(needs_update, 0, 0, 0, 0);
-        wx_dc->onpaint_reg = rgn;
+        if (wx_dc->clip_reg) {
+          /* FIXME: nested on-paint... */
+        }
+        wx_dc->clip_reg = rgn;
         wx_dc->SetCanvasClipping();
+      } else {
+        SetRectRgn(needs_update, 0, 0, 0, 0);
       }
     } else
       rgn = NULL;
@@ -886,20 +894,24 @@ void wxCanvas::DoPaint(void)
       RGBColor pixel;
       
       pixel = bgcol->pixel;
-
+      
       SetCurrentDC();
+      if (rgn)
+        SetClip(rgn);
       GetThemeDrawingState(&s);
       GetControlBounds(cPaintControl, &itemRect);
       RGBBackColor(&pixel);
       BackPat(GetWhitePattern());
       EraseRect(&itemRect);
       SetThemeDrawingState(s, TRUE);
+      if (rgn)
+        cMacDC->setCurrentUser(NULL);
     }
 
     OnPaint();
 
     if (rgn) {
-      wx_dc->onpaint_reg = NULL;
+      wx_dc->clip_reg = NULL;
       wx_dc->SetCanvasClipping();
       DisposeRgn(rgn);
     }

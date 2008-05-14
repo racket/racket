@@ -38,7 +38,7 @@ class wxCanvasDC: public wxbCanvasDC
   int pixmapWidth;
   int pixmapHeight;
 
-  RgnHandle current_reg, onpaint_reg;
+  RgnHandle current_reg, onpaint_reg, clip_reg;
 
   int current_pen_join;
   int current_pen_cap;
