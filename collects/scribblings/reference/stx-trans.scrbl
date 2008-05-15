@@ -540,8 +540,9 @@ former list (so that a module will be @tech{instantiate}d or
 former list).}
 
 
-@defproc[(make-require-transformer [proc ((syntax?) . ->* . ((listof import?)
-                                                             (listof import-source?)))])
+@defproc[(make-require-transformer [proc (syntax? . -> . (values
+                                                          (listof import?)
+                                                          (listof import-source?)))])
          require-transformer?]{
 
 Creates a @deftech{require transformer} (i.e., a structure with the

@@ -280,18 +280,18 @@ argument for consistency with the other functions.}
 
 @defproc*[([(pin-line [pict pict?]
                       [src pict-path?]
-                      [find-src (pict? pict-path? . ->* . (real? real?))]
+                      [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
-                      [find-dest (pict? pict-path? . ->* . (real? real?))]
+                      [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:line-width line-width (or/c false/c real?) #f]
                       [#:color color (or/c false/c string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f])
             pict?]
            [(pin-arrow-line [arrow-size real?] [pict pict?]
                       [src pict-path?]
-                      [find-src (pict? pict-path? . ->* . (real? real?))]
+                      [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
-                      [find-dest (pict? pict-path? . ->* . (real? real?))]
+                      [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:line-width line-width (or/c false/c real?) #f]
                       [#:color color (or/c false/c string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -299,9 +299,9 @@ argument for consistency with the other functions.}
             pict?]
            [(pin-arrows-line [arrow-size real?] [pict pict?]
                       [src pict-path?]
-                      [find-src (pict? pict-path? . ->* . (real? real?))]
+                      [find-src (pict? pict-path? . -> . (values real? real?))]
                       [dest pict-path?]
-                      [find-dest (pict? pict-path? . ->* . (real? real?))]
+                      [find-dest (pict? pict-path? . -> . (values real? real?))]
                       [#:line-width line-width (or/c false/c real?) #f]
                       [#:color color (or/c false/c string? (is-a/c? color%)) #f]
                       [#:under? under? any/c #f]
@@ -398,7 +398,7 @@ comparing the last-element bottom-right corners.}
             pict?]
            [(pin-over [base pict?] 
                       [find-pict pict-path?]
-                      [find (pict? pict-path? . ->* . (real? real?))]
+                      [find (pict? pict-path? . -> . (values real? real?))]
                       [pict pict?])
             pict?])]{
 
@@ -415,7 +415,7 @@ should be something like @scheme[lt-find].}
             pict?]
            [(pin-under [base pict?] 
                        [find-pict pict?]
-                       [find (pict? pict? . ->* . (real? real?))]
+                       [find (pict? pict? . -> . (values real? real?))]
                        [pict pict?])
             pict?])]{
 
@@ -732,7 +732,7 @@ for use with @scheme[pin-over].}
            [(pin-balloon [balloon balloon?]
                          [base pict?]
                          [at-pict pict-path?]
-                         [find ((pict? pict-path?) . ->* . (real? real?))])
+                         [find (pict? pict-path? . -> . (values real? real?))])
             pict?])]{
 
 Superimposes the pict in @scheme[balloon] onto @scheme[base] to

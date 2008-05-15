@@ -334,9 +334,10 @@ Like @scheme[class*], but omits the @scheme[interface-expr]s, for the case that 
 
 @defidform[this]{
 
-Within a @scheme[class*] form, refers to the current object (i.e., the
-object being initialized or whose method was called). Use outside the
-body of a @scheme[class*] form is a syntax error.}
+@index['("self")]{Within} a @scheme[class*] form, @scheme[this] refers
+to the current object (i.e., the object being initialized or whose
+method was called). Use outside the body of a @scheme[class*] form is
+a syntax error.}
 
 @defclassforms[
   [(inspect inspector-expr) ()]

@@ -409,7 +409,7 @@ instance of @scheme[id] and copies its field values into @scheme[x].
 @; ----------------------------------------------------------------------
 
 @defproc[(make-deserialize-info [make procedure?]
-                                [cycle-make (() . ->* . (any/c procedure?))])
+                                [cycle-make (-> (values any/c procedure?))])
          any]{
 
 Produces a deserialization information record to be used by

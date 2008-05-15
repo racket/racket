@@ -46,9 +46,9 @@ input ports as it becomes available.}
                                              false/c)))]
           [close (-> any)]
           [get-location (or/c 
-                         (() 
-                          . ->* . 
-                          ((or/c positive-exact-integer? false/c)
+                         (->
+                          (values
+                           (or/c positive-exact-integer? false/c)
                            (or/c nonnegative-exact-integer? false/c)
                            (or/c positive-exact-integer? false/c)))
                          false/c)
@@ -338,12 +338,12 @@ Like @scheme[relocate-input-port], but for output ports.}
 
 @defproc[(transplant-input-port [in input-port?]
                                 [get-location (or/c 
-                                               (() 
-                                                . ->* . 
-                                                ((or/c exact-positive-integer? false/c)
-                                                (or/c exact-nonnegative-integer? false/c)
-                                                (or/c exact-positive-integer? false/c)))
-                                              false/c)]
+                                               (->
+                                                (values
+                                                 (or/c exact-positive-integer? false/c)
+                                                 (or/c exact-nonnegative-integer? false/c)
+                                                 (or/c exact-positive-integer? false/c)))
+                                               false/c)]
                                 [init-pos (-> exact-positive-integer?)]
                                 [close? any/c #t]
                                 [count-lines! (-> any) void])
@@ -360,12 +360,12 @@ is enabled for the resulting port. The default is @scheme[void].}
 
 @defproc[(transplant-output-port [in input-port?]
                                  [get-location (or/c 
-                                                (() 
-                                                 . ->* . 
-                                                 ((or/c exact-positive-integer? false/c)
+                                                (->
+                                                 (values
+                                                  (or/c exact-positive-integer? false/c)
                                                   (or/c exact-nonnegative-integer? false/c)
                                                   (or/c exact-positive-integer? false/c)))
-                                               false/c)]
+                                                false/c)]
                                  [init-pos (-> exact-positive-integer?)]
                                  [close? any/c #t]
                                  [count-lines! (-> any) void])

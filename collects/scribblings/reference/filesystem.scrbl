@@ -603,7 +603,7 @@ directory, returns a list such that
                                    . -> . any/c)
                                   (or/c procedure?
                                         ((path? (one-of/c 'dir) any/c) 
-                                         . ->* . (any/c any/c))))]
+                                         . -> . (values any/c any/c))))]
                      [init-val any/c]
                      [start-path (or/c path-string? false/c) #f]
                      [follow-links? any/c #t])
