@@ -151,12 +151,19 @@ flags:
         binary that also embeds Scheme code.}
 
   @item{@FlagFirst{m} or @DFlagFirst{main} : Evaluates a call to
-        @scheme[main] in the top-level environment. All of the
-        command-line arguments that are not processed as options
-        (i.e., the arguments put into
-        @scheme[current-command-line-arguments]) are passed as arguments to
-        @scheme[main]. The results of the call are printed via
-        @scheme[current-print].}
+        @schemeidfont{main} as bound in the top-level environment. All
+        of the command-line arguments that are not processed as
+        options (i.e., the arguments put into
+        @scheme[current-command-line-arguments]) are passed as
+        arguments to @schemeidfont{main}. The results of the call are
+        printed via @scheme[current-print].
+
+        The call to @schemeidfont{main} is constructed as an
+        expression @scheme[((unsyntax @schemeidfont{main}) _arg-str
+        ...)]  where the lexical context of the expression gives
+        @schemeidfont{#%app} and @schemeidfont{#%datum} bindings as
+        @scheme[#%plain-app] and @scheme[#%datum], but the lexical
+        context of @schemeidfont{main} is the top-level environment.}
 
  }}
 

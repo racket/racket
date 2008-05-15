@@ -107,6 +107,8 @@
                                 (exn:fail:r6rs-message c)]
                                [(exn:fail:contract:r6rs? c)
                                 (exn:fail:contract:r6rs-message c)]
+                               [(exn:fail:syntax:r6rs? c)
+                                (exn:fail:syntax:r6rs-message c)]
                                [else (exn-message c)]))
       (make-has-continuation-marks (exn-continuation-marks c)))
      (if (and (exn:fail? c)
@@ -138,15 +140,23 @@
          (list (make-lexical-violation))
          null)
      (if (exn:fail:syntax? c)
-         (let ([forms (exn:fail:syntax-exprs c)])
-           (list (make-syntax-violation
-                  (if (pair? forms)
-                      (car forms)
-                      #f)
-                  (if (and (pair? forms)
-                           (pair? (cdr forms)))
-                      (cadr forms)
-                      #f))))
+         (if (exn:fail:syntax:r6rs? c)
+             (append
+              (list (make-syntax-violation
+                     (exn:fail:syntax:r6rs-form c)
+                     (exn:fail:syntax:r6rs-subform c)))
+              (if (exn:fail:syntax:r6rs-who c)
+                  (list (make-who-condition (exn:fail:syntax:r6rs-who c)))
+                  null))
+             (let ([forms (exn:fail:syntax-exprs c)])
+               (list (make-syntax-violation
+                      (if (pair? forms)
+                          (car forms)
+                          #f)
+                      (if (and (pair? forms)
+                               (pair? (cdr forms)))
+                          (cadr forms)
+                          #f)))))
          null)
      (if (exn:fail:contract:variable? c)
          (list (make-undefined-violation))

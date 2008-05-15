@@ -286,6 +286,38 @@
     (test/exn (syntax-violation 'form "bad" 7 #'8) &syntax)
     (test/exn (syntax-violation 'form "bad" #'7 8) &syntax)
     (test/exn (syntax-violation 'form "bad" 7 8) &syntax)
+    (test/exn (syntax-violation "form" "bad" 7) &syntax)
+    (test/exn (syntax-violation "form" "bad" 7 8) &syntax)
+
+    (test (condition-message
+           (guard (v [#t v])
+                  (syntax-violation 'apple "bad" 'worm)))
+          "bad")
+    (test (condition-who
+           (guard (v [#t v])
+                  (syntax-violation 'apple "bad" 'worm)))
+          'apple)
+    (test (condition-who
+           (guard (v [#t v])
+                  (syntax-violation "apple" "bad" 'worm)))
+          "apple")
+    (test (condition-who
+           (guard (v [#t v])
+                  (syntax-violation #f "bad" #'worm)))
+          'worm)
+    (test (syntax-violation-form
+           (guard (v [#t v])
+                  (syntax-violation 'apple "bad" '(worm))))
+          '(worm))
+    (test (syntax-violation-subform
+           (guard (v [#t v])
+                  (syntax-violation 'apple "bad" '(worm))))
+          #f)
+    (test (syntax-violation-subform
+           (guard (v [#t v])
+                  (syntax-violation 'apple "bad" '(worm) '(another))))
+          '(another))
+
 
     ;;
     ))

@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax r6rs/private/base-for-syntax
+(require (for-syntax (rename-in r6rs/private/base-for-syntax
+                                [syntax-rules r6rs:syntax-rules])
                      scheme/base)
          r6rs/private/qq-gen
          r6rs/private/exns
@@ -167,7 +168,7 @@
              [r6rs:letrec-syntax letrec-syntax])
 
  ;; 11.19
- (for-syntax syntax-rules
+ (for-syntax (rename-out [r6rs:syntax-rules syntax-rules])
              identifier-syntax
              ...
              _)

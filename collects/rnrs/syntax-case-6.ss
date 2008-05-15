@@ -3,7 +3,9 @@
 (require (for-syntax scheme/base)
          r6rs/private/qq-gen
          scheme/stxparam
-         scheme/mpair)
+         scheme/mpair
+         r6rs/private/exns
+         (for-syntax r6rs/private/check-pattern))
 
 (provide make-variable-transformer
          (rename-out [r6rs:syntax-case syntax-case]
@@ -18,7 +20,40 @@
                      [r6rs:with-syntax with-syntax]
                      [r6rs:quasisyntax quasisyntax])
          unsyntax unsyntax-splicing
-         (rename-out [raise-syntax-error syntax-violation]))
+         syntax-violation)
+
+(define syntax-violation 
+  (let ([go (lambda (who message form subforms)
+              (let ([exn (with-handlers ([exn:fail:syntax? (lambda (x) x)])
+                           (apply raise-syntax-error 
+                                  (if (string? who)
+                                      (string->symbol who)
+                                      who)
+                                  message
+                                  (convert-mpairs form)
+                                  (map convert-mpairs subforms)))])
+                (raise
+                 (make-exn:fail:syntax:r6rs
+                  (exn-message exn)
+                  (exn-continuation-marks exn)
+                  (exn:fail:syntax-exprs exn)
+                  message
+                  (or who
+                      (cond
+                       [(identifier? form) (syntax-e form)]
+                       [(and (pair? form) (identifier? (car form)))
+                        (syntax-e (car form))]
+                       [(and (syntax? form) (pair? (syntax-e form))
+                             (identifier? (car (syntax-e form))))
+                        (syntax-e (car (syntax-e form)))]
+                       [else #f]))
+                  form
+                  (and (pair? subforms) (car subforms))))))])
+    (case-lambda
+     [(who message form subform)
+      (go who message form (list subform))]
+     [(who message form)
+      (go who message form null)])))
 
 (define (r6rs:free-identifier=? a b)
   (free-identifier=? a b))
@@ -158,11 +193,13 @@
                       (syntax-case clause ()
                         [(pat val)
                          (with-syntax ([pat-ids (extract-pattern-ids #'pat lits)])
+                           ((check-pat-ellipses stx) #'pat)
                            #`(pat (syntax-parameterize ([pattern-vars
                                                          (add-pattern-vars #'pat-ids)])
                                     val)))]
                         [(pat fender val)
                          (with-syntax ([pat-ids (extract-pattern-ids #'pat lits)])
+                           ((check-pat-ellipses stx) #'pat)
                            #`(pat (syntax-parameterize ([pattern-vars
                                                          (add-pattern-vars #'pat-ids)])
                                     fender)
