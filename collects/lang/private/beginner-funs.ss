@@ -185,6 +185,9 @@
     
       (boolean=? (boolean boolean -> boolean)
 	"to determine whether two booleans are equal")
+
+      (false? (any -> boolean)
+	"to determine whether a value is false")
     
       ((beginner-not not) (boolean -> boolean)
 	"to compute the negation of a boolean value"))

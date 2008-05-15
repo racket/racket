@@ -135,3 +135,6 @@ Returns @scheme[(equal? a b)].}
 
 Returns @scheme[(equal? a b)].}
 
+@defproc[(false? [v any/c]) boolean?]{
+
+Returns @scheme[(not v)].}

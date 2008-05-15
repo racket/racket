@@ -116,6 +116,8 @@ namespace.
   (define (positive-real? v)
     (and (real? v) (>= v 0)))
 
+  (define (false? v) (eq? v #f))
+
   (define-teach beginner not
     (lambda (a)
       (unless (boolean? a)
@@ -336,7 +338,9 @@ namespace.
       (check-last/cycle 'append x)
       (apply append x)))
   
-  (provide beginner-not
+  (provide  
+    false?
+    beginner-not
     beginner-+
     beginner-/
     beginner-*

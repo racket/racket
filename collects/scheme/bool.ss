@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide true false
+(provide true false false?
          boolean=?
          symbol=?)
 
@@ -14,6 +14,8 @@
 
 (define-constant true #t)
 (define-constant false #f)
+
+(define (false? v) (eq? v #f))
 
 (define (boolean=? x y)
   (unless (and (boolean? x) (boolean? y))
