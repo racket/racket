@@ -1,6 +1,6 @@
-(module head mzscheme
-  (require mzlib/unit "head-sig.ss" "head-unit.ss")
+#lang scheme/base
+(require scheme/unit "head-sig.ss" "head-unit.ss")
 
-  (define-values/invoke-unit/infer head@)
+(define-values/invoke-unit/infer head@)
 
-  (provide-signature-elements head^))
+(provide-signature-elements head^)

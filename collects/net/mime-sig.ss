@@ -12,16 +12,13 @@
 
 ;; -- basic mime structures --
 (struct message (version entity fields))
-(struct entity
-        (type subtype charset encoding
-              disposition params id
-              description other fields
-              parts body))
-(struct disposition
-        (type filename creation
-              modification read
-              size params))
+(struct entity (type subtype charset encoding
+                disposition params id
+                description other fields
+                parts body))
+(struct disposition (type filename creation
+                     modification read
+                     size params))
 
 ;; -- mime methods --
 mime-analyze
-

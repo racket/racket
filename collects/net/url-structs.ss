@@ -1,18 +1,20 @@
-(module url-structs mzscheme
-  (require mzlib/contract
-           mzlib/serialize)
+#lang scheme/base
+(require scheme/contract
+         scheme/serialize)
 
-  (define-serializable-struct url (scheme user host port path-absolute? path query fragment))
-  (define-serializable-struct path/param (path param))
+(define-serializable-struct url
+  (scheme user host port path-absolute? path query fragment)
+  #:mutable)
+(define-serializable-struct path/param (path param))
 
-  (provide/contract
-   (struct url ([scheme (or/c false/c string?)]
-                [user (or/c false/c string?)]
-                [host (or/c false/c string?)]
-                [port (or/c false/c number?)]
-                [path-absolute? boolean?]
-                [path (listof path/param?)]
-                [query (listof (cons/c symbol? (or/c string? false/c)))]
-                [fragment (or/c false/c string?)]))
-   (struct path/param ([path (or/c string? (symbols 'up 'same))]
-                       [param (listof string?)]))))
+(provide/contract
+ (struct url ([scheme (or/c false/c string?)]
+              [user (or/c false/c string?)]
+              [host (or/c false/c string?)]
+              [port (or/c false/c number?)]
+              [path-absolute? boolean?]
+              [path (listof path/param?)]
+              [query (listof (cons/c symbol? (or/c string? false/c)))]
+              [fragment (or/c false/c string?)]))
+ (struct path/param ([path (or/c string? (symbols 'up 'same))]
+                     [param (listof string?)])))
