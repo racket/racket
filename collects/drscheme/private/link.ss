@@ -2,7 +2,7 @@
   (require "modes.ss"
            "font.ss"
            "eval.ss"
-           "module-overview.ss"
+           "module-browser.ss"
            "multi-file-search.ss"
            "debug.ss"
            "module-language.ss"
