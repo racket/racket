@@ -84,6 +84,7 @@
 	    (define canvases null)
 	    (define active-canvas #f)
 	    (define auto-set-wrap? #f)
+            (define use-text-mode? #t)
 	    (private*
 	     [max-view-size
 	      (lambda ()
@@ -120,6 +121,12 @@
 	     [load-file
 	      (opt-lambda ([file #f] [format 'guess] [show-errors? #t])
 		(do-load-file file format #t))])
+
+            (public*
+             [use-file-text-mode
+              (case-lambda 
+               [() use-text-mode?]
+               [(v?) (set! use-text-mode? (and v? #t))])])
 
 	    (private*
 	     [do-load-file
@@ -222,13 +229,14 @@
 		       (let* ([actual-format (if (memq f-format '(copy same))
 						 (-get-file-format)
 						 f-format)]
-			      [text? (memq actual-format '(text text-force-cr))])
+			      [text? (memq actual-format '(text text-force-cr))]
+                              [text-mode? (and text? use-text-mode?)])
 			 (let ([port #f]
 			       [finished? #f])
 			   (dynamic-wind
 			       void
 			       (lambda ()
-				 (set! port (open-output-file file (if text? 'text 'binary) 'truncate/replace))
+				 (set! port (open-output-file file (if text-mode? 'text 'binary) 'truncate/replace))
 				 (wx:file-creator-and-type file #"mReD" (if text? #"TEXT" #"WXME"))
 				 (wx:begin-busy-cursor)
 				 (dynamic-wind

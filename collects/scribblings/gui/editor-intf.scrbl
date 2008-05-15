@@ -282,7 +282,8 @@ locked, etc.
 
 @defmethod[#:mode pubment 
            (can-load-file? [filename path?]
-                           [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
+                           [format (one-of/c 'guess 'same 'copy 'standard
+                                             'text 'text-force-cr)])
            boolean?]{
 @methspec{
 
@@ -307,7 +308,8 @@ Returns @scheme[#t].
 
 @defmethod[#:mode pubment 
            (can-save-file? [filename path?]
-                           [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
+                           [format (one-of/c 'guess 'same 'copy 'standard
+                                             'text 'text-force-cr)])
            boolean?]{
 @methspec{
 
@@ -922,11 +924,13 @@ inserts the resulting snip into the editor.
 
 
 @defmethod*[([(insert-file [filename path-string?]
-                           [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'guess]
+                           [format (one-of/c 'guess 'same 'copy 'standard
+                                             'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
               boolean?]
              [(insert-file [port input-port]
-                           [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'guess]
+                           [format (one-of/c 'guess 'same 'copy 'standard
+                                             'text 'text-force-cr) 'guess]
                            [show-errors? any/c #t])
               boolean?])]{
 
@@ -968,7 +972,8 @@ calling
 }
 
 @defmethod[(insert-port [port input-port]
-                        [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'guess]
+                        [format (one-of/c 'guess 'same 'copy 'standard
+                                          'text 'text-force-cr) 'guess]
                         [show-errors? any/c #t])
            (one-of/c 'standard 'text 'text-force-cr)]{
 
@@ -1052,7 +1057,8 @@ See also @method[editor<%> cut].
 
 
 @defmethod[(load-file [filename (or/c path-string? false/c) #f]
-                      [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'guess]
+                      [format (one-of/c 'guess 'same 'copy 'standard
+                                        'text 'text-force-cr) 'guess]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -1067,32 +1073,35 @@ prompted for a name.
 
 The possible values for @scheme[format] are listed below. A single set of
 @scheme[format] values are used for loading and saving files:
+
 @itemize{
 
 @item{@scheme['guess] --- guess the format based on
 extension and/or contents; when saving a file, this is the same as
 @scheme['standard]}
 
-@item{@scheme['standard] --- read/write a standard file (binary format)}
-
-@item{@scheme['text] --- read/write a text file (@scheme[text%] only)}
-
-@item{@scheme['text-force-cr] --- read/write a text
-file (@scheme[text%] only); when writing, change automatic
-newlines (from word-wrapping) into real carriage returns}
-
 @item{@scheme['same] --- read in whatever format was last loaded or saved}
 
-@item{@scheme['copy] --- write using whatever
-format was last loaded or saved, but do not change the modification
-flag or remember @scheme[filename] (saving only)}
+@item{@scheme['standard] --- read/write a standard file (binary format)}
+
+@item{@scheme['copy] --- write using whatever format was last loaded
+ or saved, but do not change the modification flag or remember
+ @scheme[filename] (saving only)}
+
+@item{@scheme['text] --- read/write a text file (@scheme[text%] only);
+ file writing uses the platform's text-mode conventions
+ (e.g., newlines as return--linefeed combinations under Windows) when
+ not specifically disabled via @method[editor<%> use-file-text-mode]}
+
+@item{@scheme['text-force-cr] --- read/write a text file
+(@scheme[text%] only); when writing, change automatic newlines (from
+word-wrapping) into real carriage returns}
 
 }
 
-In a @scheme[text%] instance, the format returned from 
-@method[text% get-file-format] is always one of @scheme['standard],
-@scheme['text], or
-@scheme['text-force-cr].
+In a @scheme[text%] instance, the format returned from @method[text%
+ get-file-format] is always one of @scheme['standard], @scheme['text],
+ or @scheme['text-force-cr].
 
 The @scheme[show-errors?] argument is no longer used.
 
@@ -1409,7 +1418,8 @@ Either passes this event on to a caret-owning snip, selects a new
 
 @defmethod[#:mode pubment 
            (on-load-file [filename path?]
-                         [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
+                         [format (one-of/c 'guess 'same 'copy 'standard
+                                           'text 'text-force-cr)])
            void?]{
 @methspec{
 
@@ -1568,7 +1578,8 @@ Does nothing.
 
 @defmethod[#:mode pubment 
            (on-save-file [filename path?]
-                         [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy)])
+                         [format (one-of/c 'guess 'same 'copy 'standard
+                                           'text 'text-force-cr)])
            void?]{
 @methspec{
 
@@ -1930,7 +1941,8 @@ If @scheme[redraw-now?] is @scheme[#f], the editor will require
 
 
 @defmethod[(save-file [filename (or/c path-string? false/c) #f]
-                      [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'same]
+                      [format (one-of/c 'guess 'same 'copy 'standard
+                                        'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -1960,7 +1972,8 @@ The @scheme[show-errors?] argument is no longer used.
 
 
 @defmethod[(save-port [port output-port]
-                      [format (one-of/c 'guess 'standard 'text 'text-force-cr 'same 'copy) 'same]
+                      [format (one-of/c 'guess 'same 'copy 'standard
+                                        'text 'text-force-cr) 'same]
                       [show-errors? any/c #t])
            boolean?]{
 
@@ -2314,6 +2327,18 @@ The system may perform an undo without calling this method in response
  @method[editor<%> on-change] to monitor editor content changes.
 
 See also @method[editor<%> add-undo] .
+
+}
+
+@defmethod*[([(use-file-text-mode) boolean?]
+             [(use-file-text-mode [on? any/c]) void?])]{
+
+Gets or sets whether the current platform's text mode is used for
+writing files in @scheme['text] or @scheme['text-force-cr] mode, which
+affects the way that newlines are written. The setting is consulted by
+@method[editor<%> save-file] after @method[editor<%> on-save-file] is
+called. See also @method[editor<%> load-file] for information on file
+modes.
 
 }
 
