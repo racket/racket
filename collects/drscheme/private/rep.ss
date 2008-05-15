@@ -1433,7 +1433,10 @@ TODO
           (current-output-port (get-out-port))
           (current-error-port (get-err-port))
           (current-value-port (get-value-port))
-          (current-input-port (get-in-box-port)))
+          (current-input-port (get-in-box-port))
+
+          (current-print (lambda (v)
+                           (display-results (list v)))))
         
         (define/private (initialize-dispatch-handler) ;;; =User=
           (let* ([primitive-dispatch-handler (event-dispatch-handler)])

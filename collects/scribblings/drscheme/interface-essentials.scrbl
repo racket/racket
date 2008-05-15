@@ -395,7 +395,8 @@ the program
 @schememod[
 scheme
 (define v (read))
-(display v)
+(display v) (newline)
+v
 ]
 
 and provide the input S-expression @scheme[(1 2)], the interactions
@@ -437,9 +438,9 @@ second @scheme[(read)]:
 @schemeblock[
 #, @tt{>} (read)
 #, @ioinputfont{5 6}
-#, @iooutputfont{5}
+#, @schemeresult[5]
 #, @tt{>} (read)
-#, @iooutputfont{6}
+#, @schemeresult[6]
 #, @tt{>} #, @tt{_}
 ]
 
@@ -450,11 +451,19 @@ inserts a newline character into the input stream:
 #, @tt{>} (read)
 #, @ioinputfont{5}
 
-#, @iooutputfont{5}
+#, @schemeresult[5]
 #, @tt{>} (read-char)
 #, @schemeresult[#\newline]
 #, @tt{>} #, @tt{_}
 ]
+
+Within a @scheme[#, @hash-lang[] #, @schememodname[scheme]] module,
+the results of top-level expression print the same as the results of
+an expression entered in the @tech{interactions window}. The reason is
+that @scheme[#, @hash-lang[] #, @schememodname[scheme]] explicitly
+prints the results of top-level expressions using
+@scheme[(current-print)], and DrScheme sets @scheme[(current-print)]
+to print values in the same way as for interactions.
 
 @; ----------------------------------------------------------------------
 
