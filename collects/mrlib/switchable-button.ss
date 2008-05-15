@@ -7,6 +7,7 @@
 (define margin 2)
 (define w-circle-space 6)
 (define h-circle-space 6)
+(define rhs-pad 2) ;; extra space outside the bitmap, but inside the mouse highlighting (on the right)
 
 (define half-gray (make-object color% 127 127 127))
 (define one-fifth-gray (make-object color% 200 200 200))
@@ -207,7 +208,10 @@
             (cond
               [with-label? 
                (let-values ([(tw th _1 _2) (send dc get-text-extent label)])
-                 (let ([text-start (+ (/ cw 2) (- (/ tw 2)) (- (/ (send bitmap get-width) 2)))])
+                 (let ([text-start (+ (/ cw 2) 
+                                      (- (/ tw 2))
+                                      (- (/ (send bitmap get-width) 2))
+                                      (- rhs-pad))])
                    (send dc draw-text label text-start (- (/ ch 2) (/ th 2)))
                    (draw-the-bitmap (+ text-start tw gap) (- (/ ch 2) (/ (send bitmap get-height) 2)))))]
               [else
@@ -242,7 +246,7 @@
         (cond
           [with-label?
            (let-values ([(w h _1 _2) (send dc get-text-extent label normal-control-font)])
-             (do-w/h (+ w gap (send bitmap get-width))
+             (do-w/h (+ w gap (send bitmap get-width) rhs-pad)
                      (max h (send bitmap get-height))))]
           [else
            (do-w/h (send alternate-bitmap get-width)
@@ -281,7 +285,7 @@
            (send bdc set-bitmap #f)
            disable-bm))))
 
-#;
+
 (begin
   (define f (new frame% [label ""]))
   (define vp (new vertical-pane% [parent f]))
