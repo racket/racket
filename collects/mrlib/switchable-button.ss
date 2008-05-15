@@ -285,7 +285,7 @@
            (send bdc set-bitmap #f)
            disable-bm))))
 
-
+#;
 (begin
   (define f (new frame% [label ""]))
   (define vp (new vertical-pane% [parent f]))
