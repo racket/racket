@@ -65,10 +65,7 @@ it is still running, leaving the coroutine result unchanged.}
          (values thread? procedure?)]{
 
 Returns two values: a thread descriptor for a new thread, and a
-procedure with the same arity as @scheme[f]. (The returned procedure
-actually accepts any number of arguments, but immediately raises
-@scheme[exn:fail:contract:arity] if @scheme[f] cannot accept the
-provided number of arguments.)
+procedure with the same arity as @scheme[f].
 
 When the returned procedure is applied, its arguments are queued to be
 passed on to @scheme[f], and @|void-const| is immediately returned.

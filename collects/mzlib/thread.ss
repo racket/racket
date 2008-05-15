@@ -41,18 +41,13 @@
           (lambda ()
             (init)
             (loop))))
-       (lambda new-state
-         (let ([num (length new-state)])
-           (unless (procedure-arity-includes? f num)
-             (raise
-              (make-exn:fail:contract:arity
-               (format "<procedure-from-consumer-thread>: consumer procedure arity is ~e; provided ~s argument~a"
-                       (procedure-arity f) num (if (= 1 num) "" "s"))
-               (current-continuation-marks)))))
-         (semaphore-wait protect)
-         (set! front-state (cons new-state front-state))
-         (semaphore-post protect)
-         (semaphore-post sema)))))
+       (procedure-reduce-arity
+        (lambda new-state
+          (semaphore-wait protect)
+          (set! front-state (cons new-state front-state))
+          (semaphore-post protect)
+          (semaphore-post sema))
+        (procedure-arity f)))))
 
   (define/kw (run-server port-number handler connection-timeout
                          #:optional

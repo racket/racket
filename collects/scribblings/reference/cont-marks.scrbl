@@ -121,19 +121,26 @@ Returns @scheme[#t] if @scheme[v] is a mark set created by
           [mark-set continuation-mark-set?])
           list?]{
 
-Returns a list representing a ``@index["stack dump"]{@as-index{stack
-trace}}'' for @scheme[mark-set]'s continuation. The list contains
-pairs, where the @scheme[car] of each pair contains either @scheme[#f]
-or a symbol for a procedure name, and the @scheme[cdr] of each pair
-contains either @scheme[#f] or a @scheme[srcloc] value for the
-procedure's source location (see @secref["linecol"]); the
-@scheme[car] and @scheme[cdr] are never both @scheme[#f].
+Returns a list representing an approximate ``@index["stack
+dump"]{@as-index{stack trace}}'' for @scheme[mark-set]'s
+continuation. The list contains pairs, where the @scheme[car] of each
+pair contains either @scheme[#f] or a symbol for a procedure name, and
+the @scheme[cdr] of each pair contains either @scheme[#f] or a
+@scheme[srcloc] value for the procedure's source location (see
+@secref["linecol"]); the @scheme[car] and @scheme[cdr] are never both
+@scheme[#f].
 
-The stack-trace list is the result of
+Conceptually, the stack-trace list is the result of
 @scheme[continuation-mark-set->list] with @scheme[mark-set] and
-Scheme's private key for procedure-call marks. A stack trace is
-extracted from an exception and displayed by the default error display
-handler (see @scheme[current-error-display-handler]) for exceptions other than
+Scheme's private key for procedure-call marks. The implementation may
+be different, however, and the results may merely approximate the
+correct answer. Thus, while the result may contain useful hints to
+humans about the context of an expression, it is not reliable enough
+for programmatic use.
+
+A stack trace is extracted from an exception and displayed by the
+default error display handler (see
+@scheme[current-error-display-handler]) for exceptions other than
 @scheme[exn:fail:user] (see @scheme[raise-user-error] in
 @secref["errorproc"]).}
 
