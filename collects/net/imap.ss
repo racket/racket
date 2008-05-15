@@ -1,49 +1,50 @@
-(module imap mzscheme
-  (require mzlib/unit mzlib/contract "imap-sig.ss" "imap-unit.ss")
+#lang scheme/base
+(require scheme/unit scheme/contract "imap-sig.ss" "imap-unit.ss")
 
-  (define-values/invoke-unit/infer imap@)
+(define-values/invoke-unit/infer imap@)
 
-  (provide/contract
-   [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]
-   [imap-list-child-mailboxes
-    (case->
-     (imap-connection? (or/c false/c bytes?) . -> . (listof (list/c (listof symbol?) bytes?)))
-     (imap-connection? (or/c false/c bytes?) (or/c false/c bytes?)
-                       . -> .
-                       (listof (list/c (listof symbol?) bytes?))))])
+(provide/contract
+ [imap-get-hierarchy-delimiter (imap-connection? . -> . bytes?)]
+ [imap-list-child-mailboxes
+  (case->
+   (imap-connection? (or/c false/c bytes?)
+                     . -> . (listof (list/c (listof symbol?) bytes?)))
+   (imap-connection? (or/c false/c bytes?) (or/c false/c bytes?)
+                     . -> .
+                     (listof (list/c (listof symbol?) bytes?))))])
 
-  (provide
-   imap-connection?
-   imap-connect imap-connect*
-   imap-disconnect
-   imap-force-disconnect
-   imap-reselect
-   imap-examine
-   imap-noop
-   imap-poll
-   imap-status
+(provide
+ imap-connection?
+ imap-connect imap-connect*
+ imap-disconnect
+ imap-force-disconnect
+ imap-reselect
+ imap-examine
+ imap-noop
+ imap-poll
+ imap-status
 
-   imap-port-number ; a parameter
+ imap-port-number ; a parameter
 
-   imap-new?
-   imap-messages
-   imap-recent
-   imap-uidnext
-   imap-uidvalidity
-   imap-unseen
-   imap-reset-new!
+ imap-new?
+ imap-messages
+ imap-recent
+ imap-uidnext
+ imap-uidvalidity
+ imap-unseen
+ imap-reset-new!
 
-   imap-get-expunges
-   imap-pending-expunges?
-   imap-get-updates
-   imap-pending-updates?
+ imap-get-expunges
+ imap-pending-expunges?
+ imap-get-updates
+ imap-pending-updates?
 
-   imap-get-messages
-   imap-copy imap-append
-   imap-store imap-flag->symbol symbol->imap-flag
-   imap-expunge
+ imap-get-messages
+ imap-copy imap-append
+ imap-store imap-flag->symbol symbol->imap-flag
+ imap-expunge
 
-   imap-mailbox-exists?
-   imap-create-mailbox
+ imap-mailbox-exists?
+ imap-create-mailbox
 
-   imap-mailbox-flags))
+ imap-mailbox-flags)

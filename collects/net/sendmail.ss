@@ -1,6 +1,6 @@
-(module sendmail mzscheme
-  (require mzlib/unit "sendmail-sig.ss" "sendmail-unit.ss")
+#lang scheme/base
+(require scheme/unit "sendmail-sig.ss" "sendmail-unit.ss")
 
-  (define-values/invoke-unit/infer sendmail@)
+(define-values/invoke-unit/infer sendmail@)
 
-  (provide-signature-elements sendmail^))
+(provide-signature-elements sendmail^)

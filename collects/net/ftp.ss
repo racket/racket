@@ -1,6 +1,6 @@
-(module ftp mzscheme
-  (require mzlib/unit "ftp-sig.ss" "ftp-unit.ss")
+#lang scheme/base
+(require scheme/unit "ftp-sig.ss" "ftp-unit.ss")
 
-  (define-values/invoke-unit/infer ftp@)
+(define-values/invoke-unit/infer ftp@)
 
-  (provide-signature-elements ftp^))
+(provide-signature-elements ftp^)

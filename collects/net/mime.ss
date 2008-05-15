@@ -26,26 +26,26 @@
 ;;
 ;; Commentary:
 
-(module mime mzscheme
-  (require mzlib/unit
-           "mime-sig.ss"
-           "mime-unit.ss"
-           "qp-sig.ss"
-           "qp.ss"
-           "base64-sig.ss"
-           "base64.ss"
-           "head-sig.ss"
-           "head.ss")
+#lang scheme/base
+(require scheme/unit
+         "mime-sig.ss"
+         "mime-unit.ss"
+         "qp-sig.ss"
+         "qp.ss"
+         "base64-sig.ss"
+         "base64.ss"
+         "head-sig.ss"
+         "head.ss")
 
-  (define-unit-from-context base64@ base64^)
-  (define-unit-from-context qp@ qp^)
-  (define-unit-from-context head@ head^)
+(define-unit-from-context base64@ base64^)
+(define-unit-from-context qp@ qp^)
+(define-unit-from-context head@ head^)
 
-  (define-compound-unit/infer mime@2 (import) (export mime^)
-    (link base64@ qp@ head@ mime@))
+(define-compound-unit/infer mime@2 (import) (export mime^)
+  (link base64@ qp@ head@ mime@))
 
-  (define-values/invoke-unit/infer mime@2)
+(define-values/invoke-unit/infer mime@2)
 
-  (provide-signature-elements mime^))
+(provide-signature-elements mime^)
 
 ;;; mime.ss ends here

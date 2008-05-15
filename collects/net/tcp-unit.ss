@@ -1,6 +1,6 @@
-(module tcp-unit mzscheme
-  (provide tcp@)
+#lang scheme/base
+(provide tcp@)
 
-  (require mzlib/unit "tcp-sig.ss")
+(require scheme/unit scheme/tcp "tcp-sig.ss")
 
-  (define-unit-from-context tcp@ tcp^))
+(define-unit-from-context tcp@ tcp^)

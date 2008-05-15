@@ -26,11 +26,11 @@
 ;;
 ;; Commentary:
 
-(module qp mzscheme
-  (require mzlib/unit "qp-sig.ss" "qp-unit.ss")
+#lang scheme/base
+(require mzlib/unit "qp-sig.ss" "qp-unit.ss")
 
-  (define-values/invoke-unit/infer qp@)
+(define-values/invoke-unit/infer qp@)
 
-  (provide-signature-elements qp^))
+(provide-signature-elements qp^)
 
 ;;; qp.ss ends here

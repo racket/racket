@@ -1,6 +1,6 @@
-(module smtp mzscheme
-  (require mzlib/unit "smtp-sig.ss" "smtp-unit.ss")
+#lang scheme/base
+(require scheme/unit "smtp-sig.ss" "smtp-unit.ss")
 
-  (define-values/invoke-unit/infer smtp@)
+(define-values/invoke-unit/infer smtp@)
 
-  (provide-signature-elements smtp^))
+(provide-signature-elements smtp^)

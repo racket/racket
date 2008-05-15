@@ -1,6 +1,6 @@
-(module cookie mzscheme
-  (require mzlib/unit "cookie-sig.ss" "cookie-unit.ss")
+#lang scheme/base
+(require scheme/unit "cookie-sig.ss" "cookie-unit.ss")
 
-  (provide-signature-elements cookie^)
+(provide-signature-elements cookie^)
 
-  (define-values/invoke-unit/infer cookie@))
+(define-values/invoke-unit/infer cookie@)
