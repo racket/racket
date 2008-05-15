@@ -150,8 +150,8 @@ Applications that use the editor classes typically derive new versions
 (define append-only-text% 
   (class text%
     (inherit #,(:: text% last-position))
-    (define/override (#,(:: text% can-insert?) s l) (= s #,(:: text% last-position)))
-    (define/override (#,(:: text% can-delete?) s l) #f)
+    (define/augment (#,(:: text% can-insert?) s l) (= s (#,(:: text% last-position))))
+    (define/augment (#,(:: text% can-delete?) s l) #f)
     (super-new)))
 ]
 
