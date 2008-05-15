@@ -7,7 +7,8 @@
 
 (module |comprehensions| mzscheme
 
- (require srfi/23)
+ (require srfi/23
+          (rename scheme/base base-if if))
 
  (provide 
     do-ec list-ec append-ec string-ec string-append-ec vector-ec 
@@ -104,7 +105,7 @@
 ;   The code generation for a :do is delegated to do-ec:do.
 
 (define-syntax-globally do-ec
-  (syntax-rules (nested if not and or begin :do let)
+  (syntax-rules (nested if base-if not and or begin :do let)
 
     ; explicit nesting -> implicit nesting
     ((do-ec (nested q ...) etc ...)
@@ -122,6 +123,8 @@
 
     ; filter -> make conditional
     ((do-ec (if test) cmd)
+     (if test (do-ec cmd)) )
+    ((do-ec (base-if test) cmd)
      (if test (do-ec cmd)) )
     ((do-ec (not test) cmd)
      (if (not test) (do-ec cmd)) )
@@ -180,7 +183,7 @@
 ;   and takes care of special cases.
 
 (define-syntax-globally ec-simplify
-  (syntax-rules (if not let begin)
+  (syntax-rules (if base-if not let begin)
 
 ; one- and two-sided if
 
@@ -198,6 +201,20 @@
     ((ec-simplify (if (not (not test)) consequent))
      (ec-simplify (if test consequent)) )
     ((ec-simplify (if (not (not test)) consequent alternate))
+     (ec-simplify (if test consequent alternate)) )
+
+    ; base-if variants:
+    ((ec-simplify (base-if #t consequent))
+     consequent )
+    ((ec-simplify (base-if #f consequent))
+     (if #f #f) )
+    ((ec-simplify (base-if #t consequent alternate))
+     consequent )
+    ((ec-simplify (base-if #f consequent alternate))
+     alternate )
+    ((ec-simplify (base-if (not (not test)) consequent))
+     (ec-simplify (if test consequent)) )
+    ((ec-simplify (base-if (not (not test)) consequent alternate))
      (ec-simplify (if test consequent alternate)) )
 
 ; (let () <command>*) 
@@ -977,12 +994,14 @@
 ;   replaced by (:until gen stop).
 
 (define-syntax-globally ec-guarded-do-ec
-  (syntax-rules (nested if not and or begin)
+  (syntax-rules (nested if base-if not and or begin)
 
     ((ec-guarded-do-ec stop (nested (nested q1 ...) q2 ...) cmd)
      (ec-guarded-do-ec stop (nested q1 ... q2 ...) cmd) )
 
     ((ec-guarded-do-ec stop (nested (if test) q ...) cmd)
+     (if test (ec-guarded-do-ec stop (nested q ...) cmd)) )
+    ((ec-guarded-do-ec stop (nested (base-if test) q ...) cmd)
      (if test (ec-guarded-do-ec stop (nested q ...) cmd)) )
     ((ec-guarded-do-ec stop (nested (not test) q ...) cmd)
      (if (not test) (ec-guarded-do-ec stop (nested q ...) cmd)) )

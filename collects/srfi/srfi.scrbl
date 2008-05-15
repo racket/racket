@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
-          (for-syntax scheme/base))
+          (for-syntax scheme/base)
+          (for-label scheme/base))
 
 @(define-syntax (srfi stx)
   (syntax-case stx ()
@@ -35,6 +36,13 @@
     [() (in-core ".")]
     [(k)
      @elem{This SRFI's bindings are also available in @schememodname[scheme/base]@|k|}]))
+
+@(begin
+  (define-syntax-rule (def-mz mz-if)
+    (begin
+      (require (for-label mzscheme))
+      (define mz-if (scheme if))))
+  (def-mz mz-if))
 
 @; ----------------------------------------------------------------------
 
@@ -791,6 +799,10 @@ Superceded by @schememodname[srfi/41].
  (:while #t ":while")
  (:until #t ":until")
 )]
+
+Forms that syntactically detect @scheme[if] recognize both @scheme[if]
+from @schememodname[scheme/base] and @mz-if from
+@schememodname[mzscheme].
 
 @; ----------------------------------------
 
