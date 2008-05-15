@@ -30,8 +30,8 @@
 #include <math.h>
 #include "../gc2/gc2_obj.h"
 
-int scheme_hash_request_count;
-int scheme_hash_iteration_count;
+long scheme_hash_request_count;
+long scheme_hash_iteration_count;
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -519,7 +519,7 @@ scheme_make_bucket_table (int size, int type)
 
   table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
 
-  table->size = 2;
+  table->size = 4;
   while (table->size < size) {
     table->size <<= 1;
   }
