@@ -51,6 +51,9 @@
 
     ;; ----------------------------------------
 
+    (test (least-fixnum) (- (expt 2 (- (fixnum-width) 1))))
+    (test (greatest-fixnum) (- (expt 2 (- (fixnum-width) 1)) 1))
+
     (test (fixnum? 1.0) #f)
     (test (fixnum? 1+1i) #f)
 

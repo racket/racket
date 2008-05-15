@@ -25,7 +25,7 @@
 
 (define 64-bit? (fixnum? (expt 2 33)))
 
-(define (fixnum-width) (if 64-bit? 62 30))
+(define (fixnum-width) (if 64-bit? 63 31))
 (define (least-fixnum) (if 64-bit? (- (expt 2 62)) -1073741824))
 (define (greatest-fixnum) (if 64-bit? (- (expt 2 62) 1) +1073741823))
 
