@@ -2,7 +2,7 @@
 @(require "common.ss"
           (for-label file/gzip))
 
-@title{@exec{gzip} Compression and File Creation}
+@title[#:tag "gzip"]{@exec{gzip} Compression and File Creation}
 
 @defmodule[file/gzip]{The @schememodname[file/gzip] library provides
 utilities to create archive files in @exec{gzip} format, or simply to

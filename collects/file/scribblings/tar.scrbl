@@ -2,7 +2,7 @@
 @(require "common.ss"
           (for-label file/tar))
 
-@title{@exec{tar} File Creation}
+@title[#:tag "tar"]{@exec{tar} File Creation}
 
 @defmodule[file/tar]{The @schememodname[file/tar] library provides
 utilities to create archive files in USTAR format, like the archive

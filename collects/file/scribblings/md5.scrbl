@@ -7,7 +7,7 @@
 @(define md5-eval (make-base-eval))
 @interaction-eval[#:eval md5-eval (require file/md5)]
 
-@title{MD5 Message Digest}
+@title[#:tag "md5"]{MD5 Message Digest}
 
 @defmodule[file/md5]
 

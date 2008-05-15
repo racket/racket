@@ -4,7 +4,7 @@
                      file/gunzip
                      scheme/file))
 
-@title{@exec{zip} File Creation}
+@title[#:tag "zip"]{@exec{zip} File Creation}
 
 @defmodule[file/zip]{The @schememodname[file/zip] library provides
 utilities to create @exec{zip} archive files, which are compatible

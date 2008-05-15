@@ -3,7 +3,7 @@
           (for-label file/gunzip
                      file/gzip))
 
-@title{@exec{gzip} Decompression}
+@title[#:tag "gunzip"]{@exec{gzip} Decompression}
 
 @defmodule[file/gunzip]{The @schememodname[file/gunzip] library provides
 utilities to decompress archive files in @exec{gzip} format, or simply
