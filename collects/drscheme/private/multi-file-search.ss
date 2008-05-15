@@ -713,4 +713,4 @@
                                         (car pos)
                                         (- (cdr pos) (car pos))))))
                        (loop (+ line-number 1))]))))
-              'text)))))
+              #:mode 'text)))))
