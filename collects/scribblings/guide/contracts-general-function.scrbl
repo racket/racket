@@ -7,9 +7,9 @@
           (for-label scheme/contract) 
           (for-label scheme/gui))
 
-@title{Contracts on Functions in General}
+@title[#:tag "contracts-general-functions"]{Contracts on Functions in General}
 
-@ctc-section[#:tag "flat-named-contracts"]{Contract error messages that contain ``...''}
+@ctc-section[#:tag "flat-named-contracts"]{Contract Error Messages that Contain ``???''}
 
 You wrote your module. You added contracts. You put them into the interface
 so that client programmers have all the information from interfaces. It's a
@@ -65,7 +65,7 @@ sudden quite readable:
 @inset-flow{@schemeerror{bank-client broke the contract (-> amount
 any) it had with myaccount on deposit; expected <amount>, given: -10}}
 
-@ctc-section[#:tag "optional"]{Optional arguments}
+@ctc-section[#:tag "optional"]{Optional Arguments}
 
 Take a look at this excerpt from a string-processing module, inspired by the
 @link["http://schemecookbook.org"]{Scheme cookbook}: 
@@ -121,7 +121,7 @@ arguments: @scheme[char?]. }
  yourself, you need to communicate across boundaries for
  everything you write.
 
-@ctc-section[#:tag "rest-args"]{Rest arguments}
+@ctc-section[#:tag "rest-args"]{Rest Arguments}
 
 We all know that @scheme[+] in Beginner Scheme is a function
   that consumes at least two numbers but, in principle,
@@ -161,7 +161,7 @@ rest argument follows @scheme[#:rest]
   contract demands a list of values; in this specific
   examples, these values must be number.
 
-@ctc-section[#:tag "keywords"]{Keyword arguments}
+@ctc-section[#:tag "keywords"]{Keyword Arguments}
 
 Sometimes, a function accepts many arguments and remembering
 their order can be a nightmare. To help with such functions,
@@ -222,7 +222,7 @@ five keyword arguments, one for each of the keywords
 Also, just like in a function definition, the keywords in
 the @scheme[->] may appear in any order.
 
-@ctc-section[#:tag "optional-keywords"]{Optional keyword arguments}
+@ctc-section[#:tag "optional-keywords"]{Optional Keyword Arguments}
 
 Of course, many of the parameters in
 @scheme[ask-yes-or-no-question] (from the previous question)
@@ -259,7 +259,7 @@ sections. In this case, we have mandatory keywords
 putting the mandatory keywords in the first section and the
 optional ones in the second section.
 
-@ctc-section[#:tag "arrow-d"]{When a function's result depends on its arguments}
+@ctc-section[#:tag "arrow-d"]{When a Function's Result Depends on its Arguments}
 
 Here is an excerpt from an imaginary (pardon the pun) numerics module:
 
@@ -291,7 +291,7 @@ and @scheme[>=/c], and it pays off to look them up in the contract
 section of the reference manual. They simplify contracts tremendously
 and make them more accessible to potential clients. 
 
-@ctc-section[#:tag "arrow-d-args"]{When contract arguments depend on each other}
+@ctc-section[#:tag "arrow-d-args"]{When Contract Arguments Depend on Each Other}
 
 Eventually bank customers want their money back. Hence, a module that
 implements a bank account must include a method for withdrawing money. Of
@@ -396,7 +396,7 @@ balance. The resulting contract checks whether an account
 has a balance that is larger or smaller, depending on the
 given comparison operator, than the original balance.
 
-@ctc-section[#:tag "arrow-d-eval-order"]{Ensuring that a function properly modifies state}
+@ctc-section[#:tag "arrow-d-eval-order"]{Ensuring that a Function Properly Modifies State}
 
 The @scheme[->d] contract combinator can also ensure that a
 function only modifies state according to certain
@@ -515,7 +515,7 @@ In the case of @scheme[substring1], we also know that the indices
   numeric constraints on them. 
 }
 
-@ctc-section[#:tag "multiple"]{Multiple result values}
+@ctc-section[#:tag "multiple"]{Multiple Result Values}
 
 The function @scheme[split] consumes a list of @scheme[char]s
   and delivers the string that occurs before the first occurrence of
@@ -595,7 +595,7 @@ This contract is expensive to check of course. Here is a slightly
 ]
   Click on @scheme[string-len/c] to see what it does.
 
-@ctc-section[#:tag "no-domain"]{Procedures of some fixed, but statically unknown arity}
+@ctc-section[#:tag "no-domain"]{Procedures of Some Fixed, but Statically Unknown Arity}
 
 Imagine yourself writing a contract for a function that accepts some other
 function and a list of numbers that eventually applies the former to the

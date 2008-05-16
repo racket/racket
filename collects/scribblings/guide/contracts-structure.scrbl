@@ -5,7 +5,7 @@
           "contracts-utils.ss"
           (for-label scheme/contract))
 
-@title{Contracts on Structures}
+@title[#:tag "contracts-struct"]{Contracts on Structures}
 
 Modules deal with structures in two ways. First they export
 @scheme[struct] definitions, i.e., the ability to create
@@ -17,7 +17,7 @@ its fields contain values of a certain kind. This section
 explains how to protect structs with contracts for both
 uses.
 
-@ctc-section[#:tag "single-struct"]{Promising something about a specific struct}
+@ctc-section[#:tag "single-struct"]{Promising Something About a Specific Structure}
 
 Yes. If your module defines a variable to be a structure, then on export you
 can specify the structures shape: 
@@ -35,12 +35,12 @@ In this example, the module imports a library for representing positions, which
 exports a @scheme[posn] structure. One of the @scheme[posn]s it creates
 and exports stands for the origin, i.e., @tt{(0,0)}, of the grid. 
 
-@ctc-section[#:tag "single-vector"]{Promising something about a specific vector}
+@ctc-section[#:tag "single-vector"]{Promising Something About a Specific Vector}
 
 Yes, again. See the help desk for information on @scheme[vector/c] and
 similar contract combinators for (flat) compound data. 
 
-@ctc-section[#:tag "define-struct"]{Ensuring that all structs are well-formed}
+@ctc-section[#:tag "define-struct"]{Ensuring that All Structs are Well-Formed}
 
 The book @link["http://www.htdp.org/"]{@italic{How to Design
 Programs}} teaches that @scheme[posn]s should contain only
@@ -128,7 +128,7 @@ A single change suffices:
 Instead of exporting @scheme[p-sick] as a plain @scheme[posn?], we use a
 @scheme[struct/c] contract to enforce constraints on its components. 
 
-@ctc-section[#:tag "lazy-contracts"]{Checking properties of data structures}
+@ctc-section[#:tag "lazy-contracts"]{Checking Properties of Data Structures}
 
 Contracts written using @scheme[struct/c] immediately
 check the fields of the data structure, but sometimes this

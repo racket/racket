@@ -5,9 +5,9 @@
           "contracts-utils.ss"
           (for-label scheme/contract))
 
-@title{Gotchas}
+@title[#:tag "contracts-gotchas"]{Gotchas}
 
-@ctc-section{Using @scheme[set!] to assign to variables provided via @scheme[provide/contract]}
+@ctc-section{Using @scheme[set!] to Assign to Variables Provided via @scheme[provide/contract]}
 
 The contract library assumes that variables exported via
 @scheme[provide/contract] are not assigned to, but does not enforce

@@ -6,18 +6,18 @@
           (for-label scheme/contract)
           (for-label scheme/gui))
 
-@title{Examples}
+@title[#:tag "contracts-examples"]{Examples}
 
  This section illustrates the current state of PLT Scheme's contract
- implementation with a series of examples from Mitchell and McKim's text
- book "Design by Contract, by Example" [Addison and Wesley, 2002]. 
+ implementation with a series of examples from @italic{Design by
+ Contract, by Example} @cite["Mitchell02"].
 
 Mitchell and McKim's principles for design by contract DbC are derived
   from the 1970s style algebraic specifications. The overall goal of DbC is
   to specify the constructors of an algebra in terms of its
   observers. While we reformulate Mitchell and McKim's terminology and 
   we use a mostly applicative, we
-  retain their terminology of "classes" and "objects":
+  retain their terminology of ``classes'' and ``objects'':
 
 @itemize{
 @item{@bold{Separate queries from commands.}

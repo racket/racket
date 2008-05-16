@@ -36,17 +36,12 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["regexp.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "control"]{Exceptions and Control}
+@include-section["control.scrbl"]
 
-@; ----------------------------------------------------------------------
 @include-section["for.scrbl"]
 
-
-@; ----------------------------------------------------------------------
 @include-section["match.scrbl"]
 
-@; ----------------------------------------------------------------------
 @include-section["class.scrbl"]
 
 @; ----------------------------------------------------------------------
@@ -145,7 +140,12 @@ downloadable packages contributed by PLT Scheme users.
              #:title "Scheme with Classes, Mixins, and Traits (invited tutorial)"
              #:location "Asian Symposium on Programming Languages and Systems"
              #:date "2006")
-
+ 
+ (bib-entry #:key "Mitchell02"
+            #:author "Richard Mitchell and Jim McKim"
+            #:title "Design by Contract, by Example"
+            #:is-book? #t
+            #:date "2002")
 
 )
 

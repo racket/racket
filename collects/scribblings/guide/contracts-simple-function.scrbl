@@ -18,7 +18,7 @@ value back to the ``client'' module.
 It is important to keep this picture in mind when you read the explanations
 of the various ways of imposing contracts on functions. 
 
-@ctc-section[#:tag "argcontract"]{Restricting the arguments of a function}
+@ctc-section[#:tag "argcontract"]{Restricting the Arguments of a Function}
 
 Functions usually don't work on all possible Scheme values but only on a
 select subset such as numbers, booleans, etc. Here is a module that may
@@ -96,7 +96,7 @@ combinator}. Its purpose is to combine other contracts into a contract
 that says "this is a function @italic{and} its arguments and its result are
 like that."
 
-@ctc-section[#:tag "dots"]{Infix contract notation}
+@ctc-section[#:tag "dots"]{Infix Contract Notation}
 
 If you are used to mathematics, you like the arrow in between the
   domain and the range of a function, not at the beginning. If you
@@ -120,7 +120,7 @@ is really just a short-hand for
 Of course, placing the arrow to the left of the range follows not only
 mathematical tradition but also that of typed functional languages. 
 
-@ctc-section[#:tag "own"]{Rolling your own contracts for function arguments}
+@ctc-section[#:tag "own"]{Rolling Your Own Contracts for Function Arguments}
 
 The @scheme[deposit] function adds the given number to the value of
 @scheme[amount]. While the function's contract prevents clients from
@@ -177,7 +177,7 @@ scheme
 
 Lesson: learn about the built-in contracts in @schememodname[scheme/contract]. 
 
-@ctc-section[#:tag "and-or"]{The @scheme[and/c], @scheme[or/c], and @scheme[listof] contract combinators}
+@ctc-section[#:tag "and-or"]{The @scheme[and/c], @scheme[or/c], and @scheme[listof] Contract Combinators}
 
 Both @scheme[and/c] and @scheme[or/c] ombine contracts and
 they do what you expect them to do.
@@ -209,7 +209,7 @@ value satisfies @scheme[number?] and @scheme[integer?] and
 Oh, we almost forgot. What do you think @scheme[(listof char?)]
 means? Hint: it is a contract!
 
-@ctc-section[#:tag "range"]{Restricting the range of a function}
+@ctc-section[#:tag "range"]{Restricting the Range of a Function}
 
 Consider a utility module for creating strings from banking records: 
 
@@ -280,7 +280,7 @@ scheme
 ]
 
 
-@ctc-section{The difference between @scheme[any] and @scheme[any/c]}
+@ctc-section{The Difference Between @scheme[any] and @scheme[any/c]}
 
 The contract @scheme[any/c] accepts any value, and
 @scheme[any] is a keyword that can appear in the range of

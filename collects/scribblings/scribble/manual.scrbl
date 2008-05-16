@@ -928,6 +928,7 @@ order as given}
 
 @defproc[(bib-entry [#:key key string?]
                     [#:title title any/c]
+                    [#:is-book? is-book? any/c #f]
                     [#:author author any/c]
                     [#:location location any/c]
                     [#:date date any/c] 
@@ -941,7 +942,8 @@ the entry:
 @itemize{
 
  @item{@scheme[title] is the title of the cited work. It will be
-       surrounded by quotes in typeset form.}
+       surrounded by quotes in typeset form if @scheme[is-book?] is
+       @scheme[#f], otherwise it is typeset via @scheme[italic].}
 
  @item{@scheme[author] lists the authors. Use names in their usual
        order (as opposed to ``last, first''), and separate multiple

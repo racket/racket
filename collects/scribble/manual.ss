@@ -2042,6 +2042,7 @@
 
   (define (bib-entry #:key key 
                      #:title title 
+                     #:is-book? [is-book? #f]
                      #:author [author #f] 
                      #:location [location #f]
                      #:date [date #f]
@@ -2055,12 +2056,19 @@
            (append (decode-content (list author))
                    (list ", "))
            null)
-       (list 'ldquo)
-       (decode-content (list title))
+       (if is-book?
+           null
+           (list 'ldquo))
+       (if is-book?
+           (list (italic title))
+           (decode-content (list title)))
        (list (if location
                  "," 
-                 ".")
-             'rdquo)
+                 "."))
+       
+       (if is-book?
+           null
+           (list 'rdquo))
        (if location
            (cons " "
                  (append

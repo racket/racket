@@ -144,10 +144,14 @@
          (loop (extract s cdr car)
                (list (syntax->datum (datum->syntax #f (extract s cdr cdr car)))))]
         [else
-         (let ([r (with-handlers ([exn:fail? (lambda (e)
-                                               (list (exn-message e)
-                                                     (get-output ev)
-                                                     (get-error-output ev)))])
+         (let ([r (with-handlers ([(lambda (x)
+                                     (not (exn:break? x)))
+                                   (lambda (e)
+                                     (list (if (exn? e)
+                                               (exn-message e)
+                                               (format "uncaught exception: ~s" e))
+                                           (get-output ev)
+                                           (get-error-output ev)))])
                     (list (let ([v (do-plain-eval ev s #t)])
                             (make-reader-graph (copy-value v (make-hasheq))))
                           (get-output ev)

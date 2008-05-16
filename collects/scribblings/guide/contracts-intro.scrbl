@@ -47,7 +47,7 @@ scheme/base
 (define amount ...)
 ]
 
-@ctc-section[#:tag "amount0"]{A first contract violation}
+@ctc-section[#:tag "amount0"]{A First Contract Violation}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
@@ -62,7 +62,7 @@ When module @scheme[a] is required, the monitoring
 system signals a violation of the contract and
 blame @scheme[a] for breaking its promises.
 
-@ctc-section[#:tag "qamount"]{A subtle contract violation}
+@ctc-section[#:tag "qamount"]{A Subtle Contract Violation}
 
 Suppose the creator of @scheme[a] had written 
 @schememod[
@@ -184,7 +184,7 @@ the module boundary for a second time.
 </question>
 }
 
-@ctc-section[#:tag "obligations"]{Imposing obligations on a module's clients}
+@ctc-section[#:tag "obligations"]{Imposing Obligations on a Module's Clients}
 
 On occasion, a module may want to enter a contract with
 another module only if the other module abides by certain

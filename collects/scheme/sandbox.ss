@@ -356,18 +356,20 @@
 ;; Like a toplevel (eval `(begin ,@exprs)), but the language that is used may
 ;; not have a begin.
 (define (eval* exprs)
-  (if (null? exprs)
-      (void)
-      (let ([deftag (default-continuation-prompt-tag)])
-        (let loop ([expr (car exprs)] [exprs (cdr exprs)])
-          (if (null? exprs)
-              (eval expr)
-              (begin
-                (call-with-continuation-prompt
-                 (lambda () (eval expr))
-                 deftag
-                 (lambda (x) (abort-current-continuation deftag x)))
-                (loop (car exprs) (cdr exprs))))))))
+  (call-with-continuation-prompt
+   (lambda ()
+     (if (null? exprs)
+         (void)
+         (let ([deftag (default-continuation-prompt-tag)])
+           (let loop ([expr (car exprs)] [exprs (cdr exprs)])
+             (if (null? exprs)
+                 (eval expr)
+                 (begin
+                   (call-with-continuation-prompt
+                    (lambda () (eval expr))
+                    deftag
+                    (lambda (x) (abort-current-continuation deftag x)))
+                   (loop (car exprs) (cdr exprs))))))))))
 
 (define (evaluate-program program limits uncovered!)
   (when uncovered!
