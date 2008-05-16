@@ -21,8 +21,7 @@
          setup/pack
          setup/plt-single-installer 
          setup/getinfo
-         setup/unpack
-         setup/scribble)
+         setup/unpack)
 
 #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
 
@@ -256,12 +255,9 @@
 (define force-package-building? (make-parameter #f))
 (define build-scribble-docs? (make-parameter #f))
 
-
 ;; ---
-;; documentation stuff
-;;
-;; for reasons i do not understand, setup/scribble/setup-scribblings only works
-;; if you dynamic-require it. I just stole this code from setup/setup-unit.ss .
+;; documentation stuff --- loaded on demand so that setup/scribble can be
+;; omitted in the MzScheme distribution
 (define-namespace-anchor anchor)
 (define (doc:setup-scribblings)
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
@@ -287,7 +283,7 @@
              [critical-errors '()])
          
          (define (build-scribble-docs dir)
-           (setup-scribblings 
+           ((doc:setup-scribblings)
             (list dir)
             #f
             #f
@@ -307,7 +303,8 @@
           (λ (bad) (set! warnings (cons bad warnings)))
           (λ (err) (set! critical-errors (cons err critical-errors))))
          
-         (when (build-scribble-docs?)
+         (when (and (build-scribble-docs?)
+                    (file-exists? (build-path (collection-path "setup") "scribble.ss")))
            (printf "Building: ~a\n" dir)
            (build-scribble-docs dir))
          

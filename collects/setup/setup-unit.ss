@@ -766,6 +766,11 @@
   ;;                       Docs                    ;;
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (when (make-docs)
+    ;; Double-check that "setup/scribble" is present.
+    (unless (file-exists? (build-path (collection-path "setup") "scribble.ss"))
+      (make-docs #f)))
+
   (define (doc:verbose)
     (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
       (dynamic-require 'setup/scribble 'verbose)))
