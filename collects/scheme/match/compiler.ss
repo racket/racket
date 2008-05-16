@@ -118,6 +118,7 @@
        (compile-con-pat accs pred Struct-ps))]
     [else (error 'compile "bad key: ~a" k)]))
 
+
 ;; produces the syntax for a let clause
 (define (compile-one vars block esc)
   (define-values (first rest-pats) (Row-split-pats (car block)))
@@ -147,7 +148,7 @@
             (lambda (row)
               (define-values (p ps) (Row-split-pats row))
               (define v (Var-v p))
-              (define seen (Row-vars-seen row))
+              (define seen (Row-vars-seen row))              
               ;; a new row with the rest of the patterns
               (cond
                 ;; if this was a wild-card variable, don't bind
@@ -157,10 +158,9 @@
                                       (Row-vars-seen row))]
                 ;; if we've seen this variable before, check that it's equal to
                 ;; the one we saw
-                [(ormap (lambda (e)
-                          (let ([v* (car e)] [id (cdr e)])
-                            (and (bound-identifier=? v v*) id)))
-                        seen)
+                [(for/or ([e seen])
+                         (let ([v* (car e)] [id (cdr e)])
+                           (and (bound-identifier=? v v*) id)))                 
                  =>
                  (lambda (id)
                    (make-Row ps
@@ -390,13 +390,15 @@
                                 (make-Row pats
                                           rhs
                                           (Row-unmatch (car block))
-                                          null))
+                                          (Row-vars-seen
+                                           (car block))))
                               (map list heads)
                               (syntax->list #'(rhs ...)))
                          (list (make-Row (list tail)
                                          #`tail-rhs
                                          (Row-unmatch (car block))
-                                         null)))
+                                         (Row-vars-seen
+                                          (car block)))))
                         #'failkv)))]
     [else (error 'compile "unsupported pattern: ~a~n" first)]))
 

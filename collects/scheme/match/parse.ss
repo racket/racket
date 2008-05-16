@@ -104,7 +104,7 @@
                   (cons max (map (lambda _ 1) ps))
                   ;; vars in lp are lists, vars elsewhere are not
                   (cons #f (map (lambda _ #t) ps))
-                  (make-Null (make-Dummy #f))
+                  (make-Null (make-Dummy (syntax/loc stx _)))
                   #f))]
     [(list-no-order p ...)
      (ormap ddk? (syntax->list #'(p ...)))
@@ -119,10 +119,10 @@
                   (map (lambda _ 1) ps)
                   ;; all of these patterns get bound to only one thing
                   (map (lambda _ #t) ps)
-                  (make-Null (make-Dummy #f))
+                  (make-Null (make-Dummy (syntax/loc stx _)))
                   #f))]
-    [(list) (make-Null (make-Dummy stx))]
-    [(mlist) (make-Null (make-Dummy stx))]
+    [(list) (make-Null (make-Dummy (syntax/loc stx _)))]
+    [(mlist) (make-Null (make-Dummy (syntax/loc stx _)))]
     [(list ..)
      (ddk? #'..)
      (raise-syntax-error 'match "incorrect use of ... in pattern" stx #'..)]
