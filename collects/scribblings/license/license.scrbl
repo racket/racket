@@ -126,3 +126,7 @@ Clanbomber icon
 Everaldo Coelho
 http://www.everaldo.com/}
 
+@copyright{
+Save icon
+David Vignoni
+http://icon-king.com/}
