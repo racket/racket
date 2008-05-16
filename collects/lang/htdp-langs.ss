@@ -6,13 +6,13 @@
 
 |#
 
-(module htdp-langs mzscheme
-  (require string-constants
+#lang scheme
+(require string-constants
            framework
-           (prefix et: (lib "stacktrace.ss" "errortrace"))
-           (prefix tr: (lib "stacktrace.ss" "trace"))
+           (prefix-in et: (lib "stacktrace.ss" "errortrace"))
+           (prefix-in tr: (lib "stacktrace.ss" "trace"))
            mzlib/pretty
-           (prefix pc: mzlib/pconvert)
+           (prefix-in pc: mzlib/pconvert)
            mzlib/file
            mzlib/unit
            mzlib/class
@@ -38,8 +38,8 @@
            "run-teaching-program.ss"
            stepper/private/shared
            
-           (only test-engine/scheme-gui make-formatter)
-           (only test-engine/scheme-tests scheme-test-data test-format test-execute)
+           (only-in test-engine/scheme-gui make-formatter)
+           (only-in test-engine/scheme-tests scheme-test-data test-format test-execute)
            (lib "test-display.scm" "test-engine")
            )
   
@@ -439,8 +439,10 @@
                    (create-embedding-executable 
                     exe-name
                     #:modules `((#f ,program-filename))
-                    #:literal-expression `(require ,(filename->require-symbol program-filename))
-                    #:cmdline '("-Zmvq")
+                    #:cmdline `("-l" 
+                                "scheme/base"
+                                "-e"
+                                ,(format "~s" `(#%require ',(filename->require-symbol program-filename))))
                     #:src-filter
                     (λ (path) (cannot-compile? path))
                     #:get-extra-imports
@@ -1025,7 +1027,7 @@
       
       (define (initialize-test-coverage-point key expr)
         (unless (thread-cell-ref current-test-coverage-info)
-          (let ([ht (make-hash-table)])
+          (let ([ht (make-hasheq)])
             (thread-cell-set! current-test-coverage-info ht)
             (let ([rep (drscheme:rep:current-rep)])
               (when rep
@@ -1040,12 +1042,12 @@
                       #f)))))
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (hash-table-put! ht key (mcons #f expr)))))
+            (hash-set! ht key (mcons #f expr)))))
       
       (define (test-covered key)
         (let ([ht (thread-cell-ref current-test-coverage-info)])
           (when ht
-            (let ([v (hash-table-get ht key)])
+            (let ([v (hash-ref ht key)])
               (set-mcar! v #t)))))
       
       (define-values/invoke-unit et:stacktrace@
@@ -1403,4 +1405,5 @@
 	   (stepper:show-lambdas-as-lambdas #f)))
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)
-        (drscheme:get/extend:extend-tab tab-tracing-mixin)))))
+        (drscheme:get/extend:extend-tab tab-tracing-mixin))))
+  

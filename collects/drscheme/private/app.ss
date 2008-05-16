@@ -170,9 +170,9 @@
     (insert-url/external-browser "PLT" "http://www.plt-scheme.org/")
     
     (send* e
-      (insert ".\n")
+      (insert ".\n\n")
       (insert (get-authors))
-      (insert "\nFor licensing information see "))
+      (insert "\n\nFor licensing information see "))
     
     (insert/clickback "our software license"
                       (λ () (help-desk:goto-plt-license)))

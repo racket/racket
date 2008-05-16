@@ -1,15 +1,13 @@
 #lang scheme/unit
 
-(require string-constants
-         mred
-         (lib "external.ss" "browser")
-         (lib "bug-report.ss" "help")
-         (lib "buginfo.ss" "help" "private")
+(require scheme/gui/base
+         browser/external
          framework
-         mzlib/class
-         mzlib/list
+         scheme/class
          net/url
-         (lib "search.ss" "help")
+         setup/dirs
+         help/search
+         help/private/buginfo
          "drsig.ss")
 
 (import [prefix drscheme:frame: drscheme:frame^]
@@ -66,7 +64,7 @@
     (super-new)))
 
 (define (goto-plt-license) 
-  '(send-url
+  (send-url
     (url->string
      (path->url (build-path (find-doc-dir) "license" "index.html")))))
 
