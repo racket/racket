@@ -120,3 +120,9 @@ Copyright (c) 1994, 1995, 1996, 1999, 2000, 2001, 2002
 @copyright{
 GNU Classpath
 GNU Public License with special exception}
+
+@copyright{
+Clanbomber icon
+Everaldo Coelho
+http://www.everaldo.com/}
+

@@ -1013,7 +1013,7 @@
       
       (define debug-bitmap 
         (make-object bitmap%
-          (build-path (collection-path "gui-debugger" "icons") "icon-small.png")
+          (build-path (collection-path "gui-debugger" "icons") "clanbomber-16x16.png")
           'png/mask))
       
       (define make-pause-label
