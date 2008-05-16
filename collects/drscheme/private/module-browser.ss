@@ -740,15 +740,7 @@
         [(eof-object? sexp) 
          (custodian-shutdown-all user-custodian)]
         [else
-         ;; instead of escaping when there's an error on the user thread,
-         ;; we just shut it all down. This kills the event handling loop
-         ;; for the eventspace and wakes up the thread below
-         ;; NOTE: we cannot set this in `init' since the call to `init'
-         ;; is wrapped in a parameterize of the error-escape-handler
-         (parameterize ([error-escape-handler
-                         (λ ()
-                           (custodian-shutdown-all user-custodian))])
-           (add-connections sexp))
+         (add-connections sexp)
          (continue)]))
     (define init-complete (make-semaphore 0))
     
@@ -783,7 +775,17 @@
       (current-load-relative-directory init-dir)
       (current-directory init-dir)
       (error-display-handler (λ (str exn) (set! error-str str)))
-      (semaphore-post init-complete))
+      
+      ;; instead of escaping when there's an error on the user thread,
+      ;; we just shut it all down. This kills the event handling loop
+      ;; for the eventspace and wakes up the thread below
+      ;; NOTE: we cannot set this directly in `init' since the call to `init'
+      ;; is wrapped in a parameterize of the error-escape-handler
+      (queue-callback
+       (λ ()
+         (error-escape-handler
+          (λ () (custodian-shutdown-all user-custodian)))
+         (semaphore-post init-complete))))
     (define (kill-termination) (void))
     (define complete-program? #t)
 
