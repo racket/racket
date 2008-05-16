@@ -8,6 +8,7 @@
          framework
          mzlib/class
          mzlib/list
+         net/url
          (lib "search.ss" "help")
          "drsig.ss")
 
@@ -64,7 +65,11 @@
              (send dc draw-text dots (- cw dw) (- (/ ch 2) (/ th 2)))]))))
     (super-new)))
 
-(define (goto-plt-license) (void))
+(define (goto-plt-license) 
+  '(send-url
+    (url->string
+     (path->url (build-path (find-doc-dir) "license" "index.html")))))
+
 (define (get-docs) '())
 
 (define help-desk

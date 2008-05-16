@@ -379,7 +379,6 @@ please adhere to these guidelines:
 
  ;;; about box
  (about-drscheme-frame-title "About DrScheme")
- (the-documentation "The Documentation")
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Save this file as plain text?")

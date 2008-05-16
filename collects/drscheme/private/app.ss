@@ -220,7 +220,7 @@
     (send e insert (get-translating-acks))
     
     (let* ([docs-button (new button% 
-                             [label (string-constant the-documentation)]
+                             [label (string-constant help-desk)]
                              [parent button-panel]
                              [callback (λ (x y) (help-desk:help-desk))])])
       (send docs-button focus))
