@@ -321,7 +321,7 @@
                  (send path-list enable #t))
           (begin (set! pnames '())
                  (set! pnames-nulstrings '())
-                 (send path-list set (list "Bad Directory:" dir))
+                 (send path-list set (list "Bad Directory:" (path->string dir)))
                  (send path-list enable #f)))
         (wx:end-busy-cursor))
 
