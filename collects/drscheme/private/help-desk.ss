@@ -64,17 +64,8 @@
              (send dc draw-text dots (- cw dw) (- (/ ch 2) (/ th 2)))]))))
     (super-new)))
 
-(define (goto-manual-link a b) (error 'goto-maual-link "~s ~s" a b))
-(define (goto-hd-location b) (error 'goto-hd-location "~s" b))
-
-(define (goto-help manual link) (goto-manual-link manual link))
-(define (goto-tour) (goto-hd-location 'hd-tour))
-(define (goto-release-notes) (goto-hd-location 'release-notes))
-(define (goto-plt-license) (goto-hd-location 'plt-license))
-
-(define (get-docs) 
-  ;(error 'help-desk.ss "get-docs")
-  '())
+(define (goto-plt-license) (void))
+(define (get-docs) '())
 
 (define help-desk
   (case-lambda

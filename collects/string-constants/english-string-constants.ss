@@ -379,9 +379,7 @@ please adhere to these guidelines:
 
  ;;; about box
  (about-drscheme-frame-title "About DrScheme")
- (take-a-tour "Take a Tour!")
- (release-notes "Release Notes")
- 
+ (the-documentation "The Documentation")
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Save this file as plain text?")

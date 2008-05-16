@@ -132,13 +132,7 @@
                (regexp-split #rx";" (symbol->string (car binding)))))
       
       (define/override (help-menu:before-about help-menu)
-        (make-help-desk-menu-item help-menu)
-        '(make-object menu-item%
-           (format (string-constant welcome-to-something)
-                   (string-constant drscheme))
-           help-menu
-           (λ (item evt)
-             (drscheme:app:invite-tour))))
+        (make-help-desk-menu-item help-menu))
       
       (define/override (help-menu:about-callback item evt) (drscheme:app:about-drscheme))
       (define/override (help-menu:about-string) (string-constant about-drscheme))

@@ -214,7 +214,6 @@
     ())
   (define-signature drscheme:app^ extends drscheme:app-cm^
     (about-drscheme
-     invite-tour
      add-language-items-to-help-menu
      add-important-urls-to-help-menu
      switch-language-to))
@@ -227,11 +226,8 @@
   (define-signature drscheme:help-desk-cm^
     ())
   (define-signature drscheme:help-desk^ extends drscheme:help-desk-cm^
-    (goto-help
-     goto-tour
-     goto-release-notes
+    (help-desk
      goto-plt-license
-     help-desk
      get-docs))
   
   (define-signature drscheme:language-cm^
