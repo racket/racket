@@ -556,6 +556,10 @@
                                         [(list-no-order 1 2 3 rest ... e) rest]
                                         [_ 'no])))
                 'no))
+   (comp '((2 4) (2 1))   
+         (match '(3 2 4 3 2 1)
+           [(list x y ... x z ...) 
+            (list y z)]))
 
 
    ))
