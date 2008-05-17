@@ -5,7 +5,7 @@
 
 @title[#:tag "strings"]{Strings (Unicode)}
 
-A @defterm{string} is a fixed-length array of
+A @deftech{string} is a fixed-length array of
 @seclink["characters"]{characters}. It prints using doublequotes,
 where doublequote and backslash characters within the string are
 escaped with backslashes. Other common string escapes are supported,

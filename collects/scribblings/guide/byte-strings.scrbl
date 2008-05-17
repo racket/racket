@@ -14,7 +14,7 @@ numbers that represent bytes.
 (byte? 256)
 ]
 
-A @defterm{byte string} is similar to a string---see
+A @deftech{byte string} is similar to a string---see
 @secref["strings"]---but its content is a sequence of bytes
 instead of characters. Byte strings can be used in applications that
 process pure ASCII instead of Unicode text. The printed form of a
