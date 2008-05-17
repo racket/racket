@@ -230,6 +230,7 @@ please adhere to these guidelines:
  (file-is-not-saved "ファイル \"~a\" は保存されていません。")
  (save "保存")
  (close-anyway "とにかく閉じる")
+ (dont-save "保存しない")
  (clear-anyway "とにかく消去する")
 
  ;; menu item title
@@ -370,8 +371,6 @@ please adhere to these guidelines:
 
  ;;; about box
  (about-drscheme-frame-title "DrScheme について")
- (take-a-tour "ツアーの紹介！")
- (release-notes "リリースノート")
 
 
  ;;; save file in particular format prompting.
@@ -770,6 +769,11 @@ please adhere to these guidelines:
  (interactions-menu-item-help-string "対話ウィンドウを表示/非表示します")
  (show-toolbar "ツールバーを表示(&T)")
  (hide-toolbar "ツールバーを非表示(&T)")
+ (toolbar "ツールバー")
+ (toolbar-on-top "ツールバーを上側に表示する")
+ (toolbar-on-left "ツールバーを左側に表示する")
+ (toolbar-on-right "ツールバーを右側に表示する")
+ (toolbar-hidden "ツールバーを非表示にする")
 
  ;;; file menu
  (save-definitions-as "定義に名前を付けて保存(&A)...")
@@ -925,6 +929,8 @@ please adhere to these guidelines:
  (use-mixed-fractions "帯分数")
  (use-repeating-decimals "循環小数")
  (decimal-notation-for-rationals "有理数を10進数で表示する")
+ (enforce-primitives-group-box-label "初期束縛")
+ (enforce-primitives-check-box-label "初期束縛の再定義を禁止する")
 
   ; used in the bottom left of the drscheme frame
   ; used the popup menu from the just above; greyed out and only
@@ -1268,6 +1274,12 @@ please adhere to these guidelines:
   ;;The Test engine tool
   ;;
   (test-engine-window-title "テスト結果")
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "テスト結果を切り離して表示する")
+  (test-engine-undock-report "テスト結果を統合して表示する")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "テストを有効にする")
+  (test-engine-disable-tests "テストを無効にする")
   
   (profjWizward-insert-java-class "Java クラスを挿入")
   (profjWizard-insert-java-union "Java Union を挿入")
