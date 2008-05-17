@@ -9,6 +9,9 @@
 (require mzlib/etc)    (provide (all-from mzlib/etc))
 (require mzlib/string) (provide (all-from mzlib/string))
 
+;; these are needed to make regexp-case work in scheme/base too
+(require (rename scheme/base base-else else) (rename scheme/base base-=> =>))
+
 ;; ----------------------------------------------------------------------------
 ;;>>... Convenient syntax definitions
 
@@ -1883,9 +1886,11 @@
 ;;>     previous cases failed.
 (defsyntax* (regexp-case stx)
   (define (do-clause c)
-    (syntax-case c (else =>)
+    (syntax-case c (else base-else => base-=>)
       [(else body ...) c]
+      [(base-else body ...) #'(else body ...)]
       [(re => func) #'((regexp-match re s) => (lambda (r) (apply func r)))]
+      [(re base-=> func) #'((regexp-match re s) => (lambda (r) (apply func r)))]
       [((re . args) body ...)
        #`((regexp-match re s) =>
           (lambda (r)
