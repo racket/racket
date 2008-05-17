@@ -5,7 +5,7 @@
 
 @title[#:tag "regexp" #:style 'toc]{Regular Expressions}
 
-@margin-note{This section is based on @cite["Sitaram05"].}
+@margin-note{This chapter is a modified version of @cite["Sitaram05"].}
 
 A @deftech{regexp} value encapsulates a pattern that is described by a
 string or @tech{byte string}.  The regexp matcher tries to match this
@@ -15,6 +15,8 @@ will call the @deftech{text string}, when you call functions like
 not as a pattern.
 
 @local-table-of-contents[]
+
+@refdetails["regexp"]{regexps}
 
 @; ----------------------------------------
 
@@ -26,21 +28,19 @@ pattern, or it can be prefixed with @litchar{#rx} to form a literal
 @tech{regexp} value, and @scheme[#rx#"abc"] is a @tech{byte
 string}-based @tech{regexp} value. Alternately, a string or byte
 string can be prefixed with @litchar{#px}, as in @scheme[#px"abc"],
-for a slightly different syntax of patterns within the string.
+for a slightly extended syntax of patterns within the string.
 
 Most of the characters in a @tech{regexp} pattern are meant to match
 occurrences of themselves in the text string.  Thus, the pattern
 @scheme[#rx"abc"] matches a string that contains the characters
-@litchar{a}, @litchar{b}, and @litchar{c} in succession.
-
-In the regexp pattern, some characters act as
-@deftech{metacharacters}, and some character sequences act as
-@deftech{metasequences}.  That is, they specify something other than
-their literal selves.  For example, in the pattern @scheme[#rx"a.c"],
-the characters @litchar{a} and @litchar{c} stand for themselves, but
-the @tech{metacharacter} @litchar{.} can match @emph{any} character.
-Therefore, the pattern @scheme[#rx"a.c"] matches an @litchar{a}, any
-character, and @litchar{c} in succession.
+@litchar{a}, @litchar{b}, and @litchar{c} in succession. Other
+characters act as @deftech{metacharacters}, and some character
+sequences act as @deftech{metasequences}.  That is, they specify
+something other than their literal selves.  For example, in the
+pattern @scheme[#rx"a.c"], the characters @litchar{a} and @litchar{c}
+stand for themselves, but the @tech{metacharacter} @litchar{.} can
+match @emph{any} character.  Therefore, the pattern @scheme[#rx"a.c"]
+matches an @litchar{a}, any character, and @litchar{c} in succession.
 
 @margin-note{When we want a literal @litchar{\} inside a Scheme string
 or regexp literal, we must escape it so that it shows up in the string
@@ -55,17 +55,16 @@ it by precede it with a @litchar{\}.  The character sequence
 @litchar{\.} is thus a @tech{metasequence}, since it doesn't match
 itself but rather just @litchar{.}.  So, to match @litchar{a},
 @litchar{.}, and @litchar{c} in succession, we use the regexp pattern
-@scheme["a\\.c"]; the double @litchar{\} is an artifact of Scheme
+@scheme[#rx"a\\.c"]; the double @litchar{\} is an artifact of Scheme
 strings, not the @tech{regexp} pattern itself.
 
 The @scheme[regexp] function takes a string or byte string and
 produces a @tech{regexp} value. Use @scheme[regexp] when you construct
-a pattern to be matched against multiple strings, since a pattern must
-be compiled to a @tech{regexp} value before it can be used in a match.
-The @scheme[pregexp] function is like @scheme[regexp], but it parses
-the pattern in an alternate syntax. Regexp values with as literals
-with @litchar{#rx} or @litchar{#px} are compiled once and for all when
-they are read.
+a pattern to be matched against multiple strings, since a pattern is
+compiled to a @tech{regexp} value before it can be used in a match.
+The @scheme[pregexp] function is like @scheme[regexp], but using the
+extended syntax. Regexp values as literals with @litchar{#rx} or
+@litchar{#px} are compiled once and for all when they are read.
 
 
 The @scheme[regexp-quote] function takes an arbitrary string and

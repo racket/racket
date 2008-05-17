@@ -17,7 +17,7 @@
 
 @title[#:tag "classes"]{Classes and Objects}
 
-@margin-note{This section is based on a paper @cite["Flatt06"].}
+@margin-note{This chapter is based on a paper @cite["Flatt06"].}
 
 A @scheme[class] expression denotes a first-class value,
 just like a @scheme[lambda] expression:

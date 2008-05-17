@@ -10,6 +10,8 @@
 @section-index["strings" "pattern matching"]
 @section-index["input ports" "pattern matching"]
 
+@guideintro["regexp"]{regular expressions}
+
 @local-table-of-contents[]
 
 Regular expressions are specified as strings or byte strings, using
