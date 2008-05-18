@@ -1172,7 +1172,8 @@ module browser threading seems wrong.
         ensure-rep-hidden
         ensure-defs-shown
         
-        get-language-menu))
+        get-language-menu
+        register-toolbar-button))
     
     (define frame-mixin
       (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)
@@ -1392,16 +1393,26 @@ module browser threading seems wrong.
                 (send top-panel change-children (λ (x) (cons name-panel (remq name-panel x)))))
             (end-container-sequence)))
         
+        (define toolbar-buttons '())
+        (define/public (register-toolbar-button b)
+          (set! toolbar-buttons (cons b toolbar-buttons))
+          (orient))
+        
         (define/private (orient)
           (let ([vertical? (or (toolbar-is-left?) (toolbar-is-right?))])
-            (let loop ([obj button-panel])
-              (cond
-                [(is-a? obj area-container<%>)
-                 (for-each loop (send obj get-children))]
-                [(is-a? obj switchable-button%)
-                 (send obj set-label-visible (not vertical?))]
-                [else (void)]))
-            (send save-button set-label-visible (not vertical?))))
+            (for-each
+             (λ (obj) (send obj set-label-visible (not vertical?)))
+             toolbar-buttons))
+          
+          (let loop ([obj button-panel])
+            (cond
+              [(is-a? obj area-container<%>)
+               (for-each loop (send obj get-children))]
+              [(is-a? obj switchable-button%)
+               (unless (memq obj toolbar-buttons)
+                 (error 'register-toolbar-button "found a switchable-button% that is not registered, label ~s"
+                        (send obj get-label)))]
+              [else (void)])))
         
         (field [remove-show-status-line-callback
                 (preferences:add-callback
@@ -3365,6 +3376,7 @@ module browser threading seems wrong.
                                       (send definitions-canvas focus)))]
                    [bitmap save-bitmap]
                    [label (string-constant save-button-label)]))
+        (register-toolbar-button save-button)
         
         (set! name-message (new drs-name-message% [parent name-panel]))
         (send name-message stretchable-width #t)
@@ -3372,24 +3384,10 @@ module browser threading seems wrong.
         [define teachpack-items null]
         [define break-button (void)]
         [define execute-button (void)]
-        [define button-panel 
-          (new (class horizontal-panel%
-                 
-                 ;; do this so that new buttons that show up are put in the right mode
-                 (define/override (change-children lst)
-                   (let ([ans (super change-children lst)])
-                     (orient)
-                     ans))
-                 (define/override (add-child c)
-                   (super add-child c)
-                   (orient))
-                 (define/override (after-new-child c)
-                   (super after-new-child c)
-                   (orient))
-                 (super-new [parent top-panel] [spacing 2])))]
-        [define/public get-execute-button (λ () execute-button)]
-        [define/public get-break-button (λ () break-button)]
-        [define/public get-button-panel (λ () button-panel)]
+        [define button-panel (new horizontal-panel% [parent top-panel] [spacing 2])]
+        (define/public (get-execute-button) execute-button)
+        (define/public (get-break-button) break-button)
+        (define/public (get-button-panel) button-panel)
         
         (inherit get-info-panel)
         (define running-canvas
@@ -3406,6 +3404,7 @@ module browser threading seems wrong.
                    [callback (λ (x) (execute-callback))]
                    [bitmap execute-bitmap]
                    [label (string-constant execute-button-label)]))
+        (register-toolbar-button execute-button)
         
         (set! break-button
               (new switchable-button%
@@ -3413,7 +3412,8 @@ module browser threading seems wrong.
                    [callback (λ (x) (send current-tab break-callback))]
                    [bitmap break-bitmap]
                    [label (string-constant break-button-label)]))
-        
+        (register-toolbar-button break-button)
+
         (send button-panel stretchable-height #f)
         (send button-panel stretchable-width #f) 
         

@@ -8,6 +8,7 @@
 This method is called when the break button is clicked and
 this tab is the active tab.
 }
+
 @methimpl{
 By default, breaks any evaluation that may be happening at
 this point.
@@ -17,6 +18,7 @@ this point.
 @methspec{
 This method is called to determine if it is okay to close this tab.
 }
+
 @methimpl{
 Calls the definitions text's and interactions text's
 @method[editor:basic<%> can-close?] method.
@@ -113,6 +115,7 @@ when this frame is active.
 This method is called when the tab is closed.
 
 }
+
 @methimpl{
 
 Calls the definitions text's
@@ -230,6 +233,7 @@ This method is called when the user clicks on the break
 button or chooses the break menu item.
 
 }
+
 @methimpl{
 
 Breaks the user's evaluation started by the Run button
@@ -266,6 +270,7 @@ This method is called when the user clicks on the Run
 button or chooses the Run menu item.
 
 }
+
 @methimpl{
 
 It calls 
@@ -390,6 +395,7 @@ returns a child of the super-classes's result and insert new
 children inbetween.
 
 }
+
 @methimpl{
 First case:
 
@@ -483,6 +489,7 @@ modified. Used in conjunction with
 @method[drscheme:unit:frame% change-to-file].
 
 }
+
 @methimpl{
 
 Returns @scheme[#t] if the buffer is empty, it has not been
@@ -596,11 +603,6 @@ Calls result of
 
 Returns the \scm|"Insert"| menu. 
 
-}
-@methimpl{
-
-
-
 }}
 
 @defmethod[(get-interactions-canvas)
@@ -642,6 +644,7 @@ Returns the list of tabs in this frame.
 Called after a new tab becomes the selected tab in the frame.
 
 }
+
 @methimpl{
 
 The @scheme[from-tab] argument is the previously selected tab, and the
@@ -668,12 +671,17 @@ Note that the capability must be registered separately, via
 @scheme[drscheme:language:register-capability].
 
 
-}}
+}
+
+@defmethod[(register-toolbar-button [tb (is-a?/c switchable-button%)]) void?]{
+Registers the toolbar button @scheme[tb]. This is required
+so that the toolbar buttons properly switch orientation when 
+the toolbar's position is moved.
+}
+}
 
 
 @defclass[drscheme:unit:definitions-text% (drscheme:rep:drs-bindings-keymap-mixin (drscheme:unit:program-editor-mixin (scheme:text-mixin text:info%))) (drscheme:unit:definitions-text<%>)]{
-
-
 
 @defconstructor[()]{
 Passes all arguments to @scheme[super-init].
@@ -685,8 +693,6 @@ Passes all arguments to @scheme[super-init].
 
 Calls
 @method[drscheme:unit:frame% update-save-message].
-
-
 }
 
 @defmethod[#:mode override 
@@ -695,9 +701,6 @@ Calls
 
 Calls
 @method[drscheme:unit:frame% update-save-button].
-
-%%                                                                  %%                        drscheme:rep                              %%                                                                  
-
 }}
 
 
@@ -716,6 +719,7 @@ Called when the next settings changes. See also
 @method[drscheme:unit:definitions-text<%> get-next-settings].
 
 }
+
 @methimpl{
 
 
@@ -792,6 +796,7 @@ trigger a yellow warning message. The state is reset when
 the program is next Run.
 
 }
+
 @methimpl{
 
 Records @scheme[msg] and uses it the next time the user submits

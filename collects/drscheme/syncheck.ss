@@ -1228,6 +1228,8 @@ If the namespace does not, they are colored the unbound color.
                (bitmap syncheck-bitmap)
                (parent check-syntax-button-parent-panel)
                (callback (λ (button) (syncheck:button-callback)))))
+        (inherit register-toolbar-button)
+        (register-toolbar-button check-syntax-button)
         (define/public (syncheck:get-button) check-syntax-button)
         (send (get-button-panel) change-children
               (λ (l)

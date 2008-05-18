@@ -1264,7 +1264,9 @@
                  (bitmap debug-bitmap)
                  (parent (make-object vertical-pane% (get-button-panel)))
                  (callback (λ (button) (set! debug? #t) (execute-callback)))))
-          
+          (inherit register-toolbar-button)
+          (register-toolbar-button debug-button)
+
           (define pause-button
             (instantiate button% ()
               [label (make-pause-label this)]

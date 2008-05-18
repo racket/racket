@@ -81,6 +81,8 @@
                (alternate-bitmap macro-debugger-up-bitmap)
                (parent macro-debug-panel)
                (callback (λ (button) (execute #t)))))
+        (inherit register-toolbar-button)
+        (register-toolbar-button macro-debug-button)
 
         (define/override (execute-callback)
           (execute #f))
