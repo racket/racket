@@ -326,36 +326,37 @@
               (loop p (if (reveal-subparts? d) mine d))
               (values d mine)))))
       (define toc-content
-        (map (lambda (pp)
-               (let ([p (car pp)]
-                     [show-number? (cdr pp)])
-                 `(tr
-                   (td ([align "right"])
-                       ,@(if show-number?
-                           (format-number (collected-info-number (part-collected-info p ri))
-                                          '((tt nbsp)))
-                           '("-" nbsp)))
-                   (td
-                    (a ([href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
-                                 (format "~a~a~a"
-                                         (from-root (relative->path (dest-path dest))
-                                                    (get-dest-directory))
-                                         (if (dest-page? dest) "" "#")
-                                         (if (dest-page? dest)
-                                           ""
-                                           (anchor-name (dest-anchor dest)))))]
-                        [class ,(if (eq? p mine)
-                                  "tocviewselflink"
-                                  "tocviewlink")])
-                       ,@(render-content (or (part-title-content p) '("???"))
-                                         d ri))))))
-             (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
-               (cond [(null? l) null]
-                     [(reveal-subparts? (caar l))
-                      (cons (car l) (loop (append (map (lambda (v) (cons v #f))
-                                                       (part-parts (caar l)))
-                                                  (cdr l))))]
-                     [else (cons (car l) (loop (cdr l)))]))))
+        (parameterize ([extra-breaking? #t])
+          (map (lambda (pp)
+                 (let ([p (car pp)]
+                       [show-number? (cdr pp)])
+                   `(tr
+                     (td ([align "right"])
+                         ,@(if show-number?
+                               (format-number (collected-info-number (part-collected-info p ri))
+                                              '((tt nbsp)))
+                               '("-" nbsp)))
+                     (td
+                      (a ([href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
+                                   (format "~a~a~a"
+                                           (from-root (relative->path (dest-path dest))
+                                                      (get-dest-directory))
+                                           (if (dest-page? dest) "" "#")
+                                           (if (dest-page? dest)
+                                               ""
+                                               (anchor-name (dest-anchor dest)))))]
+                          [class ,(if (eq? p mine)
+                                      "tocviewselflink"
+                                      "tocviewlink")])
+                         ,@(render-content (or (part-title-content p) '("???"))
+                                           d ri))))))
+               (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
+                 (cond [(null? l) null]
+                       [(reveal-subparts? (caar l))
+                        (cons (car l) (loop (append (map (lambda (v) (cons v #f))
+                                                         (part-parts (caar l)))
+                                                    (cdr l))))]
+                       [else (cons (car l) (loop (cdr l)))])))))
       `((div ([class "tocset"])
           ,@(let* ([content (render-content
                              (or (part-title-content top) '("???"))
