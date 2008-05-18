@@ -275,9 +275,6 @@
   
  ;;; about box
  (about-drscheme-frame-title "Über DrScheme")
- (take-a-tour "Nehmen Sie die Führung!")
- (release-notes "Release-Notes")
- 
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Diese Datei als Text speichern?")
@@ -1213,7 +1210,13 @@
   ;;The test engine tool
   ;;
   (test-engine-window-title "Testresultate")
-
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "Testresultate andocken")
+ (test-engine-undock-report "Testresultate abdocken")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "Test aktivieren")
+  (test-engine-disable-tests "Tests deaktivieren Tests")
+  
   (profjWizward-insert-java-class "Java-Klasse einfügen")
   (profjWizard-insert-java-union "Java-Vereinigung einfügen")
 
