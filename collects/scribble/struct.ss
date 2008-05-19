@@ -385,10 +385,13 @@
        [(delayed-element? c) (element->string ((delayed-element-plain c)))]
        [(string? c) c]
        [else (case c
+               [(mdash) "---"]
                [(ndash) "--"]
                [(ldquo rdquo) "\""]
                [(rsquo) "'"]
                [(rarr) "->"]
+               [(lang) "<"]
+               [(rang) ">"]
                [else (format "~s" c)])])]
     [(c renderer sec ri)
      (cond
