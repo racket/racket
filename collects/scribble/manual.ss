@@ -1787,10 +1787,7 @@
 (provide elemtag elemref)
 
 (define (doc-prefix doc s)
-  (if doc
-    (list (module-path-prefix->string doc)
-          s)
-    s))
+  (if doc (list (module-path-prefix->string doc) s) s))
 
 (define (secref s #:underline? [u? #t] #:doc [doc #f])
   (make-link-element (if u? #f "plainlink") null `(part ,(doc-prefix doc s))))
