@@ -148,6 +148,7 @@ typedef struct Win_FD_Output_Thread {
      flush-checking thread to work, ready_sema indicates that a flush
      finished, and you_clean_up_sema is essentially a reference
      count */
+  HANDLE thread;
 } Win_FD_Output_Thread;
 
 int scheme_stupid_windows_machine;
@@ -3437,9 +3438,13 @@ Scheme_Object *scheme_file_identity(int argc, Scheme_Object *argv[])
 static int is_fd_terminal(int fd)
 {
 #if defined(WIN32_FD_HANDLES)
-  if (GetFileType((HANDLE)fd) == FILE_TYPE_CHAR)
-    return 1;
-  else
+  if (GetFileType((HANDLE)fd) == FILE_TYPE_CHAR) {
+    DWORD mode;
+    if (GetConsoleMode((HANDLE)fd, &mode))
+      return 1;
+    else
+      return 0;
+  } else
     return 0;
 #else
   return isatty(fd);
@@ -5713,8 +5718,7 @@ static long flush_fd(Scheme_Output_Port *op,
       if (fop->regfile) {
 	/* Regular files never block, so this code looks like the Unix
 	   code.  We've cheated in the make_fd proc and called
-	   FILE_TYPE_CHAR devices (e.g., console) regular files,
-	   because they cannot block, either. */
+	   consoles regular files, because they cannot block, either. */
 	int orig_len;
 
 	if (fop->textmode) {
@@ -5919,6 +5923,19 @@ static long flush_fd(Scheme_Output_Port *op,
 	    h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDWriter, oth, 0, &id);
 
 	    scheme_remember_thread(h, 1);
+
+	    /* scheme_remember_thread() is in charge of releasing h, so
+	       duplicate it for use in closing: */
+	    DuplicateHandle(GetCurrentProcess(), 
+			    h,
+			    GetCurrentProcess(),
+			    &h, 
+			    0,
+			    FALSE,
+			    DUPLICATE_SAME_ACCESS);
+
+	    oth->thread = h;
+
 	  }
 	}
 
@@ -5926,16 +5943,15 @@ static long flush_fd(Scheme_Output_Port *op,
 	   done... */
 
 	if (!fop->oth->nonblocking) {
-	  /* This case is only for Win 95/98/Me anonymous pipes.  We
-	     haven't written anything yet! We write to a buffer read
-	     by the other thread, and return -- the other thread takes
-	     care of writing. Thus, as long as there's room in the
-	     buffer, we don't block, and we can tell whether there's
-	     room. Technical problem: if multiple ports are attched to
-	     the same underlying pipe (different handle, same
-	     "device"), the port writes can get out of order. We try
-	     to avoid the problem by sleeping --- it's only Win
-	     95/98/Me, after all. */
+	  /* This case is for Win 95/98/Me anonymous pipes and
+	     character devices.  We haven't written anything yet! We
+	     write to a buffer read by the other thread, and return --
+	     the other thread takes care of writing. Thus, as long as
+	     there's room in the buffer, we don't block, and we can
+	     tell whether there's room. Technical problem: if multiple
+	     ports are attched to the same underlying pipe (different
+	     handle, same "device"), the port writes can get out of
+	     order. We try to avoid the problem by sleeping. */
 
 	  Win_FD_Output_Thread *oth = fop->oth;
 
@@ -6131,6 +6147,10 @@ fd_write_string(Scheme_Output_Port *port,
   return len;
 }
 
+#ifdef WINDOWS_FILE_HANDLES
+typedef BOOL (WINAPI* CSI_proc)(HANDLE);
+#endif
+
 static void
 fd_close_output(Scheme_Output_Port *port)
 {
@@ -6161,6 +6181,29 @@ fd_close_output(Scheme_Output_Port *port)
 
 #ifdef WINDOWS_FILE_HANDLES
   if (fop->oth) {
+    static int tried_csi = 0;
+    static CSI_proc csi;
+
+    START_XFORM_SKIP;      
+    if (!tried_csi) {
+      HMODULE hm;
+      hm = LoadLibrary("kernel32.dll");
+      if (hm)
+	csi = (BOOL (WINAPI*)(HANDLE))GetProcAddress(hm, "CancelSynchronousIo");
+      else
+	csi = NULL;
+      tried_csi = 1;
+    }
+    END_XFORM_SKIP;
+
+    if (csi) {
+      csi(fop->oth->thread);
+      /* We're hoping that if CancelSyncrhonousIo isn't available, that
+	 CloseHandle() will work, or that WriteFile() didn't block after
+	 all (which seems to be the case with pre-Vista FILE_TYPE_CHAR
+	 handles). */
+    }
+    CloseHandle(fop->oth->thread);
     fop->oth->done = 1;
     ReleaseSemaphore(fop->oth->work_sema, 1, NULL);
 
@@ -6225,7 +6268,7 @@ make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, 
 
 #ifdef WINDOWS_FILE_HANDLES
   /* Character devices can't block output, right? */
-  if (GetFileType((HANDLE)fop->fd) == FILE_TYPE_CHAR)
+  if (is_fd_terminal(fop->fd))
     regfile = 1;
   /* The work thread is created on demand in fd_flush. */
 #endif
@@ -6305,8 +6348,9 @@ static long WindowsFDWriter(Win_FD_Output_Thread *oth)
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
     }
   } else {
-    /* Blocking mode. We do the writing work.  This case is only for
-       Win 95/98/Me anonymous pipes. */
+    /* Blocking mode. We do the writing work.  This case is for
+       Win 95/98/Me anonymous pipes and character devices (such 
+       as LPT1). */
     while (!oth->err_no) {
       if (!more_work)
 	WaitForSingleObject(oth->work_sema, INFINITE);
@@ -6960,9 +7004,9 @@ static long mz_spawnv(char *command, const char * const *argv,
 
   /* If none of the stdio handles are consoles, specifically
      create the subprocess without a console: */
-  if ((GetFileType(startup.hStdInput) != FILE_TYPE_CHAR)
-      && (GetFileType(startup.hStdOutput) != FILE_TYPE_CHAR)
-      && (GetFileType(startup.hStdError) != FILE_TYPE_CHAR))
+  if (is_fd_terminal((int)startup.hStdInput)
+      && is_fd_terminal((int)startup.hStdOutput)
+      && is_fd_terminal((int)startup.hStdError))
     cr_flag = CREATE_NO_WINDOW;
   else
     cr_flag = 0;
