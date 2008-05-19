@@ -80,8 +80,7 @@
 (provide module-path-prefix->string)
 
 (define (module-path-prefix->string p)
-  (format "~a" (path->main-collects-relative
-                (resolve-module-path p #f))))
+  (format "~a" (path->main-collects-relative (resolve-module-path p #f))))
 
 ;; ----------------------------------------
 
