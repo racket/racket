@@ -69,10 +69,11 @@
                      #:render% [render% (html:render-mixin render%)]
                      #:refer-to-existing-files? [use-existing? (not dest-file)])
   (let* ([dest-file (if (string? dest-file) (string->path dest-file) dest-file)]
-         [renderer (new render% 
+         [renderer (new render%
                         [dest-dir (and dest-file (path-only dest-file))]
                         [refer-to-existing-files use-existing?]
-                        [css-path 'inline])]
+                        [css-path    'inline]
+                        [script-path 'inline])]
          [ci (send renderer collect (list doc) (list dest-file))]
          [_ (send renderer transfer-info ci (resolve-info-ci (xrefs-ri xrefs)))]
          [ri (send renderer resolve (list doc) (list dest-file) ci)]

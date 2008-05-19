@@ -20,8 +20,30 @@
 
 (xml:empty-tag-shorthand xml:html-empty-tags)
 
+(define literal
+  (let ([loc (xml:make-location 0 0 0)])
+    (lambda strings (xml:make-cdata loc loc (apply string-append strings)))))
+(define (ref-style path)
+  `(link ([rel "stylesheet"] [type "text/css"] [href ,path] [title "default"])))
+(define (inlined-style . body)
+  `(style ([type "text/css"])
+     ,(apply literal
+             `("\n"
+               ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
+               "\n"))))
+(define (ref-script path)
+  `(script ([type "text/javascript"] [src ,path])))
+(define (inlined-script . body)
+  `(script ([type "text/javascript"])
+     ,(apply literal
+             `("\n"
+               ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
+               "\n"))))
+
 (define-runtime-path scribble-css "scribble.css")
-(define scribble-css-contents
+(define-runtime-path scribble-js  "scribble-common.js")
+;; utilities for render-one-part
+(define-values (scribble-css-contents scribble-js-contents)
   (let* ([read-file
           (lambda (file)
             (with-input-from-file file
@@ -30,13 +52,20 @@
                 ;; that's fine.
                 (read-string (file-size file)))))]
          [file-getter
-          (lambda (default-file)
+          (lambda (default-file make-inline make-ref)
             (let ([c #f])
-              (lambda (file)
-                (if (or (not file) (equal? file default-file))
-                  (begin (unless c (set! c (read-file default-file))) c)
-                  (read-file file)))))])
-    (file-getter scribble-css)))
+              (lambda (file path)
+                (cond [(not (eq? 'inline path))
+                       (make-ref (or path (let-values ([(base name dir?)
+                                                        (split-path file)])
+                                            (path->string name))))]
+                      [(or (not file) (equal? file default-file))
+                       (unless c
+                         (set! c (make-inline (read-file default-file))))
+                       c]
+                      [else (make-inline (read-file file))]))))])
+    (values (file-getter scribble-css inlined-style  ref-style)
+            (file-getter scribble-js  inlined-script ref-script))))
 
 (define current-subdirectory (make-parameter #f))
 (define current-output-file (make-parameter #f))
@@ -78,20 +107,10 @@
 
 (define-serializable-struct literal-anchor (string))
 
-(define literal
-  (let ([loc (xml:make-location 0 0 0)])
-    (lambda strings (xml:make-cdata loc loc (apply string-append strings)))))
-(define (script . body)
-  `(script ([type "text/javascript"])
-     ,(apply literal
-             `("\n"
-               ,@(map (lambda (x) (if (string? x) x (format "~a" x))) body)
-               "\n"))))
-
 #reader scribble/reader (begin ; easier to format
 
 (define search-script
-  @script{
+  @inlined-script{
     var search_nodes = null;
     var last_search_terms = null;
     function node_to_text(node) {
@@ -203,7 +222,9 @@
 
     (init-field [css-path #f]
                 [up-path #f]
-                [style-file #f])
+                [style-file #f]
+                [script-path #f]
+                [script-file #f])
 
     (define/override (get-suffix) #".html")
 
@@ -490,38 +511,26 @@
     (define/public (render-one-part d ri fn number)
       (parameterize ([current-output-file fn])
         (let* ([style-file  (or style-file scribble-css)]
-               ;; meta-stuff
-               [head `((meta ([http-equiv "content-type"]
-                              [content "text-html; charset=utf-8"])))]
-               ;; css element (inlined or referenced)
-               [head
-                (cons (if (eq? 'inline css-path)
-                        `(style ([type "text/css"])
-                           "\n" ,(scribble-css-contents style-file) "\n")
-                        `(link ([rel "stylesheet"]
-                                [type "text/css"]
-                                [href ,(or css-path
-                                           (let-values
-                                               ([(base name dir?)
-                                                 (split-path style-file)])
-                                             (path->string name)))]
-                                [title "default"])))
-                      head)]
-               ;; title element
-               [head (let ([c (part-title-content d)])
-                       (if (not c)
-                         head
-                         (cons `(title ,@(format-number number '(nbsp))
-                                       ,(content->string c this d ri))
-                               head)))])
-          (unless css-path (install-file style-file))
+               [script-file (or script-file scribble-js)]
+               [title (cond [(part-title-content d)
+                             => (lambda (c)
+                                  `(title ,@(format-number number '(nbsp))
+                                          ,(content->string c this d ri)))]
+                            [else `(title)])])
+          (unless css-path    (install-file style-file))
+          (unless script-path (install-file script-file))
           (printf "<!DOCTYPE html PUBLIC ~s ~s>\n"
                   "-//W3C//DTD HTML 4.0 Transitional//EN"
                   "http://www.w3.org/TR/html4/loose.dtd")
           (xml:write-xml/content
            (xml:xexpr->xml
             `(html ()
-               (head () ,@(reverse head))
+               (head ()
+                 (meta ([http-equiv "content-type"]
+                        [content "text-html; charset=utf-8"]))
+                 ,title
+                 ,(scribble-css-contents style-file  css-path)
+                 ,(scribble-js-contents  script-file script-path))
                (body () ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
@@ -619,11 +628,10 @@
                  (make-element
                   (if (or parent up-path)
                     (make-target-url
-                     (if parent
-                       (if (and (toc-part? parent) (part-parent parent ri))
-                         (derive-filename parent)
-                         "index.html")
-                       up-path)
+                     (cond [(not parent) up-path]
+                           [(and (toc-part? parent) (part-parent parent ri))
+                            (derive-filename parent)]
+                           [else "index.html"])
                      #f)
                     "nonavigation")
                   up-content)

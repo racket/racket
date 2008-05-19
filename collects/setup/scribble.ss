@@ -233,8 +233,9 @@
         [dest-dir (if multi?
                     (let-values ([(base name dir?) (split-path ddir)]) base)
                     ddir)]
-        [css-path (and main? "../scribble.css")]
-        [up-path  (and main? "../index.html")]))))
+        [css-path    (and main? "../scribble.css")]
+        [script-path (and main? "../scribble-common.js")]
+        [up-path     (and main? "../index.html")]))))
 
 (define (pick-dest latex-dest doc)
   (cond [latex-dest
