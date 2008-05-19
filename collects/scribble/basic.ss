@@ -175,7 +175,8 @@
                    (regexp-replace #rx"^ +" 
                                    (regexp-replace #rx" +$" 
                                                    s 
-                                                   ""))
+                                                   "")
+                                   "")
                    " "))
 
 (define (record-index word-seq element-seq tag content)
