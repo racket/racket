@@ -1652,16 +1652,16 @@ static int is_special_filename(const char *f, int offset, int len, int not_nul, 
     }
     if (j && !sf[j]) {
       j += delta;
-      if ((j >= (len + delta))
+      if ((j >= (len + offset))
 	  || (f[j] == '.')
 	  || (f[j] == ':'))
 	return i + 1;
-      while ((j < len + delta)
+      while ((j < (len + offset))
 	     && ((f[j] == ' ')
 		 || (f[j] == '.'))) {
 	j++;
       }
-      if (j >= len + delta)
+      if (j >= (len + offset))
 	return i + 1;
 
       return 0;
