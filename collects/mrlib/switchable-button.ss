@@ -93,11 +93,13 @@
         [(send evt entering?)
          (set! in? #t)
          (update-float #t)
-         (refresh)]
+         (unless disabled?
+           (refresh))]
         [(send evt leaving?)
          (set! in? #f)
          (update-float #f)
-         (refresh)]
+         (unless disabled?
+           (refresh))]
         [(send evt moving?)
          (update-in evt)]))
 
