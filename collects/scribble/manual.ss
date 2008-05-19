@@ -292,7 +292,9 @@
 (define (indexed-file . str)
   (let* ([f (apply filepath str)]
          [s (element->string f)])
-    (index* (list (substring s 1 (sub1 (string-length s)))) (list f) f)))
+    (index* (list (clean-up-index-string (substring s 1 (sub1 (string-length s)))))
+            (list f) 
+            f)))
 (define (exec . str)
   (if (andmap string? str)
     (make-element 'tt str)

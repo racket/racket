@@ -161,15 +161,22 @@
 
 ;; ----------------------------------------
 
-(provide section-index index index* as-index index-section index-blocks)
+(provide section-index index index* as-index index-section index-blocks
+         clean-up-index-string)
 
 (define (section-index . elems)
   (make-part-index-decl (map element->string elems) elems))
 
-(define (clean-up s)
-  ;; Remove leading spaces, which might appear there due to images or something
-  ;;  else that gets dropped in string form.
-  (regexp-replace #rx"^ +" s ""))
+(define (clean-up-index-string s)
+  ;; Remove leading spaces or trailing, which might appear there due 
+  ;; to images or something else that gets dropped in string form.
+  ;; Then collapse whitespace.
+  (regexp-replace* #px"\\s+" 
+                   (regexp-replace #rx"^ +" 
+                                   (regexp-replace #rx" +$" 
+                                                   s 
+                                                   ""))
+                   " "))
 
 (define (record-index word-seq element-seq tag content)
   (make-index-element #f
@@ -190,7 +197,7 @@
 (define (as-index . s)
   (let ([key (make-generated-tag)]
         [content (decode-content s)])
-    (record-index (list (clean-up (content->string content)))
+    (record-index (list (clean-up-index-string (content->string content)))
                   (if (= 1 (length content))
                       content
                       (list (make-element #f content)))
