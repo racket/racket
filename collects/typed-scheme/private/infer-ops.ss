@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "type-effect-convenience.ss" "type-rep.ss" "effect-rep.ss" "rep-utils.ss"
-         "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss"
+         "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss" "type-name-env.ss"
          "subtype.ss" "remove-intersect.ss"
          scheme/match
          mzlib/etc
@@ -203,7 +203,9 @@
        (App: (Name: n*) args* _))
       (unless (free-identifier=? n n*)
         (fail! S T))
-      (cgen/list X V args args*)]
+      (let ([x (instantiate-poly (lookup-type-name n) args)]
+            [y (instantiate-poly (lookup-type-name n) args*)])
+        (cgen V X x y))]
      [((Vector: e) (Vector: e*))
       (cset-meet (cgen V X e e*) (cgen V X e* e))]
      [((Box: e) (Box: e*))
@@ -248,6 +250,7 @@
     (match v
       [(struct c (S X T))
        (let ([var (hash-ref (free-vars* R) X Constant)])
+         ;(printf "variance was: ~a~nR was ~a~n" var R)
          (list
           X
           (evcase var 
@@ -326,4 +329,4 @@
 
 ;(trace infer cgen cset-meet* subst-gen)
 
-;(trace infer subst-gen)
+;(trace infer subst-gen cgen)
