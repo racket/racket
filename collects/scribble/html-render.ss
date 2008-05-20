@@ -99,7 +99,7 @@
            [v (regexp-replace* #rx"[A-Z.]" v ".&")]
            [v (regexp-replace* #rx" " v "._")]
            [v (regexp-replace* #rx"\"" v ".'")]
-           [v (regexp-replace* #rx"[^-a-zA-Z0-9_!+*='()/.,]" v encode-str)])
+           [v (regexp-replace* #rx"[^-a-zA-Z0-9_!+*'()/.,]" v encode-str)])
       v)))
 
 (define-serializable-struct literal-anchor (string))
