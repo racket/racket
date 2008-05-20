@@ -227,7 +227,7 @@
          (if (= 1 (length doms))
              (let-values ([(thn-eff els-eff)
                            (tc-args argtypes arg-thn-effs arg-els-effs (car doms) (car rests) 
-                                    (car latent-thn-effs) (car latent-els-effs) 
+                                    (car latent-thn-effs) (car latent-els-effs)
                                     (syntax->list args))])
                (ret (car rngs) thn-eff els-eff)
                #;(if (false-effect? eff)
@@ -271,7 +271,8 @@
                                  ;; FIXME
                                  ;; should be an error here, something went horribly wrong!!!
                                  (begin 
-                                   (printf "substituion was bad~n")
+				   #;
+                                   (printf "substitution was bad~n args: ~a ~n new-doms: ~a~n~a~n" argtypes new-doms* substitution)
                                    (loop (cdr doms*) (cdr rngs*)))))))]
                              #|
                            (printf "subst is:~a~nret is: ~a~nvars is: ~a~nresult is:~a~n" substitution (car rngs*) vars 

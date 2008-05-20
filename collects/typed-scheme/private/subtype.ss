@@ -228,11 +228,31 @@
                  (unless (Type? t)                     
                    (fail! s t))
                  #;(printf "subtype: app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
-                           (instantiate-poly t args))
+                         (instantiate-poly t args))
                  (unless (Poly? t)
-                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))
-                 (let ([v (subtype* A0 (instantiate-poly t args) other)])                    
+                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
+                 (match t [(Poly-unsafe: n _)
+                           (unless (= n (length args))
+                             (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
+                                           n (length args)))])
+                 (let ([v (subtype* A0 (instantiate-poly t args) other)])
                    #;(printf "val: ~a~n"  v)
+                   v))]
+              [(list other (App: (Name: n) args stx))
+               (let ([t (lookup-type-name n)])
+                 (unless (Type? t)                     
+                   (fail! s t))
+                 #;(printf "subtype: 2 app-name: name: ~a type: ~a other: ~a ~ninst: ~a~n" (syntax-e n) t other 
+                         (instantiate-poly t args))
+                 (unless (Poly? t)
+                   (tc-error/stx stx "cannot apply non-polymorphic type ~a" t))                 
+                 (match t [(Poly-unsafe: n _)
+                           (unless (= n (length args))
+                             (tc-error/stx stx "wrong number of arguments to polymorphic type: expected ~a and got ~a"
+                                           n (length args)))])
+                 ;(printf "about to call subtype with: ~a ~a ~n" other (instantiate-poly t args))
+                 (let ([v (subtype* A0 other (instantiate-poly t args))])
+                   #;(printf "2 val: ~a~n"  v)
                    v))]
               [(list (Name: n) other)
                (let ([t (lookup-type-name n)])
@@ -253,7 +273,7 @@
               [(list (Instance: t) (Instance: t*))
                (subtype* A0 t t*)]
               ;; otherwise, not a subtype
-              [_ (fail! s t) (printf "failed")]))))))
+              [_ (fail! s t) #;(printf "failed")]))))))
 
 (define (type-compare? a b)
   (and (subtype a b) (subtype b a)))
