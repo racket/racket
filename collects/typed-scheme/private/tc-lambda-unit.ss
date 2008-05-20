@@ -60,7 +60,7 @@
                   => (lambda (thn/els) (make-arr arg-tys t #f (car thn/els) (cdr thn/els)))]
                  ;; otherwise, the simple case
                  [else (make-arr arg-tys t)])]
-              [t (int-err "bad match - not a tc-result: ~a" t)]))))
+              [t (int-err "bad match 1 - not a tc-result: ~a ~a" ret-ty t)]))))
          (let* ([arg-list (syntax->list #'(args* ...))]
                 [arg-types (map get-type arg-list)])
            (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
@@ -75,7 +75,7 @@
                   => (lambda (thn/els) (make-arr arg-types t #f (car thn/els) (cdr thn/els)))]
                  ;; otherwise, the simple case
                  [else (make-arr arg-types t)])]
-              [t (int-err "bad match - not a tc-result: ~a" t)]))))]
+              [t (int-err "bad match 2 - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))]))))]
     [(args* ... . rest)
      (begin
        (unless rest-ty
@@ -103,7 +103,7 @@
               => (lambda (thn/els) (make-arr arg-types t #f (car thn/els) (cdr thn/els)))]
              ;; otherwise, the simple case
              [else (make-arr arg-types t)])]
-          [t (int-err "bad match - not a tc-result: ~a" t)])))]
+          [t (int-err "bad match - not a tc-result: ~a no ret-ty" t)])))]
     [(args ... . rest)
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (map get-type arg-list)]
@@ -134,6 +134,10 @@
           [(Mu: _ _) (loop (unfold expected))]
           [(Function: (list (arr: args ret rest _ _))) 
            (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest)
+           expected]
+          [(Function: (list (arr: argss rets rests _ _) ...)) 
+           (for ([args argss] [ret rets] [rest rests])
+             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest))
            expected]
           [t (let ([t (tc/mono-lambda formals bodies #f)])
                (check-below t expected))]))
