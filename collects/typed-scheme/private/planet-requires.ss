@@ -64,6 +64,8 @@
                    "graphical-ui.ss"
                    "text-ui.ss"
                    "util.ss")
+  ;; disabled until Carl updates to v4
+  #;
   (planet/multiple ("cce" "fasttest.plt" 1 2)
                    "random.ss"
                    "schemeunit.ss"))
