@@ -29,6 +29,6 @@ application itself need not be installed on the client machine.
 There are a number of configuration issues relating to DCOM, which
 MysterX uses to invoke remote COM servers.  The Web page
 
-@centerline{@link["http://www.distribucon.com/dcom95.html"]{http://www.distribucon.com/dcom95.html}}
+@centerline{@link["http://www.distribucon.com/dcom95.aspx"]{http://www.distribucon.com/dcom95.html}}
 
 discusses how to setup client and server machines for DCOM.
