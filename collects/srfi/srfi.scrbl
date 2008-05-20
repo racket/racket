@@ -5,26 +5,30 @@
 
 @(define-syntax (srfi stx)
   (syntax-case stx ()
-   [(_ num #:subdir dir . title)
-    (with-syntax ([srfi/n (string->symbol
-                           (format "srfi/~a" (syntax-e #'num)))])
+   [(_ num #:subdir subdir? . title)
+    (with-syntax ([srfi/n (string->symbol (format "srfi/~a" (syntax-e #'num)))])
       #'(begin
           (section #:tag (format "srfi-~a" num)
                    #:style 'unnumbered
                    (format "SRFI ~a: " num)
                    . title)
           (defmodule srfi/n)
-          "Original specification: " @link[(format "../srfi-std/~asrfi-~a.html" dir num) 
-                                           "SRFI "
-                                           (number->string num)]))]
-   [(_ num . title) #'(srfi num #:subdir "" . title)]))
+          "Original specification: "
+          @link[(if subdir?
+                  (format "../srfi-std/srfi-~a/srfi-~a.html" num num)
+                  (format "../srfi-std/srfi-~a.html" num))
+                "SRFI "
+                (number->string num)]))]
+   [(_ num . title) #'(srfi num #:subdir #f . title)]))
 
 @;{ The `lst' argument is a list of
        (list sym syntactic-form? html-anchor) }
-@(define (redirect n lst)
-   (let ([file (format "srfi-~a.html" n)]
+@(define (redirect n lst #:subdir [subdir? #f])
+   (let ([file (if subdir?
+                 (format "srfi-~a/srfi-~a.html" n n)
+                 (format "srfi-~a.html" n))]
          [mod-path (string->symbol (format "srfi/~a" n))])
-     (make-binding-redirect-elements mod-path 
+     (make-binding-redirect-elements mod-path
        (map (lambda (b)
               (list (car b) (cadr b)
                     (build-path 'up "srfi-std" file)
@@ -33,9 +37,9 @@
 
 @(define in-core
    (case-lambda
-    [() (in-core ".")]
-    [(k)
-     @elem{This SRFI's bindings are also available in @schememodname[scheme/base]@|k|}]))
+     [() (in-core ".")]
+     [(k) @elem{This SRFI's bindings are also available in
+                @schememodname[scheme/base]@|k|}]))
 
 @(begin
   (define-syntax-rule (def-mz mz-if)
@@ -241,7 +245,7 @@ are also available from @schememodname[scheme/foreign].
  (get-output-string #f "get-output-string")
 )]
 
-@in-core[]
+@in-core{}
 
 @; ----------------------------------------
 
@@ -458,7 +462,7 @@ are also available from @schememodname[scheme/foreign].
  (case-lambda #t "case-lambda")
 )]
 
-@in-core[]
+@in-core{}
 
 @; ----------------------------------------
 
@@ -568,7 +572,7 @@ from the SRFI library expect the former.
  (error #f "error")
 )]
 
-@in-core[]
+@in-core{}
 
 @; ----------------------------------------
 
@@ -623,7 +627,7 @@ from the SRFI library expect the former.
  (format #f "format")
 )]
 
-@in-core[]
+@in-core{}
 
 @; ----------------------------------------
 
@@ -687,7 +691,7 @@ This SRFI's syntax is part of PLT Scheme's default reader and printer.
  (parameterize #t "parameterize")
 )]
 
-@in-core[]
+@in-core{}
 
 @; ----------------------------------------
 
@@ -712,9 +716,9 @@ Superceded by @schememodname[srfi/41].
 
 @; ----------------------------------------
 
-@srfi[41 #:subdir "srfi-41/"]{Streams}
+@srfi[41 #:subdir #t]{Streams}
 
-@redirect[41 '(
+@redirect[41 #:subdir #t '(
  (stream-null #f "stream-null")
  (stream-cons #t "stream-cons")
  (stream? #f "stream?")
@@ -924,7 +928,7 @@ This SRFI's syntax is part of PLT Scheme's default reader.
 
 @; ----------------------------------------
 
-@srfi[67 #:subdir "srfi-67/"]{Compare Procedures}
+@srfi[67 #:subdir #t]{Compare Procedures}
 
 @; ----------------------------------------
 
