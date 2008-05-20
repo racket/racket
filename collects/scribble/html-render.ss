@@ -80,30 +80,27 @@
 (define (toc-part? d)
   (part-style? d 'toc))
 
-;; HTML anchors are case-insenstive. To make them distinct, add a "."
-;;  in front of capital letters.  Also clean up characters that give
-;;  browers trouble (i.e., the ones that are not allowed as-in in URI
-;;  codecs) by using "~" followed by a hex encoding.
+;; HTML anchors should be case-insensitively unique. To make them
+;;  distinct, add a "." in front of capital letters.  Also clean up
+;;  characters that give browers trouble (i.e., the ones that are not
+;;  allowed as-in in URI codecs) by using "~" followed by a hex
+;;  encoding.  (The idea is that the result is still readable, so the
+;;  link can be used as a rough indication of where you'll get to.)
 (define (anchor-name v)
+  (define (encode-byte b)
+    (string-append (if (< b 16) "~0" "~") (number->string b 16)))
+  (define (encode-str str)
+    (if (regexp-match? #px"[^[:ascii:]]" str)
+      (string-append* (map encode-byte (bytes->list (string->bytes/utf-8 str))))
+      (encode-byte (char->integer (string-ref str 0)))))
   (if (literal-anchor? v)
     (literal-anchor-string v)
-    (let loop ([s (format "~a" v)])
-      (cond
-        [(regexp-match-positions #rx"[A-Z.]" s)
-         => (lambda (m)
-              (string-append
-               (loop (substring s 0 (caar m)))
-               "."
-               (substring s (caar m) (cdar m))
-               (loop (substring s (cdar m)))))]
-        [(regexp-match-positions #rx"[^-a-zA-Z0-9_!*'().]" s)
-         => (lambda (m)
-              (string-append
-               (substring s 0 (caar m))
-               "~"
-               (format "~x" (char->integer (string-ref s (caar m))))
-               (loop (substring s (cdar m)))))]
-        [else s]))))
+    (let* ([v (format "~a" v)]
+           [v (regexp-replace* #rx"[A-Z.]" v ".&")]
+           [v (regexp-replace* #rx" " v "._")]
+           [v (regexp-replace* #rx"\"" v ".'")]
+           [v (regexp-replace* #rx"[^-a-zA-Z0-9_!+*='()/.,]" v encode-str)])
+      v)))
 
 (define-serializable-struct literal-anchor (string))
 
