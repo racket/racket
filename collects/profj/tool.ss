@@ -40,6 +40,9 @@
           (comment ,(make-object color% 194 116 31) ,(string-constant profj-java-mode-color-comment))
           (error ,(make-object color% "red") ,(string-constant profj-java-mode-color-error))
           (default ,(make-object color% "black") ,(string-constant profj-java-mode-color-default))))
+      (define colors-table
+        (cons `(block-comment ,(make-object color% 194 116 31) ,(string-constant profj-java-mode-color-comment))
+              color-prefs-table))
       
       ;Set the Java coverage colors
       (define coverage-color-prefs
@@ -139,27 +142,40 @@
                    (skip-whitespace sexp-start+whitespace 'backward #t))))
           
           (define/private (get-indentation start-pos)
-            (letrec ([indent
+            (letrec ([last-offset
+                      (lambda (previous-line last-line-start)
+                        (max (sub1 (if (> last-line-start start-pos)
+                                       (- start-pos previous-line)
+                                       (- last-line-start previous-line)))
+                             0))]
+                     [indent
                       (if (or (is-stopped?) (is-frozen?))
                           0
                           (let* ([base-offset 0]
                                  [curr-open (get-sexp-start start-pos)])
+                            #;(printf "~a, ~a :~a ~n" start-pos (classify-position start-pos) curr-open)
                             (cond 
-                              [(and (eq? (classify-position start-pos) 'comment) 
-                                    (eq? (classify-position (add1 start-pos)) 'comment))
-                               base-offset]
                               [(or (not curr-open) (= curr-open 0)) base-offset]
                               [else
                                (let ([previous-line (find-string eol 'backward start-pos 0 #f)])
+                                 #;(printf "prev-line ~a~n" previous-line)
                                  (cond 
                                    [(not previous-line) (+ base-offset single-tab-stop)]
+                                   [(or (eq? (classify-position previous-line) 'comment)
+                                        (eq? (classify-position previous-line) 'block-comment))
+                                    (let* ([last-line-start (skip-whitespace (add1 previous-line) 'forward #f)]
+                                           [last-line-indent (last-offset previous-line last-line-start)]
+                                           [old-open (get-sexp-start last-line-start)])
+                                      #;(printf "lls ~a lli~a~ oo ~a~n" last-line-start last-line-indent old-open)
+                                      (cond
+                                        [(not old-open) last-line-indent]
+                                        [(and old-open (<= curr-open old-open)) last-line-indent]
+                                        [else (+ single-tab-stop last-line-indent)]))]
                                    [else
                                     (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
-                                           [last-line-indent 
-                                            (sub1 (if (> last-line-start start-pos)
-                                                      (- start-pos previous-line)
-                                                      (- last-line-start previous-line)))]
+                                           [last-line-indent (last-offset previous-line last-line-start)]
                                            [old-open (get-sexp-start last-line-start)])
+                                      #;(printf "lls ~a lli ~a oo~a~n" last-line-start last-line-indent old-open)
                                       (cond
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
@@ -178,6 +194,7 @@
           (define/public (do-return)
             (let ([start-pos (get-start-position)]
                   [end-pos (get-end-position)])
+              #;(printf "do-return start-pos ~a end-pos ~a" start-pos end-pos)
               (let ([to-insert ""])
                 (if (= start-pos end-pos)
                     (insert (string-append "\n" (get-indentation start-pos)))
@@ -189,7 +206,7 @@
               (begin-edit-sequence)
               (let loop ([para start-para])
                 (let* ([para-start (paragraph-start-position para)]
-                       [insertion (get-indentation (max 0 (sub1 para-start)) #;para-start)]
+                       [insertion (get-indentation (max 0 (sub1 para-start)))]
                        [closer? #f])
                   (let loop ()
                     (let ([c (get-character para-start)])
@@ -964,7 +981,7 @@
           (color-prefs:register-color-preference (short-sym->pref-name sym)
                                                  (short-sym->style-name sym)
                                                  color)))
-      (for-each register color-prefs-table)
+      (for-each register colors-table)
       (for-each register coverage-color-prefs)
       
       ;;Java Boxes

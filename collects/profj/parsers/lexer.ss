@@ -445,7 +445,7 @@
      
      ;; 3.7
      ("//" (syn-val lexeme 'comment #f start-pos (read-line-comment input-port)))
-     ("/*" (syn-val lexeme 'comment #f start-pos (read-block-comment input-port)))
+     ("/*" (syn-val lexeme 'block-comment #f start-pos (read-block-comment input-port)))
      #;("/**" (syn-val lexeme 'comment #f start-pos (read-document-comment input-port)))
        
      ;; 3.6
