@@ -120,21 +120,20 @@
     (lambda (source-files destination-directory)
       (define file-bases
         (map (lambda (file)
-               (let ([f (extract-base-filename/ss file 'mzc)])
-                 (if destination-directory
-                   (let-values ([(base file dir?) (split-path f)])
+               (if destination-directory
+                   (let-values ([(base file dir?) (split-path file)])
                      (build-path
                       (if (eq? destination-directory 'auto)
-                        (let ([d (build-path (if (eq? base 'relative) 'same base)
-                                             "compiled")])
-                          (unless (directory-exists? d) (make-directory* d))
-                          d)
-                        destination-directory)
+                          (let ([d (build-path (if (eq? base 'relative) 'same base)
+                                               "compiled")])
+                            (unless (directory-exists? d) (make-directory* d))
+                            d)
+                          destination-directory)
                       file))
-                   f)))
+                   file))
              source-files))
       (for ([f source-files] [b file-bases])
-        (let ([zo (append-zo-suffix f)])
+        (let ([zo (append-zo-suffix b)])
           (compile-to-zo f zo n prefix)))))
 
   (define (compile-directory dir info #:verbose [verbose? #t])
