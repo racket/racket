@@ -368,9 +368,6 @@ please adhere to these guidelines:
   
   ;;; about box
   (about-drscheme-frame-title "Om DrScheme")
-  (take-a-tour "Tag en rundvisning!")
-  (release-notes "Udgivelsesbemærkninger")
-  
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "Gem denne fil som tekt?")

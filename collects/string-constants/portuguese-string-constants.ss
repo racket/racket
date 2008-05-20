@@ -366,9 +366,6 @@ please adhere to these guidelines:
 
  ;;; about box
  (about-drscheme-frame-title "Sobre o DrScheme")
- (take-a-tour "Dar uma Volta!")
- (release-notes "Notas sobre esta Versão")
- 
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Gravar este ficheiro como texto?")

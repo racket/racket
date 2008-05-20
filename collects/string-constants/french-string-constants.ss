@@ -366,9 +366,6 @@
   
   ;;; about box
   (about-drscheme-frame-title "A propos de DrScheme")
-  (take-a-tour "Faire un tour !")
-  (release-notes "Notes pour la révision")
-  
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "Sauvegarder ce fichier au format texte ?")

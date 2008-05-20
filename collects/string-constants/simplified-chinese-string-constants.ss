@@ -306,9 +306,6 @@
   
   ;;; about box
   (about-drscheme-frame-title "关于DrScheme")
-  (take-a-tour "教程")
-  (release-notes "发行记录")
-  
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "保存本文件为纯文本？")

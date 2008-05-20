@@ -196,9 +196,6 @@
  
  ;;; about box
  (about-drscheme-frame-title "Omtrent DrScheme")
- (take-a-tour "Rondleiding!")
- (release-notes "Versienotities")
- 
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "Bestand opslaan als platte tekst?")

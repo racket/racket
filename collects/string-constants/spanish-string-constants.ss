@@ -271,8 +271,6 @@
 
  ;;; about box
  (about-drscheme-frame-title "Acerca de DrScheme")
- (take-a-tour "¡Haz un recorrido!")
- (release-notes "Notas sobre ésta versión")
  
  ;;; save file in particular format prompting.
  (save-as-plain-text "¿Salvar este archivo como texto plano?")
