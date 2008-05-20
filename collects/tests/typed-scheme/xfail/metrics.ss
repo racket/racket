@@ -14,9 +14,9 @@
 (require/typed filename-extension (Path -> (U #f Bytes)) (lib "file.ss"))
 (require/typed normalize-path (Path Path -> Path) (lib "file.ss"))
 (require/typed explode-path (Path -> (Listof Path)) (lib "file.ss"))
-(require/typed srfi48::format ( Port String String top .. -> top)  "patch.ss")
+(require/typed srfi48::format (Port String String top .. -> top)  "patch.ss")
 ;; FIXME - prefix
-#;(require/typed srfi48:format ( Port String String top .. -> top) (prefix srfi48: (lib "48.ss" "srfi")))
+#;(require/typed srfi48:format ( Port String String top .. -> top) (prefix-in srfi48: (lib "48.ss" "srfi")))
 (require (lib "match.ss")
          ;(lib "file.ss")
          ;(lib "list.ss")
@@ -29,6 +29,8 @@
 (define-type-alias number Number)
 (define-type-alias boolean Boolean)
 (define-type-alias NumF (U number #f))
+(define-type-alias NumFs (Listof NumF))
+(define-type-alias NumFss (Listof NumFs))
 (define-type-alias NumB (U boolean number))
 ;;C is either Sexpr or Listof Sepr
 ;;X = (Listof (U number #f)) - not needed as a parameter
@@ -322,19 +324,27 @@
 (define: (avg* [l : (Listof number)]) : number 
   (avg (nonfalses l)))
 
-(define-syntax define-metrics
-  (syntax-rules ()
-    [(define-metrics all-metrics-id unit-of-analysis type (name kind fn) ...) ;;TYPE ADDED !!!!
-     (begin
-       (define: u : ((type -> (Listof NumF)) -> (Path -> (Listof (U #f(Listof NumF))))) unit-of-analysis )
-       (define: name : (Metric Atom-display type NumF) (kind u 'name fn )) ...
-       (define: all-metrics-id : (Metric (Listof Atom-display) type (Listof NumF)) (combine-metrics (list name ...))))]))
+(require (for-syntax scheme/base))
 
-(define-metrics module-metrics #{ per-module @ (Listof NumF)} (Listof Sexpr)
+(define-syntax (define-metrics stx)
+  (syntax-case stx ()
+    [(define-metrics all-metrics-id unit-of-analysis type (name kind fn) ...) ;;TYPE ADDED !!!!
+     (with-syntax ([(kind-app ...) (for/list ([k (syntax->list #'(kind ...))]
+                                              [n (syntax->list #'(name ...))]
+                                              [f (syntax->list #'(fn ...))])
+                                     (quasisyntax/loc k (#,k u '#,n #,f)))])
+       (syntax/loc 
+           stx
+         (begin
+           (define: u : ((type -> (Listof NumF)) -> (Path -> (Listof (U #f(Listof NumF))))) unit-of-analysis )
+           (define: name : (Metric Atom-display type NumF) kind-app) ...
+           (define: all-metrics-id : (Metric (Listof Atom-display) type (Listof NumF)) (combine-metrics (list name ...))))))]))
+
+(define-metrics module-metrics #{per-module @ (Listof NumF)} (Listof Sexpr)
   (maximum-sexp-depth        interval  max-sexp-depth)
   (average-sexp-depth        interval  avg-sexp-depth)
   (number-of-setbangs/mod    interval  count-setbangs/ilist)
-  (number-of-exprs           interval  #{length @ (Listof Sexpr)})
+  (number-of-exprs           #{interval @ List}  #{length @ Any})
   (uses-setbang?/mod         count     module-has-setbangs?)
   (uses-contracts?           count     uses-contracts)
   (number-of-contracts       interval  contracted-provides)
@@ -350,9 +360,8 @@
   (number-of-setbangs/fn     interval  count-setbangs/expr)
   (total-num-atoms/fn        interval  atoms))
 
-(define: all-metrics : (cons (Metric (Listof Atom-display) (Listof Sexpr) (Listof NumF))
-                             (cons (Metric (Listof Atom-display) Sexpr (Listof NumF))
-                                   '() ))
+(define: all-metrics : (Listof (U (Metric (Listof Atom-display) Sexpr (Listof NumF))
+                                  (Metric (Listof Atom-display) (Listof Sexpr) (Listof NumF))))
   (list module-metrics tl-expr-metrics))
 
 ;; ============================================================
@@ -420,44 +429,48 @@
 
 ;; get-sequences : (listof 'a metric) path -> (listof (listof 'a))
 
-(pdefine: (b c C) (get-sequences [metrics : (Listof (U(Metric  b c (Listof NumF))(Metric  b C (Listof NumF))))]
+(pdefine: (b c) (get-sequences [metrics : (Listof (U (Metric  b c (Listof NumF))))]
                                  [path : Path]) 
           :  (Listof (Listof (Listof NumF)))
           (let* ([metric-fns ; : (Listof (Path -> (Listof (U #f(Listof NumF)))))
                   (map (lambda: ([m : (Metric  b c (Listof NumF))])
                                 ((metric-analysis-unit m) 
                                  (metric-computation m))) metrics)]
-                 [result-seqs ;  : (Listof (U #f (Listof (Listof ( U #f (Listof NumF))))))
+                 [#{result-seqs  : (Listof (U #f (Listof (Listof ( U #f (Listof NumF))))))}
                   (apply-to-scheme-files 
                    (lambda: ([file : Path]) 
                             (map (lambda: ([fn : (Path -> (Listof (U #f (Listof NumF))))]) (fn file)) metric-fns)) path)])
-            (map (lambda: ([l :  (Listof(Listof  (Listof NumF)))]) 
+            (map (lambda: ([l :  (Listof(Listof (Option (Listof NumF))))]) 
                           ;; FIXME - problem with inference and ordering
-                          (#{nonfalses @  (Listof NumF)} (apply append l)))
-                 (pivot (#{nonfalses @ (Listof(Listof (U #f (Listof NumF))))} result-seqs))))) 
+                          (nonfalses (apply append l)))
+                 (pivot (nonfalses result-seqs)))))
 
-;; compare : (listof metric) -> (listof result)
-(pdefine: ( b c C) (compare* [metrics : (Listof (U (Metric  b c (Listof NumF)) (Metric  b C (Listof NumF))))]) : (Listof (U (Result (Listof NumF) b C)(Result (Listof NumF) b c)))
-          (let* ([seqAs (get-sequences metrics (COLLECTS-PATH))]
-                 [seqBs (get-sequences metrics (PLANET-CODE-PATH))])
-            (map #{make-result @ (Listof NumF) b c} metrics seqAs seqBs)))
+;; compare* : (listof metric) -> (listof result)
+(: compare* (All (b c) 
+                 ((Listof (Metric b c (Listof NumF)))
+                  ->
+                  (Listof (Result (Listof NumF) b c)))))
+(define (compare* metrics)
+  (let* ([seqAs (get-sequences metrics (COLLECTS-PATH))]
+         [seqBs (get-sequences metrics (PLANET-CODE-PATH))])
+    (map #{make-result @ (Listof NumF) b c} metrics seqAs seqBs)))
 
 (pdefine: (a b c) (show [result : (Result a b c)]) : b
           ((metric->display (result-metric  result))
            (result-seqA result )
            (result-seqB result )))
 
-(define: (pretty-print-result [result : (Result (Listof NumF) (Listof Atom-display) Any)]) : Void
+(define: (a) (pretty-print-result [result : (Result (Listof NumF) (Listof Atom-display) a)]) : Void
   (for-each
-   (lambda: ([l : (Listof top)])
+   (lambda: ([l : (Listof Any)])
             (apply srfi48::format ;;sfri48:format
                    (current-output-port)
                    "~26F  | ~8,2F  | ~6,2F  | ~12,2F\n"
                    (format "~a" (car l))
                    (cdr l)))
-   #{(list* '("test name" "collects" "planet" "significance")  ;;list instead of list*
-            '("---------" "--------" "------" "------------")
-            (show result )) :: List}))
+   (list* '("test name" "collects" "planet" "significance")  ;;list instead of list*
+          '("---------" "--------" "------" "------------")
+          (show result ))))
 
 ;; applies only to the combined metric [or more generally to listof-answer results]
 (pdefine: (a b c) (total [experiment-number : Integer] [result : (Result (Listof number) b c)]) : (Listof number)
@@ -518,22 +531,25 @@
 ;; MAIN ENTRY POINT
 
 (define: results : 
-  Any
+  #;Any
   ;; FIXME bug in typed scheme when this type is used
-  #;
+  
   (Listof (U (Result (Listof NumF) (Listof Atom-display) (Listof Sexpr)) 
              (Result (Listof NumF) (Listof Atom-display) Sexpr)))
   '())
 ; just in case i want to do some more analysis on the results afterwards,
 ; so i don't have to waste a minute if i forget to bind the return value to something
 (define: (run-all-tests) : top
-  (let: ([rs :  (Listof (U (Result (Listof NumF) (Listof Atom-display) (Listof Sexpr)) 
-                           (Result (Listof NumF) (Listof Atom-display) Sexpr))) 
-             (compare* 
-              #{all-metrics ::
-                            (Listof (U (Metric (Listof Atom-display) (Listof Sexpr) (Listof NumF))
-                                       (Metric (Listof Atom-display) Sexpr (Listof NumF))))})])
-        (set! results rs) 
-        (for-each pretty-print-result rs)
-        rs))
+  (let*: ([rs1 :  (Listof (Result (Listof NumF) (Listof Atom-display) List))
+               (#{compare* @ (Listof Atom-display) List} 
+                (list module-metrics))]
+          [rs2 :  (Listof (Result (Listof NumF) (Listof Atom-display) Any))
+               (#{compare* @ (Listof Atom-display) Any} 
+                (list tl-expr-metrics))])
+         (let
+             ([rs (append rs1 rs2)])
+           (set! results rs) 
+           (for-each #{pretty-print-result @ List} rs1)
+           (for-each #{pretty-print-result @ Any} rs2)
+           rs)))
 
