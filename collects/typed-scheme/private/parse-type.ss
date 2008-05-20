@@ -195,7 +195,8 @@
               (tc-error "Wrong number of arguments to type ~a, expected ~a but got ~a" rator (length ns) (length args)))
             (instantiate-poly rator args)]
            [(Mu: _ _) (loop (unfold rator) args)]
-           [_ (tc-error "Type ~a cannot be applied, arguments were: ~a" rator args)]))
+           [_ (tc-error/delayed "Type ~a cannot be applied, arguments were: ~a" rator args)
+              Univ]))
        #;
        (let ([ty (parse-type #'id)])
          #;(printf "ty is ~a" ty)
