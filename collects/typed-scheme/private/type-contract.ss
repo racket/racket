@@ -95,7 +95,7 @@
                           [_ #`(values #,@rngs*)])]
                   [rst* rst])
                (if rst
-                   #'(dom* ...  #:rest (listof rst*) . -> . rng*)
+                   #'((dom* ...) () #:rest (listof rst*) . ->* . rng*)
                    #'(dom* ...  . -> . rng*))))
 	   (match (map f arrs)
 	     [(list e) e]
