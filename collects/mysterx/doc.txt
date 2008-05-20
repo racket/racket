@@ -655,9 +655,9 @@ _Remote COM servers_
 
   There are a number of configuration issues relating to 
   DCOM, which MysterX uses to invoke remote COM servers.
-  The Web page 
+  The Web page
 
-    http://www.distribucon.com/dcom95.html 
+    http://www.distribucon.com/dcom95.aspx
 
   discusses how to setup client and server machines for 
   DCOM.
