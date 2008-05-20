@@ -36,7 +36,8 @@ Thanks to Shoichiro Hattori for his puzzles!  Visit him on the web at:
 Thanks also to many of the contributors to the Kajitani web site for
 permission to re-distribute their puzzles.  Visit them online at:
 
-@centerline{@selflink["http://www02.so-net.ne.jp/~kajitani/index.html"]}
+@centerline{@selflink[;"http://www02.so-net.ne.jp/~kajitani/index.html"
+                      "http://nonogram.freehostia.com/pbn/index.html"]}
 
 The specific contributers who have permitted their puzzles to be
 redistributed are:
