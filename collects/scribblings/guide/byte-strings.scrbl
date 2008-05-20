@@ -5,7 +5,7 @@
 
 @title[#:tag "bytestrings"]{Bytes and Byte Strings}
 
-A @defterm{byte} is an exact integer between @scheme[0] and
+A @deftech{byte} is an exact integer between @scheme[0] and
 @scheme[255], inclusive. The @scheme[byte?] predicate recognizes
 numbers that represent bytes.
 

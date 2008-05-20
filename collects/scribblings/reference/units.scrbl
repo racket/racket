@@ -19,20 +19,13 @@
 
 @title[#:tag "mzlib:unit" #:style 'toc]{Units}
 
-@deftech{Units} are used to organize a program into separately
-compilable and reusable components. A unit resembles a procedure in
-that both are first-class values that are used for abstraction. While
-procedures abstract over values in expressions, units abstract over
-names in collections of definitions. Just as a procedure is invoked to
-evaluate its expressions given actual arguments for its formal
-parameters, a unit is invoked to evaluate its definitions given actual
-references for its imported variables. Unlike a procedure, however, a
-unit's imported variables can be partially linked with the exported
-variables of another unit @italic{prior to invocation}. Linking merges
-multiple units together into a single compound unit. The compound unit
-itself imports variables that will be propagated to unresolved
-imported variables in the linked units, and re-exports some variables
-from the linked units for further linking.
+@deftech{Units} organize a program into separately compilable and
+reusable components. The imports and exports of a unit are grouped
+into a @deftech{signature}, which can include ``static'' information
+(such as macros) in addition to placeholders for run-time values.
+Units with suitably matching signatures can be @deftech{linked}
+together to form a larger unit, and a unit with no imports can be
+@deftech{invoked} to execute its body.
 
 @note-lib[scheme/unit #:use-sources (mzlib/unit)]{ The
 @schememodname[scheme/unit] module name can be used as a language name

@@ -50,7 +50,7 @@
 
 (define-syntax (schememod stx)
   (syntax-case stx ()
-    [(_ lang rest ...)
+    [(_ #:file filename lang rest ...)
      (with-syntax ([modtag (datum->syntax
                             #'here
                             `(unsyntax (make-element
@@ -60,8 +60,18 @@
                                               (as-modname-link
                                                ',#'lang
                                                (to-element ',#'lang)))))
-                            #'lang)])
-       #'(schemeblock modtag rest ...))]))
+                            #'lang)]
+                   [(file ...)
+                    (if (syntax-e #'filename)
+                        (list
+                         (datum->syntax
+                          #'filename
+                          `(code:comment (unsyntax (t "In \"" ,#'filename "\":")))
+                          #'filename))
+                        null)])
+       (syntax/loc stx (schemeblock file ... modtag rest ...)))]
+    [(_ lang rest ...)
+     (syntax/loc stx (schememod #:file #f lang rest ...))]))
 
 (define (to-element/result s)
   (make-element "schemeresult" (list (to-element/no-color s))))

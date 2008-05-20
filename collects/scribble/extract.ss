@@ -4,6 +4,7 @@
          scribble/decode
          scribble/srcdoc
          (for-syntax scheme/base
+                     scheme/path
                      syntax/path-spec))
 
 (provide include-extracted)
@@ -28,7 +29,9 @@
          (raise-syntax-error #f "expected a literal regular expression as the second argument" stx #'regexp-s))
        (let ([s-exp 
               (parameterize ([current-namespace (make-base-namespace)]
-                             [read-accept-reader #t])
+                             [read-accept-reader #t]
+                             [current-load-relative-directory
+                              (path-only path)])
                 (expand
                  (with-input-from-file path
                    (lambda ()

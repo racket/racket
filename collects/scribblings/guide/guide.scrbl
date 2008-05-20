@@ -44,9 +44,7 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["class.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "units"]{Units@aux-elem{ (Components)}}
-
+@include-section["unit.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section[#:tag "threads"]{Threads}

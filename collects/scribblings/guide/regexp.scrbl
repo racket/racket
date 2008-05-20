@@ -31,7 +31,7 @@ string can be prefixed with @litchar{#px}, as in @scheme[#px"abc"],
 for a slightly extended syntax of patterns within the string.
 
 Most of the characters in a @tech{regexp} pattern are meant to match
-occurrences of themselves in the text string.  Thus, the pattern
+occurrences of themselves in the @tech{text string}.  Thus, the pattern
 @scheme[#rx"abc"] matches a string that contains the characters
 @litchar{a}, @litchar{b}, and @litchar{c} in succession. Other
 characters act as @deftech{metacharacters}, and some character
@@ -87,8 +87,8 @@ The @scheme[regexp-quote] function is useful when building a composite
 @section[#:tag "regexp-match"]{Matching Regexp Patterns}
 
 The @scheme[regexp-match-positions] function takes a @tech{regexp}
-pattern and a text string, and it returns a match if the regexp
-matches (some part of) the text string, or @scheme[#f] if the regexp
+pattern and a @tech{text string}, and it returns a match if the regexp
+matches (some part of) the @tech{text string}, or @scheme[#f] if the regexp
 did not match the string. A successful match produces a list of
 @deftech{index pairs}.
 
@@ -113,7 +113,7 @@ later, we will see how a single match operation can yield a list of
 @tech{submatch}es.
 
 The @scheme[regexp-match-positions] function takes optional third and
-fourth arguments that specify the indices of the text string within
+fourth arguments that specify the indices of the @tech{text string} within
 which the matching should take place.
 
 @interaction[
@@ -124,7 +124,7 @@ which the matching should take place.
 ]
 
 Note that the returned indices are still reckoned relative to the full
-text string.
+@tech{text string}.
 
 The @scheme[regexp-match] function is like
 @scheme[regexp-match-positions], but instead of returning index pairs,
@@ -135,6 +135,41 @@ it returns the matching substrings:
 (regexp-match #rx"needle" "hay needle stack")
 ]
 
+When @scheme[regexp-match] is used with byte-string regexp, the result
+is a matching byte substring:
+
+@interaction[
+(regexp-match #rx#"needle" #"hay needle stack")
+]
+
+@margin-note{A byte-string regexp can be applied to a string, and a
+             string regexp can be applied to a byte string. In both
+             cases, the result is a byte string. Internally, all
+             regexp matching is in terms of bytes, and a string regexp
+             is expanded to a regexp that matches UTF-8 encodings of
+             characters. For maximum efficiency, use byte-string
+             matching instead of string, since matching bytes directly
+             avoids UTF-8 encodings.}
+
+If you have data that is in a port, there's no need to first read it
+into a string. Functions like @scheme[regexp-match] can match on the
+port directly:
+
+@interaction[
+(define-values (i o) (make-pipe))
+(write "hay needle stack" o)
+(close-output-port o)
+(regexp-match #rx#"needle" i)
+]
+
+The @scheme[regexp-match?] function is like
+@scheme[regexp-match-positions], but simply returns a boolean
+indicating whether the match succeeded:
+
+@interaction[
+(regexp-match? #rx"brain" "bird")
+(regexp-match? #rx"needle" "hay needle stack")
+]
 
 The @scheme[regexp-split] function takes two arguments, a
 @tech{regexp} pattern and a text string, and it returns a list of

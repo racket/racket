@@ -5,7 +5,8 @@
           mzlib/process
           "guide-utils.ss"
           (for-label scheme/tcp
-                     scheme/serialize))
+                     scheme/serialize
+                     scheme/port))
 
 @(define io-eval (make-base-eval))
 
@@ -336,5 +337,80 @@ deserialization identifier is accessed reflectively when a value is
 deserialized.
 
 @; ----------------------------------------------------------------------
-@section{Bytes versus Characters}
+@section{Bytes, Characters, and Encodings}
 
+Functions like @scheme[read-line], @scheme[read], @scheme[display],
+and @scheme[write] all work in terms of @tech{characters} (which
+correspond to Unicode scalar values). Conceptually, they are
+implemented in terms of @scheme[read-char] and @scheme[write-char].
+
+More primitively, ports read and write @tech{bytes}, instead of
+@tech{characters}. The functions @scheme[read-byte] and
+@scheme[write-byte] read and write raw bytes. Other functions, such as
+@scheme[read-bytes-line], build on top of byte operations instead of
+character operations.
+
+In fact, the @scheme[read-char] and @scheme[write-char] functions are
+conceptually implemented in terms of @scheme[read-byte] and
+@scheme[write-byte]. When a single byte's value is less than 128, then
+it corresponds to an ASCII character. Any other byte is treated as
+part of a UTF-8 sequence, where UTF-8 is a particular standard way of
+encoding Unicode scalar values in bytes (which has the nice property
+that ASCII characters are encoded as themselves). Thus, a single
+@scheme[read-char] may call @scheme[read-byte] multiple times, and a
+single @scheme[write-char] may generate multiple output bytes.
+
+The @scheme[read-char] and @scheme[write-char] operations
+@emph{always} use a UTF-8 encoding. If you have a text stream that
+uses a different encoding, or if you want to generate a text stream in
+a different encoding, use @scheme[reencode-input-port] or
+@scheme[reencode-output-port]. The @scheme[reencode-input-port]
+function converts an input stream from an encoding that you specify
+into a UTF-8 stream; that way, @scheme[read-char] sees UTF-8
+encodings, even though the original used a different encoding. Beware,
+however, that @scheme[read-byte] also sees the re-encoded data,
+instead of the original byte stream.
+
+@; ----------------------------------------------------------------------
+@section{I/O Patterns}
+
+@(begin
+  (define port-eval (make-base-eval))
+  (interaction-eval #:eval port-eval (require scheme/port)))
+
+If you want to process individual lines of a file, then you can use
+@scheme[for] with @scheme[in-lines]:
+
+@interaction[
+(define (upcase-all in)
+  (for ([l (in-lines in)])
+    (display (string-upcase l))
+    (newline)))
+(upcase-all (open-input-string
+             (string-append
+              "Hello, World!\n"
+              "Can you hear me, now?")))
+]
+
+If you want to determine whether ``hello'' appears a file, then you
+could search separate lines, but it's even easier to simply apply a
+regular expression (see @secref["regexp"]) to the stream:
+
+@interaction[
+(define (has-hello? in)
+  (regexp-match? #rx"hello" in))
+(has-hello? (open-input-string "hello"))
+(has-hello? (open-input-string "goodbye"))
+]
+
+If you want to copy one port into another, use @scheme[copy-port] from
+@schememodname[scheme/port], which efficiently transfers large blocks
+when lots of data is available, but also transfers small blocks
+immediately if that's all that is available:
+
+@interaction[
+#:eval port-eval
+(define o (open-output-string))
+(copy-port (open-input-string "broom") o)
+(get-output-string o)
+]
