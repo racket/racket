@@ -483,7 +483,7 @@
                            [(a*) (quotient 5 12)]
                            [(b*) (remainder 5 12)])
                 (+ a b a* b*))
-              N]
+              -Integer]
         
         [tc-e (raise-type-error 'foo "bar" 5) (Un)]
         [tc-e (raise-type-error 'foo "bar" 7 (list 5)) (Un)]

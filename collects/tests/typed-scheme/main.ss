@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide go)
+(provide go go/text)
 
 (require (planet schematics/schemeunit/test)
          (planet schematics/schemeunit/text-ui)
@@ -77,10 +77,11 @@
               unit-tests int-tests))
 
 (define (go) (test/graphical-ui tests))
+(define (go/text) (test/text-ui tests))
 
 (when (getenv "PLT_TESTS")
   (unless (parameterize ([current-output-port (open-output-string)])
-            (= 0 (test/text-ui tests)))
+            (= 0 (go/text)))
     (error "Typed Scheme Tests did not pass.")))
 
 
