@@ -441,10 +441,10 @@
           [(or (is-stopped?) (is-frozen?))
            no-word]
           [else
-           (let ([type (classify-position current-pos)])
+           (let ([type (classify-position (max 0 (- current-pos 1)))])
              (cond
                [(eq? 'symbol type) 
-                (get-text (look-for-non-symbol current-pos)
+                (get-text (look-for-non-symbol (max 0 (- current-pos 1)))
                           current-pos)]
                [else no-word]))])))
     
