@@ -306,7 +306,6 @@
   ;;; about box
   (about-drscheme-frame-title "關於DrScheme")
   
-  
   ;;; save file in particular format prompting.
   (save-as-plain-text "保存本文件為純文本？")
   (save-in-drs-format "保存本文件為drscheme(非純文本)格式？")
@@ -893,6 +892,8 @@
   (use-mixed-fractions "帶分數")
   (use-repeating-decimals "循環小數")
   (decimal-notation-for-rationals "使用十進製表示有理數")
+  (enforce-primitives-group-box-label "初始綁定")
+  (enforce-primitives-check-box-label "不允許改變初始綁定")
   
   ; used in the bottom left of the drscheme frame as the label
   ; above the programming language's name
@@ -987,6 +988,16 @@
   (profiling-unknown-src "<< 未知 >>")
   (profiling-no-information-available "沒有可用的profiling信息。請確定你（在語言設置中）啟用了profiling，並且運行了當前程序。")
   (profiling-clear? "改變定義窗口的內容將導致profiling信息失效。是否繼續？")
+  
+  ;;The Test engine tool
+  ;;
+  (test-engine-window-title "測試結果")
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "在面板中顯示測試報告")
+  (test-engine-undock-report "獨立顯示測試報告")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "啟用測試功能")
+  (test-engine-disable-tests "停用測試功能")
   
   ;; test coverage
   (test-coverage-clear? "改變定義窗口將導致測試覆蓋信息失效。是否繼續？")

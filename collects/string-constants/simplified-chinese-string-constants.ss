@@ -893,6 +893,8 @@
   (use-mixed-fractions "带分数")
   (use-repeating-decimals "循环小数")
   (decimal-notation-for-rationals "使用十进制表示有理数")
+  (enforce-primitives-group-box-label "初始绑定")
+  (enforce-primitives-check-box-label "不允许改变初始绑定")
   
   ; used in the bottom left of the drscheme frame as the label
   ; above the programming language's name
@@ -988,6 +990,16 @@
   (profiling-no-information-available "没有可用的profiling信息。请确定你（在语言设置中）启用了profiling，并且运行了当前程序。")
   (profiling-clear? "改变定义窗口的内容将导致profiling信息失效。是否继续？")
   
+  ;;The Test engine tool
+  ;;
+  (test-engine-window-title "测试结果")
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "在面板中显示测试报告")
+  (test-engine-undock-report "独立显示测试报告")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "启用测试功能")
+  (test-engine-disable-tests "停用测试功能")
+
   ;; test coverage
   (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
   (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
