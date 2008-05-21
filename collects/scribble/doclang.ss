@@ -54,7 +54,7 @@
                                               provide
                                               define-values
                                               define-syntaxes
-                                              define-for-syntaxes
+                                              define-values-for-syntax
                                               #%require
                                               #%provide))))
                  #`(begin #,expanded (doc-begin m-id exprs . body))]
