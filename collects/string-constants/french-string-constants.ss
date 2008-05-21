@@ -189,8 +189,10 @@
   (cs-status-coloring-program "Vérificateur de syntaxe : coloriage d'une expression")
   (cs-status-eval-compile-time "Vérificateur de syntaxe : évaluation pour l'expansion") ; peut mieux faire?
   (cs-status-expanding-expression "Vérificateur de syntaxe : expansion d'une expression")
+  (cs-status-loading-docs-index "Vérificateur de syntaxe : chargement de l'index de la documentation")
   (cs-mouse-over-import "l'identificateur ~s est importé de ~s")
-  
+  (cs-view-docs "Regarder la documentation pour ~a")
+
   (cs-lexical-variable "variables lexicales")
   (cs-imported-variable "variables importées")
 
@@ -229,6 +231,7 @@
   (file-is-not-saved "Le fichier \"~a\" n'a pas été sauvegardé.")
   (save "Sauvegarder")
   (close-anyway "Fermer quand même")
+  (dont-save "Ne pas sauvegarder")
   (clear-anyway "Effacer quand même")
   
   ;; menu item title
@@ -256,6 +259,16 @@
   (syntax-coloring-choose-color "Choisissez une couleur pour ~a")
   (preferences-colors "Couleurs") ;; used in the preferences dialog
  
+  ;; parenthesis color scheme string constants
+  (parenthesis-color-scheme "Couleurs des parenthèses") ;; label for the choice% menu in the preferences dialog
+  (paren-color-basic-grey "Gris simple")
+  (paren-color-shades-of-gray "Nuances de gris")
+  (paren-color-shades-of-blue "Nuances de bleu")
+  (paren-color-spring "Printemps")
+  (paren-color-fall "Automne")
+  (paren-color-winter "Hiver")
+
+  
   (url: "URL :")
   (open-url... "Ouvrir l'URL...")
   (open-url "Ouvrir l'URL")
@@ -365,7 +378,7 @@
   (plt-installer-aborted "Installation abandonnée.") ;; msg that appears in the installation window when installation is aborted
   
   ;;; about box
-  (about-drscheme-frame-title "A propos de DrScheme")
+  (about-drscheme-frame-title "À propos de DrScheme")
   
   ;;; save file in particular format prompting.
   (save-as-plain-text "Sauvegarder ce fichier au format texte ?")
@@ -407,7 +420,7 @@
   (separate-dialog-for-searching "Utiliser un dialogue séparé pour les recherches.")
   (reuse-existing-frames "Réutiliser les fenêtres existantes lors de l'ouverture de nouveaux fichiers")
   (default-fonts "Polices par défaut")
-  (paren-match-color "Couleur de surlignage des parenthèses") ; in prefs dialog
+  (basic-gray-paren-match-color "Couleur grise simple de surlignage des parenthèses") ; in prefs dialog
   (online-coloring-active "Colorier la syntaxe interactivement")
   (open-files-in-tabs "Ouvrir les fichiers dans de nouveaux onglets (pas dans de nouvelles fenêtres)")
   (show-interactions-on-execute "Automatiquement montrer la fenêtre d'interaction lors de l'exécution d'un programme")
@@ -486,7 +499,7 @@
   (find "Chercher")
   (replace "Remplacer")
   (dock "Attacher")
-  (undock "Séparer")
+  (undock "Détacher")
   (replace&find-again "Remplacer && chercher à nouveau") ;;; need double & to get a single &
   (replace-to-end "Remplacer jusqu'à la fin")
   (forward "En avant")
@@ -783,8 +796,11 @@
   (show-interactions-menu-item-label "Montrer les &interactions")
   (hide-interactions-menu-item-label "Cacher les &interactions")
   (interactions-menu-item-help-string "Montrer/cacher la fenêtre d'interaction")
-  (show-toolbar "Montrer la barre d'ou&tils")
-  (hide-toolbar "Cacher la barre d'ou&tils")
+  (toolbar "Barre d'outils")
+  (toolbar-on-top "Barre d'outils en haut")
+  (toolbar-on-left "Barre d'outils sur la gauche")
+  (toolbar-on-right "Barre d'outils sur la droite")
+  (toolbar-hidden "Barre d'outils cachée")
   
   ;;; file menu
   (save-definitions-as "Sauvegarder les définitions...")
@@ -951,6 +967,8 @@
   (use-mixed-fractions "Fractions mêlées")
   (use-repeating-decimals "Décimales répétitives")
   (decimal-notation-for-rationals "Utiliser la notation décimale pour les nombres rationnels")
+  (enforce-primitives-group-box-label "Définitions initiales")
+  (enforce-primitives-check-box-label "Interdire la redéfinition des définition initiales")
 
   ; used in the bottom left of the drscheme frame as the label
   ; used the popup menu from the just above; greyed out and only
@@ -981,7 +999,7 @@
   (r5rs-one-line-summary "R5RS, de base")
   (expander "Expanseur") ; compression, compresseur, compresser => expansion, expanseur, expanser (expandeur, expander fait trop franglais et expandion n'existe pas)
   (expander-one-line-summary "Expanse les expressions au lieu de les évaluer")
-  (professional-languages "Langages professionnels")
+  (legacy-languages "Langages du passé")
   (teaching-languages "Langages d'enseignement")
   (experimental-languages "Langages expérimentaux")
   (initial-language-category "Langage initial")
@@ -1098,9 +1116,9 @@
   ;; This is used in this context: "PLT Scheme vNNN <<<*>>> http://download..."
   (version:now-available-at   "est maintenant disponible à")
   
-  ;; special menu
-  (special-menu "Spécial")
-  
+  ;; insert menu
+  (insert-menu "&Insérer")
+ 
   ;; large semi colon letters
   (insert-large-letters... "Insérer de grandes lettres...")
   (large-semicolon-letters "Grandes lettres en points-virgules")
@@ -1295,6 +1313,12 @@
   ;The Test engine tool
   ;;
   (test-engine-window-title "Résultats des tests")
+  ;;Following two appear in View menu, attach and free test report window from DrScheme frame
+  (test-engine-dock-report "Attacher le rapport de test")
+  (test-engine-undock-report "Détacher le rapport de test")
+  ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
+  (test-engine-enable-tests "Revalider les tests")
+  (test-engine-disable-tests "Invalider les tests")
   
   (profjWizward-insert-java-class "Insérer une classe Java")
   (profjWizard-insert-java-union "Insérer un union Java")
