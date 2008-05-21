@@ -138,112 +138,123 @@
   (let ([mapss (map cset-maps l)])
     (make-cset (apply append mapss))))
 
+(define (empty-set) '())  
+
+(define current-seen (make-parameter (empty-set)))
+
+(define (seen-before s t) (cons (Type-seq s) (Type-seq t)))
+(define (remember s t A) (cons (seen-before s t) A))
+(define (seen? s t) (member (seen-before s t) (current-seen)))
+
 (define (cgen V X S T)
   (define empty (empty-cset X))
   (define (singleton S X T )
     (insert empty X S T))
-  (parameterize ([match-equality-test type-equal?])
-    (match* 
-     (S T)
-     [(a a) empty]
-     [(_ (Univ:)) empty]
-     
-     [((F: (? (lambda (e) (memq e X)) v)) S)
-      (singleton (Un) v (var-demote S V))]
-     [(S (F: (? (lambda (e) (memq e X)) v)))
-      (singleton (var-promote S V) v Univ)]
-
-     
-     ;; two unions with the same number of elements, so we just try to unify them pairwise
-     #;[((Union: l1) (Union: l2))
-      (=> unmatch)
-      (unless (= (length l1) (length l2))
-        (unmatch))
-      (cgen-union V X l1 l2)]
-     #;
-     [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
-      (unless (= n n*)
-        (fail! S T))
-      (cgen V X b b*)]
-     
-     
-     [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]
-     ;; we might want to use multiple csets here, but I don't think it makes a difference
-     [(S (Union: es)) (or
-                       (for/or 
-                        ([e es]) 
-                        (with-handlers
-                            ([exn:infer? (lambda _ #f)])
-                          (cgen V X S e)))
-                       (fail! S T))]
-
-     [((Struct: nm p flds proc) (Struct: nm p flds* proc*))
-      (let-values ([(flds flds*)
-                    (cond [(and proc proc*)
-                           (values (cons proc flds) (cons proc* flds*))]
-                          [(or proc proc*)
-                           (fail! S T)]
-                          [else (values flds flds*)])])
-        (cgen/list X V flds flds*))]
-     [((Name: n) (Name: n*))
-      (if (free-identifier=? n n*)
-          null
-          (fail! S T))]
-     [((Pair: a b) (Pair: a* b*))
-      (cset-meet (cgen V X a a*) (cgen V X b b*))]
-     ;; if we have two mu's, we rename them to have the same variable
-     ;; and then compare the bodies
-     [((Mu-unsafe: s) (Mu-unsafe: t)) 
-      (cgen V X s t)]
-     ;; other mu's just get unfolded
-     [(s (? Mu? t)) (cgen V X s (unfold t))]
-     [((? Mu? s) t) (cgen V X (unfold s) t)]
-     ;; type application          
-     [((App: (Name: n) args _)
-       (App: (Name: n*) args* _))
-      (unless (free-identifier=? n n*)
-        (fail! S T))
-      (let ([x (instantiate-poly (lookup-type-name n) args)]
-            [y (instantiate-poly (lookup-type-name n) args*)])
-        (cgen V X x y))]
-     [((Vector: e) (Vector: e*))
-      (cset-meet (cgen V X e e*) (cgen V X e* e))]
-     [((Box: e) (Box: e*))
-      (cset-meet (cgen V X e e*) (cgen V X e* e))]
-     [((Hashtable: s1 s2) (Hashtable: t1 t2))
-      ;; the key is covariant, the value is invariant
-      (cset-meet* X (list (cgen V X s1 t1) (cgen V X t2 s2) (cgen V X s2 t2)))]
-     [((Syntax: s1) (Syntax: s2))
-      (cgen V X s1 s2)]
-     ;; parameters are just like one-arg functions
-     [((Param: in1 out1) (Param: in2 out2))
-      (cset-meet (cgen V X in2 in1) (cgen V X out1 out2))]
-     [((Function: (list t-arr ...))
-       (Function: (list s-arr ...)))
-      (=> unmatch)
-      (cset-combine
-       (filter 
-        values ;; only generate the successful csets
-        (for*/list ([t-arr t-arr] [s-arr s-arr])
-                   (with-handlers ([exn:infer? (lambda (_) #f)])
-                     (match* (t-arr s-arr)
-                             [((arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
-                              (let ([arg-mapping 
-                                     (cond [(and t-rest s-rest (= (length ts) (length ss)))
-                                            (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
-                                           [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
-                                            (cgen/list X V ss ts)]
-                                           [(and t-rest (not s-rest) (<= (length ts) (length ss)))
-                                            (cgen/list X V ss (extend ss ts t-rest))]
-                                           [(and s-rest (not t-rest) (>= (length ts) (length ss)))
-                                            (cgen/list X V (extend ts ss s-rest) ts)]
-                                           [else (fail! S T)])]
-                                    [ret-mapping (cgen V X t s)])
-                                (cset-meet arg-mapping ret-mapping))])))))]
-     [(_ _)
-      (cond [(subtype S T) empty]
-            ;; or, nothing worked, and we fail
-            [else (fail! S T)])])))
+  (if (seen? S T)
+      empty
+      (parameterize ([match-equality-test type-equal?]
+                     [current-seen (remember S T (current-seen))])
+        (match* 
+         (S T)
+         [(a a) empty]
+         [(_ (Univ:)) empty]
+         
+         [((F: (? (lambda (e) (memq e X)) v)) S)
+          (singleton (Un) v (var-demote S V))]
+         [(S (F: (? (lambda (e) (memq e X)) v)))
+          (singleton (var-promote S V) v Univ)]
+         
+         
+         ;; two unions with the same number of elements, so we just try to unify them pairwise
+         #;[((Union: l1) (Union: l2))
+            (=> unmatch)
+            (unless (= (length l1) (length l2))
+              (unmatch))
+            (cgen-union V X l1 l2)]
+         #;
+         [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
+          (unless (= n n*)
+            (fail! S T))
+          (cgen V X b b*)]
+         
+         
+         [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]
+         ;; we might want to use multiple csets here, but I don't think it makes a difference
+         [(S (Union: es)) (or
+                           (for/or 
+                            ([e es]) 
+                            (with-handlers
+                                ([exn:infer? (lambda _ #f)])
+                              (cgen V X S e)))
+                           (fail! S T))]
+         
+         [((Struct: nm p flds proc) (Struct: nm p flds* proc*))
+          (let-values ([(flds flds*)
+                        (cond [(and proc proc*)
+                               (values (cons proc flds) (cons proc* flds*))]
+                              [(or proc proc*)
+                               (fail! S T)]
+                              [else (values flds flds*)])])
+            (cgen/list X V flds flds*))]
+         [((Name: n) (Name: n*))
+          (if (free-identifier=? n n*)
+              null
+              (fail! S T))]
+         [((Pair: a b) (Pair: a* b*))
+          (cset-meet (cgen V X a a*) (cgen V X b b*))]
+         ;; if we have two mu's, we rename them to have the same variable
+         ;; and then compare the bodies
+         [((Mu-unsafe: s) (Mu-unsafe: t)) 
+          (cgen V X s t)]
+         ;; other mu's just get unfolded
+         [(s (? Mu? t)) (cgen V X s (unfold t))]
+         [((? Mu? s) t) (cgen V X (unfold s) t)]
+         ;; type application          
+         [((App: (Name: n) args _)
+           (App: (Name: n*) args* _))
+          (unless (free-identifier=? n n*)
+            (fail! S T))
+          (let ([x (instantiate-poly (lookup-type-name n) args)]
+                [y (instantiate-poly (lookup-type-name n) args*)])
+            (cgen V X x y))]
+         [((Vector: e) (Vector: e*))
+          (cset-meet (cgen V X e e*) (cgen V X e* e))]
+         [((Box: e) (Box: e*))
+          (cset-meet (cgen V X e e*) (cgen V X e* e))]
+         [((Hashtable: s1 s2) (Hashtable: t1 t2))
+          ;; the key is covariant, the value is invariant
+          (cset-meet* X (list (cgen V X s1 t1) (cgen V X t2 s2) (cgen V X s2 t2)))]
+         [((Syntax: s1) (Syntax: s2))
+          (cgen V X s1 s2)]
+         ;; parameters are just like one-arg functions
+         [((Param: in1 out1) (Param: in2 out2))
+          (cset-meet (cgen V X in2 in1) (cgen V X out1 out2))]
+         [((Function: (list t-arr ...))
+           (Function: (list s-arr ...)))
+          (=> unmatch)
+          (cset-combine
+           (filter 
+            values ;; only generate the successful csets
+            (for*/list ([t-arr t-arr] [s-arr s-arr])
+                       (with-handlers ([exn:infer? (lambda (_) #f)])
+                         (match* (t-arr s-arr)
+                                 [((arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
+                                  (let ([arg-mapping 
+                                         (cond [(and t-rest s-rest (= (length ts) (length ss)))
+                                                (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
+                                               [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
+                                                (cgen/list X V ss ts)]
+                                               [(and t-rest (not s-rest) (<= (length ts) (length ss)))
+                                                (cgen/list X V ss (extend ss ts t-rest))]
+                                               [(and s-rest (not t-rest) (>= (length ts) (length ss)))
+                                                (cgen/list X V (extend ts ss s-rest) ts)]
+                                               [else (fail! S T)])]
+                                        [ret-mapping (cgen V X t s)])
+                                    (cset-meet arg-mapping ret-mapping))])))))]
+         [(_ _)
+          (cond [(subtype S T) empty]
+                ;; or, nothing worked, and we fail
+                [else (fail! S T)])]))))
 
 (define (subst-gen C R)
   (for/list ([(k v) (car (cset-maps C))])
@@ -328,5 +339,6 @@
     ))
 
 ;(trace infer cgen cset-meet* subst-gen)
+;(trace cgen/list)
 
 ;(trace infer subst-gen cgen)
