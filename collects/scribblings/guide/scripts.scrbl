@@ -13,7 +13,7 @@ the first line must be a command to execute the script. For some
 platforms, the total length of the first line is restricted to 32
 characters, and sometimes the space is required.
 
-The simplest script format uses an absolute path to a MzScheme
+The simplest script format uses an absolute path to a @exec{mzscheme}
 executable followed by a module declaration. For example, if
 @exec{mzscheme} is installed in @filepath{/usr/local/bin}, then a file
 containing the following text acts as a ``hello world'' script:

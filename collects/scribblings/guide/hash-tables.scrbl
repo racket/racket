@@ -55,9 +55,9 @@ mapping is retained only so long as the key is retained elsewhere.
 Beware that even a weak hash table retains its values strongly, as
 long as the corresponding key is accessible. This creates a catch-22
 dependency when a value refers back to its key, so that the mapping is
-retained permanently. To break the cycle, map the key to an
-@seclink["ephemerons"]{ephemeron} that pairs the value with its key (in
-addition to the implicit pairing of the hash table).
+retained permanently. To break the cycle, map the key to an ephemeron
+that pairs the value with its key (in addition to the implicit pairing
+of the hash table).
 
 @examples[
 (define ht (make-weak-hasheq))

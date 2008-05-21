@@ -170,6 +170,9 @@ options:
  @item{With Unix or Mac OS X, you can turn the program file into an
        executable script by inserting the line
 
+       @margin-note{See @secref["scripts"] for more information on
+                    script files.}
+
         @verbatim[#:indent 2]{#! /usr/bin/env mzscheme}
 
        at the very beginning of the file. Also, change the file

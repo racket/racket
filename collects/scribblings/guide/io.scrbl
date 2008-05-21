@@ -188,10 +188,8 @@ stdout in purple, and output written to stderr in red italics.
 (swing-hammer)
 ]
 
-The current-port functions are actually @tech{parameters}, which means
-that their values can be set with @scheme[parameterize].
-
-@moreguide["parameters"]{parameters}
+The current-port functions are actually parameters, which means that
+their values can be set with @scheme[parameterize].
 
 @examples[
 #:eval io-eval

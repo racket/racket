@@ -5,12 +5,12 @@
 
 @title[#:tag "exe"]{Stand-Alone Executables from Scheme Code}
 
-The command-line flag @DFlag{exe} directs @|mzc| to embed a
-module, from source or byte code, into a copy of the MzScheme
+The command-line flag @DFlag{exe} directs @|mzc| to embed a module,
+from source or byte code, into a copy of the @exec{mzscheme}
 executable. (Under Unix, the embedding executable is actually a copy
 of a wrapper executable.)  The created executable invokes the embedded
-module on startup. The @DFlag{gui-exe} flag is similar, but it
-copies the MrEd executable. If the embedded module refers to other
+module on startup. The @DFlag{gui-exe} flag is similar, but it copies
+the @exec{mred} executable. If the embedded module refers to other
 modules via @scheme[require], then the other modules are also included
 in the embedding executable.
 
@@ -20,7 +20,7 @@ For example, the command
 
 produces either @filepath{hello.exe} (Windows), @filepath{hello.app}
 (Mac OS X), or @filepath{hello} (Unix), which runs the same as
-invoking the @filepath{hello.ss} module in MrEd.
+invoking the @filepath{hello.ss} module in @exec{mred}.
 
 Library modules or other files that are referenced
 dynamically---through @scheme[eval], @scheme[load], or
@@ -44,9 +44,9 @@ The @DFlag{exe} and @DFlag{gui-exe} flags work only with
 library provides a more general interface to the embedding mechanism.
 
 A stand-alone executable is ``stand-alone'' in the sense that you can
-run it without starting MzScheme, MrEd, or DrScheme. However, the
-executable depends on MzScheme and/or MrEd shared libraries, and
-possibly other run-time files declared via
+run it without starting @exec{mzscheme}, @exec{mred}, or
+DrScheme. However, the executable depends on PLT Scheme shared
+libraries, and possibly other run-time files declared via
 @scheme[define-runtime-path]. The executable can be packaged with
 support libraries to create a distribution, as described in
 @secref["exe-dist"].

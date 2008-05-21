@@ -5,15 +5,23 @@
 
 @title[#:tag "running" #:style 'toc]{Running and Creating Executables}
 
+While developing programs, many PLT Scheme programmers use the
+@seclink[#:doc '(lib "scribblings/drscheme/drscheme.scrbl")
+"top"]{DrScheme} programming environment. To run a program without the
+development environment, use @exec{mzscheme} (for console-based
+programs) or @exec{mred} (for GUI program). This chapter mainly
+explains how to run @exec{mzscheme} and @exec{mred}.
+
 @local-table-of-contents[]
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "mzscheme"]{Running MzScheme and MrEd}
+@section[#:tag "mzscheme"]{Running @exec{mzscheme} and @exec{mred}}
 
-Depending on command-line arguments, MzScheme runs in
-@seclink["start-interactive-mode"]{interactive mode},
-@seclink["start-module-mode"]{module mode}, or @seclink["start-load-mode"]{load mode}.
+Depending on command-line arguments, @exec{mzscheme} or @exec{mred}
+runs in @seclink["start-interactive-mode"]{interactive mode},
+@seclink["start-module-mode"]{module mode}, or
+@seclink["start-load-mode"]{load mode}.
 
 @subsection[#:tag "start-interactive-mode"]{Interactive Mode}
 
@@ -40,7 +48,7 @@ If any command-line arguments are provided (other than configuration
 options), add @Flag{i} or @DFlag{repl} to re-enable the
 @tech{REPL}. For example,
 
-@commandline{mzscheme -e '(display "hi\n")' }
+@commandline{mzscheme -e '(display "hi\n")' -i}
 
 displays ``hi'' on start-up, but still presents a @tech{REPL}.
 
@@ -107,7 +115,14 @@ The @Flag{l} or @DFlag{lib} flag is similar to
 @commandline{mzscheme -l compiler}
 
 is the same as running the @exec{mzc} executable with no arguments,
-since the @scheme[compiler] module is the main @exec{mzc} module.
+since the @scheme[compiler] module is the main @exec{mzc}
+module.
+
+Note that if you wanted to pass command-line flags to
+@scheme[compiler] above, you would need to protect the flags with a
+@Flag{-}, so that @exec{mzscheme} doesn't try to parse them itself:
+
+@commandline{mzscheme -l compiler -- --make prog.ss}
 
 @; ----------------------------------------
 
@@ -147,9 +162,13 @@ instead of @schememodname[scheme/init].
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "exe"]{Creating Stand-Alone Executables}
+@include-section["scripts.scrbl"]
 
 @; ----------------------------------------------------------------------
 
-@include-section["scripts.scrbl"]
+@section[#:tag "exe"]{Creating Stand-Alone Executables}
 
+@(define mzc-doc '(lib "scribblings/mzc/mzc.scrbl"))
+
+For information on creating and distributing executables, see
+@secref[#:doc mzc-doc "sa"] in @other-manual[mzc-doc].

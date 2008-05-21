@@ -5,7 +5,7 @@
 
 @title[#:tag "characters"]{Characters}
 
-A Scheme @defterm{character} corresponds to a Unicode @defterm{scalar
+A Scheme @deftech{character} corresponds to a Unicode @defterm{scalar
 value}. Roughly, a scalar value is an unsigned integer whose
 representation fits into 21 bits, and that maps to some notion of a
 natural-language character or piece of a character. Technically, a

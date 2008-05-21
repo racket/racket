@@ -46,64 +46,21 @@ precise details to @|MzScheme| and other reference manuals.
 
 @include-section["unit.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "threads"]{Threads}
-
-@subsection[#:tag "parameters"]{Parameters}
-
-A @deftech{parameter} holds a kind of global option. For example,
-there is a parameter that determines the default destination for
-printed output.
-
-@; ----------------------------------------------------------------------
 @include-section["namespaces.scrbl"]
 
-
-@; ----------------------------------------------------------------------
 @include-section["macros.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section[#:tag "reader"]{Reader Extension}
-
-@; ----------------------------------------------------------------------
-@section[#:tag "security"]{Security}
-
-
-@; ----------------------------------------------------------------------
-@section[#:tag "memory-management"]{Memory Management}
-
-@subsection[#:tag "weakboxes"]{Weak Boxes}
-
-@subsection[#:tag "ephemerons"]{Ephemerons}
-
-@; ----------------------------------------------------------------------
 @include-section["performance.scrbl"]
 
-@; ----------------------------------------------------------------------
 @include-section["running.scrbl"]
 
-@; ----------------------------------------------------------------------
-@section{Configuration and Compilation}
-
-@itemize{
-
- @tool["setup-plt"]{a command-line tool for installation tasks}
-
- @tool["planet"]{a command-line tool for managing packages that are
- normally downloaded automatically, on demand}
-
- @tool["mzc"]{a command-line tool for miscellaneous tasks, such as
- compiling Scheme source, compiling C-implemented extensions to the
- run-time system, generating executables, and building distribution
- packages}
-
-}
+@include-section["compile.scrbl"]
 
 @; ----------------------------------------------------------------------
 @section{More Libraries}
 
 @other-manual['(lib "scribblings/gui/gui.scrbl")] describes the PLT
-Scheme graphics toolbox, whose core is implemented by the MrEd
+Scheme graphics toolbox, whose core is implemented by the @exec{mred}
 executable.
 
 @other-manual['(lib "scribblings/foreign/foreign.scrbl")] describes

@@ -23,10 +23,13 @@ and memory performance of Scheme code.
 
 Every definition or expression to be evaluated by Scheme is compiled
 to an internal bytecode format. In interactive mode, this compilation
-occurs automatically and on-the-fly. Tools like @exec{setup-plt} and
-@scheme[compile-file] marshal compiled bytecode to a file. Most of the
-time required to compile a file is actually in macro expansion;
-generating bytecode from fully expanded code is relatively fast.
+occurs automatically and on-the-fly. Tools like @exec{mzc} and
+@exec{setup-plt} marshal compiled bytecode to a file, so that you do
+not have to compile from source every time that you run a
+program. (Most of the time required to compile a file is actually in
+macro expansion; generating bytecode from fully expanded code is
+relatively fast.) See @secref["compile"] for more information on
+generating bytecode files.
 
 The bytecode compiler applies all standard optimizations, such as
 constant propagation, constant folding, inlining, and dead-code
@@ -41,7 +44,7 @@ arithmetic on small integers, and arithmetic on inexact real
 numbers. Currently, @tech{JIT} compilation is supported for x86,
 x86_64 (a.k.a. AMD64), and 32-bit PowerPC processors. The @tech{JIT}
 compiler can be disabled via the @scheme[eval-jit-enabled] parameter
-or the @DFlag{no-jit}/@Flag{j} command-line flag.
+or the @DFlag{no-jit}/@Flag{j} command-line flag for @exec{mzscheme}.
 
 The @tech{JIT} compiler works incrementally as functions are applied,
 but the @tech{JIT} compiler makes only limited use of run-time

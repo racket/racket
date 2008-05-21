@@ -63,7 +63,7 @@ involves the re-definition of a previously immutable binding.
 ]
 
 For exploration and debugging purposes, the Scheme reflective layer
-provides a @scheme[compile-enforce-module-constants] @tech{parameter}
+provides a @scheme[compile-enforce-module-constants] parameter
 to disable the enforcement of constants.
 
 @interaction[
