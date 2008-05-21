@@ -567,7 +567,7 @@
       (super-new)))
   
   ;; create-module-based-language-executable :  
-  ;; (is-a?/c area-container<%>) string module-spec module-spec sexp (union boolean? 'ask) boolean?
+  ;; (is-a?/c area-container<%>) string (or #f module-spec) module-spec sexp (union boolean? 'ask) boolean?
   ;;  -> void
   (define (create-module-based-language-executable parent
                                                    program-filename
@@ -890,11 +890,13 @@
         (call-with-output-file bootstrap-tmp-filename
           (λ (port)
             (write `(let () ;; cannot use begin, since it gets flattened to top-level (and re-compiled!)
-                      ,@(if use-copy?
-                            (list 
-                             `(namespace-require/copy ',module-language-spec))
-                            (list
-                             `(namespace-require/constant ',module-language-spec)))
+                      ,@(if module-language-spec
+                            (if use-copy?
+                                (list 
+                                 `(namespace-require/copy ',module-language-spec))
+                                (list
+                                 `(namespace-require/constant ',module-language-spec)))
+                            '())
                       ,@(if transformer-module-language-spec
                             (list `(namespace-require `(for-syntax ,transformer-module-language-spec)))
                             (list))
@@ -914,11 +916,16 @@
             #:exists 'truncate #:mode 'text)))
       
       (let* ([pre-to-be-embedded-module-specs0
-              (if (or (not transformer-module-language-spec)
-                      (equal? module-language-spec transformer-module-language-spec))
-                  (list module-language-spec)
-                  (list module-language-spec
-                        transformer-module-language-spec))]
+              (cond
+                [(and module-language-spec transformer-module-language-spec)
+                 (if (equal? module-language-spec transformer-module-language-spec)
+                     (list module-language-spec)
+                     (list module-language-spec transformer-module-language-spec))]
+                [module-language-spec 
+                 (list module-language-spec)]
+                [transformer-module-language-spec
+                 (list transformer-module-language-spec)]
+                [else '()])]
              [pre-to-be-embedded-module-specs1
               (if gui?
                   (cons '(lib "mred/mred.ss")
@@ -969,7 +976,7 @@
                                                    gui?
                                                    use-copy?))))
   
-  ;; create-module-based-distribution : ... -> void (see docs)
+  ;; create-distribution-for-executable : ... -> void (see docs)
   (define (create-distribution-for-executable distribution-filename
                                               gui?
                                               make-executable)
@@ -1116,7 +1123,7 @@
            (path->string executable-filename)
            executable-filename))))
   
-  ;; initialize-module-based-language : boolean module-spec module-spec ((-> void) -> void)
+  ;; initialize-module-based-language : boolean (or #f module-spec) module-spec ((-> void) -> void)
   (define (initialize-module-based-language use-copy?
                                             module-spec
                                             transformer-module-spec
@@ -1127,9 +1134,10 @@
                         (λ (x)
                           (display (exn-message x))
                           (newline))])
-         (if use-copy?
-             (namespace-require/copy module-spec)
-             (namespace-require/constant module-spec))
+         (when module-spec
+           (if use-copy?
+               (namespace-require/copy module-spec)
+               (namespace-require/constant module-spec)))
          (when transformer-module-spec
            (namespace-require `(for-syntax ,transformer-module-spec)))))))
   

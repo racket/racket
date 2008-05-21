@@ -1198,7 +1198,8 @@ all of the names in the tools library, for use defining keybindings
      @scheme[module-language-spec] and
      @scheme[transformer-module-language-spec] specify the 
      settings of the initial namespace, both the transformer
-     portion and the regular portion. 
+     portion and the regular portion. Both may be @scheme[#f]
+     to indicate there are no initial bindings.
      
      The @scheme[init-code] argument is an s-expression representing
      the code for a module. This module is expected to provide

@@ -121,6 +121,11 @@
                 "2")
      
      (make-test
+      "#lang scheme\n(eval 'cons)"
+      #f
+      ". compile: bad syntax; reference to top-level identifier is not allowed, because no #%top syntax transformer is bound in: cons")
+     
+     (make-test
       (format "~s" `(module m (file ,(path->string (build-path this-dir "module-lang-test-tmp.ss"))) 1 2 3))
       "1" ;; just make sure no errors.
       "1")))

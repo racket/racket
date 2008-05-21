@@ -41,7 +41,8 @@
             to-be-copied-module-names)
   (namespace-set-variable-value! 'argv program-argv)
   (current-command-line-arguments program-argv)
-  (namespace-require language-module-spec)
+  (when language-module-spec
+    (namespace-require language-module-spec))
   (when use-require/copy?
     (namespace-require/copy language-module-spec))
   (when transformer-module-spec
