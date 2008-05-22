@@ -222,7 +222,7 @@ returns the view menu, for use by the
 See also
 @method[drscheme:frame:<%> add-show-menu-items].
 
-The method (and others) uses the word {\tt show} to preserve
+The method (and others) uses the word @tt{show} to preserve
 backwards compatibility from when the menu itself was named
 the Show menu.
 

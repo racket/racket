@@ -359,7 +359,7 @@ for important actions the user frequently executes.
 A tool can add a button to this panel to make some new functionality
 easily accessible to the user.
 
-See also mrlib's {\tt bitmap-label-maker}.
+See also mrlib's @scheme[bitmap-label-maker].
 
 }
 
@@ -392,11 +392,12 @@ Returns the result of
 This method is provided so that tools can add 
 @scheme[area-container<%>]s to the drscheme frame. Override this method so that it
 returns a child of the super-classes's result and insert new 
-children inbetween.
+children in between.
 
 }
 
 @methimpl{
+
 First case:
 
 
