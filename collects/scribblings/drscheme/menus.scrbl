@@ -261,6 +261,10 @@ clears only the corresponding teachpack.
 
  @item{@defmenuitem{Kill} Terminates the current evaluation.}
 
+@item{@defmenuitem{Limit Memory...} Allow you to specify a
+limit on the amount of memory that a program running in
+DrScheme is allowed to consume.}
+
 @item{@defmenuitem{Clear Error Highlight} Removes the red
 background that signals the source location of an error.}
 
