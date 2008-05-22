@@ -78,6 +78,7 @@ static int mzerrno = 0;
 # include <process.h>
 # include <winsock2.h>
 # include <ws2tcpip.h>
+# include <wspiapi.h>
 struct SOCKADDR_IN {
   short sin_family;
   unsigned short sin_port;
