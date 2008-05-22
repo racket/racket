@@ -448,9 +448,9 @@ This directory contains the following files and sub-directories:
   create your @filepath{users.ss}, but make sure you have information
   that matches your 'extra-fields specification.  For example, given
   this system file:
-  @verbatim[
-"    foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
-    bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash"]
+  @verbatim[#:indent 2]{
+    foo:wRzN1u5q2SqRD:1203:1203:L.E. Foo        :/home/foo:/bin/tcsh
+    bar:$1$dKlU0OkJ$t63TzKz:1205:1205:Bar Z. Lie:/home/bar:/bin/bash}
   you can create this @filepath{users.ss} file:
   @schemeblock[
     ((foo ((unix "wRzN1u5q2SqRD") "L.E. Foo" "?"))
