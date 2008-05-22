@@ -3,7 +3,7 @@
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
- (only-in scheme/list cons? take drop add-between)
+ (only-in scheme/list cons? take drop add-between last)
  '#%paramz
  (only-in scheme/match/patterns match:error))
 
@@ -136,6 +136,7 @@
      [filter (-poly (a) ((a . -> . B) (-lst a) . -> . (-lst a)))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
+     [last   (-poly (a) ((-lst a) . -> . a))]
      [add-between (-poly (a b) ((-lst a) b . -> . (-lst (Un a b))))]
      [remove* (-poly (a b)
                      (cl-> [((-lst a) (-lst a)) (-lst a)]
