@@ -3686,7 +3686,8 @@ module browser threading seems wrong.
                  (when lang
                    ;; this test can fail when a language has been added wrongly via the tools interface
                    ;; just ignore that menu item, in that case.
-                   (let ([settings (send lang unmarshall-settings marshalled-settings)])
+                   (let ([settings (or (send lang unmarshall-settings marshalled-settings)
+                                       (send lang default-settings))])
                      (when lang
                        (set! added-one? #t)
                        (new menu-item%
