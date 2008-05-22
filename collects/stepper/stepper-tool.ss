@@ -529,9 +529,16 @@
           ;; STEPPER BUTTON
 
           (define/public (get-stepper-button) stepper-button)
+          
+          (define stepper-button-parent-panel 
+            (new horizontal-panel%
+                 [parent (get-button-panel)]
+                 [stretchable-width #f]
+                 [stretchable-height #f]))
+                    
           (define stepper-button
             (new switchable-button% 
-                 [parent (new vertical-pane% [parent (get-button-panel)])]
+                 [parent stepper-button-parent-panel]
                  [label (string-constant stepper-button-label)]
                  [bitmap x:foot-img/horizontal]
                  [alternate-bitmap x:foot-img/vertical]
@@ -579,8 +586,9 @@
                         delete-child stepper-button))))
 
           ;; add the stepper button to the button panel:
-          (let ([p (send stepper-button get-parent)])
-            (send (get-button-panel) change-children (lx (cons p (remq p _)))))
+          (send (get-button-panel) change-children 
+                (lx (cons stepper-button-parent-panel
+                          (remq stepper-button-parent-panel _))))
           
           ;; hide stepper button if it's not supported for the initial language:
           (check-current-language-for-stepper)))
