@@ -21,7 +21,8 @@
            current-meta-list
 
            (struct-out shaped-parens)
-           (struct-out just-context))
+           (struct-out just-context)
+           (struct-out literal-syntax))
 
   (define no-color "schemeplain")
   (define reader-color "schemereader")
@@ -121,7 +122,9 @@
                                   (memq (syntax-e c) (current-variable-list)))]
                   [(s it? sub?)
                    (let ([sc (syntax-e c)])
-                     (let ([s (format "~s" sc)])
+                     (let ([s (format "~s" (if (literal-syntax? sc)
+                                               (literal-syntax-stx sc)
+                                               sc))])
                        (if (and (symbol? sc)
                                 ((string-length s) . > . 1)
                                 (char=? (string-ref s 0) #\_)
@@ -654,6 +657,7 @@
 
   (define-struct shaped-parens (val shape))
   (define-struct just-context (val ctx))
+  (define-struct literal-syntax (stx))
 
   (define-struct graph-reference (bx))
   (define-struct graph-defn (r bx))

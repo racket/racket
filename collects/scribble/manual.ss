@@ -66,7 +66,7 @@
                         (list
                          (datum->syntax
                           #'filename
-                          `(code:comment (unsyntax (t "In \"" ,#'filename "\":")))
+                          `(code:comment (unsyntax (t "In \"" ,(syntax-e #'filename) "\":")))
                           #'filename))
                         null)])
        (syntax/loc stx (schemeblock file ... modtag rest ...)))]

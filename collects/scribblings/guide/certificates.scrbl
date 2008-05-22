@@ -3,7 +3,7 @@
           scribble/eval
           "guide-utils.ss")
 
-@title[#:style 'quiet]{Syntax Certificates}
+@title[#:tag "stx-certs" #:style 'quiet]{Syntax Certificates}
 
 A use of a macro can expand into a use of an identifier that is not
 exported from the module that binds the macro. In general, such an
@@ -18,7 +18,7 @@ expands to a use of @scheme[unchecked-go]:
 (module m mzscheme
   (provide go)
   (define (unchecked-go n x) 
-    ;; to avoid disaster, @scheme[n] must be a number
+    (code:comment #, @t{to avoid disaster, @scheme[n] must be a number})
     (+ n 17))
   (define-syntax (go stx)
     (syntax-case stx ()

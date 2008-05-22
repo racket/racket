@@ -173,6 +173,7 @@
     (cond
      [(and v (hash-ref ht v #f))
       => (lambda (v) v)]
+     [(syntax? v) (make-literal-syntax v)]
      [(string? v) (install ht v (string-copy v))]
      [(bytes? v) (install ht v (bytes-copy v))]
      [(pair? v) 
