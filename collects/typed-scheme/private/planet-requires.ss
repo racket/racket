@@ -61,7 +61,7 @@
 (define-module schemeunit 
   (planet/multiple ("schematics" "schemeunit.plt" 2 3)
                    "test.ss"
-                   "graphical-ui.ss"
+                   ;"graphical-ui.ss"
                    "text-ui.ss"
                    "util.ss")
   ;; disabled until Carl updates to v4

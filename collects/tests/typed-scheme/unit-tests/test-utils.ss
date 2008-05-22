@@ -32,8 +32,10 @@
 (define (run . ts)
   (test/text-ui (mk-suite ts)))
 
+(define (test/gui suite) ((dynamic-require '(planet schematics/schemeunit/graphical-ui) 'test/graphical-ui) suite))
+
 (define (run/gui . ts)
-  (test/graphical-ui (mk-suite ts)))
+  (test/gui (mk-suite ts)))
 
 
 (define-syntax (define-go stx)

@@ -4,10 +4,11 @@
 
 (require (planet schematics/schemeunit/test)
          (planet schematics/schemeunit/text-ui)
-         (planet schematics/schemeunit/graphical-ui)
+         #;(planet schematics/schemeunit/graphical-ui)
          mzlib/etc
          scheme/match
-         "unit-tests/all-tests.ss")
+         "unit-tests/all-tests.ss"
+         "unit-tests/test-utils.ss")
 
 (define (scheme-file? s)
   (regexp-match ".*[.](ss|scm)" (path->string s)))
@@ -76,7 +77,7 @@
   (test-suite "Typed Scheme Tests"
               unit-tests int-tests))
 
-(define (go) (test/graphical-ui tests))
+(define (go) (test/gui tests))
 (define (go/text) (test/text-ui tests))
 
 (when (getenv "PLT_TESTS")
