@@ -18,12 +18,14 @@
                     scheme/contract
                     scheme/base
                     drscheme/tool-lib
+		    mrlib/switchable-button
                     framework))
 (provide (for-label (all-from-out scheme/gui/base)
                     (all-from-out scheme/class)
                     (all-from-out scheme/contract)
                     (all-from-out scheme/base)
                     (all-from-out drscheme/tool-lib)
+                    (all-from-out mrlib/switchable-button)
                     (all-from-out framework)))
 
 (provide docs-get/extend)

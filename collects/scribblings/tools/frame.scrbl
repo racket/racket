@@ -9,7 +9,7 @@ side of drscheme's frame.
 
 
 
-@defconstructor/make[([parent (instance (implements @scheme[area-container<%>]))])]{}
+@defconstructor/make[([parent (is-a?/c area-container<%>)])]{}
 
 @defmethod[(set-message [name (or/c string? false/c)]
                         [short-name string?])
@@ -85,8 +85,8 @@ adds a
 }
 
 @defmethod[#:mode override 
-           (file-menu:new-callback [item (instance (derived-from @scheme[menu-item%]))]
-                                   [evt (instance @scheme[control-event%])])
+           (file-menu:new-callback [item (is-a?/c menu-item%)]
+                                   [evt (is-a?/c control-event%)])
            void?]{
 
 Opens a new, empty DrScheme window.
@@ -104,8 +104,8 @@ Returns the empty string.
 }
 
 @defmethod[#:mode override 
-           (file-menu:open-callback [item (instance (derived-from @scheme[menu-item%]))]
-                                    [evt (instance @scheme[control-event%])])
+           (file-menu:open-callback [item (is-a?/c menu-item%)]
+                                    [evt (is-a?/c control-event%)])
            void?]{
 
 Calls 
@@ -142,8 +142,8 @@ Defaultly returns the empty list.
 }}
 
 @defmethod[#:mode override 
-           (help-menu:about-callback [item (instance (derived-from @scheme[menu-item%]))]
-                                     [evt (instance @scheme[control-event%])])
+           (help-menu:about-callback [item (is-a?/c menu-item%)]
+                                     [evt (is-a?/c control-event%)])
            void?]{
 
 Opens an about box for DrScheme.
@@ -161,13 +161,10 @@ Returns the string @scheme["DrScheme"].
 }
 
 @defmethod[#:mode override 
-           (help-menu:before-about [help-menu (instance @scheme[menu%])])
+           (help-menu:before-about [help-menu (is-a?/c menu%)])
            void?]{
 
 Adds the Help Desk menu item and the Welcome to DrScheme menu item.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% betweens 
-
 }
 
 @defmethod[#:mode override 
@@ -213,7 +210,7 @@ Does nothing.
 }}
 
 @defmethod[(get-show-menu)
-           (instanceof @scheme[menu%])]{
+           (is-a?/c menu%)]{
 \index{View menu}
 
 returns the view menu, for use by the

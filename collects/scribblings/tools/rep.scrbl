@@ -321,7 +321,7 @@ editor it is mixed onto.
 
 @defmethod[#:mode override 
            (get-keymaps)
-           (listof (instanceof @scheme[keymap%]))]{
+           (listof (is-a?/c keymap%))]{
 
 Calls the super method and adds in a keymap with the
 drscheme-specific keybindings:

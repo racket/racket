@@ -346,26 +346,26 @@ Returns @scheme["Definitions"].
 }
 
 @defmethod[(get-break-button)
-           (instanceof @scheme[button%])]{
+           (is-a?/c button%)]{
 Returns the break button. Mostly used for test suites.
 
 }
 
 @defmethod[(get-button-panel)
-           (instanceof @scheme[horizontal-panel%])]{
+           (is-a?/c horizontal-panel%)]{
 This panel goes along the top of the drscheme window and has buttons
 for important actions the user frequently executes. 
 
 A tool can add a button to this panel to make some new functionality
 easily accessible to the user.
 
-See also mrlib's @scheme[bitmap-label-maker].
+See also mrlib's @scheme[switchable-button%].
 
 }
 
 @defmethod[#:mode override 
            (get-canvas)
-           (instanceof @scheme[editor-canvas%])]{
+           (is-a?/c editor-canvas%)]{
 
 Returns the result of
 @method[drscheme:unit:frame<%> get-definitions-canvas].
@@ -375,7 +375,7 @@ Returns the result of
 
 @defmethod[#:mode override 
            (get-canvas\%)
-           (instanceof (derived-from @scheme[canvas%]))]{
+           (is-a?/c canvas%)]{
 
 Returns the result of
 @scheme[drscheme:get/extend:get-definitions-canvas].
@@ -384,7 +384,7 @@ Returns the result of
 }
 
 @defmethod*[([(get-definitions/interactions-panel-parent)
-              (instanceof @scheme[vertical-panel%])]
+              (is-a?/c vertical-panel%)]
              [(get-definitions/interactions-panel-parent)
               void?])]{
 @methspec{
@@ -413,7 +413,7 @@ Second case:
 
 @defmethod[#:mode override 
            (get-editor)
-           (instanceof @scheme[editor<%>])]{
+           (is-a?/c editor<%>)]{
 
 Returns the result of
 @method[drscheme:unit:frame<%> get-definitions-text].
@@ -424,7 +424,7 @@ Returns the result of
 
 @defmethod[#:mode override 
            (get-editor\%)
-           (instanceof (derived-from @scheme[editor<%>]))]{
+           (is-a?/c editor<%>)]{
 
 Returns the result of
 @scheme[drscheme:get/extend:get-definitions-text].
@@ -433,7 +433,7 @@ Returns the result of
 }
 
 @defmethod[(get-execute-button)
-           (instanceof @scheme[button%])]{
+           (is-a?/c button%)]{
 Returns the Run button. Mostly used for test suites.
 
 }
@@ -576,7 +576,7 @@ Returns the currently active tab.
 }
 
 @defmethod[(get-definitions-canvas)
-           (instanceof (derivedfrom @scheme[drscheme:unit:definitions-canvas%]))]{
+           (is-a?/c drscheme:unit:definitions-canvas%)]{
 
 This canvas is the canvas containing the 
 @method[drscheme:unit:frame<%> get-definitions-text]. It is initially the top half of the drscheme window.
@@ -589,7 +589,7 @@ object, but if you change the
 }
 
 @defmethod[(get-definitions-text)
-           (instaceof (derivedfrom @scheme[drscheme:unit:definitions-text%]))]{
+           (is-a?/c drscheme:unit:definitions-text%)]{
 
 Calls result of
 @method[drscheme:unit:frame<%> get-current-tab]'s 
@@ -599,7 +599,7 @@ Calls result of
 }
 
 @defmethod[(get-insert-menu)
-           (is-a?/c @scheme[menu%])]{
+           (is-a?/c menu%)]{
 @methspec{
 
 Returns the \scm|"Insert"| menu. 
@@ -637,8 +637,8 @@ Returns the list of tabs in this frame.
 }
 
 @defmethod[#:mode pubment 
-           (on-tab-change [from-tab (is-a?/c @scheme[drscheme:unit:tab<%>])]
-                          [to-tab (is-a?/c @scheme[drscheme:unit:tab<%>])])
+           (on-tab-change [from-tab (is-a?/c drscheme:unit:tab<%>)]
+                          [to-tab (is-a?/c drscheme:unit:tab<%>)])
            void?]{
 @methspec{
 

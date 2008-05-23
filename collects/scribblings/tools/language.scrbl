@@ -331,7 +331,7 @@ Use the
 
 
 
-@defmethod[(config-panel [parent (instanceof @scheme[panel%])])
+@defmethod[(config-panel [parent (is-a?/c panel%)])
            (case-> (-> settings) (settings -> void))]{
 This method is the same as
 @method[drscheme:language:language<%> config-panel].
@@ -588,7 +588,7 @@ Defaultly returns the value from:
 
 }}
 
-@defmethod[(config-panel [parent (instanceof @scheme[panel%])])
+@defmethod[(config-panel [parent (is-a?/c panel%)])
            (case-> (-> settings) (settings -> void))]{
 This method used by the language configuration dialog to
 construct the "details" panel for this language. It accepts
