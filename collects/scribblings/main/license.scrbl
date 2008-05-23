@@ -136,7 +136,7 @@ PLT software includes or extends the following copyrighted material:
 }
 
 @copyright{
-  Clanbomber icon
+  Clanbomber icon and Error icons
   Everaldo Coelho
   http://www.everaldo.com/
 }
