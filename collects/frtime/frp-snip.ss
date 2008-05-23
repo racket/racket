@@ -3,6 +3,8 @@
            mzlib/string
            mzlib/list
            mzlib/port
+
+           framework
            
            ;; FRP requires
            
@@ -85,6 +87,7 @@
              (send (get-editor) lock #t)))))
 
       (super-new
+       [editor (new scheme:text%)]
        [with-border? #f]
        [left-margin 0]
        [right-margin 0]
