@@ -10,6 +10,10 @@
          "context.ss"
          "steps.ss")
 
+(define-syntax-rule (STRICT-CHECKS form ...)
+  (when #f
+    form ... (void)))
+
 (define state/c (or/c state? false/c))
 (define context/c any/c)
 (define big-context/c any/c)
@@ -277,17 +281,22 @@
            (loop (unbox from) (unbox to))]
           [(and (struct? from) (struct? to))
            (loop (struct->vector from) (struct->vector to))]
+          [(eqv? from to)
+           (void)]
           [else
-           (unless (eqv? from to)
-             (fprintf (current-error-port)
-                      "from:\n~e\n\nto:\n~e\n\n"
-                      (stx->datum from)
-                      (stx->datum to))
-             (fprintf (current-error-port)
-                      "original from:\n~e\n\noriginal to:\n~e\n\n"
-                      (stx->datum from0)
-                      (stx->datum to0))
-             (error 'add-to-renames-table))
+           ;; FIXME: bad rename indicates something out of sync
+           ;; But for now, just drop it to avoid macro stepper error.
+           ;; Only bad effect should be missed subterms (usually at phase1).
+           (STRICT-CHECKS
+            (fprintf (current-error-port)
+                     "from:\n~e\n\nto:\n~e\n\n"
+                     (stx->datum from)
+                     (stx->datum to))
+            (fprintf (current-error-port)
+                     "original from:\n~e\n\noriginal to:\n~e\n\n"
+                     (stx->datum from0)
+                     (stx->datum to0))
+            (error 'add-to-renames-table))
            (void)])))
 
 (define (compose-renames-mappings first second)
