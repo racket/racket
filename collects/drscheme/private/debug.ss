@@ -178,9 +178,9 @@ profile todo:
                          (super-make-object bitmap))])
                note%))))
     
-    (define bug-note% (make-note% "bug09.png" 'png/mask))
+    (define bug-note% (make-note% "stop-multi.png" 'png/mask))
     (define mf-note% (make-note% "mf.gif" 'gif))
-    (define file-note% (make-note% "file.gif" 'gif))
+    (define file-note% (make-note% "stop-32x32.png" 'gif))
     
     ;; display-stats : (syntax -> syntax)
     ;; count the number of syntax expressions & number of with-continuation-marks in an 

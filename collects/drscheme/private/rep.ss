@@ -510,27 +510,7 @@ TODO
         (if (send bitmap ok?)
             (make-object image-snip% bitmap)
             (make-object string-snip% "[open file]"))))
-    (define docs-icon
-      (let ([bitmap
-             (make-object bitmap%
-               (build-path (collection-path "icons") "book.gif"))])
-        (if (send bitmap ok?)
-            (make-object image-snip% bitmap)
-            (make-object string-snip% "[open file]"))))
-    (define mf-icon 
-      (let ([bitmap
-             (make-object bitmap%
-               (build-path (collection-path "icons") "mf.gif"))])
-        (if (send bitmap ok?)
-            (make-object image-snip% bitmap)
-            (make-object string-snip% "[mf]"))))
-    (define bug-icon 
-      (let ([bitmap
-             (make-object bitmap%
-               (build-path (collection-path "icons") "bug09.png"))])
-        (if (send bitmap ok?)
-            (make-object image-snip% bitmap)
-            (make-object string-snip% "[err]"))))
+    
     
     ;; insert/delta : (instanceof text%) (union snip string) (listof style-delta%) *-> (values number number)
     ;; inserts the string/stnip into the text at the end and changes the
