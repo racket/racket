@@ -55,6 +55,8 @@
                 callback
                 [alternate-bitmap bitmap])
     
+    (define/override (get-label) label)
+    
     (define disable-bitmap (make-dull-mask bitmap))
     
     (define alternate-disable-bitmap
