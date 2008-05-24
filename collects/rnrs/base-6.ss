@@ -75,7 +75,7 @@
              [r6rs:string->number string->number])
 
  ;; 11.8
- not boolean?
+ not boolean? boolean=?
 
  ;; 11.9
  (rename-out [r5rs:pair? pair?]

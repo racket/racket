@@ -951,6 +951,11 @@
     (test (boolean? 0)           #f)
     (test (boolean? '())         #f)
 
+    (test (boolean=? #f #f) #f)
+    (test (boolean=? #t #t) #t)
+    (test (boolean=? #t #f) #f)
+    (test (boolean=? #f #t) #f)
+
     ;; 11.9
     (test (pair? '(a . b))         #t)
     (test (pair? '(a b c))         #t)
