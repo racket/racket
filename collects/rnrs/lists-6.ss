@@ -90,7 +90,7 @@
 
   (define (exists1 proc list)
     (if (null? list)
-        #t
+        #f
         (let loop ((list list))
           (let ((next (cdr list)))
             (if (null? next)

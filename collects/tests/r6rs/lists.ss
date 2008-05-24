@@ -13,6 +13,7 @@
     (test (find even? '(3 1 4 1 5 9)) 4)
     (test (find even? '(3 1 5 1 5 9)) #f)
     
+    (test (for-all even? '()) #t)
     (test (for-all even? '(3 1 4 1 5 9)) #f)
     (test (for-all even? '(3 1 4 1 5 9 . 2)) #f)
     (test (for-all even? '(2 4 14)) #t)
@@ -25,6 +26,7 @@
     
     (test (exists even? '(3 1 4 1 5 9)) #t)
     (test (exists even? '(3 1 1 5 9)) #f)
+    (test (exists even? '()) #f)
     (test/exn (exists even? '(3 1 1 5 9 . 2)) &assertion)
     (test (exists (lambda (n) (and (even? n) n)) '(2 1 4 14)) 2)
     (test (exists < '(1 2 4) '(2 3 4)) #t)
