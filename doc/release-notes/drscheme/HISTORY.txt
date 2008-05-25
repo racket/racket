@@ -4,7 +4,7 @@
 
   . renamed "(module ...)" language to "Module"
 
-  . dropped "MzScheme" and "MrEd" as seperate languages;
+  . dropped "MzScheme" and "MrEd" as separate languages;
     try `#lang scheme/load' with the "Module" language
 
   . changed the "Pretty Big" and "R5RS" to assume by default
