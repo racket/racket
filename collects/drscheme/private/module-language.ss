@@ -207,17 +207,18 @@
                        executable-filename 
                        gui?
                        (lambda (exe-name)
-                         (make-embedding-executable
+                         (create-embedding-executable
                           exe-name
-                          gui?
-                          #f ;; verbose?
-                          (list (list #f program-filename))
-                          null
-                          (parameterize ([current-namespace (make-empty-namespace)])
-                            (namespace-require 'mzscheme)
-                            (compile 
-                             `(namespace-require '',(string->symbol (path->string short-program-name)))))
-                          null))))
+                          #:mred? gui?
+                          #:verbose? #f ;; verbose?
+                          #:modules (list (list #f program-filename))
+                          #:literal-expression
+                          (begin
+                            (parameterize ([current-namespace (make-base-empty-namespace)])
+                              (namespace-require 'scheme/base)
+                              (compile 
+                               `(namespace-require '',(string->symbol (path->string short-program-name))))))
+                          #:cmdline null))))
                     (let ([make-launcher (if gui? make-mred-launcher make-mzscheme-launcher)])
                       (make-launcher (list "-qt-" (path->string program-filename))
                                      executable-filename))))))))
