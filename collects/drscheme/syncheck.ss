@@ -1428,7 +1428,8 @@ If the namespace does not, they are colored the unbound color.
     ;;                  id-set (six of them)
     ;;                  hash-table[require-spec -> syntax] (three of them)
     ;;               -> void
-    (define (annotate-basic sexp source-editor-cache
+    (define (annotate-basic sexp 
+                            source-editor-cache
                             user-namespace user-directory jump-to-id
                             low-binders high-binders 
                             low-varrefs high-varrefs 
@@ -1881,14 +1882,14 @@ If the namespace does not, they are colored the unbound color.
         (color-unused source-editor-cache require-for-templates unused-require-for-templates)
         (color-unused source-editor-cache require-for-syntaxes unused-require-for-syntaxes)
         (color-unused source-editor-cache requires unused-requires)
-        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu stxs id-sets)))))
+        (hash-for-each rename-ht (lambda (k stxs) (make-rename-menu source-editor-cache stxs id-sets)))))
         
     ;; record-renamable-var : rename-ht syntax -> void
     (define (record-renamable-var rename-ht stx)
       (let ([key (list (syntax-source stx) (syntax-position stx) (syntax-span stx))])
         (hash-set! rename-ht
                    key
-                   (cons stx (hash-ref rename-ht key (λ () '()))))))
+                   (cons stx (hash-ref rename-ht key '())))))
     
     ;; color-unused : hash-table[sexp -o> syntax] hash-table[sexp -o> #f] -> void
     (define (color-unused source-editor-cache requires unused)
@@ -1910,8 +1911,10 @@ If the namespace does not, they are colored the unbound color.
     ;;                      boolean
     ;;                   -> void
     ;; adds arrows and rename menus for binders/bindings
-    (define (connect-identifier source-editor-cache var rename-ht all-binders unused requires get-binding user-namespace user-directory actual?)
-      (connect-identifier/arrow source-editor-cache var all-binders unused requires get-binding user-namespace user-directory actual?)
+    (define (connect-identifier source-editor-cache var rename-ht all-binders
+                                unused requires get-binding user-namespace user-directory actual?)
+      (connect-identifier/arrow source-editor-cache var all-binders 
+                                unused requires get-binding user-namespace user-directory actual?)
       (when (and actual? (get-ids all-binders var))
         (record-renamable-var rename-ht var)))
     
@@ -2344,8 +2347,7 @@ If the namespace does not, they are colored the unbound color.
     ;; hash-table[syntax -o> (listof syntax)] -> void
     ;; take something like a transitive closure, except
     ;; only when there are non-original links in between
-    ;; (this still has the cubic complexity in the worst case,
-    ;;  but running it on syncheck.ss it takes no time)
+    
     (define (collapse-tail-links source-editor-cache tail-ht)
       (let loop ()
         (let ([found-one? #f])
@@ -2365,9 +2367,15 @@ If the namespace does not, they are colored the unbound color.
                    stx-to-tos)))
               stx-tos)))
           
+          ;; this takes O(n^3) in general, so we just do
+          ;; one iteration. This doesn't work for case 
+          ;; expressions but it seems to for most others.
+          ;; turning this on makes this function go from about
+          ;; 55 msec to about 2400 msec on my laptop, 
+          ;; (a 43x slowdown) when checking the syntax of this file.
+        
           #;
           (when found-one?
-            (printf "\n\n")
             (loop)))))
     
     ;; add-tail-ht-link : syntax syntax -> void
@@ -2409,33 +2417,38 @@ If the namespace does not, they are colored the unbound color.
                 (loop (send enclosing-snip-admin get-editor)))
               ed))))
 
-    ;; find-source-editor : source -> editor or false
+    ;; find-source-editor : cache stx -> editor or false
     (define (find-source-editor source-editor-cache stx)
       (let ([defs-text (get-defs-text)])
         (and defs-text 
-             (let txt-loop ([text defs-text])
-               (cond
-                 [(not (syntax-source stx)) #f]
-                 [(and (is-a? text fw:text:basic<%>)
-                       (eq? (hash-ref source-editor-cache text #f)
-                            (syntax-source stx)))
-                  text]
-                 [(and (is-a? text fw:text:basic<%>)
-                       (send text port-name-matches? (syntax-source stx)))
-                  (hash-set! source-editor-cache text (syntax-source stx))
-                  text]
-                 [else
-                  (let snip-loop ([snip (send text find-first-snip)])
-                    (cond
-                      [(not snip)
-                       #f]
-                      [(and (is-a? snip editor-snip%)
-                            (send snip get-editor))
-                       (or (txt-loop (send snip get-editor))
-                           (snip-loop (send snip next)))]
-                      [else 
-                       (snip-loop (send snip next))]))])))))
+             (find-source-editor/defs source-editor-cache stx defs-text))))
     
+    ;; find-source-editor : cache stx text -> editor or false
+    (define (find-source-editor/defs source-editor-cache stx defs-text)
+      (cond
+        [(not (syntax-source stx)) #f]
+        [else
+         (let txt-loop ([text defs-text])
+           (cond
+             [(and (is-a? text fw:text:basic<%>)
+                   (eq? (hash-ref source-editor-cache text #f)
+                        (syntax-source stx)))
+              text]
+             [(and (is-a? text fw:text:basic<%>)
+                   (send text port-name-matches? (syntax-source stx)))
+              (hash-set! source-editor-cache text (syntax-source stx))
+              text]
+             [else
+              (let snip-loop ([snip (send text find-first-snip)])
+                (cond
+                  [(not snip)
+                   #f]
+                  [(and (is-a? snip editor-snip%)
+                        (send snip get-editor))
+                   (or (txt-loop (send snip get-editor))
+                       (snip-loop (send snip next)))]
+                  [else 
+                   (snip-loop (send snip next))]))]))]))
     ;; get-defs-text : -> text or false
     (define (get-defs-text)
       (let ([drs-frame (currently-processing-drscheme-frame)])
@@ -2525,33 +2538,34 @@ If the namespace does not, they are colored the unbound color.
     
     
     ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id])) (listof id-set) -> void
-    (define (make-rename-menu stxs id-sets)
+    (define (make-rename-menu source-editor-cache stxs id-sets)
       (let ([defs-frame (currently-processing-drscheme-frame)])
         (when defs-frame
           (let* ([defs-text (send defs-frame get-definitions-text)]
-                 [source (syntax-source (car stxs))]) ;; all stxs in the list must have the same source
-            (when (and (send defs-text port-name-matches? source)
-                       (send defs-text port-name-matches? source))
-              (let* ([name-to-offer (format "~a" (syntax->datum (car stxs)))]
-                     [start (- (syntax-position (car stxs)) 1)]
+                 [source (syntax-source (car stxs))] ;; all stxs in the list must have the same source
+                 [source-editor (find-source-editor source-editor-cache (car stxs))])
+            (when (is-a? source-editor text%)
+              (let* ([start (- (syntax-position (car stxs)) 1)]
                      [fin (+ start (syntax-span (car stxs)))])
                 (send defs-text syncheck:add-menu
-                      defs-text
+                      source-editor
                       start 
                       fin 
                       (syntax-e (car stxs))
                       (λ (menu)
-                        (instantiate menu-item% ()
-                          (parent menu)
-                          (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
-                          (callback
-                           (λ (x y)
-                             (let ([frame-parent (find-menu-parent menu)])
-                               (rename-callback name-to-offer
-                                                defs-text
-                                                stxs
-                                                id-sets
-                                                frame-parent)))))))))))))
+                        (let ([name-to-offer (format "~a" (syntax->datum (car stxs)))])
+                          (instantiate menu-item% ()
+                            (parent menu)
+                            (label (fw:gui-utils:format-literal-label (string-constant cs-rename-var) name-to-offer))
+                            (callback
+                             (λ (x y)
+                               (let ([frame-parent (find-menu-parent menu)])
+                                 (rename-callback source-editor-cache 
+                                                  name-to-offer
+                                                  defs-text
+                                                  stxs
+                                                  id-sets
+                                                  frame-parent))))))))))))))
     
     ;; find-parent : menu-item-container<%> -> (union #f (is-a?/c top-level-window<%>)
     (define (find-menu-parent menu)
@@ -2578,7 +2592,7 @@ If the namespace does not, they are colored the unbound color.
     ;;                   (union #f (is-a?/c top-level-window<%>)) 
     ;;                -> void
     ;; callback for the rename popup menu item
-    (define (rename-callback name-to-offer defs-text stxs id-sets parent)
+    (define (rename-callback source-editor-cache name-to-offer defs-text stxs id-sets parent)
       (let ([new-str
              (fw:keymap:call/text-keymap-initializer
               (λ ()
@@ -2588,45 +2602,51 @@ If the namespace does not, they are colored the unbound color.
                  parent
                  name-to-offer)))])
         (when new-str
-          (let ([new-sym (format "~s" (string->symbol new-str))])
-            (let* ([to-be-renamed 
-                    (remove-duplicates
-                     (sort 
-                      (apply 
-                       append
-                       (map (λ (id-set) 
-                              (apply
-                               append
-                               (map (λ (stx) (or (get-ids id-set stx) '())) stxs)))
-                            id-sets))
-                      (λ (x y) 
-                        ((syntax-position x) . >= . (syntax-position y)))))]
-                   [do-renaming?
-                    (or (not (name-duplication? to-be-renamed id-sets new-sym))
-                        (equal?
-                         (message-box/custom
-                          (string-constant check-syntax)
-                          (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
-                                  new-sym)
-                          (string-constant cs-rename-anyway)
-                          (string-constant cancel)
-                          #f
-                          parent
-                          '(stop default=2))
-                         1))])
-              (when do-renaming?
-                (unless (null? to-be-renamed)
+          (let* ([new-sym (format "~s" (string->symbol new-str))]
+                 [to-be-renamed 
+                  (remove-duplicates
+                   (sort 
+                    (apply 
+                     append
+                     (map (λ (id-set) 
+                            (apply
+                             append
+                             (map (λ (stx) (or (get-ids id-set stx) '())) stxs)))
+                          id-sets))
+                    (λ (x y) 
+                      ((syntax-position x) . >= . (syntax-position y)))))]
+                 [do-renaming?
+                  (or (not (name-duplication? to-be-renamed id-sets new-sym))
+                      (equal?
+                       (message-box/custom
+                        (string-constant check-syntax)
+                        (fw:gui-utils:format-literal-label (string-constant cs-name-duplication-error) 
+                                                           new-sym)
+                        (string-constant cs-rename-anyway)
+                        (string-constant cancel)
+                        #f
+                        parent
+                        '(stop default=2))
+                       1))])
+            (when do-renaming?
+              (unless (null? to-be-renamed)
+                (let ([txts (list defs-text)])
                   (send defs-text begin-edit-sequence)
                   (for-each (λ (stx) 
-                              (let ([source (syntax-source stx)])
-                                (when (send defs-text port-name-matches? source)
+                              (let ([source-editor (find-source-editor/defs source-editor-cache stx defs-text)])
+                                (when (is-a? source-editor text%)
+                                  (unless (memq source-editor txts)
+                                    (send source-editor begin-edit-sequence)
+                                    (set! txts (cons source-editor txts)))
                                   (let* ([start (- (syntax-position stx) 1)]
                                          [end (+ start (syntax-span stx))])
-                                    (send defs-text delete start end #f)
-                                    (send defs-text insert new-sym start start #f)))))
+                                    (send source-editor delete start end #f)
+                                    (send source-editor insert new-sym start start #f)))))
                             to-be-renamed)
                   (send defs-text invalidate-bitmap-cache)
-                  (send defs-text end-edit-sequence))))))))
+                  (for-each
+                   (λ (txt) (send txt end-edit-sequence))
+                   txts))))))))
     
     ;; name-duplication? : (listof syntax) (listof id-set) symbol -> boolean
     ;; returns #t if the name chosen would be the same as another name in this scope.
