@@ -9,9 +9,9 @@
 @(define (mzport doc from to)
    (rl-link (list "mzscheme" doc) (format "Porting from ~a to ~a" from to)))
 
-@title{Release Notes}
+@title[#:style '(no-toc)]{Release Notes}
 
-@front-toc['release]
+@front-toc['release #f]
 
 @itemize[#:style "compact"]{
 

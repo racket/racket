@@ -3,8 +3,8 @@
           scribble/decode
           "private/front-toc.ss")
 
-@title{Master Index (installation)}
+@title[#:style '(no-toc)]{Master Index (installation)}
 
-@front-toc['index]
+@front-toc['index #f]
 
 @(make-splice (index-blocks))

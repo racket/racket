@@ -376,22 +376,26 @@
                                                     (cdr l))))]
                        [else (cons (car l) (loop (cdr l)))])))))
       `((div ([class "tocset"])
-          ,@(let* ([content (render-content
-                             (or (part-title-content top) '("???"))
-                             d ri)]
-                   [content (if (null? toc-content)
-                              content
-                              `((a ([href "index.html"] [class "tocviewlink"])
-                                   ,@content)))])
-              `((div ([class "tocview"])
-                  (div ([class "tocviewtitle"]) ,@content)
-                  (div nbsp)
-                  ,@(if (null? toc-content)
-                      '()
-                      (toc-wrap
-                       `(table ([class "tocviewlist"] [cellspacing "0"])
-                               ,@toc-content))))))
-          ,@(render-onthispage-contents d ri top)
+          ,@(if (part-style? d 'no-toc)
+                null
+                (let* ([content (render-content
+                                 (or (part-title-content top) '("???"))
+                                 d ri)]
+                       [content (if (null? toc-content)
+                                    content
+                                    `((a ([href "index.html"] [class "tocviewlink"])
+                                         ,@content)))])
+                  `((div ([class "tocview"])
+                         (div ([class "tocviewtitle"]) ,@content)
+                         (div nbsp)
+                         ,@(if (null? toc-content)
+                               '()
+                               (toc-wrap
+                                `(table ([class "tocviewlist"] [cellspacing "0"])
+                                        ,@toc-content)))))))
+          ,@(render-onthispage-contents d ri top (if (part-style? d 'no-toc)
+                                                     "tocview"
+                                                     "tocsub"))
           ,@(parameterize ([extra-breaking? #t])
               (append-map (lambda (t)
                             (let loop ([t t])
@@ -412,7 +416,7 @@
     (define/public (nearly-top? d ri top)
       #f)
 
-    (define/private (render-onthispage-contents d ri top)
+    (define/private (render-onthispage-contents d ri top box-class)
       (if (ormap (lambda (p) (part-whole-page? p ri))
                  (part-parts d))
         null
@@ -474,7 +478,7 @@
                [any-parts? (ormap part? ps)])
           (if (null? ps)
             null
-            `((div ([class "tocsub"])
+            `((div ([class ,box-class])
                 ,@(get-onthispage-label)
                 (table ([class "tocsublist"]
                         [cellspacing "0"])

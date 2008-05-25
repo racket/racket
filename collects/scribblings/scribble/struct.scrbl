@@ -257,6 +257,14 @@ are as follows:
 
  @item{@scheme['hidden] --- the part title is not shown in rendered output.}
 
+ @item{@scheme['no-toc] --- as a style for the main part of a
+       document, causes the HTML output to not include a margin box
+       for the main table of contents; the ``on this page'' box that
+       contains @scheme[toc-element] and @scheme[toc-target-element]
+       links (and that only includes an ``on this page'' label for
+       multi-page documents) takes on the location and color of the
+       main table of contents, instead.}
+
 }
 
 The @scheme[to-collect] field contains @techlink{content} that is
@@ -396,6 +404,15 @@ Declares the content as a hyperlink target for @scheme[tag].
 
 Like @scheme[target-element], the content is also a kind of section
 label to be shown in the ``on this page'' table for HTML output.
+
+}
+
+
+@defstruct[(toc-element element) ([toc-content list?])]{
+
+Similar to @scheme[toc-target-element], but with specific content for
+the ``on this page'' table specified in the @scheme[toc-content]
+field.
 
 }
 

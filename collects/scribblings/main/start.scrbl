@@ -3,7 +3,7 @@
           scribble/struct
           "private/manuals.ss")
 
-@title{PLT Scheme Documentation (installation)}
+@title[#:style '(no-toc)]{PLT Scheme Documentation (installation)}
 
 @margin-note{This is an installation-specific listing. Running
              @exec{plt-help} may open a different page with local and

@@ -13,7 +13,7 @@
 
 (define ((to-toc here) there target label)
   (let* ([elt (make-element "tocsubseclink" (list label))]
-         [elt (if (eq? here there) elt (link target #:underline? #f elt))])
+         [elt (link target #:underline? (eq? here there) elt)])
     (make-toc-element #f null (list elt))))
 
 ;; FIXME: Use this to avoid hard-wiring manual titles and paths below
@@ -23,14 +23,20 @@
     (module-path-index-join `(lib ,(format "scribblings/~a/~a.scrbl" s f))
                             #f))))
 
-(define (front-toc here)
+(define (front-toc here main?)
   (define docdir (let ([d (find-doc-dir)]) (lambda (p) (build-path d p))))
-  (let ([to-toc (to-toc here)])
+  (let ([to-toc (to-toc here)]
+        [up (lambda (s)
+              (if main?
+                  s
+                  ;; This needs to use a cookie(?) to always get to the
+                  ;; user-specific page... ?
+                  (string-append "../" s)))])
     (make-splice
-     (list (to-toc 'start   "index.html" "PLT Manuals")
-           (to-toc 'search  "search/index.html" "Search PLT Manuals")
+     (list (to-toc 'start   (up "index.html") "PLT Scheme Documentation")
+           (to-toc 'search  (up "search/index.html") "Search PLT Manuals")
            spacer
-           (to-toc 'index   "master-index/index.html" "Master Index")
+           (to-toc 'index   (up "master-index/index.html") "Master Index")
            spacer
            (to-toc 'license (docdir "license/index.html") "License")
            (to-toc 'acks    (docdir "acks/index.html")    "Acknowledgments")

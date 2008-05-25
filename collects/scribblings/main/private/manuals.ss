@@ -112,4 +112,4 @@
                          (string-ci<? (str ad) (str bd)))
                        (> (car ad) (car bd)))))))))
             sections)))))
-      (front-toc 'start)))))
+      (front-toc 'start #t)))))

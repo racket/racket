@@ -3,9 +3,9 @@
           drscheme/acks
           "private/front-toc.ss")
 
-@title{Acknowledgements}
+@title[#:style '(no-toc)]{Acknowledgements}
 
-@front-toc['acks]
+@front-toc['acks #f]
 
 @(get-general-acks)
 

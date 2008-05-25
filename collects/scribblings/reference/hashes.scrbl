@@ -137,7 +137,8 @@ returning an extended hash table.}
 
 @defproc[(hash-ref [hash hash?]
                    [key any/c]
-                   [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+                   [failure-result any/c (lambda () 
+                                           (raise (make-exn:fail:contract ....)))])
          any]{
 
 Returns the value for @scheme[key] in @scheme[hash]. If no value

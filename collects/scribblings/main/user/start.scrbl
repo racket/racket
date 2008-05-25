@@ -3,7 +3,7 @@
           scribble/struct
           "../private/manuals.ss")
 
-@title{PLT Scheme Documentation}
+@title[#:style '(no-toc)]{PLT Scheme Documentation}
 
 @;{
 @; This page should always be the default, so it doesn't need to say

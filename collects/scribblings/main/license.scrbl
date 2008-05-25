@@ -4,9 +4,9 @@
 
 @(define (copyright . strs) (apply verbatim #:indent 2 strs))
 
-@front-toc['license]
+@front-toc['license #f]
 
-@title{License}
+@title[#:style '(no-toc)]{License}
 
 PLT software and documentation is distributed under the GNU Lesser
 General Public License (LGPL).  This means

@@ -16,8 +16,6 @@
 @(defmodule drscheme/tool-lib)
 
 
-@bold{This Manual}
-
 This manual describes DrScheme's tools interface. It assumes
 familiarity with 
 PLT Scheme, as described in 
