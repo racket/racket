@@ -22,7 +22,7 @@
 
 (define literal
   (let ([loc (xml:make-location 0 0 0)])
-    (lambda strings (xml:make-cdata loc loc (apply string-append strings)))))
+    (lambda strings (xml:make-cdata loc loc (string-append* strings)))))
 (define (ref-style path)
   `(link ([rel "stylesheet"] [type "text/css"] [href ,path] [title "default"])))
 (define (inlined-style . body)
@@ -343,72 +343,72 @@
             (if p
               (loop p (if (reveal-subparts? d) mine d))
               (values d mine)))))
+      (define (do-part pp)
+        (let ([p (car pp)] [show-number? (cdr pp)])
+          `(tr (td ([align "right"])
+                 ,@(if show-number?
+                     (format-number
+                      (collected-info-number (part-collected-info p ri))
+                      '((tt nbsp)))
+                     '("-" nbsp)))
+               (td (a ([href
+                        ,(let ([dest (resolve-get p ri (car (part-tags p)))])
+                           (format "~a~a~a"
+                                   (from-root (relative->path (dest-path dest))
+                                              (get-dest-directory))
+                                   (if (dest-page? dest) "" "#")
+                                   (if (dest-page? dest)
+                                     ""
+                                     (anchor-name (dest-anchor dest)))))]
+                       [class ,(if (eq? p mine)
+                                 "tocviewselflink" "tocviewlink")])
+                     ,@(render-content (or (part-title-content p) '("???"))
+                                       d ri))))))
       (define toc-content
         (parameterize ([extra-breaking? #t])
-          (map (lambda (pp)
-                 (let ([p (car pp)]
-                       [show-number? (cdr pp)])
-                   `(tr
-                     (td ([align "right"])
-                         ,@(if show-number?
-                               (format-number (collected-info-number (part-collected-info p ri))
-                                              '((tt nbsp)))
-                               '("-" nbsp)))
-                     (td
-                      (a ([href ,(let ([dest (resolve-get p ri (car (part-tags p)))])
-                                   (format "~a~a~a"
-                                           (from-root (relative->path (dest-path dest))
-                                                      (get-dest-directory))
-                                           (if (dest-page? dest) "" "#")
-                                           (if (dest-page? dest)
-                                               ""
-                                               (anchor-name (dest-anchor dest)))))]
-                          [class ,(if (eq? p mine)
-                                      "tocviewselflink"
-                                      "tocviewlink")])
-                         ,@(render-content (or (part-title-content p) '("???"))
-                                           d ri))))))
+          (map do-part
                (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
                  (cond [(null? l) null]
                        [(reveal-subparts? (caar l))
-                        (cons (car l) (loop (append (map (lambda (v) (cons v #f))
-                                                         (part-parts (caar l)))
-                                                    (cdr l))))]
+                        (cons (car l)
+                              (loop (append (map (lambda (v) (cons v #f))
+                                                 (part-parts (caar l)))
+                                            (cdr l))))]
                        [else (cons (car l) (loop (cdr l)))])))))
       `((div ([class "tocset"])
           ,@(if (part-style? d 'no-toc)
-                null
-                (let* ([content (render-content
-                                 (or (part-title-content top) '("???"))
-                                 d ri)]
-                       [content (if (null? toc-content)
-                                    content
-                                    `((a ([href "index.html"] [class "tocviewlink"])
-                                         ,@content)))])
-                  `((div ([class "tocview"])
-                         (div ([class "tocviewtitle"]) ,@content)
-                         (div nbsp)
-                         ,@(if (null? toc-content)
-                               '()
-                               (toc-wrap
-                                `(table ([class "tocviewlist"] [cellspacing "0"])
-                                        ,@toc-content)))))))
-          ,@(render-onthispage-contents d ri top (if (part-style? d 'no-toc)
-                                                     "tocview"
-                                                     "tocsub"))
+              null
+              (let* ([content (render-content
+                               (or (part-title-content top) '("???"))
+                               d ri)]
+                     [content (if (null? toc-content)
+                                content
+                                `((a ([href "index.html"] [class "tocviewlink"])
+                                     ,@content)))])
+                `((div ([class "tocview"])
+                       (div ([class "tocviewtitle"]) ,@content)
+                       (div nbsp)
+                       ,@(if (null? toc-content)
+                           '()
+                           (toc-wrap
+                            `(table ([class "tocviewlist"] [cellspacing "0"])
+                                    ,@toc-content)))))))
+          ,@(render-onthispage-contents
+             d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
           ,@(parameterize ([extra-breaking? #t])
-              (append-map (lambda (t)
-                            (let loop ([t t])
-                              (if (table? t)
-                                (render-table t d ri #f)
-                                (loop (delayed-block-blocks t ri)))))
-                          (filter (lambda (e)
-                                    (let loop ([e e])
-                                      (or (and (auxiliary-table? e)
-                                               (pair? (table-flowss e)))
-                                          (and (delayed-block? e)
-                                               (loop (delayed-block-blocks e ri))))))
-                                  (flow-paragraphs (part-flow d))))))))
+              (append-map
+               (lambda (t)
+                 (let loop ([t t])
+                   (if (table? t)
+                     (render-table t d ri #f)
+                     (loop (delayed-block-blocks t ri)))))
+               (filter (lambda (e)
+                         (let loop ([e e])
+                           (or (and (auxiliary-table? e)
+                                    (pair? (table-flowss e)))
+                               (and (delayed-block? e)
+                                    (loop (delayed-block-blocks e ri))))))
+                       (flow-paragraphs (part-flow d))))))))
 
     (define/public (get-onthispage-label)
       null)
@@ -420,68 +420,52 @@
       (if (ormap (lambda (p) (part-whole-page? p ri))
                  (part-parts d))
         null
-        (let* ([nearly-top? (lambda (d) (nearly-top? d ri top))]
-               [ps ((if (nearly-top? d) values cdr)
-                    (let flatten ([d d])
-                      (append*
-                       ;; don't include the section if it's in the TOC
-                       (if (nearly-top? d) null (list d))
-                       ;; get internal targets:
-                       (letrec ([flow-targets
-                                 (lambda (flow)
-                                   (apply append (map block-targets (flow-paragraphs flow))))]
-                                [block-targets
-                                 (lambda (e)
-                                   (cond
-                                     [(table? e) (table-targets e)]
-                                     [(paragraph? e) (para-targets e)]
-                                     [(itemization? e)
-                                      (apply append (map flow-targets (itemization-flows e)))]
-                                     [(blockquote? e)
-                                      (apply append (map block-targets (blockquote-paragraphs e)))]
-                                     [(delayed-block? e)
-                                      null]))]
-                                [para-targets
-                                 (lambda (para)
-                                   (let loop ([c (paragraph-content para)])
-                                     (define a (and (pair? c) (car c)))
-                                     (cond
-                                       [(null? c) null]
-                                       [(toc-target-element? a)
-                                        (cons a (loop (cdr c)))]
-                                       [(toc-element? a)
-                                        (cons a (loop (cdr c)))]
-                                       [(element? a)
-                                        (append (loop (element-content a))
-                                                (loop (cdr c)))]
-                                       [(delayed-element? a)
-                                        (loop (append (delayed-element-content a ri)
-                                                      (cdr c)))]
-                                       [(part-relative-element? a)
-                                        (loop (append (part-relative-element-content a ri)
-                                                      (cdr c)))]
-                                       [else (loop (cdr c))])))]
-                                [table-targets
-                                 (lambda (table)
-                                   (append-map
-                                    (lambda (flows)
-                                      (append-map
-                                       (lambda (f)
-                                         (if (eq? f 'cont)
-                                           null
-                                           (flow-targets f)))
-                                       flows))
-                                    (table-flowss table)))])
-                         (append-map block-targets
-                                     (flow-paragraphs (part-flow d))))
-                       (map flatten (part-parts d)))))]
-               [any-parts? (ormap part? ps)])
+        (let ([nearly-top? (lambda (d) (nearly-top? d ri top))])
+          (define (flow-targets flow)
+            (append-map block-targets (flow-paragraphs flow)))
+          (define (block-targets e)
+            (cond [(table? e) (table-targets e)]
+                  [(paragraph? e) (para-targets e)]
+                  [(itemization? e)
+                   (append-map flow-targets (itemization-flows e))]
+                  [(blockquote? e)
+                   (append-map block-targets (blockquote-paragraphs e))]
+                  [(delayed-block? e) null]))
+          (define (para-targets para)
+            (let loop ([c (paragraph-content para)])
+              (define a (and (pair? c) (car c)))
+              (cond
+                [(null? c) null]
+                [(toc-target-element? a) (cons a (loop (cdr c)))]
+                [(toc-element? a) (cons a (loop (cdr c)))]
+                [(element? a)
+                 (append (loop (element-content a)) (loop (cdr c)))]
+                [(delayed-element? a)
+                 (loop (append (delayed-element-content a ri) (cdr c)))]
+                [(part-relative-element? a)
+                 (loop (append (part-relative-element-content a ri) (cdr c)))]
+                [else (loop (cdr c))])))
+          (define  (table-targets table)
+            (append-map
+             (lambda (flows)
+               (append-map (lambda (f) (if (eq? f 'cont) null (flow-targets f)))
+                           flows))
+             (table-flowss table)))
+          (define ps
+            ((if (nearly-top? d) values cdr)
+             (let flatten ([d d])
+               (append*
+                ;; don't include the section if it's in the TOC
+                (if (nearly-top? d) null (list d))
+                ;; get internal targets:
+                (append-map block-targets (flow-paragraphs (part-flow d)))
+                (map flatten (part-parts d))))))
+          (define any-parts? (ormap part? ps))
           (if (null? ps)
             null
             `((div ([class ,box-class])
                 ,@(get-onthispage-label)
-                (table ([class "tocsublist"]
-                        [cellspacing "0"])
+                (table ([class "tocsublist"] [cellspacing "0"])
                   ,@(map (lambda (p)
                            `(tr
                              (td
@@ -493,20 +477,29 @@
                                          '((tt nbsp)))))
                                   '(""))
                               ,@(if (toc-element? p)
-                                  (render-content (toc-element-toc-content p) d ri)
+                                  (render-content (toc-element-toc-content p)
+                                                  d ri)
                                   (parameterize ([current-no-links #t]
                                                  [extra-breaking? #t])
-                                    `((a ([href ,(if (part? p)
-                                                   (format "#~a" (anchor-name (tag-key (car (part-tags p)) ri)))
-                                                   (format "#~a" (anchor-name (tag-key (target-element-tag p) ri))))]
-                                          [class ,(if (part? p)
-                                                    "tocsubseclink"
-                                                    (if any-parts?
-                                                      "tocsubnonseclink"
-                                                      "tocsublink"))])
-                                         ,@(if (part? p)
-                                             (render-content (or (part-title-content p) '("???")) d ri)
-                                             (render-content (element-content p) d ri)))))))))
+                                    `((a ([href
+                                           ,(format
+                                             "#~a"
+                                             (anchor-name
+                                              (tag-key (if (part? p)
+                                                         (car (part-tags p))
+                                                         (target-element-tag p))
+                                                       ri)))]
+                                          [class
+                                           ,(cond
+                                              [(part? p) "tocsubseclink"]
+                                              [any-parts? "tocsubnonseclink"]
+                                              [else "tocsublink"])])
+                                         ,@(render-content
+                                            (if (part? p)
+                                              (or (part-title-content p)
+                                                  '("???"))
+                                              (element-content p))
+                                            d ri))))))))
                          ps))))))))
 
     (define/public (render-one-part d ri fn number)
@@ -649,7 +642,8 @@
     (define/public (render-version d ri)
       `((div ([class "versionbox"])
           ,@(render-content
-             (list (make-element "version" (list "Version: " (current-version))))
+             (list (make-element "version"
+                                 (list "Version: " (current-version))))
              d
              ri))))
 
@@ -668,7 +662,8 @@
                           [else 'h5])
                        ,@(format-number number '((tt nbsp)))
                        ,@(map (lambda (t)
-                                `(a ((name ,(format "~a" (anchor-name (tag-key t ri)))))))
+                                `(a ([name ,(format "~a" (anchor-name
+                                                          (tag-key t ri)))])))
                               (part-tags d))
                        ,@(if (part-title-content d)
                            (render-content (part-title-content d) d ri)
@@ -684,7 +679,7 @@
     (define/private (render-flow* p part ri start-inline? special-last?)
       ;; Wrap each table with <p>, except for a trailing table
       ;;  when `special-last?' is #t
-      (let loop ([f (flow-paragraphs p)][inline? start-inline?])
+      (let loop ([f (flow-paragraphs p)] [inline? start-inline?])
         (cond
           [(null? f) null]
           [(and (table? (car f))
@@ -706,29 +701,34 @@
     (define/override (render-element e part ri)
       (cond
         [(hover-element? e)
-         `((span ((title ,(hover-element-text e))) ,@(render-plain-element e part ri)))]
+         `((span ([title ,(hover-element-text e)])
+             ,@(render-plain-element e part ri)))]
         [(target-element? e)
-         `((a ((name ,(format "~a" (anchor-name (tag-key (target-element-tag e) ri))))))
+         `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
+                                                         ri)))]))
            ,@(render-plain-element e part ri))]
         [(and (link-element? e) (not (current-no-links)))
          (parameterize ([current-no-links #t])
-           (let-values ([(dest ext?) (resolve-get/ext? part ri (link-element-tag e))])
+           (let-values ([(dest ext?)
+                         (resolve-get/ext? part ri (link-element-tag e))])
              (if dest
-               `((a [(href ,(if (and ext? external-tag-path)
-                              ;; Redirected to search:
-                              (format "~a;tag=~a"
-                                      external-tag-path
-                                      (base64-encode
-                                       (string->bytes/utf-8
-                                        (format "~a" (serialize (link-element-tag e))))))
-                              ;; Normal link:
-                              (format "~a~a~a"
-                                      (from-root (relative->path (dest-path dest))
-                                                 (get-dest-directory))
-                                      (if (dest-page? dest) "" "#")
-                                      (if (dest-page? dest)
-                                        ""
-                                        (anchor-name (dest-anchor dest))))))
+               `((a [(href
+                      ,(if (and ext? external-tag-path)
+                         ;; Redirected to search:
+                         (format "~a;tag=~a"
+                                 external-tag-path
+                                 (base64-encode
+                                  (string->bytes/utf-8
+                                   (format "~a" (serialize
+                                                 (link-element-tag e))))))
+                         ;; Normal link:
+                         (format "~a~a~a"
+                                 (from-root (relative->path (dest-path dest))
+                                            (get-dest-directory))
+                                 (if (dest-page? dest) "" "#")
+                                 (if (dest-page? dest)
+                                   ""
+                                   (anchor-name (dest-anchor dest))))))
                      ,@(if (string? (element-style e))
                          `([class ,(element-style e)])
                          null)]
@@ -747,156 +747,147 @@
         [else (render-plain-element e part ri)]))
 
     (define/private (render-plain-element e part ri)
-      (let ([style (and (element? e) (element-style e))])
-        (cond
-          [(symbol? style)
-           (case style
-             [(italic) `((i ,@(super render-element e part ri)))]
-             [(bold) `((b ,@(super render-element e part ri)))]
-             [(tt) `((span ([class "stt"]) ,@(super render-element e part ri)))]
-             [(no-break) `((span ([class "nobreak"]) ,@(super render-element e part ri)))]
-             [(sf) `((b (font ([size "-1"][face "Helvetica"]) ,@(super render-element e part ri))))]
-             [(subscript) `((sub ,@(super render-element e part ri)))]
-             [(superscript) `((sup ,@(super render-element e part ri)))]
-             [(hspace) `((span ([class "hspace"])
-                               ,@(let ([str (content->string (element-content e))])
-                                   (map (lambda (c) 'nbsp) (string->list str)))))]
-             [(newline) `((br))]
-             [else (error 'html-render "unrecognized style symbol: ~e" style)])]
-          [(string? style) 
-           `((span ([class ,style]) ,@(super render-element e part ri)))]
-          [(and (pair? style)
-                (or (eq? (car style) 'bg-color)
-                    (eq? (car style) 'color)))
-           (unless (and (list? style)
-                        (or (and (= 4 (length style))
-                                 (andmap byte? (cdr style)))
-                            (and (= 2 (length style))
-                                 (member (cadr style)
-                                         '("white" "black" "red" "green" "blue"
-                                           "cyan" "magenta" "yellow")))))
-             (error 'render-font "bad color style: ~e"  style))
-           `((font ([style ,(format "~acolor: ~a"
-                                    (if (eq? (car style) 'bg-color)
-                                      "background-"
-                                      "")
-                                    (if (= 2 (length style))
-                                      (cadr style)
-                                      (string-append*
-                                       "#"
-                                       (map (lambda (v)
-                                              (let ([s (format "0~x" v)])
-                                                (substring s (- (string-length s) 2))))
-                                            (cdr style)))))])
-                   ,@(super render-element e part ri)))]
-          [(target-url? style)
-           (if (current-no-links)
-             (super render-element e part ri)
-             (parameterize ([current-no-links #t])
-               `((a ([href ,(let ([addr (target-url-addr style)])
-                              (if (path? addr)
-                                (from-root addr (get-dest-directory))
-                                addr))]
-                     ,@(if (string? (target-url-style style))
-                         `([class ,(target-url-style style)])
-                         null))
-                    ,@(super render-element e part ri)))))]
-          [(url-anchor? style)
-           `((a ([name ,(url-anchor-name style)])
-                ,@(super render-element e part ri)))]
-          [(image-file? style)
-           (let* ([src (main-collects-relative->path (image-file-path style))]
-                  [scale (image-file-scale style)]
-                  [sz (if (= 1.0 scale)
-                        null
-                        ;; Try to extract file size:
-                        (call-with-input-file*
-                         src
-                         (lambda (in)
-                           (if (regexp-try-match #px#"^\211PNG.{12}" in)
-                             (let ([w (read-bytes 4 in)]
-                                   [h (read-bytes 4 in)]
-                                   [to-num (lambda (s)
-                                             (number->string
-                                              (inexact->exact
-                                               (floor (* scale (integer-bytes->integer s #f #t))))))])
-                               `([width ,(to-num w)]
-                                 [height ,(to-num h)]))
-                             null))))])
-             `((img ([src ,(let ([p (install-file src)])
-                             (if (path? p)
-                               (url->string (path->url (path->complete-path p)))
-                               p))])
-                    ,@sz)))]
-          [else (super render-element e part ri)])))
+      (define style (and (element? e) (element-style e)))
+      (cond
+        [(symbol? style)
+         (case style
+           [(italic) `((i ,@(super render-element e part ri)))]
+           [(bold) `((b ,@(super render-element e part ri)))]
+           [(tt) `((span ([class "stt"]) ,@(super render-element e part ri)))]
+           [(no-break) `((span ([class "nobreak"])
+                           ,@(super render-element e part ri)))]
+           [(sf) `((b (font ([size "-1"] [face "Helvetica"])
+                        ,@(super render-element e part ri))))]
+           [(subscript) `((sub ,@(super render-element e part ri)))]
+           [(superscript) `((sup ,@(super render-element e part ri)))]
+           [(hspace) `((span ([class "hspace"])
+                         ,@(let ([str (content->string (element-content e))])
+                             (map (lambda (c) 'nbsp) (string->list str)))))]
+           [(newline) `((br))]
+           [else (error 'html-render "unrecognized style symbol: ~e" style)])]
+        [(string? style)
+         `((span ([class ,style]) ,@(super render-element e part ri)))]
+        [(and (pair? style) (memq (car style) '(color bg-color)))
+         (unless (and (list? style)
+                      (or (and (= 4 (length style))
+                               (andmap byte? (cdr style)))
+                          (and (= 2 (length style))
+                               (member (cadr style)
+                                       '("white" "black" "red" "green" "blue"
+                                         "cyan" "magenta" "yellow")))))
+           (error 'render-font "bad color style: ~e"  style))
+         `((font ([style
+                   ,(format "~acolor: ~a"
+                            (if (eq? (car style) 'bg-color) "background-" "")
+                            (if (= 2 (length style))
+                              (cadr style)
+                              (string-append*
+                               "#"
+                               (map (lambda (v)
+                                      (let ([s (number->string v 16)])
+                                        (if (< v 16) (string-append "0" s) s)))
+                                    (cdr style)))))])
+                 ,@(super render-element e part ri)))]
+        [(target-url? style)
+         (if (current-no-links)
+           (super render-element e part ri)
+           (parameterize ([current-no-links #t])
+             `((a ([href ,(let ([addr (target-url-addr style)])
+                            (if (path? addr)
+                              (from-root addr (get-dest-directory))
+                              addr))]
+                   ,@(if (string? (target-url-style style))
+                       `([class ,(target-url-style style)])
+                       null))
+                  ,@(super render-element e part ri)))))]
+        [(url-anchor? style)
+         `((a ([name ,(url-anchor-name style)])
+             ,@(super render-element e part ri)))]
+        [(image-file? style)
+         (let* ([src (main-collects-relative->path (image-file-path style))]
+                [scale (image-file-scale style)]
+                [to-num
+                 (lambda (s)
+                   (number->string
+                    (inexact->exact
+                     (floor (* scale (integer-bytes->integer s #f #t))))))]
+                [sz (if (= 1.0 scale)
+                      null
+                      ;; Try to extract file size:
+                      (call-with-input-file*
+                       src
+                       (lambda (in)
+                         (if (regexp-try-match #px#"^\211PNG.{12}" in)
+                           `([width ,(to-num (read-bytes 4 in))]
+                             [height ,(to-num (read-bytes 4 in))])
+                           null))))])
+           `((img ([src ,(let ([p (install-file src)])
+                           (if (path? p)
+                             (url->string (path->url (path->complete-path p)))
+                             p))])
+                  ,@sz)))]
+        [else (super render-element e part ri)]))
 
     (define/override (render-table t part ri need-inline?)
-      (define index? (eq? 'index (table-style t)))
+      (define t-style (table-style t))
+      (define t-style-get (if (and (pair? t-style) (list? t-style))
+                            (lambda (k) (assoc k (or t-style null)))
+                            (lambda (k) #f)))
+      (define index? (eq? 'index t-style))
+      (define (make-row flows style)
+        `(tr (,@(if style `([class ,style]) null))
+           ,@(let loop ([ds flows]
+                        [as (cdr (or (t-style-get 'alignment)
+                                     (cons #f (map (lambda (x) #f) flows))))]
+                        [vas (cdr (or (t-style-get 'valignment)
+                                      (cons #f (map (lambda (x) #f) flows))))])
+               (cond
+                 [(null? ds) null]
+                 [(eq? (car ds) 'cont)
+                  (loop (cdr ds) (cdr as) (cdr vas))]
+                 [else
+                  (let ([d (car ds)] [a (car as)] [va (car vas)])
+                    (cons
+                     `(td (,@(case a
+                               [(#f) null]
+                               [(right) '([align "right"])]
+                               [(center) '([align "center"])]
+                               [(left) '([align "left"])])
+                           ,@(case va
+                               [(#f) null]
+                               [(top) '((valign "top"))]
+                               [(baseline) '((valign "baseline"))]
+                               [(bottom) '((valign "bottom"))])
+                           ,@(if (and (pair? (cdr ds))
+                                      (eq? 'cont (cadr ds)))
+                               `([colspan
+                                  ,(number->string
+                                    (let loop ([n 2] [ds (cddr ds)])
+                                      (cond [(null? ds) n]
+                                            [(eq? 'cont (car ds))
+                                             (loop (+ n 1) (cdr ds))]
+                                            [else n])))])
+                               null))
+                          ,@(render-flow d part ri #f))
+                     (loop (cdr ds) (cdr as) (cdr vas))))]))))
       `(,@(if index? `(,search-script ,search-field) '())
         (table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline; vertical-align: top;"])
                     null)
-                ,@(case (table-style t)
+                ,@(case t-style
                     [(boxed)    '([class "boxed"])]
                     [(centered) '([align "center"])]
                     [(at-right) '([align "right"])]
                     [(at-left)  '([align "left"])]
                     [else null])
-                ,@(let ([a (and (list? (table-style t))
-                                (assoc 'style (table-style t)))])
-                    (if (and a (string? (cadr a)))
-                      `([class ,(cadr a)])
-                      null))
-                ,@(if (string? (table-style t))
-                    `([class ,(table-style t)])
-                    null))
-               ,@(map (lambda (flows style)
-                        `(tr (,@(if style `([class ,style]) null))
-                           ,@(let loop ([ds flows]
-                                        [as (cdr (or (and (list? (table-style t))
-                                                          (assoc 'alignment (or (table-style t) null)))
-                                                     (cons #f (map (lambda (x) #f) flows))))]
-                                        [vas
-                                         (cdr (or (and (list? (table-style t))
-                                                       (assoc 'valignment (or (table-style t) null)))
-                                                  (cons #f (map (lambda (x) #f) flows))))])
-                               (cond
-                                 [(null? ds) null]
-                                 [(eq? (car ds) 'cont)
-                                  (loop (cdr ds) (cdr as) (cdr vas))]
-                                 [else
-                                  (let ([d (car ds)]
-                                        [a (car as)]
-                                        [va (car vas)])
-                                    (cons
-                                     `(td (,@(case a
-                                               [(#f) null]
-                                               [(right) '([align "right"])]
-                                               [(center) '([align "center"])]
-                                               [(left) '([align "left"])])
-                                           ,@(case va
-                                               [(#f) null]
-                                               [(top) '((valign "top"))]
-                                               [(baseline) '((valign "baseline"))]
-                                               [(bottom) '((valign "bottom"))])
-                                           ,@(if (and (pair? (cdr ds))
-                                                      (eq? 'cont (cadr ds)))
-                                               `([colspan
-                                                  ,(number->string
-                                                    (let loop ([n 2]
-                                                               [ds (cddr ds)])
-                                                      (cond
-                                                        [(null? ds) n]
-                                                        [(eq? 'cont (car ds)) (loop (+ n 1) (cdr ds))]
-                                                        [else n])))])
-                                               null))
-                                          ,@(render-flow d part ri #f))
-                                     (loop (cdr ds) (cdr as) (cdr vas))))]))))
-                      (table-flowss t)
-                      (cdr (or (and (list? (table-style t))
-                                    (assoc 'row-styles (or (table-style t) null)))
-                               (cons #f (map (lambda (x) #f) (table-flowss t)))))))))
+                ,@(let ([a (t-style-get 'style)])
+                    (if (and a (string? (cadr a))) `([class ,(cadr a)]) null))
+                ,@(if (string? t-style) `([class ,t-style]) null))
+          ,@(map make-row
+                 (table-flowss t)
+                 (cdr (or (t-style-get 'row-styles)
+                          (cons #f (map (lambda (x) #f) (table-flowss t)))))))))
 
     (define/override (render-blockquote t part ri)
       `((blockquote ,(if (string? (blockquote-style t))
@@ -962,7 +953,8 @@
 
     (define/override (get-dest-directory)
       (or (and (current-subdirectory)
-               (build-path (or (super get-dest-directory) (current-directory)) (current-subdirectory)))
+               (build-path (or (super get-dest-directory) (current-directory))
+                           (current-subdirectory)))
           (super get-dest-directory)))
 
     (define/override (derive-filename d)
