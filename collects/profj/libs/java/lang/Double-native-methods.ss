@@ -3,12 +3,12 @@
   
   (require mzlib/class)
   (require "Throwable.ss" "String.ss"
-           "NumberFormatException.ss" "NullPointerException.ss" "RuntimeException.ss")
+           #;"NumberFormatException.ss" "NullPointerException.ss" "RuntimeException.ss")
   
   (provide (all-defined))
   
-  (define (Double-parseDouble-java.lang.String-native s)
-    (when (null? s)
+  (define (Double-parseDoubleHelper-java.lang.String-native s)
+    #;(when (null? s)
       (raise (create-java-exception NullPointerException
                                     "parseDouble expected to receive String, received null value"
                                     (lambda (obj msg)
@@ -22,10 +22,10 @@
             ((equal? scheme-string "-NaN") -nan.0)
             ((equal? scheme-string "-Infinity") -inf.0)
             ((equal? scheme-string "+Infinity") +inf.0)
-            (raise (create-java-exception NumberFormatException
+            (raise (create-java-exception RuntimeException
                                           (format "parseDouble given misformatted string ~a" scheme-string)
                                           (lambda (obj msg)
-                                            (send obj NumberFormatException-constructor-java.lang.String msg))
+                                            (send obj RuntimeException-constructor-java.lang.String msg))
                                           (current-continuation-marks)))))))
   
   (define (Double-doubleToLongBits-double-native num) 

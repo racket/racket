@@ -5,10 +5,8 @@
            errortrace
            
            profj/libs/java/lang/Comparable
-           profj/libs/java/io/Serializable
-           #;(lib "Comparable.ss" "profj" "libs" "java" "lang")
-           #;(lib "Serializable.ss" "profj" "libs" "java" "io"))
-  (require "compile-lang-syntax.ss")    
+           profj/libs/java/io/Serializable)
+  #;(require "compile-lang-syntax.ss")
   
   (define make-hash-table make-hash)
   (define hash-table-put! hash-set!)
@@ -1190,6 +1188,259 @@
   (define (wrap-convert-assert-PrintString . args) (void))
   (define (wrap-convert-assert-PrintWriter . args) (void))
   
-  (compile-rest-of-lang (list "Object" "Throwable" "String" "Exception" "RuntimeException" "Comparable"))
+  #;(compile-rest-of-lang (list "Object" "Throwable" "String" "Exception" "RuntimeException" "Comparable"))
+  
+  (provide Exception guard-convert-Exception convert-assert-Exception wrap-convert-assert-Exception
+           dynamic-Exception/c static-Exception/c)  
+  (define Exception
+    (class* Throwable ()
+      (super-instantiate ())
+      (define/public (Exception-constructor) (send this Throwable-constructor))
+      (define/public (Exception-constructor-java.lang.String s)
+        (send this Throwable-constructor-java.lang.String s))
+      (define/public (Exception-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this Throwable-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (Exception-constructor-java.lang.Throwable cause)
+        (send this Throwable-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "Exception")))
+  (define (wrap-convert-assert-Exception obj p n s c)
+    (make-object convert-assert-Exception obj p n s c))
+  (define convert-assert-Exception
+    (class convert-assert-Throwable 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-Exception
+    (class guard-convert-Throwable
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-Exception/c
+    (c:flat-named-contract "Exception" (lambda (c) (is-a? c convert-assert-Exception))))
+  (define static-Exception/c
+    (c:flat-named-contract "Exception" (lambda (c) (is-a? c guard-convert-Exception))))
+  
+  (provide RuntimeException guard-convert-RuntimeException convert-assert-RuntimeException wrap-convert-assert-RuntimeException
+           dynamic-RuntimeException/c static-RuntimeException/c)  
+  (define RuntimeException
+    (class* Exception ()
+      (super-instantiate ())
+      (define/public (RuntimeException-constructor) (send this Exception-constructor))
+      (define/public (RuntimeException-constructor-java.lang.String s)
+        (send this Exception-constructor-java.lang.String s))
+      (define/public (RuntimeException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this Exception-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (RuntimeException-constructor-java.lang.Throwable cause)
+        (send this Exception-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "RuntimeException")))
+  (define (wrap-convert-assert-RuntimeException obj p n s c)
+    (make-object convert-assert-RuntimeException obj p n s c))
+  (define convert-assert-RuntimeException
+    (class convert-assert-Exception 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-RuntimeException
+    (class guard-convert-Exception
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-RuntimeException/c
+    (c:flat-named-contract "RuntimeException" (lambda (c) (is-a? c convert-assert-RuntimeException))))
+  (define static-RuntimeException/c
+    (c:flat-named-contract "RuntimeException" (lambda (c) (is-a? c guard-convert-RuntimeException))))
+  
+  (provide IndexOutOfBoundsException guard-convert-IndexOutOfBoundsException convert-assert-IndexOutOfBoundsException wrap-convert-assert-IndexOutOfBoundsException
+           dynamic-IndexOutOfBoundsException/c static-IndexOutOfBoundsException/c)  
+  (define IndexOutOfBoundsException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (IndexOutOfBoundsException-constructor) (send this RuntimeException-constructor))
+      (define/public (IndexOutOfBoundsException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (IndexOutOfBoundsException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (IndexOutOfBoundsException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "IndexOutOfBoundsException")))
+  (define (wrap-convert-assert-IndexOutOfBoundsException obj p n s c)
+    (make-object convert-assert-IndexOutOfBoundsException obj p n s c))
+  (define convert-assert-IndexOutOfBoundsException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-IndexOutOfBoundsException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-IndexOutOfBoundsException/c
+    (c:flat-named-contract "IndexOutOfBoundsException" (lambda (c) (is-a? c convert-assert-IndexOutOfBoundsException))))
+  (define static-IndexOutOfBoundsException/c
+    (c:flat-named-contract "IndexOutOfBoundsException" (lambda (c) (is-a? c guard-convert-IndexOutOfBoundsException))))
+  
+  (provide ArrayIndexOutOfBoundsException guard-convert-ArrayIndexOutOfBoundsException convert-assert-ArrayIndexOutOfBoundsException wrap-convert-assert-ArrayIndexOutOfBoundsException
+           dynamic-ArrayIndexOutOfBoundsException/c static-ArrayIndexOutOfBoundsException/c)  
+  (define ArrayIndexOutOfBoundsException
+    (class* IndexOutOfBoundsException ()
+      (super-instantiate ())
+      (define/public (ArrayIndexOutOfBoundsException-constructor) (send this IndexOutOfBoundsException-constructor))
+      (define/public (ArrayIndexOutOfBoundsException-constructor-java.lang.String s)
+        (send this IndexOutOfBoundsException-constructor-java.lang.String s))
+      (define/public (ArrayIndexOutOfBoundsException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this IndexOutOfBoundsException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (ArrayIndexOutOfBoundsException-constructor-java.lang.Throwable cause)
+        (send this IndexOutOfBoundsException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "ArrayIndexOutOfBoundsException")))
+  (define (wrap-convert-assert-ArrayIndexOutOfBoundsException obj p n s c)
+    (make-object convert-assert-ArrayIndexOutOfBoundsException obj p n s c))
+  (define convert-assert-ArrayIndexOutOfBoundsException
+    (class convert-assert-IndexOutOfBoundsException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-ArrayIndexOutOfBoundsException
+    (class guard-convert-IndexOutOfBoundsException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-ArrayIndexOutOfBoundsException/c
+    (c:flat-named-contract "ArrayIndexOutOfBoundsException" (lambda (c) (is-a? c convert-assert-ArrayIndexOutOfBoundsException))))
+  (define static-ArrayIndexOutOfBoundsException/c
+    (c:flat-named-contract "ArrayIndexOutOfBoundsException" (lambda (c) (is-a? c guard-convert-ArrayIndexOutOfBoundsException))))
+
+  (provide ArrayStoreException guard-convert-ArrayStoreException convert-assert-ArrayStoreException wrap-convert-assert-ArrayStoreException
+           dynamic-ArrayStoreException/c static-ArrayStoreException/c)  
+  (define ArrayStoreException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (ArrayStoreException-constructor) (send this RuntimeException-constructor))
+      (define/public (ArrayStoreException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (ArrayStoreException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (ArrayStoreException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "ArrayStoreException")))
+  (define (wrap-convert-assert-ArrayStoreException obj p n s c)
+    (make-object convert-assert-ArrayStoreException obj p n s c))
+  (define convert-assert-ArrayStoreException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-ArrayStoreException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-ArrayStoreException/c
+    (c:flat-named-contract "ArrayStoreException" (lambda (c) (is-a? c convert-assert-ArrayStoreException))))
+  (define static-ArrayStoreException/c
+    (c:flat-named-contract "ArrayStoreException" (lambda (c) (is-a? c guard-convert-ArrayStoreException))))
+
+  (provide NegativeArraySizeException guard-convert-NegativeArraySizeException convert-assert-NegativeArraySizeException wrap-convert-assert-NegativeArraySizeException
+           dynamic-NegativeArraySizeException/c static-NegativeArraySizeException/c)  
+  (define NegativeArraySizeException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (NegativeArraySizeException-constructor) (send this RuntimeException-constructor))
+      (define/public (NegativeArraySizeException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (NegativeArraySizeException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (NegativeArraySizeException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "NegativeArraySizeException")))
+  (define (wrap-convert-assert-NegativeArraySizeException obj p n s c)
+    (make-object convert-assert-NegativeArraySizeException obj p n s c))
+  (define convert-assert-NegativeArraySizeException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-NegativeArraySizeException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-NegativeArraySizeException/c
+    (c:flat-named-contract "NegativeArraySizeException" (lambda (c) (is-a? c convert-assert-NegativeArraySizeException))))
+  (define static-NegativeArraySizeException/c
+    (c:flat-named-contract "NegativeArraySizeException" (lambda (c) (is-a? c guard-convert-NegativeArraySizeException))))
+
+  (provide ClassCastException guard-convert-ClassCastException convert-assert-ClassCastException wrap-convert-assert-ClassCastException
+           dynamic-ClassCastException/c static-ClassCastException/c)  
+  (define ClassCastException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (ClassCastException-constructor) (send this RuntimeException-constructor))
+      (define/public (ClassCastException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (ClassCastException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (ClassCastException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "ClassCastException")))
+  (define (wrap-convert-assert-ClassCastException obj p n s c)
+    (make-object convert-assert-ClassCastException obj p n s c))
+  (define convert-assert-ClassCastException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-ClassCastException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-ClassCastException/c
+    (c:flat-named-contract "ClassCastException" (lambda (c) (is-a? c convert-assert-ClassCastException))))
+  (define static-ClassCastException/c
+    (c:flat-named-contract "ClassCastException" (lambda (c) (is-a? c guard-convert-ClassCastException))))
+
+  (provide ArithmeticException guard-convert-ArithmeticException convert-assert-ArithmeticException wrap-convert-assert-ArithmeticException
+           dynamic-ArithmeticException/c static-ArithmeticException/c)  
+  (define ArithmeticException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (ArithmeticException-constructor) (send this RuntimeException-constructor))
+      (define/public (ArithmeticException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (ArithmeticException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (ArithmeticException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "ArithmeticException")))
+  (define (wrap-convert-assert-ArithmeticException obj p n s c)
+    (make-object convert-assert-ArithmeticException obj p n s c))
+  (define convert-assert-ArithmeticException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-ArithmeticException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-ArithmeticException/c
+    (c:flat-named-contract "ArithmeticException" (lambda (c) (is-a? c convert-assert-ArithmeticException))))
+  (define static-ArithmeticException/c
+    (c:flat-named-contract "ArithmeticException" (lambda (c) (is-a? c guard-convert-ArithmeticException))))
+
+  (provide NullPointerException guard-convert-NullPointerException convert-assert-NullPointerException wrap-convert-assert-NullPointerException
+           dynamic-NullPointerException/c static-NullPointerException/c)  
+  (define NullPointerException
+    (class* RuntimeException ()
+      (super-instantiate ())
+      (define/public (NullPointerException-constructor) (send this RuntimeException-constructor))
+      (define/public (NullPointerException-constructor-java.lang.String s)
+        (send this RuntimeException-constructor-java.lang.String s))
+      (define/public (NullPointerException-constructor-java.lang.string-java.lang.Throwable s cause)
+        (send this RuntimeException-constructor-java.lang.String-java.lang.Throwable s cause))
+      (define/public (NullPointerException-constructor-java.lang.Throwable cause)
+        (send this RuntimeException-constructor-java.lang.Throwable cause))
+      (define/override (my-name) "NullPointerException")))
+  (define (wrap-convert-assert-NullPointerException obj p n s c)
+    (make-object convert-assert-NullPointerException obj p n s c))
+  (define convert-assert-NullPointerException
+    (class convert-assert-RuntimeException 
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define guard-convert-NullPointerException
+    (class guard-convert-RuntimeException
+      (init w p n s c)
+      (super-instantiate (w p n s c))))
+  (define dynamic-NullPointerException/c
+    (c:flat-named-contract "NullPointerException" (lambda (c) (is-a? c convert-assert-NullPointerException))))
+  (define static-NullPointerException/c
+    (c:flat-named-contract "NullPointerException" (lambda (c) (is-a? c guard-convert-NullPointerException))))
+
   
   )

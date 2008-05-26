@@ -1,4 +1,4 @@
-(module pre-installer mzscheme
+(module pre-installer scheme/base
   
   ;copy-jinfos path (list string) -> void
   ;Copies the given jinfos into the compiled directory of the given library
@@ -23,8 +23,13 @@
        (file-or-directory-modify-seconds file-b)))
   
   (define (pre-installer plthome)
-    (copy-jinfos (collection-path "profj" "libs" "java" "lang") '("Object.jinfo" "String.jinfo" "Throwable.jinfo"
-                                                                                 "Comparable.jinfo"))
+    (copy-jinfos (collection-path "profj" "libs" "java" "lang") 
+                 '("Object.jinfo" "String.jinfo" "Throwable.jinfo" "Comparable.jinfo"
+                   "Exception.jinfo" "RuntimeException.jinfo" 
+                   "IndexOutOfBoundsException.jinfo" "ArrayStoreException.jinfo" "NullPointerException.jinfo"
+                   "ArithmeticException.jinfo" "ClassCastException.jinfo" "NegativeArraySizeException.jinfo"
+                   "ArrayIndexOutOfBoundsException.jinfo"
+                   ))
     (copy-jinfos (collection-path "profj" "libs" "java" "io") '("Serializable.jinfo")))
   (provide pre-installer)
   )

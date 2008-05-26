@@ -882,7 +882,9 @@
                                                 [(coverage?) java-examples-coverage-graphics%]
                                                 [(testcase-ext?) java-test-graphics%]
                                                 [else java-examples-graphics%]))
+                                        #;(printf "About to run tests~n")
                                         (send test-engine-obj run)
+                                        #;(printf "Test methods run~n")
                                         (send test-engine-obj setup-display (drscheme:rep:current-rep) e)
                                         (send test-engine-obj summarize-results (current-output-port))
                                         (let ([test-objs (send test-engine-obj test-objects)])
@@ -910,6 +912,8 @@
                                                         (syntax (require (quote name))))))
                                       (loop mods extras #f))
                                      (else 
+                                      #;(printf "~a~n" (syntax->datum (car mods)))
+                                      (collect-garbage)
                                       (let-values (((name syn) (get-module-name (expand (car mods)))))
                                         (set! name-to-require name)
                                         (syntax-as-top #;(eval (annotate-top (compile syn)))
@@ -931,7 +935,7 @@
                      (namespace-require string-path)
                      (namespace-require class-path)
                      (namespace-require mred-path)
-                     (namespace-require '(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
+                     (namespace-require '(prefix javaRuntime: profj/libs/java/runtime))
                      (namespace-require '(prefix c: mzlib/contract))
                      ))))))
           

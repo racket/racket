@@ -391,7 +391,8 @@
       (values (if (> (length translated-defs) 1)
                   (cons (make-syntax #f `(module ,(module-name) mzscheme
                                            (require mzlib/class
-                                                    (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
+                                                    (prefix javaRuntime: profj/libs/java/runtime)
+                                                    #;(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
                                                     (prefix c: mzlib/contract)
                                                     ,@(remove-dup-syntax (translate-require reqs type-recs)))
                                            ,@(map car translated-defs))
@@ -403,7 +404,8 @@
                                                                                  ""))
                                         mzscheme
                                         (require mzlib/class
-                                                 (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
+                                                 (prefix javaRuntime: profj/libs/java/runtime)
+                                                 #;(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
                                                  (prefix c: mzlib/contract)
                                                  ,@(remove-dup-syntax
                                                     (translate-require (map (lambda (r) (list (def-file (car defs)) r))

@@ -247,7 +247,18 @@ public final class Double extends Number implements Comparable
    * @see #NEGATIVE_INFINITY
    * @since 1.2
    */
-  public static native double parseDouble(String str);
+  static native double parseDoubleHelper(String str);
+  
+  public static double parseDouble(String str) {
+    if (null == str) 
+      throw new NullPointerException("parseDouble expected to receive String, received null value");      
+    try {
+      return parseDoubleHelper(str);
+      }
+    catch (RuntimeException e) {
+      throw new NumberFormatException(e.getMessage());
+      }
+    }
 
   /**
    * Return <code>true</code> if the <code>double</code> has the same
