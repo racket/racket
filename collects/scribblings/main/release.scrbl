@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual
           setup/dirs
-          "private/front-toc.ss")
+          "private/utils.ss")
 
 @(define (rl-link path . content)
    (apply link (apply build-path (find-doc-dir) "release-notes" path)
@@ -9,9 +9,7 @@
 @(define (mzport doc from to)
    (rl-link (list "mzscheme" doc) (format "Porting from ~a to ~a" from to)))
 
-@title[#:style '(no-toc)]{Release Notes}
-
-@front-toc['release #f]
+@main-page['release]
 
 @itemize[#:style "compact"]{
 

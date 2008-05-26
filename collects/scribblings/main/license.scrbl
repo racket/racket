@@ -1,12 +1,10 @@
 #lang scribble/doc
 @(require scribble/manual
-          "private/front-toc.ss")
+          "private/utils.ss")
 
 @(define (copyright . strs) (apply verbatim #:indent 2 strs))
 
-@front-toc['license #f]
-
-@title[#:style '(no-toc)]{License}
+@main-page['license]
 
 PLT software and documentation is distributed under the GNU Lesser
 General Public License (LGPL).  This means

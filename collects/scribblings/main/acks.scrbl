@@ -1,11 +1,9 @@
 #lang scribble/doc
 @(require scribble/manual
           drscheme/acks
-          "private/front-toc.ss")
+          "private/utils.ss")
 
-@title[#:style '(no-toc)]{Acknowledgements}
-
-@front-toc['acks #f]
+@main-page['acks]
 
 @(get-general-acks)
 

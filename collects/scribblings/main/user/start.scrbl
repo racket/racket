@@ -1,9 +1,10 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/struct
+          "../private/utils.ss"
           "../private/manuals.ss")
 
-@title[#:style '(no-toc)]{PLT Scheme Documentation}
+@main-page['start #f]
 
 @;{
 @; This page should always be the default, so it doesn't need to say
@@ -18,4 +19,4 @@
              user-specific packages (@|PLaneT| packages and other
              collections) that are not in the main installation.}
 
-@(build-contents #t)
+@(make-start-page #t)

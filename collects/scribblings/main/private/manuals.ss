@@ -2,14 +2,12 @@
 
 (require scribble/manual
          scribble/struct
-         scribble/decode
          setup/getinfo
          setup/main-collects
          scheme/list
-         "front-toc.ss"
          "../config.ss")
 
-(provide build-contents)
+(provide make-start-page)
 
 (define-struct sec (cat label))
 
@@ -31,7 +29,7 @@
                                       (truncate (/ (caar l) 10))))])
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
-(define (build-contents all?)
+(define (make-start-page all?)
   (let* ([dirs (find-relevant-directories '(scribblings))]
          [infos (map get-info/full dirs)]
          [docs (append-map
@@ -78,38 +76,35 @@
          [line
           (lambda (doc)
             (plain-line (hspace 2) (other-manual doc #:underline? #f)))])
-    (make-splice
-     (list
-      (make-delayed-block
-       (lambda (renderer part resolve-info)
-         (make-table
-          #f
-          (cdr
-           (append-map
-            (lambda (sec)
-              (let ([docs (filter (lambda (doc) (eq? (car doc) (sec-cat sec)))
-                                  docs)])
-                (list*
-                 (plain-line (hspace 1))
-                 (plain-line (sec-label sec))
-                 (add-sections
-                  (sec-cat sec)
-                  (lambda (str)
-                    (plain-line
-                     (make-element (if (string=? str "") "sepspace" "septitle")
-                                   (list 'nbsp str))))
-                  (sort
-                   (map (lambda (doc)
-                          (list (cadr doc) (line (cadddr doc)) (caddr doc)))
-                        docs)
-                   (lambda (ad bd)
-                     (if (= (car ad) (car bd))
-                       (let ([str (lambda (x)
-                                    (element->string
-                                     (cadr (paragraph-content
-                                            (car (flow-paragraphs (caadr x)))))
-                                     renderer part resolve-info))])
-                         (string-ci<? (str ad) (str bd)))
-                       (> (car ad) (car bd)))))))))
-            sections)))))
-      (front-toc 'start #t)))))
+    (define (contents renderer part resolve-info)
+      (make-table
+       #f
+       (cdr
+        (append-map
+         (lambda (sec)
+           (let ([docs (filter (lambda (doc) (eq? (car doc) (sec-cat sec)))
+                               docs)])
+             (list*
+              (plain-line (hspace 1))
+              (plain-line (sec-label sec))
+              (add-sections
+               (sec-cat sec)
+               (lambda (str)
+                 (plain-line
+                  (make-element (if (string=? str "") "sepspace" "septitle")
+                                (list 'nbsp str))))
+               (sort (map (lambda (doc)
+                            (list (cadr doc) (line (cadddr doc)) (caddr doc)))
+                          docs)
+                     (lambda (ad bd)
+                       (if (= (car ad) (car bd))
+                         (let ([str (lambda (x)
+                                      (element->string
+                                       (cadr (paragraph-content
+                                              (car (flow-paragraphs
+                                                    (caadr x)))))
+                                       renderer part resolve-info))])
+                           (string-ci<? (str ad) (str bd)))
+                         (> (car ad) (car bd)))))))))
+         sections))))
+    (make-delayed-block contents)))
