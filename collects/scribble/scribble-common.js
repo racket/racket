@@ -39,3 +39,7 @@ function DoSearchKey(event, field) {
     location = u + "?q=" + escape(val);
   }
 }
+
+// `noscript' is problematic in some browsers (always renders as a
+// block), use this hack instead
+document.write("<style>mynoscript { display:none; }</style>");

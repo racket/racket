@@ -106,11 +106,6 @@
 
 #reader scribble/reader (begin ; easier to format
 
-(define mynoscript-setup
-  @inlined-script{
-    document.write('<style>mynoscript { display:none }</style>');
-  })
-
 (define search-script
   @inlined-script{
     var search_nodes = null;
@@ -528,7 +523,6 @@
                  (meta ([http-equiv "content-type"]
                         [content "text-html; charset=utf-8"]))
                  ,title
-                 ,mynoscript-setup
                  ,(scribble-css-contents style-file  css-path)
                  ,(scribble-js-contents  script-file script-path))
                (body () ,@(render-toc-view d ri)
