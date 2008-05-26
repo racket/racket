@@ -19,155 +19,148 @@
   
   ;; build-color-selection-panel : (is-a?/c area-container<%>) symbol string string -> void
   ;; constructs a panel containg controls to configure the preferences panel.
-  (define build-color-selection-panel
-    (opt-lambda (parent 
-                 pref-sym
-                 style-name
-                 example-text)
-      (define (update-style-delta func)
+  (define (build-color-selection-panel parent pref-sym style-name example-text)
+    (define (update-style-delta func)
+      (let ([working-delta (new style-delta%)])
+        (send working-delta copy (preferences:get pref-sym))
         (func working-delta)
-        (let ([nd (new style-delta%)])
-          (send nd copy working-delta)
-          (preferences:set pref-sym nd)))
-      (define working-delta (let ([sd (new style-delta%)])
-                              (send sd copy (preferences:get pref-sym))
-                              sd))
-      (define hp (new horizontal-panel%
-                      [parent parent]
-                      [style '(border)]
-                      [stretchable-height #f]))
-      
-      (define e (new (class standard-style-list-text%
-                       (inherit change-style get-style-list)
-                       (define/augment (after-insert pos offset)
-                         (inner (void) after-insert pos offset)
-                         (let ([style (send (get-style-list)
-                                            find-named-style
-                                            style-name)])
-                           (change-style style pos (+ pos offset) #f)))
-                       (super-new))))
-      (define c (new canvas:color%
-                     [parent hp]
-                     [min-width 150]
-                     [editor e]
-                     [style '(hide-hscroll hide-vscroll)]))
-      
-      (define (make-check name on off)
-        (let* ([c (λ (check command)
-                    (if (send check get-value)
-                        (update-style-delta on)
-                        (update-style-delta off)))]
-               [check (new check-box% 
-                           [label name]
-                           [parent hp]
-                           [callback c])])
-          check))
-      
-      (define slant-check
-        (make-check (string-constant cs-italic)
-                    (λ (delta)
-                      (send delta set-style-on 'italic)
-                      (send delta set-style-off 'base))
-                    (λ (delta)
-                      (send delta set-style-on 'normal)
-                      (send delta set-style-off 'base))))
-      (define bold-check
-        (make-check (string-constant cs-bold)
-                    (λ (delta)
-                      (send delta set-weight-on 'bold)
-                      (send delta set-weight-off 'base))
-                    (λ (delta)
-                      (send delta set-weight-on 'normal)
-                      (send delta set-weight-off 'base))))
-      (define underline-check
-        (make-check (string-constant cs-underline)
-                    (λ (delta)
-                      (send delta set-underlined-on #t)
-                      (send delta set-underlined-off #f))
-                    (λ (delta)
-                      (send delta set-underlined-off #f)
-                      (send delta set-underlined-on #f))))
-      
-      (define smoothing-options
-        '(default
-           partly-smoothed
-           smoothed
-           unsmoothed))
-      (define smoothing-option-strings
-        '("Default"
-          "Partly smoothed"
-          "Smoothed"
-          "Unsmoothed"))
-      
-      (define (smoothing->index s)
-        (let loop ([i 0]
-                   [l smoothing-options])
-          (cond
-            [(null? l) 
-             ;; if it is something strange or it is 'base, we go with 'default (which is 0)
-             0]
-            [else
-             (if (eq? (car l) s)
-                 i
-                 (loop (+ i 1)
-                       (cdr l)))])))
-      
-      (define smoothing-menu
-        (new choice%
-             [label #f]
-             [parent hp]
-             [choices smoothing-option-strings]
-             [callback 
-              (λ (c e)
-                (update-style-delta
-                 (λ (delta)
-                   (send delta set-smoothing-on 
-                         (list-ref smoothing-options
-                                   (send c get-selection))))))]))
-      
-      (define color-button
-        (and (>= (get-display-depth) 8)
-             (new button%
-                  [label (string-constant cs-change-color)]
-                  [parent hp]
-                  [callback
-                   (λ (color-button evt)
-                     (let* ([add (send (preferences:get pref-sym) get-foreground-add)]
-                            [color (make-object color%
-                                     (send add get-r)
-                                     (send add get-g)
-                                     (send add get-b))]
-                            [users-choice
-                             (get-color-from-user
-                              (format (string-constant syntax-coloring-choose-color) example-text)
-                              (send color-button get-top-level-window)
-                              color)])
-                       (when users-choice
-                         (update-style-delta
-                          (λ (delta)
-                            (send delta set-delta-foreground users-choice))))))])))
-      (define style (send (send e get-style-list) find-named-style style-name))
-      
-      (send c set-line-count 1)
-      (send c allow-tab-exit #t)
-      
-      (send e insert example-text)
-      (send e set-position 0)
-      
-      (send slant-check set-value (or (eq? (send style get-style) 'slant)
-                                      (eq? (send style get-style) 'italic)))
-      (send bold-check set-value (eq? (send style get-weight) 'bold))
-      (send underline-check set-value (send style get-underlined))
-      (send smoothing-menu set-selection (smoothing->index (send style get-smoothing)))
-      (preferences:add-callback
-       pref-sym
-       (λ (p sd)
-         (send slant-check set-value (or (eq? (send style get-style) 'slant)
-                                         (eq? (send style get-style) 'italic)))
-         (send bold-check set-value (eq? (send sd get-weight-on) 'bold))
-         (send underline-check set-value (send sd get-underlined-on))
-         (send smoothing-menu set-selection (smoothing->index (send sd get-smoothing-on)))))
-      (void)))
+        (preferences:set pref-sym working-delta)))
+    (define hp (new horizontal-panel%
+                    [parent parent]
+                    [style '(border)]
+                    [stretchable-height #f]))
+    
+    (define e (new (class standard-style-list-text%
+                     (inherit change-style get-style-list)
+                     (define/augment (after-insert pos offset)
+                       (inner (void) after-insert pos offset)
+                       (let ([style (send (get-style-list)
+                                          find-named-style
+                                          style-name)])
+                         (change-style style pos (+ pos offset) #f)))
+                     (super-new))))
+    (define c (new canvas:color%
+                   [parent hp]
+                   [min-width 150]
+                   [editor e]
+                   [style '(hide-hscroll hide-vscroll)]))
+    
+    (define (make-check name on off)
+      (let* ([c (λ (check command)
+                  (if (send check get-value)
+                      (update-style-delta on)
+                      (update-style-delta off)))]
+             [check (new check-box% 
+                         [label name]
+                         [parent hp]
+                         [callback c])])
+        check))
+    
+    (define slant-check
+      (make-check (string-constant cs-italic)
+                  (λ (delta)
+                    (send delta set-style-on 'italic)
+                    (send delta set-style-off 'base))
+                  (λ (delta)
+                    (send delta set-style-on 'normal)
+                    (send delta set-style-off 'base))))
+    (define bold-check
+      (make-check (string-constant cs-bold)
+                  (λ (delta)
+                    (send delta set-weight-on 'bold)
+                    (send delta set-weight-off 'base))
+                  (λ (delta)
+                    (send delta set-weight-on 'normal)
+                    (send delta set-weight-off 'base))))
+    (define underline-check
+      (make-check (string-constant cs-underline)
+                  (λ (delta)
+                    (send delta set-underlined-on #t)
+                    (send delta set-underlined-off #f))
+                  (λ (delta)
+                    (send delta set-underlined-off #f)
+                    (send delta set-underlined-on #f))))
+    
+    (define smoothing-options
+      '(default
+         partly-smoothed
+         smoothed
+         unsmoothed))
+    (define smoothing-option-strings
+      '("Default"
+        "Partly smoothed"
+        "Smoothed"
+        "Unsmoothed"))
+    
+    (define (smoothing->index s)
+      (let loop ([i 0]
+                 [l smoothing-options])
+        (cond
+          [(null? l) 
+           ;; if it is something strange or it is 'base, we go with 'default (which is 0)
+           0]
+          [else
+           (if (eq? (car l) s)
+               i
+               (loop (+ i 1)
+                     (cdr l)))])))
+    
+    (define smoothing-menu
+      (new choice%
+           [label #f]
+           [parent hp]
+           [choices smoothing-option-strings]
+           [callback 
+            (λ (c e)
+              (update-style-delta
+               (λ (delta)
+                 (send delta set-smoothing-on 
+                       (list-ref smoothing-options
+                                 (send c get-selection))))))]))
+    
+    (define color-button
+      (and (>= (get-display-depth) 8)
+           (new button%
+                [label (string-constant cs-change-color)]
+                [parent hp]
+                [callback
+                 (λ (color-button evt)
+                   (let* ([add (send (preferences:get pref-sym) get-foreground-add)]
+                          [color (make-object color%
+                                   (send add get-r)
+                                   (send add get-g)
+                                   (send add get-b))]
+                          [users-choice
+                           (get-color-from-user
+                            (format (string-constant syntax-coloring-choose-color) example-text)
+                            (send color-button get-top-level-window)
+                            color)])
+                     (when users-choice
+                       (update-style-delta
+                        (λ (delta)
+                          (send delta set-delta-foreground users-choice))))))])))
+    (define style (send (send e get-style-list) find-named-style style-name))
+    
+    (send c set-line-count 1)
+    (send c allow-tab-exit #t)
+    
+    (send e insert example-text)
+    (send e set-position 0)
+    
+    (send slant-check set-value (or (eq? (send style get-style) 'slant)
+                                    (eq? (send style get-style) 'italic)))
+    (send bold-check set-value (eq? (send style get-weight) 'bold))
+    (send underline-check set-value (send style get-underlined))
+    (send smoothing-menu set-selection (smoothing->index (send style get-smoothing)))
+    (preferences:add-callback
+     pref-sym
+     (λ (p sd)
+       (send slant-check set-value (or (eq? (send style get-style) 'slant)
+                                       (eq? (send style get-style) 'italic)))
+       (send bold-check set-value (eq? (send sd get-weight-on) 'bold))
+       (send underline-check set-value (send sd get-underlined-on))
+       (send smoothing-menu set-selection (smoothing->index (send sd get-smoothing-on)))))
+    (void))
   
   (define (add/mult-set m v)
     (send m set (car v) (cadr v) (caddr v)))

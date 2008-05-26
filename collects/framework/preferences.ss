@@ -141,8 +141,7 @@ the state transitions / contracts are:
                    "tried to set preference ~e to ~e but it does not meet test from preferences:set-default"
                    p value))
           (check-callbacks p value)
-          (hash-set! preferences p value)
-          (void))]
+          (hash-set! preferences p value))]
        [(not (pref-default-set? p))
         (raise-unknown-preference-error
          'preferences:set "tried to set the preference ~e to ~e, but no default is set"
@@ -154,7 +153,6 @@ the state transitions / contracts are:
    (map (λ (p value) (marshall-pref p value))
         ps
         values))
-  
   (void))
 
 (define preferences:low-level-put-preferences (make-parameter put-preferences))
@@ -163,18 +161,6 @@ the state transitions / contracts are:
   (raise (exn:make-unknown-preference
           (string-append (format "~a: " sym) (apply format fmt args))
           (current-continuation-marks))))
-
-;; unmarshall-pref : symbol marshalled -> any
-;; unmarshalls a preference read from the disk
-(define (unmarshall-pref p data)
-  (let* ([un/marshall (hash-ref marshall-unmarshall p #f)]
-         [result (if un/marshall
-                     ((un/marshall-unmarshall un/marshall) data)
-                     data)]
-         [default (hash-ref defaults p)])
-    (if ((default-checker default) result)
-        result
-        (default-value default))))
 
 ;; add-callback : sym (-> void) -> void
 (define preferences:add-callback 
@@ -287,11 +273,40 @@ the state transitions / contracts are:
              (hash-ref marshall-unmarshall p (λ () (k value))))])
       (marshaller value))))
 
+;; unmarshall-pref : symbol marshalled -> any
+;; unmarshalls a preference read from the disk
+(define (unmarshall-pref p data)
+  (let* ([un/marshall (hash-ref marshall-unmarshall p #f)]
+         [result (if un/marshall
+                     ((un/marshall-unmarshall un/marshall) data)
+                     data)]
+         [default (hash-ref defaults p)])
+    (if ((default-checker default) result)
+        result
+        (default-value default))))
+
+;; copy-pref-value : sym any -> any
+;; uses the marshalling code to copy a preference. If there
+;; is not marshaller set, then no copying happens.
+(define (copy-pref-value p value)
+  (let/ec k
+    (let* ([un/marshaller (hash-ref marshall-unmarshall p (λ () (k value)))]
+           [default (hash-ref defaults p)]
+           [marsh (un/marshall-marshall un/marshaller)]
+           [unmarsh (un/marshall-unmarshall un/marshaller)]
+           [marshalled (marsh value)]
+           [copy (unmarsh marshalled)])
+      (if ((default-checker default) copy)
+          copy
+          value))))
+  
 (define-struct preferences:snapshot (x))
 (define snapshot-grabbed? #f)
 (define (preferences:get-prefs-snapshot)
   (set! snapshot-grabbed? #t)
-  (make-preferences:snapshot (hash-map defaults (λ (k v) (cons k (preferences:get k))))))
+  (make-preferences:snapshot 
+   (hash-map defaults 
+             (λ (k v) (cons k (copy-pref-value k (preferences:get k)))))))
 
 (define (preferences:restore-prefs-snapshot snapshot)
   (multi-set (map car (preferences:snapshot-x snapshot))
@@ -418,8 +433,6 @@ the state transitions / contracts are:
            restores the users's configuration to the
            default preferences.})
  
- 
- 
  (proc-doc/names
   exn:make-unknown-preference 
   (string? continuation-mark-set? . -> . exn:unknown-preference?)
@@ -462,6 +475,9 @@ the state transitions / contracts are:
   (-> preferences:snapshot?)
   ()
   @{Caches all of the current values of the preferences and returns them.
-           
-           See also 
-           @scheme[preferences:restore-prefs-snapshot].}))
+    For any preference that has marshalling and unmarshalling set
+    (see @scheme[preferences:set-un/marshall]), the preference value is
+    copied by passing it thru the marshalling and unmarshalling process.
+    Other values are not copied, but references to them are instead saved.
+
+    See also @scheme[preferences:restore-prefs-snapshot].}))
