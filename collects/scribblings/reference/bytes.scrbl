@@ -354,7 +354,7 @@ Certain encoding combinations are always available:
    @index['("UTF-8-permissive")]{the} identity conversion, except that
    any input byte that is not part of a valid encoding sequence is
    effectively replaced by the UTF-8 encoding sequence for
-   @scheme[#\uFFFD].  (This handling of invalid sequences is
+   @schemevalfont{#\uFFFD}.  (This handling of invalid sequences is
    consistent with the interpretation of port bytes streams into
    characters; see @secref["ports"].)}
 

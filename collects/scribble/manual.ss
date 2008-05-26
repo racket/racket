@@ -42,9 +42,10 @@
 (define-code SCHEMEBLOCK (to-paragraph/prefix (hspace 2) (hspace 2) "")
                          UNSYNTAX)
 (define-code SCHEMEBLOCK0 to-paragraph UNSYNTAX)
+(define interaction-prompt (make-element 'tt (list "> " )))
 (define-code schemeinput
   (to-paragraph/prefix
-   (make-element #f (list (hspace 2) (make-element 'tt (list "> " ))))
+   (make-element #f (list (hspace 2) interaction-prompt))
    (hspace 4)
    ""))
 
