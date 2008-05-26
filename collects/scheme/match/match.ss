@@ -1,8 +1,7 @@
 #lang scheme/base
 
-(require (only-in "patterns.ss"
+(require (only-in "runtime.ss"
                   match-equality-test
-                  match-...-nesting
                   exn:misc:match?)
          (only-in "match-expander.ss"
                   define-match-expander)
@@ -13,7 +12,6 @@
 
 (provide (for-syntax match-...-nesting)
          match-equality-test
-         match-...-nesting
          define-match-expander
          exn:misc:match?)
 

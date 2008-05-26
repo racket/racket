@@ -5,7 +5,7 @@
  "extra-procs.ss"
  (only-in scheme/list cons? take drop add-between last)
  '#%paramz
- (only-in scheme/match/patterns match:error))
+ (only-in scheme/match/runtime match:error))
 
 ;; these are all for constructing the types given to variables
 (require (for-syntax

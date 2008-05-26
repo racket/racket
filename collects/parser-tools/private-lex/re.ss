@@ -1,6 +1,6 @@
 (module re mzscheme
-  (require mzlib/match
-           mzlib/list
+  (require mzlib/list
+           scheme/match
            (prefix is: mzlib/integer-set)
            "util.ss")
   

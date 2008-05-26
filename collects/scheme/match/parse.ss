@@ -1,15 +1,15 @@
 #lang scheme/base
 
-(require (for-template scheme/base "parse-helper.ss")
-         syntax/boundmap
+(require syntax/boundmap
          syntax/stx
          scheme/struct-info
          "patterns.ss"
          "compiler.ss"
          "parse-helper.ss"
          "parse-quasi.ss"
-         "match-expander.ss"
-         (only-in srfi/1 delete-duplicates))
+         (only-in srfi/1 delete-duplicates)
+         (for-template (only-in "runtime.ss" matchable?)
+                       scheme/base))
 
 (provide parse/cert)
 

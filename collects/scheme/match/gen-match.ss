@@ -2,7 +2,7 @@
 
 (require "patterns.ss" "compiler.ss"
          syntax/stx scheme/nest
-         (for-template scheme/base (only-in "patterns.ss" match:error)))
+         (for-template scheme/base (only-in "runtime.ss" match:error)))
 
 (provide go)
 

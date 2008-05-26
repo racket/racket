@@ -9,7 +9,7 @@
          (only-in srfi/1 delete-duplicates))
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
-         match-expander-transform matchable? trans-match parse-struct
+         match-expander-transform trans-match parse-struct
          dd-parse parse-quote parse-id)
 
 ;; parse x as a match variable
@@ -137,10 +137,6 @@
            [result (syntax-local-introduce (introducer mresult))]
            [cert* (lambda (id) (certifier (cert id) #f introducer))])
       (parse/cert result cert*))))
-
-;; can we pass this value to regexp-match?
-(define (matchable? e)
-  (or (string? e) (bytes? e)))
 
 ;; raise an error, blaming stx
 (define (match:syntax-err stx msg)

@@ -58,7 +58,7 @@
             (when (>= j 0)
               (let ([vj (vector-ref v j)])
                 (hash-table-put! t vj
-                                 (if (hash-table-get t vj (λ () #f))
+                                 (if (hash-table-get t vj #f)
                                      'amb
                                      #t)))
               (loop (sub1 j)))))
@@ -66,7 +66,7 @@
     (let loop ([i (sub1 (vector-length super-sig))])
       (when (>= i 0)
         (let* ([v0 (vector-ref (cdr (vector-ref super-sig i)) 0)]
-               [r (hash-table-get t v0 (λ () #f))])
+               [r (hash-table-get t v0 #f)])
           (when (or (eq? r 'amb) (not r))
             (let ([tag (if (pair? v0) (car v0) #f)]
                   [sub-name (car (vector-ref super-sig i))]
@@ -107,16 +107,16 @@
   (define (check-deps dep-table unit name)
     (for-each
      (λ (dep)
-       (define r (hash-table-get dep-table dep (λ () #f)))
-       (when r
-         (raise
-          (make-exn:fail:contract
-           (if (car dep)
-             (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
-                     name (car r) (car dep) (cdr r))
-             (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
-                     name (car r) (cdr r)))
-           (current-continuation-marks)))))
+        (let ([r (hash-table-get dep-table dep #f)])
+          (when r
+            (raise
+             (make-exn:fail:contract
+              (if (car dep)
+                  (format "~a: initialization dependent signature ~a with tag ~a is supplied from a later unit with link ~a"
+                          name (car r) (car dep) (cdr r))
+                  (format "~a: untagged initialization dependent signature ~a is supplied from a later unit with link ~a"
+                          name (car r) (cdr r)))
+              (current-continuation-marks))))))
      (unit-deps unit)))
   
   ;; check-no-imports : unit symbol ->

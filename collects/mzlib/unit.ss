@@ -344,6 +344,8 @@
         ((= n 0) acc)
         (else (loop (sub1 n) (cons (sub1 n) acc))))))
   
+  (define-syntax-rule (equal-hash-table [k v] ...)
+    (make-immutable-hash-table (list (cons k v) ...) 'equal))
 
   (define-syntax (unit-export stx)
     (syntax-case stx ()
@@ -356,7 +358,7 @@
                            (syntax->list esigs)))
                         (syntax->list #'((esig ...) ...))
                         (syntax->list #'(elocs ...)))))
-         #'(hash-table 'equal kv ... ...)))))
+         #'(equal-hash-table kv ... ...)))))
   
   ;; build-key : (or symbol #f) identifier -> syntax-object
   (define-for-syntax (build-key tag i)
@@ -379,7 +381,7 @@
      (lambda (tinfo s)
        (define key (cons (car tinfo)
                          (car (siginfo-ctime-ids (cdr tinfo)))))
-       (when (hash-table-get import-idx key (lambda () #f))
+       (when (hash-table-get import-idx key #f)
          (raise-stx-err "duplicate import signature" s))
        (hash-table-put! import-idx key #t))
      tagged-siginfos
@@ -389,7 +391,7 @@
        (unless (hash-table-get import-idx
                                (cons (car dep)
                                      (car (siginfo-ctime-ids (cdr dep))))
-                               (lambda () #f))
+                               #f)
          (raise-stx-err "initialization dependency on unknown import" s)))
      tagged-deps
      dsources))
@@ -1087,18 +1089,18 @@
                                                               (vector-immutable sub-out-key ...))
                                                         ...)
                                                        'form))
-                                       (let ([fht (hash-table 'equal
-                                                              ((cons 'fdep-tag fdep-rtime)
-                                                               (cons 'fsig-name 'flnk-name))
-                                                              ...)]
-                                             [rht (hash-table 'equal
-                                                              ((cons 'rdep-tag rdep-rtime)
-                                                               #t)
-                                                              ...)])
+                                       (let ([fht (equal-hash-table
+                                                   ((cons 'fdep-tag fdep-rtime)
+                                                    (cons 'fsig-name 'flnk-name))
+                                                   ...)]
+                                             [rht (equal-hash-table
+                                                   ((cons 'rdep-tag rdep-rtime)
+                                                    #t)
+                                                   ...)])
                                          #,(syntax/loc #'sub-exp (check-deps fht sub-tmp 'form))
                                          (for-each
                                           (lambda (dep)
-                                            (when (hash-table-get rht dep (lambda () #f))
+                                            (when (hash-table-get rht dep #f)
                                               (set! deps (cons dep deps))))
                                           (unit-deps sub-tmp)))))))
                              (syntax->list #'((sub-exp
@@ -1137,7 +1139,7 @@
                                     ...)
                          (values (lambda (import-table-id)
                                    (void)
-                                   (sub-tmp (hash-table 'equal sub-in-key-code-workaround ...))
+                                   (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
                                    ...)
                                  (unit-export ((export-key ...) export-code) ...)))))))
                 (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))
@@ -1478,7 +1480,7 @@
           (lambda (b)
             (for-each
              (lambda (cid)
-               (define there? (hash-table-get sig-table cid (lambda () #f)))
+               (define there? (hash-table-get sig-table cid #f))
                (hash-table-put! sig-table cid (if there? 'duplicate (link-record-linkid b))))
              (siginfo-ctime-ids (link-record-siginfo b))))
           link-defs)
@@ -1529,7 +1531,7 @@
                       (let ([lnkid (hash-table-get
                                     sig-table
                                     (car (siginfo-ctime-ids (signature-siginfo (lookup-signature (cdr tid)))))
-                                    (lambda () #f))])
+                                    #f)])
                         (cond
                           [(not lnkid)
                            (raise-stx-err "no sub unit exports this signature" (cdr tid))]

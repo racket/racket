@@ -1,23 +1,13 @@
 #lang scheme/base
 
 (require syntax/boundmap
-         scheme/stxparam
          scheme/contract
          (for-syntax scheme/base))
 
 (provide (except-out (all-defined-out)
                      struct-key-ht
                      get-key
-                     (struct-out Row)
-                     (struct-out exn:misc:match))
-         exn:misc:match?)
-
-(define-struct (exn:misc:match exn:fail) (value))
-
-(define (match:error val)
-  (raise (make-exn:misc:match (format "match: no matching clause for ~e" val)
-                              (current-continuation-marks)
-                              val)))
+                     (struct-out Row)))
 
 (define orig-stx (make-parameter #f))
 
@@ -186,12 +176,6 @@
     [else (error 'match "bad pattern: ~a" p)]))
 
 (define match-...-nesting (make-parameter 0))
-(define match-equality-test (make-parameter equal?))
-
-(define-syntax-parameter fail
-  (lambda (stx)
-    (raise-syntax-error
-     #f "used out of context: not in match pattern" stx)))
 
 (define current-renaming (make-parameter (make-free-identifier-mapping)))
 
