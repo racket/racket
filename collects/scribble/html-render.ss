@@ -9,6 +9,7 @@
          mzlib/runtime-path
          setup/main-doc
          setup/main-collects
+         setup/dirs
          net/url
          net/base64
          scheme/serialize
@@ -705,7 +706,7 @@
              ,@(render-plain-element e part ri)))]
         [(script-element? e)
          `((script ([type ,(script-element-type e)])
-                   ,(literal (script-element-script e)))
+             ,(apply literal `("\n" ,@(script-element-script e) "\n")))
            (mynoscript ,@(render-plain-element e part ri)))]
         [(target-element? e)
          `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
@@ -1063,26 +1064,6 @@
 ;; ----------------------------------------
 ;; utils
 
-(define (from-root p d)
-  (if (not d)
-    (url->string (path->url (path->complete-path p)))
-    (let ([e-d (explode (path->complete-path d (current-directory)))]
-          [e-p (explode (path->complete-path p (current-directory)))])
-      (let loop ([e-d e-d] [e-p e-p])
-        (cond
-          [(null? e-d)
-           (let loop ([e-p e-p])
-             (cond [(null? e-p) "/"]
-                   [(null? (cdr e-p)) (car e-p)]
-                   [(eq? 'same (car e-p)) (loop (cdr e-p))]
-                   [(eq? 'up (car e-p)) (string-append "../" (loop (cdr e-p)))]
-                   [else (string-append (car e-p) "/" (loop (cdr e-p)))]))]
-          [(equal? (car e-d) (car e-p)) (loop (cdr e-d) (cdr e-p))]
-          [(eq? 'same (car e-d)) (loop (cdr e-d) e-p)]
-          [(eq? 'same (car e-p)) (loop e-d (cdr e-p))]
-          [else (string-append (string-append* (map (lambda (x) "../") e-d))
-                               (loop null e-p))])))))
-
 (define (explode p)
   (reverse (let loop ([p p])
              (let-values ([(base name dir?) (split-path p)])
@@ -1094,3 +1075,42 @@
                  (if (path? base)
                    (cons name (loop base))
                    (list name)))))))
+
+(define in-plt?
+  (let ([roots (map explode (list (find-doc-dir) (find-collects-dir)))])
+    (lambda (path)
+      (ormap (lambda (root)
+               (let loop ([path  path] [root root])
+                 (or (null? root)
+                     (and (pair? path)
+                          (equal? (car path) (car root))
+                          (loop (cdr path) (cdr root))))))
+             roots))))
+
+(define (from-root p d)
+  (define e-p (explode (path->complete-path p (current-directory))))
+  (define e-d (and d (explode (path->complete-path d (current-directory)))))
+  (define p-in? (in-plt? e-p))
+  (define d-in? (and d (in-plt? e-d)))
+  ;; use an absolute link if the link is from outside the plt tree
+  ;; going in (or if d is #f)
+  (if (not (and d (cond [(equal? p-in? d-in?) #t]
+                        [d-in? (error 'from-root
+                                      "got a link from the PLT going out; ~e"
+                                      p)]
+                        [else #f])))
+    (url->string (path->url (path->complete-path p)))
+    (let loop ([e-d e-d] [e-p e-p])
+      (cond
+        [(null? e-d)
+         (let loop ([e-p e-p])
+           (cond [(null? e-p) "/"]
+                 [(null? (cdr e-p)) (car e-p)]
+                 [(eq? 'same (car e-p)) (loop (cdr e-p))]
+                 [(eq? 'up (car e-p)) (string-append "../" (loop (cdr e-p)))]
+                 [else (string-append (car e-p) "/" (loop (cdr e-p)))]))]
+        [(equal? (car e-d) (car e-p)) (loop (cdr e-d) (cdr e-p))]
+        [(eq? 'same (car e-d)) (loop (cdr e-d) e-p)]
+        [(eq? 'same (car e-p)) (loop e-d (cdr e-p))]
+        [else (string-append (string-append* (map (lambda (x) "../") e-d))
+                             (loop null e-p))]))))

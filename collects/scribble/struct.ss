@@ -162,7 +162,7 @@
  [(aux-element element) ()]
  [(hover-element element) ([text string?])]
  [(script-element element) ([type string?]
-                            [script string?])]
+                            [script (listof string?)])]
  ;; specific renders support other elements, especially strings
 
  [with-attributes ([style any/c]

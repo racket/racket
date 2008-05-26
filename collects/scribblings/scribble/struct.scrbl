@@ -484,7 +484,7 @@ over the element's content.}
 
 
 @defstruct[(script-element element) ([type string?]
-                                     [script string?])]{
+                                     [script (listof string?)])]{
 
 For HTML rendering, when scripting is enabled in the browser,
 @scheme[script] is used for the element instead of its normal
