@@ -21,7 +21,10 @@
          setup/pack
          setup/plt-single-installer 
          setup/getinfo
-         setup/unpack)
+         setup/unpack
+         
+         (prefix-in srfi1: srfi/1)
+         )
 
 #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
 
@@ -54,7 +57,7 @@
             (list/c (λ (x) (eq? x #t)) path? natural-number/c natural-number/c)
             (list/c false/c string?)))]
  [download/install-pkg
-  (-> string? string? natural-number/c natural-number/c (or/c pkg? false/c))]
+  (-> string? string? natural-number/c any/c (or/c pkg? false/c))]
  [add-hard-link 
   (-> string? string? natural-number/c natural-number/c path? void?)]
  [remove-hard-link 
@@ -253,15 +256,40 @@
     (lambda (p) (regexp-match re (path->bytes p)))))
 
 (define force-package-building? (make-parameter #f))
-(define build-scribble-docs? (make-parameter #f))
+(define build-scribble-docs? (make-parameter #t))
 
 ;; ---
 ;; documentation stuff --- loaded on demand so that setup/scribble can be
 ;; omitted in the MzScheme distribution
 (define-namespace-anchor anchor)
-(define (doc:setup-scribblings)
+
+;; render : path[fully-expanded scribble file path] path[fully expanded directory] boolean? -> xref?
+;; renders the given scribble doc file (in src dir) into the directory
+;; dir as a real scribble document
+(define (render src-file dest-dir multi-page?)
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-    (dynamic-require 'setup/scribble 'setup-scribblings)))
+    (make-directory* dest-dir)
+    (let* ([renderer (new ((if multi-page?
+                               (dynamic-require 'scribble/html-render 'render-multi-mixin)
+                               values)
+                           ((dynamic-require 'scribble/html-render 'render-mixin) 
+                            (dynamic-require 'scribble/base-render 'render%)))
+                          [dest-dir dest-dir]
+                          [root-path dest-dir])]
+           [doc (dynamic-require `(file ,(path->string src-file)) 'doc)]
+           [ci (send renderer collect (list doc) (list dest-dir))]
+           [xref ((dynamic-require 'setup/xref 'load-collections-xref))]
+           [_ ((dynamic-require 'scribble/xref 'xref-transfer-info) renderer ci xref)]
+           [ri (send renderer resolve (list doc) (list dest-dir) ci)])
+      (send renderer set-external-tag-path
+            "/servlets/doc-search.ss")
+      (send renderer render (list doc) (list dest-dir) ri)
+      ;; return cross-reference info:
+      (send renderer serialize-info ri))))
+
+;; this MUST BE a syntactic directory (with the trailing slash)
+;; or the scribble renderer gets very confused
+(define SCRIBBLE-DOCUMENT-DIR "planet-docs/")
 
 ;; make-planet-archive: directory [file] -> file
 ;; Makes a .plt archive file suitable for PLaneT whose contents are
@@ -277,59 +305,76 @@
         (build-path (normalize-path (current-directory))
                     (string-append (path->string name) ".plt"))))]
     [(dir archive-name)
-     (parameterize ((current-directory dir))
-       (let ([announcements '()]
-             [warnings '()]
-             [critical-errors '()])
-         
-         (define (build-scribble-docs dir)
-           ((doc:setup-scribblings)
-            (list dir)
-            #f
-            #f
-            #t
-            (λ (what go alt)
-              (with-handlers ([exn:fail?
-                               (lambda (e)
-                                 (set! critical-errors 
-                                       (cons (format "Error generating scribble documentation: ~a" (exn-message e))
-                                             critical-errors))
-                                 (alt))])
-                (go)))))
-         
-         (check-info.ss-sanity 
-          dir
-          (λ (msg . args) (set! announcements (cons (apply format msg args) announcements)))
-          (λ (bad) (set! warnings (cons bad warnings)))
-          (λ (err) (set! critical-errors (cons err critical-errors))))
-         
-         (when (and (build-scribble-docs?)
-                    (file-exists? (build-path (collection-path "setup") "scribble.ss")))
-           (printf "Building: ~a\n" dir)
-           (build-scribble-docs dir))
-         
-         (unless 
-             (or (null? critical-errors)
-                 (force-package-building?))
-           (error '|PLaneT packager| "~a Refusing to continue packaging." (car critical-errors)))
-         
-         (pack archive-name
-               "archive" 
-               (list ".")
-               null
-               (if (PLANET-ARCHIVE-FILTER)
-                   (regexp->filter (PLANET-ARCHIVE-FILTER))
-                   std-filter)
-               #t
-               'file
-               #f
-               #f)
-         
-         (for-each display (reverse announcements))
-         (newline)
-         (for-each
-          (λ (s) (fprintf (current-error-port) "WARNING:\n\t~a\n" s))
-          (reverse warnings)))
+     (let ([abs-dir (normalize-path dir)])
+       (parameterize ((current-directory (normalize-path dir)))
+         (let ([announcements '()]
+               [warnings '()]
+               [critical-errors '()])
+           
+           (define info.ss
+             (let ([real-info
+                    (check-info.ss-sanity 
+                     dir
+                     (λ (msg . args) (set! announcements (cons (apply format msg args) announcements)))
+                     (λ (bad) (set! warnings (cons bad warnings)))
+                     (λ (err) (set! critical-errors (cons err critical-errors))))])
+               (or real-info (λ (x [y (λ () (error 'info.ss (format "undefined field: ~a" x)))]) (y)))))
+           
+           (let ([scribble-files (info.ss 'scribblings (λ () '()))])
+             
+             (define (outdir file-str)
+               (let* ([filename (file-name-from-path file-str)]
+                      [pathname (regexp-match #rx"(.*)\\.scrbl$" (path->bytes filename))])
+                 (build-path SCRIBBLE-DOCUMENT-DIR (bytes->path (cadr pathname)))))
+             
+             (when (and (build-scribble-docs?)
+                        (file-exists? (build-path (collection-path "setup") "scribble.ss")))
+               (with-handlers ([exn:fail? 
+                                (lambda (e)
+                                  (set! critical-errors
+                                        (cons (format "Error generating scribble documentation: ~a" (exn-message e)) critical-errors)))])
+                 (unless (list? scribble-files)
+                   (error (format "malformed scribblings field; expected (listof (list string (listof symbol))), received ~e" 
+                                  scribble-files)))
+                 (for ([entry scribble-files])
+                   (match entry
+                     [`(,(? string? filename) (,(? symbol? flags) ...))
+                      (unless (and (relative-path? filename) 
+                                   (subpath? abs-dir filename)
+                                   (bytes=? (filename-extension filename) #"scrbl"))
+                        (error "illegal scribblings file ~a (must be a file with extension .scrbl in the package directory or a subdirectory"))
+                      (unless (file-exists? (build-path abs-dir filename))
+                        (error (format "scribblings file ~a not found" filename)))
+                      (printf "Building: ~a\n" filename)
+                      (let* ([name.scrbl (file-name-from-path filename)]
+                             [name       (cadr (regexp-match #rx"(.*)\\.scrbl$" (path->string name.scrbl)))])
+                        (render (build-path filename)
+                                (build-path SCRIBBLE-DOCUMENT-DIR (string-append name "/"))
+                                (memq 'multi-page flags)))]
+                     [_ (error "malformed scribblings entry")])))))
+           
+           (unless 
+               (or (null? critical-errors)
+                   (force-package-building?))
+             (error '|PLaneT packager| "~a\nRefusing to continue packaging." (car critical-errors)))
+           
+           (pack archive-name
+                 "archive" 
+                 (list ".")
+                 null
+                 (if (PLANET-ARCHIVE-FILTER)
+                     (regexp->filter (PLANET-ARCHIVE-FILTER))
+                     std-filter)
+                 #t
+                 'file
+                 #f
+                 #f)
+           
+           (for-each display (reverse announcements))
+           (newline)
+           (for-each
+            (λ (s) (fprintf (current-error-port) "WARNING:\n\t~a\n" s))
+            (reverse warnings))))
        
        (normalize-path archive-name))]))
 
@@ -476,7 +521,7 @@
            (finished (void))))))
     (error 'display-archived-plt-file "The given file was not found in the given package")))
 
-;; check-info.ss-sanity : path (string -> void) (string -> void) (string -> void) -> void
+;; check-info.ss-sanity : path (string -> void) (string -> void) (string -> void) -> info.ss-fn | #f
 ;; gets all the info.ss fields that planet will use (using the info.ss file
 ;; from the current directory) and calls the announce, warn, and fail functions with strings
 ;; that describe how PLaneT sees the info.ss file. NOTA BENE: if this function calls fail, it may 
@@ -485,9 +530,13 @@
 ;; all the other information produced.
 (define (check-info.ss-sanity dir announce warn fail)
   (with-handlers ([exn:fail:read? 
-                   (λ (e) (fail (format "Package has an unreadable info.ss file. ~a" (exn-message e))))]
+                   (λ (e) 
+                     (fail (format "Package has an unreadable info.ss file. ~a" (exn-message e))) 
+                     #f)]
                   [exn:fail:syntax? 
-                   (λ (e) (fail (format "Package's info.ss has an syntactically ill-formed info.ss file: ~a" (exn-message e))))]) 
+                   (λ (e) 
+                     (fail (format "Package's info.ss has an syntactically ill-formed info.ss file: ~a" (exn-message e)))
+                     #f)])
     (let ([i* (get-info/full dir)])
       (cond
         [(not i*) 
@@ -525,11 +574,23 @@
                       [doc.txt
                        string?
                        (announce "doc.txt file: ~a\n" doc.txt)
-                       (unless doc.txt
-                         (warn "Package's info.ss does not contain a doc.txt entry. Without a doc.txt entry, the package will not have any documentation on planet.plt-scheme.org."))]
+                       (when doc.txt
+                         (warn "Package's info.ss contains a doc.txt entry, which is now considered deprecated. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information)."))]
                       [html-docs
                        (lambda (s) (and (list? s) (andmap string? s)))
-                       (announce "HTML documentation: yes\n")]
+                       (warn "Package specifies an html-docs entry. The preferred method of documentation for PLaneT packages is now Scribble (see the Scribble documentation included in the PLT Scheme distribution for more information).")]
+                      [scribblings
+                       (lambda (s) 
+                         (and (list? s) 
+                              (andmap
+                               (lambda (item)
+                                 (match item
+                                   [`(,(? string?) (,(? symbol?) ...)) #t]
+                                   [_ #f]))
+                               s)))
+                       (void)
+                       (unless scribblings
+                         (warn "Package does not specify a scribblings field. Without a scribblings field, the package will not have browsable online documentation."))]
                       [homepage 
                        string?
                        (cond
@@ -556,9 +617,15 @@
                       [required-core-version 
                        core-version?
                        (announce "Required mzscheme version: ~a\n" required-core-version)]
+                      [repositories
+                       (λ (x) (and (list? x) 
+                                   (srfi1:lset<= equal? x '("3xx" "4.x"))))
+                       (announce "Repositories: ~s\n" repositories)
+                       (warn "Package's info.ss does not contain a repositories field. The package will be listed in all repositories by default.")]
                       [version
                        string?
-                       (announce "Version description: ~a\n" version)]))]))))
+                       (announce "Version description: ~a\n" version)]))])
+      i*)))
 
 ;; legal-categories : (listof symbol)
 (define legal-categories
