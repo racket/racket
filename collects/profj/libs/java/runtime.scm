@@ -1,20 +1,16 @@
 ;Java runtime utilities
 ;Kathryn Gray 
-;July 2001
-
-;This module provides functions needed at runtime for compiled Java code
-
-(module runtime mzscheme
+(module runtime scheme/base
   
-  (require mzlib/class
-           mzlib/list
+  (require scheme/class
+           scheme/list
+
            profj/libs/java/lang/Object
            profj/libs/java/lang/String
            profj/libs/java/lang/Throwable
-           (lib "ArithmeticException.ss" "profj" "libs" "java" "lang")
-           (lib "ClassCastException.ss" "profj" "libs" "java" "lang")
-           (lib "NullPointerException.ss" "profj" "libs" "java" "lang")
-           (prefix ast: (lib "ast.ss" "profj"))
+           profj/libs/java/lang/ArithmeticException
+           profj/libs/java/lang/ClassCastException
+           profj/libs/java/lang/NullPointerException
            )
   
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 

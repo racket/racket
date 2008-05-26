@@ -1,11 +1,17 @@
-(module Object-composite mzscheme
+(module Object-composite scheme/base
   
-  (require mzlib/class
-           (prefix c: mzlib/contract)
-           (lib "errortrace-lib.ss" "errortrace")
-           (lib "Comparable.ss" "profj" "libs" "java" "lang")
-           (lib "Serializable.ss" "profj" "libs" "java" "io"))
+  (require scheme/class
+           (prefix-in c: scheme/contract)
+           errortrace
+           
+           profj/libs/java/lang/Comparable
+           profj/libs/java/io/Serializable
+           #;(lib "Comparable.ss" "profj" "libs" "java" "lang")
+           #;(lib "Serializable.ss" "profj" "libs" "java" "io"))
   (require "compile-lang-syntax.ss")    
+  
+  (define make-hash-table make-hash)
+  (define hash-table-put! hash-set!)
   
   ;Runtime needed code
   (define (javaRuntime:convert-to-string data)
@@ -109,7 +115,7 @@
     (if (string? obj)
         (make-java-string string)
         (begin
-          (c:contract (c:object-contract
+          (c:contract (object-contract
                        (clone (c:-> c:any/c))
                        (equals-java.lang.Object (c:-> c:any/c c:any/c))
                        (finalize (c:-> c:any/c))
@@ -446,7 +452,7 @@
   
   (define (is-java-array? obj) (is-a? obj java-array))
   
-  (define-struct runtime-type (type dim) (make-inspector))
+  (define-struct runtime-type (type dim) #:transparent)
   
   (define (array->list array start stop)
     (if (= start stop)
@@ -879,7 +885,7 @@
 ;                                                                 
 ;Throwable and exceptions
 
-  (provide Throwable (struct java:exception (object))
+  (provide Throwable (struct-out java:exception)
            exception-is-a? handle-exception create-java-exception)
   
   (define Throwable
@@ -987,7 +993,7 @@
   
   ;(make-java-exception string continuation-mark-set Throwable)
   ;Where Throwable is an object descending from class Throwable
-  (define-struct (java:exception exn) (object))
+  (define-struct (java:exception exn) (object) #:mutable)
 
   ;exception-is-a?: class -> (exn -> bool)
   (define (exception-is-a? class)
@@ -1019,7 +1025,7 @@
            guard-convert-Throwable static-Throwable/c)
   
   (define (wrap-convert-assert-Throwable obj p n s c)
-    (c:contract (c:object-contract
+    (c:contract (object-contract
                  (init-cause (c:-> c:any/c c:any/c))
                  (get-message (c:-> c:any/c))
                  (get-cause (c:-> c:any/c))
