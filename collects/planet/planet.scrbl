@@ -748,14 +748,25 @@ equal to or more recent than the version specified by this field. This
 allows you finer-grained control of your package's core-language
 requirements than its inclusion in a particular repository; for
 instance, setting this field to @scheme["300.2"] would cause the PLaneT server
-not to serve it to MzScheme v300 clients.}
+not to serve it to MzScheme v300.1 or older clients.}
 
 @item{The @scheme['version] field:
 If present, the version field should be a string that describes the 
 version number of this code that should be presented to users (e.g., 
 @scheme["0.15 alpha"]). This field does not override or in any way interact 
 with your package's package version number, which is assigned by 
-PLaneT, but may be useful to users.}}
+PLaneT, but may be useful to users.}
+
+@item{The @scheme['repositories] field: If present, the repositories
+field should be a list consisting of some subset of the strings
+@scheme["4.x"] and @scheme["3xx"]. The string @scheme["4.x"] indicates
+that this package should be included in the v4.x repository (which
+contains packages that are intended to run in PLT Scheme versions at
+or above version 4.0), and the string @scheme["3xx"] indicates that
+the package should be included in the v3xx repository (containing
+packages intended to run in PLT Scheme versions in the 3xx series). A
+single package (and a single version of a package) may be included in
+multiple repositories with the same PLaneT version number.}}
 
 In addition, PLaneT uses the setup-plt installer to install packages
 on client machines, so most fields it looks for can be included with
