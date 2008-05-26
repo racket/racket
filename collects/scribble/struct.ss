@@ -161,7 +161,12 @@
                            [desc any/c])]
  [(aux-element element) ()]
  [(hover-element element) ([text string?])]
+ [(script-element element) ([type string?]
+                            [script string?])]
  ;; specific renders support other elements, especially strings
+
+ [with-attributes ([style any/c]
+                   [assoc (listof (cons/c symbol? string?))])]
 
  [collected-info ([number (listof (or/c false/c integer?))]
                   [parent (or/c false/c part?)]

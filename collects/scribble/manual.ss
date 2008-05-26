@@ -334,8 +334,11 @@
 (define (procedure . str)
   (make-element "schemeresult" `("#<procedure:" ,@(decode-content str) ">")))
 
-(define (link url #:underline? [underline? #t] . str)
-  (make-element (make-target-url url (if underline? #f "plainlink"))
+(define (link url 
+              #:underline? [underline? #t] 
+              #:style [style (if underline? #f "plainlink")]
+              . str)
+  (make-element (make-target-url url style)
                 (decode-content str)))
 
 (define (schemeerror . str)

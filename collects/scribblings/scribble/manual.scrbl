@@ -791,9 +791,14 @@ The @tech{decode}d @scheme[pre-content] is hyperlinked to the definition
 of @scheme[id].}
 
 
-@defproc[(link [url string?] [pre-content any/c] ...) element?]{
+@defproc[(link [url string?] [pre-content any/c] ...
+               [#:underline? underline? any/c #t]
+               [#:style style any/c (if underline? #f "plainlink")]) 
+         element?]{
 
-The @tech{decode}d @scheme[pre-content] is hyperlinked to @scheme[url].}
+The @tech{decode}d @scheme[pre-content] is hyperlinked to
+@scheme[url].  If @scheme[style] is not supplied, then
+@scheme[underline?] determines how the link is rendered.}
 
 
 @defproc[(elemtag [t tag?] [pre-content any/c] ...) element?]{

@@ -43,15 +43,14 @@
                   [root  (cadr info)]
                   [path  (caddr info)]
                   [text  (make-element "tocsubseclink" (list label))]
-                  [link  (link (case root
-                                 [(plt)  (build-path (find-doc-dir) path)]
-                                 [(user) (string-append up path)]
-                                 [(#f)   path]
-                                 [else (error "internal error (main-page)")])
-                               #:underline? #f text)])
+                  [dest (case root
+                          [(plt)  (build-path (find-doc-dir) path)]
+                          [(user) (string-append up path)]
+                          [(#f)   path]
+                          [else (error "internal error (main-page)")])])
              (list id
-                   (make-toc-element #f null (list link))
-                   (make-toc-element #f null (list text))))))
+                   (make-toc-element #f null (list (link dest #:style "tocviewlink" text)))
+                   (make-toc-element #f null (list (link dest #:style "tocviewselflink" text)))))))
        links))
 
 (define (front-toc here)

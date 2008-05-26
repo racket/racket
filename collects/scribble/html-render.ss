@@ -106,6 +106,11 @@
 
 #reader scribble/reader (begin ; easier to format
 
+(define mynoscript-setup
+  @inlined-script{
+    document.write('<style>mynoscript { display:none }</style>');
+  })
+
 (define search-script
   @inlined-script{
     var search_nodes = null;
@@ -523,6 +528,7 @@
                  (meta ([http-equiv "content-type"]
                         [content "text-html; charset=utf-8"]))
                  ,title
+                 ,mynoscript-setup
                  ,(scribble-css-contents style-file  css-path)
                  ,(scribble-js-contents  script-file script-path))
                (body () ,@(render-toc-view d ri)
@@ -703,6 +709,10 @@
         [(hover-element? e)
          `((span ([title ,(hover-element-text e)])
              ,@(render-plain-element e part ri)))]
+        [(script-element? e)
+         `((script ([type ,(script-element-type e)])
+                   ,(literal (script-element-script e)))
+           (mynoscript ,@(render-plain-element e part ri)))]
         [(target-element? e)
          `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
                                                          ri)))]))
@@ -747,86 +757,100 @@
         [else (render-plain-element e part ri)]))
 
     (define/private (render-plain-element e part ri)
-      (define style (and (element? e) (element-style e)))
-      (cond
-        [(symbol? style)
-         (case style
-           [(italic) `((i ,@(super render-element e part ri)))]
-           [(bold) `((b ,@(super render-element e part ri)))]
-           [(tt) `((span ([class "stt"]) ,@(super render-element e part ri)))]
-           [(no-break) `((span ([class "nobreak"])
-                           ,@(super render-element e part ri)))]
-           [(sf) `((b (font ([size "-1"] [face "Helvetica"])
-                        ,@(super render-element e part ri))))]
-           [(subscript) `((sub ,@(super render-element e part ri)))]
-           [(superscript) `((sup ,@(super render-element e part ri)))]
-           [(hspace) `((span ([class "hspace"])
-                         ,@(let ([str (content->string (element-content e))])
-                             (map (lambda (c) 'nbsp) (string->list str)))))]
-           [(newline) `((br))]
-           [else (error 'html-render "unrecognized style symbol: ~e" style)])]
-        [(string? style)
-         `((span ([class ,style]) ,@(super render-element e part ri)))]
-        [(and (pair? style) (memq (car style) '(color bg-color)))
-         (unless (and (list? style)
-                      (or (and (= 4 (length style))
-                               (andmap byte? (cdr style)))
-                          (and (= 2 (length style))
-                               (member (cadr style)
-                                       '("white" "black" "red" "green" "blue"
-                                         "cyan" "magenta" "yellow")))))
-           (error 'render-font "bad color style: ~e"  style))
-         `((font ([style
-                   ,(format "~acolor: ~a"
-                            (if (eq? (car style) 'bg-color) "background-" "")
-                            (if (= 2 (length style))
-                              (cadr style)
-                              (string-append*
-                               "#"
-                               (map (lambda (v)
-                                      (let ([s (number->string v 16)])
-                                        (if (< v 16) (string-append "0" s) s)))
-                                    (cdr style)))))])
-                 ,@(super render-element e part ri)))]
-        [(target-url? style)
-         (if (current-no-links)
-           (super render-element e part ri)
-           (parameterize ([current-no-links #t])
-             `((a ([href ,(let ([addr (target-url-addr style)])
-                            (if (path? addr)
-                              (from-root addr (get-dest-directory))
-                              addr))]
-                   ,@(if (string? (target-url-style style))
-                       `([class ,(target-url-style style)])
-                       null))
-                  ,@(super render-element e part ri)))))]
-        [(url-anchor? style)
-         `((a ([name ,(url-anchor-name style)])
-             ,@(super render-element e part ri)))]
-        [(image-file? style)
-         (let* ([src (main-collects-relative->path (image-file-path style))]
-                [scale (image-file-scale style)]
-                [to-num
-                 (lambda (s)
-                   (number->string
-                    (inexact->exact
-                     (floor (* scale (integer-bytes->integer s #f #t))))))]
-                [sz (if (= 1.0 scale)
-                      null
-                      ;; Try to extract file size:
-                      (call-with-input-file*
-                       src
-                       (lambda (in)
-                         (if (regexp-try-match #px#"^\211PNG.{12}" in)
-                           `([width ,(to-num (read-bytes 4 in))]
-                             [height ,(to-num (read-bytes 4 in))])
-                           null))))])
-           `((img ([src ,(let ([p (install-file src)])
-                           (if (path? p)
-                             (url->string (path->url (path->complete-path p)))
-                             p))])
-                  ,@sz)))]
-        [else (super render-element e part ri)]))
+      (let* ([raw-style (and (element? e) (element-style e))]
+             [style (if (with-attributes? raw-style)
+                        (with-attributes-style raw-style)
+                        raw-style)]
+             [attribs (lambda ()
+                        (if (with-attributes? raw-style)
+                            (map (lambda (p) (list (car p) (cdr p)))
+                                 (with-attributes-assoc raw-style))
+                            null))])
+        (cond
+         [(symbol? style)
+          (case style
+            [(italic) `((i ,(attribs) ,@(super render-element e part ri)))]
+            [(bold) `((b ,(attribs) ,@(super render-element e part ri)))]
+            [(tt) `((span ([class "stt"] . ,(attribs)) ,@(super render-element e part ri)))]
+            [(no-break) `((span ([class "nobreak"] . ,(attribs))
+                                ,@(super render-element e part ri)))]
+            [(sf) `((b (font ([size "-1"] [face "Helvetica"] . ,(attribs))
+                             ,@(super render-element e part ri))))]
+            [(subscript) `((sub ,(attribs) ,@(super render-element e part ri)))]
+            [(superscript) `((sup ,(attribs) ,@(super render-element e part ri)))]
+            [(hspace) `((span ([class "hspace"] . ,(attribs))
+                              ,@(let ([str (content->string (element-content e))])
+                                  (map (lambda (c) 'nbsp) (string->list str)))))]
+            [(newline) `((br ,(attribs)))]
+            [else (error 'html-render "unrecognized style symbol: ~e" style)])]
+         [(string? style)
+          `((span ([class ,style] . ,(attribs)) ,@(super render-element e part ri)))]
+         [(and (pair? style) (memq (car style) '(color bg-color)))
+          (unless (and (list? style)
+                       (or (and (= 4 (length style))
+                                (andmap byte? (cdr style)))
+                           (and (= 2 (length style))
+                                (member (cadr style)
+                                        '("white" "black" "red" "green" "blue"
+                                          "cyan" "magenta" "yellow")))))
+            (error 'render-font "bad color style: ~e"  style))
+          `((font ([style
+                       ,(format "~acolor: ~a"
+                                (if (eq? (car style) 'bg-color) "background-" "")
+                                (if (= 2 (length style))
+                                    (cadr style)
+                                    (string-append*
+                                     "#"
+                                     (map (lambda (v)
+                                            (let ([s (number->string v 16)])
+                                              (if (< v 16) (string-append "0" s) s)))
+                                          (cdr style)))))]
+                   . ,(attribs))
+                  ,@(super render-element e part ri)))]
+         [(target-url? style)
+          (if (current-no-links)
+              (super render-element e part ri)
+              (parameterize ([current-no-links #t])
+                `((a ([href ,(let ([addr (target-url-addr style)])
+                               (if (path? addr)
+                                   (from-root addr (get-dest-directory))
+                                   addr))]
+                      ,@(if (string? (target-url-style style))
+                            `([class ,(target-url-style style)])
+                            null)
+                      . ,(attribs))
+                     ,@(super render-element e part ri)))))]
+         [(url-anchor? style)
+          `((a ([name ,(url-anchor-name style)] . ,(attribs))
+               ,@(super render-element e part ri)))]
+         [(image-file? style)
+          (let* ([src (main-collects-relative->path (image-file-path style))]
+                 [scale (image-file-scale style)]
+                 [to-num
+                  (lambda (s)
+                    (number->string
+                     (inexact->exact
+                      (floor (* scale (integer-bytes->integer s #f #t))))))]
+                 [sz (if (= 1.0 scale)
+                         null
+                         ;; Try to extract file size:
+                         (call-with-input-file*
+                          src
+                          (lambda (in)
+                            (if (regexp-try-match #px#"^\211PNG.{12}" in)
+                                `([width ,(to-num (read-bytes 4 in))]
+                                  [height ,(to-num (read-bytes 4 in))])
+                                null))))])
+            `((img ([src ,(let ([p (install-file src)])
+                            (if (path? p)
+                                (url->string (path->url (path->complete-path p)))
+                                p))]
+                    . ,(attribs))
+                   ,@sz)))]
+         [else 
+          (if (with-attributes? raw-style)
+              `((span ,(attribs) ,@(super render-element e part ri)))
+              (super render-element e part ri))])))
 
     (define/override (render-table t part ri need-inline?)
       (define t-style (table-style t))

@@ -143,6 +143,18 @@ A @deftech{block} is either a @techlink{table}, an
                          excluded in the text of a link when it
                          appears in a referenced section name.}
 
+                   @item{An instance of @scheme[hover-element] adds
+                         text to show in render HTML when the mouse
+                         hovers over the elements.}
+
+                   @item{An instance of @scheme[script-element]
+                         provides script code (usually
+                         @as-index{Javascript}) to run in the browser
+                         to generate the element; the element's normal
+                         content is used when scripting is disabled in
+                         the browser, or for rendering to other
+                         formats.}
+
              }}}}
 
        @item{A @deftech{delayed block} is an instance of
@@ -361,7 +373,8 @@ The @scheme[style] field is normally either
 
 @itemize{
 
- @item{a string, which corresponds to a CSS class for HTML output;}
+ @item{a string, which corresponds to a CSS class for HTML output and
+       a macro name for Latex output;}
 
  @item{one of the symbols that all renderers recognize: @scheme['tt],
        @scheme['italic], @scheme['bold], @scheme['sf],
@@ -382,9 +395,12 @@ The @scheme[style] field is normally either
        background color (with the same constraints and meanings as for
        @scheme['color]);}
 
- @item{an instance of @scheme[target-url] to generate a hyperlink; or}
+ @item{an instance of @scheme[target-url] to generate a hyperlink;}
 
- @item{an instance of @scheme[image-file] to support an inline image.}
+ @item{an instance of @scheme[image-file] to support an inline image; or}
+
+ @item{an instance of @scheme[with-attributes], which combines a base
+       style with a set of additional HTML attributes.}
 
 }
 
@@ -461,6 +477,21 @@ Instances of this structure type are intended for use in titles, where
 
 }
 
+@defstruct[(hover-element element) ([text string?])]{
+
+The @scheme[text] is displayed in HTML output when the mouse hovers
+over the element's content.}
+
+
+@defstruct[(script-element element) ([type string?]
+                                     [script string?])]{
+
+For HTML rendering, when scripting is enabled in the browser,
+@scheme[script] is used for the element instead of its normal
+content. The @scheme[type] string is normally
+@scheme["text/javascript"].}
+
+
 @defstruct[delayed-element ([resolve (any/c part? resolve-info? . -> . list?)]
                             [sizer (-> any/c)]
                             [plain (-> any/c)])]{
@@ -512,6 +543,11 @@ element remains intact (i.e., it is not replaced) by either the
 
 }
 
+@defstruct[with-attributes ([style any/c]
+                            [assoc (listof (cons/c symbol? string?))])]{
+
+Used for an @scheme[element]'s style to combine a base style with
+arbitrary HTML attributes.}
 
 
 @defstruct[collected-info ([number (listof (or/c false/c integer?))]
