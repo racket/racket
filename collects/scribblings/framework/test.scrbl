@@ -97,7 +97,7 @@ The code started by the primitive actions must run in the handler
 thread of the eventspace where the event takes place.  As a result,
 the test suite that invokes the primitive actions must @italic{not} run
 in that handler thread (or else some actions will deadlock).  See
-\Mrhyperref{the eventspace section}{see section~}{}{eventspaceinfo} 
+@scheme[make-eventspace]
 for more info.
 
 @subsection{Window Manager (Unix only)}

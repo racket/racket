@@ -61,7 +61,7 @@
     @method[group:% get-frames].
 
 
-    Applies \var{f} to each frame in the group
+    Applies @scheme[f] to each frame in the group
   }
   @defmethod*[(((get-active-frame) (is-a?/c frame:basic<%>)))]{
     Returns the frame with the keyboard focus or the first frame in the
@@ -94,14 +94,14 @@
     The function
     @method[group:% can-close-all?]
     must have been called just before this function and it must have returned 
-    \rawscm{\#t}.
+    @scheme[#t].
 
 
     Calls the
     @method[top-level-window<%> on-close]
     method and the
     @method[top-level-window<%> show]
-    method (with \rawscm{\#f} as argument)
+    method (with @scheme[#f] as argument)
     on each frame in the group.
   }
   @defmethod*[(((can-close-all?) void))]{

@@ -39,17 +39,17 @@
   @defmethod*[(((get-limit (start exact-integer)) int))]{
 
     Returns a limit for backward-matching parenthesis starting at position
-    \var{start}.
+    @scheme[start].
 
   }
   @defmethod*[(((balance-parens (key-event (instance key-event%))) void))]{
     This function is called when the user types a close parenthesis in the
     @scheme[text%]. If the close parenthesis that the user inserted does not match the 
-    corresponding open parenthesis and the \rawscm{'framework:fixup-parens} preference is
-    \rawscm{\#t} (see
+    corresponding open parenthesis and the @scheme['framework:fixup-parens] preference is
+    @scheme[#t] (see
     @scheme[preferences:get]) the correct closing parenthesis is inserted.
-    If the \rawscm{'framework:paren-match} preference is
-    \rawscm{\#t} (see
+    If the @scheme['framework:paren-match] preference is
+    @scheme[#t] (see
     @scheme[preferences:get]) the matching open parenthesis is flashed.
 
   }
@@ -61,15 +61,15 @@
 
 
   }
-  @defmethod*[(((tabify (start-pos exact-integer (send this iscmclassmethod (text) (get-start-position)))) void))]{
+  @defmethod*[(((tabify (start-pos exact-integer (send this text get-start-position))) void))]{
 
-    Tabs the line containing by \var{start-pos}
+    Tabs the line containing by @scheme[start-pos]
 
   }
   @defmethod*[(((tabify-selection (start exact-integer) (end exact-integer)) void))]{
 
-    Sets the tabbing for the lines containing positions \var{start}
-    through \var{end}.
+    Sets the tabbing for the lines containing positions @scheme[start]
+    through @scheme[end].
   }
   @defmethod*[(((tabify-all) void))]{
 
@@ -79,49 +79,49 @@
 
     Inserts a newline into the buffer. If 
     @method[scheme:text<%> tabify-on-return?]
-    returns \rawscm{\#t}, this will tabify the new line.
+    returns @scheme[#t], this will tabify the new line.
   }
-  @defmethod*[(((box-comment-out-selection (start-pos (union (quote start) exact-integer) rawscm) (end-pos (union (quote end) exact-integer) rawscm)) void))]{
+  @defmethod*[(((box-comment-out-selection (start-pos (or/c (symbols 'start) exact-integer?)) (end-pos (or/c (symbols 'end) exact-integer?))) void))]{
     This method comments out a selection in the text by putting it into a comment box.
 
 
-    Removes the region from \var{start-pos} to \var{end-pos}
+    Removes the region from @scheme[start-pos] to @scheme[end-pos]
     from the editor and inserts a comment box with that region
     of text inserted into the box.
 
-    If \var{start-pos} is \rawscm{'start}, the starting point of
-    the selection is used. If \var{end-pos} is \rawscm{'end},
+    If @scheme[start-pos] is @scheme['start], the starting point of
+    the selection is used. If @scheme[end-pos] is @scheme['end],
     the ending point of the selection is used.
   }
   @defmethod*[(((comment-out-selection (start exact-integer) (end exact-integer)) void))]{
 
-    Comments the lines containing positions \var{start} through \var{end}
+    Comments the lines containing positions @scheme[start] through @scheme[end]
     by inserting a semi-colon at the front of each line.
   }
   @defmethod*[(((uncomment-selection (start int) (end int)) void))]{
 
-    Uncomments the lines containing positions \var{start} through \var{end}.
+    Uncomments the lines containing positions @scheme[start] through @scheme[end].
 
   }
   @defmethod*[(((get-forward-sexp (start exact-integer)) (union |#f| exact-integer)))]{
 
     Returns the position of the end of next S-expression after position
-    \var{start}, or \rawscm{\#f} if there is no appropriate answer.
+    @scheme[start], or @scheme[#f] if there is no appropriate answer.
 
   }
   @defmethod*[(((remove-sexp (start exact-integer)) void))]{
 
-    Forward-deletes the S-expression starting after the position \var{start}.
+    Forward-deletes the S-expression starting after the position @scheme[start].
 
   }
   @defmethod*[(((forward-sexp (start |#t|)) exact-integer))]{
 
-    Moves forward over the S-expression starting at position \var{start}.
+    Moves forward over the S-expression starting at position @scheme[start].
   }
   @defmethod*[(((flash-forward-sexp (start-pos exact-integer)) void))]{
 
     Flashes the parenthesis that closes the sexpression at
-    \var{start-pos}.
+    @scheme[start-pos].
 
 
   }
@@ -129,13 +129,13 @@
 
 
     Returns the position of the start of the S-expression before or
-    containing \var{start}, or \rawscm{\#f} if there is no appropriate
+    containing @scheme[start], or @scheme[#f] if there is no appropriate
     answer.
   }
   @defmethod*[(((flash-backward-sexp (start-pos exact-integer)) void))]{
 
     Flashes the parenthesis that opens the sexpression at
-    \var{start-pos}.
+    @scheme[start-pos].
 
   }
   @defmethod*[(((backward-sexp (start-pos exact-integer)) void))]{
@@ -143,62 +143,62 @@
 
 
     Moves the caret to the beginning of the sexpression that ends at
-    \var{start-pos}.
+    @scheme[start-pos].
   }
   @defmethod*[(((find-up-sexp (start-pos exact-integer)) (union |#f| exact-integer)))]{
 
     Returns the position of the beginning of the next sexpression outside
-    the sexpression that contains \var{start-pos}. If there is no such
-    sexpression, it returns \rawscm{\#f}.
+    the sexpression that contains @scheme[start-pos]. If there is no such
+    sexpression, it returns @scheme[#f].
 
   }
   @defmethod*[(((up-sexp (start exact-integer)) void))]{
 
-    Moves backward out of the S-expression containing the position \var{start}.
+    Moves backward out of the S-expression containing the position @scheme[start].
 
   }
   @defmethod*[(((find-down-sexp (start-pos exact-integer)) (union |#f| exact-integer)))]{
 
     Returns the position of the beginning of the next sexpression inside
-    the sexpression that contains \var{start-pos}. If there is no such
-    sexpression, it returns \rawscm{\#f}.
+    the sexpression that contains @scheme[start-pos]. If there is no such
+    sexpression, it returns @scheme[#f].
   }
   @defmethod*[(((down-sexp (start exact-integer)) void))]{
 
-    Moves forward into the next S-expression after the position \var{start}.
+    Moves forward into the next S-expression after the position @scheme[start].
   }
   @defmethod*[(((remove-parens-forward (start exact-integer)) void))]{
 
     Removes the parentheses from the S-expression starting after the
-    position \var{start}.
+    position @scheme[start].
 
   }
   @defmethod*[(((select-forward-sexp (start exact-integer)) |#t|))]{
 
-    Selects the next S-expression, starting at position \var{start}.
+    Selects the next S-expression, starting at position @scheme[start].
   }
   @defmethod*[(((select-backward-sexp (start exact-integer)) |#t|))]{
 
-    Selects the previous S-expression, starting at position \var{start}.
+    Selects the previous S-expression, starting at position @scheme[start].
 
   }
   @defmethod*[(((select-up-sexp (start exact-integer)) |#t|))]{
 
-    Selects the region to the enclosing S-expression, starting at position \var{start}.
+    Selects the region to the enclosing S-expression, starting at position @scheme[start].
 
   }
   @defmethod*[(((select-down-sexp (start exact-integer)) |#t|))]{
 
-    Selects the region to the next contained S-expression, starting at position \var{start}.
+    Selects the region to the next contained S-expression, starting at position @scheme[start].
 
   }
   @defmethod*[(((transpose-sexp (start exact-integer)) void))]{
 
-    Swaps the S-expression beginning before the position \var{start} with
-    the next S-expression following \var{start}.
+    Swaps the S-expression beginning before the position @scheme[start] with
+    the next S-expression following @scheme[start].
   }
   @defmethod*[(((mark-matching-parenthesis (pos exact-positive-integer)) void))]{
-    If the paren after \var{pos} is matched, this method
+    If the paren after @scheme[pos] is matched, this method
     highlights it and it's matching counterpart in dark green.
 
   }
@@ -230,7 +230,7 @@
   The result of this mixin uses the same initialization arguments as the
   mixin's argument.
   @defmethod*[#:mode override (((get-word-at (pos positive-exact-integer)) string))]{
-    Returns the word just before \var{pos}, which is then used
+    Returns the word just before @scheme[pos], which is then used
     as the prefix for auto-completion.
 
   }

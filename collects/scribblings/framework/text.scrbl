@@ -11,23 +11,23 @@
     This function highlights a region of text in the buffer.
 
 
-    The range between \var{start} and \var{end} will be highlighted with the
-    color in color, and \var{bitmap} will be painted over the range of text in
-    black and white. If \var{bitmap} is \rawscm{\#f}, the range will be inverted,
+    The range between @scheme[start] and @scheme[end] will be highlighted with the
+    color in color, and @scheme[bitmap] will be painted over the range of text in
+    black and white. If @scheme[bitmap] is @scheme[#f], the range will be inverted,
     using the platform specific xor. This method is not recommended, because the
     selection is also displayed using xor.
 
-    If \var{caret-space?} is not \rawscm{\#f}, the left edge of the range
+    If @scheme[caret-space?] is not @scheme[#f], the left edge of the range
     will be one pixel short, to leave space for the caret. The caret does
     not interfere with the right hand side of the range. Note that under X
     windows the caret is drawn with XOR, which means almost anything can
     happen. So if the caret is in the middle of the range it may be hard
-    to see, or if it is on the left of the range and \var{caret-space?} is
-    \rawscm{\#f} it may also be hard to see.
+    to see, or if it is on the left of the range and @scheme[caret-space?] is
+    @scheme[#f] it may also be hard to see.
 
-    The \var{priority} argument indicates the relative priority for
+    The @scheme[priority] argument indicates the relative priority for
     drawing overlapping regions. If two regions overlap and have different
-    priorities, the region with \rawscm{'high} priority will be drawn second
+    priorities, the region with @scheme['high] priority will be drawn second
     and only it will be visible in the overlapping region.
 
     This method returns a thunk, which, when invoked, will turn off
@@ -52,12 +52,12 @@
     ranges in the editor.
   }
   @defmethod*[(((get-styles-fixed) boolean))]{
-    If the result of this function is \rawscm{\#t}, the styles in this 
+    If the result of this function is @scheme[#t], the styles in this 
     @scheme[text:basic<%>]
     will be fixed. This means
     that any text inserted to this editor 
     has its style set to this editor's
-    @scheme[style-list%]'s \rawscm{"Standard"} style.
+    @scheme[style-list%]'s @scheme["Standard"] style.
 
     See also
     @method[text:basic<%> set-styles-fixed].
@@ -80,12 +80,12 @@
     This moves or copies text and snips to another edit.
 
 
-    Moves or copies from the edit starting at \var{start} and ending at
-    \var{end}. It puts the copied text and snips in \var{dest-text}
-    starting at location \var{dest-pos}.
+    Moves or copies from the edit starting at @scheme[start] and ending at
+    @scheme[end]. It puts the copied text and snips in @scheme[dest-text]
+    starting at location @scheme[dest-pos].
 
     If a snip refused to be moved, it will be copied, otherwise it will be
-    moved. A snip may refuse to be moved by returning \rawscm{\#f} from
+    moved. A snip may refuse to be moved by returning @scheme[#f] from
     @method[snip% release-from-owner].
   }
   @defmethod*[(((initial-autowrap-bitmap) (union |#f| (instance bitmap%))))]{
@@ -108,9 +108,9 @@
   }
   @defmethod*[(((port-name-matches? (id (or/c path? symbol?))) boolean))]{
 
-    Indicates if \var{id} matches the port name of this file. If
+    Indicates if @scheme[id] matches the port name of this file. If
     the file is saved, the port name matches when the save file
-    is the path as \var{id}. If the file has not been saved, the
+    is the path as @scheme[id]. If the file has not been saved, the
     port name matches if the symbol is the same as the result of
     @method[text:basic<%> port-name-matches?].
 
@@ -144,7 +144,7 @@
     @method[editor<%> put-file]
     but uses
     @scheme[finder:put-file]
-    instead of \scheme|put-file|.
+    instead of @scheme[put-file].
 
   }
 }
@@ -184,8 +184,7 @@
 }
 @definterface[text:nbsp->space<%> (text%)]{
   Classes that implement this interface silently change
-  non-breaking spaces, ie the character \scheme|(integer->char
-  160)|, to regular spaces when inserted into the editor.
+  non-breaking spaces, ie the character @scheme[(integer->char 160)], to regular spaces when inserted into the editor.
 
 }
 @defmixin[text:nbsp->space-mixin (text%) (text:nbsp->space<%>)]{
@@ -197,10 +196,8 @@
   @defmethod*[#:mode augment (((after-insert (start nonnegative-exact-integer?) (len nonnegative-exact-integer?)) void))]{
 
     Replaces all non-breaking space characters
-    \begin{schemedisplay}
-    (integer->char 160)
-    \end{schemedisplay}
-    by \scheme|#\space| characters.
+    @scheme[(integer->char 160)]
+    by @scheme[#\space] characters.
 
     Ends the edit sequence (by calling
     @method[editor<%> end-edit-sequence]) started in
@@ -236,7 +233,7 @@
   }
   @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void))]{
 
-    If \var{key} is either return or newline, only invoke the \var{return}
+    If @scheme[key] is either return or newline, only invoke the @scheme[return]
     thunk (initialization argument) and do nothing else.
   }
 }
@@ -277,9 +274,9 @@
   editor are kept in sync, as modifications
   to this object happen.
   @defmethod*[(((get-delegate) (union |#f| (instanceof text%))))]{
-    The result of this method is the \iscmclass{text} object
+    The result of this method is the @scheme[text%] object
     that the contents of this editor are being delegated to, or
-    \rawscm{\#f}, if there is none.
+    @scheme[#f], if there is none.
 
   }
   @defmethod*[(((set-delegate (delegate (union |#f| (instanceof text%)))) void))]{
@@ -287,9 +284,9 @@
 
 
     When it is set, all of the snips are copied from this object
-    to \var{delegate}. Additionally, if this object implements
+    to @scheme[delegate]. Additionally, if this object implements
     @scheme[scheme:text<%>]
-    the tab settings of \var{delegate} are updated to match this
+    the tab settings of @scheme[delegate] are updated to match this
     objects.
   }
 }
@@ -365,7 +362,7 @@
 
     Sets the descent, space, lspace, and rspace to zero. Sets
     the height to 1. Sets the width to the width of tabs as
-    returned in the \scm{tab-width} parameter of the
+    returned in the @scheme[tab-width] parameter of the
     @method[text% get-tabs]
     method.
 
@@ -502,7 +499,7 @@
   When files are saved from this
   @scheme[text%], a check is made to see if there are any non-@scheme[string-snip%]
   objects in the 
-  @scheme[text%]. If so, it is saved using the file format \rawscm{'std}. (see
+  @scheme[text%]. If so, it is saved using the file format @scheme['std]. (see
   @method[text% set-file-format]
   for more information. If not, the file format passed to
   @method[editor<%> save-file]
@@ -511,18 +508,18 @@
 
     If the method
     @method[text% get-file-format]
-    returns \rawscm{'standard} and the text has only 
-    @scheme[string-snip%]s, the file format is set to \rawscm{'text}. 
+    returns @scheme['standard] and the text has only 
+    @scheme[string-snip%]s, the file format is set to @scheme['text]. 
 
     If the method
     @method[text% get-file-format]
-    returns \rawscm{'text} and the text has some non 
-    @scheme[string-snip%]s, the file format is set to \rawscm{'standard}. 
+    returns @scheme['text] and the text has some non 
+    @scheme[string-snip%]s, the file format is set to @scheme['standard]. 
 
     Depending on the user's preferences, the user may also be queried.
 
     Also, the changes to the file format only happen if the argument
-    \var{file-format} is \rawscm{'copy} or \rawscm{'same}.
+    @scheme[file-format] is @scheme['copy] or @scheme['same].
   }
 }
 @definterface[text:file<%> (editor:file<%> text:basic<%>)]{
@@ -535,7 +532,7 @@
   @defmethod*[(((while-unlocked (thunk (-> any/c))) any/c))]{
 
     Unlocks the editor, calls the thunk, and then relocks the
-    editor, all using a \scheme{dynamic-wind}.
+    editor, all using a @scheme[dynamic-wind].
   }
 }
 @defmixin[text:file-mixin (editor:file<%> text:basic<%>) (text:file<%>)]{
@@ -544,14 +541,14 @@
     Returns false if the result of
     @method[text:file<%> get-read-write?]
     is true, otherwise returns the
-    result of calling \scheme|inner|.
+    result of calling @scheme[inner].
   }
   @defmethod*[#:mode augment (((can-delete? (start number) (len number)) boolean))]{
 
     Returns false if the result of
     @method[text:file<%> get-read-write?]
     is true, otherwise returns the
-    result of calling \scheme|inner|.
+    result of calling @scheme[inner].
   }
   @defmethod*[#:mode augment (((after-save-file) void))]{
 
@@ -606,11 +603,11 @@
   output ports (one for each input port and one for all of the
   output ports).
   @defmethod*[(((delete/io (start exact-integer) (end exact-integer)) void))]{
-    Deletes the text between \var{start} and \var{end} without
+    Deletes the text between @scheme[start] and @scheme[end] without
     changing the behavior of the ports (otherwise, deleting the
     text would break internal invariants of the port). 
 
-    Both \var{start} and \var{end} must be less than
+    Both @scheme[start] and @scheme[end] must be less than
     @method[text:ports<%> get-insertion-point]
     (or else it is safe to delete them so you don't need this
     method).
@@ -681,7 +678,7 @@
     be submitted to the input port.
 
 
-    Return \scheme|#t| or the result of calling \scheme|inner|.
+    Return @scheme[#t] or the result of calling @scheme[inner].
   }
   @defmethod*[(((on-submit) void))]{
     This method is called when text is sent into the input port.
@@ -723,13 +720,13 @@
     @method[text:ports<%> get-out-port].
 
     If the result is a string that is not mapped in the editor's
-    style list, the style named \scheme|"Standard"| is used and
-    if that isn't mapped, the style named \scheme|"Basic"| is used.
+    style list, the style named @scheme["Standard"] is used and
+    if that isn't mapped, the style named @scheme["Basic"] is used.
 
     This method is called during the initialization of the class.
 
 
-    Defaultly returns \scheme|"text:ports out"| which is mapped
+    Defaultly returns @scheme["text:ports out"] which is mapped
     to a blue style in the style list returned by
     @scheme[editor:get-standard-style-list].
   }
@@ -739,13 +736,13 @@
     @method[text:ports<%> get-err-port].
 
     If the result is a string that is not mapped in the editor's
-    style list, the style named \scheme|"Standard"| is used and
-    if that isn't mapped, the style named \scheme|"Basic"| is used.
+    style list, the style named @scheme["Standard"] is used and
+    if that isn't mapped, the style named @scheme["Basic"] is used.
 
     This method is called during the initialization of the class.
 
 
-    Defaultly returns \scheme|"text:ports err"| which is mapped
+    Defaultly returns @scheme["text:ports err"] which is mapped
     to a red italic style in the style list returned by
     @scheme[editor:get-standard-style-list].
   }
@@ -755,14 +752,14 @@
     @method[text:ports<%> get-value-port].
 
     If the result is a string that is not mapped in the editor's
-    style list, the style named \scheme|"Standard"| is used and
-    if that isn't mapped, the style named \scheme|"Basic"| is used.
+    style list, the style named @scheme["Standard"] is used and
+    if that isn't mapped, the style named @scheme["Basic"] is used.
 
     This method is called during the initialization of the class.
 
 
 
-    Defaultly returns \scheme|"text:ports value"| which is mapped
+    Defaultly returns @scheme["text:ports value"] which is mapped
     to a blue style in the style list returned by
     @scheme[editor:get-standard-style-list].
 
@@ -811,9 +808,9 @@
     snips that is inserted by the box port in this editor.
 
   }
-  @defmethod*[(((get-box-input-text%) (implements iscmmixin (text:input-box))))]{
+  @defmethod*[(((get-box-input-text%) (is-a?/c text:input-box)))]{
     The result of this method is instantiated and placed inside the result of
-    @method[text:ports<%> get-box-input-editor-snip\%].
+    @method[text:ports<%> get-box-input-editor-snip%].
 
   }
 }
@@ -821,15 +818,15 @@
 
   @defmethod*[#:mode augment (((can-insert? (start exact-integer) (len exact-integer)) boolean))]{
 
-    Returns the results of the \scheme|inner| call, unless 
+    Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
-    returns \scheme|#f|.
+    returns @scheme[#f].
   }
   @defmethod*[#:mode augment (((can-delete? (start exact-integer) (len exact-integer)) boolean))]{
 
-    Returns the results of the \scheme|inner| call, unless 
+    Returns the results of the @scheme[inner] call, unless 
     @method[text:ports<%> get-allow-edits]
-    returns \scheme|#f|.
+    returns @scheme[#f].
   }
   @defmethod*[#:mode override (((on-local-char (event (is-a?/c key-event%))) void))]{
 
@@ -837,7 +834,7 @@
     @method[text:ports<%> get-unread-start-point]
     to the input port, unless
     @method[text:ports<%> submit-to-port?]
-    returns \scheme|#f|.
+    returns @scheme[#f].
 
     Also calls
     @method[text:ports<%> on-submit].
@@ -877,17 +874,17 @@
   }
   @defmethod*[(((get-autocomplete-border-color) (or/c string? (is-a?/c color%))))]{
     The border color for the autocomplete menu. Defaults to
-    \scheme|"black"|.
+    @scheme["black"].
 
   }
   @defmethod*[(((get-autocomplete-background-color) (or/c string? (is-a?/c color%))))]{
     The background color for the non-selected menu
-    items. Defaults to \scheme|"lavender"|.
+    items. Defaults to @scheme["lavender"].
 
   }
   @defmethod*[(((get-autocomplete-selected-color) (or/c string? (is-a?/c color%))))]{
     The background color for the selected menu item. Defaults to
-    \scheme|(make-object color% 204 153 255)|.
+    @scheme[(make-object color% 204 153 255)].
 
   }
   @defmethod*[(((completion-mode-key-event? (key-event key-event%)) boolean))]{

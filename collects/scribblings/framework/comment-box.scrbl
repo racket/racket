@@ -11,9 +11,9 @@
   @defmethod*[#:mode override (((make-editor) (is-a?/c text%)))]{
 
     Makes an instance of 
-    \begin{schemedisplay} 
-    (scheme:text-mixin text:keymap%)
-    \end{schemedisplay}
+    @schemeblock[
+    (scheme:text-mixin text:keymap%)]
+
   }
   @defmethod*[#:mode override (((make-snip) (is-a?/c comment-snip%)))]{
 
@@ -24,13 +24,13 @@
   @defmethod*[#:mode override (((get-corner-bitmap) (is-a?/c bitmap%)))]{
 
     Returns the semicolon bitmap from the file
-    \begin{schemedisplay}
-    (build-path (collection-path "icons") "semicolon.gif")
-    \end{schemedisplay}
+    @schemeblock[
+    (build-path (collection-path "icons") "semicolon.gif")]
+
   }
   @defmethod*[#:mode override (((get-position) (symbols (quote left-top) (quote top-right))))]{
 
-    Returns \scheme|'left-top|
+    Returns @scheme['left-top]
   }
   @defmethod*[#:mode override (((get-text) string))]{
 

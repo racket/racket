@@ -33,7 +33,7 @@
     the clients of this frame and the frame itself. For example, to insert
     a status line panel override this method with something like this:
 
-    \begin{schemedisplay}
+    @schemeblock[
     (class ...
       ...
      (rename [super-make-root-area-container make-root-area-container])
@@ -47,16 +47,14 @@
           ; ... add other children to status-panel ...
 
           root))
-      ...
-    \end{schemedisplay}
+      ...)]
 
     In this example, status-panel will contain a root panel for the other
     classes, and whatever panels are needed to display status information.
 
     The searching frame is implemented using this method.
 
-
-    Calls \rawscm{make-object} with \var{class} and \var{parent}.
+    Calls @scheme[make-object] with @scheme[class] and @scheme[parent].
   }
   @defmethod*[(((close) void))]{
     This method closes the frame by calling the
@@ -66,15 +64,14 @@
     methods. 
 
     It's implementation is:
-    \begin{schemedisplay}
+    @schemeblock[
       (inherit can-close? on-close)
       (public
         [show
           (lambda ()
             (when (can-close?)
               (on-close)
-              (show #f)))])
-    \end{schemedisplay}
+              (show #f)))])]
 
   }
   @defmethod*[(((editing-this-file? (filename path)) boolean))]{
@@ -82,20 +79,20 @@
     that file).
 
 
-    Returns \scheme|#f|.
+    Returns @scheme[#f].
   }
   @defmethod*[(((get-filename (temp (union |#f| (box boolean)) |#f|)) (union |#f| path)))]{
     This returns the filename that the frame is currently being saved as,
-    or \rawscm{\#f} if there is no appropriate filename.
+    or @scheme[#f] if there is no appropriate filename.
 
 
-    Defaultly returns \rawscm{\#f}. 
+    Defaultly returns @scheme[#f]. 
 
-    If \var{temp} is a box, it is filled with \rawscm{\#t} or \rawscm{\#f},
+    If @scheme[temp] is a box, it is filled with @scheme[#t] or @scheme[#f],
     depending if the filename is a temporary filename.
   }
   @defmethod*[(((make-visible (filename string)) void))]{
-    Makes the file named by \var{filename} visible (intended for
+    Makes the file named by @scheme[filename] visible (intended for
     use with tabbed editing).
 
   }
@@ -107,15 +104,15 @@
   object returned by
   @scheme[group:get-the-frame-group].
 
-  Do not give \iscmclass{panel}s or \iscmintf{control}s this frame as
+  Do not give @scheme[panel%]s or @scheme[control<%>]s this frame as
   parent. Instead, use the result of the
   @method[frame:basic<%> get-area-container]
   method.
 
-  \index{Windows menu}
+  @index{Windows menu}
   This mixin also creates a menu bar for the frame, as the
   frame is initialized. It uses the class returned by
-  @method[frame:basic<%> get-menu-bar\%]. It only passes the frame as an initialization argument.
+  @method[frame:basic<%> get-menu-bar%]. It only passes the frame as an initialization argument.
   In addition, it creates the windows menu in the menu bar.
 
   See also
@@ -124,8 +121,8 @@
 
     Calls the super method.
 
-    When \var{on?} is \scheme|#t|, inserts the frame into the
-    frame group and when it is \scheme|#f|, removes the frame
+    When @scheme[on?] is @scheme[#t], inserts the frame into the
+    frame group and when it is @scheme[#f], removes the frame
     from the group.
   }
   @defmethod*[#:mode override (((can-exit?) boolean))]{
@@ -137,14 +134,14 @@
 
     First, it calls
     @scheme[exit:set-exiting]
-    with \rawscm{\#t}.
+    with @scheme[#t].
     Then, it calls 
-    @scheme[exit:can-exit?]. If it returns \rawscm{\#t}, 
+    @scheme[exit:can-exit?]. If it returns @scheme[#t], 
     so does this method. If
-    it returns \rawscm{\#f}, 
+    it returns @scheme[#f], 
     this method calls
     @scheme[exit:set-exiting]
-    with \rawscm{\#f}.
+    with @scheme[#f].
   }
   @defmethod*[#:mode override (((on-exit) void))]{
 
@@ -156,12 +153,12 @@
     Calls
     @scheme[exit:on-exit]
     and then queues a callback
-    to call MzScheme's \rawscm{exit}
+    to call MzScheme's @scheme[exit]
     function. If that returns, it
     calls
     @scheme[exit:set-exiting]
     to reset that flag to
-    \rawscm{\#f}.
+    @scheme[#f].
   }
   @defmethod*[#:mode override (((on-superwindow-show (shown? any/c)) void))]{
 
@@ -175,7 +172,7 @@
 
     Calls 
     @scheme[handler:edit-file]
-    with \var{pathname} as an argument.
+    with @scheme[pathname] as an argument.
   }
   @defmethod*[#:mode override (((after-new-child) void))]{
 
@@ -190,13 +187,13 @@
 @defmixin[frame:size-pref-mixin (frame:basic<%>) (frame:size-pref<%>)]{
   @defconstructor[((size-preferences-key symbol?) (label label-string?) (parent (or/c (is-a?/c frame%) false/c) #f) (x (or/c (integer-in -10000 10000) false/c) #f) (y (or/c (integer-in -10000 10000) false/c) #f) (style (listof (one-of/c (quote no-resize-border) (quote no-caption) (quote no-system-menu) (quote hide-menu-bar) (quote mdi-parent) (quote mdi-child) (quote toolbar-button) (quote float) (quote metal))) null) (enabled any/c #t) (border (integer-in 0 1000) 0) (spacing (integer-in 0 1000) 0) (alignment (list/c (one-of/c (quote left) (quote center) (quote right)) (one-of/c (quote top) (quote center) (quote bottom))) (quote (center top))) (min-width (integer-in 0 10000) graphical-minimum-width) (min-height (integer-in 0 10000) graphical-minimum-height) (stretchable-width any/c #t) (stretchable-height any/c #t))]{
 
-    The size \var{size-preferences-key} symbol is used with 
+    The size @scheme[size-preferences-key] symbol is used with 
     @scheme[preferences:get]
     and
     @scheme[preferences:set]
     to track the current size.
 
-    Passes the \var{width} and \var{height} initialization
+    Passes the @scheme[width] and @scheme[height] initialization
     arguments to the superclass based on the current value 
     of the preference.
 
@@ -219,27 +216,26 @@
 }
 @defmixin[frame:register-group-mixin (frame:basic<%>) (frame:register-group<%>)]{
   During initialization, calls
-  @method[group:% insert-frame]with \scheme|this|.
+  @method[group:% insert-frame]with @scheme[this].
   @defmethod*[#:mode augment (((can-close?) bool))]{
 
-    Calls the inner method, with a default of \scheme|#t|.
-    If that returns \scheme|#t|, 
+    Calls the inner method, with a default of @scheme[#t].
+    If that returns @scheme[#t], 
     it checks for one of the these three conditions:
-    \begin{itemize}
 
-    \item 
+    @itemize{
+    @item{
     @scheme[exit:exiting?]
-    returns \rawscm{\#t}
-    \item there is more than one
+    returns @scheme[#t]}
+    @item{there is more than one
     frame in the group returned
     by
-    @scheme[group:get-the-frame-group], or
-    \item the procedure
+    @scheme[group:get-the-frame-group], or}
+    @item{the procedure
     @scheme[exit:user-oks-exit]
-    returns \rawscm{\#t}.
-    \end{itemize}
+    returns @scheme[#t].}}
     If any of those conditions hold, the 
-    method returns \rawscm{\#t}.
+    method returns @scheme[#t].
   }
   @defmethod*[#:mode augment (((on-close) void))]{
 
@@ -248,10 +244,10 @@
     @method[group:% remove-frame]
     method of the result of
     @scheme[group:get-the-frame-group]
-    with \rawscm{this} as an argument.
+    with @scheme[this] as an argument.
     Finally, unless
     @scheme[exit:exiting?]
-    returns \rawscm{\#t},
+    returns @scheme[#t],
     and if there are no more
     frames open, it calls
     @scheme[exit:exit].
@@ -260,8 +256,8 @@
 
     Calls
     @method[group:% set-active-frame]
-    with \rawscm{this} when
-    \var{on?} is true.
+    with @scheme[this] when
+    @scheme[on?] is true.
 
   }
 }
@@ -284,7 +280,7 @@
   is called with a string. Additionally,
   the screen space for one status line is re-used
   when by another status line when the first
-  passes \scheme|#f| to 
+  passes @scheme[#f] to 
   @method[frame:status-line<%> update-status-line]. In this manner, the status line frame avoids
   opening too many status lines and avoids
   flashing the status lines open and closed too
@@ -298,12 +294,12 @@
 
   }
   @defmethod*[(((close-status-line (id symbol?)) void))]{
-    Closes the status line \var{id}.
+    Closes the status line @scheme[id].
 
   }
   @defmethod*[(((update-status-line (id symbol?) (status (union |#f| string))) void))]{
-    Updates the status line named by \var{id} with
-    \var{status}. If \var{status} is \scheme{#f}, the status
+    Updates the status line named by @scheme[id] with
+    @scheme[status]. If @scheme[status] is @scheme[#f], the status
     line is becomes blank (and may be used by other ids).
 
   }
@@ -320,11 +316,11 @@
 @definterface[frame:info<%> (frame:basic<%>)]{
   Frames matching this interface support a status line.
 
-  The preference \scheme|'framework:show-status-line| controls
-  the visibility of the status line. If it is \scheme|#t|, the
-  status line is visible and if it is \scheme|#f|, the
+  The preference @scheme['framework:show-status-line] controls
+  the visibility of the status line. If it is @scheme[#t], the
+  status line is visible and if it is @scheme[#f], the
   status line is not visible (see 
-  \hyperref{the preferences section}{section~}{ for more info about preferences}{fw:preferences}).
+  @scheme[preferences:get] for more info about preferences)
   @defmethod*[(((determine-width (str string) (canvas (instance editor-canvas%)) (text (instance text%))) integer))]{
     This method is used to calculate the size of an
     @scheme[editor-canvas%]
@@ -390,12 +386,10 @@
     Result indicates if the show info panel has been explicitly hidden with
     @method[frame:info<%> hide-info].
 
-    If this method returns \scheme|#t| and 
-    \scheme|(preferences:get 'framework:show-status-line)| is
-    \scheme|#f|, then the info panel will not be visible.
+    If this method returns @scheme[#t] and 
+    @scheme[(preferences:get 'framework:show-status-line)] is
+    @scheme[#f], then the info panel will not be visible.
     Otherwise, it is visible.
-
-
   }
 }
 @defmixin[frame:info-mixin (frame:basic<%>) (frame:info<%>)]{
@@ -454,8 +448,8 @@
 
   @defmethod*[#:mode augment (((on-close) void))]{
 
-    removes a preferences callback for \rawscm{'framework:line-offsets}.
-    See section~\ref{fw:preferences} for more information
+    removes a preferences callback for @scheme['framework:line-offsets].
+    See @scheme[preferences:add-callback] for more information.
   }
   @defmethod*[#:mode override (((update-info) void))]{
 
@@ -472,120 +466,120 @@
 
 }
 @definterface[frame:standard-menus<%> (frame:basic<%>)]{
-  \begin{itemize}
-  \item
+  @itemize{
+  @item{
   @method[frame:standard-menus<%> file-menu:new-callback],
   @method[frame:standard-menus<%> file-menu:create-new?],
   @method[frame:standard-menus<%> file-menu:new-string],
   @method[frame:standard-menus<%> file-menu:new-help-string],
   @method[frame:standard-menus<%> file-menu:new-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-new-item]
+  @method[frame:standard-menus<%> file-menu:get-new-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-new-and-open]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-new-and-open]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:open-callback],
   @method[frame:standard-menus<%> file-menu:create-open?],
   @method[frame:standard-menus<%> file-menu:open-string],
   @method[frame:standard-menus<%> file-menu:open-help-string],
   @method[frame:standard-menus<%> file-menu:open-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-open-item]
+  @method[frame:standard-menus<%> file-menu:get-open-item]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:open-recent-callback],
   @method[frame:standard-menus<%> file-menu:create-open-recent?],
   @method[frame:standard-menus<%> file-menu:open-recent-string],
   @method[frame:standard-menus<%> file-menu:open-recent-help-string],
   @method[frame:standard-menus<%> file-menu:open-recent-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-open-recent-item]
+  @method[frame:standard-menus<%> file-menu:get-open-recent-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-open-and-revert]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-open-and-revert]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:revert-callback],
   @method[frame:standard-menus<%> file-menu:create-revert?],
   @method[frame:standard-menus<%> file-menu:revert-string],
   @method[frame:standard-menus<%> file-menu:revert-help-string],
   @method[frame:standard-menus<%> file-menu:revert-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-revert-item]
+  @method[frame:standard-menus<%> file-menu:get-revert-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-revert-and-save]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-revert-and-save]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:save-callback],
   @method[frame:standard-menus<%> file-menu:create-save?],
   @method[frame:standard-menus<%> file-menu:save-string],
   @method[frame:standard-menus<%> file-menu:save-help-string],
   @method[frame:standard-menus<%> file-menu:save-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-save-item]
+  @method[frame:standard-menus<%> file-menu:get-save-item]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:save-as-callback],
   @method[frame:standard-menus<%> file-menu:create-save-as?],
   @method[frame:standard-menus<%> file-menu:save-as-string],
   @method[frame:standard-menus<%> file-menu:save-as-help-string],
   @method[frame:standard-menus<%> file-menu:save-as-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-save-as-item]
+  @method[frame:standard-menus<%> file-menu:get-save-as-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-save-as-and-print]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-save-as-and-print]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:print-callback],
   @method[frame:standard-menus<%> file-menu:create-print?],
   @method[frame:standard-menus<%> file-menu:print-string],
   @method[frame:standard-menus<%> file-menu:print-help-string],
   @method[frame:standard-menus<%> file-menu:print-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-print-item]
+  @method[frame:standard-menus<%> file-menu:get-print-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-print-and-close]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-print-and-close]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:close-callback],
   @method[frame:standard-menus<%> file-menu:create-close?],
   @method[frame:standard-menus<%> file-menu:close-string],
   @method[frame:standard-menus<%> file-menu:close-help-string],
   @method[frame:standard-menus<%> file-menu:close-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-close-item]
+  @method[frame:standard-menus<%> file-menu:get-close-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:between-close-and-quit]
+  @item{
+  @method[frame:standard-menus<%> file-menu:between-close-and-quit]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> file-menu:quit-callback],
   @method[frame:standard-menus<%> file-menu:create-quit?],
   @method[frame:standard-menus<%> file-menu:quit-string],
   @method[frame:standard-menus<%> file-menu:quit-help-string],
   @method[frame:standard-menus<%> file-menu:quit-on-demand],
-  @method[frame:standard-menus<%> file-menu:get-quit-item]
+  @method[frame:standard-menus<%> file-menu:get-quit-item]}
 
-  \item
-  @method[frame:standard-menus<%> file-menu:after-quit]
+  @item{
+  @method[frame:standard-menus<%> file-menu:after-quit]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> edit-menu:undo-callback],
   @method[frame:standard-menus<%> edit-menu:create-undo?],
   @method[frame:standard-menus<%> edit-menu:undo-string],
   @method[frame:standard-menus<%> edit-menu:undo-help-string],
   @method[frame:standard-menus<%> edit-menu:undo-on-demand],
-  @method[frame:standard-menus<%> edit-menu:get-undo-item]
+  @method[frame:standard-menus<%> edit-menu:get-undo-item]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> edit-menu:redo-callback],
   @method[frame:standard-menus<%> edit-menu:create-redo?],
   @method[frame:standard-menus<%> edit-menu:redo-string],
   @method[frame:standard-menus<%> edit-menu:redo-help-string],
   @method[frame:standard-menus<%> edit-menu:redo-on-demand],
-  @method[frame:standard-menus<%> edit-menu:get-redo-item]
+  @method[frame:standard-menus<%> edit-menu:get-redo-item]}
 
-  \item
-  @method[frame:standard-menus<%> edit-menu:between-redo-and-cut]
+  @item{
+  @method[frame:standard-menus<%> edit-menu:between-redo-and-cut]}
 
-  \item
+  @item{
   @method[frame:standard-menus<%> edit-menu:cut-callback],
   @method[frame:standard-menus<%> edit-menu:create-cut?],
   @method[frame:standard-menus<%> edit-menu:cut-string],
@@ -593,10 +587,10 @@
   @method[frame:standard-menus<%> edit-menu:cut-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-cut-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-cut-and-copy]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:copy-callback],
   @method[frame:standard-menus<%> edit-menu:create-copy?],
   @method[frame:standard-menus<%> edit-menu:copy-string],
@@ -604,10 +598,10 @@
   @method[frame:standard-menus<%> edit-menu:copy-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-copy-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-copy-and-paste]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:paste-callback],
   @method[frame:standard-menus<%> edit-menu:create-paste?],
   @method[frame:standard-menus<%> edit-menu:paste-string],
@@ -615,10 +609,10 @@
   @method[frame:standard-menus<%> edit-menu:paste-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-paste-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-paste-and-clear]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:clear-callback],
   @method[frame:standard-menus<%> edit-menu:create-clear?],
   @method[frame:standard-menus<%> edit-menu:clear-string],
@@ -626,10 +620,10 @@
   @method[frame:standard-menus<%> edit-menu:clear-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-clear-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-clear-and-select-all]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:select-all-callback],
   @method[frame:standard-menus<%> edit-menu:create-select-all?],
   @method[frame:standard-menus<%> edit-menu:select-all-string],
@@ -637,10 +631,10 @@
   @method[frame:standard-menus<%> edit-menu:select-all-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-select-all-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-select-all-and-find]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:find-callback],
   @method[frame:standard-menus<%> edit-menu:create-find?],
   @method[frame:standard-menus<%> edit-menu:find-string],
@@ -648,7 +642,7 @@
   @method[frame:standard-menus<%> edit-menu:find-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-find-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:find-again-callback],
   @method[frame:standard-menus<%> edit-menu:create-find-again?],
   @method[frame:standard-menus<%> edit-menu:find-again-string],
@@ -656,7 +650,7 @@
   @method[frame:standard-menus<%> edit-menu:find-again-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-find-again-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:replace-and-find-again-callback],
   @method[frame:standard-menus<%> edit-menu:create-replace-and-find-again?],
   @method[frame:standard-menus<%> edit-menu:replace-and-find-again-string],
@@ -664,10 +658,10 @@
   @method[frame:standard-menus<%> edit-menu:replace-and-find-again-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-replace-and-find-again-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:between-find-and-preferences]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:preferences-callback],
   @method[frame:standard-menus<%> edit-menu:create-preferences?],
   @method[frame:standard-menus<%> edit-menu:preferences-string],
@@ -675,13 +669,13 @@
   @method[frame:standard-menus<%> edit-menu:preferences-on-demand],
   @method[frame:standard-menus<%> edit-menu:get-preferences-item]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> edit-menu:after-preferences]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> help-menu:before-about]
 
-  \item
+  }@item{
   @method[frame:standard-menus<%> help-menu:about-callback],
   @method[frame:standard-menus<%> help-menu:create-about?],
   @method[frame:standard-menus<%> help-menu:about-string],
@@ -689,10 +683,9 @@
   @method[frame:standard-menus<%> help-menu:about-on-demand],
   @method[frame:standard-menus<%> help-menu:get-about-item]
 
-  \item
-  @method[frame:standard-menus<%> help-menu:after-about]
+  }@item{
+  @method[frame:standard-menus<%> help-menu:after-about]}}
 
-  \end{itemize}
   @defmethod*[(((get-menu%) (subclass?/c menu:can-restore-underscore-menu%)))]{
     The result of this method is used as the class
     for creating the result of these methods:
@@ -727,19 +720,19 @@
   @defmethod*[(((get-file-menu) (instance (subclass?/c menu%))))]{
     Returns the file menu
     See also
-    @method[frame:standard-menus<%> get-menu\%]
+    @method[frame:standard-menus<%> get-menu%]
 
   }
   @defmethod*[(((get-edit-menu) (instance (subclass?/c menu%))))]{
     Returns the edit menu
     See also
-    @method[frame:standard-menus<%> get-menu\%]
+    @method[frame:standard-menus<%> get-menu%]
 
   }
   @defmethod*[(((get-help-menu) (instance (subclass?/c menu%))))]{
     Returns the help menu
     See also
-    @method[frame:standard-menus<%> get-menu\%]
+    @method[frame:standard-menus<%> get-menu%]
 
   }
   @defmethod*[(((file-menu:new-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
@@ -747,12 +740,11 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (handler:edit-file #f) #t)
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (handler:edit-file #f) #t)]
   }
   @defmethod*[(((file-menu:get-new-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -767,14 +759,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant new-info)}"
+    Defaultly returns @scheme[(string-constant new-info)].
   }
   @defmethod*[(((file-menu:new-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-new?) boolean))]{
     The result of this method determines if the
@@ -782,7 +774,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((file-menu:between-new-and-open (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the new menu-item
@@ -797,12 +789,11 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (handler:open-file) #t)
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (handler:open-file) #t)]
   }
   @defmethod*[(((file-menu:get-open-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -817,14 +808,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant open-info)}"
+    Defaultly returns @scheme[(string-constant open-info)]
   }
   @defmethod*[(((file-menu:open-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-open?) boolean))]{
     The result of this method determines if the
@@ -832,19 +823,19 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((file-menu:open-recent-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the open-recent menu-item of the file-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (x y) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (x y) (void))]
+
   }
   @defmethod*[(((file-menu:get-open-recent-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -859,14 +850,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant open-recent-info)}"
+    Defaultly returns @scheme[(string-constant open-recent-info)]
   }
   @defmethod*[(((file-menu:open-recent-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu) (handler:install-recent-items menu))}
+    @scheme[(λ (menu) (handler:install-recent-items menu))]
   }
   @defmethod*[(((file-menu:create-open-recent?) boolean))]{
     The result of this method determines if the
@@ -874,7 +865,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((file-menu:between-open-and-revert (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the open menu-item
@@ -889,12 +880,11 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
   }
   @defmethod*[(((file-menu:get-revert-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -909,14 +899,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant revert-info)}"
+    Defaultly returns @scheme[(string-constant revert-info)]
   }
   @defmethod*[(((file-menu:revert-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-revert?) boolean))]{
     The result of this method determines if the
@@ -924,7 +914,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((file-menu:between-revert-and-save (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the revert menu-item
@@ -939,12 +929,11 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
   }
   @defmethod*[(((file-menu:get-save-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -959,14 +948,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant save-info)}"
+    Defaultly returns @scheme[(string-constant save-info)]
   }
   @defmethod*[(((file-menu:save-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-save?) boolean))]{
     The result of this method determines if the
@@ -974,19 +963,19 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((file-menu:save-as-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the save-as menu-item of the file-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((file-menu:get-save-as-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1001,14 +990,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant save-as-info)}"
+    Defaultly returns @scheme[(string-constant save-as-info)]
   }
   @defmethod*[(((file-menu:save-as-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-save-as?) boolean))]{
     The result of this method determines if the
@@ -1016,7 +1005,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((file-menu:between-save-as-and-print (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the save-as menu-item
@@ -1031,12 +1020,12 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((file-menu:get-print-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1051,14 +1040,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant print-info)}"
+    Defaultly returns @scheme[(string-constant print-info)]
   }
   @defmethod*[(((file-menu:print-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-print?) boolean))]{
     The result of this method determines if the
@@ -1066,7 +1055,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((file-menu:between-print-and-close (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the print menu-item
@@ -1081,12 +1070,12 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (when (can-close?) (on-close) (show #f)) #t)
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (when (can-close?) (on-close) (show #f)) #t)]
+
   }
   @defmethod*[(((file-menu:get-close-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1101,14 +1090,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant close-info)}"
+    Defaultly returns @scheme[(string-constant close-info)]
   }
   @defmethod*[(((file-menu:close-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-close?) boolean))]{
     The result of this method determines if the
@@ -1116,7 +1105,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((file-menu:between-close-and-quit (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the close menu-item
@@ -1131,12 +1120,12 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (when (exit:user-oks-exit) (exit:exit)))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (when (exit:user-oks-exit) (exit:exit)))]
+
   }
   @defmethod*[(((file-menu:get-quit-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1151,14 +1140,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant quit-info)}"
+    Defaultly returns @scheme[(string-constant quit-info)]
   }
   @defmethod*[(((file-menu:quit-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((file-menu:create-quit?) boolean))]{
     The result of this method determines if the
@@ -1181,16 +1170,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'undo)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-undo-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1205,14 +1194,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant undo-info)}"
+    Defaultly returns @scheme[(string-constant undo-info)]
   }
   @defmethod*[(((edit-menu:undo-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote undo))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote undo))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-undo?) boolean))]{
     The result of this method determines if the
@@ -1220,23 +1209,23 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:redo-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the redo menu-item of the edit-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'redo)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-redo-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1251,14 +1240,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant redo-info)}"
+    Defaultly returns @scheme[(string-constant redo-info)]
   }
   @defmethod*[(((edit-menu:redo-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote redo))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote redo))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-redo?) boolean))]{
     The result of this method determines if the
@@ -1266,7 +1255,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-redo-and-cut (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the redo menu-item
@@ -1281,16 +1270,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'cut)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-cut-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1305,14 +1294,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant cut-info)}"
+    Defaultly returns @scheme[(string-constant cut-info)]
   }
   @defmethod*[(((edit-menu:cut-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote cut))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote cut))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-cut?) boolean))]{
     The result of this method determines if the
@@ -1320,7 +1309,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-cut-and-copy (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the cut menu-item
@@ -1335,16 +1324,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'copy)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-copy-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1359,14 +1348,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant copy-info)}"
+    Defaultly returns @scheme[(string-constant copy-info)]
   }
   @defmethod*[(((edit-menu:copy-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote copy))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote copy))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-copy?) boolean))]{
     The result of this method determines if the
@@ -1374,7 +1363,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-copy-and-paste (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the copy menu-item
@@ -1389,16 +1378,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'paste)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-paste-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1413,14 +1402,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant paste-info)}"
+    Defaultly returns @scheme[(string-constant paste-info)]
   }
   @defmethod*[(((edit-menu:paste-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote paste))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote paste))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-paste?) boolean))]{
     The result of this method determines if the
@@ -1428,7 +1417,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-paste-and-clear (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the paste menu-item
@@ -1443,16 +1432,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'clear)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-clear-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1467,14 +1456,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant clear-info)}"
+    Defaultly returns @scheme[(string-constant clear-info)]
   }
   @defmethod*[(((edit-menu:clear-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote clear))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote clear))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-clear?) boolean))]{
     The result of this method determines if the
@@ -1482,7 +1471,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-clear-and-select-all (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the clear menu-item
@@ -1497,16 +1486,16 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
+    @schemeblock[
     (λ (menu evt)
       (let ((edit (get-edit-target-object)))
         (when (and edit (is-a? edit editor<%>))
           (send edit do-edit-operation 'select-all)))
-      #t)
-    \end{schemedisplay}
+      #t)]
+
   }
   @defmethod*[(((edit-menu:get-select-all-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1521,14 +1510,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant select-all-info)}"
+    Defaultly returns @scheme[(string-constant select-all-info)]
   }
   @defmethod*[(((edit-menu:select-all-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<\%>) (send editor can-do-edit-operation? (quote select-all))))) (send item enable enable?)))}
+    @scheme[(λ (item) (let* ((editor (get-edit-target-object)) (enable? (and editor (is-a? editor editor<%>) (send editor can-do-edit-operation? (quote select-all))))) (send item enable enable?)))]
   }
   @defmethod*[(((edit-menu:create-select-all?) boolean))]{
     The result of this method determines if the
@@ -1536,7 +1525,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#t
+    defaultly returns #t
   }
   @defmethod*[(((edit-menu:between-select-all-and-find (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the select-all menu-item
@@ -1551,12 +1540,12 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((edit-menu:get-find-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1571,14 +1560,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant find-info)}"
+    Defaultly returns @scheme[(string-constant find-info)]
   }
   @defmethod*[(((edit-menu:find-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<\%>)))))}
+    @scheme[(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>)))))]
   }
   @defmethod*[(((edit-menu:create-find?) boolean))]{
     The result of this method determines if the
@@ -1586,19 +1575,19 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((edit-menu:find-again-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the find-again menu-item of the edit-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((edit-menu:get-find-again-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1613,14 +1602,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant find-again-info)}"
+    Defaultly returns @scheme[(string-constant find-again-info)]
   }
   @defmethod*[(((edit-menu:find-again-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<\%>)))))}
+    @scheme[(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>)))))]
   }
   @defmethod*[(((edit-menu:create-find-again?) boolean))]{
     The result of this method determines if the
@@ -1628,19 +1617,19 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((edit-menu:replace-and-find-again-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the replace-and-find-again menu-item of the edit-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((edit-menu:get-replace-and-find-again-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1655,14 +1644,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant replace-and-find-again-info)}"
+    Defaultly returns @scheme[(string-constant replace-and-find-again-info)]
   }
   @defmethod*[(((edit-menu:replace-and-find-again-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<\%>)))))}
+    @scheme[(λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>)))))]
   }
   @defmethod*[(((edit-menu:create-replace-and-find-again?) boolean))]{
     The result of this method determines if the
@@ -1670,7 +1659,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((edit-menu:between-find-and-preferences (menu (instance (subclass?/c menu%)))) void))]{
     This method is called between the addition of the find menu-item
@@ -1678,19 +1667,19 @@
     Override it to add additional menus at that point.
 
 
-    Adds a separator except when \rawscm{current-eventspace-has-standard-menus?} returns \rawscm{\#t}.
+    Adds a separator except when @scheme[current-eventspace-has-standard-menus?] returns @scheme[#t].
   }
   @defmethod*[(((edit-menu:preferences-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
     This method is called when the preferences menu-item of the edit-menu menu is selected.
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (preferences:show-dialog) #t)
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (preferences:show-dialog) #t)]
+
   }
   @defmethod*[(((edit-menu:get-preferences-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1705,14 +1694,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant preferences-info)}"
+    Defaultly returns @scheme[(string-constant preferences-info)]
   }
   @defmethod*[(((edit-menu:preferences-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((edit-menu:create-preferences?) boolean))]{
     The result of this method determines if the
@@ -1743,12 +1732,12 @@
 
 
     Defaultly bound to:
-    \begin{schemedisplay}
-    (λ (item control) (void))
-    \end{schemedisplay}
+    @schemeblock[
+    (λ (item control) (void))]
+
   }
   @defmethod*[(((help-menu:get-about-item) (instance menu-item%)))]{
-    This method returns the \iscmclass{menu-item} that corresponds
+    This method returns the @scheme[menu-item%] that corresponds
     to this menu item.
 
   }
@@ -1763,14 +1752,14 @@
     object is created.
 
 
-    Defaultly returns "\scheme{(string-constant about-info)}"
+    Defaultly returns @scheme[(string-constant about-info)]
   }
   @defmethod*[(((help-menu:about-on-demand (item menu-item%)) void))]{
     The menu item's on-demand method calls this method
 
 
     Defaultly is this:
-    \scheme{(λ (menu-item) (void))}
+    @scheme[(λ (menu-item) (void))]
   }
   @defmethod*[(((help-menu:create-about?) boolean))]{
     The result of this method determines if the
@@ -1778,7 +1767,7 @@
     to control the creation of the menu-item.
 
 
-    defaultly returns \#f
+    defaultly returns @scheme[#f]
   }
   @defmethod*[(((help-menu:after-about (menu (instance (subclass?/c menu%)))) void))]{
     This method is called after the addition of the about menu-item
@@ -1825,7 +1814,7 @@
   }
   @defmethod*[(((get-canvas<%>) (instance canvas:basic%)))]{
     The result of this method is used to guard the result of the
-    @method[frame:editor<%> get-canvas\%]
+    @method[frame:editor<%> get-canvas%]
     method. 
 
   }
@@ -1837,13 +1826,13 @@
     Override this method to specify a different editor class.
 
 
-    Returns the value of the init-field \scheme|editor%|.
+    Returns the value of the init-field @scheme[editor%].
   }
   @defmethod*[(((get-editor<%>) interface))]{
     The result of this method is used by 
     @method[frame:editor<%> make-editor]
     to check that 
-    @method[frame:editor<%> get-editor\%]
+    @method[frame:editor<%> get-editor%]
     is returning a reasonable editor.
 
 
@@ -1853,14 +1842,14 @@
   @defmethod*[(((make-editor) (instance (is-a?/c editor<%>))))]{
     This method is called to create the editor in this frame.
     It calls
-    @method[frame:editor<%> get-editor<\%>]
+    @method[frame:editor<%> get-editor<%>]
     and uses that interface to make sure the result of
-    @method[frame:editor<%> get-editor\%]
+    @method[frame:editor<%> get-editor%]
     is reasonable.
 
 
 
-    Calls \rawscm{(make-object @method[frame:editor<%> get-editor\%])}.
+    Calls @scheme[(make-object @method[frame:editor<%> get-editor%])].
 
   }
   @defmethod*[(((revert) void))]{
@@ -1876,17 +1865,17 @@
     if the editor has no filename yet.
 
 
-    Returns \rawscm{\#f} if the user cancels this operation
+    Returns @scheme[#f] if the user cancels this operation
     (only possible when the file has not been saved before and
     the user is prompted for a new filename) and returns
-    \rawscm{\#t} if not.
+    @scheme[#t] if not.
   }
   @defmethod*[(((save-as (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean))]{
     Queries the use for a file name and saves the file with that name.
 
 
-    Returns \rawscm{\#f} if the user cancells the file-choosing
-    dialog and returns \rawscm{\#t} otherwise.
+    Returns @scheme[#f] if the user cancells the file-choosing
+    dialog and returns @scheme[#t] otherwise.
   }
   @defmethod*[(((get-canvas) (instance (subclass?/c canvas%))))]{
     Returns the canvas used to display the 
@@ -1897,8 +1886,6 @@
   }
   @defmethod*[(((get-editor) (instance (is-a?/c editor<%>))))]{
     Returns the editor in this frame.
-
-
   }
 }
 @defmixin[frame:editor-mixin (frame:standard-menus<%>) (frame:editor<%>)]{
@@ -1923,7 +1910,7 @@
   }
   @defmethod*[#:mode override (((editing-this-file? (filename path)) boolean))]{
 
-    Returns \scheme|#t| if the filename is the file that this
+    Returns @scheme[#t] if the filename is the file that this
     frame is editing.
   }
   @defmethod*[#:mode augment (((on-close) void))]{
@@ -1967,7 +1954,7 @@
   }
   @defmethod*[#:mode override (((file-menu:create-revert?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((file-menu:save-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
 
@@ -1975,7 +1962,7 @@
   }
   @defmethod*[#:mode override (((file-menu:create-save?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((file-menu:save-as-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
 
@@ -1986,7 +1973,7 @@
   }
   @defmethod*[#:mode override (((file-menu:create-save-as?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((file-menu:print-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
 
@@ -1995,14 +1982,14 @@
     method of
     @scheme[editor<%>]
     with the default arguments, except that
-    the \var{output-mode} argument
+    the @scheme[output-mode] argument
     is the result of calling
     @scheme[preferences:get]
-    with \rawscm{'framework:print-output-mode}.
+    with @scheme['framework:print-output-mode].
   }
   @defmethod*[#:mode override (((file-menu:create-print?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((file-menu:between-save-as-and-print (file-menu (is-a?/c menu%))) void))]{
 
@@ -2029,7 +2016,7 @@
   }
   @defmethod*[#:mode override (((help-menu:create-about?) boolean))]{
 
-    returns \#t
+    returns #t
   }
 }
 @definterface[frame:open-here<%> (frame:editor<%>)]{
@@ -2037,7 +2024,7 @@
   displaying. 
 
   The frame is only re-used when the
-  \scheme|'framework:open-here?| preference is set
+  @scheme['framework:open-here?] preference is set
   (see 
   @scheme[preferences:get]
   and 
@@ -2057,7 +2044,7 @@
   }
   @defmethod*[(((open-here (filename string)) void))]{
 
-    Opens \var{filename} in the current frame, possibly
+    Opens @scheme[filename] in the current frame, possibly
     prompting the user about saving a file (in which case the
     frame might not get switched).
   }
@@ -2067,12 +2054,12 @@
   @scheme[frame:open-here<%>]
   @defmethod*[#:mode override (((file-menu:new-on-demand (item (is-a?/c menu-item%))) void))]{
 
-    Sets the label of \var{item} to 
-    "New..." if the preference \scheme|'framework:open-here?| is set. 
+    Sets the label of @scheme[item] to 
+    @scheme["New..."] if the preference @scheme['framework:open-here?] is set. 
   }
   @defmethod*[#:mode override (((file-menu:new-callback (item (instance (subclass?/c menu-item%))) (evt (instance control-event%))) void))]{
 
-    When the preference \scheme|'framework:open-here?|
+    When the preference @scheme['framework:open-here?]
     preference is set, this method prompts the user, asking if
     they would like to create a new frame, or just clear out
     this one. If they clear it out and the file hasn't been
@@ -2080,23 +2067,23 @@
   }
   @defmethod*[#:mode override (((file-menu:open-on-demand (item (is-a?/c menu-item%))) void))]{
 
-    Sets the label of \var{item} to 
-    "Open Here..." if the preference \scheme|'framework:open-here?| is set. 
+    Sets the label of @scheme[item] to 
+    "Open Here..." if the preference @scheme['framework:open-here?] is set. 
   }
   @defmethod*[#:mode augment (((on-close) void))]{
 
     Calls 
     @method[group:% set-open-here-frame]
-    with \scheme|#f| if 
+    with @scheme[#f] if 
     the result of 
     @method[group:% get-open-here-frame]
-    is \scheme|eq?| to \scheme|this|.
+    is @scheme[eq?] to @scheme[this].
   }
   @defmethod*[#:mode override (((on-activate (on? boolean)) void))]{
 
-    When \var{on?} is \scheme|#t|, calls
+    When @scheme[on?] is @scheme[#t], calls
     @method[group:% set-open-here-frame]
-    with \scheme|this|.
+    with @scheme[this].
   }
 }
 @definterface[frame:text<%> (frame:editor<%>)]{
@@ -2111,11 +2098,11 @@
   @defconstructor[((editor% (extends text%)))]{
 
     Calls the super initialization with either the value of the
-    \scheme|editor%| init or, if none was supplied, it passes \scheme|text%|.
+    @scheme[editor%] init or, if none was supplied, it passes @scheme[text%].
   }
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
 
-    Returns \rawscm{(class->interface \iscmclass{text})}.
+    Returns @scheme[(class->interface @scheme[text%])].
   }
 }
 @definterface[frame:pasteboard<%> (frame:editor<%>)]{
@@ -2128,27 +2115,27 @@
   @defconstructor[((editor% (extends pasteboard%)))]{
 
     Calls the super initialization with either the value of the
-    \scheme|editor%| init or, if none was supplied, it passes \scheme|pasteboard%|.
+    @scheme[editor%] init or, if none was supplied, it passes @scheme[pasteboard%].
 
   }
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
 
-    Returns \rawscm{(class->interface \iscmclass{pasteboard})}.
+    Returns @scheme[(class->interface @scheme[pasteboard%])].
   }
 }
 @definterface[frame:delegate<%> (frame:status-line<%> frame:text<%>)]{
   Frames that implement this interface provide a 20,000 feet
-  overview of the text in the main editor. The term {\bf
-  delegate} in these method descriptions refers to the
-  original editor and the term {\bf delegatee} refers to the
+  overview of the text in the main editor. The term @bold{delegate} 
+  in these method descriptions refers to the
+  original editor and the term @bold{delegatee} refers to the
   editor showing the 20,000 feet overview.
   @defmethod*[(((get-delegated-text) (instanceof (is-a?/c text:delegate<%>))))]{
     Returns the delegate text.
 
   }
   @defmethod*[(((delegated-text-shown?) boolean))]{
-    Returns \rawscm{\#t} if the delegate is visible, and
-    \rawscm{\#f} if it isn't.
+    Returns @scheme[#t] if the delegate is visible, and
+    @scheme[#f] if it isn't.
 
   }
   @defmethod*[(((hide-delegated-text) void))]{
@@ -2158,7 +2145,7 @@
     updated. This is accomplished by calling the 
     @method[text:delegate<%> set-delegate]
     method of
-    @method[frame:editor<%> get-editor]with \rawscm{\#f}.
+    @method[frame:editor<%> get-editor]with @scheme[#f].
 
     See also
     @method[frame:delegate<%> show-delegated-text]
@@ -2186,16 +2173,16 @@
 }
 @defmixin[frame:delegate-mixin (frame:status-line<%> frame:text<%>) (frame:delegate<%>)]{
   Adds support for a 20,000-feet view via
-  \iscmintf{text:delegate} and \iscmmixin{text:delegate-mixin}
+  @scheme[text:delegate<%>] and @scheme[text:delegate-mixin]
   @defmethod*[#:mode override (((make-root-area-container (class (subclass?/c panel%)) (parent (instanceof (subclass?/c panel%)))) (is-a?/c panel%)))]{
 
     adds a panel outside to hold the delegate
-    \iscmclass{editor-canvas} and \iscmclass{text}.
+    @scheme[editor-canvas%] and @scheme[text%].
 
   }
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
 
-    Returns \iscmintf{text:delegate}.
+    Returns @scheme[text:delegate].
 
   }
   @defmethod*[#:mode override (((get-editor%) (is-a?/c text:delegate<%>)))]{
@@ -2227,13 +2214,13 @@
     Sets the direction that future searches will be performed.
 
 
-    If \var{dir} is \rawscm{1} searches will be performed forwards and if 
-    \var{dir} is \rawscm{-1} searches will be performed backwards.
+    If @scheme[dir] is @scheme[1] searches will be performed forwards and if 
+    @scheme[dir] is @scheme[-1] searches will be performed backwards.
   }
   @defmethod*[(((replace&search) boolean))]{
     Calls
     @method[frame:searchable<%> replace]
-    and if it returns \rawscm{\#t}, calls 
+    and if it returns @scheme[#t], calls 
     @method[frame:searchable<%> search-again].
 
   }
@@ -2247,14 +2234,14 @@
   @defmethod*[(((replace) boolean))]{
     If the selected text matches the search string, this method replaces
     the text with the contents of the replace text. If the replace was
-    successful, \rawscm{\#t} is returned. Otherwise, \rawscm{\#f} is returned.
+    successful, @scheme[#t] is returned. Otherwise, @scheme[#f] is returned.
 
   }
   @defmethod*[(((can-replace?) boolean))]{
-    Returns \rawscm{\#t} if a replace command would succeed. 
+    Returns @scheme[#t] if a replace command would succeed. 
 
 
-    Defaultly is \rawscm{\#t} when the selected text in the result of
+    Defaultly is @scheme[#t] when the selected text in the result of
     @method[frame:searchable<%> get-text-to-search]
     is the same as the text in the find text.
   }
@@ -2285,8 +2272,8 @@
     @method[frame:searchable<%> get-text-to-search]. 
 
 
-    Returns \rawscm{\#t} if the text is found and sets the selection to the
-    found text. If the text is not found it returns \rawscm{\#f}.
+    Returns @scheme[#t] if the text is found and sets the selection to the
+    found text. If the text is not found it returns @scheme[#f].
   }
 }
 @defmixin[frame:searchable-mixin (frame:standard-menus<%>) (frame:searchable<%>)]{
@@ -2303,20 +2290,20 @@
   }
   @defmethod*[#:mode override (((edit-menu:create-find?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((edit-menu:find-again-callback) boolean))]{
 
-    Returns \rawscm{\#t}, and searches for the same text that was last
+    Returns @scheme[#t], and searches for the same text that was last
     searched for in the text.
   }
   @defmethod*[#:mode override (((edit-menu:create-find-again?) boolean))]{
 
-    returns \#t
+    returns #t
   }
   @defmethod*[#:mode override (((edit-menu:replace-and-find-again-callback) boolean))]{
 
-    Returns \rawscm{\#t}, and if the selected text matches the current text
+    Returns @scheme[#t], and if the selected text matches the current text
     in the find box, replaces it with the contents of the replace box and
     searches for the next occurrence of the text in the find box.
 
@@ -2324,14 +2311,14 @@
   }
   @defmethod*[#:mode override (((edit-menu:replace-and-find-again-on-demand (item menu-item%)) void))]{
 
-    Disables \var{item} when
+    Disables @scheme[item] when
     @method[frame:searchable<%> can-replace?]
-    returns \rawscm{\#f} and enables it when that method returns
-    \rawscm{\#t}.
+    returns @scheme[#f] and enables it when that method returns
+    @scheme[#t].
   }
   @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again?) boolean))]{
 
-    returns \#t
+    returns @scheme[#t]
   }
   @defmethod*[#:mode override (((make-root-area-container) (is-a?/c area-container<%>)))]{
 

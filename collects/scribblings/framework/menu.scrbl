@@ -21,8 +21,8 @@
   via the \& characters in the original labels) in their
   labels.
 
-  If the preference \scm{'framework:menu-bindings}
-  is \scm{\#f}, calls 
+  If the preference @scheme['framework:menu-bindings]
+  is @scheme[#f], calls 
   @method[menu:can-restore-underscore<%> erase-underscores]
   during initialization.
   @defmethod*[(((erase-underscores) void))]{

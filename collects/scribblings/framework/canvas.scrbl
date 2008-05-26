@@ -14,7 +14,7 @@
   Mixins that implement this interface initialize the
   background color of the canvas to the value of the
   \index{'framework:basic-canvas-background}
-  \scheme|'framework:basic-canvas-background| preference.
+  @scheme['framework:basic-canvas-background] preference.
   Adds a callback so that when that preference is modified,
   the background color changes.
 

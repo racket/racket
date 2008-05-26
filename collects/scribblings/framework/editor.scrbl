@@ -9,7 +9,7 @@
   @scheme[editor<%>]
   functionality required by the framework.
   @defmethod*[(((has-focus?) boolean))]{
-    This function returns \rawscm{\#t} when the editor has the keyboard
+    This function returns @scheme[#t] when the editor has the keyboard
     focus. It is implemented using:
     @method[editor<%> on-focus]
 
@@ -30,11 +30,11 @@
     edit-sequence completes.
 
 
-    The procedure \var{thunk} will be called immediately if the edit is
+    The procedure @scheme[thunk] will be called immediately if the edit is
     not in an edit-sequence. If the edit is in an edit-sequence, it will
     be called when the edit-sequence completes.
 
-    If \var{tag} is a symbol, the \var{thunk} is keyed on that symbol, and
+    If @scheme[tag] is a symbol, the @scheme[thunk] is keyed on that symbol, and
     only one thunk per symbol will be called after the
     edit-sequence. Specifically, the last call to 
     @method[editor:basic<%> run-after-edit-sequence]'s argument will be called.
@@ -50,7 +50,7 @@
 
   }
   @defmethod*[(((save-file-out-of-date?) boolean))]{
-    Returns \rawscm{\#t} if the file on disk has been modified, by some other program.
+    Returns @scheme[#t] if the file on disk has been modified, by some other program.
 
   }
   @defmethod*[(((save-file/gui-error (filename (union path |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) same copy) (quote same)) (show-errors? boolean |#t|)) boolean))]{
@@ -59,8 +59,8 @@
     opens a dialog with an error message showing the error.
 
     The result indicates if an error happened (the error has
-    already been shown to the user). It returns \rawscm{\#t} if
-    no error occurred and \rawscm{\#f} if an error occurred.
+    already been shown to the user). It returns @scheme[#t] if
+    no error occurred and @scheme[#f] if an error occurred.
 
   }
   @defmethod*[(((load-file/gui-error (filename (union string |#f|) |#f|) (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote guess)) (show-errors? boolean |#t|)) boolean))]{
@@ -69,8 +69,8 @@
     opens a dialog with an error message showing the error.
 
     The result indicates if an error happened (the error has
-    already been shown to the user). It returns \rawscm{\#t} if
-    no error occurred and \rawscm{\#f} if an error occurred.
+    already been shown to the user). It returns @scheme[#t] if
+    no error occurred and @scheme[#f] if an error occurred.
 
   }
   @defmethod*[(((on-close) void))]{
@@ -94,15 +94,15 @@
     @method[editor:basic<%> close].
 
 
-    Returns \scheme|#t|.
+    Returns @scheme[#t].
   }
   @defmethod*[(((close) boolean))]{
     This method is merely
-    \begin{schemedisplay}
+    @schemeblock[
     (if (can-close?)
         (begin (on-close) #t)
-        #f)
-    \end{schemedisplay}
+        #f)]
+
     It is intended as a shorthand, helper method for closing
     an editor. See also
     @method[editor:basic<%> can-close?]
@@ -125,11 +125,11 @@
   mixin's argument.
 
   Each instance of a class created with this mixin contains a private
-  \iscmclass{keymap} that is chained to the global keymap via:
-  \rawscm{(send \var{keymap} chain-to-keymap (keymap:get-global) \#f)}.
+  @scheme[keymap%] that is chained to the global keymap via:
+  @scheme[(send keymap chain-to-keymap (keymap:get-global) #f)].
 
-  This installs the global keymap \iscmprocedure{keymap:get-global} to
-  handle keyboard and mouse mappings not handled by \var{keymap}. The
+  This installs the global keymap @scheme[keymap:get-global] to
+  handle keyboard and mouse mappings not handled by @scheme[keymap]. The
   global keymap is created when the framework is invoked.
   @defmethod*[#:mode augment (((can-save-file? (filename string) (format symbol?)) boolean))]{
 
@@ -165,7 +165,7 @@
   }
   @defmethod*[#:mode augment (((on-edit-sequence) boolean))]{
 
-    Always returns \rawscm{\#t}. Updates a flag for
+    Always returns @scheme[#t]. Updates a flag for
     @method[editor:basic<%> local-edit-sequence?]
   }
   @defmethod*[#:mode augment (((after-edit-sequence) void))]{
@@ -218,7 +218,7 @@
 
   In addition, it calls
   @method[editor<%> set-load-overwrites-styles]
-  with \scheme|#f|.
+  with @scheme[#f].
   This ensures that saved files with different
   settings for the style list do not clobber
   the shared style list.
@@ -236,15 +236,15 @@
   @scheme[add-pasteboard-keymap-functions].
   @defmethod*[(((get-keymaps) (list-of (instance keymap%))))]{
     The keymaps returned from this method are chained to this
-    \iscmintf{editor}'s keymap.
+    @scheme[editor<%>]'s keymap.
 
     The result of this method should not change -- that is, it
     should return the same list of keymaps each time it is
     called.
 
 
-    Defaultly returns \rawscm{(list
-    @scheme[keymap:get-global])}
+    Defaultly returns @scheme[(list
+    @scheme[keymap:get-global])]
   }
 }
 @defmixin[editor:keymap-mixin (editor:basic<%>) (editor:keymap<%>)]{
@@ -256,16 +256,15 @@
   Classes implementing this interface keep the
   @method[editor<%> auto-wrap]
   state set based on the
-  \rawscm{'framework:auto-set-wrap?} preference
-  (see 
-  \hyperref{the preferences section}{section~}{ for more info about preferences}{fw:preferences}).
+  @scheme['framework:auto-set-wrap?] preference
+  (see @scheme[preferences:get] for more information about preferences).
 
   They install a preferences callback with
   @scheme[preferences:add-callback]
   that sets the state when the preference changes and 
   initialize the value of
   @method[editor<%> auto-wrap]
-  to the current value of \rawscm{'framework:auto-set-wrap?}
+  to the current value of @scheme['framework:auto-set-wrap?]
   via
   @scheme[preferences:get].
 }
@@ -280,7 +279,7 @@
     dialog that asks about closing.
 
 
-    Defaultly returns \scheme|#f|.
+    Defaultly returns @scheme[#f].
   }
   @defmethod*[(((update-frame-filename) void))]{
     Attempts to find a frame that displays this editor. If it
@@ -294,7 +293,7 @@
     @method[editor:file-mixin can-close?].
 
 
-    Defaultly returns \scheme|#f|.
+    Defaultly returns @scheme[#f].
   }
 }
 @defmixin[editor:file-mixin (editor:keymap<%>) (editor:file<%>)]{
@@ -313,13 +312,13 @@
 
     If the 
     @method[editor:file<%> allow-close-with-no-filename?]
-    method returns \scheme|#f|, this method checks to see if the file
+    method returns @scheme[#f], this method checks to see if the file
     has been saved at all yet. If not, it asks the user
     about saving (and saves if they ask).
 
     If the 
     @method[editor:file<%> allow-close-with-no-filename?]
-    method returns \scheme|#t|, this method does as before,
+    method returns @scheme[#t], this method does as before,
     except only asks if the editor's 
     @method[editor<%> get-filename]method returns a path.
 
@@ -343,8 +342,8 @@
     Returns the value of the 
     @scheme[preferences:get]
     applied to
-    \rawscm{'framework:backup-files?}.
-    \index{'framework:backup-files?}
+    @scheme['framework:backup-files?].
+    @index{'framework:backup-files?}
 
   }
   @defmethod*[(((autosave?) boolean))]{
@@ -353,7 +352,7 @@
     should be autosaved.
 
 
-    Returns \rawscm{\#t}.
+    Returns @scheme[#t].
   }
   @defmethod*[(((do-autosave) (union |#f| string)))]{
     This method is called to perform the autosaving.
@@ -368,7 +367,7 @@
     @scheme[editor<%>].
 
     Returns the filename where the autosave took place, or
-    \rawscm{\#f} if none did.
+    @scheme[#f] if none did.
   }
   @defmethod*[(((remove-autosave) void))]{
     This method removes the autosave file associated with this
@@ -400,7 +399,7 @@
   }
   @defmethod*[#:mode augment (((on-change) void))]{
 
-    Sets a flag indicating that this \iscmintf{editor} needs to be autosaved.
+    Sets a flag indicating that this @scheme[editor<%>] needs to be autosaved.
   }
   @defmethod*[#:mode override (((set-modified (modified? any/c)) void))]{
 

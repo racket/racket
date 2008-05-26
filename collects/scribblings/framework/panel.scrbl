@@ -9,7 +9,7 @@
   @scheme[panel:single-mixin%].
   @defmethod*[(((active-child (child (is-a?/c area<%>))) void) ((active-child) (is-a?/c area<%>)))]{
 
-    Sets the active child to be \var{child}
+    Sets the active child to be @scheme[child]
 
 
     Returns the current active child.
@@ -17,7 +17,7 @@
 }
 @defmixin[panel:single-mixin (area-container<%>) (panel:single<%>)]{
   This mixin adds single panel functionality to an implementation of the 
-  \iscmintf{area-container} interface.
+  @scheme[area-container<%>] interface.
 
   Single panels place all of the children in the center of the panel,
   and allow make one child to be visible at a time. The 
@@ -29,7 +29,7 @@
   method is used to hide and show the children of a single panel.
   @defmethod*[#:mode override (((after-new-child (child subarea<%>)) void))]{
 
-    Hides this child by calling \scmline{(send child show \#f)}, unless
+    Hides this child by calling @scheme[(send child show #f)], unless
     this is the first child in which case it does nothing.
   }
   @defmethod*[#:mode override (((container-size) (values exact-integer exact-integer)))]{
@@ -77,7 +77,7 @@
     takes up of the panel.
 
 
-    The argument, \var{new-percentages} must be a list of
+    The argument, @scheme[new-percentages] must be a list of
     numbers that sums to 1. It's length must be equal to the
     number of children of the panel (see
     @method[area-container<%> get-children]) and each percentage must correspond to a number of pixels
@@ -93,8 +93,8 @@
     This method controls the behavior of the other overridden
     methods in mixins that implement this interface.
 
-    If it returns \scheme|#t|, the panel will be vertically
-    aligned and if it returns \scheme|#f|, they will be
+    If it returns @scheme[#t], the panel will be vertically
+    aligned and if it returns @scheme[#f], they will be
     horizontally aligned.
 
   }
@@ -148,10 +148,10 @@
   @method[panel:dragable<%> get-vertical?]
   method of the 
   @scheme[panel:dragable-mixin]
-  to return \scheme|#t|.
+  to return @scheme[#t].
   @defmethod*[#:mode override (((get-vertical?) boolean))]{
 
-    Returns \scheme|#t|.
+    Returns @scheme[#t].
   }
 }
 @defmixin[panel:horizontal-dragable-mixin (panel:dragable<%>) (panel:vertical-dragable<%>)]{
@@ -159,10 +159,10 @@
   @method[panel:dragable<%> get-vertical?]
   method of the 
   @scheme[panel:dragable-mixin]
-  to return \scheme|#f|.
+  to return @scheme[#f].
   @defmethod*[#:mode override (((get-vertical?) boolean))]{
 
-    Returns \scheme|#f|.
+    Returns @scheme[#f].
   }
 }
 @defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin vertical-panel%)) ()]{}

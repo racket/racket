@@ -5,7 +5,7 @@
 @title{Keymap}
 
 @definterface[keymap:aug-keymap<%> (keymap%)]{
-  This keymap overrides some of the built in \iscmclass{keymap} methods
+  This keymap overrides some of the built in @scheme[keymap%] methods
   to be able to extract the keybindings from the keymap.
   @defmethod*[(((get-chained-keymaps) (listof (instance keymap%))))]{
 
@@ -22,7 +22,7 @@
     @method[keymap:aug-keymap<%> get-map-function-table]
     that returns the same result, except it accepts a hash-table that
     it inserts the bindings into. It does not replace any bindings already in 
-    \var{ht}.
+    @scheme[ht].
   }
 }
 @defmixin[keymap:aug-keymap-mixin (keymap%) (keymap:aug-keymap<%>)]{
