@@ -11,8 +11,7 @@
   
   (require mzlib/etc
            "private/unit-keywords.ss"
-           "private/unit-runtime.ss"
-           (only "private/unit-compiletime.ss" apply-mac))
+           "private/unit-runtime.ss")
   
   (provide define-signature-form struct open
            define-signature provide-signature-elements

@@ -2,7 +2,6 @@
   (require-for-syntax syntax/struct)
   (require syntax/boundmap
            mzlib/list
-           "unit-runtime.ss"
            "unit-syntax.ss")
   (require-for-template mzscheme
                         "unit-keywords.ss"
