@@ -535,7 +535,6 @@
                (body () ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
-                     ;; (br) ; why was this here?
                      ,@(render-version d ri)
                      ,@(navigation d ri #f)
                      ,@(render-part d ri)
