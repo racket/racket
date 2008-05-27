@@ -49,6 +49,7 @@
            "model-settings.ss"
            "macro-unwind.ss"
            "lifting.ss"
+           (prefix test-engine: test-engine/scheme-tests)
            #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            ;; for breakpoint display
            ;; (commented out to allow nightly testing)
@@ -306,7 +307,8 @@
     (define (step-through-expression expanded expand-next-expression)
       (let* ([annotated (a:annotate expanded break show-lambdas-as-lambdas?
                                     language-level)])
-        (eval-syntax annotated)
+        (parameterize ([test-engine:test-silence #t])
+          (eval-syntax annotated))
         (expand-next-expression)))
 
     (define (err-display-handler message exn)
