@@ -490,3 +490,36 @@
  [resolve-get/ext? ((or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-search (any/c (or/c part? false/c) resolve-info? info-key? . -> . any)]
  [resolve-get-keys ((or/c part? false/c) resolve-info? (info-key? . -> . any/c) . -> . any/c)])
+
+;; ----------------------------------------
+
+(define (flatten-style s)
+  (cond
+   [(with-attributes? s)
+    (let ([rest (flatten-style (with-attributes-style s))])
+      (if (with-attributes? rest)
+          ;; collapse nested with-attributes
+          (make-with-attributes 
+           (with-attributes-style rest)
+           (append (with-attributes-assoc s)
+                   (with-attributes-assoc rest)))
+          ;; rebuild with flattened inner:
+          (make-with-attributes 
+           rest
+           (with-attributes-assoc s))))]
+   [(target-url? s)
+    (let ([rest (flatten-style (target-url-style s))])
+      (if (with-attributes? rest)
+          ;; lift nested attributes out:
+          (make-with-attributes 
+           (make-target-url
+            (target-url-addr s)
+            (with-attributes-style rest))
+           (with-attributes-assoc rest))
+          ;; rebuild with flattened inner:
+          (make-target-url
+           (target-url-addr s)
+           rest)))]
+   [else s]))
+
+(provide flatten-style)

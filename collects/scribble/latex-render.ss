@@ -128,7 +128,11 @@
                               ri)
               (printf " ``"))
             (let ([style (and (element? e)
-                              (element-style e))]
+                              (let ([s (flatten-style
+                                        (element-style e))])
+                                (if (with-attributes? s)
+                                    (with-attributes-style s)
+                                    s)))]
                   [wrap (lambda (e s tt?)
                           (printf "{\\~a{" s)
                           (parameterize ([rendering-tt (or tt?

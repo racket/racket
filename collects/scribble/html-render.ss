@@ -752,7 +752,7 @@
         [else (render-plain-element e part ri)]))
 
     (define/private (render-plain-element e part ri)
-      (let* ([raw-style (and (element? e) (element-style e))]
+      (let* ([raw-style (flatten-style (and (element? e) (element-style e)))]
              [style (if (with-attributes? raw-style)
                         (with-attributes-style raw-style)
                         raw-style)]
@@ -760,7 +760,12 @@
                         (if (with-attributes? raw-style)
                             (map (lambda (p) (list (car p) (cdr p)))
                                  (with-attributes-assoc raw-style))
-                            null))])
+                            null))]
+             [super-render/attribs
+              (lambda ()
+                (if (with-attributes? raw-style)
+                    `((span ,(attribs) ,@(super render-element e part ri)))
+                    (super render-element e part ri)))])
         (cond
          [(symbol? style)
           (case style
@@ -804,15 +809,18 @@
                   ,@(super render-element e part ri)))]
          [(target-url? style)
           (if (current-no-links)
-              (super render-element e part ri)
+              (super-render/attribs)
               (parameterize ([current-no-links #t])
                 `((a ([href ,(let ([addr (target-url-addr style)])
                                (if (path? addr)
                                    (from-root addr (get-dest-directory))
                                    addr))]
-                      ,@(if (string? (target-url-style style))
-                            `([class ,(target-url-style style)])
-                            null)
+                      ;; The target-url chains to another style. Allow
+                      ;;  `with-attributes' inside as well as outside:
+                      ,@(let ([style (target-url-style style)])
+                          (if (string? style)
+                              `([class ,style])
+                              null))
                       . ,(attribs))
                      ,@(super render-element e part ri)))))]
          [(url-anchor? style)
@@ -842,10 +850,7 @@
                                 p))]
                     . ,(attribs))
                    ,@sz)))]
-         [else 
-          (if (with-attributes? raw-style)
-              `((span ,(attribs) ,@(super render-element e part ri)))
-              (super render-element e part ri))])))
+         [else (super-render/attribs)])))
 
     (define/override (render-table t part ri need-inline?)
       (define t-style (table-style t))
