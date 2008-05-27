@@ -913,7 +913,6 @@
                                       (loop mods extras #f))
                                      (else 
                                       #;(printf "~a~n" (syntax->datum (car mods)))
-                                      (collect-garbage)
                                       (let-values (((name syn) (get-module-name (expand (car mods)))))
                                         (set! name-to-require name)
                                         (syntax-as-top #;(eval (annotate-top (compile syn)))

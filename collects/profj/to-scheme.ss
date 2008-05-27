@@ -392,10 +392,9 @@
                   (cons (make-syntax #f `(module ,(module-name) mzscheme
                                            (require mzlib/class
                                                     (prefix javaRuntime: profj/libs/java/runtime)
-                                                    #;(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
                                                     (prefix c: mzlib/contract)
                                                     ,@(remove-dup-syntax (translate-require reqs type-recs)))
-                                           ,@(map car translated-defs))
+                                           ,@(apply append (map car translated-defs)))
                                      #f)
                         (map cadr translated-defs))
                   (list (make-syntax #f 
@@ -411,7 +410,7 @@
                                                     (translate-require (map (lambda (r) (list (def-file (car defs)) r))
                                                                             (def-uses (car defs)))
                                                                        type-recs)))
-                                        ,(car (car translated-defs)))
+                                        ,@(car (car translated-defs)))
                                      #f)))
               (filter (lambda (req) (not (member req reqs)))
                       (map (lambda (r-pair) (cadr r-pair)) group-reqs)))))
@@ -600,38 +599,36 @@
                                    ,@field-getters/setters)))
 
           (let ((class-syntax
-                 (create-syntax 
-                  #f
-                  `(begin ,(unless (or (memq 'private (map modifier-kind (header-modifiers header)))
-                                       (eq? 'anonymous kind)
-                                       (eq? 'statement kind))
-                             provides)
-                          ,@(if (null? (accesses-private methods))
-                                null
-                                (list
-                                 (create-local-names (make-method-names (accesses-private methods) null))))
-                          #;(if (null? restricted-methods)
-                                null
-                                (list (create-local-names (append (make-method-names (accesses-private methods) null)
-                                                                  restricted-methods))))
-                          (define ,class
-                            (,class* ,(if extends-object?
-                                          (translate-id parent parent-src)
-                                          `(Object-Mix ,(translate-id parent parent-src)))
-                                     ,(translate-implements (header-implements header))
-                             
-                             (super-instantiate ())
-                             
-                             ,@(if (> depth 0)
-                                   `((init-field 
-                                      ,@(let loop ((d depth))
-                                          (cond
-                                            ((= d 0) null)
-                                            (else 
-                                             (cons (string->symbol (format "encl-this-~a~~f" d))
-                                                   (loop (sub1 d))))))))
-                                   null)
-                             
+                 `(,(unless (or (memq 'private (map modifier-kind (header-modifiers header)))
+                                 (eq? 'anonymous kind)
+                                 (eq? 'statement kind))
+                       provides)
+                    ,@(if (null? (accesses-private methods))
+                          null
+                          (list
+                           (create-local-names (make-method-names (accesses-private methods) null))))
+                    #;(if (null? restricted-methods)
+                          null
+                          (list (create-local-names (append (make-method-names (accesses-private methods) null)
+                                                            restricted-methods))))
+                    (define ,class
+                      (,class* ,(if extends-object?
+                                    (translate-id parent parent-src)
+                                    `(Object-Mix ,(translate-id parent parent-src)))
+                               ,(translate-implements (header-implements header))
+                               
+                               (super-instantiate ())
+                               
+                               ,@(if (> depth 0)
+                                     `((init-field 
+                                        ,@(let loop ((d depth))
+                                            (cond
+                                              ((= d 0) null)
+                                              (else 
+                                               (cons (string->symbol (format "encl-this-~a~~f" d))
+                                                     (loop (sub1 d))))))))
+                                     null)
+                               
                              ,@(if (null? closure-args)
                                    null
                                    `((init-field 
@@ -657,8 +654,8 @@
                                  (append
                                   (map car translated-fields)
                                   (map cadr translated-fields)))
-                                 
-                                 
+                             
+                             
                              ,@(create-private-setters/getters (accesses-private fields))
                              
                              ,@(generate-inner-makers (members-inner class-members) 
@@ -842,12 +839,12 @@
                                  (members-static-init class-members))
                           
                           )
-                  #f)))
+                  ))
             
             ;reset the old class-specific info if in inner-class
             (begin0
               (if (> depth 0)
-                  class-syntax
+                  (cons 'begin class-syntax)
                   (list class-syntax 
                         (make-syntax 
                          #f
@@ -1447,20 +1444,20 @@
                                                                (format "dynamic-~a/c" (class-name))
                                                                (format "static-~a/c" (class-name)))))))
         
-        (list `(begin ,provides
-                      (define ,syntax-name (,interface ,(translate-parents (header-extends header))
-                                            ,@(make-iface-method-names (members-method members))))
-                      ,@(create-static-fields static-field-names (members-field members))
-                      ,@(append (generate-wrappers (class-name)
-                                                   "Object"
-                                                   (append
-                                                    (class-record-methods 
-                                                     (send type-recs get-class-record (list (class-name))))
-                                                    (class-record-methods
-                                                     (send type-recs get-class-record (list "Object" "java" "lang"))))
-                                                   null)
-                                (generate-contract-defs (class-name)))
-                      )
+        (list `(,provides
+                (define ,syntax-name (,interface ,(translate-parents (header-extends header))
+                                                 ,@(make-iface-method-names (members-method members))))
+                ,@(create-static-fields static-field-names (members-field members))
+                ,@(append (generate-wrappers (class-name)
+                                             "Object"
+                                             (append
+                                              (class-record-methods 
+                                               (send type-recs get-class-record (list (class-name))))
+                                              (class-record-methods
+                                               (send type-recs get-class-record (list "Object" "java" "lang"))))
+                                             null)
+                          (generate-contract-defs (class-name)))
+                )
               (make-syntax #f `(module ,name mzscheme (require ,(module-require)) ,provides) #f)))))
 
   ;-----------------------------------------------------------------------------------------------------------------
