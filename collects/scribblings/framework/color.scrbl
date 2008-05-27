@@ -51,11 +51,11 @@
     No edit to the buffer can change the tokenization of the buffer prior
     to the token immediately preceding the edit.  In the following
     example this invariant does not hold.  If the buffer contains:
-    @verbatim["\" 1 2 3"]
+    @verbatim{" 1 2 3}
     and the tokenizer treats the unmatched " as its own token (a string
     error token), and separately tokenizes the 1 2 and 3, an edit to make
     the buffer look like:
-    @verbatim["\" 1 2 3\""]
+    @verbatim{" 1 2 3"}
     would result in a single string token modifying previous tokens.  To
     handle these situations, get-token must treat the first line as a
     single token.}}
