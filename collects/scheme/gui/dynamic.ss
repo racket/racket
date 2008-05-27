@@ -5,8 +5,8 @@
 
 (define (gui-available?)
   (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (dynamic-require 'mred/private/dynamic #f)
-    #t))
+    (eq? (dynamic-require 'mred/private/dynamic 'kernel-initialized)
+         'done)))
 
 (define-namespace-anchor anchor)
 

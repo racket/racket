@@ -3045,9 +3045,9 @@ static Scheme_Module *module_load(Scheme_Object *name, Scheme_Env *env, const ch
     if (!m) {
       char *mred_note;
 
-      if (!strcmp(SCHEME_SYM_VAL(name), "#%mred-kernel")
+      if (!strcmp(SCHEME_SYM_VAL(SCHEME_PTR_VAL(name)), "#%mred-kernel")
 	  && !(scheme_strncmp(scheme_banner(), "Welcome to MzScheme", 19)))
-	mred_note = "; need to run in MrEd instead of MzScheme";
+	mred_note = "; need to run in mred instead of mzscheme";
       else
 	mred_note = "";
 

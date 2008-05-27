@@ -4,4 +4,8 @@
 ;; It is required by mred/mred so that it gets carried
 ;; along when mred/mred is attached to a new namespace.
 
+(provide kernel-initialized)
+
 (dynamic-require ''#%mred-kernel #f)
+
+(define kernel-initialized 'done)
