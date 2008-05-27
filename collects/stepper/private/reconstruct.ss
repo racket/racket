@@ -148,9 +148,7 @@
   (define (skip-step? break-kind mark-list render-settings)
     (case break-kind
       [(result-value-break)
-       (and (pair? mark-list)
-            (let ([expr (mark-source (car mark-list))])
-              (stepper-syntax-property expr 'stepper-hide-reduction)))]
+       #f]
       [(result-exp-break)
        ;; skip if clauses that are the result of and/or reductions
        (let ([and/or-clauses-consumed (stepper-syntax-property (mark-source (car mark-list)) 'stepper-and/or-clauses-consumed)])
@@ -167,6 +165,7 @@
         (not (render-settings-lifting? render-settings)))]
       [(expr-finished-break define-struct-break late-let-break) #f]))
   
+  ;; skip-redex-step : mark-list? render-settings? -> boolean?
   (define (skip-redex-step? mark-list render-settings)
     
     (define (varref-skip-step? varref)
