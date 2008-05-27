@@ -486,7 +486,7 @@ to draw image-value results or images displayed via @scheme[print].
 
 A program can manipulate image values in various ways, such as using
 the @schememodname[htdp/image] library or as an
-@schememodname[image-snip%] value.
+@scheme[image-snip%] value.
 
 @subsection[#:tag "xml-boxes"]{XML Boxes and Scheme Boxes}
 
