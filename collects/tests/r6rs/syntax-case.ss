@@ -301,6 +301,10 @@
            (guard (v [#t v])
                   (syntax-violation "apple" "bad" 'worm)))
           "apple")
+    (test (who-condition?
+           (guard (v [#t v])
+                  (syntax-violation #f "bad" 'worm)))
+          #f)
     (test (condition-who
            (guard (v [#t v])
                   (syntax-violation #f "bad" #'worm)))
@@ -315,8 +319,8 @@
           #f)
     (test (syntax-violation-subform
            (guard (v [#t v])
-                  (syntax-violation 'apple "bad" '(worm) '(another))))
-          '(another))
+                  (syntax-violation 'apple "bad" '(worm) '((another)))))
+          '((another)))
 
 
     ;;
