@@ -1,3 +1,4 @@
+#reader scribble/reader
 #lang scheme/base
 
 (require "../config.ss"
@@ -14,17 +15,36 @@
       (cond [(assq id links) => cdr]
             [else (error 'main-page "page id not found: ~e" id)]))))
 
+(define (script . body)
+  (make-script-element #f null "text/javascript" body))
+
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
 (define (main-page id [installation-specific? '?])
   (define info (page-info id))
-  (make-splice (list (title #:style '(no-toc)
-                            (car info)
-                            (case installation-specific?
-                              [(?) ""]
-                              [(#t) " (installation)"]
-                              [(#f) ""])) ; can be " (user)"
-                     (front-toc id))))
+  (define title-string (car info))
+  (define root (cadr info))
+  (define path (caddr info))
+  (define user-doc? (eq? installation-specific? #f))
+  (define inst-doc? (eq? installation-specific? #t))
+  (define up-path
+    ;; massage the current path to an up string
+    (regexp-replace* #rx"[^/]*/" (regexp-replace #rx"[^/]+$" path "") "../"))
+  (define page-title
+    (title #:style '(no-toc) title-string
+           (cond [inst-doc? " (installation)"]
+                 [user-doc? ""] ; can be " (user)"
+                 [else ""])))
+  (define toc
+    (map (lambda (item)
+           (let ([link-id (if (pair? item) (car item) item)])
+             ((if (eq? id link-id) caddr cadr) item)))
+         (front-toc-items up-path)))
+  (make-splice `(,page-title
+                 ,@toc
+                 ,@(if user-doc?
+                     (list @script{SetPLTRoot("@(version)", "@up-path")@";"})
+                     '()))))
 
 ;; FIXME: Use this to avoid hard-wiring manual titles and paths in config.ss
 (define (resolve s [f s])
@@ -43,21 +63,13 @@
                   [root  (cadr info)]
                   [path  (caddr info)]
                   [text  (make-element "tocsubseclink" (list label))]
-                  [dest (case root
-                          [(plt)  (build-path (find-doc-dir) path)]
-                          [(user) (string-append up path)]
-                          [(#f)   path]
-                          [else (error "internal error (main-page)")])])
-             (list id
-                   (make-toc-element #f null (list (link dest #:style "tocviewlink" text)))
-                   (make-toc-element #f null (list (link dest #:style "tocviewselflink" text)))))))
+                  [dest  (case root
+                           [(plt)  (build-path (find-doc-dir) path)]
+                           [(user) (string-append up path)]
+                           [(#f)   path]
+                           [else (error "internal error (main-page)")])]
+                  [elt (lambda (style)
+                         (make-toc-element
+                          #f null (list (link dest #:style style text))))])
+             (list id (elt "tocviewlink") (elt "tocviewselflink")))))
        links))
-
-(define (front-toc here)
-  ;; massages the current path to an up string
-  (let* ([up (regexp-replace #rx"[^/]+$" (caddr (page-info here)) "")]
-         [up (regexp-replace* #rx"[^/]*/" up "../")])
-    (make-splice (map (lambda (item)
-                        (let ([id (if (pair? item) (car item) item)])
-                          ((if (eq? here id) caddr cadr) item)))
-                      (front-toc-items up)))))
