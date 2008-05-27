@@ -131,8 +131,10 @@
       (-poly (a b c)
              (cl-> [((-> a b) (-lst a)) -Void]
                    [((-> a b c) (-lst a) (-lst b)) -Void]))]
-     [foldl (-poly (a b) 
-                   ((a b . -> . b) b (make-lst a) . -> . b))]
+     [foldl
+      (-poly (a b c)
+             (cl-> [((a b . -> . b) b (make-lst a)) b]
+                   [((a b c . -> . c) c (make-lst a) (make-lst b)) c]))]
      [filter (-poly (a) ((a . -> . B) (-lst a) . -> . (-lst a)))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
@@ -195,6 +197,7 @@
      [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
      [member 
       (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
+     [findf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt a)))]
      
      [string<? (->* (list -String -String) -String B)]
      [string>? (->* (list -String -String) -String B)]
@@ -246,6 +249,8 @@
               [() N])]
      
      [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
+     [assf  (-poly (a b)
+              ((a . -> . B) (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
      
      [list-ref (-poly (a) ((-lst a) -Integer . -> . a))]
      [positive? (-> N B)]
