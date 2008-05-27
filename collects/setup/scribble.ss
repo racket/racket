@@ -5,6 +5,7 @@
          "private/doc-path.ss"
          "main-collects.ss"
          scheme/class
+         scheme/list
          scheme/file
          scheme/fasl
          scheme/serialize
@@ -31,9 +32,8 @@
       (memq 'user-doc (doc-flags doc))))
 
 (define (filter-user-docs docs make-user?)
-  (define (filtered) (filter (lambda (doc) (not (user-doc? doc))) docs))
   (cond ;; Specifically disabled user stuff, filter
-        [(not make-user?) (filtered)]
+        [(not make-user?) (filter-not user-doc? docs)]
         ;; If we've built user-specific before, keep building
         [(file-exists? (build-path (find-user-doc-dir) "index.html")) docs]
         ;; Otherwise, see if we need it:
@@ -42,7 +42,7 @@
                            (memq 'no-depend-on (doc-flags doc)))))
                 docs)
          docs]
-        [else (filtered)])) ; Don't need them, so drop them
+        [else (filter-not user-doc? docs)])) ; Don't need them, so drop them
 
 (define (setup-scribblings
          only-dirs          ; limits doc builds
@@ -95,9 +95,8 @@
   (define docs
     (let* ([dirs (find-relevant-directories '(scribblings))]
            [infos (map get-info/full dirs)])
-      (filter-user-docs (apply append (map get-docs infos dirs)) make-user?)))
-  (define main-docs (filter doc-under-main? docs))
-  (define user-docs (filter (lambda (d) (not (doc-under-main? d))) docs))
+      (filter-user-docs (append-map get-docs infos dirs) make-user?)))
+  (define-values (main-docs user-docs) (partition doc-under-main? docs))
   (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
   (define auto-user? (and auto-start-doc? (ormap can-build*? user-docs)))
@@ -109,7 +108,7 @@
                       docs))))
   (define (make-loop first? iter)
     (let ([ht (make-hash)]
-          [infos (filter (lambda (i) (not (info-failed? i))) infos)]
+          [infos (filter-not info-failed? infos)]
           [src->info (make-hash)])
       ;; Collect definitions
       (for* ([info infos]
