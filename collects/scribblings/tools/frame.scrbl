@@ -35,7 +35,6 @@ hasn't been saved is shown.
 
 Provides an implementation of 
 @scheme[drscheme:frame:<%>] 
-%%                                                                  %%                       drscheme:language                          %%                                                                  
 }
 
 

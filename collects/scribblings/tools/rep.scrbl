@@ -18,9 +18,6 @@ class affect the implementation that uses it.
 
 
 @defconstructor/make[([context (implements @scheme[drscheme:rep:context<%>])])]{
-
-%          %          %%        begin rep-text methods        %          
-
 }
 
 @defmethod[#:mode override 
@@ -209,10 +206,6 @@ are created, but not when the Run button is clicked.
            void?]{
 
 Inserts a new prompt at the end of the text.
-
-
-%%                                                                  %%                       drscheme:frame                             %%                                                                  
-
 }
 
 @defmethod[(kill-evaluation)
@@ -239,13 +232,6 @@ Calls the super method.
 
 This method queues thunks for drscheme's eventspace in a
 special output-related queue.
-
-}
-@methimpl{
-
-%          %          %%      begin console-text methods      %          %% many more methods should be added here....
-
-
 }}
 
 @defmethod[(reset-console)
