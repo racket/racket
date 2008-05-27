@@ -158,7 +158,7 @@
    (string-downcase
     (if (bytes? s)
         (bytes->string/utf-8 s)
-        (string-copy s)))))
+        s))))
 
 (define (directory-part path)
   (let-values ([(base name must-be-dir) (split-path path)])
