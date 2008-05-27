@@ -1,6 +1,7 @@
 
-(module trace mzscheme
-  (require "pretty.ss")
+(module trace scheme/base
+  (require scheme/pretty
+           (for-syntax scheme/base))
 
   (provide trace untrace)
 
@@ -75,7 +76,7 @@
 	      (values first rest))))))
 
   (define -:trace-print-args
-    (lambda (name args level)
+    (lambda (name args kws kw-vals level)
       (let-values (((first rest)
 		    (build-prefixes level)))
 	(parameterize ((pretty-print-print-line
@@ -91,7 +92,8 @@
 				  (string-length first)
 				  (string-length rest))
 			      0))))
-	  (pretty-print (cons name args))))))
+	  (pretty-print (append (cons name args)
+                                (apply append (map list kws kw-vals))))))))
 
   (define -:trace-print-results
     (lambda (name results level)
@@ -146,7 +148,14 @@
 	      ids procs)
     (for-each (lambda (proc setter traced-proc)
 		(unless (traced-proc? proc)
-		  (setter (make-traced-proc traced-proc proc))))
+		  (setter (make-traced-proc 
+                           (let-values ([(a) (procedure-arity proc)]
+                                        [(req allowed) (procedure-keywords proc)])
+                             (procedure-reduce-keyword-arity traced-proc
+                                                             a
+                                                             req
+                                                             allowed))
+                           proc))))
 	      procs setters traced-procs))
 
   ;; Key used for a continuation mark to indicate
@@ -156,7 +165,7 @@
   ;; Apply a traced procedure to arguments, printing arguments
   ;; and results. We set and inspect the -:trace-level-key continuation
   ;; mark a few times to detect tail calls.
-  (define (do-traced id args real-value)
+  (define (do-traced id args kws kw-vals real-value)
     (let* ([levels (continuation-mark-set->list
 		    (current-continuation-marks)
 		    -:trace-level-key)]
@@ -178,17 +187,19 @@
 	      ;;  We don't print the results, because the original
 	      ;;  call will.
 	      (begin
-		(-:trace-print-args id args (sub1 level))
+		(-:trace-print-args id args kws kw-vals (sub1 level))
 		(with-continuation-mark
 		    -:trace-level-key
 		    (car levels)
-		  (apply real-value args)))
+                  (if (null? kws)
+                      (apply real-value args)
+                      (keyword-apply real-value kws kw-vals args))))
 	      ;; Not a tail call; push the old level, again, to ensure
 	      ;;  that when we push the new level, we have consecutive
 	      ;;  levels associated with the mark (i.e., set up for 
 	      ;;  tail-call detection the next time around):
 	      (begin
-		(-:trace-print-args id args level)
+		(-:trace-print-args id args kws kw-vals level)
 		(with-continuation-mark
 		    -:trace-level-key
 		    level
@@ -196,7 +207,9 @@
 				      (with-continuation-mark
 					  -:trace-level-key
 					  (add1 level)
-					(apply real-value args)))
+                                        (if (null? kws)
+                                            (apply real-value args)
+                                            (keyword-apply real-value kws kw-vals args))))
 		    (lambda results
 		      (flush-output)
 		      ;; Print the results:
@@ -219,7 +232,7 @@
 		     ids)
 	   (with-syntax ([(traced-name ...)
 			  (map (lambda (id)
-				 (datum->syntax-object
+				 (datum->syntax
 				  id
 				  (string->symbol
 				   (string-append "traced-"
@@ -233,8 +246,11 @@
 		(list
 		 (let ([real-value id])
 		   (let ([traced-name
-			  (lambda args
-			    (do-traced 'id args real-value))])
+                          (make-keyword-procedure
+                           (lambda (kws vals . args)
+                             (do-traced 'id args kws vals real-value))
+                           (lambda args
+                             (do-traced 'id args null null real-value)))])
 		     traced-name))
 		 ...))))])))
 
