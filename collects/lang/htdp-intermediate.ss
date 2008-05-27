@@ -51,4 +51,7 @@
   (provide-and-document
    procedures
    (all-from beginner: lang/private/intermediate-funs procedures))
+  (provide
+   (rename-out
+     [beginner-list? list?]))
   )
