@@ -130,5 +130,5 @@
    ("Throwable" "java" "lang")
    ("Object" "java" "lang"))
   (("Serializable" "java" "io"))
-  "version4"
-  "3.99.0.25")
+  "version5"
+  "ignore")
