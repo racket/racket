@@ -510,3 +510,6 @@ use @scheme[unit] when you need to parameterize code over functions,
 datatypes, and classes, and when the parameterized code itself
 provides definitions to be linked with other parameterized code.
 
+@; ----------------------------------------------------------------------
+
+@close-eval[toy-eval]

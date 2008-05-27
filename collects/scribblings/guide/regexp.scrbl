@@ -952,3 +952,5 @@ The regexp @scheme[ip-re] will match all and only valid IP addresses.
 (regexp-match ip-re "1.2.3.4")
 (regexp-match ip-re "0.0.0.0")
 ]
+
+@close-eval[ex-eval]

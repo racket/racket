@@ -460,3 +460,5 @@ defines the macro.
 @; ----------------------------------------
 
 @include-section["certificates.scrbl"]
+
+@close-eval[check-eval]

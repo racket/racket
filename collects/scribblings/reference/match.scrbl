@@ -433,3 +433,7 @@ A transformer produced by a second @scheme[proc-expr] subexpression is
 A parameter that determines the comparison procedure used to check
 whether multiple uses of an identifier match the ``same'' value. The
 default is @scheme[equal?].}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[match-eval]

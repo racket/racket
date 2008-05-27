@@ -1713,3 +1713,5 @@ a method that is not supplied by an object.
 @; ----------------------------------------------------------------------
 
 @include-section["surrogate.scrbl"]
+
+@close-eval[class-eval]

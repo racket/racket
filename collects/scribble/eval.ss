@@ -23,6 +23,7 @@
            as-examples
            
            make-base-eval
+           close-eval
 
            scribble-eval-handler)
 
@@ -244,6 +245,10 @@
                    [sandbox-eval-limits #f]
                    [sandbox-make-inspector current-inspector])
       (make-evaluator '(begin (require scheme/base)))))
+
+  (define (close-eval e)
+    (kill-evaluator e)
+    "")
       
   (define (do-plain-eval ev s catching-exns?)
     (call-with-values (lambda () 

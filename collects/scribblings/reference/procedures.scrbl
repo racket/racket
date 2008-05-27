@@ -468,6 +468,7 @@ arguments, and following steps add arguments to the left of these.
 
 @examples[#:eval fun-eval
   (map (curryr list 'foo) '(1 2 3))
-]
+]}
 
-}
+
+@close-eval[fun-eval]

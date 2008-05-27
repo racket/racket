@@ -237,3 +237,7 @@ case that matches the number of given arguments.
 
 A @scheme[case-lambda] function cannot directly support optional or
 keyword arguments.
+
+@; ----------------------------------------------------------------------
+
+@close-eval[greet-eval]

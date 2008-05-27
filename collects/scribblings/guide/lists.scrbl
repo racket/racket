@@ -344,3 +344,7 @@ directly, so the tail-call ``optimization'' kicks in:
 #,step (cons "a" (list "b"))
 #,step (list "a" "b")
 ]
+
+@; ----------------------------------------------------------------------
+
+@close-eval[list-eval]

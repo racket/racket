@@ -634,6 +634,8 @@ returns @scheme[#f].
   (filter-not even? '(1 2 3 4 5 6))
 ]}
 
+@close-eval[list-eval]
+
 @; ----------------------------------------
 @section{Immutable Cyclic Data}
 

@@ -120,3 +120,5 @@ pattern variables can be bound to lists of lists of matches:
 ]
 
 For information on many more pattern forms, see @schememodname[scheme/match].
+
+@close-eval[match-eval]

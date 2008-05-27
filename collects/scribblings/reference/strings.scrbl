@@ -384,3 +384,5 @@ one between @scheme[list] and @scheme[list*].
   (string-append* (cdr (append* (map (lambda (x) (list ", " x))
                                      '("Alpha" "Beta" "Gamma")))))
 ]}
+
+@close-eval[string-eval]

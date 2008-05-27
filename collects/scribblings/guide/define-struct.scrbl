@@ -490,3 +490,5 @@ A @scheme[_struct-option] always starts with a keyword:
 @; ----------------------------------------
 
 @refdetails["structures"]{structure types}
+
+@close-eval[posn-eval]

@@ -612,3 +612,7 @@ A macro version of @scheme[call-with-limits].}
 A predicate and accessor for exceptions that are raised by
 @scheme[call-with-limits].  The @scheme[resource] field holds a symbol,
 either @scheme['time] or @scheme['memory].}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[box-eval]

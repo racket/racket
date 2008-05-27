@@ -117,3 +117,7 @@ Unless otherwise specified, a module that is documented as a
 @scheme[module] in the same way as @schememodfont{#lang}
 @schememodname[scheme]. The documented language name can be used
 directly with @scheme[module] or @scheme[require], too.
+
+@; ----------------------------------------------------------------------
+
+@close-eval[cake-eval]

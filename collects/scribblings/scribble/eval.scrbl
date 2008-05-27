@@ -93,6 +93,13 @@ setting sandbox parameters to disable limits, set the outputs to
 @scheme['string], and not add extra security guards.}
 
 
+@defproc[(close-eval [eval (any/c . -> . any)]) (one-of/c "")]{
+
+Shuts down an evaluator produced by @scheme[make-base-eval]. Use
+@scheme[close-eval] when garbage collection cannot otherwise reclaim
+an evaluator (e.g., because it is defined in a module body).}
+
+
 @defparam[scribble-eval-handler handler 
           ((any/c . -> . any) any/c boolean? . -> . any)]{
 

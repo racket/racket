@@ -720,3 +720,7 @@ Like @scheme[syntax-local-certifier], but to certify @tech{syntax
 objects} that correspond to @scheme[provide] sub-forms, so that
 @scheme[expand-export] can deconstruct the @tech{syntax object} as
 necessary to expand it.}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[stx-eval]

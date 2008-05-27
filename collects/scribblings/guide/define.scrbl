@@ -257,3 +257,7 @@ in the next section). However, other definition forms can appear as a
 @secref["macros"]).
 
 @refdetails/gory["intdef-body"]{internal definitions}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[def-eval]

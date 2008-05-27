@@ -40,6 +40,8 @@ and @scheme[cdr] is pronounced ``could-er.'')
 (pair? (list 1 2 3))
 ]
 
+@close-eval[list-eval]
+
 Scheme's pair datatype and its relation to lists is essentially a
 historical curiosity, along with the dot notation for printing and the
 funny names @scheme[car] and @scheme[cdr]. Pairs are deeply wired into

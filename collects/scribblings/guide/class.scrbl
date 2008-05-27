@@ -799,3 +799,7 @@ Using this form in conjunction with trait operators such as
      (define/public (get-color)
        .... (get-spots-color) .... (get-stripes-color) ....))))
 ]
+
+@; ----------------------------------------------------------------------
+
+@close-eval[class-eval]

@@ -610,3 +610,7 @@ by @scheme[make-struct-info]. This @tech{structure type descriptor} is
 mostly useful for creating structure subtypes. The structure type
 includes a guard that checks an instance's first field in the same way
 as @scheme[make-struct-info].}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[struct-eval]

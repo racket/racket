@@ -412,3 +412,9 @@ immediately if that's all that is available:
 (copy-port (open-input-string "broom") o)
 (get-output-string o)
 ]
+
+@close-eval[port-eval]
+
+@; ----------------------------------------------------------------------
+
+@close-eval[io-eval]

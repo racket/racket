@@ -264,3 +264,7 @@ For an example of how @tech{continuations} are useful, see
 @other-manual['(lib "scribblings/more/more.scrbl")]. For specific
 control operators that have more convenient names than the primitives
 described here, see @schememodname[scheme/control].
+
+@; ----------------------------------------------------------------------
+
+@close-eval[cc-eval]

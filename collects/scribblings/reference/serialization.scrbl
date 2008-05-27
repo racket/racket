@@ -491,3 +491,7 @@ This directory path is used as a last resort when
 @scheme[deserialize-id] indicates a module that was loaded through a
 relative path with respect to the top level. Usually, it should be
 @scheme[(or (current-load-relative-directory) (current-directory))].}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[ser-eval]

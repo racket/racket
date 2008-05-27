@@ -597,3 +597,7 @@ use earlier bindings:
        [z (+ x y)])
   (format "adding ~s and ~s produces ~s" x y z))
 ]
+
+@; ----------------------------------------------------------------------
+
+@close-eval[ex-eval]

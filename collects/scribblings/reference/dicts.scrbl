@@ -466,3 +466,8 @@ mappings are the same when keys and values are compared with
 (dict-set! h 1 'one)
 (dict-ref h "1")
 ]}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[dict-eval]
+

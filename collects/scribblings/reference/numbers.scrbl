@@ -858,3 +858,7 @@ Returns the hyperbolic sine of @scheme[z].}
 @defproc[(cosh [z number?]) number?]{
 
 Returns the hyperbolic cosine of @scheme[z].}
+
+@; ----------------------------------------------------------------------
+
+@close-eval[math-eval]

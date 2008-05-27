@@ -190,3 +190,7 @@ and the only constraint on the form is that it starts with some
 (set-posn-x! (make-posn 1 2) 0)
 (define-xy-struct posn #:bad-option)
 ]}
+
+@; ----------------------------------------
+
+@close-eval[posn-eval]
