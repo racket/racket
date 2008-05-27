@@ -5,7 +5,7 @@
 
 (define (gui-available?)
   (with-handlers ([exn:fail? (lambda (exn) #f)])
-    (dynamic-require ''#%mred-kernel #f)
+    (dynamic-require 'mred/private/dynamic #f)
     #t))
 
 (define-namespace-anchor anchor)

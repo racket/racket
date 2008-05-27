@@ -27,7 +27,8 @@
 	   "private/gdi.ss"
 	   "private/snipfile.ss"
 	   "private/repl.ss"
-	   "private/afm.ss")
+	   "private/afm.ss"
+           "private/dynamic.ss")
 
   ;; Initialize AFM/PS:
   (wx:set-ps-procs
