@@ -253,9 +253,9 @@
 ;  h e h o m e o f t h e b r a v e ? . . .                                                         .
 ;  .. . . . . . . . . . . . . . . . . . ............................................................
 ;  . . . . . . . . . . . . . . . . . . . .                                                         .
-;  .................................................................................................
+;  .........you-know,-this-flag-doesn't-feel-quite-as...............................................
 ;  .                                                                                               .
-;  .................................................................................................
+;  ..........lighthearted-as-it-did-when-I-created-it-in-1998.......................................
 ;  .                                                                                               .
 ;  .................................................................................................
 ;  .                                                                                               .
@@ -774,6 +774,22 @@
                                                (syntax-recertify b exp (current-code-inspector) #f))
                                              bindings))))]
                   
+                  ;; this is a terrible hack... until some other language form needs it.  It wraps the 
+                  ;; given annotated expression with a break that adds the result to the list of completed
+                  ;; expressions
+                  [maybe-final-val-wrap
+                   (match-lambda 
+                     [(vector annotated free-vars) 
+                      (vector (if (stepper-syntax-property exp 'stepper-use-val-as-final)
+                                  #`(call-with-values 
+                                     (lambda () #,annotated)
+                                     (lambda results
+                                       (#,exp-finished-break (list (list #,(lambda () exp) #f (lambda () results))))
+                                       (values results)))
+                                  annotated)
+                              free-vars)]
+                     [error 'maybe-final-val-wrap "stepper internal error 20080527"])]
+                  
                   )
                ; find the source expression and associate it with the parsed expression
                ;             (when (and red-exprs foot-wrap?)
@@ -781,301 +797,302 @@
                
                
                (recertifier
-                (kernel:kernel-syntax-case exp #f
-                                           
-                                           [(#%plain-lambda . clause)
-                                            (let*-2vals ([(annotated-clause free-varrefs)
-                                                          (lambda-clause-abstraction (syntax clause))]
-                                                         [annotated-lambda
-                                                          (with-syntax ([annotated-clause annotated-clause])
-                                                            (syntax/loc exp (#%plain-lambda . annotated-clause)))])
-                                                        (outer-lambda-abstraction annotated-lambda free-varrefs))]
-                                           
-                                           [(case-lambda . clauses)
-                                            (let*-2vals ([(annotated-cases free-varrefs-cases)
-                                                          (2vals-map lambda-clause-abstraction (syntax->list (syntax clauses)))]
-                                                         [annotated-case-lambda (with-syntax ([annotated-cases annotated-cases])
-                                                                                  (syntax/loc exp (case-lambda . annotated-cases)))]
-                                                         [free-varrefs (varref-set-union free-varrefs-cases)])
-                                                        (outer-lambda-abstraction annotated-case-lambda free-varrefs))]
-                                           
-                                           
-                                           
-                                           [(if test then else) (if-abstraction (syntax test) (syntax then) (syntax else))]
-                                           
-                                           
-                                           ;                                     
-                                           ;                                     
-                                           ;   ;                     ;           
-                                           ;   ;                                 
-                                           ;   ;                                 
-                                           ;   ; ;;    ;;;    ;;;; ;;;     ; ;;  
-                                           ;   ;;  ;  ;   ;  ;   ;   ;     ;;  ; 
-                                           ;   ;   ;  ;;;;;  ;   ;   ;     ;   ; 
-                                           ;   ;   ;  ;      ;   ;   ;     ;   ; 
-                                           ;   ;   ;  ;      ;  ;;   ;     ;   ; 
-                                           ;   ;;;;    ;;;;   ;; ;   ;;;   ;   ; 
-                                           ;                     ;               
-                                           ;                 ;;;;                
-                                           ;                                     
-                                           
-                                           
-                                           [(begin . bodies-stx)
-                                            (begin
-                                              (error 'annotate-inner "nothing expands into begin! : ~v" (syntax->datum exp))
-                                              #;(begin-abstraction (syntax->list #`bodies-stx)))]
-                                           
-                                           
-                                           ;                                            
-                                           ;                                            
-                                           ;   ;                     ;             ;;   
-                                           ;   ;                                  ;  ;  
-                                           ;   ;                                 ;   ;; 
-                                           ;   ; ;;    ;;;    ;;;; ;;;     ; ;;  ;  ; ; 
-                                           ;   ;;  ;  ;   ;  ;   ;   ;     ;;  ; ;  ; ; 
-                                           ;   ;   ;  ;;;;;  ;   ;   ;     ;   ; ; ;  ; 
-                                           ;   ;   ;  ;      ;   ;   ;     ;   ; ;;   ; 
-                                           ;   ;   ;  ;      ;  ;;   ;     ;   ; ;;  ;  
-                                           ;   ;;;;    ;;;;   ;; ;   ;;;   ;   ;   ;;   
-                                           ;                     ;                      
-                                           ;                 ;;;;                       
-                                           ;                                            
-                                           
-                                           ;; one-element begin0 is a special case, because in this case only
-                                           ;; the body of the begin0 is in tail position.
-                                           
-                                           [(begin0 body)
-                                            (let*-2vals ([(annotated-body free-vars-body) 
-                                                          (tail-recur #'body)])
-                                                        (2vals (wcm-break-wrap (make-debug-info-normal free-vars-body)
-                                                                               (quasisyntax/loc exp (begin0 #,annotated-body)))
-                                                               free-vars-body))]
-                                           
-                                           
-                                           [(begin0 first-body . bodies-stx)
-                                            (let*-2vals ([(annotated-first free-vars-first) (result-recur #'first-body)]
-                                                         [(annotated-rest free-vars-rest) (2vals-map non-tail-recur (syntax->list #`bodies-stx))]
-                                                         [wrapped-rest (map normal-break/values-wrap annotated-rest)]
-                                                         [all-free-vars (varref-set-union (cons free-vars-first free-vars-rest))]
-                                                         [early-debug-info (make-debug-info-normal all-free-vars)]
-                                                         [tagged-temp (stepper-syntax-property begin0-temp 'stepper-binding-type 'stepper-temp)]
-                                                         [debug-info-maker
-                                                          (lambda (rest-exps)
-                                                            (make-debug-info-fake-exp/tail-bound                                               
-                                                             #`(begin0 #,@rest-exps)
-                                                             (binding-set-union (list (list tagged-temp) tail-bound))
-                                                             (varref-set-union (list (list tagged-temp) all-free-vars))))]
-                                                         [rolled-into-fakes (let loop ([remaining-wrapped wrapped-rest] 
-                                                                                       [remaining-src (syntax->list #`bodies-stx)]
-                                                                                       [first-time? #t])
-                                                                              ((if first-time? wcm-wrap wcm-pre-break-wrap)
-                                                                               (debug-info-maker remaining-src)   
-                                                                               (cond [(null? remaining-src) begin0-temp]
-                                                                                     [else #`(begin #,(car remaining-wrapped) #,(loop (cdr remaining-wrapped)
-                                                                                                                                      (cdr remaining-src)
-                                                                                                                                      #f))])))])
-                                                        (2vals (wcm-wrap early-debug-info
-                                                                         #`(let ([#,begin0-temp #,annotated-first])
-                                                                             #,rolled-into-fakes))
-                                                               all-free-vars))]
-                                           
-                                           
-                                           
-                                           ;                                                                        
-                                           ;                                                                        
-                                           ;  ;;;                                       ;;;                         
-                                           ;    ;              ;                          ;                         
-                                           ;    ;              ;                          ;                         
-                                           ;    ;      ;;;   ;;;;;         ;   ;   ;;;;   ;     ;   ;   ;;;    ;;;  
-                                           ;    ;     ;   ;    ;           ;   ;  ;   ;   ;     ;   ;  ;   ;  ;   ; 
-                                           ;    ;     ;;;;;    ;    ;;;;;   ; ;   ;   ;   ;     ;   ;  ;;;;;   ;;   
-                                           ;    ;     ;        ;            ; ;   ;   ;   ;     ;   ;  ;         ;  
-                                           ;    ;     ;        ;            ; ;   ;  ;;   ;     ;  ;;  ;      ;   ; 
-                                           ;    ;;;    ;;;;     ;;           ;     ;; ;   ;;;    ;; ;   ;;;;   ;;;  
-                                           ;                                                                        
-                                           ;                                                                        
-                                           ;                                                                        
-                                           [(let-values . _)
-                                            (let-abstraction exp 
-                                                             #`let-values
-                                                             (lambda (bindings)
-                                                               (map (lambda (_) *unevaluated*) bindings)))]
-                                           
-                                           [(letrec-values . _)
-                                            (let-abstraction exp 
-                                                             #`letrec-values
-                                                             (lambda (bindings) (map (lambda (b) #`#,b) bindings)))]
-                                           
-                                           
-                                           ;                          $   
-                                           ;                  @       @   
-                                           ;   :@@+@  -@@$   @@@@@    @   
-                                           ;   @$ -@  $  -$   @       @   
-                                           ;   :@@$-  @@@@@   @       @   
-                                           ;      *@  $       @           
-                                           ;   @  :@  +:      @: :$       
-                                           ;   $+@@:   $@@+   :@@$-   $   
-                                           
-                                           
-                                           [(set! var val)
-                                            (let*-2vals
-                                             ([(annotated-val val-free-varrefs)
-                                               (set!-rhs-recur (syntax val) (syntax-case (syntax var) (#%top)
-                                                                              [(#%top . real-var) (syntax-e (syntax real-var))]
-                                                                              [else (syntax var)]))]
-                                              [free-varrefs (varref-set-union (list val-free-varrefs (list #`var)))]
-                                              [annotated-set!
-                                               (return-value-wrap
-                                                (quasisyntax/loc exp (set! var #,(normal-break/values-wrap annotated-val))))])
-                                             (2vals
-                                              (outer-wcm-wrap (make-debug-info-normal free-varrefs) annotated-set!)
-                                              free-varrefs))]
-                                           
-                                           
-                                           ;                         @           
-                                           ;    $@-@@@@  @@   $@$   @@@@@  -@@$  
-                                           ;   $- :@  @   @  $- -$   @     $  -$ 
-                                           ;   @   @  @   @  @   @   @     @@@@@ 
-                                           ;   @   @  @   @  @   @   @     $     
-                                           ;   $- :@  @: +@  $- -$   @: :$ +:    
-                                           ;    $@-@  :@$-@@  $@$    :@@$-  $@@+ 
-                                           ;       @                             
-                                           ;      @@@                            
-                                           
-                                           [(quote _)
-                                            (normal-bundle null exp)]
-                                           
-                                           [(quote-syntax _)
-                                            (normal-bundle null exp)]
-                                           
-                                           
-                                           ;  @@@ @@@         $@+@        @@+-$: 
-                                           ;   @   @         $+ -@         @+@$@ 
-                                           ;   $-@ @  @@@@@  @      @@@@@  @ @ @ 
-                                           ;   ++@+$         @             @ @ @ 
-                                           ;   :@@$+         $* -$         @ @ @ 
-                                           ;   -@$@*          $@$-        @@@@@@@
-                                           
-                                           
-                                           [(with-continuation-mark key mark body)
-                                            ;(let*-2vals ([(annotated-key free-varrefs-key)
-                                            ;              (non-tail-recur (syntax key))]
-                                            ;             [(annotated-mark free-varrefs-mark)
-                                            ;              (non-tail-recur (syntax mark))]
-                                            ;             [(annotated-body dc_free-varrefs-body)
-                                            ;              (result-recur (syntax body))])
-                                            (error 'annotate/inner "this region of code is still under construction")
-                                            
-                                            ;                                       [annotated #`(let-values ([key-temp #,*unevaluated*]
-                                            ;                                             [mark-temp #,*unevaluated*]
-                                            ;)
-                                            ]
-                                           
-                                           
-                                           ;                         @@      @                           @                 
-                                           ;                          @                          @                         
-                                           ;    $@$: @@:@$- @@:@$-    @    -@@     $@+@   $@$:  @@@@@  -@@     $@$  @@:@@: 
-                                           ;      -@  @: -$  @: -$    @      @    $+ -@     -@   @       @    $- -$  @+ :@ 
-                                           ;   -$@$@  @   @  @   @    @      @    @      -$@$@   @       @    @   @  @   @ 
-                                           ;   $*  @  @   @  @   @    @      @    @      $*  @   @       @    @   @  @   @ 
-                                           ;   @- *@  @: -$  @: -$    @      @    $* -$  @- *@   @: :$   @    $- -$  @   @ 
-                                           ;   -$$-@@ @-@$   @-@$   @@@@@  @@@@@   $@$-  -$$-@@  :@@$- @@@@@   $@$  @@@ @@@
-                                           ;          @      @                                                             
-                                           ;         @@@    @@@                                                            
-                                           
-                                           
-                                           ;                                  [foot-wrap? 
-                                           ;                                   (wcm-wrap debug-info annotated)])
-                                           ;                           free-bindings))]
-                                           
-                                           ; the app form's elaboration looks like this, where M0 etc. stand for expressions, and t0 etc
-                                           ; are temp identifiers that do not occur in the program:
-                                           ; (M0 ...)
-                                           ;
-                                           ; goes to
-                                           ;
-                                           ;(let ([t0 *unevaluated*]
-                                           ;      ...)
-                                           ;  (with-continuation-mark
-                                           ;   debug-key
-                                           ;   huge-value
-                                           ;   (set! t0 M0)
-                                           ;   ...
-                                           ;   (with-continuation-mark
-                                           ;    debug-key
-                                           ;    much-smaller-value
-                                           ;    (t0 ...))))
-                                           ; 
-                                           ; 'break's are not illustrated.  An optimization is possible when all expressions M0 ... are
-                                           ; varrefs.  In particular (where v0 ... are varrefs):
-                                           ; (v0 ...)
-                                           ;
-                                           ; goes to
-                                           ; 
-                                           ; (with-continuation-mark
-                                           ;  debug-key
-                                           ;  debug-value
-                                           ;  (v0 ...))
-                                           ;
-                                           ; in other words, no real elaboration occurs. Note that this doesn't work as-is for the
-                                           ; stepper, because there's nowhere to hang the breakpoint; you want to see the break
-                                           ; occur after all vars have been evaluated.  I suppose you could do (wcm ... (begin v0 ... (v0 ...)))
-                                           ; where the second set are not annotated ... but stepper runtime is not at a premium.
-                                           
-                                           ;; the call/cc-safe version of this appears to work, and it lives in the definition of let.  I should 
-                                           ;; transfer that knowledge to here.  -- JBC, 2006-10-11
-                                           
-                                           [(#%plain-app . terms)
-                                            (let*-2vals
-                                             ([(annotated-terms free-varrefs-terms)
-                                               (2vals-map non-tail-recur (syntax->list (syntax terms)))]
-                                              [free-varrefs (varref-set-union free-varrefs-terms)])
-                                             (2vals
-                                              (let* ([arg-temps (build-list (length annotated-terms) get-arg-var)]
-                                                     [tagged-arg-temps (map (lambda (var) (stepper-syntax-property var 'stepper-binding-type 'stepper-temp))
-                                                                            arg-temps)]
-                                                     [let-clauses #`((#,tagged-arg-temps 
-                                                                      (values #,@(map (lambda (_) *unevaluated*) tagged-arg-temps))))]
-                                                     [set!-list (map (lambda (arg-symbol annotated-sub-exp)
-                                                                       #`(set! #,arg-symbol #,annotated-sub-exp))
-                                                                     tagged-arg-temps annotated-terms)]
-                                                     [new-tail-bound (binding-set-union (list tail-bound tagged-arg-temps))]
-                                                     [app-debug-info (make-debug-info-app new-tail-bound tagged-arg-temps 'called)]
-                                                     [app-term (quasisyntax/loc exp #,tagged-arg-temps)]
-                                                     [debug-info (make-debug-info-app new-tail-bound
-                                                                                      (varref-set-union (list free-varrefs tagged-arg-temps)) ; NB using bindings as vars
-                                                                                      'not-yet-called)]
-                                                     [let-body (outer-wcm-wrap debug-info #`(begin #,@set!-list
-                                                                                                   #,(break-wrap
-                                                                                                      (wcm-wrap
-                                                                                                       app-debug-info
-                                                                                                       #`(if (#,in-closure-table #,(car tagged-arg-temps))
-                                                                                                             #,app-term
-                                                                                                             #,(return-value-wrap app-term))))))])
-                                                #`(let-values #,let-clauses #,let-body))
-                                              ;)
-                                              free-varrefs))]
-                                           
-                                           
-                                           ;      @@                             
-                                           ;       @          @                  
-                                           ;    $@:@   $@$:  @@@@@ @@  @@ @@+-$: 
-                                           ;   $* *@     -@   @     @   @  @+@$@ 
-                                           ;   @   @  -$@$@   @     @   @  @ @ @ 
-                                           ;   @   @  $*  @   @     @   @  @ @ @ 
-                                           ;   $* *@  @- *@   @: :$ @: +@  @ @ @ 
-                                           ;    $@:@@ -$$-@@  :@@$- :@$-@@@@@@@@@
-                                           
-                                           
-                                           [(#%top . var-stx)
-                                            (varref-abstraction #`var-stx)]
-                                           
-                                           [var-stx
-                                            (identifier? #`var-stx)
-                                            (varref-abstraction #`var-stx)]
-                                           
-                                           [else 
-                                            (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))])))])))
+                (maybe-final-val-wrap
+                 (kernel:kernel-syntax-case exp #f
+                   
+                   [(#%plain-lambda . clause)
+                    (let*-2vals ([(annotated-clause free-varrefs)
+                                  (lambda-clause-abstraction (syntax clause))]
+                                 [annotated-lambda
+                                  (with-syntax ([annotated-clause annotated-clause])
+                                    (syntax/loc exp (#%plain-lambda . annotated-clause)))])
+                      (outer-lambda-abstraction annotated-lambda free-varrefs))]
+                   
+                   [(case-lambda . clauses)
+                    (let*-2vals ([(annotated-cases free-varrefs-cases)
+                                  (2vals-map lambda-clause-abstraction (syntax->list (syntax clauses)))]
+                                 [annotated-case-lambda (with-syntax ([annotated-cases annotated-cases])
+                                                          (syntax/loc exp (case-lambda . annotated-cases)))]
+                                 [free-varrefs (varref-set-union free-varrefs-cases)])
+                      (outer-lambda-abstraction annotated-case-lambda free-varrefs))]
+                   
+                   
+                   
+                   [(if test then else) (if-abstraction (syntax test) (syntax then) (syntax else))]
+                   
+                   
+                   ;                                     
+                   ;                                     
+                   ;   ;                     ;           
+                   ;   ;                                 
+                   ;   ;                                 
+                   ;   ; ;;    ;;;    ;;;; ;;;     ; ;;  
+                   ;   ;;  ;  ;   ;  ;   ;   ;     ;;  ; 
+                   ;   ;   ;  ;;;;;  ;   ;   ;     ;   ; 
+                   ;   ;   ;  ;      ;   ;   ;     ;   ; 
+                   ;   ;   ;  ;      ;  ;;   ;     ;   ; 
+                   ;   ;;;;    ;;;;   ;; ;   ;;;   ;   ; 
+                   ;                     ;               
+                   ;                 ;;;;                
+                   ;                                     
+                   
+                   
+                   [(begin . bodies-stx)
+                    (begin
+                      (error 'annotate-inner "nothing expands into begin! : ~v" (syntax->datum exp))
+                      #;(begin-abstraction (syntax->list #`bodies-stx)))]
+                   
+                   
+                   ;                                            
+                   ;                                            
+                   ;   ;                     ;             ;;   
+                   ;   ;                                  ;  ;  
+                   ;   ;                                 ;   ;; 
+                   ;   ; ;;    ;;;    ;;;; ;;;     ; ;;  ;  ; ; 
+                   ;   ;;  ;  ;   ;  ;   ;   ;     ;;  ; ;  ; ; 
+                   ;   ;   ;  ;;;;;  ;   ;   ;     ;   ; ; ;  ; 
+                   ;   ;   ;  ;      ;   ;   ;     ;   ; ;;   ; 
+                   ;   ;   ;  ;      ;  ;;   ;     ;   ; ;;  ;  
+                   ;   ;;;;    ;;;;   ;; ;   ;;;   ;   ;   ;;   
+                   ;                     ;                      
+                   ;                 ;;;;                       
+                   ;                                            
+                   
+                   ;; one-element begin0 is a special case, because in this case only
+                   ;; the body of the begin0 is in tail position.
+                   
+                   [(begin0 body)
+                    (let*-2vals ([(annotated-body free-vars-body) 
+                                  (tail-recur #'body)])
+                      (2vals (wcm-break-wrap (make-debug-info-normal free-vars-body)
+                                             (quasisyntax/loc exp (begin0 #,annotated-body)))
+                             free-vars-body))]
+                   
+                   
+                   [(begin0 first-body . bodies-stx)
+                    (let*-2vals ([(annotated-first free-vars-first) (result-recur #'first-body)]
+                                 [(annotated-rest free-vars-rest) (2vals-map non-tail-recur (syntax->list #`bodies-stx))]
+                                 [wrapped-rest (map normal-break/values-wrap annotated-rest)]
+                                 [all-free-vars (varref-set-union (cons free-vars-first free-vars-rest))]
+                                 [early-debug-info (make-debug-info-normal all-free-vars)]
+                                 [tagged-temp (stepper-syntax-property begin0-temp 'stepper-binding-type 'stepper-temp)]
+                                 [debug-info-maker
+                                  (lambda (rest-exps)
+                                    (make-debug-info-fake-exp/tail-bound                                               
+                                     #`(begin0 #,@rest-exps)
+                                     (binding-set-union (list (list tagged-temp) tail-bound))
+                                     (varref-set-union (list (list tagged-temp) all-free-vars))))]
+                                 [rolled-into-fakes (let loop ([remaining-wrapped wrapped-rest] 
+                                                               [remaining-src (syntax->list #`bodies-stx)]
+                                                               [first-time? #t])
+                                                      ((if first-time? wcm-wrap wcm-pre-break-wrap)
+                                                       (debug-info-maker remaining-src)   
+                                                       (cond [(null? remaining-src) begin0-temp]
+                                                             [else #`(begin #,(car remaining-wrapped) #,(loop (cdr remaining-wrapped)
+                                                                                                              (cdr remaining-src)
+                                                                                                              #f))])))])
+                      (2vals (wcm-wrap early-debug-info
+                                       #`(let ([#,begin0-temp #,annotated-first])
+                                           #,rolled-into-fakes))
+                             all-free-vars))]
+                   
+                   
+                   
+                   ;                                                                        
+                   ;                                                                        
+                   ;  ;;;                                       ;;;                         
+                   ;    ;              ;                          ;                         
+                   ;    ;              ;                          ;                         
+                   ;    ;      ;;;   ;;;;;         ;   ;   ;;;;   ;     ;   ;   ;;;    ;;;  
+                   ;    ;     ;   ;    ;           ;   ;  ;   ;   ;     ;   ;  ;   ;  ;   ; 
+                   ;    ;     ;;;;;    ;    ;;;;;   ; ;   ;   ;   ;     ;   ;  ;;;;;   ;;   
+                   ;    ;     ;        ;            ; ;   ;   ;   ;     ;   ;  ;         ;  
+                   ;    ;     ;        ;            ; ;   ;  ;;   ;     ;  ;;  ;      ;   ; 
+                   ;    ;;;    ;;;;     ;;           ;     ;; ;   ;;;    ;; ;   ;;;;   ;;;  
+                   ;                                                                        
+                   ;                                                                        
+                   ;                                                                        
+                   [(let-values . _)
+                    (let-abstraction exp 
+                                     #`let-values
+                                     (lambda (bindings)
+                                       (map (lambda (_) *unevaluated*) bindings)))]
+                   
+                   [(letrec-values . _)
+                    (let-abstraction exp 
+                                     #`letrec-values
+                                     (lambda (bindings) (map (lambda (b) #`#,b) bindings)))]
+                   
+                   
+                   ;                          $   
+                   ;                  @       @   
+                   ;   :@@+@  -@@$   @@@@@    @   
+                   ;   @$ -@  $  -$   @       @   
+                   ;   :@@$-  @@@@@   @       @   
+                   ;      *@  $       @           
+                   ;   @  :@  +:      @: :$       
+                   ;   $+@@:   $@@+   :@@$-   $   
+                   
+                   
+                   [(set! var val)
+                    (let*-2vals
+                        ([(annotated-val val-free-varrefs)
+                          (set!-rhs-recur (syntax val) (syntax-case (syntax var) (#%top)
+                                                         [(#%top . real-var) (syntax-e (syntax real-var))]
+                                                         [else (syntax var)]))]
+                         [free-varrefs (varref-set-union (list val-free-varrefs (list #`var)))]
+                         [annotated-set!
+                          (return-value-wrap
+                           (quasisyntax/loc exp (set! var #,(normal-break/values-wrap annotated-val))))])
+                      (2vals
+                       (outer-wcm-wrap (make-debug-info-normal free-varrefs) annotated-set!)
+                       free-varrefs))]
+                   
+                   
+                   ;                         @           
+                   ;    $@-@@@@  @@   $@$   @@@@@  -@@$  
+                   ;   $- :@  @   @  $- -$   @     $  -$ 
+                   ;   @   @  @   @  @   @   @     @@@@@ 
+                   ;   @   @  @   @  @   @   @     $     
+                   ;   $- :@  @: +@  $- -$   @: :$ +:    
+                   ;    $@-@  :@$-@@  $@$    :@@$-  $@@+ 
+                   ;       @                             
+                   ;      @@@                            
+                   
+                   [(quote _)
+                    (normal-bundle null exp)]
+                   
+                   [(quote-syntax _)
+                    (normal-bundle null exp)]
+                   
+                   
+                   ;  @@@ @@@         $@+@        @@+-$: 
+                   ;   @   @         $+ -@         @+@$@ 
+                   ;   $-@ @  @@@@@  @      @@@@@  @ @ @ 
+                   ;   ++@+$         @             @ @ @ 
+                   ;   :@@$+         $* -$         @ @ @ 
+                   ;   -@$@*          $@$-        @@@@@@@
+                   
+                   
+                   [(with-continuation-mark key mark body)
+                    ;(let*-2vals ([(annotated-key free-varrefs-key)
+                    ;              (non-tail-recur (syntax key))]
+                    ;             [(annotated-mark free-varrefs-mark)
+                    ;              (non-tail-recur (syntax mark))]
+                    ;             [(annotated-body dc_free-varrefs-body)
+                    ;              (result-recur (syntax body))])
+                    (error 'annotate/inner "this region of code is still under construction")
+                    
+                    ;                                       [annotated #`(let-values ([key-temp #,*unevaluated*]
+                    ;                                             [mark-temp #,*unevaluated*]
+                    ;)
+                    ]
+                   
+                   
+                   ;                         @@      @                           @                 
+                   ;                          @                          @                         
+                   ;    $@$: @@:@$- @@:@$-    @    -@@     $@+@   $@$:  @@@@@  -@@     $@$  @@:@@: 
+                   ;      -@  @: -$  @: -$    @      @    $+ -@     -@   @       @    $- -$  @+ :@ 
+                   ;   -$@$@  @   @  @   @    @      @    @      -$@$@   @       @    @   @  @   @ 
+                   ;   $*  @  @   @  @   @    @      @    @      $*  @   @       @    @   @  @   @ 
+                   ;   @- *@  @: -$  @: -$    @      @    $* -$  @- *@   @: :$   @    $- -$  @   @ 
+                   ;   -$$-@@ @-@$   @-@$   @@@@@  @@@@@   $@$-  -$$-@@  :@@$- @@@@@   $@$  @@@ @@@
+                   ;          @      @                                                             
+                   ;         @@@    @@@                                                            
+                   
+                   
+                   ;                                  [foot-wrap? 
+                   ;                                   (wcm-wrap debug-info annotated)])
+                   ;                           free-bindings))]
+                   
+                   ; the app form's elaboration looks like this, where M0 etc. stand for expressions, and t0 etc
+                   ; are temp identifiers that do not occur in the program:
+                   ; (M0 ...)
+                   ;
+                   ; goes to
+                   ;
+                   ;(let ([t0 *unevaluated*]
+                   ;      ...)
+                   ;  (with-continuation-mark
+                   ;   debug-key
+                   ;   huge-value
+                   ;   (set! t0 M0)
+                   ;   ...
+                   ;   (with-continuation-mark
+                   ;    debug-key
+                   ;    much-smaller-value
+                   ;    (t0 ...))))
+                   ; 
+                   ; 'break's are not illustrated.  An optimization is possible when all expressions M0 ... are
+                   ; varrefs.  In particular (where v0 ... are varrefs):
+                   ; (v0 ...)
+                   ;
+                   ; goes to
+                   ; 
+                   ; (with-continuation-mark
+                   ;  debug-key
+                   ;  debug-value
+                   ;  (v0 ...))
+                   ;
+                   ; in other words, no real elaboration occurs. Note that this doesn't work as-is for the
+                   ; stepper, because there's nowhere to hang the breakpoint; you want to see the break
+                   ; occur after all vars have been evaluated.  I suppose you could do (wcm ... (begin v0 ... (v0 ...)))
+                   ; where the second set are not annotated ... but stepper runtime is not at a premium.
+                   
+                   ;; the call/cc-safe version of this appears to work, and it lives in the definition of let.  I should 
+                   ;; transfer that knowledge to here.  -- JBC, 2006-10-11
+                   
+                   [(#%plain-app . terms)
+                    (let*-2vals
+                        ([(annotated-terms free-varrefs-terms)
+                          (2vals-map non-tail-recur (syntax->list (syntax terms)))]
+                         [free-varrefs (varref-set-union free-varrefs-terms)])
+                      (2vals
+                       (let* ([arg-temps (build-list (length annotated-terms) get-arg-var)]
+                              [tagged-arg-temps (map (lambda (var) (stepper-syntax-property var 'stepper-binding-type 'stepper-temp))
+                                                     arg-temps)]
+                              [let-clauses #`((#,tagged-arg-temps 
+                                               (values #,@(map (lambda (_) *unevaluated*) tagged-arg-temps))))]
+                              [set!-list (map (lambda (arg-symbol annotated-sub-exp)
+                                                #`(set! #,arg-symbol #,annotated-sub-exp))
+                                              tagged-arg-temps annotated-terms)]
+                              [new-tail-bound (binding-set-union (list tail-bound tagged-arg-temps))]
+                              [app-debug-info (make-debug-info-app new-tail-bound tagged-arg-temps 'called)]
+                              [app-term (quasisyntax/loc exp #,tagged-arg-temps)]
+                              [debug-info (make-debug-info-app new-tail-bound
+                                                               (varref-set-union (list free-varrefs tagged-arg-temps)) ; NB using bindings as vars
+                                                               'not-yet-called)]
+                              [let-body (outer-wcm-wrap debug-info #`(begin #,@set!-list
+                                                                            #,(break-wrap
+                                                                               (wcm-wrap
+                                                                                app-debug-info
+                                                                                #`(if (#,in-closure-table #,(car tagged-arg-temps))
+                                                                                      #,app-term
+                                                                                      #,(return-value-wrap app-term))))))])
+                         #`(let-values #,let-clauses #,let-body))
+                       ;)
+                       free-varrefs))]
+                   
+                   
+                   ;      @@                             
+                   ;       @          @                  
+                   ;    $@:@   $@$:  @@@@@ @@  @@ @@+-$: 
+                   ;   $* *@     -@   @     @   @  @+@$@ 
+                   ;   @   @  -$@$@   @     @   @  @ @ @ 
+                   ;   @   @  $*  @   @     @   @  @ @ @ 
+                   ;   $* *@  @- *@   @: :$ @: +@  @ @ @ 
+                   ;    $@:@@ -$$-@@  :@@$- :@$-@@@@@@@@@
+                   
+                   
+                   [(#%top . var-stx)
+                    (varref-abstraction #`var-stx)]
+                   
+                   [var-stx
+                    (identifier? #`var-stx)
+                    (varref-abstraction #`var-stx)]
+                   
+                   [else 
+                    (error 'annotate "unexpected syntax for expression: ~v" (syntax->datum exp))]))))])))
   
   (define (stepper-recertify new-stx old-stx)
     (syntax-recertify new-stx old-stx (current-code-inspector) #f))

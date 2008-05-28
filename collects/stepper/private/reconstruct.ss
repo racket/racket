@@ -148,7 +148,9 @@
   (define (skip-step? break-kind mark-list render-settings)
     (case break-kind
       [(result-value-break)
-       #f]
+       (and (pair? mark-list)
+            (let ([expr (mark-source (car mark-list))])
+              (stepper-syntax-property expr 'stepper-hide-reduction)))]
       [(result-exp-break)
        ;; skip if clauses that are the result of and/or reductions
        (let ([and/or-clauses-consumed (stepper-syntax-property (mark-source (car mark-list)) 'stepper-and/or-clauses-consumed)])
@@ -521,8 +523,9 @@
   ; Accepts the source expression, a lifting-index which is either a number (indicating
   ;  a lifted binding) or false (indicating a top-level expression), a list of values
   ;  currently bound to the bindings, and the language level's render-settings.
-  ;; returns a vectory containing a reconstructed expression and a boolean indicating whether this is source syntax
-  ;; from a define-struct and therefore should not be unwound.
+  ;; returns a vector containing a reconstructed expression and a boolean indicating 
+  ;; whether this should not be unwound (e.g., is source syntax
+  ;; from a define-struct).
   
   (define (reconstruct-completed exp lifting-indices vals-getter render-settings)
     (if lifting-indices
@@ -537,6 +540,9 @@
             [(stepper-syntax-property exp 'stepper-define-struct-hint)
              ;; the hint contains the original syntax
              (vector (stepper-syntax-property exp 'stepper-define-struct-hint) #t)]
+            ;; for test cases, use the result here as the final result of the expression:
+            [(stepper-syntax-property exp 'stepper-use-val-as-final)
+             (vector (recon-value (car (vals-getter)) render-settings) #f)]
             [else
              (vector
               (kernel:kernel-syntax-case exp #f

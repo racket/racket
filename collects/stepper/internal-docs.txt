@@ -241,7 +241,11 @@ stepper-args-of-call [ADDED BY RECONSTRUCTOR] :
 stepper-hide-completed : don't show the final top-level expression binding
   for this identifier.
 
-stepper-hide-reduction : don't show the "before" step for this term.
+stepper-hide-reduction : don't show any reductions where this term is 
+  associated with the topmost mark
+
+stepper-use-val-as-final : use the return value of this expression as a
+  "completed" val in the stepper. Used for test cases.
 
 STEPPER-HINT COLLISIONS
 
