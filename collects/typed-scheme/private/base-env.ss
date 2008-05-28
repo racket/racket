@@ -128,9 +128,10 @@
                    [((-> a b c) (-lst a) (-lst b)) (-lst c)]
                    [((-> a b c d) (-lst a) (-lst b) (-lst c)) (-lst d)]))]
      [for-each 
-      (-poly (a b c)
+      (-poly (a b c d)
              (cl-> [((-> a b) (-lst a)) -Void]
-                   [((-> a b c) (-lst a) (-lst b)) -Void]))]
+                   [((-> a b c) (-lst a) (-lst b)) -Void]
+                   [((-> a b c d) (-lst a) (-lst b) (-lst c)) -Void]))]
      [foldl
       (-poly (a b c)
              (cl-> [((a b . -> . b) b (make-lst a)) b]
