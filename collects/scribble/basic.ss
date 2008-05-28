@@ -4,8 +4,8 @@
 (require "decode.ss"
          "struct.ss"
          "config.ss"
-         mzlib/list
-         mzlib/class
+         scheme/list
+         scheme/class
          setup/main-collects
          syntax/modresolve
          (for-syntax scheme/base))
@@ -25,7 +25,7 @@
 
 (define (convert-tag tag content)
   (if (list? tag)
-    (apply append (map (lambda (t) (convert-tag t content)) tag))
+    (append-map (lambda (t) (convert-tag t content)) tag)
     `((part ,(or tag (gen-tag content))))))
 
 (define (title #:tag [tag #f] #:tag-prefix [prefix #f] #:style [style #f]
@@ -176,21 +176,21 @@
 
 (define (index* word-seq content-seq . s)
   (let ([key (make-generated-tag)])
-    (record-index (map clean-up-index-string word-seq) content-seq key (decode-content s))))
+    (record-index (map clean-up-index-string word-seq)
+                  content-seq key (decode-content s))))
 
 (define (index word-seq . s)
   (let ([word-seq (if (string? word-seq) (list word-seq) word-seq)])
-    (apply index* (map clean-up-index-string word-seq) word-seq s)))
+    (apply index* word-seq word-seq s)))
 
 (define (as-index . s)
   (let ([key (make-generated-tag)]
         [content (decode-content s)])
-    (record-index (list (clean-up-index-string (content->string content)))
-                  (if (= 1 (length content))
-                      content
-                      (list (make-element #f content)))
-                  key
-                  content)))
+    (record-index
+     (list (clean-up-index-string (content->string content)))
+     (if (= 1 (length content)) content (list (make-element #f content)))
+     key
+     content)))
 
 (define (index-section #:title [title "Index"] #:tag [tag #f])
   (make-unnumbered-part #f
@@ -205,7 +205,7 @@
   (define (commas l)
     (if (or (null? l) (null? (cdr l)))
       l
-      (cdr (apply append (map (lambda (i) (list ", " i)) l)))))
+      (cdr (append-map (lambda (i) (list ", " i)) l))))
   (define (cadr-string-lists<? a b)
     (let loop ([a (cadr a)] [b (cadr b)])
       (cond [(null? b) #f]

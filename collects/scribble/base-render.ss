@@ -165,9 +165,7 @@
         [(part tech cite)
          (let ([rhs (cadr k)])
            (if (or (string? rhs) (pair? rhs))
-               (list (car k) (cons prefix (if (pair? rhs)
-                                              rhs
-                                              (list rhs))))
+               (list (car k) (cons prefix (if (pair? rhs) rhs (list rhs))))
                k))]
         [(index-entry)
          (let ([v (convert-key prefix (cadr k))])
@@ -177,8 +175,8 @@
     (define/public (collect-part-tags d ci number)
       (for ([t (part-tags d)])
         (hash-set! (collect-info-ht ci)
-                         (generate-tag t ci)
-                         (list (or (part-title-content d) '("???")) number))))
+                   (generate-tag t ci)
+                   (list (or (part-title-content d) '("???")) number))))
 
     (define/public (collect-content c ci)
       (for ([i c]) (collect-element i ci)))
@@ -191,12 +189,11 @@
         (collect-block p ci)))
 
     (define/public (collect-block p ci)
-      (cond
-        [(table? p) (collect-table p ci)]
-        [(itemization? p) (collect-itemization p ci)]
-        [(blockquote? p) (collect-blockquote p ci)]
-        [(delayed-block? p) (void)]
-        [else (collect-paragraph p ci)]))
+      (cond [(table? p) (collect-table p ci)]
+            [(itemization? p) (collect-itemization p ci)]
+            [(blockquote? p) (collect-blockquote p ci)]
+            [(delayed-block? p) (void)]
+            [else (collect-paragraph p ci)]))
 
     (define/public (collect-table i ci)
       (for ([d (apply append (table-flowss i))])
@@ -212,24 +209,19 @@
 
     (define/public (collect-element i ci)
       (if (part-relative-element? i)
-        (let ([content
-               (or (hash-ref (collect-info-relatives ci) i #f)
-                   (let ([v ((part-relative-element-collect i) ci)])
-                     (hash-set! (collect-info-relatives ci) i v)
-                     v))])
+        (let ([content (or (hash-ref (collect-info-relatives ci) i #f)
+                           (let ([v ((part-relative-element-collect i) ci)])
+                             (hash-set! (collect-info-relatives ci) i v)
+                             v))])
           (collect-content content ci))
-        (begin
-          (when (target-element? i) (collect-target-element i ci))
-          (when (index-element? i) (collect-index-element i ci))
-          (when (collect-element? i) ((collect-element-collect i) ci))
-          (when (element? i)
-            (for ([e (element-content i)])
-              (collect-element e ci))))))
+        (begin (when (target-element? i) (collect-target-element i ci))
+               (when (index-element? i) (collect-index-element i ci))
+               (when (collect-element? i) ((collect-element-collect i) ci))
+               (when (element? i)
+                 (for ([e (element-content i)]) (collect-element e ci))))))
 
     (define/public (collect-target-element i ci)
-      (collect-put! ci
-                    (generate-tag (target-element-tag i) ci)
-                    (list i)))
+      (collect-put! ci (generate-tag (target-element-tag i) ci) (list i)))
 
     (define/public (collect-index-element i ci)
       (collect-put! ci
@@ -242,10 +234,7 @@
     ;; global-info resolution
 
     (define/public (resolve ds fns ci)
-      (let ([ri (make-resolve-info ci
-                                   (make-hasheq)
-                                   (make-hash)
-                                   (make-hash))])
+      (let ([ri (make-resolve-info ci (make-hasheq) (make-hash) (make-hash))])
         (start-resolve ds fns ri)
         ri))
 

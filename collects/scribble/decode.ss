@@ -33,16 +33,13 @@
  [part-tag-decl ([tag tag?])])
 
 (define (clean-up-index-string s)
-  ;; Remove leading spaces or trailing, which might appear there due 
-  ;; to images or something else that gets dropped in string form.
-  ;; Then collapse whitespace.
-  (regexp-replace* #px"\\s+" 
-                   (regexp-replace #rx"^ +" 
-                                   (regexp-replace #rx" +$" 
-                                                   s 
-                                                   "")
-                                   "")
-                   " "))
+  ;; Collapse whitespace, and remove leading or trailing spaces, which
+  ;; might appear there due to images or something else that gets
+  ;; dropped in string form.
+  (let* ([s (regexp-replace* #px"\\s+" s " ")]
+         [s (regexp-replace* #rx"^ " s "")]
+         [s (regexp-replace* #rx" $" s "")])
+    s))
 
 (define (decode-string s)
   (let loop ([l '((#rx"---" mdash)
@@ -102,9 +99,8 @@
               (cons (make-index-element
                      #f null (car tags)
                      (list (clean-up-index-string
-                            (regexp-replace
-                             #px"^\\s+(?:(?:A|An|The)\\s)?"
-                             (content->string title) "")))
+                            (regexp-replace #px"^\\s+(?:(?:A|An|The)\\s)?"
+                                            (content->string title) "")))
                      (list (make-element #f title))
                      (make-part-index-desc))
                     l)

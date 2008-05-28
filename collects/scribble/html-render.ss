@@ -872,7 +872,7 @@
     (define/override (render-table t part ri need-inline?)
       (define t-style (table-style t))
       (define t-style-get (if (and (pair? t-style) (list? t-style))
-                            (lambda (k) (assoc k (or t-style null)))
+                            (lambda (k) (assoc k t-style))
                             (lambda (k) #f)))
       (define index? (eq? 'index t-style))
       (define (make-row flows style)
