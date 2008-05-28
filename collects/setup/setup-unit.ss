@@ -22,7 +22,8 @@
          "unpack.ss"
          "getinfo.ss"
          "dirs.ss"
-         "main-collects.ss")
+         "main-collects.ss"
+         "private/path-utils.ss")
 
 (define-namespace-anchor anchor)
 
@@ -174,7 +175,7 @@
            (error 'setup-plt
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
-    (define path-string (path->string path))
+    (define path-name (path->name path))
     (define basename
       (let-values ([(base name dir?) (split-path path)])
         (if (path? name)
@@ -183,12 +184,12 @@
                  "Internal error: cc had invalid info-path: ~e" path))))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
-                    path))
+                    path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
     (and (not (or (regexp-match? #rx"^[.]" basename) (equal? "compiled" basename)
                   (eq? 'all (info 'compile-omit-paths void))))
          (make-cc collection path
-                  (if name (string-append path-string " (" name ")") path-string)
+                  (if name (string-append path-name " (" name ")") path-name)
                   info root-dir info-path shadowing-policy)))
 
   (define ((warning-handler v) exn)
@@ -351,7 +352,7 @@
         (let ([mark (cc-mark cc)])
           (when (file-exists? mark)
             (setup-printf "Warning: found a marker file, deleting: ~a"
-                          (cc-mark cc))
+                          (path->name mark))
             (delete-file mark)))))
     ;; Now create all marker files, signalling an error if duplicate
     (define (put-markers)
@@ -479,7 +480,7 @@
                 (unless printed?
                   (set! printed? #t)
                   (setup-printf "Deleting files for ~a at ~a"
-                                (cc-name cc) (path->string (cc-path cc)))))])
+                                (cc-name cc) (path->name (cc-path cc)))))])
         (for ([path paths])
           (let ([full-path (build-path (cc-path cc) path)])
             (when (or (file-exists? full-path) (directory-exists? full-path))
@@ -528,7 +529,7 @@
                         [dep (build-path dir mode-dir (path-add-suffix name #".dep"))])
                    (when (and (file-exists? dep) (file-exists? zo))
                      (set! did-something? #t)
-                     (setup-printf "  deleting ~a" zo)
+                     (setup-printf "  deleting ~a" (path->name zo))
                      (delete-file/record-dependency zo dependencies)
                      (delete-file/record-dependency dep dependencies))))))
             (when did-something? (loop dependencies))))
@@ -592,23 +593,20 @@
     ;; `current-namespace' for `get-namespace'.
     (for ([cc ccs-to-compile])
       (parameterize ([current-namespace (get-namespace)])
-        (begin-record-error cc (format "Compiling ~a" desc)
+        (begin-record-error cc (format "~a: compiling..." desc)
           (unless (control-io-apply
                    (case-lambda
                      [(p)
                       ;; Main "doing something" message
-                      (setup-fprintf p "Compiling ~a used by ~a"
-                                     desc (cc-name cc))]
+                      (setup-fprintf p "~a: compiling ~a" (cc-name cc) desc)]
                      [(p where)
                       ;; Doing something specifically in "where"
                       (setup-fprintf p "  in ~a"
-                                     (path->string
-                                      (path->complete-path where
-                                                           (cc-path cc))))])
+                                     (path->name (path->complete-path
+                                                  where (cc-path cc))))])
                    compile-directory
                    (list (cc-path cc) (cc-info cc)))
-            (setup-printf "No more ~a to compile for ~a"
-                          desc (cc-name cc)))))
+            (setup-printf "~a: all ~a done" (cc-name cc) desc))))
       (collect-garbage)))
 
   (define (with-specified-mode thunk)
@@ -754,7 +752,7 @@
                        info-path))
               (make-directory* base)
               (let ([p info-path])
-                (setup-printf "Updating ~a" p)
+                (setup-printf "Updating ~a" (path->name p))
                 (with-handlers ([exn:fail? (warning-handler (void))])
                   (with-output-to-file p
                     #:exists 'truncate/replace

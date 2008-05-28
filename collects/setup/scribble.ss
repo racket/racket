@@ -2,7 +2,7 @@
 
 (require "getinfo.ss"
          "dirs.ss"
-         "private/doc-path.ss"
+         "private/path-utils.ss"
          "main-collects.ss"
          scheme/class
          scheme/list
@@ -165,7 +165,8 @@
                  (lambda (k)
                    (unless one?
                      (fprintf (current-error-port)
-                              "In ~a:\n" (doc-src-file (info-doc info)))
+                              "In ~a:\n" (path->name (doc-src-file
+                                                      (info-doc info))))
                      (set! one? #t))
                    (fprintf (current-error-port) "  undefined tag: ~s\n" k))])
             (for ([k (info-undef info)])
@@ -333,8 +334,8 @@
                             (and auto-user?
                                  (memq 'depends-all (doc-flags doc)))))])
     (printf " [~a ~a]\n"
-            (if up-to-date? "Using" (if can-run? "Running" "Skipping"))
-            (doc-src-file doc))
+            (cond [up-to-date? "Using"] [can-run? "Running"] [else "Skipping"])
+            (path->name (doc-src-file doc)))
     (if up-to-date?
       ;; Load previously calculated info:
       (with-handlers ([exn:fail? (lambda (exn)
@@ -435,7 +436,7 @@
   (define doc (info-doc info))
   (define renderer (make-renderer latex-dest doc))
   (printf " [R~aendering ~a]\n" (if (info-rendered? info) "e-r" "")
-          (doc-src-file doc))
+          (path->name (doc-src-file doc)))
   (set-info-rendered?! info #t)
   (with-record-error
    (doc-src-file doc)

@@ -3,7 +3,7 @@
 (require scribble/xref
          setup/getinfo
          scheme/fasl
-         "private/doc-path.ss")
+         "private/path-utils.ss")
 
 (provide load-collections-xref)
 
