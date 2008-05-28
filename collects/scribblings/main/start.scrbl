@@ -9,6 +9,8 @@
 @margin-note{This is an installation-specific listing. Running
              @exec{plt-help} may open a different page with local and
              user-specific documentation, including documentation for
-             installed @|PLaneT| packages.}
+             installed
+             @link["http://planet.plt-scheme.org/"]{@|PLaneT|}
+             packages.}
 
 @(make-start-page #f)
