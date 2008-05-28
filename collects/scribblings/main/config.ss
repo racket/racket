@@ -16,11 +16,11 @@
   `((start   "PLT Manuals"      user "index.html")
     (search  "Search Manuals"   user "search/index.html")
     ---
-    (index   "Master Index"     user "master-index/index.html")
-    ---
     (license "License"          plt  "license/index.html")
     (acks    "Acknowledgements" plt  "acks/index.html")
     (release "Release Notes"    plt  "release/index.html")
+    ---
+    (index   "Master Index"     user "master-index/index.html")
     ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
 

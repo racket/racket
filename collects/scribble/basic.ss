@@ -237,8 +237,8 @@
     (lambda (renderer sec ri)
       (define l null)
       (define line-break (if (send renderer index-manual-newlines?)
-                             (make-element 'newline '("\n"))
-                             ""))
+                           (make-element 'newline '("\n"))
+                           ""))
       (define alpha-starts (make-hasheq))
       (hash-for-each
        (let ([parent (collected-info-parent (part-collected-info sec ri))])

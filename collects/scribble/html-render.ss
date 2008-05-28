@@ -105,6 +105,7 @@
 
 (define-serializable-struct literal-anchor (string))
 
+#; ; no need for these index-local searches
 #reader scribble/reader (begin ; easier to format
 
 (define search-script
@@ -607,6 +608,7 @@
                                 (make-element "nonavigation" index-content)
                                 (make-link-element
                                  #f index-content (car (part-tags index)))))
+                    #; ; no need for these index-local searches
                     ,@(if (eq? d index)
                         null
                         `((small nbsp
@@ -909,7 +911,8 @@
                                null))
                           ,@(render-flow d part ri #f))
                      (loop (cdr ds) (cdr as) (cdr vas))))]))))
-      `(,@(if index? `(,search-script ,search-field) '())
+      `(#; ; no need for these index-local searches
+        ,@(if index? `(,search-script ,search-field) '())
         (table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline; vertical-align: top;"])
