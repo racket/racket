@@ -1,9 +1,8 @@
 #lang scheme/base
 
-(require "type-rep.ss" "parse-type.ss" "tc-utils.ss" "subtype.ss" "utils.ss" "union.ss" "resolve-type.ss"
-         "type-env.ss" "type-effect-convenience.ss")
-(require (lib "plt-match.ss")
-         mzlib/trace)
+(require "type-rep.ss" "parse-type.ss" "tc-utils.ss" "subtype.ss" "utils.ss"
+         "type-env.ss" "type-effect-convenience.ss" "resolve-type.ss" "union.ss"
+         scheme/match mzlib/trace)
 (provide type-annotation
          get-type
          get-type/infer
@@ -25,22 +24,27 @@
 
 ;; get the type annotation of this syntax
 ;; syntax -> Maybe[Type]
+;; is let-binding really necessary? - remember to record the bugs!
 (define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
     (print-size prop)
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))
+  ;(unless let-binding (error 'ohno))
+  ;(printf "let-binding: ~a~n" let-binding)
   (cond       
     [(syntax-property stx type-label-symbol) => pt]
     [(syntax-property stx type-ascrip-symbol) => pt]
     ;; this is so that : annotation works in internal def ctxts
-    [(and let-binding (identifier? stx) (lookup-type stx (lambda () #f)))
+    [(and (identifier? stx) (lookup-type stx (lambda () #f)))
      =>
      (lambda (t)
        (maybe-finish-register-type stx)
        t)]
     [else #f]))
+
+;(trace type-annotation)
 
 (define (type-ascription stx)
   (define (pt prop)
@@ -65,9 +69,10 @@
   (parameterize
       ([current-orig-stx stx])
     (cond
-      [(type-annotation stx) => (lambda (x) 
-                                  (log/ann stx x)
-                                  x)]
+      [(type-annotation stx #:infer #t)
+       => (lambda (x) 
+            (log/ann stx x)
+            x)]
       [(not (syntax-original? stx))
        (tc-error "untyped var: ~a" (syntax-e stx))]
       [else
@@ -97,10 +102,10 @@
                     (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
-                    (map (lambda (stx ty)
-                           (cond [(type-annotation stx #:infer #t) => (lambda (ann) (check-type stx ty ann) (log/extra stx ty ann) ann)]
+                    (map (lambda (stx ty a)
+                           (cond [a => (lambda (ann) (check-type stx ty ann) (log/extra stx ty ann) ann)]
                                  [else (log/noann stx ty) ty]))
-                         stxs tys))]
+                         stxs tys anns))]
                [ty (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
                                      "Expression should produce ~a values, but produces one values of type "
                                      (length stxs) ty)]))))]))
