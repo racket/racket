@@ -158,6 +158,11 @@ font-weight: bold;
 
 .tocviewlink {
   text-decoration: none;
+  color: blue;
+}
+
+.tocviewselflink {
+  color: blue;
 }
 
 .tocsublist {
