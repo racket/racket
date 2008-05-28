@@ -175,15 +175,6 @@ with a preceeding @litchar{-}. As a special case, when an @|r6rs| path
 contains a single symbol followed by a version, a @schemeidfont{main}
 symbol is effectively inserted after the initial symbol.
 
-Examples:
-
-@schemeblock[
-(rnrs io simple (6))  #, @elem{roughly means}  rnrs/io/simple-6
-(rnrs)                #, @elem{roughly means}  rnrs
-(rnrs (6))            #, @elem{roughly means}  rnrs/main-6
-(scheme base)         #, @elem{roughly means}  scheme/base
-]
-
 When an @|r6rs| library or top-level program refers to another
 library, it can supply version constraints rather than naming a
 specific version. Version constraints are always resolved at compile
@@ -199,10 +190,10 @@ looking for matches.
 Examples (assuming a typical PLT Scheme installation):
 
 @schemeblock[
-(rnrs io simple (6))  #, @elem{really means}  (lib "rnrs/io/simple-6.ss")
-(rnrs)                #, @elem{really means}  (lib "rnrs/main-6.ss")
-(rnrs (6))            #, @elem{really means}  (lib "rnrs/main-6.ss")
-(scheme base)         #, @elem{really means}  (lib "scheme/base.ss")
+(rnrs io simple (6))  #, @elem{means}  (lib "rnrs/io/simple-6.ss")
+(rnrs)                #, @elem{means}  (lib "rnrs/main-6.ss")
+(rnrs (6))            #, @elem{means}  (lib "rnrs/main-6.ss")
+(scheme base)         #, @elem{means}  (lib "scheme/base.ss")
 ]
 
 
