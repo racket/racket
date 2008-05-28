@@ -50,11 +50,11 @@
       ;;      (list (exported-index-desc-name desc)
       ;;            (exported-index-desc-from-libs desc)))
       ;; Note: using ~s to have javascript-quoted strings
-      (format "~a[~s, ~s, ~s]"
-              (if (eq? i (car l)) "" ",\n")
+      (format "[~s, ~s, ~s]"
               (string-downcase (string-join texts " "))
               href
               html)))
+  (set! l (add-between l ",\n"))
   @script[#:noscript @list{Sorry, you must have JavaScript to use this page.}]{
     // this vector has an entry for each index link: [text, url, html]
     plt_search_data = [
@@ -216,7 +216,7 @@
       if (key == 13) DoSearch();
       else if (key == 33) PageUp();
       else if (key == 34) PageDn();
-      else search_timer = setTimeout(DoSearch, 1000);
+      else search_timer = setTimeout(DoSearch, 400);
     }
 
     search_handler = DelayedSearch;
