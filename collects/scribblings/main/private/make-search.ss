@@ -49,9 +49,10 @@
       ;; (and (exported-index-desc? desc)
       ;;      (list (exported-index-desc-name desc)
       ;;            (exported-index-desc-from-libs desc)))
+      ;; Note: using ~s to have javascript-quoted strings
       (format "~a[~s, ~s, ~s]"
               (if (eq? i (car l)) "" ",\n")
-              (string-join texts " ")
+              (string-downcase (string-join texts " "))
               href
               html)))
   @script[#:noscript @list{Sorry, you must have JavaScript to use this page.}]{
