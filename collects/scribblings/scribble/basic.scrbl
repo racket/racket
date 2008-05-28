@@ -171,7 +171,7 @@ Wraps the @tech{decode}d @scheme[pre-content] as an element with style
 
 Creates an index element given a plain-text string---or list of
 strings for a hierarchy, such as @scheme['("strings" "plain")] for a
-``plain'' entry until a more general ``strings'' entry. The strings
+``plain'' entry below a more general ``strings'' entry. The strings
 also serve as the text to render in the index. The @tech{decode}d
 @scheme[pre-content] is the text to appear inline as the index
 target.}
