@@ -1,8 +1,7 @@
 #lang scribble/doc
-@(require scribble/basic
-          scribble/decode
-          "../private/utils.ss")
+@(require "../private/utils.ss"
+          "../private/make-search.ss")
 
 @main-page['search #f]
 
-Search page not implemented yet.
+@make-search[]

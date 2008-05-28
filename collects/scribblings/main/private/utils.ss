@@ -5,9 +5,10 @@
          scribble/manual
          scribble/struct
          scribble/decode
+         scheme/list
          setup/dirs)
 
-(provide main-page)
+(provide main-page script)
 
 (define page-info
   (let ([links (filter pair? links)])
@@ -15,8 +16,8 @@
       (cond [(assq id links) => cdr]
             [else (error 'main-page "page id not found: ~e" id)]))))
 
-(define (script . body)
-  (make-script-element #f null "text/javascript" body))
+(define (script #:noscript [noscript null] . body)
+  (make-script-element #f noscript "text/javascript" (flatten body)))
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
