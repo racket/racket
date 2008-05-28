@@ -324,11 +324,15 @@
            (new button%
                 [label (string-constant white-on-black-color-scheme)]
                 [parent hp]
-                [callback (λ (x y) (preferences:set 'framework:white-on-black? #t))])
+                [callback (λ (x y) 
+                            (preferences:set 'framework:white-on-black? #t)
+                            (white-on-black))])
            (new button%
                 [label (string-constant black-on-white-color-scheme)]
                 [parent hp]
-                [callback (λ (x y) (preferences:set 'framework:white-on-black? #f))]))))))
+                [callback (λ (x y) 
+                            (preferences:set 'framework:white-on-black? #f)
+                            (black-on-white))]))))))
   
   
   (define (build-text-foreground-selection-panel parent pref-sym style-name example-text)

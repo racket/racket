@@ -51,11 +51,6 @@
                            (λ (x) (and (list? x) (andmap string? x))))
   
   (preferences:set-default 'framework:white-on-black? #f boolean?)
-  (preferences:add-callback 'framework:white-on-black? 
-                            (λ (p v)
-                              (if v
-                                  (color-prefs:white-on-black)
-                                  (color-prefs:black-on-white))))
   
   (preferences:set-default 'framework:case-sensitive-search?
                            #f
