@@ -333,9 +333,9 @@
                                  (memq 'depends-all-main (doc-flags doc)))
                             (and auto-user?
                                  (memq 'depends-all (doc-flags doc)))))])
-    (printf " [~a ~a]\n"
-            (cond [up-to-date? "Using"] [can-run? "Running"] [else "Skipping"])
-            (path->name (doc-src-file doc)))
+    (printf "setup-plt: ~a: ~a\n"
+            (path->name (doc-src-file doc))
+            (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"]))
     (if up-to-date?
       ;; Load previously calculated info:
       (with-handlers ([exn:fail? (lambda (exn)
@@ -442,8 +442,9 @@
 (define (build-again! latex-dest info with-record-error)
   (define doc (info-doc info))
   (define renderer (make-renderer latex-dest doc))
-  (printf " [R~aendering ~a]\n" (if (info-rendered? info) "e-r" "")
-          (path->name (doc-src-file doc)))
+  (printf "setup-plt: ~a: ~arendering\n" 
+          (path->name (doc-src-file doc))
+          (if (info-rendered? info) "re-" ""))
   (set-info-rendered?! info #t)
   (with-record-error
    (doc-src-file doc)
