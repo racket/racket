@@ -57,19 +57,29 @@
   (map (lambda (item)
          (if (eq? item '---)
            (list '--- (make-toc-element #f null '(nbsp)))
-           (let* ([id    (car item)]
-                  [info  (page-info id)]
-                  [label (car info)]
-                  [root  (cadr info)]
-                  [path  (caddr info)]
-                  [text  (make-element "tocsubseclink" (list label))]
-                  [dest  (case root
-                           [(plt)  (build-path (find-doc-dir) path)]
-                           [(user) (string-append up path)]
-                           [(#f)   path]
-                           [else (error "internal error (main-page)")])]
-                  [elt (lambda (style)
-                         (make-toc-element
-                          #f null (list (link dest #:style style text))))])
+           (let ()
+             (define id    (car item))
+             (define info  (page-info id))
+             (define label (car info))
+             (define root  (cadr info))
+             (define path  (caddr info))
+             (define text  (make-element "tocsubseclink" (list label)))
+             (define dest
+               (case root
+                 [(plt)  (build-path (find-doc-dir) path)]
+                 [(user) (string-append up path)]
+                 [(#f)   path]
+                 [else (error "internal error (main-page)")]))
+             (define (onclick style)
+               (if (eq? root 'user)
+                 (make-with-attributes
+                  style
+                  `([onclick
+                     . ,(format "return GotoPLTRoot(\"~a\", \"~a\");"
+                                (version) path)]))
+                 style))
+             (define (elt style)
+               (make-toc-element
+                #f null (list (link dest #:style (onclick style) text))))
              (list id (elt "tocviewlink") (elt "tocviewselflink")))))
        links))

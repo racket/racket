@@ -27,10 +27,12 @@ function SetPLTRoot(ver, relative) {
 }
 
 // adding index.html works because of the above
-function GotoPLTRoot(ver) {
+function GotoPLTRoot(ver, relative) {
   var u = GetCookie("PLT_Root."+ver);
   if (u == null) return true; // no cookie: use plain up link
-  location = u + "index.html";
+  // the relative path is optional, default goes to the toplevel start page
+  if (!relative) relative = "index.html";
+  location = u + relative;
   return false;
 }
 
