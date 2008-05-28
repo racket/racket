@@ -585,7 +585,7 @@
     (make-index-element #f
                         (list t)
                         (target-element-tag t)
-                        (list (element->string e))
+                        (list (clean-up-index-string (element->string e)))
                         (list e)
                         'tech)))
 

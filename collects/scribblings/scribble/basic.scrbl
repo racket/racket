@@ -81,8 +81,9 @@ The @scheme[vers] argument is propagated to the @scheme[title-decl]
 structure.
 
 The section title is automatically indexed by
-@scheme[decode-part]. For the index key, a leading ``A'', ``An'', or
-``The'' (followed by whitespace) is removed.}
+@scheme[decode-part]. For the index key, leading whitespace and a
+leading ``A'', ``An'', or ``The'' (followed by more whitespace) is
+removed.}
 
 
 @def-section-like[section part-start?]{ Like @scheme[title], but
@@ -171,10 +172,11 @@ Wraps the @tech{decode}d @scheme[pre-content] as an element with style
 
 Creates an index element given a plain-text string---or list of
 strings for a hierarchy, such as @scheme['("strings" "plain")] for a
-``plain'' entry below a more general ``strings'' entry. The strings
-also serve as the text to render in the index. The @tech{decode}d
-@scheme[pre-content] is the text to appear inline as the index
-target.}
+``plain'' entry below a more general ``strings'' entry. As index keys,
+the strings are ``cleaned'' using @scheme[clean-up-index-strings]. The
+strings (without clean-up) also serve as the text to render in the
+index. The @tech{decode}d @scheme[pre-content] is the text to appear
+inline as the index target.}
 
 
 @defproc[(index* [words (listof string?)]

@@ -12,7 +12,8 @@
          decode-content
          (rename-out [decode-content decode-elements])
          decode-string
-         whitespace?)
+         whitespace?
+         clean-up-index-string)
 
 (provide-structs
  [title-decl ([tag-prefix (or/c false/c string?)]
@@ -30,6 +31,18 @@
                    [entry-seq list?])]
  [part-collect-decl ([element (or/c element? part-relative-element?)])]
  [part-tag-decl ([tag tag?])])
+
+(define (clean-up-index-string s)
+  ;; Remove leading spaces or trailing, which might appear there due 
+  ;; to images or something else that gets dropped in string form.
+  ;; Then collapse whitespace.
+  (regexp-replace* #px"\\s+" 
+                   (regexp-replace #rx"^ +" 
+                                   (regexp-replace #rx" +$" 
+                                                   s 
+                                                   "")
+                                   "")
+                   " "))
 
 (define (decode-string s)
   (let loop ([l '((#rx"---" mdash)
@@ -88,9 +101,10 @@
                                     (and (list? style) (memq 'hidden style)))))
               (cons (make-index-element
                      #f null (car tags)
-                     (list (regexp-replace
-                            #px"^\\s+(?:(?:A|An|The)\\s)?"
-                            (content->string title) ""))
+                     (list (clean-up-index-string
+                            (regexp-replace
+                             #px"^\\s+(?:(?:A|An|The)\\s)?"
+                             (content->string title) "")))
                      (list (make-element #f title))
                      (make-part-index-desc))
                     l)

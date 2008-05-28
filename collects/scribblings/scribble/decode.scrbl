@@ -159,3 +159,8 @@ See @scheme[decode], @scheme[decode-part], and @scheme[decode-flow].
 
 }
 
+@defproc[(clean-up-index-string [str string?]) string?]{
+
+Trims leading and trailing whitespace, and converts non-empty
+sequences of whitespace to a single space character.}
+

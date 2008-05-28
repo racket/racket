@@ -441,7 +441,7 @@ Hyperlinks the content to @scheme[tag].
 
 
 @defstruct[(index-element element) ([tag tag?]
-                                    [plain-seq (and/c (listof string?) cons?)]
+                                    [plain-seq (and/c pair? (listof string?))]
                                     [entry-seq list?]
                                     [desc any/c])]{
 
@@ -453,7 +453,8 @@ former would be represented by @scheme[plain-seq] @scheme['("night"
 "things that go bump in")], and the latter by @scheme['("night"
 "defender of the")]. Naturally, single-@tech{element}
 @scheme[plain-seq] lists are the common case, and at least one word is
-required, but there is no limit to the word-list length.
+required, but there is no limit to the word-list length. The strings in 
+@scheme[plain-seq] must not contain a newline character.
 
 The @scheme[entry-seq] list must have the same length as
 @scheme[plain-seq]. It provides the form of each key to render in the

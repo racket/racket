@@ -111,8 +111,7 @@
           ;; Maybe there's an .so? Use it only if we don't prefer source.
           [(or (eq? prefer 'so)
                (and (not prefer)
-                    (or (not path-d)
-                        (date>=? so path-d))))
+                    (date>=? so path-d)))
            (if extension-handler
                (begin
                  (notify so)

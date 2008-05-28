@@ -124,6 +124,10 @@
       (blockquote? p)
       (delayed-block? p)))
 
+(define (string-without-newline? s)
+  (and (string? s)
+       (not (regexp-match? #rx"\n" s))))
+
 (provide-structs
  [part ([tag-prefix (or/c false/c string?)]
         [tags (listof tag?)]
@@ -156,7 +160,7 @@
                                             [alt-anchor string?])]
  [(link-element element) ([tag tag?])]
  [(index-element element) ([tag tag?]
-                           [plain-seq (listof string?)]
+                           [plain-seq (and/c pair? (listof string-without-newline?))]
                            [entry-seq list?]
                            [desc any/c])]
  [(aux-element element) ()]
