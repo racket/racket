@@ -19,17 +19,19 @@ function SetCookie(key, val) {
     key + "=" + escape(val) + "; expires="+ d.toGMTString() + "; path=/";
 }
 
-function GotoPLTRoot(ver) {
-  var u = GetCookie("PLT_Root."+ver);
-  if (u == null) return true; // no cookie: use plain up link
-  location = u;
-  return false;
-}
-
+// note that this always stores a directory name, ending with a "/"
 function SetPLTRoot(ver, relative) {
   var root = location.protocol + "//" + location.host
            + NormalizePath(location.pathname.replace(/[^\/]*$/, relative));
   SetCookie("PLT_Root."+ver, root);
+}
+
+// adding index.html works because of the above
+function GotoPLTRoot(ver) {
+  var u = GetCookie("PLT_Root."+ver);
+  if (u == null) return true; // no cookie: use plain up link
+  location = u + "index.html";
+  return false;
 }
 
 normalize_rxs = [/\/\/+/g, /\/\.(\/|$)/, /\/[^\/]*\/\.\.(\/|$)/];

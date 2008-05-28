@@ -172,7 +172,7 @@
                   [parent (or/c false/c part?)]
                   [info any/c])]
 
- [target-url ([addr (or/c string? path?)][style any/c])]
+ [target-url ([addr (or/c string? path?)] [style any/c])]
  [url-anchor ([name string?])]
  [image-file ([path (or/c path-string?
                           (cons/c (one-of/c 'collects)

@@ -224,9 +224,12 @@
   (if latex-dest
     (new (latex:render-mixin render%)
          [dest-dir latex-dest])
-    (let ([multi? (memq 'multi-page (doc-flags doc))]
-          [main? (doc-under-main? doc)]
-          [ddir (doc-dest-dir doc)])
+    (let* ([flags (doc-flags doc)]
+           [multi? (memq 'multi-page flags)]
+           [main?  (doc-under-main? doc)]
+           [ddir   (doc-dest-dir doc)]
+           [root?  (or (memq 'main-doc-root flags)
+                       (memq 'user-doc-root flags))])
       (new ((if multi? html:render-multi-mixin values)
             (html:render-mixin render%))
         [dest-dir (if multi?
@@ -234,7 +237,10 @@
                     ddir)]
         [css-path    (and main? "../scribble.css")]
         [script-path (and main? "../scribble-common.js")]
-        [up-path     (and main? "../index.html")]))))
+        ;; up-path is #t, which makes it go to the (user's) start page
+        ;; (using cookies) -- except when it is the start page itself
+        ;; (one of the two)
+        [up-path     (not root?)]))))
 
 (define (pick-dest latex-dest doc)
   (cond [latex-dest

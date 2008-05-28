@@ -219,6 +219,9 @@
              quiet-table-of-contents)
 
     (init-field [css-path #f]
+                ;; up-path is either a link "up", or #t which uses
+                ;; goes to start page (using cookies to get to the
+                ;; user start page)
                 [up-path #f]
                 [style-file #f]
                 [script-path #f]
@@ -620,14 +623,26 @@
                   prev-content)
                  sep-element
                  (make-element
-                  (if (or parent up-path)
-                    (make-target-url
-                     (cond [(not parent) up-path]
-                           [(and (toc-part? parent) (part-parent parent ri))
-                            (derive-filename parent)]
-                           [else "index.html"])
-                     #f)
-                    "nonavigation")
+                  (cond
+                    ;; up-path = #t => go up to the start page, using
+                    ;; cookies to get to the user's version of it (see
+                    ;; scribblings/main/private/utils for the code
+                    ;; that creates these cookies.)
+                    [(and (eq? #t up-path) (not parent))
+                     (make-target-url
+                      "../index.html"
+                      (make-with-attributes
+                       #f `([onclick
+                             . ,(format "return GotoPLTRoot(\"~a\");"
+                                        (version))])))]
+                    [(or parent up-path)
+                     (make-target-url
+                      (cond [(not parent) up-path]
+                            [(and (toc-part? parent) (part-parent parent ri))
+                             (derive-filename parent)]
+                            [else "index.html"])
+                      #f)]
+                    [else "nonavigation"])
                   up-content)
                  sep-element
                  (make-element
@@ -754,18 +769,18 @@
     (define/private (render-plain-element e part ri)
       (let* ([raw-style (flatten-style (and (element? e) (element-style e)))]
              [style (if (with-attributes? raw-style)
-                        (with-attributes-style raw-style)
-                        raw-style)]
+                      (with-attributes-style raw-style)
+                      raw-style)]
              [attribs (lambda ()
                         (if (with-attributes? raw-style)
-                            (map (lambda (p) (list (car p) (cdr p)))
-                                 (with-attributes-assoc raw-style))
-                            null))]
+                          (map (lambda (p) (list (car p) (cdr p)))
+                               (with-attributes-assoc raw-style))
+                          null))]
              [super-render/attribs
               (lambda ()
                 (if (with-attributes? raw-style)
-                    `((span ,(attribs) ,@(super render-element e part ri)))
-                    (super render-element e part ri)))])
+                  `((span ,(attribs) ,@(super render-element e part ri)))
+                  (super render-element e part ri)))])
         (cond
          [(symbol? style)
           (case style
@@ -809,20 +824,20 @@
                   ,@(super render-element e part ri)))]
          [(target-url? style)
           (if (current-no-links)
-              (super-render/attribs)
-              (parameterize ([current-no-links #t])
-                `((a ([href ,(let ([addr (target-url-addr style)])
-                               (if (path? addr)
-                                   (from-root addr (get-dest-directory))
-                                   addr))]
-                      ;; The target-url chains to another style. Allow
-                      ;;  `with-attributes' inside as well as outside:
-                      ,@(let ([style (target-url-style style)])
-                          (if (string? style)
-                              `([class ,style])
-                              null))
-                      . ,(attribs))
-                     ,@(super render-element e part ri)))))]
+            (super-render/attribs)
+            (parameterize ([current-no-links #t])
+              `((a ([href ,(let ([addr (target-url-addr style)])
+                             (if (path? addr)
+                               (from-root addr (get-dest-directory))
+                               addr))]
+                    ;; The target-url chains to another style,
+                    ;; flatten-style above takes care of it though.
+                    ,@(let ([style (target-url-style style)])
+                        (if (string? style)
+                          `([class ,style])
+                          null))
+                    . ,(attribs))
+                   ,@(super render-element e part ri)))))]
          [(url-anchor? style)
           `((a ([name ,(url-anchor-name style)] . ,(attribs))
                ,@(super render-element e part ri)))]
