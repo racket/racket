@@ -145,6 +145,12 @@
               (and sexp-start+whitespace
                    (skip-whitespace sexp-start+whitespace 'backward #t))))
           
+          ;Returns whether a block comment just ended when at the end of the buffer
+          (define/private (blockcomment-end? pos)
+            (and (eq? (classify-position pos) 'block-comment)
+                 (let ([close (find-string "*/" 'backward pos 0 #f)])
+                   (and close (= pos (+ 2 close))))))
+          
           (define/private (get-indentation start-pos)
             (letrec ([last-offset
                       (lambda (previous-line last-line-start)
@@ -152,10 +158,6 @@
                                        (- start-pos previous-line)
                                        (- last-line-start previous-line)))
                              0))]
-                     [blockcomment-end?
-                      (lambda (pos)
-                        (let ([close (find-string "*/" 'backward pos 0 #f)])
-                          (and close (= pos (+ 2 close)))))]
                      [blockcomment-open
                       (lambda (pos)
                         (let loop ([open-pos (find-string "/*" 'backward pos 0 #f)])
@@ -219,18 +221,18 @@
           (define/public (do-return)
             (let ([start-pos (get-start-position)]
                   [end-pos (get-end-position)])
-              #;(printf "do-return start-pos ~a end-pos ~a" start-pos end-pos)
-              #;(printf "get-character sp ~a~n" (get-character (sub1 start-pos)))
               (if (= start-pos end-pos)
                   (insert (string-append "\n" (get-indentation start-pos)))
                   (insert "\n"))))
           
           (define/public (open-brace)
-            (let ([start-pos (get-start-position)]
-                  [end-pos (get-end-position)])
+            (let* ([start-pos (get-start-position)]
+                   [end-pos (get-end-position)]
+                   [cur-class (classify-position start-pos)])
               (cond 
                 [(and (= start-pos end-pos) 
-                      (not (memq (classify-position start-pos) '(comment block-comment string error))))
+                      (or (and (eq? cur-class 'block-comment) (blockcomment-end? start-pos))
+                          (not (memq cur-class '(comment string error block-comment)))))
                  (insert (string-append "{\n" (get-indentation start-pos) "}"))
                  (set-position (add1 start-pos))
                  ]
@@ -243,20 +245,25 @@
               (let loop ([para start-para])
                 (let* ([para-start (paragraph-start-position para)]
                        [insertion (get-indentation (max 0 (sub1 para-start)))]
-                       [closer? #f])
+                       [closer? #f]
+                       [delete? #f])
                   (let loop ()
-                    (let ([c (get-character para-start)])
+                    (let ([c (get-character para-start)]
+                          [class (classify-position para-start)])
                       (cond
-                        [(and (char-whitespace? c)
+                        [(and (eq? 'white-space class)
                               (not (char=? c #\015))
                               (not (char=? c #\012)))
+                         (set! delete? #t)
                          (delete para-start (+ para-start 1))
                          (loop)]
-                        [(char=? #\} c)
+                        [(and (not (eq? 'block-comment class)) (char=? #\} c))
                          (set! closer? #t)])))
-                  (if closer?
-                      (insert (substring insertion 0 (max 0 (- (string-length insertion) single-tab-stop))) para-start para-start)
-                      (insert insertion para-start para-start)))
+                  (cond
+                    [closer?
+                     (insert (substring insertion 0 (max 0 (- (string-length insertion) single-tab-stop))) para-start para-start)]
+                    [(or delete? (not (eq? 'block-comment (classify-position para-start))))
+                     (insert insertion para-start para-start)]))
                 (unless (= para end-para)
                   (loop (+ para 1))))
               (end-edit-sequence)))
