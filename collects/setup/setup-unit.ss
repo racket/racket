@@ -123,7 +123,7 @@
   (define (done)
     (setup-printf #f "done")
     (unless (null? errors)
-      (setup-fprintf #f "")
+      (setup-printf #f "")
       (show-errors (current-error-port))
       (when (pause-on-errors)
         (fprintf (current-error-port)
@@ -605,7 +605,7 @@
       (for ([cc ccs-to-compile])
         (parameterize ([current-namespace (get-namespace)])
           (begin-record-error 
-           cc (format "~a: compiling..." desc)
+           cc "making"
            (unless (control-io-apply
                     (case-lambda
                      [(p)
