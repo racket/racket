@@ -45,3 +45,5 @@ example below illustrates the distinct roles of keywords and symbols.
   (code:comment #, @t{optional @scheme[#:exists] argument can be @scheme['replace], @scheme['truncate], ...})
   #:exists 'replace)
 ]
+
+@interaction-eval[(delete-file (build-path (find-system-path 'temp-dir) "stuff.txt"))]
