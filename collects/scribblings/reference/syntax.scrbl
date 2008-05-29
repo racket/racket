@@ -105,7 +105,7 @@ action depends on the shape of the form:
 
 @itemize{
 
- @item{If it is a @scheme[begin] form, so the sub-forms are flattened
+ @item{If it is a @scheme[begin] form, the sub-forms are flattened
   out into the module's body and immediately processed in place of the
   @scheme[begin].}
 
