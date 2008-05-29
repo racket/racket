@@ -385,4 +385,13 @@ one between @scheme[list] and @scheme[list*].
                                      '("Alpha" "Beta" "Gamma")))))
 ]}
 
+@defproc[(string-join [strs (listof string?)] [sep string?]) string?]{
+
+Appends the strings in @scheme[strs], inserting @scheme[sep] between
+each pair of strings in @scheme[strs].
+
+@examples[#:eval string-eval
+ (string-join '("one" "two" "three" "four") " potato ")
+]}
+
 @close-eval[string-eval]

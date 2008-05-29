@@ -120,11 +120,11 @@
                         [register-profile-done register-profile-done])
             (with-syntax ([rest
                            (insert-at-tail*
-                            (syntax (register-profile-done 'key start))
+                            (syntax (#%plain-app register-profile-done 'key start))
                             bodies
                             trans?)])
               (syntax
-               (let ([start (register-profile-start 'key)])
+               (let ([start (#%plain-app register-profile-start 'key)])
                  (with-continuation-mark 'profile-key 'key
                    (begin . rest))))))))
 

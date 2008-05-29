@@ -50,7 +50,8 @@
          auto-start-doc?    ; if #t, expands `only-dir' with [user-]start to
                             ;  catch new docs
          make-user?         ; are we making user stuff?
-         with-record-error) ; catch & record exceptions
+         with-record-error  ; catch & record exceptions
+         setup-printf)
   (define (scribblings-flag? sym)
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                 depends-all depends-all-main no-depend-on always-run)))
@@ -89,8 +90,9 @@
                            (doc-path dir (cadddr d) flags)
                            flags under-main? (caddr d))))
              s)
-        (begin (fprintf (current-error-port)
-                        " bad 'scribblings info: ~e from: ~e\n" s dir)
+        (begin (setup-printf
+                "WARNING"
+                "bad 'scribblings info: ~e from: ~e" s dir)
                null))))
   (define docs
     (let* ([dirs (find-relevant-directories '(scribblings))]
@@ -104,7 +106,7 @@
     (and (ormap can-build*? docs)
          (filter values
                  (map (get-doc-info only-dirs latex-dest auto-main? auto-user?
-                                    with-record-error)
+                                    with-record-error setup-printf)
                       docs))))
   (define (make-loop first? iter)
     (let ([ht (make-hash)]
@@ -115,11 +117,9 @@
              [k (info-provides info)])
         (let ([prev (hash-ref ht k #f)])
           (when (and first? prev)
-            (fprintf (current-error-port)
-                     "DUPLICATE tag: ~s\n  in: ~a\n and: ~a\n"
-                     k
-                     (doc-src-file (info-doc prev))
-                     (doc-src-file (info-doc info))))
+            (setup-printf "WARNING" "duplicate tag: ~s" k)
+            (setup-printf #f " in: ~a" (doc-src-file (info-doc prev)))
+            (setup-printf #f " and: ~a" (doc-src-file (info-doc info))))
           (hash-set! ht k info)))
       ;; Build deps:
       (for ([i infos])
@@ -163,12 +163,15 @@
                 (hash-set! deps i #t))))
           (let ([not-found
                  (lambda (k)
-                   (unless one?
-                     (fprintf (current-error-port)
-                              "In ~a:\n" (path->name (doc-src-file
-                                                      (info-doc info))))
-                     (set! one? #t))
-                   (fprintf (current-error-port) "  undefined tag: ~s\n" k))])
+                   (unless (or (memq 'depends-all (doc-flags (info-doc info)))
+                               (memq 'depends-all-main (doc-flags (info-doc info))))
+                     (unless one?
+                       (setup-printf "WARNING"
+                                     "undefined tag in ~a:" 
+                                     (path->name (doc-src-file
+                                                  (info-doc info))))
+                       (set! one? #t))
+                     (setup-printf #f " ~s" k)))])
             (for ([k (info-undef info)])
               (let ([i (hash-ref ht k #f)])
                 (if i
@@ -205,7 +208,7 @@
         ;; Build again, using dependencies
         (for ([i infos] #:when (info-need-run? i))
           (set-info-need-run?! i #f)
-          (build-again! latex-dest i with-record-error))
+          (build-again! latex-dest i with-record-error setup-printf))
         ;; If we only build 1, then it reaches it own fixpoint
         ;; even if the info doesn't seem to converge immediately.
         ;; This is a useful shortcut when re-building a single
@@ -293,7 +296,7 @@
   (fasl->s-exp (current-input-port)))
 
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
-                       with-record-error)
+                       with-record-error setup-printf)
          doc)
   (let* ([info-out-file (build-path (or latex-dest (doc-dest-dir doc)) "out.sxref")]
          [info-in-file  (build-path (or latex-dest (doc-dest-dir doc)) "in.sxref")]
@@ -333,9 +336,10 @@
                                  (memq 'depends-all-main (doc-flags doc)))
                             (and auto-user?
                                  (memq 'depends-all (doc-flags doc)))))])
-    (printf "setup-plt: ~a: ~a\n"
-            (path->name (doc-src-file doc))
-            (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"]))
+    (setup-printf 
+     (cond [up-to-date? "using"] [can-run? "running"] [else "skipping"])
+     "~a"
+     (path->name (doc-src-file doc)))
     (if up-to-date?
       ;; Load previously calculated info:
       (with-handlers ([exn:fail? (lambda (exn)
@@ -343,7 +347,8 @@
                                    (delete-file info-out-file)
                                    (delete-file info-in-file)
                                    ((get-doc-info only-dirs latex-dest auto-main?
-                                                  auto-user? with-record-error)
+                                                  auto-user? with-record-error
+                                                  setup-printf)
                                     doc))])
         (let* ([v-in (with-input-from-file info-in-file read)]
                [v-out (with-input-from-file info-out-file read-out-sxref)])
@@ -439,12 +444,13 @@
      (time expr)
      (collect-garbage) (collect-garbage) (printf "post ~a ~s\n" what (current-memory-use)))))
 
-(define (build-again! latex-dest info with-record-error)
+(define (build-again! latex-dest info with-record-error setup-printf)
   (define doc (info-doc info))
   (define renderer (make-renderer latex-dest doc))
-  (printf "setup-plt: ~a: ~arendering\n" 
-          (path->name (doc-src-file doc))
-          (if (info-rendered? info) "re-" ""))
+  (setup-printf (format "~arendering"
+                        (if (info-rendered? info) "re-" ""))
+                "~a"
+                (path->name (doc-src-file doc)))
   (set-info-rendered?! info #t)
   (with-record-error
    (doc-src-file doc)

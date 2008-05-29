@@ -46,11 +46,18 @@
           launcher^)
   (export)
 
-  (define (setup-fprintf p s . args)
-    (apply fprintf p (string-append "setup-plt: " s "\n") args))
+  (define (setup-fprintf p task s . args)
+    (apply fprintf p (string-append "setup-plt: " 
+                                    (if task
+                                        (string-append
+                                         task
+                                         ": ")
+                                        "")
+                                    s 
+                                    "\n") args))
 
-  (define (setup-printf s . args)
-    (apply setup-fprintf (current-output-port) s args))
+  (define (setup-printf task s . args)
+    (apply setup-fprintf (current-output-port) task s args))
 
   (define (exn->string x) (if (exn? x) (exn-message x) (format "~s" x)))
 
@@ -72,16 +79,16 @@
   (current-library-collection-paths
    (map simplify-path (current-library-collection-paths)))
 
-  (setup-printf "Setup version is ~a [~a]" (version) (system-type 'gc))
-  (setup-printf "Available variants:~a"
+  (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
+  (setup-printf "variants" "~a"
                 (apply string-append
                        (map (lambda (s) (format " ~a" s))
                             (available-mzscheme-variants))))
-  (setup-printf "Main collection path is ~a" main-collects-dir)
-  (setup-printf "Collection search path is~a"
+  (setup-printf "main collects" "~a" (path->string main-collects-dir))
+  (setup-printf "collects paths" 
                 (if (null? (current-library-collection-paths)) " empty!" ""))
   (for ([p (current-library-collection-paths)])
-    (setup-printf "  ~a" (path->string p)))
+    (setup-printf #f "  ~a" (path->string p)))
 
   (define (call-info info flag mk-default test)
     (let ([v (info flag mk-default)]) (test v) v))
@@ -109,14 +116,14 @@
   (define (show-errors port)
     (for ([e (reverse errors)])
       (match-let ([(list cc desc x) e])
-        (setup-fprintf port "Error during ~a for ~a"
+        (setup-fprintf port "error" "during ~a for ~a"
                        desc (if (cc? cc) (cc-name cc) cc))
-        (setup-fprintf port "  ~a" (exn->string x)))))
+        (setup-fprintf port #f "  ~a" (exn->string x)))))
 
   (define (done)
-    (setup-printf "Done setting up")
+    (setup-printf #f "done")
     (unless (null? errors)
-      (setup-printf "")
+      (setup-fprintf #f "")
       (show-errors (current-error-port))
       (when (pause-on-errors)
         (fprintf (current-error-port)
@@ -135,7 +142,7 @@
            (map (lambda (x)
                   (unpack x
                           (build-path main-collects-dir 'up)
-                          (lambda (s) (setup-printf "~a" s))
+                          (lambda (s) (setup-printf #f "~a" s))
                           (current-target-directory-getter)
                           (force-unpacks)
                           (current-target-plt-directory-getter)))
@@ -183,7 +190,8 @@
           (error 'make-cc*
                  "Internal error: cc had invalid info-path: ~e" path))))
     (when (info 'compile-subcollections (lambda () #f))
-      (setup-printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
+      (setup-printf "WARNING" 
+                    "ignoring `compile-subcollections' entry in info ~a\n"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
     (and (not (or (regexp-match? #rx"^[.]" basename) (equal? "compiled" basename)
@@ -193,7 +201,7 @@
                   info root-dir info-path shadowing-policy)))
 
   (define ((warning-handler v) exn)
-    (setup-printf "Warning: ~a" (exn->string exn))
+    (setup-printf "WARNING" "~a" (exn->string exn))
     v)
 
   ;; collection->cc : listof path -> cc/#f
@@ -351,7 +359,8 @@
       (for ([cc given-ccs])
         (let ([mark (cc-mark cc)])
           (when (file-exists? mark)
-            (setup-printf "Warning: found a marker file, deleting: ~a"
+            (setup-printf "WARNING" 
+                          "found a marker file, deleting: ~a"
                           (path->name mark))
             (delete-file mark)))))
     ;; Now create all marker files, signalling an error if duplicate
@@ -479,8 +488,8 @@
               (lambda ()
                 (unless printed?
                   (set! printed? #t)
-                  (setup-printf "Deleting files for ~a at ~a"
-                                (cc-name cc) (path->name (cc-path cc)))))])
+                  (setup-printf "deleting" "in ~a"
+                                (path->name (cc-path cc)))))])
         (for ([path paths])
           (let ([full-path (build-path (cc-path cc) path)])
             (when (or (file-exists? full-path) (directory-exists? full-path))
@@ -517,7 +526,7 @@
       ;;  delete .zos for referenced modules and delete
       ;;  info-domain cache
       (when no-specific-collections?
-        (setup-printf "Checking dependencies")
+        (setup-printf #f "checking dependencies")
         (let loop ([old-dependencies dependencies])
           (let ([dependencies (make-hash)]
                 [did-something? #f])
@@ -529,11 +538,11 @@
                         [dep (build-path dir mode-dir (path-add-suffix name #".dep"))])
                    (when (and (file-exists? dep) (file-exists? zo))
                      (set! did-something? #t)
-                     (setup-printf "  deleting ~a" (path->name zo))
+                     (setup-printf " deleting ~a" (path->name zo))
                      (delete-file/record-dependency zo dependencies)
                      (delete-file/record-dependency dep dependencies))))))
             (when did-something? (loop dependencies))))
-        (setup-printf "Clearing info-domain caches")
+        (setup-printf #f "clearing info-domain caches")
         (for ([p (current-library-collection-paths)])
           (let ([fn (build-path p "info-domain" "compiled" "cache.ss")])
             (when (file-exists? fn)
@@ -575,8 +584,9 @@
                                           [(pre)     'pre-installer]
                                           [(general) 'installer]
                                           [(post)    'post-installer])))])
-                (setup-printf "~aInstalling ~a"
-                              (case part [(pre) "Pre-"] [(post) "Post-"] [else ""])
+                (setup-printf (format "~ainstalling"
+                                      (case part [(pre) "pre-"] [(post) "post-"] [else ""]))
+                              "~a"
                               (cc-name cc))
                 (let ([dir (build-path main-collects-dir 'up)])
                   (if (procedure-arity-includes? installer 2)
@@ -591,23 +601,27 @@
     ;; To avoid keeping modules in memory across collections, pass
     ;; `make-base-namespace' as `get-namespace', otherwise use
     ;; `current-namespace' for `get-namespace'.
-    (for ([cc ccs-to-compile])
-      (parameterize ([current-namespace (get-namespace)])
-        (begin-record-error cc (format "~a: compiling..." desc)
-          (unless (control-io-apply
-                   (case-lambda
+    (let ([gc? #f])
+      (for ([cc ccs-to-compile])
+        (parameterize ([current-namespace (get-namespace)])
+          (begin-record-error 
+           cc (format "~a: compiling..." desc)
+           (unless (control-io-apply
+                    (case-lambda
                      [(p)
                       ;; Main "doing something" message
-                      (setup-fprintf p "~a: compiling ~a" (cc-name cc) desc)]
+                      (set! gc? #t)
+                      (setup-fprintf p "making" "~a" (cc-name cc))]
                      [(p where)
                       ;; Doing something specifically in "where"
-                      (setup-fprintf p "  in ~a"
+                      (setup-fprintf p #f " in ~a"
                                      (path->name (path->complete-path
                                                   where (cc-path cc))))])
-                   compile-directory
-                   (list (cc-path cc) (cc-info cc)))
-            (setup-printf "~a: all ~a done" (cc-name cc) desc))))
-      (collect-garbage)))
+                    compile-directory
+                    (list (cc-path cc) (cc-info cc)))
+             (setup-printf "making" "~a" (cc-name cc)))))
+        (when gc?
+          (collect-garbage)))))
 
   (define (with-specified-mode thunk)
     (if (not (compile-mode))
@@ -658,7 +672,7 @@
                           (for ([p (directory-list c)])
                             (when (and (regexp-match #rx#".zo$" (path-element->bytes p))
                                        (not (hash-ref ok-zo-files p #f)))
-                              (setup-fprintf (current-error-port) " deleting ~a" (build-path c p))
+                              (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                               (delete-file (build-path c p))))))))
                   ;; Make .zos
                   (compile-directory-zos dir info))
@@ -752,7 +766,7 @@
                        info-path))
               (make-directory* base)
               (let ([p info-path])
-                (setup-printf "Updating ~a" (path->name p))
+                (setup-printf "updating" "~a" (path->name p))
                 (with-handlers ([exn:fail? (warning-handler (void))])
                   (with-output-to-file p
                     #:exists 'truncate/replace
@@ -777,17 +791,18 @@
       (dynamic-require 'setup/scribble 'setup-scribblings)))
 
   (when (make-docs)
-    (setup-printf "Building documentation")
+    (setup-printf #f "building documentation")
     ((doc:verbose) (verbose))
     (with-handlers ([exn:fail?
                      (lambda (exn)
-                       (setup-printf "Docs failure: ~a" (exn->string exn)))])
+                       (setup-printf #f "docs failure: ~a" (exn->string exn)))])
       ((doc:setup-scribblings)
        (if no-specific-collections? #f (map cc-path ccs-to-compile))
        #f
        (not (null? (archives)))
        (make-user)
-       (lambda (what go alt) (record-error what "Building docs" go alt)))))
+       (lambda (what go alt) (record-error what "Building docs" go alt))
+       setup-printf)))
 
   (define (render-pdf file)
     (define cmd
@@ -797,8 +812,8 @@
       (when (= n 5)
         (error 'render-pdf "didn't get a stable result after ~a runs" n))
       (if (zero? n)
-        (setup-printf "running pdflatex on ~a" file)
-        (setup-printf "  re-running ~a~a time"
+        (setup-printf "running" "pdflatex on ~a" file)
+        (setup-printf #f " re-running ~a~a time"
                       (add1 n) (case (add1 n) [(2) 'nd] [(3) 'rd] [else 'th])))
       (unless (system cmd)
         (call-with-input-file logfile
@@ -812,12 +827,13 @@
            (lambda (log) (regexp-match? #px#"changed\\.\\s+Rerun" log)))
          (loop (add1 n))]
         [(zero? n)
-         (setup-printf "Warning: no \"Rerun\" found in first run of pdflatex for ~a"
+         (setup-printf "WARNING" 
+                       "no \"Rerun\" found in first run of pdflatex for ~a"
                        file)]))
     (path-replace-suffix file #".pdf"))
 
   (when (doc-pdf-dest)
-    (setup-printf "Building PDF documentation (via pdflatex)")
+    (setup-printf #f "building PDF documentation (via pdflatex)")
     (let ([dest-dir (path->complete-path (doc-pdf-dest))])
       (unless (directory-exists? dest-dir)
         (make-directory dest-dir))
@@ -880,7 +896,8 @@
               [(not (or mzlls mzlfs))
                (unless (null? mzlns)
                  (setup-printf
-                  "Warning: ~a launcher name list ~s has no matching library/flags lists"
+                  "WARNING"
+                  "~a launcher name list ~s has no matching library/flags lists"
                   kind mzlns))]
               [(and (or (not mzlls) (= (length mzlns) (length mzlls)))
                     (or (not mzlfs) (= (length mzlns) (length mzlfs))))
@@ -895,12 +912,13 @@
                                      (build-path (cc-path cc)
                                                  (path-replace-suffix (or mzll mzln) #""))))])
                     (unless (up-to-date? p aux)
-                      (setup-printf "Installing ~a~a launcher ~a"
+                      (setup-printf "launcher"
+                                    "~a [~a~a]"
+                                    (path->string p)
                                     kind (let ([v (current-launcher-variant)])
                                            (if (eq? v (system-type 'gc))
                                              ""
-                                             (format " ~a" v)))
-                                    (path->string p))
+                                             (format " ~a" v))))
                       (make-launcher
                        (or mzlf
                            (if (cc-collection cc)
@@ -923,7 +941,8 @@
               [else
                (let ([fault (if (or (not mzlls) (= (length mzlns) (length mzlls))) 'f 'l)])
                  (setup-printf
-                  "Warning: ~a launcher name list ~s doesn't match ~a list; ~s"
+                  "WARNING"
+                  "~a launcher name list ~s doesn't match ~a list; ~s"
                   kind mzlns
                   (if (eq? 'l fault) "library" "flags")
                   (if (eq? fault 'l) mzlls mzlfs)))]))
