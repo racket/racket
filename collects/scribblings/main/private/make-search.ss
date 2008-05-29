@@ -155,7 +155,7 @@
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
                  +'onchange="search_handler(event);"'
-                 +'onkeypress="search_handler(event);" />'
+                 +'onkeypress="return search_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
           +'<a href="#" title="Previous Page"'
@@ -249,10 +249,14 @@
     }
 
     function PageDn() {
-      first_search_result += results_num@";" UpdateResults()@";"
+      if (first_search_result + results_num < search_results.length) {
+        first_search_result += results_num;
+        UpdateResults();
+      }
     }
     function PageUp() {
-      first_search_result -= results_num@";" UpdateResults()@";"
+      first_search_result -= results_num;
+      UpdateResults();
     }
 
     function UncompactUrl(url) {
@@ -323,10 +327,11 @@
         clearTimeout(t);
       }
       var key = event && event.keyCode;
-      if (key == 13) DoSearch();
-      else if (key == 33) PageUp();
-      else if (key == 34) PageDn();
+      if (key == 13) { DoSearch()@";" return false@";" }
+      else if (key == 33) { PageUp()@";" return false@";" }
+      else if (key == 34) { PageDn()@";" return false@";" }
       else search_timer = setTimeout(DoSearch, 400);
+      return true;
     }
 
     search_handler = DelayedSearch;
