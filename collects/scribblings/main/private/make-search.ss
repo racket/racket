@@ -3,7 +3,7 @@
 
 (require scribble/decode
          scribble/struct
-         ;; scribble/manual-struct
+         scribble/manual-struct
          scheme/list
          scheme/string
          scheme/match
@@ -38,23 +38,41 @@
     (for/list ([i l])
       ;; i is (list tag (text ...) (element ...) index-desc)
       (define-values (tag texts elts desc) (apply values i))
+      (define text (string-downcase (string-join texts " ")))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-element e sec ri)])
           (match e ; should always render to a single `a'
             [`((a ([href ,href] [class "indexlink"]) . ,body))
-             (values href (string-append* (map xexpr->string body)))]
-            [else (error 'zzz "something bad happened ~s" e)])))
-      ;; (and (exported-index-desc? desc)
-      ;;      (list (exported-index-desc-name desc)
-      ;;            (exported-index-desc-from-libs desc)))
+             (let (;; throw away tooltips, we don't need them
+                   [body (match body
+                           [`((span ((title ,label)) . ,body))
+                            (if (regexp-match? #rx"^Provided from: " label)
+                              body
+                              ;; if this happens, this code should be updated
+                              (error "internal error: unexpected tooltip"))]
+                           [else body])])
+               (values href (string-append* (map xexpr->string body))))]
+            [else (error "something bad happened")])))
+      (define from-libs
+        (if (exported-index-desc? desc)
+          (string-append*
+           `("["
+             ,@(add-between
+                (map (lambda (x)
+                       (format "~s" (match x
+                                      [(? symbol?) (symbol->string x)]
+                                      [`',(? symbol? x)
+                                       (string-append "'" (symbol->string x))])))
+                     (exported-index-desc-from-libs desc))
+                ", ")
+             "]"))
+          "false"))
       ;; Note: using ~s to have javascript-quoted strings
-      (format "[~s, ~s, ~s]"
-              (string-downcase (string-join texts " "))
-              href
-              html)))
+      (format "[~s, ~s, ~s, ~a]" text href html from-libs)))
   (set! l (add-between l ",\n"))
+
   @script[#:noscript @list{Sorry, you must have JavaScript to use this page.}]{
     // this vector has an entry for each index link: [text, url, html]
     plt_search_data = [
@@ -79,7 +97,7 @@
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
                  +'onchange="search_handler(event);"'
-                 +'onkeyup="search_handler(event);" />'
+                 +'onkeypress="search_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
           +'<a href="#" title="Previous Page"'
@@ -142,9 +160,10 @@
     var last_search_terms;
     var search_results, first_search_result;
     function DoSearch() {
-      var terms = query.value.toLowerCase()
-                       .replace(/\s\s*/g," ") // single spaces
-                       .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+      var terms =
+        query.value.toLowerCase()
+             .replace(/\s\s*/g," ")                  // single spaces
+             .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
       if (terms == last_search_terms) return;
       last_search_terms = terms;
       status.nodeValue = "Searching " + plt_search_data.length + " entries";
@@ -185,9 +204,21 @@
       for (var i=0@";" i<result_links.length@";" i++) {
         var n = i + first_search_result;
         if (n < search_results.length) {
+          var desc = "";
+          if (search_results[n][3]) {
+            for (var j=0@";" j<search_results[n][3].length@";" j++)
+              desc += (j==0 ? "" : ", " )
+                      + '<span class="schememod">'
+                      + search_results[n][3][j]
+                      + '</span>';
+            desc = '&nbsp;&nbsp;'
+                   + '<span style="font-size: 80%;">'
+                   + '<span style="font-size: 80%;">from</span> '
+                   + desc + '</span>';
+          }
           result_links[i].innerHTML =
             '<a href="'+search_results[n][1]+'" class="indexlink">'
-            + search_results[n][2] + '</a>';
+            + search_results[n][2] + '</a>' + desc;
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
@@ -200,9 +231,10 @@
       else
         status.nodeValue =
           "Showing "
-          + (first_search_result+1) + "--"
+          + (first_search_result+1) + "-"
           + Math.min(first_search_result+results_num,search_results.length)
-          + " of " + search_results.length + " matches";
+          + " of " + search_results.length
+          + ((search_results.length==plt_search_data.length) ? "" : " matches");
     }
 
     var search_timer = null;
