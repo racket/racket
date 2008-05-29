@@ -121,9 +121,13 @@
       (send java-keymap add-function "tabify-at-caret" (λ (edit event) (send edit java-tabify-selection)))
       (send java-keymap map-function "TAB" "tabify-at-caret")
       
-      (define defs-text-mixin
+      (send java-keymap add-function "insert-{" (lambda (edit event) (send edit open-brace)))
+      (send java-keymap map-function "{" "insert-{")
+      (keymap:send-map-function-meta java-keymap "{" "insert-{")
+      
+      (define indent-mixin
         (mixin (color:text<%> editor:keymap<%>) ()
-          (inherit insert classify-position
+          (inherit insert classify-position set-position
                    get-start-position get-end-position get-character delete
                    backward-match backward-containing-sexp
                    find-string position-paragraph paragraph-start-position
@@ -141,7 +145,7 @@
               (and sexp-start+whitespace
                    (skip-whitespace sexp-start+whitespace 'backward #t))))
           
-          (define/private (get-indentation start-pos trim?)
+          (define/private (get-indentation start-pos)
             (letrec ([last-offset
                       (lambda (previous-line last-line-start)
                         (max (sub1 (if (> last-line-start start-pos)
@@ -210,7 +214,7 @@
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
                                         [else (+ single-tab-stop last-line-indent)]))]))])))])
-              (build-string (max (if trim? (- indent single-tab-stop) indent) 0) (λ (x) #\space))))
+              (build-string (max indent 0) (λ (x) #\space))))
           
           (define/public (do-return)
             (let ([start-pos (get-start-position)]
@@ -218,22 +222,27 @@
               #;(printf "do-return start-pos ~a end-pos ~a" start-pos end-pos)
               #;(printf "get-character sp ~a~n" (get-character (sub1 start-pos)))
               (if (= start-pos end-pos)
-                  (cond
-                    [(and (> start-pos 0) 
-                          (eq? (get-character (sub1 start-pos)) #\})
-                          (eq? (classify-position (sub1 start-pos)) 'keyword))
-                     (insert (string-append "\n" (get-indentation start-pos #t)))]
-                    [else
-                     (insert (string-append "\n" (get-indentation start-pos #f)))])
+                  (insert (string-append "\n" (get-indentation start-pos)))
                   (insert "\n"))))
           
+          (define/public (open-brace)
+            (let ([start-pos (get-start-position)]
+                  [end-pos (get-end-position)])
+              (cond 
+                [(and (= start-pos end-pos) 
+                      (not (memq (classify-position start-pos) '(comment block-comment string error))))
+                 (insert (string-append "{\n" (get-indentation start-pos) "}"))
+                 (set-position (add1 start-pos))
+                 ]
+                [else (insert "{")])))
+                 
           (define/public (java-tabify-selection)
             (let ([start-para (position-paragraph (get-start-position))]
                   [end-para (position-paragraph (get-end-position))])
               (begin-edit-sequence)
               (let loop ([para start-para])
                 (let* ([para-start (paragraph-start-position para)]
-                       [insertion (get-indentation (max 0 (sub1 para-start)) #f)]
+                       [insertion (get-indentation (max 0 (sub1 para-start)))]
                        [closer? #f])
                   (let loop ()
                     (let ([c (get-character para-start)])
@@ -1237,7 +1246,8 @@
           (register-capability-menu-item 'profj:special:java-interactions-box (get-insert-menu))
           ))
       
-      (drscheme:get/extend:extend-definitions-text defs-text-mixin)
+      (drscheme:get/extend:extend-definitions-text indent-mixin)
+      (drscheme:get/extend:extend-interactions-text indent-mixin)
       (drscheme:get/extend:extend-unit-frame java-interactions-box-mixin)
       (drscheme:language:register-capability 'profj:special:java-interactions-box (flat-contract boolean?) #t)
  
