@@ -7,8 +7,10 @@
          scheme/list
          scheme/string
          scheme/match
+         net/url
          (only-in scheme/class send)
          (only-in xml xexpr->string)
+         (only-in setup/dirs find-doc-dir)
          "utils.ss")
 
 (provide make-search)
@@ -25,6 +27,49 @@
 
 (define (make-script renderer sec ri)
   (define l null)
+  (define span-classes null)
+  ;; To make the index smaller, html contents is represented as one of these:
+  ;; - a string
+  ;; - an array of contents to be concatenated
+  ;; - a two-item array [idx, content], where idx is an index into the
+  ;;   span-classes table holding a class name.
+  ;; In addition, a "file:/main-doc.../path..." url is saved as ">path..."
+  ;; This function does the url compacting.
+  (define main-url ; (make sure that it teminates with a slash)
+    (regexp-replace #rx"/*$" (url->string (path->url (find-doc-dir))) "/"))
+  (define compact-url
+    (let ([rx (regexp (string-append "^" (regexp-quote main-url)))])
+      (lambda (url) (regexp-replace rx url ">"))))
+  ;; This function does the html compacting.
+  (define (compact-body xexprs)
+    (define (compact xexprs)
+      (match xexprs
+        [`() xexprs]
+        [`("" . ,r) (compact r)]
+        [`(,(? string? s1) ,(? string? s2) . ,r)
+         (compact `(,(string-append s1 s2) . ,r))]
+        [`((span ([class ,c]) . ,b1) (span ([class ,c]) . ,b2) . ,r)
+         (compact `((span ([class ,c]) ,@b1 ,@b2) . ,r))]
+        [`((span ([class ,c]) . ,b) . ,r)
+         (let ([c (cond [(assoc c span-classes) => cdr]
+                        [else (let ([n (length span-classes)])
+                                (set! span-classes
+                                      (cons (cons c n) span-classes))
+                                n)])])
+           (cons `(,c . ,(compact-body b)) (compact r)))]
+        [`(,x . ,r) (cons (xexpr->string x) (compact r))]))
+    ;; generate javascript array code
+    (let loop ([body (compact xexprs)])
+      (if (andmap string? body)
+        (format "~s" (string-append* body))
+        (let ([body (map (lambda (x)
+                           (if (string? x)
+                             (format "~s" x)
+                             (format "[~a,~a]" (car x) (cdr x))))
+                         body)])
+          (if (= 1 (length body))
+            (car body)
+            (string-append* `("[" ,@(add-between body ",") "]")))))))
   (hash-for-each
    (let ([parent (collected-info-parent (part-collected-info sec ri))])
      (if parent
@@ -53,7 +98,7 @@
                               ;; if this happens, this code should be updated
                               (error "internal error: unexpected tooltip"))]
                            [else body])])
-               (values href (string-append* (map xexpr->string body))))]
+               (values (compact-url href) (compact-body body)))]
             [else (error "something bad happened")])))
       (define from-libs
         (if (exported-index-desc? desc)
@@ -66,15 +111,28 @@
                                       [`',(? symbol? x)
                                        (string-append "'" (symbol->string x))])))
                      (exported-index-desc-from-libs desc))
-                ", ")
+                ",")
              "]"))
           "false"))
       ;; Note: using ~s to have javascript-quoted strings
-      (format "[~s, ~s, ~s, ~a]" text href html from-libs)))
+      (format "[~s,~s,~a,~a]" text href html from-libs)))
   (set! l (add-between l ",\n"))
 
   @script[#:noscript @list{Sorry, you must have JavaScript to use this page.}]{
-    // this vector has an entry for each index link: [text, url, html]
+    // the url of the main doc tree, for compact url
+    // representation (see also the UncompactUrl function)
+    plt_main_url = @(format "~s" main-url);
+    // classes to be used for compact representation of html strings in
+    // plt_search_data below (see also the UncompactHtml function)
+    plt_span_classes = [
+      @(add-between (map (lambda (x) (format "~s" (car x)))
+                         (reverse span-classes))
+                    ",\n  ")];
+    // this array has an entry for each index link: [text, url, html, from-lib]
+    // - text is a string holding the indexed text
+    // - url holds the link (">" prefix means relative to plt_main_url)
+    // - html holds either a string, or [idx, html] where idx is an
+    //   index into plt_span_classes (note: this is recursive)
     plt_search_data = [
     @l];
 
@@ -197,6 +255,25 @@
       first_search_result -= results_num@";" UpdateResults()@";"
     }
 
+    function UncompactUrl(url) {
+      return url.replace(/^>/, plt_main_url);
+    }
+
+    function UncompactHtml(x) {
+      if (typeof x == "string") {
+        return x;
+      } else if (! (x instanceof Array)) {
+        alert("Internal error in PLT docs");
+      } else if ((x.length == 2) && (typeof(x[0]) == "number")) {
+        return '<span class="' + plt_span_classes[x[0]]
+               + '">' + UncompactHtml(x[1]) + '</span>';
+      } else {
+        var s = "";
+        for (var i=0@";" i<x.length@";" i++) s = s.concat(UncompactHtml(x[i]));
+        return s;
+      }
+    }
+
     function UpdateResults() {
       if (first_search_result < 0 ||
           first_search_result >= search_results.length)
@@ -217,8 +294,9 @@
                    + desc + '</span>';
           }
           result_links[i].innerHTML =
-            '<a href="'+search_results[n][1]+'" class="indexlink">'
-            + search_results[n][2] + '</a>' + desc;
+            '<a href="'
+            + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
+            + UncompactHtml(search_results[n][2]) + '</a>' + desc;
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
