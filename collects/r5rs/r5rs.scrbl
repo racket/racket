@@ -81,10 +81,9 @@ loaded, if it exists. The file is the same as the file reported by
 example, under Unix, the file is @filepath{~/.pltr5rsrc}.
 
 By default, @exec{plt-r5rs} departs from @|r5rs| conformance in one
-crucial way: the initial bindings of primitives correspond to module
-imports into the top-level environment, instead of variable bindings.
-This difference is visible if the name of a primitive is redefined at
-the top level. Use the @as-index{@DFlag{no-prim}} command-line
+crucial way: the names of pre-defined functions cannot be redefined at
+the top level. This restriction enables better run-time
+performance. Use the @as-index{@DFlag{no-prim}} command-line
 flag---before a file to load, if any---to obtain the standard behavior
 for primitive bindings (at the cost of performance).
 

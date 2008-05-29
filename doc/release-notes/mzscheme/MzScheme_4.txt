@@ -113,15 +113,15 @@ changes:
    considered real (or rational), and +inf.0, -inf.0, and +nan.0 are
    no longer considered rational (or integers).
 
- - In fully expanded code, `#%datum' expands to `quote'. When using
-   the `mzscheme' language, beware that `if' in expansions is the `if'
-   of `scheme/base'. When using the `scheme/base' language, beware
-   that `lambda' and `#%app' expand to `#%plain-lambda' and
-   `#%plain-app' (which are also the `lambda' and `#%app' of the
-   `mzscheme' language). The `require' and `provide' forms expand to
-   `#%require' and `#%provide'. Finally, beware that `#%datum' in
-   `scheme/base' is different than in `mzscheme' (because the former
-   disallows unquoted keywords as expressions).
+ - In fully expanded code, `#%datum' expands to `quote'. Even when
+   using the `mzscheme' language, beware that `if' in fully expanded
+   code is the `if' of `scheme/base'. When using the `scheme/base'
+   language, beware that `lambda' and `#%app' expand to
+   `#%plain-lambda' and `#%plain-app' (which are also `lambda' and
+   `#%app' of the `mzscheme' language). The `require' and `provide'
+   forms expand to `#%require' and `#%provide'. Finally, beware that
+   `#%datum' in `scheme/base' is different than in `mzscheme' (because
+   the former disallows unquoted keywords as expressions).
 
  - The naming convention for compiled files has changed to preserve
    the original file suffix. For example, the bytecode version of
@@ -155,16 +155,16 @@ changes:
  Porting Advice
 ======================================================================
 
-The best approach to moving to v4 depends on the kind of code that
+The best approach to moving to v4.0 depends on the kind of code that
 you're working with.
 
 Non-module Programs
 -------------------
 
-If the prgram is not in a module, then the best start is to put it
-into one. The module system is there help manage code across multiple
-dialects of Scheme, so staying outside of modules while upgrading
-means that you're ignoring the main upgrade tool.
+If the program is not in a module, then the best start is to put it
+into one. The module system's job is to manage code across multiple
+dialects of Scheme, so staying outside of the module system while
+upgrading means that you're ignoring the main upgrade tool.
 
 The module notation is much lighter than before, so putting old code
 into a module may be as easy as adding `#lang scheme' to the beginning
@@ -181,7 +181,7 @@ Modules Using the `mzscheme' Language
 -------------------------------------
 
 If the program is (now) in a `mzscheme' module, then it might work
-fine as-is. The bindings of the `mzscheme' module in v3 and v4 are
+fine as-is. The bindings of the `mzscheme' module in v372 and v4.0 are
 mostly the same, with two main caveats:
 
  * Pairs are immutable in the new `mzscheme'.
@@ -205,7 +205,7 @@ mostly the same, with two main caveats:
    keyword-consuming functions from those libraries are difficult to
    use in `mzscheme' without explicitly importing and using `#%app'
    from `scheme/base'. Fortunately, keyword arguments were
-   infrequently used in PLT libraries before v4.
+   infrequently used in PLT libraries before v4.0.
 
 If these sorts of problems start to give you trouble, or if the
 relevant code is likely to be useful for a long time, then you're
