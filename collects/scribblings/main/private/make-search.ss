@@ -294,7 +294,7 @@
                       + '</span>';
             desc = '&nbsp;&nbsp;'
                    + '<span style="font-size: 80%;">'
-                   + '<span style="font-size: 80%;">from</span> '
+                   + '<span style="font-size: 80%;">provided from</span> '
                    + desc + '</span>';
           }
           result_links[i].innerHTML =
