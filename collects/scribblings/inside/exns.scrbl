@@ -405,21 +405,33 @@ passed on to @cpp{scheme_wrong_type}. As in @cpp{scheme_wrong_type},
 @var{which} can be -1, in which case @cpp{*}@var{argv} is checked.}
 
 @function[(Scheme_Object* scheme_dynamic_wind
+           [Pre_Post_Proc pre]
+           [Action_Proc action]
+           [Pre_Post_Proc post]
+           [Action_Proc jmp_handler]
            [void* data])]{
 
 Evaluates calls the function @var{action} to get a value for the
-@cpp{scheme_dynamic_wind} call. The functions @var{pre} and
- @var{post} are invoked when jumping into and out of @var{action},
- respectively.
+ @cpp{scheme_dynamic_wind} call. The @cpp{Pre_Post_Proc} and
+ @cpp{Action_Proc} types are not actually defined; instead the types
+ are inlined as if they were defined as follows:
+
+@verbatim[#:indent 2]{
+typedef void (*Pre_Post_Proc)(void *data);
+typedef Scheme_Object* (*Action_Proc)(void *data);
+}
+
+The functions @var{pre} and @var{post} are invoked when jumping into
+ and out of @var{action}, respectively.
 
 The function @var{jmp_handler} is called when an error is signaled (or
-an escaping continuation is invoked) during the call to @var{action};
-if @var{jmp_handler} returns @cpp{NULL}, then the error is passed on
-to the next error handler, otherwise the return value is used as the
-return value for the @cpp{scheme_dynamic_wind} call.
+ an escaping continuation is invoked) during the call to @var{action};
+ if @var{jmp_handler} returns @cpp{NULL}, then the error is passed on
+ to the next error handler, otherwise the return value is used as the
+ return value for the @cpp{scheme_dynamic_wind} call.
 
 The pointer @var{data} can be anything; it is passed along in calls to
-@var{action}, @var{pre}, @var{post}, and @var{jmp_handler}.}
+ @var{action}, @var{pre}, @var{post}, and @var{jmp_handler}.}
 
 @function[(void scheme_clear_escape)]{
 
