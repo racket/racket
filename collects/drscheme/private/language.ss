@@ -19,7 +19,8 @@
            framework
            (lib "syntax-browser.ss" "mrlib")
            compiler/distribute
-           compiler/bundle-dist)
+           compiler/bundle-dist
+           "rep.ss")
   
   (import [prefix drscheme:debug: drscheme:debug^]
           [prefix drscheme:tools: drscheme:tools^]
@@ -106,21 +107,6 @@
       get-reader))
   
   
-  
-  ;                  ;;;          
-  ;          
-  ;          
-  ;;;   ;;;   ;;; ;  ; ;;;     ;     ;;;  
-  ;   ;    ;    ; ; ;  ;   ;    ;    ;   ; 
-  ;;;     ;    ; ; ;  ;   ;    ;    ;;;;; 
-  ;    ;    ; ; ;  ;   ;    ;    ;     
-  ;   ;    ;    ; ; ;  ;   ;    ;    ;   ; 
-  ;;;   ;;;;; ;; ; ;; ;;;;   ;;;;;;  ;;;  
-  ;                   
-  ;                   
-  ;;;                  
-  
-  
   (define simple-module-based-language%
     (class* object% (simple-module-based-language<%>)
       (init-field module
@@ -131,7 +117,8 @@
                   (documentation-reference #f)
                   (reader (λ (src port)
                             (let ([v (parameterize ([read-accept-reader #t])
-                                       (read-syntax src port))])
+                                        (with-stacktrace-name 
+                                         (read-syntax src port)))])
                               (if (eof-object? v)
                                   v
                                   (namespace-syntax-introduce v)))))
@@ -146,19 +133,6 @@
       (define/public (get-language-url) language-url)
       (define/public (get-reader) reader)
       (super-instantiate ())))
-  
-  
-  
-  ;;         ;;;                 ;;                              ;; 
-  ;           ;                  ;                               ; 
-  ;                       ;           ;                  ;                               ; 
-  ;   ;;; ;    ;;;    ;;;; ;;  ;;    ;     ;;;          ;;;;   ;;;;    ;;;    ;;;    ;;;; 
-  ;   ; ; ;  ;   ;  ;   ;  ;   ;    ;    ;   ;         ;   ;      ;  ;   ;  ;   ;  ;   ; 
-  ;;;;;      ;  ; ; ;  ;   ;  ;   ;  ;   ;    ;    ;;;;;  ;;;;;  ;   ;   ;;;;   ;;;   ;;;;;  ;   ; 
-  ;   ; ; ;  ;   ;  ;   ;  ;   ;    ;    ;             ;   ;  ;   ;      ;  ;      ;   ; 
-  ;    ; ; ;  ;   ;  ;   ;  ;   ;    ;    ;   ;         ;   ;  ;   ;  ;   ;  ;   ;  ;   ; 
-  ;    ;; ; ;;  ;;;    ;;; ;  ;;; ; ;;;;;;  ;;;         ; ;;;    ;;; ;  ;;;    ;;;    ;;; ;
-  
   
   
   
@@ -500,23 +474,6 @@
          (current-inspector (make-inspector))
          (error-value->string-handler executable-error-value->string-handler)
          (read-case-sensitive ,(simple-settings-case-sensitive setting)))))
-  
-  
-  
-  
-  ;;;                                                    
-  ;                                                    
-  ;       ;                                                    
-  ;      ;    ;;;;  ; ;;;    ;;; ;;;  ;;  ;;;;    ;;; ;  ;;;  
-  ;     ;        ;  ;;  ;  ;   ;  ;   ;      ;  ;   ;  ;   ; 
-  ;;;;;      ;    ;     ;;;;  ;   ;  ;   ;  ;   ;   ;;;;  ;   ;  ;;;;; 
-  ;     ;    ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;     
-  ;      ;    ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ;  ;   ; 
-  ;     ;;;;;;  ;;; ;;;;  ;;  ;;;;   ;;; ;  ;;; ;  ;;;;   ;;;  
-  ;                    ;        
-  ;                    ;        
-  ;;;                  ;;;         
-  
   
   
   ;; module-based-language->language : module-based-language -> language<%>
@@ -1147,7 +1104,8 @@
             (namespace-syntax-introduce
              (datum->syntax 
               #f 
-              (cons '#%top-interaction s)))
+              (cons '#%top-interaction s)
+              s))
             s))))
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

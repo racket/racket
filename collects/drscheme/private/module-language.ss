@@ -424,8 +424,7 @@
                                    stx))
          ;; rewrite the module to use the scheme/base version of `module'
          (values v-name 
-                 #`(#,(datum->syntax #'here 'module)
-                    name lang bodies ...)))]
+                 #`(#,(datum->syntax #'here 'module) name lang bodies ...)))]
       [else
        (raise-syntax-error 'module-language
                            "only module expressions are allowed"

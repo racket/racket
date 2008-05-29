@@ -1124,13 +1124,10 @@ If the namespace does not, they are colored the unbound color.
                                      (λ () ;; =drs=
                                        (show-error-report/tab))))
                                   
-                                  (drscheme:debug:show-error-and-highlight 
-                                   msg exn 
-                                   (λ (src-to-display cms) ;; =user=
-                                     (parameterize ([current-eventspace drs-eventspace])
-                                       (queue-callback
-                                        (λ () ;; =drs=
-                                          (send (send the-tab get-ints) highlight-errors src-to-display cms))))))
+                                  (drscheme:debug:error-display-handler/stacktrace 
+                                   msg 
+                                   exn 
+                                   '())
                                   
                                   (semaphore-post error-display-semaphore)))
                                

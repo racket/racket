@@ -52,26 +52,26 @@
      test-coverage-tab-mixin))
   (define-signature drscheme:debug^ extends drscheme:debug-cm^
     (make-debug-error-display-handler
-     make-debug-error-display-handler/text
      make-debug-eval-handler
-     hide-backtrace-window
-     print-bug-to-stderr
+     error-display-handler/stacktrace
      
      test-coverage-enabled
-
      profiling-enabled
 
      add-prefs-panel
      
      get-error-color
      
-     show-error-and-highlight
-     open-and-highlight-in-file
+     hide-backtrace-window
      show-backtrace-window
+     open-and-highlight-in-file
      get-cm-key
      
-     display-srcloc-in-error
-     show-syntax-error-context))
+     ;show-error-and-highlight
+     ;print-bug-to-stderr
+     ;display-srclocs-in-error
+     ;show-syntax-error-context
+     ))
 
   (define-signature drscheme:module-langauge-cm^
     (module-language<%>))

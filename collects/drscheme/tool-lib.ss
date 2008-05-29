@@ -296,18 +296,20 @@ all of the names in the tools library, for use defining keybindings
   ;                                  ;;;;   
   
   (proc-doc/names
-   drscheme:debug:show-error-and-highlight
-   (-> string? 
-       (or/c any/c exn?) 
-       (-> (listof srcloc?) (or/c false/c (listof (list/c (is-a?/c text%) number? number?))) any)
-       any)
-   (msg exn highlight-errors)
-   @{The first two arguments are the same as the arguments to the error-display-handler.
-     This function prints the error message to the current-error-port, like the default error-display-handler 
-     and also calls @scheme[highlight-errors] to do error highlighting. It is be passed the stack trace 
-     for the error message.
-     
-     This function should be called on the same thread/eventspace where the error happened.})
+   drscheme:debug:error-display-handler/stacktrace
+   (->* (string? any/c)
+        ((or/c false/c (listof srcloc?)))
+        any)
+   ((msg exn) ((stack #f)))
+   @{Displays the error message represented by the string, adding
+     embellishments like those that appears in the DrScheme REPL,
+     specifically a clickable icon for the stack trace (if the srcloc location is not empty),
+     and a clickable icon for the source of the error (read & syntax errors show their source
+     locations and otherwise the first place in the stack trace is shown).
+                                      
+     If @scheme[stack] is false, then the stack trace embedded in the @scheme[exn] argument (if any) is used.
+                                                                         
+     This should be called in the same eventspace and on the same thread as the error.})
   
   (proc-doc/names
    drscheme:debug:make-debug-error-display-handler
@@ -323,7 +325,7 @@ all of the names in the tools library, for use defining keybindings
      @scheme[drscheme:debug:make-debug-eval-handler].
      
      See also MzScheme's
-     MzLink{mz:p:error-display-handler}{error-display-handler}
+     @scheme[error-display-handler]
      parameter.
      
      If the current-error-port is the definitions window in
@@ -345,7 +347,7 @@ all of the names in the tools library, for use defining keybindings
      This function is designed to work in conjunction with
      @scheme[drscheme:debug:make-debug-error-display-handler].
      
-     See also MzScheme's MzLink{mz:p:eval-handler}{eval-handler}
+     See also MzScheme's @scheme[eval-handler]
      parameter. 
      
      The resulting eval-handler expands and annotates the input
@@ -384,10 +386,8 @@ all of the names in the tools library, for use defining keybindings
    (srcloc? . -> . void?)
    (debug-info)
    @{This function opens a DrScheme to display
-     @scheme[debug-info]. The first element in
-     the cons indicates where the file is
-     and the two number indicate a range of
-     text to show.
+     @scheme[debug-info]. Only the src the position
+     and the span fields of the srcloc are considered.
      
      See also
      @scheme[drscheme:debug:get-cm-key].})

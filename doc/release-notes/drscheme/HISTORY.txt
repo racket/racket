@@ -18,6 +18,10 @@
   . removed help-desk:help-desk from the tools interface.
     Use the help collection instead.
 
+  . removed drscheme:debug:show-error-and-highlight from
+    the tools interface. Use drscheme:debug:error-display-handler/stacktrace
+    instead.
+
 ------------------------------
         Version 372
 ------------------------------

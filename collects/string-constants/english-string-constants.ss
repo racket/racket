@@ -329,6 +329,11 @@ please adhere to these guidelines:
   (help-desk-this-is-just-example-text
    "This is just example text for setting the font size. Open Help Desk proper (from Help menu) to follow these links.")
 
+  ;; this appears in the bottom part of the frame the first time the user hits `f1' 
+  ;; (assuming nothing else has loaded the documentation index first)
+  ;; see also: cs-status-loading-docs-index
+  (help-desk-loading-documentation-index "Help Desk: loading documentation index")
+  
  ;; Help desk htty proxy
  (http-proxy "HTTP Proxy")
  (proxy-direct-connection "Direct connection")

@@ -1,1216 +1,1476 @@
+#lang scheme
 
-(module repl-test mzscheme
-  (require "drscheme-test-util.ss"
-           mzlib/class
-           mzlib/file
-           mzlib/string
-           mred
-           framework)
-  
-  (provide run-test)
-  
-  (define-struct loc (line col offset))
-  ;; loc = (make-loc number number number)
-  ;; all numbers in loc structs start at zero.
-  
-  (define-struct test (program
-                       ;; : (union 
-                       ;;    string 
-                       ;;    'fraction-sum
-                       ;;    (listof
-                       ;;      (union string?  // typed in
-                       ;;             'left    // left arrow key
-                       ;;             (list string? string?)))) // menu item select
-                       
-                       raw-execute-answer  ;; answer when executing
-                       raw-load-answer     ;; answer when loading
+;; NOTES: 
+;;  - (expt 3 #f) is likely to never be optimized, making the stack traces produced from it predictable
 
-                       error-message ;; (or/c string? false/c)
-                       error-srcloc  ;; (or/c string? false/c)
-                       error-mode    ;; (one-of/c 'read 'syntax 'runtime 'runtime-nested)
-                       
-                       source-location ;; : (union 'definitions
-                       ;;                          'interactions
-                       ;;                          (cons loc loc))
-                       ;; if cons, the car and cdr are the start and end positions resp.
-                       ;; if 'interactions, no source location and
-                       ;;    the focus must be in the interactions window
-                       ;; if 'definitions, no source location and
-                       ;;     the focus must be in the definitions window
-                       
-                       breaking-test?              ;; : boolean
-                       
-                       ;; setup is called before the test case is run.
-                       setup ;; : -> void
-                       ;; teardown is called after the test case is complete.
-                       teardown ;; : -> void
-                       ))
-  
-  (define (to-strings . args)
-    (apply string-append (map (λ (x) (format "~s\n" x)) args)))
-  
-  (define (add-load-handler-context str)
-    (regexp
-     (string-append (regexp-quote "{bug09.png} {file.gif} ../../mred/private/snipfile.ss:")
-                    "[0-9]+:[0-9]+: "
-                    (regexp-quote str))))
-  
-  (define test-data
-    (list
-     
-     ;; basic tests
-     (make-test "1"
-                "1"
-                "1"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "\"a\""
-                "\"a\""
-                "\"a\""
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "1 2"
-                "1\n2"
-                "2"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "\"a\" \"b\""
-                "\"a\"\n\"b\""
-                "\"b\""
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "("
-                "" ""
-                "read: expected a `)'"
-                "1:0"
-                'read
-                (cons (make-loc 0 0 0) (make-loc 0 1 1))
-		#f
-                void
-                void)
-     
-     (make-test "."
-                "" ""
-                "read: illegal use of \".\""
-                "1:0"
-                'read
-                (cons (make-loc 0 0 0) (make-loc 0 1 1))
-                #f
-		void
-                void)
+#|
 
-     (make-test "(lambda ())"
-                "" ""
-                "lambda: bad syntax in: (lambda ())"
-                "1:0"
-                'syntax
-                (cons (make-loc 0 0 0) (make-loc 0 11 11))
-		#f
-                void
-                void)
-     
-     ;; make sure only a single syntax error occurs when in nested begin situation
-     (make-test "(begin (lambda ()) (lambda ()))"
-                "" ""
-                "lambda: bad syntax in: (lambda ())"
-                "1:7"
-                'syntax
-                (cons (make-loc 0 7 7) (make-loc 0 18 18))
-		#f
-                void
-                void)
-     
-     (make-test "xx"
-                "" ""
-                "reference to undefined identifier: xx"
-                "1:0"
-                'runtime
-                (cons (make-loc 0 0 0) (make-loc 0 2 2))
-		#f
-                void
-                void)
-     (make-test "(raise 1)"
-                "" ""
-                "uncaught exception: 1"
-                #f
-                'runtime
-                'interactions
-                #f
-                void
-                void)
-     (make-test "(raise #f)"
-                "" ""
-                "uncaught exception: #f"
-                #f
-                'runtime
-		'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(values 1 2)"
-                "1\n2"
-                "1\n2"
-                #f #f #f
-		'interactions
-                #f
-                void
-                void)
-     (make-test "(list 1 2)"
-                "(1 2)"
-                "(1 2)"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"
-                "#(struct:s 1)"
-                "#(struct:s 1)"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     ;; top-level semantics test
-     (make-test "(define (f) (+ 1 1)) (define + -) (f)"
-                "0"
-                "0"
-                #f #f #f
-		'interactions
-                #f
-                void
-                void)
+This produces an ACK message
 
-     (make-test "(begin (define-struct a ()) (define-struct (b a) ()))"
-		""
-		""
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(begin (values) 1)"
-		"1"
-		"1"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
+#lang scheme
+(require scheme/sandbox)
+(make-evaluator '(file "/tmp/foo.ss"))
 
-     (make-test "(begin xx (printf \"hi\\n\"))"
-                "" ""
-                "reference to undefined identifier: xx"
-                "1:7"
-                'runtime
-                (cons (make-loc 0 7 7) (make-loc 0 9 9))
-		#f
-                void
-                void)
-     
-     (make-test (string-append
-                 "(module m mzscheme (provide e) (define e #'1))\n"
-                 "(module n mzscheme (require-for-syntax 'm) (provide s) (define-syntax (s stx) e))\n"
-                 "(require 'n)\n"
-                 "s")
-                "" ""
-                "compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
-                "1:43"
-                'syntax
-                (cons (make-loc 0 43 43) (make-loc 0 44 44))
-                #f
-                void
-                void)
+|#
 
-     
-     ;; leading comment test
-     (make-test "#!/bin/sh\n1"
-                "1"
-                "1"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
+(require "drscheme-test-util.ss"
+         mred
+         framework)
 
-     (make-test "#!/bin/sh\nxx"
-                "" ""
-                "reference to undefined identifier: xx"
-                "2:0"
-                'runtime
-                (cons (make-loc 1 0 10) (make-loc 1 2 12))
-		#f
-                void
-                void)
+(provide run-test)
 
-     ;; eval tests
+(define-struct loc (line col offset))
+;; loc = (make-loc number number number)
+;; all numbers in loc structs start at zero.
 
-     (make-test "    (eval '(values 1 2))"
-                "1\n2"
-                "1\n2"
-                #f #f #f
-		'interactions
-                #f
-                void
-                void)
+(define-struct test (program
+                     ;; : (union 
+                     ;;    string 
+                     ;;    'fraction-sum
+                     ;;    (listof
+                     ;;      (union string?  // typed in
+                     ;;             'left    // left arrow key
+                     ;;             (list string? string?)))) // menu item select
+                     
+                     
+                     answer ;; : answer
+                     ;; the answers for the various modes of the test, specifically:
+                     ;;   with debugging enabled: execute, load with different filename, load with same filename
+                     ;;   as in ordinary mzscheme: execute, load with different filename, load with same filename
+                     
+                     source-location ;; (or/c 'interactions 'definitions (cons number number))
+                     
+                     breaking-test? ;; : boolean
+                     
+                     ;; setup is called before the test case is run.
+                     setup ;; : -> void
+                     ;; teardown is called after the test case is complete.
+                     teardown ;; : -> void
+                     ))
 
-     (make-test "    (eval '(list 1 2))"
-                "(1 2)"
-                "(1 2)"
-                #f #f #f
-		'interactions
-                #f
-                void
-                void)
-     
-     (make-test "    (eval '(lambda ()))"
-                "" ""
-                "lambda: bad syntax in: (lambda ())"
-                "1:4"
-                'runtime
-                (cons (make-loc 0 4 4) (make-loc 0 23 23))
-                #f
-                void
-                void)
-     (make-test "    (eval 'x)"
-                "" ""
-                "reference to undefined identifier: x"
-                "1:4"
-                'runtime
-		(cons (make-loc 0 4 4) (make-loc 0 13 13))
-		#f
-                void
-                void)
-     
-     (make-test "(eval (box 1))"
-		"#&1"
-		"#&1"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(eval '(box 1))"
-		"#&1"
-		"#&1"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     
-     ; printer setup test
-     (make-test "(car (void))"
-                "" ""
-                "car: expects argument of type <pair>; given #<void>"
-                "1:0"
-                'runtime
-                (cons (make-loc 0 0 0) (make-loc 0 12 12))
-                #f
-                void
-                void)
-     
-     ;; error in the middle
-     (make-test "1 2 ( 3 4"
-                "1\n2\n" ""
-                "read: expected a `)'"
-                "1:4"
-                'read
-		(cons (make-loc 0 4 4) (make-loc 0 5 5))
-		#f
-                void
-                void)
-     (make-test "1 2 . 3 4"
-                "1\n2\n" ""
-                "read: illegal use of \".\""
-                "1:4"
-                'read
-		(cons (make-loc 0 4 4) (make-loc 0 5 5))
-		#f
-                void
-                void)
-     (make-test "1 2 (lambda ()) 3 4"
-                "1\n2\n" ""
-                "lambda: bad syntax in: (lambda ())"
-                "1:4"
-                'syntax
-		(cons (make-loc 0 4 4) (make-loc 0 15 15))
-                #f
-                void
-                void)
-     (make-test "1 2 x 3 4"
-                "1\n2\n" ""
-                "reference to undefined identifier: x"
-                "1:4"
-                'runtime
-		(cons (make-loc 0 4 4) (make-loc 0 5 5))
-                #f
-                void
-                void)
-     (make-test "1 2 (raise 1) 3 4"
-                "1\n2\n" "" 
-                "uncaught exception: 1"
-                #f
-                'runtime
-		'interactions
-		#f
-                void
-                void)
-     (make-test "1 2 (raise #f) 3 4"
-                "1\n2\n" ""
-                "uncaught exception: #f"
-                #f
-                'runtime
-		'interactions
-		#f
-                void
-                void)
+(define-struct answer (debug-execute debug-load-fn debug-load raw-execute raw-load-fn raw-load))
 
-     ;; error across separate files
-     (make-test
-      "(load \"repl-test-tmp2.ss\") (define (g) (+ 1 (car 1))) (f g)"
-      "" ""
-      "car: expects argument of type <pair>; given 1"
-      "1:44"
-      'runtime-nested
-      (cons (make-loc -1 -1 44)
-            (make-loc -1 -1 51))
-      #f
-      (λ ()
-        (call-with-output-file (build-path tmp-load-directory "repl-test-tmp2.ss")
-          (lambda (port)
-            (write '(define (f t) (+ 1 (t)))
-                   port))
-          'truncate))
-      (λ () (delete-file (build-path tmp-load-directory "repl-test-tmp2.ss"))))
-     
-     ;; new namespace test
-     (make-test "(current-namespace (make-namespace))\nif"
-                "" ""
-                "if: bad syntax in: if"
-                "2:0"
-                'syntax
-		(cons (make-loc 1 0 37) (make-loc 1 2 39))
-		#f
-                void
-                void)
-     
-     (make-test "(current-namespace (make-namespace 'empty))\nif"
-                "" ""
-                "compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
-                "2:0"
-                'syntax
-		(cons (make-loc 1 0 44) (make-loc 1 0 46))
-		#f
-                void
-                void)
-     
-     ;; macro tests
-     (make-test "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
-		""
-                ""
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     
-     ;; error escape handler test
-     (make-test
-      "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (car))\n(lambda () (error-escape-handler old))))\n10))"
-      "" ""
-      "car: expects 1 argument, given 0\n15"
-      "5:19"
-      'runtime
-      'definitions
-      #f
-      void
-      void)
+(define-syntax (mktest stx)
+  (syntax-case stx ()
+    [(_ program (a b c d e f) di breaking-test?)
+     #'(make-test program (make-answer a b c d e f) di breaking-test? void void)]
+    [(_ program (a b c d e f) di breaking-test? setup teardown)
+     #'(make-test program (make-answer a b c d e f) di breaking-test? setup teardown)]))
 
-     ; fraction snip test
-     ;; this test depends on the state of the 'framework:fraction-snip-style preference
-     ;; make sure this preference is set to the default when running this test.
-     (make-test 'fraction-sum
-                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
-                #rx"{number 5/6 \"5/6\" (improper|mixed)}"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     ;; should produce a syntax object with a turn-down triangle.
-     (make-test "(write (list (syntax x)))" 
-                "({embedded \".#<syntax:1:21>\"})"
-                "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     ;; make sure syntax objects only go into good ports
-     (make-test "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
-                "10"
-                "10"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     ;; make sure syntax objects don't go into bad ports
-     (make-test "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
-                ""
-                ""
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
-                "#<syntax:1:96>"
-                "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test "(write-special 1)"
-                "1#t"
-                "1#t"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-
-     (make-test
-      ;; the begin/void combo is to make sure that no value printout
-      ;; comes and messes up the source location for the error.
-      "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (car))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
-      "" ""
-      "car: expects 1 argument, given 0"
-      "6:15"
-      'runtime
-      (cons (make-loc 0 99 99) (make-loc 0 104 104))
-      #f
-      void
-      void)
+(define syntax-regexp-prefix
+  (string-append
+   (regexp-quote "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp")
+   "3?"
+   (regexp-quote ".ss")))
 
 
-     ;; breaking tests
-     (make-test "(semaphore-wait (make-semaphore 0))"
-                #rx"user break$"
-                #rx"user break$"
-                #f #f #f
-                (cons (make-loc 0 0 0) (make-loc 0 35 35))
-                #t
-                void
-                void)
-     
-     (make-test "(let l()(l))"
-                #rx"user break$"
-                #rx"user break$"
-                #f #f #f
-		(cons (make-loc 0 8 8) (make-loc 0 11 11))
-                #t
-                void
-                void)
-     
-     ;; continuation tests
-     (make-test "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
-		"17"
-                "17"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     (make-test "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
-		"#(2)"
-                "#(2)"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
-     (make-test "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
-		"#(2)"
-                "#(2)"
-                #f #f #f
-		'interactions
-		#f
-                void
-                void)
+(define (to-strings . args)
+  (apply string-append (map (λ (x) (format "~s\n" x)) args)))
 
-     (make-test "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
-                "" ""
-		"procedure application: expected procedure, given: 3; arguments were: 3"
-                "3:13"
-                'runtime
-		(cons (make-loc 3 19 73) (make-loc 3 24 78))
-		#f
-                void
-                void)
-     
-     ;; top-level & continuation interaction test
-     (make-test "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
-                "right"
-                "right"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     
-     (make-test (format "~s"
-                        '(call-with-continuation-prompt
-                          (lambda ()
-                            (eval '(begin (abort-current-continuation
-                                           (default-continuation-prompt-tag)
-                                           1 2 3)
-                                          10)))
-                          (default-continuation-prompt-tag)
-                          list))
-                "(1 2 3)"
-                "(1 2 3)"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     
-     ;; graphical lambda tests
-     (make-test (list "((" '("Insert" "Insert λ") "(x) x) 1)")
-                "1"
-                "1"
-                #f #f #f
-                'interactions
-		#f
-                void
-                void)
-     
-     (make-test (list "(" '("Insert" "Insert λ") "())")
-                "" ""
-                "λ: bad syntax in: (λ ())"
-                "1:0"
-                'syntax
-                (cons (make-loc 0 0 0) (make-loc 0 5 5))
-		#f
-                void
-                void)
-     
-     ;; thread tests
-     (make-test "(begin (thread (lambda () x)) (sleep 1/10))"
-                "" ""
-                "reference to undefined identifier: x"
-                "1:26"
-                'runtime
-                (cons (make-loc 0 26 26) (make-loc 0 27 27))
-                #f
-                void
-                void)
+(define (add-load-handler-context str)
+  (regexp
+   (string-append (regexp-quote (string-append 
+                                 backtrace-image-string
+                                 " "
+                                 file-image-string
+                                 " ../../mred/private/snipfile.ss:"))
+                  "[0-9]+:[0-9]+: "
+                  (regexp-quote str))))
 
-     
-     ;; setup of the namespaces for pict printing (from slideshow)
-     
-     (make-test "(require (lib \"utils.ss\" \"texpict\"))(disk 3)"
-                "{image}"
-                "{image}"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     
-     (make-test (to-strings
-                 '(require texpict/utils)
-                 '(let ()
-                    (current-namespace (make-namespace))
-                    (namespace-set-variable-value! 'd (disk 3)))
-                 'd)
-                "#<pict>"
-                "#<pict>"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     (make-test (to-strings
-                 '(let ([on (current-namespace)]
-                        [n ((current-module-name-resolver) 'mred #f #f)])
-                    (current-namespace (make-namespace))
-                    (namespace-attach-module on n))
-                 '(require texpict/utils)
-                 '(disk 3))
-                "{image}"
-                "{image}"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     
-     (make-test (string-append
-                 "(require (lib \"pretty.ss\"))"
-                 "(pretty-print-print-hook (lambda x (car)))"
-                 "(list 1 2 3)")
-                "(1 2 3)"
-                "(1 2 3)"
-                #f #f #f
-                'interactions
-                #f
-                void
-                void)
-     
-     (make-test
-      (string-append
-       "(define p (open-output-string))\n"
-       "(parameterize ([current-error-port p])\n"
-       "(dynamic-wind\n"
-       "void\n"
-       "(lambda ()\n"
-       "((error-display-handler)\n"
-       "\"x\"\n"
-       "(with-handlers ((void values)) (eval '(lambda ())))))\n"
-       "(lambda ()\n"
-       "(display (get-output-string p)))))\n")
-      "x in: (lambda ())"
-      "x in: (lambda ())"
-      #f #f #f
-      'interactions
-      #f
-      void 
-      void)
-     ))
-  ;; these tests aren't used at the moment.
-  #;
-  (define xml-tests
-    (list
-          ;; XML tests
-     (make-test (list "#!/bin/sh\n" 
-                      '("Insert" "Insert XML Box")
-                      "<a>")
-                "(a ())"
-                "(a ())"
-                #f #f #f
-		'interactions
-                #f
-                void
-                void)
-
-     (make-test
-      '(("Insert" "Insert XML Box")
-        "<a>")
-      "(a ())"
-      "(a ())"
-      #f
-      'interactions
-      #f
-      #f
-      void
-      void)
-     
-     (make-test
-      '(("Insert" "Insert XML Box")
-        "<a>"
-        ("Insert" "Insert Scheme Box")
-        "1")
-      "(a () 1)"
-      "(a () 1)"
-      #f
-      'interactions
-      #f
-     #f
-      void
-      void)
-     
-     (make-test
-      '(("Insert" "Insert XML Box")
-        "<a>"
-        ("Insert" "Insert Scheme Splice Box")
-        "'(1)")
-      "(a () 1)"
-      "(a () 1)"
-      #f
-      'interactions
-      #f
-     #f
-      void
-      void)
-     
-     (make-test
-      '(("Insert" "Insert XML Box")
-        "<a>"
-        ("Insert" "Insert Scheme Splice Box")
-        "1")
-      "scheme-splice-box: expected a list, found: 1"
-      "scheme-splice-box: expected a list, found: 1"
-      #t
-      'definitions
-      #f
-     #f
-      void
-      void)))
-  
-  (define backtrace-image-string "{bug09.png}")
-  (define file-image-string "{file.gif}")
-
-  (define tmp-load-directory
-    (normal-case-path
-     (normalize-path 
-      (collection-path "tests" "drscheme"))))
-  
-  (define (run-test)
+(define test-data
+  (list
+   
+   ;; basic tests
+   (mktest "1"
+           ("1"
+            "1"
+            "1"
+            "1"
+            "1"
+            "1")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "\"a\""
+           
+           ("\"a\""
+            "\"a\""
+            "\"a\""
+            "\"a\""
+            "\"a\""
+            "\"a\"")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "1 2"
+           
+           ("1\n2"
+            "2"
+            "2"
+            "1\n2"
+            "2"
+            "2")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "\"a\" \"b\""
+           
+           ("\"a\"\n\"b\""
+            "\"b\""
+            "\"b\""
+            "\"a\"\n\"b\""
+            "\"b\""
+            "\"b\"")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "("
+           ("{stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)'"
+            "{stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: expected a `)'")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest "."
+           
+           ("{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: illegal use of \".\""
+            "{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: read: illegal use of \".\"")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest "(lambda ())"
+           
+           ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.ss:1:0: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: lambda: bad syntax in: (lambda ())")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; make sure only a single syntax error occurs when in nested begin situation
+   (mktest "(begin (lambda ()) (lambda ()))"
+           
+           ("{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.ss:1:7: lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:7: lambda: bad syntax in: (lambda ())")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest "xx"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
+            "reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx")
+           'definitions
+           #f
+           void
+           void)
+   (mktest "(raise 1)"
+           
+           ("uncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1")
+           'interactions
+           #f
+           void
+           void)
+   (mktest "(raise #f)"
+           
+           ("uncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(values 1 2)"
+           
+           ("1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2")
+           'interactions
+           #f
+           void
+           void)
+   (mktest "(list 1 2)"
+           
+           ("(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(parameterize ([print-struct #t])(define-struct s (x) (make-inspector))(printf \"~s\\n\" (make-s 1)))"
+           
+           ("#(struct:s 1)"
+            "#(struct:s 1)"
+            "#(struct:s 1)"
+            "#(struct:s 1)"
+            "#(struct:s 1)"
+            "#(struct:s 1)")
+           'interactions
+           #f
+           void
+           void)
+   
+   ;; top-level semantics test
+   (mktest "(define (f) (+ 1 1)) (define + -) (f)"
+           
+           ("define-values: cannot change constant identifier: +"
+            "define-values: cannot change constant identifier: +"
+            "define-values: cannot change constant identifier: +"
+            "define-values: cannot change constant identifier: +"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: define-values: cannot change constant identifier: +"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: define-values: cannot change constant identifier: +")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(begin (define-struct a ()) (define-struct (b a) ()))"
+           
+           (""
+            ""
+            ""
+            ""
+            ""
+            "")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(begin (values) 1)"
+           
+           ("1"
+            "1"
+            "1"
+            "1"
+            "1"
+            "1")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(begin xx (printf \"hi\\n\"))"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:7: reference to undefined identifier: xx"
+            "reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest (string-append
+            "(module m mzscheme (provide e) (define e #'1))\n"
+            "(module n mzscheme (require-for-syntax 'm) (provide s) (define-syntax (s stx) e))\n"
+            "(require 'n)\n"
+            "s")
+           
+           ("{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} repl-test-tmp3.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-multi.png} {stop-22x22.png} compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:43: compile: bad syntax; literal data is not allowed, because no #%datum syntax transformer is bound in: 1")
+           'definitions
+           #f
+           void
+           void)
+   
+   
+   ;; leading comment test
+   (mktest "#!/bin/sh\n1"
+           
+           ("1"
+            "1"
+            "1"
+            "1"
+            "1"
+            "1")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "#!/bin/sh\nxx"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: reference to undefined identifier: xx"
+            "reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; eval tests
+   
+   (mktest "    (eval '(values 1 2))"
+           
+           ("1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2"
+            "1\n2")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "    (eval '(list 1 2))"
+           
+           ("(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)"
+            "(1 2)")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "    (eval '(lambda ()))"
+           
+           ("{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} lambda: bad syntax in: (lambda ())")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "    (read (open-input-string \".\"))"
+           
+           ("{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\""
+            "{stop-multi.png} read: illegal use of \".\"")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "    (eval 'x)"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
+            "reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: x")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest "(eval (box 1))"
+           
+           ("#&1"
+            "#&1"
+            "#&1"
+            "#&1"
+            "#&1"
+            "#&1")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(eval '(box 1))"
+           
+           ("#&1"
+            "#&1"
+            "#&1"
+            "#&1"
+            "#&1"
+            "#&1")
+           'interactions
+           #f
+           void
+           void)
+   
+   ; printer setup test
+   (mktest "(expt 3 (void))"
+           
+           ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: expt: expected argument of type <number>; given #<void>"
+            "expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #<void>"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #<void>")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; error in the middle
+   (mktest "1 2 ( 3 4"
+           
+           ("1\n2\n{stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)'"
+            "1\n2\n{stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} read: expected a `)'"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: expected a `)'")
+           'definitions
+           #f
+           void
+           void)
+   (mktest "1 2 . 3 4"
+           
+           ("1\n2\n{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: illegal use of \".\""
+            "1\n2\n{stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} read: illegal use of \".\""
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: read: illegal use of \".\"")
+           'definitions
+           #f
+           void
+           void)
+   (mktest "1 2 (lambda ()) 3 4"
+           
+           ("1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-22x22.png} repl-test-tmp3.ss:1:4: lambda: bad syntax in: (lambda ())"
+            "1\n2\n{stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} lambda: bad syntax in: (lambda ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: lambda: bad syntax in: (lambda ())")
+           'definitions
+           #f
+           void
+           void)
+   (mktest "1 2 x 3 4"
+           
+           ("1\n2\n{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:4: reference to undefined identifier: x"
+            "1\n2\nreference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: x")
+           'definitions
+           #f
+           void
+           void)
+   (mktest "1 2 (raise 1) 3 4"
+           
+           ("1\n2\nuncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1"
+            "1\n2\nuncaught exception: 1"
+            "uncaught exception: 1"
+            "uncaught exception: 1")
+           'interactions
+           #f
+           void
+           void)
+   (mktest "1 2 (raise #f) 3 4"
+           
+           ("1\n2\nuncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f"
+            "1\n2\nuncaught exception: #f"
+            "uncaught exception: #f"
+            "uncaught exception: #f")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(require lang/htdp-beginner)\n(cond [1 2 3 4])"
+           
+           ("{stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-22x22.png} repl-test-tmp3.ss:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-multi.png} {stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-multi.png} {stop-22x22.png} cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:7: cond: expected a clause with one question and one answer, but found a clause with 4 parts in:\n  1\n  2\n  3\n  4")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; error across separate files
+   (mktest
+    "(load \"repl-test-tmp2.ss\") (define (g) (+ 1 (expt 3 #f))) (f g)"
     
-    (define drscheme-frame (wait-for-drscheme-frame))
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:44: expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:27: expt: expected argument of type <number>; given #f")
+    'definitions
+    #f
+    (λ ()
+      (call-with-output-file (build-path tmp-load-directory "repl-test-tmp2.ss")
+        (lambda (port)
+          (write '(define (f t) (+ 1 (t)))
+                 port))
+        #:exists 'truncate))
+    (λ () (delete-file (build-path tmp-load-directory "repl-test-tmp2.ss"))))
+   
+   ;; new namespace test
+   (mktest "(current-namespace (make-namespace))\nif"
+           
+           ("{stop-22x22.png} if: bad syntax in: if"
+            "{stop-22x22.png} if: bad syntax in: if"
+            "{stop-22x22.png} repl-test-tmp3.ss:2:0: if: bad syntax in: if"
+            "{stop-22x22.png} if: bad syntax in: if"
+            "{stop-multi.png} {stop-22x22.png} if: bad syntax in: if"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: if: bad syntax in: if")
+           'definitions
+           #f
+           void
+           void)
+   
+   (mktest "(current-namespace (make-namespace 'empty))\nif"
+           
+           ("{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+            "{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+            "{stop-22x22.png} repl-test-tmp3.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+            "{stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+            "{stop-multi.png} {stop-22x22.png} compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:2:0: compile: bad syntax; function application is not allowed, because no #%app syntax transformer is bound in: (#%top-interaction . if)")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; macro tests
+   (mktest "(define-syntax (c stx) (syntax-case stx () [(_ p q r) (syntax (+ p q r))]))"
+           
+           (""
+            ""
+            ""
+            ""
+            ""
+            "")
+           'interactions
+           #f
+           void
+           void)
+   
+   ;; error escape handler test
+   (mktest
+    "(let ([old (error-escape-handler)])\n(+ (let/ec k\n(dynamic-wind\n(lambda () (error-escape-handler (lambda () (k 5))))\n(lambda () (expt 3 #f))\n(lambda () (error-escape-handler old))))\n10))"
     
-    (define interactions-text (send drscheme-frame get-interactions-text))
-    (define interactions-canvas (send drscheme-frame get-interactions-canvas))
-    (define definitions-text (send drscheme-frame get-definitions-text))
-    (define definitions-canvas (send drscheme-frame get-definitions-canvas))
-    (define execute-button (send drscheme-frame get-execute-button))
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:5:19: expt: expected argument of type <number>; given #f\n15"
+     "expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #f\n15"
+     "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #f\n15")
+    'definitions
+    #f
+    void
+    void)
+   
+   ; fraction snip test
+   ;; this test depends on the state of the 'framework:fraction-snip-style preference
+   ;; make sure this preference is set to the default when running this test.
+   (mktest 'fraction-sum
+           ("{number 5/6 \"5/6\" mixed}"
+            "{number 5/6 \"5/6\" mixed}"
+            "{number 5/6 \"5/6\" mixed}"
+            "{number 5/6 \"5/6\" mixed}"
+            "{number 5/6 \"5/6\" mixed}"
+            "{number 5/6 \"5/6\" mixed}")
+           'interactions
+           #f
+           void
+           void)
+   
+   ;; should produce a syntax object with a turn-down triangle.
+   (let ([printout
+          (regexp
+           (string-append (regexp-quote "({embedded \".")
+                          syntax-regexp-prefix
+                          (regexp-quote ":1:21>\"})")))])
+     (mktest "(write (list (syntax x)))" 
+             
+             ("({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})"
+              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:21>\"})"
+              "({embedded \".#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:21>\"})")
+             'interactions
+             #f
+             void
+             void))
+   
+   ;; make sure syntax objects only go into good ports
+   (mktest "(define-syntax (foo stx) (with-handlers ([exn:fail? (lambda (x) #'10)]) (syntax-local-value #'foot))) (foo)"
+           
+           ("10"
+            "10"
+            "10"
+            "10"
+            "10"
+            "10")
+           'interactions
+           #f
+           void
+           void)
+   
+   ;; make sure syntax objects don't go into bad ports
+   (mktest "(parameterize ([current-output-port (open-output-string)]) (write #'1))"
+           
+           (""
+            ""
+            ""
+            ""
+            ""
+            "")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(parameterize ([current-output-port (open-output-string)]) (fprintf (current-error-port) \"~e\" #'foot))"
+           
+           ("#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:96>"
+            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp.ss:1:96>"
+            "#<syntax:/Users/robby/svn/plt/collects/tests/drscheme/repl-test-tmp3.ss:1:96>")
+           'interactions
+           #f
+           void
+           void)
+   
+   
+   (mktest "(write-special 1)"
+           
+           ("1#t"
+            "1#t"
+            "1#t"
+            "1#t"
+            "1#t"
+            "1#t")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest
+    ;; the begin/void combo is to make sure that no value printout
+    ;; comes and messes up the source location for the error.
+    "(define s (make-semaphore 0))\n(queue-callback\n(lambda ()\n(dynamic-wind\nvoid\n(lambda () (expt 3 #f))\n(lambda () (semaphore-post s)))))\n(begin (yield s) (void))"
     
-    (define (insert-string string)
-      (let loop ([n 0])
-        (unless (= n (string-length string))
-          (let ([c (string-ref string n)])
-            (if (char=? c #\newline)
-                (test:keystroke #\return)
-                (test:keystroke c)))
-          (loop (+ n 1)))))
+    ("{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:6:15: expt: expected argument of type <number>; given #f"
+     "expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #f"
+     "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: expt: expected argument of type <number>; given #f")
+    'definitions
+    #f
+    void
+    void)
+   
+   
+   ;; breaking tests
+   (mktest "(semaphore-wait (make-semaphore 0))"
+           ("{stop-multi.png} {stop-22x22.png} user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break")
+           'definitions
+           #t
+           void
+           void)
+   
+   (mktest "(let l()(l))"
+           (#rx"{stop-multi.png} {stop-22x22.png} user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break"
+            #rx"user break")
+           'definitions
+           #t
+           void
+           void)
+   
+   ;; continuation tests
+   (mktest "(define k (call/cc (lambda (x) x)))\n(k 17)\nk"
+           
+           ("17"
+            "17"
+            "17"
+            "17"
+            "17"
+            "17")
+           'interactions
+           #f
+           void
+           void)
+   (mktest "(define v (vector (call/cc (lambda (x) x))))\n((vector-ref v 0) 2)\nv"
+           
+           ("#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)")
+           'interactions
+           #f
+           void
+           void)
+   (mktest "(define v (vector (eval '(call/cc (lambda (x) x)))))\n((vector-ref v 0) 2)\nv"
+           
+           ("#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)"
+            "#(2)")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest "(define x 1)\n((λ (x y) y) (set! x (call/cc (lambda (x) x)))\n(x 3))"
+           
+           ("{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:3:13: procedure application: expected procedure, given: 3; arguments were: 3"
+            "procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: procedure application: expected procedure, given: 3; arguments were: 3"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:246:28: procedure application: expected procedure, given: 3; arguments were: 3")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; top-level & continuation interaction test
+   (mktest "(begin (define k (call/cc (λ (x) x)))\n(define x 'wrong))\n(set! x 'right)\n(k 1)\nx"
+           
+           ("right"
+            "right"
+            "right"
+            "right"
+            "right"
+            "right")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest (format "~s"
+                   '(call-with-continuation-prompt
+                     (lambda ()
+                       (eval '(begin (abort-current-continuation
+                                      (default-continuation-prompt-tag)
+                                      1 2 3)
+                                     10)))
+                     (default-continuation-prompt-tag)
+                     list))
+           
+           ("(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)")
+           'interactions
+           #f
+           void
+           void)
+   
+   ;; graphical lambda tests
+   (mktest (list "((" '("Insert" "Insert λ") "(x) x) 1)")
+           
+           ("1"
+            "1"
+            "1"
+            "1"
+            "1"
+            "1")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest (list "(" '("Insert" "Insert λ") "())")
+           
+           ("{stop-22x22.png} λ: bad syntax in: (λ ())"
+            "{stop-22x22.png} λ: bad syntax in: (λ ())"
+            "{stop-22x22.png} repl-test-tmp3.ss:1:0: λ: bad syntax in: (λ ())"
+            "{stop-22x22.png} λ: bad syntax in: (λ ())"
+            "{stop-multi.png} {stop-22x22.png} λ: bad syntax in: (λ ())"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: λ: bad syntax in: (λ ())")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; thread tests
+   (mktest "(begin (thread (lambda () x)) (sleep 1/10))"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:26: reference to undefined identifier: x"
+            "reference to undefined identifier: x"
+            "reference to undefined identifier: x"
+            "reference to undefined identifier: x")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; brought down from above for comparison
+   (mktest "xx"
+           
+           ("{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} repl-test-tmp3.ss:1:0: reference to undefined identifier: xx"
+            "reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx"
+            "{stop-multi.png} {stop-22x22.png} ../../mred/private/snipfile.ss:230:18: reference to undefined identifier: xx")
+           'definitions
+           #f
+           void
+           void)
+   
+   ;; setup of the namespaces for pict printing (from slideshow)
+   
+   (mktest "(require (lib \"utils.ss\" \"texpict\"))(disk 3)"
+           
+           ("{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest (to-strings
+            '(require texpict/utils)
+            '(let ()
+               (current-namespace (make-namespace))
+               (namespace-set-variable-value! 'd (disk 3)))
+            'd)
+           
+           ("#<pict>"
+            "#<pict>"
+            "#<pict>"
+            "#<pict>"
+            "#<pict>"
+            "#<pict>")
+           'interactions
+           #f
+           void
+           void)
+   (mktest (to-strings
+            '(let ([on (current-namespace)]
+                   [n ((current-module-name-resolver) 'mred #f #f)])
+               (current-namespace (make-namespace))
+               (namespace-attach-module on n))
+            '(require texpict/utils)
+            '(disk 3))
+           
+           ("{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}"
+            "{image}")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest (string-append
+            "(require (lib \"pretty.ss\"))"
+            "(pretty-print-print-hook (lambda x (expt 3 #f)))"
+            "(list 1 2 3)")
+           
+           ("(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)"
+            "(1 2 3)")
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest
+    (string-append
+     "(define p (open-output-string))\n"
+     "(parameterize ([current-error-port p])\n"
+     "(dynamic-wind\n"
+     "void\n"
+     "(lambda ()\n"
+     "((error-display-handler)\n"
+     "\"x\"\n"
+     "(with-handlers ((void values)) (eval '(lambda ())))))\n"
+     "(lambda ()\n"
+     "(display (get-output-string p)))))\n")
     
-    (define wait-for-execute (lambda () (wait-for-button execute-button)))
-    (define get-int-pos (lambda () (get-text-pos interactions-text)))
-    
-    (define tmp-load-short-filename "repl-test-tmp.ss")
-    (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
-    
-    (define tmp-load3-short-filename "repl-test-tmp3.ss")
-    (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
+    ("x in: (lambda ())"
+     "x in: (lambda ())"
+     "x in: (lambda ())"
+     "x in: (lambda ())"
+     "x in: (lambda ())"
+     "x in: (lambda ())")
+    'interactions
+    #f
+    void 
+    void)
+   
+   ))
+;; these tests aren't used at the moment.
+#;
+(define xml-tests
+  (list
+   ;; XML tests
+   (mktest (list "#!/bin/sh\n" 
+                 '("Insert" "Insert XML Box")
+                 "<a>")
+           "(a ())"
+           "(a ())"
+           #f #f #f
+           'interactions
+           #f
+           void
+           void)
+   
+   (mktest
+    '(("Insert" "Insert XML Box")
+      "<a>")
+    "(a ())"
+    "(a ())"
+    #f
+    'interactions
+    #f
+    #f
+    void
+    void)
+   
+   (mktest
+    '(("Insert" "Insert XML Box")
+      "<a>"
+      ("Insert" "Insert Scheme Box")
+      "1")
+    "(a () 1)"
+    "(a () 1)"
+    #f
+    'interactions
+    #f
+    #f
+    void
+    void)
+   
+   (mktest
+    '(("Insert" "Insert XML Box")
+      "<a>"
+      ("Insert" "Insert Scheme Splice Box")
+      "'(1)")
+    "(a () 1)"
+    "(a () 1)"
+    #f
+    'interactions
+    #f
+    #f
+    void
+    void)
+   
+   (mktest
+    '(("Insert" "Insert XML Box")
+      "<a>"
+      ("Insert" "Insert Scheme Splice Box")
+      "1")
+    "scheme-splice-box: expected a list, found: 1"
+    "scheme-splice-box: expected a list, found: 1"
+    #t
+    'definitions
+    #f
+    #f
+    void
+    void)))
 
-    (define short-tmp-load-filename
-      (let-values ([(base name dir?) (split-path tmp-load-filename)])
-        (path->string name)))
-    
-    ;; setup-fraction-sum-interactions : -> void 
-    ;; clears the definitions window, and executes `1/2' to
-    ;; get a fraction snip in the interactions window.
-    ;; Then, copies that and uses it to construct the sum
-    ;; of the 1/2 image and 1/3.
-    (define (setup-fraction-sum-interactions)
+(define backtrace-image-string "{stop-multi.png}")
+(define file-image-string "{stop-22x22.png}")
+
+(define tmp-load-directory
+  (normal-case-path
+   (normalize-path 
+    (collection-path "tests" "drscheme"))))
+
+(define (run-test)
+  
+  (define drscheme-frame (wait-for-drscheme-frame))
+  
+  (define interactions-text (send drscheme-frame get-interactions-text))
+  (define interactions-canvas (send drscheme-frame get-interactions-canvas))
+  (define definitions-text (send drscheme-frame get-definitions-text))
+  (define definitions-canvas (send drscheme-frame get-definitions-canvas))
+  (define execute-button (send drscheme-frame get-execute-button))
+  
+  (define (insert-string string)
+    (let loop ([n 0])
+      (unless (= n (string-length string))
+        (let ([c (string-ref string n)])
+          (if (char=? c #\newline)
+              (test:keystroke #\return)
+              (test:keystroke c)))
+        (loop (+ n 1)))))
+  
+  (define wait-for-execute (lambda () (wait-for-button execute-button)))
+  (define get-int-pos (lambda () (get-text-pos interactions-text)))
+  
+  (define tmp-load-short-filename "repl-test-tmp.ss")
+  (define tmp-load-filename (build-path tmp-load-directory tmp-load-short-filename))
+  
+  (define tmp-load3-short-filename "repl-test-tmp3.ss")
+  (define tmp-load3-filename (build-path tmp-load-directory tmp-load3-short-filename))
+  
+  (define short-tmp-load-filename
+    (let-values ([(base name dir?) (split-path tmp-load-filename)])
+      (path->string name)))
+  
+  ;; setup-fraction-sum-interactions : -> void 
+  ;; clears the definitions window, and executes `1/2' to
+  ;; get a fraction snip in the interactions window.
+  ;; Then, copies that and uses it to construct the sum
+  ;; of the 1/2 image and 1/3.
+  (define (setup-fraction-sum-interactions)
+    (clear-definitions drscheme-frame)
+    (type-in-definitions drscheme-frame "1/2")
+    (do-execute drscheme-frame)
+    (let ([s (make-semaphore 0)])
+      (queue-callback
+       (lambda ()
+         (let* ([start (send interactions-text paragraph-start-position 2)]
+                ;; since the fraction is supposed to be one char wide, we just
+                ;; select one char, so that, if the regular number prints out,
+                ;; this test will fail.
+                [end (+ start 1)])
+           (send interactions-text set-position start end)
+           (semaphore-post s))))
+      (semaphore-wait s))
+    (test:menu-select "Edit" "Copy")
+    (clear-definitions drscheme-frame)
+    (type-in-definitions drscheme-frame "(+ ")
+    (test:menu-select "Edit" "Paste")
+    (type-in-definitions drscheme-frame " 1/3)"))
+  
+  ; given a filename "foo", we perform two operations on the contents 
+  ; of the file "foo.ss".  First, we insert its contents into the REPL
+  ; directly, and second, we use the load command.  We compare the
+  ; the results of these operations against expected results.
+  (define ((run-single-test execute-text-start escape raw?) in-vector)
+    ;(printf "\n>> testing ~s\n" (test-program in-vector))
+    (let* ([program (test-program in-vector)]
+           [execute-answer (make-execute-answer in-vector raw?)]
+           [source-location (test-source-location in-vector)]
+           [setup (test-setup in-vector)]
+           [teardown (test-teardown in-vector)]
+           [start-line (and (pair? source-location)
+                            (number->string (+ 1 (loc-line (car source-location)))))]
+           [start-col (and (pair? source-location)
+                           (number->string (loc-col (car source-location))))]
+           [start-pos (and (pair? source-location)
+                           (number->string (+ 1 (loc-offset (car source-location)))))]
+           [breaking-test? (test-breaking-test? in-vector)])
+      
+      (setup)
+      
       (clear-definitions drscheme-frame)
-      (type-in-definitions drscheme-frame "1/2")
-      (do-execute drscheme-frame)
-      (let ([s (make-semaphore 0)])
-        (queue-callback
-         (lambda ()
-           (let* ([start (send interactions-text paragraph-start-position 2)]
-                  ;; since the fraction is supposed to be one char wide, we just
-                  ;; select one char, so that, if the regular number prints out,
-                  ;; this test will fail.
-                  [end (+ start 1)])
-             (send interactions-text set-position start end)
-             (semaphore-post s))))
-        (semaphore-wait s))
-      (test:menu-select "Edit" "Copy")
-      (clear-definitions drscheme-frame)
-      (type-in-definitions drscheme-frame "(+ ")
-      (test:menu-select "Edit" "Paste")
-      (type-in-definitions drscheme-frame " 1/3)"))
-
-    (define (string/rx-append a b)
-      (if (regexp? b)
-          (regexp (string-append (regexp-quote a) (object-name b)))
-          (string-append a b)))
-    
-    ; given a filename "foo", we perform two operations on the contents 
-    ; of the file "foo.ss".  First, we insert its contents into the REPL
-    ; directly, and second, we use the load command.  We compare the
-    ; the results of these operations against expected results.
-    (define ((run-single-test execute-text-start escape raw?) in-vector)
-      ;(printf "\n>> testing ~s\n" (test-program in-vector))
-      (let* ([program (test-program in-vector)]
-             [execute-answer (let ([base (test-raw-execute-answer in-vector)])
-                               (cond
-                                [(not (test-error-mode in-vector)) base]
-                                [else
-                                 (string/rx-append
-                                  base
-                                  (let ([base (test-error-message in-vector)])
-                                    (cond
-                                     [(not (test-error-srcloc in-vector)) base]
-                                     [raw? (if (eq? 'read (test-error-mode in-vector))
-                                               (string-append backtrace-image-string " " base)
-                                               base)]
-                                     [(eq? 'syntax (test-error-mode in-vector)) base]
-                                     [(eq? 'read (test-error-mode in-vector)) base]
-                                     [else (string-append backtrace-image-string " " base)])))]))]
-             [make-load-answer
-              (lambda (src-file)
-                (let ([base (test-raw-load-answer in-vector)])
-                  (cond
-                   [(not (test-error-mode in-vector)) base]
-                   [else
-                    (string/rx-append
-                     base
-                     (let ([base (test-error-message in-vector)]
-                           [add-src (lambda (s)
-                                      (if src-file
-                                          (string-append file-image-string " "
-                                                         src-file ":"
-                                                         (test-error-srcloc in-vector) ": "
-                                                         s)
-                                          s))])
-                       (cond
-                        [(not (test-error-srcloc in-vector)) base]
-                        [raw? (if (eq? 'runtime (test-error-mode in-vector))
-                                  (add-load-handler-context base)
-                                  (string-append backtrace-image-string " " (add-src base)))]
-                        [else (if (eq? 'syntax (test-error-mode in-vector))
-                                  (add-src base)
-                                  (string-append backtrace-image-string " " (add-src base)))])))])))]
-             [source-location (test-source-location in-vector)]
-             [setup (test-setup in-vector)]
-             [teardown (test-teardown in-vector)]
-             [start-line (and (pair? source-location)
-                              (number->string (+ 1 (loc-line (car source-location)))))]
-             [start-col (and (pair? source-location)
-                             (number->string (loc-col (car source-location))))]
-             [start-pos (and (pair? source-location)
-                             (number->string (+ 1 (loc-offset (car source-location)))))]
-             [breaking-test? (test-breaking-test? in-vector)])
-        
-        (setup)
-        
-        (clear-definitions drscheme-frame)
-        ; load contents of test-file into the REPL, recording
-        ; the start and end positions of the text
-        
-        (cond
-          [(string? program)
-           (insert-string program)]
-          [(eq? program 'fraction-sum)
-           (setup-fraction-sum-interactions)]
-          [(list? program)
-           (for-each
-            (lambda (item)
-              (cond
-                [(string? item) (insert-string item)]
-                [(eq? item 'left)
-                 (send definitions-text 
-                       set-position
-                       (- (send definitions-text get-start-position) 1)
-                       (- (send definitions-text get-start-position) 1))]
-                [(pair? item) (apply test:menu-select item)]))
-            program)])
-        
-        (do-execute drscheme-frame #f)
-        (when breaking-test?
-          (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
-        (wait-for-execute)
-        
-        (let* ([execute-text-end (- (get-int-pos) 1)] ;; subtract one to skip last newline
-               [received-execute
-                (fetch-output drscheme-frame execute-text-start execute-text-end)])
-          
-          ; check focus and selection for execute test
-          (unless raw?
+      ; load contents of test-file into the REPL, recording
+      ; the start and end positions of the text
+      
+      (cond
+        [(string? program)
+         (insert-string program)]
+        [(eq? program 'fraction-sum)
+         (setup-fraction-sum-interactions)]
+        [(list? program)
+         (for-each
+          (lambda (item)
             (cond
-              [(eq? source-location 'definitions)
-               (unless (send definitions-canvas has-focus?)
-                 (printf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
-                         program))]
-              [(eq? source-location 'interactions)
-               (unless (send interactions-canvas has-focus?)
-                 (printf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
-                         program))]
-              [(send definitions-canvas has-focus?)
-               (let ([start (car source-location)]
-                     [finish (cdr source-location)])
-                 (let* ([error-ranges (send interactions-text get-error-ranges)]
-                        [error-range (and error-ranges
-                                          (not (null? error-ranges))
-                                          (car error-ranges))])
-                   (unless (and error-range
-                                (= (+ (srcloc-position error-range) -1) (loc-offset start))
-                                (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
-                                   (loc-offset finish)))
-                     (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
-                             program
-                             (and error-range
-                                  (list (+ (srcloc-position error-range) -1)
-                                        (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
-                             (list (loc-offset start)
-                                   (loc-offset finish))))))]))
-          
-          ; check text for execute test
-          (next-test)
-          (unless (cond
-                    [(string? execute-answer)
-                     (string=? execute-answer received-execute)]
-                    [(regexp? execute-answer)
-                     (regexp-match execute-answer received-execute)]
-                    [else #f])
-            (failure)
-            (printf "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
-                    program
-                    raw?
-                    execute-answer received-execute))
-          
-          (test:new-window interactions-canvas)
-          
-          ; save the file so that load is in sync
-          (test:menu-select "File" "Save Definitions")
-          
-          ; make sure that a prompt is available at end of the REPL
-          (unless (and (char=? #\>
-                               (send interactions-text get-character
-                                     (- (send interactions-text last-position) 2)))
-                       (char=? #\space
-                               (send interactions-text get-character
-                                     (- (send interactions-text last-position) 1))))
-            (test:keystroke #\return))
-          
-                                        ;
-          
-          (let ([load-test
-                 (lambda (short-filename load-answer)
-                   ;; in order to erase the state in the namespace already, we clear (but don't save!)
-                   ;; the definitions and click execute with the empty buffer
-                   (test:new-window definitions-canvas)
-                   (test:menu-select "Edit" "Select All")
-                   (test:menu-select "Edit" "Delete")
-                   (do-execute drscheme-frame #f)
-                   (wait-for-execute)
-
-                   ;; stuff the load command into the REPL 
-                   (for-each test:keystroke
-                             (string->list (format "(load ~s)" short-filename)))
-          
-                   ;; record current text position, then stuff a CR into the REPL
-                   (let ([load-text-start (+ 1 (send interactions-text last-position))])
-                     
-                     (test:keystroke #\return)
-                     
-                     (when breaking-test?
-                       (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
-                     (wait-for-execute)
-                     
-                     (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
-                            [received-load 
-                             (fetch-output drscheme-frame load-text-start load-text-end)])
-                       
-                       ;; check load text 
-                       (next-test)
-                       (unless (cond
-                                [(string? load-answer)
-                                 (string=? load-answer received-load)]
-                                [(regexp? load-answer)
-                                 (regexp-match load-answer received-load)]
-                                [else #f])
-                         (failure)
-                         (printf "FAILED load test for ~s\n  expected: ~s\n       got: ~s\n"
-                                 program load-answer received-load)))))])
-            (load-test tmp-load-short-filename
-                       (make-load-answer #f))
-            (when (file-exists? tmp-load3-filename)
-              (delete-file tmp-load3-filename))
-            (copy-file tmp-load-filename tmp-load3-filename)
-            (load-test tmp-load3-short-filename
-                       (make-load-answer tmp-load3-short-filename)))
-                       
-          
-          (teardown)
-          
-          ; check for edit-sequence
-          (when (repl-in-edit-sequence?)
-            (printf "FAILED: repl in edit-sequence")
-            (escape)))))
-
-    (define tests 0)
-    (define failures 0)
-    (define (next-test) (set! tests (+ tests 1)))
-    (define (failure) (set! failures (+ failures 1)))
-    (define (reset) (set! tests 0) (set! failures 0))
-    (define (final-report)
-      (if (= 0 failures)
-          (printf "tests finished: all ~a tests passed\n" tests)
-          (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
-    
-    (define (run-test-in-language-level raw?)
-      (let ([level (list "Pretty Big (includes MrEd and Advanced Student)")])
-        (printf "running tests ~a debugging\n" (if raw? "without" "with"))
-        (if raw?
-            (begin
-              (set-language-level! level #f)
-              (test:set-radio-box-item! "No debugging or profiling")
-              (let ([f (get-top-level-focus-window)])
-                (test:button-push "OK")
-                (wait-for-new-frame f)))
-            (set-language-level! level))
-        
-        (random-seed-test)
-        
-        (test:new-window definitions-canvas)
-        (clear-definitions drscheme-frame)
-        (do-execute drscheme-frame)
-        (let/ec escape 
-          (for-each (run-single-test (get-int-pos) escape raw?) test-data))))
-    
-    (define (kill-tests)
-      (clear-definitions drscheme-frame)
-      (do-execute drscheme-frame)
+              [(string? item) (insert-string item)]
+              [(eq? item 'left)
+               (send definitions-text 
+                     set-position
+                     (- (send definitions-text get-start-position) 1)
+                     (- (send definitions-text get-start-position) 1))]
+              [(pair? item) (apply test:menu-select item)]))
+          program)])
       
-      (test:menu-select "Scheme" "Kill")
-      
-      (let ([win (wait-for-new-frame drscheme-frame)])
-        (test:button-push "OK")
-        (let ([drs2 (wait-for-new-frame win)])
-          (unless (eq? drs2 drscheme-frame)
-            (error 'kill-test1 "expected original drscheme frame to come back to the front"))))
-      
-      (type-in-definitions drscheme-frame "(kill-thread (current-thread))")
       (do-execute drscheme-frame #f)
-      (let ([win (wait-for-new-frame drscheme-frame)])
-        (test:button-push "OK")
-        (let ([drs2 (wait-for-new-frame win)])
-          (unless (eq? drs2 drscheme-frame)
-            (error 'kill-test2 "expected original drscheme frame to come back to the front"))))
-      
-      (clear-definitions drscheme-frame)
-      (do-execute drscheme-frame)
-      (type-in-definitions
-       drscheme-frame
-       "(define (f) (queue-callback f) (error 'ouch)) (f)")
-      (do-execute drscheme-frame #f)
-      (sleep 1/2)
-      (test:menu-select "Scheme" "Kill")
-      (let ([win (wait-for-new-frame drscheme-frame null 360)])
-        (test:button-push "OK")
-        (let ([drs2 (wait-for-new-frame win)])
-          (unless (eq? drs2 drscheme-frame)
-            (error
-             'kill-test3
-             "expected original drscheme frame to come back to the front"))))
-      (when (send (send drscheme-frame get-interactions-text) local-edit-sequence?)
-        (error 'kill-test3 "in edit-sequence")))
-    
-    (define (callcc-test)
-      (next-test)
-      (clear-definitions drscheme-frame)
-      (type-in-definitions drscheme-frame "(define kont #f) (let/cc empty (set! kont empty))")
-      (do-execute drscheme-frame)
+      (when breaking-test?
+        (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
       (wait-for-execute)
       
-      (for-each test:keystroke (string->list "(kont)"))
+      (let* ([execute-text-end (- (get-int-pos) 1)] ;; subtract one to skip last newline
+             [received-execute
+              (fetch-output drscheme-frame execute-text-start execute-text-end)])
+        
+        ; check focus and selection for execute test
+        (unless raw?
+          (cond
+            [(eq? source-location 'definitions)
+             (unless (send definitions-canvas has-focus?)
+               (printf "FAILED execute test for ~s\n  expected definitions to have the focus\n"
+                       program))]
+            [(eq? source-location 'interactions)
+             (unless (send interactions-canvas has-focus?)
+               (printf "FAILED execute test for ~s\n  expected interactions to have the focus\n"
+                       program))]
+            [(send definitions-canvas has-focus?)
+             (let ([start (car source-location)]
+                   [finish (cdr source-location)])
+               (let* ([error-ranges (send interactions-text get-error-ranges)]
+                      [error-range (and error-ranges
+                                        (not (null? error-ranges))
+                                        (car error-ranges))])
+                 (unless (and error-range
+                              (= (+ (srcloc-position error-range) -1) (loc-offset start))
+                              (= (+ (srcloc-position error-range) -1 (srcloc-span error-range)) 
+                                 (loc-offset finish)))
+                   (printf "FAILED execute test for ~s\n  error-range is ~s\n  expected ~s\n"
+                           program
+                           (and error-range
+                                (list (+ (srcloc-position error-range) -1)
+                                      (+ (srcloc-position error-range) -1 (srcloc-span error-range))))
+                           (list (loc-offset start)
+                                 (loc-offset finish))))))]))
+        
+        ; check text for execute test
+        (next-test)
+        (unless (cond
+                  [(string? execute-answer)
+                   (string=? execute-answer received-execute)]
+                  [(regexp? execute-answer)
+                   (regexp-match execute-answer received-execute)]
+                  [else #f])
+          (failure)
+          (printf "FAILED execute test for ~s (~a)\n  expected: ~s\n       got: ~s\n"
+                  program
+                  raw?
+                  execute-answer received-execute))
+        
+        (test:new-window interactions-canvas)
+        
+        ; save the file so that load is in sync
+        (test:menu-select "File" "Save Definitions")
+        
+        ; make sure that a prompt is available at end of the REPL
+        (unless (and (char=? #\>
+                             (send interactions-text get-character
+                                   (- (send interactions-text last-position) 2)))
+                     (char=? #\space
+                             (send interactions-text get-character
+                                   (- (send interactions-text last-position) 1))))
+          (test:keystroke #\return))
+        
+        ;
+        
+        (let ([load-test
+               (lambda (short-filename load-answer)
+                 ;; in order to erase the state in the namespace already, we clear (but don't save!)
+                 ;; the definitions and click execute with the empty buffer
+                 (test:new-window definitions-canvas)
+                 (test:menu-select "Edit" "Select All")
+                 (test:menu-select "Edit" "Delete")
+                 (do-execute drscheme-frame #f)
+                 (wait-for-execute)
+                 
+                 ;; stuff the load command into the REPL 
+                 (for-each test:keystroke
+                           (string->list (format "(load ~s)" short-filename)))
+                 
+                 ;; record current text position, then stuff a CR into the REPL
+                 (let ([load-text-start (+ 1 (send interactions-text last-position))])
+                   
+                   (test:keystroke #\return)
+                   
+                   (when breaking-test?
+                     (test:run-one (lambda () (send (send drscheme-frame get-break-button) command))))
+                   (wait-for-execute)
+                   
+                   (let* ([load-text-end (- (get-int-pos) 1)] ;; subtract one to eliminate newline
+                          [received-load 
+                           (fetch-output drscheme-frame load-text-start load-text-end)])
+                     
+                     ;; check load text 
+                     (next-test)
+                     (unless (cond
+                               [(string? load-answer)
+                                (string=? load-answer received-load)]
+                               [(regexp? load-answer)
+                                (regexp-match load-answer received-load)]
+                               [else #f])
+                       (failure)
+                       (printf "FAILED load test ~a for ~s\n  expected: ~s\n       got: ~s\n"
+                               short-filename
+                               program load-answer received-load)))))])
+          (load-test tmp-load-short-filename (make-load-answer in-vector raw? #f))
+          (when (file-exists? tmp-load3-filename)
+            (delete-file tmp-load3-filename))
+          (copy-file tmp-load-filename tmp-load3-filename)
+          (load-test tmp-load3-short-filename (make-load-answer in-vector raw? tmp-load3-short-filename)))
+        
+        (teardown)
+        
+        ; check for edit-sequence
+        (when (repl-in-edit-sequence?)
+          (printf "FAILED: repl in edit-sequence")
+          (escape)))))
+  
+  (define tests 0)
+  (define failures 0)
+  (define (next-test) (set! tests (+ tests 1)))
+  (define (failure) (set! failures (+ failures 1)))
+  (define (reset) (set! tests 0) (set! failures 0))
+  (define (final-report)
+    (if (= 0 failures)
+        (printf "tests finished: all ~a tests passed\n" tests)
+        (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
+  
+  (define (run-test-in-language-level raw?)
+    (let ([level (list "Pretty Big (includes MrEd and Advanced Student)")])
+      (printf "running tests ~a debugging\n" (if raw? "without" "with"))
+      (if raw?
+          (begin
+            (set-language-level! level #f)
+            (test:set-radio-box-item! "No debugging or profiling")
+            (let ([f (get-top-level-focus-window)])
+              (test:button-push "OK")
+              (wait-for-new-frame f)))
+          (set-language-level! level))
+      
+      (random-seed-test)
+      
+      (test:new-window definitions-canvas)
+      (clear-definitions drscheme-frame)
+      (do-execute drscheme-frame)
+      (let/ec escape 
+        (for-each (run-single-test (get-int-pos) escape raw?) test-data))))
+  
+  (define (kill-tests)
+    (clear-definitions drscheme-frame)
+    (do-execute drscheme-frame)
+    
+    (test:menu-select "Scheme" "Kill")
+    
+    (let ([win (wait-for-new-frame drscheme-frame)])
+      (test:button-push "OK")
+      (let ([drs2 (wait-for-new-frame win)])
+        (unless (eq? drs2 drscheme-frame)
+          (error 'kill-test1 "expected original drscheme frame to come back to the front"))))
+    
+    (type-in-definitions drscheme-frame "(kill-thread (current-thread))")
+    (do-execute drscheme-frame #f)
+    (let ([win (wait-for-new-frame drscheme-frame)])
+      (test:button-push "OK")
+      (let ([drs2 (wait-for-new-frame win)])
+        (unless (eq? drs2 drscheme-frame)
+          (error 'kill-test2 "expected original drscheme frame to come back to the front"))))
+    
+    (clear-definitions drscheme-frame)
+    (do-execute drscheme-frame)
+    (type-in-definitions
+     drscheme-frame
+     "(define (f) (queue-callback f) (error 'ouch)) (f)")
+    (do-execute drscheme-frame #f)
+    (sleep 1/2)
+    (test:menu-select "Scheme" "Kill")
+    (let ([win (wait-for-new-frame drscheme-frame null 360)])
+      (test:button-push "OK")
+      (let ([drs2 (wait-for-new-frame win)])
+        (unless (eq? drs2 drscheme-frame)
+          (error
+           'kill-test3
+           "expected original drscheme frame to come back to the front"))))
+    (when (send (send drscheme-frame get-interactions-text) local-edit-sequence?)
+      (error 'kill-test3 "in edit-sequence")))
+  
+  (define (callcc-test)
+    (next-test)
+    (clear-definitions drscheme-frame)
+    (type-in-definitions drscheme-frame "(define kont #f) (let/cc empty (set! kont empty))")
+    (do-execute drscheme-frame)
+    (wait-for-execute)
+    
+    (for-each test:keystroke (string->list "(kont)"))
+    (test:keystroke #\return)
+    (wait-for-execute)
+    
+    
+    (for-each test:keystroke (string->list "x"))
+    (let ([start (+ 1 (send interactions-text last-position))])
       (test:keystroke #\return)
       (wait-for-execute)
       
-        
-      (for-each test:keystroke (string->list "x"))
+      (let* ([end (- (get-int-pos) 1)]
+             [output (fetch-output drscheme-frame start end)]
+             [expected "reference to undefined identifier: x"])
+        (unless (equal? output expected)
+          (failure)
+          (fprintf (current-error-port) "callcc-test: expected ~s, got ~s" expected output)))))
+  
+  (define (random-seed-test)
+    (define expression
+      (string->list (format "~a" '(pseudo-random-generator->vector (current-pseudo-random-generator)))))
+    (next-test)
+    (clear-definitions drscheme-frame)
+    (do-execute drscheme-frame)
+    (wait-for-execute)
+    
+    (for-each test:keystroke expression)
+    (let ([start1 (+ 1 (send interactions-text last-position))])
+      (test:keystroke #\return)
+      (wait-for-execute)
+      (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
+        (for-each test:keystroke expression)
+        (let ([start2 (+ 1 (send interactions-text last-position))])
+          (test:keystroke #\return)
+          (wait-for-execute)
+          (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
+            (unless (equal? output1 output2)
+              (failure)
+              (fprintf (current-error-port)
+                       "random-seed-test: expected\n  ~s\nand\n  ~s\nto be the same"
+                       output1
+                       output2)))))))
+  
+  (define (top-interaction-test)
+    (clear-definitions drscheme-frame)
+    (do-execute drscheme-frame)
+    (wait-for-execute)
+    (let ([ints-just-after-welcome (+ 1 (send interactions-text last-position))])
+      
+      (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
+      (test:menu-select "File" "Save Definitions")
+      
+      (clear-definitions drscheme-frame)
+      (do-execute drscheme-frame)
+      (wait-for-execute)
+      
+      (for-each test:keystroke (string->list (format "(load ~s)" tmp-load-short-filename)))
       (let ([start (+ 1 (send interactions-text last-position))])
         (test:keystroke #\return)
         (wait-for-execute)
-        
         (let* ([end (- (get-int-pos) 1)]
                [output (fetch-output drscheme-frame start end)]
-               [expected "reference to undefined identifier: x"])
+               [expected "(+ 1 2)"])
           (unless (equal? output expected)
-            (failure)
-            (fprintf (current-error-port) "callcc-test: expected ~s, got ~s" expected output)))))
-    
-    (define (random-seed-test)
-      (define expression
-        (string->list (format "~a" '(pseudo-random-generator->vector (current-pseudo-random-generator)))))
-      (next-test)
-      (clear-definitions drscheme-frame)
-      (do-execute drscheme-frame)
-      (wait-for-execute)
+            (error 'top-interaction-test "expected.1 ~s, got ~s" expected output))
+          (next-test)))
       
-      (for-each test:keystroke expression)
-      (let ([start1 (+ 1 (send interactions-text last-position))])
+      (for-each test:keystroke (string->list "(+ 4 5)"))
+      (let ([start (+ 1 (send interactions-text last-position))])
         (test:keystroke #\return)
         (wait-for-execute)
-        (let ([output1 (fetch-output drscheme-frame start1 (- (get-int-pos) 1))])
-          (for-each test:keystroke expression)
-          (let ([start2 (+ 1 (send interactions-text last-position))])
-            (test:keystroke #\return)
-            (wait-for-execute)
-            (let ([output2 (fetch-output drscheme-frame start2 (- (get-int-pos) 1))])
-              (unless (equal? output1 output2)
-                (failure)
-                (fprintf (current-error-port)
-                         "random-seed-test: expected\n  ~s\nand\n  ~s\nto be the same"
-                         output1
-                         output2)))))))
-      
-    (define (top-interaction-test)
-      (clear-definitions drscheme-frame)
-      (do-execute drscheme-frame)
-      (wait-for-execute)
-      (let ([ints-just-after-welcome (+ 1 (send interactions-text last-position))])
-        
-        (type-in-definitions drscheme-frame "(define-syntax #%top-interaction (syntax-rules () [(_ . e) 'e]))\n(+ 1 2)\n")
-        (test:menu-select "File" "Save Definitions")
-        
-        (clear-definitions drscheme-frame)
-        (do-execute drscheme-frame)
-        (wait-for-execute)
-        
-        (for-each test:keystroke (string->list (format "(load ~s)" tmp-load-short-filename)))
-        (let ([start (+ 1 (send interactions-text last-position))])
-          (test:keystroke #\return)
-          (wait-for-execute)
-          (let* ([end (- (get-int-pos) 1)]
-                 [output (fetch-output drscheme-frame start end)]
-                 [expected "(+ 1 2)"])
-            (unless (equal? output expected)
-              (error 'top-interaction-test "expected.1 ~s, got ~s" expected output))
-            (next-test)))
-        
-        (for-each test:keystroke (string->list "(+ 4 5)"))
-        (let ([start (+ 1 (send interactions-text last-position))])
-          (test:keystroke #\return)
-          (wait-for-execute)
-          (let* ([end (- (get-int-pos) 1)]
-                 [output (fetch-output drscheme-frame start end)]
-                 [expected "(+ 4 5)"])
-            (unless (equal? output expected)
-              (error 'top-interaction-test "expected.2 ~s, got ~s" expected output))
-            (next-test)))))
-    
-    (when (file-exists? tmp-load-filename)
-      (delete-file tmp-load-filename))
-    (save-drscheme-window-as tmp-load-filename)
+        (let* ([end (- (get-int-pos) 1)]
+               [output (fetch-output drscheme-frame start end)]
+               [expected "(+ 4 5)"])
+          (unless (equal? output expected)
+            (error 'top-interaction-test "expected.2 ~s, got ~s" expected output))
+          (next-test)))))
+  
+  (when (file-exists? tmp-load-filename)
+    (delete-file tmp-load-filename))
+  (save-drscheme-window-as tmp-load-filename)
+  
+  (run-test-in-language-level #f)
+  (run-test-in-language-level #t)
+  ;(kill-tests)
+  ;(callcc-test)
+  ;(top-interaction-test)
+  ;(final-report)
+  )
 
-    (run-test-in-language-level #t)
-    (run-test-in-language-level #f)
-    (kill-tests)
-    (callcc-test)
-    (top-interaction-test)
-    (final-report)))
+
+(define (make-execute-answer test raw?)
+  ((if raw? answer-raw-execute answer-debug-execute) 
+   (test-answer test)))
+
+(define (make-load-answer test raw? src-file)
+  ((if raw?
+       (if src-file
+           answer-raw-load
+           answer-raw-load-fn)
+       (if src-file
+           answer-debug-load
+           answer-debug-load-fn))
+   (test-answer test)))
+
+(define (string/rx-append a b)
+  (if (regexp? b)
+      (regexp (string-append (regexp-quote a) (object-name b)))
+      (string-append a b)))

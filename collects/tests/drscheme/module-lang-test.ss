@@ -45,7 +45,7 @@
                 (regexp "first>"))
      (make-test "(module m mzscheme (require (all-except (lib \"list.ss\") foldl)))" 
                 "foldl"
-                ". reference to an identifier before its definition: foldl")
+                ". . reference to an identifier before its definition: foldl")
      
      (make-test "(module m mzscheme (require (prefix mz: mzscheme)))" "mz:+" #rx"procedure:+")
      
@@ -72,7 +72,7 @@
                         `(module m (file ,(path->string (build-path this-dir "module-lang-test-tmp.ss")))
                            x))
                 "+"
-                ". reference to an identifier before its definition: +")
+                ". . reference to an identifier before its definition: +")
      
      (make-test (format "~s" '(module m mzscheme (provide lambda)))
                 "(lambda (x) x)"
@@ -83,14 +83,14 @@
                 "1")
      (make-test (format "~s" '(module m mzscheme (define-syntax s (syntax 1)) (provide s)))
                 "s"
-                "s: illegal use of syntax in: s")
+                ". s: illegal use of syntax in: s")
      
      (make-test (format "~s" '(module m mzscheme (define-syntax (x stx) #'(define a 10)) x x))
                 "a"
-                ". reference to an identifier before its definition: a")
+                ". . reference to an identifier before its definition: a")
      (make-test (format "~s" '(module m mzscheme (define-syntax (x stx) #'(define-syntax (a stx) #'10)) x x))
                 "a"
-                ". reference to an identifier before its definition: a")
+                ". . reference to an identifier before its definition: a")
      (make-test (format "~s" '(module m mzscheme (define-syntax (x stx) #'(define a 10)) x x (define a 77)))
                 "a"
                 "77")
@@ -210,7 +210,7 @@
                   [(regexp? (test-result test))
                    (regexp-match (test-result test) after-int-output)])])
           (unless passed?
-            (printf "FAILED: ~a\n        ~a\n  expected: ~a\n       got: ~a\n"
+            (printf "FAILED: ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
                     (test-definitions test)
                     (or (test-interactions test) 'no-interactions)
                     (test-result test)
