@@ -366,7 +366,6 @@
     (add (string-constant plt-homepage) "http://www.plt-scheme.org/")
     (add (string-constant teachscheme!-homepage) "http://www.teach-scheme.org/")
     (add (string-constant how-to-design-programs) "http://www.htdp.org/")
-    (add (string-constant how-to-use-scheme) "http://www.htus.org/")
     
     (for-each (λ (tool)
                 (cond [(drscheme:tools:successful-tool-url tool) 
