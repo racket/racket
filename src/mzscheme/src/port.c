@@ -7004,9 +7004,9 @@ static long mz_spawnv(char *command, const char * const *argv,
 
   /* If none of the stdio handles are consoles, specifically
      create the subprocess without a console: */
-  if (is_fd_terminal((int)startup.hStdInput)
-      && is_fd_terminal((int)startup.hStdOutput)
-      && is_fd_terminal((int)startup.hStdError))
+  if (!is_fd_terminal((int)startup.hStdInput)
+      && !is_fd_terminal((int)startup.hStdOutput)
+      && !is_fd_terminal((int)startup.hStdError))
     cr_flag = CREATE_NO_WINDOW;
   else
     cr_flag = 0;
