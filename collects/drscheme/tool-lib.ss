@@ -1319,7 +1319,7 @@ all of the names in the tools library, for use defining keybindings
    drscheme:language:simple-settings-printing-style
    (drscheme:language:simple-settings?
     . -> .
-    (symbols 'constructor 'quasiquote 'write 'current-print))
+    (symbols 'constructor 'quasiquote 'write))
    (simple-settings)
    
    @{Extracts the printing-style setting from a simple-settings.})
@@ -1373,7 +1373,7 @@ all of the names in the tools library, for use defining keybindings
   (proc-doc/names
    drscheme:language:make-simple-settings
    (-> boolean?
-       (symbols 'constructor 'quasiquote 'write 'current-print)
+       (symbols 'constructor 'quasiquote 'write)
        (symbols 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
        boolean?
        boolean?

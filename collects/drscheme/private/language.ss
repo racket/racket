@@ -154,7 +154,7 @@
              (= (vector-length printable)
                 (procedure-arity make-simple-settings))
              (boolean? (vector-ref printable 0))
-             (memq (vector-ref printable 1) '(constructor quasiquote write current-print))
+             (memq (vector-ref printable 1) '(constructor quasiquote write))
              (memq (vector-ref printable 2) 
                    '(mixed-fraction 
                      mixed-fraction-e
@@ -191,7 +191,7 @@
                                   insert-newlines
                                   annotations))
   ;;  case-sensitive  : boolean
-  ;;  printing-style  : (union 'write 'constructor 'quasiquote 'current-print)
+  ;;  printing-style  : (union 'write 'constructor 'quasiquote)
   ;;  fraction-style  : (union 'mixed-fraction 'mixed-fraction-e 'repeating-decimal 'repeating-decimal-e)
   ;;  show-sharing    : boolean
   ;;  insert-newlines : boolean
@@ -236,8 +236,7 @@
                              (string-constant output-style-label)
                              (list (string-constant constructor-printing-style)
                                    (string-constant quasiquote-printing-style)
-                                   (string-constant write-printing-style)
-                                   (string-constant print-printing-style))
+                                   (string-constant write-printing-style))
                              output-panel
                              (λ (rb evt)
                                (let ([on? (not (= (send rb get-selection) 3))])
@@ -264,8 +263,7 @@
           (case (send output-style get-selection)
             [(0) 'constructor]
             [(1) 'quasiquote]
-            [(2) 'write]
-            [(3) 'current-print])
+            [(2) 'write])
           (if (send fraction-style get-value)
               'repeating-decimal-e
               'mixed-fraction-e)
@@ -282,12 +280,7 @@
                (case (simple-settings-printing-style settings)
                  [(constructor) 0]
                  [(quasiquote) 1]
-                 [(write) 2]
-                 [(current-print) 3]))
-         (let ([on? (not (eq? 'current-print (simple-settings-printing-style settings)))])
-           (send fraction-style enable on?)
-           (send show-sharing enable on?)
-           (send insert-newlines enable on?))
+                 [(write) 2]))
          (send fraction-style set-value (eq? (simple-settings-fraction-style settings)
                                              'repeating-decimal-e))
          (send show-sharing set-value (simple-settings-show-sharing settings))
@@ -301,9 +294,6 @@
   
   ;; simple-module-based-language-render-value/format : TST settings port (union #f (snip% -> void)) (union 'infinity number) -> void
   (define (simple-module-based-language-render-value/format value settings port width)
-    (if (eq? (simple-settings-printing-style settings) 'current-print)
-        (parameterize ([current-output-port port])
-          ((current-print) value))
         (let ([converted-value (simple-module-based-language-convert-value value settings)])
           (setup-printing-parameters 
            (λ ()
@@ -318,7 +308,7 @@
                   (pretty-print converted-value port))
                 (newline port)]))
            settings
-           width))))
+           width)))
   
   ;; setup-printing-parameters : (-> void) simple-settings number -> void
   (define (setup-printing-parameters thunk settings width)
@@ -386,7 +376,6 @@
   (define (simple-module-based-language-convert-value value settings)
     (case (simple-settings-printing-style settings)
       [(write) value]
-      [(current-print) value]
       [(constructor)
        (parameterize ([constructor-style-printing #t]
                       [show-sharing (simple-settings-show-sharing settings)]
@@ -456,7 +445,6 @@
        (define (convert-value value)
          ,(case (simple-settings-printing-style setting)
             [(write) `value]
-            [(current-print) `value]
             [(constructor)
              `(parameterize ([constructor-style-printing #t]
                              [show-sharing ,(simple-settings-show-sharing setting)])

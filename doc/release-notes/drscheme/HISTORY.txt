@@ -22,6 +22,13 @@
     the tools interface. Use drscheme:debug:error-display-handler/stacktrace
     instead.
 
+  . current-print's behavior is different in DrScheme. It
+    now prints to a separate port (the same on the REPL
+    printer uses, namely with blue output) and the style of
+    printing that it uses is controlled by the language
+    dialog (which means that the `current-print' option is
+    now gone from the language dialog)
+
 ------------------------------
         Version 372
 ------------------------------
