@@ -197,6 +197,11 @@
                  match match-let match-let* match-letrec
                  let/cc let/ec letcc catch
                  let-syntax letrec-syntax fluid-let-syntax letrec-syntaxes+values
+
+                 for for/list for/hash for/hasheq for/and for/or 
+                 for/lists for/first for/last for/fold
+                 for* for*/list for*/hash for*/hasheq for*/and for*/or 
+                 for*/lists for*/first for*/last for*/fold                 
                  
                  kernel-syntax-case
                  syntax-case syntax-case* syntax-rules syntax-id-rules
