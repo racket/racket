@@ -83,10 +83,7 @@
                           ,(string-constant debugging)
                           ,(string-constant debugging-and-profiling)))
                        (parent p)
-                       (callback void))))]
-                 [output
-                  (make-panel (string-constant output-style-label)
-                              "always current-print")])
+                       (callback void))))])
             (case-lambda
               [()
                (drscheme:language:make-simple-settings
@@ -106,10 +103,6 @@
                        [(none) 0]
                        [(debug) 1]
                        [(debug/profile) 2]))])))
-        (define/override (render-value/format value settings port port-write)
-          (parameterize ([current-output-port port]
-                         [current-inspector (make-inspector)])
-            ((current-print) value)))
         (super-instantiate ())))
     (define (add-swindle-language name module entry-name num one-line url)
       (drscheme:language-configuration:add-language
