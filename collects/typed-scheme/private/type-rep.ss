@@ -66,7 +66,10 @@
   ;; parent : Struct
   ;; flds : Listof[Type]
   ;; proc : Function Type
-  (dt Struct (name parent flds proc poly? pred-id)
+  ;; poly? : is this a polymorphic type?
+  ;; pred-id : identifier for the predicate of the struct
+  ;; cert : syntax certifier for pred-id
+  (dt Struct (name parent flds proc poly? pred-id cert)
       [#:intern (list name parent flds proc)]
       [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
                (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
@@ -75,7 +78,8 @@
                            (map type-rec-id flds)
                            (and proc (type-rec-id proc))
                            poly?
-                           pred-id)])
+                           pred-id
+                           cert)])
   
   ;; dom : Listof[Type]
   ;; rng : Type

@@ -188,7 +188,7 @@
                               (cgen V X S e)))
                            (fail! S T))]
          
-         [((Struct: nm p flds proc _ _) (Struct: nm p flds* proc* _ _))
+         [((Struct: nm p flds proc _ _ _) (Struct: nm p flds* proc* _ _ _))
           (let-values ([(flds flds*)
                         (cond [(and proc proc*)
                                (values (cons proc flds) (cons proc* flds*))]

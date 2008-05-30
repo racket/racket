@@ -72,7 +72,7 @@
       [(list (list (Param: t1 t2) (Param: s1 s2)) rest ...) 
        (unify/acc (list* (list t1 s1) (list t2 s2) rest) acc)]
       ;; structs
-      [(list (list (Struct: nm p elems proc _ _) (Struct: nm p elems* proc* _ _)) rest ...)
+      [(list (list (Struct: nm p elems proc _ _ _) (Struct: nm p elems* proc* _ _ _)) rest ...)
        (cond [(and proc proc*)
               (unify/acc (append rest (map list elems elems*) (list (list proc proc*))) acc)]
              [(or proc proc*) #f]

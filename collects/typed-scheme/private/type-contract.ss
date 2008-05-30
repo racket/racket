@@ -117,7 +117,7 @@
         [(Instance: _) #'(is-a?/c object%)]
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
-        [(Struct: _ _ _ _ #f pred?) pred?]
+        [(Struct: _ _ _ _ #f pred? cert) (cert pred?)]
         [(Syntax: (Base: 'Symbol)) #'identifier?]
         [(Syntax: t)
          (if (equal? ty Any-Syntax)

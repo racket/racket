@@ -287,7 +287,7 @@
         [(list (Syntax: s1) (Syntax: s2))
          (infer/int s1 s2 mapping flag)]
         ;; structs just recur
-        [(list (Struct: nm p flds proc _ _) (Struct: nm p flds* proc* _ _))
+        [(list (Struct: nm p flds proc _ _ _) (Struct: nm p flds* proc* _ _ _))
          (cond [(and proc proc*)
                 (infer/int/list (cons proc flds) (cons proc* flds*) mapping flag)]
                [(or proc proc*)
