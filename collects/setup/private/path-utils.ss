@@ -2,6 +2,7 @@
 
 (require setup/dirs
          setup/main-collects
+         setup/path-relativize
          scheme/list)
 
 (provide doc-path path->name)
@@ -21,13 +22,27 @@
 ;; printouts during compilation, so the input path is usually
 ;; complete, otherwise it can be ambiguous, so use only when it's
 ;; clear from the context what path is shown.  (To be used only for
-;; human-readable output.)
-(define (path->name path)
+;; human-readable output.)  Generalized for any base directory and an
+;; indicative prefix.
+(define (path->rel path find-base)
+  ((if (not find-base)
+     path->main-collects-relative
+     (let-values ([(path->rel rel->path)
+                   (make-relativize find-base 'rel 'path->rel 'rel->path)])
+       path->rel))
+   path))
+(define (path->name path #:prefix [prefix #f] #:base [find-base #f])
   (if (not (complete-path? path))
     (if (string? path) path (path->string path))
-    (let ([rel (path->main-collects-relative path)])
+    (let loop ([rel (path->rel path find-base)]
+               [prefix prefix])
       (if (pair? rel)
-        (bytes->string/utf-8
-         (apply bytes-append
-                (cdr (append-map (lambda (p) (list #"/" p)) (cdr rel)))))
-        (path->string rel)))))
+        (let* ([p (cdr (append-map (lambda (p) (list #"/" p)) (cdr rel)))]
+               [p (bytes->string/utf-8 (apply bytes-append p))])
+          (if prefix (format "<~a>/~a" prefix p) p))
+        (if (or prefix find-base)
+          (path->string rel)
+          ;; by default (both optionals missing) try the user
+          ;; collections too looping with a prefix avoids trying this
+          ;; again
+          (loop (path->rel path find-user-collects-dir) 'user))))))

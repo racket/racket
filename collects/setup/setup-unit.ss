@@ -1,6 +1,5 @@
-
-; Expects parameters to be set before invocation.
-; Calls `exit' when done.
+;; Expects parameters to be set before invocation.
+;; Calls `exit' when done.
 
 #lang scheme/base
 
@@ -47,14 +46,8 @@
   (export)
 
   (define (setup-fprintf p task s . args)
-    (apply fprintf p (string-append "setup-plt: " 
-                                    (if task
-                                        (string-append
-                                         task
-                                         ": ")
-                                        "")
-                                    s 
-                                    "\n") args))
+    (let ([task (if task (string-append task ": ") "")])
+      (apply fprintf p (string-append "setup-plt: " task s "\n") args)))
 
   (define (setup-printf task s . args)
     (apply setup-fprintf (current-output-port) task s args))
@@ -85,7 +78,7 @@
                        (map (lambda (s) (format " ~a" s))
                             (available-mzscheme-variants))))
   (setup-printf "main collects" "~a" (path->string main-collects-dir))
-  (setup-printf "collects paths" 
+  (setup-printf "collects paths"
                 (if (null? (current-library-collection-paths)) " empty!" ""))
   (for ([p (current-library-collection-paths)])
     (setup-printf #f "  ~a" (path->string p)))
@@ -190,7 +183,7 @@
           (error 'make-cc*
                  "Internal error: cc had invalid info-path: ~e" path))))
     (when (info 'compile-subcollections (lambda () #f))
-      (setup-printf "WARNING" 
+      (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a\n"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
@@ -359,7 +352,7 @@
       (for ([cc given-ccs])
         (let ([mark (cc-mark cc)])
           (when (file-exists? mark)
-            (setup-printf "WARNING" 
+            (setup-printf "WARNING"
                           "found a marker file, deleting: ~a"
                           (path->name mark))
             (delete-file mark)))))
@@ -585,7 +578,10 @@
                                           [(general) 'installer]
                                           [(post)    'post-installer])))])
                 (setup-printf (format "~ainstalling"
-                                      (case part [(pre) "pre-"] [(post) "post-"] [else ""]))
+                                      (case part
+                                        [(pre) "pre-"]
+                                        [(post) "post-"]
+                                        [else ""]))
                               "~a"
                               (cc-name cc))
                 (let ([dir (build-path main-collects-dir 'up)])
@@ -791,7 +787,7 @@
       (dynamic-require 'setup/scribble 'setup-scribblings)))
 
   (when (make-docs)
-    (setup-printf #f "building documentation")
+    (setup-printf #f "--- building documentation ---")
     ((doc:verbose) (verbose))
     (with-handlers ([exn:fail?
                      (lambda (exn)
@@ -897,7 +893,7 @@
                (unless (null? mzlns)
                  (setup-printf
                   "WARNING"
-                  "~a launcher name list ~s has no matching library/flags lists"
+                  "~s launcher name list ~s has no matching library/flags lists"
                   kind mzlns))]
               [(and (or (not mzlls) (= (length mzlns) (length mzlls)))
                     (or (not mzlfs) (= (length mzlns) (length mzlfs))))
@@ -910,15 +906,19 @@
                                     `(relative? . ,(not absolute-installation?))
                                     (build-aux-from-path
                                      (build-path (cc-path cc)
-                                                 (path-replace-suffix (or mzll mzln) #""))))])
+                                                 (path-replace-suffix
+                                                  (or mzll mzln)
+                                                  #""))))])
                     (unless (up-to-date? p aux)
-                      (setup-printf "launcher"
-                                    "~a [~a~a]"
-                                    (path->string p)
-                                    kind (let ([v (current-launcher-variant)])
-                                           (if (eq? v (system-type 'gc))
-                                             ""
-                                             (format " ~a" v))))
+                      (setup-printf
+                       "launcher"
+                       "~a~a"
+                       (path->name p #:prefix (format "~a-bin" kind)
+                                   #:base (if (equal? kind 'console)
+                                            find-console-bin-dir
+                                            find-gui-bin-dir))
+                       (let ([v (current-launcher-variant)])
+                         (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
                       (make-launcher
                        (or mzlf
                            (if (cc-collection cc)
@@ -942,13 +942,13 @@
                (let ([fault (if (or (not mzlls) (= (length mzlns) (length mzlls))) 'f 'l)])
                  (setup-printf
                   "WARNING"
-                  "~a launcher name list ~s doesn't match ~a list; ~s"
+                  "~s launcher name list ~s doesn't match ~a list; ~s"
                   kind mzlns
                   (if (eq? 'l fault) "library" "flags")
                   (if (eq? fault 'l) mzlls mzlfs)))]))
           (for ([variant (available-mred-variants)])
             (parameterize ([current-launcher-variant variant])
-              (make-launcher "MrEd"
+              (make-launcher 'gui
                              'mred-launcher-names
                              'mred-launcher-libraries
                              'mred-launcher-flags
@@ -957,7 +957,7 @@
                              mred-launcher-up-to-date?)))
           (for ([variant (available-mzscheme-variants)])
             (parameterize ([current-launcher-variant variant])
-              (make-launcher "MzScheme"
+              (make-launcher 'console
                              'mzscheme-launcher-names
                              'mzscheme-launcher-libraries
                              'mzscheme-launcher-flags
