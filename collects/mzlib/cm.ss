@@ -141,42 +141,46 @@
                                                            (cons (path->bytes p)
                                                                  external-deps)))))
                                                d)))])
-                           (get-module-code path mode #:source-reader read-src-syntax))]
+                           (get-module-code path mode
+                                            compile
+                                            (lambda (a b) #f) ; extension handler
+                                            #:source-reader read-src-syntax))]
                    [code-dir (get-code-dir mode path)])
-              (when (not (directory-exists? code-dir))
-                (make-directory* code-dir))
-	      (with-compile-output
-	       zo-name
-	       (lambda (out)
-		 (with-handlers ((exn:fail?
-				  (lambda (ex)
-				    (close-output-port out)
-				    (compilation-failure mode path zo-name #f (exn-message ex))
-                                    (raise ex))))
-		   (parameterize ([current-write-relative-directory
-				   (let-values ([(base name dir?) (split-path path)])
-				     (if (eq? base 'relative)
-					 (current-directory)
-					 (path->complete-path base (current-directory))))])
-		     (write code out)))
-		 ;; redundant, but close as early as possible:
-		 (close-output-port out)
-		 ;; Note that we check time and write .deps before returning from with-compile-output...
-		 (let ([ss-sec (file-or-directory-modify-seconds path)]
-		       [zo-sec (if (file-exists? zo-name)
-				   (file-or-directory-modify-seconds zo-name)
-				   +inf.0)])
-		   (when (< zo-sec ss-sec)
-		     (error 'compile-zo
-			    "date for newly created .zo file (~a @ ~a) is before source-file date (~a @ ~a)~a"
-			    zo-name
-			    (format-date (seconds->date zo-sec))
-			    path
-			    (format-date (seconds->date ss-sec))
-			    (if (> ss-sec (current-seconds))
-				", which appears to be in the future"
-				""))))
-		 (write-deps code mode path external-deps)))))])))
+              (when code
+                (when (not (directory-exists? code-dir))
+                  (make-directory* code-dir))
+                (with-compile-output
+                 zo-name
+                 (lambda (out)
+                   (with-handlers ((exn:fail?
+                                    (lambda (ex)
+                                      (close-output-port out)
+                                      (compilation-failure mode path zo-name #f (exn-message ex))
+                                      (raise ex))))
+                     (parameterize ([current-write-relative-directory
+                                     (let-values ([(base name dir?) (split-path path)])
+                                       (if (eq? base 'relative)
+                                           (current-directory)
+                                           (path->complete-path base (current-directory))))])
+                       (write code out)))
+                   ;; redundant, but close as early as possible:
+                   (close-output-port out)
+                   ;; Note that we check time and write .deps before returning from with-compile-output...
+                   (let ([ss-sec (file-or-directory-modify-seconds path)]
+                         [zo-sec (if (file-exists? zo-name)
+                                     (file-or-directory-modify-seconds zo-name)
+                                     +inf.0)])
+                     (when (< zo-sec ss-sec)
+                       (error 'compile-zo
+                              "date for newly created .zo file (~a @ ~a) is before source-file date (~a @ ~a)~a"
+                              zo-name
+                              (format-date (seconds->date zo-sec))
+                              path
+                              (format-date (seconds->date ss-sec))
+                              (if (> ss-sec (current-seconds))
+                                  ", which appears to be in the future"
+                                  ""))))
+                   (write-deps code mode path external-deps))))))])))
     (trace-printf "end compile: ~a" path))
 
   (define (format-date date)
