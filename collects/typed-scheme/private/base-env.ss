@@ -136,6 +136,7 @@
       (-poly (a b c)
              (cl-> [((a b . -> . b) b (make-lst a)) b]
                    [((a b c . -> . c) c (make-lst a) (make-lst b)) c]))]
+     [foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
      [filter (-poly (a) ((a . -> . B) (-lst a) . -> . (-lst a)))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
