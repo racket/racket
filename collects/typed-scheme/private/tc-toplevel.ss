@@ -240,5 +240,6 @@
 ;; syntax -> void
 (define (tc-toplevel-form form)
   (tc-toplevel/pass1 form)  
-  (tc-toplevel/pass2 form))
+  (begin0 (tc-toplevel/pass2 form)
+          (report-all-errors)))
 
