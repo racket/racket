@@ -167,7 +167,7 @@ as the @tech{definitions window} plus a few more:
  @onscreen{Keybindings} sub-menu of @onscreen{Edit} selects a file
  containing Scheme definitions of keybindings. The file must contain a
  single module that uses a special keybindings language,
- @schememodname[framework/keybinding-lang].  For example, a file named
+ @scheme[framework/keybinding-lang].  For example, a file named
  @filepath{mykeys.ss} for keybindings might contain the following
  code:
 

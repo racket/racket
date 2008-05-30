@@ -131,9 +131,10 @@ file if
  @item{the file is expected to contain a module (i.e., the second
  argument to the handler is a symbol);}
 
- @item{the value of each of @scheme[current-eval],
- @scheme[current-load], and @scheme[current-namespace] is the same as
- when @scheme[make-compilation-manager-load/use-compiled-handler] was
+ @item{the value of each of @scheme[(current-eval)],
+ @scheme[(current-load)], and @scheme[(namespace-module-registry
+ (current-namespace))] is the same as when
+ @scheme[make-compilation-manager-load/use-compiled-handler] was
  called;}
 
  @item{the value of @scheme[use-compiled-file-paths] contains the
