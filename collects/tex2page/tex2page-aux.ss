@@ -1,10 +1,45 @@
 ;tex2page
 ;(c) Dorai Sitaram, 1997-2002
 
-(module tex2page-aux mzscheme
-  (require mzlib/process)
-  (require mzlib/date)
-  (provide (all-defined-except ))
+;; Based on the mzscheme-specific version of tex2page for PLT Scheme v372,
+;; adjusted for v4.0 to use `r5rs', instead, since v4.0 makes pairs
+;; immutable.
+
+;; Converting the code to use immutable pairs and boxes seemed to work
+;; fine (after some testing), but switching to `r5rs' seems safer.
+
+(module tex2page-aux r5rs
+  (#%require (only mzscheme 
+                   require
+                   require-for-syntax
+                   provide))
+  (require (lib "process.ss"))
+  (require (lib "date.ss")
+           (only mzscheme
+                 make-hash-table hash-table-get hash-table-put!
+                 hash-table-for-each
+                 getenv file-exists? delete-file file-or-directory-modify-seconds
+                 current-seconds seconds->date
+                 date-hour date-minute date-day date-month date-year
+                 string-upcase
+                 version read-line error
+                 unless when fluid-let
+                 open-input-string open-output-string get-output-string eof
+                 parameterize))
+  (require-for-syntax mzscheme)
+  (provide (all-defined-except))
+
+(define (ormap f l)
+  (if (null? l)
+      #f
+      (if (null? (cdr l))
+          (f (car l))
+          (or (f (car l)) (ormap f (cdr l))))))
+
+(define (reverse! l) (reverse l))
+(define append! append)
+
+(define (eval-expr e) (eval e (interaction-environment)))
 
 (define make-table
   (lambda z (if (null? z) (make-hash-table) (make-hash-table 'equal))))
@@ -12,10 +47,6 @@
 (define table-get
   (lambda (ht k . d)
     (hash-table-get ht k (let ((d (if (null? d) #f (car d)))) (lambda () d)))))
-
-(define table-put!
-  (lambda (ht k v)
-    (hash-table-put! ht k v)))
 
 ; ensure shell-magic above
 ;Configured for Scheme dialect plt by scmxlate, v 2004-09-08,
@@ -463,7 +494,7 @@
           (approp-case (lambda (c) (if upcase? (char-upcase c) c))))
       (let loop ((n n) (dd roman-digits) (s '()))
         (if (null? dd)
-          (if (null? s) "0" (list->string (reverse s)))
+          (if (null? s) "0" (list->string (reverse! s)))
           (let* ((d (car dd))
                  (val (car d))
                  (char (approp-case (cadr d)))
@@ -593,7 +624,7 @@
   (lambda (y xx equ?)
     (let loop ((xx xx) (r '()))
       (if (null? xx)
-        (reverse r)
+        (reverse! r)
         (let ((x (car xx))) (loop (cdr xx) (if (equ? x y) r (cons x r))))))))
 
 (defstruct counter (value 0) (within #f))
@@ -715,12 +746,9 @@
              ((string? x) (string-length x))
              (else 1)))))))))
 
-(define (cudr x) (unbox (cdr x)))
-(define (set-cudr! x v) (set-box! (cdr x) v))
-
 (define display-error-context-lines
   (lambda ()
-    (let ((n (let ((c (find-count "\\errorcontextlines"))) (if c (cudr c) 0))))
+    (let ((n (let ((c (find-count "\\errorcontextlines"))) (if c (cadr c) 0))))
       (when (and *current-source-file* (> n 0))
         (let* ((n1 (max 0 (- *input-line-no* (quotient (- n 1) 2))))
                (nf (+ n1 n -1))
@@ -739,7 +767,7 @@
             (let* ((border "__________________________...")
                    (only-1? (= (length ll) 1))
                    (nf (caar ll))
-                   (ll (reverse ll))
+                   (ll (reverse! ll))
                    (n1 (caar ll)))
               (write-log "Likely error context: ")
               (write-log *current-source-file*)
@@ -905,7 +933,7 @@
   (lambda (s)
     (set!bport.buffer
       *current-tex2page-input*
-      (append (string->list s) (bport.buffer *current-tex2page-input*)))))
+      (append! (string->list s) (bport.buffer *current-tex2page-input*)))))
 
 (define toss-back-char
   (lambda (c)
@@ -954,8 +982,8 @@
     (let loop ((r '()))
       (let ((c (get-actual-char)))
         (cond
-         ((eof-object? c) (if (null? r) c (list->string (reverse r))))
-         ((char=? c #\newline) (list->string (reverse r)))
+         ((eof-object? c) (if (null? r) c (list->string (reverse! r))))
+         ((char=? c #\newline) (list->string (reverse! r)))
          (else (loop (cons c r))))))))
 
 (define ignorespaces
@@ -1028,7 +1056,7 @@
        ((invisible-space? c) "\\ ")
        ((char-tex-alphabetic? c)
         (list->string
-          (reverse
+          (reverse!
             (let loop ((s (list c #\\)))
               (let ((c (snoop-char)))
                 (cond
@@ -1106,7 +1134,7 @@
                            (fluid-let
                              ((*esc-char* *esc-char-std*))
                              (tex-string->html-string x))))))))
-                (loop (append (reverse (string->list s1)) s) nesting #f))
+                (loop (append! (reverse! (string->list s1)) s) nesting #f))
               (loop (cons c s) nesting #t)))
            ((char=? c #\{) (loop (cons c s) (+ nesting 1) #f))
            ((char=? c #\})
@@ -1114,7 +1142,7 @@
            (else (loop (cons c s) nesting #f))))))))
 
 (define get-group
-  (lambda () (list->string (reverse (get-group-as-reversed-chars)))))
+  (lambda () (list->string (reverse! (get-group-as-reversed-chars)))))
 
 (define get-peeled-group
   (lambda () (string-trim-blanks (ungroup (get-group)))))
@@ -1137,7 +1165,7 @@
                 (loop (cons c s)))
                ((and (pair? s) (char=? c #\}))
                 (get-actual-char)
-                (list->string (reverse s)))
+                (list->string (reverse! s)))
                (else
                 (for-each toss-back-char s)
                 (toss-back-char #\{)
@@ -1152,7 +1180,7 @@
         (begin
           (get-actual-char)
           (list->string
-            (reverse
+            (reverse!
               (let loop ((s '()) (nesting 0) (escape? #f))
                 (let ((c (get-actual-char)))
                   (if (eof-object? c)
@@ -1193,7 +1221,7 @@
           (get-actual-char)
           (set! braced? #f))))
     (list->string
-      (reverse
+      (reverse!
         (let loop ((s '()))
           (let ((c (snoop-actual-char)))
             (cond
@@ -1208,7 +1236,7 @@
              ((and *esc-char* (char=? c *esc-char*))
               (let ((x (get-ctl-seq)))
                 (if (string=? x "\\jobname")
-                  (loop (append (reverse (string->list *jobname*)) s))
+                  (loop (append! (reverse! (string->list *jobname*)) s))
                   (begin
                     (toss-back-char *invisible-space*)
                     (toss-back-string x)
@@ -1228,7 +1256,7 @@
     (ignorespaces)
     (string->number
       (list->string
-        (reverse
+        (reverse!
           (let loop ((s '()))
             (let ((c (snoop-actual-char)))
               (cond
@@ -1248,7 +1276,7 @@
       (let ((n
              (string->number
                (list->string
-                 (reverse
+                 (reverse!
                    (let loop ((s '()))
                      (let ((c (snoop-actual-char)))
                        (cond
@@ -1294,8 +1322,8 @@
       (counter.value (table-get *dotted-counters* "figure")))
      ((string=? x "\\sectiondnumber")
       (table-get *section-counters* (string->number (ungroup (get-token))) 0))
-     ((find-count x) => cudr)
-     ((find-dimen x) => cudr)
+     ((find-count x) => cadr)
+     ((find-dimen x) => cadr)
      (else (or (string->number (or (resolve-defs x) x)))))))
 
 (define get-number-or-false
@@ -1339,7 +1367,7 @@
        ((not (char=? c #\{)) (terror 'get-url "Missing {")))
       (string-trim-blanks
         (list->string
-          (reverse
+          (reverse!
             (let loop ((nesting 0) (s '()))
               (let ((c (get-actual-char)))
                 (cond
@@ -1376,7 +1404,7 @@
                     (begin (toss-back-char c) s)
                     (loop (cons c s) (- nesting 1))))
                  (else (loop (cons c s) nesting)))))))
-      (if (null? rev-lbl) #f (list->string (reverse rev-lbl))))))
+      (if (null? rev-lbl) #f (list->string (reverse! rev-lbl))))))
 
 (define get-raw-token
   (lambda ()
@@ -1480,7 +1508,7 @@
 (define scm-get-token
   (lambda ()
     (list->string
-      (reverse
+      (reverse!
         (let loop ((s '()) (esc? #f))
           (let ((c (snoop-actual-char)))
             (cond
@@ -1671,11 +1699,11 @@
       (cond
        ((lassoc name (texframe.counts frame) string=?)
         =>
-        (lambda (c) (set-cudr! c num)))
+        (lambda (c) (set-car! (cdr c) num)))
        (else
         (set!texframe.counts
           frame
-          (cons (cons name (box num)) (texframe.counts frame))))))
+          (cons (list name num) (texframe.counts frame))))))
     (perform-afterassignment)))
 
 (define tex-def-toks
@@ -1684,11 +1712,11 @@
       (cond
        ((lassoc name (texframe.toks frame) string=?)
         =>
-        (lambda (c) (set-cudr! c tokens)))
+        (lambda (c) (set-car! (cdr c) tokens)))
        (else
         (set!texframe.toks
           frame
-          (cons (cons name (box tokens)) (texframe.toks frame)))))
+          (cons (list name tokens) (texframe.toks frame)))))
       (perform-afterassignment))))
 
 (define tex-def-dimen
@@ -1697,11 +1725,11 @@
       (cond
        ((lassoc name (texframe.dimens frame) string=?)
         =>
-        (lambda (c) (set-cudr! c len)))
+        (lambda (c) (set-car! (cdr c) len)))
        (else
         (set!texframe.dimens
           frame
-          (cons (cons name (unbox len)) (texframe.dimens frame)))))
+          (cons (list name len) (texframe.dimens frame)))))
       (perform-afterassignment))))
 
 (define tex-def-char
@@ -1901,7 +1929,7 @@
     (when *in-para?*
       (when *use-closing-p-tag?* (emit "</p>"))
       (unless (null? *afterpar*)
-        (for-each (lambda (ap) (ap)) (reverse *afterpar*))
+        (for-each (lambda (ap) (ap)) (reverse! *afterpar*))
         (set! *afterpar* '()))
       (emit-newline)
       (set! *in-para?* #f))))
@@ -2257,7 +2285,7 @@
       (let ((c (get-actual-char)))
         (cond
          ((or (eof-object? c) (and newline? (char=? c #\newline)))
-          (list->string (reverse r)))
+          (list->string (reverse! r)))
          (newline?
           (if (char-whitespace? c)
             (loop r #t)
@@ -2994,7 +3022,7 @@
 
 (define sp-to-ems (lambda (sp) (/ sp 65536 10.0)))
 
-(define find-dimen-in-sp (lambda (cs) (cudr (find-dimen cs))))
+(define find-dimen-in-sp (lambda (cs) (cadr (find-dimen cs))))
 
 (define get-scaled-points
   (lambda ()
@@ -3148,7 +3176,7 @@
           lbl
           (let loop ((s (string->list lbl)) (r '()) (ws? #f))
             (if (null? s)
-              (list->string (reverse r))
+              (list->string (reverse! r))
               (let ((c (car s)))
                 (loop
                  (cdr s)
@@ -3365,7 +3393,7 @@
       (write-log "Unresolved cross-reference")
       (if (> (length *unresolved-xrefs*) 1) (write-log "s"))
       (write-log ": ")
-      (set! *unresolved-xrefs* (reverse *unresolved-xrefs*))
+      (set! *unresolved-xrefs* (reverse! *unresolved-xrefs*))
       (write-log (car *unresolved-xrefs*))
       (for-each
         (lambda (x)
@@ -3725,12 +3753,12 @@
        ((assv pageno *index-page-mention-alist*)
         =>
         (lambda (c)
-          (let ((n (+ 1 (unbox (cdr c)))))
+          (let ((n (+ 1 (cdr c))))
             (emit (number->roman n #f))
-            (set-cudr! c n))))
+            (set-cdr! c n))))
        (else
         (set! *index-page-mention-alist*
-          (cons (cons pageno (box 1)) *index-page-mention-alist*))))
+          (cons (cons pageno 1) *index-page-mention-alist*))))
       (emit-link-stop))))
 
 (define do-see-also
@@ -4150,10 +4178,10 @@
     (when *bib-aux-port* (close-output-port *bib-aux-port*))
     (when *verb-port* (close-output-port *verb-port*))
     (for-each
-      (lambda (c) (let ((p (cudr c))) (when p (close-input-port p))))
+      (lambda (c) (let ((p (cdr c))) (when p (close-input-port p))))
       *input-streams*)
     (for-each
-      (lambda (c) (let ((p (cudr c))) (when p (close-output-port p))))
+      (lambda (c) (let ((p (cdr c))) (when p (close-output-port p))))
       *output-streams*)))
 
 (define output-stats
@@ -4648,7 +4676,7 @@
     (let* ((x (get-ctl-seq))
            (sl (if (eqv? type 'out) *output-streams* *input-streams*))
            (n (pick-new-stream-number sl))
-           (sl-new (cons (cons n (box #f)) sl)))
+           (sl-new (cons (cons n #f) sl)))
       (tex-def-count x n #t)
       (case type
         ((out) (set! *output-streams* sl-new))
@@ -4660,26 +4688,26 @@
            (f (get-plain-filename))
            (sl (if (eqv? type 'out) *output-streams* *input-streams*))
            (c (assv n sl)))
-      (unless (and c (not (cudr c))) (terror 'do-open-stream))
+      (unless (and c (not (cdr c))) (terror 'do-open-stream))
       (case type
         ((out)
          (set! f (add-dot-tex-if-no-extension-provided f))
          (ensure-file-deleted f)
-         (set-cudr! c (open-output-file f)))
+         (set-cdr! c (open-output-file f)))
         (else
          (set! f (actual-tex-filename f #f))
-         (set-cudr! c (make-bport 'port (open-input-file f))))))))
+         (set-cdr! c (make-bport 'port (open-input-file f))))))))
 
 (define do-close-stream
   (lambda (type)
     (let* ((sl (if (eqv? type 'out) *output-streams* *input-streams*))
            (o (get-number))
            (c (assv o sl)))
-      (unless (and c (cudr c)) (terror 'do-close-stream))
+      (unless (and c (cdr c)) (terror 'do-close-stream))
       (case type
-        ((out) (close-output-port (cudr c)))
-        ((in) (close-output-port (bport.port (cudr c)))))
-      (set-cudr! c #f))))
+        ((out) (close-output-port (cdr c)))
+        ((in) (close-output-port (bport.port (cdr c)))))
+      (set-cdr! c #f))))
 
 (define tex-write-output-string
   (lambda (s)
@@ -4709,7 +4737,7 @@
        ((assv o *output-streams*)
         =>
         (lambda (c)
-          (let ((p (cudr c)))
+          (let ((p (cdr c)))
             (cond
              ((not p) (terror 'do-write-aux))
              (else (display output p) (display #\space p))))))
@@ -4726,10 +4754,10 @@
       (let loop ((r '()))
         (let ((c (snoop-actual-char)))
           (cond
-           ((eof-object? c) (if (null? r) c (list->string (reverse r))))
-           ((char=? c #\newline) (get-actual-char) (list->string (reverse r)))
+           ((eof-object? c) (if (null? r) c (list->string (reverse! r))))
+           ((char=? c #\newline) (get-actual-char) (list->string (reverse! r)))
            ((char=? c #\{)
-            (string-append (list->string (reverse r)) (get-group)))
+            (string-append (list->string (reverse! r)) (get-group)))
            (else (loop (cons (get-actual-char) r)))))))))
 
 (define do-read
@@ -4741,7 +4769,7 @@
         (unless (= i -1) (write-log x) (write-log #\=)))
        ((assv i *input-streams*)
         =>
-        (lambda (c) (set! p (cudr c)) (unless p (terror 'do-read))))
+        (lambda (c) (set! p (cdr c)) (unless p (terror 'do-read))))
        (else (terror 'do-read)))
       ((if g? tex-gdef-0arg tex-def-0arg)
        x
@@ -4763,8 +4791,8 @@
 (define do-ifeof
   (lambda ()
     (let* ((i (get-number)) (c (assv i *input-streams*)))
-      (unless (and c (cudr c)) (terror 'do-ifeof))
-      (if (eof-object? (read-char (cudr c))) do-iftrue do-iffalse))))
+      (unless (and c (cdr c)) (terror 'do-ifeof))
+      (if (eof-object? (read-char (cdr c))) do-iftrue do-iffalse))))
 
 (define do-iffalse (lambda () (set! *tex-if-stack* (cons #f *tex-if-stack*))))
 
@@ -4893,7 +4921,7 @@
     (let* ((num (get-number))
            (clauses (read-ifcase-clauses))
            (else-clause (car clauses))
-           (or-clauses (reverse (cdr clauses)))
+           (or-clauses (reverse! (cdr clauses)))
            (num-or-clauses (length or-clauses)))
       (cond
        ((< num num-or-clauses) (tex2page-string (list-ref or-clauses num)))
@@ -4905,7 +4933,7 @@
   (lambda ()
     (when (null? *tex-if-stack*) (terror 'do-else "Extra \\else"))
     (let ((top-if (car *tex-if-stack*)))
-      (set! *tex-if-stack* (cons (not top-if) *tex-if-stack*)))))
+      (set-car! *tex-if-stack* (not top-if)))))
 
 (define do-fi
   (lambda ()
@@ -5481,7 +5509,7 @@
             (loop
              (substring p (+ i 1) (string-length p))
              (cons (substring p 0 i) r))
-            (reverse (cons p r))))))))
+            (reverse! (cons p r))))))))
 
 (define kpsewhich
   (lambda (f)
@@ -5605,9 +5633,9 @@
       (let ((c (snoop-actual-char)))
         (cond
          ((eof-object? c)
-          (write-aux `(!html-head ,(list->string (reverse s)))))
+          (write-aux `(!html-head ,(list->string (reverse! s)))))
          ((char=? c *esc-char*)
-          (write-aux `(!html-head ,(list->string (reverse s))))
+          (write-aux `(!html-head ,(list->string (reverse! s))))
           (let ((x (get-ctl-seq)))
             (cond
              ((string=? x "\\endhtmlheadonly") 'done)
@@ -5827,17 +5855,17 @@
 
 (define get-toks
   (lambda (ctlseq)
-    (cond ((find-toks ctlseq) => cudr) (else (terror 'get-toks)))))
+    (cond ((find-toks ctlseq) => cadr) (else (terror 'get-toks)))))
 
 (define get-dimen
   (lambda (ctlseq)
-    (cond ((find-dimen ctlseq) => cudr) (else (tex-length 6.5 'in)))))
+    (cond ((find-dimen ctlseq) => cadr) (else (tex-length 6.5 'in)))))
 
 (define the-count
   (lambda (ctlseq)
     (let ((dracula (find-count ctlseq)))
       (unless dracula (terror 'the-count))
-      (cudr dracula))))
+      (cadr dracula))))
 
 (define do-count=
   (lambda (z g?) (get-equal-sign) (tex-def-count z (get-number) g?)))
@@ -5855,7 +5883,7 @@
   (lambda (ctlseq)
     (cadr (lassoc ctlseq (texframe.counts *global-texframe*) string=?))))
 
-(define get-count (lambda (cs) (cudr (find-count cs))))
+(define get-count (lambda (cs) (cadr (find-count cs))))
 
 (define set-gcount! (lambda (ctlseq v) (tex-def-count ctlseq v #t)))
 
@@ -5883,7 +5911,7 @@
       (cond
        ((find-dimen ctlseq)
         =>
-        (lambda (x) (scaled-point-to-tex-point (cudr x))))
+        (lambda (x) (scaled-point-to-tex-point (cadr x))))
        ((get-number-corresp-to-ctl-seq ctlseq) => (lambda (x) x))
        ((find-toks ctlseq) => cadr)
        (else (trace-if #f "expand-the failed"))))))
@@ -5894,7 +5922,7 @@
       (cond
        ((find-dimen ctlseq)
         =>
-        (lambda (x) (emit (scaled-point-to-tex-point (cudr x)))))
+        (lambda (x) (emit (scaled-point-to-tex-point (cadr x)))))
        ((get-number-corresp-to-ctl-seq ctlseq) => emit)
        ((find-toks ctlseq) => (lambda (x) (tex2page-string (cadr x))))
        (else (trace-if #f "do-the failed"))))))
@@ -5946,18 +5974,18 @@
     (let* ((ctlseq (get-ctl-seq)) (count (find-count ctlseq)))
       (get-by)
       (if count
-        (tex-def-count ctlseq (+ (cudr count) (get-number)) g?)
+        (tex-def-count ctlseq (+ (cadr count) (get-number)) g?)
         (eat-dimen)))))
 
 (define do-multiply
   (lambda (g?)
-    (let* ((ctlseq (get-ctl-seq)) (curr-val (cudr (find-count ctlseq))))
+    (let* ((ctlseq (get-ctl-seq)) (curr-val (cadr (find-count ctlseq))))
       (get-by)
       (tex-def-count ctlseq (* curr-val (get-number)) g?))))
 
 (define do-divide
   (lambda (g?)
-    (let* ((ctlseq (get-ctl-seq)) (curr-val (cudr (find-count ctlseq))))
+    (let* ((ctlseq (get-ctl-seq)) (curr-val (cadr (find-count ctlseq))))
       (get-by)
       (tex-def-count ctlseq (quotient curr-val (get-number)) g?))))
 
@@ -6229,7 +6257,7 @@
 (define get-till-char
   (lambda (c0)
     (list->string
-      (reverse
+      (reverse!
         (let loop ((s '()) (nesting 0) (escape? #f))
           (let ((c (snoop-actual-char)))
             (cond
@@ -6281,7 +6309,7 @@
       (let ((x (get-raw-token)))
         (cond
          ((eof-object? x) (terror 'get-halign-template "Eof in \\halign"))
-         ((string=? x "\\cr") (reverse (cons #f s)))
+         ((string=? x "\\cr") (reverse! (cons #f s)))
          ((string=? x "#") (loop (cons #t s)))
          ((string=? x "&") (loop (cons #f s)))
          (else (loop (cons x s))))))))
@@ -6319,7 +6347,7 @@
         (let loop2 ((i k) (s '()))
           (let ((c (if (< i n) (list-ref argpat i) #\#)))
             (if (char=? c #\#)
-              (cons i (list->string (reverse ss)))
+              (cons i (list->string (reverse! ss)))
               (let ((d (snoop-actual-char)))
                 (cond
                  ((and (char=? c #\space) (char-whitespace? d))
@@ -6350,7 +6378,7 @@
 (define read-macro-args
   (lambda (argpat k r)
     (let ((n (length argpat)))
-      (reverse
+      (reverse!
         (let loop ((k k) (r r))
           (if (>= k n)
             r
@@ -6453,15 +6481,15 @@
                ((char=? c #\\)
                 (let loop ((j (+ k 1)) (s (list #\\)))
                   (if (>= j rhs-n)
-                    (reverse s)
+                    (reverse! s)
                     (let ((c (string-ref rhs j)))
                       (cond
                        ((char-alphabetic? c) (loop (+ j 1) (cons c s)))
                        ((and (char=? c #\#) (> (length s) 1))
-                        (append (reverse s) (cons #\space (aux j))))
+                        (append (reverse! s) (cons #\space (aux j))))
                        ((= (length s) 1)
-                        (append (reverse (cons c s)) (aux (+ j 1))))
-                       (else (append (reverse s) (aux j))))))))
+                        (append (reverse! (cons c s)) (aux (+ j 1))))
+                       (else (append (reverse! s) (aux j))))))))
                ((char=? c #\#)
                 (if (= k (- rhs-n 1))
                   (list #\#)
@@ -7528,8 +7556,7 @@
       r)))
 
 (define tex2page-file-if-exists
-  ;; the argument can come from `file-in-home' so it can be #f
-  (lambda (f) (when (and f (file-exists? f)) (tex2page-file f))))
+  (lambda (f) (when (file-exists? f) (tex2page-file f))))
 
 (define do-input
   (lambda ()
@@ -7625,7 +7652,7 @@
       s
       (lambda (i)
         (let loop ()
-          (let ((x (read i))) (unless (eof-object? x) (eval x) (loop))))))))
+          (let ((x (read i))) (unless (eof-object? x) (eval-expr x) (loop))))))))
 
 (define with-output-to-port
   (lambda (o th) (parameterize ((current-output-port o)) (th))))
@@ -7853,10 +7880,10 @@
         (delete-file aux-file))
       (set! *aux-port* (open-output-file aux-file)))
     (start-css-file)
-    (unless (null? *toc-list*) (set! *toc-list* (reverse *toc-list*)))
+    (unless (null? *toc-list*) (set! *toc-list* (reverse! *toc-list*)))
     (unless (null? *stylesheets*)
-      (set! *stylesheets* (reverse *stylesheets*)))
-    (unless (null? *html-head*) (set! *html-head* (reverse *html-head*)))))
+      (set! *stylesheets* (reverse! *stylesheets*)))
+    (unless (null? *html-head*) (set! *html-head* (reverse! *html-head*)))))
 
 (define update-last-modification-time
   (lambda (f)
