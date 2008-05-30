@@ -29,7 +29,9 @@
 ;;   specifications for things to require into the initial namespace
 ;;   for the test before the test is loaded.
 (define tests
-  '([load "mzscheme/quiet.ss" (lib "scheme/init")]))
+  '([load "mzscheme/quiet.ss" (lib "scheme/init")]
+    [require "typed-scheme/main.ss"]
+    [require "match/plt-match-tests.ss"]))
 
 
 (require scheme/runtime-path (for-syntax scheme/base))
