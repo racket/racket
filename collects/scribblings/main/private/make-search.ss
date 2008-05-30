@@ -149,7 +149,8 @@
     // Configuration options
     var results_num = 20;
 
-    var query, status, results_container, result_links;
+    var query, status, results_container, result_links,
+        prev_page_link, next_page_link;
 
     function InitializeSearch() {
       var n;
@@ -163,7 +164,8 @@
                 +' onkeypress="return key_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
-          +'<a href="#" title="Previous Page"'
+          +'<a href="#" title="Previous Page" id="prev_page_link"'
+            +' style="text-decoration: none; font-weight: bold;"'
             +' onclick="key_handler(\'PgUp\'); return false;"'
             +'><tt><b>&lt;&lt;</b></tt></a>'
         +'</td><td align="center">'
@@ -171,20 +173,22 @@
             +'&nbsp;'
           +'</span>'
         +'</td><td align="right">'
-          +'<a href="#" title="Next Page"'
+          +'<a href="#" title="Next Page" id="next_page_link"'
+            +' style="text-decoration: none; font-weight: bold;"'
             +' onclick="key_handler(\'PgDn\'); return false;"'
             +'><tt><b>&gt;&gt;</b></tt></a>'
         +'</td></tr>'
-        +'<tr><td colspan="3" bgcolor="#ffe0e0">'
+        +'<tr><td colspan="3" bgcolor="#ffffff">'
           +'<span id="search_result"'
                +' style="display: none;'
                +' margin: 0.1em 0em; padding: 0.25em 1em;"></span>'
         +'</td></tr>'
         +'</table>';
-      // get the query box
+      // get the widgets we use
       query = document.getElementById("search_box");
-      // status line
       status = document.getElementById("search_status");
+      prev_page_link = document.getElementById("prev_page_link");
+      next_page_link = document.getElementById("next_page_link");
       // result_links is the array of result link <container,link> pairs
       result_links = new Array();
       n = document.getElementById("search_result");
@@ -203,7 +207,7 @@
           }
         }
       }
-      if (query.value != "") DoSearch();
+      DoSearch();
       query.focus();
       query.select();
     }
@@ -221,7 +225,7 @@
     }
 
     var last_search_term, last_search_term_raw;
-    var search_results, first_search_result, exact_results_num;
+    var search_results = [], first_search_result, exact_results_num;
     function DoSearch() {
       var term = query.value;
       if (term == last_search_term_raw) return;
@@ -234,7 +238,7 @@
       status.innerHTML = "Searching " + plt_search_data.length + " entries";
       var terms = (term=="") ? [] : term.split(/ /);
       if (terms.length == 0) {
-        search_results = plt_search_data;
+        search_results = [];
       } else {
         search_results = new Array();
         exact_results = new Array();
@@ -259,7 +263,7 @@
       first_search_result = 0;
       status.innerHTML = "" + search_results.length + " entries found";
       query.style.backgroundColor =
-        (search_results.length == 0) ? "#ffe0e0" : "white";
+        ((search_results.length == 0) && (term != "")) ? "#ffe0e0" : "white";
       UpdateResults();
     }
 
@@ -305,14 +309,14 @@
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
             + UncompactHtml(search_results[n][2]) + '</a>' + (note || "");
           result_links[i].style.backgroundColor =
-            (n < exact_results_num) ? "#ffffd0" : "#f4f4f4";
+            (n < exact_results_num) ? "#ffffe0" : "#f8f8f8";
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
         }
       }
       if (search_results.length == 0)
-        status.innerHTML = "No matches found";
+        status.innerHTML = ((last_search_term=="") ? "" : "No matches found");
       else if (search_results.length <= results_num)
         status.innerHTML = "Showing all matches";
       else
@@ -328,6 +332,11 @@
           + ((exact_results_num == search_results.length)
                ? "all" : exact_results_num)
           + " exact</span>)";
+      prev_page_link.style.color =
+        (first_search_result-results_num >= 0) ? "black" : "#e8e8e8";
+      next_page_link.style.color =
+        (first_search_result+results_num < search_results.length)
+        ? "black" : "#e0e0e0";
     }
 
     var search_timer = null;
