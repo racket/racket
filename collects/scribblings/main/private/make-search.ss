@@ -103,19 +103,22 @@
                (values (compact-url href) (compact-body body)))]
             [else (error "something bad happened")])))
       (define from-libs
-        (if (exported-index-desc? desc)
-          (string-append*
-           `("["
-             ,@(add-between
-                (map (lambda (x)
-                       (format "~s" (match x
-                                      [(? symbol?) (symbol->string x)]
-                                      [`',(? symbol? x)
-                                       (string-append "'" (symbol->string x))])))
-                     (exported-index-desc-from-libs desc))
-                ",")
-             "]"))
-          "false"))
+        (cond
+          [(exported-index-desc? desc)
+           (string-append*
+            `("["
+              ,@(add-between
+                 (map (lambda (x)
+                        (format "~s"
+                                (match x
+                                  [(? symbol?) (symbol->string x)]
+                                  [`',(? symbol? x)
+                                   (string-append "'" (symbol->string x))])))
+                      (exported-index-desc-from-libs desc))
+                 ",")
+              "]"))]
+          [(module-path-index-desc? desc) "\"module\""]
+          [else "false"]))
       ;; Note: using ~s to have javascript-quoted strings
       (format "[~s,~s,~a,~a]" text href html from-libs)))
   (set! l (add-between l ",\n"))
@@ -286,20 +289,21 @@
       for (var i=0@";" i<result_links.length@";" i++) {
         var n = i + first_search_result;
         if (n < search_results.length) {
-          var desc = "", libs = search_results[n][3];
-          if (libs && (libs.length > 0)) {
-            for (var j=0@";" j<libs.length@";" j++)
-              desc += (j==0 ? "" : ", " )
-                      + '<span class="schememod">' + libs[j] + '</span>';
-            desc = '&nbsp;&nbsp;'
-                   + '<span class="smaller">'
-                   + '<span class="smaller">provided from</span> '
-                   + desc + '</span>';
+          var note = false, desc = search_results[n][3];
+          if ((desc instanceof Array) && (desc.length > 0)) {
+            note = '<span class="smaller">provided from</span> ';
+            for (var j=0@";" j<desc.length@";" j++)
+              note += (j==0 ? "" : ", " )
+                      + '<span class="schememod">' + desc[j] + '</span>';
+          } else if (desc == "module") {
+            note = '<span class="smaller">module</span>';
           }
+          if (note)
+            note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
           result_links[i].innerHTML =
             '<a href="'
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
-            + UncompactHtml(search_results[n][2]) + '</a>' + desc;
+            + UncompactHtml(search_results[n][2]) + '</a>' + (note || "");
           result_links[i].style.backgroundColor =
             (n < exact_results_num) ? "#ffffd0" : "#f4f4f4";
           result_links[i].style.display = "block";
@@ -335,15 +339,20 @@
       }
       var key = event;
       if (typeof event != "string") {
-        switch (event.keyCode) {
+        switch (event.which || event.keyCode) {
           case 13: key = "Enter"; break;
           case 33: key = "PgUp"; break;
           case 34: key = "PgDn"; break;
         }
       }
       switch (key) {
-        case "Enter":
-          DoSearch();
+        case "Enter": // enter with no change scrolls
+          if (query.value == last_search_term_raw) {
+            first_search_result += results_num;
+            UpdateResults();
+          } else {
+            DoSearch();
+          }
           return false;
         case "PgUp":
           DoSearch(); // in case we didn't update it yet
