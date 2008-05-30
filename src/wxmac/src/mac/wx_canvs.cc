@@ -936,7 +936,17 @@ void wxCanvas::PaintRgn(RgnHandle rgn)
   if (!cHidden) {
     if (cStyle & wxAS_CONTROL) {
       /* Run on-paint atomically */
+      RgnHandle old;
+
+      old = wx_dc->clip_reg;
+
+      wx_dc->clip_reg = rgn;
+      wx_dc->SetCanvasClipping();
+
       MrEdAtomicallyPaint(this);
+
+      wx_dc->clip_reg = old;
+      wx_dc->SetCanvasClipping();
     } else {
       AddPaintRegion(rgn);
       /* In wx_frame.cc: */
