@@ -48,8 +48,8 @@
 
 (namespace-set-variable-value! 'help-desk:frame-mixin drscheme:frame:basics-mixin)
 
-(finder:default-filters (list* '("Scheme (.scm)" "*.scm")
-                               '("Scheme (.ss)" "*.ss")
+(finder:default-filters (list* '("Scheme (.ss)" "*.ss")
+                               '("Scheme (.scm)" "*.scm")
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
