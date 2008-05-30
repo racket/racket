@@ -186,25 +186,22 @@
                        [onchange "delayed_search(this.value,event);"]
                        [onkeyup  "delayed_search(this.value,event);"]))})
 
-(define (search-index-box index-url) ; appears on every page
+)
+
+(define (search-index-box) ; appears on every page
   (let ([sa string-append])
     `(input
       ([style ,(sa "font-size: 75%; margin: 0px; padding: 0px; border: 1px;"
                    " background-color: #eee; color: #888;")]
        [type "text"]
        [value "...search..."]
-       [onkeypress ,(sa "if (event && event.keyCode==13"
-                        " && this.value.indexOf(\"...search...\")<0) {"
-                        " location=\"doc-index.html?q=\"+escape(this.value);"
-                        " };")]
+       [onkeypress ,(format "return DoSearchKey(event, this, ~s);" (version))]
        [onfocus ,(sa "this.style.color=\"black\";"
                      " if (this.value.indexOf(\"...search...\")>=0)"
                      " this.value=\"\";")]
        [onblur ,(sa "if (this.value.match(/^ *$/)) {"
                     " this.style.color=\"#888\";"
                     " this.value=\"...search...\"; }")]))))
-
-)
 
 ;; ----------------------------------------
 ;;  main mixin
@@ -611,9 +608,9 @@
                     #; ; no need for these index-local searches
                     ,@(if (eq? d index)
                         null
-                        `((small nbsp
-                            ,(search-index-box (derive-filename index))))))
-                  null))
+                        `((small nbsp ,(search-index-box)))))
+                  null)
+              ,@(if up-path `(nbsp (small ,(search-index-box))) null))
             (div ([class "navright"])
               ,@(render
                  (make-element

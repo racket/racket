@@ -44,14 +44,15 @@ function NormalizePath(path) {
   return path;
 }
 
-function DoSearchKey(event, field) {
+function DoSearchKey(event, field, ver) {
   var val = field.value;
   if (event && event.keyCode == 13 && val.indexOf("...search...") < 0) {
-    var u = GetCookie("PLT_Root");
+    var u = GetCookie("PLT_Root."+ver);
     if (u == null) u = "../"; // default: go up
-    u = u.replace(/[^\/\\]*$/, "") + "plt-search.html";
-    location = u + "?q=" + escape(val);
+    location = u + "search/index.html" + "?q=" + escape(val);
+    return false;
   }
+  return true;
 }
 
 // `noscript' is problematic in some browsers (always renders as a

@@ -137,7 +137,7 @@
     @l];
 
     // Globally visible bindings
-    var search_handler, page_up_handler, page_dn_handler;
+    var key_handler;
 
     (function(){
 
@@ -154,12 +154,12 @@
         +'<table width="100%">'
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                 +'onchange="search_handler(event);"'
-                 +'onkeypress="return search_handler(event);" />'
+                 +'onchange="key_handler(event);"'
+                 +'onkeypress="return key_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
           +'<a href="#" title="Previous Page"'
-             +'onclick="page_up_handler(); return false;"'
+             +'onclick="key_handler(\"PgUp\"); return false;"'
              +'><tt><b>&lt;&lt;</b></tt></a>'
         +'</td><td align="center">'
           +'<span id="search_status" style="color: #601515; font-weight: bold;">'
@@ -167,7 +167,7 @@
           +'</span>'
         +'</td><td align="right">'
           +'<a href="#" title="Next Page"'
-             +'onclick="page_dn_handler(); return false;"'
+             +'onclick="key_handler(\"PgDn\"); return false;"'
              +'><tt><b>&gt;&gt;</b></tt></a>'
         +'</td></tr>'
         +'<tr><td colspan="3">'
@@ -215,13 +215,15 @@
       }
     }
 
-    var last_search_terms;
+    var last_search_term_raw, last_search_terms;
     var search_results, first_search_result;
     function DoSearch() {
-      var terms =
-        query.value.toLowerCase()
-             .replace(/\s\s*/g," ")                  // single spaces
-             .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+      var terms = query.value;
+      if (terms == last_search_term_raw) return;
+      last_search_term_raw = terms;
+      terms= terms.toLowerCase()
+               .replace(/\s\s*/g," ")                  // single spaces
+               .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
       if (terms == last_search_terms) return;
       last_search_terms = terms;
       status.nodeValue = "Searching " + plt_search_data.length + " entries";
@@ -245,17 +247,6 @@
       status.nodeValue = "" + search_results.length + " entries found";
       query.style.backgroundColor =
         (search_results.length == 0) ? "#ffe0e0" : "white";
-      UpdateResults();
-    }
-
-    function PageDn() {
-      if (first_search_result + results_num < search_results.length) {
-        first_search_result += results_num;
-        UpdateResults();
-      }
-    }
-    function PageUp() {
-      first_search_result -= results_num;
       UpdateResults();
     }
 
@@ -320,23 +311,34 @@
     }
 
     var search_timer = null;
-    function DelayedSearch(event) {
+    function HandleKeyEvent(event) {
       if (search_timer != null) {
         var t = search_timer;
         search_timer = null;
         clearTimeout(t);
       }
       var key = event && event.keyCode;
-      if (key == 13) { DoSearch()@";" return false@";" }
-      else if (key == 33) { PageUp()@";" return false@";" }
-      else if (key == 34) { PageDn()@";" return false@";" }
-      else search_timer = setTimeout(DoSearch, 400);
+      if (key == 13) {
+        DoSearch();
+        return false;
+      } else if (key == 33) {
+        DoSearch(); // in case we didn't update it yet
+        first_search_result -= results_num;
+        UpdateResults();
+        return false;
+      } else if (key == 34) {
+        DoSearch(); // in case we didn't update it yet
+        if (first_search_result + results_num < search_results.length) {
+          first_search_result += results_num;
+          UpdateResults();
+        }
+        return false;
+      }
+      search_timer = setTimeout(DoSearch, 400);
       return true;
     }
 
-    search_handler = DelayedSearch;
-    page_up_handler = PageUp;
-    page_dn_handler = PageDn;
+    key_handler = HandleKeyEvent;
 
     window.onload = InitializeSearch;
 
