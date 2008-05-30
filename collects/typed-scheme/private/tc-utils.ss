@@ -50,15 +50,18 @@
 (define-struct err (msg stx) #:prefab)
 
 (define (report-all-errors)
+  (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
     [(list) (void)]
     [(list (struct err (msg stx)))
+     (reset!)
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
             (for/list ([e (reverse delayed-errors)])
               (sync (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e)))))
               (err-stx e))])
+       (reset!)
        (unless (null? stxs)
          (raise-typecheck-error "Errors encountered" (apply append stxs))))]))
 
