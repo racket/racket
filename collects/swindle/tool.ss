@@ -37,7 +37,7 @@
         (define/override (use-namespace-require/copy?) #t)
         (define/override (default-settings)
           (drscheme:language:make-simple-settings
-           #t 'current-print 'mixed-fraction-e #f #t 'debug))
+           #t 'write 'mixed-fraction-e #f #t 'debug))
         (define/override (get-language-name) name*)
         (define/override (config-panel parent)
           (let* ([make-panel
@@ -91,7 +91,7 @@
               [()
                (drscheme:language:make-simple-settings
                 (send input-sensitive? get-value)
-                'current-print 'mixed-fraction-e #f #t
+                'write 'mixed-fraction-e #f #t
                 (case (send debugging get-selection)
                   [(0) 'none]
                   [(1) 'debug]
