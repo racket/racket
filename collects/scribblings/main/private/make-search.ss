@@ -153,7 +153,7 @@
       n = document.getElementById("plt_search_container").parentNode;
       // hack the table in
       n.innerHTML = ''
-        +'<table width="100%">'
+        +'<table width="100%" cellspacing="0" cellpadding="1">'
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
                 +' onchange="key_handler(event);"'
@@ -172,7 +172,7 @@
             +' onclick="key_handler(\'PgDn\'); return false;"'
             +'><tt><b>&gt;&gt;</b></tt></a>'
         +'</td></tr>'
-        +'<tr><td colspan="3">'
+        +'<tr><td colspan="3" bgcolor="#ffe0e0">'
           +'<span id="search_result"'
                +' style="display: none;'
                +' margin: 0.1em 0em; padding: 0.25em 1em;"></span>'
@@ -301,7 +301,7 @@
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
             + UncompactHtml(search_results[n][2]) + '</a>' + desc;
           result_links[i].style.backgroundColor =
-            (i < exact_results_num) ? "#ffffd0" : "white";
+            (n < exact_results_num) ? "#ffffd0" : "#f4f4f4";
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
