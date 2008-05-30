@@ -174,7 +174,8 @@
         +'</td></tr>'
         +'<tr><td colspan="3">'
           +'<span id="search_result"'
-               +' style="display: none; margin: 0.5em 1em;"></span>'
+               +' style="display: none;'
+               +' margin: 0.1em 0em; padding: 0.25em 1em;"></span>'
         +'</td></tr>'
         +'</table>';
       // get the query box
@@ -300,7 +301,7 @@
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
             + UncompactHtml(search_results[n][2]) + '</a>' + desc;
           result_links[i].style.backgroundColor =
-            (i < exact_results_num) ? "#ffffc0" : "white";
+            (i < exact_results_num) ? "#ffffd0" : "white";
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
