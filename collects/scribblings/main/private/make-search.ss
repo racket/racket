@@ -25,7 +25,7 @@
                (string<? (car a) (car b)))]
           [else (string-ci<? (car a) (car b))])))
 
-(define (make-script renderer sec ri)
+(define (make-script user-dir? renderer sec ri)
   (define l null)
   (define span-classes null)
   ;; To make the index smaller, html contents is represented as one of these:
@@ -36,7 +36,9 @@
   ;; In addition, a "file:/main-doc.../path..." url is saved as ">path..."
   ;; This function does the url compacting.
   (define main-url ; (make sure that it teminates with a slash)
-    (regexp-replace #rx"/*$" (url->string (path->url (find-doc-dir))) "/"))
+    (if user-dir?
+      (regexp-replace #rx"/*$" (url->string (path->url (find-doc-dir))) "/")
+      "../"))
   (define compact-url
     (let ([rx (regexp (string-append "^" (regexp-quote main-url)))])
       (lambda (url) (regexp-replace rx url ">"))))
@@ -154,25 +156,25 @@
         +'<table width="100%">'
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                 +'onchange="key_handler(event);"'
-                 +'onkeypress="return key_handler(event);" />'
+                +' onchange="key_handler(event);"'
+                +' onkeypress="return key_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
           +'<a href="#" title="Previous Page"'
-             +'onclick="key_handler(\"PgUp\"); return false;"'
-             +'><tt><b>&lt;&lt;</b></tt></a>'
+            +' onclick="key_handler(\'PgUp\'); return false;"'
+            +'><tt><b>&lt;&lt;</b></tt></a>'
         +'</td><td align="center">'
           +'<span id="search_status" style="color: #601515; font-weight: bold;">'
             +'&nbsp;'
           +'</span>'
         +'</td><td align="right">'
           +'<a href="#" title="Next Page"'
-             +'onclick="key_handler(\"PgDn\"); return false;"'
-             +'><tt><b>&gt;&gt;</b></tt></a>'
+            +' onclick="key_handler(\'PgDn\'); return false;"'
+            +'><tt><b>&gt;&gt;</b></tt></a>'
         +'</td></tr>'
         +'<tr><td colspan="3">'
           +'<span id="search_result"'
-                +'style="display: none; margin: 0.5em 1em;"></span>'
+               +' style="display: none; margin: 0.5em 1em;"></span>'
         +'</td></tr>'
         +'</table>';
       // get the query box
@@ -276,13 +278,11 @@
       for (var i=0@";" i<result_links.length@";" i++) {
         var n = i + first_search_result;
         if (n < search_results.length) {
-          var desc = "";
-          if (search_results[n][3]) {
-            for (var j=0@";" j<search_results[n][3].length@";" j++)
+          var desc = "", libs = search_results[n][3];
+          if (libs && (libs.length > 0)) {
+            for (var j=0@";" j<libs.length@";" j++)
               desc += (j==0 ? "" : ", " )
-                      + '<span class="schememod">'
-                      + search_results[n][3][j]
-                      + '</span>';
+                      + '<span class="schememod">' + libs[j] + '</span>';
             desc = '&nbsp;&nbsp;'
                    + '<span style="font-size: 80%;">'
                    + '<span style="font-size: 80%;">provided from</span> '
@@ -317,22 +317,30 @@
         search_timer = null;
         clearTimeout(t);
       }
-      var key = event && event.keyCode;
-      if (key == 13) {
-        DoSearch();
-        return false;
-      } else if (key == 33) {
-        DoSearch(); // in case we didn't update it yet
-        first_search_result -= results_num;
-        UpdateResults();
-        return false;
-      } else if (key == 34) {
-        DoSearch(); // in case we didn't update it yet
-        if (first_search_result + results_num < search_results.length) {
-          first_search_result += results_num;
-          UpdateResults();
+      var key = event;
+      if (typeof event != "string") {
+        switch (event.keyCode) {
+          case 13: key = "Enter"; break;
+          case 33: key = "PgUp"; break;
+          case 34: key = "PgDn"; break;
         }
-        return false;
+      }
+      switch (key) {
+        case "Enter":
+          DoSearch();
+          return false;
+        case "PgUp":
+          DoSearch(); // in case we didn't update it yet
+          first_search_result -= results_num;
+          UpdateResults();
+          return false;
+        case "PgDn":
+          DoSearch(); // in case we didn't update it yet
+          if (first_search_result + results_num < search_results.length) {
+            first_search_result += results_num;
+            UpdateResults();
+          }
+          return false;
       }
       search_timer = setTimeout(DoSearch, 400);
       return true;
@@ -345,10 +353,10 @@
     })();
   })
 
-(define (make-search)
+(define (make-search user-dir?)
   (make-splice
    (list
     (make-delayed-block
-     (lambda (r s i) (make-paragraph (list (make-script r s i)))))
+     (lambda (r s i) (make-paragraph (list (make-script user-dir? r s i)))))
     (make-element (make-with-attributes #f '((id . "plt_search_container")))
                   null))))

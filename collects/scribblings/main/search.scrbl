@@ -4,4 +4,4 @@
 
 @main-page['search #t]
 
-@make-search[]
+@make-search[#f]
