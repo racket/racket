@@ -30,7 +30,9 @@
              (let* ([table (read port)]
                     [path (object-name port)]
                     [modname 
-                     (if path
+                     (if (or (path? path)
+                             (and (string? path)
+                                  (path-string? path)))
                          (let-values ([(base name dir) (split-path path)])
                            (string->symbol (path->string (path-replace-suffix name #""))))
                          (lookup 'modname table))])

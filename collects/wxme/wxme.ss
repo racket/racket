@@ -6,6 +6,7 @@
            mzlib/class
            mzlib/contract
            mzlib/list
+           scheme/gui/dynamic
            "image.ss"
            "editor.ss"
            "private/compat.ss")
@@ -662,9 +663,7 @@
     (wxme-convert-port port close? #f))
 
   (define (do-read port who read)
-    (let ([port (if (with-handlers ([exn:fail? (lambda (x) #f)])
-                      (dynamic-require '#%mred-kernel #f)
-                      #t)
+    (let ([port (if (gui-available?)
                     ;; GUI mode, since MrEd is available:
                     (let ([text% (dynamic-require 'mred 'text%)]
                           [open-input-text-editor (dynamic-require 'mred 'open-input-text-editor)])
