@@ -599,9 +599,9 @@ TODO
       (define/public (get-context) context)
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;;					       ;;;
+      ;;;				           ;;;
       ;;;            User -> Kernel                ;;;
-      ;;;					       ;;;
+      ;;;				           ;;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
       ;; =User= (probably doesn't matter)
@@ -633,10 +633,10 @@ TODO
         (display-results/void (filter (λ (x) (not (void? x))) anss)))
       
       ;; display-results : (listof TST) -> void
-      ;; prints each element of anss that is not void as values in the REPL.
+      ;; prints each element of anss in the REPL.
       (define/public (display-results/void anss) ; =User=, =Handler=, =Breaks=
         (for-each 
-         (λ (v)
+         (λ (v) 
            (let* ([ls (current-language-settings)]
                   [lang (drscheme:language-configuration:language-settings-language ls)]
                   [settings (drscheme:language-configuration:language-settings-settings ls)])
@@ -1120,7 +1120,7 @@ TODO
                                   (λ args
                                     (abort-current-continuation 
                                      (default-continuation-prompt-tag))))))
-                          (λ x (display-results x)))
+                          (λ x (for-each (λ (x) ((current-print) x)) x)))
                          (loop)))))))
               (default-continuation-prompt-tag)
               (λ args (void)))
