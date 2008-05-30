@@ -2473,14 +2473,39 @@ static FILE *mrerr = NULL;
 static void MrEdSchemeMessages(char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
-
+#if WINDOW_STDIO
+  char *arg_s;
+  long arg_d, arg_l;
+# define VSP_BUFFER_SIZE 4096
+  char arg_buffer[VSP_BUFFER_SIZE];
+#endif
+  
   scheme_start_atomic();
+
+  HIDE_FROM_XFORM(va_start(args, msg));
 
 #if WINDOW_STDIO
   if (!wx_in_terminal) {
     static int opening = 0;
-    if (opening)
+
+    if (opening) {
+      HIDE_FROM_XFORM(va_end(args));
       return;
+    }
+
+    /* Need to extract arguments before a potential GC */
+    if (!msg) {
+      arg_s = HIDE_FROM_XFORM(va_arg(args, char*));
+      arg_d = HIDE_FROM_XFORM(va_arg(args, long));
+      arg_l = HIDE_FROM_XFORM(va_arg(args, long));
+    } else {
+# ifdef MPW_CPLUS
+      /* FIXME: No vsnprintf in MPW. */
+#  define vsnprintf(x, y, z, w) vsprintf(x, z, w)
+# endif
+      MSC_IZE(vsnprintf)(arg_buffer, VSP_BUFFER_SIZE, msg, args);
+    }
+
     opening = 1;
     if (!ioFrame) {
       wxREGGLOB(ioFrame);
@@ -2513,11 +2538,11 @@ static void MrEdSchemeMessages(char *msg, ...)
     mrerr = fopen("mrstderr.txt", "w");
   if (!mrerr) {
     scheme_end_atomic_no_swap();
+    HIDE_FROM_XFORM(va_end(args));
     return;
   }
 #endif
 
-  HIDE_FROM_XFORM(va_start(args, msg));
 #if WINDOW_STDIO
   if (wx_in_terminal) {
     vfprintf(stderr, msg, args);
@@ -2526,9 +2551,9 @@ static void MrEdSchemeMessages(char *msg, ...)
     wxchar *us;
     long d, l, ulen, ipos;
 
-    s = HIDE_FROM_XFORM(va_arg(args, char*));
-    d = HIDE_FROM_XFORM(va_arg(args, long));
-    l = HIDE_FROM_XFORM(va_arg(args, long));
+    s = arg_s;
+    d = arg_d;
+    l = arg_l;
 
     if (!ioFrame->beginEditSeq) {
       ioFrame->media->BeginEditSequence();
@@ -2563,15 +2588,8 @@ static void MrEdSchemeMessages(char *msg, ...)
       ioFrame->beginEditSeq = 0;
     }
   } else {
-# define VSP_BUFFER_SIZE 4096
-# ifdef MPW_CPLUS
-    /* FIXME: No vsnprintf in MPW. */
-#  define vsnprintf(x, y, z, w) vsprintf(x, z, w)
-# endif
-    char buffer[VSP_BUFFER_SIZE];
-    MSC_IZE(vsnprintf)(buffer, VSP_BUFFER_SIZE, msg, args);
-    ioFrame->media->Insert((char *)buffer, ioFrame->endpos);
-    ioFrame->endpos += strlen(buffer);
+    ioFrame->media->Insert((char *)arg_buffer, ioFrame->endpos);
+    ioFrame->endpos += strlen(arg_buffer);
     if (ioFrame->beginEditSeq) {
       ioFrame->media->EndEditSequence();
       ioFrame->beginEditSeq = 0;
@@ -2587,12 +2605,12 @@ static void MrEdSchemeMessages(char *msg, ...)
     s = va_arg(args, char*);
     l = va_arg(args, long);
 
-	WriteConsole(console_out, s, l, &wrote, NULL);
+    WriteConsole(console_out, s, l, &wrote, NULL);
   } else {
-	char buffer[2048];
-	DWORD wrote;
+    char buffer[2048];
+    DWORD wrote;
     vsprintf(buffer, msg, args);
-	WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
+    WriteConsole(console_out, buffer, strlen(buffer), &wrote, NULL);
   }
 #endif
 #if !WINDOW_STDIO && !WCONSOLE_STDIO
