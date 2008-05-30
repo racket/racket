@@ -159,7 +159,7 @@
         +'<table width="100%" cellspacing="0" cellpadding="1">'
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                +' onchange="key_handler(event);"'
+                +' onkeyup="key_handler(\'\');"'
                 +' onkeypress="return key_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
