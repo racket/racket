@@ -845,7 +845,9 @@
              tmp-dir
              #f
              (make-user)
-             (lambda (what go alt) (record-error what "Building docs" go alt)))
+             (lambda (what go alt)
+               (record-error what "Building pdf docs" go alt))
+             setup-printf)
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
