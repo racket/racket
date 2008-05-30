@@ -1768,7 +1768,7 @@
       (let ([pref
              (let loop ([pref pref][sel sel])
                (if (zero? sel)
-                   (cons sel (cdr pref))
+                   (cons x (cdr pref))
                    (cons (car pref) (loop (cdr pref) (sub1 sel)))))])
         (preferences:set 'framework:tabify pref))))
   (define-values (begin-list-box begin-regexp-text) 
