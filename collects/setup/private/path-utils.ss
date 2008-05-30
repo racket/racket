@@ -3,7 +3,8 @@
 (require setup/dirs
          setup/main-collects
          setup/path-relativize
-         scheme/list)
+         scheme/list
+         (rename-in planet/config [CACHE-DIR planet-dir]))
 
 (provide doc-path path->name)
 
@@ -32,17 +33,19 @@
        path->rel))
    path))
 (define (path->name path #:prefix [prefix #f] #:base [find-base #f])
+  (define (try find-base prefix)
+    (define rel (path->rel path find-base))
+    (and (pair? rel)
+         (let* ([p (cdr (append-map (lambda (p) (list #"/" p)) (cdr rel)))]
+                [p (bytes->string/utf-8 (apply bytes-append p))])
+           (if prefix (format "<~a>/~a" prefix p) p))))
+  (define (->string) (if (string? path) path (path->string path)))
   (if (not (complete-path? path))
-    (if (string? path) path (path->string path))
-    (let loop ([rel (path->rel path find-base)]
-               [prefix prefix])
-      (if (pair? rel)
-        (let* ([p (cdr (append-map (lambda (p) (list #"/" p)) (cdr rel)))]
-               [p (bytes->string/utf-8 (apply bytes-append p))])
-          (if prefix (format "<~a>/~a" prefix p) p))
-        (if (or prefix find-base)
-          (path->string rel)
-          ;; by default (both optionals missing) try the user
-          ;; collections too looping with a prefix avoids trying this
-          ;; again
-          (loop (path->rel path find-user-collects-dir) 'user))))))
+    (->string)
+    (or (try find-base prefix)
+        ;; by default (both optionals missing) try the user
+        ;; collections and planet too
+        (and (not (or prefix find-base))
+             (or (try find-user-collects-dir 'user)
+                 (try planet-dir 'planet)))
+        (->string))))

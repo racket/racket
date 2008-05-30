@@ -531,7 +531,7 @@
                         [dep (build-path dir mode-dir (path-add-suffix name #".dep"))])
                    (when (and (file-exists? dep) (file-exists? zo))
                      (set! did-something? #t)
-                     (setup-printf " deleting ~a" (path->name zo))
+                     (setup-printf "deleting" "~a" (path->name zo))
                      (delete-file/record-dependency zo dependencies)
                      (delete-file/record-dependency dep dependencies))))))
             (when did-something? (loop dependencies))))
