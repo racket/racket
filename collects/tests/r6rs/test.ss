@@ -104,7 +104,10 @@
   
   (define (check-test expr got expected)
     (set! checked (+ 1 checked))
-    (unless (equal? got expected)
+    (unless (if (and (real? expected)
+                     (nan? expected))
+                (nan? got)
+                (equal? got expected))
       (set! failures
             (cons (list expr got expected)
                   failures))))

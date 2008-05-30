@@ -284,8 +284,8 @@
               desc += (j==0 ? "" : ", " )
                       + '<span class="schememod">' + libs[j] + '</span>';
             desc = '&nbsp;&nbsp;'
-                   + '<span style="font-size: 80%;">'
-                   + '<span style="font-size: 80%;">provided from</span> '
+                   + '<span class="smaller">'
+                   + '<span class="smaller">provided from</span> '
                    + desc + '</span>';
           }
           result_links[i].innerHTML =

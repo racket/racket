@@ -195,7 +195,8 @@
       (for ([i infos]
             #:when (not (or (info-need-run? i) (not (info-build? i)))))
         (let ([ch (ormap (lambda (i2)
-                           (and (>= (info-out-time i2) (info-time i)) i2))
+                           (or (not (info? i2))
+                               (and (>= (info-out-time i2) (info-time i)) i2)))
                          (info-deps i))])
           (when ch
             (when (verbose)
