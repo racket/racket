@@ -179,9 +179,8 @@
         +'</table>';
       // get the query box
       query = document.getElementById("search_box");
-      // status should point to the text object
+      // status line
       status = document.getElementById("search_status");
-      if (status.childNodes.length == 1) status = status.firstChild;
       // result_links is the array of result link <container,link> pairs
       result_links = new Array();
       n = document.getElementById("search_result");
@@ -217,36 +216,44 @@
       }
     }
 
-    var last_search_term_raw, last_search_terms;
-    var search_results, first_search_result;
+    var last_search_term, last_search_term_raw;
+    var search_results, first_search_result, exact_results_num;
     function DoSearch() {
-      var terms = query.value;
-      if (terms == last_search_term_raw) return;
-      last_search_term_raw = terms;
-      terms= terms.toLowerCase()
-               .replace(/\s\s*/g," ")                  // single spaces
-               .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
-      if (terms == last_search_terms) return;
-      last_search_terms = terms;
-      status.nodeValue = "Searching " + plt_search_data.length + " entries";
-      terms = (terms=="") ? [] : terms.split(/ /);
+      var term = query.value;
+      if (term == last_search_term_raw) return;
+      last_search_term_raw = term;
+      term = term.toLowerCase()
+                 .replace(/\s\s*/g," ")                  // single spaces
+                 .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+      if (term == last_search_term) return;
+      last_search_term = term;
+      status.innerHTML = "Searching " + plt_search_data.length + " entries";
+      var terms = (term=="") ? [] : term.split(/ /);
       if (terms.length == 0) {
         search_results = plt_search_data;
       } else {
         search_results = new Array();
+        exact_results = new Array();
         for (var i=0@";" i<plt_search_data.length@";" i++) {
           var show = true, curtext = plt_search_data[i][0];
-          for (var j=0@";" j<terms.length@";" j++) {
-            if (curtext.indexOf(terms[j]) < 0) {
-              show = false;
-              break;
+          if (plt_search_data[i][3] && (term == curtext)) {
+            exact_results.push(plt_search_data[i]);
+          } else {
+            for (var j=0@";" j<terms.length@";" j++) {
+              if (curtext.indexOf(terms[j]) < 0) {
+                show = false;
+                break;
+              }
             }
+            if (show) search_results.push(plt_search_data[i]);
           }
-          if (show) search_results.push(plt_search_data[i]);
         }
+        exact_results_num = exact_results.length;
+        while (exact_results.length > 0)
+          search_results.unshift(exact_results.pop());
       }
       first_search_result = 0;
-      status.nodeValue = "" + search_results.length + " entries found";
+      status.innerHTML = "" + search_results.length + " entries found";
       query.style.backgroundColor =
         (search_results.length == 0) ? "#ffe0e0" : "white";
       UpdateResults();
@@ -292,22 +299,30 @@
             '<a href="'
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
             + UncompactHtml(search_results[n][2]) + '</a>' + desc;
+          result_links[i].style.backgroundColor =
+            (i < exact_results_num) ? "#ffffc0" : "white";
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
         }
       }
       if (search_results.length == 0)
-        status.nodeValue = "No matches found";
+        status.innerHTML = "No matches found";
       else if (search_results.length <= results_num)
-        status.nodeValue = "Showing all " + search_results.length + " matches";
+        status.innerHTML = "Showing all matches";
       else
-        status.nodeValue =
+        status.innerHTML =
           "Showing "
           + (first_search_result+1) + "-"
           + Math.min(first_search_result+results_num,search_results.length)
           + " of " + search_results.length
           + ((search_results.length==plt_search_data.length) ? "" : " matches");
+      if (exact_results_num > 0)
+        status.innerHTML +=
+          " (<span style=\"background-color: #ffffc0;\">"
+          + ((exact_results_num == search_results.length)
+               ? "all" : exact_results_num)
+          + " exact</span>)";
     }
 
     var search_timer = null;
@@ -342,7 +357,7 @@
           }
           return false;
       }
-      search_timer = setTimeout(DoSearch, 400);
+      search_timer = setTimeout(DoSearch, 300);
       return true;
     }
 
