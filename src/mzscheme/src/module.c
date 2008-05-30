@@ -3819,7 +3819,7 @@ static void finish_start_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_
 
 static void finish_expstart_module_in_namespace(Scheme_Env *menv, Scheme_Env *from_env)
 {
-  return finish_start_module_in_namespace(menv, from_env, 0);
+  finish_start_module_in_namespace(menv, from_env, 0);
 }
 
 static void start_module(Scheme_Module *m, Scheme_Env *env, int restart, 
