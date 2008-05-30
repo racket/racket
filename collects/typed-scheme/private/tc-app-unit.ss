@@ -204,7 +204,7 @@
                      [arg-els-effs arg-els-effs]
                      [args args-stx])
       (match ftype
-        [(tc-result: (and sty (Struct: _ _ _ (? Type? proc-ty))) thn-eff els-eff)
+        [(tc-result: (and sty (Struct: _ _ _ (? Type? proc-ty) _ _)) thn-eff els-eff)
          (outer-loop (ret proc-ty thn-eff els-eff)
                      (cons (tc-result-t ftype0) argtypes)
                      (cons (list) arg-thn-effs)

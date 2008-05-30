@@ -40,6 +40,10 @@
 ;; given in `expanded'.
 (define (look-for-in-orig orig expanded lookfor)
   (define src (syntax-source orig))
+  ;(printf "orig : ~a~n" orig)
+  ;(printf "expanded : ~a~n" expanded)
+  ;(printf "lookfor : ~a~n" lookfor)
+  ;(printf "src : ~a~n" src)
   ;; we just might get a lookfor that is already in the original
    (let ([enclosing (enclosing-syntaxes-with-source expanded lookfor src)]
          [syntax-locs (make-hash)])
@@ -51,12 +55,15 @@
      (or
       ;; we just might get a lookfor that is already in the original
       (and (eq? src (syntax-source lookfor))
-           (hash-ref syntax-locs (syntax-loc lookfor) #f))
+           (hash-ref syntax-locs (syntax-loc lookfor) #f)
+           #;(printf "chose branch one: ~a~n" (hash-ref syntax-locs (syntax-loc lookfor) #f)))
            
       ;; look for some enclosing expression
       (and enclosing
-           (ormap (lambda (enc) (hash-ref syntax-locs (syntax-loc enc) #f))
-                  enclosing)))))
+           (begin0
+             (ormap (lambda (enc) (hash-ref syntax-locs (syntax-loc enc) #f))
+                    enclosing)
+             #;(printf "chose branch two ~a~n" enclosing))))))
 
 ;(trace look-for-in-orig)
 

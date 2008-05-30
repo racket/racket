@@ -366,7 +366,7 @@
      [current-error-port (-Param -Output-Port -Output-Port)]
      [current-input-port (-Param -Input-Port -Input-Port)]
      [round (N . -> . N)]
-     [seconds->date (N . -> . (make-Struct 'date #f (list N N N N N N N N B N) #f))]
+     [seconds->date (N . -> . (make-Struct 'date #f (list N N N N N N N N B N) #f #f #'date?))]
      [current-seconds (-> N)]
      [sqrt (-> N N)]
      [path->string (-> -Path -String)]       

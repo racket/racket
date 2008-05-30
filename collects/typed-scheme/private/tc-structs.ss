@@ -1,8 +1,6 @@
 #lang scheme/base
 
-(require (lib "struct.ss" "syntax")
-         (lib "etc.ss")
-         "type-rep.ss" ;; doesn't need tests
+(require "type-rep.ss" ;; doesn't need tests
          "type-effect-convenience.ss" ;; maybe needs tests
          "type-env.ss" ;; maybe needs tests
          "type-utils.ss"
@@ -12,10 +10,12 @@
          "union.ss"
          "tc-utils.ss"
          "resolve-type.ss"
-         (lib "kerncase.ss" "syntax")
-         (lib "trace.ss")
-         (lib "kw.ss")
-         (lib "plt-match.ss"))
+         "def-binding.ss"
+         syntax/kerncase
+         syntax/struct
+         mzlib/trace         
+         scheme/match
+         (for-syntax scheme/base))
 
 
 (require (for-template scheme/base
@@ -80,7 +80,7 @@
 ;; Option[Struct-Ty] -> Listof[Type]
 (define (get-parent-flds p)
   (match p
-    [(Struct: _ _ flds _) flds]
+    [(Struct: _ _ flds _ _ _) flds]
     [(Name: n) (get-parent-flds (lookup-type-name n))]
     [#f null]))
 
@@ -93,10 +93,13 @@
                          #:mutable [setters? #f]
                          #:proc-ty [proc-ty #f]
                          #:maker [maker #f]
-                         #:constructor-return [cret #f])
+                         #:constructor-return [cret #f]
+                         #:poly? [poly? #f])
+  ;; create the approriate names that define-struct will bind
+  (define-values (maker pred getters setters) (struct-names nm flds setters?))
   (let* ([name (syntax-e nm)]
          [fld-types (append parent-field-types types)]
-         [sty (make-Struct name parent fld-types proc-ty)]
+         [sty (make-Struct name parent fld-types proc-ty poly? pred)]
          [external-fld-types/no-parent types]
          [external-fld-types fld-types])
     (register-struct-types nm sty flds external-fld-types external-fld-types/no-parent setters? 
@@ -117,17 +120,23 @@
   (define-values (maker pred getters setters) (struct-names nm flds setters?))
   ;; the type name that is used in all the types
   (define name (type-wrapper (make-Name nm)))
-  ;; register the type name
+  ;; the list of names w/ types
+  (define bindings
+    (append 
+     (list (cons (or maker* maker) 
+                 (wrapper (->* external-fld-types (if cret cret name))))
+           (cons pred
+                 (make-pred-ty (wrapper name))))
+     (map (lambda (g t) (cons g (wrapper (->* (list name) t)))) getters external-fld-types/no-parent)
+     (if setters?
+         (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) getters external-fld-types/no-parent)
+         null)))
   (register-type-name nm (wrapper sty))
-  ;; register the various function types
-  (register-type (or maker* maker) (wrapper (->* external-fld-types (if cret cret name))))
-  (register-types getters
-                  (map (lambda (t) (wrapper (->* (list name) t))) external-fld-types/no-parent))
-  (when setters?    
-    #;(printf "setters: ~a~n" (syntax-object->datum setters))
-    (register-types setters
-                    (map (lambda (t) (wrapper (->* (list name t) -Void))) external-fld-types/no-parent)))
-  (register-type pred (make-pred-ty (wrapper name))))
+  (for/list ([e bindings])
+    (let ([nm (car e)]
+          [t (cdr e)])
+      (register-type nm t)
+      (make-def-binding nm t))))
 
 ;; check and register types for a polymorphic define struct
 ;; tc/poly-struct : Listof[identifier] (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
@@ -156,7 +165,8 @@
   (mk/register-sty nm flds parent-name parent-field-types types
                    ;; wrap everything in the approriate forall
                    #:wrapper (lambda (t) (make-Poly tvars t))
-                   #:type-wrapper (lambda (t) (make-App t new-tvars #f))))
+                   #:type-wrapper (lambda (t) (make-App t new-tvars #f))
+                   #:poly? #t))
 
 
 ;; typecheck a non-polymophic struct and register the approriate types
@@ -183,74 +193,20 @@
 ;; tc/builtin-struct : identifier identifier Listof[identifier] Listof[Type] Listof[Type] -> void
 (define (tc/builtin-struct nm parent flds tys parent-tys)
   (let ([parent* (if parent (make-Name parent) #f)])
-    (mk/register-sty nm flds parent* parent-tys tys #:mutable #t)))
+    (mk/register-sty nm flds parent* parent-tys tys
+                     #:mutable #t)))
 
 ;; syntax for tc/builtin-struct
-(define-syntax d-s 
-  (syntax-rules (:) 
+(define-syntax (d-s stx) 
+  (syntax-case stx (:) 
     [(_ (nm par) ([fld : ty] ...) (par-ty ...))
-     (tc/builtin-struct #'nm #'par
-                        (list #'fld ...)
-                        (list ty ...)
-                        (list par-ty ...))]
+     #'(tc/builtin-struct #'nm #'par
+                          (list #'fld ...)
+                          (list ty ...)
+                          (list par-ty ...))]
     [(_ nm ([fld : ty] ...) (par-ty ...))
-     (tc/builtin-struct #'nm #f
-                        (list #'fld ...)
-                        (list ty ...)
-                        (list par-ty ...))]))
+     #'(tc/builtin-struct #'nm #f
+                          (list #'fld ...)
+                          (list ty ...)
+                          (list par-ty ...))]))
 
-;; This is going away!
-#|
-
-;; parent-nm is an identifier with the name of the defined type
-;; variants is (list id id (list (cons id unparsed-type))) - first id is name of variant, second is name of maker, 
-;;     list is name of field w/ type
-;; top-pred is an identifier
-;; produces void
-(define (tc/define-type parent-nm top-pred variants)
-  ;; the symbol and type variable used for parsing
-  (define parent-sym (syntax-e parent-nm))
-  (define parent-tvar (make-F parent-sym))
-  
-  ;; create the initial struct type, which contains type variables
-  (define (mk-initial-variant nm fld-tys-stx)
-    ;; parse the types (recursiveness doesn't matter)
-    (define-values (fld-tys _) (FIXME parent-sym parent-tvar fld-tys-stx))     
-    (make-Struct (syntax-e nm) #f fld-tys #f))
-  
-  ;; create the union type that is the total type
-  (define (mk-un-ty parent-sym variant-struct-tys)
-    (make-Mu parent-sym (apply Un variant-struct-tys)))     
-  
-  ;; generate the names and call mk-variant
-  (define (mk-variant nm maker-name fld-names un-ty variant-struct-ty parent-nm)
-    ;; construct the actual type of this variant
-    (define variant-ty (subst parent-nm un-ty variant-struct-ty))
-    ;; the fields of this variant
-    (match-define (Struct: _ _ fld-types _) variant-ty)
-    ;; register all the types (with custon maker name)
-    (register-struct-types nm variant-ty fld-names fld-types fld-types #f #:maker maker-name))
-  
-  ;; all the names
-  (define variant-names (map car variants))
-  (define variant-makers (map cadr variants))
-  (define variant-flds (map caddr variants))    
-  ;; create the initial variants, which don't have the parent substituted in
-  (define variant-struct-tys (map (lambda (n flds) (mk-initial-variant n (map car flds))) variant-names variant-flds))
-  ;; just the names of each variant's fields
-  (define variant-fld-names (map (lambda (x) (map cdr x)) variant-flds))
-  
-  ;; the type of the parent
-  (define un-ty (mk-un-ty parent-sym variant-struct-tys))
-  
-  ;; register the types for the parent
-  (register-type top-pred (make-pred-ty un-ty))
-  (register-type-name parent-nm un-ty)
-  
-  ;; construct all the variants, and register the appropriate names
-  (for-each (lambda (nm mk fld-names sty) (mk-variant nm mk fld-names un-ty sty parent-sym))
-            variant-names variant-makers variant-fld-names variant-struct-tys))
-
-
-
-|#

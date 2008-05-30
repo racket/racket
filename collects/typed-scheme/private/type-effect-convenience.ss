@@ -72,7 +72,7 @@
                [(dom rng rest eff1 eff2) (make-arr dom rng rest eff1 eff2)]))
 
 (define (make-promise-ty t)
-  (make-Struct (string->uninterned-symbol "Promise") #f (list t) #f))
+  (make-Struct (string->uninterned-symbol "Promise") #f (list t) #f #f #'promise?))
 
 (define N (make-Base 'Number))
 (define -Integer (make-Base 'Integer))

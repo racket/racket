@@ -66,13 +66,16 @@
   ;; parent : Struct
   ;; flds : Listof[Type]
   ;; proc : Function Type
-  (dt Struct (name parent flds proc) 
+  (dt Struct (name parent flds proc poly? pred-id)
+      [#:intern (list name parent flds proc)]
       [#:frees (combine-frees (map free-vars* (append (if proc (list proc) null) (if parent (list parent) null) flds)))
                (combine-frees (map free-idxs* (append (if proc (list proc) null) (if parent (list parent) null) flds)))]
       [#:fold-rhs (*Struct name 
                            (and parent (type-rec-id parent))
                            (map type-rec-id flds)
-                           (and proc (type-rec-id proc)))])
+                           (and proc (type-rec-id proc))
+                           poly?
+                           pred-id)])
   
   ;; dom : Listof[Type]
   ;; rng : Type

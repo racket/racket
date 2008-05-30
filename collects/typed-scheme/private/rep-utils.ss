@@ -150,7 +150,7 @@
                      (lambda (s)
                        (... 
                         (syntax-case s ()
-                          [(__ fs ...) (syntax/loc s (struct nm (_ fs ...)))]))))
+                          [(__ . fs) (quasisyntax/loc s (struct nm #, (syntax/loc #'fs (_ . fs))))]))))
                    (begin-for-syntax
                      (hash-set! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs)))
                    intern

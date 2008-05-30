@@ -19,6 +19,8 @@
   (match v
     [(Union: elems) `(make-Union (list ,@(map sub elems)))]
     [(Name: stx) `(make-Name (quote-syntax ,stx))]
+    [(Struct: name parent flds proc poly? pred-id)
+     `(make-Struct ,(sub name) ,(sub parent) ,(sub flds) ,(sub proc) ,(sub poly?) (quote-syntax ,pred-id))]
     [(App: rator rands stx) `(make-App ,(sub rator) ,(sub rands) (quote-syntax ,stx))]
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]

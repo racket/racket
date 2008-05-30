@@ -18,7 +18,7 @@
  syntax/struct
  syntax/stx
  mzlib/trace
- (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract)
+ (only-in scheme/contract -> ->* case-> cons/c flat-rec-contract provide/contract any/c)
  (for-template scheme/base scheme/contract (only-in scheme/class object% is-a?/c subclass?/c)))
 
 (define (define/fixup-contract? stx)
@@ -117,10 +117,12 @@
         [(Instance: _) #'(is-a?/c object%)]
         [(Class: _ _ _) #'(subclass?/c object%)]
         [(Value: '()) #'null?]
+        [(Struct: _ _ _ _ #f pred?) pred?]
         [(Syntax: (Base: 'Symbol)) #'identifier?]
         [(Syntax: t)
          (if (equal? ty Any-Syntax)
              #`syntax?
              #`(syntax/c #,(t->c t)))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x #,v)))]
-        [else (exit (fail))]))))
+        [else          
+         (exit (fail))]))))

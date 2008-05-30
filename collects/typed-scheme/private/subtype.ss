@@ -214,12 +214,12 @@
               [(list (Union: es) t) (and (andmap (lambda (elem) (subtype* A0 elem t)) es) A0)]
               [(list s (Union: es)) (and (ormap (lambda (elem) (subtype*/no-fail A0 s elem)) es) A0)]
               ;; subtyping on immutable structs is covariant
-              [(list (Struct: nm _ flds #f) (Struct: nm _ flds* #f))
+              [(list (Struct: nm _ flds #f _ _) (Struct: nm _ flds* #f _ _))
                (subtypes* A0 flds flds*)]
-              [(list (Struct: nm _ flds proc) (Struct: nm _ flds* proc*))
+              [(list (Struct: nm _ flds proc _ _) (Struct: nm _ flds* proc* _ _))
                (subtypes* A0 (cons proc flds) (cons proc* flds*))]
               ;; subtyping on structs follows the declared hierarchy
-              [(list (Struct: nm (? Type? parent) flds proc) other) 
+              [(list (Struct: nm (? Type? parent) flds proc _ _) other) 
                ;(printf "subtype - hierarchy : ~a ~a ~a~n" nm parent other)
                (subtype* A0 parent other)]
               ;; applications and names are structs too
@@ -261,7 +261,7 @@
                      (subtype* A0 t other)
                      (fail! s t)))]
               ;; Promises are covariant
-              [(list (Struct: 'Promise _ (list t) _) (Struct: 'Promise _ (list t*) _)) (subtype* A0 t t*)]
+              [(list (Struct: 'Promise _ (list t) _ _ _) (Struct: 'Promise _ (list t*) _ _ _)) (subtype* A0 t t*)]
               ;; subtyping on values is pointwise
               [(list (Values: vals1) (Values: vals2)) (subtypes* A0 vals1 vals2)]
               ;; single values shouldn't actually happen, but they're just like the type
