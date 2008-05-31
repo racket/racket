@@ -7,7 +7,7 @@
 
 @local-table-of-contents[]
 
-A @deftech{byte string} is a fixed-length arary of bytes. A
+A @deftech{byte string} is a fixed-length array of bytes. A
  @pidefterm{byte} is an exact integer between @scheme[0] and
  @scheme[255] inclusive.
 
