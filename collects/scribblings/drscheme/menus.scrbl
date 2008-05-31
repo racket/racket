@@ -4,8 +4,8 @@
 
 @(define (defmenuitem . s)
   (let ([mi (apply onscreen s)])
-   @index*[(list (string-append (element->string mi) " menu item"))
-           (list (elem mi " menu item"))]{@|mi| :}))
+    @index*[(list (string-append (element->string mi) " menu item"))
+            (list (elem mi " menu item"))]{@|mi| :}))
 
 @(define lam-str "\u03BB")
 
@@ -313,13 +313,13 @@ background that signals the source location of an error.}
            
  @item{@defmenuitem{Disable Tests} Stops tests written in the definitions
   window from evaluating when the program is Run. Tests can be enabled
-  using the @defmenuitem{Enable Tests} menu item. Disabling tests freezes
+  using the @onscreen{Enable Tests} menu item. Disabling tests freezes
   the contents of any existing test report window.
   }
-      
+
  @item{@defmenuitem{Enable Tests} Allows tests written in the definitions
   window to evaluate when the program is Run. Tests can be disabled using
-  the @defmenuitem{Disable Tests} menu item.
+  the @onscreen{Disable Tests} menu item.
   }
 
 }
