@@ -721,7 +721,9 @@
         [(script-element? e)
          `((script ([type ,(script-element-type e)])
              ,(apply literal `("\n" ,@(script-element-script e) "\n")))
-           (mynoscript ,@(render-plain-element e part ri)))]
+           ;; mynoscript hack doesn't always work (see hack in scribble-common.js)
+           (noscript ,@(render-plain-element e part ri))
+           )]
         [(target-element? e)
          `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
                                                          ri)))]))

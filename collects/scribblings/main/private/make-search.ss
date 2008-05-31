@@ -140,11 +140,10 @@
         +'<table width="100%" cellspacing="0" cellpadding="1">'
         +'<tr><td align="center" colspan="3">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                +' onkeyup="key_handler(\'\');"'
-                +' onkeypress="return key_handler(event);" />'
+                +' onkeydown="return key_handler(event);" />'
         +'</td></tr>'
         +'<tr><td align="left">'
-          +'<a href="#" title="Previous Page" id="prev_page_link"'
+          +'<a href="#" title="Previous Page" id="prev_page_link" tabIndex="-1"'
             +' style="text-decoration: none; font-weight: bold;"'
             +' onclick="key_handler(\'PgUp\'); return false;"'
             +'><tt><b>&lt;&lt;</b></tt></a>'
@@ -153,7 +152,7 @@
             +'&nbsp;'
           +'</span>'
         +'</td><td align="right">'
-          +'<a href="#" title="Next Page" id="next_page_link"'
+          +'<a href="#" title="Next Page" id="next_page_link" tabIndex="-1"'
             +' style="text-decoration: none; font-weight: bold;"'
             +' onclick="key_handler(\'PgDn\'); return false;"'
             +'><tt><b>&gt;&gt;</b></tt></a>'
@@ -295,23 +294,24 @@
           result_links[i].style.display = "none";
         }
       }
+      var exact = Math.min((exact_results_num - first_search_result),
+                           results_num);
+      exact = (exact <= 0) ? ""
+              : " (<span style=\"background-color: #ffffc0;\">"
+                + ((exact == results_num) ? "all" : exact)
+                + " exact</span>)";
       if (search_results.length == 0)
         status.innerHTML = ((last_search_term=="") ? "" : "No matches found");
       else if (search_results.length <= results_num)
-        status.innerHTML = "Showing all matches";
+        status.innerHTML = "Showing all matches" + exact;
       else
         status.innerHTML =
           "Showing "
           + (first_search_result+1) + "-"
           + Math.min(first_search_result+results_num,search_results.length)
+          + exact
           + " of " + search_results.length
           + ((search_results.length==plt_search_data.length) ? "" : " matches");
-      if (exact_results_num > 0)
-        status.innerHTML +=
-          " (<span style=\"background-color: #ffffc0;\">"
-          + ((exact_results_num == search_results.length)
-               ? "all" : exact_results_num)
-          + " exact</span>)";
       prev_page_link.style.color =
         (first_search_result-results_num >= 0) ? "black" : "#e8e8e8";
       next_page_link.style.color =

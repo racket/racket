@@ -56,5 +56,5 @@ function DoSearchKey(event, field, ver) {
 }
 
 // `noscript' is problematic in some browsers (always renders as a
-// block), use this hack instead
-document.write("<style>mynoscript { display:none; }</style>");
+// block), use this hack instead (does not always work!)
+// document.write("<style>mynoscript { display:none; }</style>");
