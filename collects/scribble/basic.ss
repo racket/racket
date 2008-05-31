@@ -4,6 +4,8 @@
 (require "decode.ss"
          "struct.ss"
          "config.ss"
+         "manual-struct.ss"
+         "decode-struct.ss"
          scheme/list
          scheme/class
          setup/main-collects
@@ -161,7 +163,8 @@
 
 ;; ----------------------------------------
 
-(provide section-index index index* as-index index-section index-blocks)
+(provide section-index index index* as-index index-section
+         get-index-entries index-block)
 
 (define (section-index . elems)
   (make-part-index-decl (map element->string elems) elems))
@@ -198,23 +201,75 @@
                         (list title)
                         'index
                         null
-                        (make-flow (index-blocks))
+                        (make-flow (list (index-block)))
                         null))
 
-(define (index-blocks)
-  (define (commas l)
-    (if (or (null? l) (null? (cdr l)))
-      l
-      (cdr (append-map (lambda (i) (list ", " i)) l))))
-  (define (cadr-string-lists<? a b)
-    (let loop ([a (cadr a)] [b (cadr b)])
-      (cond [(null? b) #f]
-            [(null? a) #t]
-            [(string-ci=? (car a) (car b))
-             (or (loop (cdr a) (cdr b))
-                 ;; Try string<? so "Foo" still precedes "foo"
-                 (string<? (car a) (car b)))]
-            [else (string-ci<? (car a) (car b))])))
+;; returns an ordered list of (list tag (text ...) (element ...) index-desc)
+(define (get-index-entries sec ri)
+  (define (compare-lists xs ys <?)
+    (let loop ([xs xs] [ys ys])
+      (cond [(and (null? xs) (null? ys)) '=]
+            [(null? xs) '<]
+            [(null? ys) '>]
+            [(<? (car xs) (car ys)) '<]
+            [(<? (car ys) (car xs)) '>]
+            [else (loop (cdr ys) (cdr xs))])))
+  ;; string-ci<? as a major key, and string<? next, so "Foo" precedes "foo"
+  ;; (define (string*<? s1 s2)
+  ;;   (or (string-ci<? s1 s2)
+  ;;       (and (not (string-ci<? s2 s1)) (string<? s1 s2))))
+  (define (get-desc entry)
+    (let ([desc (cadddr entry)])
+      (cond [(exported-index-desc? desc)
+             (cons 'libs (map symbol->string
+                              (exported-index-desc-from-libs desc)))]
+            [(module-path-index-desc? desc) '(mod)]
+            [(part-index-desc? desc) '(part)]
+            [(delayed-index-desc? desc) '(delayed)]
+            [else '(#f)])))
+  ;; parts first, then modules, then bindings, delayed means it's not
+  ;; the last round, and #f means no desc
+  (define desc-order '(part mod libs delayed #f))
+  (define (compare-desc e1 e2)
+    (let* ([d1 (get-desc e1)] [d2 (get-desc e2)]
+           [t1 (car d1)]      [t2 (car d2)])
+      (cond [(memq t2 (cdr (memq t1 desc-order))) '<]
+            [(memq t1 (cdr (memq t2 desc-order))) '>]
+            [else (case t1 ; equal to t2
+                    [(part) '=] ; will just compare tags
+                    [(mod)  '=] ; the text fields are the names of the modules
+                    [(libs) (compare-lists (cdr d1) (cdr d2) string<?)]
+                    [(delayed) '>] ; dosn't matter, will run again
+                    [(#f) '=])])))
+  (define (entry<? e1 e2)
+    (let ([text1 (cadr e1)] [text2 (cadr e2)])
+      (case (compare-lists text1 text2 string-ci<?)
+        [(<) #t] [(>) #f]
+        [else (case (compare-desc e1 e2)
+                [(<) #t] [(>) #f]
+                [else (case (compare-lists text1 text2 string<?)
+                        [(<) #t] [(>) #f]
+                        [else
+                         ;; (error 'get-index-entries
+                         ;;        ;; when this happens, revise this code so
+                         ;;        ;; ordering will always be deterministic
+                         ;;        "internal error -- unordered entries: ~e ~e"
+                         ;;        e1 e2)
+                         ;; Instead, just compare the tags
+                         (string<? (format "~a" (car e1))
+                                   (format "~a" (car e2)))])])])))
+  (define l null)
+  (hash-for-each
+   (let ([parent (collected-info-parent (part-collected-info sec ri))])
+     (if parent
+       (collected-info-info (part-collected-info parent ri))
+       (collect-info-ext-ht (resolve-info-ci ri))))
+   (lambda (k v)
+     (when (and (pair? k) (eq? 'index-entry (car k)))
+       (set! l (cons (cons (cadr k) v) l)))))
+  (sort l entry<?))
+
+(define (index-block)
   (define alpha (string->list "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
   (define (rows . rows)
     (make-table 'index (map (lambda (row)
@@ -222,61 +277,51 @@
                             rows)))
   (define contents
     (lambda (renderer sec ri)
-      (define l null)
-      (define line-break (if (send renderer index-manual-newlines?)
-                           (make-element 'newline '("\n"))
-                           ""))
+      (define l (get-index-entries sec ri))
+      (define manual-newlines? (send renderer index-manual-newlines?))
       (define alpha-starts (make-hasheq))
-      (hash-for-each
-       (let ([parent (collected-info-parent (part-collected-info sec ri))])
-         (if parent
-           (collected-info-info (part-collected-info parent ri))
-           (collect-info-ext-ht (resolve-info-ci ri))))
-       (lambda (k v)
-         (when (and (pair? k) (eq? 'index-entry (car k)))
-           (set! l (cons (cons (cadr k) v) l)))))
-      (set! l (sort l cadr-string-lists<?))
-      (apply
-       rows
-       (let loop ([i l] [alpha alpha])
-         (define (add-letter let l)
-           (list* (make-element "nonavigation" (list (string let))) " " l))
-         (cond [(null? alpha) null]
-               [(null? i) (add-letter (car alpha) (loop i (cdr alpha)))]
-               [else
-                (let* ([strs (cadr (car i))]
-                       [letter (if (or (null? strs) (string=? "" (car strs)))
-                                 #f
-                                 (char-upcase (string-ref (car strs) 0)))])
-                  (cond [(not letter) (loop (cdr i) alpha)]
-                        [(char-ci>? letter (car alpha))
-                         (add-letter (car alpha) (loop i (cdr alpha)))]
-                        [(char-ci=? letter (car alpha))
-                         (hash-set! alpha-starts (car i) letter)
-                         (list* (make-element
-                                 (make-target-url (format "#alpha:~a" letter) #f)
-                                 (list (string (car alpha))))
-                                " "
-                                (loop (cdr i) (cdr alpha)))]
-                        [else (loop (cdr i) alpha)]))]))
-       (list 'nbsp)
-       ((if (send renderer index-manual-newlines?)
-            list
-            (lambda (v)
-              (map list v)))
-        (map (lambda (i)
-               (define e
-                 (make-link-element "indexlink"
-                                    `(,@(commas (caddr i)) ,line-break)
-                                    (car i)))
-               (cond [(hash-ref alpha-starts i #f)
-                      => (lambda (let)
-                           (make-element (make-url-anchor
-                                          (format "alpha:~a" (char-upcase let)))
-                                         (list e)))]
-                     [else e]))
-             l)))))
-  (list (make-delayed-block contents)))
+      (define alpha-row
+        (let loop ([i l] [alpha alpha])
+          (define (add-letter let l)
+            (list* (make-element "nonavigation" (list (string let))) " " l))
+          (cond [(null? alpha) null]
+                [(null? i) (add-letter (car alpha) (loop i (cdr alpha)))]
+                [else
+                 (let* ([strs (cadr (car i))]
+                        [letter (if (or (null? strs) (string=? "" (car strs)))
+                                  #f
+                                  (char-upcase (string-ref (car strs) 0)))])
+                   (cond [(not letter) (loop (cdr i) alpha)]
+                         [(char-ci>? letter (car alpha))
+                          (add-letter (car alpha) (loop i (cdr alpha)))]
+                         [(char-ci=? letter (car alpha))
+                          (hash-set! alpha-starts (car i) letter)
+                          (list* (make-element
+                                  (make-target-url (format "#alpha:~a" letter)
+                                                   #f)
+                                  (list (string (car alpha))))
+                                 " "
+                                 (loop (cdr i) (cdr alpha)))]
+                         [else (loop (cdr i) alpha)]))])))
+      (define body
+        (let ([br (if manual-newlines? (make-element 'newline '("\n")) "")])
+          (map (lambda (i)
+                 (let ([e (make-link-element
+                           "indexlink"
+                           `(,@(add-between (caddr i) ", ") ,br)
+                           (car i))])
+                   (cond [(hash-ref alpha-starts i #f)
+                          => (lambda (let)
+                               (make-element
+                                (make-url-anchor
+                                 (format "alpha:~a" (char-upcase let)))
+                                (list e)))]
+                         [else e])))
+               l)))
+      (if manual-newlines?
+        (rows alpha-row '(nbsp) body)
+        (apply rows alpha-row '(nbsp) (map list body)))))
+  (make-delayed-block contents))
 
 ;; ----------------------------------------
 

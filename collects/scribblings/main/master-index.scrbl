@@ -5,4 +5,4 @@
 
 @main-page['index #t]
 
-@(make-splice (index-blocks))
+@(index-block)

@@ -4,6 +4,7 @@
 (require scribble/decode
          scribble/struct
          scribble/manual-struct
+         scribble/basic
          scheme/list
          scheme/string
          scheme/match
@@ -15,18 +16,7 @@
 
 (provide make-search)
 
-(define (cadr-string-lists<? a b)
-  (let loop ([a (cadr a)] [b (cadr b)])
-    (cond [(null? b) #f]
-          [(null? a) #t]
-          [(string-ci=? (car a) (car b))
-           (or (loop (cdr a) (cdr b))
-               ;; Try string<? so "Foo" still precedes "foo"
-               (string<? (car a) (car b)))]
-          [else (string-ci<? (car a) (car b))])))
-
 (define (make-script user-dir? renderer sec ri)
-  (define l null)
   (define span-classes null)
   ;; To make the index smaller, html contents is represented as one of these:
   ;; - a string
@@ -72,17 +62,8 @@
           (if (= 1 (length body))
             (car body)
             (string-append* `("[" ,@(add-between body ",") "]")))))))
-  (hash-for-each
-   (let ([parent (collected-info-parent (part-collected-info sec ri))])
-     (if parent
-       (collected-info-info (part-collected-info parent ri))
-       (collect-info-ext-ht (resolve-info-ci ri))))
-   (lambda (k v)
-     (when (and (pair? k) (eq? 'index-entry (car k)))
-       (set! l (cons (cons (cadr k) v) l)))))
-  (set! l (sort l cadr-string-lists<?))
-  (set! l
-    (for/list ([i l])
+  (define l
+    (for/list ([i (get-index-entries sec ri)])
       ;; i is (list tag (text ...) (element ...) index-desc)
       (define-values (tag texts elts desc) (apply values i))
       (define text (string-downcase (string-join texts " ")))
@@ -121,7 +102,6 @@
           [else "false"]))
       ;; Note: using ~s to have javascript-quoted strings
       (format "[~s,~s,~a,~a]" text href html from-libs)))
-  (set! l (add-between l ",\n"))
 
   @script[#:noscript @list{Sorry, you must have JavaScript to use this page.}]{
     // the url of the main doc tree, for compact url
@@ -139,7 +119,7 @@
     // - html holds either a string, or [idx, html] where idx is an
     //   index into plt_span_classes (note: this is recursive)
     plt_search_data = [
-    @l];
+    @(add-between l ",\n")];
 
     // Globally visible bindings
     var key_handler;
@@ -309,7 +289,7 @@
             + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
             + UncompactHtml(search_results[n][2]) + '</a>' + (note || "");
           result_links[i].style.backgroundColor =
-            (n < exact_results_num) ? "#ffffe0" : "#f8f8f8";
+            (n < exact_results_num) ? "#ffffd8" : "#f8f8f8";
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
