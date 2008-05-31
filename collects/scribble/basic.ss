@@ -230,6 +230,15 @@
   ;; parts first, then modules, then bindings, delayed means it's not
   ;; the last round, and #f means no desc
   (define desc-order '(part mod libs delayed #f))
+  ;; this defines an imposed ordering for module names
+  (define lib-order '(#rx"^scheme(?:/|$)" #rx"^r.rs(?:/|$)" #rx"^lang(?:/|$)"))
+  (define (lib<? lib1 lib2)
+    (define (lib-level lib)
+      (let loop ([i 0] [rxs lib-order])
+        (if (or (null? rxs) (regexp-match? (car rxs) lib))
+          i (loop (add1 i) (cdr rxs)))))
+    (let ([l1 (lib-level lib1)] [l2 (lib-level lib2)])
+      (if (= l1 l2) (string<? lib1 lib2) (< l1 l2))))
   (define (compare-desc e1 e2)
     (let* ([d1 (get-desc e1)] [d2 (get-desc e2)]
            [t1 (car d1)]      [t2 (car d2)])
@@ -238,7 +247,7 @@
             [else (case t1 ; equal to t2
                     [(part) '=] ; will just compare tags
                     [(mod)  '=] ; the text fields are the names of the modules
-                    [(libs) (compare-lists (cdr d1) (cdr d2) string<?)]
+                    [(libs) (compare-lists (cdr d1) (cdr d2) lib<?)]
                     [(delayed) '>] ; dosn't matter, will run again
                     [(#f) '=])])))
   (define (entry<? e1 e2)
