@@ -19,7 +19,7 @@ declaration has a highly constrained form. It must match the following
 grammar of @scheme[_info-module]:
 
 @schemegrammar*[
-#:literals (info lib infotab/setup quote quasiquote
+#:literals (info lib setup/infotab quote quasiquote
                  cons car cdr list list* reverse append
                  string-append path->string build-path
                  collection-path
@@ -29,7 +29,7 @@ grammar of @scheme[_info-module]:
                (define id info-expr)
                ...)]
 [intotab-mod-path (lib "infotab.ss" "setup")
-                  infotab/setup]
+                  setup/infotab]
 [info-expr (quote datum)
            (quasiquote datum)
            (info-primitive info-expr ...)
