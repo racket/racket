@@ -123,13 +123,14 @@
 
     // Globally visible bindings
     var key_handler, toggle_help_pref, hide_prefs,
-        set_results_num, set_highlight_color;
+        set_results_num, set_type_delay, set_highlight_color;
 
     (function(){
 
-    // Configuration options
-    var results_num = (GetCookie("PLT_ResultsNum", false) || 20);
-    var highlight_color = (GetCookie("PLT_HighlightColor", false) || "#ffd");
+    // Configuration options (use || in case the cookie exists but empty)
+    var results_num      = (GetCookie("PLT_ResultsNum", false) || 20);
+    var type_delay       = (GetCookie("PLT_TypeDelay", false) || 300)
+    var highlight_color  = (GetCookie("PLT_HighlightColor", false) || "#ffd");
     var background_color = "#f8f8f8";
 
     var query, status, results_container, result_links,
@@ -165,6 +166,10 @@
             +' <input type="text" tabIndex="1" id="results_num_pref"'
                    +' onkeypress="hide_prefs(event);"'
                    +' onchange="set_results_num(this); return true;"><br>'
+            +'Type delay:'
+            +' <input type="text" tabIndex="1" id="type_delay_pref"'
+                   +' onkeypress="hide_prefs(event);"'
+                   +' onchange="set_type_delay(this); return true;"><br>'
             +'Exact matches color:'
             +' <input type="text" tabIndex="1" id="highlight_color_pref"'
                    +' onkeypress="hide_prefs(event);"'
@@ -386,7 +391,7 @@
           }
           return false;
       }
-      search_timer = setTimeout(DoSearch, 300);
+      search_timer = setTimeout(DoSearch, type_delay);
       return true;
     }
     key_handler = HandleKeyEvent;
@@ -395,7 +400,8 @@
     function TogglePanel() {
       panel_shown = !panel_shown;
       if (panel_shown) {
-        document.getElementById("results_num_pref").value = results_num;
+        document.getElementById("results_num_pref").value     = results_num;
+        document.getElementById("type_delay_pref").value      = type_delay;
         document.getElementById("highlight_color_pref").value = highlight_color;
       }
       panel.style.display = panel_shown ? "table-cell" : "none";
@@ -422,6 +428,16 @@
       }
     }
     set_results_num = SetResultsNum;
+
+    function SetTypeDelay(inp) {
+      var n = (parseInt(inp.value.replace(/[^0-9]+/g,"")) || type_delay);
+      inp.value = n;
+      if (n != type_delay) {
+        type_delay = n;
+        SetCookie("PLT_TypeDelay", n);
+      }
+    }
+    set_type_delay = SetTypeDelay;
 
     function SetHighlightColor(inp) {
       var c = (inp.value.replace(/[^a-zA-Z0-9#]/g,"") || highlight_color);
