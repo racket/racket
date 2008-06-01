@@ -3,6 +3,7 @@
 (define compile-omit-paths
   '("config-lang-test.ss" "drscheme-jr.ss" "drscheme-test.ss" 
     "event-efficency.ss" ;"language-test.ss"
+    "repl-test-tmp3.ss"
     "launcher.ss"
     "line-art.ss" "menu-test.ss" "repl-test-tmp.ss" 
     "pr-144.ss" "pr-246.ss" "pr-39.ss" "pr-46.ss" "pr-48.ss" 
