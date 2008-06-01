@@ -122,32 +122,60 @@
     @(add-between l ",\n")];
 
     // Globally visible bindings
-    var key_handler;
+    var key_handler, toggle_help_pref, hide_prefs,
+        set_results_num, set_highlight_color;
 
     (function(){
 
     // Configuration options
-    var results_num = 20;
+    var results_num = (GetCookie("PLT_ResultsNum", false) || 20);
+    var highlight_color = (GetCookie("PLT_HighlightColor", false) || "#ffd");
+    var background_color = "#f8f8f8";
 
     var query, status, results_container, result_links,
-        prev_page_link, next_page_link;
+        prev_page_link, next_page_link, panel;
 
     function InitializeSearch() {
       var n;
       n = document.getElementById("plt_search_container").parentNode;
       // hack the table in
       n.innerHTML = ''
-        +'<table width="100%" cellspacing="0" cellpadding="1">'
-        +'<tr><td align="center" colspan="3">'
+        +'<table width="100%" cellspacing="0" cellpadding="1"'
+              +' bgcolor='+background_color+'>'
+        +'<tr><td align="center" colspan="2">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                +' onkeydown="return key_handler(event);" />'
+                +' tabIndex="1" onkeydown="return key_handler(event);" />'
+        +'</td><td>'
+          +'<a href="#" title="help/preference" tabIndex="3"'
+            +' style="text-decoration: none; font-weight: bold; color: black;"'
+            +' onclick="toggle_help_pref(); return false;"'
+            +'><tt><b>[?]</b></tt></a>'
         +'</td></tr>'
+        +'<tr><td colspan="3" id="help_pref"'
+               +' style="display: none; border: 1px solid #222;'
+                      +' font-size: 82%; font-family: arial, sans-serif;'
+                      +' border-top: 0px; padding: 0.5em;'
+                      +' background-color: #f0f0f0;"'
+               +'>'
+          +'&bull;&nbsp;Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Enter</tt>'
+          +' to scroll through the results.<br>'
+          +'<hr size=1>'
+          +'Preferences:<blockquote style="margin: 0.25em 1em;">'
+            +'Results per page:'
+            +' <input type="text" tabIndex="1" id="results_num_pref"'
+                   +' onkeypress="hide_prefs(event);"'
+                   +' onchange="set_results_num(this); return true;"><br>'
+            +'Exact matches color:'
+            +' <input type="text" tabIndex="1" id="highlight_color_pref"'
+                   +' onkeypress="hide_prefs(event);"'
+                   +' onchange="set_highlight_color(this); return true;"><br>'
+        +'</blockquote></td></tr>'
         +'<tr><td align="left">'
           +'<a href="#" title="Previous Page" id="prev_page_link" tabIndex="-1"'
             +' style="text-decoration: none; font-weight: bold;"'
             +' onclick="key_handler(\'PgUp\'); return false;"'
             +'><tt><b>&lt;&lt;</b></tt></a>'
-        +'</td><td align="center">'
+        +'</td><td align="center" width="100%">'
           +'<span id="search_status" style="color: #601515; font-weight: bold;">'
             +'&nbsp;'
           +'</span>'
@@ -157,7 +185,7 @@
             +' onclick="key_handler(\'PgDn\'); return false;"'
             +'><tt><b>&gt;&gt;</b></tt></a>'
         +'</td></tr>'
-        +'<tr><td colspan="3" bgcolor="#ffffff">'
+        +'<tr><td colspan="3">'
           +'<span id="search_result"'
                +' style="display: none;'
                +' margin: 0.1em 0em; padding: 0.25em 1em;"></span>'
@@ -168,6 +196,7 @@
       status = document.getElementById("search_status");
       prev_page_link = document.getElementById("prev_page_link");
       next_page_link = document.getElementById("next_page_link");
+      panel = document.getElementById("help_pref");
       // result_links is the array of result link <container,link> pairs
       result_links = new Array();
       n = document.getElementById("search_result");
@@ -285,10 +314,11 @@
             note = '&nbsp;&nbsp;<span class="smaller">' + note + '</span>';
           result_links[i].innerHTML =
             '<a href="'
-            + UncompactUrl(search_results[n][1]) + '" class="indexlink">'
+            + UncompactUrl(search_results[n][1]) + '"'
+            + ' class="indexlink" tabIndex="2">'
             + UncompactHtml(search_results[n][2]) + '</a>' + (note || "");
           result_links[i].style.backgroundColor =
-            (n < exact_results_num) ? "#ffffd8" : "#f8f8f8";
+            (n < exact_results_num) ? highlight_color : background_color;
           result_links[i].style.display = "block";
         } else {
           result_links[i].style.display = "none";
@@ -296,10 +326,10 @@
       }
       var exact = Math.min((exact_results_num - first_search_result),
                            results_num);
-      exact = (exact <= 0) ? ""
-              : " (<span style=\"background-color: #ffffc0;\">"
-                + ((exact == results_num) ? "all" : exact)
-                + " exact</span>)";
+      exact = (exact <= 0) ? ''
+              : ' (<span style="background-color: '+highlight_color+';">'
+                + ((exact == results_num) ? 'all' : exact)
+                + ' exact</span>)';
       if (search_results.length == 0)
         status.innerHTML = ((last_search_term=="") ? "" : "No matches found");
       else if (search_results.length <= results_num)
@@ -313,7 +343,7 @@
           + " of " + search_results.length
           + ((search_results.length==plt_search_data.length) ? "" : " matches");
       prev_page_link.style.color =
-        (first_search_result-results_num >= 0) ? "black" : "#e8e8e8";
+        (first_search_result-results_num >= 0) ? "black" : "#e0e0e0";
       next_page_link.style.color =
         (first_search_result+results_num < search_results.length)
         ? "black" : "#e0e0e0";
@@ -359,8 +389,50 @@
       search_timer = setTimeout(DoSearch, 300);
       return true;
     }
-
     key_handler = HandleKeyEvent;
+
+    var panel_shown = false;
+    function TogglePanel() {
+      panel_shown = !panel_shown;
+      if (panel_shown) {
+        document.getElementById("results_num_pref").value = results_num;
+        document.getElementById("highlight_color_pref").value = highlight_color;
+      }
+      panel.style.display = panel_shown ? "table-cell" : "none";
+    }
+    toggle_help_pref = TogglePanel;
+
+    function HidePanel(event) {
+      if ((event.which || event.keyCode) == 27) {
+        query.focus();
+        panel_shown = true;
+        TogglePanel();
+      }
+    }
+    hide_prefs = HidePanel;
+
+    function SetResultsNum(inp) {
+      var n = (parseInt(inp.value.replace(/[^0-9]+/g,"")) || results_num);
+      inp.value = n;
+      if (n != results_num) {
+        results_num = n;
+        SetCookie("PLT_ResultsNum", n);
+        AdjustResultsNum();
+        UpdateResults();
+      }
+    }
+    set_results_num = SetResultsNum;
+
+    function SetHighlightColor(inp) {
+      var c = (inp.value.replace(/[^a-zA-Z0-9#]/g,"") || highlight_color);
+      inp.value = c;
+      if (c != highlight_color) {
+        highlight_color = c;
+        SetCookie("PLT_HighlightColor", c);
+        UpdateResults();
+      }
+    }
+    set_highlight_color = SetHighlightColor;
 
     window.onload = InitializeSearch;
 
