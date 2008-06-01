@@ -128,8 +128,8 @@
     (function(){
 
     // Configuration options (use || in case the cookie exists but empty)
-    var results_num      = (GetCookie("PLT_ResultsNum", false) || 20);
-    var type_delay       = (GetCookie("PLT_TypeDelay", false) || 300)
+    var results_num      = (parseInt(GetCookie("PLT_ResultsNum", false)) || 20);
+    var type_delay       = (parseInt(GetCookie("PLT_TypeDelay", false)) || 300);
     var highlight_color  = (GetCookie("PLT_HighlightColor", false) || "#ffd");
     var background_color = "#f8f8f8";
 
