@@ -16,7 +16,7 @@
            (let ([lang-spec (send lang get-reader-module)])
              (when lang-spec
                (let* ([lines (send lang get-metadata-lines)]
-                      [str (send text get-text 
+                      [str (send text get-text
                                  0
                                  (send text paragraph-end-position (- lines 1)))]
                       [sp (open-input-string str)])
@@ -55,6 +55,8 @@
   
   (define (looks-like-new-module-style? text)
     (let* ([tp (open-input-text-editor text 0 'end (lambda (s) s) text #t)]
-           [l1 (read-line tp)])
+           [l1 (with-handlers ([exn:fail? (lambda (exn) eof)])
+                 ;; If tp contains a snip, read-line fails.
+                 (read-line tp))])
       (and (string? l1)
            (regexp-match #rx"#lang .*$" l1)))))
