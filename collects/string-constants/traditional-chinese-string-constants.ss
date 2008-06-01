@@ -255,6 +255,11 @@
   (help-desk-this-is-just-example-text
    "這裡顯示的只是示例字體大小的文字。要察看這些鏈接，請通過幫助菜單打開真正的Help Desk。")
   
+  ;; this appears in the bottom part of the frame the first time the user hits `f1' 
+  ;; (assuming nothing else has loaded the documentation index first)
+  ;; see also: cs-status-loading-docs-index
+  (help-desk-loading-documentation-index "Help Desk：正在讀入文檔索引")
+  
   ;; Help desk htty proxy
   (http-proxy "HTTP代理")
   (proxy-direct-connection "直接連接")
