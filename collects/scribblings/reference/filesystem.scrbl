@@ -386,6 +386,11 @@ run-time path to tools like the executable and distribution creators,
 so that files and directories needed at run time are carried along in
 a distribution.
 
+In addition to the bindings described below,
+@schememodname[scheme/runtime-path] provides @scheme[#%datum] in
+@tech{phase level} 1, since string constants are often used as
+compile-time expression with @scheme[define-runtime-path].
+
 @defform[(define-runtime-path id expr)]{
 
 Uses @scheme[expr] as both a compile-time (i.e., @tech{phase} 1)
