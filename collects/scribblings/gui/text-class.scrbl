@@ -808,9 +808,12 @@ Returns @scheme[#t] if the editor is in overwrite mode, @scheme[#f]
                          [end (or/c (box/c nonnegative-exact-integer?) false/c) #f])
            void?]{
 
-Returns the current selection range in @techlink{position}s.  See also
- @method[text% get-start-position] and @method[text%
- get-end-position].
+Returns the current selection range in @techlink{position}s.  If
+nothing is selected, the @scheme[start] and @scheme[end] will be
+the same number and that number will be where the insertion point is.
+
+See also @method[text% get-start-position] 
+and @method[text% get-end-position].
 
 @boxisfillnull[(scheme start) @elem{the starting @techlink{position} of the selection}]
 @boxisfillnull[(scheme end) @elem{the ending @techlink{position} of the selection}]
