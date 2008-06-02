@@ -113,16 +113,18 @@
       @(add-between (map (lambda (x) (format "~s" (car x)))
                          (reverse span-classes))
                     ",\n  ")];
-    // this array has an entry for each index link: [text, url, html, from-lib]
+    // this array has an entry for each index link: [text, url, html, from_lib]
     // - text is a string holding the indexed text
     // - url holds the link (">" prefix means relative to plt_main_url)
     // - html holds either a string, or [idx, html] where idx is an
     //   index into plt_span_classes (note: this is recursive)
+    // - from_lib is an array of module names for bound identifiers,
+    //   or the string "module" for a module entry
     plt_search_data = [
     @(add-between l ",\n")];
 
     // Globally visible bindings
-    var key_handler, toggle_help_pref, hide_prefs,
+    var key_handler, toggle_help_pref, hide_prefs, new_query,
         set_results_num, set_type_delay, set_highlight_color;
 
     (function(){
@@ -158,9 +160,18 @@
                       +' border-top: 0px; padding: 0.5em;'
                       +' background-color: #f0f0f0;"'
                +'>'
-          +'&bull;&nbsp;Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Enter</tt>'
-          +' to scroll through the results.<br>'
-          +'<hr size=1>'
+          +'<ul style="padding: 0em 1.5em; margin: 0em;">'
+          +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Enter</tt> to'
+             +' scroll through the results.</li>'
+          +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
+             +' idenifiers from modles that match '
+             +'&ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
+             +' itself will restrict results to bound names only</li>'
+          +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
+             +' &ldquo;<tt>L:<i>str</i></tt>&rdquo;, but'
+             +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
+             +' exactly</li>'
+          +'</ul><hr size=1>'
           +'Preferences:<blockquote style="margin: 0.25em 1em;">'
             +'Results per page:'
             +' <input type="text" tabIndex="1" id="results_num_pref"'
@@ -181,9 +192,8 @@
             +' onclick="key_handler(\'PgUp\'); return false;"'
             +'><tt><b>&lt;&lt;</b></tt></a>'
         +'</td><td align="center" width="100%">'
-          +'<span id="search_status" style="color: #601515; font-weight: bold;">'
-            +'&nbsp;'
-          +'</span>'
+          +'<span id="search_status"'
+               +' style="color: #601515; font-weight: bold;">&nbsp;</span>'
         +'</td><td align="right">'
           +'<a href="#" title="Next Page" id="next_page_link" tabIndex="-1"'
             +' style="text-decoration: none; font-weight: bold;"'
@@ -227,7 +237,7 @@
 
     function AdjustResultsNum() {
       if (result_links.length == results_num) return;
-      if (results_num <= 0) results_num = 1; // should have at least one template
+      if (results_num <= 0) results_num = 1; // expects at least one template
       while (result_links.length > results_num)
         results_container.removeChild(result_links.pop());
       while (result_links.length < results_num) {
@@ -237,41 +247,77 @@
       }
     }
 
+    // `rexact' is for an actual exact match, so we know that we matched
+    // *something* and can show exact matches as such
+    var C_fail = 0, C_match = 1, C_prefix = 2, C_exact = 3, C_rexact = 4;
+    function Compare(pat, str) {
+      var i = str.indexOf(pat);
+      if (i < 0) return C_fail;
+      else if (i > 0) return C_match;
+      else if (pat.length == str.length) return C_rexact;
+      else return C_prefix;
+    }
+    function MaxCompares(pat, strs) {
+      var r = C_fail;
+      for (var i=0@";" i<strs.length@";" i++)
+        r = Math.max(r, Compare(pat,strs[i]));
+      return r;
+    }
+
+    function CompileTerm(term) {
+      var flag = ((term.search(/^[LM]:/)==0) && term.substring(0,1));
+      if (flag) term = term.substring(2);
+      term = term.toLowerCase();
+      switch(flag) {
+        case "L": return function(text,info) {
+          if (!info) return C_fail;
+          if (info == "module") return Compare(term,text); // rexact allowed!
+          return (MaxCompares(term,info) >= C_exact) ? C_exact : C_fail;
+        }
+        case "M": return function(text,info) {
+          if (!info) return C_fail;
+          if (info == "module") return Compare(term,text); // rexact allowed!
+          return (MaxCompares(term,info) >= C_match) ? C_exact : C_fail;
+        }
+        default: return function(text,info) {
+          switch (Compare(term,text)) {
+            case C_fail: return C_fail;
+            case C_match: case C_prefix: return C_match;
+            case C_exact: case C_rexact: return (info ? C_rexact : C_match);
+          }
+        }
+      }
+    }
+
     var last_search_term, last_search_term_raw;
     var search_results = [], first_search_result, exact_results_num;
     function DoSearch() {
       var term = query.value;
       if (term == last_search_term_raw) return;
       last_search_term_raw = term;
-      term = term.toLowerCase()
-                 .replace(/\s\s*/g," ")                  // single spaces
+      term = term.replace(/\s\s*/g," ")                  // single spaces
                  .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
       if (term == last_search_term) return;
       last_search_term = term;
       status.innerHTML = "Searching " + plt_search_data.length + " entries";
       var terms = (term=="") ? [] : term.split(/ /);
+      for (var i=0@";" i<terms.length@";" i++) terms[i] = CompileTerm(terms[i]);
       if (terms.length == 0) {
         search_results = [];
       } else {
         search_results = new Array();
         exact_results = new Array();
         for (var i=0@";" i<plt_search_data.length@";" i++) {
-          var show = true, curtext = plt_search_data[i][0];
-          if (plt_search_data[i][3] && (term == curtext)) {
-            exact_results.push(plt_search_data[i]);
-          } else {
-            for (var j=0@";" j<terms.length@";" j++) {
-              if (curtext.indexOf(terms[j]) < 0) {
-                show = false;
-                break;
-              }
-            }
-            if (show) search_results.push(plt_search_data[i]);
-          }
+          var r = C_rexact;
+          for (var j=0@";" j<terms.length@";" j++)
+            r = Math.min(r, terms[j](plt_search_data[i][0],
+                                     plt_search_data[i][3]));
+          if (r >= C_rexact)   exact_results.push(plt_search_data[i]);
+          else if (r > C_fail) search_results.push(plt_search_data[i]);
         }
         exact_results_num = exact_results.length;
-        while (exact_results.length > 0)
-          search_results.unshift(exact_results.pop());
+        if (exact_results.length > 0)
+          search_results = exact_results.concat(search_results);
       }
       first_search_result = 0;
       status.innerHTML = "" + search_results.length + " entries found";
@@ -310,8 +356,12 @@
           if ((desc instanceof Array) && (desc.length > 0)) {
             note = '<span class="smaller">provided from</span> ';
             for (var j=0@";" j<desc.length@";" j++)
-              note += (j==0 ? "" : ", " )
-                      + '<span class="schememod">' + desc[j] + '</span>';
+              note +=
+                (j==0 ? "" : ", ")
+                + '<a href="?q=L:' + encodeURIComponent(desc[j]) + '"'
+                  + ' class="schememod" tabIndex="2"'
+                   +' onclick="return new_query(this);">'
+                + desc[j] + '</a>';
           } else if (desc == "module") {
             note = '<span class="smaller">module</span>';
           }
@@ -395,6 +445,20 @@
       return true;
     }
     key_handler = HandleKeyEvent;
+
+    // use this one to set the query field without jumping to the current
+    // url again, since some browsers will reload the whole page for that
+    // (it would be nice if there was a way to add it to the history too)
+    function NewQuery(node) {
+      var m = node.href.search(/[?]q=[^?&@";"]+$/);
+      if (m < 0) return true;
+      else {
+        query.value = decodeURIComponent(node.href.substring(m+3));
+        DoSearch();
+        return false;
+      }
+    }
+    new_query = NewQuery;
 
     var panel_shown = false;
     function TogglePanel() {
