@@ -135,7 +135,7 @@
          (add-between ms ",\n  "))};
 
     // Globally visible bindings
-    var key_handler, toggle_help_pref, hide_prefs, new_query, refine_query,
+    var key_handler, toggle_panel, hide_prefs, new_query, refine_query,
         set_show_manuals, set_show_manual_titles, set_results_num,
         set_type_delay, set_highlight_color;
 
@@ -151,7 +151,7 @@
     var background_color = "#f8f8f8";
 
     var query, status, results_container, result_links,
-        prev_page_link, next_page_link, panel;
+        prev_page_link, next_page_link;
 
     // tabIndex fields are set:
     //   1 query
@@ -169,24 +169,28 @@
               +' bgcolor='+background_color+'>'
         +'<tr><td align="center" colspan="2">'
           +'<input type="text" id="search_box" style="width: 100%;"'
-                +' tabIndex="1" onkeydown="return key_handler(event);" />'
+                +' tabIndex="1" onkeydown="return key_handler(event);"'
+                +' onkeydown="return key_handler(null);" />'
         +'</td><td>'
-          +'<a href="#" title="help/preference" tabIndex="3" id="toggle_panel"'
+          +'<a href="#" title="help" tabIndex="3"'
             +' style="text-decoration: none; font-weight: bold; color: black;"'
-            +' onclick="toggle_help_pref(); return false;"'
+            +' onclick="toggle_panel(\'help\'); return false;"'
             +'><tt><b>[?]</b></tt></a>'
+          +'<a href="#" title="preferences" tabIndex="3"'
+            +' style="text-decoration: none; font-weight: bold; color: black;"'
+            +' onclick="toggle_panel(\'prefs\'); return false;"'
+            +'><tt><b>[!]</b></tt></a>'
         +'</td></tr>'
-        +'<tr><td colspan="3" id="help_pref" class="smaller"'
+        +'<tr><td colspan="3" id="help_panel" class="smaller"'
                +' style="display: none; border: 1px solid #222;'
                       +' font-family: arial, sans-serif;'
                       +' border-top: 0px; padding: 0.5em;'
-                      +' background-color: #f0f0f0;"'
-               +'>'
+                      +' background-color: #f0f0f0;">'
           +'<ul style="padding: 0em 1.5em; margin: 0em;">'
           +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Enter</tt> to'
              +' scroll through the results.</li>'
           +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
-             +' idenifiers from modles that match'
+             +' identifiers from modules that match'
              +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo;'
              +' by itself will restrict results to bound names only</li>'
           +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
@@ -198,12 +202,20 @@
              +' directory where the manual is found)</li>'
           +'<li>Entries that correspond to bindings have module links that'
              +' create a query restricted to bindings in that module (using'
-             +' &ldquo;<tt>L:</tt>&rdquo;), other entries have a similar'
-             +' manual links (using &ldquo;<tt>T:</tt>&rdquo;); you can'
-             +' control whether manual links appear (and how) below</li>'
+             +' &ldquo;<tt>L:</tt>&rdquo;), other entries have similar links'
+             +' for restricting results to a specific manual (using'
+             +' &ldquo;<tt>T:</tt>&rdquo;); you can control whether manual'
+             +' links appear (and how) in the preferences</li>'
           +'<li>Right-clicking these links refines the current query instead'
-             +' of changing it</li>'
-          +'</ul><hr size=1>'
+             +' of changing it (some browsers don\'t support this)</li>'
+          +'</ul>'
+        +'</td></tr>'
+        +'<tr><td colspan="3" id="prefs_panel" class="smaller"'
+               +' style="display: none; border: 1px solid #222;'
+                      +' font-family: arial, sans-serif;'
+                      +' border-top: 0px; padding: 0.5em;'
+                      +' background-color: #f0f0f0;"'
+               +'>'
           +'Preferences:<blockquote style="margin: 0.25em 1em;">'
             +'Show manuals:'
             +' <select tabIndex="4" id="show_manuals_pref"'
@@ -255,7 +267,6 @@
       status = document.getElementById("search_status");
       prev_page_link = document.getElementById("prev_page_link");
       next_page_link = document.getElementById("next_page_link");
-      panel = document.getElementById("help_pref");
       // result_links is the array of result link <container,link> pairs
       result_links = new Array();
       n = document.getElementById("search_result");
@@ -483,8 +494,9 @@
         search_timer = null;
         clearTimeout(t);
       }
-      var key = event;
-      if (typeof event != "string") {
+      var key = null;
+      if (typeof event == "string") key = event;
+      else if (event) {
         switch (event.which || event.keyCode) {
           case 13: key = "Enter"; break;
           case 33: key = "PgUp"; break;
@@ -550,10 +562,11 @@
     }
     refine_query = RefineQuery;
 
-    var panel_shown = false;
-    function TogglePanel() {
-      panel_shown = !panel_shown;
-      if (panel_shown) {
+    var panels_shown = { "help": false, "prefs": false };
+    function TogglePanel(name) {
+      var shown = !panels_shown[name];
+      panels_shown[name] = shown;
+      if (shown && (name == "prefs")) {
         document.getElementById("show_manuals_pref").selectedIndex
                                                           = show_manuals;
         document.getElementById("show_manual_titles_pref").checked
@@ -562,18 +575,19 @@
         document.getElementById("type_delay_pref").value  = type_delay;
         document.getElementById("highlight_color_pref").value = highlight_color;
       }
-      panel.style.display = panel_shown ? "table-cell" : "none";
+      document.getElementById(name + "_panel").style.display =
+          shown ? "table-cell" : "none";
     }
-    toggle_help_pref = TogglePanel;
+    toggle_panel = TogglePanel;
 
-    function HidePanel(event) {
+    function HidePrefs(event) {
       if ((event.which || event.keyCode) == 27) {
         query.focus();
-        panel_shown = true;
-        TogglePanel();
+        panels["prefs"] = true;
+        TogglePanel("prefs");
       }
     }
-    hide_prefs = HidePanel;
+    hide_prefs = HidePrefs;
 
     function SetShowManuals(inp) {
       if (inp.selectedIndex != show_manuals) {
