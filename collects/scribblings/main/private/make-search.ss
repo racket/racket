@@ -135,7 +135,7 @@
          (add-between ms ",\n  "))};
 
     // Globally visible bindings
-    var key_handler, toggle_help_pref, hide_prefs, new_query,
+    var key_handler, toggle_help_pref, hide_prefs, new_query, refine_query,
         set_show_manuals, set_show_manual_titles, set_results_num,
         set_type_delay, set_highlight_color;
 
@@ -201,6 +201,8 @@
              +' &ldquo;<tt>L:</tt>&rdquo;), other entries have a similar'
              +' manual links (using &ldquo;<tt>T:</tt>&rdquo;); you can'
              +' control whether manual links appear (and how) below</li>'
+          +'<li>Right-clicking these links refines the current query instead'
+             +' of changing it</li>'
           +'</ul><hr size=1>'
           +'Preferences:<blockquote style="margin: 0.25em 1em;">'
             +'Show manuals:'
@@ -416,7 +418,8 @@
                 + '<a href="?q=L:' + encodeURIComponent(desc[j]) + '"'
                    +' class="schememod" tabIndex="2"'
                    +' style="text-decoration: none; color: #006;"'
-                   +' onclick="return new_query(this);">'
+                   +' onclick="return new_query(this);"'
+                   +' oncontextmenu="return refine_query(this);">'
                 + desc[j] + '</a>';
           } else if (desc == "module") {
             note = '<span class="smaller">module</span>';
@@ -428,7 +431,8 @@
             note += '<span class="smaller">in</span> '
                     + '<a href="?q=T:' + manual + '" tabIndex="2"'
                        +' style="text-decoration: none; color: #006;"'
-                       +' onclick="return new_query(this);">'
+                       +' onclick="return new_query(this);"'
+                       +' oncontextmenu="return refine_query(this);">'
                     + ((typeof idx == "number")
                        ? ('<i>'+UncompactHtml(plt_search_data[idx][2])+'</i>')
                        : manual)
@@ -528,6 +532,23 @@
       }
     }
     new_query = NewQuery;
+
+    // and this appends the the query to the current value (it's hooked
+    // on the oncontextmenu handler that doesn't work everywhere, but at
+    // least in FF and IE)
+    function RefineQuery(node) {
+      var m = node.href.search(/[?]q=[^?&@";"]+$/);
+      if (m < 0) return true;
+      m = decodeURIComponent(node.href.substring(m+3));
+      if (query.value.indexOf(m) >= 0) return true;
+      else {
+        query.value = m + " " + query.value;
+        query.focus();
+        DoSearch();
+        return false;
+      }
+    }
+    refine_query = RefineQuery;
 
     var panel_shown = false;
     function TogglePanel() {
