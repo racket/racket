@@ -71,6 +71,16 @@
       (define text (string-downcase (string-join texts " ")))
       (define-values (href html)
         (let* ([e (add-between elts ", ")]
+               ;; !!HACK!! The index entry for methods should have the extra
+               ;; text in it (when it does, this should go away)
+               [e (if (method-index-desc? desc)
+                    `(,@e ,(make-element "smaller"
+                             `(" (method of "
+                               ,(make-element "schemevariable"
+                                  (list (symbol->string
+                                         (exported-index-desc-name desc))))
+                               ")")))
+                    e)]
                [e (make-link-element "indexlink" e tag)]
                [e (send renderer render-element e sec ri)])
           (match e ; should always render to a single `a'
