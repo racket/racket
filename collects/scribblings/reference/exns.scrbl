@@ -235,7 +235,7 @@ error-display call is parameterized to install an emergency error
 display handler that attempts to print directly to a console and never
 fails.}
 
-@defform[(with-handlers ((pred-expr handler-expr))
+@defform[(with-handlers ([pred-expr handler-expr] ...)
            body ...+)]{
 
 Evaluates each @scheme[pred-expr] and and @scheme[handler-expr] in the
@@ -272,7 +272,7 @@ break). Beware, also, of catching and discarding exceptions, because
 discarding an error message can make debugging unnecessarily
 difficult.}
 
-@defform[(with-handlers* ((pred-expr handler-expr))
+@defform[(with-handlers* ([pred-expr handler-expr] ...)
            body ...+)]{
 
 Like @scheme[with-handlers], but if a @scheme[handler-expr] procedure
