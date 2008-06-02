@@ -81,7 +81,7 @@
                [e (if (method-index-desc? desc)
                     `(,@e ,(make-element "smaller"
                              `(" (method of "
-                               ,(make-element "schemevariable"
+                               ,(make-element "schemevaluelink"
                                   (list (symbol->string
                                          (exported-index-desc-name desc))))
                                ")")))
