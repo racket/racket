@@ -721,11 +721,15 @@
          `((span ([title ,(hover-element-text e)])
              ,@(render-plain-element e part ri)))]
         [(script-element? e)
-         `((script ([type ,(script-element-type e)])
-             ,(apply literal `("\n" ,@(script-element-script e) "\n")))
-           ;; mynoscript hack doesn't always work (see hack in scribble-common.js)
-           (noscript ,@(render-plain-element e part ri))
-           )]
+         (let* ([t `[type ,(script-element-type e)]]
+                [s (script-element-script e)]
+                [s (if (list? s)
+                     `(script (,t) ,(apply literal `("\n" ,@s "\n")))
+                     `(script (,t [src ,s])))])
+           (list s
+                 ;; mynoscript hack doesn't always work (see the
+                 ;; (commented) hack in scribble-common.js)
+                 `(noscript ,@(render-plain-element e part ri))))]
         [(target-element? e)
          `((a ([name ,(format "~a" (anchor-name (tag-key (target-element-tag e)
                                                          ri)))]))

@@ -8,7 +8,7 @@
          scheme/list
          setup/dirs)
 
-(provide main-page script)
+(provide main-page script script-ref)
 
 (define page-info
   (let ([links (filter pair? links)])
@@ -18,6 +18,9 @@
 
 (define (script #:noscript [noscript null] . body)
   (make-script-element #f noscript "text/javascript" (flatten body)))
+
+(define (script-ref #:noscript [noscript null] path)
+  (make-script-element #f noscript "text/javascript" path))
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version

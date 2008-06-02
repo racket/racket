@@ -485,11 +485,13 @@ over the element's content.}
 
 
 @defstruct[(script-element element) ([type string?]
-                                     [script (listof string?)])]{
+                                     [script (or/c path-string?
+                                                   (listof string?))])]{
 
 For HTML rendering, when scripting is enabled in the browser,
 @scheme[script] is used for the element instead of its normal
-content. The @scheme[type] string is normally
+content---it can be either path naming a script file to refer to, or
+the contents of the script. The @scheme[type] string is normally
 @scheme["text/javascript"].}
 
 
@@ -560,7 +562,7 @@ Computed for each part by the @techlink{collect pass}.
 }
 
 
-@defstruct[target-url ([addr string?]
+@defstruct[target-url ([addr path-string?]
                        [style any/c])]{
 
 Used as a style for an @scheme[element]. The @scheme[style] at this

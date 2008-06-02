@@ -166,7 +166,7 @@
  [(aux-element element) ()]
  [(hover-element element) ([text string?])]
  [(script-element element) ([type string?]
-                            [script (listof string?)])]
+                            [script (or/c path-string? (listof string?))])]
  ;; specific renders support other elements, especially strings
 
  [with-attributes ([style any/c]
@@ -176,7 +176,7 @@
                   [parent (or/c false/c part?)]
                   [info any/c])]
 
- [target-url ([addr (or/c string? path?)] [style any/c])]
+ [target-url ([addr path-string?] [style any/c])]
  [url-anchor ([name string?])]
  [image-file ([path (or/c path-string?
                           (cons/c (one-of/c 'collects)
