@@ -18,10 +18,22 @@
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found
 (define all-unix-browsers
-  '(gnome-open firefox galeon opera mozilla konqueror camino skipstone
-    epiphany seamonkey netscape dillo mosaic
-    ;; a configurable thing that is deprecated
-    htmlview))
+  '(;; common browsers
+    firefox galeon opera mozilla konqueror seamonkey epiphany
+    ;; known browsers
+    camino skipstone
+    ;; broken browsers (broken in that they won't work with plt-help)
+    ;; this is a configurable thing that is deprecated, but better
+    ;; than gnome-open (because it works)
+    htmlview
+    ;; gnome-open could be high, but the problem is that it doesn't
+    ;; handle file:// URLs with a query string.
+    gnome-open
+    ;; dillo does not have javascript
+    dillo
+    ;; ancient browsers
+    netscape mosaic
+    ))
 
 ;; : any -> bool
 (define (custom-browser? x)
@@ -227,13 +239,16 @@
      #:delete-at 15)))
 
 ;; Process helper
-(define (browser-run #:shell [shell? #f] #:ignore-exit-code [nowait? #f] . args)
+(define (browser-run #:shell [shell? #f] . args)
   (define-values (stdout stdin pid stderr control)
     (apply values (apply (if shell? process/ports process*/ports)
                          (open-output-nowhere) #f (current-error-port)
                          args)))
   (close-output-port stdin)
-  (unless nowait?
+  ;; this is called from plt-help which will immediately exit when we
+  ;; return, so wait just a little bit in case we'll catch an error
+  ;; starting the browser
+  (sync/timeout 0.25
     (thread (lambda ()
               (control 'wait)
               (when (eq? 'done-error (control 'status))
