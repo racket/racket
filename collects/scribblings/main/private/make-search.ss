@@ -499,8 +499,8 @@
       else if (event) {
         switch (event.which || event.keyCode) {
           case 13: key = "Enter"; break;
-          case 33: key = "PgUp"; break;
-          case 34: key = "PgDn"; break;
+          case 33: key = "PgUp";  break;
+          case 34: key = "PgDn";  break;
         }
       }
       switch (key) {
