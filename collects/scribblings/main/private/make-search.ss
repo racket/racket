@@ -583,7 +583,7 @@
     function HidePrefs(event) {
       if ((event.which || event.keyCode) == 27) {
         query.focus();
-        panels["prefs"] = true;
+        panels_shown["prefs"] = true;
         TogglePanel("prefs");
       }
     }
