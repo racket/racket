@@ -375,7 +375,7 @@
         search_results = [];
       } else {
         search_results = new Array();
-        exact_results = new Array();
+        var exact_results = new Array();
         for (var i=0@";" i<plt_search_data.length@";" i++) {
           var r = C_rexact;
           for (var j=0@";" j<terms.length@";" j++)
