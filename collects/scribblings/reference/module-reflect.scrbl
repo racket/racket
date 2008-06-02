@@ -86,7 +86,7 @@ A @tech{module name resolver} takes one and four arguments:
   @item{When given four arguments, the first is a module path, either
   equivalent to a quoted @scheme[module-path] for @scheme[require] or
   a file system path.  The second is name for the source module, if
-  any, to which the path is relative; f the second argument is
+  any, to which the path is relative; if the second argument is
   @scheme[#f], the module path is relative to @scheme[(or
   (current-load-relative-directory) (current-directory))].  The third
   argument is a @tech{syntax object} that can be used for error
