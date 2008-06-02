@@ -608,9 +608,11 @@
                     #; ; no need for these index-local searches
                     ,@(if (eq? d index)
                         null
-                        `((small nbsp ,(search-index-box)))))
+                        `((span ([class "smaller"]) nbsp ,(search-index-box)))))
                   null)
-              ,@(if up-path `(nbsp (small ,(search-index-box))) null))
+              ,@(if up-path
+                  `(nbsp (span ([class "smaller"]) ,(search-index-box)))
+                  null))
             (div ([class "navright"])
               ,@(render
                  (make-element
