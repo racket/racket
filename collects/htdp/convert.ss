@@ -145,10 +145,11 @@
 
 ;; create labels; aligned with sliders 
 (define mpanel (make-object vertical-panel% main-panel))
-(begin
+(let ()
   (make-object message% "Fahrenheit" mpanel)
   (make-object message% "" mpanel)
-  (make-object message% "Celsius" mpanel))
+  (make-object message% "Celsius" mpanel)
+  (void))
 (send mpanel stretchable-width #f)
 
 (define panel (make-object vertical-panel% main-panel))
