@@ -41,8 +41,6 @@
       default-settings
       default-settings?
       
-      order-manuals
-      
       front-end/complete-program
       front-end/interaction
       config-panel
@@ -476,7 +474,6 @@
       
       (define/public (first-opened) (void))
       (define/public (get-comment-character) (values ";  " #\;))
-      (define/public (order-manuals x) (values x #t))
       
       (inherit get-language-position)
       (define/public (get-language-name)

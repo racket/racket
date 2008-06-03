@@ -45,8 +45,6 @@
                                         void?))
                  (default-settings (-> any/c))
                  (default-settings? (-> any/c boolean?))
-                 (order-manuals (-> (listof bytes?)
-                                    (values (listof bytes?) boolean?)))
                  (front-end/complete-program (-> input-port?
                                                  any/c
                                                  (-> any/c)))

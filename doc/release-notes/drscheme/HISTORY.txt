@@ -29,6 +29,12 @@
     dialog (which means that the `current-print' option is
     now gone from the language dialog)
 
+  . drscheme:language:language-dialog and
+    drscheme:language:fill-language-dialog no longer accepts
+    the manuals? argument
+
+  . The order-manuals method is gone.
+
 ------------------------------
         Version 372
 ------------------------------

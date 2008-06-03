@@ -416,11 +416,6 @@
                       (loop (cdr these-tps))]))])
               (go "." (drscheme:rep:get-welcome-delta))
               (newline port)))
- 
-          (define/private (htdp-manuals) (list (get-manual) #"teachpack" #"drscheme" #"help"))
-          
-          (define/override (order-manuals x) 
-            (values (htdp-manuals) #f))
           
           (inherit get-module get-transformer-module get-init-code
                    use-namespace-require/copy?)

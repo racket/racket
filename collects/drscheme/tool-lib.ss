@@ -903,12 +903,10 @@ all of the names in the tools library, for use defining keybindings
   (proc-doc/names
    drscheme:language-configuration:language-dialog
    (->* (boolean? drscheme:language-configuration:language-settings?)
-	((or/c false/c (is-a?/c top-level-window<%>))
-	 boolean?)
+        ((or/c false/c (is-a?/c top-level-window<%>)))
 	(or/c false/c drscheme:language-configuration:language-settings?))
    ((show-welcome? language-settings-to-show)
-    ((parent #t)
-     (manuals? #f)))
+    ((parent #t)))
    @{Opens the language configuration dialog.
      See also
      @scheme[drscheme:language-configuration:fill-language-dialog].
@@ -929,9 +927,6 @@ all of the names in the tools library, for use defining keybindings
      The @scheme[parent] argument is used as the parent
      to the dialog.
      
-     The @scheme[manuals?] argument is passed to
-     @scheme[drscheme:language-configuration:fill-language-dialog].
-     
      The result if @scheme[#f] when the user cancells the dialog, and
      the selected language if they hit ok.})
   
@@ -942,12 +937,10 @@ all of the names in the tools library, for use defining keybindings
      (is-a?/c area-container<%>)
      drscheme:language-configuration:language-settings?)
     ((or/c false/c (is-a?/c top-level-window<%>))
-     boolean?
      (-> symbol? void?))
     drscheme:language-configuration:language-settings?)
    ((panel button-panel language-setting)
     ((re-center #f)
-     (manuals? #f)
      (ok-handler void)))
    @{This procedure accepts two parent panels and
      fills them with the contents of the language dialog.
@@ -967,12 +960,6 @@ all of the names in the tools library, for use defining keybindings
      button is clicked. If that argument is a @scheme[top-level-window<%>],
      the @onscreen{Show Details} callback will recenter the window each time
      it is clicked. Otherwise, the argument is not used.
-     
-     If @scheme[manuals?] is @scheme[#f] the usual language dialog (as seen
-     in the start up drscheme window and from the Choose Language dialog
-     created when drscheme is started up) is shown. If it isn't, the dialog
-     does not have the details and on the right-hand side shows the manual
-     ordering for the chosen language. This is used in Help Desk.
      
      @scheme[ok-handler] is a function that is in charge of interfacing the OK
      button. It should accept a symbol message: @scheme['enable] and

@@ -133,7 +133,7 @@
     ;; as the defaults in the dialog and the output language setting is the user's choice
     ;; todo: when button is clicked, ensure language is selected
     (define language-dialog
-      (opt-lambda (show-welcome? language-settings-to-show [parent #f] [manuals? #f])
+      (opt-lambda (show-welcome? language-settings-to-show [parent #f])
         (define ret-dialog%
           (class dialog%
             (define/override (on-subwindow-char receiver evt)
@@ -212,7 +212,6 @@
                                 button-panel
                                 language-settings-to-show
                                 #f
-                                manuals?
                                 ok-handler))
         
         ;; create ok/cancel buttons
@@ -247,7 +246,7 @@
     ;; if re-center is a dialog, when the show details button is clicked, the dialog is recenterd.
     (define fill-language-dialog
       (opt-lambda (parent show-details-parent language-settings-to-show
-                          [re-center #f] [manuals? #f]
+                          [re-center #f]
                           [ok-handler void]) ; en/disable button, execute it
         
         (define-values (language-to-show settings-to-show)
@@ -365,14 +364,6 @@
         (define details-outer-panel (make-object vertical-pane% outermost-panel))
         (define details/manual-parent-panel (make-object vertical-panel% details-outer-panel))
         (define details-panel (make-object panel:single% details/manual-parent-panel))
-        (define manual-ordering-panel (new vertical-panel% (parent details/manual-parent-panel)))
-        
-        (define manual-ordering-text (new panel-background-text%))
-        (define manual-ordering-canvas (new panel-background-editor-canvas% 
-                                            (parent manual-ordering-panel)
-                                            (editor manual-ordering-text)
-                                            (style '(no-hscroll))
-                                            (min-width 300)))
         
         (define one-line-summary-message (instantiate message% ()
                                            (parent parent)
@@ -411,7 +402,6 @@
                     (send details-panel active-child ldp)))
                 (send one-line-summary-message set-label (send language get-one-line-summary))
                 (send revert-to-defaults-button enable #t)
-                (update-manual-ordering-text language)
                 (set! get/set-selected-language-settings get/set-settings)
                 (set! selected-language language))
               (apply super-make-object args))))
@@ -433,63 +423,6 @@
           (ok-handler 'enable)
           (send details-button enable #t)
           (send item selected))
-        
-        ;; update-manual-ordering-text : -> void
-        ;; updates the manual ordering text with the order the manuals are searched for this language
-        (define (update-manual-ordering-text language)
-          (send manual-ordering-text begin-edit-sequence)
-          (send manual-ordering-text lock #f)
-          (send manual-ordering-text erase)
-          (send manual-ordering-text insert (string-constant plt:hd:manual-search-ordering))
-          (send manual-ordering-text insert "\n\n")
-          (send manual-ordering-text change-style 
-                (make-object style-delta% 'change-bold)
-                0
-                (- (send manual-ordering-text last-position) 2))
-          (let ([docs (drscheme:help-desk:get-docs)]
-                [manual-name-style-delta
-                 (make-object style-delta%)])
-            (let-values ([(ordered-bytes doc.txt?)
-                          (send language order-manuals (map path->bytes (map car docs)))])
-              (let loop ([ordered (map bytes->path ordered-bytes)]
-                         [n 1])
-                (cond
-                  [(null? ordered) 
-                   (when doc.txt?
-                     (insert-single "doc.txt files" n))]
-                  [else 
-                   (let* ([ent (car ordered)]
-                          [full-name (assoc ent docs)])
-                     (cond
-                       [full-name
-                        (insert-single (cdr full-name) n)
-                        (loop (cdr ordered) (+ n 1))]
-                       [else
-                        (loop (cdr ordered) n)]))]))))
-          (send manual-ordering-text change-style
-                (make-object style-delta% 'change-family 'system)
-                0
-                (send manual-ordering-text last-position))
-          (send manual-ordering-text set-position 0)
-          (send manual-ordering-text lock #t)
-          (send manual-ordering-text end-edit-sequence))
-        
-        (define manual-number-style-delta (make-object style-delta%))
-        (define stupid-internal-define-syntax1
-          (send manual-number-style-delta set-delta-foreground "darkblue"))
-        
-        (define (insert-single name n)
-          (let ([n-sp (send manual-ordering-text last-position)])
-            (send manual-ordering-text insert (number->string n))
-            (let ([n-ep (send manual-ordering-text last-position)])
-              (send manual-ordering-text insert ") ")
-              (send manual-ordering-text insert name)
-              (send manual-ordering-text insert "\n")
-              
-              (send manual-ordering-text change-style
-                    manual-number-style-delta
-                    n-sp
-                    (+ n-ep 1)))))
         
         ;; construct-details : (union (-> void) #f)
         (define construct-details void)
@@ -871,26 +804,10 @@
           (when (equal? "\n" (send t get-text 0 1))
             (send t delete 0 1)))
         
-        (cond
-          [manuals? 
-           (unless details-shown?
-             (details-callback))
-           (send show-details-parent change-children
-                 (λ (l)
-                   (remq revert-to-defaults-outer-panel
-                         (remq details-button l))))
-           (send details/manual-parent-panel change-children 
-                 (λ (l)
-                   (list manual-ordering-panel)))]
-          [else 
-           (send details-outer-panel stretchable-width #f)
-           (send details/manual-parent-panel change-children 
-                 (λ (l)
-                   (list details-panel)))])
-        
-        (send manual-ordering-text hide-caret #t)
-        (send manual-ordering-text auto-wrap #t)
-        (send manual-ordering-text lock #t)
+        (send details-outer-panel stretchable-width #f)
+        (send details/manual-parent-panel change-children 
+              (λ (l)
+                (list details-panel)))
         
         (send languages-hier-list stretchable-width #t)
         (send languages-hier-list stretchable-height #t)
@@ -1385,10 +1302,6 @@
         (define/override (default-settings) 
           (make-simple-settings+assume #f 'write 'mixed-fraction-e #f #t 'debug #t))
 
-        (define/override (order-manuals x)
-          (values 
-           (list #"r5rs" #"drscheme" #"tour" #"help")
-           #f))
         (super-new)))
     
     (define get-all-scheme-manual-keywords

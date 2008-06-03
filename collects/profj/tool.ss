@@ -379,16 +379,6 @@
               [else (drscheme:language:get-capability-default s)]))
           (define/public (first-opened) (void))
           
-          (define/public (order-manuals x)
-            (let* ((beg-list '(#"profj-beginner" #"teachpack-htdc"
-                               #"tour" #"drscheme" #"help"))
-                   (int-list (cons #"profj-intermediate" beg-list)))
-              (values (case level
-                        ((beginner) beg-list)
-                        ((intermediate intermediate+access) int-list)
-                        ((advanced full) (cons #"profj-advanced" int-list)))
-                      #f)))
-          
           ;default-settings: -> profj-settings
           (define/public (default-settings) 
             (if (memq level `(beginner intermediate intermediate+access advanced))

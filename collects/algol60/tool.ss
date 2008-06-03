@@ -78,10 +78,6 @@
           (define/public (get-language-position)
 	    (list (string-constant experimental-languages)
 		  "Algol 60"))
-          (define/public (order-manuals x) 
-            (values 
-             (list #"drscheme" #"tour" #"help")
-             #t))
           (define/public (get-language-name) "Algol 60")
           (define/public (get-language-url) #f)
           (define/public (get-language-numbers) (list 1000 10))
