@@ -7,7 +7,7 @@ START_XFORM_SKIP;
    extended format instead of a `double'. We don't want to turn off
    floatng-point optimizations in the rest of the program, so we use a
    little function to defeat the optimization: */
-static int IS_FLOAT_INF(FP_TYPE d)
+int IS_FLOAT_INF(FP_TYPE d)
 {
   return MZ_IS_POS_INFINITY(d);
 }

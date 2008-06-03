@@ -527,7 +527,7 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_double_inf_info
 #define SCHEME_CHECK_FLOAT scheme_check_double
 #define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_double
-#define DO_FLOAT_DIV do_double_div
+#define DO_FLOAT_DIV scheme__do_double_div
 #define FLOAT_E_MIN -1074
 #define FLOAT_M_BITS 52
 #include "ratfloat.inc"
@@ -549,7 +549,7 @@ Scheme_Object *scheme_rational_sqrt(const Scheme_Object *o)
 #define SCHEME_BIGNUM_TO_FLOAT_INF_INFO scheme_bignum_to_float_inf_info
 #define SCHEME_CHECK_FLOAT scheme_check_float
 #define SCHEME_BIGNUM_FROM_FLOAT scheme_bignum_from_float
-#define DO_FLOAT_DIV do_float_div
+#define DO_FLOAT_DIV scheme__do_float_div
 #define FLOAT_E_MIN -127
 #define FLOAT_M_BITS 23
 #include "ratfloat.inc"

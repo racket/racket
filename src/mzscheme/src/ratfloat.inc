@@ -4,7 +4,7 @@
    floatng-point optimizations in the rest of the program, so we use a
    little function to defeat the optimization: */
 
-static FP_TYPE DO_FLOAT_DIV(FP_TYPE n, FP_TYPE d)
+FP_TYPE DO_FLOAT_DIV(FP_TYPE n, FP_TYPE d)
 {
   return n / d;
 }

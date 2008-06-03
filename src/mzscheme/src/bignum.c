@@ -1392,7 +1392,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 
 #define USE_FLOAT_BITS 53
 #define FP_TYPE double
-#define IS_FLOAT_INF is_double_inf
+#define IS_FLOAT_INF scheme__is_double_inf
 #define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_double_inf_info
 #define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_double
 #define SCHEME_CHECK_FLOAT scheme_check_double
@@ -1410,7 +1410,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 
 # define USE_FLOAT_BITS 24
 # define FP_TYPE float
-# define IS_FLOAT_INF is_float_inf
+# define IS_FLOAT_INF scheme__is_float_inf
 # define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_float_inf_info
 # define SCHEME_BIGNUM_TO_FLOAT scheme_bignum_to_float
 # define SCHEME_CHECK_FLOAT scheme_check_float
