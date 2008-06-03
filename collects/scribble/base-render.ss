@@ -18,7 +18,10 @@
                 [refer-to-existing-files #f]
                 [root-path #f])
 
-    (define/public (get-dest-directory) dest-dir)
+    (define/public (get-dest-directory [create? #f])
+      (when (and dest-dir create? (not (directory-exists? dest-dir)))
+        (make-directory* dest-dir))
+      dest-dir)
 
     (define/public (get-substitutions) null)
 
@@ -402,7 +405,7 @@
               (string->path fn)
               fn)
           (let ([src-dir (path-only fn)]
-                [dest-dir (get-dest-directory)]
+                [dest-dir (get-dest-directory #t)]
                 [fn (file-name-from-path fn)])
             (let ([src-file (build-path (or src-dir (current-directory)) fn)]
                   [dest-file (build-path (or dest-dir (current-directory)) fn)])
@@ -421,7 +424,6 @@
                                          (and (equal? s d)
                                               (or (eof-object? s) (loop)))))))))))
                 (when (file-exists? dest-file) (delete-file dest-file))
-                (make-directory* (path-only dest-file))
                 (copy-file src-file dest-file))
               (path->string fn)))))
 

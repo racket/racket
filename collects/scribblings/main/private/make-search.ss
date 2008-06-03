@@ -21,7 +21,7 @@
 (define-runtime-path search-script "search.js")
 
 (define (make-script user-dir? renderer sec ri)
-  (define dest-dir (send renderer get-dest-directory))
+  (define dest-dir (send renderer get-dest-directory #t))
   (define span-classes null)
   ;; To make the index smaller, html contents is represented as one of these:
   ;; - a string

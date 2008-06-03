@@ -998,11 +998,15 @@
 
     (define/override (get-suffix) #"")
 
-    (define/override (get-dest-directory)
+    (define/override (get-dest-directory [create? #f])
       (or (and (current-subdirectory)
-               (build-path (or (super get-dest-directory) (current-directory))
-                           (current-subdirectory)))
-          (super get-dest-directory)))
+               (let ([d (build-path (or (super get-dest-directory)
+                                        (current-directory))
+                                    (current-subdirectory))])
+                 (when (and create? (not (directory-exists? d)))
+                   (make-directory* d))
+                 d))
+          (super get-dest-directory create?)))
 
     (define/override (derive-filename d)
       (let ([fn (format "~a.html"
