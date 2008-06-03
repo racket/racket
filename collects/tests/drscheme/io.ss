@@ -62,9 +62,8 @@ add this test:
     (define prompt '("\n> " default-color))
     
     ;; this test has to be first to test an uninitialized state of the port
-    ;; NOTE: missing a name for the "value" style ... so this test appears to fail (altho it actually passes)
     (check-output "(port-next-location (current-input-port))" 
-                  (list `("1\n0\n1\n" ,value-style)
+                  (list `("1\n0\n1" ,value-style)
                         prompt))
     
     (check-output "(display 1)" (list (list "1" output-style) prompt))

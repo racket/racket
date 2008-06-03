@@ -1502,4 +1502,16 @@
   (-> printable/c (or/c false/c (is-a?/c style-delta%)))
   (marshalled-style-delta)
   @{Builds a style delta from its printed representation.  Returns
-           @scheme[#f] if the printed form cannot be parsed.}))
+           @scheme[#f] if the printed form cannot be parsed.})
+ 
+ (proc-doc/names
+  color-prefs:white-on-black
+  (-> any)
+  ()
+  @{Sets the colors registered by @scheme[color-prefs:register-color-preference] to their white-on-black variety. })
+ 
+ (proc-doc/names
+  color-prefs:black-on-white
+  (-> any)
+  ()
+  @{Sets the colors registered by @scheme[color-prefs:register-color-preference] to their black-on-white variety. }))
