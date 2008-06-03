@@ -73,4 +73,4 @@
 (define help-desk
   (case-lambda
     [() (send-main-page)]
-    [(key) (perform-search (list key))]))
+    [(key) (perform-search key)]))
