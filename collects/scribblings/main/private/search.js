@@ -196,7 +196,10 @@ function MaxCompares(pat, strs) {
 }
 
 function UrlToManual(url) {
-  return url.replace(/\/[^\/]*$/, "").replace(/^(.*\/|>)/, "");
+  return url.replace(/#.*$/, "")       // remove fragment,
+            .replace(/\?.*$/, "")      // query,
+            .replace(/\/[^\/]*$/, "")  // filename,
+            .replace(/^(.*\/|>)/, ""); // and directory.
 }
 
 function CompileTerm(term) {
