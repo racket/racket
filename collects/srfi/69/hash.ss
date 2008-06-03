@@ -5,7 +5,8 @@
 
 (module hash mzscheme
   
-  (require mzlib/etc)
+  (require mzlib/etc
+           scheme/mpair)
   
   (provide (rename my-make-hash-table s:make-hash-table)
            (rename my-hash-table? s:hash-table?)
@@ -92,7 +93,7 @@
   
   (define (%hash-table-walk proc entries)
     (do ((index (- (vector-length entries) 1) (- index 1)))
-      ((< index 0)) (for-each proc (vector-ref entries index))))
+      ((< index 0)) (mfor-each proc (vector-ref entries index))))
   
   (define (%hash-table-maybe-resize! hash-table)
     (let* ((old-entries (my-hash-table-entries hash-table))
