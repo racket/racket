@@ -14,8 +14,7 @@
          (only-in xml xexpr->string)
          (only-in setup/dirs find-doc-dir)
          "utils.ss"
-         scheme/runtime-path
-         (for-syntax (only-in scheme/base #%datum)))
+         scheme/runtime-path)
 
 (provide make-search)
 

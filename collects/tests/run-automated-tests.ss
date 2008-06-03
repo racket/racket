@@ -34,7 +34,7 @@
     [require "match/plt-match-tests.ss"]))
 
 
-(require scheme/runtime-path (for-syntax scheme/base))
+(require scheme/runtime-path)
 
 (define-runtime-path here ".")
 

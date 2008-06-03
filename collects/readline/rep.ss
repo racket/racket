@@ -1,8 +1,7 @@
 ;; This is a wrapper around "rep-start.ss" -- use it if we're using a terminal
 #lang scheme/base
 
-(require scheme/runtime-path
-         (for-syntax scheme/base))
+(require scheme/runtime-path)
 
 (define-runtime-path rep-start "rep-start.ss")
 
