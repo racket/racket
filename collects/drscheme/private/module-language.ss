@@ -416,15 +416,29 @@
   ;; if the file has been saved
   (define (transform-module filename stx)
     (syntax-case* stx (module) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-      [(module name lang bodies ...)
-       (let ([v-name (syntax name)])
-         (when filename
-           (check-filename-matches filename
-                                   (syntax->datum (syntax name)) 
-                                   stx))
-         ;; rewrite the module to use the scheme/base version of `module'
-         (values v-name 
-                 #`(#,(datum->syntax #'here 'module) name lang bodies ...)))]
+      [(module . rest)
+       (syntax-case stx ()
+         [(form name . _)
+          (let ([v-name (syntax name)])
+            (when filename
+              (check-filename-matches filename
+                                      (syntax->datum (syntax name)) 
+                                      stx))
+            (values v-name 
+                    ;; rewrite the module to use the scheme/base version of `module'
+                    (datum->syntax stx
+                                   (cons (datum->syntax #'here 
+                                                        'module
+                                                        #'form)
+                                         #'rest)
+                                   stx)))]
+         [_
+          (raise-syntax-error 'module-language
+                              "module form is missing a name"
+                              stx)])]
+      [module (raise-syntax-error 'module-language
+                                  "bad syntax"
+                                  stx)]
       [else
        (raise-syntax-error 'module-language
                            "only module expressions are allowed"

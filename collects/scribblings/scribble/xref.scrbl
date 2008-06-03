@@ -56,14 +56,6 @@ get all cross-reference information for installed documentation.}
                                                               symbol?
                                                               (one-of/c 0 1)
                                                               (or/c exact-integer? false/c)
-                                                              (or/c exact-integer? false/c))
-                                                      (list/c (or/c module-path?
-                                                                    module-path-index?
-                                                                    path?
-                                                                    resolved-module-path?)
-                                                              symbol?
-                                                              (one-of/c 0 1)
-                                                              (or/c exact-integer? false/c)
                                                               (or/c exact-integer? false/c)))]
                                        [mode (or/c exact-integer? false/c)])
          (or/c tag? false/c)]{

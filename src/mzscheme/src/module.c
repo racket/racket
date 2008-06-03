@@ -7952,10 +7952,10 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
 
             if (do_copy_vars && (j < var_count)) {
               Scheme_Env *menv;
-              Scheme_Object *val;
+              Scheme_Object *val, *modname;
               Scheme_Bucket *b;
-              modidx = scheme_module_resolve(modidx, 1);
-              menv = scheme_module_access(modidx, orig_env, 0);
+              modname = scheme_module_resolve(modidx, 1);
+              menv = scheme_module_access(modname, orig_env, 0);
               val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
               b = scheme_global_bucket(iname, orig_env);
               scheme_set_global_bucket(((copy_vars == 2)

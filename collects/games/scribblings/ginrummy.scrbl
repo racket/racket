@@ -5,9 +5,10 @@
 
 This is a simple variant of Rummy.
 
-Put all cards in your hand into straights (3 or more cards) and 3- or
-4-of-a-kind sets to win.  Each card counts for only one set.  Aces can
-be used in both A-2-3 sequences and Q-K-A sequences.
+Put all cards in your hand into straights (3 or more cards in the same
+suit) and 3- or 4-of-a-kind sets to win.  Each card counts for only
+one set.  Aces can be used in both A-2-3 sequences and Q-K-A
+sequences.
 
 When all of your cards fit into sets (the game detects this
 automatically), you win.
