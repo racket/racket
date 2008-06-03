@@ -63,14 +63,15 @@
              (send dc draw-text dots (- cw dw) (- (/ ch 2) (/ th 2)))]))))
     (super-new)))
 
-(define (goto-plt-license) 
-  (send-url
-    (url->string
-     (path->url (build-path (find-doc-dir) "license" "index.html")))))
+(define (goto-plt-license)
+  (send-main-page "license/index.html"))
 
+(define (help-desk [key #f] #:module [mod #f] #:manual [man #f])
+  (if (or key mod man)
+    (perform-search (string-append (or key "")
+                                   (if mod (format " L:~a" mod) "")
+                                   (if man (format " T:~a" man) "")))
+    (send-main-page)))
+
+;; here for legacy code that should be removed
 (define (get-docs) '())
-
-(define help-desk
-  (case-lambda
-    [() (send-main-page)]
-    [(key) (perform-search key)]))
