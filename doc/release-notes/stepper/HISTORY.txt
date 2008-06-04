@@ -105,5 +105,6 @@ None.
 
 Changes for v372: support for check-expect, check-within, and check-error
 
-
+Changes for v4.0: overhauled support for check-expect, check-within,
+check-error.
 
