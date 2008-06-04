@@ -2,6 +2,7 @@
 
 (require lang/private/teachprims
          scheme/class
+         scheme/match
          (only scheme/base for)
          "test-engine.scm"
          )
@@ -67,7 +68,8 @@
                  (insert-test test-info
                               (lambda ()
                                 #,(with-stepper-syntax-properties (['stepper-hint hint-tag]
-                                                                   ['stepper-hide-reduction #t])
+                                                                   ['stepper-hide-reduction #t]
+                                                                   ['stepper-use-val-as-final #t])
                                     (quasisyntax/loc stx
                                       (#,checker-proc-stx
                                        #,@embedded-stxes 
@@ -106,7 +108,7 @@
   (send (send test-info get-info) add-check)
   (run-and-check (lambda (v1 v2 _) (beginner-equal? v1 v2))
                  (lambda (src v1 v2 _) (make-unequal src v1 v2))
-                 test actual #f src test-info))
+                 test actual #f src test-info 'check-expect))
 
 (define-syntax (check-within stx)
   (syntax-case stx ()
@@ -130,7 +132,8 @@
   (error-check number? within CHECK-WITHIN-INEXACT-FMT)
   (send (send test-info get-info) add-check)
   (run-and-check beginner-equal~? make-outofrange test actual within src
-                 test-info))
+                 test-info
+                 'check-within))
 
 
 (define-syntax (check-error stx)
@@ -155,9 +158,12 @@
                                                              (exn-message e))))])
                   (let ([test-val (test)])
                     (make-expected-error src error test-val)))])
-    (when (check-fail? result)
-      (send (send test-info get-info) check-failed
-            (check->message result) (check-fail-src result)))))
+    (if (check-fail? result)
+        (begin
+          (send (send test-info get-info) check-failed
+                (check->message result) (check-fail-src result))
+          (list 'check-error-failed (incorrect-error-message result) error))
+        (list 'check-error-succeeded error error))))
 
 
 (define (error-check pred? actual fmt)
@@ -170,18 +176,46 @@
 
 ;; run-and-check: (scheme-val scheme-val scheme-val -> boolean)
 ;;                (scheme-val scheme-val scheme-val -> check-fail)
-;;                ( -> scheme-val) scheme-val scheme-val object -> void
-(define (run-and-check check maker test expect range src test-info)
-  (let ([result
-         (with-handlers ([exn? (lambda (e)
-                                 (make-unexpected-error src expect
-                                                        (exn-message e)))])
-           (let ([test-val (test)])
-             (or (check test-val expect range)
-                 (maker src test-val expect range))))])
-    (when (check-fail? result)
-      (send (send test-info get-info) check-failed (check->message result)
-            (check-fail-src result)))))
+;;                ( -> scheme-val) scheme-val scheme-val object symbol? -> void
+(define (run-and-check check maker test expect range src test-info kind)
+  (match-let ([(list result result-val)
+               (with-handlers ([exn? (lambda (e)
+                                       (make-unexpected-error src expect
+                                                              (exn-message e)))])
+                 (let ([test-val (test)])
+                   ;; yikes!  it appears that test-val and expect are reversed here! -- JBC, 2008-05-28
+                   (cond [(check test-val expect range)
+                          (list #t test-val)]
+                         [else 
+                          (list (maker src test-val expect range) test-val)])))])
+    (cond [(check-fail? result)
+           (send (send test-info get-info) check-failed (check->message result)
+                 (check-fail-src result))
+           (render-for-stepper/fail result expect range kind)]
+          [else 
+           ;; I'd like to pass the actual, but I don't have it.
+           (render-for-stepper/pass result-val expect range kind)])))
+
+;; render-for-stepper/fail : test-fail? any/c any/c symbol? -> any/c
+;; arrange the fail-result as a value that will look tolerable
+;;  in the stepper's list of completed expressions
+(define (render-for-stepper/fail check-fail expected range kind)
+  (let ([displayed-result (cond [(unexpected-error? check-fail) 'error]
+                                ;; I really want actual here, but I'm using test because the thing is 
+                                ;; created backward, afaict.
+                                [(unequal? check-fail) (unequal-test check-fail)]
+                                [(outofrange? check-fail) (outofrange-test check-fail)])])
+    (case kind
+      [(check-expect) (list 'check-expect-failed displayed-result expected)]
+      [(check-within) (list 'check-within-failed displayed-result expected range)]
+      [else (error 'render-for-stepper/fail "internal error 2008052801")])))
+
+;; render-for-stepper/pass : any/c any/c any/c symbol? -> any/c
+(define (render-for-stepper/pass actual expected range kind)
+  (case kind
+    [(check-expect) (list 'check-expect-passed actual expected)]
+    [(check-within) (list 'check-within-passed actual expected range)]
+    [else (error 'render-for-stepper/pass "internal error 2008052802")]))
 
 (define (check->message fail)
   (cond
