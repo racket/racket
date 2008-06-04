@@ -338,9 +338,9 @@
                  (error 'bad))
                v))))
        ("Set the maximum inlining size" "size")]
-      [("--prim")
-       ,(lambda (f) (compiler:option:assume-primitives #t))
-       ("Assume primitive bindings at top level")]
+      [("--no-prim")
+       ,(lambda (f) (compiler:option:assume-primitives #f))
+       ("Do not assume `scheme' bindings at top level")]
       [("--stupid")
        ,(lambda (f) (compiler:option:stupid #t))
        ("Compile despite obvious non-syntactic errors")]
@@ -376,16 +376,16 @@
             (error 'mzc "prefix files are not useful in ~a mode" mode))
           (if (module-mode)
             (begin
-              (when (compiler:option:assume-primitives)
-                (error 'mzc "--prim is not useful with -m or --module"))
+              (unless (compiler:option:assume-primitives)
+                (error 'mzc "--no-prim is not useful with -m or --module"))
               (unless (null? prefixes)
                 (error 'mzc "prefix files not allowed with -m or --module"))
               #f)
             `(begin
                (require scheme)
                ,(if (compiler:option:assume-primitives)
-                  '(void)
-                  '(namespace-require/copy 'scheme))
+                    '(void)
+                    '(namespace-require/copy 'scheme))
                (require compiler/cffi)
                ,@(map (lambda (s) `(load ,s)) prefixes)
                (void)))))))
