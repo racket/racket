@@ -51,8 +51,8 @@ function InitializeSearch() {
                +' font-family: arial, sans-serif; margin: 0em 0em 1em 0em;'
                +' padding: 0.5em; background-color: #f0f0f0;">'
       +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-      +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Enter</tt> to scroll'
-         +' through the results.</li>'
+      +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and <tt>Ctrl+Enter</tt> to'
+         +' scroll through the results.</li>'
       +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only identifiers'
          +' from modules that match &ldquo;<tt><i>str</i></tt>&rdquo;;'
          +' &ldquo;<tt>M:</tt>&rdquo; by itself will restrict results to bound'
@@ -372,7 +372,7 @@ function HandleKeyEvent(event) {
   if (typeof event == "string") key = event;
   else if (event) {
     switch (event.which || event.keyCode) {
-      case 13: key = "Enter"; break;
+      case 13: if (event.ctrlKey) key = "Enter"; break;
       case 33: key = "PgUp";  break;
       case 34: key = "PgDn";  break;
     }
