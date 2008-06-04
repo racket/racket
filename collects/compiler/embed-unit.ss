@@ -142,6 +142,10 @@
                            (and m
                                 (pair? (cdr m))
                                 (cdr m)))]
+             [uti-exports (let ([m (assq 'uti-exports aux)])
+                            (and m
+                                 (pair? (cdr m))
+                                 (cdr m)))]
              [resource-files (let ([m (assq 'resource-files aux)])
                                (and m
                                     (cdr m)))])
@@ -212,10 +216,25 @@
                              
                              "CFBundleIdentifier" 
                              (format "org.plt-scheme.~a" (path->string name)))]
-                 [new-plist (if file-types
+                 [new-plist (if uti-exports
                                 (plist-replace
                                  new-plist
-                                 
+                                 "UTExportedTypeDeclarations"
+                                 (cons 'array
+                                       (map (lambda (spec)
+                                              (cons
+                                               'dict
+                                               (map (lambda (p)
+                                                      (list
+                                                       'assoc-pair
+                                                       (car p)
+                                                       (cadr p)))
+                                                    spec)))
+                                            uti-exports)))
+                                new-plist)]
+                 [new-plist (if file-types
+                                (plist-replace
+                                 new-plist                                 
                                  "CFBundleDocumentTypes"
                                  (cons 'array
                                        (map (lambda (spec)
@@ -227,8 +246,7 @@
                                                        (car p)
                                                        (cadr p)))
                                                     spec)))
-                                            file-types)))
-                                
+                                            file-types)))                                
                                 new-plist)])
             (call-with-output-file (build-path dest 
                                                "Contents" 

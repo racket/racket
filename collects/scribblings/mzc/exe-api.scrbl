@@ -148,7 +148,8 @@ distribution that contains the executable).
 The optional @scheme[#:aux] argument is an association list for
 platform-specific options (i.e., it is a list of pairs where the first
 element of the pair is a key symbol and the second element is the
-value for that key). The currently supported keys are as follows:
+value for that key). See also @scheme[build-aux-from-path]. The
+currently supported keys are as follows:
 
 @itemize{
 
@@ -169,8 +170,17 @@ value for that key). The currently supported keys are as follows:
         association lists, one for each type of file handled by the
         application; each association is a two-element list, where the
         first (key) element is a string recognized by Finder, and the
-        second element is a plist value. See
-        @filepath{drscheme.filetypes} in the @filepath{drscheme}
+        second element is a plist value (see
+        @schememodname[xml/plist]). See @filepath{drscheme.filetypes}
+        in the @filepath{drscheme} collection for an example.}
+
+  @item{@scheme['uti-exports] (Mac OS X) : Provides a list of
+        association lists, one for each @as-index{Uniform Type
+        Identifier} (UTI) exported by the executable; each association
+        is a two-element list, where the first (key) element is a
+        string recognized in a UTI declaration, and the second element
+        is a plist value (see @schememodname[xml/plist]). See
+        @filepath{drscheme.utiexports} in the @filepath{drscheme}
         collection for an example.}
 
   @item{@scheme['resource-files] (Mac OS X) : extra files to copy into
@@ -224,9 +234,6 @@ value for that key). The currently supported keys are as follows:
         original; the default is @scheme[#f].}
 
 }
-
-See also @scheme[build-aux-from-path]. The default @scheme[aux] is
-@scheme[null].
 
 If the @scheme[#:collects-path] argument is @scheme[#f], then the
 created executable maintains its built-in (relative) path to the main

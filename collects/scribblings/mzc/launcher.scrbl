@@ -38,10 +38,10 @@ or directory, it is replaced.
 The optional @scheme[aux] argument is an association list for
 platform-specific options (i.e., it is a list of pairs where the first
 element of the pair is a key symbol and the second element is the
-value for that key). See @scheme[create-embedding-executable] for a
-list that applies to both stand-alone executables and launchers under
-Windows and Mac OS X MrEd; the following additional associations apply
-to launchers:
+value for that key). See also @scheme[build-aux-from-path]. See
+@scheme[create-embedding-executable] for a list that applies to both
+stand-alone executables and launchers under Windows and Mac OS X MrEd;
+the following additional associations apply to launchers:
 
 @itemize{
 
@@ -61,8 +61,6 @@ to launchers:
         base MrEd executable through a relative path.}
 
 }
-
-See also @scheme[build-aux-from-path].
 
 For Unix/X, the script created by @scheme[make-mred-launcher] detects
 and handles X Windows flags specially when they appear as the initial
@@ -262,6 +260,10 @@ The recognized suffixes are as follows:
        @scheme['resource-files] as a list constructed by finding
        @scheme["CFBundleTypeIconFile"] entries in
        @scheme['file-types]; for use under Mac OS X}
+
+ @item{@filepath{.utiexports} @'rarr @scheme['uti-exports] as
+       @scheme[read] content (a single S-expression); for use under
+       Mac OS X}
 
 }}
 

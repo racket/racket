@@ -582,7 +582,16 @@
                                     d))])
                          (list
                           (cons 'file-types d)
-                          (cons 'resource-files icon-files))))))))))))))
+                          (cons 'resource-files icon-files))))))))))
+       (let ([l (try 'file-types #".utiexports")])
+         (if (null? l)
+             l
+             (with-handlers ([exn:fail:filesystem? (lambda (x) null)])
+               (with-input-from-file (cdar l)
+                 (lambda () 
+                   (let ([d (read)])
+                     (list
+                      (cons 'uti-exports d))))))))))))
 
 (define (make-mred-program-launcher file collection dest)
   (make-mred-launcher (list "-l-" (string-append collection "/" file))
