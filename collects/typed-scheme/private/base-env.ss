@@ -480,6 +480,9 @@
      
      ;; syntax operations
      
+     [expand (-> (-Syntax Univ) (-Syntax Univ))]
+     [expand-once (-> (-Syntax Univ) (-Syntax Univ))]
+     
      [syntax-source (-poly (a) (-> (-Syntax a) Univ))]
      [syntax-position (-poly (a) (-> (-Syntax a) (-opt N)))]
      [datum->syntax (cl->* 
