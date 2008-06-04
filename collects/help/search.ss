@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require setup/dirs net/sendurl)
+(require setup/dirs net/sendurl net/uri-codec)
 (provide perform-search send-main-page)
 
 (define search-page "search/index.html")
@@ -15,4 +15,4 @@
     (send-url/file path #:fragment fragment #:query query)))
 
 (define (perform-search str)
-  (send-main-page #:sub search-page #:query (format "q=~a" str)))
+  (send-main-page #:sub search-page #:query (format "q=~a" (uri-encode str))))

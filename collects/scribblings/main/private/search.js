@@ -151,7 +151,7 @@ function InitializeSearch() {
     for (var i=0; i<paramstrs.length; i++) {
       var param = paramstrs[i].split(/=/);
       if (param.length == 2 && param[0] == "q") {
-        query.value = unescape(param[1]).replace(/\+/g," ");
+        query.value = unescape(param[1]);
         break;
       }
     }
