@@ -29,7 +29,7 @@ All of the C compiler and linker flags that apply to @DFlag{cc} and
 @DFlag{ld} mode also apply to @DFlag{extension} mode; see
 @secref["cc"].  In addition, a few flag provide some control over the
 Scheme-to-C compiler: @as-index{@DFlag{no-prop}},
-@as-index{@DFlag{inline}}, @as-index{@DFlag{prim}},
+@as-index{@DFlag{inline}}, @as-index{@DFlag{no-prim}},
 @as-index{@DFlag{stupid}},
 @as-index{@DFlag{unsafe-disable-interrupts}},
 @as-index{@DFlag{unsafe-skip-tests}}, and
