@@ -77,7 +77,7 @@ opposed to @tech{syntax object}s inserted by macros.}
 
 
 @defproc[(syntax-source-module [stx syntax?])
-         (or/c module-path-index? symbol?)]{
+         (or/c module-path-index? symbol? false/c)]{
 
 Returns a module path index or symbol (see @secref["modpathidx"])
 for the module whose source contains @scheme[stx], or @scheme[#f] if
