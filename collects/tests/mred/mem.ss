@@ -39,7 +39,7 @@
 (define permanent-ready? #f)
 (define mb-lock (make-semaphore 1))
 
-(define htw (make-hash-table 'weak))
+(define htw (make-weak-hasheq))
 
 (send sub-collect-frame show #t)
 
@@ -95,7 +95,7 @@
 		    (sequence (apply super-init args)))))
 		start 100))
 
-	(if frame?
+	(when frame?
 	    (let* ([f (remember tag
 	    	       (make-object (if (even? n)
 				       frame% 
@@ -121,7 +121,7 @@
 	      (remember tag (make-object button% "two" p cb))
 	      (send f show #f)))
 
-	(if subwindows?
+	(when subwindows?
 	    (let ([p (make-object (get-panel% n) sub-collect-frame)]
 		  [cv (make-object canvas% sub-collect-frame)]
 		  [add-objects
@@ -152,7 +152,7 @@
 	      (send sub-collect-frame delete-child p)
 	      (send sub-collect-frame delete-child cv)))
 
-	(if (and edit? insert?)
+	(when (and edit? insert?)
 	    (let ([e edit])
 	      (when load-file?
 		(send e load-file (build-path source-dir "mem.ss")))
@@ -203,7 +203,7 @@
 	      (remember (cons tag m) (make-object point% n m))
 	      (let ([br (make-object brush%)])
 		(remember (cons tag m) br)
-		(hash-table-put! htw br 'ok))
+		(hash-set! htw br 'ok))
 	      (remember (cons tag m) (make-object pen%))
 	      (loop (sub1 m)))))
 	
@@ -228,8 +228,8 @@
 (define (still)
   (map (lambda (x)
 	 (let ([v (weak-box-value (cdr x))])
-	   (if v
-	       (printf "~s ~s~n" (car x) v))))
+	   (when v
+             (printf "~s ~s~n" (car x) v))))
        allocated)
   (void))
 
