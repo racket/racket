@@ -76,7 +76,8 @@ rewritten our fibonacci program as follows:
 (: fib (Number -> Number))
 (define (fib n)
   (let ([base? (or (= 0 n) (= 1 n))])
-    (if base? 1
+    (if base? 
+	1
         (+ (fib (- n 1)) (fib (- n 2))))))
 ]
 
@@ -112,7 +113,7 @@ structure and a function that formats a date as a string, using PLT
 Scheme's built-in @scheme[format] function.
 
 @schememod[typed-scheme
-(define-typed-struct Date ([day : Number] [month : String] [year : Number]))
+(define-struct: Date ([day : Number] [month : String] [year : Number]))
 
 (: format-date (Date -> String))
 (define (format-date d)
@@ -126,7 +127,7 @@ Here we see the new built-in type @scheme[String] as well as a definition
 of the new user-defined type @scheme[my-date].  To define
 @scheme[my-date], we provide all the information usually found in a
 @scheme[define-struct], but added type annotations to the fields using
-the @scheme[define-typed-struct] form.
+the @scheme[define-struct:] form.
 Then we can use the functions that this declaration creates, just as
 we would have with @scheme[define-struct].
 
@@ -138,8 +139,8 @@ represent these using @italic{union types}, written @scheme[(U t1 t2 ...)].
 
 @schememod[typed-scheme
 (define-type-alias Tree (U leaf node))
-(define-typed-struct leaf ([val : Number]))
-(define-typed-struct node ([left : Tree] [right : Tree]))
+(define-struct: leaf ([val : Number]))
+(define-struct: node ([left : Tree] [right : Tree]))
 
 (: tree-height (Tree -> Number))
 (define (tree-height t)
@@ -204,8 +205,8 @@ We can define our own type constructors as well.  For example, here is
 an analog of the @tt{Maybe} type constructor from Haskell:
 
 @schememod[typed-scheme
-(define-typed-struct Nothing ())
-(define-typed-struct (a) Just ([v : a]))
+(define-struct: Nothing ())
+(define-struct: (a) Just ([v : a]))
 
 (define-type-alias (Maybe a) (U Nothing (Just a)))
 
@@ -216,13 +217,13 @@ an analog of the @tt{Maybe} type constructor from Haskell:
         [else (find v (cdr l))]))
 ]
 
-The first @scheme[define-typed-struct] defines @scheme[Nothing] to be
+The first @scheme[define-struct:] defines @scheme[Nothing] to be
 a structure with no contents.  
 
 The second definition
 
 @schemeblock[
-(define-typed-struct (a) Just ([v : a]))
+(define-struct: (a) Just ([v : a]))
 ]
 
 creates a parameterized type, @scheme[Just], which is a structure with
@@ -247,46 +248,30 @@ and @scheme[(make-Nothing)] otherwise.  Therefore, it produces a
 
 @subsubsub*section{Base Types}
 These types represent primitive Scheme data.
-@defidform[Number]{Any number}
+@defidform[Number]{A @tech{number}}
+@defidform[Integer]{An @tech{integer}}
 @defidform[Boolean]{Either @scheme[#t] or @scheme[#f]}
-@defidform[String]{A string}
-@defidform[Keyword]{A PLT Scheme literal keyword}
-@defidform[Symbol]{A symbol}
+@defidform[String]{A @tech{string}}
+@defidform[Keyword]{A literal @tech{keyword}}
+@defidform[Symbol]{A @tech{symbol}}
+@defidform[Void]{@|void-const|}
+@defidform[Port]{A @tech{port}}
+@defidform[Path]{A @tech{path}}
+@defidform[Char]{A @tech{character}}
+
 @defidform[Any]{Any value}
 
-@subsubsub*section{Type Constructors}
-The following constructors are parameteric in their type arguments.
+The following base types are parameteric in their type arguments.
 
-@defform[(Listof t)]{Homogenous lists of @scheme[t]}
-@defform[(Vectorof t)]{Homogenous vectors of @scheme[t]}
+@defform[(Listof t)]{Homogenous @tech{lists} of @scheme[t]}
+@defform[(Boxof t)]{A @tech{box} of @scheme[t]}
+@defform[(Vectorof t)]{Homogenous @tech{vectors} of @scheme[t]}
 @defform[(Option t)]{Either @scheme[t] of @scheme[#f]}
-
-@;{
-@schemeblock[
-(define: f : (Number -> Number) (lambda: ([x : Number]) 3))
-]
-}
-
-@begin[
-(require (for-syntax scheme/base))
-(define-syntax (definfixform stx)
-  (syntax-case stx ()
-    [(_ dummy . rest) #'(begin (specform . rest))]))
-#;
-(define-syntax (definfixform stx)
-  (syntax-case stx ()
-    [(_ id spec desc ...)
-     #'(*defforms (quote-syntax id) 
-		  '()
-		  '(spec) 
-		  (list (lambda (x) (schemeblock0 spec)))
-		  '()
-		  '()
-		  (lambda () (list desc ...)))]))
-]
-
 @defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
   and @scheme[t] as the @scheme[cdr]}
+
+@subsubsub*section{Type Constructors}
+
 @defform[#:id -> (dom ... -> rng)]{is the type of functions from the (possibly-empty)
   sequence @scheme[dom ...] to the @scheme[rng] type.}
 @defform[(U t ...)]{is the union of the types @scheme[t ...]}
@@ -327,55 +312,74 @@ creating new types, and annotating expressions.
 @scheme[_loop], @scheme[_f], @scheme[_a], and @scheme[_v] are names, @scheme[_t] is a type.
  @scheme[_e] is an expression and @scheme[_body] is a block.
 
-@defform*[[(define: (f [v : t] ...) : t body)
-	   (define: v : t e)]]{}
-@defform[
-  (pdefine: (a ...) (f [v : t] ...) : t body)]{}
+@defform*[[(define: v : t e)
+	   (define: (f [v : t] ...) : t . body)	   
+	   (define: (a ...) (f [v : t] ...) : t . body)]]{
+These forms define variables, with annotated types.  The first form
+defines @scheme[v] with type @scheme[t] and value @scheme[e].  The
+second and third forms defines a function @scheme[f] with appropriate
+types.  In most cases, use of @scheme[:] is preferred to use of @scheme[define:].}
 
 @defform*[[
-  (let: ([v : t e] ...) body)
-  (let: loop : t0 ([v : t e] ...) body)]]{where @scheme[_t0] is the type of the
+  (let: ([v : t e] ...) . body)
+  (let: loop : t0 ([v : t e] ...) . body)]]{where @scheme[_t0] is the type of the
   result of @scheme[_loop] (and thus the result of the entire expression).}
 @defform[
-  (letrec: ([v : t e] ...) body)]{}
+  (letrec: ([v : t e] ...) . body)]{}
 @defform[
-  (let*: ([v : t e] ...) body)]{}
+  (let*: ([v : t e] ...) . body)]{}
 @defform*[[
-  (lambda: ([v : t] ...) body)
-  (lambda: ([v : t] ... . [v : t]) body)]]{}
+  (lambda: ([v : t] ...) . body)
+  (lambda: ([v : t] ... . [v : t]) . body)]]{}
 @defform*[[
-  (plambda: (a ...) ([v : t] ...) body)
-  (plambda: (a ...) ([v : t] ... . [v : t]) body)]]{}
+  (plambda: (a ...) ([v : t] ...) . body)
+  (plambda: (a ...) ([v : t] ... . [v : t]) . body)]]{}
 @defform[
   (case-lambda: [formals body] ...)]{where @scheme[_formals] is like
   the second element of a @scheme[lambda:]}
 @defform[
   (pcase-lambda: (a ...) [formals body] ...)]{where @scheme[_formals] is like
-  the third element of a @scheme[plambda:]}
+  the second element of a @scheme[lambda:].}
 
 
 @subsection{Structure Definitions}
 @defform*[[
-(define-typed-struct name ([f : t] ...))
-(define-typed-struct (name parent) ([f : t] ...))
-(define-typed-struct (v ...) name ([f : t] ...))
-(define-typed-struct (v ...) (name parent) ([f : t] ...))]]
+(define-struct: name ([f : t] ...))
+(define-struct: (name parent) ([f : t] ...))
+(define-struct: (v ...) name ([f : t] ...))
+(define-struct: (v ...) (name parent) ([f : t] ...))]]
 
 @subsection{Type Aliases}
 @defform*[[(define-type-alias name t)
-	   (define-type-alias (name v ...) t)]]{}
+	   (define-type-alias (name v ...) t)]]{
+The first form defines @scheme[name] as type, with the same meaning as
+@scheme[t].  The second form is equivalent to
+@scheme[(define-type-alias name (All (v ...) t))].  Type aliases may
+refer to other type aliases or types defined in the same module, but
+cycles among type aliases are prohibited.}
 
 
-@subsection{Type Annotation}
+@subsection{Type Annotation and Instantiation}
 
-@defform[
-(: v t)
-]
+@defform[(: v t)]{This declares that @scheme[v] has type @scheme[t].
+The definition of @scheme[v] must appear after this declaration.  This
+can be used anywhere a definition form may be used.}
 
-@litchar{#{v : t}} This is legal only for binding occurences of @scheme[_v].
+@litchar{#{v : t}} This declares that the variable @scheme[v] has type
+@scheme[t].  This is legal only for binding occurences of @scheme[_v].
 
-@litchar{#{e :: t}} This is legal only in expression contexts.
+@defform[(ann e t)]{Ensure that @scheme[e] has type @scheme[t], or
+some subtype.  The entire expression has type @scheme[t].
+This is legal only in expression contexts.}
 
+@litchar{#{e :: t}} This is identical to @scheme[(ann e t)].
+
+@defform[(inst e t ...)]{Instantiate the type of @scheme[e] with types
+@scheme[t ...].  @scheme[e] must have a polymorphic type with the
+appropriate number of type variables. This is legal only in expression
+contexts.}
+
+@litchar|{#{e @ t ...}}| This is identical to @scheme[(inst e t ...)].
 
 @subsection{Require}
 
@@ -385,8 +389,13 @@ naming a predicate, and @scheme[_r] is an optionally-renamed identifier.
 @defform*[[
 (require/typed r t m)
 (require/typed m [r t] ...)
-]]{}
+]]{The first form requires @scheme[r] from module @scheme[m], giving
+it type @scheme[t].  The second form generalizes this to multiple identifiers.}
 
-@defform[(require/opaque-type t pred m)]{}
+@defform[(require/opaque-type t pred m)]{
+This defines a new type @scheme[t].  @scheme[pred], imported from
+module @scheme[m], is a predicate for this type.  The type is defined
+as precisely those values to which @scheme[pred] produces
+@scheme[#t].  @scheme[pred] must have type @scheme[(Any -> Boolean)].}
 
 @defform[(require-typed-struct name ([f : t] ...) m)]{}
