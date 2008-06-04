@@ -19,7 +19,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 |#
 
 
-(provide (all-defined-out))
+(provide (all-defined-out)
+	 (rename-out [define-typed-struct define-struct:]))
 
 (require (for-syntax 
           scheme/base
@@ -136,7 +137,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (ann stx)
   (syntax-case stx (:)
     [(_ arg : ty)
-     #;#'(let: ([id : ty arg]) id)
+     (syntax-property #'arg 'type-ascription #'ty)]
+    [(_ arg ty)
      (syntax-property #'arg 'type-ascription #'ty)]))
 
 (define-syntax (: stx)
@@ -162,6 +164,8 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (inst stx)
   (syntax-case stx (:)
     [(_ arg : tys ...)
+     (syntax-property #'arg 'type-inst #'(tys ...))]
+    [(_ arg tys ...)
      (syntax-property #'arg 'type-inst #'(tys ...))]))
 
 (define-syntax (define: stx)
