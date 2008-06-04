@@ -43,5 +43,22 @@ drawn on the edges between nodes.
 This setting does not affect self-links---only links between two
 different nodes.
 
-}}
+}
+
+@defmethod[(draw-edges [dc (is-a?/c dc<%>)]
+[left real?]
+[top real?]
+[right real?]
+[bottom real?]
+[dx real?]
+[dy real?]) void?]{
+  This is called by the @method[editor<%> on-paint] callback of a
+  graph pasteboard, and is expected to draw the edges between the
+  snips. The argments are a subset of those passed to
+  @method[editor<%> on-paint] and it is only called when the
+  @scheme[before?] argument to   @method[editor<%> on-paint] 
+  is @scheme[#t].
+}
+
+}
 

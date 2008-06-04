@@ -222,7 +222,8 @@
       on-mouse-over-snips
       set-arrowhead-params
       get-arrowhead-params
-      set-draw-arrow-heads?))
+      set-draw-arrow-heads?
+      draw-edges))
   
   (define-struct rect (left top right bottom))
   
@@ -482,6 +483,11 @@
                         (max b (rect-bottom rect))))]))]))
       
       (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
+        (when before?
+          (draw-edges dc left top right bottom dx dy))
+        (super on-paint before? dc left top right bottom dx dy draw-caret))
+      
+      (define/public (draw-edges dc left top right bottom dx dy)
         (let ()
           ;; draw-connection : link snip boolean boolean -> void
           ;; sets the drawing context (pen and brush)
@@ -637,37 +643,33 @@
                       (link-dark-text from-link)
                       (link-light-text from-link))))
           
-          ;;; body of on-paint
-          (when before?
-            (let ([old-pen (send dc get-pen)]
-                  [old-brush (send dc get-brush)]
-                  [old-fg (send dc get-text-foreground)]
-                  [os (send dc get-smoothing)])
-              (send dc set-smoothing 'aligned)
-              
-              (let ([pairs '()])
-                (for-each-to-redraw 
-                 left top right bottom 
-                 (lambda (from-link to)
-                   (let ([from (link-snip from-link)])
-                     (cond
-                       [(or (memq from currently-overs)
-                            (memq to currently-overs))
-                        (set! pairs (cons (cons from-link to) pairs))]
-                       [else
-                        (draw-connection from-link to #f)]))))
-                (for-each (lambda (pr)
-                            (draw-connection (car pr) (cdr pr) #t))
-                          pairs))
-              
-              (send dc set-smoothing os)
-              (send dc set-pen old-pen)
-              (send dc set-text-foreground old-fg)
-              (send dc set-brush old-brush)))
-          
-          (super on-paint before? dc left top right bottom dx dy draw-caret)))
+          (let ([old-pen (send dc get-pen)]
+                [old-brush (send dc get-brush)]
+                [old-fg (send dc get-text-foreground)]
+                [os (send dc get-smoothing)])
+            (send dc set-smoothing 'aligned)
+            
+            (let ([pairs '()])
+              (for-each-to-redraw 
+               left top right bottom 
+               (lambda (from-link to)
+                 (let ([from (link-snip from-link)])
+                   (cond
+                     [(or (memq from currently-overs)
+                          (memq to currently-overs))
+                      (set! pairs (cons (cons from-link to) pairs))]
+                     [else
+                      (draw-connection from-link to #f)]))))
+              (for-each (lambda (pr)
+                          (draw-connection (car pr) (cdr pr) #t))
+                        pairs))
+            
+            (send dc set-smoothing os)
+            (send dc set-pen old-pen)
+            (send dc set-text-foreground old-fg)
+            (send dc set-brush old-brush))))
       
-        ;; for-each-to-redraw : number number number number (link snip -> void)
+      ;; for-each-to-redraw : number number number number (link snip -> void)
       (define/private (for-each-to-redraw left top right bottom f)
         (let ()
           ;;  : link snip boolean boolean -> void
