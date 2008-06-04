@@ -123,6 +123,6 @@
          (if (equal? ty Any-Syntax)
              #`syntax?
              #`(syntax/c #,(t->c t)))]
-        [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x #,v)))]
+        [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
         [else          
          (exit (fail))]))))
