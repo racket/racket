@@ -1,21 +1,21 @@
 // Globally visible bindings
 var key_handler, toggle_panel, hide_prefs, new_query, refine_query,
-    set_show_manuals, set_show_manual_titles, set_results_num,
-    set_type_delay, set_highlight_color;
+    set_pre_query, set_show_manuals, set_show_manual_titles, set_results_num,
+    set_type_delay, set_highlight_color, status_line, saved_status = false;
 
 (function(){
 
 // Configuration options (use || in case a cookie exists but is empty)
+var pre_query          = GetCookie("PLT_PreQuery","");
 var manual_settings    = parseInt(GetCookie("PLT_ManualSettings",1));
 var show_manuals       = manual_settings % 10;
 var show_manual_titles = ((manual_settings - show_manuals) / 10) > 0;
-var results_num        = (parseInt(GetCookie("PLT_ResultsNum", false)) || 20);
-var type_delay         = (parseInt(GetCookie("PLT_TypeDelay", false)) || 300);
-var highlight_color    = (GetCookie("PLT_HighlightColor", false) || "#ffd");
+var results_num        = (parseInt(GetCookie("PLT_ResultsNum",false)) || 20);
+var type_delay         = (parseInt(GetCookie("PLT_TypeDelay",false)) || 300);
+var highlight_color    = (GetCookie("PLT_HighlightColor",false) || "#ffd");
 var background_color   = "#f8f8f8";
 
-var query, status, results_container, result_links,
-    prev_page_link, next_page_link;
+var query, results_container, result_links, prev_page_link, next_page_link;
 
 // tabIndex fields are set:
 //   1 query
@@ -23,6 +23,21 @@ var query, status, results_container, result_links,
 //   3 help/pref toggle
 //   4 pref widgets
 //  -1 prev/next page (un-tab-able)
+
+function MakePref(label, input) {
+  return '<tr><td align="right">' + label + ':&nbsp;&nbsp;</td>'
+            +'<td>' + input + '</td></tr>';
+}
+descriptions = new Array();
+function PrefInputArgs(name, desc) {
+  descriptions[name] = desc;
+  return 'tabIndex="4" id="'+name+'_pref"'
+       +' onkeypress="hide_prefs(event);"'
+       +' onchange="set_'+name+'(this); return true;"'
+       +' onfocus="saved_status=status_line.innerHTML;'
+                 +'status_line.innerHTML=descriptions[\''+name+'\'];"'
+       +' onblur="if (saved_status) status_line.innerHTML=saved_status;"';
+}
 
 function InitializeSearch() {
   var n;
@@ -79,40 +94,47 @@ function InitializeSearch() {
         +' style="display: none; border: 1px solid #222; border-top: 0px;'
                +' font-family: arial, sans-serif; margin: 0em 0em 1em 0em;'
                +' padding: 0.5em; background-color: #f0f0f0;">'
-    +'<table style="margin: 0em 2em;">'
-      +'<tr><td align="right">'
-        +'Show manuals:'
-      +'</td><td>'
-        +' <select tabIndex="4" id="show_manuals_pref"'
-                +' onkeypress="hide_prefs(event);"'
-                +' onchange="set_show_manuals(this); return true;">'
+    +'<table width="100%" align="center" style="margin: 0em 2em;">'
+      + MakePref('Show manuals',
+         '<select '
+                 +PrefInputArgs("show_manuals",
+                                "Controls when manual links are shown")
+                 +'>'
            +'<option>never</option>'
            +'<option>except identifiers</option>'
            +'<option>always</option>'
          +'</select>'
-        +' <input type="checkbox" tabIndex="4" id="show_manual_titles_pref"'
-               +' onkeypress="hide_prefs(event);"'
-               +' onchange="set_show_manual_titles(this); return true;">'
-               +' use titles<br>'
-      +'</td></tr><tr><td align="right">'
-        +'Results per page:'
-      +'</td><td>'
-        +' <input type="text" tabIndex="4" id="results_num_pref"'
-               +' onkeypress="hide_prefs(event);"'
-               +' onchange="set_results_num(this); return true;"><br>'
-      +'</td></tr><tr><td align="right">'
-        +'Type delay:'
-      +'</td><td>'
-        +' <input type="text" tabIndex="4" id="type_delay_pref"'
-               +' onkeypress="hide_prefs(event);"'
-               +' onchange="set_type_delay(this); return true;"><br>'
-      +'</td></tr><tr><td align="right">'
-        +'Exact matches color:'
-      +'</td><td>'
-        +' <input type="text" tabIndex="4" id="highlight_color_pref"'
-               +' onkeypress="hide_prefs(event);"'
-               +' onchange="set_highlight_color(this); return true;"><br>'
-    +'</td></tr></table></div></td></tr>'
+         +'<input type="checkbox" '
+                 +PrefInputArgs("show_manual_titles",
+                                "Controls how manual links are shown")
+                 +'>'
+         +' use titles')
+      + MakePref('Results per page',
+         '<input type="text" '
+                 +PrefInputArgs("results_num",
+                                "How many results to show on the page")
+                 +'>')
+      + MakePref('Type delay',
+         '<input type="text" '
+                 +PrefInputArgs("type_delay",
+                                "The delay to wait (in msec) before search"
+                                +" results are updated")
+                 +'>')
+      + MakePref('Exact matches color',
+         '<input type="text" '
+                 +PrefInputArgs("highlight_color",
+                                "The color to use for highlighting exact"
+                                +" matches (a known color name or #RGB)")
+                 +'>')
+      + MakePref('Pre-Query',
+         '<input type="text" '
+                 +PrefInputArgs("pre_query",
+                   "A &ldquo;context&rdquo; query that is implicitly added to"
+                   +" all searches, for example, &ldquo;<tt>M:</tt>&rdquo; to"
+                   +" search only bindings, &ldquo;<tt>T:reference</tt>&rdquo;"
+                   +" to search only the reference manual")
+                 +'>')
+    +'</table></div></td></tr>'
     +'<tr><td align="left">'
       +'<a href="#" title="Previous Page" id="prev_page_link" tabIndex="-1"'
         +' style="text-decoration: none; font-weight: bold;"'
@@ -135,7 +157,7 @@ function InitializeSearch() {
     +'</table>';
   // get the widgets we use
   query = document.getElementById("search_box");
-  status = document.getElementById("search_status");
+  status_line = document.getElementById("search_status");
   prev_page_link = document.getElementById("prev_page_link");
   next_page_link = document.getElementById("next_page_link");
   // result_links is the array of result link <container,link> pairs
@@ -145,6 +167,7 @@ function InitializeSearch() {
   results_container.normalize();
   result_links.push(n);
   AdjustResultsNum();
+  PreFilter();
   // get search string
   if (location.search.length > 0) {
     var paramstrs = location.search.substring(1).split(/[;&]/);
@@ -195,12 +218,23 @@ function MaxCompares(pat, strs) {
   return r;
 }
 
+function NormalizeSpaces(str) {
+  return str.replace(/\s\s*/g," ")                  // single spaces
+             replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+}
+
 function UrlToManual(url) {
   return url.replace(/#.*$/, "")       // remove fragment,
             .replace(/\?.*$/, "")      // query,
             .replace(/\/[^\/]*$/, "")  // filename,
             .replace(/^(.*\/|>)/, ""); // and directory.
 }
+
+// Tests for matches and highlights:
+//   "append"
+//   "L:scheme append"
+//   "L:scheme" (no exact matches except for the `scheme' module)
+//   "L:schem" (only module names that match `schem')
 
 function CompileTerm(term) {
   var flag = ((term.search(/^[LMT]:/)==0) && term.substring(0,1));
@@ -209,12 +243,13 @@ function CompileTerm(term) {
   switch(flag) {
     case "L": return function(x) {
       if (!x[3]) return C_fail;
-      if (x[3] == "module") return Compare(term,x[0]); // rexact allowed!
+      if (x[3] == "module") // rexact allowed, show partial module matches
+        return Compare(term,x[0]);
       return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
     }
     case "M": return function(x) {
       if (!x[3]) return C_fail;
-      if (x[3] == "module") return Compare(term,x[0]); // rexact allowed!
+      if (x[3] == "module") return Compare(term,x[0]); // rexact allowed
       return (MaxCompares(term,x[3]) >= C_match) ? C_exact : C_fail;
     }
     case "T": return function(x) {
@@ -232,37 +267,45 @@ function CompileTerm(term) {
   }
 }
 
+function Search(data, term, is_pre) {
+  var preds = (term=="") ? [] : term.split(/ /);
+  for (var i=0; i<preds.length; i++) preds[i] = CompileTerm(preds[i]);
+  if (preds.length == 0) return (is_pre ? data : []);
+  var matches = new Array(), exacts = new Array();
+  for (var i=0; i<data.length; i++) {
+    var r, min = C_rexact, max = C_fail;
+    for (var j=0; j<preds.length; j++) {
+      r = preds[j](data[i]); min = Math.min(r, min); max = Math.max(r, max);
+    }
+    if (max >= C_rexact && min >= C_exact) exacts.push(data[i]);
+    else if (min > C_fail) matches.push(data[i]);
+  }
+  exact_results_num = exacts.length;
+  if (exacts.length > 0) return exacts.concat(matches);
+  else return matches;
+}
+
+var search_data; // pre-filtered searchable index data
+function PreFilter() {
+  pre_query = NormalizeSpaces(pre_query);
+  search_data = Search(plt_search_data, pre_query, true);
+  last_search_term = null;
+  last_search_term_raw = null;
+}
+
 var last_search_term, last_search_term_raw;
 var search_results = [], first_search_result, exact_results_num;
 function DoSearch() {
   var term = query.value;
   if (term == last_search_term_raw) return;
   last_search_term_raw = term;
-  term = term.replace(/\s\s*/g," ")                  // single spaces
-             .replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+  term = NormalizeSpaces(term);
   if (term == last_search_term) return;
   last_search_term = term;
-  status.innerHTML = "Searching " + plt_search_data.length + " entries";
-  var terms = (term=="") ? [] : term.split(/ /);
-  for (var i=0; i<terms.length; i++) terms[i] = CompileTerm(terms[i]);
-  if (terms.length == 0) {
-    search_results = [];
-  } else {
-    search_results = new Array();
-    var exact_results = new Array();
-    for (var i=0; i<plt_search_data.length; i++) {
-      var r = C_rexact;
-      for (var j=0; j<terms.length; j++)
-        r = Math.min(r, terms[j](plt_search_data[i]));
-      if (r >= C_rexact)   exact_results.push(plt_search_data[i]);
-      else if (r > C_fail) search_results.push(plt_search_data[i]);
-    }
-    exact_results_num = exact_results.length;
-    if (exact_results.length > 0)
-      search_results = exact_results.concat(search_results);
-  }
+  status_line.innerHTML = "Searching " + search_data.length + " entries";
+  search_results = Search(search_data, term, false);
   first_search_result = 0;
-  status.innerHTML = "" + search_results.length + " entries found";
+  status_line.innerHTML = "" + search_results.length + " entries found";
   query.style.backgroundColor =
     ((search_results.length == 0) && (term != "")) ? "#ffe0e0" : "white";
   UpdateResults();
@@ -319,7 +362,7 @@ function UpdateResults() {
                    +' onclick="return new_query(this);"'
                    +' oncontextmenu="return refine_query(this);">'
                 + ((typeof idx == "number")
-                   ? ('<i>'+UncompactHtml(plt_search_data[idx][2])+'</i>')
+                   ? ('<i>'+UncompactHtml(search_data[idx][2])+'</i>')
                    : manual)
                 + '</a>';
       }
@@ -343,22 +386,23 @@ function UpdateResults() {
             + ((exact == results_num) ? 'all' : exact)
             + ' exact</span>)';
   if (search_results.length == 0)
-    status.innerHTML = ((last_search_term=="") ? "" : "No matches found");
+    status_line.innerHTML = ((last_search_term=="") ? "" : "No matches found");
   else if (search_results.length <= results_num)
-    status.innerHTML = "Showing all matches" + exact;
+    status_line.innerHTML = "Showing all matches" + exact;
   else
-    status.innerHTML =
+    status_line.innerHTML =
       "Showing "
       + (first_search_result+1) + "-"
       + Math.min(first_search_result+results_num,search_results.length)
       + exact
       + " of " + search_results.length
-      + ((search_results.length==plt_search_data.length) ? "" : " matches");
+      + ((search_results.length==search_data.length) ? "" : " matches");
   prev_page_link.style.color =
     (first_search_result-results_num >= 0) ? "black" : "#e0e0e0";
   next_page_link.style.color =
     (first_search_result+results_num < search_results.length)
     ? "black" : "#e0e0e0";
+  saved_status = false;
 }
 
 var search_timer = null;
@@ -372,15 +416,18 @@ function HandleKeyEvent(event) {
   if (typeof event == "string") key = event;
   else if (event) {
     switch (event.which || event.keyCode) {
-      case 13: if (event.ctrlKey) key = "Enter"; break;
+      case 13: if (event.ctrlKey) key = "C-Enter";
+               break;
       case 33: key = "PgUp";  break;
       case 34: key = "PgDn";  break;
     }
   }
   switch (key) {
-    case "Enter": // enter with no change scrolls
+    case "C-Enter": // C-enter with no change scrolls down (S -> up)
       if (query.value == last_search_term_raw) {
-        first_search_result += results_num;
+        if (!event.shiftKey) first_search_result += results_num;
+        else if (first_search_result > 0) first_search_result -= results_num;
+        else first_search_result = search_results.length - results_num;
         UpdateResults();
       } else {
         DoSearch();
@@ -442,12 +489,12 @@ function TogglePanel(name) {
     document.getElementById(panel_shown+"_panel").style.display = "none";
   panel_shown = ((panel_shown != name) && name);
   if (panel_shown == "prefs") {
-    document.getElementById("show_manuals_pref").selectedIndex
-                                                          = show_manuals;
+    document.getElementById("pre_query_pref").value = pre_query;
+    document.getElementById("show_manuals_pref").selectedIndex = show_manuals;
     document.getElementById("show_manual_titles_pref").checked
                                                           = show_manual_titles;
-    document.getElementById("results_num_pref").value     = results_num;
-    document.getElementById("type_delay_pref").value      = type_delay;
+    document.getElementById("results_num_pref").value = results_num;
+    document.getElementById("type_delay_pref").value = type_delay;
     document.getElementById("highlight_color_pref").value = highlight_color;
   }
   if (panel_shown)
@@ -462,6 +509,26 @@ function HidePrefs(event) {
   }
 }
 hide_prefs = HidePrefs;
+
+function SetShowManuals(inp) {
+  if (inp.selectedIndex != show_manuals) {
+    show_manuals = inp.selectedIndex;
+    SetCookie("PLT_ManualSettings", show_manuals+(show_manual_titles?10:0));
+    UpdateResults();
+  }
+}
+set_show_manuals = SetShowManuals;
+
+function SetPreQuery(inp) {
+  if (inp.value != pre_query) {
+    pre_query = inp.value;
+    SetCookie("PLT_PreQuery", pre_query);
+    PreFilter();
+    DoSearch();
+  }
+}
+set_pre_query = SetPreQuery;
+
 
 function SetShowManuals(inp) {
   if (inp.selectedIndex != show_manuals) {
