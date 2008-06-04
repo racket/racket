@@ -1355,14 +1355,18 @@
       ))
   
   (t1 check-expect
-      (test-upto-int/lam
-       "(check-expect (+ 3 4) (+ 8 9)) (+ 4 5)"
+      (test-bwla-to-int/lam
+       "(check-expect (+ 3 4) (+ 8 9)) (check-expect (+ 1 1) 2) (check-expect (+ 2 2) 4)(+ 4 5)"
        `((before-after ((hilite (+ 4 5)))
                        ((hilite 9)))
          (before-after (9 (check-expect (+ 3 4) (hilite (+ 8 9))))
                        (9 (check-expect (+ 3 4) (hilite 17))))
          (before-after (9 (check-expect (hilite (+ 3 4)) 17))
-                       (9 (check-expect (hilite 7) 17))))))
+                       (9 (check-expect (hilite 7) 17)))
+         (before-after (9 (list 'check-expect-failed 7 17) (check-expect (hilite (+ 1 1)) 2))
+                       (9 (list 'check-expect-failed 7 17) (check-expect (hilite 2) 2)))
+         (before-after (9 (list 'check-expect-failed 7 17) (list 'check-expect-passed 2 2) (check-expect (hilite (+ 2 2)) 4))
+                       (9 (list 'check-expect-failed 7 17) (list 'check-expect-passed 2 2) (check-expect (hilite 4) 4))))))
   
   (t1 check-expect-2
       (test-upto-int/lam
@@ -1380,8 +1384,8 @@
   
   
   (t1 check-within
-      (test-upto-int/lam
-       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (+ 4 5)"
+      (test-bwla-to-int/lam
+       "(check-within (+ 3 4) (+ 8 10) (+ 10 90)) (check-expect (+ 1 1) 2)(+ 4 5)"
        `((before-after ((hilite (+ 4 5)))
                        ((hilite 9)))
          (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) (+ 10 90)))
@@ -1389,21 +1393,38 @@
          (before-after (9 (check-within (+ 3 4) 18 (hilite (+ 10 90))))
                        (9 (check-within (+ 3 4) 18 (hilite 100))))
          (before-after (9 (check-within (hilite (+ 3 4)) 18 100))
-                       (9 (check-within (hilite 7) 18 100))))))
+                       (9 (check-within (hilite 7) 18 100)))
+         (before-after (9 (list 'check-within-passed 7 18 100) (check-expect (hilite (+ 1 1)) 2))
+                       (9 (list 'check-within-passed 7 18 100) (check-expect (hilite 2) 2))))))
   
   
   (t1 check-within-bad
-      (test-upto-int/lam
-       "(check-within (+ 3 4) (+ 8 10) 0.01) (+ 4 5)"
+      (test-bwla-to-int/lam
+       "(check-within (+ 3 4) (+ 8 10) 0.01) (+ 4 5) (check-expect (+ 1 1) 2)"
        `((before-after ((hilite (+ 4 5)))
                        ((hilite 9)))
          (before-after (9 (check-within (+ 3 4) (hilite (+ 8 10)) 0.01))
                        (9 (check-within (+ 3 4) (hilite 18) 0.01)))
          (before-after (9 (check-within (hilite (+ 3 4)) 18 0.01))
-                       (9 (check-within (hilite 7) 18 0.01))))))
+                       (9 (check-within (hilite 7) 18 0.01)))
+         (before-after (9 (list 'check-within-failed 7 18 0.01) (check-expect (hilite (+ 1 1)) 2))
+                       (9 (list 'check-within-failed 7 18 0.01) (check-expect (hilite 2) 2))))))
 
+  (let ([errmsg "rest: expected argument of type <non-empty list>; given ()"])
   (t1 check-error
-      (test-upto-int/lam
+      (test-bwla-to-int/lam
+       "(check-error (+ (+ 3 4) (rest empty)) (string-append \"rest: \" \"expected argument of type <non-empty list>; given ()\")) (check-expect (+ 3 1) 4) (+ 4 5)"
+       `((before-after ((hilite (+ 4 5)))
+                       ((hilite 9)))
+         (before-after (9 (check-error (+ (+ 3 4) (rest empty)) (hilite (string-append "rest: " "expected argument of type <non-empty list>; given ()"))))
+                       (9 (check-error (+ (+ 3 4) (rest empty)) (hilite ,errmsg))))
+         (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) ,errmsg))
+                       (9 (check-error (+ (hilite 7) (rest empty)) ,errmsg)))
+         (before-after (9 (list 'check-error-passed ,errmsg ,errmsg) (check-expect (hilite (+ 3 1)) 4))
+                       (9 (list 'check-error-passed ,errmsg ,errmsg) (check-expect (hilite 4) 4)))))))
+  
+  (t1 check-error-bad
+      (test-bwla-to-int/lam
        "(check-error (+ (+ 3 4) (rest empty)) (string-append \"b\" \"ogus\")) (check-expect (+ 3 1) 4) (+ 4 5)"
        `((before-after ((hilite (+ 4 5)))
                        ((hilite 9)))
@@ -1411,10 +1432,8 @@
                        (9 (check-error (+ (+ 3 4) (rest empty)) (hilite "bogus"))))
          (before-after (9 (check-error (+ (hilite (+ 3 4)) (rest empty)) "bogus"))
                        (9 (check-error (+ (hilite 7) (rest empty)) "bogus")))
-         (before-after (9 (check-expect (hilite (+ 3 1)) 4))
-                       (9 (check-expect (hilite 4) 4)))
-         #;(before-after ((check-error (+ 7 (hilite (rest empty))) "bogus"))
-                       ((check-error-string "crunch!" "bogus"))))))
+         (before-after (9 (list 'check-error-failed "rest: expected argument of type <non-empty list>; given ()" "bogus") (check-expect (hilite (+ 3 1)) 4))
+                       (9 (list 'check-error-failed "rest: expected argument of type <non-empty list>; given ()" "bogus") (check-expect (hilite 4) 4))))))
 
   ; uses set-render-settings!
   ;(reconstruct:set-render-settings! fake-beginner-render-settings)
@@ -1688,7 +1707,7 @@
                    #;[display-only-errors #f]
                    #;[store-steps #f]
                    #;[show-all-steps #t])
-      #;(run-tests '(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
+      #;(run-tests '(check-expect check-within check-within-bad check-error) #;'(#;check-expect #;check-expect-2 check-within check-within-bad check-error))
       (run-all-tests)))
   
 
