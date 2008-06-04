@@ -1,5 +1,5 @@
-Version 3.99.0.x
->> See MzScheme_4.txt for information on major changes.
+Version 4.0, June 2008
+>> See MzScheme_4.txt
 
 Version 372, December 2007
 Added syntax-local-lift-context
