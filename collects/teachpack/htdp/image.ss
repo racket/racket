@@ -5,5 +5,5 @@
 
 (module image mzscheme
   (require htdp/image (lib "prim.ss" "lang"))  
-  (provide-primitives (all-from htdp/image))
+  (provide (all-from htdp/image))
 )
