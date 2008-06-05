@@ -3211,12 +3211,13 @@ static Scheme_Object *scheme_search_shared_pes(Scheme_Object *shared_pes, Scheme
     }
 
     if (pt->reprovide_kernel) {
-      pr = scheme_hash_get(krn->ht, glob_id);
-      if (pr) {
+      Scheme_Object *kpr;
+      kpr = scheme_hash_get(krn->ht, glob_id);
+      if (kpr) {
         if (get_orig_name)
           return glob_id;
         if (get_names) {
-          idx = SCHEME_CAR(SCHEME_CAR(pr));
+          idx = SCHEME_CAR(SCHEME_CAR(kpr));
           get_names[0] = glob_id;
           get_names[1] = idx;
           get_names[2] = glob_id;
