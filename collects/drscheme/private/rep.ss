@@ -272,18 +272,6 @@ TODO
              (λ (frame)
                (cond
                  [(is-a? obj text%)
-                  
-                  ;; this just uses the thunk argument of load-collections-xref in order
-                  ;; to ensure that there is some GUI feedback the first time the help
-                  ;; desk index is loaded.
-                  (when frame
-                    (let ([id 'loading-docs])
-                      (send frame open-status-line id)
-                      (load-collections-xref
-                       (λ ()
-                         (send frame update-status-line id (string-constant help-desk-loading-documentation-index))))
-                      (send frame close-status-line id)))
-                  
                   (let* ([start (send obj get-start-position)]
                          [end (send obj get-end-position)]
                          [str (if (= start end)
