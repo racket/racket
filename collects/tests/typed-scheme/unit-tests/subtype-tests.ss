@@ -110,10 +110,10 @@
     (cl-> [() (-pair N (-v b))]
 	  [(N) (-pair N (-v b))])]
    
-   [(-poly (a) ((Un (-base 'foo) (-struct 'bar #f (list N a) #f)) . -> . (-lst a)))
-    ((Un (-base 'foo) (-struct 'bar #f (list N (-pair N (-v a))) #f)) . -> . (-lst (-pair N (-v a))))]
-   [(-poly (a) ((-struct 'bar #f (list N a) #f) . -> . (-lst a)))
-    ((-struct 'bar #f (list N (-pair N (-v a))) #f) . -> . (-lst (-pair N (-v a))))]
+   [(-poly (a) ((Un (-base 'foo) (-struct 'bar #f (list N a) #f #f #f values)) . -> . (-lst a)))
+    ((Un (-base 'foo) (-struct 'bar #f (list N (-pair N (-v a))) #f #f #f values)) . -> . (-lst (-pair N (-v a))))]
+   [(-poly (a) ((-struct 'bar #f (list N a) #f #f #f values) . -> . (-lst a)))
+    ((-struct 'bar #f (list N (-pair N (-v a))) #f #f #f values) . -> . (-lst (-pair N (-v a))))]
    
    [(-poly (a) (a . -> . (make-Listof a))) ((-v b) . -> . (make-Listof (-v b)))]
    [(-poly (a) (a . -> . (make-Listof a))) ((-pair N (-v b)) . -> . (make-Listof (-pair N (-v b))))]

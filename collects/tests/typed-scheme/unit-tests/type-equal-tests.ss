@@ -33,9 +33,11 @@
    [(-poly (x) (-> (Un Sym N) x)) (-poly (xyz) (-> (Un N Sym) xyz))]
    [(-mu x (Un N Sym x)) (-mu y (Un N Sym y))]     
    ;; found bug
-   [FAIL (Un (-mu heap-node (-struct 'heap-node #f (list (-base 'comparator) N (-v a) (Un heap-node (-base 'heap-empty))) #f)) 
+   [FAIL (Un (-mu heap-node 
+                  (-struct 'heap-node #f (list (-base 'comparator) N (-v a) (Un heap-node (-base 'heap-empty))) #f  #f #f values)) 
              (-base 'heap-empty))
-         (Un (-mu heap-node (-struct 'heap-node #f (list (-base 'comparator) N (-pair N N) (Un heap-node (-base 'heap-empty))) #f)) 
+         (Un (-mu heap-node 
+                  (-struct 'heap-node #f (list (-base 'comparator) N (-pair N N) (Un heap-node (-base 'heap-empty))) #f #f #f values)) 
              (-base 'heap-empty))]))
 
 
