@@ -269,12 +269,15 @@
 (define (render src-file dest-dir multi-page?)
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
     (make-directory* dest-dir)
-    (let* ([renderer (new ((if multi-page?
+    (let* ([index-dir (if multi-page?
+                          (let-values ([(base name dir?) (split-path dest-dir)]) base)
+                          dest-dir)]
+           [renderer (new ((if multi-page?
                                (dynamic-require 'scribble/html-render 'render-multi-mixin)
                                values)
                            ((dynamic-require 'scribble/html-render 'render-mixin) 
                             (dynamic-require 'scribble/base-render 'render%)))
-                          [dest-dir dest-dir]
+                          [dest-dir index-dir]
                           [root-path dest-dir])]
            [doc (dynamic-require `(file ,(path->string src-file)) 'doc)]
            [ci (send renderer collect (list doc) (list dest-dir))]
@@ -283,7 +286,12 @@
            [ri (send renderer resolve (list doc) (list dest-dir) ci)])
       (send renderer set-external-tag-path
             "/servlets/doc-search.ss")
-      (send renderer render (list doc) (list dest-dir) ri)
+      (send renderer render 
+            (list doc) 
+            (list (if multi-page? 
+                      dest-dir
+                      (build-path dest-dir "index.html")))
+            ri)
       ;; return cross-reference info:
       (send renderer serialize-info ri))))
 
@@ -347,9 +355,9 @@
                         (error (format "scribblings file ~a not found" filename)))
                       (printf "Building: ~a\n" filename)
                       (let* ([name.scrbl (file-name-from-path filename)]
-                             [name       (cadr (regexp-match #rx"(.*)\\.scrbl$" (path->string name.scrbl)))])
+                             [name       (path-replace-suffix name.scrbl #"")])
                         (render (build-path filename)
-                                (build-path SCRIBBLE-DOCUMENT-DIR (string-append name "/"))
+                                (build-path SCRIBBLE-DOCUMENT-DIR name)
                                 (memq 'multi-page flags)))]
                      [_ (error "malformed scribblings entry")])))))
            

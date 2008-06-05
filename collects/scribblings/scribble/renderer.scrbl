@@ -49,7 +49,10 @@ Represents a renderer.
                  [refer-to-existing-files any/c #f]
                  [root-path (or/c path-string? false/c) #f])]{
 
-Creates a renderer whose output goes to @scheme[dest-dir].
+Creates a renderer whose output will go to @scheme[dest-dir]. For
+example, @scheme[dest-dir] could name the directory containing the
+output Latex file, the HTML file for a single-file output, or the
+output sub-directory for multi-file HTML output.
 
 If @scheme[root-path] is not @scheme[#f], it is normally the same as
 @scheme[dest-dir] or a parent of @scheme[dest-dir]. It causes
@@ -64,21 +67,30 @@ moved).}
                     [dests (listof path-string?)])
            collect-info?]{
 
-Performs the @techlink{collect pass}.}
+Performs the @techlink{collect pass}. See @method[render% render] for
+information on the @scheme[dests] argument.}
 
 @defmethod[(resolve [srcs (listof part?)]
                     [dests (listof path-string?)]
                     [ci collect-info?])
            resolve-info?]{
 
-Performs the @techlink{resolve pass}.}
+Performs the @techlink{resolve pass}. See @method[render% render] for
+information on the @scheme[dests] argument.}
 
 @defmethod[(render [srcs (listof part?)]
                    [dests (listof path-string?)]
                    [ri resolve-info?])
            void?]{
 
-Produces the final output.}
+Produces the final output.
+
+The @scheme[dests] provide names of files for Latex or single-file
+HTML output, or names of sub-directories for multi-file HTML output.
+If the @scheme[dests] are relative, they're relative to the current
+directory; normally, they should indicates a path within the
+@scheme[_dest-dir] supplied on initialization of the @scheme[render%]
+object.}
 
 @defmethod[(serialize-info [ri resolve-info?])
            any/c]{

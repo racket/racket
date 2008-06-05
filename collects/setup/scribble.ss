@@ -469,7 +469,8 @@
           (for ([i (info-deps info)])
             (with-my-namespace
              (lambda ()
-               (send renderer deserialize-info (info-sci i) ci)))))
+               (when (info? i)
+                 (send renderer deserialize-info (info-sci i) ci))))))
          (let* ([ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
                 [sci (render-time "serialize" (send renderer serialize-info ri))]
                 [defs (render-time "defined" (send renderer get-defined ci))]
@@ -554,9 +555,12 @@
              (lambda ()
                (list (list (info-vers info) (doc-flags doc))
                      (serialize (info-undef info))
-                     (map (lambda (i)
-                            (path->rel (doc-src-file (info-doc i))))
-                          (info-deps info))
+                     (filter
+                      values
+                      (map (lambda (i)
+                             (and (info? i)
+                                  (path->rel (doc-src-file (info-doc i)))))
+                           (info-deps info)))
                      (serialize (info-searches info)))))))))
 
 (define (write-out info)

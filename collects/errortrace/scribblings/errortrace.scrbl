@@ -69,7 +69,8 @@ parameters.
 
 @; ---------------------------------------------
 @section[#:tag "using-errortrace"]{Using Errortrace}
-@defmodule[errortrace]
+
+@defmodule[errortrace #:use-sources (errortrace/errortrace-lib)]
 
 @; ---------------------------------------------
 

@@ -18,8 +18,11 @@ In principle, a teachpack is just a library written in the full language,
  is imported and signal errors in a way with which students are familiar at
  that level. 
 
-This chapter covers the teachpacks for ``How to Design Programs'' and ``How
- to Design Classes.'' 
+This chapter covers the teachpacks for @italic{How to Design Programs}
+ and @italic{How to Design Classes}.
+
+@table-of-contents[]
+
 
 @include-section["htdp/scribblings/htdp.scrbl"]
 

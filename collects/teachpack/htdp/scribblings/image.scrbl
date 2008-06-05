@@ -8,11 +8,11 @@
 @title[#:tag "image"]{Manipulating Images: image.ss}
 
 
-@;declare-exporting[teachpack/htdp/image]
-@defmodule[htdp/image]{
+@declare-exporting[teachpack/htdp/image]
+
 The teachpack provides primitives for constructing and manipulating
 images. Basic, colored images are created as outlines or solid
-shapes. Additional primitives allow for the composition of images.}
+shapes. Additional primitives allow for the composition of images.
 
 @;-----------------------------------------------------------------------------
 @section{Images}

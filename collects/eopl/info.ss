@@ -7,7 +7,7 @@
 (define tool-names (list "Essentials of Programming Languages"))
 (define tool-urls (list "http://www.cs.indiana.edu/eopl/"))
 
-(define scribblings '(("eopl.scrbl" () (language -11))))
+(define scribblings '(("eopl.scrbl" () (language -12))))
 
 (define textbook-pls
   (list (list '("eopl-small.gif" "eopl")
