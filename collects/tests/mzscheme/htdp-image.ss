@@ -1158,6 +1158,7 @@
 (err/rt-name-test (add-line image-snip1 10 10 #f #f #f) "fourth")
 (err/rt-name-test (add-line image-snip1 10 10 11 #f #f) "fifth")
 (err/rt-name-test (add-line image-snip1 10 10 11 11 #f) "sixth")
+(err/rt-name-test (text "" 12 'red) "first")
 (err/rt-name-test (text #f #f #f) "first")
 (err/rt-name-test (text "abc" #f #f) "second")
 (err/rt-name-test (text "abc" 10 #f) "third")
@@ -1198,9 +1199,11 @@
 (err/rt-name-test (overlay/xy (rectangle 100 200 'outline 'red) -inf.0 +inf.0 #f) "second")
 
 (parameterize ((current-namespace (make-base-namespace)))
-  (err/rt-test (eval '(module m (lib "htdp-beginner.ss" "lang") (require (lib "image.ss" "teachpack" "htdp")) overlay))
-               (lambda (exn)
-                 (regexp-match #rx"must be applied to arguments" 
-                               (exn-message exn)))))
+  (err/rt-test
+    (eval '(module m (lib "htdp-beginner.ss" "lang")
+	     (require (lib "image.ss" "teachpack" "htdp")) overlay))
+    (lambda (exn)
+      (regexp-match #rx"must be applied to arguments" 
+	(exn-message exn)))))
 
 (report-errs)
