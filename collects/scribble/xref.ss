@@ -21,10 +21,11 @@
          xref-transfer-info
          (struct-out entry))
 
-(define-struct entry (words    ; list of strings: main term, sub-term, etc.
-                      content  ; Scribble content to the index label
-                      tag      ; for generating a Scribble link
-                      desc))   ; further info that depends on the kind of index entry
+(define-struct entry
+  (words    ; list of strings: main term, sub-term, etc.
+   content  ; Scribble content to the index label
+   tag      ; for generating a Scribble link
+   desc))   ; further info that depends on the kind of index entry
 
 ;; Private:
 (define-struct xrefs (renderer ri))
@@ -36,18 +37,16 @@
 
 (define-namespace-anchor here)
 
-(define (load-xref sources 
+(define (load-xref sources
                    #:render% [render% (html:render-mixin render%)]
                    #:root [root-path #f])
-  (let* ([renderer (new render%
-                        [dest-dir (find-system-path 'temp-dir)])]
+  (let* ([renderer (new render% [dest-dir (find-system-path 'temp-dir)])]
          [ci (send renderer collect null null)])
-    (for-each (lambda (src)
-                (parameterize ([current-namespace (namespace-anchor->empty-namespace here)])
-                  (let ([v (src)])
-                    (when v
-                      (send renderer deserialize-info v ci #:root root-path)))))
-              sources)
+    (for ([src sources])
+      (parameterize ([current-namespace
+                      (namespace-anchor->empty-namespace here)])
+        (let ([v (src)])
+          (when v (send renderer deserialize-info v ci #:root root-path)))))
     (make-xrefs renderer (send renderer resolve null null ci))))
 
 ;; ----------------------------------------
@@ -147,4 +146,3 @@
            ;; Try again with 'def:
            (xref-tag->index-entry xrefs (cons 'def (cdr tag)))]
           [else #f])))
-

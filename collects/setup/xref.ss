@@ -1,52 +1,45 @@
 #lang scheme/base
 
 (require scribble/xref
-         setup/getinfo
          scheme/fasl
+         scheme/path
+         "getinfo.ss"
          "private/path-utils.ss")
 
 (provide load-collections-xref)
 
 (define cached-xref #f)
 
-(define (get-dests dir)
-  (let* ([i (get-info/full dir)]
-         [scribblings (i 'scribblings)])
-    (map (lambda (d)
-           (and (not (and (list? d)
-                          ((length d) . > . 2)
-                          (pair? (list-ref d 2))
-                          (eq? (car (list-ref d 2)) 'omit)))
-                (pair? d)
-                (let* ([flags (if (pair? (cdr d)) (cadr d) null)]
-                       [name (if (and (pair? (cdr d)) (pair? (cddr d)) 
-                                      (pair? (cdddr d)))
-                                 (cadddr d)
-                                 (let-values ([(base name dir?) (split-path (car d))])
-                                   (path-replace-suffix name #"")))])
-                  (build-path
-                   (doc-path dir name flags)
-                   "out.sxref"))))
-         scribblings)))
+(define (get-dests)
+  (for*/list ([dir (find-relevant-directories '(scribblings))]
+              [d ((get-info/full dir) 'scribblings)])
+    (unless (and (list? d) (pair? d))
+      (error 'xref "bad scribblings entry: ~e" d))
+    (let* ([len   (length d)]
+           [flags (if (len . >= . 2) (cadr d) '())]
+           [name  (if (len . >= . 4)
+                    (cadddr d)
+                    (path->string (path-replace-suffix
+                                   (file-name-from-path (car d)) #"")))])
+      (and (not (and (len . >= . 3) (memq 'omit (caddr d))))
+           (let ([d (doc-path dir name flags #t)])
+             (and d (build-path d "out.sxref")))))))
+
+(define (get-reader-thunks)
+  (map (lambda (dest)
+         (lambda ()
+           (with-handlers ([exn:fail? (lambda (exn)
+                                        (fprintf (current-error-port)
+                                                 "WARNING: ~a\n"
+                                                 (if (exn? exn)
+                                                   (exn-message exn)
+                                                   (format "~e" exn)))
+                                        #f)])
+             (cadr (call-with-input-file* dest fasl->s-exp)))))
+       (filter values (get-dests))))
 
 (define (load-collections-xref [report-loading void])
   (or cached-xref
-      (begin
-        (report-loading)
-        (let* ([dests (map get-dests (find-relevant-directories '(scribblings)))]
-               [dests (filter values (apply append dests))])
-          (set! cached-xref
-                (load-xref (map (lambda (dest)
-                                  (lambda ()
-                                    (with-handlers ([exn:fail?
-                                                     (lambda (exn)
-                                                       (fprintf (current-error-port)
-                                                                "WARNING: ~a\n"
-                                                                (if (exn? exn)
-                                                                  (exn-message exn)
-                                                                  (format "~e" exn)))
-                                                       #f)])
-                                      (let ([r (call-with-input-file* dest fasl->s-exp)])
-                                        (cadr r)))))
-                                dests)))
-          cached-xref))))
+      (begin (report-loading)
+             (set! cached-xref (load-xref (get-reader-thunks)))
+             cached-xref)))
