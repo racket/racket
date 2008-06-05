@@ -558,6 +558,7 @@ TODO
                paragraph-start-position
                position-line
                position-paragraph
+               port-name-matches?
                release-snip
                reset-input-box
                reset-regions
@@ -700,6 +701,12 @@ TODO
                                                  (srcloc-column srcloc)
                                                  (srcloc-position srcloc)
                                                  (srcloc-span srcloc))]
+                                   [(port-name-matches? (srcloc-source srcloc))
+                                    (make-srcloc this
+                                                 (srcloc-line srcloc)
+                                                 (srcloc-column srcloc)
+                                                 (srcloc-position srcloc)
+                                                 (srcloc-span srcloc))]
                                    [(unsaved-editor? (srcloc-source srcloc))
                                     (make-srcloc (unsaved-editor-editor (srcloc-source srcloc))
                                                  (srcloc-line srcloc)
@@ -710,6 +717,7 @@ TODO
                                locs)))]
                [locs (cleanup-locs raw-locs)]
                [error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows))])
+          
           (reset-highlighting)
           
           (set! error-ranges locs)
@@ -747,7 +755,7 @@ TODO
                  [first-start (and first-loc (- (srcloc-position first-loc) 1))]
                  [first-span (and first-loc (srcloc-span first-loc))])
             
-            (when first-loc
+            (when (and first-loc first-start first-span)
               (let ([first-finish (+ first-start first-span)])
                 (when (eq? first-file definitions-text) ;; only move set the cursor in the defs window
                   (send first-file set-position first-start first-start))

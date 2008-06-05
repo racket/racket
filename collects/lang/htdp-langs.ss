@@ -968,7 +968,8 @@
                                                [source (car cms)]
                                                [pos (cadr cms)]
                                                [span (cddr cms)])
-                                          (if (path? source)
+                                          (if (or (path? source)
+                                                  (symbol? source))
                                               (list (make-srcloc source #f #f pos span))
                                               (loop (cdr cms))))]))
                               '()))]
@@ -989,7 +990,7 @@
         (let ([source (syntax-source source-stx)]
               [start-position (syntax-position source-stx)]
               [span (syntax-span source-stx)])
-          (if (and (path? source)
+          (if (and (or (symbol? source) (path? source))
                    (number? start-position)
                    (number? span))
               (with-syntax ([expr expr]
