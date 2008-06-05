@@ -225,8 +225,9 @@
                                         other-tests 
                                         other-plt-tests
                                         )))
-  (when (getenv "PLT_TESTS")
-    (unless (parameterize ([current-output-port (open-output-string)])
-              (= 0 (run-tests)))
-      (error "Match Tests did not pass.")))
+  (if (getenv "PLT_TESTS")
+      (unless (parameterize ([current-output-port (open-output-string)])
+			    (= 0 (run-tests)))
+	      (error "Match Tests did not pass."))
+      (run-tests))
   )
