@@ -610,7 +610,7 @@ wx_xbm.@LTO@: xsrc/wx_xbm.cc
 
 # Mac -----------------------------------------
 
-MACXFLAG = -Wno-long-double
+MACXFLAG =
 
 precomp.@LTO@ : macxsrc/xform_precomp.h $(srcdir)/precomp.cxx
 	$(CXX) $(MACXFLAG) -Imacxsrc --dump-pch . -o precomp.@LTO@ -c $(srcdir)/precomp.cxx
