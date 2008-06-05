@@ -693,7 +693,7 @@ profile todo:
                    (< (send from-text get-snip-position snip) para-end-pos))
           (send to-text insert (send snip copy))
           (loop (send snip next))))
-      (send to-text highlight-range (- from-start 1) from-end (get-error-color) #f #f 'high)
+      (send to-text highlight-range (max 0 (- from-start 1)) from-end (get-error-color) #f #f 'high)
       to-text))
   
   ;; get-filename : debug-source -> string
