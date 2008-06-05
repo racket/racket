@@ -93,7 +93,9 @@ angle.
 
 @defproc[(text [s string?] [f (and/c number? positive?)] [c (unsyntax @tech{Color})]) Image]{
  Creates an image of the text @scheme[s] at point size @scheme[f] 
- and painted in color @scheme[c].}
+ and painted in color @scheme[c].
+ 
+ The string @scheme[s] must have at least one character.}
 
 @;-----------------------------------------------------------------------------
 @section[#:tag "properties"]{Basic Image Properties}
