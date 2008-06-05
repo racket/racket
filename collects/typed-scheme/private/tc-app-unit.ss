@@ -233,13 +233,18 @@
                #;(if (false-effect? eff)
                      (ret (-val #f) eff)
                      (ret (car rngs) eff)))
-             (let loop ([doms* doms] [rngs rngs] [rests rests])
+             (let loop ([doms* doms] [rngs rngs] [rests* rests])
                (cond [(null? doms*) 
                       (tc-error/expr 
                        #:return (ret (Un))
-                       "no function domain matched - domains were: ~a arguments were ~a" doms argtypes)]
-                     [(subtypes/varargs argtypes (car doms*) (car rests)) (ret (car rngs))]
-                     [else (loop (cdr doms*) (cdr rngs) (cdr rests))])))]
+                       "no function domain matched - domains were:~n~a~narguments were ~a" 
+                       (stringify
+                        (for/list ([d doms] [r rests])
+                          (format "~a ~a*"(stringify d) r))
+                        "\n")
+                       argtypes)]
+                     [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
+                     [else (loop (cdr doms*) (cdr rngs) (cdr rests*))])))]
         [(and rft (tc-result: (Poly: vars (Function: (list (arr: doms rngs #f thn-effs els-effs) ...)))))
          ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
          ;(printf "ftype again:    ~a~n" ftype)

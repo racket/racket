@@ -478,6 +478,9 @@
      
      [exit (-> (Un))]
      
+     [module->namespace (-> -Sexp -Namespace)]
+     [current-namespace (-Param -Namespace -Namespace)]
+     
      ;; syntax operations
      
      [expand (-> (-Syntax Univ) (-Syntax Univ))]

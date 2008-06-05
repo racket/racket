@@ -118,6 +118,7 @@
               (free-identifier=? #'head #'require)
               (free-identifier=? #'head #'provide)
               (free-identifier=? #'head #'begin)
+              (void? type)
               (type-equal? -Void (tc-result-t type)))
           body2]
          ;; construct code to print the type
