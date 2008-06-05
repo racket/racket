@@ -370,8 +370,8 @@ A parameter that determines a list of collection directories to prefix
 @scheme[current-library-collection-paths] in an evaluator. This
 parameter is useful for cases when you want to test code using an
 alternate, test-friendly version of a collection, for example, testing
-code that uses GUI (like the @schememodname[htdp/world] teachpack) can
-be done using a fake library that provides the same interface but no
+code that uses a GUI (like the @scheme[htdp/world] teachpack) can be
+done using a fake library that provides the same interface but no
 actual interaction. The default is @scheme[null].}
 
 

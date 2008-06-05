@@ -92,7 +92,7 @@
              s)
         (begin (setup-printf
                 "WARNING"
-                "bad 'scribblings info: ~e from: ~e" s dir)
+                "bad 'scribblings info: ~e from: ~e" (i 'scribblings) dir)
                null))))
   (define docs
     (let* ([dirs (find-relevant-directories '(scribblings))]

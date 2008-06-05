@@ -4,6 +4,8 @@
 (define mzscheme-launcher-names '("swindle"))
 (define mzscheme-launcher-flags '(("-li" "swindle")))
 
+(define scribblings '(("swindle.scrbl" ())))
+
 ;; This simple interface is not enough, use tool.ss instead
 ;; (define drscheme-language-modules
 ;;   '(("swindle.ss" "swindle")
