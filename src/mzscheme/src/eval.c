@@ -4672,8 +4672,11 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
     }
   }
 
-  if (genv->rename_set)
+  if (genv->rename_set) {
     form = scheme_add_rename(form, genv->rename_set);
+    /* this "phase shift" just attaches the namespace's module registry: */
+    form = scheme_stx_phase_shift(form, 0, NULL, NULL, genv->export_registry);
+  }
 
   return form;
 }
