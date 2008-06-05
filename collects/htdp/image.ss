@@ -11,11 +11,13 @@ plt/collects/tests/mzscheme/image-test.ss
          mzlib/class
          (lib "cache-image-snip.ss" "mrlib")
          mzlib/math
+	 lang/prim
          (lib "posn.ss" "lang")
          (lib "imageeq.ss" "lang" "private")
          "error.ss")
 
-(provide image-width
+(provide-primitives
+         image-width
          image-height
          overlay
          overlay/xy
