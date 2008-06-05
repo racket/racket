@@ -610,10 +610,8 @@ wx_xbm.@LTO@: xsrc/wx_xbm.cc
 
 # Mac -----------------------------------------
 
-MACXFLAG =
-
 precomp.@LTO@ : macxsrc/xform_precomp.h $(srcdir)/precomp.cxx
-	$(CXX) $(MACXFLAG) -Imacxsrc --dump-pch . -o precomp.@LTO@ -c $(srcdir)/precomp.cxx
+	$(CXX) -Imacxsrc --dump-pch . -o precomp.@LTO@ -c $(srcdir)/precomp.cxx
 	touch precomp.@LTO@
 
 WXPRECOMPDIR = .
@@ -622,152 +620,152 @@ MACPRECOMPDEP = @WXPRECOMP@
 MACUSEPRECOMP = @USE_WXPRECOMP@
 
 mwb_item.@LTO@: macxsrc/wb_item.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_item.@LTO@ macxsrc/wb_item.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_item.@LTO@ macxsrc/wb_item.cc
 mwb_panel.@LTO@: macxsrc/wb_panel.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_panel.@LTO@ macxsrc/wb_panel.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_panel.@LTO@ macxsrc/wb_panel.cc
 mwb_timer.@LTO@: macxsrc/wb_timer.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_timer.@LTO@ macxsrc/wb_timer.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_timer.@LTO@ macxsrc/wb_timer.cc
 mwb_frame.@LTO@: macxsrc/wb_frame.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_frame.@LTO@ macxsrc/wb_frame.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_frame.@LTO@ macxsrc/wb_frame.cc
 mwb_list.@LTO@: macxsrc/wb_list.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_list.@LTO@ macxsrc/wb_list.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_list.@LTO@ macxsrc/wb_list.cc
 mPSDC.@LTO@: macxsrc/PSDC.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mPSDC.@LTO@ macxsrc/PSDC.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mPSDC.@LTO@ macxsrc/PSDC.cc
 mwb_types.@LTO@: macxsrc/wb_types.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_types.@LTO@ macxsrc/wb_types.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_types.@LTO@ macxsrc/wb_types.cc
 mwb_canvs.@LTO@: macxsrc/wb_canvs.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_canvs.@LTO@ macxsrc/wb_canvs.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_canvs.@LTO@ macxsrc/wb_canvs.cc
 mwb_gdi.@LTO@: macxsrc/wb_gdi.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_gdi.@LTO@ macxsrc/wb_gdi.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_gdi.@LTO@ macxsrc/wb_gdi.cc
 mwb_main.@LTO@: macxsrc/wb_main.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_main.@LTO@ macxsrc/wb_main.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_main.@LTO@ macxsrc/wb_main.cc
 mwb_utils.@LTO@: macxsrc/wb_utils.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_utils.@LTO@ macxsrc/wb_utils.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_utils.@LTO@ macxsrc/wb_utils.cc
 mwb_data.@LTO@: macxsrc/wb_data.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_data.@LTO@ macxsrc/wb_data.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_data.@LTO@ macxsrc/wb_data.cc
 mwb_hash.@LTO@: macxsrc/wb_hash.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_hash.@LTO@ macxsrc/wb_hash.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_hash.@LTO@ macxsrc/wb_hash.cc
 mwb_stdev.@LTO@: macxsrc/wb_stdev.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_stdev.@LTO@ macxsrc/wb_stdev.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_stdev.@LTO@ macxsrc/wb_stdev.cc
 mwb_win.@LTO@: macxsrc/wb_win.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_win.@LTO@ macxsrc/wb_win.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_win.@LTO@ macxsrc/wb_win.cc
 mwb_dc.@LTO@: macxsrc/wb_dc.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_dc.@LTO@ macxsrc/wb_dc.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_dc.@LTO@ macxsrc/wb_dc.cc
 mwb_sysev.@LTO@: macxsrc/wb_sysev.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_sysev.@LTO@ macxsrc/wb_sysev.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_sysev.@LTO@ macxsrc/wb_sysev.cc
 mwb_dialg.@LTO@: macxsrc/wb_dialg.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_dialg.@LTO@ macxsrc/wb_dialg.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_dialg.@LTO@ macxsrc/wb_dialg.cc
 mwb_obj.@LTO@: macxsrc/wb_obj.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_obj.@LTO@ macxsrc/wb_obj.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwb_obj.@LTO@ macxsrc/wb_obj.cc
 mxfspline.@LTO@: macxsrc/xfspline.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mxfspline.@LTO@ macxsrc/xfspline.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mxfspline.@LTO@ macxsrc/xfspline.cc
 mwx_choic.@LTO@: macxsrc/wx_choic.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_choic.@LTO@ macxsrc/wx_choic.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_choic.@LTO@ macxsrc/wx_choic.cc
 mwx_main.@LTO@: macxsrc/wx_main.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_main.@LTO@ macxsrc/wx_main.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_main.@LTO@ macxsrc/wx_main.cc
 mwx_clipb.@LTO@: macxsrc/wx_clipb.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_clipb.@LTO@ macxsrc/wx_clipb.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_clipb.@LTO@ macxsrc/wx_clipb.cc
 mwx_menu.@LTO@: macxsrc/wx_menu.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_menu.@LTO@ macxsrc/wx_menu.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_menu.@LTO@ macxsrc/wx_menu.cc
 mwx_messg.@LTO@: macxsrc/wx_messg.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_messg.@LTO@ macxsrc/wx_messg.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_messg.@LTO@ macxsrc/wx_messg.cc
 mwxBorder.@LTO@: macxsrc/wxBorder.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxBorder.@LTO@ macxsrc/wxBorder.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxBorder.@LTO@ macxsrc/wxBorder.cc
 mwx_dc.@LTO@: macxsrc/wx_dc.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dc.@LTO@ macxsrc/wx_dc.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dc.@LTO@ macxsrc/wx_dc.cc
 mwxBorderArea.@LTO@: macxsrc/wxBorderArea.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxBorderArea.@LTO@ macxsrc/wxBorderArea.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxBorderArea.@LTO@ macxsrc/wxBorderArea.cc
 mwx_dccan1.@LTO@: macxsrc/wx_dccan1.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan1.@LTO@ macxsrc/wx_dccan1.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan1.@LTO@ macxsrc/wx_dccan1.cc
 mwx_mnuit.@LTO@: macxsrc/wx_mnuit.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_mnuit.@LTO@ macxsrc/wx_mnuit.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_mnuit.@LTO@ macxsrc/wx_mnuit.cc
 mwxButtonBorder.@LTO@: macxsrc/wxButtonBorder.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxButtonBorder.@LTO@ macxsrc/wxButtonBorder.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxButtonBorder.@LTO@ macxsrc/wxButtonBorder.cc
 mwx_dccan2.@LTO@: macxsrc/wx_dccan2.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan2.@LTO@ macxsrc/wx_dccan2.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan2.@LTO@ macxsrc/wx_dccan2.cc
 mwx_dccan3.@LTO@: macxsrc/wx_dccan3.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan3.@LTO@ macxsrc/wx_dccan3.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dccan3.@LTO@ macxsrc/wx_dccan3.cc
 mwx_panel.@LTO@: macxsrc/wx_panel.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_panel.@LTO@ macxsrc/wx_panel.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_panel.@LTO@ macxsrc/wx_panel.cc
 mwxLabelArea.@LTO@: macxsrc/wxLabelArea.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxLabelArea.@LTO@ macxsrc/wxLabelArea.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxLabelArea.@LTO@ macxsrc/wxLabelArea.cc
 mwx_dcmem.@LTO@: macxsrc/wx_dcmem.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dcmem.@LTO@ macxsrc/wx_dcmem.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dcmem.@LTO@ macxsrc/wx_dcmem.cc
 mwx_print.@LTO@: macxsrc/wx_print.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_print.@LTO@ macxsrc/wx_print.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_print.@LTO@ macxsrc/wx_print.cc
 mwxMacDC.@LTO@: macxsrc/wxMacDC.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxMacDC.@LTO@ macxsrc/wxMacDC.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxMacDC.@LTO@ macxsrc/wxMacDC.cc
 mwx_dcpr1.@LTO@: macxsrc/wx_dcpr1.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dcpr1.@LTO@ macxsrc/wx_dcpr1.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dcpr1.@LTO@ macxsrc/wx_dcpr1.cc
 mwx_rbox.@LTO@: macxsrc/wx_rbox.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_rbox.@LTO@ macxsrc/wx_rbox.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_rbox.@LTO@ macxsrc/wx_rbox.cc
 mwx_rbut.@LTO@: macxsrc/wx_rbut.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_rbut.@LTO@ macxsrc/wx_rbut.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_rbut.@LTO@ macxsrc/wx_rbut.cc
 mwx_sbar.@LTO@: macxsrc/wx_sbar.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_sbar.@LTO@ macxsrc/wx_sbar.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_sbar.@LTO@ macxsrc/wx_sbar.cc
 mwx_dialg.@LTO@: macxsrc/wx_dialg.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dialg.@LTO@ macxsrc/wx_dialg.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_dialg.@LTO@ macxsrc/wx_dialg.cc
 mwx_screen.@LTO@: macxsrc/wx_screen.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_screen.@LTO@ macxsrc/wx_screen.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_screen.@LTO@ macxsrc/wx_screen.cc
 mwxRectBorder.@LTO@: macxsrc/wxRectBorder.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxRectBorder.@LTO@ macxsrc/wxRectBorder.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxRectBorder.@LTO@ macxsrc/wxRectBorder.cc
 mwx_slidr.@LTO@: macxsrc/wx_slidr.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_slidr.@LTO@ macxsrc/wx_slidr.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_slidr.@LTO@ macxsrc/wx_slidr.cc
 mwxScroll.@LTO@: macxsrc/wxScroll.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScroll.@LTO@ macxsrc/wxScroll.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScroll.@LTO@ macxsrc/wxScroll.cc
 mwx_frame.@LTO@: macxsrc/wx_frame.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_frame.@LTO@ macxsrc/wx_frame.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_frame.@LTO@ macxsrc/wx_frame.cc
 mwxScrollArea.@LTO@: macxsrc/wxScrollArea.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScrollArea.@LTO@ macxsrc/wxScrollArea.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScrollArea.@LTO@ macxsrc/wxScrollArea.cc
 mwx_gauge.@LTO@: macxsrc/wx_gauge.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gauge.@LTO@ macxsrc/wx_gauge.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gauge.@LTO@ macxsrc/wx_gauge.cc
 mwxScrollData.@LTO@: macxsrc/wxScrollData.cc
-	$(CXX) $(MACXFLAG) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScrollData.@LTO@ macxsrc/wxScrollData.cc
+	$(CXX) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwxScrollData.@LTO@ macxsrc/wxScrollData.cc
 mwx_gdi.@LTO@: macxsrc/wx_gdi.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gdi.@LTO@ macxsrc/wx_gdi.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gdi.@LTO@ macxsrc/wx_gdi.cc
 mwx_app.@LTO@: macxsrc/wx_app.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_app.@LTO@ macxsrc/wx_app.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_app.@LTO@ macxsrc/wx_app.cc
 mwx_util.@LTO@: macxsrc/wx_util.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_util.@LTO@ macxsrc/wx_util.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_util.@LTO@ macxsrc/wx_util.cc
 mwx_area.@LTO@: macxsrc/wx_area.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_area.@LTO@ macxsrc/wx_area.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_area.@LTO@ macxsrc/wx_area.cc
 mwx_win.@LTO@: macxsrc/wx_win.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_win.@LTO@ macxsrc/wx_win.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_win.@LTO@ macxsrc/wx_win.cc
 mwx_buttn.@LTO@: macxsrc/wx_buttn.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_buttn.@LTO@ macxsrc/wx_buttn.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_buttn.@LTO@ macxsrc/wx_buttn.cc
 mwx_item.@LTO@: macxsrc/wx_item.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_item.@LTO@ macxsrc/wx_item.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_item.@LTO@ macxsrc/wx_item.cc
 mwximgfil.@LTO@: macxsrc/wximgfil.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwximgfil.@LTO@ macxsrc/wximgfil.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwximgfil.@LTO@ macxsrc/wximgfil.cc
 mwx_canvs.@LTO@: macxsrc/wx_canvs.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_canvs.@LTO@ macxsrc/wx_canvs.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_canvs.@LTO@ macxsrc/wx_canvs.cc
 mwx_lbox.@LTO@: macxsrc/wx_lbox.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_lbox.@LTO@ macxsrc/wx_lbox.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_lbox.@LTO@ macxsrc/wx_lbox.cc
 mwx_check.@LTO@: macxsrc/wx_check.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_check.@LTO@ macxsrc/wx_check.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_check.@LTO@ macxsrc/wx_check.cc
 mwx_tabc.@LTO@: macxsrc/wx_tabc.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_tabc.@LTO@ macxsrc/wx_tabc.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_tabc.@LTO@ macxsrc/wx_tabc.cc
 mwx_gbox.@LTO@: macxsrc/wx_gbox.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gbox.@LTO@ macxsrc/wx_gbox.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_gbox.@LTO@ macxsrc/wx_gbox.cc
 mwx_mac_utils.@LTO@: macxsrc/wx_mac_utils.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_mac_utils.@LTO@ macxsrc/wx_mac_utils.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_mac_utils.@LTO@ macxsrc/wx_mac_utils.cc
 
 mwx_bmp.@LTO@: macxsrc/wx_bmp.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_bmp.@LTO@ macxsrc/wx_bmp.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_bmp.@LTO@ macxsrc/wx_bmp.cc
 mwx_image.@LTO@: macxsrc/wx_image.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_image.@LTO@ macxsrc/wx_image.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_image.@LTO@ macxsrc/wx_image.cc
 mwx_xbm.@LTO@: macxsrc/wx_xbm.cc $(MACPRECOMPDEP)
-	$(CXX) $(MACXFLAG) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_xbm.@LTO@ macxsrc/wx_xbm.cc
+	$(CXX) $(MACUSEPRECOMP) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o mwx_xbm.@LTO@ macxsrc/wx_xbm.cc
 
 simpledrop.@LTO@: macxsrc/simpledrop.cc
-	$(CXX) $(MACXFLAG) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o simpledrop.@LTO@ macxsrc/simpledrop.cc
+	$(CXX) -DGC2_JUST_MACROS $(GCPREINC) -c $(XXPOSTFLAGS) -o simpledrop.@LTO@ macxsrc/simpledrop.cc
 
 wx_xt_PRECOMPDEP =
 wx_mac_PRECOMPDEP =$(MACPRECOMPDEP)
 PRECOMPDEP = $(@WXVARIANT@_PRECOMPDEP)
 
 wx_xt_EXTRAFLAGS =
-wx_mac_EXTRAFLAGS =$(MACXFLAG) $(MACUSEPRECOMP) -Imacxsrc
+wx_mac_EXTRAFLAGS = $(MACUSEPRECOMP) -Imacxsrc
 EXTRAFLAGS = $(@WXVARIANT@_EXTRAFLAGS)
 
 wx_media.@LTO@: xsrc/wx_media.cc $(PRECOMPDEP)
