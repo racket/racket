@@ -1303,7 +1303,7 @@ profile todo:
       (define/public (get-sort-mode) sort-mode)
       (define/public (set-sort-mode mode) (set! sort-mode mode))
       
-      (inherit get-frame is-current-tab?)
+      (inherit get-frame is-current-tab? get-defs)
       ;; profile-info : (listof hashtable[symbol -o> prof-info])
       (define profile-info '())
       (define/public (add-profile-info ht) (set! profile-info (cons ht profile-info)))
@@ -1325,7 +1325,7 @@ profile todo:
         (set! profile-info '()))
       
       (define/public (refresh-profile) 
-        (send profile-info-text refresh-profile profile-info))
+        (send profile-info-text refresh-profile profile-info (get-defs)))
       
       ;; can-show-profile? : -> boolean
       ;; indicates if there is any profiling information to be shown.
@@ -1563,10 +1563,10 @@ profile todo:
       ;; removes the profile highlighting
       (field [clear-old-results void])
       
-      ;; refresh-profile : (listof hashtable[...]) -> void
+      ;; refresh-profile : (listof hashtable[...]) text% -> void
       ;; does the work to erase any existing profile info
       ;; and make new profiling info.
-      (define/public (refresh-profile profile-info)
+      (define/public (refresh-profile profile-info definitions-text)
         (begin-edit-sequence)
         (lock #f)
         (erase)
@@ -1595,11 +1595,12 @@ profile todo:
                [show-highlight
                 (λ (info)
                   (let* ([expr (prof-info-expr info)]
-                         [src (syntax-source expr)]
+                         [src (and (syntax-source expr)
+                                   (send definitions-text port-name-matches? (syntax-source expr))
+                                   definitions-text)]
                          [pos (syntax-position expr)]
                          [span (syntax-span expr)])
-                    (when (and src
-                               (is-a? src text:basic<%>)
+                    (when (and (is-a? src text:basic<%>)
                                (number? pos)
                                (number? span))
                       (unless (hash-ref in-edit-sequence src (λ () #f))
@@ -1721,6 +1722,7 @@ profile todo:
         (let ([canvas (get-canvas)])
           (when canvas
             (send canvas scroll-to 0 0 1 1 #t 'start))))
+      
       
       ;; top : number (listof X) -> (listof X)
       ;; extracts the first `n' elements from a list.
