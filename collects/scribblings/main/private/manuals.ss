@@ -30,10 +30,11 @@
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
 (define (make-start-page all?)
-  (let* ([dirs (find-relevant-directories '(scribblings))]
-         [infos (map get-info/full dirs)]
+  (let* ([recs (find-relevant-directory-records '(scribblings))]
+         [infos (map get-info/full (map directory-record-path recs))]
          [docs (append-map
-                (lambda (i dir)
+                (lambda (i rec)
+                  (define dir (directory-record-path rec))
                   (define s (and (or all? (in-main-collects? dir))
                                  (i 'scribblings)))
                   (if (not s)
@@ -66,16 +67,25 @@
                             ;; Priority label (not used):
                             ""
                             ;; Path
-                            (build-path dir (if (pair? d) (car d) "???"))))))
+                            (build-path dir (if (pair? d) (car d) "???"))
+                            ;; Spec
+                            (let ([spec (directory-record-spec rec)])
+                              (list* (car spec)
+                                     (if (pair? d) (car d) "UNKNOWN")
+                                     (if (eq? 'planet (car spec))
+                                         (list (append (cdr spec)
+                                                       (list (directory-record-maj rec)
+                                                             (list '= (directory-record-min rec)))))
+                                         (cdr spec))))))))
                      s)))
                 infos
-                dirs)]
+                recs)]
          [plain-line
           (lambda content
             (list (make-flow (list (make-paragraph content)))))]
          [line
-          (lambda (doc)
-            (plain-line (hspace 2) (other-manual doc #:underline? #f)))])
+          (lambda (spec)
+            (plain-line (hspace 2) (other-manual spec #:underline? #f)))])
     (define (contents renderer part resolve-info)
       (make-table
        #f
@@ -94,7 +104,7 @@
                   (make-element (if (string=? str "") "sepspace" "septitle")
                                 (list 'nbsp str))))
                (sort (map (lambda (doc)
-                            (list (cadr doc) (line (cadddr doc)) (caddr doc)))
+                            (list (cadr doc) (line (cadddr (cdr doc))) (caddr doc)))
                           docs)
                      (lambda (ad bd)
                        (if (= (car ad) (car bd))
