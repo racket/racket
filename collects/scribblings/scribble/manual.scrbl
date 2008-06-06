@@ -846,7 +846,7 @@ Produces an element for the @tech{decode}d @scheme[pre-content], and
 hyperlinks it to the definition of the content as established by
 @scheme[deftech]. The content's string form is normalized in the same
 way as for @scheme[deftech]. The @scheme[#:doc] argument supports
-cross-document referecnes, like in @scheme[secref].
+cross-document references, like in @scheme[secref].
 
 The hyperlink is relatively quiet, in that underlining in HTML output
 appears only when the mouse is moved over the term.
