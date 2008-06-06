@@ -158,7 +158,7 @@
                                 str
                                 (string-append str ".ss"))))
                      (,owner
-                      ,(car pkg+vers)
+                      ,(string-append (car pkg+vers) ".plt")
                       ,@(if (null? (cdr pkg+vers))
                             null
                             `(,(string->number (cadr pkg+vers))
