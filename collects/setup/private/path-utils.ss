@@ -11,7 +11,7 @@
 ;; user-doc-mode can be `false-if-missing' or `never'
 (define (doc-path dir name flags [user-doc-mode #f])
   (define (user-doc [sub #f])
-    (and (not (eq? 'never))
+    (and (not (eq? 'never user-doc-mode))
          (let ([d (find-user-doc-dir)])
            (and (or (not (eq? 'false-if-missing user-doc-mode))
                     (directory-exists? d))
