@@ -104,25 +104,14 @@
               (= 2 (length id/binding)))
          (let loop ([src (car id/binding)])
            (cond
-             [(path? src)
-              (if (complete-path? src)
-                (search (list src (cadr id/binding)))
-                (loop (path->complete-path src)))]
-             [(path-string? src)
-              (loop (path->complete-path src))]
-             [(resolved-module-path? src)
-              (let ([n (resolved-module-path-name src)])
-                (if (pair? n)
-                  (loop n)
-                  (search n)))]
-             [(module-path-index? src)
-              (loop (module-path-index-resolve src))]
-             [(module-path? src)
-              (loop (module-path-index-join src #f))]
-             [else
-              (raise-type-error 'xref-binding-definition->tag
-                                "list starting with module path, resolved module path, module path index, path, or string"
-                                src)]))]
+            [(module-path-index? src)
+             (search src)]
+            [(module-path? src)
+             (loop (module-path-index-join src #f))]
+            [else
+             (raise-type-error 'xref-binding-definition->tag
+                               "list starting with module path or module path index"
+                               src)]))]
         [else (raise-type-error 'xref-binding-definition->tag
                                 "identifier, 2-element list, or 7-element list"
                                 id/binding)]))]))

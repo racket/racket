@@ -11,7 +11,7 @@
 (define cached-xref #f)
 
 (define (get-dests)
-  (for*/list ([dir (find-relevant-directories '(scribblings))]
+  (for*/list ([dir (find-relevant-directories '(scribblings) 'all-available)]
               [d ((get-info/full dir) 'scribblings)])
     (unless (and (list? d) (pair? d))
       (error 'xref "bad scribblings entry: ~e" d))

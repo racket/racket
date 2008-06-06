@@ -1,7 +1,9 @@
 
 (module modcollapse mzscheme
   (require mzlib/list
+           scheme/string
            mzlib/contract
+           (only scheme/base regexp-split)
            "private/modhelp.ss")
 
   (define (collapse-module-path s relto-mp)
@@ -100,23 +102,94 @@
                                     (loop s2))))])
                (let ([m (regexp-match #rx"^(.*)/([^/]*)$" simpler)])
                  (if m
-                     `(lib ,(caddr m) ,(cadr m))
+                     (normalize-lib `(lib ,(caddr m) ,(cadr m)))
                      (error 'combine-relative-elements
                             "relative path escapes collection: ~s relative to ~s"
                             elements relto-mp))))))]
          [(eq? (car relto-mp) 'planet)
          (let ([pathstr (attach-to-relative-path-string
                          elements (cadr relto-mp))])
-           `(planet ,pathstr ,(caddr relto-mp)))]
+           (normalize-planet `(planet ,pathstr ,(caddr relto-mp))))]
         [else (error 'combine-relative-elements
                      "don't know how to deal with: ~s" relto-mp)]))
+
+    (define (normalize-lib s)
+      (if (null? (cddr s))
+          ;; single-string version:
+          (let ([e (cadr s)])
+            (cond
+             [(regexp-match? #rx"[.]" e)
+              ;; It has a suffix:
+              (if (regexp-match? #rx"/" e)
+                  ;; It has a path, so it's fine:
+                  s
+                  ;; No path, so add "mzlib/":
+                  `(lib ,(string-append "mzlib/" e)))]
+             [(regexp-match? #rx"/" e)
+              ;; It has a separator, so add a suffix:
+              `(lib ,(string-append e ".ss"))]
+             [else
+              ;; No separator or suffix, so add "/main.ss":
+             `(lib ,(string-append e "/main.ss"))]))
+          ;; multi-string version:
+          (if (regexp-match? #rx"[.]" (cadr s))
+              ;; there's a suffix, so we can collapse to a single string:
+              `(lib ,(string-join (append (cddr s) 
+                                          (list (cadr s)))
+                                  "/"))
+              ;; No suffix, so we must keep the old style:
+              s)))
+
+    (define (normalize-planet s)
+      (cond
+       [(symbol? (cadr s))
+        ;; normalize via string form:
+        (normalize-planet `(planet ,(symbol->string (cadr s))))]
+       [(null? (cddr s))
+        ;; normalize to long form:
+        (let* ([strs (regexp-split #rx"/" (cadr s))])
+          (let ([owner (car strs)]
+                [pkg+vers (regexp-split #rx":" (cadr strs))]
+                [path (cddr strs)])
+            `(planet ,(if (null? path)
+                          "main.ss"
+                          (let ([str (car (last-pair path))])
+                            (if (regexp-match? #rx"[.]" str)
+                                str
+                                (string-append str ".ss"))))
+                     (,owner
+                      ,(car pkg+vers)
+                      ,@(if (null? (cdr pkg+vers))
+                            null
+                            `(,(string->number (cadr pkg+vers))
+                              ,(let ([vers (caddr pkg+vers)])
+                                 (cond
+                                  [(regexp-match? #rx"<=" vers)
+                                   `(- ,(string->number (substring vers 2)))]
+                                  [(regexp-match? #rx">=" vers)
+                                   `(+ ,(string->number (substring vers 2)))]
+                                  [(regexp-match? #rx"=" vers)
+                                   (string->number (substring vers 1))]
+                                  [(regexp-match #rx"(.*)-(.*)" vers)
+                                   => (lambda (m)
+                                        `(,(string->number (cadr m))
+                                          ,(string->number (caddr m))))]
+                                  [else (error 'collapse-module-path
+                                               "confused when normalizing planet path: ~e"
+                                               s)])))))
+                     ,@(if (null? path)
+                           null
+                           (reverse (cdr (reverse path)))))))]
+       [else 
+        ;; Long form is the normal form:
+        s]))
 
     (cond [(string? s)
            ;; Parse Unix-style relative path string
            (combine-relative-elements (explode-relpath-string s))]
           [(symbol? s)
            ;; Convert to `lib' form:
-           `(lib ,(symbol->string s))]
+           (normalize-lib `(lib ,(symbol->string s)))]
           [(and (or (not (pair? s)) (not (list? s))) (not (path? s)))
            #f]
           [(or (path? s) (eq? (car s) 'file))
@@ -128,8 +201,8 @@
                    (cond [(eq? base 'relative)
                           (combine-relative-elements (cons name elements))]
                          [else (loop base (cons name elements))])))))]
-          [(eq? (car s) 'lib) s]
-          [(eq? (car s) 'planet) s]
+          [(eq? (car s) 'lib) (normalize-lib s)]
+          [(eq? (car s) 'planet) (normalize-planet s)]
           [(eq? (car s) 'quote) s]
           [else #f]))
 

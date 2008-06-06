@@ -675,8 +675,8 @@ for making @filepath{.plt} archives:}
   Returns @scheme[#t] unless @scheme[p], after stripping its
   directory path and converting to a byte string, matches one of the
   following regular expressions: @litchar{^CVS$}, @litchar{^[.]svn$},
-  @litchar{^[.]cvsignore}, @litchar{^compiled$}, @litchar{~$}, @litchar{^#.*#$},
-  @litchar{^[.]#}, or @litchar{[.]plt$}.}
+  @litchar{^[.]cvsignore}, @litchar{^compiled$}, @litchar{^doc}, 
+  @litchar{~$}, @litchar{^#.*#$}, @litchar{^[.]#}, or @litchar{[.]plt$}.}
 
 @defproc[(mztar (path path-string?)
                 (output output-port?)

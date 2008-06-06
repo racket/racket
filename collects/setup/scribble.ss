@@ -20,7 +20,7 @@
 
 (define verbose (make-parameter #t))
 
-(define-struct doc (src-dir src-file dest-dir flags under-main? category))
+(define-struct doc (src-dir src-spec src-file dest-dir flags under-main? category))
 (define-struct info (doc sci provides undef searches deps
                      build? time out-time need-run?
                      need-in-write? need-out-write?
@@ -55,7 +55,7 @@
   (define (scribblings-flag? sym)
     (memq sym '(main-doc main-doc-root user-doc-root user-doc multi-page
                 depends-all depends-all-main no-depend-on always-run)))
-  (define (validate-scribblings-infos infos dir)
+  (define (validate-scribblings-infos infos)
     (define (validate path [flags '()] [cat '(library)] [name #f])
       (and (string? path) (relative-path? path)
            (list? flags) (andmap scribblings-flag? flags)
@@ -74,8 +74,9 @@
                                   (apply validate i)))
                            infos)])
            (and (not (memq #f infos)) infos))))
-  (define (get-docs i dir)
-    (let ([s (validate-scribblings-infos (i 'scribblings) dir)])
+  (define (get-docs i rec)
+    (let ([s (validate-scribblings-infos (i 'scribblings))]
+          [dir (directory-record-path rec)])
       (if s
         (map (lambda (d)
                (let* ([flags (cadr d)]
@@ -86,6 +87,14 @@
                             (or (memq 'main-doc flags)
                                 (pair? (path->main-collects-relative dir))))])
                  (make-doc dir
+                           (let ([spec (directory-record-spec rec)])
+                             (list* (car spec)
+                                    (car d)
+                                    (if (eq? 'planet (car spec))
+                                        (list (append (cdr spec)
+                                                      (list (directory-record-maj rec)
+                                                            (list '= (directory-record-min rec)))))
+                                        (cdr spec))))
                            (build-path dir (car d))
                            (doc-path dir (cadddr d) flags)
                            flags under-main? (caddr d))))
@@ -95,9 +104,9 @@
                 "bad 'scribblings info: ~e from: ~e" (i 'scribblings) dir)
                null))))
   (define docs
-    (let* ([dirs (find-relevant-directories '(scribblings))]
-           [infos (map get-info/full dirs)])
-      (filter-user-docs (append-map get-docs infos dirs) make-user?)))
+    (let* ([recs (find-relevant-directory-records '(scribblings) 'all-available)]
+           [infos (map get-info/full (map directory-record-path recs))])
+      (filter-user-docs (append-map get-docs infos recs) make-user?)))
   (define-values (main-docs user-docs) (partition doc-under-main? docs))
   (define (can-build*? docs) (can-build? only-dirs docs))
   (define auto-main? (and auto-start-doc? (ormap can-build*? main-docs)))
@@ -396,7 +405,7 @@
          (lambda ()
            (parameterize ([current-directory (doc-src-dir doc)])
              (let* ([v (ensure-doc-prefix
-                        (dynamic-require-doc (doc-src-file doc))
+                        (dynamic-require-doc (doc-src-spec doc))
                         (doc-src-file doc))]
                     [dest-dir (pick-dest latex-dest doc)]
                     [ci (send renderer collect (list v) (list dest-dir))]
@@ -459,7 +468,7 @@
      (parameterize ([current-directory (doc-src-dir doc)])
        (let* ([v (ensure-doc-prefix (render-time 
                                      "load"
-                                     (dynamic-require-doc (doc-src-file doc)))
+                                     (dynamic-require-doc (doc-src-spec doc)))
                                     (doc-src-file doc))]
               [dest-dir (pick-dest latex-dest doc)]
               [ci (render-time "collect" 
@@ -524,7 +533,7 @@
   (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
     (thunk)))
 
-(define (dynamic-require-doc path)
+(define (dynamic-require-doc mod-path)
   ;; Use a separate namespace so that we don't end up with all the
   ;;  documentation loaded at once.
   ;; Use a custodian to compensate for examples executed during the build
@@ -540,7 +549,7 @@
       ;;  hard-wiring the "manual.ss" library:
       (namespace-attach-module ns 'scribble/manual p)
       (parameterize ([current-namespace p])
-        (call-in-nested-thread (lambda () (dynamic-require path 'doc)))))))
+        (call-in-nested-thread (lambda () (dynamic-require mod-path 'doc)))))))
 
 (define (write- info name sel)
   (let* ([doc (info-doc info)]

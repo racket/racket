@@ -77,7 +77,7 @@
     (let* ([key (and id-element-cache
                      (let ([b (identifier-label-binding c)])
                        (vector (syntax-e c)
-                               (module-path-index-resolve (caddr b))
+                               (module-path-index->taglet (caddr b))
                                (cadddr b)
                                (list-ref b 5))))])
       (or (and key

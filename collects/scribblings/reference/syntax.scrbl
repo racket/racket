@@ -206,16 +206,19 @@ Legal only in a @tech{module begin context}, and handled by the
                             (planet id)
                             (planet string)
                             (planet rel-string
-                                    (user-string pkg-string vers ...)
+                                    (user-string pkg-string vers)
                                     rel-string ...)]
                [id-maybe-renamed id
                                  [orig-id bind-id]]
                [phase-level exact-integer #f]
-               [vers nat
-                     (nat nat)
-                     (= nat)
-                     (+ nat)
-                     (- nat)])]{
+               [vers code:blank
+                     nat
+                     (code:line nat minor-vers)]
+               [minor-vers nat
+                           (nat nat)
+                           ((unsyntax (schemeidfont "=")) nat)
+                           ((unsyntax (schemeidfont "+")) nat)
+                           ((unsyntax (schemeidfont "-")) nat)])]{
 
 In a @tech{top-level context}, @scheme[require] instantiates modules
 (see @secref["module-eval-model"]). In a @tech{module context},
@@ -374,7 +377,7 @@ corresponds to the default @tech{module name resolver}.
 
  @defsubform*[((planet id)
                (planet string)
-               (planet rel-string (user-string pkg-string vers ...)
+               (planet rel-string (user-string pkg-string vers)
                        rel-string ...))]{
 
  Specifies a library available via the @PLaneT server.
@@ -415,8 +418,18 @@ corresponds to the default @tech{module name resolver}.
 
  In the more general last form of a @scheme[planet] module path, the
  @scheme[rel-string]s are similar to the @scheme[lib] form, except
- that the @scheme[(user-string pkg-string vers ...)]  names a
- @|PLaneT|-based package instead of a @tech{collection}.}
+ that the @scheme[(user-string pkg-string vers)] names a
+ @|PLaneT|-based package instead of a @tech{collection}. A version
+ specification can include an optional major and minor version, where
+ the minor version can be a specific number or a constraint:
+ @scheme[(_nat _nat)] specifies an inclusive range, @scheme[((unsyntax
+ (schemeidfont "=")) _nat)] specifies an exact match,
+ @scheme[((unsyntax (schemeidfont "+")) _nat)] specifies a minimum
+ version and is equivalent to just @scheme[_nat], and
+ @scheme[((unsyntax (schemeidfont "-")) _nat)] specifies a maximum
+ version. The @schemeidfont{=}, @schemeidfont{+}, and @schemeidfont{-}
+ identifiers in a minor-version constraint are recognized
+ symbolically.}
 
 No identifier can be bound multiple times in a given @tech{phase
 level} by an import, unless all of the bindings refer to the same

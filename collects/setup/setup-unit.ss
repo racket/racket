@@ -187,7 +187,9 @@
                     "ignoring `compile-subcollections' entry in info ~a\n"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
-    (and (not (or (regexp-match? #rx"^[.]" basename) (equal? "compiled" basename)
+    (and (not (or (regexp-match? #rx"^[.]" basename) 
+                  (equal? "compiled" basename)
+                  (equal? "doc" basename)
                   (eq? 'all (info 'compile-omit-paths void))))
          (make-cc collection path
                   (if name (string-append path-name " (" name ")") path-name)

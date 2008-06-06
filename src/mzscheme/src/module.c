@@ -2054,7 +2054,7 @@ int scheme_is_module_path(Scheme_Object *obj)
       }
     } else if (SAME_OBJ(SCHEME_CAR(obj), planet_symbol)) {
       Scheme_Object *a, *subs;
-      int len;
+      int len, counter;
 
       len = scheme_proper_list_length(obj);
 
@@ -2096,11 +2096,15 @@ int scheme_is_module_path(Scheme_Object *obj)
       if (!ok_planet_string(a))
         return 0;
 
+      /* planet allows a major and minor version number: */
+      counter = 0;
       for (obj = SCHEME_CDR(obj); !SCHEME_NULLP(obj); obj = SCHEME_CDR(obj)) {
+        if (counter == 2)
+          return 0;
         a = SCHEME_CAR(obj);
         if (ok_planet_number(a)) {
           /* ok */
-        } else if (SCHEME_PAIRP(a)) {
+        } else if ((counter == 1) && SCHEME_PAIRP(a)) {
           if (scheme_proper_list_length(a) != 2)
             return 0;
           if (ok_planet_number(SCHEME_CAR(a))) {
@@ -2127,6 +2131,7 @@ int scheme_is_module_path(Scheme_Object *obj)
             return 0;
         } else
           return 0;
+        counter++;
       }
 
       for (; !SCHEME_NULLP(subs); subs = SCHEME_CDR(subs)) {

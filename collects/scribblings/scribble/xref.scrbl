@@ -46,9 +46,7 @@ get all cross-reference information for installed documentation.}
 @defproc[(xref-binding->definition-tag [xref xref?]
                                        [binding (or/c identifier?
                                                       (list/c (or/c module-path?
-                                                                    module-path-index?
-                                                                    path?
-                                                                    resolved-module-path?)
+                                                                    module-path-index?)
                                                               symbol?)
                                                       (listof module-path-index?
                                                               symbol?

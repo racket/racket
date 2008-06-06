@@ -394,12 +394,8 @@
                         (and (checker id) lib)))
                     (or source-libs null))
              (and (pair? libs) (car libs)))])
-    (and lib (let ([p (resolved-module-path-name
-                       (module-path-index-resolve
-                        (module-path-index-join lib #f)))])
-               (if (path? p)
-                 (intern-taglet (path->main-collects-relative p))
-                 p)))))
+    (and lib (module-path-index->taglet
+              (module-path-index-join lib #f)))))
 
 (define (id-to-target-maker id dep?)
   (*id-to-target-maker 'def id dep?))
@@ -452,10 +448,8 @@
        (lambda () (car content))))))
 
 (define (make-binding-redirect-elements mod-path redirects)
-  (let ([taglet (path->main-collects-relative
-                 (resolved-module-path-name
-                  (module-path-index-resolve
-                   (module-path-index-join mod-path #f))))])
+  (let ([taglet (module-path-index->taglet 
+                 (module-path-index-join mod-path #f))])
     (make-element
      #f
      (map
@@ -1980,11 +1974,7 @@
 (define (id-info id)
   (let ([b (identifier-label-binding id)])
     (if b
-      (list (let ([p (resolved-module-path-name (module-path-index-resolve
-                                                 (caddr b)))])
-              (if (path? p)
-                (intern-taglet (path->main-collects-relative p))
-                p))
+      (list (caddr b)
             (list-ref b 3)
             (list-ref b 4)
             (list-ref b 5)

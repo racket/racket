@@ -183,7 +183,9 @@
           (let ([s (path->string p)])
             ;; this is the same check that setup/setup-unit is doing in
             ;; `make-cc*'
-            (unless (or (regexp-match? #rx"^[.]" s) (equal? "compiled" s)
+            (unless (or (regexp-match? #rx"^[.]" s) 
+                        (equal? "compiled" s)
+                        (equal? "doc" s)
                         (and (pair? omit-paths) (member s omit-paths)))
               (let ([p (build-path dir p)])
                 (compile-directory p (get-info/full p)))))))))

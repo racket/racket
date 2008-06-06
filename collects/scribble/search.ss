@@ -2,10 +2,16 @@
   (require "struct.ss"
            "basic.ss"
            setup/main-collects
-           syntax/modcode)
+           syntax/modcode
+           syntax/modcollapse
+           
+           ;; Needed to normalize planet version numbers:
+           (only-in planet/resolver get-planet-module-path/pkg)
+           (only-in planet/private/data pkg-maj pkg-min))
 
   (provide find-scheme-tag
-           intern-taglet)
+           intern-taglet
+           module-path-index->taglet)
 
   (define module-info-cache (make-hasheq))
 
@@ -34,7 +40,35 @@
                   (hash-set! interned v (make-weak-box v))
                   v)))
           v)))
-     
+
+  (define (module-path-index->taglet mod)
+    ;; Derive the name from the module path:
+    (let ([p (collapse-module-path-index
+              mod
+              (current-directory))])
+      (if (path? p)
+          ;; If we got a path back anyway, then it's best to use the resolved
+          ;; name; if the current directory has changed since we 
+          ;; the path-index was resolved, then p might not be right
+          (intern-taglet 
+           (path->main-collects-relative 
+            (resolved-module-path-name (module-path-index-resolve mod))))
+          (let ([p (if (and (pair? p)
+                            (eq? (car p) 'planet))
+                       ;; Normalize planet verion number based on current
+                       ;; linking:
+                       (let-values ([(path pkg)
+                                     (get-planet-module-path/pkg p #f #f)])
+                         (list* 'planet
+                                (cadr p)
+                                (list (car (caddr p))
+                                      (cadr (caddr p))
+                                      (pkg-maj pkg)
+                                      (pkg-min pkg))
+                                (cdddr p)))
+                       ;; Otherwise the path is fully normalized:
+                       p)])
+            (intern-taglet p)))))
 
   (define (find-scheme-tag part ri stx/binding phase-level)
     ;; The phase-level argument is used only when `stx/binding'
@@ -59,22 +93,19 @@
                stx/binding]
               [else
                (and (not (symbol? (car stx/binding)))
-                    (let ([p (module-path-index-join 
-                              (main-collects-relative->path (car stx/binding))
-                              #f)])
-                      (list #f
-                            (cadr stx/binding)
-                            p
-                            (cadr stx/binding)
-                            (if (= 2 (length stx/binding))
-                                0
-                                (caddr stx/binding))
-                            (if (= 2 (length stx/binding))
-                                0
-                                (cadddr stx/binding))
-                            (if (= 2 (length stx/binding))
-                                0
-                                (cadddr (cdr stx/binding))))))])])
+                    (list #f
+                          (cadr stx/binding)
+                          (car stx/binding)
+                          (cadr stx/binding)
+                          (if (= 2 (length stx/binding))
+                              0
+                              (caddr stx/binding))
+                          (if (= 2 (length stx/binding))
+                              0
+                              (cadddr stx/binding))
+                          (if (= 2 (length stx/binding))
+                              0
+                              (cadddr (cdr stx/binding)))))])])
       (and 
        (pair? b)
        (let ([seen (make-hasheq)]
@@ -96,10 +127,7 @@
                    [queue (cdr queue)])
                (let* ([rmp (module-path-index-resolve mod)]
                       [eb (and (equal? 0 export-phase) ;; look for the phase-0 export; good idea?
-                               (list (let ([p (resolved-module-path-name rmp)])
-                                       (if (path? p)
-                                           (intern-taglet (path->main-collects-relative p))
-                                           p))
+                               (list (module-path-index->taglet mod)
                                      id))])
                  (when (and eb
                             (not search-key))
