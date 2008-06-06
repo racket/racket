@@ -20,6 +20,17 @@
 
 (define-runtime-path search-script "search.js")
 
+(define (quote-string str)
+  (define (hex4 ch)
+    (let ([s (number->string (char->integer (string-ref ch 0)) 16)])
+      (string-append "\\u" (case (string-length s)
+                             [(1) (string-append "000" s)]
+                             [(2) (string-append "00" s)]
+                             [(3) (string-append "0" s)]
+                             [else s]))))
+  ;; use ~s to create a javascript-quoted string, then quote unicode chars
+  (regexp-replace* #px"[^[:ascii:]]" (format "~s" str) hex4))
+
 (define (make-script user-dir? renderer sec ri)
   (define dest-dir (send renderer get-dest-directory #t))
   (define span-classes null)
@@ -58,10 +69,10 @@
     ;; generate javascript array code
     (let loop ([body (compact xexprs)])
       (if (andmap string? body)
-        (format "~s" (string-append* body))
+        (quote-string (string-append* body))
         (let ([body (map (lambda (x)
                            (if (string? x)
-                             (format "~s" x)
+                             (quote-string x)
                              (format "[~a,~a]" (car x) (cdr x))))
                          body)])
           (if (= 1 (length body))
@@ -106,25 +117,21 @@
                            [else body])])
                (values (compact-url href) (compact-body body)))]
             [else (error "something bad happened")])))
+      (define (lib->name lib)
+        (quote-string (let loop ([lib lib])
+                        (match lib
+                          [`',lib (string-append "'" (loop lib))]
+                          [else (format "~s" lib)]))))
       (define from-libs
         (cond
           [(exported-index-desc? desc)
-           (string-append*
-            `("["
-              ,@(add-between
-                 (map (lambda (x)
-                        (format "~s"
-                                (match x
-                                  [(? symbol?) (symbol->string x)]
-                                  [`',(? symbol? x)
-                                   (string-append "'" (symbol->string x))])))
-                      (exported-index-desc-from-libs desc))
-                 ",")
-              "]"))]
+           (let ([libs (map lib->name (exported-index-desc-from-libs desc))])
+             (string-append* `("[" ,@(add-between libs ",") "]")))]
           [(module-path-index-desc? desc) "\"module\""]
           [else "false"]))
-      ;; Note: using ~s to have javascript-quoted strings
-      (format "[~s,~s,~a,~a]" text href html from-libs)))
+      (string-append "[" (quote-string text) ","
+                         (quote-string href) ","
+                         html "," from-libs "]")))
 
   (with-output-to-file (build-path dest-dir "plt-index.js") #:exists 'truncate
     (lambda ()
@@ -132,11 +139,11 @@
        display
        @`{// the url of the main doc tree, for compact url
           // representation (see also the UncompactUrl function)
-          plt_main_url = @,(format "~s" main-url);@"\n"
+          plt_main_url = @,(quote-string main-url);@"\n"
           // classes to be used for compact representation of html strings in
           // plt_search_data below (see also the UncompactHtml function)
           plt_span_classes = [
-            @,@(add-between (map (lambda (x) (format "~s" (car x)))
+            @,@(add-between (map (lambda (x) (quote-string (car x)))
                                  (reverse span-classes))
                             ",\n  ")];@"\n"
           // this array has an entry of four items for each index link:
@@ -152,10 +159,12 @@
           plt_manual_ptrs = {
             @,@(let* ([ms (hash-map manual-refs cons)]
                       [ms (sort ms < #:key cdr)]
-                      [ms (map (lambda (x) (format "~s: ~a" (car x) (cdr x)))
+                      [ms (map (lambda (x)
+                                 (string-append (quote-string (car x)) ": "
+                                                (number->string (cdr x))))
                                ms)])
                  (add-between ms ",\n  "))};
-          })))
+          @||})))
 
   (let ([js (build-path dest-dir "search.js")])
     (when (file-exists? js) (delete-file js))
