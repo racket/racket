@@ -19,10 +19,11 @@
            [flags (if (len . >= . 2) (cadr d) '())]
            [name  (if (len . >= . 4)
                     (cadddr d)
-                    (path->string (path-replace-suffix
-                                   (file-name-from-path (car d)) #"")))])
+                    (path->string
+                     (path-replace-suffix (file-name-from-path (car d))
+                                          #"")))])
       (and (not (and (len . >= . 3) (memq 'omit (caddr d))))
-           (let ([d (doc-path dir name flags #t)])
+           (let ([d (doc-path dir name flags 'false-if-missing)])
              (and d (build-path d "out.sxref")))))))
 
 (define (get-reader-thunks)

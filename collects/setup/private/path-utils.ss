@@ -8,17 +8,18 @@
 
 (provide doc-path path->name)
 
-(define (doc-path dir name flags [false-if-missing-user-doc? #f])
+;; user-doc-mode can be `false-if-missing' or `never'
+(define (doc-path dir name flags [user-doc-mode #f])
   (define (user-doc [sub #f])
-    (let ([d (find-user-doc-dir)])
-      (and (or (not false-if-missing-user-doc?)
-               (directory-exists? d))
-           (if sub (build-path d sub) d))))
+    (and (not (eq? 'never))
+         (let ([d (find-user-doc-dir)])
+           (and (or (not (eq? 'false-if-missing user-doc-mode))
+                    (directory-exists? d))
+                (if sub (build-path d sub) d)))))
   (cond [(memq 'main-doc-root flags) (find-doc-dir)]
         [(memq 'user-doc-root flags) (user-doc)]
         [(memq 'user-doc flags)      (user-doc name)]
-        [(or (memq 'main-doc flags)
-             (pair? (path->main-collects-relative dir)))
+        [(or (memq 'main-doc flags) (pair? (path->main-collects-relative dir)))
          (build-path (find-doc-dir) name)]
         [else (build-path dir "doc" name)]))
 
