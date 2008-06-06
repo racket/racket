@@ -12,7 +12,7 @@
                             flag-clause ... 
                             finish-clause)
               ([optional-name-expr code:blank
-                                   (code:line #:name name-expr)]
+                                   (code:line #:program name-expr)]
                [optional-argv-expr code:blank
                                    (code:line #:argv argv-expr)]
                [flag-clause (code:line #:multi flag-spec ...)
