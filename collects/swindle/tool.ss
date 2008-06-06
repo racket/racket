@@ -9,7 +9,8 @@
          mzlib/list
          mred
          net/sendurl
-         string-constants)
+         string-constants
+         swindle/extra)
 (provide tool@)
 
 (define tool@
@@ -103,6 +104,19 @@
                        [(none) 0]
                        [(debug) 1]
                        [(debug/profile) 2]))])))
+        (define last-port #f)
+        (define/override (render-value/format value settings port width)
+          (unless (eq? port last-port)
+            (set! last-port port)
+            ;; this is called with the value port, so copy the usual swindle
+            ;; handlers to this port
+            (port-write-handler
+             port (port-write-handler (current-output-port)))
+            (port-display-handler
+             port (port-display-handler (current-output-port))))
+          ;; then use them instead of the default pretty print
+          (write value port)
+          (newline port))
         (super-instantiate ())))
     (define (add-swindle-language name module entry-name num one-line url)
       (drscheme:language-configuration:add-language
