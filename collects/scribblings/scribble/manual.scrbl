@@ -838,12 +838,15 @@ These normalization steps help support natural-language references
 that differ slightly from a defined form. For example, a definition of
 ``bananas'' can be referenced with a use of ``banana''.}
 
-@defproc[(tech [pre-content any/c] ...) element?]{
+@defproc[(tech [pre-content any/c] ...
+               [#:doc module-path (or/c module-path? false/c) #f])
+         element?]{
 
 Produces an element for the @tech{decode}d @scheme[pre-content], and
 hyperlinks it to the definition of the content as established by
 @scheme[deftech]. The content's string form is normalized in the same
-way as for @scheme[deftech].
+way as for @scheme[deftech]. The @scheme[#:doc] argument supports
+cross-document referecnes, like in @scheme[secref].
 
 The hyperlink is relatively quiet, in that underlining in HTML output
 appears only when the mouse is moved over the term.
@@ -854,7 +857,9 @@ normalization performed on the term. For example, if ``bind'' is
 defined, but a sentence uses the term ``binding,'' the latter can be
 linked to the former using @schemefont["@tech{bind}ing"].}
 
-@defproc[(techlink [pre-content any/c] ...) element?]{
+@defproc[(techlink [pre-content any/c] ...
+                   [#:doc module-path (or/c module-path? false/c) #f]) 
+         element?]{
 
 Like @scheme[tech], but the link is not a quiet. For example, in HTML
 output, a hyperlink underline appears even when the mouse is not over
