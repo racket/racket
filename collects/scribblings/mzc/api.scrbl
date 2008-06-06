@@ -77,11 +77,14 @@ collection.  The following fields are used:
  @item{@indexed-scheme[name] : The name of the collection as a string, used
        only for status and error reporting.}
 
- @item{@indexed-scheme[compile-omit-paths] : A list of immediate file and
-       directory paths that should not be compiled. Alternatively,
+ @item{@indexed-scheme[compile-omit-paths] : A list of immediate file
+       and directory paths that should not be compiled. Alternatively,
        this field's value @scheme['all], which is equivalent to
        specifying all files and directories in the collection (to
-       effectively ignore the collection for compilation).
+       effectively ignore the collection for
+       compilation). Automatically omitted files and directories are
+       @filepath{compiled}, @filepath{doc}, and those whose names
+       start with @litchar{.}
 
        Files that are required by other files, however, are always
        compiled in the process of compiling the requiring file---even
