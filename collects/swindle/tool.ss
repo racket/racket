@@ -9,8 +9,7 @@
          mzlib/list
          mred
          net/sendurl
-         string-constants
-         swindle/extra)
+         string-constants)
 (provide tool@)
 
 (define tool@
