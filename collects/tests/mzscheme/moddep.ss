@@ -80,16 +80,21 @@
 				 (module-path-index-join #f #f)))
 	rel-to))
 
-(test-cmp '(lib "x.ss" "nonesuch") "x.ss" '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "x.ss" "nonesuch") "x.ss" (lambda () '(lib "y.ss" "nonesuch")))
-(test-cmp '(lib "down/x.ss" "nonesuch") "down/x.ss" '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "x.ss" "mzlib") '(lib "x.ss") '(lib "y.ss" "nonesuch"))
-(test-cmp '(lib "../x.ss" "nonesuch/private") "../x.ss" '(lib "y.ss" "nonesuch/private"))
-(test-cmp '(lib "private/../x.ss" "nonesuch") "../x.ss" '(lib "private/y.ss" "nonesuch"))
-(test-cmp '(lib "private/x.ss" "alsonot") '(lib "x.ss" "alsonot" "private") '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "nonesuch/x.ss") "x.ss" '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "nonesuch/x.ss") "x.ss" (lambda () '(lib "y.ss" "nonesuch")))
+(test-cmp '(lib "nonesuch/down/x.ss") "down/x.ss" '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "mzlib/x.ss") '(lib "x.ss") '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "nonesuch/x.ss") "../x.ss" '(lib "y.ss" "nonesuch/private"))
+(test-cmp '(lib "nonesuch/x.ss") "../x.ss" '(lib "private/y.ss" "nonesuch"))
+(test-cmp '(lib "alsonot/private/x.ss") '(lib "x.ss" "alsonot" "private") '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "x" "nonesuch") "x" '(lib "y.ss" "nonesuch"))
+(test-cmp '(lib "x" "nonesuch") "x" 'nonesuch/y)
+(test-cmp '(lib "x" "nonesuch") "x" 'nonesuch)
+(test-cmp '(lib "nonesuch/y.ss") 'nonesuch/y (current-directory))
+(test-cmp '(lib "mzlib/nonesuch.ss") '(lib "nonesuch.ss") (current-directory))
 
 (test-cmp (build-path (current-directory) "x.ss") "x.ss" (build-path (current-directory) "other"))
-(test-cmp `(file ,(path->string (build-path (current-directory) "x.ss")))
+(test-cmp (build-path (current-directory) "x.ss")
 	  "x.ss" 
 	  `(file ,(path->string (build-path (current-directory) "other"))))
 (test-cmp (build-path (current-directory) "x.ss")
@@ -99,13 +104,19 @@
 (test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1)) "x.ss" '(planet "y.ss" ("usr" "pkg.plt" 1)))
 (test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1 0)) "x.ss" (lambda () '(planet "y.ss" ("usr" "pkg.plt" 1 0))))
 (test-cmp '(planet "path/x.ss" ("a" "p.plt" 1)) "path/x.ss" '(planet "z.ss" ("a" "p.plt" 1)))
-(test-cmp '(planet "path/../x.ss" ("a" "p.plt" 2)) "../x.ss" '(planet "path/z.ss" ("a" "p.plt" 2)))
+(test-cmp '(planet "path/qq/x.ss" ("a" "p.plt" 2)) "qq/x.ss" '(planet "path/z.ss" ("a" "p.plt" 2)))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(planet "o.ss" ("a" "q.plt" 54 3)))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(lib "o.ss" "nonesuch"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(file "q.ss"))
-(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) "where/in/the/world/cs.ss")
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "m/z:2/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 5)) '(planet "m/z:2:5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 5)) '(planet "m/z:2:=5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (+ 5))) '(planet "m/z:2:>=5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (- 5))) '(planet "m/z:2:<=5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
 
-(test-cmp "./x.ss" "x.ss" ".")
+(test-cmp (string->path "./x.ss") "x.ss" (build-path 'same))
 
 ;; Try path cases that don't fit UTF-8 (and therefore would go wrong as a string):
 (let ([dir (build-path (current-directory) (bytes->path #"\xFF"))])
@@ -116,7 +127,7 @@
 	  (bytes->path #"\xFF")
 	  `(file ,(path->string (build-path (current-directory) "other"))))
 
-(test '(lib "x.ss" "alsonot")
+(test '(lib "alsonot/x.ss")
       collapse-module-path-index 
       (module-path-index-join "x.ss"
 			      (module-path-index-join
@@ -124,7 +135,7 @@
 			       (module-path-index-join #f #f)))
       '(lib "w.ss" "nonesuch"))
 
-(err/rt-test (collapse-module-path "apple.ss" 'no))
+(err/rt-test (collapse-module-path "apple.ss" '(no)))
 (err/rt-test (collapse-module-path "/apple.ss" (current-directory)))
 (err/rt-test (collapse-module-path-index "apple.ss" (current-directory)))
 

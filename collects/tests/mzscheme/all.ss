@@ -3,6 +3,7 @@
 (load-relative "mz.ss")
 (load-relative "scheme.ss")
 (load-relative "mzlib.ss")
+(load-in-sandbox "moddep.ss")
 (load-in-sandbox "boundmap-test.ss")
 (load-in-sandbox "net.ss")
 (load-in-sandbox "foreign-test.ss")

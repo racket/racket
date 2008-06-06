@@ -7,7 +7,7 @@
            "private/modhelp.ss")
 
   (define (collapse-module-path s relto-mp)
-    ;; relto-mp should be a relative path, '(lib relative-path collection),
+    ;; relto-mp should be a path, '(lib relative-path collection) or symbol,
     ;;   or '(file path) or a thunk that produces one of those
 
     ;; Used for 'lib paths, so it's always Unix-style
@@ -47,6 +47,7 @@
                     elements)))
 
       (when (procedure? relto-mp) (set! relto-mp (relto-mp)))
+      (when (symbol? relto-mp) (set! relto-mp `(lib ,(symbol->string relto-mp))))
       (cond
         [(or (path? relto-mp) (and (string? relto-mp) (ormap path? elements)))
          (apply build-path
@@ -224,6 +225,7 @@
   (define simple-rel-to-module-path-v/c
     (or/c (and/c module-path?
                  (or/c
+                  symbol?
                   (cons/c (symbols 'lib) any/c)
                   (cons/c (symbols 'file) any/c)
                   (cons/c (symbols 'planet) any/c)
