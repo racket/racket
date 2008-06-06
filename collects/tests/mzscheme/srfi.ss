@@ -51,7 +51,7 @@
 (require srfi/63)
 (require srfi/64)
 (require srfi/64/testing)
-(require srfi/66/66)
+(require srfi/66)
 (require srfi/67/compare)
 (require srfi/69/hash)
 (require srfi/71/letvalues)
