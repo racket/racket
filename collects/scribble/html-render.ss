@@ -15,7 +15,8 @@
          scheme/serialize
          (prefix-in xml: xml/xml)
          (for-syntax scheme/base)
-         "search.ss")
+         "search.ss"
+         "basic.ss")
 (provide render-mixin
          render-multi-mixin)
 

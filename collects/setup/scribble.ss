@@ -11,6 +11,7 @@
          scheme/serialize
          scribble/base-render
          scribble/struct
+         scribble/basic
          scribble/manual ; really shouldn't be here... see dynamic-require-doc
          (prefix-in html: scribble/html-render)
          (prefix-in latex: scribble/latex-render))
@@ -273,14 +274,14 @@
                          (and (path? base) (loop base)))))))
              only-dirs)))
 
-(define (ensure-doc-prefix v src-file)
-  (let ([p (format "~a" (path->main-collects-relative src-file))])
+(define (ensure-doc-prefix v src-spec)
+  (let ([p (module-path-prefix->string src-spec)])
     (when (and (part-tag-prefix v)
                (not (equal? p (part-tag-prefix v))))
       (error 'setup
              "bad tag prefix: ~e for: ~a expected: ~e"
              (part-tag-prefix v)
-             src-file
+             src-spec
              p))
     (let ([tag-prefix p]
           [tags (if (member '(part "top") (part-tags v))
@@ -406,7 +407,7 @@
            (parameterize ([current-directory (doc-src-dir doc)])
              (let* ([v (ensure-doc-prefix
                         (dynamic-require-doc (doc-src-spec doc))
-                        (doc-src-file doc))]
+                        (doc-src-spec doc))]
                     [dest-dir (pick-dest latex-dest doc)]
                     [ci (send renderer collect (list v) (list dest-dir))]
                     [ri (send renderer resolve (list v) (list dest-dir) ci)]
@@ -469,7 +470,7 @@
        (let* ([v (ensure-doc-prefix (render-time 
                                      "load"
                                      (dynamic-require-doc (doc-src-spec doc)))
-                                    (doc-src-file doc))]
+                                    (doc-src-spec doc))]
               [dest-dir (pick-dest latex-dest doc)]
               [ci (render-time "collect" 
                                (send renderer collect (list v) (list dest-dir)))])

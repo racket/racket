@@ -2,16 +2,9 @@
   (require "struct.ss"
            "basic.ss"
            setup/main-collects
-           syntax/modcode
-           syntax/modcollapse
-           
-           ;; Needed to normalize planet version numbers:
-           (only-in planet/resolver get-planet-module-path/pkg)
-           (only-in planet/private/data pkg-maj pkg-min))
+           syntax/modcode)
 
-  (provide find-scheme-tag
-           intern-taglet
-           module-path-index->taglet)
+  (provide find-scheme-tag)
 
   (define module-info-cache (make-hasheq))
 
@@ -23,52 +16,6 @@
        [else
         (module-path-index-join name 
                                 (module-path-index-rejoin base rel-to))])))
-
-  (define interned (make-weak-hash))
-  
-  (define (intern-taglet v)
-    (let ([v (if (list? v)
-                 (map intern-taglet v)
-                 v)])
-      (if (or (string? v)
-              (bytes? v)
-              (list? v))
-          (let ([b (hash-ref interned v #f)])
-            (if b
-                (weak-box-value b)
-                (begin
-                  (hash-set! interned v (make-weak-box v))
-                  v)))
-          v)))
-
-  (define (module-path-index->taglet mod)
-    ;; Derive the name from the module path:
-    (let ([p (collapse-module-path-index
-              mod
-              (current-directory))])
-      (if (path? p)
-          ;; If we got a path back anyway, then it's best to use the resolved
-          ;; name; if the current directory has changed since we 
-          ;; the path-index was resolved, then p might not be right
-          (intern-taglet 
-           (path->main-collects-relative 
-            (resolved-module-path-name (module-path-index-resolve mod))))
-          (let ([p (if (and (pair? p)
-                            (eq? (car p) 'planet))
-                       ;; Normalize planet verion number based on current
-                       ;; linking:
-                       (let-values ([(path pkg)
-                                     (get-planet-module-path/pkg p #f #f)])
-                         (list* 'planet
-                                (cadr p)
-                                (list (car (caddr p))
-                                      (cadr (caddr p))
-                                      (pkg-maj pkg)
-                                      (pkg-min pkg))
-                                (cdddr p)))
-                       ;; Otherwise the path is fully normalized:
-                       p)])
-            (intern-taglet p)))))
 
   (define (find-scheme-tag part ri stx/binding phase-level)
     ;; The phase-level argument is used only when `stx/binding'
