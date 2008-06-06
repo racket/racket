@@ -20,7 +20,11 @@ The result can be a path if @scheme[module-path-v] contains a path
 element that is needed for the result, or if
 @scheme[rel-to-module-path-v] is a non-string path that is needed for
 the result; otherwise, the result is a module path in the sense of
-@scheme[module-path?].}
+@scheme[module-path?].
+
+When the result is a @scheme['lib] or @scheme['planet] module path, it
+is normalized so that equivalent module paths are represented by
+@scheme[equal?] results.}
 
 @defproc[(collapse-module-path-index [module-path-index module-path-index?]
                                      [rel-to-module-path-v any/c])

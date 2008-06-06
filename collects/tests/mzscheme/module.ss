@@ -385,7 +385,7 @@
 (test #f module-path? '(planet "foo.ss"))
 (test #t module-path? '(planet "foo.ss" ("robby" "redex.plt")))
 (test #f module-path? '(planet "../foo.ss" ("robby" "redex.plt")))
-(test #t module-path? '(planet "foo.ss" ("robby" "redex.plt" (7 8))))
+(test #t module-path? '(planet "foo.ss" ("robby" "redex.plt" 7 (7 8))))
 (test #t module-path? '(planet "foo.ss" ("robby" "redex.plt" 7 8)))
 (test #t module-path? '(planet "foo.ss" ("robby" "redex.plt" 7 (= 8))))
 (test #t module-path? '(planet "foo.ss" ("robby" "redex.plt") "sub" "deeper"))
