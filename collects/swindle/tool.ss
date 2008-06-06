@@ -103,7 +103,6 @@
                        [(none) 0]
                        [(debug) 1]
                        [(debug/profile) 2]))])))
-        #;#;
         (define last-port #f)
         (define/override (render-value/format value settings port width)
           (unless (eq? port last-port)
