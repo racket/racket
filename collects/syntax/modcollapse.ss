@@ -162,21 +162,26 @@
                       ,@(if (null? (cdr pkg+vers))
                             null
                             `(,(string->number (cadr pkg+vers))
-                              ,(let ([vers (caddr pkg+vers)])
-                                 (cond
-                                  [(regexp-match? #rx"<=" vers)
-                                   `(- ,(string->number (substring vers 2)))]
-                                  [(regexp-match? #rx">=" vers)
-                                   `(+ ,(string->number (substring vers 2)))]
-                                  [(regexp-match? #rx"=" vers)
-                                   (string->number (substring vers 1))]
-                                  [(regexp-match #rx"(.*)-(.*)" vers)
-                                   => (lambda (m)
-                                        `(,(string->number (cadr m))
-                                          ,(string->number (caddr m))))]
-                                  [else (error 'collapse-module-path
-                                               "confused when normalizing planet path: ~e"
-                                               s)])))))
+                              . ,(if (null? (cddr pkg+vers))
+                                     null
+                                     (list
+                                      (let ([vers (caddr pkg+vers)])
+                                        (cond
+                                         [(regexp-match? #rx"<=" vers)
+                                          `(- ,(string->number (substring vers 2)))]
+                                         [(regexp-match? #rx">=" vers)
+                                          `(+ ,(string->number (substring vers 2)))]
+                                         [(regexp-match? #rx"=" vers)
+                                          (string->number (substring vers 1))]
+                                         [(regexp-match #rx"(.*)-(.*)" vers)
+                                          => (lambda (m)
+                                               `(,(string->number (cadr m))
+                                                 ,(string->number (caddr m))))]
+                                         [(string->number vers)
+                                          => (lambda (n) n)]
+                                         [else (error 'collapse-module-path
+                                                      "confused when normalizing planet path: ~e"
+                                                      s)])))))))
                      ,@(if (null? path)
                            null
                            (reverse (cdr (reverse path)))))))]
