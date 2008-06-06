@@ -557,102 +557,98 @@
     (define prev-content '(larr " prev"))
     (define up-content '("up"))
     (define next-content '("next " rarr))
-    (define no-next-content next-content)
     (define sep-element (make-element #f '(nbsp nbsp)))
 
     (define/public (derive-filename d) "bad.html")
 
     (define/private (navigation d ri pre-space?)
-      (let*-values ([(parent) (part-parent d ri)]
-                    [(prev next) (find-siblings d ri)]
-                    [(prev) (if prev
-                              (let loop ([prev prev])
-                                (if (and (toc-part? prev)
-                                         (pair? (part-parts prev)))
-                                  (loop (car (last-pair (part-parts prev))))
-                                  prev))
-                              (and parent (toc-part? parent) parent))]
-                    [(next) (cond [(and (toc-part? d)
-                                        (pair? (part-parts d)))
-                                   (car (part-parts d))]
-                                  [(and (not next) parent (toc-part? parent))
-                                   (let-values ([(prev next)
-                                                 (find-siblings parent ri)])
-                                     next)]
-                                  [else next])]
-                    [(index) (let loop ([d d])
-                               (let ([p (part-parent d ri)])
-                                 (if p
-                                   (loop p)
-                                   (let ([subs (part-parts d)])
-                                     (and (pair? subs)
-                                          (let ([d (car (last-pair subs))])
-                                            (and (part-style? d 'index)
-                                                 d)))))))])
-        (define (render . content)
-          (render-content content d ri))
-        (if (not (or prev next parent index up-path))
-          null
-          `(,@(if pre-space? '((p nbsp)) null)
-            (div ([class "navleft"])
-              ,@(render (make-element
-                         (if parent
-                           (make-target-url "index.html" #f)
-                           "nonavigation")
-                         contents-content))
-              ,@(if index
-                  `(nbsp
-                    ,@(render (if (eq? d index)
-                                (make-element "nonavigation" index-content)
-                                (make-link-element
-                                 #f index-content (car (part-tags index)))))
-                    #; ; no need for these index-local searches
-                    ,@(if (eq? d index)
-                        null
-                        `((span ([class "smaller"]) nbsp ,(search-index-box)))))
-                  null)
-              ,@(if up-path
-                  `(nbsp (span ([class "smaller"]) ,(search-index-box)))
-                  null))
-            (div ([class "navright"])
-              ,@(render
-                 (make-element
-                  (if parent
-                    (make-target-url
-                     (if prev (derive-filename prev) "index.html")
-                     #f)
-                    "nonavigation")
-                  prev-content)
-                 sep-element
-                 (make-element
-                  (cond
-                    ;; up-path = #t => go up to the start page, using
-                    ;; cookies to get to the user's version of it (see
-                    ;; scribblings/main/private/utils for the code
-                    ;; that creates these cookies.)
-                    [(and (eq? #t up-path) (not parent))
-                     (make-target-url
-                      "../index.html"
-                      (make-with-attributes
-                       #f `([onclick
-                             . ,(format "return GotoPLTRoot(\"~a\");"
-                                        (version))])))]
-                    [(or parent up-path)
-                     (make-target-url
-                      (cond [(not parent) up-path]
-                            [(and (toc-part? parent) (part-parent parent ri))
-                             (derive-filename parent)]
-                            [else "index.html"])
-                      #f)]
-                    [else "nonavigation"])
-                  up-content)
-                 sep-element
-                 (make-element
-                  (if next
-                    (make-target-url (derive-filename next) #f)
-                    "nonavigation")
-                  next-content)))
-            (p nbsp)))))
+      (define parent (part-parent d ri))
+      (define-values (prev0 next0) (find-siblings d ri))
+      (define prev
+        (if prev0
+          (let loop ([p prev0])
+            (if (and (toc-part? p) (pair? (part-parts p)))
+              (loop (last (part-parts p)))
+              p))
+          (and parent (toc-part? parent) parent)))
+      (define next
+        (cond [(and (toc-part? d) (pair? (part-parts d))) (car (part-parts d))]
+              [(not next0)
+               (let loop ([p parent])
+                 (and p (toc-part? p)
+                      (let-values ([(prev next) (find-siblings p ri)])
+                        (or next (loop (part-parent p ri))))))]
+              [else next0]))
+      (define index
+        (let loop ([d d])
+          (let ([p (part-parent d ri)])
+            (if p
+              (loop p)
+              (let ([subs (part-parts d)])
+                (and (pair? subs)
+                     (let ([d (last subs)])
+                       (and (part-style? d 'index)
+                            d))))))))
+      (define (render . content) (render-content content d ri))
+      (if (not (or prev next parent index up-path))
+        null
+        `(,@(if pre-space? '((p nbsp)) null)
+          (div ([class "navleft"])
+            ,@(render (make-element
+                       (if parent
+                         (make-target-url "index.html" #f)
+                         "nonavigation")
+                       contents-content))
+            ,@(if index
+                `(nbsp
+                  ,@(render (if (eq? d index)
+                              (make-element "nonavigation" index-content)
+                              (make-link-element
+                               #f index-content (car (part-tags index)))))
+                  #; ; no need for these index-local searches
+                  ,@(if (eq? d index)
+                      null
+                      `((span ([class "smaller"]) nbsp ,(search-index-box)))))
+                null)
+            ,@(if up-path
+                `(nbsp (span ([class "smaller"]) ,(search-index-box)))
+                null))
+          (div ([class "navright"])
+            ,@(render
+               (make-element
+                (if parent
+                  (make-target-url (if prev (derive-filename prev) "index.html")
+                                   #f)
+                  "nonavigation")
+                prev-content)
+               sep-element
+               (make-element
+                (cond
+                  ;; up-path = #t => go up to the start page, using
+                  ;; cookies to get to the user's version of it (see
+                  ;; scribblings/main/private/utils for the code that
+                  ;; creates these cookies.)
+                  [(and (eq? #t up-path) (not parent))
+                   (make-target-url
+                    "../index.html"
+                    (make-with-attributes
+                     #f `([onclick . ,(format "return GotoPLTRoot(\"~a\");"
+                                              (version))])))]
+                  [(or parent up-path)
+                   (make-target-url
+                    (cond [(not parent) up-path]
+                          [(and (toc-part? parent) (part-parent parent ri))
+                           (derive-filename parent)]
+                          [else "index.html"])
+                    #f)]
+                  [else "nonavigation"])
+                up-content)
+               sep-element
+               (make-element (if next
+                               (make-target-url (derive-filename next) #f)
+                               "nonavigation")
+                             next-content)))
+          (p nbsp))))
 
     (define/override (render-one d ri fn)
       (render-one-part d ri fn null))
