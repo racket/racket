@@ -606,8 +606,7 @@
   (port-display-handler (current-output-port) display-object)
   (port-display-handler (current-error-port)  display-object)
   (port-write-handler   (current-output-port) write-object)
-  (port-write-handler   (current-error-port)  write-object)
-  (current-print write-object))
+  (port-write-handler   (current-error-port)  write-object))
 
 ;;; ---------------------------------------------------------------------------
 ;;>>... Simple matching
