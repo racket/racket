@@ -58,10 +58,12 @@
            tests)))
 
 (define succ-tests (mk-tests "succeed" 
-                             (lambda (p) (dynamic-require `(file ,(path->string p)) #f))
+                             (lambda (p) (parameterize ([current-namespace (make-base-empty-namespace)])
+                                           (dynamic-require `(file ,(path->string p)) #f)))
                              (lambda (p thnk) (check-not-exn thnk))))
 (define fail-tests (mk-tests "fail"
-                             (lambda (p) (dynamic-require `(file ,(path->string p)) #f)) 
+                             (lambda (p) (parameterize ([current-namespace (make-base-empty-namespace)])
+                                           (dynamic-require `(file ,(path->string p)) #f)))
                              (lambda (p thnk)
                                (define-values (pred info) (exn-pred p))
                                (with-check-info
