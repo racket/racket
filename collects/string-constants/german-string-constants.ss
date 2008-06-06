@@ -953,7 +953,7 @@
  (profiling-square "Quadrat")
  (profiling-number "Aufrufanzahl")
  (profiling-time "Gesamtzeit")
- (profiling-update "Profile atkualisieren")
+ (profiling-update "Profile aktualisieren")
  (profiling-col-percent-time "% Zeit")
  (profiling-col-function "Prozedur")
  (profiling-col-time-in-msec "ms")
