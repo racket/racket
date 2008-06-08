@@ -108,10 +108,14 @@
     (if (path? p)
         ;; If we got a path back anyway, then it's best to use the resolved
         ;; name; if the current directory has changed since we 
-        ;; the path-index was resolved, then p might not be right
-        (intern-taglet 
-         (path->main-collects-relative 
-          (resolved-module-path-name (module-path-index-resolve mod))))
+        ;; the path-index was resolved, then p might not be right. Also,
+        ;; the resolved path might be a symbol instead of a path.
+        (let ([rp (resolved-module-path-name 
+                   (module-path-index-resolve mod))])
+          (if (path? rp)
+              (intern-taglet 
+               (path->main-collects-relative rp))
+              rp))
         (let ([p (if (and (pair? p)
                           (eq? (car p) 'planet))
                      ;; Normalize planet verion number based on current
