@@ -278,7 +278,8 @@
   (define (get-desc entry)
     (let ([desc (cadddr entry)])
       (cond [(exported-index-desc? desc)
-             (cons 'libs (map symbol->string
+             (cons 'libs (map (lambda (l)
+                                (format "~s" l))
                               (exported-index-desc-from-libs desc)))]
             [(module-path-index-desc? desc) '(mod)]
             [(part-index-desc? desc) '(part)]
