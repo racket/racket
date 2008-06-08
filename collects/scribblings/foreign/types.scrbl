@@ -612,7 +612,7 @@ of the super-cstruct can be used with the new sub-cstruct.  See the
 example below.
 
 Providing a @scheme[super-id] is shorthand for using an initial field
-named @scheme[super-id] and using @schemeidfont{_}@scheme[super-id]]
+named @scheme[super-id] and using @schemeidfont{_}@scheme[super-id]
 as its type.  Thus, the new struct will use
 @schemeidfont{_}@scheme[super-id]'s tag in addition to its own tag,
 meaning that instances of @scheme[_id] can be used as instances of
@@ -682,10 +682,10 @@ efficiency is not an issue.  We continue using @scheme[define-cstruct], first
 define a type for @cpp{A} which makes it possible to use `@cpp{makeA}:
 
 @schemeblock[
-(define-cstruct _A ([x _int] [y _byte]))
+(define-cstruct #,(schemeidfont "_A") ([x _int] [y _byte]))
 (define makeA
   (get-ffi-obj 'makeA "foo.so"
-    (_fun -> _A-pointer))) (code:comment #, @t{using @scheme[_A] is a memory-corrupting bug!})
+    (_fun -> #,(schemeidfont "_A-pointer")))) (code:comment #, @t{using @schemeidfont{_A} is a memory-corrupting bug!})
 (define a (makeA))
 (list a (A-x a) (A-y a))
 (code:comment #, @t{produces an @scheme[A] containing @scheme[1] and @scheme[2]})
@@ -696,7 +696,7 @@ Using @cpp{gety} is also simple:
 @schemeblock[
 (define gety
   (get-ffi-obj 'gety "foo.so"
-    (_fun _A-pointer -> _byte)))
+    (_fun #,(schemeidfont "_A-pointer") -> _byte)))
 (gety a) (code:comment #, @t{produces @scheme[2]})
 ]
 
@@ -704,10 +704,10 @@ We now define another C struct for @cpp{B}, and expose @cpp{makeB}
 using it:
 
 @schemeblock[
-(define-cstruct _B ([a _A] [z _int]))
+(define-cstruct #,(schemeidfont "_B") ([a #,(schemeidfont "_A")] [z _int]))
 (define makeB
   (get-ffi-obj 'makeB "foo.so"
-    (_fun -> _B-pointer)))
+    (_fun -> #,(schemeidfont "_B-pointer"))))
 (define b (makeB))
 ]
 
@@ -740,7 +740,7 @@ To make this more efficient, we switch to the alternative
 expects arguments for both the super fields ands the new ones:
 
 @schemeblock[
- (define-cstruct (_B _A) ([z _int]))
+ (define-cstruct (#,(schemeidfont "_B") #,(schemeidfont "_A")) ([z _int]))
  (define b (make-B 1 2 3))
 ]}
 

@@ -97,6 +97,13 @@ A few other escapes are recognized symbolically:
 
  @item{@schemeidfont{code:blank} typesets as a blank space.}
 
+ @item{@schemeidfont{_}@scheme[_id] typesets as @scheme[id], but
+       colored as a variable (like @scheme[schemevarfont]); this
+       escape applies only if @schemeidfont{_}@scheme[_id] has no
+       for-label binding and is not specifically colored as a subform
+       non-terminal via @scheme[defform], a variable via
+       @scheme[defproc], etc.}
+
 }
 
 }
