@@ -299,7 +299,7 @@
 ;; or the scribble renderer gets very confused
 (define SCRIBBLE-DOCUMENT-DIR "planet-docs/")
 
-;; make-planet-archive: directory [file] -> file
+;; make-planet-archive: path<directory> [path<file>] -> path<file>
 ;; Makes a .plt archive file suitable for PLaneT whose contents are
 ;; all files in the given directory and returns that file's name.
 ;; If the optional filename argument is provided, that filename will 
