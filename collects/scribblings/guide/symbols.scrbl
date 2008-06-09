@@ -5,7 +5,7 @@
 
 @title[#:tag "symbols"]{Symbols}
 
-A @defterm{symbol} is an atomic value that prints like an identifier.
+A @deftech{symbol} is an atomic value that prints like an identifier.
 An expression that starts with @litchar{'} and continues with an
 identifier produces a symbol value.
 

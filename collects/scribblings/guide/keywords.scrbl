@@ -5,7 +5,7 @@
 
 @title[#:tag "keywords"]{Keywords}
 
-A @defterm{keyword} value is similar to a symbol (see
+A @deftech{keyword} value is similar to a symbol (see
 @secref["symbols"]), but its printed form is prefixed with
 @litchar{#:}.
 

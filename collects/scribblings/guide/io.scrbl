@@ -19,7 +19,7 @@
 
 @title[#:tag "i/o" #:style 'toc]{Input and Output}
 
-A Scheme @defterm{port} represents an input or output stream, such as
+A Scheme @deftech{port} represents an input or output stream, such as
 a file, a terminal, a TCP connection, or an in-memory string. More
 specifically, an @defterm{input port} represents a stream from which a
 program can read data, and an @defterm{output port} represents a

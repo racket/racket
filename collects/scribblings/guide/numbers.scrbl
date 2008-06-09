@@ -5,7 +5,7 @@
 
 @title[#:tag "numbers"]{Numbers}
 
-A Scheme @defterm{number} is either exact or inexact:
+A Scheme @deftech{number} is either exact or inexact:
 
 @itemize{
 
@@ -103,8 +103,8 @@ with inexact numbers.
 (time (round (sigma (lambda (x) (/ 1.0 x)) 1 2000)))
 ]
 
-The number categories @defterm{integer}, @defterm{rational},
-@defterm{real} (always rational), and @defterm{complex} are defined in
+The number categories @deftech{integer}, @deftech{rational},
+@deftech{real} (always rational), and @deftech{complex} are defined in
 the usual way, and are recognized by the procedures @scheme[integer?],
 @scheme[rational?], @scheme[real?], and @scheme[complex?], in addition
 to the generic @scheme[number?]. A few mathematical procedures accept

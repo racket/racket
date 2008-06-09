@@ -5,7 +5,7 @@
 
 @title{Pairs and Lists}
 
-A @defterm{pair} joins two arbitrary values. The @scheme[cons]
+A @deftech{pair} joins two arbitrary values. The @scheme[cons]
 procedure constructs pairs, and the @scheme[car] and @scheme[cdr]
 procedures extract the first and second elements of the pair,
 respectively. The @scheme[pair?] predicate recognizes pairs.
@@ -21,7 +21,7 @@ the two pair elements, putting a @litchar{.} between them.
 (pair? (cons 1 2))
 ]
 
-A @defterm{list} is a combination of pairs that creates a linked
+A @deftech{list} is a combination of pairs that creates a linked
 list. More precisely, a list is either the empty list @scheme[null],
 or it is a pair whose first element is a list element and whose second
 element is a list. The @scheme[list?] predicate recognizes lists. The

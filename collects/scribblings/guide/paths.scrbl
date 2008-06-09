@@ -5,7 +5,7 @@
 
 @title[#:tag "paths"]{Paths}
 
-A @defterm{path} encapsulates a filesystem path that (potentially)
+A @deftech{path} encapsulates a filesystem path that (potentially)
 names a file or directory. Although paths can be converted to and from
 strings and byte strings, neither strings nor byte strings are
 suitable for representing general paths. The problem is that paths are

@@ -5,7 +5,7 @@
 
 @title[#:tag "ports"]{Input and Output Ports}
 
-A @defterm{port} encapsulates an I/O stream, normally for just one
+A @deftech{port} encapsulates an I/O stream, normally for just one
 direction. An @defterm{input port} reads from a stream, and an
 @defterm{output port} writes to a string.
 
