@@ -21,12 +21,12 @@
 
 
   }
-  @defmethod*[(((get-open-here-frame) (union |#f| (is-a?/c frame:editor<%>))))]{
+  @defmethod*[(((get-open-here-frame) (or/c false/c (is-a?/c frame:editor<%>))))]{
     Returns the currently saved frame
     to load new files into.
 
   }
-  @defmethod*[(((get-mdi-parent) (union |#f| (instance frame%))))]{
+  @defmethod*[(((get-mdi-parent) (or/c false/c (instance frame%))))]{
     The result of this method must be used as the parent frame for each
     frame in the group.
 
@@ -115,8 +115,8 @@
     @method[top-level-window<%> can-close?]
     method of each frame in the group.
   }
-  @defmethod*[(((locate-file) (union |#f| (is-a?/c frame:basic<%>))))]{
-    Returns the frame that is editing or viewing a particular file.
+  @defmethod*[(((locate-file [name path?]) (or/c false/c (is-a?/c frame:basic<%>))))]{
+    Returns the frame that is editing or viewing the file @scheme[name].
 
   }
 }
