@@ -1173,7 +1173,8 @@ module browser threading seems wrong.
         ensure-defs-shown
         
         get-language-menu
-        register-toolbar-button))
+        register-toolbar-button
+        get-tabs))
     
     (define frame-mixin
       (mixin (drscheme:frame:<%> frame:searchable-text<%> frame:delegate<%> frame:open-here<%>)

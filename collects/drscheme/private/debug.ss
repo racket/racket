@@ -646,11 +646,40 @@ profile todo:
                                    (λ () (send text on-close)))
                            (values #f (λ () (void)))))]
                     [(path? file)
-                     (let ([text (new text:basic%)])
-                       (if (send text load-file file)
-                           (values text 
-                                   (λ () (send text on-close)))
-                           (values #f (λ () (void)))))]
+                     (let ([file (with-handlers ((exn:fail? (λ (x) #f)))
+                                   (normal-case-path (normalize-path file)))])
+                       (if file
+                           (cond
+                             [(send (group:get-the-frame-group)
+                                    locate-file
+                                    file)
+                              =>
+                              (λ (frame)
+                                (cond
+                                  [(is-a? frame drscheme:unit:frame%)
+                                   (let loop ([tabs (send frame get-tabs)])
+                                     (cond
+                                       [(null? tabs) (values #f void)]
+                                       [else
+                                        (let* ([tab (car tabs)]
+                                               [defs (send tab get-defs)])
+                                          (if (with-handlers ((exn:fail? (λ (x) #f)))
+                                                (equal? (normalize-path (normal-case-path (send defs get-filename)))
+                                                        file))
+                                              (values defs void)
+                                              (loop (cdr tabs))))]))]
+                                  [(is-a? frame frame:editor<%>)
+                                   (values (send frame get-editor) void)]
+                                  [else (values #f void)]))]
+                             [(path? file)
+                              (let ([text (new text:basic%)])
+                                (if (send text load-file file)
+                                    (values text 
+                                            (λ () (send text on-close)))
+                                    (values #f (λ () (void)))))]
+                             [else
+                              (values #f void)])
+                           (values #f void)))]
                     [(is-a? file editor<%>)
                      (values file void)]
                     [else (error 'insert-context "unknown file spec ~e" file)])])
