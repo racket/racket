@@ -320,7 +320,7 @@
            (cond [(and (null? t-arr) (null? s-arr)) mapping]
                  [(or (null? t-arr) (null? s-arr)) (unmatch!)]
                  [else (match (list (car t-arr) (car s-arr))
-                         [(list (arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
+                         [(list (arr: ts t t-rest #f t-thn-eff t-els-eff) (arr: ss s s-rest #f s-thn-eff s-els-eff))
                           (let ([arg-mapping 
                                  (cond [(and t-rest s-rest (= (length ts) (length ss)))
                                         (infer/int/list (cons t-rest ts) (cons s-rest ss) mapping (swap flag))]
@@ -360,7 +360,7 @@
                  [els-mapping (infer/int/list/eff (apply append t-els-eff) (apply append s-els-eff) mapping flag)])             
              (U (U arg-mapping ret-mapping) (U thn-mapping els-mapping))))]
         ;; here, we try to handle a case-lambda as the argument to a polymorphic function
-        [(list (Function: ftys) (and t (Function: (list (arr: ss s s-rest s-thn-eff s-els-eff)))))
+        [(list (Function: ftys) (and t (Function: (list (arr: ss s s-rest #f s-thn-eff s-els-eff)))))
          (=> unmatch)
          (when (= 1 (length ftys)) (unmatch)) ;; we should have handled this case already
          (or 
@@ -371,7 +371,7 @@
                (infer/int (make-Function (list fty)) t mapping flag)))
            ftys)
           (fail!))]
-        [(list (and t (Function: (list (arr: ss s s-rest s-thn-eff s-els-eff)))) (Function: ftys))
+        [(list (and t (Function: (list (arr: ss s s-rest #f s-thn-eff s-els-eff)))) (Function: ftys))
          (=> unmatch)          
          (when (= 1 (length ftys))  (unmatch)) ;; we should have handled this case already
          (or 

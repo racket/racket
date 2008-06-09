@@ -37,7 +37,7 @@
              [#:Param in out
                           (make-Param (var-demote in V)
                                           (vp out))]
-             [#:arr dom rng rest thn els
+             [#:arr dom rng rest #f thn els
                     (if 
                      (apply V-in? V (append thn els))
                      (make-top-arr)
@@ -61,7 +61,7 @@
              [#:Param in out
                           (make-Param (var-promote in V)
                                           (vd out))]
-             [#:arr dom rng rest thn els
+             [#:arr dom rng rest #f thn els
                     (if (apply V-in? V (append thn els))
                         (make-arr null (Un) Univ null null)
                         (make-arr (for/list ([d dom]) (var-promote d V))
@@ -238,7 +238,7 @@
             (for*/list ([t-arr t-arr] [s-arr s-arr])
                        (with-handlers ([exn:infer? (lambda (_) #f)])
                          (match* (t-arr s-arr)
-                                 [((arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
+                                 [((arr: ts t t-rest #f t-thn-eff t-els-eff) (arr: ss s s-rest #f s-thn-eff s-els-eff))
                                   (let ([arg-mapping 
                                          (cond [(and t-rest s-rest (= (length ts) (length ss)))
                                                 (cgen/list X V (cons s-rest ss) (cons t-rest ts))]

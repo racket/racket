@@ -132,7 +132,7 @@
       (define (printable dom rst)
         (list dom rst '..))
       (match f-ty
-        [(tc-result: (Function: (list (arr: doms rngs rests thn-effs els-effs) ..1)))
+        [(tc-result: (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ..1)))
          (let loop ([doms* doms] [rngs* rngs] [rests* rests])
            (cond [(null? doms*) 
                   (if (and (not (null? doms)) (null? (cdr doms)))
@@ -148,14 +148,14 @@
                  [(and (subtypes arg-tys (car doms*)) (car rests*) (subtype tail-ty (make-Listof (car rests*))))
                   (ret (car rngs*))]
                  [else (loop (cdr doms*) (cdr rngs*) (cdr rests*))]))]                      
-        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ..1))))
+        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ..1))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function in apply not allowed" x)))
                    arg-tys0)
          (let loop ([doms* doms] [rngs* rngs] [rests* rests])
            (cond [(null? doms*)
                   (match f-ty 
-                    [(tc-result: (Poly-names: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ..1))))
+                    [(tc-result: (Poly-names: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ..1))))
                      (cond 
                        [(null? doms) (int-err "how could doms be null: ~a ~a" doms f-ty)]
                        [(= 1 (length doms))
@@ -223,7 +223,7 @@
            [_ (tc-error/expr #:return (ret (Un))
                              "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                              (length argtypes))])]
-        [(tc-result: (Function: (list (arr: doms rngs rests latent-thn-effs latent-els-effs) ..1)) thn-eff els-eff)
+        [(tc-result: (Function: (list (arr: doms rngs rests #f latent-thn-effs latent-els-effs) ..1)) thn-eff els-eff)
          (if (= 1 (length doms))
              (let-values ([(thn-eff els-eff)
                            (tc-args argtypes arg-thn-effs arg-els-effs (car doms) (car rests) 
@@ -245,7 +245,7 @@
                        argtypes)]
                      [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
                      [else (loop (cdr doms*) (cdr rngs) (cdr rests*))])))]
-        [(and rft (tc-result: (Poly: vars (Function: (list (arr: doms rngs #f thn-effs els-effs) ...)))))
+        [(and rft (tc-result: (Poly: vars (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))))
          ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
          ;(printf "ftype again:    ~a~n" ftype)
          ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
@@ -256,7 +256,7 @@
                    argtypes)
          (let loop ([doms* doms] [rngs* rngs])
            (cond [(null? doms*)
-                  (match-let ([(tc-result: (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs #f _ _) ...)))) ftype])
+                  (match-let ([(tc-result: (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs #f #f _ _) ...)))) ftype])
                     (if (= 1 (length doms))
                         (tc-error/expr #:return (ret (Un)) 
                                        "Polymorphic function could not be applied to arguments:~nExpected: ~a ~nActual: ~a" 
@@ -290,7 +290,7 @@
                        )]|#
                  [else (loop (cdr doms*) (cdr rngs*))]))]
         ;; polymorphic varargs
-        [(tc-result: (Poly: vars (Function: (list (arr: dom rng rest thn-eff els-eff)))))
+        [(tc-result: (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
@@ -310,7 +310,7 @@
              [else (tc-error/expr #:return (ret (Un))
                                   "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
                                   (stringify dom) rest (stringify argtypes))]))]
-        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests thn-effs els-effs) ...))))
+        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ...))))
          (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
         ;; Union of function types works if we can apply all of them
         [(tc-result: (Union: (list (and fs (Function: _)) ...)) e1 e2)
@@ -413,7 +413,7 @@
      (match-let* ([(tc-result: prod-t) (tc-expr #'prod)]
                   [(tc-result: con-t) (tc-expr #'con)])
        (match (list prod-t con-t)
-         [(list (Function: (list (arr: (list) vals #f _ _))) (Function: (list (arr: dom rng #f _ _))))
+         [(list (Function: (list (arr: (list) vals #f #f _ _))) (Function: (list (arr: dom rng #f #f _ _))))
           (=> unmatch)
           (match (list vals dom)
             [(list (Values: v) (list t ...))

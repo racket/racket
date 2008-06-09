@@ -42,8 +42,8 @@
        (unify/acc (map (lambda (p) (map (lambda (e) (subst v t e)) p)) rest) 
                   (cons (list v t) acc))]
       ;; arrow types - just add a whole bunch of new constraints
-      [(list (list (Function: (list (arr: ts t t-rest t-thn-eff t-els-eff) ...)) 
-                   (Function: (list (arr: ss s s-rest s-thn-eff s-els-eff) ...)))
+      [(list (list (Function: (list (arr: ts t t-rest #f t-thn-eff t-els-eff) ...)) 
+                   (Function: (list (arr: ss s s-rest #f s-thn-eff s-els-eff) ...)))
              rest ...)
        #;(printf "arrow unification~n")
        (let ()

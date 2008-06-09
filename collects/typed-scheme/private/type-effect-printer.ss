@@ -46,11 +46,13 @@
     (match a
       [(top-arr:)
        (fp "Procedure")]
-      [(arr: dom rng rest thn-eff els-eff)
+      [(arr: dom rng rest drest thn-eff els-eff)
        (fp "(")
        (for-each (lambda (t) (fp "~a " t)) dom)
        (when rest
-         (fp "~a .. " rest))
+         (fp "~a* " rest))
+       (when drest
+         (fp "~a ..." drest))
        (fp "-> ~a" rng)
        (unless (and (null? thn-eff) (null? els-eff))
          (fp " : ~a ~a" thn-eff els-eff))
@@ -96,7 +98,7 @@
          [(list) (fp "(case-lambda)")]
          [(list a) (print-arr a)]
          [(list a ...) (fp "(case-lambda ") (for-each print-arr a) (fp ")")]))]
-    [(arr: _ _ _ _ _) (print-arr c)]
+    [(arr: _ _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(Box: e) (fp "(Box ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]

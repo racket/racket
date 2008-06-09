@@ -1,22 +1,25 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base)
+         "tc-utils.ss"
          mzlib/etc)
 
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.ss  and type-rep.ss
 
-(define-values (Covariant Contravariant Invariant Constant)
+(define-values (Covariant Contravariant Invariant Constant Dotted)
   (let ()
     (define-struct Variance () #:inspector #f)
     (define-struct (Covariant Variance) () #:inspector #f)
     (define-struct (Contravariant Variance) () #:inspector #f)
     (define-struct (Invariant Variance) () #:inspector #f)
     (define-struct (Constant Variance) () #:inspector #f)
-    (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant))))
+    ;; not really a variance, but is disjoint with the others
+    (define-struct (Dotted Variance) () #:inspector #f)
+    (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant) (make-Dotted))))
 
 
-(provide Covariant Contravariant Invariant Constant)
+(provide Covariant Contravariant Invariant Constant Dotted)
 
 ;; hashtables for keeping track of free variables and indexes
 (define index-table (make-weak-hasheq))
@@ -39,6 +42,8 @@
   (define (combine-var v w)
     (cond
       [(eq? v w) v]
+      [(or (eq? v Dotted) (eq? w Dotted))
+       (int-err "Cannot combine Dotted w/ not Dotted: ~a ~a" v w)]
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
@@ -53,6 +58,12 @@
               (hash-set! ht sym var))))))
    freess)
   ht)
+
+;; given a set of free variables, remove bound, add bound ...
+(define (fix-bound vs bound)
+  (define vs* (hash-map* (lambda (k v) v) vs))
+  (hash-remove! vs* bound)
+  (hash-set! vs* bound (cons bound Dotted)))
 
 ;; frees -> frees
 (define (flip-variances vs)
@@ -89,7 +100,8 @@
      (when (< k n) (hash-remove! new-ht k))))
   new-ht)
 
-(provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table)
+(provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table
+         fix-bound)
 
 (define-syntax (unless-in-table stx) 
   (syntax-case stx ()

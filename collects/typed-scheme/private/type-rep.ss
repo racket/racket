@@ -21,7 +21,7 @@
   
   ;; n is a Name
   (dt F (n) [#:frees (make-immutable-hasheq (list (cons n Covariant))) empty-hash-table] [#:fold-rhs #:base])
-  
+    
   ;; id is an Identifier
   (dt Name (id) [#:intern (hash-id id)] [#:frees #f] [#:fold-rhs #:base])
     
@@ -54,9 +54,18 @@
   
   ;; n is how many variables are bound here
   ;; body is a Scope
-  (dt Poly (n body) #:no-provide [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+  (dt Poly (n body) #:no-provide 
+      [#:frees (free-vars* body) (without-below n (free-idxs* body))]
       [#:fold-rhs (let ([body* (remove-scopes n body)])
                     (*Poly n (add-scopes n (type-rec-id body*))))])
+  
+  ;; n is how many variables are bound here
+  ;; there are n-1 'normal' vars and 1 ... var
+  ;; body is a Scope
+  (dt PolyDots (n body) #:no-provide
+      [#:frees (free-vars* body) (without-below n (free-idxs* body))]
+      [#:fold-rhs (let ([body* (remove-scopes n body)])
+                    (*PolyDots n (add-scopes n (type-rec-id body*))))])
   
   ;; pred : identifier
   ;; cert : syntax certifier
@@ -83,24 +92,37 @@
   
   ;; dom : Listof[Type]
   ;; rng : Type
-  ;; rest : Type
+  ;; rest : Option[Type]
+  ;; drest : Option[Cons[Type,Name or nat]]
+  ;; rest and drest NOT both true
   ;; thn-eff : Effect
   ;; els-eff : Effect
   ;; arr is NOT a Type
-  (dt arr (dom rng rest thn-eff els-eff)
-      [#:frees (combine-frees (append (map flip-variances (map free-vars* dom)) 
-                                      (map free-vars* (append (list rng) 
-                                                              (if rest (list rest) null)
-                                                              thn-eff
-                                                              els-eff))))
-               (combine-frees (append (map flip-variances (map free-idxs* dom))
-                                      (map free-idxs* (append (list rng) 
-                                                              (if rest (list rest) null)
-                                                              thn-eff
-                                                              els-eff))))]
+  (dt arr (dom rng rest drest thn-eff els-eff)
+      [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null) dom)))
+                                      (match drest
+                                        [(cons t (? symbol? bnd))
+                                         (let ([vs (free-vars* t)])
+                                           (flip-variances (fix-bound vs bnd)))]
+                                        [(cons t bnd) (flip-variances (free-vars* t))]
+                                        [_ null])
+                                      (list (free-vars* rng))
+                                      (map make-invariant
+                                           (map free-vars* (append thn-eff els-eff)))))
+               (combine-frees (append (map flip-variances (map free-idxs* (append (if rest (list rest) null) dom)))
+                                      (match drest
+                                        [(cons t (? number? bnd))
+                                         (let ([vs (free-idxs* t)])
+                                           (flip-variances (fix-bound vs bnd)))]
+                                        [(cons t bnd) (flip-variances (free-idxs* t))]
+                                        [_ null])
+                                      (list (free-idxs* rng))                                      
+                                      (map make-invariant
+                                           (map free-idxs* (append thn-eff els-eff)))))]
       [#:fold-rhs (*arr (map type-rec-id dom)
                         (type-rec-id rng)
                         (and rest (type-rec-id rest))
+                        (and drest (cons (type-rec-id (car drest)) (cdr drest)))
                         (map effect-rec-id thn-eff)
                         (map effect-rec-id els-eff))])
   
@@ -203,19 +225,22 @@
               [(kw #:matcher mtch pats ... expr)
                (hash-set! ht (syntax-e #'kw) (list #'mtch 
                                                    (syntax/loc cl (pats ...))
-                                                   (lambda (tr er) #'expr)))]
+                                                   (lambda (tr er) #'expr)
+                                                   cl))]
               [(kw pats ... expr) 
                (hash-set! ht (syntax-e #'kw) (list (mk-matcher (syntax-e #'kw)) 
                                                    (syntax/loc cl (pats ...))
-                                                   (lambda (tr er) #'expr)))]))
+                                                   (lambda (tr er) #'expr)
+                                                   cl))]))
           (define rid #'type-rec-id)
           (define erid #'effect-rec-id)
           (define (gen-clause k v)
             (define match-ex (car v))
             (define pats (cadr v))
             (define body-f (caddr v))
-            (define pat (quasisyntax/loc pats (#,match-ex  . #,pats)))
-            (define cl (quasisyntax/loc match-ex (#,pat #,(body-f rid erid))))
+            (define src (cadddr v))
+            (define pat (quasisyntax/loc src (#,match-ex  . #,pats)))
+            (define cl (quasisyntax/loc src (#,pat #,(body-f rid erid))))
             cl)
           (syntax-case stx ()
             [(tc rec-id ty [kw pats ... es] ...)
@@ -266,6 +291,9 @@
          ;; necessary to avoid infinite loops
          [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
          [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+         [#:PolyDots n body* 
+                 (let ([body (remove-scopes n body*)])
+                   (*PolyDots n (*Scope (loop (+ n outer) body))))]
          [#:Poly n body* 
                  (let ([body (remove-scopes n body*)])
                    (*Poly n (*Scope (loop (+ n outer) body))))])))
@@ -291,6 +319,9 @@
          ;; necessary to avoid infinite loops
          [#:Union elems (*Union (remove-dups (sort (map sb elems) type<?)))]
          [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
+         [#:PolyDots n body* 
+                 (let ([body (remove-scopes n body*)])
+                   (*PolyDots n (*Scope (loop (+ n outer) body))))]
          [#:Poly n body* 
                  (let ([body (remove-scopes n body*)])
                    (*Poly n (*Scope (loop (+ n outer) body))))])))
@@ -337,6 +368,21 @@
          (error "Wrong number of names"))
        (instantiate-many (map *F names) scope)]))
   
+  ;; the 'smart' constructor
+  (define (PolyDots* names body)
+    (if (null? names) body
+        (let ([v (*PolyDots (length names) (abstract-many names body))])
+          (hash-set! name-table v names)
+          v)))
+  
+  ;; the 'smart' destructor
+  (define (PolyDots-body* names t)
+    (match t
+      [(PolyDots: n scope)
+       (unless (= (length names) n)
+         (error "Wrong number of names"))
+       (instantiate-many (map *F names) scope)]))
+  
   (print-struct #t)
   
   (define-match-expander Mu-unsafe:
@@ -348,6 +394,11 @@
     (lambda (stx)
       (syntax-case stx ()
         [(_ n bp) #'(? Poly? (app (lambda (t) (list (Poly-n t) (Poly-body t))) (list n bp)))])))
+  
+  (define-match-expander PolyDots-unsafe:
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ n bp) #'(? PolyDots? (app (lambda (t) (list (PolyDots-n t) (PolyDots-body t))) (list n bp)))])))
   
   (define-match-expander Mu:*
     (lambda (stx)
@@ -392,6 +443,31 @@
                        (list syms (Poly-body* syms t))))
                    (list nps bp)))])))
   
+  ;; This match expander wraps the smart constructor
+  ;; names are generated with gensym
+  (define-match-expander PolyDots:*
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ nps bp)
+         #'(? PolyDots?
+              (app (lambda (t) 
+                     (let* ([n (PolyDots-n t)]
+                            [syms (build-list n (lambda _ (gensym)))])
+                       (list syms (PolyDots-body* syms t))))
+                   (list nps bp)))])))
+  
+  ;; This match expander uses the names from the hashtable  
+  (define-match-expander PolyDots-names:
+    (lambda (stx)
+      (syntax-case stx ()
+        [(_ nps bp)
+         #'(? PolyDots?
+              (app (lambda (t) 
+                     (let* ([n (PolyDots-n t)]
+                            [syms (hash-ref name-table t)])
+                       (list syms (PolyDots-body* syms t))))
+                   (list nps bp)))])))
+  
   ;; unfold : Type -> Type
   ;; must be applied to a Mu
   (define (unfold t)
@@ -417,21 +493,26 @@
   (provide
    unfold
    Mu-name: Poly-names:
+   PolyDots-names:
    Type-seq Effect-seq  
    Mu-unsafe: Poly-unsafe:
-   Mu? Poly?
+   PolyDots-unsafe:
+   Mu? Poly? PolyDots?
    arr
    Type? Effect?
    Poly-n
+   PolyDots-n
    free-vars*
    type-equal? type-compare type<?
    remove-dups
    (rename-out [Mu:* Mu:]               
                [Poly:* Poly:]
+               [PolyDots:* PolyDots:]
                [Mu* make-Mu]
                [Poly* make-Poly]
                [Mu-body* Mu-body]
-               [Poly-body* Poly-body]))
+               [Poly-body* Poly-body]
+               [PolyDots-body* PolyDots-body]))
   
   ;(trace unfold)
 
