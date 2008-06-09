@@ -19,6 +19,7 @@
 
   ;; Needed for browsing
   (define original-security-guard (current-security-guard))
+  (define orig-err-string-handler (error-value->string-handler))
       
   (define-unit viewer@
       (import (prefix config: cmdline^) core^)
@@ -485,15 +486,17 @@
       (define c-frame (new (class talk-frame%
 			     (define/override (on-move x y)
 			       (super on-move x y)
-			       (parameterize ([current-security-guard original-security-guard])
-				 (with-handlers ([void raise]) ; prevents exn handler from grabbing security guard
+			       (parameterize ([current-security-guard original-security-guard]
+                                              [error-value->string-handler orig-err-string-handler])
+				 (with-handlers ([void void]) ; also prevents exn handler from grabbing security guard
 				   (put-preferences '(slideshow:commentary-x slideshow:commentary-y)
 						    (list x y)
 						    void))))
 			     (define/override (on-size w h)
 			       (super on-size w h)
-			       (parameterize ([current-security-guard original-security-guard])
-				 (with-handlers ([void raise]) ; prevents exn handler from grabbing security guard
+			       (parameterize ([current-security-guard original-security-guard]
+                                              [error-value->string-handler orig-err-string-handler])
+				 (with-handlers ([void void]) ; also prevents exn handler from grabbing security guard
 				   (put-preferences '(slideshow:commentary-width slideshow:commentary-height)
 						    (list w h)
 						    void))))
