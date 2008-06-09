@@ -6,6 +6,8 @@
 @begin[
 (define (item* header . args) (apply item @bold[header]{: } args))
 (define-syntax-rule (tmod forms ...) (schememod typed-scheme forms ...))
+(define (gtech . x)  (apply tech x #:doc '(lib "scribblings/guide/guide.scrbl")))
+(define (rtech . x)  (apply tech x #:doc '(lib "scribblings/reference/reference.scrbl")))
 ]
 
 @title[#:tag "top"]{@bold{Typed Scheme}: Scheme with Static Types}
@@ -248,24 +250,24 @@ and @scheme[(make-Nothing)] otherwise.  Therefore, it produces a
 
 @subsubsub*section{Base Types}
 These types represent primitive Scheme data.
-@defidform[Number]{A @tech{number}}
-@defidform[Integer]{An @tech{integer}}
+@defidform[Number]{A @gtech{number}}
+@defidform[Integer]{An @gtech{integer}}
 @defidform[Boolean]{Either @scheme[#t] or @scheme[#f]}
-@defidform[String]{A @tech{string}}
-@defidform[Keyword]{A literal @tech{keyword}}
-@defidform[Symbol]{A @tech{symbol}}
+@defidform[String]{A @gtech{string}}
+@defidform[Keyword]{A literal @gtech{keyword}}
+@defidform[Symbol]{A @gtech{symbol}}
 @defidform[Void]{@|void-const|}
-@defidform[Port]{A @tech{port}}
-@defidform[Path]{A @tech{path}}
-@defidform[Char]{A @tech{character}}
+@defidform[Port]{A @gtech{port}}
+@defidform[Path]{A @rtech{path}}
+@defidform[Char]{A @gtech{character}}
 
 @defidform[Any]{Any value}
 
 The following base types are parameteric in their type arguments.
 
-@defform[(Listof t)]{Homogenous @tech{lists} of @scheme[t]}
-@defform[(Boxof t)]{A @tech{box} of @scheme[t]}
-@defform[(Vectorof t)]{Homogenous @tech{vectors} of @scheme[t]}
+@defform[(Listof t)]{Homogenous @gtech{lists} of @scheme[t]}
+@defform[(Boxof t)]{A @gtech{box} of @scheme[t]}
+@defform[(Vectorof t)]{Homogenous @gtech{vectors} of @scheme[t]}
 @defform[(Option t)]{Either @scheme[t] of @scheme[#f]}
 @defform[(Pair s t)]{is the pair containing @scheme[s] as the @scheme[car]
   and @scheme[t] as the @scheme[cdr]}
