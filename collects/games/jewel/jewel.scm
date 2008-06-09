@@ -1309,7 +1309,7 @@
     ; generate an expose event, redraw the opengl window
     (queue-callback 
       (lambda x (send *OPENGL_WINDOW* on-paint))
-      #t
+      #f
     )
   )
 
