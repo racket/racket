@@ -10,6 +10,7 @@
 
 (provide fv fv/list
          substitute
+         substitute-dots
          subst-all
          subst 
          ret
@@ -26,7 +27,45 @@
   (define (sb t) (substitute image name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-                 [#:F name* (if (eq? name* name) image target)])
+                 [#:F name* (if (eq? name* name) image target)]
+                 [#:arr dom rng rest drest thn-eff els-eff
+                        (begin
+                          (when (and (pair? drest)
+                                     (eq? name (cdr drest)))
+                            (int-err "substitute used on ... variable ~a" name))
+                          (make-arr (map sb dom)
+                                    (sb rng)
+                                    (and rest (sb rest))
+                                    (and drest (cons (sb (car drest)) (cdr drest)))
+                                    (map (lambda (e) (sub-eff sb e)) thn-eff)
+                                    (map (lambda (e) (sub-eff sb e)) els-eff)))])
+      target))
+
+;; substitute-dots : Listof[Type] Name Type -> Type
+(define (substitute-dots images name target)    
+  (define (sb t) (substitute-dots images name t))
+  (if (hash-ref (free-vars* target) name #f)
+      (type-case sb target
+                 [#:F name* (if (eq? name* name)
+                                (int-err "substitute-dots: got single variable ~a" name*)
+                                target)]
+                 [#:arr dom rng rest drest thn-eff els-eff
+                        (if (and (pair? drest)
+                                 (eq? name (cdr drest)))                            
+                            (make-arr (append 
+                                       (map sb dom)
+                                       (map (lambda (img) (substitute img name (car drest))) images))
+                                      (sb rng)
+                                      #f
+                                      #f
+                                      (map (lambda (e) (sub-eff sb e)) thn-eff)
+                                      (map (lambda (e) (sub-eff sb e)) els-eff))
+                            (make-arr (map sb dom)
+                                      (sb rng)
+                                      (and rest (sb rest))
+                                      (and drest (cons (sb (car drest)) (cdr drest)))
+                                      (map (lambda (e) (sub-eff sb e)) thn-eff)
+                                      (map (lambda (e) (sub-eff sb e)) els-eff)))])
       target))
 
 ;; substitute many variables

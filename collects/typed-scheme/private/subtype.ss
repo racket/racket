@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "type-rep.ss" "unify.ss" "type-utils.ss"
+(require (except-in "type-rep.ss" sub-eff) "unify.ss" "type-utils.ss"
          "tc-utils.ss"
          "effect-rep.ss"
          "type-comparison.ss"

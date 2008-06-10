@@ -63,7 +63,8 @@
 (define (fix-bound vs bound)
   (define vs* (hash-map* (lambda (k v) v) vs))
   (hash-remove! vs* bound)
-  (hash-set! vs* bound (cons bound Dotted)))
+  (hash-set! vs* bound (cons bound Dotted))
+  vs*)
 
 ;; frees -> frees
 (define (flip-variances vs)

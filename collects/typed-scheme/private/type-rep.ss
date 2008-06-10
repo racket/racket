@@ -103,8 +103,8 @@
                                     (match drest
                                       [(cons t (? symbol? bnd))
                                        (let ([vs (free-vars* t)])
-                                         (flip-variances (fix-bound vs bnd)))]
-                                      [(cons t bnd) (flip-variances (free-vars* t))]
+                                         (list (flip-variances (fix-bound vs bnd))))]
+                                      [(cons t bnd) (list (flip-variances (free-vars* t)))]
                                       [_ null])
                                     (list (free-vars* rng))
                                     (map make-invariant
@@ -113,8 +113,8 @@
                                     (match drest
                                       [(cons t (? number? bnd))
                                        (let ([vs (free-idxs* t)])
-                                         (flip-variances (fix-bound vs bnd)))]
-                                      [(cons t bnd) (flip-variances (free-idxs* t))]
+                                         (list (flip-variances (fix-bound vs bnd))))]
+                                      [(cons t bnd) (list (flip-variances (free-idxs* t)))]
                                       [_ null])
                                     (list (free-idxs* rng))                                      
                                     (map make-invariant
@@ -520,6 +520,7 @@
  free-vars*
  type-equal? type-compare type<?
  remove-dups
+ sub-eff
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]
              [PolyDots:* PolyDots:]
