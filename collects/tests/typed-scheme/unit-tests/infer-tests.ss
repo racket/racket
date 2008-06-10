@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base))
-(require (private planet-requires type-effect-convenience type-rep unify union infer-ops type-utils)
+(require (private planet-requires type-effect-convenience type-rep unify union infer type-utils)
          (prefix-in table: (private tables)))
 (require (schemeunit)) 
 
@@ -25,6 +25,8 @@
               [fv-t (-poly (b c d e) (-v a)) a]
               [fv-t (-mu a (-lst a))]
               [fv-t (-mu a (-lst (-pair a (-v b)))) b]
+              
+              [fv-t (->* null (-v a) N) a] ;; check that a is CONTRAVARIANT
               ))
 
 (define-syntax-rule (i2-t t1 t2 (a b) ...)

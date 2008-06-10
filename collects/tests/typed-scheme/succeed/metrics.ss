@@ -14,9 +14,9 @@
 (require/typed filename-extension (Path -> (U #f Bytes)) (lib "file.ss"))
 (require/typed normalize-path (Path Path -> Path) (lib "file.ss"))
 (require/typed explode-path (Path -> (Listof Path)) (lib "file.ss"))
-(require/typed srfi48::format (Port String String top .. -> top)  "patch.ss")
+(require/typed srfi48::format (Port String String top * -> top)  "patch.ss")
 ;; FIXME - prefix
-#;(require/typed srfi48:format ( Port String String top .. -> top) (prefix-in srfi48: (lib "48.ss" "srfi")))
+#;(require/typed srfi48:format ( Port String String top * -> top) (prefix-in srfi48: (lib "48.ss" "srfi")))
 (require (lib "match.ss")
          ;(lib "file.ss")
          ;(lib "list.ss")

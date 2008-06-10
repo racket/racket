@@ -9,13 +9,16 @@
  "parse-type-tests.ss" ;; done
  "type-annotation-test.ss" ;; done
  "module-tests.ss"
+ "subst-tests.ss"
  "infer-tests.ss")
 
-(require (private planet-requires))
+(require (private planet-requires infer infer-dummy))
 
 (require (schemeunit))
 
 (provide unit-tests)
+
+(infer-param infer)
 
 (define unit-tests
   (apply

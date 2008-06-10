@@ -38,7 +38,7 @@
                                        [randomize! : ( -> Void)]
                                        [pseudo-randomize! : (Integer Integer -> Void)]
                                        [make-integers : (-> (Integer -> Integer)) ] 
-                                       [make-reals : ( Nb .. -> ( -> Number))])) 
+                                       [make-reals : ( Nb * -> ( -> Number))])) 
   (define-type-alias Random :random-source)
   (define: (:random-source-make 
             [state-ref : ( -> SpList)]
@@ -46,7 +46,7 @@
             [randomize! : ( -> Void)]
             [pseudo-randomize! : (Integer Integer -> Void)]
             [make-integers : (-> (Integer -> Integer)) ] 
-            [make-reals : (Nb .. -> (-> Number))])
+            [make-reals : (Nb * -> (-> Number))])
             : Random
     (make-:random-source state-ref state-set! randomize! pseudo-randomize! make-integers make-reals ))
   

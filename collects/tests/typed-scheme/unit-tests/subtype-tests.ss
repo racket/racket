@@ -3,7 +3,7 @@
 (require "test-utils.ss")
 
 (require (private subtype type-rep type-effect-convenience 
-                  planet-requires init-envs type-environments union))
+                  planet-requires init-envs type-environments union infer infer-dummy))
 
 (require (schemeunit)
          (for-syntax scheme/base))
