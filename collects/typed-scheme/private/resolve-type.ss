@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require "type-rep.ss"  "type-name-env.ss" "tc-utils.ss"
-         "type-utils.ss" 
+         "type-utils.ss"
          mzlib/plt-match
          mzlib/trace)
 

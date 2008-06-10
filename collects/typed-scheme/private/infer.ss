@@ -5,7 +5,7 @@
 
 (require "unify.ss" "type-comparison.ss" "type-rep.ss" "effect-rep.ss" "subtype.ss"
          "planet-requires.ss" "tc-utils.ss" "union.ss"
-         "resolve-type.ss"
+         "resolve-type.ss" "type-utils.ss"
          "type-effect-convenience.ss"
          (lib "trace.ss")
          (lib "plt-match.ss")

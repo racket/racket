@@ -17,7 +17,8 @@
          tc-result: 
          tc-result-equal? 
          effects-equal?
-         tc-result-t)
+         tc-result-t
+         unfold)
 
 
 ;; substitute : Type Name Type -> Type
@@ -35,7 +36,12 @@
   (foldr (lambda (e acc) (substitute (cadr e) (car e) acc)) t s))
 
 
-
+;; unfold : Type -> Type
+;; must be applied to a Mu
+(define (unfold t)
+  (match t
+    [(Mu: name b) (substitute t name b)]
+    [_ (int-err "unfold: requires Mu type, got ~a" t)]))
 
 (define (instantiate-poly t types)
   (match t
