@@ -11,7 +11,6 @@
          "utils.ss" ;; doesn't need tests
          "type-rep.ss" ;; doesn't need tests
          "unify.ss" ;; needs tests
-         "infer.ss"
          "type-effect-convenience.ss" ;; maybe needs tests
          "union.ss"
          "subtype.ss" ;; has tests
