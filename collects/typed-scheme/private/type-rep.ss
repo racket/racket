@@ -337,7 +337,7 @@
                     (if rest (sb rest) #f)
                     (if drest
                         (cons (sb (car drest))
-                              (if (= (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
+                              (if (eqv? (cdr drest) (+ count outer)) (F-n image) (cdr drest)))
                         #f)
                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
@@ -526,6 +526,7 @@
              [PolyDots:* PolyDots:]
              [Mu* make-Mu]
              [Poly* make-Poly]
+             [PolyDots* make-PolyDots]
              [Mu-body* Mu-body]
              [Poly-body* Poly-body]
              [PolyDots-body* PolyDots-body]))

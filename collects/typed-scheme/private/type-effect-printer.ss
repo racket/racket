@@ -52,7 +52,7 @@
        (when rest
          (fp "~a* " rest))
        (when drest
-         (fp "~a ..." drest))
+         (fp "~a ... ~a " (car drest) (cdr drest)))
        (fp "-> ~a" rng)
        (unless (and (null? thn-eff) (null? els-eff))
          (fp " : ~a ~a" thn-eff els-eff))
@@ -115,6 +115,8 @@
     [(Poly-names: names body) 
      #;(fprintf (current-error-port) "POLY SEQ: ~a~n" (Type-seq body))
      (fp "(All ~a ~a)" names body)]
+    [(PolyDots-names: (list names ... dotted) body) 
+     (fp "(All ~a ~a)" (append names (list dotted '...)) body)]
     #;
     [(Mu-unsafe: b) (fp "(unsafe-mu ~a ~a)" (Type-seq c) b)]
     [(Mu: x (Syntax: (Union: (list

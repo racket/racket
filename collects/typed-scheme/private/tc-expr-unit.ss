@@ -69,13 +69,20 @@
   (let* ([ty (lookup-type/lexical id)]
          [inst (syntax-property id 'type-inst)])
     (cond [(and inst
-                (not (Poly? ty)))
+                (not (or (Poly? ty) (PolyDots? ty))))
            (tc-error/expr #:return (ret (Un)) "Cannot instantiate non-polymorphic type ~a" ty)]
+          
           [(and inst
-               (not (= (length (syntax->list inst)) (Poly-n ty))))
+                (Poly? ty)
+                (not (= (length (syntax->list inst)) (Poly-n ty))))
            (tc-error/expr #:return (ret (Un)) 
                           "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
                           ty (Poly-n ty) (length (syntax->list inst)))]
+          [(and inst (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
+           ;; we can provide 0 arguments for the ... var
+           (tc-error/expr #:return (ret (Un)) 
+                          "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
+                          ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
           [else
            (let ([ty* (if inst
                           (instantiate-poly ty (map parse-type (syntax->list inst)))

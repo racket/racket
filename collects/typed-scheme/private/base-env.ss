@@ -498,6 +498,20 @@
      [syntax? (make-pred-ty (-Syntax Univ))]
      [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                         (-> (-Syntax Univ) Univ Univ)))]
+     
+     ;; experimental
+     
+     [map* (make-PolyDots 
+            (list 'a 'b 'c)
+            (make-Function 
+             (list 
+              (make-arr-dots 
+               (list (make-Function (list (make-arr-dots (list (-v b)) (-v a) (-v c) 'c)))
+                     (-lst (-v b)))
+               (-lst (-v a))
+               (-lst (-v c))
+               'c))))]
+     
      )))
 
 (begin-for-syntax 

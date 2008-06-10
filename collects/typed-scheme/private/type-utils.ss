@@ -33,7 +33,7 @@
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest)))
-                            (int-err "substitute used on ... variable ~a" name))
+                            (int-err "substitute used on ... variable ~a in type ~a" name target))
                           (make-arr (map sb dom)
                                     (sb rng)
                                     (and rest (sb rest))
