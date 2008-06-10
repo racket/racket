@@ -44,6 +44,7 @@
                      (make-arr (for/list ([d dom]) (var-demote d V))
                                (vp rng)
                                (and rest (var-demote rest V))
+                               #f
                                thn
                                els))]))
 
@@ -67,6 +68,7 @@
                         (make-arr (for/list ([d dom]) (var-promote d V))
                                   (vd rng)
                                   (and rest (var-promote rest V))
+                                  #f
                                   thn
                                   els))]))
 ;; a stupid impl
@@ -83,12 +85,28 @@
 ;; X a var
 (define-struct c (S X T) #:prefab)
 
-;; map is a functional map from vars to c's
-;; V list of vars
+;; maps is a list of pairs of
+;;    - functional maps from vars to c's
+;;    - functional mappings from vars to lists of vars generated for ...
+;; we need a bunch of mappings for each cset to handle case-lambda
+;; because case-lambda can generate multiple possible solutions, and we
+;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
 (define (empty-cset X)
-  (make-cset (list (for/hash ([x X]) (values x (make-c (Un) x Univ))))))
+  (make-cset (list (cons (for/hash ([x X]) (values x (make-c (Un) x Univ)))
+                         (make-immutable-hash null)))))
+
+(define (in-pairs seq)
+  (make-do-sequence
+   (lambda ()
+     (let-values ([(more? gen) (sequence-generate seq)])
+       (values (lambda (e) (let ([e (gen)]) (values (car e) (cdr e))))
+               (lambda (_) #t)
+               #t
+               (lambda (_) (more?))
+               (lambda _ #t)
+               (lambda _ #t))))))
 
 #;
 (define (lookup cset var)
@@ -97,7 +115,9 @@
 (define (insert cs var S T)
   (match cs
     [(struct cset (maps))
-     (make-cset (for/list ([map maps])(hash-set map var (make-c S var T))))]))
+     (make-cset (for/list ([(map dmap) (in-pairs maps)])
+                  (cons (hash-set map var (make-c S var T))
+                        dmap)))]))
 
 (define c-meet
   (match-lambda**
@@ -106,6 +126,13 @@
       (unless (subtype S T)
         (fail! S T))
       (make-c S X T))]))
+
+(define (subst-all/c sub -c)
+  (match -c
+    [(struct c (S X T))
+     (make-c (subst-all sub S)
+             (F-n (subst-all sub (make-F X)))
+             (subst-all sub T))]))
     
 
 (define (cset-meet x y)
@@ -113,10 +140,20 @@
    [((struct cset (maps1)) (struct cset (maps2)))
     (let ([maps (filter values
                         (for*/list
-                         ([map1 maps1] [map2 maps2])
+                         ([(map1 dmap1) (in-pairs maps1)]
+                          [(map2 dmap2) (in-pairs maps2)])
                          (with-handlers ([exn:infer? (lambda (_) #f)])
-                           (for/hash ([(k v1) map1])                     
-                                     (values k (c-meet v1 (hash-ref map2 k)))))))])
+                           (let* ([new-dmap dmap1]
+                                  [subst
+                                   (apply append
+                                          (for/list ([(dvar vars) dmap1])
+                                            (let ([vars2 (hash-ref dmap2 dvar #f)])
+                                              (unless (and vars2 (= (length vars) (length vars2)))
+                                                (fail! vars vars2))
+                                              (if vars2 (map list vars2 (map make-F vars)) null))))])
+                             (cons (for/hash ([(k v1) map1])
+                                             (values k (c-meet v1 (subst-all/c subst (hash-ref map2 k)))))
+                                   dmap1)))))])
       (when (null? maps)
         (fail! maps1 maps2))
       (make-cset maps))]))
@@ -257,7 +294,7 @@
                 [else (fail! S T)])]))))
 
 (define (subst-gen C R)
-  (for/list ([(k v) (car (cset-maps C))])
+  (for/list ([(k v) (car (car (cset-maps C)))])
     (match v
       [(struct c (S X T))
        (let ([var (hash-ref (free-vars* R) X Constant)])

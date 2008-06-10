@@ -96,7 +96,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (types-of-formals stx src)
   (syntax-case stx (:)
     [([var : ty] ...) (quasisyntax/loc stx (ty ...))]
-    [([var : ty] ... . [rest : rest-ty]) (syntax/loc stx (ty ... rest-ty ..))]
+    [([var : ty] ... . [rest : rest-ty]) (syntax/loc stx (ty ... rest-ty *))]
     [_
      (let loop ([stx stx])
        (syntax-case stx ()
