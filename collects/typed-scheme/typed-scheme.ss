@@ -13,6 +13,8 @@
           "private/type-name-env.ss"
           "private/type-alias-env.ss"
           "private/utils.ss"
+          (only-in "private/infer-dummy.ss" infer-param)
+          "private/infer.ss"
           "private/type-effect-convenience.ss"
           "private/type-contract.ss"
           scheme/nest
@@ -47,7 +49,10 @@
            [with-handlers
                ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
                  (lambda (e) (tc-error "Internal error: ~a" e))])]
-           [parameterize ([delay-errors? #t]
+           [parameterize (;; a cheat to avoid units
+                          [infer-param infer]
+                          ;; do we report multiple errors
+                          [delay-errors? #t]
                           ;; this parameter is for parsing types
                           [current-tvars initial-tvar-env]
                           ;; this parameter is just for printing types
@@ -93,7 +98,9 @@
     [(_ . form)     
      (nest
          ([begin (set-box! typed-context? #t)]
-          [parameterize (;; this paramter is for parsing types
+          [parameterize (;; a cheat to avoid units
+                         [infer-param infer]
+                         ;; this paramter is for parsing types
                          [current-tvars initial-tvar-env]
                          ;; this parameter is just for printing types
                          ;; this is a parameter to avoid dependency issues

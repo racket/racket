@@ -2,19 +2,6 @@
 (require scheme/unit)
 (provide (all-defined-out))
 
-;; cycle 1
-
-(define-signature type-printer^
-  (print-type has-name print-effect)) ;; done
-
-(define-signature infer^
-  (unify1 fv fv/list unfold)) ;; done 
-
-(define-signature subst^
-  (subst subst-all)) ;; done
-
-(define-signature type-equal^
-  (type-equal? type-compare type<? rename tc-result-equal?)) ;; done
 
 ;; cycle 2
 

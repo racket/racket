@@ -281,7 +281,8 @@
 ;; X : variables to infer
 ;; S : actual argument types
 ;; T : formal argument types
-;; R : result type or #f
+;; R : result type
+;; expected : boolean
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result

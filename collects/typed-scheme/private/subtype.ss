@@ -1,11 +1,12 @@
 #lang scheme/base
 
-(require (except-in "type-rep.ss" sub-eff) "unify.ss" "type-utils.ss"
+(require (except-in "type-rep.ss" sub-eff) "type-utils.ss"
          "tc-utils.ss"
          "effect-rep.ss"
          "type-comparison.ss"
          "resolve-type.ss"
          "type-name-env.ss"
+         (only-in "infer-dummy.ss" unify)
          mzlib/plt-match
          mzlib/trace)
 
@@ -197,7 +198,7 @@
               ;; use unification to see if we can use the polytype here
               [(list (Poly: vs b) s)
                (=> unmatch)
-               (if (unify1 s b) A0 (unmatch))]
+               (if (unify vs (list b) (list s)) A0 (unmatch))]
               [(list s (Poly: vs b))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]

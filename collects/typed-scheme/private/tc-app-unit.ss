@@ -5,7 +5,6 @@
          "effect-rep.ss"
          "tc-utils.ss"
          "subtype.ss"
-         "unify.ss"
          "infer.ss"
          "union.ss"
          "type-utils.ss"
