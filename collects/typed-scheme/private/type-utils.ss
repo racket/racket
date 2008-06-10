@@ -6,6 +6,7 @@
          "rep-utils.ss"
          "free-variance.ss"
          mzlib/plt-match
+         scheme/list
          (for-syntax scheme/base))
 
 (provide fv fv/list
@@ -88,6 +89,13 @@
      (unless (= (length types) (length ns))
        (int-err "instantiate-poly: wrong number of types: expected ~a, got ~a" (length ns) (length types)))
      (subst-all (map list ns types) body)]
+    [(PolyDots: (list fixed ... dotted) body)
+     (unless (>= (length types) (length fixed))
+       (int-err "instantiate-poly: wrong number of types: expected at least ~a, got ~a" (length fixed) (length types)))
+     (let* ([fixed-tys (take types (length fixed))]
+            [rest-tys (drop types (length fixed))]
+            [body* (subst-all (map list fixed fixed-tys) body)])
+       (substitute-dots rest-tys dotted body*))]
     [_ (int-err "instantiate-many: requires Poly type, got ~a" t)]))
 
 
