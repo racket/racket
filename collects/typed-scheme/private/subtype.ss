@@ -198,7 +198,7 @@
               ;; use unification to see if we can use the polytype here
               [(list (Poly: vs b) s)
                (=> unmatch)
-               (if (unify vs (list b) (list s)) A0 (unmatch))]
+               (if (unify vs (list b) (list s)) A0 (unmatch))]              
               [(list s (Poly: vs b))
                (=> unmatch)
                (if (null? (fv b)) (subtype* A0 s b) (unmatch))]

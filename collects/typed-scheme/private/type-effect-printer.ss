@@ -103,7 +103,7 @@
     [(Box: e) (fp "(Box ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]
     [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
-    [(F: nm) (fp "<~a>" nm)]      
+    [(F: nm) (fp "~a" nm)]      
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
     [(Param: in out) 
      (if (equal? in out)

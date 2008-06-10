@@ -24,6 +24,10 @@
 
 (define (stx-cadr stx) (stx-car (stx-cdr stx)))
 
+;; t is (make-F v)
+(define-struct Dotted (t))
+(define-struct (DottedBoth Dotted) ())
+
 
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])
@@ -74,11 +78,28 @@
          (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty)))]
       [(dom ... rest ::: -> rng)
        (and (eq? (syntax-e #'->) '->) 
-            (or (symbolic-identifier=? #'::: (quote-syntax ..))
-                (symbolic-identifier=? #'::: (quote-syntax ...))))
+            (symbolic-identifier=? #'::: (quote-syntax *)))
        (begin
          (add-type-name-reference #'->)
          (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rest) (parse-type #'rng)))]
+      [(dom ... rest ::: bound -> rng)
+       (and (eq? (syntax-e #'->) '->) 
+            (eq? (syntax-e #':::) '...)
+            (identifier? #'bound))
+       (begin
+         (add-type-name-reference #'->)
+         (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
+           (if (not (Dotted? var))
+               (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))
+               (make-Function
+                (list
+                 (make-arr-dots (map parse-type (syntax->list #'(dom ...)))
+                                (parse-type #'rng)
+                                (parameterize ([current-tvars (extend-env (list (syntax-e #'bound)) 
+                                                                          (list (make-DottedBoth (make-F (syntax-e #'bound))))
+                                                                          (current-tvars))])
+                                  (parse-type #'rest))
+                                (syntax-e #'bound)))))))]
       ;; has to be below the previous one
       [(dom ... -> rng) 
        (eq? (syntax-e #'->) '->)
@@ -129,6 +150,17 @@
       [(quot t)
        (eq? (syntax-e #'quot) 'quote)
        (-val (syntax-e #'t))]
+      [(All (vars ... v dd) t)
+       (and (eq? (syntax-e #'All) 'All)
+            (eq? (syntax-e #'dd) '...)
+            (andmap identifier? (syntax->list #'(v vars ...))))
+       (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
+              [tvars (map make-F vars)]
+              [v (syntax-e #'v)]
+              [tv (make-Dotted (make-F v))])
+         (add-type-name-reference #'All)
+         (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
+           (make-PolyDots (append vars (list v)) (parse-type #'t))))]
       [(All (vars ...) t) 
        (and (eq? (syntax-e #'All) 'All)
             (andmap identifier? (syntax->list #'(vars ...))))
@@ -136,7 +168,7 @@
               [tvars (map make-F vars)])
          (add-type-name-reference #'All)
          (parameterize ([current-tvars (extend-env vars tvars (current-tvars))])
-           (make-Poly vars (parse-type #'t))))]        
+           (make-Poly vars (parse-type #'t))))]
       [(Opaque p?) 
        (eq? (syntax-e #'Opaque) 'Opaque)
        (begin
@@ -157,7 +189,12 @@
        (identifier? #'id)
        (cond 
          ;; if it's a type variable, we just produce the corresponding reference (which is in the HT)
-         [(lookup (current-tvars) (syntax-e #'id) (lambda (_) #f))]
+         [(lookup (current-tvars) (syntax-e #'id) (lambda (_) #f))
+          =>
+          (lambda (e) (cond [(DottedBoth? e) (Dotted-t e)]
+                            [(Dotted? e)
+                             (tc-error "Type variable ~a must be used with ..." (syntax-e #'id))]
+                            [else e]))]
          ;; if it's a type alias, we expand it (the expanded type is stored in the HT)
          [(lookup-type-alias #'id parse-type (lambda () #f))
           =>
