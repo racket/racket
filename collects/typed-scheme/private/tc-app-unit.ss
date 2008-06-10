@@ -6,7 +6,7 @@
          "tc-utils.ss"
          "subtype.ss"
          "unify.ss"
-         "infer-ops.ss"
+         "infer.ss"
          "union.ss"
          "type-utils.ss"
          "type-effect-convenience.ss"
