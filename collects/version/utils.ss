@@ -1,9 +1,13 @@
 #lang scheme/base
 
-(provide valid-version? version->list version<?)
+(provide valid-version? version->list version<? version<=? alpha-version?)
 
 (define rx:version
-  #px"^(0|[1-9][0-9]*)[.](0|(0|[1-9][0-9]*)([.](0|[1-9][0-9]*)){0,2}(?<![.]0))$")
+  ;; (this restricts the last component to be below 999 too, which is
+  ;; not really proper according to the spec in schvers.h)
+  (pregexp (string-append "^(0|[1-9][0-9]*)[.]"
+                          "(0|(0|[1-9][0-9]{0,1})([.](0|[1-9][0-9]{0,2})){0,2}"
+                          "(?<![.]0))$")))
 
 (define (valid-version? s)
   (and (string? s) (regexp-match? rx:version s)))
@@ -17,6 +21,8 @@
       [(4) ver]
       [else (error 'version->list "bad version: ~e" str)])))
 
+;; the following functions assume valid version string inputs
+
 (define (version<? a b)
   (let loop ([a (version->list a)]
              [b (version->list b)])
@@ -24,3 +30,10 @@
           [(< (car a) (car b)) #t]
           [(> (car a) (car b)) #f]
           [else (loop (cdr a) (cdr b))])))
+
+(define (version<=? a b)
+  (or (equal? a b) (version<? a b)))
+
+(define (alpha-version? v)
+  (let ([l (version->list v)])
+    (or ((list-ref l 1) . >= . 90) ((list-ref l 2) . >= . 900))))

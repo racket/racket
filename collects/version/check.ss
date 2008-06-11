@@ -1,7 +1,9 @@
 #lang scheme/base
 
-(define version-url "http://download.plt-scheme.org/version")
+(define version-url "http://download.plt-scheme.org/version.txt")
 (define timeout 30)
+
+(require "utils.ss")
 
 ;; This file can be invoked from an installer, and in case it's
 ;; without zo files using net/url.ss is extremely slow.  Instead, do
@@ -57,6 +59,11 @@
     (define (get key)
       (cond [(assq key version-info) => cadr]
             [else (err (format "no `~s' in response" key) version-info)]))
+    (define (getver key)
+      (let ([ver (get key)])
+        (if (valid-version? ver)
+          ver
+          (err "bad version string from server" key))))
     (unless (and (list? version-info)
                  (andmap (lambda (x)
                            (and (list? x)
@@ -67,24 +74,19 @@
       (err "bad response from server" version-info))
     ;; Make a decision
     (let ([current (version)]
-          [stable (get 'stable)]
-          [recent (get 'recent)])
+          [stable (getver 'stable)]
+          [recent (getver 'recent)])
       (cond
-        ;; temporary hack, until v4 comes out
-        [(regexp-match? #rx"372" recent)
-         `(error "the download pages were not ported to v4 yet")]
         ;; we have the newest version (can be > if we have an svn build)
-        [(string>=? current recent) 'ok]
+        [(version<=? recent current) 'ok]
         ;; we're stable, but there's a newer version
-        [(string>=? current stable)
-         `(ok-but ,recent)]
+        [(version<=? stable current) `(ok-but ,recent)]
         ;; new version out -- no alphas or we have an alpha => show recent
-        ;; (also for svn builds of a stable version -- anything with ".")
         [(or (equal? recent stable)
-             (and (regexp-match #rx"[.]" current)
+             (and (alpha-version? current)
                   ;; but if we have an alpha that is older then the current
                   ;; stable then go to the next case
-                  (string>=? current stable)))
+                  (version<=? stable current)))
          `(newer ,recent)]
         ;; new version out, we have an outdated stable, there is also an alpha
         ;; (alternatively, we have an alpha that is older than the current
