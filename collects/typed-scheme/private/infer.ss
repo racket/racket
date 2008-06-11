@@ -108,9 +108,14 @@
 ;; X a var
 (define-struct c (S X T) #:prefab)
 
+;; Struct containing a list of cs
+(define-struct clist (cs) #:prefab)
+
 ;; maps is a list of pairs of
 ;;    - functional maps from vars to c's
-;;    - functional mappings from vars to lists of vars generated for ...
+;;    - functional mappings from vars to either
+;;      - a list of vars generated for ...
+;;      - a clist containing possible constraints on the ... bound
 ;; we need a bunch of mappings for each cset to handle case-lambda
 ;; because case-lambda can generate multiple possible solutions, and we
 ;; don't want to rule them out too early
@@ -156,6 +161,16 @@
      (make-c (subst-all sub S)
              (F-n (subst-all sub (make-F X)))
              (subst-all sub T))]))
+
+;; map map (key val val -> val) -> map
+(define (hash-union h1 h2 f)
+  (for/fold ([h* h1])
+    ([(k v2) h2])
+    (let* ([v1 (hash-ref h1 k #f)]
+           [new-val (if v1
+                        (f k v1 v2)
+                        v2)])      
+    (hash-set h* k new-val))))
     
 
 (define (cset-meet x y)
@@ -166,24 +181,28 @@
                          ([(map1 dmap1) (in-pairs maps1)]
                           [(map2 dmap2) (in-pairs maps2)])
                          (with-handlers ([exn:infer? (lambda (_) #f)])
-                           (let* ([new-dmap dmap1]
+                           (let* ([new-dmap (hash-union dmap1 dmap2
+                                                        (lambda (k vars1 vars2)
+                                                          (cond [(and (list? vars1) (list? vars2))
+                                                                 (unless (= (length vars1) (length vars2))
+                                                                   (fail! vars1 vars2))
+                                                                 vars1]
+                                                                [else 
+                                                                 (int-err "nyi : stars and dots together: ~a ~a" vars1 vars2)])))]
                                   [subst
                                    (apply append
                                           (for/list ([(dvar vars) dmap1])
-                                            (let ([vars2 (hash-ref dmap2 dvar #f)])
-                                              (when (and vars2 (not (= (length vars) (length vars2))))
-                                                (printf "kaboom vars:~a vars2:~a~n" vars vars2)
-                                                (fail! vars vars2))
+                                            (let ([vars2 (hash-ref dmap2 dvar #f)])                                              
                                               (if vars2 (map list vars2 (map make-F vars)) null))))])
-                             (cons (for/hash ([(k v1) map1])
-                                             (values k (c-meet v1 (subst-all/c subst (hash-ref map2 k v1)))))
-                                   dmap1)))))])
+                             (cons 
+                              (hash-union map1 map2 (lambda (k v1 v2) (c-meet v1 (subst-all/c subst v2))))
+                              new-dmap)))))])
       (when (null? maps)
         (fail! maps1 maps2))
       (make-cset maps))]))
 
-(define (cset-meet* V args)
-  (for/fold ([c (empty-cset V)])
+(define (cset-meet* X args)
+  (for/fold ([c (empty-cset X)])
     ([a args])
     (cset-meet a c)))
 
@@ -268,9 +287,35 @@
            (let* ([arg-mapping (cgen/list X V ss ts)]
                   [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
                   [ret-mapping (cgen V X t s)])
-             (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
-          ;; Handle mixes of dots and stars later
+             (cset-meet* (cons dbound V) (list arg-mapping darg-mapping ret-mapping)))]
+          [((arr: ts t t-rest #f                  t-thn-eff t-els-eff)
+            (arr: ss s #f     (cons s-dty dbound) s-thn-eff s-els-eff))
+           (unless (<= (length ts) (length ss))
+             (fail! S T))
+           (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
+                  [darg-mapping (cgen (cons dbound V) X s-dty t-rest)]
+                  [ret-mapping (cgen V X t s)])
+             (let-values ([(darg-mapping* dbound-constraint)
+                           (split-mapping darg-mapping dbound)])
+               (add-var-mapping (cset-meet* V (list arg-mapping darg-mapping* ret-mapping))
+                                dbound
+                                dbound-constraint)))]
+          ;; If dotted <: starred is correct, add it below.  Not sure it is.
           [(_ _) (fail! S T)]))
+
+;; split-mapping : cset symbol -> (values cset clist)
+(define (split-mapping mapping var)
+  (let-values ([(mappings cs)
+                (for/fold ([mapping null]
+                           [constraints null])
+                  ([(map dmap) (in-pairs (cset-maps mapping))])
+                  (when (hash-ref dmap var #f)
+                    (int-err "Got constraints for var ~a: ~a" var (hash-ref dmap var #f)))
+                  (values (cons (cons (hash-remove map var) dmap) mapping)
+                          (let ([var-c (hash-ref map var #f)])
+                            (if var-c (cons var-c constraints) constraints))))])
+    (values (make-cset mappings) (make-clist cs))))
+    
 
 (define (cgen V X S T)
   (define empty (empty-cset X))
@@ -471,7 +516,7 @@
     ))
 
 ;(trace infer cgen cset-meet* subst-gen)
-;(trace cgen/arr)
+;(trace cgen/arr cgen/list cset-meet)
 
 ;(trace infer/dots cset-meet)
 

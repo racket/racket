@@ -97,7 +97,12 @@
        (match arities
          [(list) (fp "(case-lambda)")]
          [(list a) (print-arr a)]
-         [(list a ...) (fp "(case-lambda ") (for-each print-arr a) (fp ")")]))]
+         [(list a b ...) (fp "(case-lambda ")
+                         (print-arr a) 
+                         (for-each 
+                          (lambda (e) (fp " ") (print-arr e))
+                          b)
+                         (fp ")")]))]
     [(arr: _ _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(Box: e) (fp "(Box ~a)" e)]
