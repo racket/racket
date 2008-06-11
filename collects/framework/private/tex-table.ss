@@ -152,7 +152,8 @@
     ("ni" "∋")
     ("propto" "∝")
     ("vdash" "⊢")
-    ("dashv" "⊣")))
+    ("dashv" "⊣")
+    ("skull" "☠")))
 
 ;; checks to see if there are duplicates
 #;
