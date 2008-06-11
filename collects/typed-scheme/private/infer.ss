@@ -8,7 +8,7 @@
          mzlib/trace
          scheme/list)
 
-(provide infer infer/vararg restrict)
+(provide infer infer/vararg restrict infer/dots)
 
 (define-values (fail-sym exn:infer?)
   (let ([sym (gensym)])
@@ -171,11 +171,12 @@
                                    (apply append
                                           (for/list ([(dvar vars) dmap1])
                                             (let ([vars2 (hash-ref dmap2 dvar #f)])
-                                              (unless (and vars2 (= (length vars) (length vars2)))
+                                              (when (and vars2 (not (= (length vars) (length vars2))))
+                                                (printf "kaboom vars:~a vars2:~a~n" vars vars2)
                                                 (fail! vars vars2))
                                               (if vars2 (map list vars2 (map make-F vars)) null))))])
                              (cons (for/hash ([(k v1) map1])
-                                             (values k (c-meet v1 (subst-all/c subst (hash-ref map2 k)))))
+                                             (values k (c-meet v1 (subst-all/c subst (hash-ref map2 k v1)))))
                                    dmap1)))))])
       (when (null? maps)
         (fail! maps1 maps2))
@@ -206,70 +207,75 @@
 (define (remember s t A) (cons (seen-before s t) A))
 (define (seen? s t) (member (seen-before s t) (current-seen)))
 
+(define (add-var-mapping cset dbound vars)
+  (make-cset (for/list ([(cs vs) (in-pairs (cset-maps cset))])
+               (cons cs (hash-set vs dbound vars)))))
+
+(define (cgen/arr V X t-arr s-arr)
+  (match* (t-arr s-arr)
+          [((arr: ts t #f #f t-thn-eff t-els-eff)
+            (arr: ss s #f #f s-thn-eff s-els-eff))
+           (cset-meet (cgen/list X V ss ts)
+                      (cgen V X t s))]
+          [((arr: ts t t-rest #f t-thn-eff t-els-eff)
+            (arr: ss s s-rest #f s-thn-eff s-els-eff))
+           (let ([arg-mapping 
+                  (cond [(and t-rest s-rest (<= (length ts) (length ss)))
+                         (cgen/list X V (cons s-rest ss) (cons t-rest (extend ss ts t-rest)))]
+                        [(and t-rest s-rest (>= (length ts) (length ss)))
+                         (cgen/list X V (cons s-rest (extend ts ss s-rest)) (cons t-rest ts))]
+                        [(and t-rest (not s-rest) (<= (length ts) (length ss)))
+                         (cgen/list X V ss (extend ss ts t-rest))]
+                        [(and s-rest (not t-rest) (>= (length ts) (length ss)))
+                         (cgen/list X V (extend ts ss s-rest) ts)]
+                        [else (fail! S T)])]
+                 [ret-mapping (cgen V X t s)])
+             (cset-meet arg-mapping ret-mapping))]
+          [((arr: ts t #f (cons dty dbound) t-thn-eff t-els-eff)
+            (arr: ss s #f #f                s-thn-eff s-els-eff))
+           (unless (memq dbound X)
+             (fail! S T))
+           (unless (<= (length ts) (length ss))
+             (fail! S T))
+           (let* ([num-vars (- (length ss) (length ts))]
+                  [vars     (for/list ([n (in-range num-vars)])
+                              (gensym dbound))]
+                  [new-tys  (for/list ([var vars])
+                              (substitute (make-F var) dbound dty))]
+                  [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f t-thn-eff t-els-eff) s-arr)])
+             (add-var-mapping new-cset dbound vars))]
+          [((arr: ts t #f #f                t-thn-eff t-els-eff)
+            (arr: ss s #f (cons dty dbound) s-thn-eff s-els-eff))
+           (unless (memq dbound X)
+             (fail! S T))
+           (unless (<= (length ss) (length ts))
+             (fail! S T))
+           (let* ([num-vars (- (length ts) (length ss))]
+                  [vars     (for/list ([n (in-range num-vars)])
+                              (gensym dbound))]
+                  [new-tys  (for/list ([var vars])
+                              (substitute (make-F var) dbound dty))]
+                  [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f s-thn-eff s-els-eff))])
+             (make-cset (for/list ([(cs vs) (in-pairs (cset-maps new-cset))])
+                          (cons cs (hash-set vs dbound vars)))))]
+          [((arr: ts t #f (cons t-dty dbound) t-thn-eff t-els-eff)
+            (arr: ss s #f (cons s-dty dbound) s-thn-eff s-els-eff))
+           (unless (= (length ts) (length ss))
+             (fail! S T))
+           ;; If we want to infer the dotted bound, then why is it in both types?
+           (when (memq dbound X)
+             (fail! S T))
+           (let* ([arg-mapping (cgen/list X V ss ts)]
+                  [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
+                  [ret-mapping (cgen V X t s)])
+             (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
+          ;; Handle mixes of dots and stars later
+          [(_ _) (fail! S T)]))
+
 (define (cgen V X S T)
   (define empty (empty-cset X))
   (define (singleton S X T )
-    (insert empty X S T))
-  (define (cgen/arr t-arr s-arr)
-    (match* (t-arr s-arr)
-            [((arr: ts t #f #f t-thn-eff t-els-eff)
-              (arr: ss s #f #f s-thn-eff s-els-eff))
-             (cgen/list X V ss ts)]
-            [((arr: ts t t-rest #f t-thn-eff t-els-eff)
-              (arr: ss s s-rest #f s-thn-eff s-els-eff))
-             (let ([arg-mapping 
-                    (cond [(and t-rest s-rest (<= (length ts) (length ss)))
-                           (cgen/list X V (cons s-rest ss) (cons t-rest (extend ss ts t-rest)))]
-                          [(and t-rest s-rest (>= (length ts) (length ss)))
-                           (cgen/list X V (cons s-rest (extend ts ss s-rest)) (cons t-rest ts))]
-                          [(and t-rest (not s-rest) (<= (length ts) (length ss)))
-                           (cgen/list X V ss (extend ss ts t-rest))]
-                          [(and s-rest (not t-rest) (>= (length ts) (length ss)))
-                           (cgen/list X V (extend ts ss s-rest) ts)]
-                          [else (fail! S T)])]
-                   [ret-mapping (cgen V X t s)])
-               (cset-meet arg-mapping ret-mapping))]
-            [((arr: ts t #f (cons dty dbound) t-thn-eff t-els-eff)
-              (arr: ss s #f #f                s-thn-eff s-els-eff))
-             (unless (memq dbound X)
-               (fail! S T))
-             (unless (<= (length ts) (length ss))
-               (fail! S T))
-             (let* ([num-vars (- (length ss) (length ts))]
-                    [vars     (for/list ([n (in-range num-vars)])
-                                (gensym dbound))]
-                    [new-tys  (for/list ([var vars])
-                                (substitute (make-F var) dbound dty))]
-                    [new-cset (cgen/arr (make-arr (append ts new-tys) t #f #f t-thn-eff t-els-eff) s-arr)])
-               (make-cset (for/list ([(cs vs) (in-pairs (cset-maps new-cset))])
-                            (cons cs (hash-set vs dbound vars)))))]
-            [((arr: ts t #f #f                t-thn-eff t-els-eff)
-              (arr: ss s #f (cons dty dbound) s-thn-eff s-els-eff))
-             (unless (memq dbound X)
-               (fail! S T))
-             (unless (<= (length ss) (length ts))
-               (fail! S T))
-             (let* ([num-vars (- (length ts) (length ss))]
-                    [vars     (for/list ([n (in-range num-vars)])
-                                (gensym dbound))]
-                    [new-tys  (for/list ([var vars])
-                                (substitute (make-F var) dbound dty))]
-                    [new-cset (cgen/arr t-arr (make-arr (append ss new-tys) s #f #f s-thn-eff s-els-eff))])
-               (make-cset (for/list ([(cs vs) (in-pairs (cset-maps new-cset))])
-                            (cons cs (hash-set vs dbound vars)))))]
-            [((arr: ts t #f (cons t-dty dbound) t-thn-eff t-els-eff)
-              (arr: ss s #f (cons s-dty dbound) s-thn-eff s-els-eff))
-             (unless (= (length ts) (length ss))
-               (fail! S T))
-             ;; If we want to infer the dotted bound, then why is it in both types?
-             (when (memq dbound X)
-               (fail! S T))
-             (let* ([arg-mapping (cgen/list X V ss ts)]
-                    [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
-                    [ret-mapping (cgen V X t s)])
-               (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
-            ;; Handle mixes of dots and stars later
-            [(_ _) (fail! S T)]))
+    (insert empty X S T))  
   (if (seen? S T)
       empty
       (parameterize ([match-equality-test type-equal?]
@@ -358,7 +364,7 @@
             (for*/list 
              ([t-arr t-arr] [s-arr s-arr])
              (with-handlers ([exn:infer? (lambda (_) #f)])
-               (cgen/arr t-arr s-arr)))))]
+               (cgen/arr V X t-arr s-arr)))))]
          [(_ _)
           (cond [(subtype S T) empty]
                 ;; or, nothing worked, and we fail
@@ -407,6 +413,23 @@
   (and ((length S) . >= . (length T))
        (infer X S new-T R expected)))
 
+;; like infer, but dotted-var is the bound on the ...
+;; and T-dotted is the repeated type
+(define (infer/dots X dotted-var S T T-dotted R [expected #f])
+  (with-handlers ([exn:infer? (lambda _ #f)])    
+    (let* ([short-S (take S (length T))]
+           [rest-S (drop S (length T))]
+           [cs-short (cgen/list (cons dotted-var X) null short-S T)]
+           [new-vars (for/list ([i (in-range (length rest-S))]) (gensym dotted-var))]
+           [new-Ts (for/list ([v new-vars])
+                     (substitute (make-F v) dotted-var T-dotted))]
+           [cs-dotted (cgen/list (append new-vars X) null rest-S new-Ts)]
+           [cs-dotted* (add-var-mapping cs-dotted dotted-var new-vars)]
+           [cs (cset-meet cs-short cs-dotted*)])
+      (if (not expected)
+          (subst-gen cs R)
+          (cset-meet cs (cgen null X R expected))))))
+
 ;; Listof[A] Listof[B] B -> Listof[B]
 ;; pads out t to be as long as s
 (define (extend s t extra)
@@ -448,6 +471,8 @@
     ))
 
 ;(trace infer cgen cset-meet* subst-gen)
-;(trace cgen/list)
+;(trace cgen/arr)
+
+;(trace infer/dots cset-meet)
 
 ;(trace infer subst-gen cgen)

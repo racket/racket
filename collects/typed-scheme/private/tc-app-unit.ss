@@ -309,8 +309,29 @@
              [else (tc-error/expr #:return (ret (Un))
                                   "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
                                   (stringify dom) rest (stringify argtypes))]))]
+        ;; polymorphic ... type
+        [(tc-result: (PolyDots: (and vars (list fixed-vars ... dotted-var))
+                                (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff)))))
+         (for-each (lambda (x) (unless (not (Poly? x))                                      
+                                 (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
+                   argtypes)
+         (unless (<= (length dom) (length argtypes))
+           (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
+         (unless (eq? dbound dotted-var)
+           (int-err "dbound (~a) and dotted-var (~a) not the same" dbound dotted-var))
+         (let ([substitution 
+                (infer/dots fixed-vars dotted-var argtypes dom dty rng expected)])
+           (cond 
+             [(and expected substitution) expected]
+             [substitution
+              (ret (subst-all substitution rng))]
+             [else (tc-error/expr #:return (ret (Un))
+                                  "no polymorphic function domain matched -~ndomain was: ~a ~ndotted rest type was: ~a ... ~a~narguments were ~a"
+                                  (stringify dom) dty dbound (stringify argtypes))]))]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ...))))
          (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
+        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs #f drests thn-effs els-effs) ...))))
+         (tc-error/expr #:return (ret (Un)) "polymorphic ... case-lambda application not yet supported")]
         ;; Union of function types works if we can apply all of them
         [(tc-result: (Union: (list (and fs (Function: _)) ...)) e1 e2)
          (match-let ([(list (tc-result: ts) ...) (map (lambda (f) (outer-loop 
