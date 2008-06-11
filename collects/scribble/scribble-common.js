@@ -1,7 +1,7 @@
 // Common functionality for PLT documentation pages
 
 function GetCookie(key, def) {
-  if (document.cookie.length <= 0) return null;
+  if (document.cookie.length <= 0) return def;
   var cookiestrs = document.cookie.split(/; */);
   for (var i in cookiestrs) {
     var cur = cookiestrs[i];
