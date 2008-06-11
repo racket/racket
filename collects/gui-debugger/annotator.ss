@@ -5,6 +5,7 @@
            mzlib/etc
            (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)
+           (only-in mzscheme [apply plain-apply])
            )
   (provide annotate-stx annotate-for-single-stepping)
 
@@ -64,39 +65,48 @@
                 [break? (break? (syntax-source raw))])
            (if is-tail?
                #`(let-values ([(value-list) #f])
-                   (if (#,break? #,start)
-                       (set! value-list (#,break-before
-                                           #,debug-info
-                                           (current-continuation-marks)))
-                       (void))
-                   (if (not value-list)
+                   (if (#%plain-app #,break? #,start)
+                       (set! value-list (#%plain-app
+                                         #,break-before
+                                         #,debug-info
+                                         (#%plain-app current-continuation-marks)))
+                       (#%plain-app void))
+                   (if (#%plain-app not value-list)
                        #,annotated
-                       (apply values value-list)))
+                       (#%plain-app plain-apply values value-list)))
                #`(let-values ([(value-list) #f])
-                   (if (#,break? #,start)
-                       (set! value-list (#,break-before
-                                           #,debug-info
-                                           (current-continuation-marks)))
-                       (void))
-                   (if (not value-list)
-                       (call-with-values
-                        (lambda () #,annotated)
+                   (if (#%plain-app #,break? #,start)
+                       (set! value-list (#%plain-app 
+                                         #,break-before
+                                         #,debug-info
+                                         (#%plain-app current-continuation-marks)))
+                       (#%plain-app void))
+                   (if (#%plain-app not value-list)
+                       (#%plain-app 
+                        call-with-values
+                        (#%plain-lambda () #,annotated)
                         (case-lambda
-                          [(val) (if (#,break? #,end)
-                                     (#,break-after
-                                        #,debug-info
-                                        (current-continuation-marks) val)
+                          [(val) (if (#%plain-app #,break? #,end)
+                                     (#%plain-app 
+                                      #,break-after
+                                      #,debug-info
+                                      (#%plain-app current-continuation-marks) val)
                                      val)]
-                          [vals (if (#,break? #,end)
-                                    (apply #,break-after
-                                           #,debug-info
-                                           (current-continuation-marks) vals)
-                                    (apply values vals))]))
-                       (if (#,break? #,end)
-                           (apply #,break-after
-                                  #,debug-info
-                                  (current-continuation-marks) value-list)
-                           (apply values value-list)))))))
+                          [vals (if (#%plain-app 
+                                     #,break? #,end)
+                                    (#%plain-app 
+                                     plain-apply 
+                                     #,break-after
+                                     #,debug-info
+                                     (#%plain-app current-continuation-marks) vals)
+                                    (#%plain-app plain-apply values vals))]))
+                       (if (#%plain-app #,break? #,end)
+                           (#%plain-app 
+                            plain-apply #,break-after
+                            #,debug-info
+                            (#%plain-app current-continuation-marks) 
+                            value-list)
+                           (#%plain-app plain-apply values value-list)))))))
        record-bound-id
        record-top-level-id
        source)))
@@ -147,7 +157,7 @@
       (define (previous-bindings bound-vars)
         (if (null? bound-vars)
             #'null
-            #'(debugger-local-bindings)))
+            #'(#%plain-app debugger-local-bindings)))
       
       (define (top-level-annotate stx)
         (kernel:kernel-syntax-case
@@ -160,7 +170,7 @@
                                                                (syntax-source #'identifier))))
                                           (syntax->list #'module-level-exprs)))))]
          [else-stx
-          (general-top-level-expr-iterator stx  #f  )]))
+          (general-top-level-expr-iterator stx  #f)]))
       
       (define (module-level-expr-iterator stx module-name )
         (kernel:kernel-syntax-case
@@ -181,11 +191,12 @@
             (quasisyntax/loc stx
               (begin (define-values (var ...) #,(annotate #`expr '() #t module-name))
                      #,(if (syntax-source stx)
-                           #`(begin (#,record-top-level-id '#,module-name #'var (case-lambda
-                                                                                  [() var]
-                                                                                  [(v) (set! var v)])) ...)
-                           #'(void))
-                     (void)))
+                           #`(begin (#%plain-app 
+                                     #,record-top-level-id '#,module-name #'var (case-lambda
+                                                                                 [() var]
+                                                                                 [(v) (set! var v)])) ...)
+                           #'(#%plain-app void))
+                     (#%plain-app void)))
             )
           ]
          [(define-syntaxes (var ...) expr)
@@ -257,16 +268,18 @@
                 (if letrec?
                     (quasisyntax/loc expr
                       (let ([old-bindings previous-bindings])
-                        (label (((debugger-local-bindings) (lambda ()
-                                                             (list*
+                        (label (((debugger-local-bindings) (#%plain-lambda ()
+                                                             (#%plain-app
+                                                              list*
                                                               #,@local-debug-info
                                                               old-bindings)))
                                 ((var ...) new-rhs/trans) ...)
                                #,@bodies)))
                     (quasisyntax/loc expr
                       (label (((var ...) new-rhs/trans) ...)
-                             (let ([debugger-local-bindings (lambda ()
-                                                              (list*
+                             (let ([debugger-local-bindings (#%plain-lambda ()
+                                                              (#%plain-app
+                                                               list*
                                                                #,@local-debug-info
                                                                previous-bindings))])
                                #,@bodies))))))]))
@@ -286,8 +299,9 @@
               (quasisyntax/loc clause
                 (arg-list 
                  (let ([debugger-local-bindings
-                        (lambda ()
-                          (list*
+                        (#%plain-lambda ()
+                          (#%plain-app
+                           list*
                            #,@(assemble-debug-info new-bound-vars new-bound-vars 'normal #f)
                            #,(previous-bindings bound-vars)))])
                    #,@new-bodies))))]))
@@ -358,9 +372,9 @@
                                     (annotate expr bound-vars #f module-name ))
                                   (syntax->list #'exprs))])
                (if (or is-tail? (not (syntax-source expr)))
-                   (quasisyntax/loc expr #,subexprs)
+                   (quasisyntax/loc expr (#%plain-app . #,subexprs))
                    (wcm-wrap (make-debug-info module-name expr bound-vars bound-vars 'normal #f (previous-bindings bound-vars))
-                             (quasisyntax/loc expr #,subexprs))))]
+                             (quasisyntax/loc expr (#%plain-app . #,subexprs)))))]
             
             [(#%top . var) expr]
             

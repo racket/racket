@@ -57,7 +57,7 @@
   (define skipto-mark? skipto-mark-struct?)
   (define skipto-mark (make-skipto-mark-struct))
   (define (strip-skiptos mark-list)
-    (filter (lx (not (skipto-mark? _))) mark-list))
+    (filter (lx (#%plain-app not (skipto-mark? _))) mark-list))
   
     
   ; debug-key: this key will be used as a key for the continuation marks.
@@ -75,8 +75,10 @@
   
   ; see module top for type
   (define (make-full-mark module-name source label bindings assembled-info-stx)
-    (mz:datum->syntax-object #'here `(lambda () (,(make-make-full-mark-varargs module-name source label bindings)
-	  				         ,assembled-info-stx))))
+    (mz:datum->syntax-object #'here `(#%plain-lambda () 
+                                       (#%plain-app 
+                                        ,(make-make-full-mark-varargs module-name source label bindings)
+                                        ,assembled-info-stx))))
   
   (define (mark-module-name mark)
     (full-mark-struct-module-name (mark)))
