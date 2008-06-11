@@ -48,5 +48,5 @@
       (define-values (p w/o-base)
         (url->path (url-replace-path (lambda _ up) u)))
       (unless (or (file-exists? p) (link-exists? p))
-        (raise (make-exn:fail:filesystem:exists (string->immutable-string "No valid path") (current-continuation-marks))))
+        (raise (make-exn:fail:filesystem:exists (string->immutable-string (format "No valid path: ~a" p)) (current-continuation-marks))))
       (values p w/o-base))))
