@@ -1,6 +1,6 @@
 #lang scheme/base
 (require "test-utils.ss" (for-syntax scheme/base))
-(require (private planet-requires type-effect-convenience type-rep unify union infer type-utils)
+(require (private planet-requires type-effect-convenience type-rep union infer type-utils)
          (prefix-in table: (private tables)))
 (require (schemeunit)) 
 
