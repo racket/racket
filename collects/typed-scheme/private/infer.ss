@@ -37,16 +37,27 @@
              [#:Param in out
                           (make-Param (var-demote in V)
                                           (vp out))]
-             [#:arr dom rng rest #f thn els
-                    (if 
-                     (apply V-in? V (append thn els))
-                     (make-top-arr)
-                     (make-arr (for/list ([d dom]) (var-demote d V))
-                               (vp rng)
-                               (and rest (var-demote rest V))
-                               #f
-                               thn
-                               els))]))
+             [#:arr dom rng rest drest thn els
+                    (cond
+                      [(apply V-in? V (append thn els))
+                       (make-arr null (Un) Univ #f null null)]
+                      [(and drest (V-in? V (cdr drest)))
+                       (make-arr (for/list ([d dom]) (var-demote d V))
+                                 (vp rng)
+                                 (var-demote (car drest) V)
+                                 #f
+                                 thn
+                                 els)]
+                      [else
+                       (make-arr (for/list ([d dom]) (var-demote d V))
+                                 (vp rng)
+                                 (and rest (var-demote rest V))
+                                 (and drest
+                                      (cons (var-demote (car drest)
+                                                        (cons (cdr drest) V))
+                                            (cdr drest)))
+                                 thn
+                                 els)])]))
 
 (define (var-demote T V)
   (define (vd t) (var-demote t V))
@@ -62,15 +73,27 @@
              [#:Param in out
                           (make-Param (var-promote in V)
                                           (vd out))]
-             [#:arr dom rng rest #f thn els
-                    (if (apply V-in? V (append thn els))
-                        (make-arr null (Un) Univ null null)
-                        (make-arr (for/list ([d dom]) (var-promote d V))
-                                  (vd rng)
-                                  (and rest (var-promote rest V))
-                                  #f
-                                  thn
-                                  els))]))
+             [#:arr dom rng rest drest thn els
+                    (cond
+                      [(apply V-in? V (append thn els))
+                       (make-arr null (Un) Univ #f null null)]
+                      [(and drest (V-in? V (cdr drest)))
+                       (make-arr (for/list ([d dom]) (var-promote d V))
+                                 (vd rng)
+                                 (var-promote (car drest) V)
+                                 #f
+                                 thn
+                                 els)]
+                      [else
+                       (make-arr (for/list ([d dom]) (var-promote d V))
+                                 (vd rng)
+                                 (and rest (var-promote rest V))
+                                 (and drest
+                                      (cons (var-promote (car drest)
+                                                         (cons (cdr drest) V))
+                                            (cdr drest)))
+                                 thn
+                                 els)])]))
 ;; a stupid impl
 (define (meet S T) 
   (let ([s* (restrict S T)])
@@ -272,22 +295,26 @@
           (cset-combine
            (filter 
             values ;; only generate the successful csets
-            (for*/list ([t-arr t-arr] [s-arr s-arr])
-                       (with-handlers ([exn:infer? (lambda (_) #f)])
-                         (match* (t-arr s-arr)
-                                 [((arr: ts t t-rest #f t-thn-eff t-els-eff) (arr: ss s s-rest #f s-thn-eff s-els-eff))
-                                  (let ([arg-mapping 
-                                         (cond [(and t-rest s-rest (= (length ts) (length ss)))
-                                                (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
-                                               [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
-                                                (cgen/list X V ss ts)]
-                                               [(and t-rest (not s-rest) (<= (length ts) (length ss)))
-                                                (cgen/list X V ss (extend ss ts t-rest))]
-                                               [(and s-rest (not t-rest) (>= (length ts) (length ss)))
-                                                (cgen/list X V (extend ts ss s-rest) ts)]
-                                               [else (fail! S T)])]
-                                        [ret-mapping (cgen V X t s)])
-                                    (cset-meet arg-mapping ret-mapping))])))))]
+            (for*/list 
+             ([t-arr t-arr] [s-arr s-arr])
+             (with-handlers ([exn:infer? (lambda (_) #f)])
+               (match* (t-arr s-arr)
+                       [((arr: ts t t-rest #f t-thn-eff t-els-eff)
+                         (arr: ss s s-rest #f s-thn-eff s-els-eff))
+                        (let ([arg-mapping 
+                               (cond [(and t-rest s-rest (<= (length ts) (length ss)))
+                                      (cgen/list X V (cons s-rest ss) (cons t-rest (extend ss ts t-rest)))]
+                                     [(and t-rest s-rest (>= (length ts) (length ss)))
+                                      (cgen/list X V (cons s-rest (extend ts ss s-rest)) (cons t-rest ts))]
+                                     [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
+                                      (cgen/list X V ss ts)]
+                                     [(and t-rest (not s-rest) (<= (length ts) (length ss)))
+                                      (cgen/list X V ss (extend ss ts t-rest))]
+                                     [(and s-rest (not t-rest) (>= (length ts) (length ss)))
+                                      (cgen/list X V (extend ts ss s-rest) ts)]
+                                     [else (fail! S T)])]
+                              [ret-mapping (cgen V X t s)])
+                          (cset-meet arg-mapping ret-mapping))])))))]
          [(_ _)
           (cond [(subtype S T) empty]
                 ;; or, nothing worked, and we fail
