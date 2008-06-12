@@ -45,11 +45,18 @@
 
     (define (combine-relative-elements elements)
 
+      (define (extract-base relto)
+        (let-values ([(base n d?) (split-path relto)])
+          (if (eq? base 'relative) 
+              'same 
+              (if (not base)
+                  relto ; strange case: relto is a root directory
+                  base))))
+
       ;; Used for 'file paths, so it's platform specific:
       (define (attach-to-relative-path relto)
         (apply build-path
-               (let-values ([(base n d?) (split-path relto)])
-                 (if (eq? base 'relative) 'same base))
+               (extract-base relto)
                (map (lambda (i) (if (bytes? i) (bytes->path i) i))
                     elements)))
 
@@ -58,8 +65,7 @@
       (cond
         [(or (path? relto-mp) (and (string? relto-mp) (ormap path? elements)))
          (apply build-path
-                (let-values ([(base name dir?) (split-path relto-mp)])
-                  (if (eq? base 'relative) 'same base))
+                (extract-base relto-mp)
                 (map (lambda (x) (if (bytes? x) (bytes->path x) x))
                      elements))]
         [(string? relto-mp)

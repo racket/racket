@@ -104,7 +104,7 @@
   ;; Derive the name from the module path:
   (let ([p (collapse-module-path-index
             mod
-            (current-directory))])
+            (build-path (current-directory) "dummy"))])
     (if (path? p)
         ;; If we got a path back anyway, then it's best to use the resolved
         ;; name; if the current directory has changed since we 
