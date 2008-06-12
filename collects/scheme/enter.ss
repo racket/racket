@@ -90,17 +90,18 @@
       (let* ([rpath (module-path-index-resolve mpi)]
              [path (resolved-module-path-name rpath)])
         (when (path? path)
-          (unless (hash-ref done path #f)
-            (hash-set! done path #t)
-            (let ([mod (hash-ref loaded path #f)])
-              (when mod
-                (for-each loop (mod-depends mod))
-                (let ([ts (get-timestamp path)])
-                  (when (ts . > . (mod-timestamp mod))
-                    (let ([orig (current-load/use-compiled)])
-                      (parameterize ([current-load/use-compiled
-                                      (enter-load/use-compiled orig #f)]
-                                     [current-module-declare-name rpath])
-                        ((enter-load/use-compiled orig #t) 
-                         path
-                         (mod-name mod))))))))))))))
+	  (let ([path (normal-case-path path)])
+            (unless (hash-ref done path #f)
+              (hash-set! done path #t)
+              (let ([mod (hash-ref loaded path #f)])
+                (when mod
+                  (for-each loop (mod-depends mod))
+                  (let ([ts (get-timestamp path)])
+                    (when (ts . > . (mod-timestamp mod))
+                      (let ([orig (current-load/use-compiled)])
+                        (parameterize ([current-load/use-compiled
+                                        (enter-load/use-compiled orig #f)]
+                                       [current-module-declare-name rpath])
+                          ((enter-load/use-compiled orig #t) 
+                           path
+                           (mod-name mod)))))))))))))))
