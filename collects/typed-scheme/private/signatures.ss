@@ -2,6 +2,28 @@
 (require scheme/unit)
 (provide (all-defined-out))
 
+(define-signature constraints^
+  ((struct cset (maps)) 
+   exn:infer?
+   fail-sym
+   ;; inference failure - masked before it gets to the user program
+   (define-syntaxes (fail!)
+     (syntax-rules ()
+       [(_ s t) (raise fail-sym)]))
+   cset-meet cset-meet*
+   (struct clist (cs))
+   empty-cset
+   insert
+   cset-combine
+   (struct c (S X T))))
+
+(define-signature restrict^
+  (restrict))
+
+(define-signature infer^
+  (infer infer/vararg infer/dots))
+
+
 
 ;; cycle 2
 

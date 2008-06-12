@@ -10,7 +10,9 @@
          print-effect*
          define-struct/printer
          id
-         filter-multiple)
+         filter-multiple
+         hash-union
+         in-pairs)
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()
@@ -117,3 +119,26 @@
           [(symbol? v) (symbol->string v)]
           [(identifier? v) (symbol->string (syntax-e v))]))
   (datum->syntax kw (string->symbol (apply string-append (map f args)))))
+
+
+;; map map (key val val -> val) -> map
+(define (hash-union h1 h2 f)
+  (for/fold ([h* h1])
+    ([(k v2) h2])
+    (let* ([v1 (hash-ref h1 k #f)]
+           [new-val (if v1
+                        (f k v1 v2)
+                        v2)])      
+    (hash-set h* k new-val))))
+
+
+(define (in-pairs seq)
+  (make-do-sequence
+   (lambda ()
+     (let-values ([(more? gen) (sequence-generate seq)])
+       (values (lambda (e) (let ([e (gen)]) (values (car e) (cdr e))))
+               (lambda (_) #t)
+               #t
+               (lambda (_) (more?))
+               (lambda _ #t)
+               (lambda _ #t))))))

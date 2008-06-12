@@ -2,7 +2,7 @@
 
 (require "unit-utils.ss"
          mzlib/trace
-         (only-in mzlib/unit provide-signature-elements)
+         (only-in scheme/unit provide-signature-elements)
          "signatures.ss" "tc-toplevel.ss"         
          "tc-if-unit.ss" "tc-lambda-unit.ss" "tc-app-unit.ss"
          "tc-let-unit.ss"
