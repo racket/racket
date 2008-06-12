@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require (for-label scheme/base
-                     scheme/contract
+@(require (for-label (except-in lazy delay force promise?)
                      (only-in lazy/force
                               ! !! !!!
                               !list !!list
@@ -17,6 +16,32 @@
      (define scheme-promise? (scheme promise?))))
   (def-scheme scheme-force scheme-delay scheme-promise?))
 
+@(define-syntax-rule (deflazy mod def id)
+   (begin
+     (def-mz-req mod id mz-id)
+     @def[id]{Lazy variant of @|mz-id|.}))
+
+@(define-syntax-rule (def-mz-req mod id in-mz-id)
+   (begin
+     (define-syntax-rule (intro mz-id)
+       (begin
+         (require (for-label (only-in mod id)))
+         (define mz-id (scheme id))))
+     (intro in-mz-id)))
+
+@(define-syntax-rule (defprocthing* mod id ...)
+   (begin
+    (deflazy mod defprocthing id)
+    ...))
+
+@(define-syntax-rule (defprocthing id . rest)
+   (defthing id procedure? . rest))
+
+@(define-syntax-rule (defidform* mod id ...)
+   (begin
+    (deflazy mod defidform id)
+    ...))
+
 @; ----------------------------------------
 
 @(require scribble/manual)
@@ -31,7 +56,7 @@ can be used to write lazy code. To write lazy code, simply use
 
 @schememod[
 lazy
-... lazy code here...]
+... #, @elem{lazy code here}...]
 
 Function applications are delayed, and promises are automatically
 forced. The language provides bindings that are equivalent to most of
@@ -61,11 +86,60 @@ change (or be dropped) in the future.
 
 There are a few additional bindings, the important ones are special
 forms that force strict behaviour---there are several of these that
-are useful in forcing different parts of a value in different ways.
+are useful in forcing different parts of a value in different ways, as
+described in @secref["forcing"].
 
 @; ----------------------------------------
 
-@section{Forcing Values}
+@section{Lazy Forms and Functions}
+
+@defidform*[mzscheme
+lambda
+define
+]
+
+@defidform*[scheme
+let
+let*
+letrec
+parameterize
+define-values
+let-values
+let*-values
+letrec-values
+if
+set!
+begin begin0 when unless
+cond case
+]
+
+@defprocthing*[scheme
+   values make-struct-type
+   cons list list* vector box
+   and or
+   set-mcar! set-mcdr! vector-set! set-box!
+   error printf fprintf display write print
+   eq? eqv? equal?
+   list? length list-ref list-tail append map for-each andmap ormap
+   member memq memv assoc assq assv reverse
+   caar cadr cdar cddr caaar caadr cadar caddr cdaar cdadr cddar cdddr caaaar
+   caaadr caadar caaddr cadaar cadadr caddar cadddr cdaaar cdaadr cdadar cdaddr
+   cddaar cddadr cdddar cddddr
+   first second third fourth fifth sixth seventh eighth rest cons? empty empty?
+   foldl foldr last-pair remove remq remv remove* remq* remv* memf assf filter
+   sort
+   true false boolean=? symbol=? compose build-list
+   take
+]
+
+@defprocthing[identity]{Lazy identity function.}
+
+@defprocthing[cycle]{Creates a lazy infinite list given a list of
+elements to repeat in order.}
+
+@; ----------------------------------------
+
+@section[#:tag "forcing"]{Forcing Values}
 
 @defmodule[lazy/force]
 

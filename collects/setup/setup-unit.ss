@@ -99,7 +99,11 @@
   (define (record-error cc desc go fail-k)
     (with-handlers ([exn:fail?
                      (lambda (x)
-                       (fprintf (current-error-port) "~a\n" (exn->string x))
+                       (if (verbose)
+                           ((error-display-handler)
+                            (format "~a\n" (exn->string x))
+                            x)
+                           (fprintf (current-error-port) "~a\n" (exn->string x)))
                        (set! errors (cons (list cc desc x) errors))
                        (fail-k))])
       (go)))

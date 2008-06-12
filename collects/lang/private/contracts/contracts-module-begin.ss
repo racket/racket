@@ -251,7 +251,9 @@
 		  [(define-values-for-syntax . _)
 		   #`(begin #,e2 (frm e1s e3s def-ids))]
 		  [(begin b1 ...)
-		   #`(frm e1s (b1 ... . e3s) def-ids)]
+		   (syntax-track-origin #`(frm e1s (b1 ... . e3s) def-ids)
+                                        e2
+                                        (car (syntax-e e2)))]
 		  [(define-values (id ...) . _)
 		   #`(frm (#,e2 . e1s) e3s (id ... . def-ids))]
 		  [_

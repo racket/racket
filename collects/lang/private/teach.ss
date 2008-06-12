@@ -459,10 +459,13 @@
                                     stx 
                                     (define name
                                       #,(stepper-syntax-property
-                                         #`(lambda arg-seq 
-                                             #,(stepper-syntax-property #`make-lambda-generative 
-                                                                       'stepper-skip-completely #t) 
-                                             lexpr ...)
+                                         (syntax-track-origin
+                                          #`(lambda arg-seq 
+                                              #,(stepper-syntax-property #`make-lambda-generative 
+                                                                         'stepper-skip-completely #t) 
+                                              lexpr ...)
+                                          lam
+                                          (syntax-local-introduce (car (syntax-e lam))))
                                          'stepper-define-type
                                          'lambda-define))))))])
                   (check-definition-new

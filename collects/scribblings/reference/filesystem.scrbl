@@ -264,8 +264,8 @@ Returns the file or directory's last modification date as
 platform-specific seconds (see also @secref["time"]) when
 @scheme[secs-n] is not provided or is @scheme[#f]. (For FAT
 filesystems under Windows, directories do not have modification
-dates. Therefore, the creation date is returned for a directory (but
-the modification date is returned for a file).)
+dates. Therefore, the creation date is returned for a directory, but
+the modification date is returned for a file.)
 
 If @scheme[secs-n] is provided and not @scheme[#f], the access and
 modification times of @scheme[path] are set to the given time.

@@ -248,8 +248,8 @@ pre-defined forms are as follows.
  @defsubform[(only-in require-spec id-maybe-renamed ...)]{
   Like @scheme[require-spec], but constrained to those exports for
   which the identifiers to bind match @scheme[id-maybe-renamed]: as
-  @scheme[id] or as @scheme[orig-id] in @scheme[[orig-id bind-id]]. If
-  the @scheme[id] of @scheme[orig-id] of any @scheme[id-maybe-renamed]
+  @scheme[_id] or as @scheme[_orig-id] in @scheme[[_orig-id _bind-id]]. If
+  the @scheme[_id] or @scheme[_orig-id] of any @scheme[id-maybe-renamed]
   is not in the set that @scheme[require-spec] describes, a syntax
   error is reported.}
 

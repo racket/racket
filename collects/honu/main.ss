@@ -1,4 +1,4 @@
-(module honu-module "private/mzscheme.ss"
+(module main "private/mzscheme.ss"
 
   (require-for-syntax syntax/stx
 		      "private/ops.ss"
@@ -767,7 +767,7 @@
                                          (define-syntax arg-id (make-honu-type #'arg-pred-id stx-car #'arg-name-id #f)) ...
                                          (honu-unparsed-type-predicate #,>->-stx next-pred res-type-name . #,result-stx)
                                          (let ([v ((generic-val v) safe? arg-pred-id ... arg-name-id ...)])
-                                           (check #f #f res-type-name next-pred v)))))
+                                           (check* #f #f res-type-name next-pred v)))))
                            ;; Not a generic
                            (values #f #f)))
                    ;; generics always protect themselves, for now:
@@ -927,17 +927,17 @@
   (define (check proc who type-name pred val)
     (let-values ([(tst new-val) (pred val)])
       (unless tst
-	(raise
-	 (make-exn:fail:contract
-	  (format "~a: expected `~a' value for ~a, got something else: ~e"
+        (raise
+         (make-exn:fail:contract
+          (format "~a: expected `~a' value for ~a, got something else: ~e"
                   (or proc (if (eq? who #t) #f who) "procedure")
                   type-name
                   (cond [(eq? who #t) "result"]
                         [else (if proc
-                                (format "`~a' argument" who)
-                                (if who "initialization" "argument"))])
+                                  (format "`~a' argument" who)
+                                  (if who "initialization" "argument"))])
                   val)
-	  (current-continuation-marks))))
+          (current-continuation-marks))))
       new-val))
 
   (define-syntax as-protected
@@ -1017,7 +1017,7 @@
                             v))
                     ;; Need a run-time check:
                     (with-syntax ([val v])
-                      #'(check proc who type-name-expr pred val))))]
+                      #'(check* proc who type-name-expr pred val))))]
 	   [(if test-expr then-expr else-expr)
             (if (eq? #t (syntax-e #'type-name))
                 ;; Context guarantees correct use, but we have to manage any
@@ -1086,7 +1086,13 @@
                     v
                     ;; Run-time check:
                     (with-syntax ([val v])
-                      #'(check proc who type-name-expr pred val))))]))]))
+                      #'(check* proc who type-name-expr pred val))))]))]))
+
+  (define-syntax check*
+    (syntax-rules ()
+      [(_ proc who type-name #f val) val]
+      [(_ proc who type-name pred val)
+       (check proc who type-name pred val)]))
 
   (define-syntax (honu-app stx)
     (syntax-case stx ()
@@ -1099,9 +1105,13 @@
             (if (= (length (syntax->list #'(arg-type ...)))
                    (length (syntax->list #'(b ...))))
                 ;; Some run-time checks maybe needed on some arguments:
-                #'(honu-typed (pack-a-expr (check-expr-type #f #f arg-type arg-type-name arg-pred b) ...) 
-                              orig-expr
-                              result-type result-protect-id)
+                (with-syntax ([app
+                               (syntax/loc stx
+                                 (pack-a-expr (check-expr-type #f #f arg-type arg-type-name arg-pred b) ...))])
+                  (syntax/loc stx
+                    (honu-typed app
+                                orig-expr
+                                result-type result-protect-id)))
                 (raise-syntax-error #f
                                     (format (string-append 
                                              "static type mismatch: "
@@ -1114,7 +1124,8 @@
             ;; There will be a run-time check to make sure that a is the
             ;;  right kind of function, etc., and it will take care of the
             ;;  argument checks itself.
-            #'(#%app (honu-typed pack-a-expr orig-a-expr a-type a-protect-id) b ...)]
+            (syntax/loc stx
+              (#%app (honu-typed pack-a-expr orig-a-expr a-type a-protect-id) b ...))]
            [_else
             (type-mismatch #'orig-a-expr #'a-type #'(-> (.... #f) (.... #f #f)))]))]))
 
@@ -1178,11 +1189,14 @@
 		    [(set! id rhs)
 		     (if const?
 			 (raise-syntax-error #f "cannot assign to constant" #'id)
-			 #'(set! gen-id (check-expr-type 'set! id type-name type-name-expr pred-id rhs)))]
+			 (syntax/loc stx
+                           (set! gen-id (check-expr-type 'set! id type-name type-name-expr pred-id rhs))))]
 		    [(id arg (... ...))
-		     #'(honu-app (honu-typed gen-id id type-name protect-id) arg (... ...))]
+		     (syntax/loc stx
+                       (honu-app (honu-typed gen-id id type-name protect-id) arg (... ...)))]
 		    [id
-		     #'(honu-typed gen-id id type-name protect-id)]))))))]))
+                     (syntax/loc stx
+                       (honu-typed gen-id id type-name protect-id))]))))))]))
 
   (define-for-syntax (make-typed-procedure gen-id result-spec arg-spec protect-id)
     (with-syntax ([((arg arg-type arg-type-name arg-pred-id) ...) arg-spec]

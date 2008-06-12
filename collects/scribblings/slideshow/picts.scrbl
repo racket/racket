@@ -681,7 +681,7 @@ library provides functions for creating and placing cartoon-speech
 balloons.}
 
 @defproc[(wrap-balloon [pict pict?]
-                       [spike one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw)]
+                       [spike (one-of/c ('n 's 'e 'w 'ne 'se 'sw 'nw))]
                        [dx real?]
                        [dy real?]
                        [color (or/c string? (is-a?/c color%)) balloon-color]
@@ -810,8 +810,8 @@ follows:
 }}
 
 @defproc[(face* [eyebrow-kind (one-of/c 'none 'normal 'worried 'angry)]
-                [mouth-kind (one-of/c 'plain 'narrow 'medium 'large 'huge
-                                      'grimace 'oh 'tongue)]
+                [mouth-kind (one-of/c 'plain 'smaller 'narrow 'medium 'large 
+                                      'huge 'grimace 'oh 'tongue)]
                 [frown? any/c]
                 [color (or/c string (is-a?/c color%))]
                 [eye-inset real?]
@@ -832,7 +832,7 @@ Returns a pict for a face:
 
  @item{@scheme[eyebrow-kind] determines the eyebrow shape.}
 
- @item{@scheme[mouth-kind] determines the mouth shape, sombined with
+ @item{@scheme[mouth-kind] determines the mouth shape, combined with
        @scheme[frown?].}
 
  @item{@scheme[frown?] determines whether the mouth is up or down.}

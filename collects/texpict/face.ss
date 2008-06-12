@@ -107,15 +107,16 @@
                    (* sw 2/3) (+ (if flip? 0 i) (* h 2/3))
                    (- (* pi (- 5/4 (if flip? 1 0))) da) (+ (* pi (- 7/4 (if flip? 1 0))) da)))
                 
-                (define (plain-smile flip? tongue?)
+                (define (plain-smile flip? tongue? narrow?)
 		  (send dc set-brush no-brush)
 		  (series dc 
                           (if mouth-shading? 3 0)
                           (make-object color% "black")
                           face-edge-color
                           (lambda (i)
-                            (smile w h i 0 #f 0 flip?)
-                            (smile w h (+ 1 (- i)) 0 #f 0 flip?)) 
+                            (let ([da (if narrow? (* pi -1/8) 0)])
+                              (smile w h i da #f 0 flip?)
+                              (smile w h (+ 1 (- i)) da #f 0 flip?)))
                           #t #f)
 		  (when tongue?
 		    (let ([path (new dc-path%)]
@@ -243,7 +244,12 @@
                 
                 (define (medium-grimace flip?)
                   (grimace
-                   (* 1.2 w) (* h 0.9) (- (* 0.1 pi))
+                   (* 1.2 w) (* h 0.9) (- (* 0.1 pi)) 
+                   flip?))
+                
+                (define (narrow-grimace flip?)
+                  (grimace
+                   (* 1.2 w) (* h 0.9) (- (* 0.1 pi)) 15
                    flip?))
                 
                 (define (large-smile flip?)
@@ -327,14 +333,15 @@
 		  [(angry) (angry-eyebrows eyebrow-dy)]
 		  [(none) (void)])
 		(case mouth-kind
-		  [(plain) (plain-smile frown? #f)]
+		  [(plain) (plain-smile frown? #f #f)]
+		  [(smaller) (plain-smile frown? #f #t)]
                   [(narrow) (narrow-smile frown?)]
 		  [(medium) (medium-smile frown?)]
 		  [(large) (large-smile frown?)]
 		  [(huge) (largest-smile frown?)]
 		  [(grimace) (medium-grimace frown?)]
                   [(oh) (oh)]
-		  [(tongue) (plain-smile frown? #t)])
+		  [(tongue) (plain-smile frown? #t #f)])
                 
                 (send dc set-brush old-brush)
                 (send dc set-pen old-pen))
