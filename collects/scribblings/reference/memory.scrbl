@@ -85,7 +85,8 @@ otherwise.}
 @section[#:tag "willexecutor"]{Wills and Executors}
 
 A @deftech{will executor} manages a collection of values and
-associated @deftech{will} procedures. The will procedure for each
+associated @deftech{will} procedures
+(a.k.a. @deftech{finalizers}). The @tech{will} procedure for each
 value is ready to be executed when the value has been proven (by the
 garbage collector) to be unreachable, except through weak references
 (see @secref["weakbox"]) or as the registrant for other will

@@ -506,7 +506,7 @@ modules can define the name. That is, a @deftech{module-level
 variable} is like a @tech{top-level variable} from the perspective of
 evaluation.
 
-One difference between a module an a top-level definition is that a
+One difference between a module and a top-level definition is that a
 module can be declared without instantiating its module-level
 definitions. Evaluation of a @scheme[require] @deftech{instantiates}
 (i.e., triggers the @deftech{instantiation} of) a declared module,
@@ -742,7 +742,7 @@ from the thread's managing set, and the thread is killed when its
 managing set becomes empty.
 
 The values managed by a custodian are only weakly held by the
-custodian. As a result, a @tech{will} can be executed for a value that
+custodian. As a result, a @techlink{will} can be executed for a value that
 is managed by a custodian. In addition, a custodian only weakly
 references its subordinate custodians; if a subordinate custodian is
 unreferenced but has its own subordinates, then the custodian may be
