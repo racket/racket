@@ -2,6 +2,9 @@
 (require scheme/unit)
 (provide (all-defined-out))
 
+(define-signature promote-demote^
+  (var-promote var-demote))
+
 (define-signature constraints^
   ((struct cset (maps)) 
    exn:infer?
