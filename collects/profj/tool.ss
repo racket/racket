@@ -125,6 +125,15 @@
       (send java-keymap map-function "{" "insert-{")
       (keymap:send-map-function-meta java-keymap "{" "insert-{")
       
+      (send java-keymap add-function "insert-(" (lambda (edit event) (send edit open-par)))
+      (send java-keymap map-function "(" "insert-(")
+      (keymap:send-map-function-meta java-keymap "(" "insert-(")
+      
+      (send java-keymap add-function "insert-[" (lambda (edit event) (send edit open-brack)))
+      (send java-keymap map-function "[" "insert-[")
+      (keymap:send-map-function-meta java-keymap "[" "insert-[")
+
+      
       (define indent-mixin
         (mixin (color:text<%> editor:keymap<%>) ()
           (inherit insert classify-position set-position
@@ -166,12 +175,38 @@
                             [(eq? (classify-position (sub1 open-pos)) 'block-comment)
                              (loop (find-string "/*" 'backward open-pos 0 #f))]
                             [else open-pos])))]
+                     [sensitive-indent
+                      (lambda (last-line-indent last-line-start opener open-at)
+                        #;(printf "sensitive-indent opener ~a~n" opener)
+                        #;(printf "previous open at ~a~n" (get-sexp-start (sub1 open-at)))
+                        (cond
+                          [(equal? opener #\{)
+                           (let* ([previous-open (get-sexp-start (sub1 open-at))]
+                                  [brace? (and previous-open (equal? #\{ (get-character (sub1 previous-open))))]
+                                  [base-line-start (and brace? (skip-whitespace (add1 previous-open) 'forward #f))])
+                             #;(printf "brace? ~a bls ~a~n" brace? base-line-start)
+                             (cond
+                               [base-line-start (+ single-tab-stop
+                                                   (max 0 (sub1 (- base-line-start previous-open))))]
+                               [brace? (+ single-tab-stop 0)]
+                               [else (+ single-tab-stop last-line-indent)]))]
+                          [(equal? opener #\()
+                           (+ (max 0
+                                   (- open-at #;(find-string "(" 'forward last-line-start start-pos #f)
+                                      last-line-start))
+                              last-line-indent)]
+                          [(equal? opener #\[)
+                           (+ (max 0
+                                   (- open-at
+                                      last-line-start))
+                              last-line-indent)]
+                          [else last-line-indent]))]                           
                      [indent
                       (if (or (is-stopped?) (is-frozen?))
                           0
                           (let* ([base-offset 0]
                                  [curr-open (get-sexp-start start-pos)])
-                            #;(printf "indent ~a, ~a :~a ~n" start-pos (classify-position start-pos) curr-open)
+                            #;(printf "indent starts at ~a open is ~a~n" start-pos curr-open)
                             (cond 
                               [(and (eq? (classify-position start-pos) 'block-comment)
                                          (not (blockcomment-end? start-pos)))
@@ -186,7 +221,6 @@
                               [(or (not curr-open) (= curr-open 0)) base-offset]
                               [else
                                (let ([previous-line (find-string eol 'backward start-pos 0 #f)])
-                                 #;(printf "prev-line ~a~n" previous-line)
                                  (cond 
                                    [(not previous-line) (+ base-offset single-tab-stop)]
                                    [(eq? (classify-position previous-line) 'block-comment)
@@ -206,16 +240,20 @@
                                       (cond
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
-                                        [else (+ single-tab-stop last-line-indent)]))]
+                                        [else 
+                                         (sensitive-indent last-line-indent last-line-start (get-character (sub1 curr-open)) curr-open)
+                                         #;(+ single-tab-stop last-line-indent)]))]
                                    [else
                                     (let* ([last-line-start (skip-whitespace previous-line 'forward #f)]
                                            [last-line-indent (last-offset previous-line last-line-start)]
                                            [old-open (get-sexp-start last-line-start)])
-                                      #;(printf "lls ~a lli ~a oo~a~n" last-line-start last-line-indent old-open)
+                                      #;(printf "lls ~a lli ~a oo~a ~n" last-line-start last-line-indent old-open)
                                       (cond
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
-                                        [else (+ single-tab-stop last-line-indent)]))]))])))])
+                                        [else 
+                                         (sensitive-indent last-line-indent last-line-start (get-character (sub1 curr-open)) curr-open)
+                                         #;(+ single-tab-stop last-line-indent)]))]))])))])
               (build-string (max indent 0) (λ (x) #\space))))
           
           (define/public (do-return)
@@ -233,10 +271,40 @@
                 [(and (= start-pos end-pos) 
                       (or (and (eq? cur-class 'block-comment) (blockcomment-end? start-pos))
                           (not (memq cur-class '(comment string error block-comment)))))
-                 (insert (string-append "{\n" (get-indentation start-pos) "}"))
+                 (insert "{")
+                 (insert (string-append "\n" 
+                                        (let ([indent (get-indentation (add1 start-pos))])
+                                          (substring indent 0 (max 0 (- (string-length indent) single-tab-stop))))
+                                        "}"))
                  (set-position (add1 start-pos))
                  ]
                 [else (insert "{")])))
+          
+          (define/public (open-par)
+            (let* ([start-pos (get-start-position)]
+                   [end-pos (get-end-position)]
+                   [cur-class (classify-position start-pos)])
+              (cond 
+                [(and (= start-pos end-pos) 
+                      (or (and (eq? cur-class 'block-comment) (blockcomment-end? start-pos))
+                          (not (memq cur-class '(comment string error block-comment)))))
+                 (insert "()")
+                 (set-position (add1 start-pos))
+                 ]
+                [else (insert "(")])))
+          
+          (define/public (open-brack)
+            (let* ([start-pos (get-start-position)]
+                   [end-pos (get-end-position)]
+                   [cur-class (classify-position start-pos)])
+              (cond 
+                [(and (= start-pos end-pos) 
+                      (or (and (eq? cur-class 'block-comment) (blockcomment-end? start-pos))
+                          (not (memq cur-class '(comment string error block-comment)))))
+                 (insert "[]")
+                 (set-position (add1 start-pos))
+                 ]
+                [else (insert "[")])))
                  
           (define/public (java-tabify-selection)
             (let ([start-para (position-paragraph (get-start-position))]
