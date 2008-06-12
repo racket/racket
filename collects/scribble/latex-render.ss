@@ -49,13 +49,15 @@
         (when (and (part-title-content d) (pair? number))
           (when (part-style? d 'index)
             (printf "\\twocolumn\n\\parskip=0pt\n\\addcontentsline{toc}{section}{Index}\n"))
-          (let ([no-number? (and (pair? number) (not (car number)))])
+          (let ([no-number? (and (pair? number) 
+                                 (or (not (car number))
+                                     ((length number) . > . 3)))])
             (printf "\\~a~a~a"
                     (case (length number)
                       [(0 1) "sectionNewpage\n\n\\section"]
                       [(2) "subsection"]
                       [(3) "subsubsection"]
-                      [else "subsubsection*"])
+                      [else "subsubsection"])
                     (if (and (part-style? d 'hidden) (not no-number?))
                       "hidden" "")
                     (if no-number? "*" ""))
