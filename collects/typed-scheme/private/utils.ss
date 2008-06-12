@@ -12,7 +12,9 @@
          id
          filter-multiple
          hash-union
-         in-pairs)
+         in-pairs
+         in-list-forever
+         extend)
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()
@@ -142,3 +144,19 @@
                (lambda (_) (more?))
                (lambda _ #t)
                (lambda _ #t))))))
+
+(define (in-list-forever seq val)
+  (make-do-sequence
+   (lambda ()
+     (let-values ([(more? gen) (sequence-generate seq)])
+       (values (lambda (e) (let ([e (if (more?) (gen) val)]) e))
+               (lambda (_) #t)
+               #t
+               (lambda (_) #t)
+               (lambda _ #t)
+               (lambda _ #t))))))
+
+;; Listof[A] Listof[B] B -> Listof[B]
+;; pads out t to be as long as s
+(define (extend s t extra)
+  (append t (build-list (- (length s) (length t)) (lambda _ extra))))

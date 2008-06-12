@@ -1,15 +1,12 @@
 #lang scheme/unit
 
-(require "type-effect-convenience.ss" "type-rep.ss" "effect-rep.ss" "rep-utils.ss"
-         "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss" "type-name-env.ss"
-         "subtype.ss" "remove-intersect.ss" "utils.ss"
+(require "type-effect-convenience.ss" "type-rep.ss" 
+         "type-utils.ss" "union.ss" "tc-utils.ss" 
+         "subtype.ss" "utils.ss"
          "signatures.ss"
-         scheme/match
-         mzlib/etc
-         mzlib/trace
-         scheme/list)
+         scheme/match)
 
-(import restrict^)
+(import restrict^ dmap^)
 (export constraints^)
 
 
@@ -68,13 +65,15 @@
 (define (join T U) (Un T U))
 
 
-(define c-meet
-  (match-lambda**
-   [((struct c (S X T)) (struct c (S* _ T*)))
-    (let ([S (join S S*)] [T (meet T T*)])
-      (unless (subtype S T)
-        (fail! S T))
-      (make-c S X T))]))
+(define (c-meet c1 c2 [var #f])
+  (match* (c1 c2)
+    [((struct c (S X T)) (struct c (S* X* T*)))
+     (unless (or var (eq? X X*))
+       (int-err "Non-matching vars in c-meet: ~a ~a" X X*))
+     (let ([S (join S S*)] [T (meet T T*)])
+       (unless (subtype S T)
+         (fail! S T))
+       (make-c S (or var X) T))]))
 
 (define (subst-all/c sub -c)
   (match -c

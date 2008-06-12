@@ -11,8 +11,6 @@
 (import constraints^ promote-demote^)
 (export infer^)
 
-
-
 (define (empty-set) '())  
 
 (define current-seen (make-parameter (empty-set)))
@@ -24,7 +22,6 @@
 (define (add-var-mapping cset dbound vars)
   (make-cset (for/list ([(cs vs) (in-pairs (cset-maps cset))])
                (cons cs (hash-set vs dbound vars)))))
-
 
 ;; ss and ts have the same length
 (define (cgen-union V X ss ts)
@@ -279,24 +276,8 @@
           (subst-gen cs R)
           (cset-meet cs (cgen null X R expected))))))
 
-;; Listof[A] Listof[B] B -> Listof[B]
-;; pads out t to be as long as s
-(define (extend s t extra)
-  (append t (build-list (- (length s) (length t)) (lambda _ extra))))
-
 (define (infer/simple S T R)
   (infer (fv/list T) S T R))
 
-
 (define (i s t r)
   (infer/simple (list s) (list t) r))
-
-;; this is *definitely* not yet correct
-
-
-;(trace infer cgen cset-meet* subst-gen)
-;(trace cgen/arr cgen/list cset-meet)
-
-;(trace infer/dots cset-meet)
-
-;(trace infer subst-gen cgen)

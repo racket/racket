@@ -2,30 +2,19 @@
 
 
 (require syntax/kerncase
-         syntax/struct
-         syntax/stx
          scheme/match
-         "type-contract.ss"
          "signatures.ss"
-         "tc-structs.ss"
          "type-utils.ss"
          "utils.ss" ;; doesn't need tests
          "type-rep.ss" ;; doesn't need tests
          "type-effect-convenience.ss" ;; maybe needs tests
          "union.ss"
          "subtype.ss" ;; has tests
-         "internal-forms.ss" ;; doesn't need tests
-         "planet-requires.ss" ;; doesn't need tests
-         "type-env.ss" ;; maybe needs tests
          "parse-type.ss" ;; has tests
          "tc-utils.ss" ;; doesn't need tests
-         "type-environments.ss" ;; doesn't need tests
          "lexical-env.ss" ;; maybe needs tests
          "type-annotation.ss" ;; has tests
-         "type-name-env.ss" ;; maybe needs tests
-         "init-envs.ss"
          "effect-rep.ss"
-         "mutated-vars.ss"
          scheme/private/class-internal)
 
 (require (for-template scheme/base scheme/private/class-internal))

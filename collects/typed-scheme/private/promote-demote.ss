@@ -1,11 +1,8 @@
 #lang scheme/unit
 
-(require "type-effect-convenience.ss" "type-rep.ss" "effect-rep.ss" "rep-utils.ss"
-         "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss" "type-name-env.ss"
-         "subtype.ss" "remove-intersect.ss" "signatures.ss" "utils.ss"
-         scheme/match
-         mzlib/etc
-         mzlib/trace
+(require "type-effect-convenience.ss" "type-rep.ss" 
+         "type-utils.ss" "union.ss" 
+         "signatures.ss" 
          scheme/list)
 
 (import)

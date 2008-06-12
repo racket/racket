@@ -2,6 +2,11 @@
 (require scheme/unit)
 (provide (all-defined-out))
 
+(define-signature dmap^
+  ((struct dmap (map))
+   (struct dcon (fixed rest))
+   dmap-meet))
+
 (define-signature promote-demote^
   (var-promote var-demote))
 
@@ -18,6 +23,7 @@
    empty-cset
    insert
    cset-combine
+   c-meet
    (struct c (S X T))))
 
 (define-signature restrict^

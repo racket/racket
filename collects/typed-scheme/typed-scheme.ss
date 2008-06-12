@@ -12,7 +12,7 @@
           "private/tc-utils.ss"
           "private/type-name-env.ss"
           "private/type-alias-env.ss"
-          "private/utils.ss"
+          (except-in "private/utils.ss" extend)
           (only-in "private/infer-dummy.ss" infer-param)
           "private/infer.ss"
           "private/type-effect-convenience.ss"
