@@ -39,7 +39,7 @@ Synonyms for @scheme[cvector?], @scheme[cvector->vector], @scheme[cvector-length
                                                   (car l)
                                                   #("?" 1 1 2 1))
                                    (datum->syntax #'here
-                                                  (car l)
+                                                  (cadr l)
                                                   #("?" 1 3 4 1)))
                                   #("?" 1 0 1 3)))])
        (with-syntax ([<type> (mk type)]
