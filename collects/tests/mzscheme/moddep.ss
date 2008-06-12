@@ -116,6 +116,9 @@
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (- 5))) '(planet "m/z:2:<=5/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
 
+(test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6))) 
+          "../utils.ss" '(planet "doc/stuff.ss" ("untyped" "unlib.plt" 3 (= 6))))
+
 (test-cmp (build-path 'same "x.ss") "x.ss" (build-path 'same))
 
 ;; Try path cases that don't fit UTF-8 (and therefore would go wrong as a string):

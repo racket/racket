@@ -31,6 +31,13 @@
           (let ([m (regexp-match #rx"^(.*/)/*[^/]*$" relto)])
             (string-append (cadr m) elem-str)))))
 
+    (define (simpler-relpath path)
+      (let loop ([s (regexp-replace* #px"(?<![.])[.]/" path "")])
+        (let ([s2 (regexp-replace #rx"([^/.]*)/[.][.]/" s "")])
+          (if (equal? s s2)
+              s
+              (loop s2)))))
+
     (define (add-main s)
       (if (regexp-match #rx"[.][^/]*$" s)
           s
@@ -96,11 +103,7 @@
                                                 (string-append s "/"))
                                               (cddr relto-mp))
                                          (list (cadr relto-mp)))))])
-             (let ([simpler (let loop ([s (regexp-replace* #px"(?<![.])[.]/" path "")])
-                              (let ([s2 (regexp-replace #rx"([^/.]*)/[.][.]/" s "")])
-                                (if (equal? s s2)
-                                    s
-                                    (loop s2))))])
+             (let ([simpler (simpler-relpath path)])
                (let ([m (regexp-match #rx"^(.*)/([^/]*)$" simpler)])
                  (if m
                      (normalize-lib `(lib ,(caddr m) ,(cadr m)))
@@ -108,8 +111,9 @@
                             "relative path escapes collection: ~s relative to ~s"
                             elements relto-mp))))))]
          [(eq? (car relto-mp) 'planet)
-         (let ([pathstr (attach-to-relative-path-string
-                         elements (cadr relto-mp))])
+         (let ([pathstr (simpler-relpath
+                         (attach-to-relative-path-string
+                          elements (cadr relto-mp)))])
            (normalize-planet `(planet ,pathstr ,(caddr relto-mp))))]
         [else (error 'combine-relative-elements
                      "don't know how to deal with: ~s" relto-mp)]))
