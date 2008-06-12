@@ -1,16 +1,17 @@
-(module types mzscheme
+(module types scheme/base
 
   (require 
-   (only srfi/1 lset-intersection)
+   (only-in srfi/1 lset-intersection)
    mzlib/etc
    mzlib/pretty
    mzlib/list
-   mzlib/class
+   scheme/class
    "ast.ss")
   
-  (provide (all-defined-except number-assign-conversions remove-dups meth-member?
-                               contained-in? consolidate-lists subset? depth conversion-steps
-                               generate-require-spec))
+  (provide (except-out (all-defined-out)
+                       number-assign-conversions remove-dups meth-member?
+                       contained-in? consolidate-lists subset? depth conversion-steps
+                       generate-require-spec))
       
   ;; symbol-type = 'null | 'string | 'boolean | 'char | 'byte | 'short | 'int
   ;;             | 'long | 'float | 'double | 'void | 'dynamic
@@ -22,7 +23,7 @@
   ;;      | dynamic-val
   ;;      | unknown-ref
 
-  (define-struct ref-type (class/iface path) (make-inspector))
+  (define-struct ref-type (class/iface path) #:transparent)
   (define-struct array-type (type dim))
   
   (define object-type (make-ref-type "Object" `("java" "lang")))
@@ -337,33 +338,33 @@
   ;;                    (list method-records) (list inner-record) (list (list strings)) (list (list strings)))
   ;; After full processing fields and methods should contain all inherited fields 
   ;; and methods.  Also parents and ifaces should contain all super-classes/ifaces
-  (define-struct class-record (name modifiers class? object? fields methods inners parents ifaces) (make-inspector))
+  (define-struct class-record (name modifiers class? object? fields methods inners parents ifaces) #:mutable #:transparent)
 
   (define interactions-record (make-class-record (list "interactions") null #f #f null null null null null))
   
   ;; (make-field-record string (list symbol) bool (list string) type)
-  (define-struct field-record (name modifiers init? class type) (make-inspector))
+  (define-struct field-record (name modifiers init? class type) #:mutable #:transparent)
   
   ;; (make-method-record string (list symbol) type (list type) (list type) (U bool method-record) string)
-  (define-struct method-record (name modifiers rtype atypes throws override class) (make-inspector))
+  (define-struct method-record (name modifiers rtype atypes throws override class) #:mutable #:transparent)
 
   ;;(make-inner-record string string (list symbol) bool)
-  (define-struct inner-record (name full-name modifiers class?) (make-inspector))
+  (define-struct inner-record (name full-name modifiers class?) #:mutable #:transparent)
 
   ;;(make-scheme-record string (list string) path (list dynamic-val))
-  (define-struct scheme-record (name path dir provides))
+  (define-struct scheme-record (name path dir provides) #:mutable #:transparent)
   
   ;;(make-dynamic-val (U type method-contract unknown-ref))
-  (define-struct dynamic-val (type) (make-inspector))
+  (define-struct dynamic-val (type) #:mutable #:transparent)
   
   ;;(make-unknown-ref (U method-contract field-contract))
-  (define-struct unknown-ref (access) (make-inspector))
+  (define-struct unknown-ref (access) #:mutable #:transparent)
   
   ;;(make-method-contract string type (list type) (U #f string))
-  (define-struct method-contract (name return args prefix) (make-inspector))
+  (define-struct method-contract (name return args prefix) #:mutable #:transparent)
   
   ;;(make-field-contract string type)
-  (define-struct field-contract (name type))
+  (define-struct field-contract (name type) #:mutable #:transparent)
   
 ;                                                                                      
 ;                                                                            ;;        
@@ -388,25 +389,25 @@
                 (error 'internal-error "type-records importer field was not set"))))
       
       ;Stores type information and require syntax per compile or execution
-      (define records (make-hash-table 'equal))
-      (define requires (make-hash-table 'equal))
-      (define package-contents (make-hash-table 'equal))
+      (define records (make-hash))
+      (define requires (make-hash))
+      (define package-contents (make-hash))
       
       ;Stores per-class information accessed by location
-      (define class-environment (make-hash-table))
-      (define class-require (make-hash-table))
+      (define class-environment (make-hasheq))
+      (define class-require (make-hasheq))
 
-      (define compilation-location (make-hash-table))
+      (define compilation-location (make-hasheq))
       
       (define class-reqs null)
       (define location #f)
       
       ;add-class-record: class-record -> void
       (define/public (add-class-record r)
-        (hash-table-put! records (class-record-name r) r))
+        (hash-set! records (class-record-name r) r))
       ;add-to-records: (list string) ( -> 'a) -> void
       (define/public (add-to-records key thunk)
-        (hash-table-put! records key thunk))
+        (hash-set! records key thunk))
       
       ;; get-class-record: (U type (list string) 'string) (U (list string) #f) ( -> 'a) -> 
       ;;                                            (U class-record scheme-record procedure)
@@ -434,13 +435,13 @@
                     (not (null? outer-record))
                     (not (eq? outer-record 'in-progress))
                     (member key (map inner-record-name (class-record-inners (get-record outer-record this)))))
-               (hash-table-get records (cons key-inner (cdr container)) fail))
+               (hash-ref records (cons key-inner (cdr container)) fail))
               ((and container (not (null? outer-record)) (eq? outer-record 'in-progress))
-               (let ((res (hash-table-get records (cons key-inner inner-path) (lambda () #f))))
+               (let ((res (hash-ref records (cons key-inner inner-path) #f)))
                  (or res
-                     (hash-table-get records (cons key path) new-search))))
+                     (hash-ref records (cons key path) new-search))))
               (else
-               (hash-table-get records (cons key path) new-search))))))
+               (hash-ref records (cons key path) new-search))))))
 
       ;normalize-key: (U 'strung ref-type (list string)) -> (values string (list string))
       (define/private (normalize-key ctype)
@@ -453,7 +454,7 @@
       ;search-for-record string string (list string) (-> #f) (-> 'a) -> class-record
       (define/private (search-for-record class-name new-prefix path test-fail fail)
         (let* ((new-class-name (string-append new-prefix "." class-name))
-               (rec? (hash-table-get records (cons new-class-name path) test-fail))
+               (rec? (hash-ref records (cons new-class-name path) test-fail))
                (back-path (reverse path)))
           (cond
             (rec? rec?)
@@ -462,10 +463,10 @@
       
       ;add-package-contents: (list string) (list string) -> void
       (define/public (add-package-contents package classes)
-        (let ((existing-classes (hash-table-get package-contents package (lambda () null))))
+        (let ((existing-classes (hash-ref package-contents package null)))
           (if (null? existing-classes)
-              (hash-table-put! package-contents package classes)
-              (hash-table-put! package-contents package (non-dup-append classes existing-classes)))))
+              (hash-set! package-contents package classes)
+              (hash-set! package-contents package (non-dup-append classes existing-classes)))))
 
       (define/private (non-dup-append cl pa)
         (cond
@@ -475,23 +476,23 @@
       
       ;get-package-contents: (list string) ( -> 'a) -> (list string)
       (define/public (get-package-contents package fail)
-        (hash-table-get package-contents package fail))
+        (hash-ref package-contents package fail))
       
       ;add-to-env: string (list string) file -> void
       (define/public (add-to-env class path loc)
         #;(printf "add-to-env class ~a path ~a loc ~a~n~n" class path loc)
-        (unless (hash-table-get (hash-table-get class-environment loc
-                                                (lambda () 
-                                                  (let ([new-t (make-hash-table 'equal)])
-                                                    (hash-table-put! class-environment loc new-t)
-                                                    new-t)))
-                                class (lambda () #f))
-          (hash-table-put! (hash-table-get class-environment loc) class path)))
+        (unless (hash-ref (hash-ref class-environment loc
+                                    (lambda () 
+                                      (let ([new-t (make-hash)])
+                                        (hash-set! class-environment loc new-t)
+                                        new-t)))
+                          class #f)
+          (hash-set! (hash-ref class-environment loc) class path)))
       
       ;Returns the environment of classes for the current location
       ;get-class-env: -> (list string)
       (define/public (get-class-env)
-        (hash-table-map (hash-table-get class-environment location) (lambda (key val) key)))
+        (hash-map (hash-ref class-environment location) (lambda (key val) key)))
       
       (define (env-failure)
         (error 'class-environment "Internal Error: environment does not have location"))
@@ -500,35 +501,33 @@
       (define/public (lookup-path class fail)
         #;(printf "class ~a location ~a~n" class location)
         #;(printf "lookup ~a~n" class)
-        #;(hash-table-for-each (hash-table-get class-environment location)
-                            (lambda (k v) (printf "~a -> ~a~n" k v)))
+        #;(hash-for-each (hash-ref class-environment location)
+                         (lambda (k v) (printf "~a -> ~a~n" k v)))
         (if location
-            (hash-table-get (hash-table-get class-environment 
-                                            location 
-                                            env-failure)
-                            class fail)
+            (hash-ref (hash-ref class-environment location env-failure)
+                      class fail)
             (fail)))
       
       ;add-require-syntax: (list string) (list syntax syntax) -> void
       (define/public (add-require-syntax name syn)
-        (get-require-syntax #t name (lambda () (hash-table-put! requires (cons #t name) (car syn))))
-        (get-require-syntax #f name (lambda () (hash-table-put! requires (cons #f name) (cadr syn)))))
+        (get-require-syntax #t name (lambda () (hash-set! requires (cons #t name) (car syn))))
+        (get-require-syntax #f name (lambda () (hash-set! requires (cons #f name) (cadr syn)))))
       
       (define (syntax-fail)
         (error 'syntax "Internal Error: syntax did not have given req"))
       
       ;get-require-syntax: bool (list string) . ( -> 'a)  -> syntax
       (define/public (get-require-syntax prefix? name . fail)
-        (hash-table-get requires (cons prefix? name) (if (null? fail) syntax-fail (car fail))))
+        (hash-ref requires (cons prefix? name) (if (null? fail) syntax-fail (car fail))))
         
       ;add-class-req: name boolean location -> void
       (define/public (add-class-req name pre loc)
-        (hash-table-put! (hash-table-get class-require
-                                         loc
-                                         (lambda () (let ((new-t (make-hash-table 'equal)))
-                                                      (hash-table-put! class-require loc new-t)
-                                                      new-t)))
-                         name pre))
+        (hash-set! (hash-ref class-require
+                             loc
+                             (lambda () (let ((new-t (make-hash)))
+                                          (hash-set! class-require loc new-t)
+                                          new-t)))
+                   name pre))
       
       ;require-fail
       (define (require-fail)
@@ -536,7 +535,7 @@
       
       ;require-prefix?: (list string) ( -> 'a) -> bool
       (define/public (require-prefix? name fail)
-        (hash-table-get (hash-table-get class-require location require-fail) name fail))
+        (hash-ref (hash-ref class-require location require-fail) name fail))
       
       (define/private (member-req req reqs)
         (and (not (null? reqs))
@@ -544,17 +543,17 @@
                       (equal? (req-path req) (req-path (car reqs))))
                  (member-req req (cdr reqs)))))
 
-      (define/public (set-compilation-location loc dir)  (hash-table-put! compilation-location loc dir))
+      (define/public (set-compilation-location loc dir)  (hash-set! compilation-location loc dir))
       (define/public (get-compilation-location)
-        (hash-table-get compilation-location location 
-                        (lambda () (error 'get-compilation-location "Internal error: location not found"))))
-      (define/public (set-composite-location name dir) (hash-table-put! compilation-location name dir))
+        (hash-ref compilation-location location 
+                  (lambda () (error 'get-compilation-location "Internal error: location not found"))))
+      (define/public (set-composite-location name dir) (hash-set! compilation-location name dir))
       (define/public (get-composite-location name)
         ;(printf "get-composite-location for ~a~n" name)
-        ;(hash-table-for-each compilation-location
+        ;(hash-for-each compilation-location
         ;                     (lambda (k v) (printf "~a -> ~a~n" k v)))
-        (hash-table-get compilation-location name 
-                        (lambda () (error 'get-composite-location "Internal error: name not found"))))
+        (hash-ref compilation-location name 
+                  (lambda () (error 'get-composite-location "Internal error: name not found"))))
       
       (define/public (add-req req)
         (unless (member-req req class-reqs)
@@ -585,8 +584,8 @@
       
       (define/public (give-interaction-execution-names)
         (when execution-loc
-          (hash-table-for-each (hash-table-get class-environment execution-loc)
-                               (lambda (k v) (add-to-env k v 'interactions)))
+          (hash-for-each (hash-ref class-environment execution-loc)
+                         (lambda (k v) (add-to-env k v 'interactions)))
           (set! execution-loc #f)))
       
       (define test-classes null)
@@ -794,14 +793,14 @@
   (define (module-has-binding? mod-ref variable fail)
     (let ((var (string->symbol (java-name->scheme variable))))
       (or (memq var (scheme-record-provides mod-ref))
-          (let ((mod-syntax (datum->syntax-object #f
-                                                  `(,#'module m mzscheme
-                                                     (require ,(generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
-                                                                                      (scheme-record-path mod-ref)))
-                                                     ,var)
-                                                  #f)))
+          (let ((mod-syntax (datum->syntax #f
+                                           `(,#'module m mzscheme
+                                                       (require ,(generate-require-spec (java-name->scheme (scheme-record-name mod-ref))
+                                                                                        (scheme-record-path mod-ref)))
+                                                       ,var)
+                                           #f)))
             (with-handlers ((exn? (lambda (e) (fail))))
-              (parameterize ([current-namespace (make-namespace)])
+              (parameterize ([current-namespace (make-base-namespace)])
                 (expand mod-syntax)))
             (set-scheme-record-provides! mod-ref (cons var (scheme-record-provides mod-ref)))))))
           

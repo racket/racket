@@ -1,6 +1,6 @@
-(module name-utils mzscheme
+(module name-utils scheme/base
   
-  (provide (all-defined-except getter))
+  (provide (except-out (all-defined-out) getter))
   
   (define (getter match-pattern replace-pattern)
     (lambda (name)

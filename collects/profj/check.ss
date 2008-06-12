@@ -1,4 +1,4 @@
-(module check mzscheme
+(module check scheme/base
 
   (require "ast.ss"
            "types.ss"
@@ -7,8 +7,8 @@
            "restrictions.ss"
            "profj-pref.ss"
            "build-info.ss"
-           mzlib/class mzlib/list mzlib/file
-           (prefix srfi: srfi/1) mzlib/string)
+           scheme/class scheme/path
+           (prefix-in srfi: srfi/1) mzlib/string)
   (provide check-defs check-interactions-types)
   
   ;symbol-remove-last: symbol->symbol
@@ -24,20 +24,20 @@
 
   ;env =>
   ;(make-environment (list var-type) (list string) (list type) (list string) (list inner-rec))
-  (define-struct environment (types set-vars exns labels local-inners) (make-inspector))
+  (define-struct environment (types set-vars exns labels local-inners) #:transparent)
   
   ;Constant empty environment
   (define empty-env (make-environment null null null null null))
 
   ;; var-type => (make-var-type string type properties)
-  (define-struct var-type (var type properties) (make-inspector))
+  (define-struct var-type (var type properties) #:transparent)
   
   ;;inner-rec ==> (make-inner-rec string (U symbol void) (list string) class-rec)
   (define-struct inner-rec (name unique-name package record))
   
   ;;Environment variable properties
   ;;(make-properties bool bool bool bool bool bool)
-  (define-struct properties (parm? field? static? settable? final? usable? set?) (make-inspector))
+  (define-struct properties (parm? field? static? settable? final? usable? set?) #:transparent #:mutable)
   (define parm (make-properties #t #f #f #t #f #t #t))
   (define final-parm (make-properties #t #f #f #f #t #t #t))
   (define method-var (make-properties #f #f #f #t #f #t #f))
@@ -3666,7 +3666,7 @@
   ;implicit import error
   ;class-lookup-error: string src -> void
   (define (class-lookup-error class src)
-    (if (path? class) (set! class (path->string class)))
+    (when (path? class) (set! class (path->string class)))
     (raise-error (string->symbol class)
                  (format "Implicit import of class ~a failed as this class does not exist at the specified location"
                          class)

@@ -1,6 +1,6 @@
-(module build-info mzscheme
+(module build-info scheme/base
   
-  (require mzlib/class mzlib/file mzlib/list
+  (require scheme/class scheme/path 
            "ast.ss" "types.ss" "error-messaging.ss" "parameters.ss" 
            "restrictions.ss" "parser.ss" "profj-pref.ss")
 
@@ -30,7 +30,7 @@
   
   ;build-require-syntax: string (list string) dir bool bool-> (list syntax)
   (define (build-require-syntax name path dir local? scheme?)
-    (let* ((syn (lambda (acc) (datum->syntax-object #f acc #f)))
+    (let* ((syn (lambda (acc) (datum->syntax #f acc #f)))
            (profj-lib? (ormap (lambda (p) (same-base-dir? dir p))
                               (map (lambda (p) (build-path p "profj" "libs"))
                                    (current-library-collection-paths))))
@@ -53,13 +53,13 @@
                               (string-append n ".ss")
                               (string->symbol n))))))
       (if scheme?
-          (list (syn `(prefix ,(string->symbol
+          (list (syn `(prefix-in ,(string->symbol
                                 (apply string-append
                                        (append (map (lambda (s) (string-append s ".")) path)
                                                (list name "-"))))
                               ,(syn (access (make-name)))))
-                (syn `(prefix ,(string->symbol (string-append name "-")) ,(syn (access (make-name))))))
-          (list (syn `(prefix ,(string->symbol (apply string-append
+                (syn `(prefix-in ,(string->symbol (string-append name "-")) ,(syn (access (make-name))))))
+          (list (syn `(prefix-in ,(string->symbol (apply string-append
                                                       (map (lambda (s) (string-append s ".")) path)))
                               ,(syn (access (make-name)))))
                 (syn (access (make-name)))))))
@@ -452,7 +452,7 @@
                                 (directory-list (build-path (dir-path-path base-dir) "compiled")))))))
            (lang-classes (get-classes lang-dir)) 
            (test-classes (when (testcase-ext?) (get-classes test-dir)))
-           (array (datum->syntax-object #f `(lib "array.ss" "profj/libs/java/lang") #f))
+           (array (datum->syntax #f `(lib "array.ss" "profj/libs/java/lang") #f))
            
            (add
             (lambda (path classes dir array?)

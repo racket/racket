@@ -1,5 +1,4 @@
-#cs
-(module restrictions mzscheme
+(module restrictions scheme/base
   
   (provide is-field-restricted? is-method-restricted? forbidden-lang-class? is-import-restricted?)
   

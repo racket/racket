@@ -1,8 +1,9 @@
-(module compile mzscheme
+(module compile scheme/base
   (require "parameters.ss" "ast.ss" "types.ss" "parser.ss" "build-info.ss" "check.ss" "to-scheme.ss" "profj-pref.ss")
-  (require mzlib/list
-           mzlib/file
-           mzlib/class)
+  (require #;mzlib/list
+           #;mzlib/file
+           scheme/path
+           scheme/class)
 
   (provide compile-java compile-interactions compile-files compile-ast compile-interactions-ast
            compilation-unit-code compilation-unit-contains set-compilation-unit-code!
@@ -74,7 +75,7 @@
          (compile-java-internal port loc type-recs #f level)))))
 
   (define (compile-module expr)
-    (parameterize ([current-namespace (make-namespace)])
+    (parameterize ([current-namespace (make-base-namespace)])
       (compile expr)))
 
   ;compile-to-file: port location level -> void
@@ -121,19 +122,19 @@
                                                                                              #f
                                                                                              class-record-error)
                                                                                        port))
-                                                          'truncate/replace)))
+                                                          #:exists 'truncate/replace)))
                               names syntaxes locations)))
                 (compile-java-internal port location type-recs #t level))))
 
   ;; call-with-output-zo-file* path-string path-string proc [symbol ...] -> 
   ;;  Like call-with-output-file*, but takes an extra initial path to use
-  ;;  as a original location, so that marshaled paths in a generated .zo file
+  ;;  as an original location, so that marshaled paths in a generated .zo file
   ;;  can be written as relative paths
-  (define (call-with-output-zo-file* loc name proc . flags)
+  (define (call-with-output-zo-file* loc name proc flag)
     (let ([dir (and (path-string? loc)
                     (path-only (path->complete-path loc)))])
       (parameterize ([current-write-relative-directory dir])
-        (apply call-with-output-file* name proc flags))))
+        (call-with-output-file* name proc #:exists flag))))
   
   (define (class-record-error) (error 'compile-to-file "Internal error: class record not found"))
   
@@ -215,7 +216,7 @@
     (to-file #f)
     (let ((ast (parse-interactions port location level)))
       (if (null? ast)
-          (datum->syntax-object #f '(void) #f)
+          (datum->syntax #f '(void) #f)
           (begin 
             (build-interactions-info ast level location type-recs)
             (check-interactions-types ast level location type-recs)
@@ -224,13 +225,13 @@
   (define (compile-interactions-ast ast location level type-recs gen-require?)
     (to-file #f)
     (if (null? ast)
-        (datum->syntax-object #f '(void) #f)
+        (datum->syntax #f '(void) #f)
         (begin
           (build-interactions-info ast level location type-recs)
           (check-interactions-types ast level location type-recs)
           (translate-interactions ast location type-recs gen-require?))))
   
-  (define-struct elt (prev val next))
+  (define-struct elt (prev val next) #:mutable)
   
   (define fifo
     (class* object% ()

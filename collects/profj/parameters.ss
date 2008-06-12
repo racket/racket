@@ -1,8 +1,6 @@
-(module parameters mzscheme
+(module parameters scheme/base
   
-  (require mzlib/class)
-  
-  (provide (all-defined))
+  (provide (all-defined-out))
   
   ;Stores the classpath for the current run
   (define classpath (make-parameter null))

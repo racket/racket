@@ -1,7 +1,6 @@
-(module profj-pref mzscheme
+(module profj-pref scheme/base
   
-  (require mzlib/file
-           mzlib/list)
+  (require mzlib/file)
   
   (provide reset-classpath add-to-classpath get-classpath)
 

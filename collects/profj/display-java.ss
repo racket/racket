@@ -1,6 +1,6 @@
-(module display-java mzscheme
+(module display-java scheme/base
   
-  (require mzlib/class
+  (require scheme/class
            mred
            framework
            profj/libs/java/lang/Object

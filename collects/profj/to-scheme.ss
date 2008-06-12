@@ -1,19 +1,18 @@
-(module to-scheme mzscheme
+(module to-scheme scheme/base
   (require "ast.ss"
            "types.ss"
            "name-utils.scm"
            "graph-scc.ss"
            "parameters.ss"
-           mzlib/class
-           mzlib/list
+           scheme/class
            mzlib/etc
-           (prefix int-set: (lib "integer-set.ss"))
+           (prefix-in int-set: (lib "integer-set.ss"))
            )
   
-  (provide translate-program translate-interactions (struct compilation-unit (contains code locations depends)))
+  (provide translate-program translate-interactions (struct-out compilation-unit))
   
   ;(make-compilation-unit (list string) (list syntax) (list location) (list (list string)))
-  (define-struct compilation-unit (contains code locations depends) (make-inspector))
+  (define-struct compilation-unit (contains code locations depends) #:transparent #:mutable)
   
   ;File takes java AST as defined by ast.ss and produces
   ;semantically (hopefully) equivalent scheme code
@@ -37,6 +36,8 @@
   (define current-depth (make-parameter 0))
   (define current-local-classes (make-parameter null))
     
+  (define datum->syntax-object datum->syntax)
+  (define syntax-object->datum syntax->datum)
   (define stx-for-original-property (read-syntax #f (open-input-string "original")))
   (define (stx-for-source) stx-for-original-property)
   (define (create-syntax oddness sexpression source)
@@ -117,8 +118,8 @@
   
   ;get-class-name: (U name type-spec) -> syntax
   (define (get-class-name name)
-    (if (type-spec? name)
-        (set! name (type-spec-name name)))
+    (when (type-spec? name)
+      (set! name (type-spec-name name)))
     (if (null? (name-path name))
         (translate-id (id-string (name-id name))
                       (id-src (name-id name)))
@@ -253,84 +254,7 @@
             (lambda (def)
               (filter (lambda (x) x) (map find (def-uses def)))))
            )
-      (get-scc defs get-requires for-each)
-      #;(get-strongly-connected-components defs for-each-def get-requires)))
-  
-  ;get-strongly-connected-components: GRAPH (GRAPH (NODE -> void) -> void) (NODE -> (list NODE)) -> (list (list NODE))
-  (define (get-strongly-connected-components graph for-each-node get-connected-nodes)
-    
-    (let ((marks (make-hash-table))
-          (strongly-connecteds null)
-          (cur-cycle-length 0)
-          (current-cycle null))
-      
-      (letrec ((already-in-cycle? 
-                (lambda (n) (eq? 'in-a-cycle (hash-table-get marks n))))
-               (in-current-cycle?
-                (lambda (n) (hash-table-get current-cycle n (lambda () #f))))
-               (current-cycle-memq
-                (lambda (nodes) (ormap in-current-cycle? nodes)))
-               (add-to-current-cycle
-                (lambda (n) 
-                  (set! cur-cycle-length (add1 cur-cycle-length))
-                  (hash-table-put! current-cycle n #t)))
-               (retrieve-current-cycle
-                (lambda () (hash-table-map current-cycle (lambda (key v) key))))
-               
-               ;; componetize : NODE (list NODE) bool -> void
-               (componentize 
-                (lambda (node successors member?)
-                  (unless (already-in-cycle? node)
-                    (printf "componentize ~a ~a ~a~n" 
-                            (id-string (def-name node))
-                            (map id-string (map def-name successors)) 
-                            (map id-string (map def-name (retrieve-current-cycle)))
-                            )
-                    (let ((added? #f)
-                          (cur-length cur-cycle-length)
-                          (old-mark (hash-table-get marks node)))
-                      (when (and (not member?) (current-cycle-memq successors))
-                        (set! added? #t)
-                        (add-to-current-cycle node))
-                      (hash-table-put! marks node 'in-progress)
-                      (for-each 
-                       (lambda (successor)
-                         (unless (or (in-current-cycle? successor)
-                                     (eq? 'in-progress (hash-table-get marks successor)))
-                           (componentize successor (get-connected-nodes successor) #f)))
-                       successors)
-                      (printf "finished successors for ~a~n" (id-string (def-name node)))
-                      (when (not (= cur-length cur-cycle-length))
-                        (add-to-current-cycle node))
-                      
-                      (if (or added? (= cur-length cur-cycle-length))
-                          (hash-table-put! marks node old-mark)
-                          (componentize node successors #f)))))))
-        
-        (for-each-node graph (lambda (n) (hash-table-put! marks n 'no-info)))
-        
-        (for-each-node graph
-                       (lambda (node)
-                         #;(hash-table-for-each 
-                          marks 
-                          (lambda (key val) (printf "~a -> ~a~n" (eq-hash-code key) val)))
-                         #;(printf "Working on ~a~n~n" (eq-hash-code node))
-                         #;(printf "node: ~a successors: ~a" (def-name node) (map def-name (get-connected-nodes node)))
-                         (when (eq? (hash-table-get marks node) 'no-info)
-                           (set! current-cycle (make-hash-table))
-                           (add-to-current-cycle node)
-                           (set! cur-cycle-length 0)
-                           (printf "calling componetice ~a~n" (id-string (def-name node)))
-                           (for-each (lambda (node) (componentize node (get-connected-nodes node) #f))
-                                     (get-connected-nodes node))
-                           (set! strongly-connecteds 
-                                 (cons (retrieve-current-cycle) strongly-connecteds))
-                           (printf "~a~n~n" (map id-string (map def-name (car strongly-connecteds))))
-                           (hash-table-for-each
-                            current-cycle
-                            (lambda (n v) (hash-table-put! marks n 'in-a-cycle))))))
-        
-        strongly-connecteds)))
+      (get-scc defs get-requires for-each)))
   
   ;order-defs: (list def) -> (list def)
   (define (order-defs defs)
@@ -389,10 +313,10 @@
                                           defs)))
            (reqs (filter-reqs group-reqs defs type-recs)))
       (values (if (> (length translated-defs) 1)
-                  (cons (make-syntax #f `(module ,(module-name) mzscheme
-                                           (require mzlib/class
-                                                    (prefix javaRuntime: profj/libs/java/runtime)
-                                                    (prefix c: mzlib/contract)
+                  (cons (make-syntax #f `(module ,(module-name) scheme/base
+                                           (require scheme/class
+                                                    (prefix-in javaRuntime: profj/libs/java/runtime)
+                                                    (prefix-in c: scheme/contract)
                                                     ,@(remove-dup-syntax (translate-require reqs type-recs)))
                                            ,@(apply append (map car translated-defs)))
                                      #f)
@@ -401,11 +325,10 @@
                                      `(module ,(build-identifier (regexp-replace "-composite" 
                                                                                  (symbol->string (module-name)) 
                                                                                  ""))
-                                        mzscheme
-                                        (require mzlib/class
-                                                 (prefix javaRuntime: profj/libs/java/runtime)
-                                                 #;(prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
-                                                 (prefix c: mzlib/contract)
+                                        scheme/base
+                                        (require scheme/class
+                                                 (prefix-in javaRuntime: profj/libs/java/runtime)
+                                                 (prefix-in c: scheme/contract)
                                                  ,@(remove-dup-syntax
                                                     (translate-require (map (lambda (r) (list (def-file (car defs)) r))
                                                                             (def-uses (car defs)))
@@ -538,9 +461,10 @@
         ;set class specific parameters - old ones are safe
         (class-name (id-string (header-id header)))
         (parent-name parent)
-        (class-override-table (make-hash-table))
+        (class-override-table (make-hasheq))
             
         (let* ((class (translate-id (class-name) (id-src (header-id header))))
+               (class-rec (send type-recs get-class-record (list (class-name))))
                (overridden-methods (get-overridden-methods (append (accesses-public methods) 
                                                                    (accesses-package methods) 
                                                                    (accesses-protected methods))))
@@ -570,12 +494,14 @@
                                                            (filter
                                                             (lambda (m) (not (or (private? (method-record-modifiers m))
                                                                                  (static? (method-record-modifiers m)))))
-                                                            (begin0
-                                                              (class-record-methods (send type-recs get-class-record (list (class-name))))
-                                                              #;(printf "finished class-record-methods~n")))
+                                                            (class-record-methods class-rec))
                                                            (append (accesses-public fields) (accesses-package fields)
                                                                    (accesses-protected fields)))
                                         (generate-contract-defs (class-name))))
+               (stm-class (generate-stm-class (class-name)
+                                              (parent-name)
+                                              (class-record-methods class-rec)
+                                              (class-record-fields class-rec)))
                (static-method-names (make-static-method-names (accesses-static methods) type-recs))
                (static-field-names (make-static-field-names (accesses-static fields)))
                (static-field-setters (make-static-field-setters-names 
@@ -705,7 +631,7 @@
                              (define field-setters ,(build-field-table create-set-name 'set fields))
                              (define private-methods
                                ,(if (null? (accesses-private methods))
-                                    '(make-hash-table)
+                                    '(make-hasheq)
                                     (build-method-table (accesses-private methods) private-generics)))
                              
                              ,@(if test?
@@ -803,8 +729,9 @@
                                     (members-init class-members))
                              
                              ))
-                          
+                    
                           ,@wrapper-classes
+                          ,stm-class
                           
                           #;,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)
@@ -865,7 +792,7 @@
         (c:flat-named-contract ,class-name
                                (lambda (v) (is-a? v ,(build-identifier (string-append "guard-convert-" class-name))))))))
 
-  ;generate-wrappers: string (list method-record) (list field) -> (list sexp)
+  ;generate-wrappers: string string (list method-record) (list field) -> (list sexp)
   (define (generate-wrappers class-name super-name methods fields)
     (let* (;these methods will be used to detect when a method is now overloaded when it wasn't in the super class
            (wrapped-methods-initial
@@ -1010,6 +937,8 @@
                                               ,@list-of-args) (method-record-rtype method) #f))))))))
            methods))
   
+  ;list-from: int int -> (listof int)
+  ;Produces a list of integers starting at from and going to one less than to
   (define (list-from from to)
     (cond
       ((= from to) null)
@@ -1017,7 +946,7 @@
     
   ;methods->contract: (list method-record) -> sexp
   (define (methods->contract methods)
-    `(c:object-contract ,@(map (lambda (m)
+    `(object-contract ,@(map (lambda (m)
                                `(,(build-identifier (mangle-method-name (method-record-name m)
                                                                         (method-record-atypes m)))
                                  (c:-> ,@(map (lambda (a) 'c:any/c) (method-record-atypes m)) c:any/c)))
@@ -1167,9 +1096,9 @@
   
   ;build-method-table: (list method) (list symbol) -> sexp
   (define (build-method-table methods generics)
-    `(let ((table (make-hash-table)))
+    `(let ((table (make-hasheq)))
        (for-each (lambda (method generic)
-                   (hash-table-put! table (string->symbol method) generic))
+                   (hash-set! table (string->symbol method) generic))
                  (list ,@(map (lambda (m)
                                (mangle-method-name (id-string (method-name m))
                                                    (method-record-atypes (method-rec m))))
@@ -1179,9 +1108,9 @@
   
   ;build-field-table: (string->string) symbol accesses -> sexp
   (define (build-field-table maker type fields)
-    `(let ((table (make-hash-table)))
+    `(let ((table (make-hasheq)))
        (for-each (lambda (field field-method)
-                   (hash-table-put! table (string->symbol field) field-method))
+                   (hash-set! table (string->symbol field) field-method))
                  ,@(let ((non-private-fields (map (lambda (n) (id-string (field-name n)))
                                                   (append (accesses-public fields)
                                                           (accesses-package fields)
@@ -1201,7 +1130,62 @@
                                           private-fields))))))
        table))
 
-                      
+  ;generate-stm: string string (list method-record) (list field-record) -> syntax
+  (define (generate-stm-class class parent methods fields)
+    (create-syntax #f
+                   `(begin
+                      (require scheme/private/class-internal)
+                      (provide ,(string->symbol (string-append class "-stm")))
+                      (define ,(string->symbol (string-append class "-stm"))
+                        (class* object% (stm-wrapper)
+                          (super-instantiate ())
+                          
+                          (define o null)
+                          (define field-map (make-hasheq))
+                          (define/public (log obj) (set! o obj))
+                          (define/public (get-field field)
+                            (or (hash-ref field-map field #f)
+                                (get-field o field)))
+                          (define/public (set-field! field value)
+                            (hash-set! field-map field value)
+                            value)
+                          ,@(generate-stm-fields fields)
+                          ,@(generate-stm-methods methods))))
+                   #f))
+  
+  ;generate-stm-fields: (listof field-record) -> (list of sexpr)
+  (define (generate-stm-fields fields)
+    (apply append
+           (map (lambda (field-rec)
+                  (let* ([name (field-record-name field-rec)]
+                         [s-name (string->symbol name)]
+                         [get (create-get-name name)])
+                    
+                    (list
+                     `(define/public (,get obj)
+                        (or (hash-ref field-map ',name #f)
+                            (send o ,get o)))
+                     `(define/public (,(create-set-name name) obj val)
+                        (hash-set! field-map ',name val)
+                        val))))
+                (filter (lambda (f) (private? (field-record-modifiers f))) fields))))
+    
+  
+  ;generate-stm-methods: (listof method-record) -> (listof sexpr)
+  (define (generate-stm-methods methods) 
+    (map (lambda (method-rec) 
+           (let ([method-name (string->symbol (mangle-method-name (method-record-name method-rec)
+                                                                  (method-record-atypes method-rec)))]
+                 [args (map (lambda (a) (gensym 'arg-)) (method-record-atypes method-rec))])
+             #;(printf "~a~n" method-rec)
+             `(define/public (,method-name ,@args)
+                (let-values ([(method obj) (find-method/who 'send o ',method-name)])
+                  (method this ,@args)))))
+         (filter (lambda (method-rec)
+                   (and (not (static? (method-record-modifiers method-rec)))
+                        (not (method-record-override method-rec))))
+                   methods)))
+  
   ;generate-inner-makers: (list def) int type-records -> (list syntax)
   (define (generate-inner-makers defs depth type-recs)
     (apply append
@@ -1244,9 +1228,9 @@
   
   ;Code to separate different member types for easier access
   ;(make-accesses (list member) (list member) (list member) ...)
-  (define-struct accesses (private protected static public package private-static))
+  (define-struct accesses (private protected static public package private-static) #:mutable)
   ;(make-members (list method) (list field) (list init) (list init) (list def) (list def))
-  (define-struct members (method field static-init init nested inner))
+  (define-struct members (method field static-init init nested inner) #:mutable)
   
   ;update: ('a 'b -> void) 'a ('b -> (list 'a)) 'b) -> 'b 
   ;Allows a set! to be passed in and applied
@@ -1491,7 +1475,7 @@
     (filter (lambda (m) 
               (let ((mname (id-string (method-name m))))
                 (and (method-record-override (method-rec m))
-                     (hash-table-put! (class-override-table) 
+                     (hash-set! (class-override-table) 
                                       (build-identifier 
                                        ((if (constructor? mname) build-constructor-name mangle-method-name)
                                         mname
@@ -1684,6 +1668,7 @@
                                           (lambda (obj)
                                             (cond
                                               ((is-a? obj ,class) (normal-get obj))
+                                              ((is-a? obj stm-wrapper) (send obj get-field))
                                               (else 
                                                (send obj 
                                                      ,(build-identifier (format "~a-wrapped" getter))))))))
@@ -1694,9 +1679,11 @@
                                           `(define ,setter
                                              (let ((normal-set (class-field-mutator ,class ,quote-name)))
                                                (lambda (obj val)
-                                                 (if (is-a? obj ,class)
-                                                     (normal-set obj val)
-                                                     (send obj ,(build-identifier (format "~a-wrapped" setter)) val)))))
+                                                 (cond
+                                                   [(is-a? obj ,class) (normal-set obj val)]
+                                                   [(is-a? obj stm-wrapper) (send obj set-field! val)]
+                                                   [else
+                                                    (send obj ,(build-identifier (format "~a-wrapped" setter)) val)]))))
                                           #f))
                             null))
                   (create-field-accessors (if final (cdr names) (cddr names)) (cdr fields))))))
@@ -2151,22 +2138,22 @@
          ((string String) 
           (if from-dynamic?
               `string?
-              `(c:is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
+              `(is-a?/c ,(if (send (types) require-prefix? '("String" "java" "lang") (lambda () #f))
                                'java.lang.String 'String))))
          ((dynamic void) 'c:any/c)))
       ((ref-type? type)
        (if (equal? type string-type)
            (type->contract 'string from-dynamic?)
-           `(c:or/c (c:is-a?/c object%) string?)))
+           `(c:or/c (is-a?/c object%) string?)))
       ((unknown-ref? type)
        (if (not (null? stop?))
-           `(c:or/c (c:is-a?/c object%) string?)
+           `(c:or/c (is-a?/c object%) string?)
            (cond
              ((method-contract? (unknown-ref-access type))
-              `(c:object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
+              `(object-contract (,(string->symbol (java-name->scheme (method-contract-name (unknown-ref-access type))))
                                  ,(type->contract (unknown-ref-access type) from-dynamic?))))
              ((field-contract? (unknown-ref-access type))
-              `(c:object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
+              `(object-contract (field ,(build-identifier (string-append (field-contract-name (unknown-ref-access type)) "~f"))
                                        ,(type->contract (field-contract-type (unknown-ref-access type)) from-dynamic?)))))))
       ((method-contract? type)
        `(c:-> ,@(map (lambda (a) (type->contract a from-dynamic?)) (method-contract-args type))
@@ -2488,7 +2475,7 @@
               (access (field-access-access name))
               (obj (field-access-object name))
               (cant-be-null? (never-null? obj))
-              (expr (if obj (translate-expression obj))))
+              (expr (and obj (translate-expression obj))))
          (cond
            ((var-access-static? access)
             (let ((static-name (build-static-name field-string (var-access-class access)))
@@ -2737,7 +2724,7 @@
       (else #f)))
   
   (define (overridden? name)
-    (hash-table-get (class-override-table) name (lambda () #f)))
+    (hash-ref (class-override-table) name #f))
   
   ;translate-class-alloc: (U name id def) (list type) (list syntax) src bool bool method-record-> syntax
   (define (translate-class-alloc class-type arg-types args src inner? local-inner? ctor-record)
@@ -2982,7 +2969,7 @@
                      (field-src (id-src (field-access-field access)))
                      (vaccess (field-access-access access))
                      (obj (field-access-object access))
-                     (expr (if obj (translate-expression obj))))
+                     (expr (and obj (translate-expression obj))))
                 (cond
                   ((var-access-static? vaccess)
                    (set-h (build-identifier (build-static-name (build-var-name field)

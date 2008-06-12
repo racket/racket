@@ -1,13 +1,11 @@
-(module graph-scc mzscheme
-  
-  #;(require "ast.ss")
+(module graph-scc scheme/base
   
   (provide get-scc)
   
   (define (get-scc nodes get-successors for-each-node)
-    (letrec ([in-component (make-hash-table)]
-             [dpth-nums (make-hash-table)]
-             [root-of-node (make-hash-table)]
+    (letrec ([in-component (make-hasheq)]
+             [dpth-nums (make-hasheq)]
+             [root-of-node (make-hasheq)]
              [counter 0]
              [stack null]
              [sccs null]
@@ -15,30 +13,31 @@
              ;node -> boolean
              [visited? 
               (lambda (node)
-                (symbol? (hash-table-get in-component node #f)))]
+                (symbol? (hash-ref in-component node #f)))]
              ;node -> boolean
              [in-component?
               (lambda (node)
-                (eq? 'true (hash-table-get in-component node #f)))]
+                (eq? 'true (hash-ref in-component node #f)))]
              
              ;node node -> node
              [min-root 
               (lambda (old-min new-node)
-                #;(printf "~a <= ~a, ~a" (hash-table-get dpth-nums old-min)
-                          (hash-table-get dpth-nums 
-                                          (hash-table-get root-of-node new-node)
-                                          (lambda () (add1 counter))) counter)
-                (if (<= (hash-table-get dpth-nums old-min)
-                        (hash-table-get dpth-nums 
-                                        (hash-table-get root-of-node new-node)
-                                        (add1 counter)))
+                #;(printf "~a <= ~a, ~a" 
+                          (hash-ref dpth-nums old-min)
+                          (hash-ref dpth-nums 
+                                    (hash-ref root-of-node new-node)
+                                    (lambda () (add1 counter))) counter)
+                (if (<= (hash-ref dpth-nums old-min)
+                        (hash-ref dpth-nums 
+                                  (hash-ref root-of-node new-node)
+                                  (add1 counter)))
                     old-min
                     new-node))]
              ;node -> void
              [assign-depth-num 
               (lambda (node)
-                (unless (hash-table-get dpth-nums node #f)
-                  (hash-table-put! dpth-nums node counter)
+                (unless (hash-ref dpth-nums node #f)
+                  (hash-set! dpth-nums node counter)
                   (set! counter (add1 counter))))]
              
              [push! (lambda (v) (set! stack (cons v stack)))]
@@ -49,8 +48,8 @@
               (lambda (node)
                 #;(printf "visit of ~a~n" (def-name node))
                 (let ([root-v node])
-                  (hash-table-put! root-of-node node root-v)
-                  (hash-table-put! in-component node 'false)
+                  (hash-set! root-of-node node root-v)
+                  (hash-set! in-component node 'false)
                   (assign-depth-num node)
                   (push! node)
                   (for-each-node
@@ -65,18 +64,18 @@
                    (get-successors node))
                   #;(printf "root-v ~a for visit of ~a~n" (def-name root-v)
                           (def-name node))
-                  (hash-table-put! root-of-node node root-v)
-                  (if (eq? root-v node)
-                      (let loop ([w (pop!)] [scc null])
-                        #;(printf "~a ~a ~n" w scc)
-                        (hash-table-put! in-component w 'true)
-                        (if (eq? w node)
-                            (set! sccs (cons (cons w scc) sccs))
-                            (loop (pop!) (cons w scc)))))))])
+                  (hash-set! root-of-node node root-v)
+                  (when (eq? root-v node)
+                    (let loop ([w (pop!)] [scc null])
+                      #;(printf "~a ~a ~n" w scc)
+                      (hash-set! in-component w 'true)
+                      (if (eq? w node)
+                          (set! sccs (cons (cons w scc) sccs))
+                          (loop (pop!) (cons w scc)))))))])
       
       (for-each-node (lambda (node)
                        (set! counter 0)
-                       (set! dpth-nums (make-hash-table))
+                       (set! dpth-nums (make-hasheq))
                        (unless (visited? node) (visit node)))
                      nodes)
       

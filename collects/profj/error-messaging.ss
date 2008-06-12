@@ -1,7 +1,6 @@
-(module error-messaging mzscheme
+(module error-messaging scheme/base
   
-  (require "ast.ss")
-  (require "types.ss")
+  (require "ast.ss" "types.ss")
   
   (provide make-error-pass get-expected type->ext-name id->ext-name 
            get-call-type method-name->ext-name path->ext name->path
@@ -16,7 +15,7 @@
 
   ;make-so: symbol src (-> location) -> syntax-object
   (define (make-so id src parm)
-    (datum->syntax-object #f id (build-src-list src parm)))
+    (datum->syntax #f id (build-src-list src parm)))
   
   ;build-src-list: src (-> location) -> (U bool (list loc int int int int))
   (define (build-src-list src parm)

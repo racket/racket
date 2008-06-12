@@ -6,23 +6,7 @@
            
            profj/libs/java/lang/Comparable
            profj/libs/java/io/Serializable)
-  #;(require "compile-lang-syntax.ss")
-  
-  (define make-hash-table make-hash)
-  (define hash-table-put! hash-set!)
-  
-  ;Runtime needed code
-  (define (javaRuntime:convert-to-string data)
-    (cond
-      ((number? data) (make-java-string (number->string data)))
-      ((boolean? data) 
-       (make-java-string (if data "true" "false")))
-      ((char? data) (make-java-string (string data)))
-      ((is-a? data ObjectI) (send data toString))
-      ((is-a? data object%) (make-java-string "SchemeObject"))
-      (else (error 'JavaRuntime:Internal_Error:convert-to-string
-                   (format "Convert to string given unsupported data: ~s" data)))))
-  
+  #;(require "compile-lang-syntax.ss")  
   
 ;                                            
 ;         ;;         ;                       
@@ -1442,5 +1426,7 @@
   (define static-NullPointerException/c
     (c:flat-named-contract "NullPointerException" (lambda (c) (is-a? c guard-convert-NullPointerException))))
 
+  (define stm-wrapper (interface () log get-field set-field!))
+  (provide stm-wrapper)
   
   )

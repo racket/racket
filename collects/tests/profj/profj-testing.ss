@@ -1,4 +1,4 @@
-(module profj-testing mzscheme
+(module profj-testing scheme
   
   (require (lib "compile.ss" "profj")
            (lib "parameters.ss" "profj")
@@ -80,7 +80,7 @@
         (get-position v1 (cdr visited) (add1 pos))))
   
   ;interact-internal: symbol (list string) (list evalable-value) string type-record -> void
-  (define (interact-internal level interacts vals msg type-recs)
+  (define (interact-internal level interacts vals msg type-recs namespace)
     (for-each (lambda (ent val)
                 (let ((st (open-input-string ent)))
                   (with-handlers 
@@ -94,18 +94,18 @@
                              (interaction-msgs (cons
                                                 (format "Test ~a: Exception raised for ~a : ~a"
                                                         msg ent (exn-message exn)) (interaction-msgs))))))])
-                    (let ((new-val (eval `(begin
-                                            (require mzlib/class
-                                                     (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java"))
-                                                     (prefix c: mzlib/contract))
-                                            ,(compile-interactions st st type-recs level)))))
-                      (when (eq? val 'error)
-                        (missed-expected-errors (add1 (missed-expected-errors)))
-                        (expected-failed-tests (cons msg (expected-failed-tests))))
-                      (unless (and (not (eq? val 'error)) (java-equal? (eval val) new-val null null))
-                        (interaction-errors (add1 (interaction-errors)))
-                        (interaction-msgs (cons (format "Test ~a: ~a evaluated to ~a instead of ~a"
-                                                        msg ent new-val val) (interaction-msgs))))))))
+                    (parameterize ([current-namespace namespace][coverage? #f])
+                      (let ((new-val (eval `(begin (require mzlib/class
+                                                            (prefix-in javaRuntime: (lib "runtime.ss" "profj" "libs" "java"))
+                                                            (prefix-in c: scheme/contract))
+                                                   ,(compile-interactions st st type-recs level)))))
+                        (when (eq? val 'error)
+                          (missed-expected-errors (add1 (missed-expected-errors)))
+                          (expected-failed-tests (cons msg (expected-failed-tests))))
+                        (unless (and (not (eq? val 'error)) (java-equal? (eval val) new-val null null))
+                          (interaction-errors (add1 (interaction-errors)))
+                          (interaction-msgs (cons (format "Test ~a: ~a evaluated to ~a instead of ~a"
+                                                          msg ent new-val val) (interaction-msgs)))))))))
               interacts vals))
        
   ;interact-test: symbol (list string) (list evalable-value) string |
@@ -113,10 +113,11 @@
   (define interact-test
     (case-lambda
       [(level in val msg)
-       (interact-internal level in val msg (create-type-record))]
+       (interact-internal level in val msg (create-type-record) (make-base-namespace))]
       ((defn level in val msg)
        (let* ((type-recs (create-type-record))
-              (def-st (open-input-string defn)))
+              (def-st (open-input-string defn))
+              (cur-namespace (make-base-namespace)))
          (with-handlers
              ([exn?
                (lambda (exn)
@@ -125,13 +126,14 @@
                                                  msg (exn-message exn))
                                          (interaction-msgs))))])
            (execution? #t)
-           (eval-modules (compile-java 'port 'port level #f def-st def-st type-recs))
-           (interact-internal level in val msg type-recs))))))
+           (eval-modules (compile-java 'port 'port level #f def-st def-st type-recs) cur-namespace)
+           (interact-internal level in val msg type-recs cur-namespace))))))
   
   ;interact-test-java-expected: string symbol (list string) (list string) string -> void
   (define (interact-test-java-expected defn level in val msg)
     (let* ((type-recs (create-type-record))
-           (def-st (open-input-string defn)))
+           (def-st (open-input-string defn))
+           (cur-namespace (make-base-namespace)))
       (with-handlers
           ([exn?
             (lambda (exn)
@@ -140,14 +142,15 @@
                                               msg (exn-message exn))
                                       (interaction-msgs))))])
         (execution? #t)
-        (eval-modules (compile-java 'port 'port level #f def-st def-st type-recs))
+        (eval-modules (compile-java 'port 'port level #f def-st def-st type-recs) cur-namespace)
         (let ((vals (map (lambda (ex-val)
                            (let ((st (open-input-string ex-val)))
-                             (eval `(begin (require mzlib/class
-                                                    (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
-                                           ,(compile-interactions st st type-recs level)))))
+                             (parameterize ((current-namespace cur-namespace))
+                               (eval `(begin (require mzlib/class
+                                                      (prefix-in javaRuntime: (lib "runtime.ss" "profj" "libs" "java")))
+                                             ,(compile-interactions st st type-recs level))))))
                          val)))
-          (interact-internal level in vals msg type-recs)))))
+          (interact-internal level in vals msg type-recs cur-namespace)))))
   
   (define (execute-test defn level error? msg)
     (let ((st (open-input-string defn)))
@@ -161,7 +164,7 @@
                  (execution-errors (add1 (execution-errors)))
                  (execution-msgs (cons
                                   (format "Test ~a : Exception-raised: ~a" msg (exn-message exn)) (execution-msgs))))))])
-        (eval-modules (compile-java 'port 'port level #f st st))
+        (eval-modules (compile-java 'port 'port level #f st st) (make-base-namespace))
         (when error?
           (missed-expected-errors (add1 (missed-expected-errors)))
           (expected-failed-tests (cons msg (expected-failed-tests))))
@@ -179,7 +182,7 @@
                       (list 'interact #f (exn-message exn)))])
                 (let* ((get-val (lambda (v-st v-pe)
                                   (eval `(begin (require mzlib/class)
-                                                (require (prefix javaRuntime: (lib "runtime.scm" "profj" "libs" "java")))
+                                                (require (prefix-in javaRuntime: (lib "runtime.ss" "profj" "libs" "java")))
                                                 ,(compile-interactions v-st v-st type-recs level)))))
                        (i-st (open-input-string interact))
                        (v-st (open-input-string val))
@@ -210,10 +213,11 @@
                           (format "Test ~a :Exception-raised: ~a" msg (exn-message exn)) (file-msgs)))))])
       (eval-modules (compile-java 'file 'port level file #f #f))))
   
-  (define (eval-modules modules)
-    (for-each eval 
-         (apply append
-                (map compilation-unit-code modules))))
+  (define (eval-modules modules namespace)
+    (parameterize ([current-namespace namespace])
+      (for-each eval 
+                (apply append
+                       (map compilation-unit-code modules)))))
   
   ;prepare-for-tests: String -> void
   (define (prepare-for-tests lang-level)

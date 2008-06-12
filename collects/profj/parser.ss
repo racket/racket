@@ -1,5 +1,5 @@
 
-(module parser mzscheme
+(module parser scheme/base
   (require "parsers/full-parser.ss"
            "parsers/advanced-parser.ss"
            "parsers/intermediate-access-parser.ss"
@@ -8,11 +8,11 @@
            "parsers/general-parsing.ss"
            "parsers/parse-error.ss"
            "parsers/lexer.ss"
-           (prefix err: "comb-parsers/parsers.scm")
+           (prefix-in err: "comb-parsers/parsers.scm")
            "ast.ss"
            "parameters.ss")
   
-  (require (all-except parser-tools/lex input-port)
+  (require (except-in parser-tools/lex input-port)
            syntax/readerr
            )
   (provide parse parse-interactions parse-expression parse-type parse-name lex-stream)

@@ -1,16 +1,16 @@
-(module ast mzscheme
+(module ast scheme/base
   
   ;Macro to allow structure definition and provision
   (define-syntax p-define-struct
     (syntax-rules ()
 	          [(_ (name inherit) fields)
 		   (begin
-		     (provide (struct name fields))
-                     (define-struct (name inherit) fields (make-inspector)))]
+		     (provide (struct-out name))
+                     (define-struct (name inherit) fields #:mutable #:transparent))]
                   [(_ name fields)
                    (begin
-                     (provide (struct name fields))
-                     (define-struct name fields (make-inspector)))]))
+                     (provide (struct-out name))
+                     (define-struct name fields #:mutable #:transparent))]))
 
   
   ;(make-src int int int int loc)

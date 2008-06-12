@@ -1,12 +1,12 @@
 (module tool scheme/base
-  (require drscheme/tool mzlib/contract
+  (require drscheme/tool scheme/contract
            mred framework
            errortrace/errortrace-lib
-           (prefix-in u: mzlib/unit)
+           (prefix-in u: scheme/unit)
            scheme/file
            mrlib/include-bitmap
            mzlib/etc
-           mzlib/class
+           scheme/class
 	   string-constants
            profj/libs/java/lang/Object profj/libs/java/lang/array
            profj/libs/java/lang/String)
@@ -14,7 +14,7 @@
            (lib "test-engine.scm" "test-engine")
            (lib "java-tests.scm" "test-engine")
            (lib "test-coverage.scm" "test-engine")
-           (except-in "ast.ss" for) #;"tester.scm"
+           (except-in "ast.ss" for)
            "display-java.ss")
 
   (require (for-syntax scheme/base
@@ -832,7 +832,7 @@
             (dynamic-require 'profj/libs/java/lang/Object #f)
             (let ([obj-path ((current-module-name-resolver) 'profj/libs/java/lang/Object #f #f)]
                   [string-path ((current-module-name-resolver) 'profj/libs/java/lang/String #f #f)]
-                  [class-path ((current-module-name-resolver) 'mzlib/class #f #f)]
+                  [class-path ((current-module-name-resolver) 'scheme/class #f #f)]
                   [mred-path ((current-module-name-resolver) 'mred #f #f)]
                   [n (current-namespace)]
                   [e (current-eventspace)])
