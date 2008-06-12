@@ -30,7 +30,7 @@ scheme
 
 promises to all clients of the above module that amount will
 always be a positive number. The contract system monitors
-@scheme[a]'s obligation carefully. Every time a client
+the module's obligation carefully. Every time a client
 refers to @scheme[amount], the monitor checks that the value
 of @scheme[amount] is indeed a positive number.
 
@@ -49,7 +49,7 @@ scheme/base
 
 @ctc-section[#:tag "amount0"]{A First Contract Violation}
 
-Suppose the creator of @scheme[a] had written 
+Suppose the creator of the module had written 
 @schememod[
 scheme
 
@@ -58,13 +58,13 @@ scheme
   
 (define amount 0)]
 
-When module @scheme[a] is required, the monitoring
+When this module is required, the monitoring
 system signals a violation of the contract and
-blame @scheme[a] for breaking its promises.
+blames the module for breaking its promises.
 
 @ctc-section[#:tag "qamount"]{A Subtle Contract Violation}
 
-Suppose the creator of @scheme[a] had written 
+Suppose we write this module
 @schememod[
 scheme
 
