@@ -46,7 +46,7 @@ Various common pieces of code that both the client and server need to access
       [(pkg dir)
        (let* ((at (build-assoc-table pkg dir)))
          (get-best-match at pkg))]))
-
+  
   ;; lookup-package-by-keys : string string nat nat nat -> (list path string string (listof string) nat nat) | #f
   ;; looks up and returns a list representation of the package named by the given owner,
   ;; package name, major and (exact) minor version.
@@ -251,14 +251,26 @@ Various common pieces of code that both the client and server need to access
   
   ;; string->mz-version : string -> mz-version | #f
   (define (string->mz-version str)
-    (let ((ver (regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)))
-      (if ver
-          (make-mz-version 
-           (string->number (list-ref ver 1))
-           (if (list-ref ver 3)
-               (string->number (list-ref ver 3))
-               0))
-          #f)))
+    (cond
+      ;; Old style numbering (with three digits in front)
+      [(regexp-match #rx"^([0-9][0-9][0-9])([.0-9]*)$" str)
+       =>
+       (lambda (ver)
+         (let* ([major&minor (string->number (list-ref ver 1))])
+           (make-mz-version (remainder (quotient major&minor 100) 10)
+                            (remainder (quotient major&minor 10) 10))))]
+      ;; New style numbering
+      [(regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)
+       =>
+       (lambda (ver)
+         (make-mz-version
+          (string->number (list-ref ver 1))
+          (if (list-ref ver 3)
+              (string->number (list-ref ver 3))
+              0)))]
+      [else #f]))
+  
+  
   
   ;; version<= : mz-version mz-version -> boolean
   ;; determines if a is the version string of an earlier mzscheme release than b
@@ -313,7 +325,7 @@ Various common pieces of code that both the client and server need to access
                       (or (not hi) (<= n hi))
                       (compatible-version? x spec))))
                  table)))
-        (if (null? matches)
+          (if (null? matches)
               #f
               (let ((best-row
                      (car 
@@ -328,13 +340,13 @@ Various common pieces of code that both the client and server need to access
                  (assoc-table-row->dir best-row)
                  (assoc-table-row->type best-row)))))))
   
-   
+  
   ;; get-installed-package : string string nat nat -> PKG | #f
   ;; gets the package associated with this package specification, if any
   (define (get-installed-package owner name maj min)
     (lookup-package (make-pkg-spec name maj min min (list owner) #f (version))))
-    
-    
+  
+  
   ; ==========================================================================================
   ; UTILITY
   ; Miscellaneous utility functions
