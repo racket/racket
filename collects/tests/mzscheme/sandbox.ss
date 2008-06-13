@@ -226,11 +226,10 @@
 
    ;; limited FS access, allowed for requires
    --top--
-   (when (directory-exists? "/tmp") ; non-collects place to play with
-     (let* ([mzlib    (path->string (collection-path "mzlib"))]
-            [list-lib (path->string (build-path mzlib "list.ss"))]
-            [test-lib (path->string (path->complete-path ; <- for windows
-                                     "/tmp/sandbox-test.ss"))])
+   (let* ([tmp      (find-system-path 'temp-dir)]
+          [mzlib    (path->string (collection-path "mzlib"))]
+          [list-lib (path->string (build-path mzlib "list.ss"))]
+          [test-lib (path->string (build-path tmp "sandbox-test.ss"))])
        (t --top--
           (set! ev (make-evaluator 'mzscheme '()))
           --eval--
@@ -241,7 +240,7 @@
           ;; writing is forbidden
           (open-output-file ,list-lib) =err> "file access denied"
           ;; reading from other places is forbidden
-          (directory-list "/tmp") =err> "file access denied"
+          (directory-list ,tmp) =err> "file access denied"
           ;; no network too
           (tcp-listen 12345) =err> "network access denied"
           --top--
@@ -256,7 +255,7 @@
           x => 123
           (length (with-input-from-file ,test-lib read)) => 5
           ;; the directory is still not kosher
-          (directory-list "/tmp") =err> "file access denied"
+          (directory-list ,tmp) =err> "file access denied"
           --top--
           ;; should work also for module evaluators
           ;; --> NO!  Shouldn't make user code require whatever it wants
@@ -266,24 +265,19 @@
           ;; x => 123
           ;; (length (with-input-from-file ,test-lib read)) => 5
           ;; ;; the directory is still not kosher
-          ;; (directory-list "/tmp") =err> "file access denied"
+          ;; (directory-list tmp) =err> "file access denied"
           --top--
-          ;; explicitly allow access to /tmp
-          (set! ev (let ([rx (if (eq? 'windows (system-type))
-                               ;; on windows this will have a drive letter
-                               #rx#"^[a-zA-Z]:[/\\]tmp(?:[/\\]|$)"
-                               #rx#"^/tmp(?:/|$)")])
-                     (parameterize ([sandbox-path-permissions
-                                     ;; allow all `/tmp' paths for windows
-                                     `((read ,rx)
-                                       ,@(sandbox-path-permissions))])
-                       (make-evaluator 'mzscheme '()))))
+          ;; explicitly allow access to tmp
+          (set! ev (parameterize ([sandbox-path-permissions
+                                   `((read ,tmp)
+                                     ,@(sandbox-path-permissions))])
+                     (make-evaluator 'mzscheme '())))
           --eval--
           (length (with-input-from-file ,test-lib read)) => 5
-          (list? (directory-list "/tmp"))
-          (open-output-file "/tmp/blah") =err> "file access denied"
-          (delete-directory "/tmp/blah") =err> "file access denied"
-          )))
+          (list? (directory-list ,tmp))
+          (open-output-file ,(build-path tmp "blah")) =err> "access denied"
+          (delete-directory ,(build-path tmp "blah")) =err> "access denied")
+       (delete-file test-lib))
 
    ;; languages and requires
    --top--
