@@ -45,8 +45,8 @@
 (define sandbox-init-hook    (make-parameter void))
 (define sandbox-input        (make-parameter #f))
 (define sandbox-output       (make-parameter #f))
-(define sandbox-error-output (make-parameter (lambda ()
-                                               (dup-output-port (current-error-port)))))
+(define sandbox-error-output
+  (make-parameter (lambda () (dup-output-port (current-error-port)))))
 (define sandbox-eval-limits  (make-parameter '(30 20))) ; 30sec, 20mb
 (define sandbox-propagate-breaks (make-parameter #t))
 (define sandbox-coverage-enabled (make-parameter #f))
@@ -404,24 +404,31 @@
       ((mz/mr void eventspace-handler-thread) (current-eventspace)))
     values))
 
+;; special message values for the evaluator procedure, also inside the user
+;; context they're used for function applications.
 (define-struct evaluator-message (msg args))
 (define-syntax define-evaluator-messenger
   (syntax-rules ()
+    ;; with extra args
+    [(define-evaluator-messenger (name arg ...) msg)
+     (define (name evaluator arg ...)
+       (evaluator (make-evaluator-message msg (list arg ...))))]
+    [(define-evaluator-messenger (name . args) msg)
+     (define (name evaluator . args)
+       (evaluator (make-evaluator-message msg (list* args))))]
+    ;; without
     [(define-evaluator-messenger name msg)
      (define name
-       (let ([evmsg (make-evaluator-message msg #f)])
-         (lambda (evaluator) (evaluator evmsg))))]
-    [(define-evaluator-messenger name msg (... ...)) ; with extra args
-     (define (name evaluator . args)
-       (evaluator (make-evaluator-message msg args)))]))
+       (let ([evmsg (make-evaluator-message msg '())])
+         (lambda (evaluator) (evaluator evmsg))))]))
 
-(define-evaluator-messenger kill-evaluator  'kill)
+(define-evaluator-messenger kill-evaluator 'kill)
 (define-evaluator-messenger break-evaluator 'break)
-(define-evaluator-messenger set-eval-limits 'limits ...)
-(define-evaluator-messenger put-input       'input ...)
-(define-evaluator-messenger get-output      'output)
+(define-evaluator-messenger (set-eval-limits . xs) 'limits)
+(define-evaluator-messenger (put-input . xs) 'input)
+(define-evaluator-messenger get-output 'output)
 (define-evaluator-messenger get-error-output 'error-output)
-(define-evaluator-messenger get-uncovered-expressions 'uncovered ...)
+(define-evaluator-messenger (get-uncovered-expressions . xs) 'uncovered)
 
 (define (make-evaluator* init-hook require-perms program-or-maker)
   (define cust          (make-custodian))
@@ -461,27 +468,32 @@
         (when (eof-object? expr) (channel-put result-ch expr) (user-kill))
         (with-handlers ([void (lambda (exn)
                                 (channel-put result-ch (cons 'exn exn)))])
-          (let* ([code (input->code (list expr) 'eval n)]
+          (let* ([run (if (evaluator-message? expr)
+                        (lambda ()
+                          (apply (evaluator-message-msg expr)
+                                 (evaluator-message-args expr)))
+                        (lambda ()
+                          (eval* (input->code (list expr) 'eval n))))]
                  [sec (and limits (car limits))]
                  [mb  (and limits (cadr limits))]
                  [run (if (or sec mb)
-                          (lambda () (with-limits sec mb (eval* code)))
-                          (lambda () (eval* code)))])
+                        (lambda () (with-limits sec mb (run)))
+                        run)])
             (channel-put result-ch
                          (cons 'vals (call-with-values run list)))))
         (loop (add1 n)))))
   (define (user-eval expr)
     (let ([r (if user-thread
-                 (begin (channel-put input-ch expr)
-                        (let loop ()
-                          (with-handlers ([(lambda (e)
-                                             (and (sandbox-propagate-breaks)
-                                                  (exn:break? e)))
-                                           (lambda (e)
-                                             (user-break)
-                                             (loop))])
-                            (channel-get result-ch))))
-                 eof)])
+               (begin (channel-put input-ch expr)
+                      (let loop ()
+                        (with-handlers ([(lambda (e)
+                                           (and (sandbox-propagate-breaks)
+                                                (exn:break? e)))
+                                         (lambda (e)
+                                           (user-break)
+                                           (loop))])
+                          (channel-get result-ch))))
+               eof)])
       (cond [(eof-object? r) (error 'evaluator "terminated")]
             [(eq? (car r) 'exn) (raise (cdr r))]
             [else (apply values (cdr r))])))
@@ -497,9 +509,7 @@
             (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
             uncovered))]))
   (define (output-getter p)
-    (if (procedure? p)
-        (user-eval #`(#%app (quote #,p)))
-        p))
+    (if (procedure? p) (user-eval (make-evaluator-message p '())) p))
   (define input-putter
     (case-lambda
      [() (input-putter input)]
