@@ -1,16 +1,10 @@
 #lang scheme/unit
 
-(require "signatures.ss" "utils.ss" "tc-utils.ss" scheme/match)
+(require "signatures.ss" "utils.ss" "tc-utils.ss" "constraint-structs.ss"
+         scheme/match)
 
 (import constraints^)
 (export dmap^)
-
-;; map : hash mapping variable to dcon
-(define-struct dmap (map))
-
-;; fixed : Listof[c]
-;; rest : option[c]
-(define-struct dcon (fixed rest))
 
 ;; dcon-meet : dcon dcon -> dcon
 (define (dcon-meet dc1 dc2)
@@ -42,9 +36,10 @@
         (for/list ([c1 longer]
                    [c2 (in-list-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
-        (c-meet lrest srest (c-X lrest))))]))
+        (c-meet lrest srest (c-X lrest))))]
+    [(_ _) (int-err "Got non-dcons: ~a ~a" dc1 dc2)]))
 
 (define (dmap-meet dm1 dm2)
-  (hash-union dm1 dm2
-              (lambda (k dc1 dc2) (dcon-meet dc1 dc2))))
-
+  (make-dmap
+   (hash-union (dmap-map dm1) (dmap-map dm2)
+               (lambda (k dc1 dc2) (dcon-meet dc1 dc2)))))

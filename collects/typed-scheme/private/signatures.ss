@@ -3,28 +3,24 @@
 (provide (all-defined-out))
 
 (define-signature dmap^
-  ((struct dmap (map))
-   (struct dcon (fixed rest))
-   dmap-meet))
+  (dmap-meet))
 
 (define-signature promote-demote^
   (var-promote var-demote))
 
 (define-signature constraints^
-  ((struct cset (maps)) 
-   exn:infer?
+  (exn:infer?
    fail-sym
    ;; inference failure - masked before it gets to the user program
    (define-syntaxes (fail!)
      (syntax-rules ()
        [(_ s t) (raise fail-sym)]))
    cset-meet cset-meet*
-   (struct clist (cs))
+   no-constraint
    empty-cset
    insert
    cset-combine
-   c-meet
-   (struct c (S X T))))
+   c-meet))
 
 (define-signature restrict^
   (restrict))

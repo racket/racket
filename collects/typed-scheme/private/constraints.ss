@@ -3,7 +3,7 @@
 (require "type-effect-convenience.ss" "type-rep.ss" 
          "type-utils.ss" "union.ss" "tc-utils.ss" 
          "subtype.ss" "utils.ss"
-         "signatures.ss"
+         "signatures.ss" "constraint-structs.ss"
          scheme/match)
 
 (import restrict^ dmap^)
@@ -20,27 +20,13 @@
   (syntax-rules ()
     [(_ s t) (raise fail-sym)]))
 
-
-;; S, T types
-;; X a var
-(define-struct c (S X T) #:prefab)
-
-;; maps is a list of pairs of
-;;    - functional maps from vars to c's
-;;    - dmaps (see dmap.ss)
-;; we need a bunch of mappings for each cset to handle case-lambda
-;; because case-lambda can generate multiple possible solutions, and we
-;; don't want to rule them out too early
-(define-struct cset (maps) #:prefab)
-
 ;; Widest constraint possible
 (define (no-constraint v)
   (make-c (Un) v Univ))
 
 (define (empty-cset X)
   (make-cset (list (cons (for/hash ([x X]) (values x (no-constraint x)))
-                         (make-immutable-hash null)))))
-
+                         (make-dmap (make-immutable-hash null))))))
 
 #;
 (define (lookup cset var)
@@ -94,13 +80,14 @@
                             (dmap-meet dmap1 dmap2)))))])
       (when (null? maps)
         (fail! maps1 maps2))
-      (make-cset maps))]))
+      (make-cset maps))]
+   [(_ _) (int-err "Got non-cset: ~a ~a" x y)]))
 
 (define (cset-meet* args)
-  (for/fold ([c (make-immutable-hash null)])
+  (for/fold ([c (make-cset (list (cons (make-immutable-hash null)
+                                       (make-dmap (make-immutable-hash null)))))])
     ([a args])
     (cset-meet a c)))
-
 
 (define (cset-combine l)
   (let ([mapss (map cset-maps l)])
