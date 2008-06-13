@@ -10,21 +10,30 @@
 
 (define ex-str "This is a string with \" inside")
 
-(define-syntax-rule (schemegrammar*+library form ...)
+(define-syntax-rule (schemegrammar*+library 
+                     #:literals lits
+                     (check-expect check-within check-error require)
+                     form ...)
   (schemegrammar*
+   #:literals lits
    form ...
    [test-case #, @scheme[(check-expect expr expr)]
               #, @scheme[(check-within expr expr expr)]
               #, @scheme[(check-error expr expr)]]
    (...
-    [libray-require #, @scheme[(require string)]
-                    #, @scheme[(require (lib string string ...))]
-                    #, @scheme[(require (planet string package))]])
+    [library-require #, @scheme[(require string)]
+                     #, @scheme[(require (lib string string ...))]
+                     #, @scheme[(require (planet string package))]])
    (...
     [package #, @scheme[(string string number number)]])))
 
-(define-syntax-rule (schemegrammar*+qq form ...)
+(define-syntax-rule (schemegrammar*+qq 
+                     #:literals lits
+                     (check-expect check-within check-error require)
+                     form ...)
   (schemegrammar*+library
+   #:literals lits
+   (check-expect check-within check-error require)
    form ...
    (...
     [quoted id

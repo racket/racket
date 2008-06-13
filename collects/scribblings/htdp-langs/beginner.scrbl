@@ -12,10 +12,11 @@
 @schemegrammar*+library[
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             check-expect check-within check-error)
+(check-expect check-within check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
-             
+             test-case             
              library-require]
 [definition (define (id id id ...) expr)
             (define id expr)
@@ -28,7 +29,6 @@
       (if expr expr expr)
       (and expr expr expr ...)
       (or expr expr expr ...)
-      test-case
       empty
       id
       (code:line id (code:comment #, @seclink["beginner-id"]{identifier}))

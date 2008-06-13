@@ -39,9 +39,11 @@
 #:literals (define define-struct lambda cond else if and or empty true false require lib planet
             local let let* letrec time begin begin0 set! delay shared recur when case unless
             check-expect check-within check-error)
+(check-expect check-within check-error require)
 [program (code:line def-or-expr ...)]
 [def-or-expr definition
              expr
+             test-case
              library-require]
 [definition (define (id id id ...) expr)
             (define id expr)
@@ -71,7 +73,6 @@
       (and expr expr expr ...)
       (or expr expr expr ...)
       (time expr)
-      test-case
       empty
       (code:line id (code:comment #, @seclink["intermediate-id"]{identifier}))
       (code:line prim-op (code:comment #, @seclink["intermediate-lambda-prim-op"]{primitive operation}))

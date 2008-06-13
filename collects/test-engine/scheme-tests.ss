@@ -30,11 +30,11 @@
   "check-within requires three expressions. Try (check-within test expected range).")
 
 (define-for-syntax CHECK-EXPECT-DEFN-STR
-  "check-expect cannot be used as an expression")
+  "found a test that is not at the top level")
 (define-for-syntax CHECK-WITHIN-DEFN-STR
-  "check-within cannot be used as an expression")
+  CHECK-EXPECT-DEFN-STR)
 (define-for-syntax CHECK-ERROR-DEFN-STR
-  "check-error cannot be used as an expression")
+  CHECK-EXPECT-DEFN-STR)
 
 (define-struct check-fail (src))
 
@@ -84,21 +84,24 @@
                    '(syntax-e cdr cdr syntax-e car) ;; lambda
                    ))))))
 
+(define-for-syntax (check-context?)
+  (let ([c (syntax-local-context)])
+    (memq c '(module top-level))))
 
 ;; check-expect
 (define-syntax (check-expect stx)
   (syntax-case stx ()
     [(_ test actual)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (check-expect-maker stx #'check-values-expected (list #`(lambda () test) #`actual) 'comes-from-check-expect)]
     [(_ test)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
     [(_ test actual extra ...)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-expect CHECK-EXPECT-STR stx)]
     [(_ test ...)
-     (eq? (syntax-local-context) 'expression)
+     (not (check-context?))
      (raise-syntax-error 'check-expect CHECK-EXPECT-DEFN-STR stx)]))
 
 ;; check-values-expected: (-> scheme-val) scheme-val src -> void
@@ -113,19 +116,19 @@
 (define-syntax (check-within stx)
   (syntax-case stx ()
     [(_ test actual within)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (check-expect-maker stx #'check-values-within (list #`(lambda () test) #`actual #`within) 'comes-from-check-within)]
     [(_ test actual)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
     [(_ test)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
     [(_ test actual within extra ...)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-within CHECK-WITHIN-STR stx)]
     [(_ test ...)
-     (eq? (syntax-local-context) 'expression)
+     (not (check-context?))
      (raise-syntax-error 'check-within CHECK-WITHIN-DEFN-STR stx)]))
 
 (define (check-values-within test actual within src test-info)
@@ -139,13 +142,13 @@
 (define-syntax (check-error stx)
   (syntax-case stx ()
     [(_ test error)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (check-expect-maker stx #'check-values-error (list #'(lambda () test) #`error) 'comes-from-check-error)]
     [(_ test)
-     (not (eq? (syntax-local-context) 'expression))
+     (check-context?)
      (raise-syntax-error 'check-error CHECK-ERROR-STR stx)]
     [(_ test ...)
-     (eq? (syntax-local-context) 'expression)
+     (not (check-context?))
      (raise-syntax-error 'check-error CHECK-ERROR-DEFN-STR stx)]))
 
 (define (check-values-error test error src test-info)
@@ -162,7 +165,11 @@
         (begin
           (send (send test-info get-info) check-failed
                 (check->message result) (check-fail-src result))
-          (list 'check-error-failed (incorrect-error-message result) error))
+          (list 'check-error-failed 
+                (if (expected-error? result)
+                    (expected-error-message result)
+                    (incorrect-error-message result))
+                error))
         (list 'check-error-succeeded error error))))
 
 
