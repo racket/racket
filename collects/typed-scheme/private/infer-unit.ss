@@ -32,11 +32,12 @@
     (cgen/list V X ss* ts*)))
 
 (define (cgen/arr V X t-arr s-arr)
+  (define (cg S T) (cgen V X S T))
   (match* (t-arr s-arr)
           [((arr: ts t #f #f t-thn-eff t-els-eff)
             (arr: ss s #f #f s-thn-eff s-els-eff))
            (cset-meet (cgen/list X V ss ts)
-                      (cgen V X t s))]
+                      (cg t s))]
           [((arr: ts t t-rest #f t-thn-eff t-els-eff)
             (arr: ss s s-rest #f s-thn-eff s-els-eff))
            (let ([arg-mapping 
@@ -49,7 +50,7 @@
                         [(and s-rest (not t-rest) (>= (length ts) (length ss)))
                          (cgen/list X V (extend ts ss s-rest) ts)]
                         [else (fail! S T)])]
-                 [ret-mapping (cgen V X t s)])
+                 [ret-mapping (cg t s)])
              (cset-meet arg-mapping ret-mapping))]
           [((arr: ts t #f (cons dty dbound) t-thn-eff t-els-eff)
             (arr: ss s #f #f                s-thn-eff s-els-eff))
@@ -87,18 +88,18 @@
              (fail! S T))
            (let* ([arg-mapping (cgen/list X V ss ts)]
                   [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
-                  [ret-mapping (cgen V X t s)])
-             (cset-meet* (cons dbound V) (list arg-mapping darg-mapping ret-mapping)))]
+                  [ret-mapping (cg t s)])
+             (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
           [((arr: ts t t-rest #f                  t-thn-eff t-els-eff)
             (arr: ss s #f     (cons s-dty dbound) s-thn-eff s-els-eff))
            (unless (<= (length ts) (length ss))
              (fail! S T))
            (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
                   [darg-mapping (cgen (cons dbound V) X s-dty t-rest)]
-                  [ret-mapping (cgen V X t s)])
+                  [ret-mapping (cg t s)])
              (let-values ([(darg-mapping* dbound-constraint)
                            (split-mapping darg-mapping dbound)])
-               (add-var-mapping (cset-meet* V (list arg-mapping darg-mapping* ret-mapping))
+               (add-var-mapping (cset-meet* (list arg-mapping darg-mapping* ret-mapping))
                                 dbound
                                 dbound-constraint)))]
           ;; If dotted <: starred is correct, add it below.  Not sure it is.
@@ -117,11 +118,11 @@
                             (if var-c (cons var-c constraints) constraints))))])
     (values (make-cset mappings) (make-clist cs))))
     
+(define (singleton S X T)
+  (insert (empty-cset X) X S T))
 
-(define (cgen V X S T)
-  (define empty (empty-cset X))
-  (define (singleton S X T )
-    (insert empty X S T))  
+(define (cgen V X S T) 
+  (define (cg S T) (cgen V X S T))
   (if (seen? S T)
       empty
       (parameterize ([match-equality-test type-equal?]
@@ -147,17 +148,17 @@
          [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
           (unless (= n n*)
             (fail! S T))
-          (cgen V X b b*)]
+          (cg b b*)]
          
          
-         [((Union: es) S) (cset-meet* X (for/list ([e es]) (cgen V X e S)))]
+         [((Union: es) S) (cset-meet* (for/list ([e es]) (cg e S)))]
          ;; we might want to use multiple csets here, but I don't think it makes a difference
          [(S (Union: es)) (or
                            (for/or 
                             ([e es]) 
                             (with-handlers
                                 ([exn:infer? (lambda _ #f)])
-                              (cgen V X S e)))
+                              (cg S e)))
                            (fail! S T))]
          
          [((Struct: nm p flds proc _ _ _) (Struct: nm p flds* proc* _ _ _))
@@ -173,14 +174,14 @@
               null
               (fail! S T))]
          [((Pair: a b) (Pair: a* b*))
-          (cset-meet (cgen V X a a*) (cgen V X b b*))]
+          (cset-meet (cg a a*) (cg b b*))]
          ;; if we have two mu's, we rename them to have the same variable
          ;; and then compare the bodies
          [((Mu-unsafe: s) (Mu-unsafe: t)) 
-          (cgen V X s t)]
+          (cg s t)]
          ;; other mu's just get unfolded
-         [(s (? Mu? t)) (cgen V X s (unfold t))]
-         [((? Mu? s) t) (cgen V X (unfold s) t)]
+         [(s (? Mu? t)) (cg s (unfold t))]
+         [((? Mu? s) t) (cg (unfold s) t)]
          ;; type application          
          [((App: (Name: n) args _)
            (App: (Name: n*) args* _))
@@ -188,19 +189,19 @@
             (fail! S T))
           (let ([x (instantiate-poly (lookup-type-name n) args)]
                 [y (instantiate-poly (lookup-type-name n) args*)])
-            (cgen V X x y))]
+            (cg x y))]
          [((Vector: e) (Vector: e*))
-          (cset-meet (cgen V X e e*) (cgen V X e* e))]
+          (cset-meet (cg e e*) (cg e* e))]
          [((Box: e) (Box: e*))
-          (cset-meet (cgen V X e e*) (cgen V X e* e))]
+          (cset-meet (cg e e*) (cg e* e))]
          [((Hashtable: s1 s2) (Hashtable: t1 t2))
           ;; the key is covariant, the value is invariant
-          (cset-meet* X (list (cgen V X s1 t1) (cgen V X t2 s2) (cgen V X s2 t2)))]
+          (cset-meet* (list (cg s1 t1) (cg t2 s2) (cg s2 t2)))]
          [((Syntax: s1) (Syntax: s2))
-          (cgen V X s1 s2)]
+          (cg s1 s2)]
          ;; parameters are just like one-arg functions
          [((Param: in1 out1) (Param: in2 out2))
-          (cset-meet (cgen V X in2 in1) (cgen V X out1 out2))]
+          (cset-meet (cg in2 in1) (cg out1 out2))]
          [((Function: (list t-arr ...))
            (Function: (list s-arr ...)))
           (=> unmatch)
@@ -236,7 +237,7 @@
                   S])))])))
 
 (define (cgen/list X V S T)
-  (cset-meet* X (for/list ([s S] [t T]) (cgen V X s t))))
+  (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))
 
 ;; X : variables to infer
 ;; S : actual argument types
