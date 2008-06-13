@@ -25,9 +25,6 @@
 ;; X a var
 (define-struct c (S X T) #:prefab)
 
-;; Struct containing a list of cs
-(define-struct clist (cs) #:prefab)
-
 ;; maps is a list of pairs of
 ;;    - functional maps from vars to c's
 ;;    - dmaps (see dmap.ss)
@@ -36,14 +33,18 @@
 ;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
+;; Widest constraint possible
+(define (no-constraint v)
+  (make-c (Un) v Univ))
+
 (define (empty-cset X)
-  (make-cset (list (cons (for/hash ([x X]) (values x (make-c (Un) x Univ)))
+  (make-cset (list (cons (for/hash ([x X]) (values x (no-constraint x)))
                          (make-immutable-hash null)))))
 
 
 #;
 (define (lookup cset var)
-  (hash-ref (cset-map cset) var (make-c (Un) var Univ)))
+  (hash-ref (cset-map cset) var (no-constraint var)))
 
 (define (insert cs var S T)
   (match cs
