@@ -34,30 +34,50 @@
            (hash-ref fixed v (no-constraint v)))]
       [_ (no-constraint v)])))
 
-(define (move-vars-to-dmap cset dbound vars)
+(define (map/cset f cset)
   (make-cset (for/list ([(cmap dmap) (in-pairs (cset-maps cset))])
-               (cons (foldl (lambda (v cmap)
-                              (hash-remove cmap v))
-                            cmap vars)
-                     (dmap-meet (make-dmap
-                                 (make-immutable-hash 
-                                  (list (cons dbound
-                                              (make-dcon (for/list ([v vars])
-                                                           (hash-ref cmap v 
-                                                                     (lambda () (int-err "No constraint for new var ~a" v))))
-                                                         #f)))))
-                                dmap)))))
+               (f cmap dmap))))
+
+(define (singleton-dmap dbound dcon)
+  (make-dmap (make-immutable-hash (list (cons dbound dcon)))))
+
+(define (hash-remove* hash keys)
+  (for/fold ([h hash]) ([k (in-list keys)]) (hash-remove h k)))
+
+(define (mover cset dbound vars f)
+  (map/cset
+   (lambda (cmap dmap)
+     (cons (hash-remove* cmap vars)           
+           (dmap-meet 
+            (singleton-dmap 
+             dbound
+             (f cmap))
+            dmap)))
+   cset))
+
+(define (move-vars-to-dmap cset dbound vars)
+  (mover cset dbound vars
+         (lambda (cmap)
+           (make-dcon (for/list ([v vars])
+                        (hash-ref cmap v 
+                                  (lambda () (int-err "No constraint for new var ~a" v))))
+                      #f))))
 
 (define (move-rest-to-dmap cset dbound)
-  (make-cset (for/list ([(cmap dmap) (in-pairs (cset-maps cset))])
-               (cons (hash-remove cmap dbound)
-                     (dmap-meet (make-dmap
-                                 (make-immutable-hash
-                                  (list (cons dbound
-                                              (make-dcon null
-                                                         (hash-ref cmap dbound
-                                                                   (lambda () (int-err "No constraint for bound ~a" dbound))))))))
-                                 dmap)))))
+  (mover cset dbound (list dbound)
+         (lambda (cmap)
+           (make-dcon null
+                      (hash-ref cmap dbound
+                                (lambda () (int-err "No constraint for bound ~a" dbound)))))))
+
+(define (move-vars+rest-to-dmap cset dbound vars)
+  (mover cset dbound (list dbound)
+         (lambda (cmap)
+           (make-dcon (for/list ([v vars])
+                        (hash-ref cmap v 
+                                  (lambda () (int-err "No constraint for new var ~a" v))))
+                      (hash-ref cmap dbound
+                                (lambda () (int-err "No constraint for bound ~a" dbound)))))))
                                        
 
 ;; ss and ts have the same length
@@ -130,12 +150,21 @@
             (arr: ss s #f     (cons s-dty dbound) s-thn-eff s-els-eff))
            (unless (memq dbound X)
              (fail! S T))
-           (unless (<= (length ts) (length ss))
-             (fail! S T))
-           (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
-                  [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-dty t-rest) dbound)]
-                  [ret-mapping (cg t s)])
-             (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
+           (if (<= (length ts) (length ss))
+               ;; the simple case
+               (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
+                      [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-dty t-rest) dbound)]
+                      [ret-mapping (cg t s)])
+                 (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
+               ;; the hard case
+               (let* ([num-vars (- (length ts) (length ss))]
+                      [vars     (for/list ([n (in-range num-vars)])
+                                  (gensym dbound))]
+                      [new-tys  (for/list ([var vars])
+                                  (substitute (make-F var) dbound s-dty))]
+                      [new-cset (cgen/arr V (append vars X) t-arr 
+                                          (make-arr (append ss new-tys) s #f (cons s-dty dbound) s-thn-eff s-els-eff))])
+                 (move-vars+rest-to-dmap new-cset dbound vars)))]
           ;; If dotted <: starred is correct, add it below.  Not sure it is.
           [(_ _) (fail! S T)]))
     
@@ -144,7 +173,6 @@
   (define empty (empty-cset X))
   (define (singleton S X T)
     (insert empty X S T))
-  #;(printf "In cgen: ~a ~a~n" S T)
   (if (seen? S T)
       empty
       (parameterize ([match-equality-test type-equal?]

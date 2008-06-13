@@ -23,10 +23,12 @@
 (define-struct cset (maps) #:prefab)
 
 (define (hashof k/c v/c)
-  (lambda (h)
-    (and (hash? h)
-         (for/and ([(k v) h])
-             (and (k/c k) (v/c v))))))
+  (flat-named-contract
+   (format "#<hashof ~a ~a>" k/c v/c)
+   (lambda (h)
+     (and (hash? h)
+          (for/and ([(k v) h])
+                   (and (k/c k) (v/c v)))))))
 
 (provide/contract (struct c ([S Type?] [X symbol?] [T Type?]))
                   (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
