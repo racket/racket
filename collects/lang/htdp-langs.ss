@@ -753,7 +753,8 @@
                         (parameterize ([current-custodian nc])
                           (thread (λ () 
                                     (with-handlers ((exn? (λ (x) (set! exn x))))
-                                      (parameterize ([read-accept-reader #t])
+                                      (parameterize ([read-accept-reader #t]
+                                                     [current-namespace (make-base-namespace)])
                                         (compile-file filename))))))])
                    (thread
                     (λ ()
