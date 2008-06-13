@@ -249,25 +249,49 @@ Various common pieces of code that both the client and server need to access
   
   (define-struct mz-version (major minor))
   
+  
   ;; string->mz-version : string -> mz-version | #f
+  ;; Converts a string into mz-version.  We need to account
+  ;; for the change in numbering style from the 372 era to the 4.0 era.
   (define (string->mz-version str)
+    (define (minor+maint-chunks->minor chunks)
+      (+ (* (string->number (car chunks)) 1000)
+         (if (> (length chunks) 1)
+             (string->number (cadr chunks))
+             0)))
+    
     (cond
-      ;; Old style numbering (with three digits in front)
-      [(regexp-match #rx"^([0-9][0-9][0-9])([.0-9]*)$" str)
+      ;; Old style numbering with three digits in front.  The first digit
+      ;; goes up to three.
+      [(regexp-match #rx"^([0-3][0-9][0-9])\\.?([.0-9]*)$" str)
        =>
        (lambda (ver)
-         (let* ([major&minor (string->number (list-ref ver 1))])
-           (make-mz-version (remainder (quotient major&minor 100) 10)
-                            (remainder (quotient major&minor 10) 10))))]
+         (let ([major (string->number (list-ref ver 1))])
+           (cond
+             [(= (string-length (list-ref ver 2)) 0)
+              (make-mz-version major 0)]
+             [else
+              (let* ([minor+maint (regexp-split #rx"\\." (list-ref ver 2))]
+                     [minor (minor+maint-chunks->minor minor+maint)])
+                (make-mz-version major minor))])))]
       ;; New style numbering
-      [(regexp-match #rx"^([0-9]+)(\\.([0-9]+))?$" str)
+      [(regexp-match #rx"^([0-9]+)(\\.([.0-9]+))?$" str)
        =>
        (lambda (ver)
-         (make-mz-version
-          (string->number (list-ref ver 1))
-          (if (list-ref ver 3)
-              (string->number (list-ref ver 3))
-              0)))]
+         (cond [(list-ref ver 3)
+                (let* ([chunks (regexp-split #rx"\\." (list-ref ver 3))])
+                  (make-mz-version (+ (* (string->number (list-ref ver 1))
+                                         100)
+                                      (if (> (length chunks) 0)
+                                          (string->number (car chunks))
+                                          0))
+                                   (if (> (length (cdr chunks)) 0)
+                                       (minor+maint-chunks->minor (cdr chunks))
+                                       0)))]
+               [else
+                (make-mz-version (* (string->number (list-ref ver 1))
+                                    100)
+                                 0)]))]
       [else #f]))
   
   
