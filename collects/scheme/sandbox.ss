@@ -496,7 +496,10 @@
         (if src
             (filter (lambda (x) (equal? src (syntax-source x))) uncovered)
             uncovered))]))
-  (define (output-getter p) (if (procedure? p) (user-eval `(,p)) p))
+  (define (output-getter p)
+    (if (procedure? p)
+        (user-eval #`(#%app (quote #,p)))
+        p))
   (define input-putter
     (case-lambda
      [() (input-putter input)]
