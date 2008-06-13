@@ -12,6 +12,7 @@
 (map* + (list 1 2 3) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30) (list 10 20 30))
 
 (: h (Integer Integer Integer * -> Integer))
-(define (h x y . z) 0)
+(define (h x y . z) (apply + (cons x (cons y z))))
 
 (map* h (list 1 2 3) (list 4 5 6))
+(map* h (list 1 2 3) (list 4 5 6) (list 4 5 6))
