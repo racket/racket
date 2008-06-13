@@ -259,3 +259,35 @@
 (htdp-err/rt-test (if false 1 ...) rx:dots-error)
 (htdp-test 1 'ok-dots (if true 1 ...))
 (htdp-error-test #'(set! ... true))
+
+(htdp-syntax-test #'(cons (check-expect 1 1) empty))
+(htdp-syntax-test #'(define (f x) (check-expect 1 x)))
+(htdp-syntax-test #'(define (f x) (check-expect 1 x) x))
+
+(htdp-top (check-expect 1 1))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-expect 1 2))
+(htdp-test 2 'two 2) ;; test failure recorded in teaching lang...
+(htdp-top-pop 1)
+
+(htdp-top (check-expect 1 (/ 1 0)))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-error (/ 1 0) "division by zero"))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-error (/ 1 0) "wrong error"))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-error 0 "not error"))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
+
+(htdp-top (check-within 1 2 3))
+(htdp-test 2 'two 2)
+(htdp-top-pop 1)
