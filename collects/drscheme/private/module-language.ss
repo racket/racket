@@ -120,6 +120,21 @@
         (string-constant module-language-one-line-summary))
       
       (inherit get-reader)
+      (define/override (front-end/interaction port settings)
+        (if (null? (namespace-mapped-symbols))
+            (begin
+              (display
+               (string-append
+                "There are no bindings for use in the REPL.\n"
+                "Consider starting your program with:\n"
+                "\n"
+                "  #lang scheme\n"
+                "\n"
+                "and clicking ‘Run’ again.\n")
+               (current-error-port))
+              (λ x eof))
+            (super front-end/interaction port settings)))
+      
       (define/override (front-end/complete-program port settings)
         (let* ([super-thunk (λ () ((get-reader) (object-name port) port))]
                [path (get-filename port)]
@@ -144,7 +159,7 @@
                (let ([super-result (super-thunk)])
                  (if (eof-object? super-result)
                      (raise-syntax-error
-                      'module-language
+                      'Module\ language
                       "the definitions window must contain a module")
                      (let-values ([(name new-module)
                                    (transform-module path super-result)])

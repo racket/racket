@@ -387,7 +387,6 @@ profile todo:
                    (write-special snp (current-error-port)))
                  (display msg (current-error-port))))])
       (send error-text-style-delta set-delta-foreground (make-object color% 200 0 0))
-      (send-out " in:" void)
       (let ([show-one
              (λ (expr)
                (display " " (current-error-port))
@@ -400,8 +399,11 @@ profile todo:
             [exprs (exn:fail:syntax-exprs exn)])
         (cond
           [(null? exprs) (void)]
-          [(null? (cdr exprs)) (show-one (car exprs))]
+          [(null? (cdr exprs))
+           (send-out " in:" void)
+           (show-one (car exprs))]
           [else
+           (send-out " in:" void)
            (for-each (λ (expr)
                        (display "\n " (current-error-port))
                        (show-one expr))
