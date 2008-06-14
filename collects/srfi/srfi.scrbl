@@ -75,6 +75,12 @@ distributed as part of PLT Scheme's documentation).
 
 @srfi[1]{List Library}
 
+This SRFI works with pairs and lists as in @schememodname[scheme] and
+@schememodname[mzscheme], which are immutable, so it does not export
+@schemeidfont{set-car!} and @schemeidfont{set-cdr!}. The other
+provided bindings that end in @schemeidfont{!} are equivalent to the
+corresponding bindings without @schemeidfont{!}.
+
 @redirect[1 '(
  (cons #f "cons")
  (list #f "list")
@@ -195,8 +201,6 @@ distributed as part of PLT Scheme's documentation).
  (lset-difference #f "lset-difference")
  (lset-xor #f "lset-xor")
  (lset-diff+intersection #f "lset-diff+intersection")
- (set-car! #f "set-car!")
- (set-cdr! #f "set-cdr!")
 )]
 
 @; ----------------------------------------
