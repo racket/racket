@@ -2,7 +2,7 @@
   (require mzlib/class mzlib/list mzlib/string mzlib/file
 	   (prefix wx: "kernel.ss")
 	   "helper.ss" "mrtop.ss" "mritem.ss" "mrpanel.ss" "mrtextfield.ss"
-           "messagebox.ss" "mrmenu.ss")
+           "messagebox.ss" "mrmenu.ss" (only scheme/base compose))
   (provide path-dialog%)
 
   (define last-visted-directory #f)
@@ -27,17 +27,28 @@
 
   (define default-filters (if win? '(("Any" "*.*")) '(("Any" "*"))))
 
+  (define (expand-path* p)
+    (if (equal? "" p)
+      p
+      ;; expand-user-path throws an exception on bad usernames
+      (with-handlers ([exn:fail:filesystem? (lambda (e) p)])
+        (expand-user-path p))))
+
   (define simplify-path*
     (if win?
       (lambda (p . more)
         (apply simplify-path (regexp-replace*
                               #rx"/" (if (path? p) (path->string p) p) "\\\\")
                more))
-      simplify-path))
+      (compose simplify-path expand-path*)))
+
+  (define directory-exists*? (compose directory-exists? expand-path*))
+  (define file-exists*?      (compose file-exists? expand-path*))
+  (define absolute-path*?    (compose absolute-path? expand-path*))
 
   (define (build-path* dir path)
-    (cond [(absolute-path? path) (if (string? path) (string->path path) path)]
-          [(equal? "" path)      (if (string? dir)  (string->path dir)  dir)]
+    (cond [(absolute-path*? path) (if (string? path) (string->path path) path)]
+          [(equal? "" path)       (if (string? dir)  (string->path dir)  dir)]
           [else (build-path dir path)]))
 
   ;; returns a list of a glob-regexp-list and another one without hiding dots
@@ -212,8 +223,8 @@
         (when (or (not r)    ; when returning something
                   multi?     ; single
                   (not put?) ; and we're in put? mode
-                  (not (or (file-exists? r) ; and it exists
-                           (directory-exists? r)))
+                  (not (or (file-exists*? r) ; and it exists
+                           (directory-exists*? r)))
                   ;; then ask about continuing
                   (eq? 'yes (message-box "Warning"
                                          (format "Replace \"~a\"?" r)
@@ -249,7 +260,7 @@
                 (if (root? dir) ps (cons up-dir-pname ps)))
               (let* ([path   (car paths)]
                      [paths  (cdr paths)]
-                     [isdir? (directory-exists? path)]
+                     [isdir? (directory-exists*? path)]
                      [pname  (path->pname path isdir?)]
                      [name   (pname-string pname)])
                 (loop paths
@@ -290,7 +301,7 @@
 
       (define (set-dir newdir)
         (wx:begin-busy-cursor)
-        (set! dir (simplify-path* (expand-path newdir)))
+        (set! dir (simplify-path* newdir))
         ;; get a list of upward paths, display it with clickbacks
         (let* ([sep (cons path-separator #f)]
                [items ; a list of (cons name path)
@@ -314,7 +325,7 @@
                 (loop j (cdr items)))))
           (send dir-text lock))
         (clear-path-list-state)
-        (if (directory-exists? dir)
+        (if (directory-exists*? dir)
           (begin (set! pnames (sorted-dirlist dir))
                  (set! pnames-nulstrings (map pname-nulstring pnames))
                  (set-path-list-pnames)
@@ -358,8 +369,8 @@
                       selections))
             (set! selections (send path-list get-selections)))
           (let* ([seln    (length selections)]
-                 [isdir?  (directory-exists? path)]
-                 [isfile? (file-exists? path)]
+                 [isdir?  (directory-exists*? path)]
+                 [isfile? (file-exists*? path)]
                  [choose? (and dir? empty? (= 0 seln))]
                  [go?     (and isdir? (not empty?) (<= seln 1))])
             ;; set ok-button label
@@ -379,7 +390,7 @@
                       (andmap (lambda (i)
                                 (let ([s (send path-list get-string i)])
                                   (is-ok?
-                                   s (directory-exists? s) (file-exists? s))))
+                                   s (directory-exists*? s) (file-exists*? s))))
                               selections))))))))
 
       (define (new-selected-paths)
@@ -416,9 +427,9 @@
             (parameterize ([current-directory dir])
               (let-values ([(base file dir?) (split-path path)])
                 (and (or (memq base '(#f relative)) ; root or here
-                         (directory-exists? base)   ; or has base
+                         (directory-exists*? base)  ; or has base
                          (create-directory base))   ; or made base
-                     (begin (make-directory path) #t))))))) ; => create
+                     (begin (make-directory* path) #t))))))) ; => create
 
       (define (do-enter*)
         (let ([t (send text get-value)])
@@ -435,8 +446,8 @@
                  [/?   (not (equal? sel0 sel))]
                  [sel/ (string-append sel path-separator)]
                  [path (build-path* dir (or nonstring-path sel))]
-                 [isfile? (and (not /?) (file-exists? path))]
-                 [isdir?  (directory-exists? path)]
+                 [isfile? (and (not /?) (file-exists*? path))]
+                 [isdir?  (directory-exists*? path)]
                  [selections (send path-list get-selections)]
                  [many?   (and multi? (equal? "" sel)
                                (<= 1 (length selections)))])
@@ -546,7 +557,7 @@
                 (when m
                   (let* ([pfx (substring value 0 (cdar m))]
                          [pfx (build-path* dir pfx)])
-                    (when (directory-exists? pfx)
+                    (when (directory-exists*? pfx)
                       (set-dir pfx)
                       (reset-last-text-state)
                       (set! value (substring value (cdar m)))
