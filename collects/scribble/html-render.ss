@@ -774,102 +774,104 @@
       (let* ([raw-style (flatten-style (and (element? e) (element-style e)))]
              [style (if (with-attributes? raw-style)
                       (with-attributes-style raw-style)
-                      raw-style)]
-             [attribs (lambda ()
-                        (if (with-attributes? raw-style)
-                          (map (lambda (p) (list (car p) (cdr p)))
-                               (with-attributes-assoc raw-style))
-                          null))]
-             [super-render/attribs
-              (lambda ()
-                (if (with-attributes? raw-style)
-                  `((span ,(attribs) ,@(super render-element e part ri)))
-                  (super render-element e part ri)))])
+                      raw-style)])
+        (define (attribs)
+          (if (with-attributes? raw-style)
+            (map (lambda (p) (list (car p) (cdr p)))
+                 (with-attributes-assoc raw-style))
+            null))
+        (define (render* [x 'span])
+          ;; x can be a tag name, or a list of attributes, or a tag followed by
+          ;; a list of attributes (internal use: no error checking!)
+          (let-values ([(tag attribs)
+                        (cond [(symbol? x) (values x (attribs))]
+                              [(symbol? (car x))
+                               (unless (null? (cddr x)) (error "boom"))
+                               (values (car x) (append (cadr x) (attribs)))]
+                              [else (values 'span (append x (attribs)))])]
+                       [(content) (super render-element e part ri)])
+            (if (and (eq? 'span tag) (null? attribs))
+              content
+              `((,tag ,attribs ,@content)))))
         (cond
-         [(symbol? style)
-          (case style
-            [(italic) `((i ,(attribs) ,@(super render-element e part ri)))]
-            [(bold) `((b ,(attribs) ,@(super render-element e part ri)))]
-            [(tt) `((span ([class "stt"] . ,(attribs)) ,@(super render-element e part ri)))]
-            [(no-break) `((span ([class "nobreak"] . ,(attribs))
-                                ,@(super render-element e part ri)))]
-            [(sf) `((b (font ([size "-1"] [face "Helvetica"] . ,(attribs))
-                             ,@(super render-element e part ri))))]
-            [(subscript) `((sub ,(attribs) ,@(super render-element e part ri)))]
-            [(superscript) `((sup ,(attribs) ,@(super render-element e part ri)))]
-            [(hspace) `((span ([class "hspace"] . ,(attribs))
-                              ,@(let ([str (content->string (element-content e))])
-                                  (map (lambda (c) 'nbsp) (string->list str)))))]
-            [(newline) `((br ,(attribs)))]
-            [else (error 'html-render "unrecognized style symbol: ~e" style)])]
-         [(string? style)
-          `((span ([class ,style] . ,(attribs)) ,@(super render-element e part ri)))]
-         [(and (pair? style) (memq (car style) '(color bg-color)))
-          (unless (and (list? style)
-                       (or (and (= 4 (length style))
-                                (andmap byte? (cdr style)))
-                           (and (= 2 (length style))
-                                (member (cadr style)
-                                        '("white" "black" "red" "green" "blue"
-                                          "cyan" "magenta" "yellow")))))
-            (error 'render-font "bad color style: ~e"  style))
-          `((font ([style
-                       ,(format "~acolor: ~a"
-                                (if (eq? (car style) 'bg-color) "background-" "")
-                                (if (= 2 (length style))
-                                    (cadr style)
-                                    (string-append*
-                                     "#"
-                                     (map (lambda (v)
-                                            (let ([s (number->string v 16)])
-                                              (if (< v 16) (string-append "0" s) s)))
-                                          (cdr style)))))]
-                   . ,(attribs))
-                  ,@(super render-element e part ri)))]
-         [(target-url? style)
-          (if (current-no-links)
-            (super-render/attribs)
-            (parameterize ([current-no-links #t])
-              `((a ([href ,(let ([addr (target-url-addr style)])
-                             (if (path? addr)
-                               (from-root addr (get-dest-directory))
-                               addr))]
-                    ;; The target-url chains to another style,
-                    ;; flatten-style above takes care of it though.
-                    ,@(let ([style (target-url-style style)])
-                        (if (string? style)
-                          `([class ,style])
-                          null))
-                    . ,(attribs))
-                   ,@(super render-element e part ri)))))]
-         [(url-anchor? style)
-          `((a ([name ,(url-anchor-name style)] . ,(attribs))
-               ,@(super render-element e part ri)))]
-         [(image-file? style)
-          (let* ([src (main-collects-relative->path (image-file-path style))]
-                 [scale (image-file-scale style)]
-                 [to-num
-                  (lambda (s)
-                    (number->string
-                     (inexact->exact
-                      (floor (* scale (integer-bytes->integer s #f #t))))))]
-                 [sz (if (= 1.0 scale)
-                         null
-                         ;; Try to extract file size:
-                         (call-with-input-file*
-                          src
-                          (lambda (in)
-                            (if (regexp-try-match #px#"^\211PNG.{12}" in)
-                                `([width ,(to-num (read-bytes 4 in))]
-                                  [height ,(to-num (read-bytes 4 in))])
-                                null))))])
-            `((img ([src ,(let ([p (install-file src)])
-                            (if (path? p)
-                                (url->string (path->url (path->complete-path p)))
-                                p))]
-                    . ,(attribs))
-                   ,@sz)))]
-         [else (super-render/attribs)])))
+          [(symbol? style)
+           (case style
+             [(italic) (render* 'i)]
+             [(bold) (render* 'b)]
+             [(tt) (render* '([class "stt"]))]
+             [(no-break) (render* '([class "nobreak"]))]
+             [(sf) `((b ,@(render* '(font ([size "-1"] [face "Helvetica"])))))]
+             [(subscript) (render* 'sub)]
+             [(superscript) (render* 'sup)]
+             [(hspace)
+              `((span ([class "hspace"] . ,(attribs))
+                  ,@(let ([str (content->string (element-content e))])
+                      (map (lambda (c) 'nbsp) (string->list str)))))]
+             [(newline) `((br ,(attribs)))]
+             [else (error 'html-render "unrecognized style symbol: ~e" style)])]
+          [(string? style) (render* `([class ,style]))]
+          [(and (pair? style) (memq (car style) '(color bg-color)))
+           (unless (and (list? style)
+                        (case (length style)
+                          [(4) (andmap byte? (cdr style))]
+                          [(2) (member (cadr style)
+                                       '("white" "black" "red" "green" "blue"
+                                         "cyan" "magenta" "yellow"))]
+                          [else #f]))
+             (error 'render-font "bad color style: ~e"  style))
+           (render* `(font
+                      ([style
+                        ,(format "~acolor: ~a"
+                                 (if (eq? (car style) 'bg-color) "background-" "")
+                                 (if (= 2 (length style))
+                                   (cadr style)
+                                   (string-append*
+                                    "#"
+                                  (map (lambda (v)
+                                         (let ([s (number->string v 16)])
+                                           (if (< v 16) (string-append "0" s) s)))
+                                       (cdr style)))))])))]
+          [(target-url? style)
+           (if (current-no-links)
+             (render*)
+             (parameterize ([current-no-links #t])
+               (render* `(a ([href ,(let ([addr (target-url-addr style)])
+                                      (if (path? addr)
+                                        (from-root addr (get-dest-directory))
+                                        addr))]
+                             ;; The target-url chains to another style,
+                             ;; flatten-style above takes care of it though.
+                             ,@(let ([style (target-url-style style)])
+                                 (if (string? style)
+                                   `([class ,style])
+                                   null)))))))]
+          [(url-anchor? style)
+           (render* `(a ([name ,(url-anchor-name style)])))]
+          [(image-file? style)
+           (let* ([src (main-collects-relative->path (image-file-path style))]
+                  [scale (image-file-scale style)]
+                  [to-num
+                   (lambda (s)
+                     (number->string
+                      (inexact->exact
+                       (floor (* scale (integer-bytes->integer s #f #t))))))]
+                  [sz (if (= 1.0 scale)
+                        null
+                        ;; Try to extract file size:
+                        (call-with-input-file*
+                         src
+                         (lambda (in)
+                           (if (regexp-try-match #px#"^\211PNG.{12}" in)
+                             `([width ,(to-num (read-bytes 4 in))]
+                               [height ,(to-num (read-bytes 4 in))])
+                             null))))])
+             `((img ([src ,(let ([p (install-file src)])
+                             (if (path? p)
+                               (url->string (path->url (path->complete-path p)))
+                               p))]
+                     . ,(attribs))
+                    ,@sz)))]
+          [else (render*)])))
 
     (define/override (render-table t part ri need-inline?)
       (define t-style (table-style t))
