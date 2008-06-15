@@ -327,12 +327,12 @@ See also @method[text% hide-caret].
             ([(change-style [delta (or/c (is-a?/c style-delta%) false/c)]
                             [start (or/c nonnegative-exact-integer? (one/of 'start)) 'start]
                             [end (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
-                            [counts-as-mod? any/c @scheme[#t]])
+                            [counts-as-mod? any/c #t])
               void?]
              [(change-style [style (or/c (is-a?/c style<%>) false/c)]
                             [start (or/c nonnegative-exact-integer? (one/of 'start)) 'start]
                             [end (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
-                            [counts-as-mod? any/c @scheme[#t]])
+                            [counts-as-mod? any/c #t])
               void?])]{
 
 Changes the style for a region in the editor by applying a style delta

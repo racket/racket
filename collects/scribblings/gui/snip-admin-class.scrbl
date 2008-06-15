@@ -35,7 +35,7 @@ Gets a drawing context suitable for determining display size
 }
 
 @defmethod[(get-editor)
-           (or/c @scheme[text%] (is-a?/c pasteboard%))]{
+           (or/c (is-a?/c text%) (is-a?/c pasteboard%))]{
 
 Returns the editor that this administrator reports to (directly or
  indirectly).

@@ -77,7 +77,7 @@ See also @method[editor-snip% set-align-top-line].
 
 
 @defmethod[(get-editor)
-           (or/c (or/c @scheme[text%] (is-a?/c pasteboard%)) false/c)]{
+           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]{
 
 Returns the editor contained by the snip, or @scheme[#f] is there is
  no editor.
@@ -226,7 +226,7 @@ See also @method[editor-snip% get-align-top-line].
 
 }
 
-@defmethod[(set-editor [editor (or/c (or/c @scheme[text%] (is-a?/c pasteboard%)) false/c)])
+@defmethod[(set-editor [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)])
            void?]{
 
 Sets the editor contained by the snip, releasing the old editor in the
