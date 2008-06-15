@@ -42,7 +42,7 @@ The built-in classes provide various mechanisms for handling GUI
                          (send msg #,(method message% set-label) "Button click"))))
 
 (code:comment #, @t{Show the frame by calling its @scheme[show] method})
-(send frame top-level-window::show #t)
+(send frame #,(:: top-level-window<%> show) #t)
 ]
 
 Programmers never implement the GUI event loop directly. Instead, the
