@@ -339,7 +339,7 @@ owning @scheme[path]), otherwise @scheme[path] is returned (after
 expansion).}
 
 
-@defproc[(cleanse-path [path path-string?] [expand-tilde? any/c #f]) path]{
+@defproc[(cleanse-path [path path-string?]) path]{
 
 @techlink{Cleanse}s @scheme[path] (as described at the beginning of
 this section). The filesystem might be accessed, but the source or
