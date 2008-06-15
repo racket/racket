@@ -90,13 +90,16 @@
                                       proc1)
                                   proc2
                                   cert))
+
+    (define cert-key (gensym 'for-cert))
     
-    (define (certify-clause clause certifier introducer)
+    (define (certify-clause src-stx clause certifier introducer)
       ;; This is slightly painful. The painsion into `:do-in' involves a lot of pieces
       ;; that are no treated as sub-expressions. We have to push the certificates
       ;; down to all the relevant identifiers and expressions:
-      (define (cert s) (certifier s #f introducer))
-      (define (map-cert s) (map (lambda (s) (certifier s #f #;introducer))
+      (define (recert s) (syntax-recertify s src-stx (current-inspector) cert-key))
+      (define (cert s) (certifier (recert s) cert-key introducer))
+      (define (map-cert s) (map (lambda (s) (certifier (recert s) cert-key #;introducer))
                                 (syntax->list s)))
 
       (syntax-case clause (:do-in)
@@ -167,7 +170,9 @@
                    [certifier (sequence-transformer-ref m 2)])
                (let ([xformed (xformer (introducer (syntax-local-introduce clause)))])
                  (if xformed
-                     (expand-clause orig-stx (certify-clause (syntax-local-introduce (introducer xformed)) 
+                     (expand-clause orig-stx (certify-clause (syntax-case clause ()
+                                                               [(_ rhs) #'rhs])
+                                                             (syntax-local-introduce (introducer xformed)) 
                                                              certifier
                                                              introducer))
                      (eloop #f)))))]
