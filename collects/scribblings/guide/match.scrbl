@@ -121,4 +121,19 @@ pattern variables can be bound to lists of lists of matches:
 
 For information on many more pattern forms, see @schememodname[scheme/match].
 
+Forms like @scheme[match-let] and @scheme[match-lambda] support
+patterns in positions that otherwise must be identifiers. For example,
+@scheme[match-let] generalizes @scheme[let] to a @as-index{destructing
+bind}:
+
+@interaction[
+#:eval match-eval
+(match-let ([(list x y z) '(1 2 3)])
+  (list z y x))
+]
+
+For information on these additional forms, see @schememodname[scheme/match].
+
+@refdetails["match"]{pattern matching}
+
 @close-eval[match-eval]
