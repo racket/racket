@@ -104,7 +104,7 @@ Appends menu items to a given menu (not a popup menu) to implement a
 }
 
 @defproc[(append-editor-operation-menu-items [menu (or/c @scheme[menu%] (is-a?/c popup-menu%))]
-                                             [text-only? any/c @scheme[#t]])
+                                             [text-only? any/c #t])
          void?]{
 Appends menu items to a given menu (not a popup menu) to implement the
  standard editor operations, such as cut and paste. The callback for
@@ -323,7 +323,7 @@ When reading from streams that span PLT Scheme versions, use
 @defproc[(read-editor-version [in (is-a?/c editor-stream-in%)]
                               [in-base (is-a?/c editor-stream-in-base%)]
                               [parse-format? any/c]
-                              [raise-errors? any/c @scheme[#t]])
+                              [raise-errors? any/c #t])
          boolean?]{
 
 Reads version information from @scheme[in-base], where @scheme[in-base] is
