@@ -9,7 +9,7 @@ An @scheme[editor-canvas%] object manages and displays a
 
 @defconstructor[([parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
-                 [editor (or/c (or/c @scheme[text%] (is-a?/c pasteboard%)) false/c) #f]
+                 [editor (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c) #f]
                  [style (listof (one-of/c 'no-border 'control-border 'combo 
                                           'no-hscroll 'no-vscroll 
                                           'hide-hscroll 'hide-vscroll 
@@ -157,7 +157,7 @@ Enables or disables force-focus mode.  In force-focus mode, the caret
 
 
 @defmethod[(get-editor)
-           (or/c (or/c @scheme[text%] (is-a?/c pasteboard%)) false/c)]{
+           (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]{
 
 Returns the editor currently displayed by this canvas, or @scheme[#f]
  if the canvas does not have an editor.
@@ -307,7 +307,7 @@ Enables or disables bottom-base scrolling, or gets the current enable
 
 
 
-@defmethod[(set-editor [edit (or/c (or/c @scheme[text%] (is-a?/c pasteboard%)) false/c)]
+@defmethod[(set-editor [edit (or/c (or/c (is-a?/c text%) (is-a?/c pasteboard%)) false/c)]
                        [redraw? any/c #t])
            void?]{
 
