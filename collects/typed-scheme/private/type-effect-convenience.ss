@@ -41,7 +41,7 @@
     [(_ dom ... rng)
      (->* (list dom ...) rng)]
     [(_ dom ... rng : eff1 eff2)
-     (->* (list dom ...) : eff1 eff2)]))
+     (->* (list dom ...) rng : eff1 eff2)]))
 (define-syntax ->*
   (syntax-rules (:)
     [(_ dom rng)       
