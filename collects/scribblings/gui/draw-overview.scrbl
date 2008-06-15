@@ -67,7 +67,7 @@ The following example creates a frame with a drawing canvas, and then
     (send dc #,(:: dc<%> draw-arc) 75 75 150 150 (* 5/4 -pi) (* 7/4 -pi))))
 
 (code:comment #, @t{Show the frame})
-(send frame top-level-window::show #t) 
+(send frame #,(:: top-level-window<%> show) #t) 
 (code:comment #, @t{Wait a second to let the window get ready})
 (sleep/yield 1) 
 (code:comment #, @t{Draw the face})
@@ -76,7 +76,7 @@ The following example creates a frame with a drawing canvas, and then
 
 The @scheme[sleep/yield] call is necessary under X because
  drawing to the canvas has no effect when the canvas is not
- shown. Although the @scheme[(send frame top-level-window::show #t)]
+ shown. Although the @scheme[(send frame #,(:: top-level-window<%> show) #t)]
  expression queues a show request for the frame, the actual display of
  the frame and its canvas requires handling several events. The
  @scheme[sleep/yield] procedure pauses for a specified number
@@ -106,7 +106,7 @@ One second is plenty of time for the frame to show itself, but a
 (code:comment #, @t{... pens, brushes, and @scheme[draw-face] are the same as above ...})
 
 (code:comment #, @t{Show the frame})
-(send frame top-level-window::show #t)
+(send frame #,(:: top-level-window<%> show) #t)
 ]
 
 Suppose that @scheme[draw-face] creates a particularly complex face that
