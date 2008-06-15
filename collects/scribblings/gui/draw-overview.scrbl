@@ -261,8 +261,8 @@ More complex shapes are typically best implemented with
           (send dc #,(:: dc<%> set-origin) 5 5)
           (send dc #,(:: dc<%> set-scale) 0.5 0.5)
           (paint-plt dc))]))
-(send c canvas::min-client-width (/ 650 2))
-(send c canvas::min-client-height (/ 650 2))
+(send c #,(:: canvas<%> min-client-width) (/ 650 2))
+(send c #,(:: canvas<%> min-client-height) (/ 650 2))
 (send f show #t)
 ])
 
