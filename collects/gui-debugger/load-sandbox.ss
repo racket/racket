@@ -2,6 +2,7 @@
   
   (require syntax/moddep
            mzlib/class
+           scheme/private/namespace
            mred)  
   
   (provide eval/annotations
@@ -51,7 +52,8 @@
            (unless m (raise 'module-name-not-passed-to-load-module/annotate))
            (with-module-reading-parameterization
             (lambda ()
-              (let* ([first (expand (read-syntax src in-port))]
+              (let* ([first (parameterize ([current-namespace (make-base-namespace)])
+                              (expand (read-syntax src in-port)))]
                      [module-ized-exp (annotator (check-module-form first m fn))]
                      [second (read in-port)])
                 (unless (eof-object? second)
