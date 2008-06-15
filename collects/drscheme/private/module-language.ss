@@ -121,17 +121,11 @@
       
       (inherit get-reader)
       (define/override (front-end/interaction port settings)
-        (if (null? (namespace-mapped-symbols))
+        (if (thread-cell-ref hopeless-repl)
             (begin
-              (display
-               (string-append
-                "There are no bindings for use in the REPL.\n"
-                "Consider starting your program with:\n"
-                "\n"
-                "  #lang scheme\n"
-                "\n"
-                "and clicking ‘Run’ again.\n")
-               (current-error-port))
+              (display "Module Language: " (current-error-port))
+              (display hopeless-message (current-error-port))
+              (newline (current-error-port))
               (λ x eof))
             (super front-end/interaction port settings)))
       
@@ -158,9 +152,7 @@
               [(= 2 iteration-number)
                (let ([super-result (super-thunk)])
                  (if (eof-object? super-result)
-                     (raise-syntax-error
-                      'Module\ language
-                      "the definitions window must contain a module")
+                     (raise-syntax-error 'Module\ Language hopeless-message)
                      (let-values ([(name new-module)
                                    (transform-module path super-result)])
                        (set! module-name name)
@@ -182,6 +174,7 @@
                       "there can only be one expression in the definitions window"
                       super-result)))]
               [(= 4 iteration-number)
+               (thread-cell-set! hopeless-repl #f)
                (if path
                    #`(#%app current-namespace 
                             (#%app 
@@ -242,6 +235,16 @@
        (module #f)
        (language-position (list "Module"))
        (language-numbers (list -32768)))))
+  
+  (define hopeless-repl (make-thread-cell #t))
+  (define hopeless-message
+    (string-append
+     "There must be a module in the\n"
+     "definitions window. Try starting your program with\n"
+     "\n"
+     "  #lang scheme\n"
+     "\n"
+     "and clicking ‘Run’."))
   
   ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
   (define (module-language-config-panel parent)
