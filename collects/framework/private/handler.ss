@@ -23,74 +23,50 @@
 
 (define format-handlers '())
 
-(define make-insert-handler
-  (letrec ([string-list?
-            (λ (l)
-              (cond
-                [(null? l) #t]
-                [(not (pair? l)) #f]
-                [else
-                 (and (string? (car l))
-                      (string-list? (cdr l)))]))])
-    (λ (who name extension handler)
-      (cond
-        [(not (string? name))
+(define (make-insert-handler who name extension handler)
+  (cond [(not (string? name))
          (error who "name was not a string")]
-        [(and (not (procedure? extension))
-              (not (string? extension))
-              (not (string-list? extension)))
+        [(not (or (procedure? extension)
+                  (string? extension)
+                  (and (list? extension) (andmap string? extension))))
          (error who
                 "extension was not a string, list of strings, or a predicate")]
         [(not (procedure? handler))
          (error who "handler was not a function")]
         [else (make-handler name
-                            (if (string? extension)
-                                (list extension)
-                                extension)
-                            handler)]))))
+                            (if (string? extension) (list extension) extension)
+                            handler)]))
 
-(define insert-format-handler
-  (λ args
-    (set! format-handlers 
-          (cons (apply make-insert-handler 'insert-format-handler args)
-                format-handlers))))
+(define (insert-format-handler . args)
+  (set! format-handlers
+        (cons (apply make-insert-handler 'insert-format-handler args)
+              format-handlers)))
 
-(define find-handler
-  (λ (name handlers)
-    (let/ec exit
-      (let ([extension (if (string? name)
-                           (or (filename-extension name)
-                               "")
-                           "")])
-        (for-each
-         (λ (handler)
-           (let ([ext (handler-extension handler)])
-             (when (or (and (procedure? ext)
-                            (ext name))
-                       (and (pair? ext)
-                            (ormap (λ (ext) (string=? ext extension))
-                                   ext)))
-               (exit (handler-handler handler)))))
-         handlers)
-        #f))))
+(define (find-handler name handlers)
+  (let/ec exit
+    (let ([extension (if (string? name) (or (filename-extension name) "") "")])
+      (for ([handler handlers])
+        (let ([ext (handler-extension handler)])
+          (when (or (and (procedure? ext) (ext name))
+                    (and (pair? ext)
+                         (ormap (λ (ext) (string=? ext extension))
+                                ext)))
+            (exit (handler-handler handler)))))
+      #f)))
 
-(define find-format-handler
-  (λ (name)
-    (find-handler name format-handlers)))
+(define (find-format-handler name)
+  (find-handler name format-handlers))
 
 ; Finding format & mode handlers by name
-(define find-named-handler
-  (λ (name handlers)
-    (let loop ([l handlers])
-      (cond
-        [(null? l) #f]
-        [(string-ci=? (handler-name (car l)) name)
-         (handler-handler (car l))]
-        [else (loop (cdr l))]))))
+(define (find-named-handler name handlers)
+  (let loop ([l handlers])
+    (cond [(null? l) #f]
+          [(string-ci=? (handler-name (car l)) name)
+           (handler-handler (car l))]
+          [else (loop (cdr l))])))
 
-(define find-named-format-handler
-  (λ (name)
-    (find-named-handler name format-handlers)))
+(define (find-named-format-handler name)
+  (find-named-handler name format-handlers))
 
 ; Open a file for editing
 (define current-create-new-window
@@ -100,55 +76,46 @@
        (send frame show #t)
        frame))))
 
-(define edit-file
-  (case-lambda
-    [(filename) (edit-file
-                 filename
-                 (λ ()
-                   ((current-create-new-window) filename)))]
-    [(filename make-default)
-     (with-handlers ([(λ (x) #f) ;exn:fail?
-                      (λ (exn)
-                        (message-box
-                         (string-constant error-loading)
-                         (string-append
-                          (format (string-constant error-loading-file/name)
-                                  (or filename
-                                      (string-constant unknown-filename)))
-                          "\n\n"
-                          (if (exn? exn)
-                              (format "~a" (exn-message exn))
-                              (format "~s" exn))))
-                        #f)])
-       (gui-utils:show-busy-cursor
-        (λ ()
-          (if filename
-              (let ([already-open (send (group:get-the-frame-group)
-                                        locate-file
-                                        filename)])
-                (cond
-                  [already-open
-                   (send already-open make-visible filename)
-                   (send already-open show #t)
-                   already-open]
-                  [(and (preferences:get 'framework:open-here?)
-                        (send (group:get-the-frame-group) get-open-here-frame))
-                   =>
-                   (λ (fr)
-                     (add-to-recent filename)
-                     (send fr open-here filename)
-                     (send fr show #t)
-                     fr)]
-                  [else
-                   (let ([handler
-                          (if (path? filename)
-                              (find-format-handler filename)
-                              #f)])
-                     (add-to-recent filename)
-                     (if handler
-                         (handler filename)
-                         (make-default)))]))
-              (make-default)))))]))
+(define (edit-file filename [make-default
+                             (λ () ((current-create-new-window) filename))])
+  (with-handlers ([(λ (x) #f) ;exn:fail?
+                   (λ (exn)
+                     (message-box
+                      (string-constant error-loading)
+                      (string-append
+                       (format (string-constant error-loading-file/name)
+                               (or filename
+                                   (string-constant unknown-filename)))
+                       "\n\n"
+                       (if (exn? exn)
+                         (format "~a" (exn-message exn))
+                         (format "~s" exn))))
+                     #f)])
+    (gui-utils:show-busy-cursor
+     (λ ()
+       (if filename
+         (let ([already-open (send (group:get-the-frame-group)
+                                   locate-file
+                                   filename)])
+           (cond
+             [already-open
+              (send already-open make-visible filename)
+              (send already-open show #t)
+              already-open]
+             [(and (preferences:get 'framework:open-here?)
+                   (send (group:get-the-frame-group) get-open-here-frame))
+              =>
+              (λ (fr)
+                (add-to-recent filename)
+                (send fr open-here filename)
+                (send fr show #t)
+                fr)]
+             [else
+              (let ([handler (and (path? filename)
+                                  (find-format-handler filename))])
+                (add-to-recent filename)
+                (if handler (handler filename) (make-default)))]))
+         (make-default))))))
 
 ;; type recent-list-item = (list/p string? number? number?)
 
@@ -156,36 +123,33 @@
 (define (add-to-recent filename)
   (let* ([old-list (preferences:get 'framework:recently-opened-files/pos)]
          [old-ents (filter (λ (x) (string=? (path->string (car x))
-                                            (path->string filename))) 
+                                            (path->string filename)))
                            old-list)]
          [old-ent (if (null? old-ents)
                       #f
                       (car old-ents))]
-         [new-ent (list filename 
+         [new-ent (list filename
                         (if old-ent (cadr old-ent) 0)
                         (if old-ent (caddr old-ent) 0))]
-         [added-in (cons new-ent (remove new-ent old-list compare-recent-list-items))]
-         [new-recent (size-down added-in (preferences:get 'framework:recent-max-count))])
+         [added-in (cons new-ent
+                         (remove new-ent old-list compare-recent-list-items))]
+         [new-recent (size-down added-in
+                                (preferences:get 'framework:recent-max-count))])
     (preferences:set 'framework:recently-opened-files/pos new-recent)))
 
 ;; compare-recent-list-items : recent-list-item recent-list-item -> boolean
 (define (compare-recent-list-items l1 l2)
-  (string=? (path->string (car l1))
-            (path->string (car l2))))
+  (equal? (car l1) (car l2)))
 
 ;; size-down : (listof X) -> (listof X)[< recent-max-count]
 ;; takes a list of stuff and returns the
 ;; front of the list, up to `recent-max-count' items
 (define (size-down new-recent n)
-  (let loop ([n n]
-             [new-recent new-recent])
-    (cond
-      [(zero? n) null]
-      [(null? new-recent) null]
-      [else
-       (cons (car new-recent)
-             (loop (- n 1)
-                   (cdr new-recent)))])))
+  (let loop ([n n] [new-recent new-recent])
+    (cond [(zero? n) null]
+          [(null? new-recent) null]
+          [else (cons (car new-recent)
+                      (loop (- n 1) (cdr new-recent)))])))
 
 ;; size-recently-opened-files : number -> void
 ;; sets the recently-opened-files/pos preference
@@ -194,16 +158,16 @@
   (preferences:set
    'framework:recently-opened-files/pos
    (size-down (preferences:get 'framework:recently-opened-files/pos)
-              n)))       
+              n)))
 
 ;; set-recent-position : path number number -> void
-;; updates the recent menu preferences 
+;; updates the recent menu preferences
 ;; with the positions `start' and `end'
 (define (set-recent-position filename start end)
   (let* ([recent-items
           (preferences:get 'framework:recently-opened-files/pos)]
          [new-recent-items
-          (map (λ (x) 
+          (map (λ (x)
                  (if (string=? (path->string (car x))
                                (path->string filename))
                      (list* (car x) start end (cdddr x))
@@ -263,7 +227,7 @@
   (make-object (get-recent-items-window%)
     (string-constant show-recent-items-window-label)
     #f
-    (preferences:get 'framework:recent-items-window-w) 
+    (preferences:get 'framework:recent-items-window-w)
     (preferences:get 'framework:recent-items-window-h)))
 
 ;; recent-items-window : (union #f (is-a?/c frame%))
@@ -282,74 +246,75 @@
 
 (define (get-recent-items-window%)
   (class recent-items-super%
-    
+
     ;; remove extraneous separators
     (define/override (file-menu:between-print-and-close menu) (void))
     (define/override (edit-menu:between-find-and-preferences menu) (void))
-    
+
     (define/override (on-size w h)
       (preferences:set 'framework:recent-items-window-w w)
       (preferences:set 'framework:recent-items-window-h h))
-    
+
     ;; refresh-hl : (listof recent-list-item) -> void
     (define/private (refresh-hl recent-list-items)
       (let ([ed (send hl get-editor)])
         (send ed begin-edit-sequence)
-        (for-each (λ (item) (send hl delete-item item)) (send hl get-items))
+        (for ([item (send hl get-items)]) (send hl delete-item item))
         (for-each (λ (item) (add-recent-item item))
-                  (if (eq? (preferences:get 'framework:recently-opened-sort-by) 'name)
-                      (sort recent-list-items
-                            (λ (x y) (string<=? (path->string (car x))
-                                                (path->string (car y)))))
-                      recent-list-items))
+                  (if (eq? (preferences:get 'framework:recently-opened-sort-by)
+                           'name)
+                    (sort recent-list-items string<?
+                          #:key (compose path->string car) #:cache-keys? #t)
+                    recent-list-items))
         (send ed end-edit-sequence)))
-    
+
     (define/private (add-recent-item recent-list-item)
-      (let ([item (send hl new-item (make-hierlist-item-mixin recent-list-item))])
-        (send (send item get-editor) insert (path->string (car recent-list-item)))))
-    
+      (let ([item (send hl
+                        new-item (make-hierlist-item-mixin recent-list-item))])
+        (send (send item get-editor)
+              insert (path->string (car recent-list-item)))))
+
     (field [remove-prefs-callback
-            (preferences:add-callback
-             'framework:recently-opened-files/pos
-             (λ (p v)
-               (refresh-hl v)))])
-    
+            (preferences:add-callback 'framework:recently-opened-files/pos
+                                      (λ (p v) (refresh-hl v)))])
+
     (define/augment (on-close)
       (inner (void) on-close)
       (remove-prefs-callback)
       (set! recent-items-window #f))
-    
+
     (super-new)
-    
+
     (inherit get-area-container)
     (field [bp (make-object horizontal-panel% (get-area-container))]
-           [hl (make-object recent-items-hierarchical-list% (get-area-container) '())]
+           [hl (make-object recent-items-hierarchical-list%
+                            (get-area-container) '())]
            [sort-by-name-button
-            (make-object button% 
-              (string-constant recent-items-sort-by-name) 
+            (make-object button%
+              (string-constant recent-items-sort-by-name)
               bp
               (λ (x y) (set-sort-by 'name)))]
            [sort-by-age-button
-            (make-object button% 
-              (string-constant recent-items-sort-by-age) 
+            (make-object button%
+              (string-constant recent-items-sort-by-age)
               bp
               (λ (x y) (set-sort-by 'age)))])
-    
+
     (send bp stretchable-height #f)
     (send sort-by-name-button stretchable-width #t)
     (send sort-by-age-button stretchable-width #t)
-    
+
     (define/private (set-sort-by flag)
       (preferences:set 'framework:recently-opened-sort-by flag)
       (case flag
-        [(name) 
+        [(name)
          (send sort-by-age-button enable #t)
          (send sort-by-name-button enable #f)]
-        [(age) 
+        [(age)
          (send sort-by-age-button enable #f)
          (send sort-by-name-button enable #t)])
       (refresh-hl (preferences:get 'framework:recently-opened-files/pos)))
-    
+
     (set-sort-by (preferences:get 'framework:recently-opened-sort-by))))
 
 ;; make-hierlist-item-mixin : recent-item -> mixin(arg to new-item method of hierlist)
@@ -364,7 +329,7 @@
   (let* ([parent (and (or (not (eq? 'macosx (system-type)))
                           (preferences:get 'framework:open-here?))
                       (get-top-level-focus-window))]
-         [file 
+         [file
           (parameterize ([finder:dialog-parent-parameter parent])
             (finder:get-file directory))])
     (and file
