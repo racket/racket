@@ -1,7 +1,9 @@
 #lang scheme/unit
 
 (require "type-effect-convenience.ss" "type-rep.ss" "effect-rep.ss" "rep-utils.ss"
-         "free-variance.ss" "type-utils.ss" "union.ss" "tc-utils.ss" "type-name-env.ss"
+         "free-variance.ss" 
+         (except-in "type-utils.ss" Dotted)
+         "union.ss" "tc-utils.ss" "type-name-env.ss"
          "subtype.ss" "remove-intersect.ss" "signatures.ss" "utils.ss"
          "constraint-structs.ss"
          scheme/match

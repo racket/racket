@@ -4,7 +4,7 @@
          "effect-rep.ss"
          "tc-utils.ss"
          "rep-utils.ss"
-         "free-variance.ss"
+         (only-in "free-variance.ss" combine-frees)
          mzlib/plt-match
          scheme/list
          (for-syntax scheme/base))
@@ -20,7 +20,9 @@
          tc-result-equal? 
          effects-equal?
          tc-result-t
-         unfold)
+         unfold
+         (struct-out Dotted)
+         (struct-out DottedBoth))
 
 
 ;; substitute : Type Name Type -> Type
@@ -129,3 +131,7 @@
 
 ;; fv/list : Listof[Type] -> Listof[Name]
 (define (fv/list ts) (hash-map (combine-frees (map free-vars* ts)) (lambda (k v) k)))
+
+;; t is (make-F v)
+(define-struct Dotted (t))
+(define-struct (DottedBoth Dotted) ())

@@ -96,7 +96,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-for-syntax (types-of-formals stx src)
   (syntax-case stx (:)
     [([var : ty] ...) (quasisyntax/loc stx (ty ...))]
-    [([var : ty] ... . [rest : rest-ty]) (syntax/loc stx (ty ... rest-ty *))]
+    [([var : ty] ... . [rest : rest-ty]) 
+     (syntax/loc stx (ty ... rest-ty *))]
+    [([var : ty] ... . [rest : rest-ty ddd bound])
+     (eq? '... (syntax-e #'ddd))
+     (syntax/loc stx (ty ... rest-ty ddd bound))]
     [_
      (let loop ([stx stx])
        (syntax-case stx ()
@@ -139,7 +143,12 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ arg : ty)
      (syntax-property #'arg 'type-ascription #'ty)]
     [(_ arg ty)
-     (syntax-property #'arg 'type-ascription #'ty)]))
+     (syntax-property #'arg 'type-ascription #'ty)]
+    [(_ arg ty ddd bound)
+     (eq? '... (syntax-e #'ddd))
+     (syntax-property (syntax-property #'arg 'type-ascription #'ty)
+                      'type-dotted 
+                      #'bound)]))
 
 (define-syntax (: stx)
   (let ([stx*
@@ -198,12 +207,19 @@ This file defines two sorts of primitives. All of them are provided into any mod
     (map label-one
          (syntax->list vars)
          (syntax->list tys)))
+  (define (label-dotted var ty bound)
+    (syntax-property (syntax-property var 'type-ascription ty)
+                      'type-dotted 
+                      bound))
   (syntax-case stx (:)
     [[var : ty] (label-one #'var #'ty)]
     [([var : ty] ...)
      (label #'(var ...) #'(ty ...))]
     [([var : ty] ... . [rest : rest-ty])
-     (append (label #'(var ...) #'(ty ...)) (label-one #'rest #'rest-ty))]))       
+     (append (label #'(var ...) #'(ty ...)) (label-one #'rest #'rest-ty))]
+    [([var : ty] ... . [rest : rest-ty ddd bound])
+     (eq? '... (syntax-e #'ddd))
+     (append (label #'(var ...) #'(ty ...)) (label-dotted #'rest #'rest-ty #'bound))]))
 
 (define-syntax-rule (λ: . args) (lambda: . args))
 

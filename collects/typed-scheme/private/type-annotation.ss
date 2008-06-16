@@ -8,11 +8,14 @@
          get-type/infer
          type-label-symbol
          type-ascrip-symbol
+         type-dotted-symbol
          type-ascription
-         check-type)
+         check-type
+         dotted?)
 
 (define type-label-symbol 'type-label)
-(define type-ascrip-symbol 'type-ascription)    
+(define type-ascrip-symbol 'type-ascription)
+(define type-dotted-symbol 'type-dotted)
 
 (define (print-size stx)
   (syntax-case stx ()
@@ -69,10 +72,7 @@
   (parameterize
       ([current-orig-stx stx])
     (cond
-      [(type-annotation stx #:infer #t)
-       => (lambda (x) 
-            (log/ann stx x)
-            x)]
+      [(type-annotation stx #:infer #t)]
       [(not (syntax-original? stx))
        (tc-error "untyped var: ~a" (syntax-e stx))]
       [else
@@ -121,3 +121,7 @@
       (unless (subtype e-type ty)
         ;(printf "orig-stx: ~a" (syntax->datum stx*))
         (tc-error "Body had type:~n~a~nVariable had type:~n~a~n" e-type ty)))))
+
+(define (dotted? stx)
+  (cond [(syntax-property stx type-dotted-symbol) => syntax-e]
+        [else #f]))

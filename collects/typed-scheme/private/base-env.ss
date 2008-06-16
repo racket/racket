@@ -492,7 +492,7 @@
      [identifier? (make-pred-ty (-Syntax Sym))]
      [syntax? (make-pred-ty (-Syntax Univ))]
      [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
-                                        (-> (-Syntax Univ) Univ Univ)))]     
+                                        (-> (-Syntax Univ) Univ Univ)))]
      )))
 
 (begin-for-syntax 

@@ -24,11 +24,6 @@
 
 (define (stx-cadr stx) (stx-car (stx-cdr stx)))
 
-;; t is (make-F v)
-(define-struct Dotted (t))
-(define-struct (DottedBoth Dotted) ())
-
-
 (define (parse-type stx)    
   (parameterize ([current-orig-stx stx])
     (syntax-case* stx ()

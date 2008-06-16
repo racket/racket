@@ -6,6 +6,7 @@
          make-empty-env
          extend-env
          extend/values
+         dotted-env
          initial-tvar-env)
 
 (require scheme/match
@@ -22,6 +23,10 @@
 (define current-tvars (make-parameter initial-tvar-env))  
 
 (define (make-empty-env p?) (make-env p? '()))
+
+;; the environment for types of ... variables
+(define dotted-env (make-parameter (make-empty-env free-identifier=?)))
+
 
 
 ;; extend that works on single arguments

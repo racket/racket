@@ -41,6 +41,7 @@
       stx))
 
 (define (raise-typecheck-error msg stxs)
+  (printf "msg : ~a~n" msg)
   (raise (make-exn:fail:syntax (string-append "typecheck: " msg)
                                (current-continuation-marks)
                                stxs)))
@@ -58,7 +59,7 @@
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
-            (for/list ([e (reverse delayed-errors)])
+            (for/list ([e l])
               (sync (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e)))))
               (err-stx e))])
        (reset!)
@@ -67,10 +68,13 @@
 
 (define delay-errors? (make-parameter #t))
 
-(define (tc-error/delayed msg #:stx [stx (current-orig-stx)] . rest)
-  (if (delay-errors?)
-      (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors))
-      (raise-typecheck-error (apply format msg rest) (list (locate-stx stx)))))
+(define (tc-error/delayed msg #:stx [stx* (current-orig-stx)] . rest)
+  (let ([stx (locate-stx stx*)])
+    (unless (syntax? stx)
+      (error "syntax was not syntax" stx (syntax->datum stx*)))
+    (if (delay-errors?)
+        (set! delayed-errors (cons (make-err (apply format msg rest) (list stx)) delayed-errors))
+        (raise-typecheck-error (apply format msg rest) (list stx)))))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)  

@@ -94,7 +94,8 @@
             => (match-lambda 
                  [(tc-result: t)
                   (register-type (car vars) t)
-                  (list (make-def-binding (car vars) t))])]
+                  (list (make-def-binding (car vars) t))]
+                 [t (int-err "~a is not a tc-result" t)])]
            [else
             (tc-error "Untyped definition : ~a" (map syntax-e vars))]))]
       
