@@ -391,8 +391,8 @@
     [(module . rest)
      (syntax-case stx ()
        [(form name . _)
-        (let ([v-name (syntax name)])
-          (when filename (check-filename-matches filename #'name stx))
+        (let ([v-name #'name])
+          (when filename (check-filename-matches filename v-name stx))
           (thread-cell-set! hopeless-repl #f)
           (values
            v-name
