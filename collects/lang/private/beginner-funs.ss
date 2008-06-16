@@ -286,7 +286,7 @@
       (memv (any list -> (union false list))
 	"to determine whether some value is on the list"
 	" (comparing values with eqv?)")
-      ((beginner-member member) (any list -> (union false list))
+      ((beginner-member member) (any list -> boolean)
 	"to determine whether some value is on the list"
 	" (comparing values with equal?)")
       (reverse (list -> list)
