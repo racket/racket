@@ -261,7 +261,9 @@ Returns the snip's @techlink{count} (i.e., number of @techlink{item}s
 Calculates the snip's width, height, descent (amount of height which
  is drawn below the baseline), space (amount of height which is
  ``filler'' space at the top), and horizontal spaces (amount of width
- which is ``filler'' space at the left and right).
+ which is ``filler'' space at the left and right). Those values are
+ returned by filling the @scheme[w], @scheme[h], @scheme[descent],
+ @scheme[space], @scheme[lspace], and @scheme[rspace] boxes.
 
 This method is called by the snip's administrator; it is not normally
  called directly by others. To get the extent of a snip, use
@@ -273,8 +275,8 @@ A drawing context is provided for the purpose of finding font sizes,
  about the state of the drawing context, except that it is scaled
  properly. In particular, the font for the snip's style is not
  automatically set in the drawing context before the method is
- called.\footnote{Many snips cache their size information, so
- automatically setting the font would be wasteful.}  If @method[snip%
+ called. (Many snips cache their size information, so
+ automatically setting the font would be wasteful.)  If @method[snip%
  get-extent] or @method[snip% partial-offset] changes the drawing
  context's setting, it must restore them before returning. However,
  the methods should not need to change the drawing context; only font
@@ -282,10 +284,12 @@ A drawing context is provided for the purpose of finding font sizes,
  @xmethod[dc<%> get-text-extent] accepts a @scheme[font%] argument for
  sizing that overrides that device context's current font.
 
-The snip's left and top @techlink{location}s are provided in editor
- coordinates. In a text editor, the y-coordinate is the @italic{line's}
- top @techlink{location}; the snip's actual top @techlink{location} is potentially
- undetermined until its height is known.
+The snip's left and top @techlink{location}s are provided as @scheme[x]
+ and @scheme[y] in editor coordinates, in case the snip's size depends
+ on its location; the @scheme[x] and @scheme[y] arguments are usually
+ ignored. In a text editor, the @scheme[y]-coordinate is the @italic{line's}
+ top @techlink{location}; the snip's actual top @techlink{location} is
+ potentially undetermined until its height is known.
 
 If a snip caches the result size for future replies, it should
  invalidate its cached size when @method[snip% size-cache-invalid] is
