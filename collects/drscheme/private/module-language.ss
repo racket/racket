@@ -399,9 +399,12 @@
         ;; rewrite the module to use the scheme/base version of `module'
         (let ([module (datum->syntax #'here 'module #'form)])
           (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
-    [else (raise-syntax-error 'module-language
-                              "only a (module ...) expression is allowed"
-                              stx)]))
+    [else (raise-syntax-error
+           'module-language
+           (string-append "only a module expression is allowed, either\n"
+                          "    #lang <language-name>\n or\n"
+                          "    (module <name> <language> ...)\n")
+           stx)]))
 
 ;; get-filename : port -> (union string #f)
 ;; extracts the file the definitions window is being saved in, if any.
