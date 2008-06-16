@@ -597,8 +597,8 @@ please adhere to these guidelines:
  (open-here-menu-item "&Open Here...")
 
  (open-recent-info "A list of the recently opened files")
- (open-recent-menu-item "Open Recent")
- 
+ (open-recent-menu-item "Open Recen&t")
+
  (revert-info "Revert this file to the copy on disk")
  (revert-menu-item "&Revert")
 
