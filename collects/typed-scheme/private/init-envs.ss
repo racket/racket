@@ -25,6 +25,7 @@
     [(Opaque: pred cert) `(make-Opaque (quote-syntax ,pred) (syntax-local-certifier))]
     [(Mu-name: n b) `(make-Mu ,(sub n) ,(sub b))]
     [(Poly-names: ns b) `(make-Poly (list ,@(map sub ns)) ,(sub b))]
+    [(PolyDots-names: ns b) `(make-PolyDots (list ,@(map sub ns)) ,(sub b))]
     [(? Type? (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
      `(,(gen-constructor tag) ,@(map sub vals))]
     [(? Effect? (app (lambda (v) (vector->list (struct->vector v))) (list-rest tag seq vals))) 
