@@ -70,8 +70,9 @@
            ;; local-expand the module
            ;; pmb = #%plain-module-begin                            
            [with-syntax ([new-mod 
-                          (local-expand #`(#%plain-module-begin 
-                                           forms ...)
+                          (local-expand (syntax/loc stx
+                                          (#%plain-module-begin 
+                                           forms ...))
                                         'module-begin 
                                         null)])]
            [with-syntax ([(pmb body2 ...) #'new-mod])]
