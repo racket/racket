@@ -310,8 +310,8 @@
                                   "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
                                   (stringify dom) rest (stringify argtypes))]))]
         ;; polymorphic ... type
-        [(tc-result: (PolyDots: (and vars (list fixed-vars ... dotted-var))
-                                (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff)))))
+        [(tc-result: (and t (PolyDots: (and vars (list fixed-vars ... dotted-var))
+                                       (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
@@ -325,9 +325,15 @@
              [(and expected substitution) expected]
              [substitution
               (ret (subst-all substitution rng))]
-             [else (tc-error/expr #:return (ret (Un))
-                                  "no polymorphic function domain matched -~ndomain was: ~a ~ndotted rest type was: ~a ... ~a~narguments were ~a"
-                                  (stringify dom) dty dbound (stringify argtypes))]))]
+             [else 
+              (match t
+                [(PolyDots-names: vars
+                                  (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))
+                 (tc-error/expr #:return (ret (Un))
+                                (string-append
+                                 "no polymorphic function domain matched -~n"
+                                 "domain was: ~a ~ndotted rest type was: ~a ... ~a~narguments were ~a")
+                                (stringify dom) dty dbound (stringify argtypes))])]))]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ...))))
          (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs #f drests thn-effs els-effs) ...))))

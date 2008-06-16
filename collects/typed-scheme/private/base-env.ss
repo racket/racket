@@ -123,7 +123,7 @@
      [procedure? (make-pred-ty (make-Function (list (make-top-arr))))]
      [map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-lst a))
                               ((-lst b) b) . ->... .(-lst c)))]
-     [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . -Void) (-lst a))
+     [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
                                    ((-lst b) b) . ->... . -Void))]
      [fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                     ((-lst b) b) . ->... . c))]
