@@ -174,7 +174,6 @@
                       "there can only be one expression in the definitions window"
                       super-result)))]
               [(= 4 iteration-number)
-               (thread-cell-set! hopeless-repl #f)
                (if path
                    #`(#%app current-namespace 
                             (#%app 
@@ -429,6 +428,7 @@
        (update-buttons)]))
   
   ;; transform-module : (union #f string) syntax syntax -> (values symbol[name-of-module] syntax[module])
+  ;; = User = 
   ;; in addition to exporting everything, the result module's name
   ;; is the fully path-expanded name with a directory prefix, 
   ;; if the file has been saved
@@ -442,6 +442,7 @@
               (check-filename-matches filename
                                       (syntax->datum (syntax name)) 
                                       stx))
+            (thread-cell-set! hopeless-repl #f)
             (values v-name 
                     ;; rewrite the module to use the scheme/base version of `module'
                     (datum->syntax stx
