@@ -218,29 +218,21 @@
   (let ([recently-opened-files
          (preferences:get
           'framework:recently-opened-files/pos)])
-    (for-each (λ (item) (send item delete))
-              (send menu get-items))
-    
-    (instantiate menu-item% ()
-      (parent menu)
-      (label (string-constant show-recent-items-window-menu-item))
-      (callback (λ (x y) (show-recent-items-window))))
-    
-    (instantiate separator-menu-item% ()
-      (parent menu))
-    
-    (for-each (λ (recent-list-item) 
-                (let ([filename (car recent-list-item)])
-                  (instantiate menu-item% ()
-                    (parent menu)
-                    (label (gui-utils:trim-string  
-                            (regexp-replace*
-                             "&"
-                             (path->string filename)
-                             "&&")
-                            200))
-                    (callback (λ (x y) (open-recent-list-item recent-list-item))))))
-              recently-opened-files)
+    (for ([item (send menu get-items)]) (send item delete))
+
+    (for ([recent-list-item recently-opened-files])
+      (let ([filename (car recent-list-item)])
+        (new menu-item%
+          [parent menu]
+          [label (gui-utils:trim-string
+                  (regexp-replace* #rx"&" (path->string filename) "\\&\\&")
+                  200)]
+          [callback (λ (x y) (open-recent-list-item recent-list-item))])))
+    (new separator-menu-item% [parent menu])
+    (new menu-item%
+      [parent menu]
+      [label (string-constant show-recent-items-window-menu-item)]
+      [callback (λ (x y) (show-recent-items-window))])
     (void)))
 
 ;; open-recent-list-item : recent-list-item -> void
