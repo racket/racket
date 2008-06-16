@@ -1,0 +1,35 @@
+#lang scheme/unit
+
+(require "signatures.ss"
+         "tc-utils.ss"
+         "type-environments.ss"
+         "type-utils.ss"
+         "type-rep.ss"
+         syntax/kerncase
+         scheme/match)
+
+(require (for-template scheme/base))
+
+(import tc-expr^ tc-app^)
+(export tc-dots^)
+
+;; form : syntax[expr]
+;; returns two values : one is the type, the other the bound on the ... (always a symbol)
+(define (tc/dots form)
+  (parameterize ([current-orig-stx form])
+    (kernel-syntax-case* form #f (map)
+      [id
+       (identifier? #'id)
+       (match (lookup (dotted-env) #'id (lambda (k) (lookup-fail (syntax-e k))))
+         [(cons dty dbound)
+          (values dty dbound)])]
+      [(#%plain-app map f l)
+       (let-values ([(lty lbound) (tc/dots #'l)])
+         (parameterize ([current-tvars (extend-env (list lbound)
+                                                   (list (make-DottedBoth (make-F lbound)))
+                                                   (current-tvars))])
+           (match-let* ([ft (tc-expr #'f)]
+                        [(tc-result: t) (tc/funapp #'f #'(l) ft (list (ret lty)) #f)])
+             (values t lbound))))]
+      [_
+       (tc-error "form cannot be used where a term of ... type is expected")])))
