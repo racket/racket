@@ -21,7 +21,11 @@
 ;; identifer -> Type
 (define (lookup-type/lexical i)
   (lookup (lexical-env) i 
-          (lambda (i) (lookup-type i))))
+          (lambda (i) (lookup-type 
+                       i (lambda () 
+                           (if (lookup (dotted-env) i (lambda _ #f))
+                               (tc-error "Rest variable ~a with ... type used in an inappropriate context" (syntax-e i))
+                               (lookup-fail (syntax-e i))))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment

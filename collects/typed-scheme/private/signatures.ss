@@ -53,3 +53,6 @@
 (define-signature tc-let^
   (tc/let-values tc/letrec-values tc/let-values/check tc/letrec-values/check))
 
+(define-signature tc-dots^
+  (tc/dots))
+

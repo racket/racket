@@ -41,7 +41,6 @@
       stx))
 
 (define (raise-typecheck-error msg stxs)
-  (printf "msg : ~a~n" msg)
   (raise (make-exn:fail:syntax (string-append "typecheck: " msg)
                                (current-continuation-marks)
                                stxs)))

@@ -12,13 +12,14 @@
          "type-effect-printer.ss"
          "type-annotation.ss"
          "resolve-type.ss"
+         "type-environments.ss"
          (only-in scheme/private/class-internal make-object do-make-object)
          mzlib/trace mzlib/pretty syntax/kerncase scheme/match
          (for-template 
           "internal-forms.ss" scheme/base 
           (only-in scheme/private/class-internal make-object do-make-object)))
 
-(import tc-expr^ tc-lambda^)
+(import tc-expr^ tc-lambda^ tc-dots^)
 (export tc-app^)
 
 ;; comparators that inform the type system
@@ -399,7 +400,8 @@
 
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
-    (values apply not list list* call-with-values do-make-object make-object cons) ;; the special-cased functions   
+    (values apply not list list* call-with-values do-make-object make-object cons
+            andmap ormap) ;; the special-cased functions   
     ;; special cases for classes
     [(#%plain-app make-object cl args ...)
      (tc/app/internal #'(#%plain-app do-make-object cl (#%plain-app list args ...) (#%plain-app list)) expected)]     
@@ -539,6 +541,19 @@
        ;(printf "special case~n")
        (tc/rec-lambda/check form #'(args ...) #'body #'lp ts expected)
        (ret expected))]
+    [(#%plain-app or/andmap f arg)
+     (and (or (free-identifier=? #'or/andmap #'ormap)
+              (free-identifier=? #'or/andmap #'andmap))
+          (with-handlers (#;[exn:fail? (lambda _ #f)])
+            (tc/dots #'arg)
+            #t))
+     (let-values ([(ty bound) (tc/dots #'arg)])
+       (parameterize ([current-tvars (extend-env (list bound)
+                                                 (list (make-DottedBoth (make-F bound)))
+                                                 (current-tvars))])
+         (match-let* ([ft (tc-expr #'f)]
+                      [(tc-result: t) (tc/funapp #'f #'(arg) ft (list (ret ty)) #f)])
+           (ret (Un (-val #f) t)))))]
     ;; default case
     [(#%plain-app f args ...) 
      (begin
