@@ -151,10 +151,11 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    whenever the canvas must be redrawn. The canvas is usually re-drawn after a tick event, a keyboard
    event, or a mouse event has occurred.  The generated scene is  displayed in the world's canvas.}
 
-@defproc[(end-of-time [msg string?]) true]{
-   Stop the currently running animation. Specifically, stop the clock and ensure no @tech{KeyEvent}s
-   or @tech{MouseEvent}s are forwarded to the respective handlers. Display the given string to
-   signal the end of the animation.}
+@defproc[(is-end-of-world [last-world? (-> (unsyntax @tech{World}) boolean?)]) true]{
+   Tell DrScheme to call @scheme[last-world?] whenever the canvas is
+   drawn. If this call produces @scheme[true], the clock is stopped; no
+   tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
+   the respective handlers. As a result, the canvas isn't updated either.} 
 
 @section{Scenes and Images}
 
