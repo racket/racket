@@ -438,10 +438,7 @@
        (syntax-case stx ()
          [(form name . _)
           (let ([v-name (syntax name)])
-            (when filename
-              (check-filename-matches filename
-                                      (syntax->datum (syntax name)) 
-                                      stx))
+            (when filename (check-filename-matches filename #'name stx))
             (thread-cell-set! hopeless-repl #f)
             (values v-name 
                     ;; rewrite the module to use the scheme/base version of `module'
@@ -504,11 +501,12 @@
         [else #f])))
 
   ;; check-filename-matches : string datum syntax -> void
-  (define (check-filename-matches filename datum unexpanded-stx)
+  (define (check-filename-matches filename name unexpanded-stx)
+    (define datum (syntax-e name))
     (unless (symbol? datum)
       (raise-syntax-error 'module-language
-                          "unexpected object in name position of module"
-                          unexpanded-stx))
+                          "bad syntax in name position of module"
+                          unexpanded-stx name))
     (let-values ([(base name dir?) (split-path filename)])
       (let* ([expected (string->symbol (path->string
                                         (path-replace-suffix name #"")))])
