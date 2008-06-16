@@ -149,20 +149,20 @@
             [(3)
              (let ([super-result (super-thunk)])
                (if (eof-object? super-result)
-                 #`(begin
-                     (current-module-declare-name #f)
-                     #,(if path
-                         #`(begin
-                             ((current-module-name-resolver) (make-resolved-module-path #,path))
-                             (call-with-continuation-prompt
-                              (λ () (dynamic-require #,path #f))))
-                         #`(call-with-continuation-prompt
-                            (λ () (dynamic-require ''#,(get-require-module-name) #f)))))
+                 #`(current-module-declare-name #f)
                  (raise-syntax-error
                   'module-language
                   "there can only be one expression in the definitions window"
                   super-result)))]
             [(4)
+             (if path
+               #`(begin ((current-module-name-resolver)
+                         (make-resolved-module-path #,path))
+                        (call-with-continuation-prompt
+                         (λ () (dynamic-require #,path #f))))
+               #`(call-with-continuation-prompt
+                  (λ () (dynamic-require ''#,(get-require-module-name) #f))))]
+            [(5)
              (if path
                #`(#%app current-namespace (#%app module->namespace #,path))
                #`(#%app current-namespace
