@@ -381,36 +381,27 @@
       (module-language-settings-command-line-args settings))
      (update-buttons)]))
 
-;; transform-module : (union #f string) syntax syntax -> (values symbol[name-of-module] syntax[module])
+;; transform-module : (union #f string) syntax
+;;   -> (values syntax[name-of-module] syntax[module])
 ;; = User =
 ;; in addition to exporting everything, the result module's name
 ;; is the fully path-expanded name with a directory prefix, 
 ;; if the file has been saved
 (define (transform-module filename stx)
   (syntax-case* stx (module) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-    [(module . rest)
-     (syntax-case stx ()
-       [(form name . _)
-        (let ([v-name #'name])
-          (when filename (check-filename-matches filename v-name stx))
-          (thread-cell-set! hopeless-repl #f)
-          (values
-           v-name
-           ;; rewrite the module to use the scheme/base version of `module'
-           (datum->syntax stx
-                          (cons (datum->syntax #'here 'module #'form) #'rest)
-                          stx)))]
-       [_
-        (raise-syntax-error 'module-language
-                            "module form is missing a name"
-                            stx)])]
-    [module (raise-syntax-error 'module-language
-                                "bad syntax"
-                                stx)]
-    [else
-     (raise-syntax-error 'module-language
-                         "only module expressions are allowed"
-                         stx)]))
+    [(module name lang . rest)
+     (eq? 'module (syntax-e #'module))
+     (let ([v-name #'name])
+       (when filename (check-filename-matches filename v-name stx))
+       (thread-cell-set! hopeless-repl #f)
+       (values
+        v-name
+        ;; rewrite the module to use the scheme/base version of `module'
+        (let ([module (datum->syntax #'here 'module #'form)])
+          (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
+    [else (raise-syntax-error 'module-language
+                              "only a (module ...) expression is allowed"
+                              stx)]))
 
 ;; get-filename : port -> (union string #f)
 ;; extracts the file the definitions window is being saved in, if any.
