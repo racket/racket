@@ -1,13 +1,13 @@
-#cs
-(module general-parsing mzscheme
+(module general-parsing scheme/base
   
-  (require (all-except parser-tools/lex input-port)
-           mzlib/string
-           (prefix class: mzlib/class)
-           mzlib/list)
+  (require 
+   (for-syntax scheme/base)
+   (except-in parser-tools/lex input-port)
+   mzlib/string
+   (prefix-in class: scheme/class))
   (require "../ast.ss" "../parameters.ss" "lexer.ss")
   
-  (provide (all-defined))
+  (provide (all-defined-out))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;Methods used by all generated parsers
@@ -16,16 +16,16 @@
       ((_ end)
        (syntax (build-src 1 end)))
       ((_ start end)
-       (with-syntax ((start-pos (datum->syntax-object 
+       (with-syntax ((start-pos (datum->syntax 
                                  (syntax end)
                                  (string->symbol 
                                   (format "$~a-start-pos"
-                                          (syntax-object->datum (syntax start))))))
-                     (end-pos (datum->syntax-object 
+                                          (syntax->datum (syntax start))))))
+                     (end-pos (datum->syntax 
                                (syntax end)
                                (string->symbol 
                                 (format "$~a-end-pos"
-                                        (syntax-object->datum (syntax end)))))))
+                                        (syntax->datum (syntax end)))))))
          (syntax
           (make-src (position-line start-pos)
                     (position-col start-pos)

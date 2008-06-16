@@ -1,4 +1,4 @@
-(module intermediate-parser mzscheme
+(module intermediate-parser scheme/base
 
   (require "general-parsing.ss"
            "lexer.ss"
@@ -6,36 +6,30 @@
            "../parameters.ss")
   
   (require parser-tools/yacc
-           (all-except parser-tools/lex input-port)
+           (except-in parser-tools/lex input-port)
            syntax/readerr)
   
-  (require-for-syntax "lexer.ss")
-  ;(require (lib "build-grammar.ss" "tester"))
+  (require (for-syntax "lexer.ss"))
 
-  (define-syntax testing-parser
-    (syntax-rules ()
-      ((_ parse-info ...) (parser parse-info ...))))  
   
   (provide parse-intermediate parse-intermediate-interactions 
            parse-intermediate-expression parse-intermediate-type)
-  ;(provide intermediate-grammar)
-  
   
   (define parsers
-    (testing-parser
+    (parser
      (start CompilationUnit IntermediateInteractions Expression Type)
      ;;(debug "parser.output")
      (tokens java-vals special-toks Keywords Separators EmptyLiterals Operators ExtraKeywords)
      ;(terminals val-tokens special-tokens keyword-tokens separator-tokens literal-tokens operator-tokens)
      (error (lambda (tok-ok name val start-pos end-pos)
-              (if ((determine-error))
-                  (raise-read-error (format "Parse error near <~a:~a>" name val)
-                                    (file-path)
-                                    (position-line start-pos)
-                                    (position-col start-pos)
-                                    (+ (position-offset start-pos) (interactions-offset))
-                                    (- (position-offset end-pos)
-                                       (position-offset start-pos))))))
+              (when ((determine-error))
+                (raise-read-error (format "Parse error near <~a:~a>" name val)
+                                  (file-path)
+                                  (position-line start-pos)
+                                  (position-col start-pos)
+                                  (+ (position-offset start-pos) (interactions-offset))
+                                  (- (position-offset end-pos)
+                                     (position-offset start-pos))))))
 
      (end EOF)
      (src-pos)
@@ -611,9 +605,6 @@
       
       (ConstantExpression
        [(Expression) $1]))))
-  
-  ;(define intermediate-grammar (cadr parsers))
-  ;(set! parsers (car parsers))
   
   (define parse-intermediate (car parsers))
   (define parse-intermediate-interactions (cadr parsers))

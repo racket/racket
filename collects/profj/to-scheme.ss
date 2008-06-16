@@ -498,7 +498,7 @@
                                                            (append (accesses-public fields) (accesses-package fields)
                                                                    (accesses-protected fields)))
                                         (generate-contract-defs (class-name))))
-               (stm-class (generate-stm-class (class-name)
+               #;(stm-class (generate-stm-class (class-name)
                                               (parent-name)
                                               (class-record-methods class-rec)
                                               (class-record-fields class-rec)))
@@ -731,7 +731,7 @@
                              ))
                     
                           ,@wrapper-classes
-                          ,stm-class
+                          #;,stm-class
                           
                           #;,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)

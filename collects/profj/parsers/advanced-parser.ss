@@ -1,4 +1,4 @@
-(module advanced-parser mzscheme
+(module advanced-parser scheme/base
 
   (require "general-parsing.ss"
            "lexer.ss"
@@ -6,17 +6,10 @@
            "../parameters.ss")
   
   (require parser-tools/yacc
-           (all-except parser-tools/lex input-port)
+           (except-in parser-tools/lex input-port)
            syntax/readerr)
-  
-  ;(require (lib "build-grammar.ss" "tester"))
-  
-  (define-syntax testing-parser
-    (syntax-rules ()
-      ((_ parse-info ...) (parser parse-info ...))))
-  
+    
   (provide parse-advanced parse-advanced-interactions parse-advanced-expression parse-advanced-type)
-  ;(provide advanced-grammar)  
   
   (define parsers
     (parser
@@ -25,14 +18,14 @@
      (tokens java-vals special-toks Keywords Separators EmptyLiterals Operators ExtraKeywords)
      ;(terminals val-tokens special-tokens keyword-tokens separator-tokens literal-tokens operator-tokens)
      (error (lambda (tok-ok name val start-pos end-pos)
-              (if ((determine-error))
-                  (raise-read-error (format "Parse error near <~a:~a>" name val)
-                                    (file-path)
-                                    (position-line start-pos)
-                                    (position-col start-pos)
-                                    (+ (position-offset start-pos) (interactions-offset))
-                                    (- (position-offset end-pos)
-                                       (position-offset start-pos))))))
+              (when ((determine-error))
+                (raise-read-error (format "Parse error near <~a:~a>" name val)
+                                  (file-path)
+                                  (position-line start-pos)
+                                  (position-col start-pos)
+                                  (+ (position-offset start-pos) (interactions-offset))
+                                  (- (position-offset end-pos)
+                                     (position-offset start-pos))))))
 
      (end EOF)
      (src-pos)
@@ -809,9 +802,6 @@
       
       (ConstantExpression
        [(Expression) $1]))))
-
-  ;(define advanced-grammar (cadr parsers))
-  ;(set! parsers (car parsers))
   
   (define parse-advanced (car parsers))
   (define parse-advanced-interactions (cadr parsers))

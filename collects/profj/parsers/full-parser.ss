@@ -1,4 +1,4 @@
-(module full-parser mzscheme
+(module full-parser scheme/base
 
   (require "general-parsing.ss"
            "lexer.ss"
@@ -6,7 +6,7 @@
            "../parameters.ss")
   
   (require parser-tools/yacc
-           (all-except parser-tools/lex input-port)
+           (except-in parser-tools/lex input-port)
            syntax/readerr)
   
   (provide parse-full parse-full-interactions parse-full-expression parse-full-type)

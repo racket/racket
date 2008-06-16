@@ -1,20 +1,20 @@
-(module lexer mzscheme
+(module lexer scheme/base
   
   ;; Lexical Analysis according to the Java Language Specification First Edition 
   ;; chapter 3.
   ;; Lacks all Unicode support
   
-  (require mzlib/class
+  (require scheme/class
            parser-tools/lex
-           (prefix re: parser-tools/lex-sre)
-           (lib "parameters.ss" "profj"))
+           (prefix-in re: parser-tools/lex-sre)
+           profj/parameters) 
   
   (define (image-snip%)
     (if (mred?)
       	(dynamic-require 'mred 'image-snip%)
         (class object% (super-instantiate ()))))
   
-  (provide (all-defined-except image-snip%))
+  (provide (except-out (all-defined-out) image-snip%))
   (define-struct test-case (test))
   (define-struct example-box (contents))
   (define-struct interact-case (box))
