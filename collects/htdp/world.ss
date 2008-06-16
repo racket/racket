@@ -1,8 +1,23 @@
+;; Mon Jun 16 15:38:14 EDT 2008: removed end-of-time and provided is-end-of-time 
+;;                               also allow repeated setting of callbacks now
+;;                               If this is changed back, is-end-of-world will fail
+
+;; Wed Apr 23 11:42:25 EDT 2008: fixed reverse bug in animation 
+;; Thu Mar 20 17:15:54 EDT 2008: fixed place-image0, which used shrink off-by-1
+;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
+;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
+;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
+;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
+;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
+;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
+;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
+;; Wed Dec 20 18:17:03 EST 2006: recording events and creating images
+
 #|
 At Thu, 21 Dec 2006 14:10:35 -0500, Matthias Felleisen wrote:
 2. The history mechanism collects a record in a list for every event.
     This means say 30 tick events per second, plus mice and keyboard  
-callbacks.
+    callbacks.
     Say we get 50 events at the upper limit per second.
     After playing for one minute, the event list contains 3,000 records.
     After playing for ten minutes, the event list contains 30,000 records.
@@ -23,16 +38,6 @@ ones.)
 Matthew
 |#
 
-;; Wed Apr 23 11:42:25 EDT 2008: fixed reverse bug in animation 
-;; Thu Mar 20 17:15:54 EDT 2008: fixed place-image0, which used shrink off-by-1
-;; Mon Sep 17 09:40:39 EDT 2007: run-simulation now allows recordings, too
-;; Mon Aug  6 19:50:30 EDT 2007: exporting both add-line from image.ss and scene+line 
-;; Fri May  4 18:05:33 EDT 2007: define-run-time-path 
-;; Thu May  3 22:06:16 EDT 2007: scene # image; pasteboard% for text%
-;; Sat Apr 28 13:31:02 EDT 2007: fixed the image and animated-gif thing, using Matthew's lib
-;; Fri Dec 22 11:51:53 EST 2006: cleaned up the callback code with macro
-;; Thu Dec 21 13:59:23 EST 2006: fixed add-line and place-image to accept numbers
-;; Wed Dec 20 18:17:03 EST 2006: recording events and creating images
 ;; Sun Dec 09 23:17:41 EST 2006: add-line fixed so it cuts off lines before drawing
 ;; Mon Mar 27 10:29:28 EST 2006: integrated Felix's mouse events
 ;; Wed Jan 25 13:38:42 EST 2006: on-redraw: proc is now called on installation
@@ -92,7 +97,6 @@ Matthew
   ;; =============================
   (provide      ;; forall(World):
    big-bang	;; Number Number Number World [Boolean] -> true
-   end-of-time  ;; String u Symbol -> World
    )
   
   (provide-higher-order-primitive
@@ -121,6 +125,10 @@ Matthew
   
   (provide-higher-order-primitive
    on-mouse-event (clack)  ;; (World Number Number MouseEvent -> World) -> true
+   )
+  
+  (provide-higher-order-primitive
+   is-end-of-world (last-world)  ;; (World -> Boolean) -> true
    )
   
   (provide-higher-order-primitive
@@ -247,12 +255,7 @@ Matthew
   (define (coerce x) (inexact->exact (floor x)))
 
   (define *the-delta* 0.0)
-  
-  (define (end-of-time s)
-    (printf "end of time: ~a~n" s)
-    (callback-stop!)
-    the-world)
-  
+
   (define (on-tick-event f)
     (check-proc 'on-tick-event f 1 "on-tick-event" "one argument")
     (check-world 'on-tick-event)
@@ -281,6 +284,12 @@ Matthew
     (set-mouse-callback f (current-eventspace))
     #t)
   
+  (define (is-end-of-world f)
+    (check-proc 'is-end-of-world f 1 "is-end-of-world" "one argument")
+    (check-world 'is-end-of-world)
+    (set-is-end-of-world-callback f)
+    #t)
+  
   (define (run-movie movie)
     (check-arg 'run-movie (list? movie) "list (of images)" "first" movie)
     (for-each (lambda (cand) 
@@ -288,8 +297,7 @@ Matthew
               movie)
     (let* ([fst (car movie)]
 	   [wdt (image-width fst)]
-	   [hgt (image-height fst)]
-	   [nxt (lambda (w) (if (null? w) (end-of-time "") (cdr w)))])
+	   [hgt (image-height fst)])
       (big-bang wdt hgt (/ 1 27) movie)
       (let run-movie ([movie movie])
 	(cond
@@ -760,7 +768,7 @@ Matthew
   ;                                                                 
   ;                                                                 
   
-  ;; callbacks: timer, mouse, key, redraw
+  ;; callbacks: timer, mouse, key, redraw, is-end-of-world 
   
   ;; Definition = (define-callback Symbol String Symbol Expression ...)
   ;; effect: (define-callback introduces three names: name, name0, set-name
@@ -778,6 +786,7 @@ Matthew
              (values 
               void void 
               (lambda (f esp ...)
+                #;
                 (when (callback-set? #,name) 
                   (error (format "the ~a has already been specified") msg))
                 (set! #,name0 f)
@@ -789,6 +798,7 @@ Matthew
     (set! timer-callback void)
     (set! mouse-callback void)
     (set! key-callback void)
+    (set! is-end-of-world-callback (lambda (w) #f))
     (set! redraw-callback void))
   
   ;; Any -> Boolean
@@ -816,7 +826,19 @@ Matthew
 	    (format "image with pinhole at (~s,~s)"
 	      (pinhole-x result) (pinhole-y result)))
 	  (check-result tname (lambda (x) (image? x)) "scene" result))
-      (update-frame result)))
+      (update-frame result)
+      ;; if this world is the last one, stop the world
+      (when (is-end-of-world-callback)
+        (callback-stop!))))
+
+  ;; f : [World -> Boolean]
+  (define-callback is-end-of-world "is end of world check" (f) ()
+    (define result (f the-world))
+    (define fname (object-name f))
+    (define tname (if fname fname 'your-redraw-function))
+    (check-result fname boolean? "boolean" result)
+    result)
+  (set-is-end-of-world-callback (lambda (w) #f))
 
   ;; f : [World KeyEvent -> World]
   ;; esp : EventSpace 
