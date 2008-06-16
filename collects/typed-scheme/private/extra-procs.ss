@@ -1,11 +1,10 @@
 #lang scheme/base
-(provide assert map*)
+(provide assert)
 
 (define (assert v)
   (unless v
     (error "Assertion failed - value was #f"))
   v)
 
-(define map* map)
 
 
