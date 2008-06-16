@@ -115,9 +115,8 @@
     (inherit get-reader)
     (define/override (front-end/interaction port settings)
       (if (thread-cell-ref hopeless-repl)
-        (begin (display "Module Language: " (current-error-port))
-               (display hopeless-message (current-error-port))
-               (newline (current-error-port))
+        (begin (fprintf (current-error-port)
+                        "Module Language: ~a\n" hopeless-message)
                (λ x eof))
         (super front-end/interaction port settings)))
 
