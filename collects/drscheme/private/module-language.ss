@@ -204,7 +204,7 @@
                                       (format "~a" (exn-message x))
                                       (format "uncaught exception: ~s" x))))])
                 (if (not launcher?)
-                    (let ([short-program-name 
+                    (let ([short-program-name
                            (let-values ([(base name dir) (split-path program-filename)])
                              (path-replace-suffix name #""))])
                       ((if (eq? 'distribution (car executable-specs))
@@ -476,12 +476,12 @@
   (define (build-name pre-path)
     (let ([path (normal-case-path (simplify-path (expand-user-path pre-path) #f))])
       (let-values ([(base name dir) (split-path path)])
-        (string->symbol (format ",~a" 
+        (string->symbol (format ",~a"
                                 (bytes->string/latin-1
                                  (path->bytes
-                                  (build-path 
+                                  (build-path
                                    base
-                                   (remove-suffix (path->string name))))))))))
+                                   (path-replace-suffix name #"")))))))))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
@@ -502,14 +502,16 @@
                              #f
                              filename))))))]
         [else #f])))
-  
+
   ;; check-filename-matches : string datum syntax -> void
   (define (check-filename-matches filename datum unexpanded-stx)
     (unless (symbol? datum)
-      (raise-syntax-error 'module-language "unexpected object in name position of module" 
+      (raise-syntax-error 'module-language
+                          "unexpected object in name position of module"
                           unexpanded-stx))
     (let-values ([(base name dir?) (split-path filename)])
-      (let* ([expected (string->symbol (remove-suffix (path->string name)))])
+      (let* ([expected (string->symbol (path->string
+                                        (path-replace-suffix name #"")))])
         (unless (equal? expected datum)
           (raise-syntax-error
            'module-language
@@ -517,15 +519,7 @@
                    datum
                    expected)
            unexpanded-stx)))))
-  
-  (define re:check-filename-matches #rx"^(.*)\\.[^.]*$")
-  (define (remove-suffix str)
-    (let ([m (regexp-match re:check-filename-matches str)])
-      (if m
-          (cadr m)
-          str)))
-  
-  
+
   (define module-language-put-file-mixin
     (mixin (text:basic<%>) ()
       (inherit get-text last-position get-character get-top-level-window)
