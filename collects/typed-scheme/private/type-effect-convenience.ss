@@ -52,6 +52,16 @@
      (make-Function (list (make-arr* dom rng #f eff1 eff2)))]
     [(_ dom rst rng : eff1 eff2)
      (make-Function (list (make-arr* dom rng rst eff1 eff2)))]))
+(define-syntax ->...
+  (syntax-rules (:)
+    [(_ dom rng)
+     (->* dom rng)]
+    [(_ dom (dty dbound) rng)
+     (make-Function (list (make-arr* dom rng #f (cons dty 'dbound) (list) (list))))]
+    [(_ dom rng : eff1 eff2)
+     (->* dom rng : eff1 eff2)]
+    [(_ dom (dty dbound) rng : eff1 eff2)
+     (make-Function (list (make-arr* dom rng #f (cons dty 'dbound) eff1 eff2)))]))
 (define-syntax cl->
   (syntax-rules (:)
     [(_ [(dom ...) rng] ...)
@@ -113,6 +123,13 @@
     [(_ (vars ...) ty)
      (let ([vars (-v vars)] ...)
        (make-Poly (list 'vars ...) ty))]))
+
+(define-syntax -polydots
+  (syntax-rules ()
+    [(_ (vars ... dotted) ty)
+     (let ([dotted (-v dotted)]
+           [vars (-v vars)] ...)
+       (make-PolyDots (list 'vars ... 'dotted) ty))]))
 
 (define-syntax -mu
   (syntax-rules ()

@@ -1,9 +1,11 @@
+
 #lang scheme/base
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
  (only-in scheme/list cons? take drop add-between last)
+ (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in scheme/match/runtime match:error))
 
@@ -99,11 +101,8 @@
      [read (cl-> 
             [(-Port) -Sexp]
             [() -Sexp])]
-     [ormap (-poly (a b) ((-> a b) (-lst a) . -> . b))]
-     [andmap (-poly (a b c d e) 
-                    (cl->*
-                     ((-> a b) (-lst a) . -> . b)
-                     ((-> c d e) (-lst c) (-lst d) . -> . e)))]
+     [ormap (-polydots (a b) (->... (list (->... (list a) (b b) B) (-lst a)) ((-lst b) b) B))]
+     [andmap (-polydots (a b) (->... (list (->... (list a) (b b) B) (-lst a)) ((-lst b) b) B))]
      [newline (cl-> [() -Void]
                     [(-Port) -Void])]
      [not (-> Univ B)]
@@ -122,16 +121,12 @@
      [list? (make-pred-ty (-lst Univ))]
      [list (-poly (a) (->* '() a (-lst a)))]
      [procedure? (make-pred-ty (make-Function (list (make-top-arr))))]
-     [map 
-      (-poly (a b c d)
-             (cl-> [((-> a b) (-lst a)) (-lst b)]
-                   [((-> a b c) (-lst a) (-lst b)) (-lst c)]
-                   [((-> a b c d) (-lst a) (-lst b) (-lst c)) (-lst d)]))]
-     [for-each 
-      (-poly (a b c d)
-             (cl-> [((-> a b) (-lst a)) -Void]
-                   [((-> a b c) (-lst a) (-lst b)) -Void]
-                   [((-> a b c d) (-lst a) (-lst b) (-lst c)) -Void]))]
+     [map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-lst a))
+                              ((-lst b) b) . ->... .(-lst c)))]
+     [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . -Void) (-lst a))
+                                   ((-lst b) b) . ->... . -Void))]
+     [fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+                                    ((-lst b) b) . ->... . c))]
      [foldl
       (-poly (a b c)
              (cl-> [((a b . -> . b) b (make-lst a)) b]
