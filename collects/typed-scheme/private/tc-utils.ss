@@ -97,10 +97,6 @@
 ;; this is used only for printing type names
 (define current-type-names (make-parameter (lambda () '())))
 
-;; error for unbound variables
-(define (lookup-fail e) (tc-error "unbound identifier ~a" e))  
-
-
 ;; for reporting internal errors in the type checker
 (define-struct (exn:fail:tc exn:fail) ())
 
@@ -124,4 +120,5 @@
 
 (define (add-type-name-reference t)
   (type-name-references (cons t (type-name-references))))
+
 

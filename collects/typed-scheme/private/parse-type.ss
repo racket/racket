@@ -73,7 +73,7 @@
          (make-pred-ty (list (parse-type #'dom)) (parse-type #'rng) (parse-type #'pred-ty)))]
       [(dom ... rest ::: -> rng)
        (and (eq? (syntax-e #'->) '->) 
-            (symbolic-identifier=? #'::: (quote-syntax *)))
+            (eq? (syntax-e #':::) '*))
        (begin
          (add-type-name-reference #'->)
          (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rest) (parse-type #'rng)))]
@@ -106,17 +106,12 @@
        (-values (map parse-type (syntax->list #'(tys ...))))]
       [(case-lambda tys ...) 
        (eq? (syntax-e #'case-lambda) 'case-lambda)
-       (make-Function (map (lambda (ty) 
-                             (syntax-case* ty (->) symbolic-identifier=?
-                               [(dom ... -> rng)
-                                (make-arr 
-                                 (map parse-type (syntax->list #'(dom ...))) 
-                                 (parse-type #'rng))]))
-                           (syntax->list #'(tys ...))))]
-      ;; I wish I could write this
-      #;[(case-lambda ([dom ... -> rng] ...)) (make-funty (list (make-arr (list (parse-type #'dom) ...) (parse-type #'rng)) ...))]
-      #;[(list-of t) (make-lst (parse-type #'t))]
-      #;[(Listof t) (make-lst (parse-type #'t))]
+       (make-Function 
+        (for/list ([ty (syntax->list #'(tys ...))])
+          (let ([t (parse-type ty)])
+            (match t
+              [(Function: (list arr)) arr]
+              [_ (tc-error/stx ty "Component of case-lambda type was not a function clause")]))))]
       [(Vectorof t) 
        (eq? (syntax-e #'Vectorof) 'Vectorof)
        (begin

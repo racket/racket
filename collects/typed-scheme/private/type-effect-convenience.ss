@@ -249,8 +249,5 @@
                (exit t)))]
         [_ (exit t)]))))
 
-(define (tc-error/expr msg #:return [return (Un)] #:stx [stx (current-orig-stx)] . rest)
-  (tc-error/delayed #:stx stx (apply format msg rest))
-  return)
 
 

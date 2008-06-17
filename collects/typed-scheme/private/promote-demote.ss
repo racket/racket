@@ -30,7 +30,7 @@
                     (cond
                       [(apply V-in? V (append thn els))
                        (make-arr null (Un) Univ #f null null)]
-                      [(and drest (V-in? V (cdr drest)))
+                      [(and drest (V-in? V (car drest)))
                        (make-arr (for/list ([d dom]) (var-demote d V))
                                  (vp rng)
                                  (var-demote (car drest) V)
@@ -66,7 +66,7 @@
                     (cond
                       [(apply V-in? V (append thn els))
                        (make-arr null (Un) Univ #f null null)]
-                      [(and drest (V-in? V (cdr drest)))
+                      [(and drest (V-in? V (car drest)))
                        (make-arr (for/list ([d dom]) (var-promote d V))
                                  (vd rng)
                                  (var-promote (car drest) V)

@@ -2,7 +2,8 @@
 
 (require syntax/boundmap
          mzlib/trace
-         "tc-utils.ss")
+         "tc-utils.ss"
+         "type-utils.ss")
 
 (provide register-type-name
          lookup-type-name

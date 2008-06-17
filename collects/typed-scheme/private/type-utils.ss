@@ -23,7 +23,9 @@
          unfold
          (struct-out Dotted)
          (struct-out DottedBoth)
-         just-Dotted?)
+         just-Dotted?
+         tc-error/expr
+         lookup-fail)
 
 
 ;; substitute : Type Name Type -> Type
@@ -140,3 +142,10 @@
 (define (just-Dotted? S)
     (and (Dotted? S)
          (not (DottedBoth? S))))
+
+(define (tc-error/expr msg #:return [return (make-Union null)] #:stx [stx (current-orig-stx)] . rest)
+  (tc-error/delayed #:stx stx (apply format msg rest))
+  return)
+
+;; error for unbound variables
+(define (lookup-fail e) (tc-error/expr "unbound identifier ~a" e))
