@@ -902,13 +902,18 @@ TODO
         (end-edit-sequence))
       
       (field (already-warned? #f))
-      
+
+      ;; special value that is used with `exit' when we don't want the popup
+      (define no-terminate-explanation-string
+        "NO NEED TO POPUP A TERMINATION EXPLANATION")
+
       (define/private (cleanup)
         (set! in-evaluation? #f)
         (update-running #f)
         (unless (and (get-user-thread) (thread-running? (get-user-thread)))
           (lock #t)
-          (unless shutting-down?
+          (unless (or shutting-down?
+                      (equal? user-exit-code no-terminate-explanation-string))
             (no-user-evaluation-message
              (let ([canvas (get-active-canvas)])
                (and canvas
@@ -916,7 +921,7 @@ TODO
              user-exit-code
              (not (thread-running? memory-killed-thread))))))
       (field (need-interaction-cleanup? #f))
-      
+
       (define/private (no-user-evaluation-message frame exit-code memory-killed?)
         (let* ([new-limit (and custodian-limit (+ (* 1024 1024 128) custodian-limit))]
                [ans (message-box/custom
@@ -1226,9 +1231,9 @@ TODO
                              (parameterize ([current-eventspace drs-eventspace])
                                (queue-callback
                                 (λ ()
-                                  (set! user-exit-code 
-                                        (if (and (integer? x)
-                                                 (<= 0 x 255))
+                                  (set! user-exit-code
+                                        (if (or (and (integer? x) (<= 0 x 255))
+                                                (equal? x no-terminate-explanation-string))
                                             x
                                             0))
                                   (semaphore-post s))))

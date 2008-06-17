@@ -220,7 +220,8 @@
     (queue-callback
      (λ ()
        (fprintf (current-error-port) "\n(Further interactions disabled.)\n")
-       (kill-thread t)))
+       ;; special value that will exit the repl but avoid the popup
+       (exit "NO NEED TO POPUP A TERMINATION EXPLANATION")))
     (apply raise-syntax-error '|Module Language|
            (if (null? error-args)
              (list (string-append
