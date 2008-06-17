@@ -225,7 +225,7 @@
     (apply raise-syntax-error '|Module Language|
            (if (null? error-args)
              (list (string-append
-                    "There must be a module in the\n"
+                    "There must be a valid module in the\n"
                     "definitions window. Try starting your program with\n"
                     "\n"
                     "  #lang scheme\n"
@@ -403,14 +403,32 @@
        (values
         v-name
         ;; rewrite the module to use the scheme/base version of `module'
-        (let ([module (datum->syntax #'here 'module #'form)])
-          (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
+        (let* ([mod (datum->syntax #'here 'module #'form)]
+               [expr (datum->syntax stx `(,mod ,#'name ,#'lang . ,#'rest) stx)])
+          ;; now expand it, and if there's an error, then use a minimal module
+          ;; that will use the language as usual and report the error, it'll
+          ;; turn to 3d code:
+          ;;   (module <name> <lang> (raise <the-stx-exn>))
+          ;; so the repl will have at least the language bindings.  (this won't
+          ;; work right with a bad language name -- but that kind of error will
+          ;; be reported anyway.)
+          (with-handlers
+              ([void (lambda (e)
+                       (fprintf (current-error-port)
+                                (string-append
+                                 "*** Module Language: there is a syntax error"
+                                 " in your code, so it was not evaluated;\n"
+                                 "*** the interactions below have only the"
+                                 " language bindings for ‘~s’\n")
+                                (syntax->datum #'lang))
+                       (datum->syntax
+                        stx `(,mod ,#'name ,#'lang ,#`(#%app raise #,e)) stx))])
+            (expand expr)))))]
     [else (hopeless-shout
            (string-append "only a module expression is allowed, either\n"
                           "    #lang <language-name>\n or\n"
                           "    (module <name> <language> ...)\n")
-           stx)
-          ]))
+           stx)]))
 
 ;; get-filename : port -> (union string #f)
 ;; extracts the file the definitions window is being saved in, if any.
