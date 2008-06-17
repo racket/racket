@@ -542,11 +542,13 @@
        (tc/rec-lambda/check form #'(args ...) #'body #'lp ts expected)
        (ret expected))]
     [(#%plain-app or/andmap f arg)
-     (and (or (free-identifier=? #'or/andmap #'ormap)
-              (free-identifier=? #'or/andmap #'andmap))
-          (with-handlers (#;[exn:fail? (lambda _ #f)])
-            (tc/dots #'arg)
-            #t))
+     (and 
+      (identifier? #'or/andmap)
+      (or (free-identifier=? #'or/andmap #'ormap)
+          (free-identifier=? #'or/andmap #'andmap))
+      (with-handlers (#;[exn:fail? (lambda _ #f)])
+        (tc/dots #'arg)
+        #t))
      (let-values ([(ty bound) (tc/dots #'arg)])
        (parameterize ([current-tvars (extend-env (list bound)
                                                  (list (make-DottedBoth (make-F bound)))
