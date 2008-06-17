@@ -115,9 +115,7 @@
     (inherit get-reader)
     (define/override (front-end/interaction port settings)
       (if (thread-cell-ref hopeless-repl)
-        (begin (fprintf (current-error-port)
-                        "Module Language: ~a\n" hopeless-message)
-               (λ x eof))
+        (hopeless-shout)
         (super front-end/interaction port settings)))
 
     (define/override (front-end/complete-program port settings)
@@ -141,7 +139,7 @@
             [(2)
              (let ([super-result (super-thunk)])
                (if (eof-object? super-result)
-                 (raise-syntax-error '|Module Language| hopeless-message)
+                 (hopeless-shout)
                  (let-values ([(name new-module)
                                (transform-module path super-result)])
                    (set! module-name name)
@@ -218,14 +216,16 @@
      [language-numbers (list -32768)])))
 
 (define hopeless-repl (make-thread-cell #t))
-(define hopeless-message
-  (string-append
-   "There must be a module in the\n"
-   "definitions window. Try starting your program with\n"
-   "\n"
-   "  #lang scheme\n"
-   "\n"
-   "and clicking ‘Run’."))
+(define (hopeless-shout)
+  (let ([t (current-thread)])
+    (queue-callback (λ () (kill-thread t)))
+    (raise-syntax-error '|Module Language|
+      (string-append "There must be a module in the\n"
+                     "definitions window. Try starting your program with\n"
+                     "\n"
+                     "  #lang scheme\n"
+                     "\n"
+                     "and clicking ‘Run’."))))
 
 ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
 (define (module-language-config-panel parent)
