@@ -546,7 +546,7 @@
       (identifier? #'or/andmap)
       (or (free-identifier=? #'or/andmap #'ormap)
           (free-identifier=? #'or/andmap #'andmap))
-      (with-handlers (#;[exn:fail? (lambda _ #f)])
+      (with-handlers ([exn:fail? (lambda _ #f)])
         (tc/dots #'arg)
         #t))
      (let-values ([(ty bound) (tc/dots #'arg)])
