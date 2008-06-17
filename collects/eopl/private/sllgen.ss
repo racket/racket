@@ -7,6 +7,7 @@
 
 (module sllgen mzscheme
   (require mzlib/pretty
+           scheme/mpair
 	   "../datatype.ss"
 	   "sllboth.ss"
 	   mzlib/etc)
@@ -982,7 +983,7 @@
 	       (lambda (production)
 		 (sllgen:make-parse-table-production-entry
 		  production non-terminals first-table follow-table))
-	       (cdr table-entry))))
+	       (unbox (cdr table-entry)))))
 	   table))))
 
     (define sllgen:make-parse-table-non-terminal-entry
@@ -2070,16 +2071,15 @@
   (define sllgen:unzip-buffer
     (lambda (trees n buf)
       (let ((ans (let consloop ((n n))
-		   (if (zero? n) buf (mcons '() (consloop (- n 1)))))))
+		   (if (zero? n) 
+                       (list->mlist buf)
+                       (mcons '() (consloop (- n 1)))))))
 	(let loop ((trees trees)
 		   (ptr ans)
 		   (ctr n))
 					;     (eopl:printf "ctr = ~s trees = ~s~%" ctr trees)
 	  (cond
-	   ((null? trees) (let loop ([ans ans])
-                            (if (null? ans)
-                                null
-                                (cons (mcar ans) (loop (mcdr ans))))))
+	   ((null? trees) (mlist->list ans))
 	   ((zero? ctr) (loop trees ans n))
 	   (else
 	    (set-mcar! ptr (cons (car trees) (mcar ptr)))
@@ -2088,5 +2088,9 @@
   (define sllgen:apply-reduction
     (lambda (lhs opcode args)
       (apply (eval opcode)
-	     args)))
+	     (map (lambda (v)
+                    (if (list? v)
+                        (list->mlist v)
+                        v))
+                  args))))
   )

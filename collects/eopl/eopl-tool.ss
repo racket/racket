@@ -48,6 +48,7 @@ wraps the load of the module.)
 	  (define/override (use-namespace-require/copy?) #t)
 	  (define/override (on-execute settings run-in-user-thread)
 	    (super on-execute settings run-in-user-thread)
+            (print-mpair-curly-braces #f)
 	    (run-in-user-thread
 	     (lambda ()
 	       ((namespace-variable-value 'install-eopl-exception-handler)))))

@@ -3,7 +3,8 @@
 	   "private/sllgen.ss"
 	   mzlib/trace
 	   mzlib/pretty
-           (rename r5rs r5rs:define define))
+           (rename r5rs r5rs:define define)
+           (rename r5rs r5rs:quote quote))
   (require-for-syntax "private/slldef.ss")
 
   (provide define-datatype
@@ -12,13 +13,13 @@
   ;; Special def that saves a quoted value at compile time in case
   ;; it's needed for `sllgen:make-define-datatypes':
   (define-syntax (eopl-define stx)
-    (syntax-case stx (quote)
-      [(_ name (quote def))
+    (syntax-case stx (r5rs:quote)
+      [(_ name (r5rs:quote def))
        (identifier? (syntax name))
        (syntax/loc stx
 	 (begin
 	   (begin-for-syntax (hash-table-put! sllgen-def 'name (quote-syntax def)))
-	   (define name (quote def))))]
+	   (define name (r5rs:quote def))))]
       [(_ . rest)
        (syntax/loc stx (r5rs:define . rest))]))
 
@@ -120,9 +121,9 @@
 		 ;; if preds is empty, but list isn't, then recycle
 		 (loop obj all-preds)
 		 ;; otherwise check and element and recur.
-		 (and (pair? obj)
-		      ((car preds) (car obj))
-		      (loop (cdr obj) (cdr preds))))))))))
+		 (and (mpair? obj)
+		      ((car preds) (mcar obj))
+		      (loop (mcdr obj) (cdr preds))))))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

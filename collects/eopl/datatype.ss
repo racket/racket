@@ -192,7 +192,9 @@
 			     (values null null null #f)]
 			    [else
 			     (let ([clause (car clauses)])
-			       (syntax-case clause (else)
+			       (syntax-case* clause (else) (lambda (a b)
+                                                             (and (eq? (syntax-e b) 'else)
+                                                                  (not (identifier-binding b))))
 				 [(variant (field-id ...) body0 body1 ...)
 				  (let* ([variant (syntax variant)]
 					 [vt
