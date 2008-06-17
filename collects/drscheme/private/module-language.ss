@@ -216,16 +216,22 @@
      [language-numbers (list -32768)])))
 
 (define hopeless-repl (make-thread-cell #t))
-(define (hopeless-shout)
+(define (hopeless-shout . error-args)
   (let ([t (current-thread)])
-    (queue-callback (λ () (kill-thread t)))
-    (raise-syntax-error '|Module Language|
-      (string-append "There must be a module in the\n"
-                     "definitions window. Try starting your program with\n"
-                     "\n"
-                     "  #lang scheme\n"
-                     "\n"
-                     "and clicking ‘Run’."))))
+    (queue-callback
+     (λ ()
+       (fprintf (current-error-port) "\n(Further interactions disabled.)\n")
+       (kill-thread t)))
+    (apply raise-syntax-error '|Module Language|
+           (if (null? error-args)
+             (list (string-append
+                    "There must be a module in the\n"
+                    "definitions window. Try starting your program with\n"
+                    "\n"
+                    "  #lang scheme\n"
+                    "\n"
+                    "and clicking ‘Run’."))
+             error-args))))
 
 ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
 (define (module-language-config-panel parent)
@@ -399,12 +405,12 @@
         ;; rewrite the module to use the scheme/base version of `module'
         (let ([module (datum->syntax #'here 'module #'form)])
           (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
-    [else (raise-syntax-error
-           '|Module Language|
+    [else (hopeless-shout
            (string-append "only a module expression is allowed, either\n"
                           "    #lang <language-name>\n or\n"
                           "    (module <name> <language> ...)\n")
-           stx)]))
+           stx)
+          ]))
 
 ;; get-filename : port -> (union string #f)
 ;; extracts the file the definitions window is being saved in, if any.
