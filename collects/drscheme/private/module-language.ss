@@ -141,7 +141,7 @@
             [(2)
              (let ([super-result (super-thunk)])
                (if (eof-object? super-result)
-                 (raise-syntax-error 'Module\ Language hopeless-message)
+                 (raise-syntax-error '|Module Language| hopeless-message)
                  (let-values ([(name new-module)
                                (transform-module path super-result)])
                    (set! module-name name)
@@ -151,7 +151,7 @@
                (if (eof-object? super-result)
                  #`(current-module-declare-name #f)
                  (raise-syntax-error
-                  'module-language
+                  '|Module Language|
                   "there can only be one expression in the definitions window"
                   super-result)))]
             [(4)
@@ -400,7 +400,7 @@
         (let ([module (datum->syntax #'here 'module #'form)])
           (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
     [else (raise-syntax-error
-           'module-language
+           '|Module Language|
            (string-append "only a module expression is allowed, either\n"
                           "    #lang <language-name>\n or\n"
                           "    (module <name> <language> ...)\n")
@@ -430,7 +430,7 @@
 (define (check-filename-matches filename name unexpanded-stx)
   (define datum (syntax-e name))
   (unless (symbol? datum)
-    (raise-syntax-error 'module-language
+    (raise-syntax-error '|Module Language|
                         "bad syntax in name position of module"
                         unexpanded-stx name))
   (let-values ([(base name dir?) (split-path filename)])
@@ -438,7 +438,7 @@
                      (path->string (path-replace-suffix name #"")))])
       (unless (equal? expected datum)
         (raise-syntax-error
-         'module-language
+         '|Module Language|
          (format "module name doesn't match saved filename, got ~s and expected ~a"
                  datum
                  expected)
