@@ -547,6 +547,9 @@
         [tc-err (apply append (list 1) (list 2) (list 3) (list (list 1) "foo"))]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list 1))) (-lst -Integer)]
         [tc-e (apply append (list 1) (list 2) (list 3) (list (list 1) (list "foo"))) (-lst (Un -String -Integer))]
+        [tc-err (plambda: (b ...) [y : b ... b] (apply append (map list y)))]
+        [tc-e (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
+              (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
         
         ;; error tests
         [tc-err (#%variable-reference number?)]
