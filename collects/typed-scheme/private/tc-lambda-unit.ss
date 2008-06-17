@@ -144,9 +144,12 @@
   (define (syntax-len s)
     (cond [(syntax->list s) => length]
           [else (let loop ([s s])
-                  (if (pair? (syntax-e s))
-                      (+ 1 (loop (cdr (syntax-e s))))
-                      1))]))
+                  (cond
+                    [(pair? s)
+                     (+ 1 (loop (cdr s)))]
+                    [(pair? (syntax-e s))
+                     (+ 1 (loop (cdr (syntax-e s))))]
+                    [else 1]))]))
   (if (and expected
            (= 1 (length (syntax->list formals))))
       ;; special case for not-case-lambda

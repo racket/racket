@@ -164,9 +164,10 @@
 (define -Sexp (-mu x (*Un Sym N B -String (-val null) (-pair x x))))
 (define -Port (*Un -Input-Port -Output-Port))
 
-(define (-lst* . args) (if (null? args)
-                           (-val null)
-                           (-pair (car args) (apply -lst* (cdr args)))))
+(define (-lst* #:tail [tail (-val null)] . args)
+  (if (null? args)
+      tail
+      (-pair (car args) (apply -lst* #:tail tail (cdr args)))))
 
 
 #;(define NE (-mu x (Un N (make-Listof x))))
