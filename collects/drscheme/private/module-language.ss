@@ -148,8 +148,7 @@
              (let ([super-result (super-thunk)])
                (if (eof-object? super-result)
                  #`(current-module-declare-name #f)
-                 (raise-syntax-error
-                  '|Module Language|
+                 (hopeless-shout
                   "there can only be one expression in the definitions window"
                   super-result)))]
             [(4)
@@ -436,18 +435,17 @@
 (define (check-filename-matches filename name unexpanded-stx)
   (define datum (syntax-e name))
   (unless (symbol? datum)
-    (raise-syntax-error '|Module Language|
-                        "bad syntax in name position of module"
-                        unexpanded-stx name))
+    (hopeless-shout "bad syntax in name position of module"
+                    unexpanded-stx name))
   (let-values ([(base name dir?) (split-path filename)])
     (let ([expected (string->symbol
                      (path->string (path-replace-suffix name #"")))])
       (unless (equal? expected datum)
-        (raise-syntax-error
-         '|Module Language|
-         (format "module name doesn't match saved filename, got ~s and expected ~a"
-                 datum
-                 expected)
+        (hopeless-shout
+         (format
+          "module name doesn't match saved filename, got ~s and expected ~s"
+          datum
+          expected)
          unexpanded-stx)))))
 
 (define module-language-put-file-mixin
