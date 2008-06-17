@@ -25,6 +25,8 @@
           (values dty dbound)])]
       [(#%plain-app map f l)
        (let-values ([(lty lbound) (tc/dots #'l)])
+         (unless (Dotted? (lookup (current-tvars) lbound (lambda _ #f)))
+           (int-err "tc/dots: ~a was not dotted" lbound))
          (parameterize ([current-tvars (extend-env (list lbound)
                                                    (list (make-DottedBoth (make-F lbound)))
                                                    (current-tvars))])

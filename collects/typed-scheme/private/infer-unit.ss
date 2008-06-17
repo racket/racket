@@ -6,6 +6,7 @@
          "union.ss" "tc-utils.ss" "type-name-env.ss"
          "subtype.ss" "remove-intersect.ss" "signatures.ss" "utils.ss"
          "constraint-structs.ss"
+         (only-in "type-environments.ss" lookup current-tvars)
          scheme/match
          mzlib/etc
          mzlib/trace
@@ -185,8 +186,18 @@
          [(_ (Univ:)) empty]
          
          [((F: (? (lambda (e) (memq e X)) v)) S)
+          (when (match S
+                  [(F: v*)
+                   (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                  [_ #f])
+            (fail! S T))
           (singleton (Un) v (var-demote S V))]
          [(S (F: (? (lambda (e) (memq e X)) v)))
+          (when (match S
+                  [(F: v*)
+                   (just-Dotted? (lookup (current-tvars) v* (lambda _ #f)))]
+                  [_ #f])
+            (fail! S T))
           (singleton (var-promote S V) v Univ)]
          
          

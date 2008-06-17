@@ -126,14 +126,18 @@
     (let loop ([l l] [acc '()])
       (if (null? (cdr l))
           (values (reverse acc) (car l))
-          (loop (cdr l) (cons (car l) acc)))))   
-  (define (printable dom rst drst)
+          (loop (cdr l) (cons (car l) acc)))))
+  (define (printable-h dom r-ty r-bound)
     (let ([doms-string (if (null? dom) "" (string-append (stringify dom) " "))])
-      (cond [rst
-             (format "~a~a *" doms-string rst)]
-            [drst
-             (format "~a~a ... ~a" doms-string (car drst) (cdr drst))]
+      (cond [r-bound
+             (format "~a~a ... ~a" doms-string r-ty r-bound)]
+            [r-ty
+             (format "~a~a *" doms-string r-ty)]
             [else (stringify dom)])))
+  (define (printable dom rst drst)
+    (cond [rst (printable-h dom rst #f)]
+          [drst (printable-h dom (car drst) (cdr drst))]
+          [else (printable-h dom #f #f)]))
   (define-values (fixed-args tail) (split (syntax->list args)))
   (define (apply-error doms rests drests arg-tys tail-ty tail-bound)
     (if (and (not (null? doms)) (null? (cdr doms)))
@@ -172,11 +176,9 @@
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (let-values ([(tail-ty tail-bound)
-                              (with-handlers ([exn:fail? (lambda _ (values #f #f))])
+                              (with-handlers ([exn:fail? (lambda _ (values (tc-expr/t tail) #f))])
                                 (tc/dots tail))])
-                  (if tail-ty
-                      (apply-error doms rests drests arg-tys tail-ty tail-bound)
-                      (apply-error doms rests drests arg-tys (tc-expr/t tail) #f)))]
+                      (apply-error doms rests drests arg-tys tail-ty tail-bound))]
                [(and (car rests*)
                      (let-values ([(tail-ty tail-bound) 
                                    (with-handlers ([exn:fail? (lambda _ (values #f #f))])
@@ -203,9 +205,9 @@
                 (ret (car rngs*))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ..1))))
-     (let*-values ([(arg-tys tail-ty) (values (map tc-expr/t fixed-args)
-                                              (tc-expr/t tail))]
-                   [(arg-tys0) (append arg-tys (list tail-ty))])
+     (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
+                   [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
+                                           (tc/dots tail))])
        (for-each (lambda (x) (unless (not (Poly? x))                                      
                                (tc-error "Polymorphic argument ~a to polymorphic function in apply not allowed" x)))
                  (cons tail-ty arg-tys))
@@ -220,11 +222,11 @@
                           (tc-error/expr
                            #:return (ret (Un))
                            "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
-                           (car doms) (car rests) (stringify arg-tys0))
+                           (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))
                           (tc-error/expr
                            #:return (ret (Un))
                            "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
-                           (car doms) (stringify arg-tys0)))]
+                           (car doms) (printable-h arg-tys tail-ty tail-bound)))]
                      [else 
                       (tc-error/expr
                        #:return (ret (Un))
@@ -235,8 +237,11 @@
                               (format "~a rest argument: " (stringify dom) rest)
                               (stringify dom)))
                         "\n")
-                       (stringify arg-tys0))])])]
-               [(and (<= (length (car doms*))
+                       (printable-h arg-tys tail-ty tail-bound))])])]
+               ;; the actual work, when we have a * function and a list final argument
+               [(and (car rests*)
+                     (not tail-bound)
+                     (<= (length (car doms*))
                          (length arg-tys))
                      (infer/vararg vars
                                    (cons tail-ty arg-tys) 
@@ -244,12 +249,18 @@
                                          (car doms*))
                                    (car rests*)
                                    (car rngs*)))
-                => (lambda (substitution) 
-                     #;(let* ([s (lambda (t) (subst-all substitution t))]
-                            [new-doms* (append (map s (car doms*)) (list (make-Listof (s (car rests*)))))])
-                         (unless (andmap subtype arg-tys0 new-doms*)
-                           (int-err "Inconsistent substitution - arguments not subtypes: ~n~a~n~a~n" arg-tys0 new-doms*)))
-                     (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+               [(and (car rests*)
+                     tail-bound                     
+                     (<= (length (car doms*))
+                         (length arg-tys))
+                     (infer/vararg vars
+                                   (cons (make-Listof tail-ty) arg-tys)
+                                   (cons (make-Listof (car rests*))
+                                         (car doms*))
+                                   (car rests*)
+                                   (car rngs*)))
+                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*))])))]
     [(tc-result: (Poly: vars (Function: '())))
      (tc-error/expr #:return (ret (Un))

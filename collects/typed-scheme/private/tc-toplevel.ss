@@ -90,7 +90,10 @@
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
            ;; special case to infer types for top level defines - should handle the multiple values case here
            [(and (= 1 (length vars)) 
-                 (with-handlers ([exn:fail? (lambda _ #f)]) (tc-expr #'expr)))
+                 (with-handlers ([exn:fail? (lambda _ #f)])
+                   (save-errors!)
+                   (begin0 (tc-expr #'expr)
+                           (restore-errors!))))
             => (match-lambda 
                  [(tc-result: t)
                   (register-type (car vars) t)

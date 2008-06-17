@@ -22,7 +22,8 @@
          tc-result-t
          unfold
          (struct-out Dotted)
-         (struct-out DottedBoth))
+         (struct-out DottedBoth)
+         just-Dotted?)
 
 
 ;; substitute : Type Name Type -> Type
@@ -135,3 +136,7 @@
 ;; t is (make-F v)
 (define-struct Dotted (t))
 (define-struct (DottedBoth Dotted) ())
+
+(define (just-Dotted? S)
+    (and (Dotted? S)
+         (not (DottedBoth? S))))

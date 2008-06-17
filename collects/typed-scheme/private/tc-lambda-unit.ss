@@ -116,18 +116,19 @@
                                      (lambda _ (tc-error/stx #'rest
                                                              "Bound on ... type (~a) was not in scope" bound))))
               (tc-error "Bound on ... type (~a) is not an appropriate type variable" bound))
-            (parameterize ([current-tvars (extend-env (list bound) 
-                                                      (list (make-DottedBoth (make-F bound)))
-                                                      (current-tvars))])
-              (let ([rest-type (get-type #'rest)])
-                (with-lexical-env/extend 
-                 arg-list
-                 arg-types
-                 (parameterize ([dotted-env (extend-env (list #'rest)
-                                                        (list (cons rest-type bound))
-                                                        (dotted-env))])
-                   (match-let ([(tc-result: t thn els) (tc-exprs (syntax->list body))])
-                     (make-arr-dots arg-types t rest-type bound)))))))]
+            (let ([rest-type (parameterize ([current-tvars 
+                                             (extend-env (list bound) 
+                                                         (list (make-DottedBoth (make-F bound)))
+                                                         (current-tvars))])
+                               (get-type #'rest))])
+              (with-lexical-env/extend 
+               arg-list
+               arg-types
+               (parameterize ([dotted-env (extend-env (list #'rest)
+                                                      (list (cons rest-type bound))
+                                                      (dotted-env))])
+                 (match-let ([(tc-result: t thn els) (tc-exprs (syntax->list body))])
+                   (make-arr-dots arg-types t rest-type bound))))))]
          [else
           (let ([rest-type (get-type #'rest)])
             (with-lexical-env/extend 

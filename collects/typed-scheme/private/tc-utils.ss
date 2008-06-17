@@ -49,6 +49,11 @@
 
 (define-struct err (msg stx) #:prefab)
 
+(define-values (save-errors! restore-errors!)
+  (let ([v (box #f)])
+    (values (lambda () (set-box! v delayed-errors))
+            (lambda () (set! delayed-errors (unbox v))))))
+
 (define (report-all-errors)
   (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
