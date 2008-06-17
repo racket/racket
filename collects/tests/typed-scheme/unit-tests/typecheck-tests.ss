@@ -551,6 +551,18 @@
         [tc-e (plambda: (b ...) [y : (Listof Integer) ... b] (apply append y))
               (-polydots (b) (->... (list) ((-lst -Integer) b) (-lst -Integer)))]
         
+        [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
+                          (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
+                                 1 1 1 1 w))]
+        
+        [tc-err (plambda: (a ...) ([z : String] . [w : Number])
+                          (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
+                                 1 w))]
+        
+        [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
+                          (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
+                                 1 w))]
+        
         ;; error tests
         [tc-err (#%variable-reference number?)]
         [tc-err (+ 3 #f)]
