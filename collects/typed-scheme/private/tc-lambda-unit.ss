@@ -161,7 +161,7 @@
   (if (and expected
            (= 1 (length (syntax->list formals))))
       ;; special case for not-case-lambda
-      (let loop ([expected expected])
+      (let loop ([expected expected])        
         (match expected          
           [(Mu: _ _) (loop (unfold expected))]
           [(Function: (list (arr: args ret rest #f _ _))) 
@@ -171,7 +171,7 @@
            (for ([args argss] [ret rets] [rest rests])
              (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest))
            expected]
-          [t (let ([t (tc/mono-lambda formals bodies #f)])
+          [t (let ([t (tc/mono-lambda formals bodies #f)])               
                (check-below t expected))]))
       (let loop ([formals (syntax->list formals)] 
                  [bodies (syntax->list bodies)]

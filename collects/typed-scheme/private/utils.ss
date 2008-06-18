@@ -14,7 +14,14 @@
          hash-union
          in-pairs
          in-list-forever
-         extend)
+         extend
+         debug)
+
+(define-syntax-rule (debug args)
+  (begin (printf "starting ~a~n" 'args)
+         (let ([e args])
+           (printf "result was ~a~n" e)
+           e)))
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()
