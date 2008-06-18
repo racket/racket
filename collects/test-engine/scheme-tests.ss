@@ -187,17 +187,14 @@
 (define (run-and-check check maker test expect range src test-info kind)
   (match-let ([(list result result-val)
                (with-handlers ([exn? (lambda (e)
-                                       (make-unexpected-error src expect
-                                                              (exn-message e)))])
+                                       (list (make-unexpected-error src expect
+                                                                    (exn-message e)) 'error))])
                  (let ([test-val (test)])
-                   ;; yikes!  it appears that test-val and expect are reversed here! -- JBC, 2008-05-28
-                   (cond [(check test-val expect range)
-                          (list #t test-val)]
+                   (cond [(check expect test-val range) (list #t test-val)]
                          [else 
                           (list (maker src test-val expect range) test-val)])))])
     (cond [(check-fail? result)
-           (send (send test-info get-info) check-failed (check->message result)
-                 (check-fail-src result))
+           (send (send test-info get-info) check-failed (check->message result) (check-fail-src result))
            (render-for-stepper/fail result expect range kind)]
           [else 
            ;; I'd like to pass the actual, but I don't have it.
