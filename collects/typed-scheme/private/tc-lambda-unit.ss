@@ -37,68 +37,67 @@
 ;; fixme: abstract the two cases!
 ;; syntax-list[id] block listof[type] type option[type] -> arr
 (define (tc/lambda-clause/check args body arg-tys ret-ty rest-ty)
-  (syntax-case args ()
-    [(args* ...)    
-     (if (ormap (lambda (e) (not (type-annotation e))) (syntax->list #'(args* ...)))
-         (let* ([arg-list (syntax->list #'(args* ...))])
-           (let ([arg-tys
-                  (let ([arg-len (length arg-list)]
-                        [tys-len (length arg-tys)])
-                    (define (expected-str tys-len rest-ty arg-len)
-                      (format "Expected function with ~a argument~a~a, but got function with ~a argument~a"
-                              tys-len
-                              (if (= tys-len 1) "" "s")
-                              (if rest-ty " and a rest arg" "")
-                              arg-len
-                              (if (= arg-len 1) "" "s")))
-                    (cond
-                      [(= arg-len tys-len)
-                       arg-list]
-                      [(< arg-len tys-len)
-                       (tc-error/expr
-                        #:return (take arg-tys arg-len)
-                        (expected-str tys-len rest-ty arg-len))]
-                      [(> arg-len tys-len)
-                       (tc-error/expr
-                        #:return (append arg-tys
-                                         (map (lambda _ (if rest-ty rest-ty (Un))) (drop arg-list tys-len)))
-                        (expected-str tys-len rest-ty arg-len))]))])
-           (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
-           (with-lexical-env/extend 
-            arg-list arg-tys
-            (match (tc-exprs/check (syntax->list body) ret-ty)
-              [(tc-result: t thn els)
-               (cond
-                 ;; this is T-AbsPred                
-                 ;; if this function takes only one argument, and all the effects are about that one argument
-                 [(and (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
-                  => (lambda (thn/els) (make-arr arg-tys t #f (car thn/els) (cdr thn/els)))]
-                 ;; otherwise, the simple case
-                 [else (make-arr arg-tys t)])]
-              [t (int-err "bad match 1 - not a tc-result: ~a ~a" ret-ty t)]))))
-         (let* ([arg-list (syntax->list #'(args* ...))]
-                [arg-types (map get-type arg-list)])
-           (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
-           (with-lexical-env/extend 
-            arg-list arg-types
-            (match (tc-exprs/check (syntax->list body) ret-ty)
-              [(tc-result: t thn els)
-               (cond
-                 ;; this is T-AbsPred                
-                 ;; if this function takes only one argument, and all the effects are about that one argument
-                 [(and (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
-                  => (lambda (thn/els) (make-arr arg-types t #f (car thn/els) (cdr thn/els)))]
-                 ;; otherwise, the simple case
-                 [else (make-arr arg-types t)])]
-              [t (int-err "bad match 2 - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))]))))]
-    [(args* ... . rest)
-     (begin
-       (unless rest-ty
-         (tc-error "Expected function with ~a arguments and no rest argument,~nbut got function with ~a arguments and a rest argument"
-                   (length arg-tys) (length (syntax->list #'(args* ...)))))
-       (with-lexical-env/extend
-        (list #'rest) (list (-lst rest-ty))
-        (tc/lambda-clause/check #'(args* ...) body arg-tys ret-ty #f)))]))
+  (define (expected-str tys-len rest-ty arg-len rest)
+    (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
+            tys-len
+            (if (= tys-len 1) "" "s")
+            (if rest-ty " and a rest arg" "")
+            arg-len
+            (if (= arg-len 1) "" "s")
+            (if rest " and a rest arg" "")))
+  ;; listof[id] option[id] block listof[type] option[type] type
+  (define (check-clause arg-list rest body arg-tys rest-ty ret-ty)
+    (let* ([arg-len (length arg-list)]
+           [tys-len (length arg-tys)]
+           [arg-types (if (andmap type-annotation arg-list)
+                          (map get-type arg-list)
+                          (cond
+                            [(= arg-len tys-len) arg-tys]
+                            [(< arg-len tys-len) (tc-error/expr
+                                                  #:return (take arg-tys arg-len)
+                                                  (expected-str tys-len rest-ty arg-len rest))]
+                            [(> arg-len tys-len) (tc-error/expr
+                                                  #:return (append arg-tys
+                                                                   (map (lambda _ (if rest-ty rest-ty (Un)))
+                                                                        (drop arg-list tys-len)))
+                                                  (expected-str tys-len rest-ty arg-len rest))]))])
+      (define (check-body)
+        (with-lexical-env/extend 
+         arg-list arg-types
+         (match (tc-exprs/check (syntax->list body) ret-ty)
+           [(tc-result: t thn els)
+            (cond
+              ;; this is T-AbsPred                
+              ;; if this function takes only one argument, and all the effects are about that one argument
+              [(and (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
+               => (lambda (thn/els) (make-arr arg-types t rest-ty (car thn/els) (cdr thn/els)))]
+              ;; otherwise, the simple case
+              [else (make-arr arg-types t rest-ty)])]
+           [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
+      (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+      (cond
+        [(not rest)
+         (check-body)]
+        [rest-ty
+         (with-lexical-env/extend
+          (list rest) (list (-lst rest-ty))
+          (check-body))]
+        [else
+         (with-lexical-env/extend
+          (list rest)
+          (list (tc-error/expr #:return (-lst (cond
+                                                [(type-annotation #'rest)
+                                                 (get-type #'rest)]
+                                                [(< arg-len tys-len)
+                                                 (list-ref arg-tys arg-len)]
+                                                [else (Un)]))
+                               "Expected no rest argument, but got one"))
+          (check-body))])))
+    (syntax-case args ()
+      [(args* ...)
+       (check-clause (syntax->list #'(args* ...)) #f body arg-tys rest-ty ret-ty)]
+      [(args* ... . rest)
+       (check-clause (syntax->list #'(args* ...)) #'rest body arg-tys rest-ty ret-ty)]))
 
 ;; syntax-list[id] block -> arr
 (define (tc/lambda-clause args body)
