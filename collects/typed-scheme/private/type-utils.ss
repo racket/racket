@@ -52,9 +52,11 @@
   (define (sb t) (substitute-dots images name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-                 [#:F name* (if (eq? name* name)
+                 ;; The way I handled this in my type system is via type validity checking.  Hrmm.
+                 #;[#:F name* (if (eq? name* name)
                                 (int-err "substitute-dots: got single variable ~a" name*)
                                 target)]
+                 [#:F name* target]
                  [#:arr dom rng rest drest thn-eff els-eff
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
