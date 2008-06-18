@@ -84,7 +84,7 @@
                             [(< arg-len tys-len) (-lst (list-ref arg-tys arg-len))]
                             [else (-lst (Un))])])
            (with-lexical-env/extend
-            (list rest) (list (-lst rest-type))
+            (list rest) (list rest-type)
             (check-body)))])))
     (syntax-case args ()
       [(args* ...)
