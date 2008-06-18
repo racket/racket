@@ -1,0 +1,15 @@
+((("UTTypeConformsTo"
+   (array
+    "public.text"
+    "public.plain-text"))
+  ("UTTypeDescription"
+   "PLT Scheme program source")
+  ("UTTypeIdentifier"
+   "org.plt-scheme.source")
+  ("UTTypeTagSpecification"
+   (dict
+    (assoc-pair "com.apple.ostype"
+                "TEXT")
+    (assoc-pair "public.filename-extension"
+                (array "ss"
+                       "scm"))))))
