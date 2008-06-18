@@ -20,7 +20,11 @@
     (kernel-syntax-case* form #f (map)
       [id
        (identifier? #'id)
-       (match (lookup (dotted-env) #'id (lambda (k) (tc-error "unbound dotted identifier ~a" (syntax-e k))))
+       ;; we use tc-error directly instead of lookup-fail because we _don't_ want this
+       ;; error to be delayed.  We usually catch it further up and decide that something
+       ;; wasn't dotted after all because of it.
+       (match (lookup (dotted-env) #'id (lambda (k) 
+                                          (tc-error "unbound dotted identifier ~a" (syntax-e k))))
          [(cons dty dbound)
           (values dty dbound)])]
       [(#%plain-app map f l)
