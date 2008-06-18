@@ -80,11 +80,11 @@
         [else
          (let ([rest-type (cond
                             [rest-ty rest-ty]
-                            [(type-annotation rest) (-lst (get-type rest))]
-                            [(< arg-len tys-len) (-lst (list-ref arg-tys arg-len))]
-                            [else (-lst (Un))])])
+                            [(type-annotation rest) (get-type rest)]
+                            [(< arg-len tys-len) (list-ref arg-tys arg-len)]
+                            [else (Un)])])
            (with-lexical-env/extend
-            (list rest) (list rest-type)
+            (list rest) (list (-lst rest-type))
             (check-body)))])))
     (syntax-case args ()
       [(args* ...)
