@@ -53,14 +53,10 @@
                           (map get-type arg-list)
                           (cond
                             [(= arg-len tys-len) arg-tys]
-                            [(< arg-len tys-len) (tc-error/expr
-                                                  #:return (take arg-tys arg-len)
-                                                  (expected-str tys-len rest-ty arg-len rest))]
-                            [(> arg-len tys-len) (tc-error/expr
-                                                  #:return (append arg-tys
-                                                                   (map (lambda _ (if rest-ty rest-ty (Un)))
-                                                                        (drop arg-list tys-len)))
-                                                  (expected-str tys-len rest-ty arg-len rest))]))])
+                            [(< arg-len tys-len) (take arg-tys arg-len)]
+                            [(> arg-len tys-len) (append arg-tys
+                                                         (map (lambda _ (if rest-ty rest-ty (Un)))
+                                                              (drop arg-list tys-len)))]))])
       (define (check-body)
         (with-lexical-env/extend 
          arg-list arg-types
@@ -75,24 +71,21 @@
               [else (make-arr arg-types t rest-ty)])]
            [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
       (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+      (when (or (not (= arg-len tys-len))
+                (and rest (not rest-ty)))
+        (tc-error/delayed (expected-str tys-len rest-ty arg-len rest)))
       (cond
         [(not rest)
          (check-body)]
-        [rest-ty
-         (with-lexical-env/extend
-          (list rest) (list (-lst rest-ty))
-          (check-body))]
         [else
-         (with-lexical-env/extend
-          (list rest)
-          (list (tc-error/expr #:return (-lst (cond
-                                                [(type-annotation #'rest)
-                                                 (get-type #'rest)]
-                                                [(< arg-len tys-len)
-                                                 (list-ref arg-tys arg-len)]
-                                                [else (Un)]))
-                               "Expected no rest argument, but got one"))
-          (check-body))])))
+         (let ([rest-type (cond
+                            [rest-ty rest-ty]
+                            [(type-annotation rest) (-lst (get-type rest))]
+                            [(< arg-len tys-len) (-lst (list-ref arg-tys arg-len))]
+                            [else (-lst (Un))])])
+           (with-lexical-env/extend
+            (list rest) (list (-lst rest-type))
+            (check-body)))])))
     (syntax-case args ()
       [(args* ...)
        (check-clause (syntax->list #'(args* ...)) #f body arg-tys rest-ty ret-ty)]
