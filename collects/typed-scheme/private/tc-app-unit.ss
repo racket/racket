@@ -218,24 +218,34 @@
                    (cond 
                      [(null? doms) (int-err "how could doms be null: ~a ~a" doms f-ty)]
                      [(= 1 (length doms))
-                      (if (car rests)
-                          (tc-error/expr
-                           #:return (ret (Un))
-                           "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
-                           (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))
-                          (tc-error/expr
-                           #:return (ret (Un))
-                           "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
-                           (car doms) (printable-h arg-tys tail-ty tail-bound)))]
+                      (cond
+                        [(car rests)
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
+                          (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))]
+                        [(car drests)
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a ... ~a~narguments were ~a~n" 
+                          (car doms) (car (car drests)) (car (cdr drests)) (printable-h arg-tys tail-ty tail-bound))]
+                        [else 
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
+                          (car doms) (printable-h arg-tys tail-ty tail-bound))])]
                      [else 
                       (tc-error/expr
                        #:return (ret (Un))
                        "no polymorphic function domain matched - ~ndomains were: ~a~narguments were ~a~n"
                        (stringify 
-                        (for/list ([dom doms] [rest rests])
-                          (if rest
-                              (format "~a rest argument: " (stringify dom) rest)
-                              (stringify dom)))
+                        (for/list ([dom doms] [rest rests] [drest drests])
+                          (cond
+                            [rest
+                             (format "~a rest argument: ~a" (stringify dom) rest)]
+                            [drest
+                             (format "~a rest argument: ~a ... ~a" (stringify dom) (car drest) (cdr drest))]
+                            [else (stringify dom)]))
                         "\n")
                        (printable-h arg-tys tail-ty tail-bound))])])]
                ;; the actual work, when we have a * function and a list final argument
@@ -291,24 +301,34 @@
                    (cond 
                      [(null? doms) (int-err "how could doms be null: ~a ~a" doms f-ty)]
                      [(= 1 (length doms))
-                      (if (car rests)
-                          (tc-error/expr
-                           #:return (ret (Un))
-                           "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
-                           (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))
-                          (tc-error/expr
-                           #:return (ret (Un))
-                           "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
-                           (car doms) (printable-h arg-tys tail-ty tail-bound)))]
+                      (cond
+                        [(car rests)
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
+                          (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))]
+                        [(car drests)
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~nrest argument was: ~a ... ~a~narguments were ~a~n" 
+                          (car doms) (car (car drests)) (car (cdr drests)) (printable-h arg-tys tail-ty tail-bound))]
+                        [else 
+                         (tc-error/expr
+                          #:return (ret (Un))
+                          "polymorphic function domain did not match -~ndomain was: ~a~narguments were ~a~n" 
+                          (car doms) (printable-h arg-tys tail-ty tail-bound))])]
                      [else 
                       (tc-error/expr
                        #:return (ret (Un))
                        "no polymorphic function domain matched - ~ndomains were: ~a~narguments were ~a~n"
                        (stringify 
-                        (for/list ([dom doms] [rest rests])
-                          (if rest
-                              (format "~a rest argument: " (stringify dom) rest)
-                              (stringify dom)))
+                        (for/list ([dom doms] [rest rests] [drest drests])
+                          (cond
+                            [rest
+                             (format "~a rest argument: ~a" (stringify dom) rest)]
+                            [drest
+                             (format "~a rest argument: ~a ... ~a" (stringify dom) (car drest) (cdr drest))]
+                            [else (stringify dom)]))
                         "\n")
                        (printable-h arg-tys tail-ty tail-bound))])])]
                ;; the actual work, when we have a * function and a list final argument
