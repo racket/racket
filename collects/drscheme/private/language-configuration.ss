@@ -1311,6 +1311,13 @@
             (set! words (text:get-completions/manuals '(scheme/base scheme/contract))))
           words)))
     
+    (define get-all-manual-keywords
+      (let ([words #f])
+        (λ ()
+          (unless words
+            (set! words (text:get-completions/manuals #f)))
+          words)))
+    
     ;; add-built-in-languages : -> void
     (define (add-built-in-languages)
       (let* ([words #f]
@@ -1324,7 +1331,7 @@
                     (define/augment (capability-value key)
                       (cond
                         [(eq? key 'drscheme:autocomplete-words) 
-                         (get-all-scheme-manual-keywords)]
+                         (get-all-manual-keywords)]
                         [else (drscheme:language:get-capability-default key)]))
                     (define/override (create-executable setting parent program-filename)
                       (let ([executable-fn

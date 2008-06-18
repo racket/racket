@@ -115,6 +115,7 @@
      get-default-language-settings
      settings-preferences-symbol
      get-all-scheme-manual-keywords
+     get-all-manual-keywords
      add-built-in-languages
      not-a-language-language<%>))
   

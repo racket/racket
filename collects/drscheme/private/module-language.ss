@@ -52,7 +52,7 @@
       (define/augment (capability-value key)
         (cond
           [(eq? key 'drscheme:autocomplete-words) 
-           (drscheme:language-configuration:get-all-scheme-manual-keywords)]
+           (drscheme:language-configuration:get-all-manual-keywords)]
           [else (drscheme:language:get-capability-default key)]))
       
       ;; config-panel : as in super class
