@@ -20,7 +20,7 @@
     (kernel-syntax-case* form #f (map)
       [id
        (identifier? #'id)
-       (match (lookup (dotted-env) #'id (lambda (k) (lookup-fail (syntax-e k))))
+       (match (lookup (dotted-env) #'id (lambda (k) (tc-error "unbound dotted identifier ~a" (syntax-e k))))
          [(cons dty dbound)
           (values dty dbound)])]
       [(#%plain-app map f l)
