@@ -13,7 +13,7 @@ A @scheme[canvas%] object is a general-purpose window for drawing
                                           'vscroll 'hscroll 'resize-corner
                                           'gl 'no-autoclear 'transparent
                                           'no-focus 'deleted)) null]
-                 [paint-callback ((is-a?/c button%) (is-a?/c dc<%>) . -> . any) void]
+                 [paint-callback ((is-a?/c canvas%) (is-a?/c dc<%>) . -> . any) void]
                  [label (or/c label-string? false/c) #f]
                  [gl-config (or/c (is-a?/c gl-config%) false/c) #f]
                  [enabled any/c #t]
