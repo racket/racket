@@ -563,6 +563,21 @@
                           (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                  1 w))]
         
+        ;; instantiating non-dotted terms
+        [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
+              (-Integer . -> . -Integer)]
+        [tc-e (inst (plambda: (a) [x : a *] (apply + x)) Integer)
+              ((list) -Integer . ->* . -Integer)]
+        
+        ;; instantiating dotted terms
+        [tc-e (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
+              (-Integer B -Integer . -> . -Integer)]
+        [tc-e (inst (plambda: (a ...) [xs : (a ... a -> Integer) ... a] 3) Integer Boolean Integer)
+              ((-Integer B -Integer . -> . -Integer)
+               (-Integer B -Integer . -> . -Integer)
+               (-Integer B -Integer . -> . -Integer)
+               . -> . -Integer)]
+        
         ;; error tests
         [tc-err (#%variable-reference number?)]
         [tc-err (+ 3 #f)]
