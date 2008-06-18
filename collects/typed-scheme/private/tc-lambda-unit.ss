@@ -41,13 +41,28 @@
     [(args* ...)    
      (if (ormap (lambda (e) (not (type-annotation e))) (syntax->list #'(args* ...)))
          (let* ([arg-list (syntax->list #'(args* ...))])
-           (let ([arg-list
-                  (if (= (length arg-list) (length arg-tys))
-                      arg-list
-                      (tc-error/expr
-                       #:return (map (lambda _ (Un)) arg-tys)
-                       "Expected function with ~a arguments, but got function with ~a arguments"
-                       (length arg-tys) (length arg-list)))])
+           (let ([arg-tys
+                  (let ([arg-len (length arg-list)]
+                        [tys-len (length arg-tys)])
+                    (define (expected-str tys-len rest-ty arg-len)
+                      (format "Expected function with ~a argument~a~a, but got function with ~a argument~a"
+                              tys-len
+                              (if (= tys-len 1) "" "s")
+                              (if rest-ty " and a rest arg" "")
+                              arg-len
+                              (if (= arg-len 1) "" "s")))
+                    (cond
+                      [(= arg-len tys-len)
+                       arg-list]
+                      [(< arg-len tys-len)
+                       (tc-error/expr
+                        #:return (take arg-tys arg-len)
+                        (expected-str tys-len rest-ty arg-len))]
+                      [(> arg-len tys-len)
+                       (tc-error/expr
+                        #:return (append arg-tys
+                                         (map (lambda _ (if rest-ty rest-ty (Un))) (drop arg-list tys-len)))
+                        (expected-str tys-len rest-ty arg-len))]))])
            (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
            (with-lexical-env/extend 
             arg-list arg-tys
