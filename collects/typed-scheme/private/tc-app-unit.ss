@@ -390,7 +390,8 @@
                        argtypes)]
                      [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
                      [else (loop (cdr doms*) (cdr rngs) (cdr rests*))])))]
-        [(and rft (tc-result: (Poly: vars (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))))
+        [(and rft (tc-result: (or (Poly: vars (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))
+                                  (PolyDots: (list vars ... _) (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...))))))
          ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
          ;(printf "ftype again:    ~a~n" ftype)
          ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
@@ -435,7 +436,8 @@
                        )]|#
                  [else (loop (cdr doms*) (cdr rngs*))]))]
         ;; polymorphic varargs
-        [(tc-result: (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))
+        [(tc-result: (or (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
+                         (PolyDots: (list vars ... _) (Function: (list (arr: dom rng rest #f thn-eff els-eff))))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
