@@ -564,7 +564,7 @@
            (mrg32k3a-random-integer state n))
           (else
            (mrg32k3a-random-large state n)))))
-     (lambda: [args : Nb] 
+     (lambda: [args : Nb *] 
        (cond
         ((null? args)
          (lambda () 
@@ -603,7 +603,7 @@
 (define: (random-source-make-integers [s : Random]): (Nb -> Nb)
   ((:random-source-make-integers s)))
 
-(define: (random-source-make-reals [s : Random] . [unit : Nb]) : ( -> Flt)
+(define: (random-source-make-reals [s : Random] . [unit : Nb *]) : ( -> Flt)
   (apply (:random-source-make-reals s)  unit))
 
 ; ---

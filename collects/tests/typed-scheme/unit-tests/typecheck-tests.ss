@@ -157,17 +157,17 @@
                     (cond [(pair? x) 1]
                           [(null? x) 1]))
               -Integer]
-        [tc-e (lambda: ([x : Number] . [y : Number]) (car y)) (->* (list N) N N)]
-        [tc-e ((lambda: ([x : Number] . [y : Number]) (car y)) 3) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number]) (car y)) 3 4 5) N]
-        [tc-e ((lambda: ([x : Number] . [y : Number]) (car y)) 3 4) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number]) (car y)) 3 '(4)) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number]) (car y)) 3 '(4 6 7)) N]
-        [tc-e (apply (lambda: ([x : Number] . [y : Number]) (car y)) 3 '()) N]
+        [tc-e (lambda: ([x : Number] . [y : Number *]) (car y)) (->* (list N) N N)]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3) N]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4 5) N]
+        [tc-e ((lambda: ([x : Number] . [y : Number *]) (car y)) 3 4) N]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4)) N]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '(4 6 7)) N]
+        [tc-e (apply (lambda: ([x : Number] . [y : Number *]) (car y)) 3 '()) N]
         
-        [tc-e (lambda: ([x : Number] . [y : Boolean]) (car y)) (->* (list N) B B)]
-        [tc-e ((lambda: ([x : Number] . [y : Boolean]) (car y)) 3) B]
-        [tc-e (apply (lambda: ([x : Number] . [y : Boolean]) (car y)) 3 '(#f)) B]
+        [tc-e (lambda: ([x : Number] . [y : Boolean *]) (car y)) (->* (list N) B B)]
+        [tc-e ((lambda: ([x : Number] . [y : Boolean *]) (car y)) 3) B]
+        [tc-e (apply (lambda: ([x : Number] . [y : Boolean *]) (car y)) 3 '(#f)) B]
         
         [tc-e (let: ([x : Number 3])
                     (when (number? x) #t))
@@ -222,7 +222,7 @@
                  (string-append "foo" (a v))))
          -String]
         
-        [tc-e (apply (plambda: (a) [x : a] x) '(5)) (-lst -Integer)]
+        [tc-e (apply (plambda: (a) [x : a *] x) '(5)) (-lst -Integer)]
         [tc-e (apply append (list '(1 2 3) '(4 5 6))) (-lst -Integer)]
         
         [tc-err ((case-lambda: [([x : Number]) x]
@@ -471,7 +471,7 @@
         
         ;; testing some primitives
         [tc-e (let ([app apply]
-                    [f (lambda: [x : Number] 3)])
+                    [f (lambda: [x : Number *] 3)])
                 (app f (list 1 2 3)))
               -Integer]
         [tc-e ((lambda () (call/cc (lambda: ([k : (Number -> (U))]) (if (read) 5 (k 10))))))
@@ -527,7 +527,7 @@
                   1)]
         
         [tc-e ((case-lambda:
-                [[x : Number] (+ 1 (car x))])
+                [[x : Number *] (+ 1 (car x))])
                5)
               N]
         #;

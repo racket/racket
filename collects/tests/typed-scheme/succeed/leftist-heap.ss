@@ -205,7 +205,7 @@
                     s))
             0 h)))
   
-  (pdefine: (a) (-heap . [xs : a]) : (Heap a)
+  (pdefine: (a) (-heap . [xs : a *]) : (Heap a)
     (list->heap xs))   
 
   
