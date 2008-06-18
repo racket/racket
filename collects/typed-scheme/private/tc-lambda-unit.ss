@@ -32,65 +32,81 @@
         [(Remove-Effect: t v) (if (free-identifier=? v id) (make-Latent-Remove-Effect t) (fail))]))
     (cons (map rv thns) (map rv elss))))
 
+(define (expected-str tys-len rest-ty drest arg-len rest)
+  (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
+          tys-len
+          (if (= tys-len 1) "" "s")
+          (if (or rest-ty
+                  drest)
+              " and a rest arg"
+              "")
+          arg-len
+          (if (= arg-len 1) "" "s")
+          (if rest " and a rest arg" "")))
+
+;; listof[id] option[id] block listof[type] option[type] option[(cons type var)] type
+(define (check-clause arg-list rest body arg-tys rest-ty drest ret-ty)
+  (let* ([arg-len (length arg-list)]
+         [tys-len (length arg-tys)]
+         [arg-types (if (andmap type-annotation arg-list)
+                        (map get-type arg-list)
+                        (cond
+                          [(= arg-len tys-len) arg-tys]
+                          [(< arg-len tys-len) (take arg-tys arg-len)]
+                          [(> arg-len tys-len) (append arg-tys
+                                                       (map (lambda _ (or rest-ty (Un)))
+                                                            (drop arg-list tys-len)))]))])
+    (define (check-body)
+      (with-lexical-env/extend 
+       arg-list arg-types
+       (match (tc-exprs/check (syntax->list body) ret-ty)
+         [(tc-result: t thn els)
+          (cond
+            ;; this is T-AbsPred                
+            ;; if this function takes only one argument, and all the effects are about that one argument
+            [(and (not rest-ty) (not drest) (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
+             => (lambda (thn/els) (make-arr arg-types t rest-ty drest (car thn/els) (cdr thn/els)))]
+            ;; otherwise, the simple case
+            [else (make-arr arg-types t rest-ty drest null null)])]
+         [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
+    (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+    (when (or (not (= arg-len tys-len))
+              (and rest (and (not rest-ty)
+                             (not drest))))
+      (tc-error/delayed (expected-str tys-len rest-ty drest arg-len rest)))
+    (cond
+      [(not rest)
+       (check-body)]
+      [drest
+       (with-dotted-env/extend
+        rest (car drest) (cdr drest)
+        (check-body))]
+      [(dotted? rest)
+       =>
+       (lambda (b)
+         (let ([dty (get-type rest)])
+           (with-dotted-env/extend
+            rest dty b
+            (check-body))))]
+      [else
+       (let ([rest-type (cond
+                          [rest-ty rest-ty]
+                          [(type-annotation rest) (get-type rest)]
+                          [(< arg-len tys-len) (list-ref arg-tys arg-len)]
+                          [else (Un)])])
+         (with-lexical-env/extend
+          (list rest) (list (-lst rest-type))
+          (check-body)))])))
 
 ;; typecheck a single lambda, with argument list and body
-;; fixme: abstract the two cases!
-;; syntax-list[id] block listof[type] type option[type] -> arr
-(define (tc/lambda-clause/check args body arg-tys ret-ty rest-ty)
-  (define (expected-str tys-len rest-ty arg-len rest)
-    (format "Expected function with ~a argument~a~a, but got function with ~a argument~a~a"
-            tys-len
-            (if (= tys-len 1) "" "s")
-            (if rest-ty " and a rest arg" "")
-            arg-len
-            (if (= arg-len 1) "" "s")
-            (if rest " and a rest arg" "")))
-  ;; listof[id] option[id] block listof[type] option[type] type
-  (define (check-clause arg-list rest body arg-tys rest-ty ret-ty)
-    (let* ([arg-len (length arg-list)]
-           [tys-len (length arg-tys)]
-           [arg-types (if (andmap type-annotation arg-list)
-                          (map get-type arg-list)
-                          (cond
-                            [(= arg-len tys-len) arg-tys]
-                            [(< arg-len tys-len) (take arg-tys arg-len)]
-                            [(> arg-len tys-len) (append arg-tys
-                                                         (map (lambda _ (if rest-ty rest-ty (Un)))
-                                                              (drop arg-list tys-len)))]))])
-      (define (check-body)
-        (with-lexical-env/extend 
-         arg-list arg-types
-         (match (tc-exprs/check (syntax->list body) ret-ty)
-           [(tc-result: t thn els)
-            (cond
-              ;; this is T-AbsPred                
-              ;; if this function takes only one argument, and all the effects are about that one argument
-              [(and (= 1 (length arg-list)) (remove-var (car arg-list) thn els))
-               => (lambda (thn/els) (make-arr arg-types t rest-ty (car thn/els) (cdr thn/els)))]
-              ;; otherwise, the simple case
-              [else (make-arr arg-types t rest-ty)])]
-           [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
-      (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
-      (when (or (not (= arg-len tys-len))
-                (and rest (not rest-ty)))
-        (tc-error/delayed (expected-str tys-len rest-ty arg-len rest)))
-      (cond
-        [(not rest)
-         (check-body)]
-        [else
-         (let ([rest-type (cond
-                            [rest-ty rest-ty]
-                            [(type-annotation rest) (get-type rest)]
-                            [(< arg-len tys-len) (list-ref arg-tys arg-len)]
-                            [else (Un)])])
-           (with-lexical-env/extend
-            (list rest) (list (-lst rest-type))
-            (check-body)))])))
+;; drest-ty and drest-bound are both false or not false
+;; syntax-list[id] block listof[type] type option[type] option[(cons type var)] -> arr
+(define (tc/lambda-clause/check args body arg-tys ret-ty rest-ty drest)
     (syntax-case args ()
       [(args* ...)
-       (check-clause (syntax->list #'(args* ...)) #f body arg-tys rest-ty ret-ty)]
+       (check-clause (syntax->list #'(args* ...)) #f body arg-tys rest-ty drest ret-ty)]
       [(args* ... . rest)
-       (check-clause (syntax->list #'(args* ...)) #'rest body arg-tys rest-ty ret-ty)]))
+       (check-clause (syntax->list #'(args* ...)) #'rest body arg-tys rest-ty drest ret-ty)]))
 
 ;; syntax-list[id] block -> arr
 (define (tc/lambda-clause args body)
@@ -164,12 +180,9 @@
       (let loop ([expected expected])        
         (match expected          
           [(Mu: _ _) (loop (unfold expected))]
-          [(Function: (list (arr: args ret rest #f _ _))) 
-           (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest)
-           expected]
-          [(Function: (list (arr: argss rets rests #f _ _) ...)) 
-           (for ([args argss] [ret rets] [rest rests])
-             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest))
+          [(Function: (list (arr: argss rets rests drests _ _) ...)) 
+           (for ([args argss] [ret rets] [rest rests] [drest drests])
+             (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest drest))
            expected]
           [t (let ([t (tc/mono-lambda formals bodies #f)])               
                (check-below t expected))]))

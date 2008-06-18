@@ -7,7 +7,8 @@
          extend-env
          extend/values
          dotted-env
-         initial-tvar-env)
+         initial-tvar-env
+         with-dotted-env/extend)
 
 (require scheme/match
          "tc-utils.ss")
@@ -61,3 +62,7 @@
                  [else (extend-env (list ks) (list vs) env)]))
          env kss vss))
 
+;; run code in an extended dotted env
+(define-syntax with-dotted-env/extend
+  (syntax-rules ()
+    [(_ i t v . b) (parameterize ([dotted-env (extend/values (list i) (list (cons t v)) (dotted-env))]) . b)]))
