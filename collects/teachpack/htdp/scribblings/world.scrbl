@@ -13,9 +13,7 @@ The teachpack provides two sets of tools. The first allows students to
 create and display a series of animated scenes, i.e., a simulation. The
 second one generalizes the first by adding interactive GUI features. 
 
-
 @declare-exporting[teachpack/htdp/world #:use-sources (teachpack/htdp/image)]
-
 
 @section[#:tag "basics"]{Basics}
 
@@ -29,10 +27,14 @@ primitives and introduces a special kind of image: a scene.
 The teachpack can display only @tech{Scene}s, which are images whose
 pinholes are at position @scheme[(0,0)].
 
-@defproc[(empty-scene [width natural-number/c][height natural-number/c]) (unsyntax @tech{Scene})]{Creates a @scheme[width] x @scheme[height] @tech{Scene}.}
+@defproc[(empty-scene [width natural-number/c]
+	   [height natural-number/c])
+	 (unsyntax @tech{Scene})]
+{Creates a @scheme[width] x @scheme[height] @tech{Scene}.} 
 
-@defproc[(place-image [img image?] [x number?][y number?][s (unsyntax @tech{Scene})]) (unsyntax @tech{Scene})]{
- Creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
+@defproc[(place-image [img image?] [x number?][y number?]
+	   [s (unsyntax @tech{Scene})]) (unsyntax @tech{Scene})]
+{Creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
  @scheme[(x,y)] are comp. graph. coordinates, i.e., they count left and
  down from the upper-left corner.}
 
@@ -151,9 +153,9 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    whenever the canvas must be redrawn. The canvas is usually re-drawn after a tick event, a keyboard
    event, or a mouse event has occurred.  The generated scene is  displayed in the world's canvas.}
 
-@defproc[(is-end-of-world [last-world? (-> (unsyntax @tech{World}) boolean?)]) true]{
+@defproc[(stop-when [last-world? (-> (unsyntax @tech{World}) boolean?)]) true]{
    Tell DrScheme to call @scheme[last-world?] whenever the canvas is
-   drawn. If this call produces @scheme[true], the clock is stopped; no
+   drawn. If this call produces @scheme[true], the clock is stopped; no more
    tick events, @tech{KeyEvent}s, or @tech{MouseEvent}s are forwarded to
    the respective handlers. As a result, the canvas isn't updated either.} 
 
