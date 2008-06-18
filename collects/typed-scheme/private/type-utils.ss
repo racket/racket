@@ -60,7 +60,8 @@
                                  (eq? name (cdr drest)))                            
                             (make-arr (append 
                                        (map sb dom)
-                                       (map (lambda (img) (substitute img name (car drest))) images))
+                                       ;; We need to recur first, just to expand out any dotted usages of this.
+                                       (map (lambda (img) (substitute img name (sb (car drest)))) images))
                                       (sb rng)
                                       #f
                                       #f
