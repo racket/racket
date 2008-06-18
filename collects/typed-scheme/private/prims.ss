@@ -221,7 +221,6 @@ This file defines two sorts of primitives. All of them are provided into any mod
                       'type-dotted 
                       bound))
   (syntax-case stx (:)
-    [[var : ty] (label-one #'var #'ty)]
     [([var : ty] ...)
      (label #'(var ...) #'(ty ...))]
     [([var : ty] ... . [rest : rest-ty star])
