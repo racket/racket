@@ -114,7 +114,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [([var : ty] ...) (quasisyntax/loc stx (ty ...))]
     [([var : ty] ... . [rest : rest-ty star])
      (eq? '* (syntax-e #'star))
-     (syntax/loc stx (ty ... rest-ty *))]
+     (syntax/loc stx (ty ... rest-ty star))]
     [([var : ty] ... . [rest : rest-ty ddd bound])
      (eq? '... (syntax-e #'ddd))
      (syntax/loc stx (ty ... rest-ty ddd bound))]
@@ -149,15 +149,7 @@ This file defines two sorts of primitives. All of them are provided into any mod
     [(_ arg : ty)
      (syntax-property #'arg 'type-ascription #'ty)]
     [(_ arg ty)
-     (syntax-property #'arg 'type-ascription #'ty)]
-    [(_ arg ty star)
-     (eq? '* (syntax-e #'star))
-     (syntax-property #'arg 'type-ascription #'ty)]
-    [(_ arg ty ddd bound)
-     (eq? '... (syntax-e #'ddd))
-     (syntax-property (syntax-property #'arg 'type-ascription #'ty)
-                      'type-dotted 
-                      #'bound)]))
+     (syntax-property #'arg 'type-ascription #'ty)]))
 
 (define-syntax (: stx)
   (let ([stx*
