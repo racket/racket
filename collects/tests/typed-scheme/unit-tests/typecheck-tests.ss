@@ -577,6 +577,9 @@
                (-Integer B -Integer . -> . -Integer)
                . -> . -Integer)]
         
+        [tc-e (plambda: (z x y ...) () (inst map z x y ... y))
+              (-polydots (z x y) ((list ((list z x) (y y) . ->... . z) z (-lst x)) ((-lst y) y) . ->... . (-lst z)))]
+        
         ;; error tests
         [tc-err (#%variable-reference number?)]
         [tc-err (+ 3 #f)]
