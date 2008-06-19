@@ -63,7 +63,8 @@
                             (make-arr (append 
                                        (map sb dom)
                                        ;; We need to recur first, just to expand out any dotted usages of this.
-                                       (map (lambda (img) (substitute img name (sb (car drest)))) images))
+                                       (let ([expanded (sb (car drest))])
+					 (map (lambda (img) (substitute img name expanded)) images)))
                                       (sb rng)
                                       #f
                                       #f
