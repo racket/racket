@@ -12,19 +12,19 @@ interface Automobile {
 }
 
 class Car implements Automobile {
-
+  
   String make;
   String model;
   int miles;
   double basePrice;
-
+  
   Car(String make, String model, int miles, double basePrice) {
     this.make = make;
     this.model = model;
     this.miles = miles;
     this.basePrice = basePrice;
   }
-
+  
   int milesTraveled() {
     return this.miles;
   }
@@ -35,10 +35,10 @@ class Car implements Automobile {
   Automobile travel(int miles) {
     return new Car(this.make, this.model, this.miles+miles, this.basePrice);
   }
-
+  
   double price(int year) {
     if ((2006 - year) == 0) {
-       return this.basePrice;
+      return this.basePrice;
     } else {
       if ((2006 - year) > 0) {
         return this.basePrice - (this.basePrice / (2006 - year));
@@ -47,34 +47,34 @@ class Car implements Automobile {
       }
     }
   }
-
+  
 }
 
 class CarExamples {
-
+  
   CarExamples() { }
-
+  
   Car myCar = new Car("Toyota","Tercel",100000, 16000.00);
   Car momCar = new Car("Honda","Excel",10000, 32000.00);
-
+  
   boolean test1 = check this.myCar expect this.momCar;
   boolean test2 = check this.myCar.milesTraveled() expect 100000;
   
   boolean testTravel() {
     return (check this.myCar.travel(10) expect new Car("Toyota","Tercel",100010, 16000.00)) ||
-           (check this.momCar.travel(90000) expect this.myCar);
+    (check this.momCar.travel(90000) expect this.myCar);
   }
-
+  
   boolean testMakeModel() {
     return check this.myCar.makeAndModel() expect "ToyotaTercel";
   }
-
+  
   boolean testPrice() {
     return (check this.myCar.price(2006) expect 16000.00 within .01) &&
-           (check this.myCar.price(1991) expect 14933.33 within .01) &&
-           (check this.myCar.price(2007) expect 32000.00 within .01);
+    (check this.myCar.price(1991) expect 14933.33 within .01) &&
+    (check this.myCar.price(2007) expect 32000.00 within .01);
   }
- 
+  
 }
 
 class Truck implements Automobile {
@@ -83,22 +83,22 @@ class Truck implements Automobile {
   int numDoors;
   boolean extendedBed;
   double basePrice;
-
+  
   Truck( String make, int miles, int numDoors, boolean bed, double basePrice) {
-     this.make = make;
-     this.miles = miles;
-     this.numDoors = numDoors;
-     this.extendedBed = bed;
-     this.basePrice = basePrice;
+    this.make = make;
+    this.miles = miles;
+    this.numDoors = numDoors;
+    this.extendedBed = bed;
+    this.basePrice = basePrice;
   }
-
+  
   int milesTraveled() { return this.miles; }
   String makeAndModel() {
     if (this.extendedBed) {
-       return this.make.concat("Extended");
+      return this.make.concat("Extended");
     } else {
-       return this.make.concat(String.valueOf(this.numDoors));
-     }
+      return this.make.concat(String.valueOf(this.numDoors));
+    }
   }
   Automobile travel(int miles) {
     return new Truck(this.make, this.miles + miles, this.numDoors, this.extendedBed, this.basePrice);
@@ -118,25 +118,25 @@ class Truck implements Automobile {
 class TruckExamples {
   Truck oneTruck = new Truck("Toyota",10000, 2,false,20000.00);
   Truck twoTruck = new Truck("Ford",100000,2,true,35000.00);
-
+  
   boolean test1 = check this.oneTruck.milesTraveled() expect 10000;
   boolean test2 = check this.oneTruck expect this.twoTruck;
   
   TruckExamples() { }
-
+  
   boolean testPrice() {
     return (check this.oneTruck.price(2006) expect 20000.00 within .01) &&
            (check this.oneTruck.price(1996) expect 16000.00 within .01);
   }
-
+  
   boolean testTravel() {
     return check this.oneTruck.travel(1000) expect new Truck("Toyota",11000,2,false,20000.00);
   }
-
+  
   boolean testMakeAndModel() {
     return (check this.oneTruck.makeAndModel() expect "Toyota2") &&
            (check this.twoTruck.makeAndModel() expect "FordExtended");
   }
- 
+  
 }
 

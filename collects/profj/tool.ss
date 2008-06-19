@@ -182,18 +182,20 @@
                         (cond
                           [(equal? opener #\{)
                            (let* ([previous-open (get-sexp-start (sub1 open-at))]
-                                  [brace? (and previous-open (equal? #\{ (get-character (sub1 previous-open))))]
-                                  [base-line-start (and brace? (skip-whitespace (add1 previous-open) 'forward #f))])
-                             #;(printf "brace? ~a bls ~a~n" brace? base-line-start)
+                                  [brace? (and previous-open 
+                                               (> (sub1 previous-open) 0)
+                                               (equal? #\{ (get-character (sub1 previous-open))))]
+                                  [base-line-text (and brace? (skip-whitespace (add1 previous-open) 'forward #f))]
+                                  [base-line-start (and base-line-text (find-string eol 'backward base-line-text 0 #f))])
+                             #;(printf "brace? ~a blt ~a bls ~a~n" brace? base-line-text base-line-start)
                              (cond
                                [base-line-start (+ single-tab-stop
-                                                   (max 0 (sub1 (- base-line-start previous-open))))]
+                                                   (max 0 (sub1 (- base-line-text base-line-start))))]
                                [brace? (+ single-tab-stop 0)]
                                [else (+ single-tab-stop last-line-indent)]))]
                           [(equal? opener #\()
                            (+ (max 0
-                                   (- open-at #;(find-string "(" 'forward last-line-start start-pos #f)
-                                      last-line-start))
+                                   (- open-at last-line-start))
                               last-line-indent)]
                           [(equal? opener #\[)
                            (+ (max 0
@@ -240,6 +242,7 @@
                                       (cond
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
+                                        [(< (sub1 curr-open) 0) base-offset]
                                         [else 
                                          (sensitive-indent last-line-indent last-line-start (get-character (sub1 curr-open)) curr-open)
                                          #;(+ single-tab-stop last-line-indent)]))]
@@ -251,6 +254,7 @@
                                       (cond
                                         [(not old-open) last-line-indent]
                                         [(and old-open (<= curr-open old-open)) last-line-indent]
+                                        [(< (sub1 curr-open) 0) base-offset]
                                         [else 
                                          (sensitive-indent last-line-indent last-line-start (get-character (sub1 curr-open)) curr-open)
                                          #;(+ single-tab-stop last-line-indent)]))]))])))])
@@ -311,15 +315,20 @@
                   [end-para (position-paragraph (get-end-position))])
               (begin-edit-sequence)
               (let loop ([para start-para])
+                #;(printf "in tabify outer loop ~a ~a~n" para end-para)
                 (let* ([para-start (paragraph-start-position para)]
+                       [curr-white-space (skip-whitespace para-start 'forward #f)]
                        [insertion (get-indentation (max 0 (sub1 para-start)))]
                        [closer? #f]
                        [delete? #f])
                   (let loop ()
+                    #;(printf "in tabify inner loop ~a ~a, ~a ~n" para para-start curr-white-space)
                     (let ([c (get-character para-start)]
                           [class (classify-position para-start)])
+                      #;(printf "character is ~a, ~a~n" c class)
                       (cond
                         [(and (eq? 'white-space class)
+                              (not (= curr-white-space para-start))
                               (not (char=? c #\015))
                               (not (char=? c #\012)))
                          (set! delete? #t)
@@ -332,8 +341,7 @@
                      (insert (substring insertion 0 (max 0 (- (string-length insertion) single-tab-stop))) para-start para-start)]
                     [(or delete? (not (eq? 'block-comment (classify-position para-start))))
                      (insert insertion para-start para-start)]))
-                (unless (= para end-para)
-                  (loop (+ para 1))))
+                (unless (= para end-para) (loop (+ para 1))))
               (end-edit-sequence)))
 
           (super-new)))
