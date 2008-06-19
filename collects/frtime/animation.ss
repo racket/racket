@@ -96,6 +96,8 @@
   (define-struct curve (xmin xmax ymin ymax fn))
   (define-struct polygon (posn-list posn color))
   (define-struct solid-polygon (posn-list posn color))
+  (define-struct arc (pos width height start-radians end-radians color))
+  (define-struct solid-arc (pos width height start-radians end-radians color))
   (define-struct image (pos renderer))
   
   (define (prep-image file)
@@ -144,6 +146,20 @@
                  (* 2 radius)
                  (* 2 radius)
                  (if (undefined? color) "black" color))))]
+           [($ arc pos width height start-radians end-radians color)
+            (let ([pos (v-n pos)]
+                  [width (v-n width)]
+                  [height (v-n height)]
+                  [start-radians (v-n start-radians)]
+                  [end-radians (v-n end-radians)])
+              ((draw-arc pixmap) pos width height start-radians end-radians color))]
+           [($ solid-arc pos width height start-radians end-radians color)
+            (let ([pos (v-n pos)]
+                  [width (v-n width)]
+                  [height (v-n height)]
+                  [start-radians (v-n start-radians)]
+                  [end-radians (v-n end-radians)])
+              ((draw-solid-arc pixmap) pos width height start-radians end-radians color))]
            [($ image pos renderer)
             (let ([renderer (v-n renderer)]
                   [pos (v-n pos)])

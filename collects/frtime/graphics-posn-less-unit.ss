@@ -523,6 +523,52 @@
   (define draw/clear/flip-rectangle (draw/clear/flip 'draw-rectangle))
   (define draw/clear/flip-ellipse (draw/clear/flip 'draw-ellipse))
   
+  (define (draw-arc viewport)
+    (check-viewport 'draw-arc viewport)
+    (rec draw-arc-viewport
+	 (case-lambda
+	  [(p width height start-radians end-radians)
+           (draw-arc-viewport p width height (make-rgb 0 0 0))]
+	  [(p width height start-radians end-radians color)
+	   (check 'draw-arc
+		  posn? p "posn"
+		  number? width "number"
+		  number? height "number"
+                  number? start-radians "number"
+                  number? end-radians "number"
+		  (orp color? number?) color "color or index")
+           (let ([dc (viewport-dc viewport)]
+                 [buffer-dc (viewport-buffer-dc viewport)])
+             (send dc set-pen (send mred:the-pen-list find-or-create-pen (get-color color) 1 'solid))
+             (send dc set-brush (send mred:the-brush-list find-or-create-brush "BLACK" 'transparent))
+             (send buffer-dc set-pen (send mred:the-pen-list find-or-create-pen (get-color color) 1 'solid))
+             (send buffer-dc set-brush (send mred:the-brush-list find-or-create-brush "BLACK" 'transparent))
+             (send dc draw-arc (posn-x p) (posn-y p) width height start-radians end-radians)
+             (send buffer-dc draw-arc (posn-x p) (posn-y p) width height start-radians end-radians))])))
+    
+  (define (draw-solid-arc viewport)
+    (check-viewport 'draw-solid-arc viewport)
+    (rec draw-arc-viewport
+	 (case-lambda
+	  [(p width height start-radians end-radians)
+           (draw-arc-viewport p width height (make-rgb 0 0 0))]
+	  [(p width height start-radians end-radians color)
+	   (check 'draw-solid-arc
+		  posn? p "posn"
+		  number? width "number"
+		  number? height "number"
+                  number? start-radians "number"
+                  number? end-radians "number"
+		  (orp color? number?) color "color or index")
+           (let ([dc (viewport-dc viewport)]
+                 [buffer-dc (viewport-buffer-dc viewport)])
+             (send dc set-pen (send mred:the-pen-list find-or-create-pen (get-color color) 1 'solid))
+             (send dc set-brush (send mred:the-brush-list find-or-create-brush (get-color color) 'solid))
+             (send buffer-dc set-pen (send mred:the-pen-list find-or-create-pen (get-color color) 1 'solid))
+             (send buffer-dc set-brush (send mred:the-brush-list find-or-create-brush (get-color color) 'solid))
+             (send dc draw-arc (posn-x p) (posn-y p) width height start-radians end-radians)
+             (send buffer-dc draw-arc (posn-x p) (posn-y p) width height start-radians end-radians))])))
+    
   (define (draw-rectangle viewport)
     (check-viewport 'draw-rectangle viewport)
     (rec draw-rectangle-viewport

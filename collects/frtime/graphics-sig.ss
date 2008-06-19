@@ -40,6 +40,7 @@
      get-pixel get-color-pixel test-pixel
      
      draw-rectangle clear-rectangle flip-rectangle 
+     draw-arc draw-solid-arc
      draw-ellipse clear-ellipse flip-ellipse 
      draw-polygon clear-polygon flip-polygon 
      draw-solid-rectangle clear-solid-rectangle flip-solid-rectangle 
