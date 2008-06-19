@@ -559,9 +559,10 @@
                           (apply (plambda: (b) ([x : Number] . [y : Number ... a]) x)
                                  1 w))]
         
-        [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
-                          (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
-                                 1 w))]
+        [tc-e (plambda: (a ...) ([z : String] . [w : Number ... a])
+                        (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
+                               1 w))
+              (-polydots (a) ((list -String) (N a) . ->... . N))]
         ;; instantiating non-dotted terms
         [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
               (-Integer . -> . -Integer : (list (make-Latent-Var-True-Effect)) (list (make-Latent-Var-False-Effect)))]
@@ -578,7 +579,7 @@
                . -> . -Integer)]
         
         [tc-e (plambda: (z x y ...) () (inst map z x y ... y))
-              (-polydots (z x y) ((list ((list z x) (y y) . ->... . z) z (-lst x)) ((-lst y) y) . ->... . (-lst z)))]
+              (-polydots (z x y) (-> ((list ((list x) (y y) . ->... . z) (-lst x)) ((-lst y) y) . ->... . (-lst z))))]
         
         ;; error tests
         [tc-err (#%variable-reference number?)]
@@ -609,6 +610,36 @@
         
         [tc-e (filter even? (filter integer? (list 1 2 3 'foo)))
               (-lst -Integer)]
+        
+        [tc-err (plambda: (a ...) [as : a ... a]
+                          (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
+                                 3 (list #\c) as))]
+        [tc-err (plambda: (a ...) [as : a ... a]
+                          (apply fold-left (lambda: ([c : Integer] [a : String] . [xs : a ... a]) c)
+                                 3 (list #\c) (map list as)))]
+        [tc-err (plambda: (a ...) [as : a ... a]
+                          (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
+                                 3 (list #\c) (map list (map list as))))]
+        
+        [tc-e (plambda: (a ...) [as : a ... a]
+                        (apply fold-left (lambda: ([c : Integer] [a : Char] . [xs : a ... a]) c)
+                               3 (list #\c) (map list as)))
+              (-polydots (a) ((list) (a a) . ->... . -Integer))]
+        
+        ;; First is same as second, but with map explicitly instantiated.
+        [tc-e (plambda: (a ...) [ys : (a ... a -> Number) *]
+                (lambda: [zs : a ... a]
+                  ((inst map Number (a ... a -> Number))
+                   (lambda: ([y : (a ... a -> Number)])
+                     (apply y zs))
+                   ys)))
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
+        [tc-e (plambda: (a ...) [ys : (a ... a -> Number) *]
+                (lambda: [zs : a ... a]
+                  (map (lambda: ([y : (a ... a -> Number)])
+                         (apply y zs))
+                       ys)))
+              (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
         
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
