@@ -11,7 +11,11 @@
 ;; rest : option[c]
 (define-struct dcon (fixed rest) #:prefab)
 
-;; map : hash mapping variable to dcon
+;; type : c
+;; bound : vars
+(define-struct dcon-dotted (type bound) #:prefab)
+
+;; map : hash mapping variable to dcon or dcon-dotted
 (define-struct dmap (map) #:prefab)
 
 ;; maps is a list of pairs of
@@ -32,5 +36,6 @@
 
 (provide/contract (struct c ([S Type?] [X symbol?] [T Type?]))
                   (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
-                  (struct dmap ([map (hashof symbol? dcon?)]))
+                  (struct dcon-dotted ([type c?] [bound symbol?]))
+                  (struct dmap ([map (hashof symbol? (lambda (e) (or (dcon? e) (dcon-dotted? e))))]))
                   (struct cset ([maps (listof (cons/c (hashof symbol? c?) dmap?))])))

@@ -130,6 +130,8 @@
                                    ((-lst b) b) . ->... . -Void))]
      [fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
                                     ((-lst b) b) . ->... . c))]
+     [fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+                                     ((-lst b) b) . ->... . c))]
      [foldl
       (-poly (a b c)
              (cl-> [((a b . -> . b) b (make-lst a)) b]

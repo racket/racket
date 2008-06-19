@@ -12,6 +12,7 @@
 (provide fv fv/list
          substitute
          substitute-dots
+         substitute-dotted
          subst-all
          subst 
          ret
@@ -76,7 +77,7 @@
       target))
 
 ;; implements sd from the formalism
-;; substitute-dotted : Type Name Type Name -> Type
+;; substitute-dotted : Type Name Name Type -> Type
 (define (substitute-dotted image image-bound name target)
   (define (sb t) (substitute-dotted image image-bound name t))
   (if (hash-ref (free-vars* target) name #f)

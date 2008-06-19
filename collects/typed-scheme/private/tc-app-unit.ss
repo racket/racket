@@ -13,6 +13,7 @@
          "type-annotation.ss"
          "resolve-type.ss"
          "type-environments.ss"
+         (only-in srfi/1 alist-delete)
          (only-in scheme/private/class-internal make-object do-make-object)
          mzlib/trace mzlib/pretty syntax/kerncase scheme/match
          (for-template 
@@ -324,7 +325,7 @@
                                    (car rests*)
                                    (car rngs*)))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
-               ;; ... function, ... arg
+               ;; ... function, ... arg, same bound on ...
                [(and (car drests*)
                      tail-bound
                      (eq? tail-bound (cdr (car drests*)))
@@ -332,6 +333,24 @@
                         (length arg-tys))
                      (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*)))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+               ;; ... function, ... arg, different bound on ...
+               [(and (car drests*)
+                     tail-bound
+                     (not (eq? tail-bound (cdr (car drests*))))
+                     (= (length (car doms*))
+                        (length arg-tys))
+                     (parameterize ([current-tvars (extend-env (list tail-bound (cdr (car drests*)))
+                                                               (list (make-DottedBoth (make-F tail-bound))
+                                                                     (make-DottedBoth (make-F (cdr (car drests*)))))
+                                                               (current-tvars))])
+                       (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*))))
+                => (lambda (substitution) 
+                     (define drest-bound (cdr (car drests*)))
+                     (ret (substitute-dotted (cadr (assq drest-bound substitution))
+                                             tail-bound
+                                             drest-bound
+                                             (subst-all (alist-delete drest-bound substitution eq?)
+                                                        (car rngs*)))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result: (PolyDots: vars (Function: '())))

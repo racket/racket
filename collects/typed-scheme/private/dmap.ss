@@ -37,6 +37,14 @@
                    [c2 (in-list-forever shorter srest)])
           (c-meet c1 c2 (c-X c1)))
         (c-meet lrest srest (c-X lrest))))]
+    [((struct dcon-dotted (c1 bound1)) (struct dcon-dotted (c2 bound2)))
+     (unless (eq? bound1 bound2)
+       (fail! bound1 bound2))
+     (make-dcon-dotted (c-meet c1 c2 bound1) bound1)]
+    [((struct dcon _) (struct dcon-dotted _))
+     (fail! dc1 dc2)]
+    [((struct dcon-dotted _) (struct dcon _))
+     (fail! dc1 dc2)]
     [(_ _) (int-err "Got non-dcons: ~a ~a" dc1 dc2)]))
 
 (define (dmap-meet dm1 dm2)
