@@ -101,9 +101,9 @@
 (dt arr (dom rng rest drest thn-eff els-eff)
     [#:frees (combine-frees (append (map flip-variances (map free-vars* (append (if rest (list rest) null) dom)))
                                     (match drest
-                                      [(cons t (? symbol? bnd))
+                                      #;[(cons t (? symbol? bnd))
                                        (let ([vs (free-vars* t)])
-                                         (list (flip-variances (fix-bound vs bnd))))]
+                                         (list (flip-variances vs)))]
                                       [(cons t bnd) (list (flip-variances (free-vars* t)))]
                                       [_ null])
                                     (list (free-vars* rng))
@@ -111,9 +111,9 @@
                                          (map free-vars* (append thn-eff els-eff)))))
              (combine-frees (append (map flip-variances (map free-idxs* (append (if rest (list rest) null) dom)))
                                     (match drest
-                                      [(cons t (? number? bnd))
+                                      #;[(cons t (? number? bnd))
                                        (let ([vs (free-idxs* t)])
-                                         (list (flip-variances (fix-bound vs bnd))))]
+                                         (list (flip-variances vs)))]
                                       [(cons t bnd) (list (flip-variances (free-idxs* t)))]
                                       [_ null])
                                     (list (free-idxs* rng))                                      

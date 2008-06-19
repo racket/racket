@@ -319,23 +319,28 @@
                 [else (fail! S T)])]))))
 
 (define (subst-gen C R)
-  (for/list ([(k v) (car (car (cset-maps C)))])
+  (define (constraint->type v #:variable [variable #f])
     (match v
       [(struct c (S X T))
-       (let ([var (hash-ref (free-vars* R) X Constant)])
-         ;(printf "variance was: ~a~nR was ~a~n" var R)
-         (list
-          X
-          (evcase var 
+       (let ([var (hash-ref (free-vars* R) (or variable X) Constant)])
+         ;(printf "variance was: ~a~nR was ~a~nX was ~a~n" var R (or variable X))
+         (evcase var 
                  [Constant S]
                  [Covariant S]
                  [Contravariant T]
-                 [Invariant 
-                  #; ; don't fail, we just pretend in covariance
-                  (unless (type-equal? S T)
-                              ;(printf "invariant and not equal ~a ~a" S T)
-                              (fail! S T))
-                  S])))])))
+                 [Invariant S]))]))
+  (match (car (cset-maps C))
+    [(cons cmap (struct dmap (dm)))
+     (append 
+      (for/list ([(k dc) dm])
+        (match dc
+          [(struct dcon (fixed rest))
+           (list k
+                 (for/list ([f fixed])
+                   (constraint->type f #:variable k))
+                 (and rest (constraint->type rest)))]))
+      (for/list ([(k v) cmap])
+        (list k (constraint->type v))))]))
 
 (define (cgen/list X V S T)
   (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))

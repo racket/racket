@@ -54,7 +54,6 @@
   (define (sb t) (substitute-dots images name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-                 [#:F name* target]
                  [#:arr dom rng rest drest thn-eff els-eff
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
@@ -101,7 +100,14 @@
 ;; substitution = Listof[List[Name,Type]]
 ;; subst-all : substition Type -> Type
 (define (subst-all s t)
-  (foldr (lambda (e acc) (substitute (cadr e) (car e) acc)) t s))
+  (for/fold ([t t]) ([e s])
+    (match e
+      [(list v (list imgs ...) #f)
+       (substitute-dots imgs v t)]
+      [(list v (list ts) starred)
+       (int-err "subst-all: nyi")]
+      [(list v img)
+       (substitute img v t)])))
 
 
 ;; unfold : Type -> Type
