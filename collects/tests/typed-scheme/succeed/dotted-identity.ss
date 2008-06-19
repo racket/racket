@@ -8,3 +8,9 @@
 
 #{(f y) :: (Integer Integer -> Integer)}
 
+(: z (Integer * -> Integer))
+(define (z . xs) (apply + xs))
+
+((f z) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18)
+#;
+#{(f z) :: (Integer * -> Integer)}
