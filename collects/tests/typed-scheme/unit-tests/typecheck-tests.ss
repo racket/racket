@@ -562,10 +562,9 @@
         [tc-err (plambda: (a ...) ([z : String] . [w : Number ... a])
                           (apply (plambda: (b ...) ([x : Number] . [y : Number ... b]) x)
                                  1 w))]
-        
         ;; instantiating non-dotted terms
         [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
-              (-Integer . -> . -Integer)]
+              (-Integer . -> . -Integer : (list (make-Latent-Var-True-Effect)) (list (make-Latent-Var-False-Effect)))]
         [tc-e (inst (plambda: (a) [x : a *] (apply list x)) Integer)
               ((list) -Integer . ->* . (-lst -Integer))]
         
