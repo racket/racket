@@ -107,8 +107,11 @@
            (or (and (null? thn-eff*) (null? els-eff*))
                (and (effects-equal? thn-eff thn-eff*)
                     (effects-equal? els-eff els-eff*))
-               (and (andmap sub-eff thn-eff thn-eff*)
-                    (andmap sub-eff els-eff els-eff*)))
+               (and 
+                (= (length thn-eff) (length thn-eff*))
+                (= (length els-eff) (length els-eff*))
+                (andmap sub-eff thn-eff thn-eff*)
+                (andmap sub-eff els-eff els-eff*)))
          (fail! s t))
        ;; either the effects have to be the same, or the supertype can't have effects
        (let ([A (subtypes*/varargs A0 t1 s1 s3)])

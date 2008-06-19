@@ -68,7 +68,10 @@
 ;; equality - good
 
 (define tc-result-equal? equal?)
-(define (effects-equal? fs1 fs2) (andmap eq? fs1 fs2))
+(define (effects-equal? fs1 fs2) 
+  (and 
+   (= (length fs1) (length fs2))
+   (andmap eq? fs1 fs2)))
 
 
 ;; fv : Type -> Listof[Name]

@@ -7,10 +7,13 @@
  '#%paramz
  (only-in scheme/match/runtime match:error))
 
+
+
 ;; these are all for constructing the types given to variables
 (require (for-syntax
           scheme/base
           "init-envs.ss"
+          "effect-rep.ss"
           (except-in "type-rep.ss" make-arr)
           "type-effect-convenience.ss"
           (only-in "type-effect-convenience.ss" [make-arr* make-arr])
@@ -137,7 +140,15 @@
              (cl-> [((a b . -> . b) b (make-lst a)) b]
                    [((a b c . -> . c) c (make-lst a) (make-lst b)) c]))]
      [foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
-     [filter (-poly (a) ((a . -> . B) (-lst a) . -> . (-lst a)))]
+     [filter (-poly (a b) (cl->*
+                           ((a . -> . B
+                               :
+                               (list (make-Latent-Restrict-Effect b))
+                               (list (make-Latent-Remove-Effect b)))
+                            (-lst a)
+                            . -> .
+                            (-lst b))
+                           ((a . -> . B) (-lst a) . -> . (-lst a))))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [last   (-poly (a) ((-lst a) . -> . a))]

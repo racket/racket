@@ -146,6 +146,20 @@
 (define (remember s t A) (cons (seen-before s t) A))
 (define (seen? s t) (member (seen-before s t) (current-seen)))
 
+;; t and s must be *latent* effects
+(define (cgen/eff V X t s)
+  (match* (t s)
+    [(e e) (empty-cset X)]
+    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: s))
+     (cset-meet (cgen V X t s) (cgen V X s t))]
+    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: s))
+     (cset-meet (cgen V X t s) (cgen V X s t))]
+    [(_ _) (fail! t s)]))
+
+(define (cgen/eff/list V X ts ss)
+  (cset-meet* X (for/list ([t ts] [s ss]) (cgen/eff V X t s))))
+
+
 (define (cgen V X S T)
   (define empty (empty-cset X))
   (define (singleton S X T )
@@ -239,7 +253,11 @@
                        (with-handlers ([exn:infer? (lambda (_) #f)])
                          (match* (t-arr s-arr)
                                  [((arr: ts t t-rest t-thn-eff t-els-eff) (arr: ss s s-rest s-thn-eff s-els-eff))
-                                  (let ([arg-mapping 
+                                  (let ([eff-mapping
+					 (cset-meet* X
+						     (list (cgen/eff/list V X t-thn-eff s-thn-eff)
+							   (cgen/eff/list V X t-els-eff s-els-eff)))]
+					[arg-mapping 
                                          (cond [(and t-rest s-rest (= (length ts) (length ss)))
                                                 (cgen/list X V (cons s-rest ss) (cons t-rest ts))]
                                                [(and (not t-rest) (not s-rest) (= (length ts) (length ss)))
@@ -250,7 +268,7 @@
                                                 (cgen/list X V (extend ts ss s-rest) ts)]
                                                [else (fail! S T)])]
                                         [ret-mapping (cgen V X t s)])
-                                    (cset-meet arg-mapping ret-mapping))])))))]
+                                    (cset-meet arg-mapping (cset-meet eff-mapping ret-mapping)))])))))]
          [(_ _)
           (cond [(subtype S T) empty]
                 ;; or, nothing worked, and we fail
