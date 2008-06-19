@@ -13,7 +13,6 @@
 
 (provide (all-defined-out))
 
-
 (define (-vet id) (make-Var-True-Effect id))
 (define (-vef id) (make-Var-False-Effect id))
 
@@ -38,10 +37,11 @@
 
 (define-syntax ->
   (syntax-rules (:)
-    [(_ dom ... rng)
-     (->* (list dom ...) rng)]
     [(_ dom ... rng : eff1 eff2)
-     (->* (list dom ...) rng : eff1 eff2)]))
+     (->* (list dom ...) rng : eff1 eff2)]
+    [(_ dom ... rng)
+     (->* (list dom ...) rng)]))
+
 (define-syntax ->*
   (syntax-rules (:)
     [(_ dom rng)       
