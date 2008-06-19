@@ -91,13 +91,29 @@
                         (filter (lambda (te) (not (ormap (lambda (s) (type-equal? s te)) ss))) ts))])
     (cgen/list V X ss* ts*)))
 
+;; t and s must be *latent* effects
+(define (cgen/eff V X t s)
+  (match* (t s)
+    [(e e) (empty-cset X)]
+    [((Latent-Restrict-Effect: t) (Latent-Restrict-Effect: s))
+     (cset-meet (cgen V X t s) (cgen V X s t))]
+    [((Latent-Remove-Effect: t) (Latent-Remove-Effect: s))
+     (cset-meet (cgen V X t s) (cgen V X s t))]
+    [(_ _) (fail! t s)]))
+
+(define (cgen/eff/list V X ts ss)
+  (cset-meet* (for/list ([t ts] [s ss]) (cgen/eff V X t s))))
+
 (define (cgen/arr V X t-arr s-arr)
   (define (cg S T) (cgen V X S T))
   (match* (t-arr s-arr)
           [((arr: ts t #f #f t-thn-eff t-els-eff)
             (arr: ss s #f #f s-thn-eff s-els-eff))
-           (cset-meet (cgen/list X V ss ts)
-                      (cg t s))]
+           (cset-meet* 
+            (list (cgen/list X V ss ts)
+                  (cg t s)
+                  (cgen/eff/list V X t-thn-eff s-thn-eff)
+                  (cgen/eff/list V X t-els-eff s-els-eff)))]
           [((arr: ts t t-rest #f t-thn-eff t-els-eff)
             (arr: ss s s-rest #f s-thn-eff s-els-eff))
            (let ([arg-mapping 
