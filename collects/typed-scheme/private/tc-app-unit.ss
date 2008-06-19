@@ -120,6 +120,27 @@
 
 ;(trace tc-args)
 
+(define (stringify-domain dom rst drst)
+  (let ([doms-string (if (null? dom) "" (string-append (stringify dom) " "))])
+    (cond [drst
+           (format "~a~a ... ~a" doms-string (car drst) (cdr drst))]
+          [rst
+           (format "~a~a *" doms-string rst)]
+          [else (stringify dom)])))
+
+(define (domain-mismatches ty doms rests drests arg-tys tail-ty tail-bound)
+  (cond
+    [(null? doms)
+     (int-err "How could doms be null: ~a ~a" ty)]
+    [(= 1 (length doms))
+     (format "Domain: ~a~nArguments: ~a~n"
+             (stringify-domain (car doms) (car rests) (car drests))
+             (stringify-domain arg-tys (if (not tail-bound) tail-ty #f) (if tail-bound (cons tail-ty tail-bound) #f)))]
+    [else
+     (format "Domains:~nArguments: ~a~n"
+             (stringify (map stringify-domain doms rests drests) "~n~t")
+             (stringify-domain arg-tys (if (not tail-bound) tail-ty #f) (if tail-bound (cons tail-ty tail-bound) #f)))]))
+
 (define (tc/apply f args)
   (define f-ty (tc-expr f))
   ;; produces the first n-1 elements of the list, and the last element
@@ -128,80 +149,8 @@
       (if (null? (cdr l))
           (values (reverse acc) (car l))
           (loop (cdr l) (cons (car l) acc)))))
-  (define (printable-h dom r-ty r-bound)
-    (let ([doms-string (if (null? dom) "" (string-append (stringify dom) " "))])
-      (cond [r-bound
-             (format "~a~a ... ~a" doms-string r-ty r-bound)]
-            [r-ty
-             (format "~a~a *" doms-string r-ty)]
-            [else (stringify dom)])))
-  (define (printable dom rst drst)
-    (cond [rst (printable-h dom rst #f)]
-          [drst (printable-h dom (car drst) (cdr drst))]
-          [else (printable-h dom #f #f)]))
   (define-values (fixed-args tail) (split (syntax->list args)))
-  (define (apply-error doms rests drests arg-tys tail-ty tail-bound)
-    (if (and (not (null? doms)) (null? (cdr doms)))
-        (tc-error/expr
-         #:return (ret (Un))
-         (string-append 
-          "bad arguments to apply~n - function expected ~a as fixed arguments and ~a as a rest argument,~n"
-          " - given ~a as fixed arguments and ~a as a rest argument~n")
-         (if (null? (car doms))
-             "nothing"
-             (stringify (car doms)))
-         (cond [(car rests)
-                (format "~a *" (car rests))]
-               [(car drests)
-                (format "~a ... ~a" (car (car drests)) (cdr (car drests)))]
-               [else "nothing"])
-         (if (null? arg-tys)
-             "nothing"
-             (stringify arg-tys))
-         (if tail-bound
-             (format "~a ... ~a" tail-ty tail-bound)
-             tail-ty))
-        (tc-error/expr
-         #:return (ret (Un))
-         "no function domain matched in apply~ndomains were: ~n\t~a~narguments were: \n\t~a\n" 
-         (stringify (map printable doms rests drests) "\n\t")
-         (stringify (append arg-tys (list (if tail-bound
-                                              (string-append tail-ty " ... " tail-bound)
-                                              tail-ty)))))))
-  (define (apply-error/poly doms rests drests arg-tys tail-ty tail-bound)
-    (cond 
-      [(null? doms) (int-err "how could doms be null: ~a ~a" doms f-ty)]
-      [(= 1 (length doms))
-       (cond
-         [(car rests)
-          (tc-error/expr
-           #:return (ret (Un))
-           "polymorphic function domain did not match in apply~ndomain was: ~a~nrest argument was: ~a~narguments were ~a~n" 
-           (car doms) (car rests) (printable-h arg-tys tail-ty tail-bound))]
-         [(car drests)
-          (tc-error/expr
-           #:return (ret (Un))
-           "polymorphic function domain did not match in apply~ndomain was: ~a~nrest argument was: ~a ... ~a~narguments were ~a~n" 
-           (car doms) (car (car drests)) (cdr (car drests)) (printable-h arg-tys tail-ty tail-bound))]
-         [else 
-          (tc-error/expr
-           #:return (ret (Un))
-           "polymorphic function domain did not match in apply~ndomain was: ~a~narguments were ~a~n" 
-           (car doms) (printable-h arg-tys tail-ty tail-bound))])]
-      [else 
-       (tc-error/expr
-        #:return (ret (Un))
-        "no polymorphic function domain matched in apply~ndomains were: ~a~narguments were ~a~n"
-        (stringify 
-         (for/list ([dom doms] [rest rests] [drest drests])
-           (cond
-             [rest
-              (format "~a rest argument: ~a" (stringify dom) rest)]
-             [drest
-              (format "~a rest argument: ~a ... ~a" (stringify dom) (car drest) (cdr drest))]
-             [else (stringify dom)]))
-         "\n")
-        (printable-h arg-tys tail-ty tail-bound))]))
+
   (match f-ty
     [(tc-result: (Function: (list (arr: doms rngs rests drests thn-effs els-effs) ...)))
      (when (null? doms)
@@ -213,7 +162,10 @@
                 (let-values ([(tail-ty tail-bound)
                               (with-handlers ([exn:fail? (lambda _ (values (tc-expr/t tail) #f))])
                                 (tc/dots tail))])
-                      (apply-error doms rests drests arg-tys tail-ty tail-bound))]
+                  (tc-error/expr #:return (ret (Un))
+                                 (string-append 
+                                  "Bad arguments to function in apply:~n"
+                                  (domain-mismatches f-ty doms rests drests arg-tys tail-ty tail-bound))))]
                [(and (car rests*)
                      (let-values ([(tail-ty tail-bound) 
                                    (with-handlers ([exn:fail? (lambda _ (values #f #f))])
@@ -250,7 +202,10 @@
          (cond [(null? doms*)
                 (match f-ty 
                   [(tc-result: (Poly-names: _ (Function: (list (arr: doms rngs rests drests _ _) ..1))))
-                   (apply-error/poly doms rests drests arg-tys tail-ty tail-bound)])]
+                   (tc-error/expr #:return (ret (Un))
+                                 (string-append 
+                                  "Bad arguments to polymorphic function in apply:~n"
+                                  (domain-mismatches f-ty doms rests drests arg-tys tail-ty tail-bound)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
                      (not tail-bound)
@@ -300,7 +255,10 @@
          (cond [(null? doms*)
                 (match f-ty 
                   [(tc-result: (PolyDots-names: _ (Function: (list (arr: doms rngs rests drests _ _) ..1))))
-                   (apply-error/poly doms rests drests arg-tys tail-ty tail-bound)])]
+                   (tc-error/expr #:return (ret (Un))
+                                 (string-append 
+                                  "Bad arguments to polymorphic function in apply:~n"
+                                  (domain-mismatches f-ty doms rests drests arg-tys tail-ty tail-bound)))])]
                ;; the actual work, when we have a * function and a list final argument
                [(and (car rests*)
                      (not tail-bound)
@@ -387,7 +345,7 @@
            [_ (tc-error/expr #:return (ret (Un))
                              "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                              (length argtypes))])]
-        [(tc-result: (Function: (list (arr: doms rngs rests #f latent-thn-effs latent-els-effs) ..1)) thn-eff els-eff)
+        [(tc-result: (and t (Function: (list (arr: doms rngs rests (and drests #f) latent-thn-effs latent-els-effs) ..1))) thn-eff els-eff)
          (if (= 1 (length doms))
              (let-values ([(thn-eff els-eff)
                            (tc-args argtypes arg-thn-effs arg-els-effs (car doms) (car rests) 
@@ -401,16 +359,15 @@
                (cond [(null? doms*) 
                       (tc-error/expr 
                        #:return (ret (Un))
-                       "no function domain matched - domains were:~n~a~narguments were ~a" 
-                       (stringify
-                        (for/list ([d doms] [r rests])
-                          (format "~a ~a*"(stringify d) r))
-                        "\n")
-                       argtypes)]
+                       (string-append "No function domains matched in function application:"
+                                      (domain-mismatches t doms rests drests argtypes #f #f)))]
                      [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
                      [else (loop (cdr doms*) (cdr rngs) (cdr rests*))])))]
-        [(and rft (tc-result: (or (Poly: vars (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))
-                                  (PolyDots: (list vars ... _) (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...))))))
+        [(and rft (tc-result: (and t
+                                   (or (Poly: vars 
+                                              (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))
+                                       (PolyDots: (list vars ... _)
+                                                  (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))))))
          ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
          ;(printf "ftype again:    ~a~n" ftype)
          ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
@@ -421,14 +378,17 @@
                    argtypes)
          (let loop ([doms* doms] [rngs* rngs])
            (cond [(null? doms*)
-                  (match-let ([(tc-result: (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs #f #f _ _) ...)))) ftype])
-                    (if (= 1 (length doms))
-                        (tc-error/expr #:return (ret (Un)) 
-                                       "Polymorphic function could not be applied to arguments:~nExpected: ~a ~nActual: ~a" 
-                                       (stringify (car msg-doms)) (stringify argtypes))
-                        (tc-error/expr #:return (ret (Un))
-                                       "no polymorphic function domain matched - possible domains were: ~n~a~narguments were: ~n~a"
-                                       (stringify (map stringify msg-doms) "\n") (stringify argtypes))))]
+                  (match t
+                    [(Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
+                     (tc-error/expr #:return (ret (Un))
+                                    (string-append "Polymorphic function over ~a could not be applied to arguments:~n"
+                                                   (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
+                                    (stringify msg-vars))]
+                    [(PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
+                     (tc-error/expr #:return (ret (Un))
+                                    (string-append "Polymorphic function over ~a ... could not be applied to arguments:~n"
+                                                   (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
+                                    (stringify msg-vars))])]
                  [(and (= (length (car doms*))
                           (length argtypes))
                        (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) expected))
@@ -455,8 +415,9 @@
                        )]|#
                  [else (loop (cdr doms*) (cdr rngs*))]))]
         ;; polymorphic varargs
-        [(tc-result: (or (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
-                         (PolyDots: (list vars ... _) (Function: (list (arr: dom rng rest #f thn-eff els-eff))))))
+        [(tc-result: (and t
+                          (or (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
+                              (PolyDots: (list vars ... _) (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
@@ -474,8 +435,9 @@
                   (int-err "Inconsistent substitution - arguments not subtypes"))
                 (ret (subst-all substitution rng)))]
              [else (tc-error/expr #:return (ret (Un))
-                                  "no polymorphic function domain matched - domain was: ~a rest type was: ~a arguments were ~a"
-                                  (stringify dom) rest (stringify argtypes))]))]
+                                  (string-append
+                                   "No polymorphic function domain matched in function application:~n"
+                                   (domain-mismatches t (list dom) (list rest) (list #f) argtypes #f #f)))]))]
         ;; polymorphic ... type
         [(tc-result: (and t (PolyDots: (and vars (list fixed-vars ... dotted-var))
                                        (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))))
@@ -498,9 +460,8 @@
                                   (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))
                  (tc-error/expr #:return (ret (Un))
                                 (string-append
-                                 "no polymorphic function domain matched -~n"
-                                 "domain was: ~a ~ndotted rest type was: ~a ... ~a~narguments were ~a")
-                                (stringify dom) dty dbound (stringify argtypes))])]))]
+                                 "No polymorphic function domain matched in function application:~n"
+                                 (domain-mismatches t (list dom) (list #f) (list (cons dty dbound)) argtypes #f #f)))])]))]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ...))))
          (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
         [(tc-result: (Poly: vars (Function: (list (arr: doms rngs #f drests thn-effs els-effs) ...))))
@@ -510,7 +471,8 @@
          (match-let ([(list (tc-result: ts) ...) (map (lambda (f) (outer-loop 
                                                                    (ret f e1 e2) argtypes arg-thn-effs arg-els-effs args)) fs)])
            (ret (apply Un ts)))]
-        [(tc-result: f-ty _ _) (tc-error/expr #:return (ret (Un)) "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))))
+        [(tc-result: f-ty _ _) (tc-error/expr #:return (ret (Un))
+                                              "Cannot apply expression of type ~a, since it is not a function type" f-ty)]))))
 
 ;(trace tc/funapp)
 

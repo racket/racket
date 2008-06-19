@@ -49,9 +49,9 @@
                                     (map (lambda (e) (sub-eff sb e)) els-eff)))])
       target))
 
-;; substitute-dots : Listof[Type] Name Type -> Type
-(define (substitute-dots images name target)    
-  (define (sb t) (substitute-dots images name t))
+;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
+(define (substitute-dots images rimage name target)    
+  (define (sb t) (substitute-dots images rimage name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
                  [#:arr dom rng rest drest thn-eff els-eff
@@ -63,7 +63,7 @@
                                        (let ([expanded (sb (car drest))])
 					 (map (lambda (img) (substitute img name expanded)) images)))
                                       (sb rng)
-                                      #f
+                                      rimage
                                       #f
                                       (map (lambda (e) (sub-eff sb e)) thn-eff)
                                       (map (lambda (e) (sub-eff sb e)) els-eff))
@@ -102,10 +102,8 @@
 (define (subst-all s t)
   (for/fold ([t t]) ([e s])
     (match e
-      [(list v (list imgs ...) #f)
-       (substitute-dots imgs v t)]
-      [(list v (list ts) starred)
-       (int-err "subst-all: nyi")]
+      [(list v (list imgs ...) starred)
+       (substitute-dots imgs starred v t)]
       [(list v img)
        (substitute img v t)])))
 
@@ -129,7 +127,7 @@
      (let* ([fixed-tys (take types (length fixed))]
             [rest-tys (drop types (length fixed))]
             [body* (subst-all (map list fixed fixed-tys) body)])
-       (substitute-dots rest-tys dotted body*))]
+       (substitute-dots rest-tys #f dotted body*))]
     [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
 
 (define (instantiate-poly-dotted t types image var)
