@@ -1,4 +1,13 @@
 ------------------------------
+        Version 4.0.1
+------------------------------
+
+  . fixed a bug so that user-defined teachpacks can now be
+    added
+
+  . fixed a bug in PLaneT
+
+------------------------------
         Version 4.0
 ------------------------------
 
