@@ -16,6 +16,7 @@
          subst 
          ret
          instantiate-poly
+         instantiate-poly-dotted
          tc-result: 
          tc-result-equal? 
          effects-equal?
@@ -52,10 +53,6 @@
   (define (sb t) (substitute-dots images name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
-                 ;; The way I handled this in my type system is via type validity checking.  Hrmm.
-                 #;[#:F name* (if (eq? name* name)
-                                (int-err "substitute-dots: got single variable ~a" name*)
-                                target)]
                  [#:F name* target]
                  [#:arr dom rng rest drest thn-eff els-eff
                         (if (and (pair? drest)
@@ -76,6 +73,27 @@
                                       (and drest (cons (sb (car drest)) (cdr drest)))
                                       (map (lambda (e) (sub-eff sb e)) thn-eff)
                                       (map (lambda (e) (sub-eff sb e)) els-eff)))])
+      target))
+
+;; implements sd from the formalism
+;; substitute-dotted : Type Name Type Name -> Type
+(define (substitute-dotted image image-bound name target)
+  (define (sb t) (substitute-dotted image image-bound name t))
+  (if (hash-ref (free-vars* target) name #f)
+      (type-case sb target
+                 [#:F name*
+                      (if (eq? name* name)
+                          image
+                          target)]
+                 [#:arr dom rng rest drest thn-eff els-eff
+                        (make-arr (map sb dom)
+                                  (sb rng)
+                                  (and rest (sb rest))
+                                  (and drest
+                                       (cons (sb (car drest))
+                                             (if (eq? name (cdr drest)) image-bound (cdr drest))))
+                                  (map (lambda (e) (sub-eff sb e)) thn-eff)
+                                  (map (lambda (e) (sub-eff sb e)) els-eff))])
       target))
 
 ;; substitute many variables
@@ -105,7 +123,16 @@
             [rest-tys (drop types (length fixed))]
             [body* (subst-all (map list fixed fixed-tys) body)])
        (substitute-dots rest-tys dotted body*))]
-    [_ (int-err "instantiate-many: requires Poly type, got ~a" t)]))
+    [_ (int-err "instantiate-poly: requires Poly type, got ~a" t)]))
+
+(define (instantiate-poly-dotted t types image var)
+  (match t
+    [(PolyDots: (list fixed ... dotted) body)
+     (unless (= (length fixed) (length types))
+       (int-err "instantiate-poly-dotted: wrong number of types: expected ~a, got ~a" (length fixed) (length types)))
+     (let ([body* (subst-all (map list fixed types) body)])
+       (substitute-dotted image var dotted body*))]
+    [_ (int-err "instantiate-poly-dotted: requires PolyDots type, got ~a" t)]))
 
 
 ;; this structure represents the result of typechecking an expression

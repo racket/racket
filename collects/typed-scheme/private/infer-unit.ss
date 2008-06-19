@@ -127,7 +127,10 @@
                          (cgen/list X V (extend ts ss s-rest) ts)]
                         [else (fail! S T)])]
                  [ret-mapping (cg t s)])
-             (cset-meet arg-mapping ret-mapping))]
+             (cset-meet*
+              (list arg-mapping ret-mapping
+                    (cgen/eff/list V X t-thn-eff s-thn-eff)
+                    (cgen/eff/list V X t-els-eff s-els-eff))))]
           [((arr: ts t #f (cons dty dbound) t-thn-eff t-els-eff)
             (arr: ss s #f #f                s-thn-eff s-els-eff))
            (unless (memq dbound X)
@@ -164,7 +167,10 @@
            (let* ([arg-mapping (cgen/list X V ss ts)]
                   [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
                   [ret-mapping (cg t s)])
-             (cset-meet* (list arg-mapping darg-mapping ret-mapping)))]
+             (cset-meet* 
+              (list arg-mapping darg-mapping ret-mapping
+                    (cgen/eff/list V X t-thn-eff s-thn-eff)
+                    (cgen/eff/list V X t-els-eff s-els-eff))))]
           [((arr: ts t t-rest #f                  t-thn-eff t-els-eff)
             (arr: ss s #f     (cons s-dty dbound) s-thn-eff s-els-eff))
            (unless (memq dbound X)
@@ -174,7 +180,9 @@
                (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
                       [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-dty t-rest) dbound)]
                       [ret-mapping (cg t s)])
-                 (cset-meet* (list arg-mapping darg-mapping ret-mapping)))
+                 (cset-meet* (list arg-mapping darg-mapping ret-mapping
+                                   (cgen/eff/list V X t-thn-eff s-thn-eff)
+                                   (cgen/eff/list V X t-els-eff s-els-eff))))
                ;; the hard case
                (let* ([num-vars (- (length ts) (length ss))]
                       [vars     (for/list ([n (in-range num-vars)])

@@ -124,16 +124,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (plambda: stx)
   (syntax-case stx ()
     [(plambda: (tvars ...) formals . body)
-     (syntax-property #'(lambda: formals . body)
-                      'typechecker:plambda
-                      #'(tvars ...))]))
+     (quasisyntax/loc stx
+       (#%expression
+        #,(syntax-property (syntax/loc stx (lambda: formals . body))
+                           'typechecker:plambda
+                           #'(tvars ...))))]))
 
 (define-syntax (pcase-lambda: stx)
   (syntax-case stx ()
     [(pcase-lambda: (tvars ...) cl ...)
-     (syntax-property #'(case-lambda: cl ...)
-                      'typechecker:plambda
-                      #'(tvars ...))]))
+     (quasisyntax/loc stx
+       (#%expression
+        #,(syntax-property (syntax/loc stx (case-lambda: cl ...))
+                           'typechecker:plambda
+                           #'(tvars ...))))]))
 
 (define-syntax (pdefine: stx)
   (syntax-case stx (:)
@@ -173,8 +177,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
 
 (define-syntax (inst stx)
   (syntax-case stx (:)
-    [(_ arg : tys ...)
-     (syntax-property #'arg 'type-inst #'(tys ...))]
+    [(_ arg : . tys)
+     (syntax/loc stx (inst arg . tys))]    
+    [(_ arg tys ... ty ddd b)
+     (eq? (syntax-e #'ddd) '...)
+     (syntax-property #'arg 'type-inst #'(tys ... (ty . b)))]
     [(_ arg tys ...)
      (syntax-property #'arg 'type-inst #'(tys ...))]))
 

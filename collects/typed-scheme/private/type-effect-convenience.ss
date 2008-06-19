@@ -35,12 +35,12 @@
     [(False-Effect:) eff]
     [_ (error 'internal-tc-error "can't add var to effect ~a" eff)]))
 
-(define-syntax ->
-  (syntax-rules (:)
+(define-syntax (-> stx)
+  (syntax-case* stx (:) (lambda (a b) (eq? (syntax-e a) (syntax-e b)))
     [(_ dom ... rng : eff1 eff2)
-     (->* (list dom ...) rng : eff1 eff2)]
+     #'(->* (list dom ...) rng : eff1 eff2)]
     [(_ dom ... rng)
-     (->* (list dom ...) rng)]))
+     #'(->* (list dom ...) rng)]))
 
 (define-syntax ->*
   (syntax-rules (:)
