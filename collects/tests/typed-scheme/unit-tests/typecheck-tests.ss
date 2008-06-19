@@ -566,8 +566,8 @@
         ;; instantiating non-dotted terms
         [tc-e (inst (plambda: (a) ([x : a]) x) Integer)
               (-Integer . -> . -Integer)]
-        [tc-e (inst (plambda: (a) [x : a *] (apply + x)) Integer)
-              ((list) -Integer . ->* . -Integer)]
+        [tc-e (inst (plambda: (a) [x : a *] (apply list x)) Integer)
+              ((list) -Integer . ->* . (-lst -Integer))]
         
         ;; instantiating dotted terms
         [tc-e (inst (plambda: (a ...) [xs : a ... a] 3) Integer Boolean Integer)
@@ -601,6 +601,12 @@
                          (if (number? (not (not x)))
                              (add1 x)
                              12))]
+        
+        [tc-e (filter integer? (list 1 2 3 'foo))
+              (-lst -Integer)]
+        
+        [tc-e (filter even? (filter integer? (list 1 2 3 'foo)))
+              (-lst -Integer)]
         
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
