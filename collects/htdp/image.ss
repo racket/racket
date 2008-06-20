@@ -1,7 +1,7 @@
 #|
 
 The test suite for this code is in
-plt/collects/tests/mzscheme/image-test.ss
+plt/collects/tests/mzscheme/htdp-image.ss
 
 |#
 
