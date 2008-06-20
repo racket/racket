@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+Version 4.0.1				  [Fri Jun 20 10:35:32 EDT 2008]
+
+* world.ss: replaced 'end-of-world' with a hook called 'stop-when'
+
+------------------------------------------------------------------------
 VERSION 4.0				  [Thu May  8 11:03:30 EDT 2008]
 
 * small bug fixes in world
