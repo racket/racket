@@ -82,5 +82,5 @@
 
 ;; TESTS
 
-(= 0 (size ((inst empty Number))))
+(= 0 (size (empty)))
 
