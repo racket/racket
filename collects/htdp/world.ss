@@ -469,11 +469,13 @@ Matthew
    (string-append 
     (if (<= y0 y1) "lower" "upper") "-" (if (<= x0 x1) "right" "left"))))
 
+#| TESTS
 'direction 
 (equal? (direction 10 10 0 0) 'upper-left)
 (equal? (direction 10 10 20 20) 'lower-right)
 (equal? (direction 10 10 0 20) 'lower-left)
 (equal? (direction 10 10 20 0) 'upper-right)
+|#
 
 ;; -----------------------------------------------------------------------------
 ;; LINEs 
@@ -510,7 +512,7 @@ Matthew
 (define (X ln h) (/ (- h (lyne-y0 ln)) (lyne-slope ln)))
 
 ;; --- TESTS --- 
-
+#|
 (define line1 (points->line 0 0 100 100))
 (= (of line1 0) 0)
 (= (of line1 100) 100)
@@ -527,7 +529,7 @@ Matthew
          (lambda () (intersections (points->line 0 10 100 80) 100 100))
          list)
         (list false false 10 80))
-
+|#
 ;; ---------------------------------------------------------------------------
 
 
