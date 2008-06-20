@@ -13,11 +13,6 @@
 
 ((f z) 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18)
 
-#; #{(f z) :: (Integer * -> Integer)}
+(f z)
 
-;; I don't believe the below should work, but it points out where that internal error is coming from.
-
-(: g (All (b ...) ( -> (b ... b -> Integer))))
-(define (g) (lambda xs 0))
-
-(f (g))
+#{(f z) :: (Integer * -> Integer)}
