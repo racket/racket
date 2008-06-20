@@ -86,16 +86,7 @@
               (hash-ref cmap v 
                         (lambda () (int-err "No constraint for new var ~a" v))))
             (hash-ref cmap dbound
-                      (lambda () (int-err "No constraint for bound ~a" dbound)))))))
-                                       
-
-;; ss and ts have the same length
-(define (cgen-union V X ss ts)
-  ;; first, we remove common elements of ss and ts
-  (let-values ([(ss* ts*)
-                (values (filter (lambda (se) (not (ormap (lambda (t) (type-equal? t se)) ts))) ss)
-                        (filter (lambda (te) (not (ormap (lambda (s) (type-equal? s te)) ss))) ts))])
-    (cgen/list V X ss* ts*)))
+                      (lambda () (int-err "No constraint for bound ~a" dbound)))))))                                      
 
 ;; t and s must be *latent* effects
 (define (cgen/eff V X t s)
@@ -171,7 +162,7 @@
      (when (memq dbound X)
        (fail! S T))
      (let* ([arg-mapping (cgen/list X V ss ts)]
-            [darg-mapping (cgen (cons dbound V) X s-dty t-dty)]
+            [darg-mapping (cgen V X s-dty t-dty)]
             [ret-mapping (cg t s)])
        (cset-meet* 
         (list arg-mapping darg-mapping ret-mapping
@@ -195,7 +186,7 @@
      (if (<= (length ts) (length ss))
          ;; the simple case
          (let* ([arg-mapping (cgen/list X V ss (extend ss ts t-rest))]
-                [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-dty t-rest) dbound)]
+                [darg-mapping (move-rest-to-dmap (cgen V X s-dty t-rest) dbound)]
                 [ret-mapping (cg t s)])
            (cset-meet* (list arg-mapping darg-mapping ret-mapping
                              (cgen/eff/list V X t-thn-eff s-thn-eff)
@@ -227,7 +218,7 @@
            (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))
          ;; the simple case
          (let* ([arg-mapping (cgen/list X V (extend ts ss s-rest) ts)]
-                [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-rest t-dty) dbound #:exact #t)]
+                [darg-mapping (move-rest-to-dmap (cgen V X s-rest t-dty) dbound #:exact #t)]
                 [ret-mapping (cg t s)])
            (cset-meet* (list arg-mapping darg-mapping ret-mapping
                              (cgen/eff/list V X t-thn-eff s-thn-eff)
@@ -425,3 +416,5 @@
 
 (define (i s t r)
   (infer/simple (list s) (list t) r))
+
+;(trace cgen/arr)

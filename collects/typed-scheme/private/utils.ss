@@ -17,11 +17,23 @@
          extend
          debug)
 
-(define-syntax-rule (debug args)
-  (begin (printf "starting ~a~n" 'args)
-         (let ([e args])
-           (printf "result was ~a~n" e)
-           e)))
+(define-syntax debug
+  (syntax-rules ()
+    [(_ (f . args))
+     (begin (printf "starting ~a~n" 'f)
+            (let ([l (list . args)])
+              (printf "arguments are:~n")
+              (for/list ([arg 'args]
+                         [val l])
+                (printf "\t~a: ~a~n" arg val))
+              (let ([e (apply f l)])
+                (printf "result was ~a~n" e)
+                e)))]
+    [(_ . args)
+     (begin (printf "starting ~a~n" 'args)
+            (let ([e args])
+              (printf "result was ~a~n" e)
+              e))]))
 
 (define-syntax (with-syntax* stx)
   (syntax-case stx ()

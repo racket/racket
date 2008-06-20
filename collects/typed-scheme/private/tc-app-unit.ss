@@ -138,8 +138,8 @@
              (stringify-domain (car doms) (car rests) (car drests))
              (stringify-domain arg-tys (if (not tail-bound) tail-ty #f) (if tail-bound (cons tail-ty tail-bound) #f)))]
     [else
-     (format "Domains:~nArguments: ~a~n"
-             (stringify (map stringify-domain doms rests drests) "~n~t")
+     (format "Domains: ~a~nArguments: ~a~n"
+             (stringify (map stringify-domain doms rests drests) "~n\t")
              (stringify-domain arg-tys (if (not tail-bound) tail-ty #f) (if tail-bound (cons tail-ty tail-bound) #f)))]))
 
 (define (tc/apply f args)
