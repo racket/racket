@@ -80,9 +80,8 @@
       (make-cset maps))]
    [(_ _) (int-err "Got non-cset: ~a ~a" x y)]))
 
-(define (cset-meet* args)
-  (for/fold ([c (make-cset (list (cons (make-immutable-hash null)
-                                       (make-dmap (make-immutable-hash null)))))])
+(define (cset-meet* args #:X [X null])
+  (for/fold ([c (empty-cset X)])
     ([a args])
     (cset-meet a c)))
 
