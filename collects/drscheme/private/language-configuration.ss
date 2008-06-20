@@ -1604,7 +1604,6 @@
                                 (parent parent)
                                 (label (string-constant looking-for-standard-scheme?))))
                          (list (string-constant legacy-languages)
-                               (string-constant plt)
                                (string-constant pretty-big-scheme))
                          (list "r5rs.png" "icons")))
       
