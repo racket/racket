@@ -425,7 +425,9 @@
         ;; polymorphic varargs
         [(tc-result: (and t
                           (or (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
-                              (PolyDots: (list vars ... _) (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))))
+                              ;; we want to infer the dotted-var here as well, and we don't use these separately
+                              ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
+                              (PolyDots: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))))
          (for-each (lambda (x) (unless (not (Poly? x))                                      
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
