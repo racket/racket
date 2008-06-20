@@ -2058,6 +2058,8 @@
         (unless dont-search
           (search #f))
         (inner (void) after-delete x y))
+      (define/override (get-keymaps)
+        (cons search/replace-keymap (super get-keymaps)))
       (super-new)
       (inherit set-styles-fixed)
       (set-styles-fixed #t)))
@@ -2066,7 +2068,24 @@
     (class text:keymap%
       (inherit set-styles-fixed)
       (super-new)
+      (define/override (get-keymaps)
+        (cons search/replace-keymap (super get-keymaps)))
       (set-styles-fixed #t)))
+  
+  (define search/replace-keymap (new keymap%))
+  (send search/replace-keymap add-function
+        "jump-between-search/replace"
+        (λ (txt evt)
+          (let ([new-editor
+                 (cond
+                   [(eq? txt find-edit) replace-edit]
+                   [(eq? txt replace-edit) find-edit]
+                   [else #f])])
+            (when new-editor
+              (let ([canvas (send new-editor get-canvas)])
+                (when canvas
+                  (send canvas focus)))))))
+  (send search/replace-keymap map-function "tab" "jump-between-search/replace")
   
   (define find-edit #f)
   (define replace-edit #f)
