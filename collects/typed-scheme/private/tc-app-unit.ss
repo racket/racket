@@ -6,6 +6,7 @@
          "tc-utils.ss"
          "subtype.ss"
          "infer.ss"
+         (only-in "utils.ss" debug)
          "union.ss"
          "type-utils.ss"
          "type-effect-convenience.ss"
@@ -216,7 +217,8 @@
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
-                                   (car rngs*)))
+                                   (car rngs*)
+                                   (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
@@ -228,7 +230,8 @@
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
-                                   (car rngs*)))
+                                   (car rngs*)
+                                   (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg
                [(and (car drests*)
@@ -236,7 +239,7 @@
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
                         (length arg-tys))
-                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*)))
+                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; if nothing matches, around the loop again
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
@@ -269,7 +272,8 @@
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
-                                   (car rngs*)))
+                                   (car rngs*)
+                                   (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
@@ -281,7 +285,8 @@
                                    (cons (make-Listof (car rests*))
                                          (car doms*))
                                    (car rests*)
-                                   (car rngs*)))
+                                   (car rngs*)
+                                   (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, same bound on ...
                [(and (car drests*)
@@ -289,7 +294,7 @@
                      (eq? tail-bound (cdr (car drests*)))
                      (= (length (car doms*))
                         (length arg-tys))
-                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*)))
+                     (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
                 => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, different bound on ...
                [(and (car drests*)
@@ -301,7 +306,7 @@
                                                                (list (make-DottedBoth (make-F tail-bound))
                                                                      (make-DottedBoth (make-F (cdr (car drests*)))))
                                                                (current-tvars))])
-                       (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*))))
+                       (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*)))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
                      (ret (substitute-dotted (cadr (assq drest-bound substitution))
@@ -345,7 +350,8 @@
            [_ (tc-error/expr #:return (ret (Un))
                              "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                              (length argtypes))])]
-        [(tc-result: (and t (Function: (list (arr: doms rngs rests (and drests #f) latent-thn-effs latent-els-effs) ..1))) thn-eff els-eff)
+        [(tc-result: (and t (Function: (list (arr: doms rngs rests (and drests #f) latent-thn-effs latent-els-effs) ..1)))
+                     thn-eff els-eff)
          (if (= 1 (length doms))
              (let-values ([(thn-eff els-eff)
                            (tc-args argtypes arg-thn-effs arg-els-effs (car doms) (car rests) 
@@ -373,25 +379,27 @@
          ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
          ;(printf "reresolving: ~a~n" (resolve-tc-result ftype))
          ;(printf "argtypes: ~a~ndoms: ~a~n" argtypes doms)
-         (for-each (lambda (x) (unless (not (Poly? x))
+         (for-each (lambda (x) (unless (not (or (PolyDots? x) (Poly? x)))
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
          (let loop ([doms* doms] [rngs* rngs])
            (cond [(null? doms*)
                   (match t
-                    [(Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
-                     (tc-error/expr #:return (ret (Un))
-                                    (string-append "Polymorphic function over ~a could not be applied to arguments:~n"
-                                                   (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
-                                    (stringify msg-vars))]
-                    [(PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
-                     (tc-error/expr #:return (ret (Un))
-                                    (string-append "Polymorphic function over ~a ... could not be applied to arguments:~n"
-                                                   (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
-                                    (stringify msg-vars))])]
+                    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
+                         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...))))
+                     (if (and (andmap null? msg-doms)
+                              (null? argtypes))
+                         (tc-error/expr #:return (ret (-> (Un)))
+                                        "Could not infer types for applying polymorphic function over ~a~n"
+                                        (stringify msg-vars))
+                         (tc-error/expr #:return (ret (->* (list) Univ (Un)))
+                                        (string-append
+                                         "Polymorphic function over ~a could not be applied to arguments:~n"
+                                         (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
+                                        (stringify msg-vars)))])]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) expected))
+                        (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) (fv (car rngs*)) expected))
                   => (lambda (substitution)
                        (or expected
                            (let* ([s (lambda (t) (subst-all substitution t))]
@@ -424,7 +432,7 @@
          (unless (<= (length dom) (length argtypes))
            (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
          (let ([substitution 
-                (infer/vararg vars argtypes dom rest rng expected)])
+                (infer/vararg vars argtypes dom rest rng (fv rng) expected)])
            (cond 
              [(and expected substitution) expected]
              [substitution
@@ -449,7 +457,7 @@
          (unless (eq? dbound dotted-var)
            (int-err "dbound (~a) and dotted-var (~a) not the same" dbound dotted-var))
          (let ([substitution 
-                (infer/dots fixed-vars dotted-var argtypes dom dty rng expected)])
+                (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) expected)])
            (cond 
              [(and expected substitution) expected]
              [substitution

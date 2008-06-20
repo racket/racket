@@ -28,9 +28,6 @@
   (make-cset (list (cons (for/hash ([x X]) (values x (no-constraint x)))
                          (make-dmap (make-immutable-hash null))))))
 
-#;
-(define (lookup cset var)
-  (hash-ref (cset-map cset) var (no-constraint var)))
 
 (define (insert cs var S T)
   (match cs

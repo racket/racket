@@ -11,6 +11,10 @@
 ;; rest : option[c]
 (define-struct dcon (fixed rest) #:prefab)
 
+;; fixed : Listof[c]
+;; rest : c
+(define-struct dcon-exact (fixed rest) #:prefab)
+
 ;; type : c
 ;; bound : vars
 (define-struct dcon-dotted (type bound) #:prefab)
@@ -26,16 +30,21 @@
 ;; don't want to rule them out too early
 (define-struct cset (maps) #:prefab)
 
+
 (define (hashof k/c v/c)
   (flat-named-contract
    (format "#<hashof ~a ~a>" k/c v/c)
    (lambda (h)
+     (define k/c? (if (flat-contract? k/c) (flat-contract-predicate k/c) k/c))
+     (define v/c? (if (flat-contract? v/c) (flat-contract-predicate v/c) v/c))
      (and (hash? h)
           (for/and ([(k v) h])
-                   (and (k/c k) (v/c v)))))))
+                   (and (k/c? k) 
+                        (v/c? v)))))))
 
 (provide/contract (struct c ([S Type?] [X symbol?] [T Type?]))
                   (struct dcon ([fixed (listof c?)] [rest (or/c c? false/c)]))
+                  (struct dcon-exact ([fixed (listof c?)] [rest c?]))
                   (struct dcon-dotted ([type c?] [bound symbol?]))
-                  (struct dmap ([map (hashof symbol? (lambda (e) (or (dcon? e) (dcon-dotted? e))))]))
+                  (struct dmap ([map (hashof symbol? (or/c dcon? dcon-exact? dcon-dotted?))]))
                   (struct cset ([maps (listof (cons/c (hashof symbol? c?) dmap?))])))

@@ -70,21 +70,23 @@
                                   (lambda () (int-err "No constraint for new var ~a" v))))
                       #f))))
 
-(define (move-rest-to-dmap cset dbound)
+(define (move-rest-to-dmap cset dbound #:exact [exact? #f])
   (mover cset dbound (list dbound)
          (lambda (cmap)
-           (make-dcon null
-                      (hash-ref cmap dbound
-                                (lambda () (int-err "No constraint for bound ~a" dbound)))))))
+           ((if exact? make-dcon-exact make-dcon)
+            null
+            (hash-ref cmap dbound
+                      (lambda () (int-err "No constraint for bound ~a" dbound)))))))
 
-(define (move-vars+rest-to-dmap cset dbound vars)
+(define (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
   (mover cset dbound (list dbound)
          (lambda (cmap)
-           (make-dcon (for/list ([v vars])
-                        (hash-ref cmap v 
-                                  (lambda () (int-err "No constraint for new var ~a" v))))
-                      (hash-ref cmap dbound
-                                (lambda () (int-err "No constraint for bound ~a" dbound)))))))
+           ((if exact? make-dcon-exact make-dcon)
+            (for/list ([v vars])
+              (hash-ref cmap v 
+                        (lambda () (int-err "No constraint for new var ~a" v))))
+            (hash-ref cmap dbound
+                      (lambda () (int-err "No constraint for bound ~a" dbound)))))))
                                        
 
 ;; ss and ts have the same length
@@ -208,6 +210,28 @@
                                     (make-arr (append ss new-tys) s #f (cons s-dty dbound) s-thn-eff s-els-eff))])
            (move-vars+rest-to-dmap new-cset dbound vars)))]
     ;; If dotted <: starred is correct, add it below.  Not sure it is.
+    [((arr: ts t #f     (cons t-dty dbound) t-thn-eff t-els-eff)
+      (arr: ss s s-rest #f                  s-thn-eff s-els-eff))
+     (unless (memq dbound X)
+       (fail! S T))
+     (if (< (length ts) (length ss))
+         ;; the hard case
+         (let* ([num-vars (- (length ss) (length ts))]
+                [vars     (for/list ([n (in-range num-vars)])
+                            (gensym dbound))]
+                [new-tys  (for/list ([var vars])
+                            (substitute (make-F var) dbound t-dty))]
+                [new-cset (cgen/arr V (append vars X)                                      
+                                    (make-arr (append ts new-tys) t #f (cons t-dty dbound) t-thn-eff t-els-eff)
+                                    s-arr)])
+           (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))
+         ;; the simple case
+         (let* ([arg-mapping (cgen/list X V (extend ts ss s-rest) ts)]
+                [darg-mapping (move-rest-to-dmap (cgen (cons dbound V) X s-rest t-dty) dbound #:exact #t)]
+                [ret-mapping (cg t s)])
+           (cset-meet* (list arg-mapping darg-mapping ret-mapping
+                             (cgen/eff/list V X t-thn-eff s-thn-eff)
+                             (cgen/eff/list V X t-els-eff s-els-eff)))))]
     [(_ _) (fail! S T)]))
     
 (define (cgen V X S T)
@@ -318,7 +342,12 @@
                 ;; or, nothing worked, and we fail
                 [else (fail! S T)])]))))
 
-(define (subst-gen C R)
+(define (check-vars must-vars subst)
+  (and (for/and ([v must-vars])
+                (assq v subst))
+       subst))
+
+(define (subst-gen C R must-vars)
   (define (constraint->type v #:variable [variable #f])
     (match v
       [(struct c (S X T))
@@ -331,16 +360,23 @@
                  [Invariant S]))]))
   (match (car (cset-maps C))
     [(cons cmap (struct dmap (dm)))
-     (append 
-      (for/list ([(k dc) dm])
-        (match dc
-          [(struct dcon (fixed rest))
-           (list k
-                 (for/list ([f fixed])
-                   (constraint->type f #:variable k))
-                 (and rest (constraint->type rest)))]))
-      (for/list ([(k v) cmap])
-        (list k (constraint->type v))))]))
+     (check-vars
+      must-vars
+      (append 
+       (for/list ([(k dc) dm])
+         (match dc
+           [(struct dcon (fixed rest))
+            (list k
+                  (for/list ([f fixed])
+                    (constraint->type f #:variable k))
+                  (and rest (constraint->type rest)))]
+           [(struct dcon-exact (fixed rest))
+            (list k
+                  (for/list ([f fixed])
+                    (constraint->type f #:variable k))
+                  (constraint->type rest))]))
+       (for/list ([(k v) cmap])
+         (list k (constraint->type v)))))]))
 
 (define (cgen/list X V S T)
   (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))
@@ -349,26 +385,27 @@
 ;; S : actual argument types
 ;; T : formal argument types
 ;; R : result type
+;; must-vars : variables that must be in the substitution
 ;; expected : boolean
 ;; returns a substitution
 ;; if R is #f, we don't care about the substituion
 ;; just return a boolean result
-(define (infer X S T R [expected #f])
-  (with-handlers ([exn:infer? (lambda _ #f)])    
+(define (infer X S T R must-vars [expected #f])
+  (with-handlers ([exn:infer? (lambda _ #f)])  
     (let ([cs (cgen/list X null S T)])
       (if (not expected)
-          (subst-gen cs R)
+          (subst-gen cs R must-vars)
           (cset-meet cs (cgen null X R expected))))))
 
 ;; like infer, but T-var is the vararg type:
-(define (infer/vararg X S T T-var R [expected #f])
+(define (infer/vararg X S T T-var R must-vars [expected #f])
   (define new-T (extend S T T-var))
   (and ((length S) . >= . (length T))
-       (infer X S new-T R expected)))
+       (infer X S new-T R must-vars expected)))
 
 ;; like infer, but dotted-var is the bound on the ...
 ;; and T-dotted is the repeated type
-(define (infer/dots X dotted-var S T T-dotted R [expected #f])
+(define (infer/dots X dotted-var S T T-dotted R must-vars [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])    
     (let* ([short-S (take S (length T))]
            [rest-S (drop S (length T))]
@@ -380,7 +417,7 @@
            [cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars)]
            [cs (cset-meet cs-short cs-dotted*)])
       (if (not expected)
-          (subst-gen cs R)
+          (subst-gen cs R must-vars)
           (cset-meet cs (cgen null X R expected))))))
 
 (define (infer/simple S T R)
