@@ -32,16 +32,16 @@
 (define-syntax-rule (i2-t t1 t2 (a b) ...)
   (test-check (format "~a ~a" t1 t2)
               equal?
-              (infer t1 t2 (fv t1))
+              (infer t1 t2 (fv t1) (fv t1))
               (list (list a b) ...)))
 
 (define-syntax-rule (i2-l t1 t2 fv (a b) ...)
   (test-check (format "~a ~a" t1 t2)
               equal?
-              (infer/list t1 t2 fv)
+              (infer/list t1 t2 fv fv)
               (list (list a b) ...)))
 
-(define (f t1 t2) (infer t1 t2 (fv t1)))
+(define (f t1 t2) (infer t1 t2 (fv t1) (fv t1)))
 
 (define-syntax-rule (i2-f t1 t2)
   (test-false (format "~a ~a" t1 t2)                   
