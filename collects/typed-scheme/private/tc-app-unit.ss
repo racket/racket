@@ -374,6 +374,11 @@
                                               (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))
                                        (PolyDots: (list vars ... _)
                                                   (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))))))
+         ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
+         ;(printf "ftype again:    ~a~n" ftype)
+         ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
+         ;(printf "reresolving: ~a~n" (resolve-tc-result ftype))
+         ;(printf "argtypes: ~a~ndoms: ~a~n" argtypes doms)
          (for-each (lambda (x) (unless (not (or (PolyDots? x) (Poly? x)))
                                  (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
                    argtypes)
@@ -394,11 +399,28 @@
                                         (stringify msg-vars)))])]
                  [(and (= (length (car doms*))
                           (length argtypes))
-                       (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) (fv (car rngs*)) expected))
+                        (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) (fv (car rngs*)) expected))
                   => (lambda (substitution)
                        (or expected
-                           (ret (subst-all substitution (car rngs*)))))]
-                 ;; otherwise, try the next element of the case-lambda
+                           (let* ([s (lambda (t) (subst-all substitution t))]
+                                  [new-doms* (map s (car doms*))])
+                             (if (andmap subtype argtypes new-doms*)
+                                 (ret (subst-all substitution (car rngs*)))
+                                 ;; FIXME
+                                 ;; should be an error here, something went horribly wrong!!!
+                                 (begin 
+				   #;
+                                   (printf "substitution was bad~n args: ~a ~n new-doms: ~a~n~a~n" argtypes new-doms* substitution)
+                                   (loop (cdr doms*) (cdr rngs*)))))))]
+                             #|
+                           (printf "subst is:~a~nret is: ~a~nvars is: ~a~nresult is:~a~n" substitution (car rngs*) vars 
+                                   (subst-all substitution (car rngs*)))
+                           (printf "new-doms*: ~a~n" new-doms*)
+                           (printf "orig doms* is: ~a~n" (car doms*))
+                           (printf "argtypes: ~a~n" argtypes)
+                           (int-err "Inconsistent substitution - arguments not subtypes")))
+                       #;(printf "subst is:~a~nret is: ~a~nvars is: ~a~n" substitution (car rngs*) vars)
+                       )]|#
                  [else (loop (cdr doms*) (cdr rngs*))]))]
         ;; polymorphic varargs
         [(tc-result: (and t
@@ -414,7 +436,12 @@
            (cond 
              [(and expected substitution) expected]
              [substitution
-              (ret (subst-all substitution rng))]
+              (let* ([s (lambda (t) (subst-all substitution t))]
+                     [new-dom (map s dom)]
+                     [new-rest (s rest)])                                  
+                (unless (subtypes/varargs argtypes new-dom new-rest)
+                  (int-err "Inconsistent substitution - arguments not subtypes"))
+                (ret (subst-all substitution rng)))]
              [else (tc-error/expr #:return (ret (Un))
                                   (string-append
                                    "No polymorphic function domain matched in function application:~n"

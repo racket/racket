@@ -196,7 +196,7 @@
      (min (->* (list N) N N))
      [values  (make-Poly '(a) (-> (-v a) (-v a)))]
      [vector-ref 
-      (make-Poly (list 'a) ((make-Vector (-v a)) -Integer . -> . (-v a)))]
+      (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
      [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (make-Vector a)))]
      [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]
      [reverse (make-Poly '(a) (-> (make-lst (-v a)) (make-lst (-v a))))]
@@ -323,7 +323,7 @@
      
      [match:error ((list) Univ . ->* . (Un))]
      
-     [vector-set! (-poly (a) (-> (make-Vector a) -Integer a -Void))]
+     [vector-set! (-poly (a) (-> (make-Vector a) N a -Void))]
      
      [vector->list (-poly (a) (-> (make-Vector a) (-lst a)))]
      [list->vector (-poly (a) (-> (-lst a) (make-Vector a)))]
@@ -353,13 +353,13 @@
      [make-vector
       (-poly (a)
              (cl->
-              [(-Integer) (make-Vector -Integer)]
-              [(-Integer a) (make-Vector a)]))]
+              [(N) (make-Vector N)]
+              [(N a) (make-Vector a)]))]
      
      [file-exists? (-Pathlike . -> . B)]
      [string->symbol (-String . -> . Sym)]
      [symbol->string (Sym . -> . -String)]
-     [vector-length (-poly (a) ((make-Vector a) . -> . -Integer))]
+     [vector-length (-poly (a) ((make-Vector a) . -> . N))]
      
      [call-with-input-file (-poly (a) 
                                   (cl->

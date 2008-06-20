@@ -370,7 +370,7 @@
          (list k (constraint->type v)))))]))
 
 (define (cgen/list V X S T)
-  (cset-meet* #:X X (for/list ([s S] [t T]) (cgen V X s t))))
+  (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))
 
 ;; X : variables to infer
 ;; S : actual argument types
