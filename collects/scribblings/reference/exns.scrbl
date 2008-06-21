@@ -276,8 +276,8 @@ difficult.}
            body ...+)]{
 
 Like @scheme[with-handlers], but if a @scheme[handler-expr] procedure
-is called, breaks are not explicitly disabled, and the call is in tail
-position with respect to the @scheme[with-handlers*] form.}
+is called, breaks are not explicitly disabled, and the handler call is
+in tail position with respect to the @scheme[with-handlers*] form.}
 
 @;------------------------------------------------------------------------
 @section{Configuring Default Handling}
