@@ -6,7 +6,8 @@
 
 This interface represents the bare essentials when defining
 a module-based language. Use the
-\iscmmixin{drscheme:language:simple-module-based-language->module-based-language-mixin} mixin to construct an implementation of
+@scheme[drscheme:language:simple-module-based-language->module-based-language-mixin]
+mixin to construct an implementation of
 @scheme[drscheme:language:module-based-language<%>] from an implementation of this interface.
 
 The class
@@ -40,7 +41,7 @@ This method replaces
 
 
 The result is expected to be the 
-\MzLink{mz:modpath}{specification of a module}
+@scheme[module] (its initial require)
 except as value, ie @scheme[quote]d.
 
 }
@@ -133,8 +134,7 @@ returns the corresponding init arg.
 
 @defmixin[drscheme:language:simple-module-based-language->module-based-language-mixin (drscheme:language:simple-module-based-language<%>) (drscheme:language:module-based-language<%>)]{
 
-\index{drscheme:language:simple-settings}
-\label{tools:simple-settings}
+@index{drscheme:language:simple-settings}
 This mixin uses a struct definition for its settings:
 @schemeblock[
 (define-struct drscheme:language:simple-settings
@@ -323,10 +323,11 @@ Returns @scheme[#t].
 @definterface[drscheme:language:module-based-language<%> ()]{
 
 This interface is for languages that can be implemented
-with MzScheme \MzLink{mz:modules}{modules}. 
+with MzScheme @scheme[module]s.
 
 Use the
-\iscmmixin{drscheme:language:module-based-language->language-mixin} mixin to construct an implementation of
+@scheme[drscheme:language:module-based-language->language-mixin]
+mixin to construct an implementation of
 @scheme[drscheme:language:language<%>] from an implementation of this interface.
 
 
@@ -385,7 +386,7 @@ This method specifies the module that defines the language.
 It is used to initialize the user's namespace.
 
 The result is expected to be the 
-\MzLink{mz:modpath}{specification of a module}
+@scheme[module] (its initial require)
 except as value, ie @scheme[quote]d.
 
 See also
@@ -420,7 +421,7 @@ transformation language. It is used to initialize
 the transformer portion of the user's namespace.
 
 The result is expected to be the 
-\MzLink{mz:modpath}{specification of a module}
+@scheme[module] (its initial require)
 except as value, ie @scheme[quote]d or @scheme[#f].
 
 If the result is @scheme[#f], no module is required into the
@@ -675,7 +676,7 @@ returns.
 Implementations of this method should not return fully
 expanded expressions, since there are two forms of
 expansion, using either
-\Mzhyperref{@scheme[expand]}{mz:expansion}
+@scheme[expand]
 or 
 @scheme[expand-top-level-with-compile-time-evals] 
 and the use of the expanded code dictates which applies.
@@ -766,7 +767,7 @@ Returns a url for the language.
 }
 @methimpl{
 
-If the result isn't \#f, the name of the language is
+If the result isn't @scheme[#f], the name of the language is
 clickable in the interactions window and clicking takes you
 to this url.
 
@@ -786,7 +787,7 @@ saved by DrScheme, and removed from the buffer after it is
 opened in DrScheme.
 
 The string is expect to be a prefix to the file that sets up
-a reader for files in this language, using \texttt{#reader}.
+a reader for files in this language, using @tt{#reader}.
 
 See also
 @method[drscheme:language:language<%> metadata->settings],
@@ -828,7 +829,7 @@ when the user selects this language.
 }}
 
 @defmethod[(get-reader-module)
-           (or/c sexp-representing-a-require-spec \#f)]{
+           (or/c sexp-representing-a-require-spec false/c)]{
 
 The result of this method is used when saving or loading files.
 
@@ -893,7 +894,8 @@ the settings for this language.
 The @scheme[on-execute] method is called on DrScheme's
 eventspace's main thread before any evaluation happens
 during execution. Use this method to initialize MzScheme's
-\Mzhyperref{parameters}{mz:parameters} for the user. When
+@secref[#:doc '(lib "scribblings/reference/reference.scrbl") "parameters"]
+for the user. When
 this function is called, the user's thread has already been
 created, as has its custodian. These parameters have been
 changed from the defaults in MzScheme:
