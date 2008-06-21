@@ -84,7 +84,7 @@ If the namespace does not, they are colored the unbound color.
     ;; use this to communicate the frame being
     ;; syntax checked w/out having to add new
     ;; parameters to all of the functions
-    (define currently-processing-drscheme-frame (make-parameter #f))
+    (define currently-processing-definitions-text (make-parameter #f))
     
     (define (phase1) 
       (drscheme:unit:add-to-program-editor-mixin clearing-text-mixin))
@@ -1166,7 +1166,7 @@ If the namespace does not, they are colored the unbound color.
                                      (with-lock/edit-sequence
                                       definitions-text
                                       (λ ()
-                                        (parameterize ([currently-processing-drscheme-frame this])
+                                        (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expansion-completed user-namespace user-directory)
                                           (send definitions-text syncheck:sort-bindings-table))))
                                      (cleanup)
@@ -1183,7 +1183,7 @@ If the namespace does not, they are colored the unbound color.
                                         (open-status-line 'drscheme:check-syntax)
                                         (force-xref (λ () (update-status-line 'drscheme:check-syntax status-loading-docs-index)))
                                         (update-status-line 'drscheme:check-syntax status-coloring-program)
-                                        (parameterize ([currently-processing-drscheme-frame this])
+                                        (parameterize ([currently-processing-definitions-text definitions-text])
                                           (expanded-expression user-namespace user-directory sexp jump-to-id))
                                         (close-status-line 'drscheme:check-syntax))))))
                                 (update-status-line 'drscheme:check-syntax status-expanding-expression)
@@ -2448,10 +2448,8 @@ If the namespace does not, they are colored the unbound color.
                    (snip-loop (send snip next))]))]))]))
     ;; get-defs-text : -> text or false
     (define (get-defs-text)
-      (let ([drs-frame (currently-processing-drscheme-frame)])
-        (and drs-frame
-             (send drs-frame get-definitions-text))))
-    
+      (currently-processing-definitions-text))
+ 
     
 ;                                                                                             
 ;                                                                                             
@@ -2473,10 +2471,9 @@ If the namespace does not, they are colored the unbound color.
     ;; document-variable : stx identifier-binding -> void
     (define (document-variable stx get-binding)
       (when (syntax-original? stx)
-        (let ([defs-frame (currently-processing-drscheme-frame)])
-          (when defs-frame
-            (let* ([defs-text (send defs-frame get-definitions-text)]
-                   [binding-info (get-binding stx)])
+        (let ([defs-text (currently-processing-definitions-text)])
+          (when defs-text
+            (let ([binding-info (get-binding stx)])
               (when (and (pair? binding-info)
                          (syntax-position stx)
                          (syntax-span stx))
@@ -2536,10 +2533,9 @@ If the namespace does not, they are colored the unbound color.
     
     ;; make-rename-menu : (cons stx[original,id] (listof stx[original,id])) (listof id-set) -> void
     (define (make-rename-menu source-editor-cache stxs id-sets)
-      (let ([defs-frame (currently-processing-drscheme-frame)])
-        (when defs-frame
-          (let* ([defs-text (send defs-frame get-definitions-text)]
-                 [source (syntax-source (car stxs))] ;; all stxs in the list must have the same source
+      (let ([defs-text (currently-processing-definitions-text)])
+        (when defs-text
+          (let* ([source (syntax-source (car stxs))] ;; all stxs in the list must have the same source
                  [source-editor (find-source-editor source-editor-cache (car stxs))])
             (when (is-a? source-editor text%)
               (let* ([start (- (syntax-position (car stxs)) 1)]
