@@ -260,6 +260,27 @@
             (unless (= (length l1) (length l2))
               (unmatch))
             (cgen-union V X l1 l2)]
+         
+         #;[((Poly: v1 b1) (Poly: v2 b2))
+          (unless (= (length v1) (length v2))
+            (fail! S T))
+          (let ([b2* (subst-all (map list v2 v1) b2)])
+            (cg b1 b2*))]
+         
+         #;[((PolyDots: (list v1 ... r1) b1) (PolyDots: (list v2 ... r2) b2))
+          (unless (= (length v1) (length v2))
+            (fail! S T))
+          (let ([b2* (substitute-dotted v1 v1 v2 (subst-all (map list v2 v1) b2))])
+            (cg b1 b2*))]
+         
+         #;[((Poly: v1 b1) T)
+          (let ([b1* (var-demote b1 v1)])
+            (cg b1* T))]
+
+         #;[((PolyDots: (list v1 ... r1) b1) T)
+          (let ([b1* (var-demote b1 (cons r1 v1))])
+            (cg b1* T))]
+
          #;
          [((Poly-unsafe: n b) (Poly-unsafe: n* b*))
           (unless (= n n*)
