@@ -1,6 +1,5 @@
 #lang typed-scheme
 
-
 (apply (plambda: (a ...) [ys : (a ... a -> Number) *]
          (lambda: [zs : a ... a]
             (map (lambda: ([y : (a ... a -> Number)])
@@ -56,3 +55,11 @@
             (apply y zs))
           ys)))
  + - * /)
+
+(: map-with-funcs (All (b a ...) ((a ... a -> b) * -> (a ... a -> (Listof b)))))
+(define (map-with-funcs . fs)
+  (lambda as
+    (map (lambda: ([f : (a ... a -> b)])
+           (apply f as))
+         fs)))
+(map-with-funcs + - * /)
