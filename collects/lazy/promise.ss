@@ -237,6 +237,10 @@
     #2 cpu time: 3057 real time: 3058 gc time: 231
     #3 cpu time: 2566 real time: 2567 gc time: 235
     #4 cpu time: 4744 real time: 4746 gc time: 539
+       cpu time: 4331 real time: 4334 gc time: 237 ; now with 4.0.1.1
+       cpu time: 2362 real time: 2361 gc time: 148 ; using scheme/promise
+    ;; what-if call-with-exception-handler was tail-recursive
+       cpu time: 2357 real time: 2357 gc time: 148
 
     fib: (define (fib n) (if (<= n 1) n (+ (fib (- n 1)) (fib (- n 2)))))
          (time (! (fib 29)))
@@ -244,6 +248,10 @@
     #2 cpu time: 3194 real time: 3195 gc time: 227
     #3 cpu time: 2833 real time: 2833 gc time: 231
     #4 cpu time: 5837 real time: 5837 gc time: 712
+       cpu time: 5328 real time: 5329 gc time: 297 ; now with 4.0.1.1
+       cpu time: 2685 real time: 2688 gc time: 154 ; using scheme/promise
+    ;; what-if call-with-exception-handler was tail-recursive
+       cpu time: 2579 real time: 2578 gc time: 158
 
   |#
 
