@@ -10,12 +10,12 @@ model. It is based on a proposal by Friedman, Haynes, and Dybvig
 
 Whenever a primitive error occurs in PLT Scheme, an exception is
 raised.  The value that is passed to the current @tech{exception
-handler} is always an instance of the @scheme[exn] structure
-type. Every @scheme[exn] structure value has a @scheme[message] field
-that is a string, the primitive error message.  The default exception
-handler recognizes exception values with the @scheme[exn?] predicate
-and passes the error message to the current error display handler (see
-@scheme[error-display-handler]).
+handler} for a primitive error is always an instance of the
+@scheme[exn] structure type. Every @scheme[exn] structure value has a
+@scheme[message] field that is a string, the primitive error message.
+The default exception handler recognizes exception values with the
+@scheme[exn?] predicate and passes the error message to the current
+error display handler (see @scheme[error-display-handler]).
 
 Primitive procedures that accept a procedure argument with a
 particular required arity (e.g., @scheme[call-with-input-file],
@@ -29,7 +29,7 @@ particular required arity (e.g., @scheme[call-with-input-file],
 
 Raises an exception, where @scheme[v] represents the exception being
 raised. The @scheme[v] argument can be anything; it is passed to the
-current @deftech{exception handler}.
+current @tech{exception handler}.
 
 If @scheme[barrier?] is true, then the call to the @tech{exception
 handler} is protected by a @tech{continuation barrier}, so that

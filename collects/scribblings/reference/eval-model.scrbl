@@ -606,7 +606,7 @@ to implement dynamic scope.
 @section[#:tag "prompt-model"]{Prompts, Delimited Continuations, and Barriers}
 
 A @deftech{prompt} is a special kind of continuation frame that is
-annotated with a specific @deftech{prompt-tag} (essentially a
+annotated with a specific @deftech{prompt tag} (essentially a
 continuation mark). Various operations allow the capture of frames in
 the continuation from the redex position out to the nearest enclosing
 prompt with a particular prompt tag; such a continuation is sometimes
@@ -661,14 +661,15 @@ is created) as all other threads.
 @section[#:tag "parameter-model"]{Parameters}
 
 @deftech{Parameters} are essentially a derived concept in Scheme; they
-are defined in terms of continuation marks and thread cells. However,
-parameters are also built in, in the sense that some primitive
-procedures consult parameter values. For example, the default output
-stream for primitive output operations is determined by a parameter.
+are defined in terms of @tech{continuation marks} and @tech{thread
+cells}. However, parameters are also built in, in the sense that some
+primitive procedures consult parameter values. For example, the
+default output stream for primitive output operations is determined by
+a parameter.
 
 A parameter is a setting that is both thread-specific and
 continuation-specific. In the empty continuation, each parameter
-corresponds to a preserved thread cell; a corresponding
+corresponds to a @tech{preserved} @tech{thread cell}; a corresponding
 @deftech{parameter procedure} accesses and sets the thread cell's
 value for the current thread.
 
@@ -692,19 +693,19 @@ are defined in terms of continuations, prompts, and continuation
 marks.  However, exceptions are also built in, in the sense that
 primitive forms and procedures may raise exceptions.
 
-A handler for uncaught exceptions is designated through a built-in
-parameter. A handler to catch exceptions can be associated with a
-continuation frame though a continuation mark (whose key is not
-directly accessible). When an exception is raised, the current
-continuation's marks determine a chain of handler procedures that are
-consulted to handle the exception.
+An @deftech{exception handler} to catch exceptions can be associated
+with a continuation frame though a @tech{continuation mark} (whose key
+is not directly accessible). When an exception is raised, the current
+continuation's marks determine a chain of @tech{exception handler}
+procedures that are consulted to handle the exception. A handler for
+uncaught exceptions is designated through a built-in @tech{parameter}.
 
-One potential action of an exception handler is to abort the current
-continuation up to an enclosing prompt with a particular tag.  The
-default handler for uncaught exceptions, in particular, aborts to a
-particular tag for which a prompt is always present, because the
-prompt is installed in the outermost frame of the continuation for any
-new thread.
+One potential action of an @tech{exception handler} is to abort the
+current @tech{continuation} up to an enclosing @tech{prompt} with a
+particular @tech{prompt tag}.  The default handler for uncaught
+exceptions, in particular, aborts to a particular tag for which a
+prompt is always present, because the prompt is installed in the
+outermost frame of the continuation for any new thread.
 
 @;------------------------------------------------------------------------
 @section[#:tag "custodian-model"]{Custodians}

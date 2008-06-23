@@ -84,7 +84,7 @@ collection.  The following fields are used:
        effectively ignore the collection for
        compilation). Automatically omitted files and directories are
        @filepath{compiled}, @filepath{doc}, and those whose names
-       start with @litchar{.}
+       start with @litchar{.}.
 
        Files that are required by other files, however, are always
        compiled in the process of compiling the requiring file---even

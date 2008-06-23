@@ -101,7 +101,13 @@ information on these attributes of a structure type.  The
 multiple times, attaches a property value to the structure type; see
 @secref["structprops"] for more information on properties. The
 @scheme[#:transparent] option is a shorthand for @scheme[#:inspector
-#f]. 
+#f].
+
+@margin-note{Use the @scheme[prop:procedure] to property implement an
+@as-index{applicable structure}, use @scheme[prop:evt] to create a
+structure type whose instances are @tech{synchronizable events}, and
+so on. By convention, property names usually start with
+@schemeidfont{prop:}.}
 
 The @scheme[#:prefab] option obtains a @techlink{prefab} (pre-defined,
 globally shared) structure type, as opposed to creating a new
