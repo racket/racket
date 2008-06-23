@@ -45,7 +45,12 @@
         (let ([new-x (box x)]
               [new-y (box y)])
           (global-to-local new-x new-y)
-          (find-snip (unbox new-x) (unbox new-y))))
+          (cond
+            [(is-a? this text%)
+             (let ([pos (send this find-position (unbox new-x) (unbox new-y))])
+               (find-snip pos 'after-or-none))]
+            [(is-a? this pasteboard%)
+             (find-snip (unbox new-x) (unbox new-y))])))
       
       (super-instantiate ())
       ))
