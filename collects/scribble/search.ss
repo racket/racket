@@ -58,13 +58,14 @@
        (let ([seen (make-hasheq)]
              [search-key #f])
          (let loop ([queue (list (list (caddr b) (cadddr b) (list-ref b 4) (list-ref b 5) (list-ref b 6)))]
-                    [rqueue null])
+                    [rqueue null]
+                    [need-result? #t])
            (cond
             [(null? queue)
              (if (null? rqueue)
                  ;; Not documented
                  #f
-                 (loop (reverse rqueue) null))]
+                 (loop (reverse rqueue) null need-result?))]
             [else
              (let ([mod (list-ref (car queue) 0)]
                    [id (list-ref (car queue) 1)]
@@ -80,77 +81,86 @@
                             (not search-key))
                    (set! search-key eb))
                  (let ([v (and eb (resolve-search search-key part ri `(dep ,eb)))])
-                   (or (and v
-                            (let ([v (resolve-get/tentative part ri `(form ,eb))])
-                              (or (and v `(form ,eb))
-                                  `(def ,eb))))
-                       ;; Maybe it's re-exported from this module...
-                       ;; Try a shortcut:
-                       (if (eq? rmp (and (car b) (module-path-index-resolve (car b))))
-                           ;; Not defined through this path, so keep looking
-                           (loop queue rqueue)
-                           ;; Check parents, if we can get the source:
-                           (if (and (path? (resolved-module-path-name rmp))
-                                    (not (hash-ref seen rmp #f)))
-                               (let ([exports
-                                      (hash-ref
-                                       module-info-cache
-                                       rmp
-                                       (lambda ()
-                                         (let-values ([(valss stxess)
-                                                       (with-handlers ([exn:fail?
-                                                                        (lambda (exn)
-                                                                          (values null null))])
-                                                         (module-compiled-exports
-                                                          (get-module-code (resolved-module-path-name rmp)
-                                                                           #:choose (lambda (src zo so) 'zo))))])
-                                           (let ([t 
-                                                  ;; Merge the two association lists:
-                                                  (let loop ([base valss]
-                                                             [stxess stxess])
-                                                    (cond
-                                                     [(null? stxess) base]
-                                                     [(assoc (caar stxess) base)
-                                                      => (lambda (l)
-                                                           (loop (cons (cons (car l)
-                                                                             (append (cdar stxess)
-                                                                                     (cdr l)))
-                                                                       (remq l base))
-                                                                 (cdr stxess)))]
-                                                     [else (loop (cons (car stxess)
-                                                                       base)
-                                                                 (cdr stxess))]))])
-                                             (hash-set! module-info-cache rmp t)
-                                             t))))])
-                                 (hash-set! seen rmp #t)
-                                 (let ([a (assq id (let ([a (assoc export-phase exports)])
-                                                     (if a
-                                                         (cdr a) 
-                                                         null)))])
-                                   (if a
-                                       (loop queue
-                                             (append (map (lambda (m)
-                                                            (if (pair? m)
-                                                                (list (module-path-index-rejoin (car m) mod)
-                                                                      (list-ref m 2)
-                                                                      defn-phase
-                                                                      (list-ref m 1)
-                                                                      (list-ref m 3))
-                                                                (list (module-path-index-rejoin m mod)
-                                                                      id
-                                                                      0
-                                                                      0
-                                                                      0)))
-                                                          (cadr a))
-                                                     rqueue))
-                                       (begin
-                                         ;; A dead end may not be our fault: the files could
-                                         ;; have changed in inconsistent ways. So just say #f
-                                         ;; for now.
-                                         #;
-                                         (error 'find-scheme-tag
-                                                "dead end when looking for binding source: ~e"
-                                                id)
-                                         #f))))
-                               ;; Can't get the module source, so continue with queue:
-                               (loop queue rqueue)))))))])))))))
+                   (let* ([here-result
+                           (and need-result?
+                                v
+                                (let ([v (resolve-get/tentative part ri `(form ,eb))])
+                                  (or (and v `(form ,eb))
+                                      `(def ,eb))))]
+                          [need-result? (and need-result? (not here-result))])
+                     ;; Even if we've found `here-result', look deeper so that we have 
+                     ;; consistent `dep' results.
+                     (let ([nest-result
+                            ;; Maybe it's re-exported from this module...
+                            ;; Try a shortcut:
+                            (if (eq? rmp (and (car b) (module-path-index-resolve (car b))))
+                                ;; Not defined through this path, so keep looking
+                                (loop queue rqueue need-result?)
+                                ;; Check parents, if we can get the source:
+                                (if (and (path? (resolved-module-path-name rmp))
+                                         (not (hash-ref seen rmp #f)))
+                                    (let ([exports
+                                           (hash-ref
+                                            module-info-cache
+                                            rmp
+                                            (lambda ()
+                                              (let-values ([(valss stxess)
+                                                            (with-handlers ([exn:fail?
+                                                                             (lambda (exn)
+                                                                               (values null null))])
+                                                              (module-compiled-exports
+                                                               (get-module-code (resolved-module-path-name rmp)
+                                                                                #:choose (lambda (src zo so) 'zo))))])
+                                                (let ([t 
+                                                       ;; Merge the two association lists:
+                                                       (let loop ([base valss]
+                                                                  [stxess stxess])
+                                                         (cond
+                                                          [(null? stxess) base]
+                                                          [(assoc (caar stxess) base)
+                                                           => (lambda (l)
+                                                                (loop (cons (cons (car l)
+                                                                                  (append (cdar stxess)
+                                                                                          (cdr l)))
+                                                                            (remq l base))
+                                                                      (cdr stxess)))]
+                                                          [else (loop (cons (car stxess)
+                                                                            base)
+                                                                      (cdr stxess))]))])
+                                                  (hash-set! module-info-cache rmp t)
+                                                  t))))])
+                                      (hash-set! seen rmp #t)
+                                      (let ([a (assq id (let ([a (assoc export-phase exports)])
+                                                          (if a
+                                                              (cdr a) 
+                                                              null)))])
+                                        (if a
+                                            (loop queue
+                                                  (append (map (lambda (m)
+                                                                 (if (pair? m)
+                                                                     (list (module-path-index-rejoin (car m) mod)
+                                                                           (list-ref m 2)
+                                                                           defn-phase
+                                                                           (list-ref m 1)
+                                                                           (list-ref m 3))
+                                                                     (list (module-path-index-rejoin m mod)
+                                                                           id
+                                                                           0
+                                                                           0
+                                                                           0)))
+                                                               (cadr a))
+                                                          rqueue)
+                                                  need-result?)
+                                            (begin
+                                              ;; A dead end may not be our fault: the files could
+                                              ;; have changed in inconsistent ways. So just say #f
+                                              ;; for now.
+                                              #;
+                                              (error 'find-scheme-tag
+                                              "dead end when looking for binding source: ~e"
+                                              id)
+                                              #f))))
+                                    ;; Can't get the module source, so continue with queue:
+                                    (loop queue rqueue need-result?)))])
+                       (or here-result
+                           nest-result))))))])))))))

@@ -297,6 +297,30 @@ If a value provided to @scheme[serialize] is a simple tree (i.e., no
 sharing), then the fourth and fifth elements in the serialized
 representation will be empty.}
 
+@; ----------------------------------------------------------------------
+
+@defproc[(serialized=? [v1 any/c] [v2 any/c]) boolean?]{
+
+Returns @scheme[#t] if @scheme[v1] and @scheme[v2] represent the same
+serialization information.
+
+More precisely, it returns the same value that @scheme[(equal?
+(deserialize v1) (deserialize v2))] would return if
+
+@itemize[
+
+ @item{all structure types whose deserializers are accessed with
+       distinct module paths are actually distinct types;}
+
+ @item{all structure types are transparent; and}
+
+ @item{all structure instances contain only the constituent values
+       recorded in each of @scheme[v1] and @scheme[v2].}
+
+]}
+
+@; ----------------------------------------------------------------------
+
 @defparam[deserialize-module-guard guard (module-path? symbol? . -> . void?)]{
 
 A parameter whose value is called by @scheme[deserialize] before

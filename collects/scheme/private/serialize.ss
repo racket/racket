@@ -17,6 +17,8 @@
 	   serialize
 	   deserialize
 
+           serialized=?
+
            deserialize-module-guard)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -362,7 +364,7 @@
 
   (define-struct not-ready (shares fixup))
 
-  (define (lookup-shared! share n mod-map)
+  (define (lookup-shared! share n mod-map module-path-index-join)
     ;; The shared list is not necessarily in order of
     ;;  refereds before referees. A `not-ready' object
     ;;  indicates a reference before a value is ready,
@@ -374,12 +376,12 @@
           (let* ([v (vector-ref (not-ready-shares sv) n)]
                  [val (if (box? v)
                           (deserial-shell (unbox v) mod-map (not-ready-fixup sv) n)
-                          (deserialize-one v share mod-map))])
+                          (deserialize-one v share mod-map module-path-index-join))])
             (vector-set! share n val)
             val)
           sv)))
 
-  (define (deserialize-one v share mod-map)
+  (define (deserialize-one v share mod-map module-path-index-join)
     (let loop ([v v])
       (cond
        [(or (boolean? v)
@@ -398,7 +400,7 @@
 	  (apply (deserialize-info-maker info) (map loop (cdr v))))]
        [else
 	(case (car v)
-	  [(?) (lookup-shared! share (cdr v) mod-map)]
+	  [(?) (lookup-shared! share (cdr v) mod-map module-path-index-join)]
           [(f) (apply make-prefab-struct (cadr v) (map loop (cddr v)))]
 	  [(void) (void)]
 	  [(u) (let ([x (cdr v)])
@@ -488,17 +490,39 @@
 	[(mpi)
          (error 'deserialize "cannot restore module-path-index in cycle")])]))
 
+  (define (deserialize-with-map mod-map vers l module-path-index-join)
+    (let ([share-n (list-ref l 2)]
+          [shares (list-ref l 3)]
+          [fixups (list-ref l 4)]
+          [result (list-ref l 5)])
+      ;; Create vector for sharing:
+      (let* ([fixup (make-vector share-n #f)]
+             [share (make-vector share-n (make-not-ready
+                                          (list->vector shares)
+                                          fixup))])
+        ;; Deserialize into sharing array:
+        (let loop ([n 0][l shares])
+          (unless (= n share-n)
+            (lookup-shared! share n mod-map module-path-index-join)
+            (loop (add1 n) (cdr l))))
+        ;; Fixup shell for graphs
+        (for-each (lambda (n+v)
+                    (let ([v (deserialize-one (cdr n+v) share mod-map module-path-index-join)])
+                      ((vector-ref fixup (car n+v)) v)))
+                  fixups)
+        ;; Deserialize final result. (If there's no sharing, then
+        ;;  all the work is actually here.)
+        (deserialize-one result share mod-map module-path-index-join))))
+  
+  (define (extract-version l)
+    (if (pair? (car l))
+        (values (caar l) (cdr l))
+        (values 0 l)))
+
   (define (deserialize l)
-    (let-values ([(vers l)
-                  (if (pair? (car l))
-                      (values (caar l) (cdr l))
-                      (values 0 l))])
+    (let-values ([(vers l) (extract-version l)])
       (let ([mod-map (make-vector (list-ref l 0))]
-            [mod-map-l (list-ref l 1)]
-            [share-n (list-ref l 2)]
-            [shares (list-ref l 3)]
-            [fixups (list-ref l 4)]
-            [result (list-ref l 5)])
+            [mod-map-l (list-ref l 1)])
         ;; Load constructor mapping
         (let loop ([n 0][l mod-map-l])
           (unless (null? l)
@@ -512,21 +536,48 @@
               ;; Register maker and struct type:
               (vector-set! mod-map n des))
             (loop (add1 n) (cdr l))))
-        ;; Create vector for sharing:
-        (let* ([fixup (make-vector share-n #f)]
-               [share (make-vector share-n (make-not-ready
-                                            (list->vector shares)
-                                            fixup))])
-          ;; Deserialize into sharing array:
-          (let loop ([n 0][l shares])
-            (unless (= n share-n)
-              (lookup-shared! share n mod-map)
-              (loop (add1 n) (cdr l))))
-          ;; Fixup shell for graphs
-          (for-each (lambda (n+v)
-                      (let ([v (deserialize-one (cdr n+v) share mod-map)])
-                        ((vector-ref fixup (car n+v)) v)))
-                    fixups)
-          ;; Deserialize final result. (If there's no sharing, then
-          ;;  all the work is actually here.)
-          (deserialize-one result share mod-map))))))
+        (deserialize-with-map mod-map vers l module-path-index-join))))
+
+  ;; ----------------------------------------
+
+  (define (serialized=? l1 l2)
+    (let-values ([(vers1 l1) (extract-version l1)]
+                 [(vers2 l2) (extract-version l2)])
+      (let ([mod-map1 (make-vector (list-ref l1 0))]
+            [mod-map1-l (list-ref l1 1)]
+            [mod-map2 (make-vector (list-ref l2 0))]
+            [mod-map2-l (list-ref l2 1)]
+            [make-key (lambda (path+name)
+                        (if (car path+name)
+                            (let ([p (unprotect-path (car path+name))]
+                                  [sym (cdr path+name)])
+                              (list p sym))
+                            (list #f (cdr path+name))))]
+            [mpi-key (gensym)])
+        (let ([keys1 (map make-key mod-map1-l)]
+              [keys2 (map make-key mod-map2-l)]
+              [ht (make-hash)]
+              [mpij (lambda (a b) (vector mpi-key a b))])
+          (for-each (lambda (key)
+                      (unless (hash-ref ht key #f)
+                        (hash-set! ht key (gensym))))
+                    (append keys1 keys2))
+          (for-each (lambda (mod-map keys)
+                      (let loop ([n 0][l keys])
+                        (unless (null? l)
+                          (let ([sym (hash-ref ht (car l))])
+                            (vector-set! mod-map n
+                                         (make-deserialize-info
+                                          (lambda args
+                                            (vector sym (list->vector args)))
+                                          (lambda ()
+                                            (let ([v (vector sym #f)])
+                                              (values v
+                                                      (lambda (vec)
+                                                        (vector-set! v 1 (vector-ref vec 1)))))))))
+                          (loop (add1 n) (cdr l)))))
+                    (list mod-map1 mod-map2)
+                    (list keys1 keys2))
+          (let ([v1 (deserialize-with-map mod-map1 vers1 l1 mpij)]
+                [v2 (deserialize-with-map mod-map2 vers2 l2 mpij)])
+            (equal? v1 v2)))))))

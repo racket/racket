@@ -4,16 +4,16 @@
 
 (Section 'serialization)
 
-(require mzlib/serialize)
+(require scheme/serialize)
 
 ;; ----------------------------------------
 
 (define insp (current-inspector))
 
-(define-serializable-struct a () insp)
-(define-serializable-struct b (x y) insp)
-(define-serializable-struct (c a) (z) insp)
-(define-serializable-struct (d b) (w) insp)
+(define-serializable-struct a () #:inspector insp #:mutable)
+(define-serializable-struct b (x y) #:inspector insp #:mutable)
+(define-serializable-struct (c a) (z) #:inspector insp #:mutable)
+(define-serializable-struct (d b) (w) #:inspector insp #:mutable)
 
 (define (same? v1 v2)
   ;; This is not quite the same as `equal?', veuase it knows
@@ -95,7 +95,9 @@
   (parameterize ([print-graph #t])
     (test #t serializable? v)
     (test #t same? v v)
-    (test #t same? v (deserialize (serialize v)))))
+    (test #t same? v (deserialize (serialize v)))
+    (test #t serialized=? (serialize v) (serialize v))
+    (test #f serialized=? (serialize v) (serialize (not v)))))
 
 (define (mk-ht mk)
   (let ([ht (mk)])
