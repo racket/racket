@@ -252,7 +252,7 @@
            #f
            (if (keyword? (syntax-e (car p)))
                "unrecognized struct-specification keyword"
-               "expected a struct-spefication keyword")
+               "expected a struct-specification keyword")
            stx
            (car p))])))
 
