@@ -1,4 +1,8 @@
-#lang scheme/base
+(module promise '#%kernel
+(#%require "private/small-scheme.ss" "private/more-scheme.ss" "private/define.ss"
+           (rename "private/define-struct.ss" define-struct define-struct*)
+           (for-syntax '#%kernel "private/stxcase-scheme.ss"))
+(#%provide lazy delay force promise?)
 
 ;; This module implements "lazy promises" and a `force' that is iterated
 ;; through them.
@@ -13,9 +17,6 @@
 ;; it behaves as in Scheme (except that `force' is identity for non
 ;; promise values), and `force'+`lazy' are sufficient for implementing
 ;; the lazy language.
-
-(require (for-syntax scheme/base))
-(provide lazy delay force promise?)
 
 (define (promise-printer promise port write?)
   (let loop ([p (promise-val promise)])
@@ -37,7 +38,7 @@
           [else
            (display "#<promise!(values" port)
            (let ([fmt (if write? " ~s" " ~a")])
-             (for ([x p]) (fprintf port fmt x)))
+             (for-each (lambda (x) (fprintf port fmt x)) p))
            (display ")>" port)])))
 
 (define-struct promise (val)
@@ -126,3 +127,5 @@
             [else (apply values p)]))
     ;; different from srfi-45: identity for non-promises
     promise))
+
+)
