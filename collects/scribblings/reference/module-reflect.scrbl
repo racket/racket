@@ -73,7 +73,6 @@ the enclosing module, so that a relative reference can be converted to
 an absolute symbol or @tech{resolved module path}.
 
 A @tech{module name resolver} takes one and four arguments:
-%
 @itemize{
 
   @item{When given one argument, it is a name for a module declaration

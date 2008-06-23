@@ -55,7 +55,6 @@ The arguments implement the port as follows:
   @item{@scheme[read-in] --- a procedure that takes a single argument:
     a mutable byte string to receive read bytes. The procedure's
     result is one of the following:
-%
     @itemize{
 
       @item{the number of bytes read, as an exact, non-negative integer;}
