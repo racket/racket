@@ -35,7 +35,7 @@ pinholes are at position @scheme[(0,0)].
 @defproc[(place-image [img image?] [x number?][y number?]
 	   [s (unsyntax @tech{Scene})]) (unsyntax @tech{Scene})]
 {Creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
- @scheme[(x,y)] are comp. graph. coordinates, i.e., they count left and
+ @scheme[(x,y)] are comp. graph. coordinates, i.e., they count right and
  down from the upper-left corner.}
 
 @section[#:tag "simulations"]{Simple Simulations}
