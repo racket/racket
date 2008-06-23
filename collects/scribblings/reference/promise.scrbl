@@ -25,7 +25,11 @@ to produce its value.}
 @defform[(lazy expr)]{
 
 Like @scheme[delay], except that if @scheme[expr] produces a promise,
-then the promise is @scheme[force]d to obtain a value.}
+then this promise is @scheme[force]d to obtain a value.  In other
+words, this form creates a kind of a composable promise, which is
+mostly useful for implementing lazy libraries and languages.  Also
+note that the @scheme[expr] in this case is restricted to one that
+produces a single value.}
 
 @defproc[(force [v any/c]) any]{
 
