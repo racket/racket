@@ -378,12 +378,11 @@ that the resulting path refers to the same directory as before).
 When @scheme[use-filesystem?] is @scheme[#f], up-directory indicators
 are removed by deleting a preceding path element, and the result can
 be a relative path with up-directory indicators remaining at the
-beginning of the path or, for @|AllUnix| paths; otherwise,
-up-directory indicators are dropped when they refer to the parent of a
-root directory. Similarly, the result can be the same as
-@scheme[(build-path 'same)] (but with a trailing separator) if
-eliminating up-directory indicators leaves only same-directory
-indicators.
+beginning of the path; up-directory indicators are dropped when they
+refer to the parent of a root directory. Similarly, the result can be
+the same as @scheme[(build-path 'same)] (but with a trailing
+separator) if eliminating up-directory indicators leaves only
+same-directory indicators.
 
 The @scheme[path] argument can be a path for any platform when
 @scheme[use-filesystem?] is @scheme[#f], and the resulting path is for
