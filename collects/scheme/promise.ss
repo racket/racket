@@ -64,11 +64,8 @@
 (define-syntax (delay stx)
   (syntax-case stx ()
     [(delay expr)
-     (with-syntax ([proc (syntax-property
-                          (syntax/loc stx (lambda () expr))
-                          'inferred-name (syntax-local-name))])
-       (syntax/loc stx
-         (lazy (make-promise (call-with-values proc list)))))]))
+     (syntax/loc stx
+       (lazy (make-promise (call-with-values (lambda () expr) list))))]))
 
 ;; force iterates on lazy promises (forbids dependency cycles)
 ;; * (force X) = X for non promises
