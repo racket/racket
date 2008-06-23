@@ -19,12 +19,17 @@
 
 (define (promise-printer promise port write?)
   (let loop ([p (promise-val promise)])
-    (cond [(procedure? p)
+    (cond [(reraise? p)
+           (let ([v (reraise-val p)])
+             (if (exn? v)
+               (fprintf port "#<promise!exn!~a>" (exn-message v))
+               (fprintf port (if write? "#<promise!~a>" "#<promise!~s>")
+                        `(raise ,v))))]
+          [(procedure? p)
            (cond [(object-name p)
                   => (lambda (n) (fprintf port "#<promise:~a>" n))]
                  [else (display "#<promise>" port)])]
           [(promise? p) (loop (promise-val p))] ; hide sharing
-          [(exn? p) (display "#<promise!exception>" port)] ; exn when forced
           ;; values
           [(null? p) (fprintf port "#<promise!(values)>")]
           [(null? (cdr p))
@@ -39,11 +44,12 @@
   #:mutable
   #:property prop:custom-write promise-printer)
 ;; A promise value can hold
-;; - <thunk>: usually a delayed promise, but can also hold a `running' thunk
-;; - <promise>: a shared (redirected) promise that points at another one
 ;; - (list <value> ...): forced promise (possibly multiple-values, usually one)
-;; - <exn>: a forced promise, where an exception happened when forcing
-
+;; - <promise>: a shared (redirected) promise that points at another one
+;; - <thunk>: usually a delayed promise,
+;;        - can also hold a `running' thunk that will throw a reentrant error
+;;        - can also hold a raising-a-value thunk on exceptions and other
+;;          `rais'ed values (actually, applicable structs for printouts)
 ;; Creates a `composable' promise
 ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
 (define-syntax (lazy stx)
@@ -52,6 +58,13 @@
                                       (syntax/loc stx (lambda () expr))
                                       'inferred-name (syntax-local-name))])
                    (syntax/loc stx (make-promise proc)))]))
+
+;; use this to create a value to be raised, make it a procedure so no other
+;; code need to change (we could just use the exceptions -- but any value can
+;; be raised); also make it have a proper printer so we can show such promises
+;; properly.
+(define-struct reraise (val)
+  #:property prop:procedure (lambda (this) (raise (reraise-val this))))
 
 ;; Creates a promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
@@ -81,14 +94,15 @@
           (cond [(procedure? p*) (loop1 (p*))]
                 [(promise? p*) (loop2 p*)]
                 [else (set-promise-val! root p*)
-                      (cond [(exn? p*) (raise p*)]
-                            [(null? p*) (values)]
+                      (cond [(null? p*) (values)]
                             [(null? (cdr p*)) (car p*)]
                             [else (apply values p*)])])))
       (begin ; error here for "library approach" (see above URL)
         (set-promise-val! root (list v))
         v))))
 
+;; this is uuused durinc computation to avoid reentrant loops (which makes it
+;; non-r5rs, but there's no good uses for allowing that)
 (define (running proc)
   (let ([name (object-name proc)])
     ;; important: be careful not to close over the thunk!
@@ -104,10 +118,9 @@
              ;; "mark" root as running (avoids cycles)
              (set-promise-val! promise (running p))
              (call-with-exception-handler
-               (lambda (exn) (set-promise-val! promise exn) exn)
+               (lambda (e) (set-promise-val! promise (make-reraise e)) e)
                (lambda () (force-proc p promise)))]
             [(promise? p) (loop (promise-val p))]
-            [(exn? p) (raise p)]
             [(null? p) (values)]
             [(null? (cdr p)) (car p)]
             [else (apply values p)]))
