@@ -9,9 +9,7 @@
 
 (let ([inp (current-input-port)] [outp (current-output-port)])
   (when (and (eq? 'stdin (object-name inp)) (terminal-port? inp))
-    (dynamic-require rep-start #f)
-    (when (terminal-port? outp)
-      (port-count-lines! outp))))
+    (dynamic-require rep-start #f)))
 
 (define readline-init-expr
   '(require readline/rep))

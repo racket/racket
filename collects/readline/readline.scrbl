@@ -116,10 +116,13 @@ A parameter that determines the number of history entries to save,
 defaults to @scheme[100].}
 
 
-@defboolparam[keep-duplicates keep?]{
+@defparam[keep-duplicates keep? (one-of/c #f 'unconsecutive #t)]{
 
-A parameter. If @scheme[#f] (the default), then lines that are equal
-to the previous one are not added as new history items.}
+A parameter. If @scheme[#f] (the default), then when a line is equal
+to a previous one, the previous one is removed.  If it set to
+@scheme['unconsecutive] then this happens only for an line that
+duplicates the previous one, and if it is @scheme[#f] then all
+duplicates are kept.}
 
 
 @defboolparam[keep-blanks keep?]{
@@ -186,10 +189,28 @@ Adds the given string to the @|readline| history, which is accessible to
 the user via the up-arrow key.}
 
 
-@defproc[(add-history-bytes [str string?]) void?]{
+@defproc[(add-history-bytes [str bytes?]) void?]{
 
 Adds the given byte string to the @|readline| history, which is
 accessible to the user via the up-arrow key.}
+
+@defproc[(history-length) nonnegative-exact-integer?]{
+
+Returns the length of the history list.}
+
+
+@defproc[(history-get [idx integer?]) string?]{
+
+Returns the history string at the @scheme[idx] position.  @scheme[idx]
+can be negative, which will make it count from the last (i.e,
+@scheme[-1] returns the last item, @scheme[-2] returns the
+second-to-last, etc.)}
+
+
+@defproc[(history-delete [idx integer?]) string?]{
+
+Deletes the history string at the @scheme[idx] position.  The position
+is specified in the same way as the argument for @scheme[history-get].}
 
 
 @defproc[(set-completion-function! [proc ((or/c string? bytes?)

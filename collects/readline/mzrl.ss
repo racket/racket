@@ -1,8 +1,9 @@
-(module mzrl mzscheme
+#lang scheme/base
 
-(require mzlib/foreign) (unsafe!)
+(require mzlib/foreign (only-in '#%foreign ffi-obj)) (unsafe!)
 (provide readline readline-bytes
          add-history add-history-bytes
+         history-length history-get history-delete
          set-completion-function!)
 
 ;; libtermcap needed on some platforms
@@ -41,6 +42,41 @@
 
 (define add-history-bytes
   (get-ffi-obj "add_history" libreadline (_fun _bytes -> _void)))
+
+(define history-length
+  (let ([hl (ffi-obj #"history_length" libreadline)])
+    (lambda () (ptr-ref hl _int))))
+(define history-base
+  (let ([hb (ffi-obj #"history_base" libreadline)])
+    (lambda () (ptr-ref hb _int))))
+
+;; The history library has this great feature: *some* function consume
+;; an index that is relative to history_base, and *some* get a plain
+;; offset.  Someone just had so much fun they had to share.  This
+;; deals with this absurdity, checks the range of the index, and deals
+;; with negative offsets.
+(define (hist-idx who idx base?)
+  (let* ([len (history-length)]
+         [idx (cond [(<= 0 idx (sub1 len)) idx]
+                    [(<= (- len) idx -1)   (+ len idx)]
+                    [else (error who "index out of history range, -~a - ~a"
+                                 len (sub1 len))])])
+    (if base? (+ idx (history-base)) idx)))
+
+;; actually, returns a pointer to a struct with the string, but all we
+;; care about is the string...
+(define history-get
+  (get-ffi-obj "history_get" libreadline
+    (_fun (i) :: (_int = (hist-idx 'history-get i #t)) -> (_ptr o _string))))
+
+(define history-remove ; returns HIST_ENTRY* that history_free() frees
+  (get-ffi-obj "remove_history" libreadline
+    (_fun (i) :: (_int = (hist-idx 'history-delete i #f)) -> _pointer)))
+(define history-free ; ignore histdata_t return value
+  (get-ffi-obj "free_history_entry" libreadline (_fun _pointer -> _void)))
+
+(define (history-delete idx)
+  (history-free (history-remove idx)))
 
 ;; Simple completion: use this with a (string -> (list-of string)) function
 ;; that returns the completions for a given string (can be used with other
@@ -81,5 +117,3 @@
 ;; make it possible to run Scheme threads while waiting for input
 (set-ffi-obj! "rl_event_hook" libreadline (_fun -> _int)
               (lambda () (sync/enable-break real-input-port) 0))
-
-)
