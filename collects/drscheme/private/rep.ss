@@ -26,6 +26,7 @@ TODO
          scheme/unit
          scheme/list
          "drsig.ss"
+         "find-syntax-source-editor.ss"
          string-constants
          setup/xref
          scheme/gui/base
@@ -707,7 +708,7 @@ TODO
                                                  (srcloc-column srcloc)
                                                  (srcloc-position srcloc)
                                                  (srcloc-span srcloc))]
-                                   [(find-source-editor (srcloc-source srcloc) definitions-text)
+                                   [(find-syntax-source-editor (srcloc-source srcloc) definitions-text)
                                     =>
                                     (lambda (editor)
                                       (make-srcloc editor
@@ -774,31 +775,6 @@ TODO
             (when first-loc
               (send first-file set-caret-owner (get-focus-snip) 'global)))))
       
-      
-      
-      ;; find-source-editor: syntax-source text% -> (or/c editor #f)
-      ;; Looks for an embedded snip editor whose source is the a-stx-source.
-      ;;
-      ;; Note: this is a copy-and-paste from syncheck.
-      ;; I've ripping out the editor caches for now,
-      ;; until I get comments from others about this.
-      (define/private (find-source-editor a-stx-source defs-text)
-        (let txt-loop ([text defs-text])
-          (cond
-            [(and (is-a? text text:basic<%>)
-                  (send text port-name-matches? a-stx-source))
-             text]
-            [else
-             (let snip-loop ([snip (send text find-first-snip)])
-               (cond
-                 [(not snip)
-                  #f]
-                 [(and (is-a? snip editor-snip%)
-                       (send snip get-editor))
-                  (or (txt-loop (send snip get-editor))
-                      (snip-loop (send snip next)))]
-                 [else
-                  (snip-loop (send snip next))]))])))
       
       
       (define/public (reset-highlighting)

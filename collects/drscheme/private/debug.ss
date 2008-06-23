@@ -16,6 +16,7 @@ profile todo:
          scheme/gui/base
          string-constants
          framework/private/bday
+         "find-syntax-source-editor.ss"
          "drsig.ss"
          "bindings-browser.ss"
          (for-syntax scheme/base))
@@ -775,7 +776,8 @@ profile todo:
                             [(and frame (is-a? frame frame:editor<%>))
                              (send frame get-editor)]
                             [else #f])]
-                         [(is-a? debug-source editor<%>) debug-source])]
+                         [(is-a? debug-source editor<%>) debug-source]
+                         [else #f])]
                [rep (and (is-a? frame drscheme:unit:frame%)
                          (send frame get-interactions-text))])
           (when frame
