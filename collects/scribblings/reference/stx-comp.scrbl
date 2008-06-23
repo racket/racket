@@ -79,7 +79,7 @@ Returns one of three kinds of values, depending on the binding of
       any @scheme[phase-level] value, then it is produced for all
       @scheme[phase-level] values.}
 
-      @item{The result is a list of six items when @scheme[id-stx]
+      @item{The result is a list of seven items when @scheme[id-stx]
       has a @tech{module binding}: @scheme[(list _source-mod _source-id
       _nominal-source-mod _nominal-source-id _source-phase _import-phase 
       _nominal-export-phase)].
