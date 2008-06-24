@@ -79,14 +79,20 @@
                       (lambda () (int-err "No constraint for bound ~a" dbound)))))))
 
 (define (move-vars+rest-to-dmap cset dbound vars #:exact [exact? #f])
-  (mover cset dbound (list dbound)
-         (lambda (cmap)
-           ((if exact? make-dcon-exact make-dcon)
-            (for/list ([v vars])
-              (hash-ref cmap v 
-                        (lambda () (int-err "No constraint for new var ~a" v))))
-            (hash-ref cmap dbound
-                      (lambda () (int-err "No constraint for bound ~a" dbound)))))))                                      
+  (map/cset
+   (lambda (cmap dmap)
+     (cons (hash-remove* cmap vars)           
+            (dmap-meet 
+             (singleton-dmap 
+              dbound
+              ((if exact? make-dcon-exact make-dcon)
+               (for/list ([v vars])
+                 (hash-ref cmap v 
+                           (lambda () (int-err "No constraint for new var ~a" v))))
+               (hash-ref cmap dbound
+                         (lambda () (int-err "No constraint for bound ~a" dbound)))))
+             dmap)))
+   cset))
 
 ;; t and s must be *latent* effects
 (define (cgen/eff V X t s)
@@ -205,26 +211,31 @@
       (arr: ss s s-rest #f                  s-thn-eff s-els-eff))
      (unless (memq dbound X)
        (fail! S T))
-     (if (< (length ts) (length ss))
-         ;; the hard case
-         (let* ([num-vars (- (length ss) (length ts))]
-                [vars     (for/list ([n (in-range num-vars)])
-                            (gensym dbound))]
-                [new-tys  (for/list ([var vars])
-                            (substitute (make-F var) dbound t-dty))]
-                [new-cset (cgen/arr V (append vars X)                                      
-                                    (make-arr (append ts new-tys) t #f (cons t-dty dbound) t-thn-eff t-els-eff)
-                                    s-arr)])
-           (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))
-         ;; the simple case
-         (let* ([arg-mapping (cgen/list V X (extend ts ss s-rest) ts)]
-                [darg-mapping (move-rest-to-dmap (cgen V X s-rest t-dty) dbound #:exact #t)]
-                [ret-mapping (cg t s)])
-           (cset-meet* (list arg-mapping darg-mapping ret-mapping
-                             (cgen/eff/list V X t-thn-eff s-thn-eff)
-                             (cgen/eff/list V X t-els-eff s-els-eff)))))]
+     (cond [(< (length ts) (length ss))
+            ;; the hard case
+            (let* ([num-vars (- (length ss) (length ts))]
+                   [vars     (for/list ([n (in-range num-vars)])
+                               (gensym dbound))]
+                   [new-tys  (for/list ([var vars])
+                               (substitute (make-F var) dbound t-dty))]
+                   [arg-mapping (cgen/list V (append vars X) ss (append ts new-tys))]
+                   [darg-mapping (cgen V X s-rest t-dty)]
+                   [ret-mapping (cg t s)]
+                   [new-cset
+                    (cset-meet* (list arg-mapping darg-mapping ret-mapping
+                                      (cgen/eff/list V X t-thn-eff s-thn-eff)
+                                      (cgen/eff/list V X t-els-eff s-els-eff)))])
+              (move-vars+rest-to-dmap new-cset dbound vars #:exact #t))]
+           [else
+            ;; the simple case
+            (let* ([arg-mapping (cgen/list V X (extend ts ss s-rest) ts)]
+                   [darg-mapping (move-rest-to-dmap (cgen V X s-rest t-dty) dbound #:exact #t)]
+                   [ret-mapping (cg t s)])
+              (cset-meet* (list arg-mapping darg-mapping ret-mapping
+                                (cgen/eff/list V X t-thn-eff s-thn-eff)
+                                (cgen/eff/list V X t-els-eff s-els-eff))))])]
     [(_ _) (fail! S T)]))
-    
+
 (define (cgen V X S T)
   (define (cg S T) (cgen V X S T))
   (define empty (empty-cset X))

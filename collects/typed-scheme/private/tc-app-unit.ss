@@ -412,15 +412,6 @@
 				   #;
                                    (printf "substitution was bad~n args: ~a ~n new-doms: ~a~n~a~n" argtypes new-doms* substitution)
                                    (loop (cdr doms*) (cdr rngs*)))))))]
-                             #|
-                           (printf "subst is:~a~nret is: ~a~nvars is: ~a~nresult is:~a~n" substitution (car rngs*) vars 
-                                   (subst-all substitution (car rngs*)))
-                           (printf "new-doms*: ~a~n" new-doms*)
-                           (printf "orig doms* is: ~a~n" (car doms*))
-                           (printf "argtypes: ~a~n" argtypes)
-                           (int-err "Inconsistent substitution - arguments not subtypes")))
-                       #;(printf "subst is:~a~nret is: ~a~nvars is: ~a~n" substitution (car rngs*) vars)
-                       )]|#
                  [else (loop (cdr doms*) (cdr rngs*))]))]
         ;; polymorphic varargs
         [(tc-result: (and t
@@ -444,10 +435,16 @@
                 (unless (subtypes/varargs argtypes new-dom new-rest)
                   (int-err "Inconsistent substitution - arguments not subtypes"))
                 (ret (subst-all substitution rng)))]
-             [else (tc-error/expr #:return (ret (Un))
-                                  (string-append
-                                   "No polymorphic function domain matched in function application:~n"
-                                   (domain-mismatches t (list dom) (list rest) (list #f) argtypes #f #f)))]))]
+             [else 
+              (match t
+                [(or (Poly-names: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
+                     ;; we want to infer the dotted-var here as well, and we don't use these separately
+                     ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
+                     (PolyDots-names: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))
+                 (tc-error/expr #:return (ret (Un))
+                                (string-append
+                                 "No polymorphic function domain matched in function application:~n"
+                                 (domain-mismatches t (list dom) (list rest) (list #f) argtypes #f #f)))])]))]
         ;; polymorphic ... type
         [(tc-result: (and t (PolyDots: (and vars (list fixed-vars ... dotted-var))
                                        (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))))
