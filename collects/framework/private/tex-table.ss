@@ -153,7 +153,12 @@
     ("propto" "∝")
     ("vdash" "⊢")
     ("dashv" "⊣")
-    ("skull" "☠")))
+    
+    ("skull" "☠") 
+    ("smiley" "☺")
+    ("blacksmiley" "☻")
+    ("frownie" "☹")
+    ))
 
 ;; checks to see if there are duplicates
 #;
