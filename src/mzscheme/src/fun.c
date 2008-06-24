@@ -83,17 +83,14 @@ Scheme_Object *scheme_values_func; /* the function bound to `values' */
 Scheme_Object *scheme_procedure_p_proc;
 Scheme_Object *scheme_void_proc;
 Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
-
 Scheme_Object *scheme_reduced_procedure_struct;
-
 Scheme_Object *scheme_tail_call_waiting;
-
 Scheme_Object *scheme_inferred_name_symbol;
+Scheme_Object *scheme_default_prompt_tag;
 
 int scheme_cont_capture_count;
 int scheme_prompt_capture_count;
 
-Scheme_Object *scheme_default_prompt_tag;
 
 /* locals */
 static Scheme_Object *procedure_p (int argc, Scheme_Object *argv[]);
@@ -151,29 +148,37 @@ static Scheme_Object *current_prompt_read(int, Scheme_Object **);
 static Scheme_Object *write_compiled_closure(Scheme_Object *obj);
 static Scheme_Object *read_compiled_closure(Scheme_Object *obj);
 
-/* Back-door arguments to scheme_top_level_do: */
-static int top_next_registered;
-static Scheme_Comp_Env *top_next_env;
-static Scheme_Object *top_next_mark;
-static Scheme_Object *top_next_name;
-static Scheme_Object *top_next_certs;
-static Scheme_Object *top_next_modidx;
-static Scheme_Env *top_next_menv;
-static int top_next_use_thread_cc_ok;
-
+/* READ ONLY SHARABLE GLOBALS */
 static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
 
-static Scheme_Object *certify_mode_symbol, *transparent_symbol, *transparent_binding_symbol, *opaque_symbol;
+static Scheme_Object *certify_mode_symbol;
+static Scheme_Object *transparent_symbol;
+static Scheme_Object *transparent_binding_symbol;
+static Scheme_Object *opaque_symbol;
 
-static Scheme_Object *cont_key, *barrier_prompt_key;
+static Scheme_Object *cont_key; /* uninterned */
+static Scheme_Object *barrier_prompt_key; /* uninterned */
 
 static Scheme_Object *is_method_symbol;
 
-static Scheme_Object *call_with_prompt_proc, *abort_continuation_proc;
+static Scheme_Object *call_with_prompt_proc;
+static Scheme_Object *abort_continuation_proc;
 
+static Scheme_Object *internal_call_cc_prim;
+
+/* CACHES NEED TO BE THREAD LOCAL */
 static Scheme_Prompt *available_prompt, *available_cws_prompt, *available_regular_prompt;
 static Scheme_Dynamic_Wind *available_prompt_dw;
 static Scheme_Meta_Continuation *available_prompt_mc;
+static Scheme_Object *cached_beg_stx;
+static Scheme_Object *cached_dv_stx;
+static Scheme_Object *cached_ds_stx;
+static int cached_stx_phase;
+
+/* NEED TO BE THREAD LOCAL */
+static Scheme_Cont *offstack_cont;
+static Scheme_Overflow *offstack_overflow;
+
 
 typedef void (*DW_PrePost_Proc)(void *);
 
@@ -183,7 +188,6 @@ typedef void (*DW_PrePost_Proc)(void *);
 static void register_traversers(void);
 #endif
 
-static Scheme_Object *internal_call_cc_prim;
 
 /* See call_cc: */
 typedef struct Scheme_Dynamic_Wind_List {
@@ -192,12 +196,6 @@ typedef struct Scheme_Dynamic_Wind_List {
   int meta_depth;
   struct Scheme_Dynamic_Wind_List *next;
 } Scheme_Dynamic_Wind_List;
-
-static Scheme_Object *cached_beg_stx, *cached_dv_stx, *cached_ds_stx;
-static int cached_stx_phase;
-
-static Scheme_Cont *offstack_cont;
-static Scheme_Overflow *offstack_overflow;
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -1917,75 +1915,91 @@ void scheme_reset_overflow(void)
 /*                       entry continuation barrier                       */
 /*========================================================================*/
 
-void scheme_on_next_top(Scheme_Comp_Env *env, Scheme_Object *mark, 
+static Scheme_Prompt *allocate_prompt(Scheme_Prompt **cached_prompt) {
+  Scheme_Prompt *prompt;
+  if (*cached_prompt) {
+    prompt = *cached_prompt;
+    *cached_prompt = NULL;
+  } else  {
+    prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
+    prompt->so.type = scheme_prompt_type;
+  }
+  return prompt;
+}
+
+static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *state) {
+    state->current_local_env = thread->current_local_env;
+    state->mark              = thread->current_local_mark;
+    state->name              = thread->current_local_name;
+    state->certs             = thread->current_local_certs;
+    state->modidx            = thread->current_local_modidx;
+    state->menv              = thread->current_local_menv;
+}
+
+static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *thread) {
+    thread->current_local_env     = state->current_local_env;
+    thread->current_local_mark    = state->mark;
+    thread->current_local_name    = state->name;
+    thread->current_local_certs   = state->certs;
+    thread->current_local_modidx  = state->modidx;
+    thread->current_local_menv    = state->menv;
+}
+
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env, Scheme_Object *mark, 
 			Scheme_Object *name, 
 			Scheme_Object *certs, 
 			Scheme_Env *menv,
 			Scheme_Object *modidx)
-     /* Set back-door arguments for scheme_top_level_do */
 {
-  if (!top_next_registered) {
-    top_next_registered = 1;
-    REGISTER_SO(top_next_env);
-    REGISTER_SO(top_next_mark);
-    REGISTER_SO(top_next_name);
-    REGISTER_SO(top_next_certs);
-    REGISTER_SO(top_next_modidx);
-    REGISTER_SO(top_next_menv);
-  }
-
-  top_next_env = env;
-  top_next_mark = mark;
-  top_next_name = name;
-  top_next_certs = certs;
-  top_next_modidx = modidx;
-  top_next_menv = menv;
+  state->current_local_env = env;
+  state->mark              = mark;
+  state->name              = name;
+  state->certs             = certs;
+  state->modidx            = modidx;
+  state->menv              = menv;
 }
 
-void *top_level_do(void *(*k)(void), int eb, void *sj_start)
-     /* Wraps a function `k' with a handler for stack overflows and
-	barriers to full-continuation jumps. No barrier if !eb. */
+void *scheme_top_level_do(void *(*k)(void), int eb) {
+    return scheme_top_level_do_worker(k, eb, 0, NULL);
+}
+
+void *scheme_top_level_do_worker(void *(*k)(void), int eb, int new_thread, Scheme_Dynamic_State *dyn_state)
 {
-  void *v;
-  Scheme_Prompt * volatile prompt;
-  mz_jmp_buf *save, newbuf;
+  /* Wraps a function `k' with a handler for stack overflows and
+     barriers to full-continuation jumps. No barrier if !eb. */
+  
+  void * v;
+  Scheme_Prompt * volatile prompt = NULL;
+  mz_jmp_buf *save;
+  mz_jmp_buf newbuf;
   Scheme_Stack_State envss;
-  Scheme_Comp_Env * volatile save_current_local_env;
-  Scheme_Object * volatile save_mark, *  volatile save_name, * volatile save_certs, * volatile save_modidx;
-  Scheme_Env * volatile save_menv;
+
+  Scheme_Dynamic_State save_dyn_state;
+
   Scheme_Thread * volatile p = scheme_current_thread;
-  int thread_cc = top_next_use_thread_cc_ok;
   volatile int old_pcc = scheme_prompt_capture_count;
   Scheme_Cont_Frame_Data cframe;
+
 #ifdef MZ_PRECISE_GC
   void *external_stack;
 #endif
 
-  top_next_use_thread_cc_ok = 0;
 
   if (scheme_active_but_sleeping)
     scheme_wake_up();
 
   if (eb) {
-    if (available_prompt) {
-      prompt = available_prompt;
-      available_prompt = NULL;
-    } else  {
-      prompt = MALLOC_ONE_TAGGED(Scheme_Prompt);
-      prompt->so.type = scheme_prompt_type;
-    }
-
+    prompt = allocate_prompt(&available_prompt);
     initialize_prompt(p, prompt, PROMPT_STACK(prompt));
-    if (!thread_cc) {
+      
+    if (!new_thread) {
       prompt->is_barrier = 1;
     }
 
     if (!barrier_prompt_key) {
       REGISTER_SO(barrier_prompt_key);
-      barrier_prompt_key = scheme_make_symbol("bar"); /* ininterned */
+      barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
     }
-  } else {
-    prompt = NULL;
   }
 
 #ifdef MZ_PRECISE_GC
@@ -1996,27 +2010,11 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
 #endif
 
   scheme_save_env_stack_w_thread(envss, p);
+  save_dynamic_state(p, &save_dyn_state);
 
-  save_current_local_env = p->current_local_env;
-  save_mark = p->current_local_mark;
-  save_name = p->current_local_name;
-  save_certs = p->current_local_certs;
-  save_modidx = p->current_local_modidx;
-  save_menv = p->current_local_menv;
-
-  if (top_next_env) {
-    p->current_local_env = top_next_env;
-    p->current_local_mark = top_next_mark;
-    p->current_local_name = top_next_name;
-    p->current_local_certs = top_next_certs;
-    p->current_local_modidx = top_next_modidx;
-    p->current_local_menv = top_next_menv;
-    top_next_env = NULL;
-    top_next_mark = NULL;
-    top_next_name = NULL;
-    top_next_certs = NULL;
-    top_next_modidx = NULL;
-    top_next_menv = NULL;
+  if (dyn_state) {
+    restore_dynamic_state(dyn_state, p);
+    dyn_state = NULL;
   }
 
   scheme_create_overflow(); /* needed even if scheme_overflow_jmp is already set */
@@ -2030,7 +2028,7 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
   p->error_buf = &newbuf;
 
   if (scheme_setjmp(newbuf)) {
-    if (!thread_cc) {
+    if (!new_thread) {
       p = scheme_current_thread;
       scheme_restore_env_stack_w_thread(envss, p);
 #ifdef MZ_PRECISE_GC
@@ -2044,17 +2042,12 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
           available_prompt = prompt;
         }
       }
-      p->current_local_env = save_current_local_env;
-      p->current_local_mark = save_mark;
-      p->current_local_name = save_name;
-      p->current_local_certs = save_certs;
-      p->current_local_modidx = save_modidx;
-      p->current_local_menv = save_menv;
+      restore_dynamic_state(&save_dyn_state, p);
     }
     scheme_longjmp(*save, 1);
   }
 
-  if (thread_cc) {
+  if (new_thread) {
     /* check for initial break before we do anything */
     scheme_check_break_now();
   }
@@ -2065,15 +2058,10 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
      may refer to multiple values, and we don't want the
      multiple-value array cleared. */
 
-  if (!thread_cc) {
+  if (!new_thread) {
     p = scheme_current_thread;
 
-    p->current_local_env = save_current_local_env;
-    p->current_local_mark = save_mark;
-    p->current_local_name = save_name;
-    p->current_local_certs = save_certs;
-    p->current_local_modidx = save_modidx;
-    p->current_local_menv = save_menv;
+    restore_dynamic_state(&save_dyn_state, p);
 
     p->error_buf = save;
   }
@@ -2089,30 +2077,9 @@ void *top_level_do(void *(*k)(void), int eb, void *sj_start)
   if (scheme_active_but_sleeping)
     scheme_wake_up();
 
-  return v;
+  return (Scheme_Object *)v;
 }
 
-void *scheme_top_level_do(void *(*k)(void), int eb)
-{
-  void *sj_start;
-
-#ifdef MZ_PRECISE_GC
-  sj_start = (void *)&__gc_var_stack__;
-#else
-  sj_start = &sj_start;
-#endif
-
-  sj_start = top_level_do(k, eb, sj_start);
-
-#ifdef MZ_PRECISE_GC
-  if (0) {
-    /* ensure __gc_var_stack__ is here: */
-    sj_start = scheme_malloc_atomic(0);
-  }
-#endif
-
-  return sj_start;
-}
 
 void scheme_clear_prompt_cache()
 {
@@ -2274,10 +2241,43 @@ scheme_apply_multi(Scheme_Object *rator, int num_rands, Scheme_Object **rands)
   return _apply(rator, num_rands, rands, 1, 1);
 }
 
-Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator)
+Scheme_Object *
+scheme_apply_thread_thunk(Scheme_Object *rator)
 {
-  top_next_use_thread_cc_ok = 1;
-  return _apply(rator, 0, NULL, 1, 1);
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = rator;
+  p->ku.k.p2 = NULL;
+  p->ku.k.i1 = 0;
+  p->ku.k.i2 = 1;
+
+  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 1, NULL);
+}
+
+Scheme_Object *
+scheme_apply_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = rator;
+  p->ku.k.p2 = rands;
+  p->ku.k.i1 = num_rands;
+  p->ku.k.i2 = 0;
+
+  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 0, dyn_state);
+}
+
+Scheme_Object *
+scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state)
+{
+  Scheme_Thread *p = scheme_current_thread;
+
+  p->ku.k.p1 = rator;
+  p->ku.k.p2 = rands;
+  p->ku.k.i1 = num_rands;
+  p->ku.k.i2 = 1;
+
+  return (Scheme_Object *)scheme_top_level_do_worker(apply_k, 1, 0, dyn_state);
 }
 
 Scheme_Object *
@@ -2624,11 +2624,14 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
 
-    scheme_on_next_top(env, mark, boundname, certs, 
-                       menv, menv ? menv->link_midx : env->genv->link_midx);
+    {
+      Scheme_Dynamic_State dyn_state;
+      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, certs, 
+          menv, menv ? menv->link_midx : env->genv->link_midx);
 
-    rands_vec[0] = code;
-    code = scheme_apply(rator, 1, rands_vec);
+      rands_vec[0] = code;
+      code = scheme_apply_with_dynamic_state(rator, 1, rands_vec, &dyn_state);
+    }
 
     SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code);
 

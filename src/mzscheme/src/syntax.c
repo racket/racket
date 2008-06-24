@@ -680,8 +680,8 @@ void scheme_install_macro(Scheme_Bucket *b, Scheme_Object *v)
 }
 
 static Scheme_Object *
-define_execute(Scheme_Object *vec, int delta, int defmacro,
-	       Resolve_Prefix *rp, Scheme_Env *dm_env)
+define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
+	       Resolve_Prefix *rp, Scheme_Env *dm_env, Scheme_Dynamic_State *dyn_state)
 {
   Scheme_Object *name, *macro, *vals, *var;
   int i, g, show_any;
@@ -694,7 +694,7 @@ define_execute(Scheme_Object *vec, int delta, int defmacro,
     scheme_prepare_exp_env(dm_env);
 
     save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1);
-    vals = scheme_eval_linked_expr_multi(vals);
+    vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals, dyn_state);
     if (defmacro == 2)
       dm_env = NULL;
     else
@@ -828,7 +828,7 @@ define_execute(Scheme_Object *vec, int delta, int defmacro,
 static Scheme_Object *
 define_values_execute(Scheme_Object *data)
 {
-  return define_execute(data, 1, 0, NULL, NULL);
+  return define_execute_with_dynamic_state(data, 1, 0, NULL, NULL, NULL);
 }
 
 static Scheme_Object *clone_vector(Scheme_Object *data, int skip)
@@ -5085,8 +5085,12 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
   if (!dm_env)
     dm_env = scheme_environment_from_dummy(dummy);
 
-  scheme_on_next_top(rhs_env, NULL, scheme_false, NULL, dm_env, dm_env->link_midx);
-  return define_execute(form, 4, for_stx ? 2 : 1, rp, dm_env);
+  {
+    Scheme_Dynamic_State dyn_state;
+
+    scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, NULL, dm_env, dm_env->link_midx);
+    return define_execute_with_dynamic_state(form, 4, for_stx ? 2 : 1, rp, dm_env, &dyn_state);
+  }
 }
 
 static Scheme_Object *
@@ -5463,8 +5467,10 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {
-    scheme_on_next_top(rhs_env, NULL, scheme_false, certs, rhs_env->genv, rhs_env->genv->link_midx);
-    a = scheme_eval_linked_expr_multi(a);
+    Scheme_Dynamic_State dyn_state;
+
+    scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, certs, rhs_env->genv, rhs_env->genv->link_midx);
+    a = scheme_eval_linked_expr_multi_with_dynamic_state(a, &dyn_state);
   }
 
   scheme_pop_prefix(save_runstack);

@@ -8501,6 +8501,19 @@ Scheme_Object *scheme_eval_linked_expr_multi(Scheme_Object *obj)
   return _eval(obj, NULL, 1, 1, 1, 0);
 }
 
+Scheme_Object *scheme_eval_linked_expr_multi_with_dynamic_state(Scheme_Object *obj, Scheme_Dynamic_State *dyn_state)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  
+  p->ku.k.p1 = obj;
+  p->ku.k.p2 = NULL;
+  p->ku.k.i1 = 1;
+  p->ku.k.i2 = 1;
+  p->ku.k.i3 = 0;
+
+    return (Scheme_Object *)scheme_top_level_do_worker(eval_k, 1, 0, dyn_state);
+}
+
 /* for mzc: */
 Scheme_Object *scheme_load_compiled_stx_string(const char *str, long len)
 {

@@ -4293,9 +4293,11 @@ static void eval_defmacro(Scheme_Object *names, int count,
     if (is_simple_expr(expr)) {
       vals = _scheme_eval_linked_expr_multi_wp(expr, scheme_current_thread);
     } else {
-      scheme_on_next_top(comp_env, NULL, scheme_false, certs, 
+      Scheme_Dynamic_State dyn_state;
+
+      scheme_set_dynamic_state(&dyn_state, comp_env, NULL, scheme_false, certs, 
                          genv, (genv->link_midx ? genv->link_midx : genv->module->me->src_modidx));
-      vals = scheme_eval_linked_expr_multi(expr);
+      vals = scheme_eval_linked_expr_multi_with_dynamic_state(expr, &dyn_state);
     }
 
     scheme_pop_prefix(save_runstack);
@@ -5269,16 +5271,18 @@ module_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 Scheme_Object *scheme_apply_for_syntax_in_env(Scheme_Object *proc, Scheme_Env *env)
 {
   Scheme_Comp_Env *rhs_env;
+  Scheme_Dynamic_State dyn_state;
 
   rhs_env = scheme_new_comp_env(env, NULL, SCHEME_TOPLEVEL_FRAME);
 
-  scheme_on_next_top(rhs_env, NULL, scheme_false, NULL, 
-		     env, (env->link_midx 
-			   ? env->link_midx 
-			   : (env->module
-			      ? env->module->me->src_modidx
-			      : NULL)));
-  return scheme_apply_multi(proc, 0, NULL);
+  scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, NULL, 
+      env, (env->link_midx 
+        ? env->link_midx 
+        : (env->module
+          ? env->module->me->src_modidx
+          : NULL)));
+
+  return scheme_apply_multi_with_dynamic_state(proc, 0, NULL, &dyn_state);
 }
 
 /**********************************************************************/

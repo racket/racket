@@ -999,12 +999,22 @@ void scheme_init_ephemerons(void);
 void scheme_flush_stack_copy_cache(void);
 #endif
 
-void *scheme_top_level_do(void *(*k)(void), int eb);
-#define scheme_top_level_do_w_thread(k, eb, p) scheme_top_level_do(k, eb)
+typedef struct Scheme_Dynamic_State {
+    struct Scheme_Comp_Env * volatile current_local_env;
+    Scheme_Object * volatile mark;
+    Scheme_Object * volatile name;
+    Scheme_Object * volatile certs;
+    Scheme_Object * volatile modidx;
+    Scheme_Env    * volatile menv;
+} Scheme_Dynamic_State;
 
-void scheme_on_next_top(struct Scheme_Comp_Env *env, Scheme_Object *mark, 
-			Scheme_Object *name, Scheme_Object *certs, 
-			Scheme_Env *menv, Scheme_Object *in_modidx);
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, struct Scheme_Comp_Env *env, Scheme_Object *mark, 
+			Scheme_Object *name, 
+			Scheme_Object *certs, 
+			Scheme_Env *menv,
+			Scheme_Object *modidx);
+void *scheme_top_level_do(void *(*k)(void), int eb);
+void *scheme_top_level_do_worker(void *(*k)(void), int eb, int newthread, Scheme_Dynamic_State *dyn_state);
 
 Scheme_Object *scheme_call_ec(int argc, Scheme_Object *argv[]);
 
@@ -1233,6 +1243,8 @@ void scheme_recheck_prompt_and_barrier(struct Scheme_Cont *c);
 Scheme_Object *scheme_all_current_continuation_marks(void);
 
 void scheme_about_to_move_C_stack(void);
+
+Scheme_Object *scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */
@@ -1647,6 +1659,7 @@ void scheme_clear_delayed_load_cache();
 
 Scheme_Object *scheme_eval_linked_expr(Scheme_Object *expr);
 Scheme_Object *scheme_eval_linked_expr_multi(Scheme_Object *expr);
+Scheme_Object *scheme_eval_linked_expr_multi_with_dynamic_state(Scheme_Object *obj, Scheme_Dynamic_State *dyn_state);
 
 Scheme_Object *_scheme_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
 Scheme_Object *_scheme_tail_apply_to_list (Scheme_Object *rator, Scheme_Object *rands);
