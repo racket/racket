@@ -437,14 +437,22 @@ i {
   color: blue;
 }
 
-.techlink {
-  text-decoration: none;
-  color: #0000a0;
+.techoutside {
+  text-decoration: underline;
+  color: #d0d0d0;
 }
 
-.techlink:hover {
+.techoutside:hover {
   text-decoration: underline;
   color: blue;
+}
+
+.techinside {
+  color: black;
+}
+
+.techoutside:hover > .techinside {
+  color: inherit;
 }
 
 .bibliography td {

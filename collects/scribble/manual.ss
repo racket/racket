@@ -585,7 +585,13 @@
                         'tech)))
 
 (define (tech #:doc [doc #f] . s)
-  (*tech make-link-element "techlink" doc s))
+  (*tech (lambda (style c tag)
+           (make-link-element
+            style
+            (list (make-element "techinside" c))
+            tag))
+         "techoutside"
+         doc s))
 
 (define (techlink #:doc [doc #f] . s)
   (*tech make-link-element #f doc s))
