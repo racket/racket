@@ -451,8 +451,8 @@ i {
   color: black;
 }
 
-.techoutside:hover > .techinside {
-  color: inherit;
+.techinside:hover {
+  color: blue;
 }
 
 .bibliography td {
