@@ -70,6 +70,7 @@
           (syntax/loc stx (let name ([pat exp] ...) body ...))]
          ;; now the real cases
          [(_ name ([pat exp] ...) . body)
+          (identifier? #'name)
           (syntax/loc stx (letrec ([name (match-lambda** ((pat ...) . body))])
                             (name exp ...)))]
          [(_ ([pat exp] ...) . body)

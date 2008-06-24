@@ -561,5 +561,9 @@
            [(list x y ... x z ...) 
             (list y z)]))
 
+   (comp '(1 2)
+         (match-let ([(vector a b) (vector 1 2)])
+                    (list a b)))
+
 
    ))
