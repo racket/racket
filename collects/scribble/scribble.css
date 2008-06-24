@@ -343,29 +343,13 @@ font-weight: bold;
   text-align: center;
 }
 
-pre {
-  margin-left: 2em;
-}
+pre { margin-left: 2em; }
+blockquote { margin-left: 2em; }
 
-blockquote {
-  margin-left: 2em;
-}
-
-ol {
-  list-style-type: decimal;
-}
-
-ol ol {
-  list-style-type: lower-alpha;
-}
-
-ol ol ol {
-  list-style-type: lower-roman;
-}
-
-ol ol ol ol {
-  list-style-type: upper-alpha;
-}
+ol          { list-style-type: decimal; }
+ol ol       { list-style-type: lower-alpha; }
+ol ol ol    { list-style-type: lower-roman; }
+ol ol ol ol { list-style-type: upper-alpha; }
 
 i {
 }
@@ -467,6 +451,6 @@ i {
 }
 
 .compact li p {
-  margin: 0 0 0 0;
-  padding: 0 0 0 0;
+  margin: 0em;
+  padding: 0em;
 }
