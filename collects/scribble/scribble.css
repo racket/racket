@@ -421,7 +421,7 @@ i {
   color: blue;
 }
 
-.techoutside       { text-decoration: underline; color: #d0d0d0; }
+.techoutside       { text-decoration: underline; color: #b0b0b0; }
 .techoutside:hover { text-decoration: underline; color: blue; }
 
 /* .techinside:hover doesn't work with FF, .techinside:hover>
