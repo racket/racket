@@ -1,3 +1,5 @@
+#;
+(exn-pred 2)
 #lang typed-scheme
 
 (plambda: (a ...) ([z : String] . [w : Number *])

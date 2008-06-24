@@ -20,10 +20,12 @@
    (lambda (val)
      (and (exn? val)
           (for/and ([e args])
-                   (if (procedure? e)
-                       (e val)
-                       (begin
-                         (regexp-match e (exn-message val)))))))
+                   (cond [(procedure? e) (e val)]
+                         [(number? e)
+                          (and (exn:fail:syntax? val)
+                               (= e (length (exn:fail:syntax-exprs val))))]
+                         [(or (string? e) (regexp? e) (bytes? e))
+                          (regexp-match e (exn-message val))]))))
    args))
   
 (define (exn-pred p)
