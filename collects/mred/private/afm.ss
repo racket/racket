@@ -5,7 +5,9 @@
   (provide (protect afm-draw-text
 		    afm-get-text-extent
 		    afm-expand-name
-		    afm-glyph-exists?)
+		    afm-glyph-exists?
+                    afm-record-font
+                    afm-fonts-string)
 	   current-ps-afm-file-paths
 	   current-ps-cmap-file-paths)
 
@@ -498,16 +500,19 @@
 	      (* scale (font-internal-leading font)))))
 
   ;; pen is positioned at text top-left:
-  (define (afm-draw-text font-name size string out kern? sym-map?)
+  (define (afm-draw-text font-name size string out kern? sym-map? used-fonts)
     (let* ([l (map-symbols sym-map? (string->list string))]
+           [used-fonts (or used-fonts (make-hash-table 'equal))]
 	   [font (or (get-font font-name)
 		     (make-font 0 0 0 0 #hash() #f #f))]
 	   [show-simples (lambda (simples special-font-name special-font)
 			   (unless (null? simples)
 			     (when special-font
-			       (fprintf out "currentfont~n/~a findfont~n~a scalefont setfont~n"
-					(afm-expand-name special-font-name)
-					size))
+                               (let ([name (afm-expand-name special-font-name)])
+                                 (hash-table-put! used-fonts name #t)
+                                 (fprintf out "currentfont~n/~a findfont~n~a scalefont setfont~n"
+                                          name
+                                          size)))
 			     (if (font-is-cid? (or special-font font))
 				 (fprintf out "<~a> show\n"
 					  (apply
@@ -626,7 +631,8 @@
 	     (show-simples simples special-font-name special-font)
 	     ;; Future work: a box. For now, we just skip some space.
 	     (fprintf out "~a 0 rmoveto\n" (/ size 2))
-	     (loop (cdr l) null #f #f)))]))))
+	     (loop (cdr l) null #f #f)))])))
+    used-fonts)
 
   ;; ----------------------------------------
   ;; Name expansion
@@ -637,6 +643,31 @@
       (if (and f (font-char-set-name f))
 	  (string-append font-name "-" (bytes->string/latin-1 (font-char-set-name f)))
 	  font-name)))
+
+
+  (define (afm-record-font name used-fonts)
+    (let ([used-fonts (or used-fonts (make-hash-table 'equal))])
+      (hash-table-put! used-fonts name #t)
+      used-fonts))
+
+  (define (afm-fonts-string used-fonts)
+    (if (hash-table? used-fonts)
+        (let ([s (open-output-string)]
+              [pos 0])
+          (hash-table-for-each
+           used-fonts
+           (lambda (k v)
+             (let ([len (string-length k)])
+               (when ((+ len pos) . > . 50)
+                 (fprintf s "\n%%+ ")
+                 (set! pos 0))
+               (unless (zero? pos)
+                 (display " " s)
+                 (set! pos (add1 pos)))
+               (display k s)
+               (set! pos (+ pos len)))))
+          (get-output-string s))
+        ""))
 
   ;; ----------------------------------------
   ;; Font substitution

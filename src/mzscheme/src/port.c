@@ -4022,6 +4022,17 @@ Scheme_Object *scheme_open_output_file(const char *name, const char *who)
   return scheme_do_open_output_file((char *)who, 0, 2, a, 0);
 }
 
+Scheme_Object *scheme_open_input_output_file(const char *name, const char *who, Scheme_Object **oport)
+{
+  Scheme_Object *a[2];
+
+  a[0]= scheme_make_path(name);
+  a[1] = truncate_replace_symbol;
+  scheme_do_open_output_file((char *)who, 0, 2, a, 1);
+  *oport = scheme_multiple_array[1];
+  return scheme_multiple_array[0];
+}
+
 Scheme_Object *scheme_open_output_file_with_mode(const char *name, const char *who, int text)
 {
   Scheme_Object *a[3];

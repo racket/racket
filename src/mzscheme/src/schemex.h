@@ -667,6 +667,7 @@ Scheme_Object *(*scheme_write_special_evt_via_write_special)(Scheme_Output_Port 
 								    Scheme_Object *special);
 Scheme_Object *(*scheme_open_input_file)(const char *name, const char *who);
 Scheme_Object *(*scheme_open_output_file)(const char *name, const char *who);
+Scheme_Object *(*scheme_open_input_output_file)(const char *name, const char *who, Scheme_Object **oport);
 Scheme_Object *(*scheme_open_output_file_with_mode)(const char *name, const char *who, int text);
 Scheme_Object *(*scheme_make_file_input_port)(FILE *fp);
 Scheme_Object *(*scheme_make_named_file_input_port)(FILE *fp, Scheme_Object *name);

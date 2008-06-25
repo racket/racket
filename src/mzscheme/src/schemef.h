@@ -791,6 +791,7 @@ MZ_EXTERN Scheme_Object *scheme_write_special_evt_via_write_special(Scheme_Outpu
 
 MZ_EXTERN Scheme_Object *scheme_open_input_file(const char *name, const char *who);
 MZ_EXTERN Scheme_Object *scheme_open_output_file(const char *name, const char *who);
+MZ_EXTERN Scheme_Object *scheme_open_input_output_file(const char *name, const char *who, Scheme_Object **oport);
 MZ_EXTERN Scheme_Object *scheme_open_output_file_with_mode(const char *name, const char *who, int text);
 
 MZ_EXTERN Scheme_Object *scheme_make_file_input_port(FILE *fp);

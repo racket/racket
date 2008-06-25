@@ -67,9 +67,9 @@
 #include "wx_rgn.h"
 #include "../mzscheme/include/scheme.h"
 
-extern void wxPostScriptDrawText(Scheme_Object *f, const char *fontname, 
-				 const char *text, int dt, Bool combine, int use16, 
-				 double font_size, int symbol_map);
+extern void *wxPostScriptDrawText(Scheme_Object *f, const char *fontname, 
+                                  const char *text, int dt, Bool combine, int use16, 
+                                  double font_size, int symbol_map, void *used_fonts);
 extern void wxPostScriptGetTextExtent(const char *fontname, 
 				      const char *text, int dt, int len, Bool combine, int use16, 
 				      double font_size,
@@ -77,6 +77,8 @@ extern void wxPostScriptGetTextExtent(const char *fontname,
 				      int symbol_map);
 extern char *wxPostScriptFixupFontName(const char *fontname);
 extern Bool wxPostScriptGlyphExists(const char *fontname, int c, int symbol_map);
+extern void *wxPostScriptRecordFont(const char *fontname, void *used_fonts);
+extern char *wxPostScriptFontsToString(void *used_fonts);
 
 # define YSCALE(y) ((paper_h) - ((y) * user_scale_y + device_origin_y))
 # define XSCALE(x) ((x) * user_scale_x + device_origin_x)
@@ -137,12 +139,21 @@ wxPrintPaperDatabase *wxThePrintPaperDatabase;
 /**************************************************/
 
 wxPSStream::wxPSStream(char *file) {
-  f = scheme_open_output_file(file, "post-script-dc%");
+  Scheme_Object *o;
+  f_in = scheme_open_input_output_file(file, "post-script-dc%", &o);
+  f = o;
   int_width = 0;
 }
  
 wxPSStream::~wxPSStream(void) {
-  if (f) scheme_close_output_port((Scheme_Object *)f);
+  if (f_in) {
+    scheme_close_input_port((Scheme_Object *)f_in);
+    f_in = NULL;
+  }
+  if (f) {
+    scheme_close_output_port((Scheme_Object *)f);
+    f = NULL;
+  }
 }
 
 int wxPSStream::good(void) {
@@ -201,6 +212,14 @@ void wxPSStream::seekp(long pos) {
 void wxPSStream::width(int w) {
   int_width = w;
 }
+
+long wxPSStream::read_at(long pos, char *buf, long amt) {
+  scheme_set_file_position((Scheme_Object *)f_in, pos);
+  return scheme_get_byte_string("post-script%", (Scheme_Object *)f_in,
+                                buf, 0, amt,
+                                0, 0, NULL);
+}
+
 
 /**************************************************/
 
@@ -1362,8 +1381,11 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
     if (!current_font_name
 	|| (next_font_size != current_font_size)
 	|| strcmp(next_font_name, current_font_name)) {
-      pstream->Out("/"); pstream->Out(wxPostScriptFixupFontName(next_font_name)); pstream->Out(" findfont\n");
+      char *fn;
+      pstream->Out("/"); fn = wxPostScriptFixupFontName(next_font_name); pstream->Out(fn); pstream->Out(" findfont\n");
       pstream->Out(next_font_size); pstream->Out(" scalefont setfont\n");
+      
+      used_fonts = wxPostScriptRecordFont(fn, used_fonts);
 
       current_font_size = next_font_size;
       current_font_name = next_font_name;
@@ -1409,8 +1431,8 @@ void wxPostScriptDC::DrawText(DRAW_TEXT_CONST char *text, double x, double y,
   }
 
   sym_map = current_font->GetFamily() == wxSYMBOL;
-  wxPostScriptDrawText((Scheme_Object *)pstream->f, name, text, dt, combine, use16, current_font_size,
-		       sym_map);
+  used_fonts = wxPostScriptDrawText((Scheme_Object *)pstream->f, name, text, dt, combine, use16, current_font_size,
+                                    sym_map, used_fonts);
 
   if ((angle != 0.0) || (user_scale_x != 1) || (user_scale_y != 1)) {
     pstream->Out("grestore\n"); 
@@ -1542,11 +1564,22 @@ Bool wxPostScriptDC::StartDoc (char *message)
   }
 
   boundingboxpos = pstream->tellp();
-
   pstream->Out("%%BoundingBox: -00000 -00000 -00000 -00000\n");
   pstream->Out("%%Pages: -00000\n");
+
   if (landscape)
     pstream->Out("%%Orientation: Landscape\n");
+
+  {
+    int i;
+    pstream->Out("%%DocumentFonts: ");  
+    fontlistpos = pstream->tellp();
+    for (i = 0; i < 5; i++) {
+      pstream->Out("          ");  
+    }
+    pstream->Out("\n");  
+  }
+
   pstream->Out("%%EndComments\n\n");
 
   pstream->Out(wxPostScriptHeaderEllipse);
@@ -1570,6 +1603,7 @@ void wxPostScriptDC::EndDoc (void)
 {
   double llx, lly, urx, ury;
   double minx, miny, maxx, maxy;
+  long last_pos;
 
   if (!pstream)
     return;
@@ -1611,6 +1645,8 @@ void wxPostScriptDC::EndDoc (void)
   if (ury <= lly)
     ury = lly + 1;
 
+  last_pos = pstream->tellp();
+
   // The Adobe specifications call for integers; we round as to make
   // the bounding larger.
   pstream->seekp(boundingboxpos);
@@ -1626,6 +1662,33 @@ void wxPostScriptDC::EndDoc (void)
   pstream->Out("%%Pages: ");
   pstream->width(5);
   pstream->Out((page_number - 1)); pstream->Out("\n");
+
+  {
+    char *fnts;
+    long len;
+    fnts = wxPostScriptFontsToString(used_fonts);
+    pstream->seekp(fontlistpos);
+    len = strlen(fnts);
+    if (len <= 50) {
+      pstream->Out(fnts);
+    } else {
+      long a, bot, delta = len - 50;
+      char *buf;
+      buf = new WXGC_ATOMIC char[4096];
+      for (a = last_pos; a > fontlistpos; ) {
+        bot = a - 4095;
+        if (bot < fontlistpos)
+          bot = fontlistpos;
+        pstream->read_at(bot, buf, a - bot);
+        buf[a - bot] = 0;
+        pstream->seekp(bot + delta);
+        pstream->Out(buf);
+        a = bot;
+      }
+      pstream->seekp(fontlistpos);
+      pstream->Out(fnts);
+    }
+  }
 
   DELETE_OBJ pstream;
   pstream = NULL;

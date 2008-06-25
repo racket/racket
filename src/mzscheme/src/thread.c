@@ -6685,7 +6685,7 @@ Scheme_Object *scheme_make_namespace(int argc, Scheme_Object *argv[])
     env = env->exp_env;
   }
 
-  return env;
+  return (Scheme_Object *)env;
 }
 
 static Scheme_Object *namespace_p(int argc, Scheme_Object **argv)

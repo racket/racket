@@ -2474,8 +2474,8 @@ static void MrEdSchemeMessages(char *msg, ...)
 {
   GC_CAN_IGNORE va_list args;
 #if WINDOW_STDIO
-  char *arg_s;
-  long arg_d, arg_l;
+  char *arg_s = NULL;
+  long arg_d = 0, arg_l = 0;
 # define VSP_BUFFER_SIZE 4096
   char arg_buffer[VSP_BUFFER_SIZE];
 #endif

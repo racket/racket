@@ -35,7 +35,9 @@
    afm-draw-text
    afm-get-text-extent
    afm-expand-name
-   afm-glyph-exists?)
+   afm-glyph-exists?
+   afm-record-font
+   afm-fonts-string)
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

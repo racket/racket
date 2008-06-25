@@ -5431,8 +5431,6 @@ define_for_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Exp
 
 Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env)
 { 
-  Scheme_Object *dummy;
- 
   /* Get a prefixed-based accessor for a dummy top-level bucket. It's
      used to "link" to the right environment at run time. The `begin'
      symbol is arbitrary; the top-level/prefix support handles a symbol

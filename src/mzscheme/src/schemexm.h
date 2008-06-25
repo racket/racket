@@ -445,6 +445,7 @@
 #define scheme_write_special_evt_via_write_special (scheme_extension_table->scheme_write_special_evt_via_write_special)
 #define scheme_open_input_file (scheme_extension_table->scheme_open_input_file)
 #define scheme_open_output_file (scheme_extension_table->scheme_open_output_file)
+#define scheme_open_input_output_file (scheme_extension_table->scheme_open_input_output_file)
 #define scheme_open_output_file_with_mode (scheme_extension_table->scheme_open_output_file_with_mode)
 #define scheme_make_file_input_port (scheme_extension_table->scheme_make_file_input_port)
 #define scheme_make_named_file_input_port (scheme_extension_table->scheme_make_named_file_input_port)

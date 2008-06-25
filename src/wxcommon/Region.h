@@ -11,7 +11,7 @@
 
 class wxPSStream : public wxObject {
  public:
-  void *f;
+  void *f, *f_in;
   int int_width;
   wxPSStream(char *file);
   ~wxPSStream(void);
@@ -27,6 +27,8 @@ class wxPSStream : public wxObject {
   void seekp(long pos);
 
   void width(int w);
+
+  long read_at(long pos, char *buf, long amt);
 };
 
 class wxPostScriptDC;

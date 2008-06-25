@@ -59,7 +59,7 @@ class wxPostScriptDC: public wxDC
   int page_number;
   wxPSStream *pstream;    // PostScript output stream
   char *filename;
-  long boundingboxpos;
+  long boundingboxpos, fontlistpos;
   unsigned char currentRed;
   unsigned char currentGreen;
   unsigned char currentBlue;
@@ -77,6 +77,8 @@ class wxPostScriptDC: public wxDC
 
   int mode, use_paper_bbox, as_eps;
   char *preview_cmd, *print_cmd, *print_opts;
+
+  void *used_fonts;
 
   // Create a printer DC
   wxPostScriptDC(Bool interactive = TRUE, wxWindow *parent = NULL, Bool usePaperBBox = FALSE, Bool asEPS = TRUE);
