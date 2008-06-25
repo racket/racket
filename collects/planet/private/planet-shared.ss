@@ -247,7 +247,7 @@ Various common pieces of code that both the client and server need to access
   (define (make-assoc-table-row name path maj min dir required-version type)
     (list name path maj min dir required-version type))
   
-  (define-struct mz-version (major minor))
+  (define-struct mz-version (major minor) #:inspector #f)
   
   
   ;; string->mz-version : string -> mz-version | #f
@@ -280,14 +280,16 @@ Various common pieces of code that both the client and server need to access
        (lambda (ver)
          (cond [(list-ref ver 3)
                 (let* ([chunks (regexp-split #rx"\\." (list-ref ver 3))])
-                  (make-mz-version (+ (* (string->number (list-ref ver 1))
-                                         100)
-                                      (if (> (length chunks) 0)
-                                          (string->number (car chunks))
-                                          0))
-                                   (if (> (length (cdr chunks)) 0)
-                                       (minor+maint-chunks->minor (cdr chunks))
-                                       0)))]
+                  (and (andmap (λ (x) (not (equal? x ""))) chunks)
+                       (make-mz-version (+ (* (string->number (list-ref ver 1))
+                                              100)
+                                           (if (> (length chunks) 0)
+                                               (begin
+                                                 (string->number (car chunks)))
+                                               0))
+                                        (if (> (length (cdr chunks)) 0)
+                                            (minor+maint-chunks->minor (cdr chunks))
+                                            0))))]
                [else
                 (make-mz-version (* (string->number (list-ref ver 1))
                                     100)
