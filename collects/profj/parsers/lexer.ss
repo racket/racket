@@ -44,11 +44,12 @@
                                     const       for        new           switch
                                     continue    goto       package       synchronized))
   
-  (define-empty-tokens ExtraKeywords (dynamic check expect within by -> ->> ->>> test tests testcase))
+  (define-empty-tokens ExtraKeywords (dynamic check checkEffect expect within except oneOf by errorMsg -> ->> ->>> test tests testcase))
   
   (define-tokens java-vals
                  (STRING_LIT CHAR_LIT INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT 
-                             IDENTIFIER STRING_ERROR NUMBER_ERROR HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT))
+                             IDENTIFIER STRING_ERROR NUMBER_ERROR HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT
+                             TEST_IDENTIFIER ID_ERROR))
   
   (define-tokens special-toks (EXAMPLE TEST_SUITE IMAGE_SPECIAL OTHER_SPECIAL))
   
@@ -312,15 +313,20 @@
         ((dynamic?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
      
-     ((re:or "check" "expect" "within")
+     ((re:or "check" "expect" "within" "oneOf" "errorMsg")
       (cond
         ((test-ext?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
      
-     ((re:or "test" "tests" "testcase" "by")
+     ((re:or "test" "tests" "testcase" "by" "checkEffect" "except")
       (cond
         ((testcase-ext?) (string->symbol lexeme))
         (else (token-IDENTIFIER lexeme))))
+     
+     ((re:: Identifier "@")
+      (cond
+        [(testcase-ext?) (token-TEST_IDENTIFIER lexeme)]
+        [else (token-ID_ERROR lexeme)]))
      
      ;; 3.9
      (Keyword (string->symbol lexeme))

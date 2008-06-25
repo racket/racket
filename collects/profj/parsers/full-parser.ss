@@ -19,7 +19,7 @@
   (define parsers
     (parser
      (start CompilationUnit Interactions VariableInitializer Type)
-     ;;(debug "parser.output")
+     #;(debug "parser.output")
      (tokens java-vals special-toks Keywords ExtraKeywords Separators EmptyLiterals Operators)
      (error (lambda (tok-ok name val start-pos end-pos)
               (raise-read-error (format "Parse error near <~a:~a>" name val)
@@ -886,6 +886,7 @@
       (PostfixExpression
        [(Primary) $1]
        [(Name) (name->access $1)]
+       [(TEST_IDENTIFIER) (make-test-id #f (build-src 1) $1)]
        [(PostIncrementExpression) $1]
        [(PostDecrementExpression) $1])
       
@@ -1027,14 +1028,44 @@
         (make-check-expect #f (build-src 4) $2 $4 #f (build-src 2 4))]
        [(check ConditionalExpression expect ConditionalExpression within ConditionalExpression) 
         (make-check-expect #f (build-src 6) $2 $4 $6 (build-src 2 4))]
-       [(check ConditionalExpression within ConditionalExpression)
-        (make-check-rand #f (build-src 4) $2 $4 (build-src 2 4))]
+       [(check ConditionalExpression oneOf O_PAREN ConditionalExpressionList C_PAREN)
+        (make-check-rand #f (build-src 6) $2 (reverse $5) (build-src 2 6))]
        [(check ConditionalExpression catch Type)
         (make-check-catch #f (build-src 4) $2 $4)]
        [(check ConditionalExpression expect ConditionalExpression by ==)
         (make-check-by #f (build-src 6) $2 $4 '==)]
        [(check ConditionalExpression expect ConditionalExpression by IDENTIFIER)
-        (make-check-by #f (build-src 6) $2 $4 $6)])
+        (make-check-by #f (build-src 6) $2 $4 $6)]
+       [(checkEffect O_PAREN EffectVars SEMI_COLON EffectConds C_PAREN O_BRACE EffectExpression C_BRACE)
+        (make-check-effect #f (build-src 9) $3 $5 $8)]
+       )
+      
+      (ConditionalExpressionList
+       ((ConditionalExpression) (list $1))
+       ((ConditionalExpressionList COMMA ConditionalExpression) (cons $3 $1)))
+      
+      (EffectVars
+       [() null]
+       [(IDENTIFIER) (list (make-id $1 (build-src 1)))]
+       [(EffectVars COMMA IDENTIFIER) (cons (make-id $3 (build-src 3 3)) $1)])
+            
+      (EffectConds
+       [() null]
+       [(EffectCond) (list $1)]
+       [(EffectConds COMMA EffectCond) (cons $3 $1)])
+      
+      (EffectCond
+       [(ConditionalExpression except ConditionalExpression) 
+        'condition-expression]
+       [(ConditionalExpression) $1])
+      
+      (EffectExpression
+       [(Expression) $1]
+       [(StmtExpressionList) $1])
+      
+      (StmtExpressionList
+       [(StatementExpression SEMI_COLON) (list $1)]
+       [(StmtExpressionList StatementExpression SEMI_COLON) (cons $2 $1)])       
        
       (MutateExpression
        [(CheckExpression) $1]

@@ -498,7 +498,7 @@
                                                            (append (accesses-public fields) (accesses-package fields)
                                                                    (accesses-protected fields)))
                                         (generate-contract-defs (class-name))))
-               #;(stm-class (generate-stm-class (class-name)
+               (stm-class (generate-stm-class (class-name)
                                               (parent-name)
                                               (class-record-methods class-rec)
                                               (class-record-fields class-rec)))
@@ -731,7 +731,7 @@
                              ))
                     
                           ,@wrapper-classes
-                          #;,stm-class
+                          ,@(if (testcase-ext?) (list stm-class) null)
                           
                           #;,@(create-generic-methods (append (accesses-public methods)
                                                             (accesses-package methods)
@@ -3029,6 +3029,10 @@
                                             (expr-src expr)))
       ((check-mutate? expr) (translate-check-mutate (check-mutate-mutate expr)
                                                     (check-mutate-check expr)
+                                                    (expr-src expr)))
+      ((check-effect? expr) (translate-check-effect (check-effect-vars expr)
+                                                    (check-effect-conds expr)
+                                                    (check-effect-test expr)
                                                     (expr-src expr)))))
 
   
@@ -3101,6 +3105,18 @@
                    `(javaRuntime:check-mutate ,t ,c ,(checked-info mutatee) (quote ,(src->list src))
                                               (namespace-variable-value 'current~test~object% #f
                                                                         (lambda () #f)))
+                   (build-src src))))
+  
+  ;translate-check-effect: (listof id) (listof expression) (listof expression) src -> syntax
+  (define (translate-check-effect ids conds test src)
+    (let ([cs (map (lambda (c) (create-syntax #f `(lambda () ,(translate-expression c)) #f)) conds)]
+          [ts (map (lambda (t) (create-syntax #f `(lambda () ,(translate-expression t)) #f)) test)])
+      (make-syntax #f
+                   `(let (,@(map (lambda (id)
+                                   `(,(string->symbol (format "~a@" id)) ,id))
+                                 (map id-string ids)))
+                      ,@(map (lambda (t) `(,t)) ts)
+                      ,@(map (lambda (c) `(,c)) cs))
                    (build-src src))))
   
   (require "error-messaging.ss")

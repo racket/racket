@@ -298,7 +298,7 @@
   ;(make-check-expect (U #f type) src Expression Expression (U #f Expression) src)
   (p-define-struct (check-expect check) (test actual range ta-src))
   
-  ;(make-check-rand (U #f type) src Expression Expression src)
+  ;(make-check-rand (U #f type) src Expression (listof Expression) src)
   (p-define-struct (check-rand check) (test range ta-src))
   
   ;(make-check-catch (U #f type) src Expression type-spec)
@@ -309,5 +309,10 @@
   
   ;(make-check-mutate (U #f type) src Expression Expression src)
   (p-define-struct (check-mutate check) (mutate check op-src))
+  
+  ;(make-check-effect (U #f type) src (listof id) (listof Expression) (U Expression (listof Expression)))
+  (p-define-struct (check-effect check) (vars conds test))
+  
+  (p-define-struct (test-id expr) (id))
   
 )
