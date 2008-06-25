@@ -2626,11 +2626,23 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     {
       Scheme_Dynamic_State dyn_state;
+      Scheme_Cont_Frame_Data cframe;
+      Scheme_Config *config;
+
+      scheme_prepare_exp_env(env->genv);
+      config = scheme_extend_config(scheme_current_config(),
+                                    MZCONFIG_ENV,
+                                    (Scheme_Object *)env->genv->exp_env);
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+
       scheme_set_dynamic_state(&dyn_state, env, mark, boundname, certs, 
           menv, menv ? menv->link_midx : env->genv->link_midx);
 
       rands_vec[0] = code;
       code = scheme_apply_with_dynamic_state(rator, 1, rands_vec, &dyn_state);
+
+      scheme_pop_continuation_frame(&cframe);
     }
 
     SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code);

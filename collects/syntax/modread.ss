@@ -51,7 +51,8 @@
                (raise-wrong-module-name filename expected-module
                                         (syntax-e #'nm)))
              (datum->syntax-object exp
-                                   (cons #'module (cdr (syntax-e exp)))
+                                   (cons (namespace-module-identifier)
+                                         (cdr (syntax-e exp)))
                                    exp
                                    exp))]
           [else

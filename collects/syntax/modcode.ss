@@ -1,4 +1,3 @@
-
 (module modcode scheme/base
   (require mzlib/port
            mzlib/contract
@@ -20,8 +19,6 @@
 		      any/c]
                      . opt-> .
                      any)])
-
-
 
   (define moddep-current-open-input-file
     (make-parameter open-input-file))

@@ -19,6 +19,26 @@
                      eval:)))
           2)
 
+    ;; Check that `eval' at compile-time produces values (such as conditions)
+    ;; that make sense at compile time (i.e., no phase crossing):
+    (test (eval
+           '(let-syntax ([x (lambda (stx)
+                              (datum->syntax
+                               #'here
+                               (condition-message
+                                (call/cc
+                                 (lambda (esc)
+                                   (with-exception-handler
+                                    (lambda (exn) (esc exn))
+                                    (lambda ()
+                                      (eval '(assertion-violation 'exptime "ok")
+                                            (environment
+                                             '(rnrs)
+                                             '(rnrs eval))))))))))])
+              x)
+           (environment '(rnrs) '(for (rnrs eval) expand)))
+          "ok")
+
     ;;
     ))
 

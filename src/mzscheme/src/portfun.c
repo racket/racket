@@ -4442,7 +4442,7 @@ static Scheme_Object *do_load_handler(void *data)
   Scheme_Config *config = lhd->config;
   Scheme_Object *last_val = scheme_void, *obj, **save_array = NULL;
   Scheme_Env *genv;
-  int save_count = 0, got_one = 0;
+  int save_count = 0, got_one = 0, as_module;
 
   while ((obj = scheme_internal_read(port, lhd->stxsrc, 1, 0, 0, 0, 0, -1, NULL, 
                                      NULL, NULL, lhd->delay_load_info))
@@ -4451,6 +4451,9 @@ static Scheme_Object *do_load_handler(void *data)
     got_one = 1;
 
     /* ... begin special support for module loading ... */
+
+    genv = scheme_get_env(config);
+    as_module = 0;
 
     if (SCHEME_SYMBOLP(lhd->expected_module)) {
       /* Must be of the form `(module <expectedname> ...)',possibly compiled. */
@@ -4539,9 +4542,10 @@ static Scheme_Object *do_load_handler(void *data)
 	/* Replace `module' in read expression with one bound to #%kernel's `module': */
 	a = SCHEME_STX_CAR(obj);
 	d = SCHEME_STX_CDR(obj);
-	a = scheme_datum_to_syntax(module_symbol, a, scheme_sys_wraps(NULL), 0, 1);
+	a = scheme_datum_to_syntax(module_symbol, a, scheme_sys_wraps_phase(genv->phase), 0, 1);
 	d = scheme_make_pair(a, d);
 	obj = scheme_datum_to_syntax(d, obj, scheme_false, 0, 1);
+        as_module = 1;
       }
     } else {
       /* Add #%top-interaction, since we're in non-module mode: */
@@ -4552,8 +4556,7 @@ static Scheme_Object *do_load_handler(void *data)
 
     /* ... end special support for module loading ... */
 
-    genv = scheme_get_env(config);
-    if (genv->rename_set)
+    if (!as_module && genv->rename_set)
       obj = scheme_add_rename(obj, genv->rename_set);
 
     last_val = _scheme_apply_multi_with_prompt(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),

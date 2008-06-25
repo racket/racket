@@ -26,4 +26,3 @@
 ;; can we pass this value to regexp-match?
 (define (matchable? e)
   (or (string? e) (bytes? e)))
-

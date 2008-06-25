@@ -5087,9 +5087,24 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env, int for_stx)
 
   {
     Scheme_Dynamic_State dyn_state;
+    Scheme_Cont_Frame_Data cframe;
+    Scheme_Config *config;
+    Scheme_Object *result;
+
+    scheme_prepare_exp_env(dm_env);
+
+    config = scheme_extend_config(scheme_current_config(),
+				  MZCONFIG_ENV,
+				  (Scheme_Object *)dm_env->exp_env);
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
     scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, NULL, dm_env, dm_env->link_midx);
-    return define_execute_with_dynamic_state(form, 4, for_stx ? 2 : 1, rp, dm_env, &dyn_state);
+    result = define_execute_with_dynamic_state(form, 4, for_stx ? 2 : 1, rp, dm_env, &dyn_state);
+
+    scheme_pop_continuation_frame(&cframe);
+
+    return result;
   }
 }
 
@@ -5418,12 +5433,11 @@ Scheme_Object *scheme_make_environment_dummy(Scheme_Comp_Env *env)
 { 
   Scheme_Object *dummy;
  
-  /* Get prefixed-based accessors for a dummy top-level buckets. It's
-     used to "link" to the right enviornment. begin_symbol is arbitrary */
-  dummy = (Scheme_Object *)scheme_global_bucket(begin_symbol, env->genv);
-  dummy = scheme_register_toplevel_in_prefix(dummy, env, NULL, 0);
-
-  return dummy;
+  /* Get a prefixed-based accessor for a dummy top-level bucket. It's
+     used to "link" to the right environment at run time. The `begin'
+     symbol is arbitrary; the top-level/prefix support handles a symbol
+     as a "toplevel" specially. */
+  return scheme_register_toplevel_in_prefix(begin_symbol, env, NULL, 0);
 }
 
 Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy)
@@ -5467,10 +5481,22 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {
+    Scheme_Cont_Frame_Data cframe;
+    Scheme_Config *config;
     Scheme_Dynamic_State dyn_state;
 
+    scheme_prepare_exp_env(rhs_env->genv);
+  
+    config = scheme_extend_config(scheme_current_config(),
+                                  MZCONFIG_ENV,
+                                  (Scheme_Object *)rhs_env->genv->exp_env);
+    scheme_push_continuation_frame(&cframe);
+    scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+  
     scheme_set_dynamic_state(&dyn_state, rhs_env, NULL, scheme_false, certs, rhs_env->genv, rhs_env->genv->link_midx);
     a = scheme_eval_linked_expr_multi_with_dynamic_state(a, &dyn_state);
+    
+    scheme_pop_continuation_frame(&cframe);
   }
 
   scheme_pop_prefix(save_runstack);

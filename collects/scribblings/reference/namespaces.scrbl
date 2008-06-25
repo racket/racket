@@ -4,9 +4,9 @@
 @title{Namespaces}
 
 See @secref["namespace-model"] for basic information on the
-namespace model.
+@tech{namespace} model.
 
-A new namespace is created with procedures like
+A new @tech{namespace} is created with procedures like
 @scheme[make-empty-namespace], and @scheme[make-base-namespace], which
 return a first-class namespace value. A namespace is used by setting
 the @scheme[current-namespace] parameter value, or by providing the
@@ -21,21 +21,27 @@ otherwise.}
 
 @defproc[(make-empty-namespace) namespace?]{
 
-Creates a new namespace that is empty, and whose @tech{module registry}
-contains no mappings. Attach modules from an existing namespace to the
-new one with @scheme[namespace-attach-module].}
+Creates a new namespace that is empty, and whose @tech{module
+registry} contains no mappings. The namespace's @tech{base phase} is
+the same as the @tech{base phase} of the @tech{current
+namespace}. Attach modules from an existing namespace to the new one
+with @scheme[namespace-attach-module].}
 
 
 @defproc[(make-base-empty-namespace) namespace?]{
 
 Creates a new empty namespace, but with @schememodname[scheme/base]
-attached.}
+attached. The namespace's @tech{base phase} is the same as the
+@tech{phase} in which the @scheme[make-base-empty-namespace]
+function was created.}
 
 
 @defproc[(make-base-namespace) namespace?]{
 
 Creates a new namespace with @schememodname[scheme/base] attached and
-@scheme[require]d into the top-level environment.}
+@scheme[require]d into the top-level environment. The namespace's
+@tech{base phase} is the same as the @tech{phase} in which the
+@scheme[make-base-namespace] function was created.}
 
 
 @defform[(define-namespace-anchor id)]{
@@ -56,16 +62,15 @@ Returns @scheme[#t] if @scheme[v] is a namespace-anchor value,
 
 @defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
 
-Returns an empty namespace that shares a @tech{module registry} with the
-source of the anchor.
+Returns an empty namespace that shares a @tech{module registry} with
+the source of the anchor, and whose @tech{base phase} the the
+@tech{phase} in which the anchor was created.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
 module context, then the source is the namespace in which the
 containing module is instantiated. If the anchor is from a
 @scheme[define-namespace-anchor] form in a top-level content, then the
-source is the namespace in which the anchor definition was evaluated.
-The resulting namespace corresponds to @tech{phase} 0, independent of
-the phase of @scheme[a]'s definition.}
+source is the namespace in which the anchor definition was evaluated.}
 
 
 @defproc[(namespace-anchor->namespace [a namespace-anchor?]) namespace?]{
@@ -73,10 +78,9 @@ the phase of @scheme[a]'s definition.}
 Returns a namespace corresponding to the source of the anchor.
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
-module context, then the result is a namespace obtained via
-@scheme[module->namespace] using the resolved name of the enclosing
-module and the @tech{module registry} of the module instance at
-@tech{phase} 0.
+module context, then the result is a namespace for the module's body
+in the anchor's phase. The result is the same as a namespace obtained
+via @scheme[module->namespace].
 
 If the anchor is from a @scheme[define-namespace-anchor] form in a
 top-level content, then the result is the namespace in which the
@@ -95,14 +99,22 @@ lexical context of the resulting identifier corresponds to the
 top-level environment of the current namespace; the identifier has no
 source location or properties.}
 
+
+@defproc[(namespace-module-identifier [namespace namespace? (current-namespace)]) identifier?]{
+
+Returns an identifier whose binding is @scheme[module] in the
+@tech{base phase} of @scheme[namespace].}
+
+
 @defproc[(namespace-variable-value [sym symbol?]
                                    [use-mapping? any/c #t]
                                    [failure-thunk (or/c (-> any) false/c) #f]
                                    [namespace namespace? (current-namespace)])
          any]{
 
-Returns a value for @scheme[sym] in @scheme[namespace]. The returned value
-depends on @scheme[use-mapping?]:
+Returns a value for @scheme[sym] in @scheme[namespace], using
+@scheme[namespace]'s @tech{base phase}. The returned value depends on
+@scheme[use-mapping?]:
 
  @itemize{
 
@@ -138,12 +150,13 @@ exception.}
          void?]{
 
 Sets the value of @scheme[sym] in the top-level environment of
-@scheme[namespace] for @tech{phase level} 0, defining @scheme[sym] if
+@scheme[namespace] in the @tech{base phase}, defining @scheme[sym] if
 it is not already defined.
 
-If @scheme[map?] is supplied as true, then the namespace's identifier
-mapping is also adjusted (see @secref["namespace-model"]) so that
-@scheme[sym] maps to the variable.}
+If @scheme[map?] is supplied as true, then the namespace's
+@tech{identifier} mapping is also adjusted (see
+@secref["namespace-model"]) in the @tech{phase level} corresponding to
+the @tech{base phase}, so that @scheme[sym] maps to the variable.}
 
 
 @defproc[(namespace-undefine-variable! [sym symbol?]
@@ -151,27 +164,29 @@ mapping is also adjusted (see @secref["namespace-model"]) so that
          void?]{
 
 Removes the @scheme[sym] variable, if any, in the top-level
-environment of @scheme[namespace] at @tech{phase level} 0. The
-namespace's identifier mapping (see @secref["namespace-model"]) is
-unaffected.}
+environment of @scheme[namespace] in its @tech{base phase}. The
+namespace's @tech{identifier} mapping (see @secref["namespace-model"])
+is unaffected.}
 
  
 @defproc[(namespace-mapped-symbols [namespace namespace? (current-namespace)])
          (listof symbol?)]{
 
 Returns a list of all symbols that are mapped to variables, syntax,
-and imports in @scheme[namespace] for @tech{phase level} 0.}
+and imports in @scheme[namespace] for the @tech{phase level}
+corresponding to the @tech{namespace}'s @tech{base phase}.}
 
 
 
 @defproc[(namespace-require [quoted-raw-require-spec any/c])
          void?]{
 
-Performs the import corresponding to @scheme[quoted-raw-require-spec] in
-the top-level environment of the current namespace, like a top-level
-@scheme[#%require]. The @scheme[quoted-raw-require-spec] argument must be a
-datum that corresponds to a quoted @scheme[_raw-require-spec] for
-@scheme[#%require], which includes module paths.
+Performs the import corresponding to @scheme[quoted-raw-require-spec]
+in the top-level environment of the current namespace, like a
+top-level @scheme[#%require]. The @scheme[quoted-raw-require-spec]
+argument must be a datum that corresponds to a quoted
+@scheme[_raw-require-spec] for @scheme[#%require], which includes
+module paths.
 
 Module paths in @scheme[quoted-raw-require-spec] are resolved with respect
 to @scheme[current-load-relative-directory] or
@@ -183,28 +198,29 @@ current namespace corresponds to a module body.}
          void?]{
 
 Like @scheme[namespace-require] for syntax exported from the module,
-but exported variables at @tech{phase level} 0 are treated differently: the
-export's current value is copied to a top-level variable in the
-current namespace.}
+but exported variables at the namespace's @tech{base phase} are
+treated differently: the export's current value is copied to a
+top-level variable in the current namespace.}
 
 
 @defproc[(namespace-require/constant [quoted-raw-require-spec any/c])
          void?]{
 
-Like @scheme[namespace-require], but for each exported variable at
-@tech{phase level} 0, the export's value is copied to a corresponding
-top-level variable that is made immutable. Despite setting the
-top-level variable, the corresponding identifier is bound as
-imported.}
+Like @scheme[namespace-require], but for each exported variable at the
+@tech{namespace}'s @tech{base phase}, the export's value is copied to
+a corresponding top-level variable that is made immutable. Despite
+setting the top-level variable, the corresponding identifier is bound
+as imported.}
 
 
 @defproc[(namespace-require/expansion-time [quoted-raw-require-spec any/c])
          void?]{
 
 Like @scheme[namespace-require], but only the transformer part of the
-module is executed; that is, the module is merely @tech{visit}ed, and
-not @tech{instantiate}d (see @secref["mod-parse"]). If the required
-module has not been instantiated before, the module's variables remain
+module is executed relative to the @tech{namespace}'s @tech{base
+phase}; that is, the module is merely @tech{visit}ed, and not
+@tech{instantiate}d (see @secref["mod-parse"]). If the required module
+has not been instantiated before, the module's variables remain
 undefined.}
 
 
@@ -214,19 +230,24 @@ undefined.}
          any]{
 
 Attaches the instantiated module named by @scheme[modname] in
-@scheme[src-namespace] to the @tech{module registry} of
-@scheme[dest-namespace]. If @scheme[modname] is not a symbol, the
-current module name resolver is called to resolve the path, but no
-module is loaded; the resolved form of @scheme[modname] is used as the
-module name in @scheme[dest-namespace]. In addition to
+@scheme[src-namespace] (at its @tech{base phase}) to the @tech{module
+registry} of @scheme[dest-namespace]. If @scheme[modname] is not a
+symbol, the current module name resolver is called to resolve the
+path, but no module is loaded; the resolved form of @scheme[modname]
+is used as the module name in @scheme[dest-namespace]. In addition to
 @scheme[modname], every module that it imports (directly or
 indirectly) is also recorded in the current namespace's @tech{module
-registry}. If @scheme[modname] does not refer to an instantiated
-module in @scheme[src-namespace], or if the name of any module to be
-attached already has a different declaration or instance in
-@scheme[dest-namespace], then the @exnraise[exn:fail:contract].  The
-inspector of the module invocation in @scheme[dest-namespace] is the
-same as inspector of the invocation in @scheme[src-namespace].}
+registry}. The inspector of the module invocation in
+@scheme[dest-namespace] is the same as inspector of the invocation in
+@scheme[src-namespace].
+
+If @scheme[modname] does not refer to an instantiated module in
+@scheme[src-namespace], or if the name of any module to be attached
+already has a different declaration or instance in
+@scheme[dest-namespace], then the @exnraise[exn:fail:contract].
+
+If @scheme[src-namespace] and @scheme[dest-namespace] do not have the
+same @tech{base phase}, then the @exnraise[exn:fail:contract].}
 
 
 @defproc[(namespace-unprotect-module [inspector inspector?]
@@ -252,10 +273,11 @@ is useful only for identification via @scheme[eq?].}
 @defproc[(module->namespace [modname module-path?]) namespace?]{
 
 Returns a namespace that corresponds to the body of an instantiated
-module in the current namespace's @tech{module registry}. The returned
-namespace has the same @tech{module registry} as the current
-namespace. Modifying a binding in the namespace changes the binding
-seen in modules that require the namespace's module.
+module in the current namespace's @tech{module registry} and in the
+current namespace's @tech{base phase}. The returned namespace has the
+same @tech{module registry} as the current namespace. Modifying a
+binding in the namespace changes the binding seen in modules that
+require the namespace's module.
 
 Module paths in a top-level @scheme[require] expression are resolved
 with respect to the namespace's module. New @scheme[provide]
@@ -305,21 +327,20 @@ correspond to the first two elements of a list produced by
          namespace?]{
 
 Returns an empty namespace that shares module declarations and
-instances with the namespace in which @scheme[varref] is
-instantiated. The namespace corresponds to @tech{phase} 0, independent
-of the phase of @scheme[varref]'s binding.}
+instances with the namespace in which @scheme[varref] is instantiated,
+and with the same phase as @scheme[varref].}
 
 
-@defproc[(variable-reference->top-level-namespace [varref variable-reference?])
+@defproc[(variable-reference->namespace [varref variable-reference?])
          namespace?]{
 
-If @scheme[varref] refers to a top-level binding, the result is
-@scheme[varref]'s namespace if it corresponds to a @tech{phase} 0
-binding, otherwise it is the @tech{phase} 0 namespace associated with
-@scheme[varref]'s namespace.
+If @scheme[varref] refers to a module binding, then the result is a
+namespace for the module's body in the referenced binding's
+@tech{phase}; the result is the same as a namespace obtained via
+@scheme[module->namespace].
 
-If @scheme[varref] refers to a module binding, then the
-@exnraise[exn:fail:contract].}
+If @scheme[varref] refers to a top-level binding, then the result is
+the namespace in which the referenced binding is defined.}
 
 
 @defproc[(variable-reference->resolved-module-path [varref variable-reference?])
@@ -330,3 +351,8 @@ If @scheme[varref] refers to a module binding, the result is a
 
 If @scheme[varref] refers to a top-level binding, then the
 @exnraise[exn:fail:contract].}
+
+@defproc[(variable-reference->phase [varref variable-reference?])
+         exact-nonnegative-integer?]{
+
+Returns the @tech{phase} of the binding referenced by @scheme[varref].}

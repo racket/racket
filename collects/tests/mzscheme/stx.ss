@@ -938,16 +938,14 @@
 ;; lifting expressions
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define prev-ctx #f)
-
 (define-syntax (@@foo stx)
   (syntax-case stx ()
     [(_ n)
      (if (zero? (syntax-e #'n))
-	 #'0
+	 #'(list #f 0)
 	 (with-syntax ([m (sub1 (syntax-e #'n))])
-           (eval `(set! prev-ctx ',(syntax-local-lift-context)))
-	   (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
+           #`(list '#,(syntax-local-lift-context)
+                   #,(syntax-local-lift-expression #'(add1 (cadr (@@foo m)))))))]))
 
 (define lifted-output #f) 
 
@@ -957,11 +955,14 @@
      (with-syntax ([id (syntax-local-lift-expression #'(set! lifted-output "lifted!"))])
        #'(list lifted-output id))]))
 
-(test 2 '@@foo (@@foo 2))
-(test #f values prev-ctx)
-(test 2 eval (expand-once #'(@@foo 2)))
-(test 2 eval (expand #'(@@foo 2)))
-(test 2 eval (expand-to-top-form #'(@@foo 2)))
+(test (list #f 2) '@@foo (@@foo 2))
+(test (list #f 2) eval-syntax #'(@@foo 2))
+(test (list #f 2) eval (expand-once #'(@@foo 2)))
+(test (list #f 2) eval (expand-syntax-once #'(@@foo 2)))
+(test (list #f 2) eval (expand #'(@@foo 2)))
+(test (list #f 2) eval (expand-syntax #'(@@foo 2)))
+(test (list #f 2) eval (expand-to-top-form #'(@@foo 2)))
+(test (list #f 2) eval (expand-syntax-to-top-form #'(@@foo 2)))
 (test (list "lifted!" (void)) '@@goo (@@goo))
 (set! lifted-output #f)
 (test (list "lifted!" (void)) eval (expand-once #'(@@goo)))
@@ -1020,22 +1021,25 @@
 (require '@@p)
 (test 10 '@@goo (@@goo))
 
-(set! prev-ctx #f)
-
 (module @@m scheme/base
   (require (for-syntax scheme/base))
+  (define-for-syntax prev-ctx #f)
   (define-syntax (@@foo stx)
     (syntax-case stx ()
       [(_ n)
        (if (zero? (syntax-e #'n))
-	   #'0
+	   #'(list #f 0)
 	   (with-syntax ([m (sub1 (syntax-e #'n))])
-             (let ([prev (eval 'prev-ctx)])
+             (let ([prev prev-ctx])
                (if prev
                    (unless (eq? prev (syntax-local-lift-context))
-                     (error "context mismatch!"))
-                   (eval `(set! prev-ctx ',(syntax-local-lift-context)))))
-	     (syntax-local-lift-expression #'(add1 (@@foo m)))))]))
+                     (error 'context
+                            "mismatch: ~s vs.: ~s"
+                            prev
+                            (syntax-local-lift-context)))
+                   (set! prev-ctx (syntax-local-lift-context))))
+             #`(list '#,(syntax-local-lift-context)
+                     #,(syntax-local-lift-expression #'(add1 (cadr (@@foo m)))))))]))
   (define @@local #f)
   (define (set-local v)
     (set! @@local v))
@@ -1043,10 +1047,9 @@
   (provide @@local))
 
 (require '@@m)
-(test 2 '@@local @@local)
-(test #t symbol? prev-ctx)
+(test 2 '@@local (cadr @@local))
+(test #t '@@local (symbol? (car @@local)))
 
-(set! prev-ctx #f)
 (define-syntaxes (@@local-top @@local-top2 @@local-top3)
   (let ([mk
          (lambda (stops)
@@ -1066,15 +1069,13 @@
      (mk null)
      (mk #f))))
 
-(test 1 'let-foo (let ([x 5]) (@@foo 1)))
-(test 1 eval (expand #'(let ([x 5]) (@@foo 1))))
-(test 1 'local-foo (let ([x 5]) (@@local-top (@@foo 1))))
-(test 'the-key values prev-ctx)
-(test 1 eval (expand #'(let ([x 5]) (@@local-top (@@foo 1)))))
-(test 1 eval (expand #'(@@local-top (@@foo 1))))
-(test 1 eval (expand #'(@@local-top2 (@@foo 1))))
-(test 1 eval (expand #'(@@local-top3 (@@foo 1))))
-(test 'the-key values prev-ctx)
+(test '(#f 1) 'let-foo (let ([x 5]) (@@foo 1)))
+(test '(#f 1) eval (expand #'(let ([x 5]) (@@foo 1))))
+(test '(the-key 1) 'local-foo (let ([x 5]) (@@local-top (@@foo 1))))
+(test '(the-key 1) eval (expand #'(let ([x 5]) (@@local-top (@@foo 1)))))
+(test '(the-key 1) eval (expand #'(@@local-top (@@foo 1))))
+(test '(the-key 1) eval (expand #'(@@local-top2 (@@foo 1))))
+(test '(the-key 1) eval (expand #'(@@local-top3 (@@foo 1))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check interaction of macro-introduced/lifted names and

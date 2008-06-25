@@ -112,7 +112,9 @@ action depends on the shape of the form:
  @item{If it is a @scheme[define-syntaxes] or
   @scheme[define-values-for-syntax] form, then the right-hand side is
   evaluated (in @tech{phase} 1), and the binding is immediately
-  installed for further partial expansion within the module.}
+  installed for further partial expansion within the
+  module. Evaluation of the right-hand side is @scheme[parameterize]d
+  to set @scheme[current-namespace] as in @scheme[let-syntax].}
 
  @item{If the form is a @scheme[require] form, bindings are introduced
    immediately, and the imported modules are @tech{instantiate}d or
@@ -1179,6 +1181,12 @@ Creates a @tech{transformer binding} (see
 relative to the surrounding context. (See @secref["id-model"] for
 information on @tech{phase levels}.)
 
+The evaluation of each @scheme[trans-expr] is @scheme[parameterize]d
+to set @scheme[current-namespace] to a @tech{namespace} that shares
+@tech{bindings} and @tech{variables} with the namespace being used to
+expand the @scheme[let-syntax] form, except that its @tech{base phase}
+is one greater.
+
 Each @scheme[id] is bound in the @scheme[body]s, and not in other
 @scheme[trans-expr]s.}
 
@@ -1486,8 +1494,10 @@ z
 The first form creates a @tech{transformer binding} (see
 @secref["transformer-model"]) of @scheme[id] with the value of
 @scheme[expr], which is an expression at @tech{phase level} 1 relative
-to the surrounding context. (See @secref["id-model"] for
-information on @tech{phase levels}.)
+to the surrounding context. (See @secref["id-model"] for information
+on @tech{phase levels}.)  Evaluation of @scheme[expr] side is
+@scheme[parameterize]d to set @scheme[current-namespace] as in
+@scheme[let-syntax].
 
 The second form is a shorthand the same as for @scheme[define]; it
 expands to a definition of the first form where the @scheme[expr] is a
@@ -1499,7 +1509,7 @@ expands to a definition of the first form where the @scheme[expr] is a
 Like @scheme[define-syntax], but creates a @tech{transformer binding}
 for each @scheme[id].  The @scheme[expr] should produce as many values
 as @scheme[id]s, and each value is bound to the corresponding
-@scheme[id].}
+@scheme[id]. }
 
 
 @defform*[[(define-for-syntax id expr)
@@ -1508,7 +1518,9 @@ as @scheme[id]s, and each value is bound to the corresponding
 Like @scheme[define], except that the binding is at @tech{phase level}
 1 instead of @tech{phase level} 0 relative to its context. The
 expression for the binding is also at @tech{phase level} 1. (See
-@secref["id-model"] for information on @tech{phase levels}.)}
+@secref["id-model"] for information on @tech{phase levels}.)
+Evaluation of @scheme[expr] side is @scheme[parameterize]d to set
+@scheme[current-namespace] as in @scheme[let-syntax].}
 
 @defform[(define-values-for-syntax (id ...) expr)]{
 

@@ -45,11 +45,13 @@ it is sent to the @tech{evaluation handler}:
 
 @itemize{
 
- @item{If @scheme[top-level-form] is a pair whose @scheme[car] is a symbol or
-       identifier, and if applying @scheme[namespace-syntax-introduce]
-       to the (@scheme[datum->syntax]-converted) identifier produces
-       an identifier bound to @scheme[module], then only that
-       identifier is enriched.}
+ @item{If @scheme[top-level-form] is a pair whose @scheme[car] is a
+       symbol or identifier, and if applying
+       @scheme[namespace-syntax-introduce] to the
+       (@scheme[datum->syntax]-converted) identifier produces an
+       identifier bound to @scheme[module] in a @tech{phase level}
+       that corresponds to @scheme[namespace]'s @tech{base phase},
+       then only that identifier is enriched.}
 
  @item{For any other @scheme[top-level-form],
        @scheme[namespace-syntax-introduce] is applied to the entire

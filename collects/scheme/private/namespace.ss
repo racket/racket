@@ -15,8 +15,10 @@
   (define orig-varref (#%variable-reference orig-varref))
 
   (define (make-base-empty-namespace)
-    (let ([ns (make-empty-namespace)])
-      (namespace-attach-module (variable-reference->empty-namespace orig-varref)
+    (let* ([this-ns (variable-reference->empty-namespace orig-varref)]
+           [ns (parameterize ([current-namespace this-ns]) ; ensures correct phase
+                 (make-empty-namespace))])
+      (namespace-attach-module this-ns
                                'scheme/base 
                                ns)
       ns))
@@ -43,7 +45,10 @@
                                stx
                                id-stx))
          (syntax/loc stx
-           (define id (make-namespace-anchor (#%variable-reference id)))))]))
+           ;; two-step definition allows this to work in for-syntax contexts:
+           (begin
+             (define tmp #f)
+             (define id (make-namespace-anchor (#%variable-reference tmp))))))]))
 
   (define-struct namespace-anchor (var))
   
@@ -59,14 +64,4 @@
       (raise-type-error 'anchor->namespace
                         "namespace anchor"
                         ra))
-    (let ([mp (variable-reference->resolved-module-path
-               (namespace-anchor-var ra))])
-      (if mp
-          (let ([ns (namespace-anchor->empty-namespace ra)])
-            (parameterize ([current-namespace ns])
-              (module->namespace (let ([name (resolved-module-path-name mp)])
-                                   (if (path? name)
-                                     name
-                                     (list 'quote name))))))
-          (variable-reference->top-level-namespace
-           (namespace-anchor-var ra))))))
+    (variable-reference->namespace (namespace-anchor-var ra))))

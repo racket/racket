@@ -1814,10 +1814,13 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
 }
 
 static Scheme_Object *link_toplevel(Scheme_Object *expr, Scheme_Env *env,
-					   Scheme_Object *src_modidx, 
-					   Scheme_Object *dest_modidx)
+                                    Scheme_Object *src_modidx, 
+                                    Scheme_Object *dest_modidx)
 {
-  if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
+  if (SCHEME_SYMBOLP(expr)) {
+    /* See scheme_make_environment_dummy */
+    return (Scheme_Object *)scheme_global_bucket(begin_symbol, env);
+  } else if (SAME_TYPE(SCHEME_TYPE(expr), scheme_variable_type)) {
     Scheme_Bucket_With_Home *b = (Scheme_Bucket_With_Home *)expr;
     
     if (!env || !b->home->module)
@@ -4655,12 +4658,15 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
 {
   if (genv->rename_set) {
     if (SCHEME_STX_PAIRP(form)) {
-      Scheme_Object *a, *d;
+      Scheme_Object *a, *d, *module_stx;
       
       a = SCHEME_STX_CAR(form);
       if (SCHEME_STX_SYMBOLP(a)) {
 	a = scheme_add_rename(a, genv->rename_set);
-	if (scheme_stx_module_eq(a, scheme_module_stx, 0)) {
+        module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"),
+                                            scheme_false, scheme_sys_wraps_phase(genv->phase), 
+                                            0, 0);
+	if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
 	  /* Don't add renames to the whole module; let the 
 	     module's language take over. */
 	  d = SCHEME_STX_CDR(form);
@@ -5873,8 +5879,9 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
     c = scheme_hash_module_variable(env->genv, env->genv->module->self_modidx, 
 				    c, env->genv->module->insp,
 				    -1, env->genv->mod_phase);
-  } else
+  } else {
     c = (Scheme_Object *)scheme_global_bucket(c, env->genv);
+  }
 
   return scheme_register_toplevel_in_prefix(c, env, rec, drec);
 }
@@ -8841,7 +8848,7 @@ static Scheme_Object *expand(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 -1, 1, 0, scheme_true, 0, NULL, 0);
+                 -1, 1, 0, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
@@ -8854,7 +8861,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
   
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 -1, -1, 0, scheme_true, 0, NULL, 0);
+                 -1, -1, 0, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *stop_syntax(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -9163,7 +9170,7 @@ expand_once(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, 1, 0, scheme_true, 0, NULL, 0);
+                 1, 1, 0, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *
@@ -9177,7 +9184,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, -1, 0, scheme_true, 0, NULL, 0);
+                 1, -1, 0, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *
@@ -9188,7 +9195,7 @@ expand_to_top_form(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, 1, 1, scheme_true, 0, NULL, 0);
+                 1, 1, 1, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *
@@ -9202,7 +9209,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   env = scheme_get_env(NULL);
 
   return _expand(argv[0], scheme_new_expand_env(env, NULL, SCHEME_TOPLEVEL_FRAME), 
-                 1, -1, 1, scheme_true, 0, NULL, 0);
+                 1, -1, 1, scheme_false, 0, NULL, 0);
 }
 
 static Scheme_Object *do_eval_string_all(const char *str, Scheme_Env *env, int cont, int w_prompt)

@@ -6674,7 +6674,18 @@ void scheme_add_namespace_option(Scheme_Object *key, void (*f)(Scheme_Env *))
 
 Scheme_Object *scheme_make_namespace(int argc, Scheme_Object *argv[])
 {
-  return (Scheme_Object *)scheme_make_empty_env();
+  Scheme_Env *genv, *env;
+  long phase;
+
+  genv = scheme_get_env(NULL);
+  env = scheme_make_empty_env();
+  
+  for (phase = genv->phase; phase--; ) {
+    scheme_prepare_exp_env(env);
+    env = env->exp_env;
+  }
+
+  return env;
 }
 
 static Scheme_Object *namespace_p(int argc, Scheme_Object **argv)

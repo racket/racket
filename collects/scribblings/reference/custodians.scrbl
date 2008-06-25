@@ -48,7 +48,7 @@ subordinate to @scheme[super] (directly or indirectly). If
 
 @defproc[(custodian-memory-accounting-available?) boolean?]{
 
-Returns @scheme[#t] if MzScheme is compiled with support for
+Returns @scheme[#t] if PLT Scheme is compiled with support for
 per-custodian memory accounting, @scheme[#f] otherwise.
 
 @margin-note{Memory accounting is normally available in PLT Scheme 3m,

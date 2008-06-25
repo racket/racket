@@ -3260,9 +3260,9 @@ static int explain_resolves = 0;
    etc.). */
 
 static Scheme_Object *resolve_env(WRAP_POS *_wraps,
-				  Scheme_Object *a, Scheme_Object *orig_phase, 
-				  int w_mod, Scheme_Object **get_names,
-				  Scheme_Object *skip_ribs)
+                                  Scheme_Object *a, Scheme_Object *orig_phase, 
+                                  int w_mod, Scheme_Object **get_names,
+                                  Scheme_Object *skip_ribs)
 /* Module binding ignored if w_mod is 0.
    If module bound, result is module idx, and get_names[0] is set to source name,
      get_names[1] is set to the nominal source module, get_names[2] is set to
@@ -3345,6 +3345,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
       /* Module rename: */
       Module_Renames *mrn;
 
+      EXPLAIN(printf("Rename/set\n"));
+	
       if (SCHEME_RENAMESP(WRAP_POS_FIRST(wraps))) {
         mrn = (Module_Renames *)WRAP_POS_FIRST(wraps);
       } else {
@@ -3359,10 +3361,12 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 
       if (mrn && (!is_in_module || (mrn->kind != mzMOD_RENAME_TOPLEVEL)) 
           && !skip_other_mods) {
+        EXPLAIN(printf(" use rename %p %d\n", mrn->phase, mrn->kind));
+
 	if (mrn->kind != mzMOD_RENAME_TOPLEVEL)
 	  is_in_module = 1;
-	
-	if (same_phase(phase, mrn->phase)) {
+
+        if (same_phase(phase, mrn->phase)) {
 	  Scheme_Object *rename, *nominal = NULL, *glob_id;
           int get_names_done;
 
@@ -3392,6 +3396,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	  } else
 	    glob_id = SCHEME_STX_VAL(a);
 
+          EXPLAIN(printf(" search %s\n", scheme_write_to_string(glob_id, 0)));
+
 	  rename = scheme_hash_get(mrn->ht, glob_id);
 	  if (!rename && mrn->nomarshal_ht)
 	    rename = scheme_hash_get(mrn->nomarshal_ht, glob_id);
@@ -3405,6 +3411,8 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
             if (rename)
               get_names_done = 1;
           }
+
+          EXPLAIN(printf(" search result: %p\n", rename));
             	  
 	  if (rename) {
 	    if (mrn->kind == mzMOD_RENAME_MARKED) {

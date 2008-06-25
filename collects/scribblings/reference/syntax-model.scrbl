@@ -73,7 +73,7 @@ reference to a specific @tech{top-level variable}.
 
 Every binding has a @deftech{phase level} in which it can be
 referenced, where a @tech{phase level} normally corresponds to an
-integer (but the special @deftech{label phase level} does not
+integer (but the special @tech{label phase level} does not
 correspond to an integer).  @tech{Phase level} 0 corresponds to the
 run time of the enclosing module (or the run time of top-level
 expressions). Bindings in @tech{phase level} 0 constitute the
@@ -84,7 +84,7 @@ expanded; bindings in @tech{phase level} 1 constitute the
 run time of a different module for which the enclosing module is
 imported for use at @tech{phase level} 1 (relative to the importing
 module); bindings in @tech{phase level} -1 constitute the
-@deftech{template environment}. The @tech{label phase level} does not
+@deftech{template environment}. The @deftech{label phase level} does not
 correspond to any execution time; it is used to track bindings (e.g.,
 to identifiers within documentation) without implying an execution
 dependency.
@@ -313,7 +313,12 @@ things:
        is called as a @tech{syntax transformer} (described below), and
        parsing starts again with the @tech{syntax-object} result. If
        the @tech{transformer binding} is to any other kind of value,
-       parsing fails with an @scheme[exn:fail:syntax] exception.}
+       parsing fails with an @scheme[exn:fail:syntax] exception. The
+       call to the @tech{syntax transformer} is @scheme[parameterize]d
+       to set @scheme[current-namespace] to a @tech{namespace} that
+       shares @tech{bindings} and @tech{variables} with the namespace
+       being used to expand, except that its @tech{base phase} is one
+       greater.}
 
  @item{A @tech{variable} @tech{binding}, such as introduced by a
        module-level @scheme[define] or by @scheme[let]. In this case,
@@ -621,7 +626,7 @@ If the last expression form turns out to be a @scheme[define-values]
 or @scheme[define-syntaxes] form, expansion fails with a syntax error.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mod-parse"]{Module Phases}
+@subsection[#:tag "mod-parse"]{Module Phases and Visits}
 
 A @scheme[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when
@@ -632,23 +637,23 @@ in the module, and also evaluates all expressions for
 
 Module @tech{visits} propagate through @scheme[require]s in the same
 way as module @tech{instantiation}. Moreover, when a module is
-@tech{visit}ed, any module that it @scheme[require-for-syntax]es is
-@tech{instantiate}d at @tech{phase} 1, which the adjustment that
-@scheme[require-for-template] leading back to @tech{phase} 0 causes
-the required module to be merely visited at @tech{phase} 0, not
-@tech{instantiate}d.
+@tech{visit}ed, any module that it @scheme[require]s
+@scheme[for-syntax] is @tech{instantiate}d at @tech{phase} 1, with the
+adjustment that @scheme[require] @scheme[for-template]s leading back
+to @tech{phase} 0 causes the required module to be merely visited at
+@tech{phase} 0, not @tech{instantiate}d.
 
-When the expander encounters @scheme[require-for-syntax], it
+When the expander encounters @scheme[(require (for-syntax ....))], it
 immediately instantiates the required module at @tech{phase} 1, in
 addition to adding bindings scheme @tech{phase level} 1 (i.e., the
 @tech{transformer environment}).
 
-When the expander encounters @scheme[require] and
-@scheme[require-for-syntax] within a @tech{module context}, the
-resulting @tech{visits} and @tech{instantiations} are specific to the
-expansion of the enclosing module, and are kept separate from
-@tech{visits} and @tech{instantiations} triggered from a
-@tech{top-level context} or from the expansion of a different module.
+When the expander encounters @scheme[require] and @scheme[(require
+(for-syntax ....))] within a @tech{module context}, the resulting
+@tech{visits} and @tech{instantiations} are specific to the expansion
+of the enclosing module, and are kept separate from @tech{visits} and
+@tech{instantiations} triggered from a @tech{top-level context} or
+from the expansion of a different module.
 
 @;------------------------------------------------------------------------
 @section[#:tag "compilation-model"]{Compilation}
@@ -705,10 +710,15 @@ names to module declarations (see @secref["module-eval-model"]).
 This registry is shared by all @tech{phase level}s.
 
 For evaluation, each namespace encapsulates a distinct set of
-top-level variables, as well as a potentially distinct set of module
-instances in each @tech{phase}. That is, even though module
-declarations are shared for all @tech{phase levels}, module instances
-are distinct for each @tech{phase}.
+top-level variables at various @tech{phases}, as well as a potentially
+distinct set of module instances in each @tech{phase}. That is, even
+though module declarations are shared for all @tech{phase levels},
+module instances are distinct for each @tech{phase}. Each namespace
+has a @deftech{base phase}, which corresponds to the phase used by
+reflective operations such as @scheme[eval] and
+@scheme[dynamic-require]. In particular, using @scheme[eval] on a
+@scheme[require] form @tech{instantiates} a module in the namespace's
+@tech{base phase}.
 
 After a namespace is created, module instances from existing
 namespaces can be attached to the new namespace.  In terms of the
@@ -725,8 +735,8 @@ code that is executing, or with the namespace that was used to link
 the compiled form of the currently evaluating code. In particular,
 changing the current namespace during evaluation does not change the
 variables to which executing expressions refer. The current namespace
-only determines the behavior of (essentially reflective) operations to
-expand code and to start evaluating expanded/compiled code.
+only determines the behavior of reflective operations to expand code
+and to start evaluating expanded/compiled code.
 
 @examples[
 (code:line
@@ -741,16 +751,18 @@ expand code and to start evaluating expanded/compiled code.
      (display (eval 'x)))) (code:comment #, @t{displays @scheme['new]}))
 ]
 
-A namespace is purely a top-level entity, not to be confused with an
-environment. In particular, a namespace does not encapsulate the full
-environment of an expression inside local-binding forms.
+A @tech{namespace} is purely a top-level entity, not to be confused
+with an @tech{environment}. In particular, a @tech{namespace} does not
+encapsulate the full @tech{environment} of an expression inside
+local-binding forms.
 
-If an identifier is bound to syntax or to an import, then defining the
-identifier as a variable shadows the syntax or import in future uses
-of the environment. Similarly, if an identifier is bound to a
-top-level variable, then binding the identifier to syntax or an import
-shadows the variable; the variable's value remains unchanged, however,
-and may be accessible through previously evaluated expressions.
+If an @tech{identifier} is bound to syntax or to an import, then
+defining the @tech{identifier} as a @tech{variable} shadows the syntax
+or import in future uses of the environment. Similarly, if an
+@tech{identifier} is bound to a @tech{top-level variable}, then
+binding the identifier to syntax or an import shadows the variable;
+the variable's value remains unchanged, however, and may be accessible
+through previously evaluated expressions.
 
 @examples[
 (define x 5)

@@ -516,7 +516,7 @@ definitions.
 For example, given the module declaration
 
 @schemeblock[
-(module m mzscheme
+(module m scheme
   (define x 10))
 ]
 
@@ -525,16 +525,16 @@ and installs @scheme[10] as its value. This @scheme[x] is unrelated to
 any top-level definition of @scheme[x].
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "module-phase"]{Module Phases}
+@subsection[#:tag "module-phase"]{Phases}
 
 A module can be @tech{instantiate}d in multiple @deftech{phases}. A
 phase is an integer that, again, is effectively a prefix on the names
 of module-level definitions. A top-level @scheme[require]
 @tech{instantiates} a module at @tech{phase} 0, if the module is not
 already @tech{instantiate}d at phase 0.  A top-level
-@scheme[require-for-syntax] @tech{instantiates} a module at
+@scheme[(require (for-syntax ....))] @tech{instantiates} a module at
 @tech{phase} 1 (if it is not already @tech{instantiate}d at that
-level); a @scheme[require-for-syntax] also has a different binding
+level); @scheme[for-syntax] also has a different binding
 effect on further program parsing, as described in
 @secref["intro-binding"].
 
@@ -553,18 +553,27 @@ If a module @tech{instantiate}d at @tech{phase} @math{n}
 @scheme[require]s another module, then the @scheme[require]d module is
 first @tech{instantiate}d at phase @math{n}, and so on
 transitively. (Module @scheme[require]s cannot form cycles.) If a
-module @tech{instantiate}d at phase @math{n}
-@scheme[require-for-syntax]es another module, the other module is
-first @tech{instantiate}d at @tech{phase} @math{n+1}, and so on.  If a
+module @tech{instantiate}d at phase @math{n} @scheme[require]s
+@scheme[for-syntax] another module, the other module is first
+@tech{instantiate}d at @tech{phase} @math{n+1}, and so on.  If a
 module @tech{instantiate}d at phase @math{n} for non-zero @math{n}
-@scheme[require-for-template]s another module, the other module is
-first @tech{instantiate}d at @tech{phase} @math{n-1}, and so on.
+@scheme[require]s @scheme[for-template] another module, the other
+module is first @tech{instantiate}d at @tech{phase} @math{n-1}, and so
+on.
 
 A final distinction among module @tech{instantiations} is that
-multiple @tech{instantiations} may exist at phase 1 and higher. These
+multiple @tech{instantiations} may exist at @tech{phase} 1 and higher. These
 @tech{instantiations} are created by the parsing of module forms (see
 @secref["mod-parse"]), and are, again, conceptually distinguished
 by prefixes.
+
+Top-level variables can exist in multiple phases in the same way as
+within modules. For example, @scheme[define-for-syntax] creates a
+@tech{phase} 1 variable. Furthermore, reflective operations like
+@scheme[make-base-namespace] and @scheme[eval] provide access to
+top-level variables in higher @tech{phases}, while module
+@tech{instantiations} (triggered by with @scheme[require]) relative to such
+top-levels are in corresponding higher @tech{phase}s.
 
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 @subsection[#:tag "module-redeclare"]{Module Re-declarations}
@@ -682,8 +691,8 @@ thread yields the parameter's value. A parameter procedure sets or
 accesses the relevant thread cell for its parameter.
 
 Various operations, such as @scheme[parameterize] or
-@scheme[with-parameterization], install a parameterization into the
-current continuation's frame.
+@scheme[call-with-parameterization], install a parameterization into
+the current continuation's frame.
 
 @;------------------------------------------------------------------------
 @section[#:tag "exn-model"]{Exceptions}
@@ -757,7 +766,7 @@ custodian is shut down. The custodian only weakly retains the box
 itself, however (so the box and its content can be collected if there
 are no other references to them).
 
-When MzScheme is compiled with support for per-custodian memory
+When PLT Scheme is compiled with support for per-custodian memory
 accounting (see @scheme[custodian-memory-accounting-available?]), the
 @scheme[current-memory-use] procedure can report a custodian-specific
 result.  This result determines how much memory is occupied by objects

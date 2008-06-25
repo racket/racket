@@ -110,4 +110,31 @@
   (test (void) namespace-undefine-variable! 'bar)
   (test 28 namespace-variable-value 'bar #t (lambda () 28)))
 
+;; ----------------------------------------
+
+(module phaser scheme/base 
+  (define x (variable-reference->phase
+             (#%variable-reference x)))
+  (provide x))
+
+(test 0 dynamic-require ''phaser 'x)
+
+(let ([s (open-output-string)])
+  (parameterize ([current-output-port s])
+    (eval '(begin-for-syntax (display (dynamic-require ''phaser 'x)))))
+  (test "1" get-output-string s))
+
+(test 0 dynamic-require ''phaser 'x)
+
+(let ([s (open-output-string)])
+  (parameterize ([current-output-port s])
+    (eval '(begin-for-syntax
+            (let ([ns (make-base-namespace)])
+              (namespace-attach-module (current-namespace) ''phaser ns)
+              (eval '(require 'phaser) ns)
+              (display (eval 'x ns))))))
+  (test "1" get-output-string s))
+
+;; ----------------------------------------
+
 (report-errs)

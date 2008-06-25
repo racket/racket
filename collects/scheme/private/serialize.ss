@@ -62,6 +62,7 @@
 
   (define deserialize-module-guard (make-parameter (lambda (mod-path sym) 
                                                      (void))))
+  (define varref (#%variable-reference varref))
   
   (define (mod-to-id info mod-map cache)
     (let ([deserialize-id (serialize-info-deserialize-id info)])
@@ -72,7 +73,7 @@
 		(let ([path+name
 		       (cond
 			[(identifier? deserialize-id)
-			 (let ([b (identifier-binding deserialize-id)])
+			 (let ([b (identifier-binding deserialize-id (variable-reference->phase varref))])
 			   (cons
 			    (and (list? b)
 				 (if (symbol? (caddr b))

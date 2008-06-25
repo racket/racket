@@ -2168,6 +2168,34 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	print_utf8_string(pp, ">", 0, 1);
       }
     }
+  else if (SCHEME_NAMESPACEP(obj))
+    {
+      if (compact || !pp->print_unreadable) {
+	cannot_print(pp, notdisplay, obj, ht, compact);
+      } else {
+        char s[10];
+        
+        print_utf8_string(pp, "#<namespace:", 0, 12);
+
+        if (((Scheme_Env *)obj)->module) {
+          Scheme_Object *modname;
+          int is_sym;
+          
+          modname = ((Scheme_Env *)obj)->module->modname;
+          is_sym = SCHEME_SYMBOLP(SCHEME_PTR_VAL(modname));
+          print_utf8_string(pp, (is_sym ? "'" : "\""), 0, 1);
+          print(SCHEME_PTR_VAL(modname), 0, 0, ht, mt, pp);
+          PRINTADDRESS(pp, modname);
+          if (!is_sym)
+            print_utf8_string(pp, "\"" , 0, 1);
+          print_utf8_string(pp, ":", 0, 1);
+        }
+
+        sprintf(s, "%ld", ((Scheme_Env *)obj)->phase);
+        print_utf8_string(pp, s, 0, -1);
+	print_utf8_string(pp, ">", 0, 1);
+      }
+    }
   else if (SCHEME_INPORTP(obj))
     {
       if (compact || !pp->print_unreadable) {
