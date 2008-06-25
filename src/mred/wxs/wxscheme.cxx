@@ -1341,6 +1341,8 @@ static Scheme_Object *SetPSProcs(int, Scheme_Object *a[])
   wxREGGLOB(ps_get_text_extent);
   wxREGGLOB(ps_expand_name);
   wxREGGLOB(ps_glyph_exists);
+  wxREGGLOB(ps_record_font);
+  wxREGGLOB(ps_fonts_string);
   ps_draw_text = a[0];
   ps_get_text_extent = a[1];
   ps_expand_name = a[2];
@@ -1371,7 +1373,8 @@ void *wxPostScriptDrawText(Scheme_Object *f, const char *fontname,
     a[6] = (used_fonts ? (Scheme_Object *)used_fonts : scheme_false);
 
     return scheme_apply(ps_draw_text, 7, a);
-  }
+  } else
+    return NULL;
 }
 
 extern void wxPostScriptGetTextExtent(const char *fontname, 
