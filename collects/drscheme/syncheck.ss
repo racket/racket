@@ -2432,7 +2432,8 @@ If the namespace does not, they are colored the unbound color.
                         (syntax-source stx)))
               text]
              [(and (is-a? text fw:text:basic<%>)
-                   (send text port-name-matches? (syntax-source stx)))
+                   (or (eq? text (syntax-source stx))
+                       (send text port-name-matches? (syntax-source stx))))
               (hash-set! source-editor-cache text (syntax-source stx))
               text]
              [else

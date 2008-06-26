@@ -16,7 +16,8 @@
   (let txt-loop ([text defs-text])
     (cond
       [(and (is-a? text text:basic<%>)
-            (send text port-name-matches? a-stx-source))
+            (or (send text port-name-matches? a-stx-source)
+                (eq? text a-stx-source)))
        text]
       [else
        (let snip-loop ([snip (send text find-first-snip)])
