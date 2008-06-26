@@ -26,7 +26,7 @@ TODO
          scheme/unit
          scheme/list
          "drsig.ss"
-         "find-syntax-source-editor.ss"
+         "embedded-snip-utils.ss"
          string-constants
          setup/xref
          scheme/gui/base

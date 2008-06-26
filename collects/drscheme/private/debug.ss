@@ -16,7 +16,7 @@ profile todo:
          scheme/gui/base
          string-constants
          framework/private/bday
-         "find-syntax-source-editor.ss"
+         "embedded-snip-utils.ss"
          "drsig.ss"
          "bindings-browser.ss"
          (for-syntax scheme/base))
@@ -787,20 +787,7 @@ profile todo:
   
   
   
-  ;; get-enclosing-editor-frame: editor<%> -> (or/c frame% #f)
-  ;; Returns the enclosing frame of an-editor, or #f if we can't find it.
-  (define (get-enclosing-editor-frame an-editor)
-    (let ([admin (send an-editor get-admin)])
-      (cond
-        [(and admin (is-a? admin editor-snip-editor-admin<%>))
-         (let* ([enclosing-editor-snip (send admin get-snip)]
-                [editor-snip-admin (send enclosing-editor-snip get-admin)]
-                [enclosing-editor (send editor-snip-admin get-editor)])
-           (get-enclosing-editor-frame enclosing-editor))]
-        [else
-         (let ([canvas (send an-editor get-canvas)])
-           (and canvas
-                (send canvas get-top-level-window)))])))
+  
   
   
   
