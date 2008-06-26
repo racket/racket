@@ -201,6 +201,10 @@ void wxPSStream::Out(long l)
   Out(buf);
 }
 
+void wxPSStream::flush() {
+  scheme_flush_output((Scheme_Object *)f);
+}
+
 long wxPSStream::tellp(void) {
   return scheme_set_file_position((Scheme_Object *)f, -1);
 }
@@ -1683,6 +1687,7 @@ void wxPostScriptDC::EndDoc (void)
         buf[a - bot] = 0;
         pstream->seekp(bot + delta);
         pstream->Out(buf);
+        pstream->flush();
         a = bot;
       }
       pstream->seekp(fontlistpos);

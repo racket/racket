@@ -23,6 +23,8 @@ class wxPSStream : public wxObject {
   void Out(long l);
   void Out(int i);
 
+  void flush();
+
   long tellp(void);
   void seekp(long pos);
 
