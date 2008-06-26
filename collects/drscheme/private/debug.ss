@@ -792,7 +792,7 @@ profile todo:
   (define (get-enclosing-editor-frame an-editor)
     (let ([admin (send an-editor get-admin)])
       (cond
-        [(is-a? admin editor-snip-editor-admin<%>)
+        [(and admin (is-a? admin editor-snip-editor-admin<%>))
          (let* ([enclosing-editor-snip (send admin get-snip)]
                 [editor-snip-admin (send enclosing-editor-snip get-admin)]
                 [enclosing-editor (send editor-snip-admin get-editor)])
