@@ -300,8 +300,20 @@
   (number->string z radix))
 
 (define (r6rs:string->number s [radix 10])
-  (and (regexp-match? rx:number s)
-       (string->number (regexp-replace* #rx"[|][0-9]+" s "") radix)))
+  (let* ([prefix (case radix
+                   [(10) "#d"]
+                   [(16) "#x"]
+                   [(8) "#o"]
+                   [(2) "#b"]
+                   [else (raise-type-error
+                          'string->number
+                          "2, 8, 10, or 16"
+                          radix)])]
+         [s (if (regexp-match? #rx"#[dDxXoObB]" s)
+                s
+                (string-append prefix s))])
+    (and (regexp-match? rx:number s)
+         (string->number (regexp-replace* #rx"[|][0-9]+" s "")))))
 
 (define-syntax-rule (make-mapper what for for-each in-val val-length val->list list->result)
   (case-lambda

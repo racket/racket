@@ -880,7 +880,7 @@
          (test (string->number (string-append "#b" (number->string n 2))) n)
          (test (string->number (number->string n 10) 10) n)
          (test (string->number (string-append "#d" (number->string n 10))) n)))
-     '(1 2.0 1/2 2e200 1+2i))
+     '(1 15 1023 -5 2.0 1/2 2e200 1+2i))
     (test (string->number "nope") #f)
 
     (test (string->number "100")                  100)

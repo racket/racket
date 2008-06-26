@@ -6,6 +6,7 @@
                      rnrs/base-6
                      rnrs/unicode-6
                      rnrs/exceptions-6
+                     rnrs/conditions-6
                      rnrs/io/simple-6
                      rnrs/r5rs-6
                      (only-in scheme/base
@@ -250,12 +251,14 @@ several known ways:
        raised through @scheme[raise-continuable], a handler can escape
        only through a continuation that is a tail of the current
        continuation, and a continuation captured within the handler
-       cannot be invoked after control escapes from the raise.}
+       cannot be invoked after control escapes from the raise.
 
- @item{Currently, inexact numbers are printed without a precision
-       indicator, and precision indicators are ignored on input (e.g.,
+       The initial exception handler does not return for
+       non-@scheme[&serious] conditions.}
+
+ @item{Inexact numbers are printed without a precision indicator, and
+       precision indicators are ignored on input (e.g.,
        @schemevalfont{0.5|7} is read the same as @scheme[0.5]).}
-
 
  @item{Word boundaries for @scheme[string-downcase],
        @scheme[string-upcase], and @scheme[string-titlecase] are not
