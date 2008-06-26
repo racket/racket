@@ -380,7 +380,7 @@
                                   [(begin . rest)
                                    (let ([l (syntax->list #'rest)])
                                      (if l
-                                         (loop (append l exprs) idss rhss stx-idss stx-rhss)
+                                         (loop (append l (cdr exprs)) idss rhss stx-idss stx-rhss)
                                          (raise-syntax-error #f expr "bad syntax")))]
                                   [(define-syntaxes (id ...) rhs)
                                    (andmap identifier? (syntax->list #'(id ...)))
