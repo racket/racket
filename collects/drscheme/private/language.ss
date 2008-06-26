@@ -115,8 +115,8 @@
                   (documentation-reference #f)
                   (reader (λ (src port)
                             (let ([v (parameterize ([read-accept-reader #t])
-                                        (with-stacktrace-name 
-                                         (read-syntax src port)))])
+                                       (with-stacktrace-name 
+                                        (read-syntax src port)))])
                               (if (eof-object? v)
                                   v
                                   (namespace-syntax-introduce v)))))
