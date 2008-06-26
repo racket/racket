@@ -2366,38 +2366,10 @@ static int add_simple_require_renames(Scheme_Object *orig_src,
   return saw_mb;
 }
 
-Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
+void scheme_prep_namespace_rename(Scheme_Env *menv)
 {
-  Scheme_Env *menv;
-  Scheme_Object *modchain;
-
-  name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
-
-  modchain = env->modchain;
-  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
-  if (!menv) {
-    if (scheme_hash_get(env->module_registry, name))
-      scheme_arg_mismatch("module->namespace",
-			  "module not instantiated in the current namespace: ",
-			  name);
-    else
-      scheme_arg_mismatch("module->namespace",
-			  "unknown module in the current namespace: ",
-			  name);
-  }
-
-  {
-    Scheme_Object *insp;
-    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
-    if (scheme_module_protected_wrt(menv->insp, insp) || menv->attached) {
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		       "module->namespace: current code inspector cannot access namespace of module: %D",
-		       name);
-    }
-  }
-
   if (menv->lazy_syntax)
-    finish_expstart_module_in_namespace(menv, env);
+    finish_expstart_module_in_namespace(menv, menv /* was just env... */);
   if (!menv->et_ran)
     scheme_run_module_exptime(menv, 1);
   scheme_prepare_exp_env(menv);
@@ -2415,7 +2387,7 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
            definitions, etc. */
 	int i;
 	Scheme_Module *im;
-	Scheme_Object *l, *idx, *one_rn, *shift;
+	Scheme_Object *l, *idx, *one_rn, *shift, *name;
 
 	rns = menv->rename_set;
         one_rn = scheme_get_module_rename_from_set(rns, scheme_make_integer(0), 1);
@@ -2497,6 +2469,39 @@ Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
       menv->rename_set_ready = 1;
     }
   }
+}
+
+Scheme_Object *scheme_module_to_namespace(Scheme_Object *name, Scheme_Env *env)
+{
+  Scheme_Env *menv;
+  Scheme_Object *modchain;
+
+  name = scheme_module_resolve(scheme_make_modidx(name, scheme_false, scheme_false), 1);
+
+  modchain = env->modchain;
+  menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(modchain), name);
+  if (!menv) {
+    if (scheme_hash_get(env->module_registry, name))
+      scheme_arg_mismatch("module->namespace",
+			  "module not instantiated in the current namespace: ",
+			  name);
+    else
+      scheme_arg_mismatch("module->namespace",
+			  "unknown module in the current namespace: ",
+			  name);
+  }
+
+  {
+    Scheme_Object *insp;
+    insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
+    if (scheme_module_protected_wrt(menv->insp, insp) || menv->attached) {
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+		       "module->namespace: current code inspector cannot access namespace of module: %D",
+		       name);
+    }
+  }
+
+  scheme_prep_namespace_rename(menv);
 
   return (Scheme_Object *)menv;
 }
