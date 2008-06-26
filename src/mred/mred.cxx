@@ -2546,6 +2546,7 @@ static void MrEdSchemeMessages(char *msg, ...)
 #if WINDOW_STDIO
   if (wx_in_terminal) {
     vfprintf(stderr, msg, args);
+    fflush(stderr);
   } else if (!msg) {
     char *s;
     wxchar *us;
@@ -2615,6 +2616,7 @@ static void MrEdSchemeMessages(char *msg, ...)
 #endif
 #if !WINDOW_STDIO && !WCONSOLE_STDIO
   vfprintf(mrerr, msg, args);
+  fflush(mrerr);
 #endif
 
   scheme_end_atomic_no_swap();

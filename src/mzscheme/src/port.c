@@ -343,6 +343,8 @@ static Scheme_Object *make_oskit_console_input_port();
 static void force_close_output_port(Scheme_Object *port);
 static void force_close_input_port(Scheme_Object *port);
 
+static void set_fd_flush_mode(Scheme_Object *o, int mode);
+
 static Scheme_Object *text_symbol, *binary_symbol;
 static Scheme_Object *append_symbol, *error_symbol, *update_symbol, *can_update_symbol;
 static Scheme_Object *replace_symbol, *truncate_symbol, *truncate_replace_symbol;
@@ -533,6 +535,12 @@ scheme_init_port (Scheme_Env *env)
 			     : scheme_make_file_output_port(stderr)
 #endif
 			     );
+
+#ifdef MZ_FDS
+# ifdef WINDOWS_FILE_HANDLES
+  set_fd_flush_mode(scheme_orig_stderr_port, MZ_FLUSH_ALWAYS);
+# endif
+#endif
 
   flush_out = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stdout_port));
   flush_err = SCHEME_TRUEP(scheme_terminal_port_p(1, &scheme_orig_stderr_port));
@@ -6322,6 +6330,11 @@ make_fd_output_port(int fd, Scheme_Object *name, int regfile, int win_textmode, 
     return scheme_values(2, a);
   } else
     return the_port;
+}
+
+static void set_fd_flush_mode(Scheme_Object *o, int mode)
+{
+  ((Scheme_FD *)((Scheme_Output_Port *)o)->port_data)->flush = mode;
 }
 
 static void flush_if_output_fds(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
