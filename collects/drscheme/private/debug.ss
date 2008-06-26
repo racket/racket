@@ -764,7 +764,9 @@ profile todo:
                [frame (cond
                         [(path? debug-source) (handler:edit-file debug-source)]
                         [(is-a? debug-source editor<%>)
-                         (get-enclosing-editor-frame debug-source)]
+                         (let ([canvas (send debug-source get-canvas)])
+                           (and canvas
+                                (send canvas get-top-level-window)))]
                         [else #f])]
                [editor (cond
                          [(path? debug-source)
@@ -784,23 +786,6 @@ profile todo:
             (when (is-a? editor text:basic<%>)
               (send rep highlight-errors same-src-srclocs '())
               (send editor set-caret-owner #f 'global)))))))
-  
-  
-  
-  ;; get-enclosing-editor-frame: editor<%> -> (or/c frame% #f)
-  ;; Returns the enclosing frame of an-editor, or #f if we can't find it.
-  (define (get-enclosing-editor-frame an-editor)
-    (let ([admin (send an-editor get-admin)])
-      (cond
-        [(is-a? admin editor-snip-editor-admin<%>)
-         (let* ([enclosing-editor-snip (send admin get-snip)]
-                [editor-snip-admin (send enclosing-editor-snip get-admin)]
-                [enclosing-editor (send editor-snip-admin get-editor)])
-           (get-enclosing-editor-frame enclosing-editor))]
-        [else
-         (let ([canvas (send an-editor get-canvas)])
-           (and canvas
-                (send canvas get-top-level-window)))])))
   
   
   
