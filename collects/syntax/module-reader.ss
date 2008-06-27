@@ -1,7 +1,5 @@
 (module module-reader scheme/base
 
-;; (require scheme/class) ; avoid requiring too much to the reader level
-
 (provide (rename-out [provide-module-reader #%module-begin]
                      [wrap wrap-read-all]))
 
@@ -26,13 +24,6 @@
                      (reverse a)
                      (loop (cons v a)))))]
          [p-name (object-name port)]
-         #;
-         [p-name (let ([i (and (object? p-name) (object-interface p-name))])
-                   (cond [(and i (method-in-interface? 'get-port-name i))
-                          (send p-name get-port-name)]
-                         [(and i (method-in-interface? 'get-filename i))
-                          (send p-name get-filename)]
-                         [else p-name]))]
          [name (if (path? p-name)
                  (let-values ([(base name dir?) (split-path p-name)])
                    (string->symbol
