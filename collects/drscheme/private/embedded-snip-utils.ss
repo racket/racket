@@ -45,4 +45,4 @@
 ;; can't find it.
 (define (get-snip-outer-editor a-snip)
   (let ([admin (send a-snip get-admin)])
-    (and admin (send snip-admin get-editor))))
+    (and admin (send admin get-editor))))
