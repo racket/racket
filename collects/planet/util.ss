@@ -665,7 +665,7 @@
 ;; determines if the given string is something that (version) could've produced
 (define (core-version? s)
   (and (string? s)
-       (regexp-match #rx"^[0-9]+(\\.[0-9]*)?$" s)))
+       (string->mz-version s)))
 
 ;; checkinfo: syntax
 ;; given an info.ss function, a failure function, and a bunch of fields to check,
