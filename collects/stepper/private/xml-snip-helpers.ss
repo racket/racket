@@ -23,7 +23,7 @@
                "read: bad syntax: empty scheme box")
            txt line col pos 1)))
       (let ([stx (read-syntax
-                  (get-source-name text)
+                  text
                   (open-input-text-editor text 0 (send text last-position)))])
         (when (eof-object? stx)
           (raise-read-error
@@ -33,12 +33,6 @@
            text 1 1 1 (send text last-position)))
 	stx)))
   
-  (define (get-source-name text)
-    (cond
-      [(method-in-interface? 'get-port-name (object-interface text))
-       (send text get-port-name)]
-      [else
-       (send text get-filename)]))
   
   (define (xml-read-special eliminate-whitespace-in-empty-tags? snip file line col pos)
     (let ([editor (send snip get-editor)]
