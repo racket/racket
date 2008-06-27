@@ -105,15 +105,21 @@
 
 (parameterize ([pretty-print-columns 20])
   (test "(1234567890 1 2 3 4)" pretty-format '(1234567890 1 2 3 4))
-  (test "(1234567890xx\n  1\n  2\n  3\n  4)" pretty-format '(1234567890xx 1 2 3 4))
+  (test "(1234567890xx\n 1\n 2\n 3\n 4)" pretty-format '(1234567890xx 1 2 3 4))
   (test "(lambda 1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4))
   (let ([table (pretty-print-extend-style-table #f null null)])
     (parameterize ([pretty-print-current-style-table 
                     (pretty-print-extend-style-table table '(lambda) '(list))])
-      (test "(lambda\n  1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4)))
+      (test "(lambda\n 1234567890\n 1\n 2\n 3\n 4)" pretty-format '(lambda 1234567890 1 2 3 4)))
     (test "(lambda 1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4))
     (parameterize ([pretty-print-current-style-table table])
-      (test "(lambda 1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4)))))
+      (test "(lambda 1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4)))
+    ;; Make sure special case for lambda, etc, doesn't hide sharing:
+    (let ([a (read (open-input-string "#0=((x) 1 . #0#)"))])
+      (test "(lambda\n .\n #0=((x) 1 . #0#))" pretty-format `(lambda . ,a)))
+    (let ([a (read (open-input-string "#0=((1 . #0#))"))])
+      (test "(quote\n .\n #0=((1 . #0#)))" pretty-format `(quote . ,a))
+      (test "'#0=((1 . #0#))" pretty-format `(quote ,a)))))
 
 (parameterize ([pretty-print-exact-as-decimal #t])
   (test "10" pretty-format 10)
@@ -157,7 +163,7 @@
                   (λ (val dsp? port)
                     (write (wrap-content val) port))])
     (test "(lambda (x)\n  abcdef)" pretty-format (add-wrappers '(lambda (x) abcdef)))
-    (test "(call/cc\n  call/cc)" pretty-format (add-wrappers '(call/cc call/cc)))))
+    (test "(call/cc\n call/cc)" pretty-format (add-wrappers '(call/cc call/cc)))))
 
 (parameterize ([print-struct #t])
   (let ()

@@ -859,7 +859,8 @@
 	       (wr* pport obj depth display?))))
 
        (define (pp-expr expr extra depth)
-	 (if (read-macro? expr pair? car cdr)
+	 (if (and (read-macro? expr pair? car cdr)
+                  (not (and found (hash-table-get found (cdr expr) #f))))
 	     (begin
 	       (out (read-macro-prefix expr car))
 	       (pr (read-macro-body expr car cdr)
@@ -870,16 +871,18 @@
 	       (if (or (and (symbol? head)
                             (not (size-hook head display?)))
                        ((pretty-print-remap-stylable) head))
-		   (let ((proc (style head)))
+		   (let ((proc (style head expr)))
 		     (if proc
 			 (proc expr extra depth)
-			 (if (> (string-length 
-                                 (symbol->string
-                                  (if (symbol? head)
-                                      head
-                                      ((pretty-print-remap-stylable) head))))
-				max-call-head-width)
-			     (pp-general expr extra #f #f #f pp-expr depth)
+			 (if (and #f
+                                  ;; Why this special case? Currently disabled.
+                                  (> (string-length 
+                                      (symbol->string
+                                       (if (symbol? head)
+                                           head
+                                           ((pretty-print-remap-stylable) head))))
+                                     max-call-head-width))
+                             (pp-general expr extra #f #f #f pp-expr depth)
 			     (pp-list expr extra pp-expr #t depth))))
 		   (pp-list expr extra pp-expr #t depth)))))
 
@@ -1035,38 +1038,58 @@
 
        (define max-call-head-width 5)
 
-       (define (style head)
+       (define (no-sharing? expr count)
+         (if (and found (hash-table-get found (cdr expr) #f))
+             #f
+             (or (zero? count)
+                 (no-sharing? (cdr expr) (sub1 count)))))
+
+       (define (style head expr)
          (case (look-in-style-table head)
 	   ((lambda λ define define-macro define-syntax
 		    syntax-rules
 		    shared
 		    unless when)
-	    pp-lambda)
+            (and (no-sharing? expr 1)
+                 pp-lambda))
 	   ((if set! set!-values)
-	    pp-if)
+            (and (no-sharing? expr 1)
+                 pp-if))
 	   ((cond case-lambda)
-	    pp-cond)
+            (and (no-sharing? expr 0)
+                 pp-cond))
 	   ((case) 
-	    pp-case)
+            (and (no-sharing? expr 1)
+                 pp-case))
 	   ((and or import export 
 		 require require-for-syntax require-for-template 
 		 provide link
 		 public private override rename inherit field init)
-	    pp-and)
+            (and (no-sharing? expr 0)
+                 pp-and))
 	   ((let letrec let*
 	      let-values letrec-values let*-values
 	      let-syntax letrec-syntax
 	      let-syntaxes letrec-syntaxes)
-	    pp-let)
+            (and (no-sharing? expr
+                              (if (and (pair? (cdr expr))
+                                       (symbol? (cadr expr)))
+                                  2
+                                  1))
+                 pp-let))
 	   ((begin begin0)
-	    pp-begin)
+            (and (no-sharing? expr 0)
+                 pp-begin))
 	   ((do letrec-syntaxes+values)
-	    pp-do)
+            (and (no-sharing? expr 2)
+                 pp-do))
 
 	   ((send class syntax-case instantiate module)
-	    pp-class)
+            (and (no-sharing? expr 2)
+                 pp-class))
 	   ((make-object)
-	    pp-make-object)
+            (and (no-sharing? expr 1)
+                 pp-make-object))
 
 	   (else #f)))
 
