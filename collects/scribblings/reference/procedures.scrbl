@@ -171,7 +171,7 @@ list is also in the second list.
 
 @defproc[(make-keyword-procedure
           [proc (((listof keyword?) list?) () #:rest list? . ->* . any)]
-          [plain-proc procedure? (lambda args (keyword-apply proc null null args))])
+          [plain-proc procedure? (lambda args (apply proc null null args))])
          procedure?]{
 
 Returns a procedure that accepts all keyword arguments (without
