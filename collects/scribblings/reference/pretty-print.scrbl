@@ -45,7 +45,7 @@ Same as @scheme[pretty-print], but @scheme[v] is printed like
 @scheme[display] instead of like @scheme[write].}
 
 
-@defproc[(pretty-format [v any/c][columns nonnegative-exact-integer? (pretty-print-columns)])
+@defproc[(pretty-format [v any/c][columns exact-nonnegative-integer? (pretty-print-columns)])
          string?]{
 
 Like @scheme[pretty-print], except that it returns a string containing
@@ -67,7 +67,7 @@ by @scheme[read-eval-print-loop].}
 
 @section{Basic Pretty-Print Options}
 
-@defparam[pretty-print-columns width (or/c positive-exact-integer? (one-of/c 'infinity))]{
+@defparam[pretty-print-columns width (or/c exact-positive-integer? (one-of/c 'infinity))]{
 
 A parameter that determines the default width for pretty printing.
 
@@ -76,7 +76,7 @@ is never broken into lines, and a newline is not added to the end of
 the output.}
 
 
-@defparam[pretty-print-depth depth (or/c nonnegative-exact-integer? false/c)]{
+@defparam[pretty-print-depth depth (or/c exact-nonnegative-integer? false/c)]{
 
 Parameter that controls the default depth for recursive pretty
 printing. Printing to @scheme[depth] means that elements nested more
@@ -158,7 +158,7 @@ so that the output follows popular code-formatting rules:
 @schemeblock[
 'lambda 'case-lambda
 'define 'define-macro 'define-syntax
-'let letrec 'let*
+'let 'letrec 'let*
 'let-syntax 'letrec-syntax
 'let-values 'letrec-values 'let*-values
 'let-syntaxes 'letrec-syntaxes
@@ -190,7 +190,7 @@ the style table is treated normally.}
 
 @section{Line-Output Hook}
 
-@defproc[(pretty-print-newline [port out-port?][width nonnegative-exact-integer?]) void?]{
+@defproc[(pretty-print-newline [port out-port?][width exact-nonnegative-integer?]) void?]{
 
 Calls the procedure associated with the
 @scheme[pretty-print-print-line] parameter to print a newline to
@@ -202,12 +202,12 @@ target column width, typically obtained from
 
 
 @defparam[pretty-print-print-line proc
-          ((or/c nonnegative-exact-integer? false/c)
+          ((or/c exact-nonnegative-integer? false/c)
            output-port?
-           nonnegative-exact-integer?
-           (or/c nonnegative-exact-integer? (one-of/c 'infinity))
+           exact-nonnegative-integer?
+           (or/c exact-nonnegative-integer? (one-of/c 'infinity))
            . -> .
-           nonnegative-exact-integer?)]{
+           exact-nonnegative-integer?)]{
 
 A parameter that determines a procedure for printing the newline
 separator between lines of a pretty-printed value. The procedure is
@@ -248,7 +248,9 @@ redirected to the port supplied to @scheme[pretty-print] or
 
 
 @defparam[pretty-print-size-hook proc
-          (any/c boolean? output-port . -> . (or/c false/c nonnegative-exact-integer?))]{
+          (any/c boolean? output-port?
+           . -> . 
+           (or/c false/c exact-nonnegative-integer?))]{
 
 A parameter that determines a sizing hook for pretty-printing.
 
@@ -270,7 +272,7 @@ pretty-printing.}
 
 
 @defparam[pretty-print-print-hook proc
-          (any/c boolean? output-port . -> . void?)]{
+          (any/c boolean? output-port? . -> . void?)]{
 
 A parameter that determines a print hook for pretty-printing.  The
 print-hook procedure is applied to a value for printing when the
@@ -318,21 +320,21 @@ cycles, it sets this parameter to @scheme[#f].}
 
 @defproc[(make-tentative-pretty-print-output-port 
           [out output-port?]
-          [width nonnegative-exact-integer?]
+          [width exact-nonnegative-integer?]
           [overflow-thunk (-> any)])
          output-port?]{
 
 Produces an output port that is suitable for recursive pretty printing
 without actually producing output. Use such a port to tentatively
 print when proper output depends on the size of recursive
-prints. Determine the size of the tentative print using
-@scheme[port-count-lines].
+prints. After printing, determine the size of the tentative output
+using @scheme[file-position].
 
 The @scheme[out] argument should be a pretty-printing port, such as
 the one supplied to a custom-write procedure when
 @scheme[pretty-printing] is set to true, or another tentative output
 port. The @scheme[width] argument should be a target column width,
-usually obtained from @scheme[pretty-print-column-count], possibly
+usually obtained from @scheme[pretty-print-columns], possibly
 decremented to leave room for a terminator. The
 @scheme[overflow-thunk] procedure is called if more than
 @scheme[width] items are printed to the port; it can escape from the
