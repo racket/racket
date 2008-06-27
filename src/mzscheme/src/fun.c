@@ -4599,6 +4599,9 @@ static void sync_meta_cont(Scheme_Meta_Continuation *resume_mc)
 {
   Scheme_Cont *cnaya;
 
+  if (!resume_mc->cont)
+    return;
+
   cnaya = MALLOC_ONE_TAGGED(Scheme_Cont);
   memcpy(cnaya, resume_mc->cont, sizeof(Scheme_Cont));
     
