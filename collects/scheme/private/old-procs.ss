@@ -25,8 +25,9 @@
         (raise-syntax-error 'make-namespace
                             "'initial or 'empty"
                             flag))
-      (let ([new (make-empty-namespace)]
-            [old (variable-reference->empty-namespace (#%variable-reference reflect-var))])
+      (let* ([old (variable-reference->empty-namespace (#%variable-reference reflect-var))]
+             [new (parameterize ([current-namespace old])
+                    (make-empty-namespace))])
         (namespace-attach-module old 'mzscheme new)
         (unless (eq? flag 'empty)
           (parameterize ([current-namespace new])
