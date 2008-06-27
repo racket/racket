@@ -453,6 +453,10 @@ If the identifier position of the range contract is
 expressions are evaluated when the function is called (and
 the underscore is not bound in the range). Otherwise the
 range expressions are evaluated when the function returns.
+
+If there are optional arguments that are not supplied, then 
+the corresponding variables will be bound to a special value
+called the @scheme[unsupplied-arg] value.
 }
 
 @defform*/subs[#:literals (any values ->)
