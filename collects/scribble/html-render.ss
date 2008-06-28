@@ -189,13 +189,15 @@
 
 )
 
-(define (search-index-box) ; appears on every page
+(define (search-box) ; appears on every page
   (let ([sa string-append])
     `(input
-      ([style ,(sa "font-size: 75%; margin: 0px; padding: 0px; border: 1px;"
-                   " background-color: #eee; color: #888;")]
+      ([style ,(sa "font-size: 60%; margin: 0px; padding: 0px;"
+                   " background-color: #eee; color: #888;"
+                   " border: 1px solid #ddd; text-align: center;")]
        [type "text"]
        [value "...search..."]
+       [size "12"]
        [title "Enter a search string to search the manuals"]
        [onkeypress ,(format "return DoSearchKey(event, this, ~s);" (version))]
        [onfocus ,(sa "this.style.color=\"black\";"
@@ -591,6 +593,25 @@
                        (and (part-style? d 'index)
                             d))))))))
       (define (render . content) (render-content content d ri))
+      (define (titled-url label x #:title-from [tfrom #f] . more)
+        (define-values (url title)
+          (cond [(part? x)
+                 (values (derive-filename x)
+                         (string-append
+                          "\"" (content->string (part-title-content x)) "\""))]
+                [(equal? x "index.html") (values x "the manual top")]
+                [(equal? x "../index.html") (values x "the documentation top")]
+                [(string? x) (values x #f)]
+                [else (error 'navigation "internal error ~e" x)]))
+        (define title*
+          (if (and tfrom (part? tfrom))
+            (string-append
+             "\"" (content->string (part-title-content tfrom)) "\"")
+            title))
+        (make-target-url url
+          (make-with-attributes #f
+            `([title . ,(if title* (string-append label " to " title*) label)]
+              ,@more))))
       (if (not (or prev next parent index up-path))
         null
         `(,@(if pre-space? '((p nbsp)) null)
@@ -611,42 +632,38 @@
                       null
                       `((span ([class "smaller"]) nbsp ,(search-index-box)))))
                 null)
-            ,@(if up-path
-                `(nbsp (span ([class "smaller"]) ,(search-index-box)))
-                null))
+            ,@(if up-path `(nbsp ,(search-box)) null))
           (div ([class "navright"])
             ,@(render
                (make-element
-                (if parent
-                  (make-target-url (if prev (derive-filename prev) "index.html")
-                                   #f)
-                  "nonavigation")
+                (cond [(not parent) "nonavigation"]
+                      [prev (titled-url "backward" prev)]
+                      [else (titled-url "backward" "index.html"
+                                        #:title-from
+                                        (and (part? parent) parent))])
                 prev-content)
                sep-element
                (make-element
                 (cond
+                  [(and (part? parent) (toc-part? parent)
+                        (part-parent parent ri))
+                   (titled-url "up" parent)]
+                  [parent (titled-url "up" "index.html" #:title-from parent)]
                   ;; up-path = #t => go up to the start page, using
                   ;; cookies to get to the user's version of it (see
                   ;; scribblings/main/private/utils for the code that
                   ;; creates these cookies.)
-                  [(and (eq? #t up-path) (not parent))
-                   (make-target-url
-                    "../index.html"
-                    (make-with-attributes
-                     #f `([onclick . ,(format "return GotoPLTRoot(\"~a\");"
-                                              (version))])))]
-                  [(or parent up-path)
-                   (make-target-url
-                    (cond [(not parent) up-path]
-                          [(and (toc-part? parent) (part-parent parent ri))
-                           (derive-filename parent)]
-                          [else "index.html"])
-                    #f)]
+                  [(eq? #t up-path)
+                   (titled-url
+                    "up" "../index.html"
+                    `[onclick
+                      . ,(format "return GotoPLTRoot(\"~a\");" (version))])]
+                  [up-path (titled-url "up" up-path)]
                   [else "nonavigation"])
                 up-content)
                sep-element
                (make-element (if next
-                               (make-target-url (derive-filename next) #f)
+                               (titled-url "forward" next)
                                "nonavigation")
                              next-content)))
           (p nbsp))))
