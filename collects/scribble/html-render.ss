@@ -196,6 +196,7 @@
                    " background-color: #eee; color: #888;")]
        [type "text"]
        [value "...search..."]
+       [title "Enter a search string to search the manuals"]
        [onkeypress ,(format "return DoSearchKey(event, this, ~s);" (version))]
        [onfocus ,(sa "this.style.color=\"black\";"
                      " if (this.value.indexOf(\"...search...\")>=0)"
