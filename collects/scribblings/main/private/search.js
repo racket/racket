@@ -360,11 +360,11 @@ function Search(data, term, is_pre, K) {
       else if (min > C_fail)  wordmatches.push(data[i]);
       fuel--; i++;
     }
-    if (i<data.length) t = setTimeout(DoChunk, 25);
+    if (i<data.length) t = setTimeout(DoChunk,15);
     else return K([exacts.length, exacts.concat(matches).concat(wordmatches)]);
   };
   if (!K) return DoChunk();
-  else { progress(0); t = setTimeout(DoChunk,25); return killer; }
+  else { progress(0); t = setTimeout(DoChunk,15); return killer; }
 }
 
 var search_data; // pre-filtered searchable index data
