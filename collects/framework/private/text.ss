@@ -49,6 +49,30 @@ WARNING: printf is rebound in the body of the unit to always
 (define-struct range (start end b/w-bitmap color caret-space?))
 (define-struct rectangle (left top right bottom b/w-bitmap color))
 
+
+(define-values (register-port-name! lookup-port-name)
+  ;; port-name->editor-ht: (hashof symbol (weakboxof editor:basic<%>))
+  ;; Maintains a mapping from port names back to their respective editors.
+  (let ([port-name->editor-ht (make-weak-hasheq)])
+    
+    ;; register-port-name-to-editor!: symbol editor<%> -> void
+    ;; Registers the editor's port name.
+    (define (register-port-name! a-port-name an-editor)
+      (hash-set! port-name->editor-ht a-port-name (make-weak-box an-editor)))
+    
+    ;; lookup-port-name: symbol -> (or/c editor:basic<%> #f)
+    ;; Given a port name, tries to get the editor with that name.
+    (define (lookup-port-name a-port-name)
+      (let ([a-weak-box (hash-ref port-name->editor-ht a-port-name #f)])
+        (cond
+          [(not a-weak-box)
+           #f]
+          [else
+           (weak-box-value a-weak-box)])))
+    
+    (values register-port-name! lookup-port-name)))
+
+
 ;; wx: `default-wrapping?', add as the initial value for auto-wrap bitmap,
 ;; unless matthew makes it primitive
 
@@ -82,7 +106,8 @@ WARNING: printf is rebound in the body of the unit to always
         (cond
           [(or (unbox b) (not n))
            (unless port-name-identifier
-             (set! port-name-identifier (gensym 'unsaved-editor)))
+             (set! port-name-identifier (gensym 'unsaved-editor))
+             (register-port-name! port-name-identifier this))
            port-name-identifier]
           [else n])))
     (define/public (port-name-matches? id)

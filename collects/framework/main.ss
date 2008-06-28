@@ -86,6 +86,13 @@
             then all of the documented names are used.})
  
  (proc-doc/names
+  text:lookup-port-name
+  (-> symbol? (or/c (is-a?/c editor:basic<%>) false/c))
+  (manuals)
+  @{Returns the editor instance whose port-name matches the given symbol.  If no
+            editor can be found, then returns @scheme[false].})
+ 
+ (proc-doc/names
   number-snip:make-repeating-decimal-snip
   (number? boolean? . -> . (is-a?/c snip%))
   (num show-prefix?)

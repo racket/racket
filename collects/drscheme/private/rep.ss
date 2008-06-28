@@ -26,7 +26,6 @@ TODO
          scheme/unit
          scheme/list
          "drsig.ss"
-         "embedded-snip-utils.ss"
          string-constants
          setup/xref
          scheme/gui/base
@@ -35,7 +34,6 @@ TODO
 
 (provide rep@ with-stacktrace-name)
 
-(define-struct unsaved-editor (editor))
 
 (define stacktrace-runtime-name
   (string->uninterned-symbol "this-is-the-funny-name"))
@@ -708,7 +706,8 @@ TODO
                                                  (srcloc-column srcloc)
                                                  (srcloc-position srcloc)
                                                  (srcloc-span srcloc))]
-                                   [(find-syntax-source-editor (srcloc-source srcloc) definitions-text)
+                                   [(and (symbol? (srcloc-source srcloc))
+                                         (text:lookup-port-name (srcloc-source srcloc)))
                                     =>
                                     (lambda (editor)
                                       (make-srcloc editor
@@ -716,12 +715,6 @@ TODO
                                                    (srcloc-column srcloc)
                                                    (srcloc-position srcloc)
                                                    (srcloc-span srcloc)))]
-                                   [(unsaved-editor? (srcloc-source srcloc))
-                                    (make-srcloc (unsaved-editor-editor (srcloc-source srcloc))
-                                                 (srcloc-line srcloc)
-                                                 (srcloc-column srcloc)
-                                                 (srcloc-position srcloc)
-                                                 (srcloc-span srcloc))]
                                    [else srcloc]))
                                locs)))]
                [locs (cleanup-locs raw-locs)]

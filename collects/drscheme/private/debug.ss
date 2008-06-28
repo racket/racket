@@ -763,8 +763,11 @@ profile todo:
                         srclocs)]
                [frame (cond
                         [(path? debug-source) (handler:edit-file debug-source)]
-                        [(is-a? debug-source editor<%>)
-                         (get-enclosing-editor-frame debug-source)]
+                        [(and (symbol? debug-source)
+                              (text:lookup-port-name debug-source))
+                         =>
+                         (lambda (editor)
+                           (get-enclosing-editor-frame editor))]
                         [else #f])]
                [editor (cond
                          [(path? debug-source)
@@ -774,7 +777,10 @@ profile todo:
                             [(and frame (is-a? frame frame:editor<%>))
                              (send frame get-editor)]
                             [else #f])]
-                         [(is-a? debug-source editor<%>) debug-source]
+                         [(and (symbol? debug-source)
+                               (text:lookup-port-name debug-source))
+                          =>
+                          values]
                          [else #f])]
                [rep (and (is-a? frame drscheme:unit:frame%)
                          (send frame get-interactions-text))])

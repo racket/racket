@@ -207,7 +207,8 @@
   (define-signature text^ extends text-class^
     (autocomplete-append-after
      autocomplete-limit
-     get-completions/manuals))
+     get-completions/manuals
+     lookup-port-name))
   
   (define-signature canvas-class^
     (basic<%>
