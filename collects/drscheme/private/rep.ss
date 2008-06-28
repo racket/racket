@@ -1168,7 +1168,6 @@ TODO
              
              (cleanup-sucessful 'not-yet-cleanup-sucessful)
              (cleanup-semaphore 'not-yet-cleanup-semaphore)
-             (thread-grace 'not-yet-thread-grace)
              (thread-killed 'not-yet-thread-killed))
       (define/private (initialize-killed-thread) ; =Kernel=
         (when (thread? thread-killed)
