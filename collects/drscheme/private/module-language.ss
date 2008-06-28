@@ -110,12 +110,9 @@
            (current-command-line-arguments (module-language-settings-command-line-args settings))
            (let ([default (current-library-collection-paths)])
              (current-library-collection-paths
-              (apply 
-               append
-               (map (λ (x) (if (symbol? x)
-                               default
-                               (list x)))
-                    (module-language-settings-collection-paths settings))))))))
+              (append-map
+               (λ (x) (if (symbol? x) default (list x)))
+               (module-language-settings-collection-paths settings)))))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
