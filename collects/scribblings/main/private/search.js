@@ -11,7 +11,7 @@ var manual_settings    = parseInt(GetCookie("PLT_ManualSettings",1));
 var show_manuals       = manual_settings % 10;
 var show_manual_titles = ((manual_settings - show_manuals) / 10) > 0;
 var results_num        = (parseInt(GetCookie("PLT_ResultsNum",false)) || 20);
-var type_delay         = (parseInt(GetCookie("PLT_TypeDelay",false)) || 300);
+var type_delay         = (parseInt(GetCookie("PLT_TypeDelay",false)) || 150);
 var highlight_color    = (GetCookie("PLT_HighlightColor",false) || "#ffd");
 var background_color   = "#f8f8f8";
 
@@ -197,31 +197,66 @@ function AdjustResultsNum() {
   }
 }
 
-// constants for Compare(() results;
-// `rexact' is for an actual exact match, so we know that we matched
-// *something* and can show exact matches as such, in other words:
-//   - < exact => this match is inexact
-//   - = exact => does not affect the exactness of this match
-//   - > exact => this is an exact match as far as this predicate goes
-var C_fail = 0, C_match = 1, C_prefix = 2, C_exact = 3, C_rexact = 4;
+// Terms are compared using Compare(), which returns one of several constants:
+// - C_fail: there was no match
+// - C_match: there was a match somewhere in the string
+// - C_prefix: there was a prefix match (starts at 0)
+// - C_rexact: there was a ("real") exact match
+// There is also C_exact which can be returned by some of the X: operators.
+// It's purpose is to be able to return a result that doesn't affect the
+// exactness of the search (for example L:foo searches for a source module that
+// is exactly `foo', but it will return C_exact which means that it doesn't
+// change whether the match is considered exact or not).  Note that these
+// constants are ordered, so:
+// - < exact => this match is inexact
+// - = exact => does not affect the exactness of this match
+// - > exact => this is an exact match as far as this predicate goes
+// Finally, there is also a C_wordmatch that is used when there is no proper
+// match, but all the words in the term match (where a word is an alphanumeric
+// sequence or a punctuation, for example, "foo-bar!!" has these words: "foo",
+// "-", "bar", "!!")
+var C_fail   = 0, C_min = 0,
+    C_wordmatch = 1,
+    C_match  = 2,
+    C_prefix = 3,
+    C_exact  = 4,
+    C_rexact = 5, C_max = 5;
 
 function Compare(pat, str) {
   var i = str.indexOf(pat);
   if (i < 0) return C_fail;
-  else if (i > 0) return C_match;
-  else if (pat.length == str.length) return C_rexact;
-  else return C_prefix;
+  if (i > 0) return C_match;
+  if (pat.length == str.length) return C_rexact;
+  return C_prefix;
+}
+function CompareRx(pat, str) {
+  if (!(pat instanceof RegExp)) return Compare(pat,str);
+  var r = str.match(pat);
+  if (r == null || r.length == 0) return C_fail;
+  if (r[0] == str) return C_rexact;
+  if (str.indexOf(r[0]) == 0) return C_prefix;
+  return C_match;
 }
 function MaxCompares(pat, strs) {
-  var r = C_fail;
-  for (var i=0; i<strs.length; i++)
+  var r = C_min;
+  for (var i=0; i<strs.length; i++) {
     r = Math.max(r, Compare(pat,strs[i]));
+    if (r >= C_max) return r;
+  }
+  return r;
+}
+function MinComparesRx(pats, str) {
+  var r = C_max;
+  for (var i=0; i<pats.length; i++) {
+    r = Math.min(r, CompareRx(pats[i],str));
+    if (r <= C_min) return r;
+  }
   return r;
 }
 
 function NormalizeSpaces(str) {
-  return str.replace(/\s\s*/g," ")                  // single spaces
-             replace(/^\s/g,"").replace(/\s$/g,""); // trim edge spaces
+  return str.replace(/\s\s*/g," ")                // single spaces
+             replace(/^\s/,"").replace(/\s$/,""); // trim edge spaces
 }
 
 function UrlToManual(url) {
@@ -242,60 +277,107 @@ function CompileTerm(term) {
   if (flag) term = term.substring(2);
   term = term.toLowerCase();
   switch(flag) {
-    case "L": return function(x) {
+  case "L":
+    return function(x) {
       if (!x[3]) return C_fail;
       if (x[3] == "module") // rexact allowed, show partial module matches
         return Compare(term,x[0]);
       return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
     }
-    case "M": return function(x) {
+  case "M":
+    return function(x) {
       if (!x[3]) return C_fail;
       if (x[3] == "module") return Compare(term,x[0]); // rexact allowed
       return (MaxCompares(term,x[3]) >= C_match) ? C_exact : C_fail;
     }
-    case "T": return function(x) {
+  case "T":
+    return function(x) {
       if (Compare(term,UrlToManual(x[1])) < C_exact) return C_fail;
       else if (x[1].search(/\/index\.html$/) > 0) return C_rexact;
       else return C_exact;
     }
-    default: return function(x) {
-      switch (Compare(term,x[0])) {
-        case C_fail: return C_fail;
-        case C_match: case C_prefix: return C_match;
-        case C_exact: case C_rexact: return (x[3] ? C_rexact : C_match);
-      }
+  default:
+    var words = term.split(/\b/);
+    for (var i=0; i<words.length; i++)
+      if (words[i].search(/^\w/) >= 0) words[i] = new RegExp("\\b"+words[i]);
+    // (note: seems like removing duplicates is not important since search
+    // strings will not have them, except, maybe, for an occasional x-y-z)
+    return function(x) {
+      var r = Compare(term,x[0]);
+      // only bindings can be used for exact matches
+      if (r >= C_exact) return (x[3] ? C_rexact : C_match);
+      if (r >= C_match) return r;
+      if (MinComparesRx(words,x[0]) > C_fail) return C_wordmatch;
+      return r;
     }
   }
 }
 
-function Search(data, term, is_pre) {
+function Id(x) {
+  return x;
+}
+
+function MakeShowProgress() {
+  var orig = status_line.innerHTML;
+  var indicators = [
+    ">.........", "->........", "-->.......", "--->......", "---->.....",
+    "----->....", "------>...", "------->..", "-------->.", "--------->",
+    "---------*"];
+  return function(n) {
+    status_line.innerHTML =
+      orig + "&nbsp;<tt>"
+      + indicators[Math.round(10*n/search_data.length)] + "</tt>";
+  }
+}
+
+function Search(data, term, is_pre, K) {
+  // `K' is a continuation, if this run is supposed to happen in a "thread"
+  // false otherwise
+  var t = false;
+  var killer = function() { if (t) clearTimeout(t); };
+  // term comes with normalized spaces (trimmed, and no doubles)
   var preds = (term=="") ? [] : term.split(/ /);
   for (var i=0; i<preds.length; i++) preds[i] = CompileTerm(preds[i]);
-  if (preds.length == 0) return (is_pre ? data : []);
-  var matches = new Array(), exacts = new Array();
-  for (var i=0; i<data.length; i++) {
-    var r, min = C_rexact, max = C_fail;
-    for (var j=0; j<preds.length; j++) {
-      r = preds[j](data[i]); min = Math.min(r, min); max = Math.max(r, max);
-    }
-    if (max >= C_rexact && min >= C_exact) exacts.push(data[i]);
-    else if (min > C_fail) matches.push(data[i]);
+  if (preds.length == 0) {
+    var ret = is_pre ? [0,data] : [0,[]];
+    if (K) { K(ret); return killer; }
+    else return ret;
   }
-  exact_results_num = exacts.length;
-  if (exacts.length > 0) return exacts.concat(matches);
-  else return matches;
+  var matches = new Array(), exacts = new Array(), wordmatches = new Array();
+  var i = 0;
+  var chunk_fuel = K ? Math.round(data.length/10) : data.length;
+  var progress = K ? MakeShowProgress() : Id;
+  var DoChunk = function() {
+    var fuel = Math.min(chunk_fuel, data.length-i);
+    progress(i+fuel);
+    while (fuel > 0) {
+      var r, min = C_max, max = C_min;
+      for (var j=0; j<preds.length; j++) {
+        r = preds[j](data[i]); min = Math.min(r, min); max = Math.max(r, max);
+      }
+      if (max >= C_rexact && min >= C_exact) exacts.push(data[i]);
+      else if (min > C_wordmatch) matches.push(data[i]);
+      else if (min > C_fail)  wordmatches.push(data[i]);
+      fuel--; i++;
+    }
+    if (i<data.length) t = setTimeout(DoChunk, 25);
+    else return K([exacts.length, exacts.concat(matches).concat(wordmatches)]);
+  };
+  if (!K) return DoChunk();
+  else { progress(0); t = setTimeout(DoChunk,25); return killer; }
 }
 
 var search_data; // pre-filtered searchable index data
 function PreFilter() {
   pre_query = NormalizeSpaces(pre_query);
-  search_data = Search(plt_search_data, pre_query, true);
+  search_data = Search(plt_search_data, pre_query, true, false)[1];
   last_search_term = null;
   last_search_term_raw = null;
 }
 
 var last_search_term, last_search_term_raw;
 var search_results = [], first_search_result, exact_results_num;
+var kill_bg_search = function(){ return; };
 function DoSearch() {
   var term = query.value;
   if (term == last_search_term_raw) return;
@@ -304,12 +386,18 @@ function DoSearch() {
   if (term == last_search_term) return;
   last_search_term = term;
   status_line.innerHTML = "Searching " + search_data.length + " entries";
-  search_results = Search(search_data, term, false);
-  first_search_result = 0;
-  status_line.innerHTML = "" + search_results.length + " entries found";
-  query.style.backgroundColor =
-    ((search_results.length == 0) && (term != "")) ? "#ffe0e0" : "white";
-  UpdateResults();
+  kill_bg_search();
+  kill_bg_search = Search(search_data, term, false,
+    // use a continuation to run this in the background
+    function(res) {
+      search_results = res[1];
+      exact_results_num = res[0];
+      first_search_result = 0;
+      status_line.innerHTML = "" + search_results.length + " entries found";
+      query.style.backgroundColor =
+        ((search_results.length == 0) && (term != "")) ? "#ffe0e0" : "white";
+      UpdateResults();
+    });
 }
 
 function UncompactUrl(url) {
@@ -319,7 +407,7 @@ function UncompactUrl(url) {
 function UncompactHtml(x) {
   if (typeof x == "string") {
     return x;
-  } else if (! (x instanceof Array)) {
+  } else if (!(x instanceof Array)) {
     alert("Internal error in PLT docs");
   } else if ((x.length == 2) && (typeof(x[0]) == "number")) {
     return '<span class="' + plt_span_classes[x[0]]
@@ -346,6 +434,7 @@ function UpdateResults() {
             (j==0 ? "" : ", ")
             + '<a href="?q=L:' + encodeURIComponent(desc[j]) + '"'
                +' class="schememod" tabIndex="2"'
+               +' title="show bindings from the '+desc[j]+' module"'
                +' style="text-decoration: none; color: #006;"'
                +' onclick="return new_query(this);"'
                +' oncontextmenu="return refine_query(this);">'
@@ -359,6 +448,7 @@ function UpdateResults() {
         note = (note ? (note + " ") : "");
         note += '<span class="smaller">in</span> '
                 + '<a href="?q=T:' + manual + '" tabIndex="2"'
+                   +' title="show entries from the '+manual+' manual"'
                    +' style="text-decoration: none; color: #006;"'
                    +' onclick="return new_query(this);"'
                    +' oncontextmenu="return refine_query(this);">'
@@ -406,13 +496,10 @@ function UpdateResults() {
   saved_status = false;
 }
 
-var search_timer = null;
+var search_timer = false;
 function HandleKeyEvent(event) {
-  if (search_timer != null) {
-    var t = search_timer;
-    search_timer = null;
-    clearTimeout(t);
-  }
+  if (search_timer) clearTimeout(search_timer);
+  kill_bg_search();
   var key = null;
   if (typeof event == "string") key = event;
   else if (event) {
@@ -529,7 +616,6 @@ function SetPreQuery(inp) {
   }
 }
 set_pre_query = SetPreQuery;
-
 
 function SetShowManuals(inp) {
   if (inp.selectedIndex != show_manuals) {
