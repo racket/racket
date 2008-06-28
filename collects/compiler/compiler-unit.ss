@@ -27,7 +27,8 @@
          scheme/file
          mzlib/compile ; gets compile-file
          mzlib/cm
-         setup/getinfo)
+         setup/getinfo
+         setup/main-collects)
 
 (provide compiler@)
 
@@ -178,17 +179,20 @@
         (when (info* 'compile-subcollections (lambda () #f))
           (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
                   dir))
-        (for ([p (directory-list dir)]
-              #:when (directory-exists? (build-path dir p)))
-          (let ([s (path->string p)])
-            ;; this is the same check that setup/setup-unit is doing in
-            ;; `make-cc*'
-            (unless (or (regexp-match? #rx"^[.]" s) 
+        (for ([p (directory-list dir)])
+          (let ([p* (build-path dir p)]
+                [s  (path->string p)])
+            (when (and
+                   (directory-exists? p*)
+                   (not
+                    ;; this is the same check that setup/setup-unit is
+                    ;; doing in `make-cc*'
+                    (or (regexp-match? #rx"^[.]" s)
                         (equal? "compiled" s)
-                        (equal? "doc" s)
-                        (and (pair? omit-paths) (member s omit-paths)))
-              (let ([p (build-path dir p)])
-                (compile-directory p (get-info/full p)))))))))
+                        (and (equal? "doc" s)
+                             (not (pair? (path->main-collects-relative p*))))
+                        (and (pair? omit-paths) (member s omit-paths)))))
+              (compile-directory p* (get-info/full p*))))))))
 
   (define (compile-collection-zos collection . cp)
     (compile-directory (apply collection-path collection cp)
