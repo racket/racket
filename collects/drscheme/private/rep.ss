@@ -135,7 +135,7 @@ TODO
       ;; (disable buttons, menus, etc)
       
       disable-evaluation ;; (-> void)
-      ;; make the context enable all methods of evaluation
+      ;; make the context disable all methods of evaluation
       ;; (disable buttons, menus, etc)
       
       set-breakables ;; (union thread #f) (union custodian #f) -> void
