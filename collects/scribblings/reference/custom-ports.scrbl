@@ -303,13 +303,13 @@ The arguments implement the port as follows:
     and the position for the next item in the port's stream (a
     positive number or @scheme[#f]). See also @secref["linecol"].  
 
-    This procedure is only called if line counting is enabled for the
-    port via @scheme[port-count-lines!] (in which case
-    @scheme[count-lines!] is called). The @scheme[read],
-    @scheme[read-syntax], @scheme[read-honu], and
-    @scheme[read-honu-syntax] procedures assume that reading a
-    non-whitespace character increments the column and position by
-    one.}
+    This procedure is called to implement @scheme[port-next-location],
+    but only if line counting is enabled for the port via
+    @scheme[port-count-lines!] (in which case @scheme[count-lines!] is
+    called). The @scheme[read], @scheme[read-syntax],
+    @scheme[read-honu], and @scheme[read-honu-syntax] procedures
+    assume that reading a non-whitespace character increments the
+    column and position by one.}
 
   @item{@scheme[count-lines!] --- a procedure of no arguments
     that is called if and when line counting is enabled for the port.
@@ -943,8 +943,9 @@ procedures.
     stream (a positive number or @scheme[#f]). See also
     @secref["linecol"].
 
-    This procedure is only called if line counting is enabled for the
-    port via @scheme[port-count-lines!] (in which case
+    This procedure is called to implement @scheme[port-next-location]
+    for the port, but only if line counting is enabled for the port
+    via @scheme[port-count-lines!] (in which case
     @scheme[count-lines!] is called).}
 
   @item{@scheme[count-lines!] --- a procedure of no arguments
