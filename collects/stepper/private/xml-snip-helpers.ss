@@ -21,16 +21,16 @@
            (if splice?
                "read: bad syntax: empty scheme splice box"
                "read: bad syntax: empty scheme box")
-           txt line col pos 1)))
-      (let ([stx (read-syntax
-                  (get-source-name text)
-                  (open-input-text-editor text 0 (send text last-position)))])
+           (get-source-name txt) line col pos 1)))
+      (let* ([source-name (get-source-name text)]
+             [stx (read-syntax source-name
+                               (open-input-text-editor text 0 (send text last-position) source-name))])
         (when (eof-object? stx)
           (raise-read-error
            (if splice?
                "read: bad syntax: empty scheme splice box"
                "read: bad syntax: empty scheme box")
-           text 1 1 1 (send text last-position)))
+           source-name 1 1 1 (send text last-position)))
 	stx)))
   
   (define (get-source-name text)
@@ -46,13 +46,14 @@
       (when (= 0 (send editor last-position))
         (let-values ([(txt line col pos) (find-position-in-outer snip)])
           (raise-read-error "read: bad syntax: empty xml box"
-                            txt line col pos 1)))
+                            (get-source-name txt) line col pos 1)))
       (dynamic-wind
        (lambda () 
          (set! old-locked (send editor is-locked?))
          (send editor lock #t))
        (lambda ()
-         (let* ([port (open-input-text-editor editor 0 'end (xml-snip-filter editor))]
+         (let* ([source-name (get-source-name editor)]
+                [port (open-input-text-editor editor 0 'end (xml-snip-filter editor) source-name)]
                 [xml (read-xml port)]
                 [xexpr (xml->xexpr (document-element xml))]
                 [clean-xexpr (if eliminate-whitespace-in-empty-tags?
