@@ -359,7 +359,7 @@ The unit imports @scheme[compiler:option^], @scheme[dynext:compile^],
 
 @defmodule[compiler/option-unit]
 
-@defthing[option@ unit?]{
+@defthing[compiler:option@ unit?]{
 
 Provides the exports of @schememodname[compiler/option] in unit
 form. It imports no signatures, and exports
