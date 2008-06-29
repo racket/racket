@@ -157,6 +157,7 @@
                     "there can only be one expression in the definitions window"
                     super-result)))]
               [(4)
+               (thread-cell-set! hopeless-repl #f)
                (if path
                    #`(begin ((current-module-name-resolver)
                              (make-resolved-module-path #,path))
@@ -222,6 +223,11 @@
   (define hopeless-repl (make-thread-cell #t))
   (define (raise-hopeless-syntax-error . error-args)
     (define rep (drscheme:rep:current-rep))
+    ;; MINOR HACK: since this is a value that is used by the drscheme thread,
+    ;; Robby says it's better to set it while in that thread.  This requires
+    ;; adding `drscheme:init^' to the imports to get
+    ;; `drscheme:init:system-eventspace', or make `queue-system-callback/sync'
+    ;; into a public method (accessible here).
     (send rep set-show-no-user-evaluation-message? #f)
     (let/ec k
       (parameterize ([error-escape-handler k])
@@ -408,7 +414,6 @@
            (raise-hopeless-syntax-error "bad syntax in name position of module"
                                         stx v-name))
          (when filename (check-filename-matches filename datum stx))
-         (thread-cell-set! hopeless-repl #f)
          (values
           v-name
           ;; rewrite the module to use the scheme/base version of `module'
