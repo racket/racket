@@ -905,20 +905,26 @@ TODO
         (insert-before "\n")
         (end-edit-sequence))
       
-      (field (already-warned? #f))
+      (field (already-warned? #f) (show-no-user-evaluation-message? #t))
+      
+      ;; use this to be able to kill the evaluator without the popup dialog
+      (define/public (set-show-no-user-evaluation-message? b)
+        (set! show-no-user-evaluation-message? b))
       
       (define/private (cleanup)
         (set! in-evaluation? #f)
         (update-running #f)
         (unless (and (get-user-thread) (thread-running? (get-user-thread)))
           (lock #t)
-          (unless shutting-down?
+          (when (and show-no-user-evaluation-message? (not shutting-down?))
             (no-user-evaluation-message
              (let ([canvas (get-active-canvas)])
                (and canvas
                     (send canvas get-top-level-window)))
              user-exit-code
-             (not (thread-running? memory-killed-thread))))))
+             (not (thread-running? memory-killed-thread))))
+          (set! show-no-user-evaluation-message? #t)))
+      
       (field (need-interaction-cleanup? #f))
       
       (define/private (no-user-evaluation-message frame exit-code memory-killed?)
@@ -1175,7 +1181,8 @@ TODO
                     (λ () ; =Kernel=, =Handler=
                       (if need-interaction-cleanup?
                           (cleanup-interaction)
-                          (cleanup)))))))))
+                          (cleanup))
+                      (lock #t))))))))
       
       (define/public (run-in-evaluation-thread thunk) ; =Kernel=
         (semaphore-wait eval-thread-state-sema)
