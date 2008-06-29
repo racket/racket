@@ -252,10 +252,13 @@ The additional exports are as follows:
          compiled-expression?]{
 
 Compiles @scheme[stx] using the compilation handler that was active
-when the @schememodname[errortrace/errortrace-lib] module was executed,
-but first instruments the code for Errortrace information.  The code is
-instrumented only if the namespace is the same as when the module was
-executed. This procedure is suitable for use as a compilation handler.}
+when the @schememodname[errortrace/errortrace-lib] module was
+executed, but first instruments the code for Errortrace information.
+The code is instrumented only if @scheme[(namespace-module-registry
+(current-namespace))] is the same as when the
+@schememodname[errortrace/errortrace-lib] module was executed. This
+procedure is suitable for use as a compilation handler via
+@scheme[current-compile].}
 
 @defproc[(errortrace-error-display-handler (string string?) (exn exn?)) void?]{
 
@@ -269,12 +272,16 @@ a module named @schemeidfont{errortrace-key}, no instrumentation is
 applied. This annotation function is used by
 @scheme[errortrace-compile-handler].}
 
-@defproc[(annotate-top (stx any/c)) any/c]{
+@defproc[(annotate-top [stx any/c][phase-level exact-integer?]) any/c]{
 
-Like @scheme[errortrace-annotate], but without the special case for
-@scheme[errortrace-key]. Also, if @scheme[stx] is a module declaration,
-it is not enriched with imports to explicitly load Errortrace run-time
-support.}
+Like @scheme[errortrace-annotate], but given an explicit phase level
+for @scheme[stx]; @scheme[(namespace-base-phase)] is typically the
+right value for the @scheme[phase-level] argument.
+
+Unlike @scheme[errortrace-annotate], there no special case for
+a module named @scheme[errortrace-key]. Also, if @scheme[stx] is a module
+declaration, it is not enriched with imports to explicitly load
+Errortrace run-time support.}
 
 @; -----------------------------------------------
 
