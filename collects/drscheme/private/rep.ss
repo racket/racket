@@ -1180,6 +1180,11 @@ TODO
                       (if need-interaction-cleanup?
                           (cleanup-interaction)
                           (cleanup))
+                      ;; HACK: lock the interactions now; the reason for this
+                      ;; is that `cleanup-interaction' invokes
+                      ;; `enable-evaluation', and in "unit.ss" this is defined
+                      ;; to unlock the interactions which might make sense in
+                      ;; that context.
                       (lock #t))))))))
       
       (define/public (run-in-evaluation-thread thunk) ; =Kernel=
