@@ -2577,7 +2577,7 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);
-Scheme_Object *scheme_sys_wraps_phase(long phase);
+Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase);
 
 Scheme_Env *scheme_new_module_env(Scheme_Env *env, Scheme_Module *m, int new_exp_module_tree);
 int scheme_is_module_env(Scheme_Comp_Env *env);

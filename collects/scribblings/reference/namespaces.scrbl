@@ -95,15 +95,30 @@ A parameter that determines the @techlink{current namespace}.}
 @defproc[(namespace-symbol->identifier [sym symbol?]) identifier?]{
 
 Similar to @scheme[datum->syntax] restricted to symbols. The
-lexical context of the resulting identifier corresponds to the
-top-level environment of the current namespace; the identifier has no
-source location or properties.}
+@tech{lexical information} of the resulting identifier corresponds to
+the top-level environment of the current namespace; the identifier has
+no source location or properties.}
 
 
-@defproc[(namespace-module-identifier [namespace namespace? (current-namespace)]) identifier?]{
+@defproc[(namespace-base-phase [namespace namespace? (current-namespace)]) exact-integer?]{
+
+Returns the @tech{base phase} of @scheme[namespace].}
+
+
+@defproc[(namespace-module-identifier [where (or/c namespace? exact-integer? false/c)
+                                             (current-namespace)])
+         identifier?]{
 
 Returns an identifier whose binding is @scheme[module] in the
-@tech{base phase} of @scheme[namespace].}
+@tech{base phase} of @scheme[where] if it is a namespace, or in the
+@scheme[where] @tech{phase level} otherwise.
+
+The @tech{lexical information} of the identifier includes bindings (in
+the same @tech{phase level}) for all syntactic forms that appear in
+fully expanded code (see @secref["fully-expanded"]), but using the
+name reported by the second element of @scheme[identifier-binding] for
+the binding; the @tech{lexical information} may also include other
+bindings.}
 
 
 @defproc[(namespace-variable-value [sym symbol?]

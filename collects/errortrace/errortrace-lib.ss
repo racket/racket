@@ -2,28 +2,29 @@
 ;; Poor man's stack-trace-on-exceptions/profiler.
 ;; See manual for information.
 
-(module errortrace-lib mzscheme
+(module errortrace-lib scheme/base
   (require "stacktrace.ss"
            "errortrace-key.ss"
            mzlib/list
            mzlib/unit
-           mzlib/runtime-path)
+           mzlib/runtime-path
+           (for-syntax scheme/base))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Test coverage run-time support
   (define test-coverage-enabled (make-parameter #f))
 
-  (define test-coverage-info (make-hash-table))
+  (define test-coverage-info (make-hasheq))
 
   (define (initialize-test-coverage-point key expr)
-    (hash-table-put! test-coverage-info key (mcons expr 0)))
+    (hash-set! test-coverage-info key (mcons expr 0)))
 
   (define (test-covered key)
-    (let ([v (hash-table-get test-coverage-info key)])
+    (let ([v (hash-ref test-coverage-info key)])
       (set-mcdr! v (add1 (mcdr v)))))
 
   (define (get-coverage-counts)
-    (hash-table-map test-coverage-info (lambda (k v) (cons (mcar v) (mcdr v)))))
+    (hash-map test-coverage-info (lambda (k v) (cons (mcar v) (mcdr v)))))
 
   (define (annotate-covered-file name . more)
     (apply annotate-file name (get-coverage-counts)
@@ -39,10 +40,10 @@
   (define profiling-record-enabled (make-parameter #t))
   (define profile-paths-enabled (make-parameter #f))
 
-  (define profile-info (make-hash-table))
+  (define profile-info (make-hasheq))
 
   (define (clear-profile-results)
-    (hash-table-for-each profile-info
+    (hash-for-each profile-info
       (lambda (k v)
         (set-box! (vector-ref v 0) #f)
         (vector-set! v 1 0)
@@ -50,12 +51,12 @@
         (vector-set! v 4 null))))
 
   (define (initialize-profile-point key name expr)
-    (hash-table-put! profile-info key
-                     (vector (box #f) 0 0 (and name (syntax-e name)) expr null)))
+    (hash-set! profile-info key
+               (vector (box #f) 0 0 (and name (syntax-e name)) expr null)))
 
   (define (register-profile-start key)
     (and (profiling-record-enabled)
-         (let ([v (hash-table-get profile-info key)])
+         (let ([v (hash-ref profile-info key)])
            (let ([b (vector-ref v 0)])
              (vector-set! v 1 (add1 (vector-ref v 1)))
              (when (profile-paths-enabled)
@@ -63,10 +64,10 @@
                       (continuation-mark-set->list
                        (current-continuation-marks)
                        profile-key)])
-                 (unless (hash-table? (vector-ref v 5))
-                   (vector-set! v 5 (make-hash-table 'equal)))
-                 (hash-table-put! (vector-ref v 5) cms 
-                                  (add1 (hash-table-get (vector-ref v 5) cms (lambda () 0))))))
+                 (unless (hash? (vector-ref v 5))
+                   (vector-set! v 5 (make-hash)))
+                 (hash-set! (vector-ref v 5) cms 
+                            (add1 (hash-ref (vector-ref v 5) cms (lambda () 0))))))
              (if (unbox b)
                  #f
                  (begin
@@ -75,7 +76,7 @@
 
   (define (register-profile-done key start)
     (when start
-      (let ([v (hash-table-get profile-info key)])
+      (let ([v (hash-ref profile-info key)])
         (let ([b (vector-ref v 0)])
           (set-box! b #f)
           (vector-set! v 2
@@ -83,7 +84,7 @@
                           (vector-ref v 2)))))))
 
   (define (get-profile-results)
-    (hash-table-map profile-info
+    (hash-map profile-info
       (lambda (key val)
         (let ([count (vector-ref val 1)]
               [time (vector-ref val 2)]
@@ -91,14 +92,14 @@
               [expr (vector-ref val 4)]
               [cmss (vector-ref val 5)])
           (list count time name expr
-		(if (hash-table? cmss)
-		    (hash-table-map cmss (lambda (ks v)
-					   (cons v 
-						 (map (lambda (k)
-							(let ([v (cdr (hash-table-get profile-info k))])
-							  (list (vector-ref v 2)
-                                                                (vector-ref v 3))))
-						      ks))))
+		(if (hash? cmss)
+		    (hash-map cmss (lambda (ks v)
+                                     (cons v 
+                                           (map (lambda (k)
+                                                  (let ([v (cdr (hash-ref profile-info k))])
+                                                    (list (vector-ref v 2)
+                                                          (vector-ref v 3))))
+                                                ks))))
 		    null))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,19 +129,19 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; Execute counts
 
-  (define execute-info (make-hash-table))
+  (define execute-info (make-hasheq))
 
   (define execute-counts-enabled (make-parameter #f))
 
   (define (register-executed-once key)
-    (let ([i (hash-table-get execute-info key)])
+    (let ([i (hash-ref execute-info key)])
       (set-mcdr! i (add1 (mcdr i)))))
 
   (define (execute-point mark expr)
     (if (execute-counts-enabled)
         (let ([key (gensym)])
-          (hash-table-put! execute-info key (mcons mark 0))
-          (with-syntax ([key (datum->syntax-object #f key (quote-syntax here))]
+          (hash-set! execute-info key (mcons mark 0))
+          (with-syntax ([key (datum->syntax #f key (quote-syntax here))]
                         [expr expr]
                         [register-executed-once register-executed-once]);<- 3D!
             (syntax
@@ -150,8 +151,8 @@
         expr))
 
   (define (get-execute-counts)
-    (hash-table-map execute-info (lambda (k v) (cons (mcar v)
-                                                     (mcdr v)))))
+    (hash-map execute-info (lambda (k v) (cons (mcar v)
+                                               (mcdr v)))))
 
   (define (annotate-executed-file name . more)
     (apply annotate-file name (get-execute-counts)
@@ -266,7 +267,7 @@
                      [line (format ":~a:~a" line col)]
                      [pos (format "::~a" pos)]
                      [else ""])
-                    (syntax-object->datum stx))
+                    (syntax->datum stx))
            (loop (- n 1) (cdr l)))])))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -310,14 +311,17 @@
     (lambda (top-e)
       (define (normal e)
         (let ([ex (expand-syntax e)])
-          (annotate-top ex #f)))
-      (syntax-case top-e (begin module)
-        [(module name . reste)
+          (annotate-top ex (namespace-base-phase))))
+      (syntax-case top-e ()
+        [(mod name . reste)
+         (and (identifier? #'mod)
+              (free-identifier=? #'mod (namespace-module-identifier)
+                                 (namespace-base-phase)))
          (if (eq? (syntax-e #'name) 'errortrace-key)
              top-e
              (let ([top-e (expand-syntax top-e)])
-               (syntax-case top-e (module #%plain-module-begin)
-                 [(module name init-import (#%plain-module-begin body ...))
+               (syntax-case top-e (#%plain-module-begin)
+                 [(mod name init-import (#%plain-module-begin body ...))
                   (normal
                    #`(module name init-import
                        #,(syntax-recertify
@@ -336,11 +340,12 @@
 
   (define errortrace-compile-handler
     (let ([orig (current-compile)]
-          [ns (current-namespace)])
+          [reg (namespace-module-registry (current-namespace))])
       (lambda (e immediate-eval?)
         (orig
          (if (and (instrumenting-enabled)
-                  (eq? ns (current-namespace))
+                  (eq? reg
+                       (namespace-module-registry (current-namespace)))
                   (not (compiled-expression? (if (syntax? e)
                                                  (syntax-e e)
                                                  e))))
@@ -348,7 +353,7 @@
                         (if (syntax? e)
                             e
                             (namespace-syntax-introduce
-                             (datum->syntax-object #f e))))])
+                             (datum->syntax #f e))))])
 	       e2)
              e)
          immediate-eval?))))
@@ -385,7 +390,7 @@
            annotate-executed-file
 
            ;; use names that are consistent with the above
-           (rename test-coverage-enabled coverage-counts-enabled)
+           (rename-out [test-coverage-enabled coverage-counts-enabled])
            get-coverage-counts
            annotate-covered-file
 

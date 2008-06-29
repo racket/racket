@@ -62,7 +62,7 @@
                                   e
                                   (namespace-syntax-introduce
                                    (datum->syntax-object #f e))))
-                 #f)
+                 (namespace-base-phase))
                 e)
               immediate-eval?))))
 

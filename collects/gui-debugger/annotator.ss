@@ -160,15 +160,16 @@
             #'(#%plain-app debugger-local-bindings)))
       
       (define (top-level-annotate stx)
-        (kernel:kernel-syntax-case
-         stx #f
+        (kernel:kernel-syntax-case/phase
+         stx (namespace-base-phase)
          [(module identifier name (#%plain-module-begin . module-level-exprs))
-          (quasisyntax/loc stx (module identifier name
-                                 (#%plain-module-begin 
-                                  #,@(map (lambda (e) (module-level-expr-iterator
-                                                       e (list (syntax-e #'identifier)
-                                                               (syntax-source #'identifier))))
-                                          (syntax->list #'module-level-exprs)))))]
+          (with-syntax ([(module . _) stx])
+            (quasisyntax/loc stx (module identifier name
+                                   (#%plain-module-begin 
+                                    #,@(map (lambda (e) (module-level-expr-iterator
+                                                         e (list (syntax-e #'identifier)
+                                                                 (syntax-source #'identifier))))
+                                            (syntax->list #'module-level-exprs))))))]
          [else-stx
           (general-top-level-expr-iterator stx  #f)]))
       

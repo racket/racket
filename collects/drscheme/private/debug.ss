@@ -245,7 +245,8 @@ profile todo:
                                       list))]))]
                        [_else 
                         ;; Not `begin', so proceed with normal expand and eval 
-                        (let* ([annotated (annotate-top (expand-syntax top-e) #f)])
+                        (let* ([annotated (annotate-top (expand-syntax top-e)
+                                                        (namespace-base-phase))])
                           (oe annotated))])))))])
       debug-tool-eval-handler))
   

@@ -1878,6 +1878,8 @@ static void ref_validate(Scheme_Object *tl, Mz_CPort *port,
 static Scheme_Object *
 ref_optimize(Scheme_Object *tl, Optimize_Info *info)
 {
+  scheme_optimize_info_used_top(info);  
+
   info->preserves_marks = 1;
   info->single_result = 1;
 
@@ -1887,7 +1889,8 @@ ref_optimize(Scheme_Object *tl, Optimize_Info *info)
 static Scheme_Object *
 ref_shift(Scheme_Object *data, int delta, int after_depth)
 {
-  return scheme_make_syntax_compiled(REF_EXPD, data);
+  return scheme_make_syntax_compiled(REF_EXPD, 
+                                     scheme_optimize_shift(data, delta, after_depth));
 }
 
 static Scheme_Object *

@@ -669,21 +669,25 @@ Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env)
   else
     phase = env->genv->phase;
 
-  return scheme_sys_wraps_phase(phase);
+  return scheme_sys_wraps_phase(scheme_make_integer(phase));
 }
 
-Scheme_Object *scheme_sys_wraps_phase(long phase)
+Scheme_Object *scheme_sys_wraps_phase(Scheme_Object *phase)
 {
   Scheme_Object *rn, *w;
+  long p;
 
-  if ((phase == 0) && scheme_sys_wraps0)
+  if (SCHEME_INTP(phase))
+    p = SCHEME_INT_VAL(phase);
+  else
+    p = -1;
+
+  if ((p == 0) && scheme_sys_wraps0)
     return scheme_sys_wraps0;
-  if ((phase == 1) && scheme_sys_wraps1)
+  if ((p == 1) && scheme_sys_wraps1)
     return scheme_sys_wraps1;
 
-  rn = scheme_make_module_rename(scheme_make_integer(phase), 
-                                 mzMOD_RENAME_NORMAL, 
-                                 NULL);
+  rn = scheme_make_module_rename(phase, mzMOD_RENAME_NORMAL, NULL);
 
   /* Add a module mapping for all kernel provides: */
   scheme_extend_module_rename_with_kernel(rn, kernel_modidx);
@@ -692,11 +696,11 @@ Scheme_Object *scheme_sys_wraps_phase(long phase)
 
   w = scheme_datum_to_syntax(kernel_symbol, scheme_false, scheme_false, 0, 0);
   w = scheme_add_rename(w, rn);
-  if (phase == 0) {
+  if (p == 0) {
     REGISTER_SO(scheme_sys_wraps0);
     scheme_sys_wraps0 = w;
   }
-  if (phase == 1) {
+  if (p == 1) {
     REGISTER_SO(scheme_sys_wraps1);
     scheme_sys_wraps1 = w;
   }

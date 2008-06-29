@@ -4542,7 +4542,9 @@ static Scheme_Object *do_load_handler(void *data)
 	/* Replace `module' in read expression with one bound to #%kernel's `module': */
 	a = SCHEME_STX_CAR(obj);
 	d = SCHEME_STX_CDR(obj);
-	a = scheme_datum_to_syntax(module_symbol, a, scheme_sys_wraps_phase(genv->phase), 0, 1);
+	a = scheme_datum_to_syntax(module_symbol, a, 
+                                   scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
+                                   0, 1);
 	d = scheme_make_pair(a, d);
 	obj = scheme_datum_to_syntax(d, obj, scheme_false, 0, 1);
         as_module = 1;

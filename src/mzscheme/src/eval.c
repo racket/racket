@@ -4664,7 +4664,8 @@ static Scheme_Object *add_renames_unless_module(Scheme_Object *form, Scheme_Env 
       if (SCHEME_STX_SYMBOLP(a)) {
 	a = scheme_add_rename(a, genv->rename_set);
         module_stx = scheme_datum_to_syntax(scheme_intern_symbol("module"),
-                                            scheme_false, scheme_sys_wraps_phase(genv->phase), 
+                                            scheme_false, 
+                                            scheme_sys_wraps_phase(scheme_make_integer(genv->phase)), 
                                             0, 0);
 	if (scheme_stx_module_eq(a, module_stx, genv->phase)) {
 	  /* Don't add renames to the whole module; let the 

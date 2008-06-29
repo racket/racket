@@ -1116,7 +1116,8 @@
                         [annotated
                          (if is-compiled?
                              exp
-                             (let* ([et-annotated (et:annotate-top (expand exp) #f)]
+                             (let* ([et-annotated (et:annotate-top (expand exp) 
+                                                                   (namespace-base-phase))]
                                     [tr-annotated
                                      (if tracing?
                                          (tr:annotate (expand et-annotated))

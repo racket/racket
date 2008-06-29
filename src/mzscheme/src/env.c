@@ -75,6 +75,7 @@ static Scheme_Env *make_empty_not_inited_env(int toplevel_size);
 
 static Scheme_Object *namespace_identifier(int, Scheme_Object *[]);
 static Scheme_Object *namespace_module_identifier(int, Scheme_Object *[]);
+static Scheme_Object *namespace_base_phase(int, Scheme_Object *[]);
 static Scheme_Object *namespace_variable_value(int, Scheme_Object *[]);
 static Scheme_Object *namespace_set_variable_value(int, Scheme_Object *[]);
 static Scheme_Object *namespace_undefine_variable(int, Scheme_Object *[]);
@@ -503,6 +504,12 @@ static void make_init_env(void)
 						      "namespace-module-identifier",
 						      0, 1),
 			     env);
+  scheme_add_global_constant("namespace-base-phase",
+			     scheme_make_prim_w_arity(namespace_base_phase,
+						      "namespace-base-phase",
+						      0, 1),
+			     env);
+
 
   scheme_add_global_constant("namespace-variable-value",
 			     scheme_make_prim_w_arity(namespace_variable_value,
@@ -3719,17 +3726,43 @@ static Scheme_Object *
 namespace_module_identifier(int argc, Scheme_Object *argv[])
 {
   Scheme_Env *genv;
+  Scheme_Object *phase;
+
+  if (argc > 0) {
+    if (SCHEME_NAMESPACEP(argv[0])) {
+      genv = (Scheme_Env *)argv[0];
+      phase = scheme_make_integer(genv->phase);
+    } else if (SCHEME_FALSEP(argv[0])) {
+      phase = scheme_false;
+    } else if (SCHEME_INTP(argv[0]) || SCHEME_BIGNUMP(argv[0])) {
+      phase = argv[0];
+    } else {
+      scheme_wrong_type("namespace-module-identifier", "namespace, #f, or exact integer", 0, argc, argv);
+      return NULL;
+    }
+  } else {
+    genv = scheme_get_env(NULL);
+    phase = scheme_make_integer(genv->phase);
+  }
+
+  return scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, 
+                                scheme_sys_wraps_phase(phase), 0, 0);
+}
+
+static Scheme_Object *
+namespace_base_phase(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *genv;
 
   if ((argc > 0) && !SCHEME_NAMESPACEP(argv[0]))
-    scheme_wrong_type("namespace-module-identifier", "namespace", 0, argc, argv);
+    scheme_wrong_type("namespace-base-phase", "namespace", 0, argc, argv);
 
   if (argc)
     genv = (Scheme_Env *)argv[0];
   else
     genv = scheme_get_env(NULL);
 
-  return scheme_datum_to_syntax(scheme_intern_symbol("module"), scheme_false, 
-                                scheme_sys_wraps_phase(genv->phase), 0, 0);
+  return scheme_make_integer(genv->phase);
 }
 
 static Scheme_Object *

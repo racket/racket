@@ -108,7 +108,7 @@
       ;; argument is the source expression, and the fourth argument is #t for
       ;; a transformer expression and #f for a normal expression.
 
-      (define (profile-point bodies name expr trans?)
+      (define (profile-point bodies name expr phase)
         (let ([key (gensym 'profile-point)])
           (initialize-profile-point key name expr)
           (with-syntax ([key (datum->syntax #f key (quote-syntax here))]
@@ -122,29 +122,29 @@
                            (insert-at-tail*
                             (syntax (#%plain-app register-profile-done 'key start))
                             bodies
-                            trans?)])
+                            phase)])
               (syntax
                (let ([start (#%plain-app register-profile-start 'key)])
                  (with-continuation-mark 'profile-key 'key
                    (begin . rest))))))))
 
-      (define (insert-at-tail* e exprs trans?)
+      (define (insert-at-tail* e exprs phase)
         (let ([new
                (rebuild exprs
                         (let loop ([exprs exprs])
                           (if (stx-null? (stx-cdr exprs))
                               (list (cons (stx-car exprs)
                                           (insert-at-tail
-                                           e (stx-car exprs) trans?)))
+                                           e (stx-car exprs) phase)))
                               (loop (stx-cdr exprs)))))])
           (if (syntax? exprs)
               (certify exprs new)
               new)))
 
-      (define (insert-at-tail se sexpr trans?)
+      (define (insert-at-tail se sexpr phase)
         (with-syntax ([expr sexpr]
                       [e se])
-          (kernel-syntax-case sexpr trans?
+          (kernel-syntax-case/phase sexpr phase
             ;; negligible time to eval
             [id
              (identifier? sexpr)
@@ -160,14 +160,14 @@
             [(set! . _) (syntax (begin0 expr e))]
 
             [(let-values bindings . body)
-             (insert-at-tail* se sexpr trans?)]
+             (insert-at-tail* se sexpr phase)]
             [(letrec-values bindings . body)
-             (insert-at-tail* se sexpr trans?)]
+             (insert-at-tail* se sexpr phase)]
 
             [(begin . _)
-             (insert-at-tail* se sexpr trans?)]
+             (insert-at-tail* se sexpr phase)]
             [(with-continuation-mark . _)
-             (insert-at-tail* se sexpr trans?)]
+             (insert-at-tail* se sexpr phase)]
 
             [(begin0 body ...)
              (certify sexpr (syntax (begin0 body ... e)))]
@@ -179,29 +179,29 @@
               (rebuild
                sexpr
                (list
-                (cons #'then (insert-at-tail se (syntax then) trans?))
-                (cons #'else (insert-at-tail se (syntax else) trans?)))))]
+                (cons #'then (insert-at-tail se (syntax then) phase))
+                (cons #'else (insert-at-tail se (syntax else) phase)))))]
 
             [(#%plain-app . rest)
              (if (stx-null? (syntax rest))
                  ;; null constant
                  (syntax (begin e expr))
                  ;; application; exploit guaranteed left-to-right evaluation
-                 (insert-at-tail* se sexpr trans?))]
+                 (insert-at-tail* se sexpr phase))]
 
             [_else
              (error 'errortrace
                     "unrecognized (non-top-level) expression form: ~e"
                     (syntax->datum sexpr))])))
 
-      (define (profile-annotate-lambda name expr clause bodys-stx trans?)
+      (define (profile-annotate-lambda name expr clause bodys-stx phase)
         (let* ([bodys (stx->list bodys-stx)]
-               [bodyl (map (lambda (e) (annotate e trans?))
+               [bodyl (map (lambda (e) (annotate e phase))
                            bodys)])
           (rebuild clause
                    (if (profiling-enabled)
                        (let ([prof-expr
-                              (profile-point bodyl name expr trans?)])
+                              (profile-point bodyl name expr phase)])
                          ;; Tell rebuild to replace first expressions with
                          ;; (void), and replace the last expression with
                          ;; prof-expr:
@@ -223,7 +223,7 @@
                 (syntax-property new 'inferred-name p2)
                 new))))
 
-      (define (annotate-let expr trans? varss-stx rhss-stx bodys-stx)
+      (define (annotate-let expr phase varss-stx rhss-stx bodys-stx)
         (let ([varss (syntax->list varss-stx)]
               [rhss (syntax->list rhss-stx)]
               [bodys (syntax->list bodys-stx)])
@@ -235,20 +235,20 @@
                                 (syntax id)]
                                [_else #f])
                              rhs
-                             trans?))
+                             phase))
                           varss
                           rhss)]
                 [bodyl (map
                         (lambda (body)
-                          (annotate body trans?))
+                          (annotate body phase))
                         bodys)])
             (rebuild expr (append (map cons bodys bodyl)
                                   (map cons rhss rhsl))))))
 
-      (define (annotate-seq expr bodys-stx annotate trans?)
+      (define (annotate-seq expr bodys-stx annotate phase)
         (let* ([bodys (syntax->list bodys-stx)]
                [bodyl (map (lambda (b)
-                             (annotate b trans?))
+                             (annotate b phase))
                            bodys)])
           (rebuild expr (map cons bodys bodyl))))
 
@@ -317,15 +317,12 @@
                (car l))))
 
       (define (make-annotate top? name)
-        (lambda (expr trans?)
+        (lambda (expr phase)
           (test-coverage-point
-           (kernel-syntax-case expr trans?
+           (kernel-syntax-case/phase expr phase
              [_
               (identifier? expr)
-              (let ([b ((if trans?
-                          identifier-binding
-                          identifier-transformer-binding)
-                        expr)])
+              (let ([b (identifier-binding expr phase)])
                 (cond
                  [(eq? 'lexical b)
                   ;; lexical variable - no error possile
@@ -344,14 +341,14 @@
               ;; no error possible
               expr]
 
-             ;; Can't put annotation on the outside
              [(define-values names rhs)
               top?
+              ;; Can't put annotation on the outside
               (let ([marked (with-mark expr
                                        (annotate-named
                                         (one-name #'names)
                                         (syntax rhs)
-                                        trans?))])
+                                        phase))])
                 (certify
                  expr
                  (rebuild expr (list (cons #'rhs marked)))))]
@@ -361,14 +358,14 @@
                expr
                (annotate-seq expr
                              (syntax exprs)
-                             annotate-top trans?))]
+                             annotate-top phase))]
              [(define-syntaxes (name ...) rhs)
               top?
               (let ([marked (with-mark expr
                                        (annotate-named
                                         (one-name #'(name ...))
                                         (syntax rhs)
-                                        #t))])
+                                        (add1 phase)))])
                 (certify
                  expr
                  (rebuild expr (list (cons #'rhs marked)))))]
@@ -379,18 +376,17 @@
                                        (annotate-named
                                         (one-name (syntax (name ...)))
                                         (syntax rhs)
-                                        #t))])
+                                        (add1 phase)))])
                 (certify
                  expr
                  (rebuild expr (list (cons #'rhs marked)))))]
 
-             ;; Just wrap body expressions
              [(module name init-import (#%plain-module-begin body ...))
-              top?
+              ;; Just wrap body expressions
               (let ([bodys (syntax->list (syntax (body ...)))]
 		    [mb (list-ref (syntax->list expr) 3)])
                 (let ([bodyl (map (lambda (b)
-                                    (annotate-top b trans?))
+                                    (annotate-top b 0))
                                   bodys)])
 		  (certify
 		   expr
@@ -404,7 +400,7 @@
 
              [(#%expression e)
               top?
-              (certify expr #`(#%expression #,(annotate (syntax e) trans?)))]
+              (certify expr #`(#%expression #,(annotate (syntax e) phase)))]
 		   
              ;; No way to wrap
              [(#%require i ...) expr]
@@ -425,7 +421,7 @@
                (keep-lambda-properties
                 expr
                 (profile-annotate-lambda name expr expr (syntax body)
-                                         trans?)))]
+                                         phase)))]
              [(case-lambda clause ...)
               (with-syntax ([([args . body] ...)
                              (syntax (clause ...))])
@@ -433,7 +429,7 @@
                        [clausel (map
                                  (lambda (body clause)
                                    (profile-annotate-lambda
-                                    name expr clause body trans?))
+                                    name expr clause body phase))
                                  (syntax->list (syntax (body ...)))
                                  clauses)])
                   (certify
@@ -447,7 +443,7 @@
               (with-mark expr
                          (certify
                           expr
-                          (annotate-let expr trans?
+                          (annotate-let expr phase
                                         (syntax (vars ...))
                                         (syntax (rhs ...))
                                         (syntax body))))]
@@ -455,7 +451,7 @@
               (with-mark expr
                          (certify
                           expr
-                          (annotate-let expr trans?
+                          (annotate-let expr phase
                                         (syntax (vars ...))
                                         (syntax (rhs ...))
                                         (syntax body))))]
@@ -465,7 +461,7 @@
               (let ([new-rhs (annotate-named
                               (syntax var)
                               (syntax rhs)
-                              trans?)])
+                              (add1 phase))])
                 ;; set! might fail on undefined variable, or too many values:
                 (with-mark expr
                            (certify
@@ -477,21 +473,21 @@
 	      ;; Single expression: no mark
 	      (certify
 	       expr
-	       #`(begin #,(annotate (syntax e) trans?)))]
+	       #`(begin #,(annotate (syntax e) phase)))]
              [(begin . body)
               (with-mark expr
                          (certify
                           expr
-                          (annotate-seq expr #'body annotate trans?)))]
+                          (annotate-seq expr #'body annotate phase)))]
              [(begin0 . body)
               (with-mark expr
                          (certify
                           expr
-                          (annotate-seq expr #'body annotate trans?)))]
+                          (annotate-seq expr #'body annotate phase)))]
              [(if tst thn els)
-              (let ([w-tst (annotate (syntax tst) trans?)]
-                    [w-thn (annotate (syntax thn) trans?)]
-                    [w-els (annotate (syntax els) trans?)])
+              (let ([w-tst (annotate (syntax tst) phase)]
+                    [w-thn (annotate (syntax thn) phase)]
+                    [w-els (annotate (syntax els) phase)])
                 (with-mark expr
                            (certify
                             expr
@@ -499,8 +495,8 @@
                                                 (cons #'thn w-thn)
                                                 (cons #'els w-els))))))]
              [(if tst thn)
-              (let ([w-tst (annotate (syntax tst) trans?)]
-                    [w-thn (annotate (syntax thn) trans?)])
+              (let ([w-tst (annotate (syntax tst) phase)]
+                    [w-thn (annotate (syntax thn) phase)])
                 (with-mark expr
                            (certify
                             expr
@@ -511,7 +507,7 @@
                          (certify
                           expr
                           (annotate-seq expr (syntax body)
-                                        annotate trans?)))]
+                                        annotate phase)))]
 
              ;; Wrap whole application, plus subexpressions
              [(#%plain-app . body)
@@ -520,7 +516,7 @@
                 ;; It's a null:
                 expr]
                [(syntax-case* expr (#%plain-app void)
-                              (if trans?
+                              (if phase
                                 free-transformer-identifier=?
                                 free-identifier=?)
                   [(#%plain-app void) #t]
@@ -531,7 +527,7 @@
                 (with-mark expr (certify
                                  expr
                                  (annotate-seq expr (syntax body)
-                                               annotate trans?)))])]
+                                               annotate phase)))])]
 
              [_else
               (error 'errortrace "unrecognized expression form~a: ~e"
@@ -541,5 +537,5 @@
 
       (define annotate (make-annotate #f #f))
       (define annotate-top (make-annotate #t #f))
-      (define (annotate-named name expr trans?)
-        ((make-annotate #t name) expr trans?))))
+      (define (annotate-named name expr phase)
+        ((make-annotate #t name) expr phase))))
