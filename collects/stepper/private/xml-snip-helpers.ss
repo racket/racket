@@ -24,7 +24,7 @@
            (get-source-name txt) line col pos 1)))
       (let* ([source-name (get-source-name text)]
              [stx (read-syntax source-name
-                               (open-input-text-editor text 0 (send text last-position) source-name))])
+                               (open-input-text-editor text 0 'end values source-name))])
         (when (eof-object? stx)
           (raise-read-error
            (if splice?
