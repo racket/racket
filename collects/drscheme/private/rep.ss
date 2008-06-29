@@ -34,7 +34,6 @@ TODO
 
 (provide rep@ with-stacktrace-name)
 
-
 (define stacktrace-runtime-name
   (string->uninterned-symbol "this-is-the-funny-name"))
 
@@ -768,8 +767,6 @@ TODO
             (when first-loc
               (send first-file set-caret-owner (get-focus-snip) 'global)))))
       
-      
-      
       (define/public (reset-highlighting)
         (reset-error-ranges))
       
@@ -905,7 +902,8 @@ TODO
         (insert-before "\n")
         (end-edit-sequence))
       
-      (field (already-warned? #f) (show-no-user-evaluation-message? #t))
+      (field (already-warned? #f)
+             (show-no-user-evaluation-message? #t))
       
       ;; use this to be able to kill the evaluator without the popup dialog
       (define/public (set-show-no-user-evaluation-message? b)
