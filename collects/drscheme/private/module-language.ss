@@ -241,8 +241,7 @@
                         "\n"
                         "and clicking ‘Run’."))
                  error-args))))
-    ;; This would be nice, but it removes the text selection from the error
-    ;; (fprintf (current-error-port)"\n[Interactions disabled]")
+    (send rep insert-warning "\n[Interactions disabled]")
     (custodian-shutdown-all (send rep get-user-custodian)))
   
   ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
@@ -405,25 +404,27 @@
   ;; is the fully path-expanded name with a directory prefix, 
   ;; if the file has been saved
   (define (transform-module filename stx)
-    (syntax-case* stx (module) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
-      [(module name lang . rest)
-       (eq? 'module (syntax-e #'module))
-       (let* ([v-name #'name]
-              [datum (syntax-e v-name)])
-         (unless (symbol? datum)
-           (raise-hopeless-syntax-error "bad syntax in name position of module"
-                                        stx v-name))
-         (when filename (check-filename-matches filename datum stx))
-         (values
-          v-name
-          ;; rewrite the module to use the scheme/base version of `module'
-          (let ([module (datum->syntax #'here 'module #'form)])
-            (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
-      [else (raise-hopeless-syntax-error
-             (string-append "only a module expression is allowed, either\n"
-                            "    #lang <language-name>\n or\n"
-                            "    (module <name> <language> ...)\n")
-             stx)]))
+    (define-values (mod name lang body)
+      (syntax-case stx ()
+        [(module name lang . body)
+         (eq? 'module (syntax-e #'module))
+         (values #'module #'name #'lang #'body)]
+        [_ (raise-hopeless-syntax-error
+            (string-append "only a module expression is allowed, either\n"
+                           "    #lang <language-name>\n or\n"
+                           "    (module <name> <language> ...)\n")
+            stx)]))
+    (let* ([datum (syntax-e name)])
+      (unless (symbol? datum)
+        (raise-hopeless-syntax-error "bad syntax in name position of module"
+                                     stx name))
+      (when filename (check-filename-matches filename datum stx))
+      (values
+       name
+       ;; rewrite the module to use the scheme/base version of `module'
+       (let* ([mod  (datum->syntax #'here 'module mod)]
+              [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
+         expr))))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
