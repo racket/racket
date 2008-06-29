@@ -145,12 +145,9 @@
                (let ([super-result
                       ;; just reading the definitions might be a syntax error,
                       ;; possibly due to bad language (eg, no foo/lang/reader)
-                      (with-handlers
-                          ([exn? (λ (e)
-                                   (fprintf (current-error-port)
-                                            "Module Language: ~a\n"
-                                            "invalid module text")
-                                   (raise-hopeless-exception e))])
+                      (with-handlers ([exn? (λ (e)
+                                              (raise-hopeless-exception
+                                               e "invalid module text"))])
                         (super-thunk))])
                  (if (eof-object? super-result)
                    (raise-hopeless-syntax-error)
@@ -230,7 +227,7 @@
        [language-numbers (list -32768)])))
   
   (define hopeless-repl (make-thread-cell #t))
-  (define (raise-hopeless-exception exn)
+  (define (raise-hopeless-exception exn [prefix #f])
     (define rep (drscheme:rep:current-rep))
     ;; MINOR HACK: since this is a value that is used by the drscheme thread,
     ;; Robby says it's better to set it while in that thread.  This requires
@@ -238,6 +235,8 @@
     ;; `drscheme:init:system-eventspace', or make `queue-system-callback/sync'
     ;; into a public method (accessible here).
     (send rep set-show-no-user-evaluation-message? #f)
+    (when prefix
+      (fprintf (current-error-port) "Module Language: ~a\n" prefix))
     ((error-display-handler) (exn-message exn) exn)
     (send rep insert-warning "\n[Interactions disabled]")
     (custodian-shutdown-all (send rep get-user-custodian)))
@@ -444,8 +443,7 @@
                ;; probably best to not say anything here
                ;; (send rep insert-warning "Definitions not in effect")
                lang-only)
-             (raise-hopeless-syntax-error "bad language specification"
-                                          stx lang))))
+             (raise-hopeless-exception exn "invalid language specification"))))
        ;; Expand the module expression, so we can catch an syntax errors and
        ;; provide a repl with the base language in that case.
        (with-handlers ([exn? only-language])
