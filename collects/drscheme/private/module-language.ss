@@ -142,7 +142,16 @@
                       (make-resolved-module-path '#,path)
                       #f))]
               [(2)
-               (let ([super-result (super-thunk)])
+               (let ([super-result
+                      ;; just reading the definitions might be a syntax error,
+                      ;; possibly due to bad language (eg, no foo/lang/reader)
+                      (with-handlers
+                          ([exn? (λ (e)
+                                   (fprintf (current-error-port)
+                                            "Module Language: ~a\n"
+                                            "invalid module text")
+                                   (raise-hopeless-exception e))])
+                        (super-thunk))])
                  (if (eof-object? super-result)
                    (raise-hopeless-syntax-error)
                    (let-values ([(name new-module)
@@ -221,7 +230,7 @@
        [language-numbers (list -32768)])))
   
   (define hopeless-repl (make-thread-cell #t))
-  (define (raise-hopeless-syntax-error . error-args)
+  (define (raise-hopeless-exception exn)
     (define rep (drscheme:rep:current-rep))
     ;; MINOR HACK: since this is a value that is used by the drscheme thread,
     ;; Robby says it's better to set it while in that thread.  This requires
@@ -229,20 +238,21 @@
     ;; `drscheme:init:system-eventspace', or make `queue-system-callback/sync'
     ;; into a public method (accessible here).
     (send rep set-show-no-user-evaluation-message? #f)
-    (let/ec k
-      (parameterize ([error-escape-handler k])
-        (apply raise-syntax-error '|Module Language|
-               (if (null? error-args)
-                 (list (string-append
-                        "There must be a valid module in the\n"
-                        "definitions window.  Try starting your program with\n"
-                        "\n"
-                        "  #lang scheme\n"
-                        "\n"
-                        "and clicking ‘Run’."))
-                 error-args))))
+    ((error-display-handler) (exn-message exn) exn)
     (send rep insert-warning "\n[Interactions disabled]")
     (custodian-shutdown-all (send rep get-user-custodian)))
+  (define (raise-hopeless-syntax-error . error-args)
+    (with-handlers ([exn? raise-hopeless-exception])
+      (apply raise-syntax-error '|Module Language|
+             (if (null? error-args)
+               (list (string-append
+                      "There must be a valid module in the\n"
+                      "definitions window.  Try starting your program with\n"
+                      "\n"
+                      "  #lang scheme\n"
+                      "\n"
+                      "and clicking ‘Run’."))
+               error-args))))
   
   ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
   (define (module-language-config-panel parent)
@@ -414,17 +424,32 @@
                            "    #lang <language-name>\n or\n"
                            "    (module <name> <language> ...)\n")
             stx)]))
-    (let* ([datum (syntax-e name)])
-      (unless (symbol? datum)
-        (raise-hopeless-syntax-error "bad syntax in name position of module"
-                                     stx name))
-      (when filename (check-filename-matches filename datum stx))
-      (values
-       name
-       ;; rewrite the module to use the scheme/base version of `module'
-       (let* ([mod  (datum->syntax #'here 'module mod)]
-              [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
-         expr))))
+    (define name* (syntax-e name))
+    (unless (symbol? name*)
+      (raise-hopeless-syntax-error "bad syntax in name position of module"
+                                   stx name))
+    (when filename (check-filename-matches filename name* stx))
+    (values
+     name
+     ;; rewrite the module to use the scheme/base version of `module'
+     (let* ([mod  (datum->syntax #'here 'module mod)]
+            [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
+       (define (only-language exn)
+         (let* ([lang-only (datum->syntax stx `(,mod ,name ,lang) stx)]
+                [lang-only (with-handlers ([void (λ (e) #f)])
+                             (expand lang-only))])
+           (if lang-only
+             (let ([rep (drscheme:rep:current-rep)])
+               ((error-display-handler) (exn-message exn) exn)
+               ;; probably best to not say anything here
+               ;; (send rep insert-warning "Definitions not in effect")
+               lang-only)
+             (raise-hopeless-syntax-error "bad language specification"
+                                          stx lang))))
+       ;; Expand the module expression, so we can catch an syntax errors and
+       ;; provide a repl with the base language in that case.
+       (with-handlers ([exn? only-language])
+         (expand expr)))))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
