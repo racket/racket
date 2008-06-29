@@ -958,7 +958,8 @@ TODO
           (when (equal? ans 3)
             (set-custodian-limit new-limit)
             (preferences:set 'drscheme:limit-memory new-limit))
-          (void)))
+          (set-insertion-point (last-position))
+          (insert-warning "\n[Interactions disabled]")))
       
       (define/private (cleanup-interaction) ; =Kernel=, =Handler=
         (set! need-interaction-cleanup? #f)
