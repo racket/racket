@@ -120,9 +120,7 @@
       (inherit get-reader)
       (define/override (front-end/interaction port settings)
         (if (thread-cell-ref hopeless-repl)
-            (begin (fprintf (current-error-port)
-                            "Module Language: ~a\n" hopeless-message)
-                   (λ x eof))
+            (raise-hopeless-syntax-error)
             (super front-end/interaction port settings)))
       
       (define/override (front-end/complete-program port settings)
@@ -146,19 +144,18 @@
               [(2)
                (let ([super-result (super-thunk)])
                  (if (eof-object? super-result)
-                     (raise-syntax-error 'Module\ Language hopeless-message)
-                     (let-values ([(name new-module)
-                                   (transform-module path super-result)])
-                       (set! module-name name)
-                       new-module)))]
+                   (raise-hopeless-syntax-error)
+                   (let-values ([(name new-module)
+                                 (transform-module path super-result)])
+                     (set! module-name name)
+                     new-module)))]
               [(3)
                (let ([super-result (super-thunk)])
                  (if (eof-object? super-result)
-                     #`(current-module-declare-name #f)
-                     (raise-syntax-error
-                      'module-language
-                      "there can only be one expression in the definitions window"
-                      super-result)))]
+                   #`(current-module-declare-name #f)
+                   (raise-hopeless-syntax-error
+                    "there can only be one expression in the definitions window"
+                    super-result)))]
               [(4)
                (if path
                    #`(begin ((current-module-name-resolver)
@@ -223,14 +220,24 @@
        [language-numbers (list -32768)])))
   
   (define hopeless-repl (make-thread-cell #t))
-  (define hopeless-message
-    (string-append
-     "There must be a module in the\n"
-     "definitions window. Try starting your program with\n"
-     "\n"
-     "  #lang scheme\n"
-     "\n"
-     "and clicking ‘Run’."))
+  (define (raise-hopeless-syntax-error . error-args)
+    (define rep (drscheme:rep:current-rep))
+    (send rep set-show-no-user-evaluation-message? #f)
+    (let/ec k
+      (parameterize ([error-escape-handler k])
+        (apply raise-syntax-error '|Module Language|
+               (if (null? error-args)
+                 (list (string-append
+                        "There must be a valid module in the\n"
+                        "definitions window.  Try starting your program with\n"
+                        "\n"
+                        "  #lang scheme\n"
+                        "\n"
+                        "and clicking ‘Run’."))
+                 error-args))))
+    ;; This would be nice, but it removes the text selection from the error
+    ;; (fprintf (current-error-port)"\n[Interactions disabled]")
+    (custodian-shutdown-all (send rep get-user-custodian)))
   
   ;; module-language-config-panel : panel -> (case-> (-> settings) (settings -> void))
   (define (module-language-config-panel parent)
@@ -395,16 +402,19 @@
     (syntax-case* stx (module) (λ (x y) (eq? (syntax-e x) (syntax-e y)))
       [(module name lang . rest)
        (eq? 'module (syntax-e #'module))
-       (let ([v-name #'name])
-         (when filename (check-filename-matches filename v-name stx))
+       (let* ([v-name #'name]
+              [datum (syntax-e v-name)])
+         (unless (symbol? datum)
+           (raise-hopeless-syntax-error "bad syntax in name position of module"
+                                        stx v-name))
+         (when filename (check-filename-matches filename datum stx))
          (thread-cell-set! hopeless-repl #f)
          (values
           v-name
           ;; rewrite the module to use the scheme/base version of `module'
           (let ([module (datum->syntax #'here 'module #'form)])
             (datum->syntax stx `(,module ,#'name ,#'lang . ,#'rest) stx))))]
-      [else (raise-syntax-error
-             'module-language
+      [else (raise-hopeless-syntax-error
              (string-append "only a module expression is allowed, either\n"
                             "    #lang <language-name>\n or\n"
                             "    (module <name> <language> ...)\n")
@@ -430,22 +440,17 @@
                              filename))))))]
         [else #f])))
   
-  ;; check-filename-matches : string syntax syntax -> void
-  (define (check-filename-matches filename name unexpanded-stx)
-    (define datum (syntax-e name))
-    (unless (symbol? datum)
-      (raise-syntax-error 'module-language
-                          "bad syntax in name position of module"
-                          unexpanded-stx name))
+  ;; check-filename-matches : string datum syntax -> void
+  (define (check-filename-matches filename datum unexpanded-stx)
     (let-values ([(base name dir?) (split-path filename)])
       (let ([expected (string->symbol
                        (path->string (path-replace-suffix name #"")))])
         (unless (equal? expected datum)
-          (raise-syntax-error
-           'module-language
-           (format "module name doesn't match saved filename, got ~s and expected ~a"
-                   datum
-                   expected)
+          (raise-hopeless-syntax-error
+           (format
+            "module name doesn't match saved filename, got ~s and expected ~s"
+            datum
+            expected)
            unexpanded-stx)))))
   
   (define module-language-put-file-mixin
