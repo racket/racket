@@ -305,15 +305,16 @@ Imports @scheme[stacktrace-imports^] and exports @scheme[stacktrace^].}
 @defsignature[stacktrace^ ()]{
 
 @deftogether[(
-  @defproc[(annotate (stx syntax?) (trans? boolean?)) syntax?]
-  @defproc[(annotate-top (stx syntax?) (trans? boolean?)) syntax?])]{
+  @defproc[(annotate (stx syntax?) (phase-level exact-integer?)) syntax?]
+  @defproc[(annotate-top (stx syntax?) (phase-level exact-integer?)) syntax?])]{
 
 Annotate expressions with errortrace information. The
 @schemeout[annotate-top] function should be called with a top-level
 expression, and @schemeout[annotate] should be called with a nested
 expression (e.g., by @schemein[initialize-profile-point]).  The
-boolean argument indicates whether the expression is a transformer
-expression (@scheme[#t]) or a normal expression (@scheme[#f]).}
+@scheme[phase-level] argument indicates the phase level of the
+expression, typically @scheme[(namespace-base-phase)] for a top-level
+expression.}
 
 @deftogether[(
   @defproc[(make-st-mark (syntax syntax?)) st-mark?]
