@@ -428,26 +428,24 @@
       (raise-hopeless-syntax-error "bad syntax in name position of module"
                                    stx name))
     (when filename (check-filename-matches filename name* stx))
-    (values
-     name
-     ;; rewrite the module to use the scheme/base version of `module'
-     (let* ([mod  (datum->syntax #'here 'module mod)]
-            [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
-       (define (only-language exn)
-         (let* ([lang-only (datum->syntax stx `(,mod ,name ,lang) stx)]
-                [lang-only (with-handlers ([void (λ (e) #f)])
-                             (expand lang-only))])
-           (if lang-only
-             (let ([rep (drscheme:rep:current-rep)])
-               ((error-display-handler) (exn-message exn) exn)
-               ;; probably best to not say anything here
-               ;; (send rep insert-warning "Definitions not in effect")
-               lang-only)
-             (raise-hopeless-exception exn "invalid language specification"))))
-       ;; Expand the module expression, so we can catch an syntax errors and
-       ;; provide a repl with the base language in that case.
-       (with-handlers ([exn? only-language])
-         (expand expr)))))
+    (let* (;; rewrite the module to use the scheme/base version of `module'
+           [mod  (datum->syntax #'here 'module mod)]
+           [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
+      (define (only-language exn)
+        (let* ([lang-only (datum->syntax stx `(,mod ,name ,lang) stx)]
+               [lang-only (with-handlers ([void (λ (e) #f)])
+                            (expand lang-only))])
+          (if lang-only
+            (let ([rep (drscheme:rep:current-rep)])
+              ((error-display-handler) (exn-message exn) exn)
+              ;; probably best to not say anything here
+              ;; (send rep insert-warning "Definitions not in effect")
+              lang-only)
+            (raise-hopeless-exception exn "invalid language specification"))))
+      ;; Expand the module expression, so we can catch an syntax errors and
+      ;; provide a repl with the base language in that case.
+      (define expr* (with-handlers ([exn? only-language]) (expand expr)))
+      (values name expr*)))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
