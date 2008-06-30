@@ -255,8 +255,8 @@ function MinComparesRx(pats, str) {
 }
 
 function NormalizeSpaces(str) {
-  return str.replace(/\s\s*/g," ")                // single spaces
-             replace(/^\s/,"").replace(/\s$/,""); // trim edge spaces
+  return str.replace(/\s\s*/g," ")              // single spaces
+            .replace(/^ /,"").replace(/ $/,""); // trim edge spaces
 }
 
 function UrlToManual(url) {
