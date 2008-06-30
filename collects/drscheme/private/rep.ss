@@ -897,11 +897,11 @@ TODO
         (let ([locked? (is-locked?)])
           (when locked? (lock #f))
           (begin-edit-sequence)
-          (let ([start (get-insertion-point)])
-            (insert-before message)
-            (let ([end (get-insertion-point)])
-              (change-style warning-style-delta start end)))
-          (insert-before "\n")
+          (let ([start (last-position)])
+            (insert message start)
+            (let ([end (last-position)])
+              (change-style warning-style-delta start end)
+              (insert "\n" end)))
           (end-edit-sequence)
           (when locked? (lock #t))))
       
@@ -958,7 +958,6 @@ TODO
           (when (equal? ans 3)
             (set-custodian-limit new-limit)
             (preferences:set 'drscheme:limit-memory new-limit))
-          (set-insertion-point (last-position))
           (insert-warning "\n[Interactions disabled]")))
       
       (define/private (cleanup-interaction) ; =Kernel=, =Handler=
