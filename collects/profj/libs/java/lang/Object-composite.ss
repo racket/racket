@@ -2,7 +2,7 @@
   
   (require scheme/class
            (prefix-in c: scheme/contract)
-           errortrace
+           errortrace/errortrace-lib
            
            profj/libs/java/lang/Comparable
            profj/libs/java/io/Serializable)
