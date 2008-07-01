@@ -469,12 +469,22 @@
                [lang-only (with-handlers ([void (λ (e) #f)])
                             (expand lang-only))])
           (if lang-only
-            (let ([rep (drscheme:rep:current-rep)])
+            (begin
               ((error-display-handler) (exn-message exn) exn)
               ;; probably best to not say anything here
-              ;; (send rep insert-warning "Definitions not in effect")
+              ;; (send (drscheme:rep:current-rep) insert-warning
+              ;;       "Definitions not in effect")
               lang-only)
-            (raise-hopeless-exception exn "invalid language specification"))))
+            ;; say that it's an invalid language only if it doesn't resolve
+            ;; properly, because the language can be fine but throw a syntax
+            ;; error when there are no body expressions (for example, the
+            ;; syntax/module-reader language)
+            (raise-hopeless-exception
+             exn
+             (with-handlers ([void (lambda (_)
+                                     "invalid language specification")])
+               ((current-module-name-resolver) 'scheme #f #f)
+               #f)))))
       ;; Expand the module expression, so we can catch an syntax errors and
       ;; provide a repl with the base language in that case.
       (define expr* (with-handlers ([exn? only-language]) (expand expr)))
