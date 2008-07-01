@@ -74,8 +74,8 @@
     (_fun (i) :: (_int = (hist-idx 'history-delete i #f)) -> _pointer)))
 (define history-free ; ignore histdata_t return value
   (get-ffi-obj "free_history_entry" libreadline (_fun _pointer -> _void)
-               ;; if not available, just leak
-               (lambda () void)))
+               ;; if not available, use free
+               free))
 
 (define (history-delete idx)
   (history-free (history-remove idx)))
