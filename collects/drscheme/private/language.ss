@@ -196,7 +196,9 @@
   ;;  annotations     : (union 'none 'debug 'debug/profile 'test-coverage)
   (define simple-settings->vector (make-->vector simple-settings))
   
-  ;; simple-module-based-language-config-panel : parent -> (case-> (-> settings) (settings -> void))
+  ;; simple-module-based-language-config-panel :
+  ;;   parent [#:case-sensitive (union #f #t '?)]
+  ;;     -> (case-> (-> settings) (settings -> void))
   (define (simple-module-based-language-config-panel
            _parent
            #:case-sensitive [*case-sensitive '?])
