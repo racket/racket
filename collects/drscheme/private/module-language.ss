@@ -40,8 +40,9 @@
   
   ;; collection-paths : (listof (union 'default string))
   ;; command-line-args : (vectorof string)
+  ;; auto-text : string
   (define-struct (module-language-settings drscheme:language:simple-settings)
-    (collection-paths command-line-args))
+    (collection-paths command-line-args auto-text))
   
   ;; module-mixin : (implements drscheme:language:language<%>)
   ;;             -> (implements drscheme:language:language<%>)
@@ -68,7 +69,8 @@
                  (append 
                   (vector->list (drscheme:language:simple-settings->vector super-defaults))
                   (list '(default)
-                        #())))))
+                        #()
+                        default-auto-text)))))
       
       ;; default-settings? : -> boolean
       (define/override (default-settings? settings)
@@ -76,31 +78,41 @@
              (equal? (module-language-settings-collection-paths settings)
                      '(default))
              (equal? (module-language-settings-command-line-args settings)
-                     #())))
+                     #())
+             ;; Never show that this is a "custom" language because of the
+             ;; auto-text
+             ;; (equal? (module-language-settings-auto-text settings)
+             ;;         default-auto-text)
+             ))
       
       (define/override (marshall-settings settings)
         (let ([super-marshalled (super marshall-settings settings)])
           (list super-marshalled
                 (module-language-settings-collection-paths settings)
-                (module-language-settings-command-line-args settings))))
+                (module-language-settings-command-line-args settings)
+                (module-language-settings-auto-text settings))))
       
       (define/override (unmarshall-settings marshalled)
-        (and (pair? marshalled)
-             (pair? (cdr marshalled))
-             (pair? (cddr marshalled))
-             (null? (cdddr marshalled))
+        (and (list? marshalled)
+             ;; older formats had no auto-text
+             (<= 3 (length marshalled) 4)
              (list? (cadr marshalled))
-             (vector? (caddr marshalled))
-             (andmap string? (vector->list (caddr marshalled)))
              (andmap (λ (x) (or (string? x) (symbol? x)))
                      (cadr marshalled))
+             (vector? (caddr marshalled))
+             (andmap string? (vector->list (caddr marshalled)))
+             (or (= 3 (length marshalled))
+                 (string? (cadddr marshalled)))
              (let ([super (super unmarshall-settings (car marshalled))])
                (and super
                     (apply make-module-language-settings
                            (append
                             (vector->list (drscheme:language:simple-settings->vector super))
                             (list (cadr marshalled)
-                                  (caddr marshalled))))))))
+                                  (caddr marshalled)
+                                  (if (= 3 (length marshalled))
+                                    default-auto-text
+                                    (cadddr marshalled)))))))))
       
       (define/override (on-execute settings run-in-user-thread)
         (set! iteration-number 0)
@@ -116,6 +128,10 @@
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
+      
+      (define default-auto-text "#lang scheme\n")
+      (define/public (get-auto-text settings)
+        (module-language-settings-auto-text settings))
       
       (inherit get-reader)
       (define/override (front-end/interaction port settings)
@@ -262,7 +278,8 @@
            [stretchable-height #f]
            [stretchable-width #f]))
     (define simple-case-lambda
-      (drscheme:language:simple-module-based-language-config-panel new-parent))
+      (drscheme:language:simple-module-based-language-config-panel
+       new-parent #:case-sensitive #t))
     (define cp-panel (new group-box-panel%
                           [parent new-parent]
                           [label (string-constant ml-cp-collection-paths)]))
@@ -275,6 +292,14 @@
                                [label #f]
                                [init-value "#()"]
                                [callback void]))
+    (define auto-text-panel (new group-box-panel%
+                                 [parent new-parent]
+                                 [label "Auto-text"])) ;!! need string-constant
+    (define auto-text-text-box (new text-field%
+                                    [parent auto-text-panel]
+                                    [label #f]
+                                    [init-value ""]
+                                    [callback void]))
     
     ;; data associated with each item in listbox : boolean
     ;; indicates if the entry is the default paths.
@@ -389,6 +414,12 @@
             (parameterize ([print-vector-length #f])
               (format "~s" vec))))
     
+    (define (get-auto-text)
+      (string-append (send auto-text-text-box get-value) "\n"))
+    
+    (define (install-auto-text str)
+      (send auto-text-text-box set-value (regexp-replace #rx"\n$" str "")))
+    
     (send lb set '())
     (update-buttons)
     
@@ -399,11 +430,13 @@
                 (append 
                  (vector->list (drscheme:language:simple-settings->vector simple-settings))
                  (list (get-collection-paths)
-                       (get-command-line-args)))))]
+                       (get-command-line-args)
+                       (get-auto-text)))))]
       [(settings)
        (simple-case-lambda settings)
        (install-collection-paths (module-language-settings-collection-paths settings))
        (install-command-line-args (module-language-settings-command-line-args settings))
+       (install-auto-text (module-language-settings-auto-text settings))
        (update-buttons)]))
   
   ;; transform-module : (union #f string) syntax

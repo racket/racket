@@ -557,6 +557,8 @@ module browser threading seems wrong.
                  drscheme:language-configuration:settings-preferences-symbol
                  next-settings))
               
+              (remove-auto-text)
+              (insert-auto-text)
               (after-set-next-settings _next-settings)))
           
           (define/pubment (after-set-next-settings s)
@@ -660,6 +662,37 @@ module browser threading seems wrong.
                 (values (/ (+ xl xr) 2)
                         (/ (+ yl yr) 2)))))
           
+          (define default-changed? #f)
+          (define/augment (on-change) (set! default-changed? #t))
+          (define/public (still-untouched?)
+            (and (or (= (last-position) 0) (not default-changed?))
+                 (not (is-modified?))
+                 (not (get-filename))))
+          ;; inserts the auto-text if any, and executes the text if so
+          (define (insert-auto-text)
+            (define lang
+              (drscheme:language-configuration:language-settings-language
+               next-settings))
+            (define auto-text
+              (and (= (last-position) 0) (still-untouched?)
+                   (is-a? lang drscheme:module-language:module-language<%>)
+                   (send lang get-auto-text
+                         (drscheme:language-configuration:language-settings-settings
+                          next-settings))))
+            (when auto-text
+              (begin-edit-sequence #f)
+              (insert auto-text)
+              (set-modified #f)
+              (end-edit-sequence)
+              (set! default-changed? #f)
+              (send (get-top-level-window) execute-callback)))
+          (define (remove-auto-text)
+            (when (and (still-untouched?) (> (last-position) 0))
+              (begin-edit-sequence #f)
+              (send this erase)
+              (set-modified #f)
+              (end-edit-sequence)))
+          
           (inherit invalidate-bitmap-cache)
           (define/public (set-error-arrows arrows)
             (set! error-arrows arrows)
@@ -668,6 +701,9 @@ module browser threading seems wrong.
           (define error-arrows #f)
           
           (super-new)
+          
+          ;; insert the default-text
+          (queue-callback insert-auto-text)
           
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
@@ -1650,9 +1686,7 @@ module browser threading seems wrong.
         
         (define/override (get-editor%) (drscheme:get/extend:get-definitions-text))
         (define/public (still-untouched?)
-          (and (= (send definitions-text last-position) 0)
-               (not (send definitions-text is-modified?))
-               (not (send definitions-text get-filename))
+          (and (send definitions-text still-untouched?)
                (let* ([prompt (send interactions-text get-prompt)]
                       [first-prompt-para
                        (let loop ([n 0])
