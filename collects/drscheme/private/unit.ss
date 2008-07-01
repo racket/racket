@@ -685,6 +685,13 @@ module browser threading seems wrong.
               (set-modified #f)
               (end-edit-sequence)
               (set! default-changed? #f)
+              ;; HACK: click run; would be better to override on-execute and
+              ;; make it initialize a working repl, but the problem is that
+              ;; doing that in module-language.ss means that it'll either need
+              ;; to find if the current text is the auto-text and analyze it to
+              ;; get this initialization, or it will need to do that for all
+              ;; possible contents, which means that it'll work when opening
+              ;; exiting files too.
               (send (get-top-level-window) execute-callback)))
           (define (remove-auto-text)
             (when (and (still-untouched?) (> (last-position) 0))
