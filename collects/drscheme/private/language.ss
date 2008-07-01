@@ -197,15 +197,18 @@
   (define simple-settings->vector (make-->vector simple-settings))
   
   ;; simple-module-based-language-config-panel : parent -> (case-> (-> settings) (settings -> void))
-  (define (simple-module-based-language-config-panel _parent)
+  (define (simple-module-based-language-config-panel
+           _parent
+           #:case-sensitive [*case-sensitive '?])
     (letrec ([parent (instantiate vertical-panel% ()
                        (parent _parent)
                        (alignment '(center center)))]
              
-             [input-panel (instantiate group-box-panel% ()
-                            (label (string-constant input-syntax))
-                            (parent parent)
-                            (alignment '(left center)))]
+             [input-panel (and (eq? *case-sensitive '?)
+                               (instantiate group-box-panel% ()
+                                 (label (string-constant input-syntax))
+                                 (parent parent)
+                                 (alignment '(left center))))]
              
              [dynamic-panel (instantiate group-box-panel% ()
                               (label (string-constant dynamic-properties))
@@ -217,10 +220,11 @@
                              (parent parent)
                              (alignment '(left center)))]
              
-             [case-sensitive (make-object check-box%
-                               (string-constant case-sensitive-label)
-                               input-panel
-                               void)]
+             [case-sensitive (and input-panel
+                                  (make-object check-box%
+                                    (string-constant case-sensitive-label)
+                                    input-panel
+                                    void))]
              [debugging (instantiate radio-box% ()
                           (label #f)
                           (choices 
@@ -240,7 +244,8 @@
                                (let ([on? (not (= (send rb get-selection) 3))])
                                  (send fraction-style enable on?)
                                  (send show-sharing enable on?)
-                                 (send insert-newlines enable on?))))]
+                                 (send insert-newlines enable on?)))
+                             '(horizontal vertical-label))]
              [fraction-style
               (make-object check-box% (string-constant decimal-notation-for-rationals)
                 output-panel
@@ -257,7 +262,9 @@
       (case-lambda
         [()
          (make-simple-settings
-          (send case-sensitive get-value)
+          (if case-sensitive
+            (send case-sensitive get-value)
+            (and *case-sensitive #t))
           (case (send output-style get-selection)
             [(0) 'constructor]
             [(1) 'quasiquote]
@@ -273,7 +280,9 @@
             [(2) 'debug/profile]
             [(3) 'test-coverage]))]
         [(settings)
-         (send case-sensitive set-value (simple-settings-case-sensitive settings))
+         (when case-sensitive
+           (send case-sensitive set-value
+                 (simple-settings-case-sensitive settings)))
          (send output-style set-selection
                (case (simple-settings-printing-style settings)
                  [(constructor) 0]
