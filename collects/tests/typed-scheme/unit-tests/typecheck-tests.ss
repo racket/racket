@@ -11,7 +11,7 @@
                   type-name-env init-envs mutated-vars
                   effect-rep type-annotation type-utils)
          (for-syntax (private tc-utils typechecker base-env type-env))
-         (for-template (private base-env)))
+         (for-template (private base-env base-types)))
 (require (schemeunit))
 
 
