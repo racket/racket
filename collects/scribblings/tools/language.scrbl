@@ -893,7 +893,11 @@ the settings for this language.
            any]{
 The @scheme[on-execute] method is called on DrScheme's
 eventspace's main thread before any evaluation happens
-during execution. Use this method to initialize MzScheme's
+when the Run button is clicked. It is also called when
+a new DrScheme tab (or window) is created to initialize
+the empty interactions window.
+
+Use this method to initialize MzScheme's
 @secref[#:doc '(lib "scribblings/reference/reference.scrbl") "parameters"]
 for the user. When
 this function is called, the user's thread has already been
