@@ -4,7 +4,7 @@
          mzlib/plt-match
          mzlib/struct)
 
-(provide with-syntax* syntax-map start-timing do-time reverse-begin define-simple-syntax printf/log
+(provide with-syntax* syntax-map start-timing do-time reverse-begin printf/log
          with-logging-to-file log-file-name ==
          print-type*
          print-effect*
@@ -15,7 +15,15 @@
          in-pairs
          in-list-forever
          extend
-         debug)
+         debug
+         in-syntax)
+
+(define-sequence-syntax in-syntax 
+  (lambda () #'syntax->list)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[ids (_ arg)]
+       #'[ids (in-list (syntax->list arg))]])))
 
 (define-syntax debug
   (syntax-rules ()
@@ -52,6 +60,7 @@
 (define-syntax reverse-begin
   (syntax-rules () [(_ h . forms) (begin0 (begin . forms) h)]))
 
+#;
 (define-syntax define-simple-syntax
   (syntax-rules ()
     [(dss (n . pattern) template)

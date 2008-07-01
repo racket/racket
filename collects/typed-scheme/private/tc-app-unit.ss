@@ -6,7 +6,7 @@
          "tc-utils.ss"
          "subtype.ss"
          "infer.ss"
-         (only-in "utils.ss" debug)
+         (only-in "utils.ss" debug in-syntax)
          "union.ss"
          "type-utils.ss"
          "type-effect-convenience.ss"
@@ -17,6 +17,7 @@
          (only-in srfi/1 alist-delete)
          (only-in scheme/private/class-internal make-object do-make-object)
          mzlib/trace mzlib/pretty syntax/kerncase scheme/match
+         (for-syntax scheme/base)
          (for-template 
           "internal-forms.ss" scheme/base 
           (only-in scheme/private/class-internal make-object do-make-object)))
@@ -64,7 +65,7 @@
 ;; rest-type: the type of the functions's rest parameter, or #f
 ;; latent-eff: the latent effect of the function
 ;; arg-stxs: the syntax for each actual parameter, for error reporting
-;; [Type] [Type] Maybe[Type] [Syntax] -> Effect  
+;; [Type] [Type] Maybe[Type] [Syntax] -> (values Listof[Effect] Listof[Effect])
 (define (tc-args arg-types arg-thn-effs arg-els-effs dom-types rest-type latent-thn-eff latent-els-eff arg-stxs)
   (define (var-true-effect-v e) (match e
                                   [(Var-True-Effect: v) v]))
@@ -80,9 +81,6 @@
            (= (length (car arg-thn-effs)) (length (car arg-els-effs)) 1)
            (Var-True-Effect? (caar arg-thn-effs)) ;; thn-effs is a list for each arg
            (Var-False-Effect? (caar arg-els-effs)) ;; same with els-effs
-           #;(printf "got to mi= ~a ~a ~n~a ~a~n" 
-                     (var-true-effect-v (caar arg-thn-effs)) (var-true-effect-v (caar arg-els-effs))
-                     (syntax-e (var-true-effect-v (caar arg-thn-effs))) (syntax-e (var-false-effect-v (caar arg-els-effs))))
            (free-identifier=? (var-true-effect-v (caar arg-thn-effs))
                               (var-false-effect-v (caar arg-els-effs)))
            (subtype (car arg-types) (car dom-types)))
@@ -116,7 +114,7 @@
             #:stx (car stxs)
             "Wrong function argument type, expected ~a, got ~a for argument ~a" 
             (car doms) (car args) arg-count)
-           (values null null)]))))
+           (loop (cdr args) (cdr doms) (cdr stxs) (add1 arg-count))]))))
 
 
 ;(trace tc-args)
@@ -196,8 +194,8 @@
      (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
                    [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
                                            (tc/dots tail))])
-       (for-each (lambda (x) (unless (not (Poly? x))                                      
-                               (tc-error "Polymorphic argument ~a to polymorphic function in apply not allowed" x)))
+       #;(for-each (lambda (x) (unless (not (Poly? x))                                      
+                               (tc-error "Polymorphic argument of type ~a to polymorphic function in apply not allowed" x)))
                  (cons tail-ty arg-tys))
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
@@ -251,9 +249,6 @@
      (let*-values ([(arg-tys) (map tc-expr/t fixed-args)]
                    [(tail-ty tail-bound) (with-handlers ([exn:fail:syntax? (lambda _ (values (tc-expr/t tail) #f))])
                                            (tc/dots tail))])
-       (for-each (lambda (x) (unless (not (Poly? x))                                      
-                               (tc-error "Polymorphic argument ~a to polymorphic function in apply not allowed" x)))
-                 (cons tail-ty arg-tys))
        (let loop ([doms* doms] [rngs* rngs] [rests* rests] [drests* drests])
          (cond [(null? doms*)
                 (match f-ty 
@@ -322,6 +317,34 @@
     [(tc-result: f-ty) (tc-error/expr #:return (ret (Un))
                          "Type of argument to apply is not a function type: ~n~a" f-ty)]))
 
+(define-syntax (handle-clauses stx)
+  (syntax-case stx ()
+    [(_  (lsts ... rngs) pred infer t argtypes expected)
+     (with-syntax ([(vars ... rng) (generate-temporaries #'(lsts ... rngs))])
+       (syntax/loc stx
+         (or (for/or ([vars lsts] ... [rng rngs]
+                      #:when (pred vars ... rng))
+                     (let ([substitution (infer vars ... rng)])
+                       (and substitution
+                            (or expected
+                                (ret (subst-all substitution rng))))))             
+             (poly-fail t argtypes))))]))
+
+(define (poly-fail t argtypes)
+  (match t
+    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
+         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...))))
+     (if (and (andmap null? msg-doms)
+              (null? argtypes))
+         (tc-error/expr #:return (ret (-> (Un)))
+                        "Could not infer types for applying polymorphic function over ~a~n"
+                        (stringify msg-vars))
+         (tc-error/expr #:return (ret (->* (list) Univ (Un)))
+                        (string-append
+                         "Polymorphic function over ~a could not be applied to arguments:~n"
+                         (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
+                        (stringify msg-vars)))]))
+
 
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
   (match-let* ([(list (tc-result: argtypes arg-thn-effs arg-els-effs) ...) argtys])
@@ -331,14 +354,17 @@
                      [arg-els-effs arg-els-effs]
                      [args args-stx])
       (match ftype
+        ;; procedural structs
         [(tc-result: (and sty (Struct: _ _ _ (? Type? proc-ty) _ _ _)) thn-eff els-eff)
          (outer-loop (ret proc-ty thn-eff els-eff)
                      (cons (tc-result-t ftype0) argtypes)
                      (cons (list) arg-thn-effs)
                      (cons (list) arg-els-effs)
                      #`(#,(syntax/loc f-stx dummy) #,@args))]
+        ;; mu types, etc
         [(tc-result: (? needs-resolving? t) thn-eff els-eff)
          (outer-loop (ret (resolve-once t) thn-eff els-eff) argtypes arg-thn-effs arg-els-effs args)]
+        ;; parameters
         [(tc-result: (Param: in out))
          (match argtypes
            [(list) (ret out)]
@@ -350,129 +376,54 @@
            [_ (tc-error/expr #:return (ret (Un))
                              "Wrong number of arguments to parameter - expected 0 or 1, got ~a"
                              (length argtypes))])]
+        ;; single clause functions
+        [(tc-result: (and t (Function: (list (arr: dom rng rest #f latent-thn-effs latent-els-effs))))
+                     thn-eff els-eff)
+         (let-values ([(thn-eff els-eff)
+                       (tc-args argtypes arg-thn-effs arg-els-effs dom rest 
+                                latent-thn-effs latent-els-effs
+                                (syntax->list args))])
+           (ret rng thn-eff els-eff))]
+        ;; non-polymorphic case-lambda functions
         [(tc-result: (and t (Function: (list (arr: doms rngs rests (and drests #f) latent-thn-effs latent-els-effs) ..1)))
                      thn-eff els-eff)
-         (if (= 1 (length doms))
-             (let-values ([(thn-eff els-eff)
-                           (tc-args argtypes arg-thn-effs arg-els-effs (car doms) (car rests) 
-                                    (car latent-thn-effs) (car latent-els-effs)
-                                    (syntax->list args))])
-               (ret (car rngs) thn-eff els-eff)
-               #;(if (false-effect? eff)
-                     (ret (-val #f) eff)
-                     (ret (car rngs) eff)))
-             (let loop ([doms* doms] [rngs rngs] [rests* rests])
-               (cond [(null? doms*) 
-                      (tc-error/expr 
-                       #:return (ret (Un))
-                       (string-append "No function domains matched in function application:"
-                                      (domain-mismatches t doms rests drests argtypes #f #f)))]
-                     [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
-                     [else (loop (cdr doms*) (cdr rngs) (cdr rests*))])))]
-        [(and rft (tc-result: (and t
-                                   (or (Poly: vars 
-                                              (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))
-                                       (PolyDots: (list vars ... _)
-                                                  (Function: (list (arr: doms rngs #f #f thn-effs els-effs) ...)))))))
-         ;(printf "Typechecking poly app~nftype:          ~a~n" ftype)
-         ;(printf "ftype again:    ~a~n" ftype)
-         ;(printf "resolved ftype: ~a : ~a~n" (equal? rft ftype) rft)
-         ;(printf "reresolving: ~a~n" (resolve-tc-result ftype))
-         ;(printf "argtypes: ~a~ndoms: ~a~n" argtypes doms)
-         (for-each (lambda (x) (unless (not (or (PolyDots? x) (Poly? x)))
-                                 (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
-                   argtypes)
-         (let loop ([doms* doms] [rngs* rngs])
-           (cond [(null? doms*)
-                  (match t
-                    [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
-                         (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...))))
-                     (if (and (andmap null? msg-doms)
-                              (null? argtypes))
-                         (tc-error/expr #:return (ret (-> (Un)))
-                                        "Could not infer types for applying polymorphic function over ~a~n"
-                                        (stringify msg-vars))
-                         (tc-error/expr #:return (ret (->* (list) Univ (Un)))
-                                        (string-append
-                                         "Polymorphic function over ~a could not be applied to arguments:~n"
-                                         (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
-                                        (stringify msg-vars)))])]
-                 [(and (= (length (car doms*))
-                          (length argtypes))
-                        (infer (fv/list (cons (car rngs*) (car doms*))) argtypes (car doms*) (car rngs*) (fv (car rngs*)) expected))
-                  => (lambda (substitution)
-                       (or expected
-                           (let* ([s (lambda (t) (subst-all substitution t))]
-                                  [new-doms* (map s (car doms*))])
-                             (if (andmap subtype argtypes new-doms*)
-                                 (ret (subst-all substitution (car rngs*)))
-                                 ;; FIXME
-                                 ;; should be an error here, something went horribly wrong!!!
-                                 (begin 
-				   #;
-                                   (printf "substitution was bad~n args: ~a ~n new-doms: ~a~n~a~n" argtypes new-doms* substitution)
-                                   (loop (cdr doms*) (cdr rngs*)))))))]
-                 [else (loop (cdr doms*) (cdr rngs*))]))]
+         (let loop ([doms* doms] [rngs rngs] [rests* rests])
+           (cond [(null? doms*) 
+                  (tc-error/expr 
+                   #:return (ret (Un))
+                   (string-append "No function domains matched in function application:"
+                                  (domain-mismatches t doms rests drests argtypes #f #f)))]
+                 [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
+                 [else (loop (cdr doms*) (cdr rngs) (cdr rests*))]))]
+        ;; simple polymorphic functions, no rest arguments
+        [(tc-result: (and t
+                          (or (Poly: vars 
+                                     (Function: (list (arr: doms rngs (and rests #f) (and drests #f) thn-effs els-effs) ...)))
+                              (PolyDots: (list vars ... _)
+                                         (Function: (list (arr: doms rngs (and rests #f) (and drests #f) thn-effs els-effs) ...))))))
+         (handle-clauses (doms rngs) 
+                         (lambda (dom _) (= (length dom) (length argtypes)))
+                         (lambda (dom rng) (infer (fv/list (cons rng dom)) argtypes dom rng (fv rng) expected))
+                         t argtypes expected)]
         ;; polymorphic varargs
         [(tc-result: (and t
-                          (or (Poly: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
+                          (or (Poly: vars (Function: (list (arr: doms rngs rests (and drests #f) thn-effs els-effs) ...)))
                               ;; we want to infer the dotted-var here as well, and we don't use these separately
                               ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
-                              (PolyDots: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))))
-         (for-each (lambda (x) (unless (not (Poly? x))                                      
-                                 (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
-                   argtypes)
-         (unless (<= (length dom) (length argtypes))
-           (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
-         (let ([substitution 
-                (infer/vararg vars argtypes dom rest rng (fv rng) expected)])
-           (cond 
-             [(and expected substitution) expected]
-             [substitution
-              (let* ([s (lambda (t) (subst-all substitution t))]
-                     [new-dom (map s dom)]
-                     [new-rest (s rest)])                                  
-                (unless (subtypes/varargs argtypes new-dom new-rest)
-                  (int-err "Inconsistent substitution - arguments not subtypes"))
-                (ret (subst-all substitution rng)))]
-             [else 
-              (match t
-                [(or (Poly-names: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff))))
-                     ;; we want to infer the dotted-var here as well, and we don't use these separately
-                     ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
-                     (PolyDots-names: vars (Function: (list (arr: dom rng rest #f thn-eff els-eff)))))
-                 (tc-error/expr #:return (ret (Un))
-                                (string-append
-                                 "No polymorphic function domain matched in function application:~n"
-                                 (domain-mismatches t (list dom) (list rest) (list #f) argtypes #f #f)))])]))]
+                              (PolyDots: vars (Function: (list (arr: doms rngs rests (and drests #f) thn-effs els-effs) ...))))))
+         (handle-clauses (doms rests rngs)
+                         (lambda (dom rest rng) (<= (length dom) (length argtypes)))
+                         (lambda (dom rest rng) (infer/vararg vars argtypes dom rest rng (fv rng) expected))
+                         t argtypes expected)]
         ;; polymorphic ... type
-        [(tc-result: (and t (PolyDots: (and vars (list fixed-vars ... dotted-var))
-                                       (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))))
-         (for-each (lambda (x) (unless (not (Poly? x))                                      
-                                 (tc-error "Polymorphic argument ~a to polymorphic function not allowed" x)))
-                   argtypes)
-         (unless (<= (length dom) (length argtypes))
-           (tc-error "incorrect number of arguments to function: ~a ~a" dom argtypes))
-         (unless (eq? dbound dotted-var)
-           (int-err "dbound (~a) and dotted-var (~a) not the same" dbound dotted-var))
-         (let ([substitution 
-                (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) expected)])
-           (cond 
-             [(and expected substitution) expected]
-             [substitution
-              (ret (subst-all substitution rng))]
-             [else 
-              (match t
-                [(PolyDots-names: vars
-                                  (Function: (list (arr: dom rng #f (cons dty dbound) thn-eff els-eff))))
-                 (tc-error/expr #:return (ret (Un))
-                                (string-append
-                                 "No polymorphic function domain matched in function application:~n"
-                                 (domain-mismatches t (list dom) (list #f) (list (cons dty dbound)) argtypes #f #f)))])]))]
-        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests #f thn-effs els-effs) ...))))
-         (tc-error/expr #:return (ret (Un)) "polymorphic vararg case-lambda application not yet supported")]
-        [(tc-result: (Poly: vars (Function: (list (arr: doms rngs #f drests thn-effs els-effs) ...))))
-         (tc-error/expr #:return (ret (Un)) "polymorphic ... case-lambda application not yet supported")]
+        [(tc-result: (and t (PolyDots: 
+                             (and vars (list fixed-vars ... dotted-var))
+                             (Function: (list (arr: doms rngs (and #f rests) (cons dtys dbounds) thn-effs els-effs) ...)))))
+         (handle-clauses (doms dtys dbounds rngs)
+                         (lambda (dom dty dbound rng) (and (<= (length dom) (length argtypes))
+                                                           (eq? dotted-var dbound)))
+                         (lambda (dom dty dbound rng) (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) expected))
+                         t argtypes expected)]
         ;; Union of function types works if we can apply all of them
         [(tc-result: (Union: (list (and fs (Function: _)) ...)) e1 e2)
          (match-let ([(list (tc-result: ts) ...) (map (lambda (f) (outer-loop 
@@ -520,55 +471,53 @@
      (find #'e)]
     [_ #f]))
 
-(define (matches? stx)
-  (let loop ([stx stx] [ress null] [acc*s null])
-    (syntax-case stx (#%plain-app reverse)
-      [([(res) (#%plain-app reverse acc*)] . more)
-       (loop #'more (cons #'res ress) (cons #'acc* acc*s))]
-      [rest
-       (syntax->list #'rest)
-       (begin
-         ;(printf "ress: ~a~n" (map syntax-e ress))
-         (list (reverse ress) (reverse acc*s) #'rest))]
-      [_ #f])))
 
+(define (check-do-make-object cl pos-args names named-args)
+  (let* ([names (map syntax-e (syntax->list names))]
+         [name-assoc (map list names (syntax->list named-args))])
+    (let loop ([t (tc-expr cl)])
+      (match t
+        [(tc-result: (? Mu? t)) (loop (ret (unfold t)))]
+        [(tc-result: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
+         (unless (= (length pos-tys)
+                    (length (syntax->list pos-args)))
+           (tc-error/delayed "expected ~a positional arguments, but got ~a"
+                             (length pos-tys) (length (syntax->list pos-args))))
+         ;; use for, since they might be different lengths in error case
+         (for ([pa (in-syntax pos-args)]
+               [pt (in-list pos-tys)])
+           (tc-expr/check pa pt))
+         (for ([n names]
+               #:when (not (memq n tnames)))
+           (tc-error/delayed 
+            "unknown named argument ~a for class~nlegal named arguments are ~a"
+            n (stringify tnames)))
+         (for-each (match-lambda
+                     [(list tname tfty opt?)
+                      (let ([s (cond [(assq tname name-assoc) => cadr]
+                                     [(not opt?)
+                                      (tc-error/delayed "value not provided for named init arg ~a" tname)
+                                      #f]
+                                     [else #f])])
+                        (if s
+                            ;; this argument was present
+                            (tc-expr/check s tfty)
+                            ;; this argument wasn't provided, and was optional
+                            #f))])
+                   tnflds)
+         (ret (make-Instance c))]
+        [(tc-result: t)
+         (tc-error/expr #:return (ret (Un)) "expected a class value for object creation, got: ~a" t)]))))
 
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
     (values apply not list list* call-with-values do-make-object make-object cons
             andmap ormap) ;; the special-cased functions   
     ;; special cases for classes
-    [(#%plain-app make-object cl args ...)
-     (tc/app/internal #'(#%plain-app do-make-object cl (#%plain-app list args ...) (#%plain-app list)) expected)]     
-    [(#%plain-app do-make-object cl (#%plain-app list pos-args ...) (#%plain-app list (#%plain-app cons 'names named-args) ...))
-     (let* ([names (map syntax-e (syntax->list #'(names ...)))]
-            [name-assoc (map list names (syntax->list #'(named-args ...)))])
-       (let loop ([t (tc-expr #'cl)])
-         (match t
-           [(tc-result: (? Mu? t)) (loop (ret (unfold t)))]
-           [(tc-result: (and c (Class: pos-tys (list (and tnflds (list tnames _ _)) ...) _))) 
-            (unless (= (length pos-tys)
-                       (length (syntax->list #'(pos-args ...))))
-              (tc-error "expected ~a positional arguments, but got ~a" (length pos-tys) (length (syntax->list #'(pos-args ...)))))
-            (for-each tc-expr/check (syntax->list #'(pos-args ...)) pos-tys)
-            (for-each (lambda (n) (unless (memq n tnames)
-                                    (tc-error "unknown named argument ~a for class~nlegal named arguments are ~a" n (stringify tnames))))
-                      names)
-            (for-each (match-lambda
-                        [(list tname tfty opt?)
-                         (let ([s (cond [(assq tname name-assoc) => cadr]
-                                        [(not opt?)
-                                         (tc-error "value not provided for named init arg ~a" tname)]
-                                        [else #f])])
-                           (if s
-                               ;; this argument was present
-                               (tc-expr/check s tfty)
-                               ;; this argument wasn't provided, and was optional
-                               #f))])
-                      tnflds)
-            (ret (make-Instance c))]
-           [(tc-result: t)
-            (tc-error "expected a class value for object creation, got: ~a" t)])))]
+    [(#%plain-app make-object cl . args)     
+     (check-do-make-object #'cl #'args #'() #'())]
+    [(#%plain-app do-make-object cl (#%plain-app list . pos-args) (#%plain-app list (#%plain-app cons 'names named-args) ...))
+     (check-do-make-object #'cl #'pos-args #'(names ...) #'(named-args ...))]
     [(#%plain-app do-make-object . args)
      (int-err "bad do-make-object : ~a" (syntax->datum #'args))]
     ;; call-with-values
@@ -617,65 +566,12 @@
        [(tc-result: t thn-eff els-eff)
         (ret B (map var->type-eff els-eff) (map var->type-eff thn-eff))])]
     ;; special case for `apply'
-    [(#%plain-app apply f . args) (tc/apply #'f #'args)]
-    
+    [(#%plain-app apply f . args) (tc/apply #'f #'args)]    
     ;; even more special case for match
-    [(#%plain-app 
-      (letrec-values 
-          ([(lp) (#%plain-lambda (val acc ...)
-                   (if (#%plain-app null? val*)
-                       thn
-                       els))])
-        lp*)
-      actual actuals ...)
-     (and ;(printf "got here 0:~a~n" (syntax->datum #'body))
-          expected
-          ;(printf "got here 1~n")
-          (not (andmap type-annotation (syntax->list #'(val acc ...))))
-          (free-identifier=? #'val #'val*)
-          (ormap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
-                  (syntax->list #'(acc ...)))
-          ;(printf "got here 2~n")
-          #;
-          (match (matches? #'lv-bindings)
-            [(list res acc* more)
-             (and
-              (andmap type-annotation res)
-              (andmap free-identifier=? (syntax->list #'(acc ...)) acc*)
-              (free-identifier=? #'lp #'lp*))]
-            [_ #f]))
-     (let* ([ts1 (tc-expr/t #'actual)]
-            [ts1 (generalize ts1)]
-            [ann-ts (map (lambda (a ac) (or (find-annotation #'(if (#%plain-app null? val*) thn els) a)
-                                            (generalize (tc-expr/t ac))))
-                         (syntax->list #'(acc ...))
-                         (syntax->list #'(actuals ...)))]
-            [ts (cons ts1 ann-ts)]) 
-       ;(printf "doing match case actuals:~a ann-ts: ~a~n" (syntax->datum #'(actuals ...)) ann-ts)
-       ;; check that the actual arguments are ok here
-       (map tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
-       ;(printf "done here ts = ~a~n" ts)
-       ;; then check that the function typechecks with the inferred types
-       (tc/rec-lambda/check form
-                            #'(val acc ...)
-                            #'((if (#%plain-app null? val*)
-                                   thn
-                                   els))
-                            #'lp
-                            ts
-                            expected)
-       (ret expected))]
-    ;; special case when argument needs inference
-    [(#%plain-app (letrec-values ([(lp) (#%plain-lambda (args ...) . body)]) lp*) . actuals)
-     (and ;(printf "special case 0 ~a~n" expected)
-          expected
-          ;(printf "special case 1~n")
-          (not (andmap type-annotation (syntax->list #'(args ...))))
-          (free-identifier=? #'lp #'lp*))
-     (let ([ts (map (compose generalize tc-expr/t) (syntax->list #'actuals))])
-       ;(printf "special case~n")
-       (tc/rec-lambda/check form #'(args ...) #'body #'lp ts expected)
-       (ret expected))]
+    [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
+     (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*))
+     (let-loop-check #'lp #'actuals #'args #'body expected)]
+    ;; or/andmap of ... argument
     [(#%plain-app or/andmap f arg)
      (and 
       (identifier? #'or/andmap)
@@ -693,8 +589,43 @@
            (ret (Un (-val #f) t)))))]
     ;; default case
     [(#%plain-app f args ...) 
-     (begin
-       ;(printf "default case~n~a~n" (syntax->datum form))
-       (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...))) expected))]))
-  
+     (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...))) expected)]))
+
+(define (let-loop-check form lp actuals args body expected)
+  (kernel-syntax-case* #`(#,args #,body #,actuals) #f (null?)
+    [((val acc ...)
+      ((if (#%plain-app null? val*) thn els))
+      (actual actuals ...))
+     (and (free-identifier=? #'val #'val*)
+          (ormap (lambda (a) (find-annotation #'(if (#%plain-app null? val*) thn els) a))
+                 (syntax->list #'(acc ...))))
+     (let* ([ts1 (generalize (tc-expr/t #'actual))]
+            [ann-ts (for/list ([a (in-syntax #'(acc ...))]
+                               [ac (in-syntax #'(actuals ...))])
+                      (or (find-annotation #'(if (#%plain-app null? val*) thn els) a)
+                          (generalize (tc-expr/t ac))))]
+            [ts (cons ts1 ann-ts)])
+       ;; check that the actual arguments are ok here
+       (map tc-expr/check (syntax->list #'(actuals ...)) ann-ts)
+       ;; then check that the function typechecks with the inferred types
+       (tc/rec-lambda/check form args body lp ts expected)
+       (ret expected))]
+    ;; special case when argument needs inference
+    [_
+     (let ([ts (map (compose generalize tc-expr/t) (syntax->list actuals))])
+       (tc/rec-lambda/check form args body lp ts expected)
+       (ret expected))]))
+
+(define (matches? stx)
+  (let loop ([stx stx] [ress null] [acc*s null])
+    (syntax-case stx (#%plain-app reverse)
+      [([(res) (#%plain-app reverse acc*)] . more)
+       (loop #'more (cons #'res ress) (cons #'acc* acc*s))]
+      [rest
+       (syntax->list #'rest)
+       (begin
+         ;(printf "ress: ~a~n" (map syntax-e ress))
+         (list (reverse ress) (reverse acc*s) #'rest))]
+      [_ #f])))
+
 ;(trace tc/app/internal)
