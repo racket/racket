@@ -35,7 +35,7 @@
 #lang scheme/base
 
 (require srfi/optional
-         (only-in scheme/list take drop))
+         (only-in scheme/list take drop take-right drop-right))
 
 (provide first second
          third fourth
@@ -90,6 +90,7 @@
 ;; off by K, then chasing down the list until the lead pointer falls off
 ;; the end.
 
+#; ; provided by scheme/list
 (define (take-right lis k)
   (check-arg integer? k 'take-right)
   (let lp ((lag lis)  (lead (drop lis k)))
@@ -97,6 +98,7 @@
       (lp (cdr lag) (cdr lead))
       lag)))
 
+#; ; provided by scheme/list
 (define (drop-right lis k)
   (check-arg integer? k 'drop-right)
   (let recur ((lag lis) (lead (drop lis k)))
@@ -133,6 +135,9 @@
              (suffix (cdr prev)))
         (set-cdr! prev '())
         (values x suffix))))
+
+;; these could be reprovided from scheme/base, but they don't raise an
+;; error on improper lists
 
 (define (last lis) (car (last-pair lis)))
 
