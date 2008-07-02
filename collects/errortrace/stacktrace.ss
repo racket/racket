@@ -461,7 +461,7 @@
               (let ([new-rhs (annotate-named
                               (syntax var)
                               (syntax rhs)
-                              (add1 phase))])
+                              phase)])
                 ;; set! might fail on undefined variable, or too many values:
                 (with-mark expr
                            (certify

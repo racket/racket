@@ -356,7 +356,7 @@ During execution of the program, this is called for each point with
 the key for that program point that was passed to
 @schemein[initialize-test-coverage-point].}
 
-@defproc[(initialize-test-coverage-point (key any/c) (stx any)) void?]{
+@defproc[(initialize-test-coverage-point (key any/c) (stx any/c)) void?]{
 
 During compilation of the program, this function is called with each
 sub-expression of the program. The first argument is a special key
