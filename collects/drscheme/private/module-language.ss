@@ -250,11 +250,13 @@
     ;; adding `drscheme:init^' to the imports to get
     ;; `drscheme:init:system-eventspace', or make `queue-system-callback/sync'
     ;; into a public method (accessible here).
-    (send rep set-show-no-user-evaluation-message? #f)
+    (when rep
+      (send rep set-show-no-user-evaluation-message? #f))
     (when prefix
       (fprintf (current-error-port) "Module Language: ~a\n" prefix))
     ((error-display-handler) (exn-message exn) exn)
-    (send rep insert-warning "\n[Interactions disabled]")
+    (when rep
+      (send rep insert-warning "\n[Interactions disabled]"))
     (custodian-shutdown-all (send rep get-user-custodian)))
   (define (raise-hopeless-syntax-error . error-args)
     (with-handlers ([exn? raise-hopeless-exception])
