@@ -840,7 +840,8 @@
 			   (out "#")
 			   (when print-vec-length?
 			     (out (number->string (vector-length obj))))
-			   (pp-list (vector->repeatless-list obj) extra pp-expr #f depth)]
+			   (pp-list (vector->repeatless-list obj) extra pp-expr #f depth
+                                    pair? car cdr pair-open pair-close)]
 			  [(and (custom-write? obj)
 				(not (struct-type? obj)))
 			   (write-custom pp* obj pport depth display? width)]
@@ -849,12 +850,14 @@
                            (let ([v (struct->vector obj)])
                              (when (prefab?! obj v)
                                (out "s"))
-                             (pp-list (vector->list v) extra pp-expr #f depth))]
+                             (pp-list (vector->list v) extra pp-expr #f depth
+                                      pair? car cdr pair-open pair-close))]
 			  [(hash-table? obj)
 			   (out (if (hash-table? obj 'equal)
                                     "#hash"
                                     "#hasheq"))
-			   (pp-list (hash-table-map obj cons) extra pp-expr #f depth)]
+			   (pp-list (hash-table-map obj cons) extra pp-expr #f depth
+                                    pair? car cdr pair-open pair-close)]
 			  [(and (box? obj) print-box?)
 			   (out "#&") 
 			   (pr (unbox obj) extra pp-pair depth)])
