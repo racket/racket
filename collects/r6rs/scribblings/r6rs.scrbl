@@ -161,7 +161,7 @@ files. Note that this technique does not support accessing
 reference @scheme[(duck)] is treated like @scheme[(duck main)] for
 finding the library, as explained in @secref["libpaths"]. Multiple
 paths can be provided with multiple uses of @DPFlag{path}; the paths
-are search in order, and before the installation's collections.
+are searched in order, and before the installation's collections.
 
 @; ----------------------------------------
 
