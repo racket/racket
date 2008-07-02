@@ -224,7 +224,7 @@
                                      get-pure-port
                                      (lambda (ip)
                                        (copy-port ip op)))))
-                                'truncate)
+                                #:exists 'truncate)
         (pop-status)
         (let ([bitmap (make-object bitmap% tmp-filename)])
           (with-handlers ([exn:fail?
