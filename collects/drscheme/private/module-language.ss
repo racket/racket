@@ -256,8 +256,8 @@
       (fprintf (current-error-port) "Module Language: ~a\n" prefix))
     ((error-display-handler) (exn-message exn) exn)
     (when rep
-      (send rep insert-warning "\n[Interactions disabled]"))
-    (custodian-shutdown-all (send rep get-user-custodian)))
+      (send rep insert-warning "\n[Interactions disabled]")
+      (custodian-shutdown-all (send rep get-user-custodian))))
   (define (raise-hopeless-syntax-error . error-args)
     (with-handlers ([exn? raise-hopeless-exception])
       (apply raise-syntax-error '|Module Language|
