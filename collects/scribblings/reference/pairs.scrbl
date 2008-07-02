@@ -516,10 +516,6 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(last-pair [p pair?]) pair?]{
 Returns the last pair of a (possibly improper) list.}
 
-@defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) list?]{
-Synonym for @scheme[list-tail].
-}
-
 @defproc[(take [lst any/c] [pos nonnegative-exact-integer?]) list?]{
 Returns a fresh list whose elements are the first @scheme[pos] elements of
 @scheme[lst].  If @scheme[lst] has fewer than
@@ -531,6 +527,35 @@ must merely start with a chain of at least @scheme[pos] pairs.
 @examples[#:eval list-eval
  (take '(1 2 3 4) 2)
  (take 'non-list 0)
+]}
+
+@defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
+Just like @scheme[list-tail].}
+
+@defproc[(take-right [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
+Returns the @scheme[list]'s @scheme[pos]-length tail. If @scheme[lst]
+has fewer than @scheme[pos] elements, then the
+@exnraise[exn:fail:contract].
+
+The @scheme[lst] argument need not actually be a list; @scheme[lst]
+must merely end with a chain of at least @scheme[pos] pairs.
+
+@examples[#:eval list-eval
+ (take-right '(1 2 3 4) 2)
+ (take-right 'non-list 0)
+]}
+
+@defproc[(drop-right [lst any/c] [pos nonnegative-exact-integer?]) list?]{
+Returns a fresh list whose elements are the prefix of @scheme[lst],
+dropping its @scheme[pos]-length tail. If @scheme[lst] has fewer than
+@scheme[pos] elements, then the @exnraise[exn:fail:contract].
+
+The @scheme[lst] argument need not actually be a list; @scheme[lst]
+must merely end with a chain of at least @scheme[pos] pairs.
+
+@examples[#:eval list-eval
+ (drop-right '(1 2 3 4) 2)
+ (drop-right 'non-list 0)
 ]}
 
 @defproc[(add-between [lst list?] [v any/c]) list?]{
