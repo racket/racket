@@ -6,7 +6,7 @@
            "slatex.ss")
 
   (provide slatex latex pdf-slatex pdf-latex slatex/no-latex
-           filename->latex-filename nonstop-mode?)
+           filename->latex-filename)
   
   (define (add-suffix p s)
     (path->string
@@ -14,31 +14,20 @@
       (bytes-append 
        (path->bytes (if (string? p) (string->path p) p)) s))))
 
-  (define (strip-input input-file)
-    (cond
-      [(regexp-match #rx"^\\\\input{(.*)}$" input-file) => cadr]
-      [else input-file]))
-  
   (define (filename->latex-filename input-file)
-    (let* ([filename (strip-input input-file)]
-           [norm (normalize-path filename)])
+    (let* ([norm (normalize-path input-file)])
       (cond
-        [(file-exists? norm) filename]
+        [(file-exists? norm) input-file]
         [(file-exists? (add-suffix norm #".tex"))
-	 (add-suffix filename #".tex")]
+	 (add-suffix input-file #".tex")]
         [else
-         (error 'filename->latex-filename "~e does not exist" filename)])))
-
-  (define nonstop-mode?
-    (make-parameter #f))
+         (error 'filename->latex-filename "~e does not exist" input-file)])))
 
   (define (exec-latex exe file)
     (let ([latex-path (find-executable-path exe #f)])
       (unless latex-path
         (error 'latex "could not find latex binary: ~e" exe))
-      (if (nonstop-mode?)
-          (system* latex-path "\\nonstopmode" (string-append "\\input{" file "}"))
-          (system* latex-path file))))
+      (system* latex-path file)))
 
   ;; latex, pdf-latex : string -> boolean
   ;; boolean result indicates success
