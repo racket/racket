@@ -10,8 +10,10 @@
 
          drop
          take
+         split-at
          drop-right
          take-right
+         split-at-right
 
          append*
          flatten
@@ -99,27 +101,46 @@
     (raise-type-error 'drop "non-negative exact integer" n))
   (or (drop* list n) (too-large 'drop list n)))
 
+(define (split-at list0 n0)
+  (unless (exact-nonnegative-integer? n0)
+    (raise-type-error 'split-at "non-negative exact integer" n0))
+  (let loop ([list list0] [n n0] [pfx '()])
+    (cond [(zero? n) (values (reverse pfx) list)]
+          [(pair? list) (loop (cdr list) (sub1 n) (cons (car list) pfx))]
+          [else (too-large 'take list0 n0)])))
+
 ;; take/drop-right are originally from srfi-1, uses the same lead-pointer trick
 
 (define (take-right list n)
   (unless (exact-nonnegative-integer? n)
     (raise-type-error 'take-right "non-negative exact integer" n))
-  (let loop ([lag list]
+  (let loop ([list list]
              [lead (or (drop* list n) (too-large 'take-right list n))])
     ;; could throw an error for non-lists, but be more like `take'
     (if (pair? lead)
-      (loop (cdr lag) (cdr lead))
-      lag)))
+      (loop (cdr list) (cdr lead))
+      list)))
 
 (define (drop-right list n)
   (unless (exact-nonnegative-integer? n)
     (raise-type-error 'drop-right "non-negative exact integer" n))
-  (let loop ([lag list]
+  (let loop ([list list]
              [lead (or (drop* list n) (too-large 'drop-right list n))])
     ;; could throw an error for non-lists, but be more like `drop'
     (if (pair? lead)
-      (cons (car lag) (loop (cdr lag) (cdr lead)))
+      (cons (car list) (loop (cdr list) (cdr lead)))
       '())))
+
+(define (split-at-right list n)
+  (unless (exact-nonnegative-integer? n)
+    (raise-type-error 'split-at-right "non-negative exact integer" n))
+  (let loop ([list list]
+             [lead (or (drop* list n) (too-large 'split-at-right list n))]
+             [pfx '()])
+    ;; could throw an error for non-lists, but be more like `split-at'
+    (if (pair? lead)
+      (loop (cdr list) (cdr lead) (cons (car list) pfx))
+      (values (reverse pfx) list))))
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case

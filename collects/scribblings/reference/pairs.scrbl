@@ -532,6 +532,14 @@ must merely start with a chain of at least @scheme[pos] pairs.
 @defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
 Just like @scheme[list-tail].}
 
+@defproc[(split-at [lst any/c] [pos nonnegative-exact-integer?])
+         (values list? any/c)]{
+Returns the same result as
+
+@schemeblock[(values (take lst pos) (drop lst pos))]
+
+except that it can be faster.}
+
 @defproc[(take-right [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
 Returns the @scheme[list]'s @scheme[pos]-length tail. If @scheme[lst]
 has fewer than @scheme[pos] elements, then the
@@ -557,6 +565,14 @@ must merely end with a chain of at least @scheme[pos] pairs.
  (drop-right '(1 2 3 4) 2)
  (drop-right 'non-list 0)
 ]}
+
+@defproc[(split-at-right [lst any/c] [pos nonnegative-exact-integer?])
+         (values list? any/c)]{
+Returns the same result as
+
+@schemeblock[(values (drop-right lst pos) (take-right lst pos))]
+
+except that it can be faster.}
 
 @defproc[(add-between [lst list?] [v any/c]) list?]{
 

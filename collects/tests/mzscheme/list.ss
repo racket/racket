@@ -147,7 +147,12 @@
 
 ;; ---------- take/drop[-right] ----------
 (let ()
-  (define funs (list take drop take-right drop-right))
+  (define-syntax-rule (vals-list expr)
+    (call-with-values (lambda () expr) list))
+  (define (split-at*       l n) (vals-list (split-at       l n)))
+  (define (split-at-right* l n) (vals-list (split-at-right l n)))
+  (define funs (list take drop take-right drop-right
+                     split-at* split-at-right*))
   (define tests
     ;; -----args------ --take--- --drop--- --take-r--- --drop-r-
     '([((a b c d) 2)   (a b)     (c d)     (c d)       (a b)    ]
@@ -156,7 +161,12 @@
       [((a b c . d) 1) (a)       (b c . d) (c . d)     (a b)    ]
       [((a b c . d) 3) (a b c)   d         (a b c . d) ()       ]
       [(99 0)          ()        99        99          ()       ]))
-  (for ([t tests] #:when #t [expect (cdr t)] [fun funs])
+  (for ([t tests]
+        #:when #t
+        [expect `(,@(cdr t)
+                  ,(list (list-ref t 1) (list-ref t 2))
+                  ,(list (list-ref t 4) (list-ref t 3)))]
+        [fun funs])
     (apply test expect fun (car t)))
   (for ([fun funs])
     (arity-test fun 2 2)

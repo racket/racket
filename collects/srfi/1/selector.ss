@@ -35,7 +35,7 @@
 #lang scheme/base
 
 (require srfi/optional
-         (only-in scheme/list take drop take-right drop-right))
+         (only-in scheme/list take drop take-right drop-right split-at))
 
 (provide first second
          third fourth
@@ -120,6 +120,7 @@
                  lis)))
       '()))) ; Special case dropping everything -- no cons to side-effect.
 
+#; ; provided by scheme/list
 (define (split-at x k)
   (check-arg integer? k 'split-at)
   (let recur ((lis x) (k k))
