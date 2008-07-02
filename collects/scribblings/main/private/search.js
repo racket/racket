@@ -498,19 +498,22 @@ function UpdateResults() {
 
 var search_timer = false;
 function HandleKeyEvent(event) {
-  if (search_timer) clearTimeout(search_timer);
-  kill_bg_search();
   var key = null;
   if (typeof event == "string") key = event;
   else if (event) {
     switch (event.which || event.keyCode) {
-      case 13: if (event.ctrlKey) key = "C-Enter";
-               break;
+      case 13: key = (event.ctrlKey ? "C-Enter" : "Enter"); break;
       case 33: key = "PgUp";  break;
       case 34: key = "PgDn";  break;
     }
   }
+  // note: uses of DoSearch() below starts a background search, which
+  // means that the operation can still be done on the previously
+  // displayed results.
   switch (key) {
+    case "Enter": // starts a search immediately
+      DoSearch();
+      return false;
     case "C-Enter": // C-enter with no change scrolls down (S -> up)
       if (query.value == last_search_term_raw) {
         if (!event.shiftKey) first_search_result += results_num;
@@ -534,6 +537,13 @@ function HandleKeyEvent(event) {
       }
       return false;
   }
+  // what if we get a key just before the results are shown?  we might
+  // get them displayed and then the new search begins.  this can be
+  // solved by using kill_bg_search() here, but then *all* keys abort
+  // the current search, and that's a problem in case the new key
+  // won't make DoSearch start a new search (like Enter or using Tab).
+  // so leave it without that.
+  if (search_timer) clearTimeout(search_timer);
   search_timer = setTimeout(DoSearch, type_delay);
   return true;
 }
@@ -554,9 +564,9 @@ function NewQuery(node) {
 }
 new_query = NewQuery;
 
-// and this appends the the query to the current value (it's hooked
-// on the oncontextmenu handler that doesn't work everywhere, but at
-// least in FF and IE)
+// and this appends the query to the current value (it's hooked on the
+// oncontextmenu handler that doesn't work everywhere, but at least in
+// FF and IE)
 function RefineQuery(node) {
   var m = node.href.search(/[?]q=[^?&;]+$/);
   if (m < 0) return true;
