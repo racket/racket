@@ -10,9 +10,17 @@
      ;; set up drag and drop
      (error 'slatex "pdf-slatex not supported under Mac OS Classic")]
     [(windows unix macosx)
-     (when (eq? (vector) argv)
-       (error 'slatex "expected a file on the command line~n"))
-     (parameterize ([error-escape-handler exit])
-       (pdf-slatex (vector-ref argv 0)))
-     (exit)]))
+     (when (equal? (vector) argv)
+       (fprintf (current-error-port) "pdf-slatex: expected a file on the command line\n")
+       (exit 1))
+     (let-values ([(nonstop? file) (if (string=? "\\nonstopmode" (vector-ref argv 0))
+                                       (values #t (vector-ref argv 1))
+                                       (values #f (vector-ref argv 0)))])
+     (let ([result
+            (parameterize ([error-escape-handler exit]
+                           [nonstop-mode? nonstop?])
+              (pdf-slatex file))])
+       (if result
+           (exit)
+           (exit 1))))]))
 

@@ -12,12 +12,16 @@
      
      (for-each slatex (vector->list argv))]
     [(windows unix macosx)
-     (when (eq? (vector) argv)
+     (when (equal? (vector) argv)
        (fprintf (current-error-port) "slatex: expected a file on the command line\n")
        (exit 1))
+     (let-values ([(nonstop? file) (if (string=? "\\nonstopmode" (vector-ref argv 0))
+                                       (values #t (vector-ref argv 1))
+                                       (values #f (vector-ref argv 0)))])
      (let ([result
-            (parameterize ([error-escape-handler exit])
-              (slatex (vector-ref argv 0)))])
+            (parameterize ([error-escape-handler exit]
+                           [nonstop-mode? nonstop?])
+              (slatex file))])
        (if result
            (exit)
-           (exit 1)))]))
+           (exit 1))))]))

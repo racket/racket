@@ -1,33 +1,44 @@
 
-(module slatex-wrapper mzscheme
+(module slatex-wrapper scheme/base
   (require mzlib/file
 	   mzlib/process
 	   mzlib/sendevent
            "slatex.ss")
 
   (provide slatex latex pdf-slatex pdf-latex slatex/no-latex
-           filename->latex-filename)
-
+           filename->latex-filename nonstop-mode?)
+  
   (define (add-suffix p s)
     (path->string
      (bytes->path 
       (bytes-append 
        (path->bytes (if (string? p) (string->path p) p)) s))))
 
+  (define (strip-input input-file)
+    (cond
+      [(regexp-match #rx"^\\\\input{(.*)}$" input-file) => cadr]
+      [else input-file]))
+  
   (define (filename->latex-filename input-file)
-    (let ([norm (normalize-path input-file)])
+    (let* ([filename (strip-input input-file)]
+           [norm (normalize-path filename)])
       (cond
-        [(file-exists? norm) input-file]
+        [(file-exists? norm) filename]
         [(file-exists? (add-suffix norm #".tex"))
-	 (add-suffix input-file #".tex")]
+	 (add-suffix filename #".tex")]
         [else
-         (error 'filename->latex-filename "~e does not exist" input-file)])))
+         (error 'filename->latex-filename "~e does not exist" filename)])))
+
+  (define nonstop-mode?
+    (make-parameter #f))
 
   (define (exec-latex exe file)
     (let ([latex-path (find-executable-path exe #f)])
       (unless latex-path
         (error 'latex "could not find latex binary: ~e" exe))
-      (system* latex-path file)))
+      (if (nonstop-mode?)
+          (system* latex-path "\\nonstopmode" (string-append "\\input{" file "}"))
+          (system* latex-path file))))
 
   ;; latex, pdf-latex : string -> boolean
   ;; boolean result indicates success
