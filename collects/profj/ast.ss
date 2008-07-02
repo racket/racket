@@ -310,9 +310,10 @@
   ;(make-check-mutate (U #f type) src Expression Expression src)
   (p-define-struct (check-mutate check) (mutate check op-src))
   
-  ;(make-check-effect (U #f type) src (listof id) (listof Expression) (U Expression (listof Expression)))
+  ;(make-check-effect (U #f type) src (listof access) (listof Expression) (U Expression (listof Expression)))
   (p-define-struct (check-effect check) (vars conds test))
   
+  ;(make-test-id (U #f type) src string)
   (p-define-struct (test-id expr) (id))
   
 )

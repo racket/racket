@@ -2310,6 +2310,7 @@
                                                 (assignment-key-src expr)
                                                 (expr-src expr)))
       ((check? expr) (translate-check expr))
+      ((test-id? expr) (translate-id (test-id-id expr)  (expr-src expr)))
       (else
        (error 'translate-expression (format "Translate Expression given unrecognized expression ~s" expr)))))
   
@@ -3113,8 +3114,9 @@
           [ts (map (lambda (t) (create-syntax #f `(lambda () ,(translate-expression t)) #f)) test)])
       (make-syntax #f
                    `(let (,@(map (lambda (id)
-                                   `(,(string->symbol (format "~a@" id)) ,id))
-                                 (map id-string ids)))
+                                   `(,(string->symbol (format "~a@" id)) ,(build-identifier (build-var-name id))))
+                                 (map (apply compose (list id-string local-access-name access-name))
+                                      ids)))
                       ,@(map (lambda (t) `(,t)) ts)
                       ,@(map (lambda (c) `(,c)) cs))
                    (build-src src))))

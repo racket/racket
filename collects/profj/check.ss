@@ -37,7 +37,7 @@
   
   ;;Environment variable properties
   ;;(make-properties bool bool bool bool bool bool)
-  (define-struct properties (parm? field? static? settable? final? usable? set?) #:transparent #:mutable)
+  (define-struct properties (parm? field? static? settable? final? usable? (set? #:mutable)) #:transparent)
   (define parm (make-properties #t #f #f #t #f #t #t))
   (define final-parm (make-properties #t #f #f #f #t #t #t))
   (define method-var (make-properties #f #f #f #t #f #t #f))
@@ -1562,6 +1562,11 @@
                         (check-test-exprs exp
                                           check-sub-expr
                                           env level type-recs)))
+        ((test-id? exp)
+         (set-expr-type exp
+                        (check-test-var (test-id-id exp)
+                                        (expr-src exp)
+                                        env)))
          )))
 
   ;;check-bin-op: symbol exp exp (exp env -> type/env) env src-loc symbol type-records -> type/env
@@ -2981,32 +2986,55 @@
       (make-type/env 'boolean (type/env-e checker-type))))
   
     
-  ;check-test-effect: (list id) (list exp) (list exp) (exp env -> type/env) env src type-records -> type/env
+  ;check-test-effect: (list access) (list exp) (list exp) (exp env -> type/env) env src type-records -> type/env
   (define (check-test-effect vars conds test check-e env src type-recs)
-    (let ([unbound-vars (filter (lambda (v) (not (lookup-var-in-env (id-string v) env))) vars)])
-      (unless (null? unbound-vars)
-        (check-test-effect-error 'unbound-vars unbound-vars))
-      (let ([t-ts/e
-             (foldr (lambda (e acc)
-                      (let* ([env (car acc)]
-                             [curr (check-e e env)])
-                        (cons (type/env-e curr)
-                              (cons (type/env-t curr) (cdr acc)))))
-                    (list env)
-                    test)])
-        (let ([c-ts/e
-               (foldr (lambda (e acc)
-                        (let* ([env (car acc)]
-                               [curr (check-e e env)])
-                          (cons (type/env-e curr)
-                                (cons (type/env-t curr) (cdr acc)))))
-                      (list (car t-ts/e))
-                      conds)])
-          (unless (andmap (lambda (te) (eq? 'boolean te)) (cdr c-ts/e))
-            (check-test-effect-error 'bad-cond-type))
-          (make-type/env 'boolean (car c-ts/e))))))
+    (for-each (lambda (id) 
+                (with-handlers ((exn? (lambda (e) (effect-vars-error (local-access-name (access-name id))
+                                                                     (expr-src id)))))
+                  (check-e id env))) vars)
+    (let* ([t-ts/e
+           (foldr (lambda (e acc)
+                    (let* ([env (car acc)]
+                           [curr (check-e e env)])
+                      (cons (type/env-e curr)
+                            (cons (type/env-t curr) (cdr acc)))))
+                  (list env)
+                  test)]
+           [conds-env 
+            (let loop ([test-vars vars] [env (car t-ts/e)])
+              (cond
+                [(null? test-vars) env]
+                [else 
+                 (loop
+                  (cdr test-vars)
+                  (add-var-to-env (string-append (id-string (local-access-name (access-name (car vars)))) "@")
+                                  (expr-types (car test-vars))
+                                  final-parm
+                                  env))]))]
+           [c-ts/e
+            (foldr (lambda (e acc)
+                     (let* ([env (car acc)]
+                            [curr (check-e e env)])
+                       (cons (type/env-e curr)
+                             (cons (type/env-t curr) (cdr acc)))))
+                   (list conds-env)
+                   conds)])
+      (unless (andmap (lambda (te) (eq? 'boolean te)) (cdr c-ts/e))
+        (check-test-effect-error 'bad-cond-type))
+      (make-type/env 'boolean (unnest-var env (car c-ts/e)))))
 
+  (define (check-test-var id src env)
+    (let ([t (lookup-var-in-env id env)])
+      (unless t (check-test-effect-error 'test-var))
+      (make-type/env (var-type-type t) env)))
   
+  (define (effect-vars-error id src)
+    (let ([var (id->ext-name id)])
+      (raise-error
+       var
+       (format "Effect variables in 'checkEffect' must be previously defined. ~a is undefined." var)
+       'checkEffect src)))
+     
   (define check-test-effect-error error)
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

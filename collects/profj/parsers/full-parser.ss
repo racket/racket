@@ -1046,8 +1046,9 @@
       
       (EffectVars
        [() null]
-       [(IDENTIFIER) (list (make-id $1 (build-src 1)))]
-       [(EffectVars COMMA IDENTIFIER) (cons (make-id $3 (build-src 3 3)) $1)])
+       [(IDENTIFIER) (list (make-access #f (build-src 1) (make-local-access (make-id $1 (build-src 1)))))]
+       [(EffectVars COMMA IDENTIFIER) 
+        (cons (make-access #f (build-src 3 3) (make-local-access (make-id $3 (build-src 3 3)))) $1)])
             
       (EffectConds
        [() null]
