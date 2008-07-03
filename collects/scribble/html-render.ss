@@ -189,22 +189,24 @@
 
 )
 
-(define (search-box) ; appears on every page
-  (let ([sa string-append])
+(define search-box ; appears on every page
+  (let ([sa         string-append]
+        [emptylabel "...search manuals..."]
+        [dimcolor   "#888"])
     `(input
       ([style ,(sa "font-size: 60%; margin: 0px; padding: 0px;"
-                   " background-color: #eee; color: #888;"
+                   " background-color: #eee; color: "dimcolor";"
                    " border: 1px solid #ddd; text-align: center;")]
        [type "text"]
-       [value "...search manuals..."]
+       [value ,emptylabel]
        [title "Enter a search string to search the manuals"]
        [onkeypress ,(format "return DoSearchKey(event, this, ~s);" (version))]
        [onfocus ,(sa "this.style.color=\"black\";"
-                     " if (this.value.indexOf(\"...search...\")>=0)"
+                     " if (this.value.indexOf(\""emptylabel"\")>=0)"
                      " this.value=\"\";")]
        [onblur ,(sa "if (this.value.match(/^ *$/)) {"
-                    " this.style.color=\"#888\";"
-                    " this.value=\"...search...\"; }")]))))
+                    " this.style.color=\""dimcolor"\";"
+                    " this.value=\""emptylabel"\"; }")]))))
 
 ;; ----------------------------------------
 ;;  main mixin
@@ -625,7 +627,7 @@
          `[onclick . ,(format "return GotoPLTRoot(\"~a\");" (version))]))
       (define navleft
         `(span ([class "navleft"])
-           ,(search-box)
+           ,search-box
            nbsp
            ,@(render (make-element (if up-path top-link "nonavigation")
                                    top-content))
