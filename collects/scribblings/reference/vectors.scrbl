@@ -131,7 +131,7 @@ the elements of @scheme[vec] from @scheme[start-pos] (inclusive) to
 @exnraise[exn:fail:contract].}
 
 @defproc[(build-vector [n exact-nonnegative-integer?]
-                       [proc (exact-nonnegative-integer? . -> . any.c)])
+                       [proc (exact-nonnegative-integer? . -> . any/c)])
          vector?]{
 
 Creates a vector of @scheme[n] elements by applying @scheme[proc] to
