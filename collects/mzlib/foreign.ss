@@ -1221,8 +1221,8 @@
 (provide define-cpointer-type)
 (define-syntax (define-cpointer-type stx)
   (syntax-case stx ()
-    [(_ _TYPE) #'(_ _TYPE #f #f #f)]
-    [(frm _TYPE ptr-type) #'(frm _TYPE ptr-type #f #f)]
+    [(_ _TYPE) #'(define-cpointer-type _TYPE #f #f #f)]
+    [(_ _TYPE ptr-type) #'(define-cpointer-type _TYPE ptr-type #f #f)]
     [(_ _TYPE ptr-type scheme->c c->scheme)
      (and (identifier? #'_TYPE)
           (regexp-match #rx"^_.+" (symbol->string (syntax-e #'_TYPE))))
