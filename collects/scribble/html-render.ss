@@ -554,12 +554,13 @@
             (values prev (and (pair? (cdr l)) (cadr l)))
             (loop (cdr l) (car l))))))
 
+    (define top-content      '("top"))
     (define contents-content '("contents"))
-    (define index-content '("index"))
-    (define prev-content '(larr " prev"))
-    (define up-content '("up"))
-    (define next-content '("next " rarr))
-    (define sep-element (make-element #f '(nbsp nbsp)))
+    (define index-content    '("index"))
+    (define prev-content     '(larr " prev"))
+    (define up-content       '("up"))
+    (define next-content     '("next " rarr))
+    (define sep-element      (make-element #f '(nbsp nbsp)))
 
     (define/public (derive-filename d) "bad.html")
 
@@ -611,63 +612,62 @@
           (make-with-attributes #f
             `([title . ,(if title* (string-append label " to " title*) label)]
               ,@more))))
-      (define (navbar)
+      (define top-link
+        (titled-url
+         "up" "../index.html"
+         `[onclick . ,(format "return GotoPLTRoot(\"~a\");" (version))]))
+      (define navleft
+        `(span ([class "navleft"])
+           ,(search-box)
+           nbsp
+           ,@(render (make-element (if up-path top-link "nonavigation")
+                                   top-content))
+           nbsp
+           ,@(render (make-element
+                      (if parent
+                        (make-target-url "index.html" #f)
+                        "nonavigation")
+                      contents-content))
+           nbsp
+           ,@(render (if (or (not index) (eq? d index))
+                       (make-element "nonavigation" index-content)
+                       (make-link-element
+                        #f index-content (car (part-tags index)))))))
+      (define navright
+        `(span ([class "navright"])
+           ,@(render
+              (make-element
+               (cond [(not parent) "nonavigation"]
+                     [prev (titled-url "backward" prev)]
+                     [else (titled-url "backward" "index.html"
+                                       #:title-from
+                                       (and (part? parent) parent))])
+               prev-content)
+              sep-element
+              (make-element
+               (cond
+                 [(and (part? parent) (toc-part? parent) (part-parent parent ri))
+                  (titled-url "up" parent)]
+                 [parent (titled-url "up" "index.html" #:title-from parent)]
+                 ;; up-path = #t => go up to the start page, using
+                 ;; cookies to get to the user's version of it (see
+                 ;; scribblings/main/private/utils for the code that
+                 ;; creates these cookies.)
+                 [(eq? #t up-path) top-link]
+                 [up-path (titled-url "up" up-path)]
+                 [else "nonavigation"])
+               up-content)
+              sep-element
+              (make-element
+               (if next (titled-url "forward" next) "nonavigation")
+               next-content))))
+      (define navbar
         `(div ([class "navset"]
                [style ,(let ([v (if top? 'bottom 'top)])
                          (format "margin-~a: 2em; border-~a: ~a"
                                  v v "2px solid #e0e0c0;"))])
-           (span ([class "navleft"])
-             ,@(render (make-element
-                        (if parent
-                          (make-target-url "index.html" #f)
-                          "nonavigation")
-                        contents-content))
-             ,@(if index
-                 `(nbsp
-                   ,@(render (if (eq? d index)
-                               (make-element "nonavigation" index-content)
-                               (make-link-element
-                                #f index-content (car (part-tags index)))))
-                   #; ; no need for these index-local searches
-                   ,@(if (eq? d index)
-                       null
-                       `((span ([class "smaller"]) nbsp ,(search-index-box)))))
-                 null)
-             ,@(if up-path `(nbsp ,(search-box)) null))
-           (span ([class "navright"])
-             ,@(render
-                (make-element
-                 (cond [(not parent) "nonavigation"]
-                       [prev (titled-url "backward" prev)]
-                       [else (titled-url "backward" "index.html"
-                                         #:title-from
-                                         (and (part? parent) parent))])
-                 prev-content)
-                sep-element
-                (make-element
-                 (cond
-                   [(and (part? parent) (toc-part? parent)
-                         (part-parent parent ri))
-                    (titled-url "up" parent)]
-                   [parent (titled-url "up" "index.html" #:title-from parent)]
-                   ;; up-path = #t => go up to the start page, using
-                   ;; cookies to get to the user's version of it (see
-                   ;; scribblings/main/private/utils for the code that
-                   ;; creates these cookies.)
-                   [(eq? #t up-path)
-                    (titled-url
-                     "up" "../index.html"
-                     `[onclick
-                       . ,(format "return GotoPLTRoot(\"~a\");" (version))])]
-                   [up-path (titled-url "up" up-path)]
-                   [else "nonavigation"])
-                 up-content)
-                sep-element
-                (make-element
-                 (if next (titled-url "forward" next) "nonavigation")
-                 next-content)))
-           nbsp)) ; needed to make the navset background visible
-      (if (or prev next parent index up-path) (list (navbar)) null))
+           ,navleft ,navright nbsp)) ; need nbsp to make the navset bg visible
+      (list navbar))
 
     (define/override (render-one d ri fn)
       (render-one-part d ri fn null))
