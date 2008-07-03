@@ -142,9 +142,10 @@ If the namespace does not, they are colored the unbound color.
     (define-struct (tail-arrow arrow) (from-text from-pos to-text to-pos))
     
     ;; color : string
+    ;; text: text:basic<%>
     ;; start, fin: number
     ;; used to represent regions to highlight when passing the mouse over the syncheck window
-    (define-struct colored-region (color start fin))
+    (define-struct colored-region (color text start fin))
     
     ;; id : symbol  --  the nominal-source-id from identifier-binding
     ;; filename : path
@@ -399,7 +400,8 @@ If the namespace does not, they are colored the unbound color.
                 (add-to-range/key text start-pos end-pos make-menu key #t)))
             
             (define/public (syncheck:add-background-color text color start fin key)
-              (add-to-range/key text start fin (make-colored-region color start fin) key #f))
+              (when (is-a? text text:basic<%>)
+                (add-to-range/key text start fin (make-colored-region color text start fin) key #f)))
             
             ;; syncheck:add-arrow : symbol text number number text number number boolean -> void
             ;; pre: start-editor, end-editor are embedded in `this' (or are `this')
@@ -755,13 +757,15 @@ If the namespace does not, they are colored the unbound color.
               (let ([new-region (and eles (ormap (λ (x) (and (colored-region? x) x)) eles))])
                 (unless (eq? current-colored-region new-region)
                   (when current-colored-region
-                    (unhighlight-range (colored-region-start current-colored-region)
-                                       (colored-region-fin current-colored-region)
-                                       (send the-color-database find-color (colored-region-color current-colored-region))))
+                    (send (colored-region-text current-colored-region) unhighlight-range 
+                          (colored-region-start current-colored-region)
+                          (colored-region-fin current-colored-region)
+                          (send the-color-database find-color (colored-region-color current-colored-region))))
                   (when new-region
-                    (highlight-range (colored-region-start new-region)
-                                     (colored-region-fin new-region)
-                                     (send the-color-database find-color (colored-region-color new-region))))
+                    (send (colored-region-text new-region) highlight-range
+                          (colored-region-start new-region)
+                          (colored-region-fin new-region)
+                          (send the-color-database find-color (colored-region-color new-region))))
                   (set! current-colored-region new-region))))
                 
             ;; tack/untack-callback : (listof arrow) -> void
