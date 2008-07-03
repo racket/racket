@@ -419,7 +419,7 @@ If the namespace does not, they are colored the unbound color.
             (define/public (syncheck:add-tail-arrow from-text from-pos to-text to-pos)
               (let ([tail-arrow (make-tail-arrow #f #f #f #f to-text to-pos from-text from-pos)])
                 (add-to-range/key from-text from-pos (+ from-pos 1) tail-arrow #f #f)
-                (add-to-range/key from-text to-pos (+ to-pos 1) tail-arrow #f #f)))
+                (add-to-range/key to-text to-pos (+ to-pos 1) tail-arrow #f #f)))
             
             ;; syncheck:add-jump-to-definition : text start end id filename -> void
             (define/public (syncheck:add-jump-to-definition text start end id filename)
@@ -2461,17 +2461,18 @@ If the namespace does not, they are colored the unbound color.
                          (syntax-span stx))
                 (let* ([start (- (syntax-position stx) 1)]
                        [fin (+ start (syntax-span stx))]
+                       [source-editor (find-source-editor stx)]
                        [xref (get-xref)])
-                  (when xref
+                  (when (and xref source-editor)
                     (let ([definition-tag (xref-binding->definition-tag xref binding-info #f)])
                       (when definition-tag
                         (let-values ([(path tag) (xref-tag->path+anchor xref definition-tag)])
                           (when path
                             (let ([index-entry (xref-tag->index-entry xref definition-tag)])
                               (when index-entry
-                                (send defs-text syncheck:add-background-color defs-text "navajowhite" start fin (syntax-e stx))
+                                (send defs-text syncheck:add-background-color source-editor "navajowhite" start fin (syntax-e stx))
                                 (send defs-text syncheck:add-menu
-                                      defs-text
+                                      source-editor
                                       start 
                                       fin 
                                       (syntax-e stx)
