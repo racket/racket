@@ -596,9 +596,16 @@
       (define (titled-url label x #:title-from [tfrom #f] . more)
         (define-values (url title)
           (cond [(part? x)
-                 (values (derive-filename x)
-                         (string-append
-                          "\"" (content->string (part-title-content x)) "\""))]
+                 (values
+                  (derive-filename x)
+                  (string-append
+                   "\""
+                   (content->string
+                    (append (format-number (collected-info-number
+                                            (part-collected-info x ri))
+                                           '(" "))
+                            (part-title-content x)))
+                   "\""))]
                 [(equal? x "index.html") (values x "the manual top")]
                 [(equal? x "../index.html") (values x "the documentation top")]
                 [(string? x) (values x #f)]
