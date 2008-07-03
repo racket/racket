@@ -82,7 +82,12 @@
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)  
-  (raise-typecheck-error (apply format msg rest) (list (locate-stx (current-orig-stx)))))
+  (let ([stx (locate-stx (current-orig-stx))])
+    ;; If this isn't original syntax, then we can get some pretty bogus error messages.  Note
+    ;; that this is from a macro expansion, so that introduced vars and such don't confuse the user.
+    (if (syntax-original? stx)
+        (raise-typecheck-error (apply format msg rest) (list stx))
+        (raise-typecheck-error (apply format (string-append "Error in macro expansion -- " msg) rest) (list stx)))))
 
 ;; produce a type error, given a particular syntax
 (define (tc-error/stx stx msg . rest)
