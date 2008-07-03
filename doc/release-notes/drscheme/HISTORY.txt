@@ -1,4 +1,11 @@
 ------------------------------
+        Version 4.0.2
+------------------------------
+
+  . fixed a bug in profj that triggered bad behavior when planet
+    packages were installed via drscheme
+
+------------------------------
         Version 4.0.1
 ------------------------------
 
