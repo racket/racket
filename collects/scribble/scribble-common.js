@@ -46,7 +46,7 @@ function NormalizePath(path) {
 
 function DoSearchKey(event, field, ver) {
   var val = field.value;
-  if (event && event.keyCode == 13 && val.indexOf("...search...") < 0) {
+  if (event && event.keyCode == 13 && val.indexOf("...search manuals...") < 0) {
     var u = GetCookie("PLT_Root."+ver, null);
     if (u == null) u = "../"; // default: go up
     location = u + "search/index.html" + "?q=" + escape(val);
