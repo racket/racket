@@ -126,15 +126,8 @@
  string-tokenize
  string-replace
 
- ;; R5RS extended, re-exported:
- ;; I could do this:
- ;; (rename extended-string-fill! string-fill!)
- ;; (rename extended-string->list string->list)
- ;; and it would work fine in the top level, but you won't be
- ;; able to (require "string.ss" "srfi") into another module,
- ;; so I won't.  FIXME: is there any other way?
- extended-string-fill!
- extended-string->list
+ s:string-fill!
+ s:string->list
  ;; R5RS re-exports:
  ;; string-copy
  ;; string? make-string string-length string-ref string-set!
@@ -1281,9 +1274,9 @@
 ;; string-copy! to tstart from [fstart fend]
 ;;    Guaranteed to work, even if s1 eq s2.
 
-(define (extended-string-fill! s char . maybe-start+end)
-  (check-arg char? char 'extended-string-fill!)
-  (let-string-start+end (start end) 'extended-string-fill! s maybe-start+end
+(define (s:string-fill! s char . maybe-start+end)
+  (check-arg char? char 'string-fill!)
+  (let-string-start+end (start end) 'string-fill! s maybe-start+end
     (do ((i (- end 1) (- i 1)))
         ((< i start))
       (string-set! s i char))))
@@ -1485,14 +1478,14 @@
                              (if (= vi -1) 0
                                  (lp2 vi))))))))))))))
 
-
+
 ;; Misc
 ;;
 ;; (string-null? s)
 ;; (string-reverse  s [start end])
 ;; (string-reverse! s [start end])
 ;; (reverse-list->string clist)
-;; (extended-string->list s [start end])
+;; (s:string->list s [start end])
 
 (define (string-null? s) (zero? (string-length s)))
 
@@ -1526,11 +1519,11 @@
     s))
 
 
-;; (define (extended-string->list s . maybe-start+end)
+;; (define (s:string->list s . maybe-start+end)
 ;;  (apply string-fold-right cons '() s maybe-start+end))
 
-(define (extended-string->list s . maybe-start+end)
-  (let-string-start+end (start end) 'extended-string->list s maybe-start+end
+(define (s:string->list s . maybe-start+end)
+  (let-string-start+end (start end) 'string->list s maybe-start+end
     (do ((i (- end 1) (- i 1))
          (ans '() (cons (string-ref s i) ans)))
         ((< i start) ans))))
@@ -1795,7 +1788,7 @@
             ((zero? slen) (error 'string-xcopy! "Cannot replicate empty (sub)string: ~a ~a ~a ~a ~a ~a ~a" target tstart s sfrom sto start end))
 
             ((= 1 slen)        ; Fast path for 1-char replication.
-             (extended-string-fill! target (string-ref s start) tstart tend))
+             (s:string-fill! target (string-ref s start) tstart tend))
 
             ;; Selected text falls entirely within one span.
             ((= (floor (/ sfrom slen)) (floor (/ sto slen)))
