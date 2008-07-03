@@ -58,18 +58,24 @@ table td {
 /* ---------------------------------------- */
 /* Navigation */
 
+.navset {
+  background-color: #f0f0e0;
+}
+
 .navleft {
+  margin-left: 1ex;
   position: relative;
   float: left;
   white-space: nowrap;
 }
 .navright {
+  margin-right: 1ex;
   position: relative;
   float: right;
   white-space: nowrap;
 }
 .nonavigation {
-  color: #EEEEEE;
+  color: #e0e0e0;
 }
 
 /* ---------------------------------------- */
@@ -116,15 +122,15 @@ table td {
 /* Table of contents, inline */
 
 .toclink {
-text-decoration: none;
-color: blue;
-font-size: 85%;
+  text-decoration: none;
+  color: blue;
+  font-size: 85%;
 }
 
 .toptoclink {
-text-decoration: none;
-color: blue;
-font-weight: bold;
+  text-decoration: none;
+  color: blue;
+  font-weight: bold;
 }
 
 /* ---------------------------------------- */
@@ -139,13 +145,13 @@ font-weight: bold;
 
 .tocview {
   text-align: left;
-  background-color: #F5F5DC;
+  background-color: #f0f0e0;
 }
 
 .tocsub {
   text-align: left;
   margin-top: 0.5em;
-  background-color: #F5F5F5;
+  background-color: #f0f0e0;
 }
 
 .tocviewtitle {
