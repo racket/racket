@@ -391,15 +391,15 @@
                      [content (if (null? toc-content)
                                 content
                                 `((a ([href "index.html"] [class "tocviewlink"])
-                                     ,@content)))])
+                                    ,@content)))])
                 `((div ([class "tocview"])
-                       (div ([class "tocviewtitle"]) ,@content)
-                       (div nbsp)
-                       ,@(if (null? toc-content)
-                           '()
-                           (toc-wrap
-                            `(table ([class "tocviewlist"] [cellspacing "0"])
-                                    ,@toc-content)))))))
+                    (div ([class "tocviewtitle"]) ,@content)
+                    (div nbsp)
+                    ,@(if (null? toc-content)
+                        '()
+                        (toc-wrap
+                         `(table ([class "tocviewlist"] [cellspacing "0"])
+                            ,@toc-content)))))))
           ,@(render-onthispage-contents
              d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
           ,@(parameterize ([extra-breaking? #t])
@@ -1153,11 +1153,12 @@
   (define d-in? (and d (in-plt? e-d)))
   ;; use an absolute link if the link is from outside the plt tree
   ;; going in (or if d is #f)
-  (if (not (and d (cond [(equal? p-in? d-in?) #t]
-                        [d-in? (error 'from-root
-                                      "got a link from the PLT going out; ~e"
-                                      p)]
-                        [else #f])))
+  (if (not (and d (cond
+                    [(equal? p-in? d-in?) #t]
+                    [d-in? (error 'from-root
+                                  "got a link from the PLT tree going out; ~e"
+                                  p)]
+                    [else #f])))
     (url->string (path->url (path->complete-path p)))
     (let loop ([e-d e-d] [e-p e-p])
       (cond
