@@ -111,7 +111,7 @@
     (test "#(1234567890xx\n  1\n  2\n  3\n  4)" pretty-format (vector '1234567890xx 1 2 3 4))
     (test "#s(apple\n   1234567890xx\n   1\n   2\n   3\n   4)" pretty-format #s(apple 1234567890xx 1 2 3 4))
     (test "#(struct:a\n  1234567890xx\n  1)" pretty-format (make-a '1234567890xx 1))
-    (test "#hash((a . 567890xx)\n      (b . 1))" pretty-format #hash((a . 567890xx) (b . 1)))
+    (test "#hash((a\n       .\n       1234567890xx))" pretty-format #hash((a . 1234567890xx)))
     (test "(lambda 1234567890\n  1\n  2\n  3\n  4)" pretty-format '(lambda 1234567890 1 2 3 4))
     (test "(if 12345678903333\n  a\n  b)" pretty-format '(if 12345678903333 a b))
     (test "(cond\n (12345678903333 a)\n (else b))" pretty-format '(cond [12345678903333 a][else b]))
