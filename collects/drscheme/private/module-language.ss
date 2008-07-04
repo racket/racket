@@ -19,7 +19,8 @@
   (import [prefix drscheme:language-configuration: drscheme:language-configuration/internal^]
           [prefix drscheme:language: drscheme:language^]
           [prefix drscheme:unit: drscheme:unit^]
-          [prefix drscheme:rep: drscheme:rep^])
+          [prefix drscheme:rep: drscheme:rep^]
+          [prefix drscheme:init: drscheme:init^])
   (export drscheme:module-language^)
   
   (define module-language<%>
@@ -245,20 +246,29 @@
   (define hopeless-repl (make-thread-cell #t))
   (define (raise-hopeless-exception exn [prefix #f])
     (define rep (drscheme:rep:current-rep))
-    ;; MINOR HACK: since this is a value that is used by the drscheme thread,
-    ;; Robby says it's better to set it while in that thread.  This requires
-    ;; adding `drscheme:init^' to the imports to get
-    ;; `drscheme:init:system-eventspace', or make `queue-system-callback/sync'
-    ;; into a public method (accessible here).
-    (if (not rep)
-      (raise exn)
-      (begin
-        (send rep set-show-no-user-evaluation-message? #f)
-        (when prefix
-          (fprintf (current-error-port) "Module Language: ~a\n" prefix))
-        ((error-display-handler) (exn-message exn) exn)
-        (send rep insert-warning "\n[Interactions disabled]")
-        (custodian-shutdown-all (send rep get-user-custodian)))))
+    
+    ;; if we don't have the drscheme rep, then we just raise
+    ;; the exception as normal. (I don't think this can happen...?)
+    (unless rep
+      (raise exn))
+    
+    (let ([send-over 
+           (λ (t)
+             (let ([s (make-semaphore 0)])
+               (parameterize ([current-eventspace drscheme:init:system-eventspace])
+                 (queue-callback
+                  (λ ()
+                    (t)
+                    (semaphore-post s))))
+               (semaphore-wait s)))])
+      
+      (send-over (λ () (send rep set-show-no-user-evaluation-message? #f)))
+      (when prefix
+        (fprintf (current-error-port) "Module Language: ~a\n" prefix))
+      ((error-display-handler) (exn-message exn) exn)
+      (send-over
+       (λ () (send rep insert-warning "\nInteractions disabled.")))
+      (custodian-shutdown-all (send rep get-user-custodian))))
   (define (raise-hopeless-syntax-error . error-args)
     (with-handlers ([exn? raise-hopeless-exception])
       (apply raise-syntax-error '|Module Language|
