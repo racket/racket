@@ -746,6 +746,7 @@
       
       (Primary
        [(PrimaryNoNewArray) $1]
+       [(TEST_IDENTIFIER) (make-test-id #f (build-src 1) $1)]
        [(ArrayCreationExpression) $1])
       
       (PrimaryNoNewArray
@@ -886,7 +887,6 @@
       (PostfixExpression
        [(Primary) $1]
        [(Name) (name->access $1)]
-       [(TEST_IDENTIFIER) (make-test-id #f (build-src 1) $1)]
        [(PostIncrementExpression) $1]
        [(PostDecrementExpression) $1])
       

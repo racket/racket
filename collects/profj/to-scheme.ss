@@ -1143,12 +1143,13 @@
                           (define o null)
                           (define field-map (make-hasheq))
                           (define/public (log obj) (set! o obj))
-                          (define/public (get-field field)
+                          (define/public (get-field-stm field)
                             (or (hash-ref field-map field #f)
-                                (get-field o field)))
-                          (define/public (set-field! field value)
+                                (eval `(get-field ,field ,o))))
+                          (define/public (set-field-stm! field value)
                             (hash-set! field-map field value)
                             value)
+                          (define/public (my-name) (send o my-name))
                           ,@(generate-stm-fields fields)
                           ,@(generate-stm-methods methods))))
                    #f))
@@ -1668,7 +1669,8 @@
                                           (lambda (obj)
                                             (cond
                                               ((is-a? obj ,class) (normal-get obj))
-                                              ((is-a? obj stm-wrapper) (send obj get-field))
+                                              ((is-a? obj stm-wrapper) 
+                                               (send obj get-field-stm (quote ,quote-name)))
                                               (else 
                                                (send obj 
                                                      ,(build-identifier (format "~a-wrapped" getter))))))))
@@ -1681,7 +1683,8 @@
                                                (lambda (obj val)
                                                  (cond
                                                    [(is-a? obj ,class) (normal-set obj val)]
-                                                   [(is-a? obj stm-wrapper) (send obj set-field! val)]
+                                                   [(is-a? obj stm-wrapper) 
+                                                    (send obj set-field-stm! (quote ,quote-name) val)]
                                                    [else
                                                     (send obj ,(build-identifier (format "~a-wrapped" setter)) val)]))))
                                           #f))
@@ -3108,15 +3111,27 @@
                                                                         (lambda () #f)))
                    (build-src src))))
   
-  ;translate-check-effect: (listof id) (listof expression) (listof expression) src -> syntax
+  ;translate-check-effect: (listof access) (listof expression) (listof expression) src -> syntax
   (define (translate-check-effect ids conds test src)
     (let ([cs (map (lambda (c) (create-syntax #f `(lambda () ,(translate-expression c)) #f)) conds)]
           [ts (map (lambda (t) (create-syntax #f `(lambda () ,(translate-expression t)) #f)) test)])
       (make-syntax #f
-                   `(let (,@(map (lambda (id)
-                                   `(,(string->symbol (format "~a@" id)) ,(build-identifier (build-var-name id))))
-                                 (map (apply compose (list id-string local-access-name access-name))
-                                      ids)))
+                   `(let (,@(apply 
+                             append
+                             (map (lambda (id type)
+                                    (let ([var (build-identifier (build-var-name id))])
+                                      `((,(string->symbol (format "~a@" id)) ,var)
+                                        (,var 
+                                         ,(cond
+                                            [(or (prim-numeric-type? type) (eq? type 'boolean)) var]
+                                            [else 
+                                             `(let ([obj@ (make-object 
+                                                              ,(build-identifier 
+                                                                (string-append (ref-type-class/iface type) "-stm")))])
+                                                (send obj@ log ,var)
+                                                obj@)])))))
+                                 (map (apply compose (list id-string local-access-name access-name)) ids)
+                                 (map expr-types ids))))
                       ,@(map (lambda (t) `(,t)) ts)
                       ,@(map (lambda (c) `(,c)) cs))
                    (build-src src))))

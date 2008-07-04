@@ -1426,7 +1426,7 @@
   (define static-NullPointerException/c
     (c:flat-named-contract "NullPointerException" (lambda (c) (is-a? c guard-convert-NullPointerException))))
 
-  (define stm-wrapper (interface () log get-field set-field!))
+  (define stm-wrapper (interface () log get-field-stm set-field-stm!))
   (provide stm-wrapper)
   
   )
