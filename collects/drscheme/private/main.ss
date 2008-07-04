@@ -288,6 +288,9 @@
 (install-help-browser-preference-panel)
 (drscheme:tools:add-prefs-panel)
 
+(drscheme:language:register-capability 'drscheme:tabify-menu-callback 
+                                       (or/c false/c (-> (is-a?/c text%) number? number? void?))
+                                       (λ (t a b) (send t tabify-selection a b)))
 (drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '())
 (drscheme:language:register-capability 'drscheme:define-popup
                                        (or/c (cons/c string? string?) false/c)

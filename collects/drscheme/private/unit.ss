@@ -3159,15 +3159,38 @@ module browser threading seems wrong.
               scheme-menu
               (λ (x y) (drscheme:module-overview:module-overview this)))
             (make-object separator-menu-item% scheme-menu)
-            (make-object menu:can-restore-menu-item%
-              (string-constant reindent-menu-item-label)
-              scheme-menu
-              (send-method (λ (x) (send x tabify-selection))))
-            (make-object menu:can-restore-menu-item%
-              (string-constant reindent-all-menu-item-label)
-              scheme-menu
-              (send-method (λ (x) (send x tabify-all)))
-              #\i)
+            
+            (let ([cap-val
+                   (λ ()
+                     (let* ([tab (get-current-tab)]
+                            [defs (send tab get-defs)]
+                            [settings (send defs get-next-settings)]
+                            [language (drscheme:language-configuration:language-settings-language settings)])
+                       (send language capability-value 'drscheme:tabify-menu-callback)))])
+              (new menu:can-restore-menu-item%
+                   [label (string-constant reindent-menu-item-label)]
+                   [parent scheme-menu]
+                   [demand-callback (λ (m) (send m enable (cap-val)))]
+                   [callback (send-method 
+                              (λ (x)
+                                (let ([f (cap-val)])
+                                  (when f
+                                    (f x
+                                       (send x get-start-position)
+                                       (send x get-end-position))))))])
+              
+              (new menu:can-restore-menu-item%
+                   [label (string-constant reindent-all-menu-item-label)]
+                   [parent scheme-menu]
+                   [callback 
+                    (send-method 
+                     (λ (x)
+                       (let ([f (cap-val)])
+                         (when f
+                           (f x 0 (send x last-position))))))]
+                   [shortcut #\i]
+                   [demand-callback (λ (m) (send m enable (cap-val)))]))
+            
             (make-object menu:can-restore-menu-item%
               (string-constant box-comment-out-menu-item-label)
               scheme-menu

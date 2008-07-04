@@ -981,7 +981,10 @@ all of the names in the tools library, for use defining keybindings
      @itemize{
      @item{ @scheme[(drscheme:language:register-capability 'drscheme:check-syntax-button (flat-contract boolean?) #t)]
      --- controls the visiblity of the check syntax button
-     }@item{ @scheme[(drscheme:language:register-capability 'drscheme:language-menu-title (flat-contract string?) (string-constant scheme-menu-name))]
+     }@item{ @schemeblock[(drscheme:language:register-capability
+                           'drscheme:language-menu-title
+                           (flat-contract string?)
+                           (string-constant scheme-menu-name))]
       --- controls the name of the menu just to the right of the language menu (defaultly named ``Scheme'')
      }@item{ @scheme[(drscheme:language:register-capability 'drscheme:define-popup (or/c (cons/c string? string?) false/c) (cons "(define" "(define ...)"))]
       --- specifies the prefix that the define popup should look for and what label it should have,
@@ -1006,6 +1009,11 @@ all of the names in the tools library, for use defining keybindings
       --- determines if the insert scheme box, insert scheme splice box, and the insert xml box menu item ins the special menu are visible
      }@item{ @scheme[(drscheme:language:register-capability 'drscheme:autocomplete-words (listof string?) '())]
       --- determines the list of words that are used when completing words in this language
+     }@item{ @schemeblock[(drscheme:language:register-capability
+                           'drscheme:tabify-menu-callback
+                           (or/c false/c (-> (is-a?/c text%) number? number? void?))
+                           (λ (t a b) (send t tabify-selection a b)))]
+      --- is used as the callback when the ``Reindent'' or ``Reindent All'' menu is selected. The first argument is the editor, and the second and third are a range in the editor.
       }}})
 
   (proc-doc/names
