@@ -371,7 +371,7 @@
                                  "tocviewselflink" "tocviewlink")])
                      ,@(render-content (or (part-title-content p) '("???"))
                                        d ri))))))
-      (define toc-content
+      (define (toc-content)
         (parameterize ([extra-breaking? #t])
           (map do-part
                (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
@@ -385,7 +385,8 @@
       `((div ([class "tocset"])
           ,@(if (part-style? d 'no-toc)
               null
-              (let* ([content (render-content
+              (let* ([toc-content (toc-content)]
+                     [content (render-content
                                (or (part-title-content top) '("???"))
                                d ri)]
                      [content (if (null? toc-content)
@@ -532,7 +533,8 @@
                  ,title
                  ,(scribble-css-contents style-file  css-path)
                  ,(scribble-js-contents  script-file script-path))
-               (body () ,@(render-toc-view d ri)
+               (body ()
+                 ,@(render-toc-view d ri)
                  (div ([class "maincolumn"])
                    (div ([class "main"])
                      ,@(render-version d ri)
