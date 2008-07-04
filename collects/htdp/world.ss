@@ -1,3 +1,4 @@
+;; Fri Jul  4 10:25:47 EDT 2008: added ke=? and key-event? 
 ;; Mon Jun 16 15:38:14 EDT 2008: removed end-of-time and provided stop-when 
 ;;                               also allow repeated setting of callbacks now
 ;;                               If this is changed back, stop-when will fail
@@ -45,14 +46,14 @@ Matthew
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
-#lang scheme
+#lang mzscheme
 (require mzlib/class
          mzlib/kw
          mzlib/etc
          mred
          htdp/error
          htdp/image
-         (only-in lang/htdp-beginner image?)
+         (only lang/htdp-beginner image?)
          mrlib/cache-image-snip
          lang/prim)
 
@@ -83,7 +84,7 @@ Matthew
 
 ;; image manipulation functions:
 ;; =============================
-(provide (all-from-out htdp/image))
+(provide (all-from htdp/image))
 
 (provide
  ;; Scene is Image with pinhole in origin 
@@ -111,6 +112,11 @@ Matthew
 ;; KeyEvent is one of: 
 ;; -- Char 
 ;; -- Symbol 
+
+(provide
+  key-event? ;; Any -> Boolean
+  ke=? ;; KeyEvent KeyEvent -> Boolean
+ )
 
 (provide-higher-order-primitive
  on-key-event (control) ;; (World KeyEvent -> World) -> true
@@ -272,6 +278,14 @@ Matthew
   (set-redraw-callback f)
   (redraw-callback)
   #t)
+
+(define (key-event? k)
+  (or (char? k) (symbol? k)))
+
+(define (ke=? k m)
+  (check-arg 'ke=? (key-event? k) 'KeyEvent "first" k)
+  (check-arg 'ke=? (key-event? m) 'KeyEvent "first" m)
+  (eqv? k m))
 
 (define (on-key-event f)
   (check-proc 'on-key-event f 2 "on-key-event" "two arguments")
@@ -752,7 +766,7 @@ Matthew
   (define intv (if (> +inf.0 *the-delta* 0) (inexact->exact (floor (* 100 *the-delta*))) 5))
   (when (file-exists? ANIMATED-GIF-FILE)
     (delete-file ANIMATED-GIF-FILE))
-  (write-animated-gif bitmap-list intv ANIMATED-GIF-FILE #;one-at-a-time? #t))
+  (write-animated-gif bitmap-list intv ANIMATED-GIF-FILE #:one-at-a-time? #t))
 
 (define ANIMATED-GIF-FILE "i-animated.gif")
 
@@ -783,9 +797,9 @@ Matthew
             [callback (lambda (before after)
                         (string->symbol 
                          (string-append before n:str "-callback" after)))]
-            [name (datum->syntax stx (callback "" ""))]
-            [name0 (datum->syntax stx (callback "" "0"))]
-            [set-name (datum->syntax stx (callback "set-" ""))])
+            [name (datum->syntax-object stx (callback "" ""))]
+            [name0 (datum->syntax-object stx (callback "" "0"))]
+            [set-name (datum->syntax-object stx (callback "set-" ""))])
        #`(define-values (#,name #,name0 #,set-name)
            (values 
             void void 

@@ -18,6 +18,18 @@
     [(symbol=? ke 'right) 90]
     [else w]))
 
+;; --- 
+(check-expect (key-event? 'a) true)
+(check-expect (key-event? 0) false)
+(check-expect (key-event? #\a) true)
+
+(check-expect (ke=? 'a 'b) false)
+(check-expect (ke=? 'a #\a) false)
+(check-expect (ke=? 'left 'left) true)
+
+(check-error (ke=? 'a 0) "ke=?: expected <KeyEvent> as first argument, given: 0")
+
+
 ;; run world run
 
 (big-bang 100 100 .01 world0 true) ;; get ready to create images 
