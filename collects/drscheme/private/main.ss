@@ -180,7 +180,7 @@
 
 (preferences:set-default 
  'drscheme:keybindings-window-size
- (cons 200 400)
+ (cons 400 600)
  (λ (x) (and (pair? x)
              (number? (car x))
              (number? (cdr x)))))

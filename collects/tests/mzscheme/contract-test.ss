@@ -1914,6 +1914,19 @@
      10 +)
    55)
   
+  (test/spec-passed/result
+   'unconstrained-domain->6
+   ((contract (unconstrained-domain-> any/c)
+              (λ (#:key k) k)
+              'pos
+              'neg)
+    #:key 1)
+   1)
+  
+  (test/pos-blame
+   'unconstrained-domain->7
+   '((contract (unconstrained-domain-> number?) (λ (#:x x) x) 'pos 'neg) #:x #f))
+  
 ;                              
 ;                              
 ;                              

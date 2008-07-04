@@ -55,9 +55,13 @@ v4 todo:
                 (let ([p-app-x (proj-x pos-blame neg-blame src-info orig-str)] ...)
                   (λ (val)
                     (if (procedure? val)
-                        (λ args
-                          (let-values ([(res-x ...) (apply val args)])
-                            (values (p-app-x res-x) ...)))
+                        (make-keyword-procedure
+                         (λ (kwds kwd-vals . args)
+                           (let-values ([(res-x ...) (keyword-apply val kwds kwd-vals args)])
+                             (values (p-app-x res-x) ...)))
+                         (λ args
+                           (let-values ([(res-x ...) (apply val args)])
+                             (values (p-app-x res-x) ...))))
                         (raise-contract-error val
                                               src-info
                                               pos-blame
