@@ -116,7 +116,13 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
    @scheme['release] denote arrow keys or special events, such as releasing
    the key on the keypad.
 
-@defproc[(on-key-event [change (-> (unsyntax @tech{World}) (unsyntax @tech{KeyEvent}) (unsyntax @tech{World}))]) true]{
+@defproc[(key-event? [x any]) boolean?]{
+   is @scheme[x] a @tech{KeyEvent}}
+
+@defproc[(ke=? [x key-event?][y key-event?]) boolean?]{
+   compares two @tech{KeyEvent} for equality}
+
+@defproc[(on-key-event [change (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))]) true]{
    Tell DrScheme to call @scheme[change] on the current world and a 
    @tech{KeyEvent} for every keystroke the user of the computer makes. The result
    of the call becomes the current world.
@@ -127,12 +133,11 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
 (schemeblock
 (define (change w a-key-event)
   (cond
-    [(char? a-key-event) w]
-    ;; else (symbol? a-key-event) holds
-    [(symbol=? a-key-event 'left)  (world-go w -DELTA)]
-    [(symbol=? a-key-event 'right) (world-go w +DELTA)]
-    [(symbol=? a-key-event 'up)    (world-go w -DELTA)]
-    [(symbol=? a-key-event 'down)  (world-go w +DELTA)]
+    [(ke=? a-key-event 'left)  (world-go w -DELTA)]
+    [(ke=? a-key-event 'right) (world-go w +DELTA)]
+    [(char? a-key-event) w] ;; to demonstrate order-free checking 
+    [(ke=? a-key-event 'up)    (world-go w -DELTA)]
+    [(ke=? a-key-event 'down)  (world-go w +DELTA)]
     [else w]))
 ))
 
