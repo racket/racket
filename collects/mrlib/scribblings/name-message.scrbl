@@ -63,6 +63,28 @@ If @scheme[file-name?] is @scheme[#f], @scheme[msg] is treated as a
 label string. Clicking on the name-message control pops up a dialog
 saying that there is no file name until the file is saved.}
 
+
+@defmethod[(get-background-color) (or/c false/c (is-a/c color%) string?)]{
+
+The result of this method is used for the background color
+when redrawing the the name message. If it is @scheme[#f], the
+OS's default panel background is used.
+
+}
+
+@defmethod[(set-allow-shrinking [width (or/c false/c number?)]) void?]{
+
+When this method receives a number, the name-message will
+then shrink (the number indicates the minimum width the name
+message will have).
+
+If it receives false, the name message will not shrink and
+its minimum width will be the size required to display its
+current label.
+
+Defaultly, the name-message does not allow shrinking.
+}
+
 }
 
 @; ----------------------------------------------------------------------
