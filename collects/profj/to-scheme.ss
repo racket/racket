@@ -3055,10 +3055,10 @@
                       ,(testcase-ext?))
                    (build-src src))))
   
-  ;translate-check-rand: expression expression src -> syntax
+  ;translate-check-rand: expression [listof expression] src -> syntax
   (define (translate-check-rand test range src)
     (let ([t (make-syntax #f `(lambda () ,(translate-expression test)) #f)]
-          [r (translate-expression range)]
+          [r (map translate-expression range)]
           [extracted-info (checked-info test)])
       (make-syntax #f
                    `(javaRuntime:compare-rand ,t ,r ,extracted-info (quote ,(src->list src))

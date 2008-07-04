@@ -1,5 +1,3 @@
-;Java runtime utilities
-;Kathryn Gray 
 (module runtime scheme/base
   
   (require scheme/class
@@ -251,41 +249,7 @@
   
   ;compare-within: (-> val) val val (list symbol string) (U #f object) boolean . boolean -> boolean
   (define (compare-within test act range info src test-obj catch? . within?)
-    (letrec (#;(java-equal?
-              (lambda (v1 v2 visited-v1 visited-v2)
-                (or (eq? v1 v2)
-                    (already-seen? v1 v2 visited-v1 visited-v2)
-                    (cond 
-                      ((and (number? v1) (number? v2))
-                       (if (or (inexact? v1) (inexact? v2) (not (null? within?)))
-                           (<= (abs (- v1 v2)) range)
-                           (= v1 v2)))
-                      ((and (object? v1) (object? v2))
-                       (cond
-                         ((equal? "String" (send v1 my-name))
-                          (and (equal? "String" (send v2 my-name))
-                               (equal? (send v1 get-mzscheme-string) (send v2 get-mzscheme-string))))
-                         ((equal? "array" (send v1 my-name))
-                          (and (equal? "array" (send v2 my-name))
-                               (= (send v1 length) (send v2 length))
-                               (let ((v1-vals (array->list v1))
-                                     (v2-vals (array->list v2)))
-                                 (andmap (lambda (x) x)
-                                         (map java-equal? v1-vals v2-vals 
-                                              (map (lambda (v) (cons v1 visited-v1)) v1-vals)
-                                              (map (lambda (v) (cons v2 visited-v2)) v2-vals))))))
-                         (else
-                          (and (equal? (send v1 my-name) (send v2 my-name))
-                               (let ((v1-fields (send v1 field-values))
-                                     (v2-fields (send v2 field-values)))
-                                 (and (= (length v1-fields) (length v2-fields))
-                                      (andmap (lambda (x) x) 
-                                              (map java-equal? v1-fields v2-fields 
-                                                   (map (lambda (v) (cons v1 visited-v1)) v1-fields)
-                                                   (map (lambda (v) (cons v2 visited-v2)) v2-fields)))))))))
-                      ((and (not (object? v1)) (not (object? v2))) (equal? v1 v2))
-                      (else #f)))))
-             (fail? #f))
+    (let ((fail? #f))
       (set! test 
             (with-handlers ([exn? 
                              (lambda (e) 
@@ -337,7 +301,7 @@
           (report-check-result (and (not fail?) result) 'check-by info values-list src test-obj))
       (and (not fail?) result)))
   
-  ;compare-rand: (-> val) value [list string] src object -> boolean
+  ;compare-rand: (-> val) (listof value) [list string] src object -> boolean
   (define (compare-rand test range info src test-obj)
     (let* ([fail? #f]
            [test-val (with-handlers ((exn?
@@ -345,7 +309,7 @@
                                         (set! fail? #t)
                                         (list exception e))))
                        (test))]
-           [expected-vals (array->list range)]
+           [expected-vals range]
            [result
             (and (not fail?)
                  (ormap (lambda (e-v) (java-equal? test-val e-v null null 0.001 #t))
@@ -381,6 +345,11 @@
                         (fifth current-check))))
               (report-results (cdr checks)))))
         result-value)))
+  
+  ;check-effects: (-> (listof val)) (-> (listof val)) (list string) src object -> boolean
+  (define (check-effects tests checks info src test-obj)
+    (tests)
+    (checks))
   
   (define (report-check-result res check-kind info values src test-obj)
     (when test-obj 
