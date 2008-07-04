@@ -669,7 +669,7 @@ module browser threading seems wrong.
                  (not (is-modified?))
                  (not (get-filename))))
           ;; inserts the auto-text if any, and executes the text if so
-          (define (insert-auto-text)
+          (define/private (insert-auto-text)
             (define lang
               (drscheme:language-configuration:language-settings-language
                next-settings))
@@ -691,9 +691,10 @@ module browser threading seems wrong.
               ;; to find if the current text is the auto-text and analyze it to
               ;; get this initialization, or it will need to do that for all
               ;; possible contents, which means that it'll work when opening
-              ;; exiting files too.
+              ;; exiting files too (it might be feasible once we have a #lang
+              ;; parser).
               (send (get-top-level-window) execute-callback)))
-          (define (remove-auto-text)
+          (define/private (remove-auto-text)
             (when (and (still-untouched?) (> (last-position) 0))
               (begin-edit-sequence #f)
               (send this erase)
@@ -710,7 +711,7 @@ module browser threading seems wrong.
           (super-new)
           
           ;; insert the default-text
-          (queue-callback insert-auto-text)
+          (queue-callback (lambda () (insert-auto-text)))
           
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
