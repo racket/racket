@@ -175,6 +175,7 @@ table td {
 }
 
 .tocviewselflink {
+  text-decoration: underline;
   color: blue;
 }
 

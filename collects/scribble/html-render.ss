@@ -386,21 +386,25 @@
           ,@(if (part-style? d 'no-toc)
               null
               (let* ([toc-content (toc-content)]
-                     [content (render-content
-                               (or (part-title-content top) '("???"))
-                               d ri)]
-                     [content (if (null? toc-content)
-                                content
-                                `((a ([href "index.html"] [class "tocviewlink"])
-                                    ,@content)))])
-                `((div ([class "tocview"])
-                    (div ([class "tocviewtitle"]) ,@content)
-                    (div nbsp)
-                    ,@(if (null? toc-content)
+                     [toc-content
+                      (if (null? toc-content)
                         '()
                         (toc-wrap
                          `(table ([class "tocviewlist"] [cellspacing "0"])
-                            ,@toc-content)))))))
+                            ,@toc-content)))]
+                     [title-content
+                      `(div ([class "tocviewtitle"])
+                         (a ([href "index.html"]
+                             [class ,(if (eq? mine top)
+                                       "tocviewselflink"
+                                       "tocviewlink")])
+                           ,@(render-content (or (part-title-content top)
+                                                 '("???"))
+                                             d ri)))])
+                `((div ([class "tocview"])
+                    ,title-content
+                    (div nbsp)
+                    ,@toc-content))))
           ,@(render-onthispage-contents
              d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
           ,@(parameterize ([extra-breaking? #t])
