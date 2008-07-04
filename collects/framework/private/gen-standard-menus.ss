@@ -7,6 +7,9 @@
 
 (define-runtime-path here ".")
 
+(define standard-menus.ss-filename (simplify-path (build-path here "standard-menus.ss")))
+(define docs-menus.ss-filename (simplify-path (build-path here 'up 'up "scribblings" "framework" "standard-menus.scrbl")))
+
 ;; build-before-super-item-clause : an-item -> (listof clause)
 (define build-before-super-item-clause
   (λ (item)
@@ -114,9 +117,6 @@
     [(generic-method? generic)
      (list `(define/public ,(generic-name generic)
               ,(generic-initializer generic)))]))
-
-(define standard-menus.ss-filename (build-path here "standard-menus.ss"))
-(define docs-menus.ss-filename (simplify-path (build-path here 'up 'up "scribblings" "framework" "standard-menus.scrbl")))
 
 (define (main)
   (write-standard-menus.ss)

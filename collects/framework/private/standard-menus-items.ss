@@ -292,12 +292,12 @@
         (make-an-item 'edit-menu 'redo 
                       '(string-constant redo-info)
                       (edit-menu:do 'redo)
-                      '(if (eq? (system-type) 'macosx)
-                           #\z
-                           #\y)
-                      '(if (eq? (system-type) 'macosx)
-                           (cons 'shift (get-default-shortcut-prefix))
-                           (get-default-shortcut-prefix))
+                      '(if (eq? (system-type) 'windows)
+                           #\y
+                           #\z)
+                      '(if (eq? (system-type) 'windows)
+                           (get-default-shortcut-prefix)
+                           (cons 'shift (get-default-shortcut-prefix)))
                       '(string-constant redo-menu-item)
                       (edit-menu:can-do-on-demand 'redo)
                       #t)
