@@ -3130,10 +3130,10 @@ module browser threading seems wrong.
                         (when num
                           (cond
                             [(eq? num #t)
-                             (preferences:set 'drscheme:limit-memory #f)
+                             (preferences:set 'drscheme:memory-limit #f)
                              (send interactions-text set-custodian-limit #f)]
                             [else
-                             (preferences:set 'drscheme:limit-memory 
+                             (preferences:set 'drscheme:memory-limit 
                                               (* 1024 1024 num))
                              (send interactions-text set-custodian-limit
                                    (* 1024 1024 num))]))))]))

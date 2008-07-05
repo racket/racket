@@ -77,7 +77,7 @@
                                          (number? (car x))
                                          (number? (cdr x))))))
 
-(preferences:set-default 'drscheme:limit-memory (* 1024 1024 128)
+(preferences:set-default 'drscheme:memory-limit (* 1024 1024 128)
                          (λ (x) (or (boolean? x)
                                     (integer? x)
                                     (x . >= . (* 1024 1024 100)))))
