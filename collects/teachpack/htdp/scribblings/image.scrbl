@@ -53,15 +53,15 @@ In DrScheme, you can insert images from your file system. Use PNG images
 instead whenever possible for insertions. In addition, you can create basic
 shapes with the following functions.
 
-@defproc[(rectangle [w number?] [h number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
+@defproc[(rectangle [w (and/c number? (or/c zero? positive?))] [h (and/c number? (or/c zero? positive?))] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a @scheme[w] by @scheme[h] rectangle, filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
-@defproc[(circle [r number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
+@defproc[(circle [r (and/c number? (or/c zero? positive?))] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a circle or disk of radius @scheme[r], filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
-@defproc[(ellipse [w number?] [h number?] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
+@defproc[(ellipse [w (and/c number? (or/c zero? positive?))] [h (and/c number? (or/c zero? positive?))] [m (unsyntax @tech{Mode})] [c (unsyntax @tech{Color})]) image?]{
  Creates a @scheme[w] by @scheme[h] ellipse, filled in according to
  @scheme[m] and painted in color @scheme[c]}
 
