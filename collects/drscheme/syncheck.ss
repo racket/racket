@@ -75,6 +75,9 @@ If the namespace does not, they are colored the unbound color.
   get-error-report-text
   get-error-report-visible?
   
+  turn-off-error-report
+  turn-on-error-report
+  
   update-button-visibility/settings)
 
 (define tool@ 
@@ -916,6 +919,7 @@ If the namespace does not, they are colored the unbound color.
         (define/public (get-error-report-text) report-error-text)
         (define/public (get-error-report-visible?) error-report-visible?)
         (define/public (turn-on-error-report) (set! error-report-visible? #t))
+        (define/public (turn-off-error-report) (set! error-report-visible? #f))
         (define/augment (clear-annotations)
           (inner (void) clear-annotations)
           (syncheck:clear-error-message)
@@ -1035,6 +1039,7 @@ If the namespace does not, they are colored the unbound color.
         
         (define/public (hide-error-report) 
           (when (syncheck:error-report-visible?)
+            (send (get-current-tab) turn-off-error-report)
             (send report-error-parent-panel change-children
                   (λ (l) (remq report-error-panel l)))))
         
