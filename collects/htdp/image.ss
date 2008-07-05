@@ -391,48 +391,53 @@ plt/collects/tests/mzscheme/htdp-image.ss
                         y2))))))
 
 (define (text str size color-in)
-  (check 'text (lambda (x) (and (string? x) (not (equal? "" x)))) str "non-empty string" "first")
+  (check 'text string? str "string" "first")
   (check 'text (lambda (x) (and (integer? x) (<= 1 x 255))) size "integer between 1 and 255" "second")
   (check-image-color 'text color-in "third")
-  (let ([color (make-color% color-in)])
-    (let-values ([(tw th) (get-text-size size str)])
-      (let ([draw-proc
-             (lambda (txt-color mode dc dx dy)
-               (let ([old-mode (send dc get-text-mode)]
-                     [old-fore (send dc get-text-foreground)]
-                     [old-font (send dc get-font)])
-                 (send dc set-text-mode mode)
-                 (send dc set-text-foreground txt-color)
-                 (send dc set-font (get-font size))
-                 (send dc draw-text str dx dy)
-                 (send dc set-text-mode old-mode)
-                 (send dc set-text-foreground old-fore)
-                 (send dc set-font old-font)))])
-        (new cache-image-snip%
-             [dc-proc (lambda (dc dx dy) (draw-proc color 'transparent dc dx dy))]
-             [argb-proc 
-              (lambda (argb dx dy)
-                (let ([bm-color
-                       (build-bitmap
-                        (lambda (dc)
-                          (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
-                          (send dc set-brush (send the-brush-list find-or-create-brush color 'solid))
-                          (send dc draw-rectangle 0 0 tw th))
-                        tw
-                        th)]
-                      [bm-mask
-                       (build-bitmap
-                        (lambda (dc)
-                          (draw-proc 
-                           (send the-color-database find-color "black")
-                           'solid dc 0 0))
-                        tw
-                        th)])
-                  (overlay-bitmap argb dx dy bm-color bm-mask)))]
-             [width tw]
-             [height th]
-             [px 0]
-             [py 0])))))
+  (cond
+    [(string=? str "")
+     (let-values ([(tw th) (get-text-size size "dummyX")])
+       (rectangle 0 th 'solid 'black))]
+    [else
+     (let ([color (make-color% color-in)])
+       (let-values ([(tw th) (get-text-size size str)])
+         (let ([draw-proc
+                (lambda (txt-color mode dc dx dy)
+                  (let ([old-mode (send dc get-text-mode)]
+                        [old-fore (send dc get-text-foreground)]
+                        [old-font (send dc get-font)])
+                    (send dc set-text-mode mode)
+                    (send dc set-text-foreground txt-color)
+                    (send dc set-font (get-font size))
+                    (send dc draw-text str dx dy)
+                    (send dc set-text-mode old-mode)
+                    (send dc set-text-foreground old-fore)
+                    (send dc set-font old-font)))])
+           (new cache-image-snip%
+                [dc-proc (lambda (dc dx dy) (draw-proc color 'transparent dc dx dy))]
+                [argb-proc 
+                 (lambda (argb dx dy)
+                   (let ([bm-color
+                          (build-bitmap
+                           (lambda (dc)
+                             (send dc set-pen (send the-pen-list find-or-create-pen "black" 1 'transparent))
+                             (send dc set-brush (send the-brush-list find-or-create-brush color 'solid))
+                             (send dc draw-rectangle 0 0 tw th))
+                           tw
+                           th)]
+                         [bm-mask
+                          (build-bitmap
+                           (lambda (dc)
+                             (draw-proc 
+                              (send the-color-database find-color "black")
+                              'solid dc 0 0))
+                           tw
+                           th)])
+                     (overlay-bitmap argb dx dy bm-color bm-mask)))]
+                [width tw]
+                [height th]
+                [px 0]
+                [py 0]))))]))
 
 (define cached-bdc-for-text-size (make-thread-cell #f))
 (define (get-text-size size string)
@@ -452,41 +457,37 @@ plt/collects/tests/mzscheme/htdp-image.ss
           [(macosx) 'partly-smoothed]
           [else 'smoothed])))
 
-(define (a-rect/circ who do-draw w h color brush pen)
-  (check-sizes who w h)
+(define (a-rect/circ do-draw w h color brush pen)
   (let* ([dc-proc (make-color-wrapper color brush pen do-draw)]
          [mask-proc (make-color-wrapper 'black brush pen do-draw)])
     (make-simple-cache-image-snip w h (floor (/ w 2)) (floor (/ h 2)) dc-proc mask-proc)))
 
 (define (rectangle in-w in-h mode color)
-  (check-size 'rectangle in-w "first")
-  (check-size 'rectangle in-h "second")
+  (check-size/0 'rectangle in-w "first")
+  (check-size/0 'rectangle in-h "second")
   (check-mode 'rectangle mode "third")
   (check-image-color 'rectangle color "fourth")
   (let ([w (inexact->exact (floor in-w))]
         [h (inexact->exact (floor in-h))])
-    (a-rect/circ 'rectangle
-                 (lambda (dc dx dy) (send dc draw-rectangle dx dy w h))
+    (a-rect/circ (lambda (dc dx dy) (send dc draw-rectangle dx dy w h))
                  w h color (mode->brush-symbol mode) (mode->pen-symbol mode))))
 
 (define (ellipse in-w in-h mode color)
-  (check-size 'ellipse in-w "first")
-  (check-size 'ellipse in-h "second")
+  (check-size/0 'ellipse in-w "first")
+  (check-size/0 'ellipse in-h "second")
   (check-mode 'ellipse mode "third")
   (check-image-color 'ellipse color "fourth")
   (let ([w (inexact->exact (floor in-w))]
         [h (inexact->exact (floor in-h))])
-    (a-rect/circ 'ellipse
-                 (lambda (dc dx dy) (send dc draw-ellipse dx dy w h))
+    (a-rect/circ (lambda (dc dx dy) (send dc draw-ellipse dx dy w h))
                  w h color (mode->brush-symbol mode) (mode->pen-symbol mode))))
 
 (define (circle in-r mode color)
-  (check-size 'circle in-r "first")
+  (check-size/0 'circle in-r "first")
   (check-mode 'circle mode "second")
   (check-image-color 'circle color "third")
   (let ([r (inexact->exact (floor in-r))])
-    (a-rect/circ 'circle
-                 (lambda (dc dx dy) (send dc draw-ellipse dx dy (* 2 r) (* 2 r)))
+    (a-rect/circ (lambda (dc dx dy) (send dc draw-ellipse dx dy (* 2 r) (* 2 r)))
                  (* 2 r) (* 2 r) color (mode->brush-symbol mode) (mode->pen-symbol mode))))
 
 (define (triangle in-size mode color)
@@ -629,10 +630,12 @@ plt/collects/tests/mzscheme/htdp-image.ss
   (let ([w (inexact->exact (ceiling w))]
         [h (inexact->exact (ceiling h))])
     (let ([argb-proc 
-           (lambda (argb-vector dx dy)
-             (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]
-                   [m-bm (build-bitmap (lambda (dc) (mask-proc dc 0 0)) w h)])
-               (overlay-bitmap argb-vector dx dy c-bm m-bm)))])
+           (if (or (zero? w) (zero? h))
+               void
+               (lambda (argb-vector dx dy)
+                 (let ([c-bm (build-bitmap (lambda (dc) (dc-proc dc 0 0)) w h)]
+                       [m-bm (build-bitmap (lambda (dc) (mask-proc dc 0 0)) w h)])
+                   (overlay-bitmap argb-vector dx dy c-bm m-bm))))])
       (new cache-image-snip%
            [dc-proc dc-proc]
            [argb-proc argb-proc]
@@ -986,7 +989,7 @@ converting from the computer's coordinates, we get:
              "given width times given height is ~a, but the given color list has ~a items"
              (* w h) (length cl)))
     (let ([index-list (alpha-colors->ent-list cl)])
-      (argb->cache-image-snip (make-argb (list->vector index-list) w) px py))))
+      (argb->cache-image-snip (make-argb (list->vector index-list) w h) px py))))
 
 ;; alpha-colors->ent-list : (listof alpha-color) -> (listof number)
 (define (alpha-colors->ent-list cl)

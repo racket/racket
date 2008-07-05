@@ -44,13 +44,13 @@ predicate.
 
 }
 
-@defmethod[(get-bitmap)
-           (is-a?/c bitmap%)]{
+@defmethod[(get-bitmap) (or/c false/c (is-a?/c bitmap%))]{
 
     Builds (if not yet built) a bitmap corresponding to
     this snip and returns it.
 
-
+    If the width or the height of the snip is @scheme[0], 
+    this method return @scheme[#f].
 }
 
 @defmethod[(get-dc-proc)
@@ -83,7 +83,9 @@ predicate.
 
 This snipclass is used for saved cache image snips.}
 
-@defproc[(make-argb [vectorof (integer-in 0 255)] [width exact-nonnegative-integer?])
+@defproc[(make-argb [vectorof (integer-in 0 255)]
+                    [width exact-nonnegative-integer?]
+                    [height exact-nonnegative-integer?])
          argb?]{
 
  Constructs a new argb value. The vector has four entries
@@ -98,6 +100,10 @@ This snipclass is used for saved cache image snips.}
 @defproc[(argb-width [argb argb?]) exact-nonnegative-integer?]{
 
   Extracts the width from @scheme[argb].}
+
+@defproc[(argb-height [argb argb?]) exact-nonnegative-integer?]{
+
+  Extracts the height from @scheme[argb].}
 
 
 @defproc[(argb? [v any/c]) boolean?]{
@@ -142,9 +148,13 @@ procedure @scheme[draw] to render the bitmap content into the given
  @scheme[argb], using @scheme[dx] and @scheme[dy] as the pinhole.}
 
 
-@defproc[(argb->bitmap [argb argb?]) (is-a?/c bitmap%)]{
+@defproc[(argb->bitmap [argb argb?]) (or/c false/c (is-a?/c bitmap%))]{
 
    Builds a bitmap that draws the same way as @scheme[argb]; the alpha
    pixels are put into the bitmap's @method[bitmap% get-loaded-mask]
-   bitmap.}
+   bitmap.
+
+   If the width or height of @scheme[argb] is @scheme[0],
+   this returns @scheme[#f].
+}
 

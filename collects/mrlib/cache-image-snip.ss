@@ -9,8 +9,8 @@
            cache-image-snip-class%
            snip-class)
            
-  ;; type argb = (make-argb (vectorof rational[between 0 & 255]) int)
-  (define-struct argb (vector width))
+  ;; type argb = (make-argb (vectorof rational[between 0 & 255]) int int)
+  (define-struct argb (vector width height))
   
   #|
 
@@ -64,7 +64,6 @@
       ;; argb : (union #f argb)
       (init-field [argb #f])
 
-      
       ;; bitmap : (union #f (is-a?/c bitmap%))
       ;; the way that this image is be drawn, on its own
       (define bitmap #f)
@@ -79,18 +78,22 @@
              (px px)
              (py py)))
       
-      ;; get-bitmap : -> bitmap
+      ;; get-bitmap : -> bitmap or false
       ;; returns a bitmap showing what the image would look like, 
       ;; if it were drawn
       (define/public (get-bitmap)
-        (unless bitmap
-          (set! bitmap (argb->bitmap (get-argb))))
-        bitmap)
+        (cond
+          [(or (zero? width) (zero? height))
+           #f]
+          [else
+           (unless bitmap
+             (set! bitmap (argb->bitmap (get-argb))))
+           bitmap]))
       
       ;; get-argb : -> argb
       (define/public (get-argb)
         (unless argb
-          (set! argb (make-argb (make-vector (* 4 width height) 255) width))
+          (set! argb (make-argb (make-vector (* 4 width height) 255) width height))
           (argb-proc argb 0 0))
         argb)
       
@@ -108,10 +111,12 @@
       
       (define/override (draw dc x y left top right bottom dx dy draw-caret)
         (cond
-          [argb (let ([bitmap (get-bitmap)])
-                  (send dc draw-bitmap bitmap x y 'solid 
-                        (send the-color-database find-color "black")
-                        (send bitmap get-loaded-mask)))]
+          [argb 
+           (let ([bitmap (get-bitmap)])
+             (when bitmap
+               (send dc draw-bitmap bitmap x y 'solid 
+                     (send the-color-database find-color "black")
+                     (send bitmap get-loaded-mask))))]
           [dc-proc 
            (let ([smoothing (send dc get-smoothing)])
              (send dc set-smoothing 'aligned)
@@ -124,6 +129,7 @@
                     (format "~s"
                             (list (argb-vector (get-argb))
                                   width
+                                  height
                                   px 
                                   py)))])
           (send f put str)))
@@ -146,11 +152,31 @@
       (define/override (read f)
         (data->snip (read-from-string (send f get-bytes) (lambda () #f))))
       (define/public (data->snip data)
-        (if data
-            (argb->cache-image-snip (make-argb (first data) (second data))
-                                    (third data)
-                                    (fourth data))
-            (make-null-cache-image-snip)))
+        (cond
+          [(not (list? data)) (make-null-cache-image-snip)]
+          [(= (length data 4))
+           ;; this is the case for old save files
+           ;; if the width is zero, the height 
+           ;; will automatically also be zero
+           (let ([argb-vec (list-ref data 0)]
+                 [width (list-ref data 1)]
+                 [px (list-ref data 2)]
+                 [py (list-ref data 3)])
+             (argb->cache-image-snip (make-argb argb-vec
+                                                width 
+                                                (if (zero? width)
+                                                    0
+                                                    (/ (vector-length argb-vec) width 4)))
+                                     px 
+                                     py))]
+          [(= (length data) 5)
+           ;; this is the new saved data and it has the width and the height separately.
+           (let ([argb-vec (list-ref data 0)]
+                 [width (list-ref data 1)]
+                 [height (list-ref data 2)]
+                 [px (list-ref data 3)]
+                 [py (list-ref data 4)])
+             (argb->cache-image-snip (make-argb argb-vec width height) px py))]))
       (super-new)))
 
   (define snip-class (new cache-image-snip-class%))
@@ -236,8 +262,8 @@
   ;; argb->cache-image-snip : argb number number -> cache-image-snip
   (define (argb->cache-image-snip argb px py)
     (let* ([width (argb-width argb)]
+           [height (argb-height argb)]
            [argb-vector (argb-vector argb)]
-           [height (quotient (vector-length argb-vector) (* 4 width))]
            [bitmap (argb->bitmap argb)]
            [mask (send bitmap get-loaded-mask)])
       (new cache-image-snip%
@@ -246,42 +272,47 @@
            (argb argb)
            (px px)
            (py py)
-           (argb-proc 
-            (lambda (argb dx dy)
-              (overlay-bitmap argb dx dy bitmap mask)))
-           (dc-proc (lambda (dc dx dy)
-                      (send dc draw-bitmap bitmap dx dy 'solid 
-                            (send the-color-database find-color "black")
-                            mask))))))
+           (argb-proc (if (or (zero? width) (zero? height))
+                          void
+                          (lambda (argb dx dy) (overlay-bitmap argb dx dy bitmap mask))))
+           (dc-proc (if (or (zero? width) (zero? height))
+                        void
+                        (lambda (dc dx dy)
+                          (send dc draw-bitmap bitmap dx dy 'solid 
+                                (send the-color-database find-color "black")
+                                mask)))))))
   
-  ;; argb-vector->bitmap : argb -> bitmap
+  ;; argb-vector->bitmap : argb -> bitmap or false
   ;; flattens the argb vector into a bitmap
   (define (argb->bitmap argb)
     (let* ([argb-vector (argb-vector argb)]
            [w (argb-width argb)]
-           [h (quotient (vector-length argb-vector) (* w 4))]
-           [bm (make-object bitmap% w h)]
-           [mask-bm (make-object bitmap% w h)]
-           [bdc (new bitmap-dc% (bitmap bm))]
-           [bytes (make-bytes (vector-length argb-vector) 255)]
-           [mask-bytes (make-bytes (vector-length argb-vector) 255)])
-      (let loop ([i (- (vector-length argb-vector) 1)])
-        (cond
-          [(zero? (modulo i 4))
-           (let ([av (round (vector-ref argb-vector i))])
-             (bytes-set! mask-bytes (+ i 1) av)
-             (bytes-set! mask-bytes (+ i 2) av)
-             (bytes-set! mask-bytes (+ i 3) av))]
-          [else
-           (bytes-set! bytes i (round (vector-ref argb-vector i)))])
-        (unless (zero? i)
-          (loop (- i 1))))
-      (send bdc set-argb-pixels 0 0 w h bytes)
-      (send bdc set-bitmap mask-bm)
-      (send bdc set-argb-pixels 0 0 w h mask-bytes)
-      (send bdc set-bitmap #f)
-      (send bm set-loaded-mask mask-bm)
-      bm))
+           [h (argb-height argb)])
+      (cond
+        [(or (zero? w) (zero? h)) #f]
+        [else
+         (let* ([bm (make-object bitmap% w h)]
+                [mask-bm (make-object bitmap% w h)]
+                [bdc (new bitmap-dc% (bitmap bm))]
+                [bytes (make-bytes (vector-length argb-vector) 255)]
+                [mask-bytes (make-bytes (vector-length argb-vector) 255)])
+           (let loop ([i (- (vector-length argb-vector) 1)])
+             (cond
+               [(zero? (modulo i 4))
+                (let ([av (round (vector-ref argb-vector i))])
+                  (bytes-set! mask-bytes (+ i 1) av)
+                  (bytes-set! mask-bytes (+ i 2) av)
+                  (bytes-set! mask-bytes (+ i 3) av))]
+               [else
+                (bytes-set! bytes i (round (vector-ref argb-vector i)))])
+             (unless (zero? i)
+               (loop (- i 1))))
+           (send bdc set-argb-pixels 0 0 w h bytes)
+           (send bdc set-bitmap mask-bm)
+           (send bdc set-argb-pixels 0 0 w h mask-bytes)
+           (send bdc set-bitmap #f)
+           (send bm set-loaded-mask mask-bm)
+           bm)])))
   
   ;; overlay-bitmap : argb int int bitmap bitmap -> void
   ;; assumes that the mask bitmap only has greyscale in it
@@ -656,9 +687,10 @@ for b3, we have:
    [flatten-bitmap ((is-a?/c bitmap%) . -> . (is-a?/c bitmap%))]
 
    [argb->cache-image-snip (argb? number? number? . -> . (is-a?/c cache-image-snip%))]
-   [argb->bitmap (argb? . -> . (is-a?/c bitmap%))]
+   [argb->bitmap (argb? . -> . (or/c false/c (is-a?/c bitmap%)))]
            
    [argb? (any/c . -> . boolean?)]
-   [make-argb ((vectorof (integer-in 0 255)) integer? . -> . argb?)]
+   [make-argb ((vectorof (integer-in 0 255)) exact-nonnegative-integer? exact-nonnegative-integer? . -> . argb?)]
    [argb-vector (argb? . -> . (vectorof (integer-in 0 255)))]
-   [argb-width (argb? . -> . integer?)]))
+   [argb-width (argb? . -> . exact-nonnegative-integer?)]
+   [argb-height (argb? . -> . exact-nonnegative-integer?)]))

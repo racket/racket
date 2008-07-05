@@ -49,10 +49,15 @@
     (let ([bdc (make-object bitmap-dc%)]
           [max-difference
            (lambda (s1 s2)
-             (apply max
-                    (map (lambda (x y) (abs (- x y))) 
-                         (bytes->list s1)
-                         (bytes->list s1))))])
+             (cond
+               [(and (zero? (bytes-length s1))
+                     (zero? (bytes-length s2)))
+                0]
+               [else
+                (apply max
+                       (map (lambda (x y) (abs (- x y))) 
+                            (bytes->list s1)
+                            (bytes->list s1)))]))])
       
       ;; test that no drawing is outside the snip's drawing claimed drawing area
       (let* ([extra-space 100]
@@ -89,8 +94,8 @@
         
         (test (list 'bmtrunc name #t) (lambda () (list 'bmtrunc name (equal? s-noclip s-trunc)))))
         
-      (let ([bm-normal (make-object bitmap% width height)]
-            [bm-bitmap (make-object bitmap% width height)]
+      (let ([bm-normal (make-object bitmap% (max 1 width) (max 1 height))]
+            [bm-bitmap (make-object bitmap% (max 1 width) (max 1 height))]
             [s-normal (make-bytes (* width height 4))]
             [s-bitmap (make-bytes (* width height 4))])
         
@@ -394,6 +399,19 @@
                            (p00 (rectangle 1 2 'solid 'blue)))))
 
 (test #t
+      'image=?-zero1
+      (image=? (rectangle 0 10 'solid 'red)
+               (rectangle 0 10 'solid 'red)))
+(test #t
+      'image=?-zero2
+      (image=? (rectangle 0 10 'solid 'red)
+               (rectangle 0 10 'solid 'blue)))
+(test #f
+      'image=?-zero3
+      (image=? (rectangle 0 5 'solid 'red)
+               (rectangle 0 4'solid 'blue)))
+
+(test #t
       'image-inside?1
       (image-inside? (overlay/xy (p00 (rectangle 3 2 'solid 'red))
                                  1 0
@@ -484,6 +502,14 @@
 (test 7
       'image-height
       (image-height (rectangle 5 7 'solid 'red)))
+
+(test 10 image-width (rectangle 10 0 'solid 'red))
+(test 0 image-height (rectangle 10 0 'solid 'red))
+(test 0 image-width (rectangle 0 10 'solid 'red))
+(test 10 image-height (rectangle 0 10 'solid 'red))
+
+(test 0 image-width (text "" 12 'black))
+(test #t 'not-zero-empty-string-height (not (zero? (image-height (text "" 12 'black)))))
 
 (test 1 'color-red (color-red (make-color 1 2 3)))
 (test 2 'color-green (color-green (make-color 1 2 3)))
@@ -797,8 +823,20 @@
 (check-on-bitmap 'outline-rect (rectangle 2 2 'outline 'red))
 (check-on-bitmap 'solid-ellipse (ellipse 2 4 'solid 'red))
 (check-on-bitmap 'outline-ellipse (ellipse 2 4 'outline 'red))
-(check-on-bitmap 'solid-ellipse (circle 4 'solid 'red))
-(check-on-bitmap 'outline-ellipse (circle 4 'outline 'red))
+(check-on-bitmap 'solid-circle (circle 4 'solid 'red))
+(check-on-bitmap 'outline-circle (circle 4 'outline 'red))
+
+(check-on-bitmap '0solid-rect1 (rectangle 0 2 'solid 'red))
+(check-on-bitmap '0solid-rect2 (rectangle 2 0 'solid 'red))
+(check-on-bitmap '0outline-rect1 (rectangle 2 0 'outline 'red))
+(check-on-bitmap '0outline-rect2 (rectangle 0 0 'outline 'red))
+(check-on-bitmap '0solid-ellipse1 (ellipse 0 3 'solid 'red))
+(check-on-bitmap '0solid-ellipse2 (ellipse 3 0 'solid 'red))
+(check-on-bitmap '0outline-ellipse1 (ellipse 0 4 'outline 'red))
+(check-on-bitmap '0outline-ellipse2 (ellipse 2 0 'outline 'red))
+(check-on-bitmap '0solid-circle (circle 0 'solid 'red))
+(check-on-bitmap '0outline-circle (circle 0 'outline 'red))
+
 (check-on-bitmap 'solid-triangle (triangle 10 'solid 'red))
 (check-on-bitmap 'outline-triangle (triangle 10 'outline 'red))
 (check-on-bitmap 'solid-star (star 4 10 20 'solid 'red))
@@ -1158,7 +1196,6 @@
 (err/rt-name-test (add-line image-snip1 10 10 #f #f #f) "fourth")
 (err/rt-name-test (add-line image-snip1 10 10 11 #f #f) "fifth")
 (err/rt-name-test (add-line image-snip1 10 10 11 11 #f) "sixth")
-(err/rt-name-test (text "" 12 'red) "first")
 (err/rt-name-test (text #f #f #f) "first")
 (err/rt-name-test (text "abc" #f #f) "second")
 (err/rt-name-test (text "abc" 10 #f) "third")
