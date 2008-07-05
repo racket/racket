@@ -9,6 +9,14 @@
   
   (define (nothing? v) (eq? v nothing))
   
+  (define-syntax define-reactive
+    (syntax-rules ()
+      [(_ name expr)
+       (define name
+         (let ([val (parameterize ([snap? #f])
+                      expr)])
+           (lambda () (deep-value-now val))))]))
+  
   (define deep-value-now
     (case-lambda
       [(obj) (deep-value-now obj empty)]
@@ -40,7 +48,7 @@
       
   (define (lift strict? fn . args)
     (if (snap?) ;; maybe fix later to handle undefined-strictness
-        (apply fn (map value-now/no-copy args))
+        (apply fn (map value-now args))
         (with-continuation-mark
             'frtime 'lift-active
           (cond
@@ -817,6 +825,7 @@
            until
            event-loop
            split
+           define-reactive
            
            ;; from frp-core
            event-receiver
