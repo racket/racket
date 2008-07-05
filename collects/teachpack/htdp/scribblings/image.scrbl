@@ -153,10 +153,27 @@ first image.
 
 @defproc[(overlay/xy [img image?] [delta-x number?] [delta-y number?] [other image?]) image?]{
 Creates an image by adding the pixels of @scheme[other] to
-@scheme[img]. Instead of lining up on the pinhole, @scheme[other]'s pinhole
-is lined up with an offset of (@scheme[delta-x],@scheme[delta-y]) from the
-pinhole of @scheme[img]. The pinhole of the resulting image is the same
-place as the pinhole in the first image.}
+@scheme[img]. 
+
+Instead of lining the two images up on their pinholes,
+@scheme[other]'s pinhole is lined up on the point:
+@schemeblock[
+(make-posn (+ (pinhole-x img) delta-x)
+           (+ (pinhole-y img) delta-y))
+]
+
+The pinhole of the resulting image is the same
+place as the pinhole in the first image.
+
+The same effect can be had by combining
+@scheme[move-pinhole] and @scheme[overlay],
+@schemeblock[
+(overlay img 
+         (move-pinhole other
+                      (- delta-x)
+                      (- delta-y)))]
+
+}
 
 @defproc[(image-inside? [img image?] [other image?]) boolean?]{
  Determines whether the pixels of the second image appear in the first.
