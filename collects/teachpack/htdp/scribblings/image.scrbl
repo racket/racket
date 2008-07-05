@@ -27,7 +27,7 @@ shapes. Additional primitives allow for the composition of images.
 @deftech{Mode} @scheme[(one-of/c 'solid 'outline "solid" "outline")]
 
 A @tech{Mode} is used to specify whether painting a shape fills or
-outlines the form.}
+outlines the form.
 
 @defstruct[color [(red (and/c natural-number/c (<=/c 255)))
 		  (green (and/c natural-number/c (<=/c 255)))
@@ -35,7 +35,7 @@ outlines the form.}
 
 @deftech{RGB} @scheme[color?]
 
-An @tech{RGB} describes a color via share of red, blue, and green colors
+A @tech{RGB} describes a color via a shade of red, blue, and green colors
  (e.g., @scheme[(make-color 100 200 30)]).
 
 @deftech{Color} @scheme[(or/c symbol? string? color?)] 
