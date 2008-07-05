@@ -201,11 +201,12 @@
        [value ,emptylabel]
        [title "Enter a search string to search the manuals"]
        [onkeypress ,(format "return DoSearchKey(event, this, ~s);" (version))]
-       [onfocus ,(sa "this.style.color=\"black\";"
-                     " if (this.value.indexOf(\""emptylabel"\")>=0)"
-                     " this.value=\"\";")]
+       [onfocus ,(sa "this.style.color=\"black\"; "
+                     "this.style.textAlign=\"left\"; "
+                     "if (this.value == \""emptylabel"\") this.value=\"\";")]
        [onblur ,(sa "if (this.value.match(/^ *$/)) {"
                     " this.style.color=\""dimcolor"\";"
+                    " this.style.textAlign=\"center\";"
                     " this.value=\""emptylabel"\"; }")]))))
 
 ;; ----------------------------------------
@@ -337,74 +338,78 @@
 
     ;; ----------------------------------------
 
-    (define/private (reveal-subparts? p)
+    (define/private (reveal-subparts? p) ;!!! need to use this
       (part-style? p 'reveal))
 
     (define/public (toc-wrap table)
       null)
 
     (define/public (render-toc-view d ri)
-      (define-values (top mine)
-        (let loop ([d d] [mine d])
-          (let ([p (collected-info-parent (part-collected-info d ri))])
-            (if p
-              (loop p (if (reveal-subparts? d) mine d))
-              (values d mine)))))
-      (define (do-part pp)
-        (let ([p (car pp)] [show-number? (cdr pp)])
-          `(tr (td ([align "right"])
-                 ,@(if show-number?
-                     (format-number
-                      (collected-info-number (part-collected-info p ri))
-                      '((tt nbsp)))
-                     '("-" nbsp)))
-               (td (a ([href
-                        ,(let ([dest (resolve-get p ri (car (part-tags p)))])
-                           (format "~a~a~a"
-                                   (from-root (relative->path (dest-path dest))
-                                              (get-dest-directory))
-                                   (if (dest-page? dest) "" "#")
-                                   (if (dest-page? dest)
-                                     ""
-                                     (anchor-name (dest-anchor dest)))))]
-                       [class ,(if (eq? p mine)
-                                 "tocviewselflink" "tocviewlink")])
-                     ,@(render-content (or (part-title-content p) '("???"))
-                                       d ri))))))
+      (define toc-chain
+        (let loop ([d d] [r (if (pair? (part-parts d)) (list d) '())])
+          (cond [(collected-info-parent (part-collected-info d ri))
+                 => (lambda (p) (loop p (cons p r)))]
+                [(pair? r) r]
+                ;; we have no toc, so use just the current part
+                [else (list d)])))
+      (define top (car toc-chain))
+      (define (toc-item->title+num t show-mine?)
+        (values
+         `((a ([href ,(let ([dest (resolve-get t ri (car (part-tags t)))])
+                        (format "~a~a~a"
+                                (from-root (relative->path (dest-path dest))
+                                           (get-dest-directory))
+                                (if (dest-page? dest) "" "#")
+                                (if (dest-page? dest)
+                                  ""
+                                  (anchor-name (dest-anchor dest)))))]
+               [class ,(if (or (eq? t d) (and show-mine? (memq t toc-chain)))
+                         "tocviewselflink"
+                         "tocviewlink")])
+              ,@(render-content (or (part-title-content t) '("???")) d ri)))
+         (format-number (collected-info-number (part-collected-info t ri))
+                        '(nbsp))))
+      (define (toc-item->block t i)
+        (define-values (title num) (toc-item->title+num t #f))
+        (define children (part-parts t)) ; note: might be empty
+        (define id (format "tocview_~a" i))
+        (define expand? (eq? t (last toc-chain)))
+        (define top? (eq? t top))
+        (define header
+          `(table ([cellspacing "0"] [cellpadding "0"])
+             (tr ()
+               (td ([style "width: 1em;"])
+                 ,(if (null? children)
+                    'bull
+                    `(a ([href "javascript:void(0);"]
+                         [title "Expand/Collapse"]
+                         [class "tocviewtoggle"]
+                         [onclick ,(format "TocviewToggle(this,\"~a\");" id)])
+                       ,(if expand? 9662 9654))))
+               (td () ,@num)
+               (td () ,@title))))
+        `(div ([class "tocviewlist"]
+               ,@(if top? `([style "margin-bottom: 1em;"]) '()))
+           ,(if top? `(div ([class "tocviewtitle"]) ,header) header)
+           ,(if (null? children)
+              ""
+              `(div ([class "tocviewsublist"]
+                     [style ,(format "display: ~a; margin-bottom: ~aem;"
+                                     (if expand? 'block 'none)
+                                     (if top? 0 1))]
+                     [id ,id])
+                 (table ([cellspacing "0"] [cellpadding "0"])
+                   ,@(for/list ([c children])
+                       (let-values ([(t n) (toc-item->title+num c #t)])
+                         `(tr () (td ([align "right"]) ,@n) (td () ,@t)))))))))
       (define (toc-content)
-        (parameterize ([extra-breaking? #t])
-          (map do-part
-               (let loop ([l (map (lambda (v) (cons v #t)) (part-parts top))])
-                 (cond [(null? l) null]
-                       [(reveal-subparts? (caar l))
-                        (cons (car l)
-                              (loop (append (map (lambda (v) (cons v #f))
-                                                 (part-parts (caar l)))
-                                            (cdr l))))]
-                       [else (cons (car l) (loop (cdr l)))])))))
+        (for/list ([t toc-chain] [i (in-naturals)])
+          (toc-item->block t i)))
       `((div ([class "tocset"])
           ,@(if (part-style? d 'no-toc)
               null
-              (let* ([toc-content (toc-content)]
-                     [toc-content
-                      (if (null? toc-content)
-                        '()
-                        (toc-wrap
-                         `(table ([class "tocviewlist"] [cellspacing "0"])
-                            ,@toc-content)))]
-                     [title-content
-                      `(div ([class "tocviewtitle"])
-                         (a ([href "index.html"]
-                             [class ,(if (eq? mine top)
-                                       "tocviewselflink"
-                                       "tocviewlink")])
-                           ,@(render-content (or (part-title-content top)
-                                                 '("???"))
-                                             d ri)))])
-                `((div ([class "tocview"])
-                    ,title-content
-                    (div nbsp)
-                    ,@toc-content))))
+              ;; toc-wrap determines if we get the toc or just the title !!!
+              `((div ([class "tocview"]) ,@(toc-content))))
           ,@(render-onthispage-contents
              d ri top (if (part-style? d 'no-toc) "tocview" "tocsub"))
           ,@(parameterize ([extra-breaking? #t])
@@ -634,20 +639,17 @@
       (define navleft
         `(span ([class "navleft"])
            ,search-box
-           nbsp
-           ,@(render (make-element (if up-path top-link "nonavigation")
-                                   top-content))
-           nbsp
-           ,@(render (make-element
-                      (if parent
-                        (make-target-url "index.html" #f)
-                        "nonavigation")
-                      contents-content))
-           nbsp
-           ,@(render (if (or (not index) (eq? d index))
-                       (make-element "nonavigation" index-content)
-                       (make-link-element
-                        #f index-content (car (part-tags index)))))))
+           ,@(render
+              sep-element
+              (make-element (if up-path top-link "nonavigation") top-content)
+              sep-element
+              (make-element
+               (if parent (make-target-url "index.html" #f) "nonavigation")
+               contents-content)
+              sep-element
+              (if (or (not index) (eq? d index))
+                (make-element "nonavigation" index-content)
+                (make-link-element #f index-content (car (part-tags index)))))))
       (define navright
         `(span ([class "navright"])
            ,@(render

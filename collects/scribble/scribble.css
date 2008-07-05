@@ -142,6 +142,9 @@ table td {
   width: 12.5em;
   margin-right: 2em;
 }
+.tocset td {
+  vertical-align: top;
+}
 
 .tocview {
   text-align: left;
@@ -154,19 +157,24 @@ table td {
   background-color: #f0f0e0;
 }
 
-.tocviewtitle {
-  font-size: 82%;
-  font-weight: bold;
-  margin: 0.2em 0.2em 0.2em 0.2em;
-}
-
 .tocviewlist {
-  margin: 0.2em 0.2em 0.2em 0.2em;
+  margin: 0.2em;
+}
+.tocviewlist table {
+  font-size: 82%;
 }
 
-.tocviewlist td {
-  font-size: 82%;
-  vertical-align: top;
+.tocviewsublist {
+  margin-left: 0.4em;
+  border-left: 1px solid #bbf;
+  padding-left: 0.8em;
+}
+.tocviewsublist table {
+  font-size: 75%;
+}
+
+.tocviewtitle * {
+  font-weight: bold;
 }
 
 .tocviewlink {
@@ -179,12 +187,15 @@ table td {
   color: blue;
 }
 
-.tocsublist {
-  margin: 0.2em 0.2em 0.2em 0.2em;
+.tocviewtoggle {
+  text-decoration: none;
+  color: blue;
 }
 
+.tocsublist {
+  margin: 0.2em;
+}
 .tocsublist td {
-  vertical-align: top;
   padding-left: 1em;
   text-indent: -1em;
 }
@@ -212,7 +223,7 @@ table td {
 .tocsubtitle {
   font-size: 82%;
   font-style: italic;
-  margin: 0.2em 0.2em 0.2em 0.2em;
+  margin: 0.2em;
 }
 
 .sepspace {

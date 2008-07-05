@@ -55,6 +55,13 @@ function DoSearchKey(event, field, ver) {
   return true;
 }
 
+function TocviewToggle(glyph,id) {
+  var s = document.getElementById(id).style;
+  var expand = s.display == "none";
+  s.display = expand ? "block" : "none";
+  glyph.innerHTML = expand ? "&#9662;" : "&#9654;";
+}
+
 // `noscript' is problematic in some browsers (always renders as a
 // block), use this hack instead (does not always work!)
 // document.write("<style>mynoscript { display:none; }</style>");
