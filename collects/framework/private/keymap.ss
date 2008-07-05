@@ -948,6 +948,11 @@
               (send text lock #t)
               #t)]
            
+           [newline
+            (λ (text event)
+              (send text insert "\n")
+              #t)]
+           
            [TeX-compress
             (let* ([biggest (apply max (map (λ (x) (string-length (car x))) tex-shortcut-table))])
               (λ (text event)
@@ -985,7 +990,7 @@
            (string->list (string-append greek-letters Greek-letters)))
           
           (add "TeX compress" TeX-compress)
-          
+          (add "newline" newline)
           (add "down-into-embedded-editor" down-into-embedded-editor)
           (add "up-out-of-embedded-editor" up-out-of-embedded-editor)
           (add "forward-to-next-embedded-editor" forward-to-next-embedded-editor)
@@ -1081,6 +1086,8 @@
           
           (map "~m:c:\\" "TeX compress")
           (map "~c:m:\\" "TeX compress")
+          
+          (map "c:j" "newline")
           
           (map-meta "c:down" "down-into-embedded-editor")
           (map "a:c:down" "down-into-embedded-editor")
