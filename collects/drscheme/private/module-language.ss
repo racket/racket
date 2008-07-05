@@ -246,29 +246,23 @@
   (define hopeless-repl (make-thread-cell #t))
   (define (raise-hopeless-exception exn [prefix #f])
     (define rep (drscheme:rep:current-rep))
-    
-    ;; if we don't have the drscheme rep, then we just raise
-    ;; the exception as normal. (I don't think this can happen...?)
-    (unless rep
-      (raise exn))
-    
-    (let ([send-over 
-           (λ (t)
-             (let ([s (make-semaphore 0)])
-               (parameterize ([current-eventspace drscheme:init:system-eventspace])
-                 (queue-callback
-                  (λ ()
-                    (t)
-                    (semaphore-post s))))
-               (semaphore-wait s)))])
-      
-      (send-over (λ () (send rep set-show-no-user-evaluation-message? #f)))
-      (when prefix
-        (fprintf (current-error-port) "Module Language: ~a\n" prefix))
-      ((error-display-handler) (exn-message exn) exn)
-      (send-over
-       (λ () (send rep insert-warning "\nInteractions disabled.")))
-      (custodian-shutdown-all (send rep get-user-custodian))))
+    ;; if we don't have the drscheme rep, then we just raise the exception as
+    ;; normal.  (It can happen in some rare cases like having a single empty
+    ;; scheme box in the definitions.)
+    (unless rep (raise exn))
+    (when prefix (fprintf (current-error-port) "Module Language: ~a\n" prefix))
+    ((error-display-handler) (exn-message exn) exn)
+    ;; do the rep-related work carefully -- using drscheme's eventspace, and
+    ;; wait for it to finish before we continue.
+    (let ([s (make-semaphore 0)])
+      (parameterize ([current-eventspace drscheme:init:system-eventspace])
+        (queue-callback
+         (λ ()
+           (send* rep (insert-warning "\nInteractions disabled.")
+                      (set-show-no-user-evaluation-message? #f))
+           (semaphore-post s))))
+      (semaphore-wait s))
+    (custodian-shutdown-all (send rep get-user-custodian)))
   (define (raise-hopeless-syntax-error . error-args)
     (with-handlers ([exn? raise-hopeless-exception])
       (apply raise-syntax-error '|Module Language|
