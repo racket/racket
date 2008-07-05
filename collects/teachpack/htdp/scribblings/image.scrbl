@@ -170,8 +170,8 @@ The same effect can be had by combining
 @schemeblock[
 (overlay img 
          (move-pinhole other
-                      (- delta-x)
-                      (- delta-y)))]
+                       (- delta-x)
+                       (- delta-y)))]
 
 }
 
