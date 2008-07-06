@@ -194,7 +194,7 @@
         [emptylabel "...search manuals..."]
         [dimcolor   "#888"])
     `(input
-      ([style ,(sa "font-size: 60%; margin: 0px; padding: 0px;"
+      ([style ,(sa "width: 16em; margin: 0px; padding: 0px;"
                    " background-color: #eee; color: "dimcolor";"
                    " border: 1px solid #ddd; text-align: center;")]
        [type "text"]
