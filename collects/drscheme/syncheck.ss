@@ -353,19 +353,31 @@ If the namespace does not, they are colored the unbound color.
                 (set-arrow-end-x! arrow end-x)
                 (set-arrow-end-y! arrow end-y)))
             
+            
             (define/private (update-tail-arrow-poss arrow)
-              (let-values ([(start-x start-y) (find-poss 
+              ;; If the item is an embedded editor snip, redirect
+              ;; the arrow to point at the left edge rather than the
+              ;; midpoint.
+              (define (find-poss/embedded text pos)
+                (let* ([snip (send text find-snip pos 'after)])
+                  (cond
+                    [(and snip 
+                          (is-a? snip editor-snip%)
+                          (= pos (send text get-snip-position snip)))
+                     (find-poss text pos pos)]
+                    [else
+                     (find-poss text pos (+ pos 1))])))
+              (let-values ([(start-x start-y) (find-poss/embedded 
                                                (tail-arrow-from-text arrow)
-                                               (tail-arrow-from-pos arrow)
-                                               (+ (tail-arrow-from-pos arrow) 1))]
-                           [(end-x end-y) (find-poss 
+                                               (tail-arrow-from-pos arrow))]
+                           [(end-x end-y) (find-poss/embedded
                                            (tail-arrow-to-text arrow)
-                                           (tail-arrow-to-pos arrow)
-                                           (+ (tail-arrow-to-pos arrow) 1))])
+                                           (tail-arrow-to-pos arrow))])
                 (set-arrow-start-x! arrow start-x)
                 (set-arrow-start-y! arrow start-y)
                 (set-arrow-end-x! arrow end-x)
                 (set-arrow-end-y! arrow end-y)))
+            
             
             ;; syncheck:init-arrows : -> void
             (define/public (syncheck:init-arrows)
