@@ -385,7 +385,7 @@
                          [title "Expand/Collapse"]
                          [class "tocviewtoggle"]
                          [onclick ,(format "TocviewToggle(this,\"~a\");" id)])
-                       ,(if expand? 9662 9654))))
+                       ,(if expand? 9660 9658))))
                (td () ,@num)
                (td () ,@title))))
         `(div ([class "tocviewlist"]

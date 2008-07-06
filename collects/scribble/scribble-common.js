@@ -59,7 +59,7 @@ function TocviewToggle(glyph,id) {
   var s = document.getElementById(id).style;
   var expand = s.display == "none";
   s.display = expand ? "block" : "none";
-  glyph.innerHTML = expand ? "&#9662;" : "&#9654;";
+  glyph.innerHTML = expand ? "&#9660;" : "&#9658;";
 }
 
 // `noscript' is problematic in some browsers (always renders as a
