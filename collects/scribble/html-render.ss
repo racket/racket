@@ -196,7 +196,8 @@
     `(input
       ([style ,(sa "width: 16em; margin: 0px; padding: 0px;"
                    " background-color: #eee; color: "dimcolor";"
-                   " border: 1px solid #ddd; text-align: center;")]
+                   " border: 1px solid #ddd;"
+                   " text-align: center; vertical-align: middle;")]
        [type "text"]
        [value ,emptylabel]
        [title "Enter a search string to search the manuals"]
@@ -641,7 +642,7 @@
         `(span ([class "navleft"])
            ,search-box
            ,@(render
-              (and up-path sep-element)
+              sep-element
               (and up-path (make-element top-link top-content))
               ;; sep-element
               ;; (make-element
