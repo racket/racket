@@ -605,7 +605,8 @@
                      (let ([d (last subs)])
                        (and (part-style? d 'index)
                             d))))))))
-      (define (render . content) (render-content content d ri))
+      (define (render . content)
+        (render-content (filter values content) d ri))
       (define (titled-url label x #:title-from [tfrom #f] . more)
         (define-values (url title)
           (cond [(part? x)
@@ -640,44 +641,48 @@
         `(span ([class "navleft"])
            ,search-box
            ,@(render
-              sep-element
-              (make-element (if up-path top-link "nonavigation") top-content)
-              sep-element
-              (make-element
-               (if parent (make-target-url "index.html" #f) "nonavigation")
-               contents-content)
-              sep-element
-              (if (or (not index) (eq? d index))
-                (make-element "nonavigation" index-content)
-                (make-link-element #f index-content (car (part-tags index)))))))
+              (and up-path sep-element)
+              (and up-path (make-element top-link top-content))
+              ;; sep-element
+              ;; (make-element
+              ;;  (if parent (make-target-url "index.html" #f) "nonavigation")
+              ;;  contents-content)
+              ;; sep-element
+              ;; (if (or (not index) (eq? d index))
+              ;;   (make-element "nonavigation" index-content)
+              ;;   (make-link-element #f index-content (car (part-tags index))))
+              )))
       (define navright
-        `(span ([class "navright"])
-           ,@(render
-              (make-element
-               (cond [(not parent) "nonavigation"]
-                     [prev (titled-url "backward" prev)]
-                     [else (titled-url "backward" "index.html"
-                                       #:title-from
-                                       (and (part? parent) parent))])
-               prev-content)
-              sep-element
-              (make-element
-               (cond
-                 [(and (part? parent) (toc-part? parent) (part-parent parent ri))
-                  (titled-url "up" parent)]
-                 [parent (titled-url "up" "index.html" #:title-from parent)]
-                 ;; up-path = #t => go up to the start page, using
-                 ;; cookies to get to the user's version of it (see
-                 ;; scribblings/main/private/utils for the code that
-                 ;; creates these cookies.)
-                 [(eq? #t up-path) top-link]
-                 [up-path (titled-url "up" up-path)]
-                 [else "nonavigation"])
-               up-content)
-              sep-element
-              (make-element
-               (if next (titled-url "forward" next) "nonavigation")
-               next-content))))
+        (if (not (or parent up-path next))
+          ""
+          `(span ([class "navright"])
+             ,@(render
+                (make-element
+                 (cond [(not parent) "nonavigation"]
+                       [prev (titled-url "backward" prev)]
+                       [else (titled-url "backward" "index.html"
+                                         #:title-from
+                                         (and (part? parent) parent))])
+                 prev-content)
+                sep-element
+                (make-element
+                 (cond
+                   [(and (part? parent) (toc-part? parent)
+                         (part-parent parent ri))
+                    (titled-url "up" parent)]
+                   [parent (titled-url "up" "index.html" #:title-from parent)]
+                   ;; up-path = #t => go up to the start page, using
+                   ;; cookies to get to the user's version of it (see
+                   ;; scribblings/main/private/utils for the code that
+                   ;; creates these cookies.)
+                   [(eq? #t up-path) top-link]
+                   [up-path (titled-url "up" up-path)]
+                   [else "nonavigation"])
+                 up-content)
+                sep-element
+                (make-element
+                 (if next (titled-url "forward" next) "nonavigation")
+                 next-content)))))
       (define navbar
         `(div ([class "navset"]
                [style ,(let ([v (if top? 'bottom 'top)])
