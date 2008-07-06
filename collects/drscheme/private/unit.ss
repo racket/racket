@@ -381,7 +381,7 @@ module browser threading seems wrong.
                        (λ (x) x)
                        text:info%)))))))))])
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock)
+          (inherit get-top-level-window is-locked? lock while-unlocked)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -445,7 +445,9 @@ module browser threading seems wrong.
                   (let ([locked? (is-locked?)])
                     (when locked? (lock #f))
                     (set! save-file-metadata metadata)
-                    (insert metadata 0 0)
+                    (while-unlocked
+                     (λ ()
+                       (insert metadata 0 0)))
                     (when locked? (lock #t)))))))
           (define/private (filename->modname filename)
             (let-values ([(base name dir) (split-path filename)])
@@ -466,7 +468,9 @@ module browser threading seems wrong.
               (let ([modified? (is-modified?)]
                     [locked? (is-locked?)])
                 (when locked? (lock #f))
-                (delete 0 (string-length save-file-metadata))
+                (while-unlocked
+                 (λ ()
+                   (delete 0 (string-length save-file-metadata))))
                 (when locked? (lock #t))
                 (set! save-file-metadata #f)
                 ;; restore modification status to where it was before the metadata is removed
