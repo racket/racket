@@ -1392,13 +1392,13 @@
                    (string-append
                     (case (system-type)
                       [(macosx macos) "d:"]
-                      [(windows) "c:"]
-                      [(unix) "a:"]
+                      [(windows unix) "c:"]
                       [else (error 'keymap.ss "unknown platform: ~s" (system-type))])
                     key)
                    func))])
       (add/map "editor-undo" 'undo "z")
-      (add/map "editor-redo" 'redo "y")
+      (unless (eq? (system-type) 'macosx)
+	(add/map "editor-redo" 'redo "y"))
       (add/map "editor-cut" 'cut "x")
       (add/map "editor-copy" 'copy "c")
       (add/map "editor-paste" 'paste "v")
