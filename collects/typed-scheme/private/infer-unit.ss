@@ -105,7 +105,7 @@
     [(_ _) (fail! t s)]))
 
 (define (cgen/eff/list V X ts ss)
-  (unless (= (length ts) (length ss)) (fail! ts ss))
+  (unless (>= (length ts) (length ss)) (fail! ts ss))
   (cset-meet* (for/list ([t ts] [s ss]) (cgen/eff V X t s))))
 
 (define (cgen/arr V X t-arr s-arr)
