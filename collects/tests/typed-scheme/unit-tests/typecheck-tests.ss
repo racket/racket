@@ -35,7 +35,8 @@
   (syntax-case stx ()
     [(_ e)
      #`(parameterize ([delay-errors? #f]
-                      [current-namespace (namespace-anchor->namespace anch)])
+                      [current-namespace (namespace-anchor->namespace anch)]
+                      [orig-module-stx (quote-syntax e)])
          (let ([ex (expand 'e)])
            (find-mutated-vars ex)
            (tc-expr ex)))]))
@@ -648,7 +649,8 @@
         ))
   (test-suite
    "check-type tests"
-   (test-exn "Fails correctly" exn:fail:syntax? (lambda () (check-type #'here N B)))
+   (test-exn "Fails correctly" exn:fail:syntax? (lambda () (parameterize ([orig-module-stx #'here])
+                                                             (check-type #'here N B))))
    (test-not-exn "Doesn't fail on subtypes" (lambda () (check-type #'here N Univ)))
    (test-not-exn "Doesn't fail on equal types" (lambda () (check-type #'here N N)))
    )
