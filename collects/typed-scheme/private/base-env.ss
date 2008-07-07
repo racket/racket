@@ -7,7 +7,8 @@
  (only-in scheme/list cons? take drop add-between last)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
- (only-in scheme/match/runtime match:error))
+ (only-in scheme/match/runtime match:error)
+ scheme/promise)
 
 
 
@@ -415,17 +416,16 @@
                  [(-Input-Port Sym) -String])]
      [copy-file (-> -Pathlike -Pathlike -Void)]  
      [bytes->string/utf-8 (-> -Bytes -String)]
+     
      ;; language
      [(expand '(this-language))
       Sym
       string-constants/string-constant]
-     ;; make-promise 
-     
+     ;; make-promise      
      [(cadr (syntax->list (expand '(delay 3))))
       (-poly (a) (-> (-> a) (-Promise a)))
       scheme/promise]
-     ;; qq-append
-     
+     ;; qq-append     
      [(cadr (syntax->list (expand '`(,@'() 1)))) 
       (-poly (a b) 
              (cl->*

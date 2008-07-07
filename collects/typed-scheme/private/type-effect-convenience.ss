@@ -213,17 +213,19 @@
                      (identifier? #'nm)
                      #`(list  #'nm ty)]
                     [(e ty extra-mods ...)
-                     #'(list (let ([new-ns
-                                    (let* ([ns (make-empty-namespace)])
-                                      (namespace-attach-module (current-namespace)
-                                                               'scheme/base
-                                                               ns)
-                                      ns)])
-                               (parameterize ([current-namespace new-ns])
-                                 (namespace-require 'scheme/base)
-                                 (namespace-require 'extra-mods) ...
-                                 e))
-                             ty)]))
+                     #'(let ([x (list (let ([new-ns
+                                             (let* ([ns (make-empty-namespace)])
+                                               (namespace-attach-module (current-namespace)
+                                                                        'scheme/base
+                                                                        ns)
+                                               ns)])
+                                        (parameterize ([current-namespace new-ns])
+                                          (namespace-require 'scheme/base)
+                                          (namespace-require 'extra-mods) ...
+                                          e))
+                                      ty)])
+                         ;(display x) (newline)
+                         x)]))
                 (syntax->list #'(e ...))))]))
 
 ;; if t is of the form (Pair t* (Pair t* ... (Listof t*)))

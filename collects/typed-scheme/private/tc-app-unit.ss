@@ -522,21 +522,19 @@
      (int-err "bad do-make-object : ~a" (syntax->datum #'args))]
     ;; call-with-values
     [(#%plain-app call-with-values prod con)
-     (match-let* ([(tc-result: prod-t) (tc-expr #'prod)]
-                  [(tc-result: con-t) (tc-expr #'con)])
-       (match (list prod-t con-t)
-         [(list (Function: (list (arr: (list) vals #f #f _ _))) (Function: (list (arr: dom rng #f #f _ _))))
-          (=> unmatch)
-          (match (list vals dom)
-            [(list (Values: v) (list t ...))
-             (if (subtypes v t)
-                 (ret rng)
-                 (unmatch))]
-            [(list t1 (list t2))
-             (if (subtype t1 t2) (ret rng) (unmatch))]
-            [_ (unmatch)])]
-         [_ (tc-error "Incorrect arguments to call with values: ~a ~a" prod-t con-t)]))]
-    ;; special cases for `values'
+     (match-let* ([(tc-result: prod-t) (tc-expr #'prod)])
+       (define (values-ty->list t)
+         (match t
+           [(Values: ts) ts]
+           [_ (list t)]))
+       (match prod-t
+         [(Function: (list (arr: (list) vals _ #f _ _)))
+          (tc/funapp #'con #'prod (tc-expr #'con) (map ret (values-ty->list vals)) expected)]
+         [_ (tc-error/expr #:return (ret (Un)) 
+                           "First argument to call with values must be a function that can accept no arguments, got: ~a"
+                           prod-t)]))]
+    ;; special cases for `values'    
+    ;; special case the single-argument version to preserve the effects
     [(#%plain-app values arg) (tc-expr #'arg)]
     [(#%plain-app values . args)
      (let ([tys (map tc-expr/t (syntax->list #'args))])
