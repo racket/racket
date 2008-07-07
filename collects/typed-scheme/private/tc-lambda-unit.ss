@@ -220,8 +220,13 @@
 ;; tc/plambda syntax syntax-list syntax-list type -> Poly
 ;; formals and bodies must by syntax-lists
 (define (tc/plambda form formals bodies expected)
+  (define (maybe-loop form formals bodies expected)
+    (match expected
+      [(Function: _) (tc/mono-lambda formals bodies expected)]
+      [(or (Poly: _ _) (PolyDots: _ _))
+       (tc/plambda form formals bodies expected)]))
   (match expected
-    [(Poly-names: ns (and expected* (Function: _)))
+    [(Poly-names: ns expected*)
      (let* ([tvars (let ([p (syntax-property form 'typechecker:plambda)])
                      (when (and (pair? p) (eq? '... (car (last p))))
                        (tc-error "Expected a polymorphic function without ..., but given function had ..."))
@@ -230,10 +235,10 @@
             [literal-tvars tvars]
             [new-tvars (map make-F literal-tvars)]
             [ty (parameterize ([current-tvars (extend-env literal-tvars new-tvars (current-tvars))])
-                  (tc/mono-lambda formals bodies expected*))])
+                  (maybe-loop form formals bodies expected*))])
        ;(printf "plambda: ~a ~a ~a ~n" literal-tvars new-tvars ty)
        (ret expected))]
-    [(PolyDots-names: (list ns ... dvar) (and expected* (Function: _)))
+    [(PolyDots-names: (list ns ... dvar) expected*)
      (let-values 
          ([(tvars dotted)
            (let ([p (syntax-property form 'typechecker:plambda)])
@@ -249,7 +254,7 @@
                                                             (cons (make-Dotted (make-F dotted))
                                                                   new-tvars)
                                                             (current-tvars))])
-                    (tc/mono-lambda formals bodies expected*))])
+                    (maybe-loop form formals bodies expected*))])
          (ret expected)))]
     [#f
      (match (map syntax-e (syntax->list (syntax-property form 'typechecker:plambda)))
