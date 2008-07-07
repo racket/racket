@@ -3,7 +3,8 @@
   (require mred
            mzlib/class
            mzlib/cmdline
-           (lib "bday.ss" "framework" "private"))
+           scheme/list
+           framework/private/bday)
 
   ; (current-load text-editor-load-handler)
   
@@ -72,16 +73,9 @@
            magic-images))
   
   (define (add-key-code new-code)
-    (set! key-codes
-          (cons
-           new-code
-           (let loop ([n (- longest-magic-string 2)] [l key-codes])
-             (cond [(null? l) null]
-                   [(zero? n) null]
-                   [else (let ([p (loop (sub1 n) (cdr l))])
-                           (if (eq? p (cdr l))
-                               l
-                               (cons (car l) p)))])))))
+    (set! key-codes (cons new-code key-codes))
+    (when ((length key-codes) . > . longest-magic-string)
+      (set! key-codes (take key-codes longest-magic-string))))
   
   (let ([set-splash-bitmap
          (dynamic-require '(lib "splash.ss" "framework") 'set-splash-bitmap)])
