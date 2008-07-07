@@ -570,7 +570,7 @@
     ;; even more special case for match
     [(#%plain-app (letrec-values ([(lp) (#%plain-lambda args . body)]) lp*) . actuals)
      (and expected (not (andmap type-annotation (syntax->list #'args))) (free-identifier=? #'lp #'lp*))
-     (let-loop-check #'lp #'actuals #'args #'body expected)]
+     (let-loop-check #'form #'lp #'actuals #'args #'body expected)]
     ;; or/andmap of ... argument
     [(#%plain-app or/andmap f arg)
      (and 
