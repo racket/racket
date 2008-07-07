@@ -464,7 +464,7 @@
 ;; and T-dotted is the repeated type
 (define (infer/dots X dotted-var S T T-dotted R must-vars [expected #f])
   (with-handlers ([exn:infer? (lambda _ #f)])
-    (let* ([short-S (debug (take S (length T)))]
+    (let* ([short-S (take S (length T))]
            [rest-S (drop S (length T))]
            [cs-short (cgen/list null (cons dotted-var X) short-S T)]
            [new-vars (for/list ([i (in-range (length rest-S))]) (gensym dotted-var))]
@@ -484,4 +484,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-(trace cgen/arr cgen cgen/list)
+;;(trace cgen/arr cgen cgen/list)
