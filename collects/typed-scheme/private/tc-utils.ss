@@ -106,8 +106,10 @@
 (define-struct (exn:fail:tc exn:fail) ())
 
 ;; raise an internal error - typechecker bug!
-(define (int-err msg . args) 
-  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: " (apply format msg args))
+(define (int-err msg . args)  
+  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
+                                          (apply format msg args)
+                                          (format "\nwhile typechecking\n~a" (syntax->datum (current-orig-stx))))
                            (current-continuation-marks))))
 
 (define-syntax (nyi stx)

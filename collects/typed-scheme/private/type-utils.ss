@@ -40,7 +40,8 @@
                  [#:arr dom rng rest drest thn-eff els-eff
                         (begin
                           (when (and (pair? drest)
-                                     (eq? name (cdr drest)))
+                                     (eq? name (cdr drest))
+                                     (just-Dotted? name))
                             (int-err "substitute used on ... variable ~a in type ~a" name target))
                           (make-arr (map sb dom)
                                     (sb rng)
