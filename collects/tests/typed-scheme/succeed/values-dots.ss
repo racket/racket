@@ -16,12 +16,13 @@
     (apply values* (map (lambda: ([f : (b ... b -> b)])
                           (apply f bs)) fs))))
 
-#;(map-with-funcs + - * /)
+(map-with-funcs + - * /)
 
 (inst map-with-funcs Integer Integer)
 
-#;(map-with-funcs (lambda: ([x : Integer] [y : Integer]) (+ x y))
-                  (lambda: ([x : Integer] [y : Integer]) (- x y)))
+(map-with-funcs 
+ (lambda: ([x : Integer] [y : Integer]) (+ x y))
+ (lambda: ([x : Integer] [y : Integer]) (- x y)) )
 
 (((inst map-with-funcs Integer Integer)
     (lambda: ([x : Integer] [y : Integer]) (+ x y))
