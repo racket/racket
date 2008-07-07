@@ -540,7 +540,7 @@
     [(#%plain-app values arg) (tc-expr #'arg)]
     [(#%plain-app values . args)
      (let ([tys (map tc-expr/t (syntax->list #'args))])
-       (ret (list->values-ty tys)))]
+       (ret (-values tys)))]
     ;; special case for `list'
     [(#%plain-app list . args)
      (let ([tys (map tc-expr/t (syntax->list #'args))])

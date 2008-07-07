@@ -140,12 +140,6 @@
 
 (define -values make-Values)
 
-;; produce the appropriate type of a list of types
-;; that is - if there is exactly one type, just produce it, otherwise produce a values-ty
-;; list[type] -> type
-(define (list->values-ty l)
-  (if (= 1 (length l)) (car l) (-values l)))
-
 (define-syntax *Un
   (syntax-rules ()
     [(_ . args) (make-Union (list . args))]))

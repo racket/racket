@@ -56,12 +56,6 @@
                                  (make-ValuesDots (map sb types) (sb dty) dbound))])
       target))
 
-;; the other definition is not accessible here
-(define (-values args)
-  (if (= (length args) 1)
-      (car args)
-      (make-Values args)))
-
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
 (define (substitute-dots images rimage name target)    
   (define (sb t) (substitute-dots images rimage name t))
@@ -69,7 +63,7 @@
       (type-case sb target
                  [#:ValuesDots types dty dbound
                                (if (eq? name dbound)
-                                   (-values
+                                   (make-Values
                                     (append 
                                      (map sb types)
                                      ;; We need to recur first, just to expand out any dotted usages of this.

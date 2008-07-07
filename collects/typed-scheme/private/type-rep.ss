@@ -143,8 +143,10 @@
 (dt Univ () [#:frees #f] [#:fold-rhs #:base])
 
 ;; types : Listof[Type]
-(dt Values (types) [#:frees (combine-frees (map free-vars* types))
-                            (combine-frees (map free-idxs* types))]
+(dt Values (types) 
+    #:no-provide
+    [#:frees (combine-frees (map free-vars* types))
+             (combine-frees (map free-idxs* types))]
     [#:fold-rhs (*Values (map type-rec-id types))])
 
 (dt ValuesDots (types dty dbound) 
@@ -515,6 +517,11 @@
         [(type<? s t) 1]
         [else -1]))
 
+(define (Values* l)
+  (if (and (pair? l) (null? (cdr l)))
+      (car l)
+      (*Values l)))
+
 ;(trace subst subst-all)
 
 (provide
@@ -532,6 +539,8 @@
  type-equal? type-compare type<?
  remove-dups
  sub-eff
+ Values: Values? Values-types
+ (rename-out [Values* make-Values])
  (rename-out [Mu:* Mu:]               
              [Poly:* Poly:]
              [PolyDots:* PolyDots:]
