@@ -38,7 +38,9 @@
       on-close
       can-close?
       close
-      get-filename/untitled-name))
+      get-filename/untitled-name
+      
+      get-pos/text))
   
   (define basic-mixin
     (mixin (editor<%>) (basic<%>)
@@ -48,6 +50,31 @@
       (define/public (close) (if (can-close?)
                                  (begin (on-close) #t)
                                  #f))
+      
+      (define/public (get-pos/text event)
+        (let ([event-x (send event get-x)]
+              [event-y (send event get-y)]
+              [on-it? (box #f)])
+          (let loop ([editor this])
+            (let-values ([(x y) (send editor dc-location-to-editor-location event-x event-y)])
+              (cond
+                [(is-a? editor text%)
+                 (let ([pos (send editor find-position x y #f on-it?)])
+                   (cond
+                     [(not (unbox on-it?)) (values #f #f)]
+                     [else
+                      (let ([snip (send editor find-snip pos 'after-or-none)])
+                        (if (and snip
+                                 (is-a? snip editor-snip%))
+                            (loop (send snip get-editor))
+                            (values pos editor)))]))]
+                [(is-a? editor pasteboard%)
+                 (let ([snip (send editor find-snip x y)])
+                   (if (and snip
+                            (is-a? snip editor-snip%))
+                       (loop (send snip get-editor))
+                       (values editor #f)))]
+                [else (values #f #f)])))))
       
       ;; get-filename/untitled-name : -> string
       ;; returns a string representing the visible name for this file,
@@ -291,8 +318,7 @@
                         (get-top-level-window)])
           (finder:put-file f d)))
       
-      
-      (super-instantiate ())))
+      (super-new)))
   
   (define standard-style-list (new style-list%))
   (define (get-standard-style-list) standard-style-list)

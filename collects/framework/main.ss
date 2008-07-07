@@ -909,7 +909,10 @@
  (parameter-doc
   keymap:add-to-right-button-menu
   (parameter/c
-   (-> (is-a?/c popup-menu%) (is-a?/c editor<%>) (is-a?/c event%) void?))
+   (-> (is-a?/c popup-menu%)
+       (is-a?/c editor<%>)
+       (is-a?/c event%)
+       void?))
   proc
   @{When the keymap that @scheme[keymap:get-global] returns is installed
          into an editor, this parameter's value is used for right button

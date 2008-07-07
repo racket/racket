@@ -28,7 +28,8 @@ module browser threading seems wrong.
            "auto-language.ss"
            "insert-large-letters.ss"
            mrlib/switchable-button
-           
+           mrlib/cache-image-snip
+
            (prefix-in drscheme:arrow: "../arrow.ss")
            
            mred
@@ -112,60 +113,116 @@ module browser threading seems wrong.
                     (or (is-a? text (get-definitions-text%))
                         (is-a? text drscheme:rep:text%))
                     (is-a? event mouse-event%))
-           (let* ([end (send text get-end-position)]
-                  [start (send text get-start-position)])
-             (unless (= 0 (send text last-position))
-               (let ([str (if (= end start)
-                              (find-symbol
-                               text
-                               (call-with-values
-                                (λ ()
-                                  (send text dc-location-to-editor-location
-                                        (send event get-x)
-                                        (send event get-y)))
-                                (λ (x y)
-                                  (send text find-position x y))))
-                              (send text get-text start end))]
-                     [language
-                      (let ([canvas (send text get-canvas)])
-                        (and canvas
-                             (let ([tlw (send canvas get-top-level-window)])
-                               (and (is-a? tlw -frame<%>)
-                                    (send (send tlw get-definitions-text)
-                                          get-next-settings)))))])
-                 (unless (string=? str "")
-                   (make-object separator-menu-item% menu)
-                   (make-object menu-item%
-                     (gui-utils:format-literal-label (string-constant search-help-desk-for) 
-                             (shorten-str 
-                              str 
-                              (- 200 (string-length (string-constant search-help-desk-for)))))
-                     menu
-                     (λ x (help-desk:help-desk str)))
-                   (void)))))))))
+           
+           (let ([add-sep
+                  (let ([added? #f])
+                    (λ ()
+                      (unless added?
+                        (set! added? #t)
+                        (new separator-menu-item% [parent menu]))))])
+             
+             (let* ([end (send text get-end-position)]
+                    [start (send text get-start-position)])
+               (unless (= 0 (send text last-position))
+                 (let ([str (if (= end start)
+                                (find-symbol
+                                 text
+                                 (call-with-values
+                                  (λ ()
+                                    (send text dc-location-to-editor-location
+                                          (send event get-x)
+                                          (send event get-y)))
+                                  (λ (x y)
+                                    (send text find-position x y))))
+                                (send text get-text start end))]
+                       [language
+                        (let ([canvas (send text get-canvas)])
+                          (and canvas
+                               (let ([tlw (send canvas get-top-level-window)])
+                                 (and (is-a? tlw -frame<%>)
+                                      (send (send tlw get-definitions-text)
+                                            get-next-settings)))))])
+                   (unless (string=? str "")
+                     (add-sep)
+                     (make-object menu-item%
+                       (gui-utils:format-literal-label
+                        (string-constant search-help-desk-for) 
+                        (shorten-str 
+                         str 
+                         (- 200 (string-length (string-constant search-help-desk-for)))))
+                       menu
+                       (λ x (help-desk:help-desk str)))))))
+           
+           (when (is-a? text editor:basic<%>)
+             (let-values ([(pos text) (send text get-pos/text event)])
+               (when (and pos (is-a? text text%))
+                 (send text split-snip pos)
+                 (send text split-snip (+ pos 1))
+                 (let ([snip (send text find-snip pos 'after-or-none)])
+                   (when (or (is-a? snip image-snip%)
+                             (is-a? snip cache-image-snip%))
+                     (add-sep)
+                     (new menu-item%
+                          [parent menu]
+                          [label (string-constant save-image)]
+                          [callback
+                           (λ (_1 _2)
+                             (let ([fn (put-file #f 
+                                                 (send text get-top-level-window)
+                                                 #f "untitled.png" "png")])
+                               (when fn
+                                 (let ([kind (filename->kind fn)])
+                                   (cond
+                                     [kind
+                                      (send (send snip get-bitmap) save-file fn kind)]
+                                     [else
+                                      (message-box 
+                                       (string-constant drscheme)
+                                       "Must choose a filename that ends with either .png, .jpg, .xbm, or .xpm")])))))]))))))
+           
+           (void))))))
+    
+    (define (filename->kind fn)
+      (let ([ext (filename-extension fn)])
+        (and ext
+             (let ([sym (string->symbol (bytes->string/utf-8 ext))])
+               (ormap (λ (pr) (and (eq? sym (car pr)) (cadr pr)))
+                      allowed-extensions)))))
+    
+    (define allowed-extensions '((png png)
+                                 (jpg jpeg)
+                                 (xbm xbm)
+                                 (xpm xpm)))
+    
+    
     
     ;; find-symbol : number -> string
     ;; finds the symbol around the position `pos' (approx)
     (define (find-symbol text pos)
-      (let* ([before
-              (let loop ([i (- pos 1)]
-                         [chars null])
-                (if (< i 0)
-                    chars
-                    (let ([char (send text get-character i)])
-                      (if (non-letter? char)
+      (send text split-snip pos)
+      (send text split-snip (+ pos 1))
+      (let ([snip (send text find-snip pos 'after-or-none)])
+        (if (is-a? snip string-snip%)
+            (let* ([before
+                    (let loop ([i (- pos 1)]
+                               [chars null])
+                      (if (< i 0)
                           chars
-                          (loop (- i 1)
-                                (cons char chars))))))]
-             [after
-              (let loop ([i pos])
-                (if (< i (send text last-position))
-                    (let ([char (send text get-character i)])
-                      (if (non-letter? char)
-                          null
-                          (cons char (loop (+ i 1)))))
-                    null))])
-        (apply string (append before after))))
+                          (let ([char (send text get-character i)])
+                            (if (non-letter? char)
+                                chars
+                                (loop (- i 1)
+                                      (cons char chars))))))]
+                   [after
+                    (let loop ([i pos])
+                      (if (< i (send text last-position))
+                          (let ([char (send text get-character i)])
+                            (if (non-letter? char)
+                                null
+                                (cons char (loop (+ i 1)))))
+                          null))])
+              (apply string (append before after)))
+            "")))
     
     ;; non-letter? : char -> boolean
     ;; returns #t if the character belongs in a symbol (approx) and #f it is
@@ -293,7 +350,7 @@ module browser threading seems wrong.
                       (let ([interactions-text (send f get-interactions-text)]) 
                         (when (object? interactions-text) 
                           (send interactions-text reset-highlighting)))))) 
-                
+                                
                 (define/augment (after-insert x y) 
                   (reset-highlighting) 
                   (inner (void) after-insert x y)) 

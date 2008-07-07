@@ -220,7 +220,7 @@ If the namespace does not, they are colored the unbound color.
         (let* ([cursor-arrow (make-object cursor% 'arrow)])
           (class* super% (syncheck-text<%>)
             (inherit set-cursor get-admin invalidate-bitmap-cache set-position
-                     position-location
+                     get-pos/text position-location
                      get-canvas last-position dc-location-to-editor-location
                      find-position begin-edit-sequence end-edit-sequence
                      highlight-range unhighlight-range)
@@ -627,35 +627,6 @@ If the namespace does not, they are colored the unbound color.
               (for-each-tail-arrows/to/from tail-arrow-from-pos tail-arrow-from-text
                                             tail-arrow-to-pos tail-arrow-to-text))
             
-            ;; get-pos/text : event -> (values (union #f text%) (union number #f))
-            ;; returns two #fs to indicate the event doesn't correspond to
-            ;; a position in an editor, or returns the innermost text
-            ;; and position in that text where the event is.
-            (define/private (get-pos/text event)
-              (let ([event-x (send event get-x)]
-                    [event-y (send event get-y)]
-                    [on-it? (box #f)])
-                (let loop ([editor this])
-                  (let-values ([(x y) (send editor dc-location-to-editor-location event-x event-y)])
-                    (cond
-                      [(is-a? editor text%)
-                       (let ([pos (send editor find-position x y #f on-it?)])
-                         (cond
-                           [(not (unbox on-it?)) (values #f #f)]
-                           [else
-                            (let ([snip (send editor find-snip pos 'after-or-none)])
-                              (if (and snip
-                                       (is-a? snip editor-snip%))
-                                  (loop (send snip get-editor))
-                                  (values pos editor)))]))]
-                      [(is-a? editor pasteboard%)
-                       (let ([snip (send editor find-snip x y)])
-                         (if (and snip
-                                  (is-a? snip editor-snip%))
-                             (loop (send snip get-editor))
-                             (values #f #f)))]
-                      [else (values #f #f)])))))
-            
             (define/override (on-event event)
               (if arrow-vectors
                   (cond
@@ -674,7 +645,7 @@ If the namespace does not, they are colored the unbound color.
                          (send event entering?))
                      (let-values ([(pos text) (get-pos/text event)])
                        (cond
-                         [(and pos text)
+                         [(and pos (is-a? text text%))
                           (unless (and (equal? pos cursor-location)
                                        (eq? cursor-text text))
                             (set! cursor-location pos)
@@ -707,7 +678,7 @@ If the namespace does not, they are colored the unbound color.
                      (super on-event event)]
                     [(send event button-down? 'right)
                      (let-values ([(pos text) (get-pos/text event)])
-                       (if (and pos text)
+                       (if (and pos (is-a? text text%))
                            (let ([arrow-vector (hash-ref arrow-vectors text (λ () #f))])
                              (when arrow-vector
                                (let ([vec-ents (vector-ref arrow-vector pos)])

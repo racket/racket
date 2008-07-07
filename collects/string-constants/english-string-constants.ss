@@ -391,6 +391,9 @@ please adhere to these guidelines:
  (yes "Yes")
  (no "No")
  
+ ;; saving image (right click on an image to see the text)
+  (save-image "Save image...")
+  
  ;;; preferences
  (preferences "Preferences")
  (error-saving-preferences "Error saving preferences: ~a")
