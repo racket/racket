@@ -368,8 +368,6 @@
                  [new-cset (cgen/list V (append vars X) (append ss new-tys) ts)])
             (move-vars-to-dmap new-cset dbound vars))]
          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
-          (unless (= (length ss) (length ts))
-            (fail! ss ts))
           (when (memq dbound X) (fail! ss ts))          
           (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
          [((Vector: e) (Vector: e*))
@@ -436,6 +434,8 @@
          (list k (constraint->type v)))))]))
 
 (define (cgen/list V X S T)
+  (unless (= (length S) (length T))
+    (fail! S T))
   (cset-meet* (for/list ([s S] [t T]) (cgen V X s t))))
 
 ;; X : variables to infer
@@ -471,7 +471,7 @@
            [new-Ts (for/list ([v new-vars])
                      (substitute (make-F v) dotted-var 
                                  (substitute-dots (map make-F new-vars) #f dotted-var T-dotted)))]
-           [cs-dotted (cgen/list null (append new-vars X) rest-S new-Ts)]
+           [cs-dotted (debug (cgen/list null (append new-vars X) rest-S new-Ts))]
            [cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars)]
            [cs (cset-meet cs-short cs-dotted*)])
       (if (not expected)
@@ -484,4 +484,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;;(trace cgen/arr cgen cgen/list)
+(trace cgen/arr cgen #;cgen/list)
