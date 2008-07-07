@@ -474,7 +474,7 @@
        #'(? Poly?
             (app (lambda (t) 
                    (let* ([n (Poly-n t)]
-                          [syms (hash-ref name-table t)])
+                          [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (Poly-body* syms t))))
                  (list nps bp)))])))
 
