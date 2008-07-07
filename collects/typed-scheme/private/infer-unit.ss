@@ -105,6 +105,7 @@
     [(_ _) (fail! t s)]))
 
 (define (cgen/eff/list V X ts ss)
+  (unless (= (length ts) (length ss)) (fail! ts ss))
   (cset-meet* (for/list ([t ts] [s ss]) (cgen/eff V X t s))))
 
 (define (cgen/arr V X t-arr s-arr)
@@ -287,7 +288,7 @@
             (cg b1 b2*))]
          
          [((Poly: v1 b1) T)
-          (debug (cgen (append v1 V) X b1 T))]
+          (cgen (append v1 V) X b1 T)]
 
          #;[((PolyDots: (list v1 ... r1) b1) T)
           (let ([b1* (var-demote b1 (cons r1 v1))])
@@ -484,4 +485,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen/arr cgen #;cgen/list)
+;(trace cgen/arr #;cgen #;cgen/list)
