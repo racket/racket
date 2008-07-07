@@ -300,7 +300,7 @@
           (cg b b*)]
          
          
-         [((Union: es) S) (cset-meet* (for/list ([e es]) (cg e S)))]
+         [((Union: es) S) (cset-meet* (cons empty (for/list ([e es]) (cg e S))))]
          ;; we might want to use multiple csets here, but I don't think it makes a difference
          [(S (Union: es)) (or
                            (for/or 
