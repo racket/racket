@@ -24,20 +24,22 @@
                          [(number? e)
                           (and (exn:fail:syntax? val)
                                (= e (length (exn:fail:syntax-exprs val))))]
-                         [(or (string? e) (regexp? e) (bytes? e))
+                         [else                          
                           (regexp-match e (exn-message val))]))))
    args))
   
 (define (exn-pred p)
   (let ([sexp (with-handlers
                   ([exn:fail? (lambda _ #f)])
-                (with-input-from-file p
-                  (lambda () 
-                    (read-line 'any) (read))))])
+                (call-with-input-file
+                 p
+                 (lambda (prt) 
+                   (read-line prt 'any) (read prt))))])
     (match sexp
       [(list-rest 'exn-pred e)
        (eval `(exn-matches . ,e) (namespace-anchor->namespace a))]
-      [_ (exn-matches ".*typecheck.*" exn:fail:syntax?)])))
+      [_ 
+       (exn-matches ".*typecheck.*" exn:fail:syntax?)])))
 
 (define (mk-tests dir loader test)
   (lambda ()
