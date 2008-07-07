@@ -1,5 +1,5 @@
 #;
-(exn-pred 2)
+(exn-pred 7)
 #lang typed-scheme
 
 (require typed-scheme/private/extra-procs)
@@ -14,3 +14,12 @@
 
 (map-with-funcs (lambda: ([x : Integer] [y : Integer] . [z : Integer *])
                          (+ x y)))
+
+(map-with-funcs (lambda: ([x : Integer] [y : Integer])
+                         (+ x y)))
+
+(map-with-funcs + - * / string-append)
+
+((map-with-funcs + - * /) 1 2 3)
+((map-with-funcs + - * /) 1 2 3 4 5)
+((map-with-funcs + - * /) 1 2 3 "foo")
