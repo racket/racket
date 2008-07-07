@@ -66,7 +66,6 @@
     (match t
       [(Pair: a e) (cons a (tuple-elems e))]
       [(Value: '()) null]))
-  ;(fp "~a~n" (Type-seq c))
   (match c 
     [(Univ:) (fp "Any")]
     [(? has-name?) (fp "~a" (has-name? c))]
@@ -116,12 +115,13 @@
          (fp "(Parameter ~a)" in)           
          (fp "(Parameter ~a ~a)" in out))]
     [(Hashtable: k v) (fp "(HashTable ~a ~a)" k v)]
-    #;
-    [(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
+    
+    #;[(Poly-unsafe: n b) (fp "(unsafe-poly ~a ~a ~a)" (Type-seq c) n b)]
     [(Poly-names: names body) 
      #;(fprintf (current-error-port) "POLY SEQ: ~a~n" (Type-seq body))
      (fp "(All ~a ~a)" names body)]
-    [(PolyDots-names: (list names ... dotted) body) 
+    #;[(PolyDots-unsafe: n b) (fp "(unsafe-polydots ~a ~a ~a)" (Type-seq c) n b)]
+    [(PolyDots-names: (list names ... dotted) body)
      (fp "(All ~a ~a)" (append names (list dotted '...)) body)]
     #;
     [(Mu-unsafe: b) (fp "(unsafe-mu ~a ~a)" (Type-seq c) b)]

@@ -71,7 +71,7 @@
          (tc-error/expr #:return (ret (Un)) 
                         "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
                         ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
-        [(and (PolyDots? ty) (= (length (syntax->list inst)) (PolyDots-n ty)))
+        [(PolyDots? ty)
          ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
          ;; use instantiate-poly-dotted, otherwise we do the normal thing.
          (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])

@@ -351,14 +351,13 @@
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
        [#:ValuesDots tys dty dbound
                      (*ValuesDots (map sb tys)
-                                  (sb dty)
-                                  
+                                  (sb dty)                                  
                                   (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])
                      (*PolyDots n (*Scope (loop (+ n outer) body))))]
-       [#:Poly n body* 
+       [#:Poly n body*
                (let ([body (remove-scopes n body*)])
                  (*Poly n (*Scope (loop (+ n outer) body))))])))
   (let ([n (length images)])
@@ -500,7 +499,7 @@
        #'(? PolyDots?
             (app (lambda (t) 
                    (let* ([n (PolyDots-n t)]
-                          [syms (hash-ref name-table t)])
+                          [syms (hash-ref name-table t (lambda _ (build-list n (lambda _ (gensym)))))])
                      (list syms (PolyDots-body* syms t))))
                  (list nps bp)))])))
 
