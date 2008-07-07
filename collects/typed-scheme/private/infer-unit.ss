@@ -471,7 +471,7 @@
            [new-Ts (for/list ([v new-vars])
                      (substitute (make-F v) dotted-var 
                                  (substitute-dots (map make-F new-vars) #f dotted-var T-dotted)))]
-           [cs-dotted (debug (cgen/list null (append new-vars X) rest-S new-Ts))]
+           [cs-dotted (cgen/list null (append new-vars X) rest-S new-Ts)]
            [cs-dotted* (move-vars-to-dmap cs-dotted dotted-var new-vars)]
            [cs (cset-meet cs-short cs-dotted*)])
       (if (not expected)
@@ -484,4 +484,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-(trace cgen/arr cgen #;cgen/list)
+;(trace cgen/arr cgen #;cgen/list)
