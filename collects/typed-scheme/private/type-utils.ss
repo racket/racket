@@ -115,8 +115,6 @@
                                   (map (lambda (e) (sub-eff sb e)) els-eff))])
        target))
 
-(trace substitute-dots)
-
 ;; substitute many variables
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]
 ;; subst-all : substition Type -> Type
