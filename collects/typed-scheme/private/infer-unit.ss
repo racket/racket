@@ -353,8 +353,8 @@
                                      (gensym dbound))]
                  [new-tys  (for/list ([var vars])
                                      (substitute (make-F var) dbound t-dty))]
-                 [new-cset (cgen/list V X ss (append ts new-tys))])
-            (move-vars-to-dmap new-cset vars dbound))]
+                 [new-cset (cgen/list V (append vars X) ss (append ts new-tys))])
+            (move-vars-to-dmap new-cset dbound vars))]
          [((ValuesDots: ss s-dty dbound) (Values: ts))
           (unless (>= (length ts) (length ss))
             (fail! ss ts))
@@ -365,8 +365,8 @@
                                      (gensym dbound))]
                  [new-tys  (for/list ([var vars])
                                      (substitute (make-F var) dbound s-dty))]
-                 [new-cset (cgen/list V X (append ss new-tys) ts)])
-            (move-vars-to-dmap new-cset vars dbound))]
+                 [new-cset (cgen/list V (append vars X) (append ss new-tys) ts)])
+            (move-vars-to-dmap new-cset dbound vars))]
          [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
           (unless (= (length ss) (length ts))
             (fail! ss ts))
@@ -483,4 +483,4 @@
 (define (i s t r)
   (infer/simple (list s) (list t) r))
 
-;(trace cgen/arr)
+;(trace cgen/arr cgen)
