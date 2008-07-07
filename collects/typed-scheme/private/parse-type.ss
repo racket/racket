@@ -101,6 +101,19 @@
        (begin
          (add-type-name-reference #'->)
          (->* (map parse-type (syntax->list #'(dom ...))) (parse-type #'rng)))]
+      [(values tys ... dty dd bound)
+       (and (eq? (syntax-e #'dd) '...)
+            (identifier? #'bound)
+            (eq? (syntax-e #'values) 'values))
+       (let ([var (lookup (current-tvars) (syntax-e #'bound) (lambda (_) #f))])
+         (if (not (Dotted? var))
+             (tc-error/stx #'bound "Used a type variable (~a) not bound with ... as a bound on a ..." (syntax-e #'bound))             
+             (make-ValuesDots (map parse-type (syntax->list #'(tys ...)))
+                              (parameterize ([current-tvars (extend-env (list (syntax-e #'bound)) 
+                                                                        (list (make-DottedBoth (make-F (syntax-e #'bound))))
+                                                                        (current-tvars))])
+                                (parse-type #'dty))
+                              (syntax-e #'bound))))]
       [(values tys ...) 
        (eq? (syntax-e #'values) 'values)
        (-values (map parse-type (syntax->list #'(tys ...))))]

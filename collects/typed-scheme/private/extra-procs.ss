@@ -1,5 +1,5 @@
 #lang scheme/base
-(provide assert)
+(provide assert call-with-values* values*)
 
 (define (assert v)
   (unless v
@@ -13,3 +13,6 @@
       (apply f
              (apply fold-right f c (cdr as) (map cdr bss))
              (car as) (map car bss))))
+
+(define call-with-values* call-with-values)
+(define values* values)

@@ -7,6 +7,7 @@
          (only-in "free-variance.ss" combine-frees)
          mzlib/plt-match
          scheme/list
+         mzlib/trace
          (for-syntax scheme/base))
 
 (provide fv fv/list
@@ -46,7 +47,12 @@
                                     (and rest (sb rest))
                                     (and drest (cons (sb (car drest)) (cdr drest)))
                                     (map (lambda (e) (sub-eff sb e)) thn-eff)
-                                    (map (lambda (e) (sub-eff sb e)) els-eff)))])
+                                    (map (lambda (e) (sub-eff sb e)) els-eff)))]
+                 [#:ValuesDots types dty dbound
+                               (begin
+                                 (when (eq? name dbound)
+                                   (int-err "substitute used on ... variable ~a in type ~a" name target))
+                                 (make-ValuesDots (map sb types) (sb dty) dbound))])
       target))
 
 ;; substitute-dots : Listof[Type] Option[type] Name Type -> Type
@@ -54,6 +60,15 @@
   (define (sb t) (substitute-dots images rimage name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
+                 [#:ValuesDots types dty dbound
+                               (if (eq? name dbound)
+                                   (make-Values
+                                    (append 
+                                     (map sb types)
+                                     ;; We need to recur first, just to expand out any dotted usages of this.
+                                     (let ([expanded (sb dty)])
+                                       (map (lambda (img) (substitute img name expanded)) images))))
+                                   (make-ValuesDots (map sb types) (sb dty) dbound))]
                  [#:arr dom rng rest drest thn-eff els-eff
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
@@ -81,6 +96,10 @@
   (define (sb t) (substitute-dotted image image-bound name t))
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
+                 [#:ValuesDots types dty dbound
+                               (make-ValuesDots (map sb types)
+                                                (sb dty)
+                                                (if (eq? name dbound) image-bound dbound))]
                  [#:F name*
                       (if (eq? name* name)
                           image
@@ -94,7 +113,9 @@
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
                                   (map (lambda (e) (sub-eff sb e)) thn-eff)
                                   (map (lambda (e) (sub-eff sb e)) els-eff))])
-      target))
+       target))
+
+(trace substitute-dots)
 
 ;; substitute many variables
 ;; substitution = Listof[U List[Name,Type] List[Name,Listof[Type]]]

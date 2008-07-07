@@ -111,9 +111,6 @@
                                          (map free-vars* (append thn-eff els-eff)))))
              (combine-frees (append (map flip-variances (map free-idxs* (append (if rest (list rest) null) dom)))
                                     (match drest
-                                      #;[(cons t (? number? bnd))
-                                       (let ([vs (free-idxs* t)])
-                                         (list (flip-variances vs)))]
                                       [(cons t bnd) (list (flip-variances (free-idxs* t)))]
                                       [_ null])
                                     (list (free-idxs* rng))                                      
@@ -149,6 +146,11 @@
 (dt Values (types) [#:frees (combine-frees (map free-vars* types))
                             (combine-frees (map free-idxs* types))]
     [#:fold-rhs (*Values (map type-rec-id types))])
+
+(dt ValuesDots (types dty dbound) 
+    [#:frees (combine-frees (map free-vars* (cons dty types)))
+             (combine-frees (map free-idxs* (cons dty types)))]
+    [#:fold-rhs (*ValuesDots (map type-rec-id types) (type-rec-id dty) dbound)])
 
 ;; in : Type
 ;; out : Type
@@ -301,6 +303,10 @@
                         #f)
                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
+       [#:ValuesDots tys dty dbound
+              (*ValuesDots (map sb tys)
+                           (sb dty)
+                           (if (eq? dbound name) (+ count outer) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])
@@ -341,6 +347,11 @@
                         #f)
                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                     (map (lambda (e) (sub-eff sb e)) els-eff))]
+       [#:ValuesDots tys dty dbound
+                     (*ValuesDots (map sb tys)
+                                  (sb dty)
+                                  
+                                  (if (eqv? dbound (+ count outer)) (F-n image) dbound))]
        [#:Mu (Scope: body) (*Mu (*Scope (loop (add1 outer) body)))]
        [#:PolyDots n body* 
                    (let ([body (remove-scopes n body*)])

@@ -110,6 +110,7 @@
     [(Pair: l r) (fp "(Pair ~a ~a)" l r)]
     [(F: nm) (fp "~a" nm)]      
     [(Values: (list v ...)) (fp "~a" (cons 'values v))]
+    [(ValuesDots: v dty dbound) (fp "~a" (cons 'values (append v (list dty '... dbound))))]
     [(Param: in out) 
      (if (equal? in out)
          (fp "(Parameter ~a)" in)           

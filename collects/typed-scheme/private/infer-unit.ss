@@ -339,6 +339,39 @@
           (let ([x (instantiate-poly (lookup-type-name n) args)]
                 [y (instantiate-poly (lookup-type-name n) args*)])
             (cg x y))]
+         [((Values: ss) (Values: ts))
+          (unless (= (length ss) (length ts))
+            (fail! ss ts))
+          (cgen/list V X ss ts)]
+         [((Values: ss) (ValuesDots: ts t-dty dbound))
+          (unless (>= (length ss) (length ts))
+            (fail! ss ts))
+          (unless (memq dbound X)
+            (fail! S T))
+          (let* ([num-vars (- (length ss) (length ts))]
+                 [vars     (for/list ([n (in-range num-vars)])
+                                     (gensym dbound))]
+                 [new-tys  (for/list ([var vars])
+                                     (substitute (make-F var) dbound t-dty))]
+                 [new-cset (cgen/list V X ss (append ts new-tys))])
+            (move-vars-to-dmap new-cset vars dbound))]
+         [((ValuesDots: ss s-dty dbound) (Values: ts))
+          (unless (>= (length ts) (length ss))
+            (fail! ss ts))
+          (unless (memq dbound X)
+            (fail! S T))
+          (let* ([num-vars (- (length ts) (length ss))]
+                 [vars     (for/list ([n (in-range num-vars)])
+                                     (gensym dbound))]
+                 [new-tys  (for/list ([var vars])
+                                     (substitute (make-F var) dbound s-dty))]
+                 [new-cset (cgen/list V X (append ss new-tys) ts)])
+            (move-vars-to-dmap new-cset vars dbound))]
+         [((ValuesDots: ss s-dty dbound) (ValuesDots: ts t-dty dbound))
+          (unless (= (length ss) (length ts))
+            (fail! ss ts))
+          (when (memq dbound X) (fail! ss ts))          
+          (cgen/list V X (cons s-dty ss) (cons t-dty ts))]
          [((Vector: e) (Vector: e*))
           (cset-meet (cg e e*) (cg e* e))]
          [((Box: e) (Box: e*))
