@@ -404,8 +404,11 @@
                        (let-values ([(t n) (toc-item->title+num c #t)])
                          `(tr () (td ([align "right"]) ,@n) (td () ,@t)))))))))
       (define (toc-content)
-        (for/list ([t toc-chain] [i (in-naturals)])
-          (toc-item->block t i)))
+        ;; no links -- the code constructs links where needed
+        (parameterize ([current-no-links #t]
+                       [extra-breaking? #t])
+          (for/list ([t toc-chain] [i (in-naturals)])
+            (toc-item->block t i))))
       `((div ([class "tocset"])
           ,@(if (part-style? d 'no-toc)
               null
