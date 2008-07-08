@@ -923,7 +923,6 @@
       (define t-style-get (if (and (pair? t-style) (list? t-style))
                             (lambda (k) (assoc k t-style))
                             (lambda (k) #f)))
-      (define index? (eq? 'index t-style))
       (define (make-row flows style)
         `(tr (,@(if style `([class ,style]) null))
            ,@(let loop ([ds flows]
@@ -960,9 +959,7 @@
                                null))
                           ,@(render-flow d part ri #f))
                      (loop (cdr ds) (cdr as) (cdr vas))))]))))
-      `(#; ; no need for these index-local searches
-        ,@(if index? `(,search-script ,search-field) '())
-        (table ([cellspacing "0"]
+      `((table ([cellspacing "0"]
                 ,@(if need-inline?
                     '([style "display: inline; vertical-align: top;"])
                     null)
