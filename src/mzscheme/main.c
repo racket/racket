@@ -242,7 +242,9 @@ END_XFORM_SKIP;
 
 static int main_after_dlls(int argc, MAIN_char **argv)
 {
-  return scheme_main_stack_setup(1, (Scheme_Startup_Main)main_after_stack, NULL, argc, (char **)argv);
+  return scheme_main_stack_setup(1, 
+                                 (Scheme_Startup_Main)main_after_stack, NULL, 
+                                 argc, (char **)argv);
 }
 
 /************************     main_after_stack    *************************/
