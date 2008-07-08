@@ -240,9 +240,9 @@ END_XFORM_SKIP;
 /************************     main_after_dlls    **************************/
 /*        Prep stack for GC, then call main_after_stack (indirectly)      */
 
-static int main_after_dlls(int argc, MAIN_char **MAIN_argv)
+static int main_after_dlls(int argc, MAIN_char **argv)
 {
-  return scheme_main_stack_setup(1, main_after_stack, NULL, argc, argv);
+  return scheme_main_stack_setup(1, (Scheme_Startup_Main)main_after_stack, NULL, argc, (char **)argv);
 }
 
 /************************     main_after_stack    *************************/
