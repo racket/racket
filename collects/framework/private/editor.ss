@@ -302,12 +302,16 @@
                (for-each (λ (t) (t)) queue)])))
         (inner (void) after-edit-sequence))
       
-      [define/override on-new-box
-        (λ (type)
-          (cond
-            [(eq? type 'text) (make-object editor-snip% (make-object text:basic%))]
-            [else (make-object editor-snip% (make-object pasteboard:basic%))]))]
+      (define/override (on-new-box type)
+        (cond
+          [(eq? type 'text) (make-object editor-snip% (make-object text:basic%))]
+          [else (make-object editor-snip% (make-object pasteboard:basic%))]))
       
+      (define/override (on-new-image-snip filename kind relative-path? inline?)
+        (super on-new-image-snip 
+               (if (eq? kind 'unknown) 'unknown/mask kind) 
+               relative-path? 
+               inline?))
       
       (define/override (get-file d)
         (parameterize ([finder:dialog-parent-parameter

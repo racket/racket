@@ -200,6 +200,18 @@
     @scheme[text%]
     classes. 
   }
+  @defmethod[#:mode override (on-new-image-snip [filname (or/c path? false/c)]
+  		    	                         [kind (one-of/c 'unknown 'gif 'jpeg 'xbm 'xpm 'bmp 'pict)]
+                                                 [relative-path? any/c]
+                                                 [inline? any/c])
+                             (is-a?/c image-snip%)]{
+    @schemeblock[
+        (super on-new-image-snip 
+               (if (eq? kind 'unknown) 'unknown/mask kind) 
+               relative-path? 
+               inline?)]
+  }
+
   @defmethod*[#:mode override (((get-file (directory (or/c path-string? false/c))) string))]{
 
     Uses
