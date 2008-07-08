@@ -296,13 +296,16 @@ To embed PLT Scheme CGC in a program, follow these steps:
   installing from source also places this file in the installation's
   @filepath{include} directory.}
 
- @item{Start your main program through the @cpp{scheme_main_setup}
-  trampoline, and put all uses of MzScheme functions inside the
-  function passed to @cpp{scheme_main_setup}. The @cpp{scheme_main_setup}
-  function registers the current C stack location with the memory
-  manager. It also creates the initial namespace @cpp{Scheme_Env*} by
-  calling @cppi{scheme_basic_env} and passing the result to the
-  function provided to @cpp{scheme_main_setup}.}
+ @item{Start your main program through the @cpp{scheme_main_setup} (or
+  @cpp{scheme_main_stack_setup}) trampoline, and put all uses of
+  MzScheme functions inside the function passed to
+  @cpp{scheme_main_setup}. The @cpp{scheme_main_setup} function
+  registers the current C stack location with the memory manager. It
+  also creates the initial namespace @cpp{Scheme_Env*} by calling
+  @cppi{scheme_basic_env} and passing the result to the function
+  provided to @cpp{scheme_main_setup}. (The
+  @cpp{scheme_main_stack_setup} trampoline registers the C stack with
+  the memory manager without creating a namespace.)}
 
  @item{Configure the namespace by adding module declarations. The
   initial namespace contains declarations only for a few primitive

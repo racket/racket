@@ -89,30 +89,36 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
 }
 
 typedef struct {
-  Scheme_Main _main;
+  Scheme_Env_Main _main;
+  int argc;
+  char **argv;
 } Scheme_Main_Data;
 
-static int call_with_basic(void *data, int argc, char **argv)
+static int call_with_basic(void *data)
 {
-  Scheme_Main _main = ((Scheme_Main_Data *)data)->_main;
-  return _main(scheme_basic_env(), argc, argv);
+  Scheme_Main_Data *ma = (Scheme_Main_Data *)data;
+  Scheme_Env_Main _main = ma->_main;
+  
+  return _main(scheme_basic_env(), ma->argc, ma->argv);
 }
 
-int scheme_main_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv)
+int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv)
 {
   Scheme_Main_Data d;
   d._main = _main;
-  return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d, argc, argv);
+  d.argc = argc;
+  d.argv = argv;
+  return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d);
 }
 
-int scheme_main_stack_setup(int no_auto_statics, Scheme_Startup_Main _main, void *data, int argc, char **argv)
+int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data)
 {
   void *stack_start;
   int volatile return_code;
 
   scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
 
-  return_code = _main(data, argc, argv);
+  return_code = _main(data);
 
 #ifdef MZ_PRECISE_GC
   /* Trick xform conversion to keep start_addr: */

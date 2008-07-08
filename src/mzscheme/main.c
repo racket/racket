@@ -213,7 +213,7 @@ int actual_main(int argc, char *argv[]);
 /*          Prepare for delayload, then call main_after_dlls              */
 
 static int main_after_dlls(int argc, MAIN_char **MAIN_argv);
-static int main_after_stack(void *data, int argc, MAIN_char **MAIN_argv);
+static int main_after_stack(void *data);
 
 # ifdef MZ_PRECISE_GC
 START_XFORM_SKIP;
@@ -240,22 +240,33 @@ END_XFORM_SKIP;
 /************************     main_after_dlls    **************************/
 /*        Prep stack for GC, then call main_after_stack (indirectly)      */
 
+typedef struct {
+  int argc;
+  MAIN_char **argv;
+} Main_Args;
+
 static int main_after_dlls(int argc, MAIN_char **argv)
 {
-  return scheme_main_stack_setup(1, 
-                                 (Scheme_Startup_Main)main_after_stack, NULL, 
-                                 argc, (char **)argv);
+  Main_Args ma;
+  ma.argc = argc;
+  ma.argv = argv;
+  return scheme_main_stack_setup(1, main_after_stack, &ma);
 }
 
 /************************     main_after_stack    *************************/
 /*            Phase 1 setup, then call actual_main (indirectly)           */
 
-static int main_after_stack(void *data, int argc, MAIN_char **MAIN_argv)
+static int main_after_stack(void *data)
 {
   int rval;
+  int argc;
+  MAIN_char **MAIN_argv;
 #ifdef WINDOWS_UNICODE_MAIN
   char **argv;
 #endif
+
+  argc = ((Main_Args *)data)->argc;
+  MAIN_argv = ((Main_Args *)data)->argv;
 
 #if defined(OSKIT) && !defined(OSKIT_TEST) && !KNIT
   oskit_prepare(&argc, &argv);

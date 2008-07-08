@@ -688,7 +688,7 @@ Registers an extension's global variable that can contain Scheme
 
 @function[(int scheme_main_setup
            [int no_auto_statics]
-           [Scheme_Main main]
+           [Scheme_Env_Main main]
            [int argc]
            [char** argv])]{
 
@@ -697,11 +697,11 @@ calling @cpp{scheme_basic_env}, and then calls @var{main} with the
 namespace, @var{argc}, and @var{argv}. (The @var{argc} and @var{argv}
 are just passed on to @var{main}, and are not inspected in any way.)
 
-The @cpp{Scheme_Main} type is defined as follows:
+The @cpp{Scheme_Env_Main} type is defined as follows:
 
 @verbatim[#:indent 4]{
-typedef int (*Scheme_Main)(Scheme_Env *env, 
-                           int argc, char **argv);
+typedef int (*Scheme_Env_Main)(Scheme_Env *env, 
+                               int argc, char **argv);
 }
 
 The result of @var{main} is the result of @cpp{scheme_main_setup}.
@@ -709,6 +709,24 @@ The result of @var{main} is the result of @cpp{scheme_main_setup}.
 If @var{no_auto_statics} is non-zero, then static variables must be
 explicitly registered with the garbage collector; see
 @secref["im:memoryalloc"] for more information.}
+
+
+@function[(int scheme_main_stack_setup
+           [int no_auto_statics]
+           [Scheme_Nested_Main main]
+           [void* data])]{
+
+A more primitive variant of @cpp{scheme_main_setup} that initializes
+the GC stack base but does not create the initial namespace (so an
+embedding application can perform other operations that involve
+garbage-collected data before creating a namespace).
+
+The @var{data} argument is passed through to @var{main}, where the
+@cpp{Scheme_Nested_Main} type is defined as follows:
+
+@verbatim[#:indent 4]{
+typedef int (*Scheme_Nested_Main)(void *data);
+}}
 
 
 @function[(void scheme_set_stack_base
@@ -739,7 +757,7 @@ must be the beginning or end of a local-frame registration. Worse, in
 CGC or 3m, if @cpp{real_main} is declared @cpp{static}, the compiler
 may inline it and place variables containing collectable values deeper
 in the stack than @cpp{dummy}. To avoid these problems, use
-@cpp{scheme_main_setup}, instead.}
+@cpp{scheme_main_setup} or @cpp{scheme_main_stack_setup}, instead.}
 
 @function[(void scheme_set_stack_bounds
            [void* stack_addr]

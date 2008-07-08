@@ -1697,12 +1697,12 @@ MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
 MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
 /* Stack-preparation start-up: */
-typedef int (*Scheme_Startup_Main)(void *data, int argc, char **argv);
-MZ_EXTERN int scheme_main_stack_setup(int no_auto_statics, Scheme_Startup_Main _main, void *data, int argc, char **argv);
+typedef int (*Scheme_Nested_Main)(void *data);
+MZ_EXTERN int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void *data);
 
 /* More automatic start-up: */
-typedef int (*Scheme_Main)(Scheme_Env *env, int argc, char **argv);
-MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv);
+typedef int (*Scheme_Env_Main)(Scheme_Env *env, int argc, char **argv);
+MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv);
 
 
 MZ_EXTERN void scheme_register_static(void *ptr, long size);

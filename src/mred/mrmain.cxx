@@ -252,7 +252,7 @@ int actual_main(int argc, char **argv)
   return r;
 }
 
-static int main_after_stack(void *data, int argc, char *argv[])
+static int main_after_stack(int argc, char *argv[])
 {
   int rval;
 
@@ -299,9 +299,24 @@ static int main_after_stack(void *data, int argc, char *argv[])
 /* Just jumps to generic main. */
 
 #ifndef wx_msw 
+
+typedef struct {
+  int argc;
+  char **argv;
+} Main_Args;
+
+static int call_main_after_stack(void *data)
+{
+  Main_Args *ma = (Main_Args *)data;
+  return main_after_stack(ma->argc, ma->argv);
+}
+
 int main(int argc, char *argv[])
 {
-  return scheme_main_stack_setup(1, main_after_stack, NULL, argc, argv);
+  Main_Args ma;
+  ma.argc = argc;
+  ma.argv = argv;
+  return scheme_main_stack_setup(1, call_main_after_stack, &ma);
 }
 #endif
 
@@ -517,22 +532,19 @@ typedef struct {
   int wm_is_mred;
   HINSTANCE hInstance;
   HINSTANCE hPrevInstance;
+  int argc;
+  char **argv;
   int nCmdShow;
 } WinMain_Args;
 
-static int call_main_after_stack(int argc, char *argv[]) 
-{
-  return main_after_stack(NULL, argc, argv);
-}
-
-static int WinMain_after_stack(void *_wma, int argc, char **argv)
+static int WinMain_after_stack(void *_wma)
 {
   WinMain_Args *wma = (WinMain_Args *)_wma;
 
   return wxWinMain(wma->wm_is_mred, wma->hInstance, wma->hPrevInstance, 
-                   argc, argv, 
+                   wma->argc, wma->argv, 
                    wma->nCmdShow, 
-                   call_main_after_stack);
+                   main_after_stack);
 }
 
 int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
@@ -628,9 +640,11 @@ int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
   wma.wm_is_mred = wm_is_mred;
   wma.hInstance = hInstance;
   wma.hPrevInstance = hPrevInstance;
+  wma.argc = argc;
+  wma.argv = argv;
   wma.nCmdShow = nCmdShow;
 
-  return scheme_main_stack_setup(1, WinMain_after_stack, &wma, argc, argv);
+  return scheme_main_stack_setup(1, WinMain_after_stack, &wma);
 }
 
 # ifdef MZ_PRECISE_GC
