@@ -551,7 +551,7 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 
   scheme_init_jmpup_buf(&overflow->jmp->cont);
   scheme_zero_unneeded_rands(scheme_current_thread); /* for GC */
-  if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, ADJUST_STACK_START(p->stack_start))) {
+  if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, p->stack_start)) {
     p = scheme_current_thread;
     overflow = p->overflow;
     p->overflow = overflow->prev;

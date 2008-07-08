@@ -252,22 +252,9 @@ int actual_main(int argc, char **argv)
   return r;
 }
 
-int main(int argc, char *argv[])
+static int main_after_stack(void *data, int argc, char *argv[])
 {
   int rval;
-  void *stack_start;
-
-  stack_start = (void *)&stack_start;
-
-  /* Set stack base and turn off auto-finding of static variables ---
-     unless this is Windows, where scheme_set_stack_base
-     is called by wxWindows. */
-#ifndef wx_msw
-# if defined(MZ_PRECISE_GC)
-  stack_start = (void *)&__gc_var_stack__;
-# endif
-  scheme_set_stack_base(stack_start, 1);
-#endif
 
 #ifdef wx_x
 # if INTERRUPT_CHECK_ON
@@ -305,6 +292,24 @@ int main(int argc, char *argv[])
   return rval;
 }
 
+/* **************************************************************** */
+/*   Main for Unix and Mac OS X                                     */
+/* **************************************************************** */
+
+/* Just jumps to generic main. */
+
+#ifndef wx_msw 
+int main(int argc, char *argv[])
+{
+  return scheme_main_stack_setup(1, main_after_stack, NULL, argc, argv);
+}
+#endif
+
+/* **************************************************************** */
+/*   Main for Windows                                               */
+/* **************************************************************** */
+
+/* Implements single-instance mode and otherwise initializes Windows. */
 
 #ifdef wx_msw 
 
@@ -506,11 +511,36 @@ static char *CreateUniqueName()
   return together;
 }
 
+/* To propagate args from WinMain to wxWinMain via
+   scheme_main_stack_setup: */
+typedef struct {
+  int wm_is_mred;
+  HINSTANCE hInstance;
+  HINSTANCE hPrevInstance;
+  int nCmdShow;
+} WinMain_Args;
+
+static int call_main_after_stack(int argc, char *argv[]) 
+{
+  return main_after_stack(NULL, argc, argv);
+}
+
+static int WinMain_after_stack(void *_wma, int argc, char **argv)
+{
+  WinMain_Args *wma = (WinMain_Args *)_wma;
+
+  return wxWinMain(wma->wm_is_mred, wma->hInstance, wma->hPrevInstance, 
+                   argc, argv, 
+                   wma->nCmdShow, 
+                   call_main_after_stack);
+}
+
 int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
   LPWSTR m_lpCmdLine;
   long argc, j, l;
   char *a, **argv, *b, *normalized_path = NULL;
+  WinMain_Args wma;
 
   /* Get command line: */
   m_lpCmdLine = GetCommandLineW();
@@ -595,7 +625,12 @@ int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
     }
   }
 
-  return wxWinMain(wm_is_mred, hInstance, hPrevInstance, argc, argv, nCmdShow, main);
+  wma.wm_is_mred = wm_is_mred;
+  wma.hInstance = hInstance;
+  wma.hPrevInstance = hPrevInstance;
+  wma.nCmdShow = nCmdShow;
+
+  return scheme_main_stack_setup(1, winMain_after_stack, &wma, argc, argv);
 }
 
 # ifdef MZ_PRECISE_GC

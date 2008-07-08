@@ -88,22 +88,38 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
   use_registered_statics = no_auto_statics;
 }
 
+typedef struct {
+  Scheme_Main _main;
+} Scheme_Main_Data;
+
+static int call_with_basic(void *data, int argc, char **argv)
+{
+  Scheme_Main _main = ((Scheme_Main_Data *)data)->_main;
+  return _main(scheme_basic_env(), argc, argv);
+}
+
 int scheme_main_setup(int no_auto_statics, Scheme_Main _main, int argc, char **argv)
 {
-  void *start_addr = &start_addr;
+  Scheme_Main_Data d;
+  d._main = _main;
+  return scheme_main_stack_setup(no_auto_statics, call_with_basic, &d, argc, argv);
+}
 
-#ifdef MZ_PRECISE_GC
-  start_addr = &__gc_var_stack__;
-#endif
-  
-  scheme_set_stack_base(start_addr, no_auto_statics);
+int scheme_main_stack_setup(int no_auto_statics, Scheme_Startup_Main _main, void *data, int argc, char **argv)
+{
+  void *stack_start;
+  int volatile return_code;
+
+  scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
+
+  return_code = _main(data, argc, argv);
 
 #ifdef MZ_PRECISE_GC
   /* Trick xform conversion to keep start_addr: */
-  start_addr = start_addr;
+  stack_start = NULL;
 #endif
 
-  return _main(scheme_basic_env(), argc, argv);
+  return return_code;
 }
 
 void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)

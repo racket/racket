@@ -1809,12 +1809,6 @@ void scheme_really_create_overflow(void *stack_base)
 {
   Scheme_Overflow_Jmp *jmp;
 
-  /* Even if we already have scheme_overflow_jmp,
-     it's possible that we're starting at a lower stack position
-     than previously. It's important (for non-3m) to declare
-     the new stack start: */
-  scheme_ensure_stack_start(stack_base);
-
   if (scheme_overflow_jmp)
     return;
 
@@ -1896,9 +1890,9 @@ void scheme_really_create_overflow(void *stack_base)
 
 void scheme_create_overflow(void)
 {
-  void *dummy;
-  scheme_really_create_overflow(PROMPT_STACK(dummy));
-  dummy = NULL; /* to ensure that we get __gc_var_stack__ in 3m */
+  void *stack_marker;
+  scheme_really_create_overflow(PROMPT_STACK(stack_marker));
+  stack_marker = NULL; /* to ensure that we get __gc_var_stack__ in 3m */
 }
 
 void scheme_init_overflow(void)
@@ -5435,7 +5429,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
       else if (meta_prompt)
         stack_start = meta_prompt->stack_boundary;
       else
-        stack_start = ADJUST_STACK_START(p->stack_start);
+        stack_start = p->stack_start;
     }
   }
 
@@ -5768,10 +5762,6 @@ Scheme_Object *scheme_apply_for_prompt(Scheme_Prompt *prompt, Scheme_Object *pro
   /* Grab stack address, then continue on with final step: */
   prompt->stack_boundary = PROMPT_STACK(proc);
 
-  /* Even if all threads start deeper, a continuation might be sent
-     to the thread to start it at this prompt's stack level. */
-  scheme_ensure_stack_start(prompt->stack_boundary);
-
   proc = scheme_finish_apply_for_prompt(prompt, prompt_tag, proc, argc, argv);
 
   return proc;
@@ -5827,7 +5817,7 @@ static Scheme_Object *compose_continuation(Scheme_Cont *cont, int exec_chain,
 
   if (scheme_setjmpup(&offstack_overflow->jmp->cont, 
                       offstack_overflow->jmp, 
-                      ADJUST_STACK_START(p->stack_start))) {
+                      p->stack_start)) {
     /* Returning. (Jumped here from finish_apply_for_prompt,
        scheme_compose_continuation, scheme_eval, or start_child.)
        

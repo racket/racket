@@ -7383,7 +7383,7 @@ Scheme_Object *scheme_native_stack_trace(void)
     stack_end -= (RETURN_ADDRESS_OFFSET << JIT_LOG_WORD_SIZE);
     tail = stack_cache_stack[stack_cache_stack_pos].cache;
   } else {
-    stack_end = (unsigned long)ADJUST_STACK_START(scheme_current_thread->stack_start);
+    stack_end = (unsigned long)scheme_current_thread->stack_start;
     tail = scheme_null;
   }
 
@@ -7491,7 +7491,7 @@ void scheme_dump_stack_trace(void)
   p = gs();
   stack_start = scheme_approx_sp();
 
-  stack_end = (unsigned long)ADJUST_STACK_START(scheme_current_thread->stack_start);
+  stack_end = (unsigned long)scheme_current_thread->stack_start;
 
   while (STK_COMP((unsigned long)p, stack_end)
 	 && STK_COMP(stack_start, (unsigned long)p)) {

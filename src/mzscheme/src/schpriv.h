@@ -973,15 +973,10 @@ Scheme_Object *scheme_handle_stack_overflow(Scheme_Object *(*k)(void));
 extern struct Scheme_Overflow_Jmp *scheme_overflow_jmp;
 extern void *scheme_overflow_stack_start;
 
-void scheme_ensure_stack_start(void *d);
-extern void *scheme_deepest_stack_start;
-
 #ifdef MZ_PRECISE_GC
 # define PROMPT_STACK(id) &__gc_var_stack__
-# define ADJUST_STACK_START(start) (start)
 #else
 # define PROMPT_STACK(id) ((void *)(&id))
-# define ADJUST_STACK_START(start) (start ? start : scheme_deepest_stack_start)
 #endif
 
 struct Scheme_Overflow_Jmp *scheme_prune_jmpup(struct Scheme_Overflow_Jmp *jmp, void *stack_boundary);

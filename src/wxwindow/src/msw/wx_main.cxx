@@ -181,7 +181,6 @@ static int retValue = 0;
 
 extern void wxCreateApp(void);
 extern void wxStartEndSessionThread();
-extern "C" __declspec(dllimport) void scheme_set_stack_base(void *, int);
 
 int WM_IS_MRED;
 
@@ -190,16 +189,6 @@ int wxWinMain(int wm_is_mred,
 	      int count, char **command, int nCmdShow,
 	      int (*main)(int, char**))
 {
-  void *mzscheme_stack_start;
-
-  mzscheme_stack_start = (void *)&mzscheme_stack_start;
-
-#if defined(MZ_PRECISE_GC)
-  mzscheme_stack_start = (void *)&__gc_var_stack__;
-#endif
-
-  scheme_set_stack_base(mzscheme_stack_start, 1);
-
   wxhInstance = hInstance;
   WM_IS_MRED = wm_is_mred;
 
