@@ -630,7 +630,7 @@ int APIENTRY WinMain_dlls_ready(HINSTANCE hInstance, HINSTANCE hPrevInstance, LP
   wma.hPrevInstance = hPrevInstance;
   wma.nCmdShow = nCmdShow;
 
-  return scheme_main_stack_setup(1, winMain_after_stack, &wma, argc, argv);
+  return scheme_main_stack_setup(1, WinMain_after_stack, &wma, argc, argv);
 }
 
 # ifdef MZ_PRECISE_GC
