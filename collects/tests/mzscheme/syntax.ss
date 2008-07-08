@@ -1096,5 +1096,39 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Check that locations for lambda arguments are created
+;; one-by-one --- like `let*', and not like `letrec':
+
+(test '((1 10) (x1 10) (x2 z1))
+      'lambda-loc
+      (let ()
+        (define procs null)
+        (define again #f)
+
+        (define (f x 
+                   [y (let/cc k
+                        (unless again
+                          (set! again k))
+                        (lambda () 'done))]
+                   [z 10])
+          (set! procs
+                (cons (lambda (xv zv)
+                        (begin0
+                         (list x z)
+                         (set! x xv)
+                         (set! z zv)))
+                      procs))
+          (y))
+
+        (f 1)
+        (let/cc esc (again esc))
+
+        (list
+         ((cadr procs) 'x1 'z1)
+         ((car procs) 'x2 'z2)
+         ((cadr procs) 'x10 'z10))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
 

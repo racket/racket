@@ -988,9 +988,12 @@ as follows:
        list that is associated to @scheme[rest-id].}
 
 The @scheme[kw-formals] identifiers are bound in the
-@scheme[body]s. When the procedure is applied, a new location is
-created for each identifier, and the location is filled with the
-associated argument value.
+@scheme[body]s. When the procedure is applied, a new @tech{location}
+is created for each identifier, and the location is filled with the
+associated argument value. The @tech{locations} are created and filled
+in order, with @scheme[_default-expr]s evaluated as needed to fill
+locations. @margin-note{In other words, argument bindings with
+default-value expressions are evaluated analogous to @scheme[let*].}
 
 If any identifier appears in the @scheme[body]s that is not one of the
 identifiers in @scheme[kw-formals], then it refers to the same
@@ -1638,9 +1641,10 @@ classifications:
 
 @defform[(when test-expr expr ...)]{
 
-Evaluates the @scheme[text-expr]. If the result is any value other
-than @scheme[#f], the @scheme[expr]s are evaluated, and the results
-are ignored. No @scheme[expr] is in tail position with respect to the
+Evaluates the @scheme[text-expr]. If the result is @scheme[#f], then
+the result of the @scheme[when] expression is
+@|void-const|. Otherwise, the @scheme[expr]s are evaluated, and the
+last @scheme[expr] is in tail position with respect to the
 @scheme[when] form.
 
 @examples[
