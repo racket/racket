@@ -136,7 +136,7 @@ function InitializeSearch() {
                    +" to search only the reference manual")
                  +'>')
     +'</table></div></td></tr>'
-    +'<tr><td align="left">'
+    +'<tr valign="top"><td align="left">'
       +'<a href="#" title="Previous Page" id="prev_page_link" tabIndex="-1"'
         +' style="text-decoration: none; font-weight: bold;"'
         +' onclick="key_handler(\'PgUp\'); return false;"'
@@ -476,9 +476,14 @@ function UpdateResults() {
           : ' (<span style="background-color: '+highlight_color+';">'
             + ((exact == results_num) ? 'all' : exact)
             + ' exact</span>)';
-  if (search_results.length == 0)
-    status_line.innerHTML = ((last_search_term=="") ? "" : "No matches found");
-  else if (search_results.length <= results_num)
+  if (search_results.length == 0) {
+    if (last_search_term == "") status_line.innerHTML = "";
+    else status_line.innerHTML = 'No matches found '
+           + '<div style="color: black; font-size: 82%;">'
+           + '(Make sure your spelling is correct'
+           + (last_search_term.search(/ /)>=0 ? ', or try fewer keywords' : '')
+           + ')</div>';
+  } else if (search_results.length <= results_num)
     status_line.innerHTML = "Showing all matches" + exact;
   else
     status_line.innerHTML =
