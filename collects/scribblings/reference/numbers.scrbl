@@ -292,16 +292,16 @@ otherwise.}
 @examples[(min 1 3 2) (min 1 3 2.0)]}
 
 
-@defproc[(gcd [n integer?] ...) integer?]{ Returns the greatest common
- divisor of the @scheme[n]s. If no arguments are provided, the result is
- @scheme[0].
+@defproc[(gcd [n integer?] ...) integer?]{ Returns the
+ @as-index{greatest common divisor} of the @scheme[n]s. If no
+ arguments are provided, the result is @scheme[0].
 
 @examples[(gcd 10) (gcd 12 81.0)]}
 
 
-@defproc[(lcm [n integer?] ...) integer?]{ Returns the least common
- multiple of the @scheme[n]s. If no arguments are provided, the result is
- @scheme[1].
+@defproc[(lcm [n integer?] ...) integer?]{ Returns the
+ @as-index{least common multiple} of the @scheme[n]s. If no arguments
+ are provided, the result is @scheme[1].
 
 @examples[(lcm 10) (lcm 3 4.0)]}
 
@@ -405,9 +405,10 @@ used.
 @; ------------------------------------------------------------------------
 @section{Powers and Roots}
 
-@defproc[(sqrt [z number?]) number?]{ Returns the principal square root
- of @scheme[z].The result is exact if @scheme[z] is exact and @scheme[z]'s
- square root is rational. See also @scheme[integer-sqrt].
+@defproc[(sqrt [z number?]) number?]{ Returns the principal
+ @as-index{square root} of @scheme[z].The result is exact if
+ @scheme[z] is exact and @scheme[z]'s square root is rational. See
+ also @scheme[integer-sqrt].
 
 @examples[(sqrt 4/9) (sqrt 2) (sqrt -1)]}
 
