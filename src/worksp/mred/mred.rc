@@ -37,7 +37,7 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
-            VALUE "FileDescription", "PLT Scheme based GUI application\0"
+            VALUE "FileDescription", "PLT Scheme GUI application\0"
             VALUE "InternalName", "MrEd\0"
             VALUE "FileVersion", "4, 0, 2, 3\0"
             VALUE "LegalCopyright", "Copyright © 1995-2008\0"

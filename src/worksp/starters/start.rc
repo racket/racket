@@ -40,10 +40,10 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "PLT Scheme Inc.\0"
 #ifdef MRSTART
-            VALUE "FileDescription", "MrEd Launcher\0"
+            VALUE "FileDescription", "PLT Scheme GUI Launcher\0"
 #endif
 #ifdef MZSTART
-            VALUE "FileDescription", "MzScheme Launcher\0"
+            VALUE "FileDescription", "PLT Scheme Launcher\0"
 #endif
             VALUE "FileVersion", "4, 0, 2, 3\0"
 #ifdef MRSTART
@@ -52,15 +52,14 @@ BEGIN
 #ifdef MZSTART
             VALUE "InternalName", "mzstart\0"
 #endif
-            VALUE "LegalCopyright", "Copyright © 1996-2002\0"
+            VALUE "LegalCopyright", "Copyright © 1996-2008\0"
 #ifdef MRSTART
             VALUE "OriginalFilename", "MrStart.exe\0"
-            VALUE "ProductName", "MrEd Launcher\0"
 #endif
 #ifdef MZSTART
             VALUE "OriginalFilename", "MzStart.exe\0"
-            VALUE "ProductName", "MzScheme Launcher\0"
 #endif
+            VALUE "ProductName", "PLT Scheme\0"
             VALUE "ProductVersion", "4, 0, 2, 3\0"
         END
     END
