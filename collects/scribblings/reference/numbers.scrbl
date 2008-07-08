@@ -406,7 +406,7 @@ used.
 @section{Powers and Roots}
 
 @defproc[(sqrt [z number?]) number?]{ Returns the principal
- @as-index{square root} of @scheme[z].The result is exact if
+ @as-index{square root} of @scheme[z].  The result is exact if
  @scheme[z] is exact and @scheme[z]'s square root is rational. See
  also @scheme[integer-sqrt].
 
