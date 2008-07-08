@@ -194,8 +194,8 @@
   (paren-color-spring "春")
   (paren-color-fall "秋")
   (paren-color-winter "冬")
-
-
+  
+  
   (url: "URL:")
   (open-url... "打开URL...")
   (open-url "打开URL")
@@ -317,6 +317,9 @@
   (save-in-drs-format "保存本文件为drscheme(非纯文本)格式？")
   (yes "是")
   (no "否")
+  
+  ;; saving image (right click on an image to see the text)
+  (save-image "保存图片...")
   
   ;;; preferences
   (preferences "参数设置")
@@ -524,7 +527,7 @@
   (open-here-menu-item "从这里打开(&O)...")
   
   (open-recent-info "最近使用过文件的列表")
-  (open-recent-menu-item "最近使用过的文件")
+  (open-recent-menu-item "最近使用过的文件(&T)")
   
   (revert-info "将当前文件恢复为磁盘上的副本")
   (revert-menu-item "恢复(&R)")
@@ -868,7 +871,7 @@
   (teachpack-already-installed "已经存在一个名为'~a'的教学包。是否覆盖？")
   ; ~a is filled with a list of language names. Each name is separated by a newline and is indented two spaces (no commas, no 'and')
   (teachpacks-only-in-languages "教学抱仅在下列语言中有效：~a")
-     
+  
   ;;; Language dialog
   (introduction-to-language-dialog
    "请选择语言。大部分入门级的学生都可以使用默认语言。")
@@ -1004,7 +1007,7 @@
   ;;Following two appear in Scheme (Java, etc) menu, cause Tests to be Run automatically or not
   (test-engine-enable-tests "启用测试功能")
   (test-engine-disable-tests "停用测试功能")
-
+  
   ;; test coverage
   (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
   (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
