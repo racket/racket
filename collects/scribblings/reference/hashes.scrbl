@@ -20,9 +20,8 @@ keys and values.  See also @scheme[in-hash], @scheme[in-hash-keys],
 @scheme[in-hash-values], and @scheme[in-hash-pairs].
 
 Two hash tables cannot be @scheme[equal?] unless they use the same
-key-comparison procedure (@scheme[equal?] or @scheme[eq?]), if they
-both hold keys strongly or weakly, and if they have the same
-mutability.
+key-comparison procedure (@scheme[equal?] or @scheme[eq?]), both hold keys
+strongly or weakly, and have the same mutability.
 
 @bold{Caveats concerning concurrent modification:} A mutable hash
 table can be manipulated with @scheme[hash-ref], @scheme[hash-set!],
