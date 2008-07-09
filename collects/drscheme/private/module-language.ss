@@ -310,11 +310,11 @@
     
     ;; data associated with each item in listbox : boolean
     ;; indicates if the entry is the default paths.
-    (define lb (new list-box%
-                    [parent cp-panel]
-                    [choices '("a" "b" "c")]
-                    [label #f]
-                    [callback (λ (x y) (update-buttons))]))
+    (define collection-paths-lb (new list-box%
+                                     [parent cp-panel]
+                                     [choices '("a" "b" "c")]
+                                     [label #f]
+                                     [callback (λ (x y) (update-buttons))]))
     (define button-panel (new horizontal-panel%
                               [parent cp-panel]
                               [alignment '(center center)]
@@ -336,8 +336,8 @@
         (λ (x y) (move-callback +1))))
     
     (define (update-buttons)
-      (let ([lb-selection (send lb get-selection)]
-            [lb-tot (send lb get-number)])
+      (let ([lb-selection (send collection-paths-lb get-selection)]
+            [lb-tot (send collection-paths-lb get-number)])
         (send remove-button enable lb-selection)
         (send raise-button enable (and lb-selection (not (= lb-selection 0))))
         (send lower-button enable
@@ -347,7 +347,7 @@
       (let ([dir (get-directory (string-constant ml-cp-choose-a-collection-path)
                                 (send parent get-top-level-window))])
         (when dir
-          (send lb append (path->string dir) #f)
+          (send collection-paths-lb append (path->string dir) #f)
           (update-buttons))))
     
     (define (add-default-callback)
@@ -356,56 +356,56 @@
                           (string-constant ml-cp-default-already-present)
                           (send parent get-top-level-window))]
             [else
-             (send lb append (string-constant ml-cp-default-collection-path) #t)
+             (send collection-paths-lb append (string-constant ml-cp-default-collection-path) #t)
              (update-buttons)]))
     
     ;; has-default? : -> boolean
     ;; returns #t if the `default' entry has already been added
     (define (has-default?)
-      (let loop ([n (send lb get-number)])
+      (let loop ([n (send collection-paths-lb get-number)])
         (cond [(= n 0) #f]
-              [(send lb get-data (- n 1)) #t]
+              [(send collection-paths-lb get-data (- n 1)) #t]
               [else (loop (- n 1))])))
     
     (define (remove-callback)
-      (let ([to-delete (send lb get-selection)])
-        (send lb delete to-delete)
-        (unless (zero? (send lb get-number))
-          (send lb set-selection (min to-delete (- (send lb get-number) 1))))
+      (let ([to-delete (send collection-paths-lb get-selection)])
+        (send collection-paths-lb delete to-delete)
+        (unless (zero? (send collection-paths-lb get-number))
+          (send collection-paths-lb set-selection (min to-delete (- (send collection-paths-lb get-number) 1))))
         (update-buttons)))
     
     (define (move-callback d)
-      (let* ([sel (send lb get-selection)]
+      (let* ([sel (send collection-paths-lb get-selection)]
              [vec (get-lb-vector)]
              [new (+ sel d)]
              [other (vector-ref vec new)])
         (vector-set! vec new (vector-ref vec sel))
         (vector-set! vec sel other)
         (set-lb-vector vec)
-        (send lb set-selection new)
+        (send collection-paths-lb set-selection new)
         (update-buttons)))
     
     (define (get-lb-vector)
-      (list->vector (for/list ([n (in-range (send lb get-number))])
-                              (cons (send lb get-string n) (send lb get-data n)))))
+      (list->vector (for/list ([n (in-range (send collection-paths-lb get-number))])
+                              (cons (send collection-paths-lb get-string n) (send collection-paths-lb get-data n)))))
     
     (define (set-lb-vector vec)
-      (send lb clear)
+      (send collection-paths-lb clear)
       (for ([x (in-vector vec)] [n (in-naturals)])
-           (send lb append (car x))
-           (send lb set-data n (cdr x))))
+           (send collection-paths-lb append (car x))
+           (send collection-paths-lb set-data n (cdr x))))
     
     (define (get-collection-paths)
-      (for/list ([n (in-range (send lb get-number))])
-                (let ([data (send lb get-data n)])
-                  (if data 'default (send lb get-string n)))))
+      (for/list ([n (in-range (send collection-paths-lb get-number))])
+                (let ([data (send collection-paths-lb get-data n)])
+                  (if data 'default (send collection-paths-lb get-string n)))))
     
     (define (install-collection-paths paths)
-      (send lb clear)
+      (send collection-paths-lb clear)
       (for ([cp paths])
            (if (symbol? cp)
-               (send lb append (string-constant ml-cp-default-collection-path) #t)
-               (send lb append cp #f))))
+               (send collection-paths-lb append (string-constant ml-cp-default-collection-path) #t)
+               (send collection-paths-lb append cp #f))))
     
     (define (get-command-line-args)
       (let* ([str (send args-text-box get-value)]
@@ -427,7 +427,7 @@
     (define (install-auto-text str)
       (send auto-text-text-box set-value (regexp-replace #rx"\n$" str "")))
     
-    (send lb set '())
+    (send collection-paths-lb set '())
     (update-buttons)
     
     (case-lambda
