@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label (except-in scheme/base file-size)
-	  	     teachpack/htdp/dir))
+                     teachpack/htdp/dir))
 
-@title[#:tag "dir"]{Working with Files and Directories: dir.ss}
+@teachpack["dir"]{Working with Files and Directories}
 
 @declare-exporting[teachpack/htdp/dir]
 

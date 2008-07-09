@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/elevator))
+                     teachpack/htdp/elevator))
 
-@title[#:tag "elevator"]{Controlling an Elevator: elevator.ss}
+@teachpack["elevator"]{Controlling an Elevator}
 
 @declare-exporting[teachpack/htdp/elevator]
 

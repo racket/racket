@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/master))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/master))
 
-@title[#:tag "master"]{MasterMinding : master.ss}
+@teachpack["master"]{MasterMinding}
 
 @declare-exporting[teachpack/htdp/master]
 

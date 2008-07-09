@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/hangman))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/hangman))
 
-@title[#:tag "hangman"]{Hangman : hangman.ss}
+@teachpack["hangman"]{Hangman}
 
 @declare-exporting[teachpack/htdp/hangman]
 

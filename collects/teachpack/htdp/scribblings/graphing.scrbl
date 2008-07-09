@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/graphing))
+                     teachpack/htdp/graphing))
 
-@title[#:tag "graphing"]{Graphing Functions: graphing.ss}
+@teachpack["graphing"]{Graphing Functions}
 
 @declare-exporting[teachpack/htdp/graphing]
 

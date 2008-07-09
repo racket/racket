@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/convert))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/convert))
 
-@title[#:tag "convert"]{Converting Temperatures: convert.ss}
+@teachpack["convert"]{Converting Temperatures}
 
 @declare-exporting[teachpack/htdp/convert]
 

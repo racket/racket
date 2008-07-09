@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/draw))
+                     teachpack/htdp/draw))
 
-@title[#:tag "draw"]{Simple Drawing: draw.ss}
+@teachpack["draw"]{Simple Drawing}
 
 @declare-exporting[teachpack/htdp/draw]
 
@@ -26,29 +26,36 @@ a color, it raises an error.
 @scheme[width] x @scheme[height] canvas.} 
 
 @defproc[(start/cartesian-plane [width number?][height number?])
-true]{Opens a @scheme[width] x @scheme[height] canvas and draws a Cartesian
-plane.}  
+         true]{
+Opens a @scheme[width] x @scheme[height] canvas and draws a Cartesian
+plane.}
 
 @defproc[(stop) true]{Closes the canvas.}
 
-@defproc[(draw-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})]) true]{Draws a
-@scheme[c] circle at @scheme[p] with radius @scheme[r].} 
+@defproc[(draw-circle [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
+         true]{
+Draws a @scheme[c] circle at @scheme[p] with radius @scheme[r].}
 
-@defproc[(draw-solid-disk [p posn?] [r number?] [c (unsyntax @tech{DrawColor})]) true]{Draws a
-@scheme[c] disk at @scheme[p] with radius @scheme[r].} 
+@defproc[(draw-solid-disk [p posn?] [r number?] [c (unsyntax @tech{DrawColor})])
+         true]{
+Draws a @scheme[c] disk at @scheme[p] with radius @scheme[r].}
 
-@defproc[(draw-solid-rect [ul posn?] [width number?] [height number?] [c
-(unsyntax @tech{DrawColor})]) true]{Draws a @scheme[width] x @scheme[height], @scheme[c]
-rectangle with the upper-left corner at @scheme[ul].}  
+@defproc[(draw-solid-rect [ul posn?] [width number?] [height number?]
+                          [c (unsyntax @tech{DrawColor})])
+         true]{
+Draws a @scheme[width] x @scheme[height], @scheme[c] rectangle with the
+upper-left corner at @scheme[ul].}
 
-@defproc[(draw-solid-line [strt posn?] [end posn?] [c (unsyntax @tech{DrawColor})]) true]{Draws
-a @scheme[c] line from @scheme[strt] to @scheme[end].}
+@defproc[(draw-solid-line [strt posn?] [end posn?]
+                          [c (unsyntax @tech{DrawColor})])
+         true]{
+Draws a @scheme[c] line from @scheme[strt] to @scheme[end].}
 
-@defproc[(draw-solid-string [p posn?][s string?]) true]{Draws @scheme[s] at
-@scheme[p].} 
+@defproc[(draw-solid-string [p posn?] [s string?]) true]{
+Draws @scheme[s] at @scheme[p].}
 
-@defproc[(sleep-for-a-while [s number?]) true]{Suspends evaluation for
-@scheme[s] seconds.} 
+@defproc[(sleep-for-a-while [s number?]) true]{
+Suspends evaluation for @scheme[s] seconds.}
 
 The teachpack also provides @scheme[clear-] operations for each
 @scheme[draw-] operation. The arguments are the same. Note: use
@@ -58,8 +65,8 @@ The color argument for all @scheme[clear-] functions are optional.
 @;-----------------------------------------------------------------------------
 @section[#:tag "interaction"]{Interactions with Canvas}
 
-@defproc[(wait-for-mouse-click) posn?]{Waits for the user to click on the
-mouse, within the canvas.}
+@defproc[(wait-for-mouse-click) posn?]{
+Waits for the user to click on the mouse, within the canvas.}
 
 @deftech{DrawKeyEvent}: @scheme[(or/c char? symbol?)] A
 @tech{DrawKeyEvent} represents keyboard events: 

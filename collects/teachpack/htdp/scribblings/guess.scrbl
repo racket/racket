@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/guess))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/guess))
 
-@title[#:tag "guess"]{Guessing Numbers: guess.ss}
+@teachpack["guess"]{Guessing Numbers}
 
 @declare-exporting[teachpack/htdp/guess]
 
@@ -19,7 +19,7 @@ is the user's guess, and @scheme[target], which is the randomly
 chosen number-to-be-guessed. The result is a symbol that reflects the
 relationship of the player's guess to the target.}
 
-@defproc[(guess-with-gui-3  [check-guess (-> digit? digit? digit? number? symbol?)]) true]{
+@defproc[(guess-with-gui-3 [check-guess (-> digit? digit? digit? number? symbol?)]) true]{
 The @scheme[check-guess] function consumes three digits (@scheme[digit0],
 @scheme[digit1], @scheme[digit2]) and one number (@scheme[target]). The
 latter is the randomly chosen number-to-be-guessed; the three digits are

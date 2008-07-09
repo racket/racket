@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/show-queen))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/show-queen))
 
-@title[#:tag "show-queen"]{8 Queens: show-queen.ss}
+@teachpack["show-queen"]{Queens}
 
 @declare-exporting[teachpack/htdp/show-queen]
 

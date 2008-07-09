@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
-          (for-label scheme 
-	  	     teachpack/htdp/gui))
+@(require scribble/manual "shared.ss"
+          (for-label scheme
+                     teachpack/htdp/gui))
 
-@title[#:tag "gui"]{Simple Graphical User Interfaces: gui.ss}
+@teachpack["gui"]{Simple Graphical User Interfaces}
 
 @declare-exporting[teachpack/htdp/gui]
 

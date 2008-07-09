@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/arrow))
+                     teachpack/htdp/arrow))
 
-@title[#:tag "arrow"]{Managing Control Arrows: arrow.ss}
+@teachpack["arrow"]{Managing Control Arrows}
 
 @declare-exporting[teachpack/htdp/arrow]
 

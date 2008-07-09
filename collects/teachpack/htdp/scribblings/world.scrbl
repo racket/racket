@@ -1,12 +1,12 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme
-		     teachpack/htdp/image
-		     teachpack/htdp/world
-		     lang/private/imageeq))
+                     teachpack/htdp/image
+                     teachpack/htdp/world
+                     lang/private/imageeq))
 
-@title[#:tag "world"]{Simulations and Animations: world.ss}
+@teachpack["world"]{Simulations and Animations}
 
 
 The teachpack provides two sets of tools. The first allows students to
@@ -20,20 +20,22 @@ second one generalizes the first by adding interactive GUI features.
 The teachpack assumes working knowledge of the basic image manipulation
 primitives and introduces a special kind of image: a scene. 
 
-@deftech{Scene}@schemeblock[(and/c image?
-			           (lambda (i)
-				     (and (= (pinhole-x i) 0) (= (pinhole-y i) 0))))]
+@deftech{Scene}@;
+@schemeblock[(and/c image?
+                  (lambda (i)
+                    (and (= (pinhole-x i) 0) (= (pinhole-y i) 0))))]
 
 The teachpack can display only @tech{Scene}s, which are images whose
 pinholes are at position @scheme[(0,0)].
 
 @defproc[(empty-scene [width natural-number/c]
-	   [height natural-number/c])
-	 (unsyntax @tech{Scene})]
-{Creates a @scheme[width] x @scheme[height] @tech{Scene}.} 
+                      [height natural-number/c])
+         (unsyntax @tech{Scene})]
+{Creates a @scheme[width] x @scheme[height] @tech{Scene}.}
 
-@defproc[(place-image [img image?] [x number?][y number?]
-	   [s (unsyntax @tech{Scene})]) (unsyntax @tech{Scene})]
+@defproc[(place-image [img image?] [x number?] [y number?]
+                      [s (unsyntax @tech{Scene})])
+         (unsyntax @tech{Scene})]
 {Creates a scene by placing @scheme[img] at @scheme[(x,y)] into @scheme[s];
  @scheme[(x,y)] are comp. graph. coordinates, i.e., they count right and
  down from the upper-left corner.}
@@ -41,12 +43,12 @@ pinholes are at position @scheme[(0,0)].
 @section[#:tag "simulations"]{Simple Simulations}
 
 @defproc[(run-simulation
-	   [w natural-number/c]
-	   [h natural-number/c]
-	   [r number?]
-	   [create-image (-> natural-number/c scene)]
-	   [gifs? boolean? #f])
-	 true]{
+           [w natural-number/c]
+           [h natural-number/c]
+           [r number?]
+           [create-image (-> natural-number/c scene)]
+           [gifs? boolean? #f])
+         true]{
    creates and shows a canvas of width @scheme[w] and height @scheme[h] , 
    starts a clock, making it tick every @scheme[r] (usually fractional)
    seconds. Every time the clock ticks, drscheme applies @scheme[create-image] to
@@ -61,7 +63,7 @@ pinholes are at position @scheme[(0,0)].
    for describing students work.  
 }
 
-In addition, 
+In addition,
 @schemeblock[
 (define (create-UFO-scene height)
   (place-image UFO 50 height (empty-scene 100 100)))

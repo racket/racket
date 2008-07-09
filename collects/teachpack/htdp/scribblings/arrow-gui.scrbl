@@ -1,17 +1,17 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/arrow-gui))
+                     teachpack/htdp/arrow-gui))
 
-@title[#:tag "arrow-gui"]{An Arrow GUI: arrow-gui.ss}
+@teachpack["arrow-gui"]{An Arrow GUI}
 
 @declare-exporting[teachpack/htdp/arrow-gui]
 
 The teachpack provides operations for creating and manipulating an arrow
 GUI. We recommend using the @seclink["world"]{world teachpack} instead.
 
-@deftech{modelT} @scheme[(-> button% event% true)] 
+@deftech{modelT} @scheme[(-> button% event% true)]
 
 A @tech{modelT} is a function that accepts and ignores two arguments. 
 

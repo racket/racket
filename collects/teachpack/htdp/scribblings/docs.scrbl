@@ -1,10 +1,10 @@
 #lang scribble/doc
 
-@(require scribble/manual
+@(require scribble/manual "shared.ss"
           (for-label scheme 
-	  	     teachpack/htdp/docs))
+                     teachpack/htdp/docs))
 
-@title[#:tag "docs"]{Manipulating Simple HTML Documents: docs.ss}
+@teachpack["docs"]{Manipulating Simple HTML Documents}
 
 @declare-exporting[teachpack/htdp/docs]
 
