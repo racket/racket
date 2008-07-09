@@ -1,3 +1,5 @@
+#lang mzscheme 
+
 #|
  workshop experience: 
 
@@ -58,7 +60,7 @@ Matthew
 ;; Sat Dec 10 19:39:03 EST 2005: fixed name, changed interface to on-key-event
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
-#lang mzscheme
+
 (require mzlib/class
          mzlib/kw
          mzlib/etc
