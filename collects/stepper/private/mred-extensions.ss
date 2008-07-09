@@ -6,7 +6,7 @@
            "testing-shared.ss"
            "shared.ss"
 	   string-constants
-           (lib "bitmap-label.ss" "mrlib"))
+           mrlib/bitmap-label)
 
   (provide
    foot-img/horizontal

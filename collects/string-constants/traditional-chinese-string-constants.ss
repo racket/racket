@@ -603,7 +603,7 @@
   (keybindings-error-installing-file "安裝熱鍵綁定~a時出錯:\n\n~a")
   
   (user-defined-keybinding-error "熱鍵綁定出錯~a\n\n~a")
-  (user-defined-keybinding-malformed-file "文件~a並不是一個按照(lib \"keybinding-lang.ss\" \"framework\")語言編寫的module.")  
+  (user-defined-keybinding-malformed-file "文件~a並不是一個按照framework/keybinding-lang語言編寫的module.")  
   
   ;; menu items in the "special" menu
   (insert-text-box-item "插入文本框")

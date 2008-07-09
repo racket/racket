@@ -1,9 +1,9 @@
 (module beginner-contracts mzscheme
   
   (require "contracts-helpers.ss"
-           (lib "posn.ss" "lang")
-           (lib "teach.ss" "lang" "private")
-           mzlib/list)  
+           lang/posn
+           lang/private/teach
+           mzlib/list)
   
   (provide (all-defined))
   

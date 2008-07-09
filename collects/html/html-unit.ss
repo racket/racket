@@ -8,7 +8,7 @@
 	   mzlib/include
 	   "html-sig.ss"
 	   "sgml-reader-sig.ss"
-	   (lib "xml-sig.ss" "xml"))
+	   xml/xml-sig)
 
   (provide html@)
 

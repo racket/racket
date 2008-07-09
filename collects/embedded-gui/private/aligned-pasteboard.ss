@@ -5,21 +5,21 @@
 |#
 
 (module aligned-pasteboard mzscheme
-  
+
   (provide aligned-pasteboard%)
-  
+
   (require
    mzlib/class
    mred
    mzlib/etc
-   (lib "click-forwarding-editor.ss" "mrlib")
+   mrlib/click-forwarding-editor
    "on-show-pasteboard.ss"
    "really-resized-pasteboard.ss"
    "interface.ss"
    "locked-pasteboard.ss"
    "suppress-modify-editor.ss"
    "on-show-editor.ss")
-  
+
   (define aligned-pasteboard%
     (class* (click-forwarding-editor-mixin
              (suppress-modify-editor-mixin

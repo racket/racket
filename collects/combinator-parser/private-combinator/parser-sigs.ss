@@ -1,8 +1,8 @@
 (module parser-sigs scheme
   
-  (require (only-in (lib "etc.ss") opt-lambda))    ; Required for expansion
-  (require (lib "lex.ss" "parser-tools")
-           (lib "string.ss"))
+  (require (only-in mzlib/etc opt-lambda))    ; Required for expansion
+  (require parser-tools/lex
+           mzlib/string)
   
   (provide (all-defined-out))
   

@@ -23,7 +23,7 @@
   (define (patch-files)
     (parameterize ((current-command-line-arguments
                     (vector (path->string (find-console-bin-dir)))))
-      (dynamic-require `(lib "winvers-change.ss" "setup") #f)))
+      (dynamic-require 'setup/winvers-change #f)))
 
   (define collects-dir
     (path->string (find-collects-dir)))

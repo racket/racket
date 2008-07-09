@@ -3,6 +3,6 @@
 ; The servlet accepts requests only from the *same machine* as the Web server
 ; for security purposes.
 
-(require (lib "configure.ss" "web-server"))
+(require web-server/configure)
 
 servlet

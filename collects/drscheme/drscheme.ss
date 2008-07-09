@@ -17,13 +17,13 @@
                   (parameterize ([current-namespace (make-namespace)]
                                  [use-compiled-file-paths '()])
                     (values
-                     (dynamic-require '(lib "zo-compile.ss" "errortrace") 'zo-compile)
+                     (dynamic-require 'errortrace/zo-compile 'zo-compile)
                      (dynamic-require 'mzlib/cm 'make-compilation-manager-load/use-compiled-handler)
                      (dynamic-require 'mzlib/cm 'manager-trace-handler)))])
       (current-compile zo-compile)
       (use-compiled-file-paths (list (build-path "compiled" "errortrace")))
       (current-load/use-compiled (make-compilation-manager-load/use-compiled-handler))
-      (error-display-handler (dynamic-require '(lib "errortrace-lib.ss" "errortrace")
+      (error-display-handler (dynamic-require 'errortrace/errortrace-lib
                                               'errortrace-error-display-handler))
       (when cm-trace?
         (printf "PLTDRDEBUG: enabling CM tracing\n")

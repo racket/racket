@@ -6,7 +6,7 @@
 ;;  Honu (#hx, #sx, #honu)
 ;;  #reader
 
-(require (lib "scheme-lexer.ss" "syntax-color"))
+(require syntax-color/scheme-lexer)
 
 (define (char kind)
   (case kind

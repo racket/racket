@@ -1,8 +1,8 @@
 (module installer mzscheme
-  (require (prefix lang: (lib "installer.ss" "profj" "libs" "java" "lang"))
-           (prefix io: (lib "installer.ss" "profj" "libs" "java" "io"))
-           (prefix test: (lib "installer.ss" "profj" "libs" "java" "tester"))
-           (prefix util: (lib "installer.ss" "profj" "libs" "java" "util"))
+  (require (prefix lang: profj/libs/java/lang/installer)
+           (prefix io: profj/libs/java/io/installer)
+           (prefix test: profj/libs/java/tester/installer)
+           (prefix util: profj/libs/java/util/installer)
            )
   (provide installer)
 

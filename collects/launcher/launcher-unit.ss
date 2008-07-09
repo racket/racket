@@ -6,11 +6,11 @@
 
          compiler/embed
          setup/dirs
-         (lib "variant.ss" "setup")
+         setup/variant
 
          "launcher-sig.ss"
 
-         (lib "winutf16.ss" "compiler" "private"))
+         compiler/private/winutf16)
 
 (import)
 (export launcher^)

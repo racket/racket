@@ -570,7 +570,7 @@
  (keybindings-choose-user-defined-file "Bitte eine Datei mit den Tastenbelegungen auswählen.")
 
  (user-defined-keybinding-error "Fehler beim Ausführen der Tastenbelegung ~a\n\n~a")
- (user-defined-keybinding-malformed-file "Die Datei ~a enthält kein Modul, das in der Sprache (lib \"keybinding-lang.ss\" \"framework\") geschrieben ist.")  
+ (user-defined-keybinding-malformed-file "Die Datei ~a enthält kein Modul, das in der Sprache framework/keybinding-lang geschrieben ist.")  
  (keybindings-planet-malformed-spec "Die PLaneT-Spezifikation ist fehlerhaft: ~a") ; the string will be what the user typed in
  (keybindings-type-planet-spec "Bitte PLaneT-require-Spezifikation eingeben (ohne das `require')")
   

@@ -8,8 +8,8 @@
          mzlib/class
          mzlib/list
          scheme/path
-         (lib "external.ss" "browser")
-         (lib "plt-installer.ss" "setup"))
+         browser/external
+         setup/plt-installer)
 
 (import [prefix drscheme:app: drscheme:app^]
         [prefix drscheme:unit: drscheme:unit^]

@@ -1,5 +1,5 @@
 (module installer mzscheme
-  (require (lib "compile.ss" "profj"))
+  (require profj/compile)
   (provide installer)
   
   (define (installer plthome)

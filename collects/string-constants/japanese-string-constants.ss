@@ -649,7 +649,7 @@ please adhere to these guidelines:
  (keybindings-choose-user-defined-file "キーバインドを記述したファイルを選択してください")
 
  (user-defined-keybinding-error "キーバインド ~a\n\n~a を実行中にエラーが発生しました")
- (user-defined-keybinding-malformed-file "ファイル ~a には、言語 (lib \"keybinding-lang.ss\" \"framework\") で書かれたモジュールが含まれていません。")
+ (user-defined-keybinding-malformed-file "ファイル ~a には、言語 framework/keybinding-lang で書かれたモジュールが含まれていません。")
 
  ;; menu items in the "special" menu
  (insert-text-box-item "テキストボックスを挿入")

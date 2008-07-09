@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
-         (lib "url-param.ss" "web-server" "private"))
+         web-server/private/url-param)
 (provide url-param-tests)
 
 (define url0 (string->url "http://www.test.com/somewhere"))

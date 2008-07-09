@@ -1,7 +1,7 @@
 (require
  mzlib/class
  mzlib/etc
- (lib "aligned-pasteboard.ss" "mrlib")
+ mrlib/aligned-pasteboard
  mzlib/class
  mred)
 

@@ -4,5 +4,3 @@
       (let-syntax ([m (syntax-rules ()
 			[(_) x])])
 	(m)))
-  
-  

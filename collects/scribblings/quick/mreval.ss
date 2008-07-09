@@ -1,13 +1,13 @@
 
 (module mreval mzscheme
-  (require (lib "eval.ss" "scribble")
-           (lib "struct.ss" "scribble")
-           (lib "scheme.ss" "scribble")
+  (require scribble/eval
+           scribble/struct
+           scribble/scheme
            mzlib/class
            mzlib/file
            mzlib/runtime-path
            mzlib/serialize
-           (lib "exn.ss" "scribblings" "quick"))
+           scribblings/quick/exn)
 
   (define-syntax define-mr
     (syntax-rules ()

@@ -3,17 +3,17 @@
 (require mzlib/cmdline
          (only-in mzlib/file
                   normalize-path)
-         (lib "web-server.ss" "web-server")
-         (lib "responders.ss" "web-server" "configuration")
-         (lib "mime-types.ss" "web-server" "private")
-         (prefix-in fsmap: (lib "filesystem-map.ss" "web-server" "dispatchers"))
-         (prefix-in timeout: (lib "dispatch-timeout.ss" "web-server" "dispatchers"))
-         (prefix-in files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
-         (prefix-in filter: (lib "dispatch-filter.ss" "web-server" "dispatchers"))
-         (prefix-in lift: (lib "dispatch-lift.ss" "web-server" "dispatchers"))
-         (prefix-in sequencer: (lib "dispatch-sequencer.ss" "web-server" "dispatchers"))
-         (prefix-in lang: (lib "dispatch-lang.ss" "web-server" "dispatchers"))
-         (prefix-in stat: (lib "dispatch-stat.ss" "web-server" "dispatchers")))
+         web-server/web-server
+         web-server/configuration/responders
+         web-server/private/mime-types
+         (prefix-in fsmap: web-server/dispatchers/filesystem-map)
+         (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
+         (prefix-in files: web-server/dispatchers/dispatch-files)
+         (prefix-in filter: web-server/dispatchers/dispatch-filter)
+         (prefix-in lift: web-server/dispatchers/dispatch-lift)
+         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
+         (prefix-in lang: web-server/dispatchers/dispatch-lang)
+         (prefix-in stat: web-server/dispatchers/dispatch-stat))
 
 (define server-root-path (make-parameter (collection-path "web-server" "default-web-root")))
 (define port (make-parameter 8080))

@@ -1,8 +1,8 @@
 (module tests-common mzscheme
   
-  (require (lib "private/annotate.ss" "stepper")
+  (require stepper/private/annotate
            mzlib/contract
-           (lib "shared.ss" "stepper" "private"))
+           stepper/private/shared)
   
   (provide/contract (reset-namespaces (-> void?))
                     (annotate-exprs (-> (listof syntax?) break-contract (listof syntax?)))

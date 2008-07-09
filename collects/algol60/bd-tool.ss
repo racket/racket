@@ -1,5 +1,5 @@
 (module bd-tool mzscheme
-  (require (lib "encode-decode.ss" "framework" "private"))
+  (require framework/private/encode-decode)
   (decode 05c1dd6edc460c06d057f9226301b2e86c5c23690103a9835c
           e53a0f50602852d2ecce8f324379adb7ef3924b6a60aeaf6fb
           48dd403909a6d24daf634c984a379d189493609a731ce33ac6

@@ -1,5 +1,5 @@
 (require "test-harness.ss"
-         (lib "unit-runtime.ss" "mzlib" "private"))
+         mzlib/private/unit-runtime)
 
 ;; check-unit
 (test-runtime-error exn:fail:contract? "check-unit: not a unit"

@@ -6,7 +6,7 @@
   (require-for-template mzscheme
                         "unit-keywords.ss"
                         "unit-runtime.ss")
-  (require (lib "define-struct.ss" "scheme/private"))
+  (require scheme/private/define-struct)
   
   (provide (struct var-info (syntax? exported? id))
            (struct signature (siginfo vars val-defs stx-defs))

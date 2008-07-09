@@ -1,7 +1,7 @@
 #lang typed-scheme
 ;;syntax-only requires
-(require (only-in (lib "etc.ss") let+))
-(require (only-in (lib "match.ss") match))
+(require (only-in mzlib/etc let+))
+(require (only-in mzlib/match match))
 
 (define-type-alias number Number)
 (define-type-alias boolean Boolean)

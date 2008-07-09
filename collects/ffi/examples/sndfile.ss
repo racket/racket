@@ -4,7 +4,7 @@
 
 (require ffi/sndfile)
 
-;; (require (lib "swindle.ss" "swindle"))
+;; (require swindle)
 
 (define (add-half x y)
   (/ (+ x (* y 0.5)) 1.5))

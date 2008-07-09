@@ -1,11 +1,11 @@
-(require (prefix annotate: (lib "annotate.ss" "stepper" "private"))
+(require (prefix annotate: stepper/private/annotate)
          (prefix kernel: syntax/kerncase)
-         (prefix reconstruct: (lib "reconstruct.ss" "stepper" "private"))
-         (lib "shared.ss" "stepper" "private")
-         (lib "highlight-placeholder.ss" "stepper" "private")
-         (lib "my-macros.ss" "stepper" "private")
-         (lib "model-settings.ss" "stepper" "private")
-         (lib "marks.ss" "stepper" "private")
+         (prefix reconstruct: stepper/private/reconstruct)
+         stepper/private/shared
+         stepper/private/highlight-placeholder
+         stepper/private/my-macros
+         stepper/private/model-settings
+         stepper/private/marks
          mzlib/class
          mzlib/etc
          "tests-common.ss")

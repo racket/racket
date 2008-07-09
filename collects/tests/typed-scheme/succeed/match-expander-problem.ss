@@ -1,8 +1,8 @@
 #lang typed-scheme
 
-#;(require (lib "etc.ss"))
+#;(require mzlib/etc)
 ;(require "prims.ss")
-(require (lib "match.ss"))
+(require mzlib/match)
 
 (define-typed-struct pt ([x : Number] [y : Number]))
 

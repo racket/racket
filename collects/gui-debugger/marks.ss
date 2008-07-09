@@ -3,8 +3,8 @@
   (require mzlib/list
 	   mzlib/contract
            (prefix-in mz: mzscheme)
-           (lib "my-macros.ss" "stepper" "private")
-           (lib "shared.ss" "stepper" "private"))
+           stepper/private/my-macros
+           stepper/private/shared)
 
   (define-struct full-mark-struct (module-name source label bindings values))
 

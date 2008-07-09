@@ -1,9 +1,9 @@
-(require (for-syntax (lib "unit-compiletime.ss" "mzlib" "private")
-                     (lib "unit-syntax.ss" "mzlib" "private")))
+(require (for-syntax mzlib/private/unit-compiletime
+                     mzlib/private/unit-syntax))
 (require "test-harness.ss"
-         (lib "unit-compiletime.ss" "mzlib" "private")
-         (lib "unit-keywords.ss" "mzlib" "private")
-         (lib "unit-syntax.ss" "mzlib" "private"))
+         mzlib/private/unit-compiletime
+         mzlib/private/unit-keywords
+         mzlib/private/unit-syntax)
 
 
 ;; split-requires

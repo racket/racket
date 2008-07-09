@@ -7,9 +7,9 @@
          "planet-requires.ss" "tc-utils.ss" "union.ss"
          "resolve-type.ss"
          "type-effect-convenience.ss"
-         (lib "trace.ss")
-         (lib "plt-match.ss")
-         (lib "list.ss"))
+         mzlib/trace
+         mzlib/plt-match
+         mzlib/list)
 (require (galore))
 
 #;(provide infer infer/list infer/list/vararg combine table:un exn:infer?)

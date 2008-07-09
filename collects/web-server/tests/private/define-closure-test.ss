@@ -2,7 +2,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          mzlib/serialize
          mzlib/match
-         (lib "define-closure.ss" "web-server" "private"))
+         web-server/private/define-closure)
 (provide define-closure-tests)
 
 (define-closure id (x) () x)

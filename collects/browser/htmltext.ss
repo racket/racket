@@ -9,9 +9,9 @@
 	   net/url
 	   net/url-sig
            mred
-           (lib "mred-unit.ss" "mred")
-           (lib "mred-sig.ss" "mred")
-	   (lib "external.ss" "browser"))
+           mred/mred-unit
+           mred/mred-sig
+	   browser/external)
            
   (define-unit-from-context url@ url^)
   

@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "struct.ss") (lib "unit.ss"))
+(require mzlib/struct mzlib/unit)
 (provide #;(all-defined))
 
 (define-syntax defstructs/sig/unit

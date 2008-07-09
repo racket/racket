@@ -1,6 +1,6 @@
 (require "test-harness.ss"
          ;unit-syntax
-         (lib "unit-syntax.ss" "mzlib" "private")
+         mzlib/private/unit-syntax
 	 )
 
  ;; check-id

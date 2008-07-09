@@ -1,9 +1,9 @@
 
 (module teachhelp mzscheme
   (require "firstorder.ss"
-           (lib "shared.ss" "stepper" "private"))
+           stepper/private/shared)
 
-  (require-for-syntax (lib "shared.ss" "stepper" "private"))
+  (require-for-syntax stepper/private/shared)
   
   (provide make-undefined-check 
 	   make-first-order-function)

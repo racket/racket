@@ -1,7 +1,7 @@
 (module cm scheme/base
   (require syntax/modcode
            syntax/modresolve
-	   (lib "main-collects.ss" "setup")
+	   setup/main-collects
 	   scheme/file)
 
   (provide make-compilation-manager-load/use-compiled-handler

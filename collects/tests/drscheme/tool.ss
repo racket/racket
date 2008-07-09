@@ -1,7 +1,7 @@
 ;; load this file as a tool to run the test suites
 
 (module tool mzscheme
-  (require (lib "tool.ss" "drscheme")
+  (require drscheme/tool
            mzlib/list
            mzlib/unit
            mzlib/class
@@ -36,7 +36,7 @@
                            (if (send bitmap ok?) bitmap "Console")
                            (get-button-panel)
                            (lambda (button evt) 
-                             (let ([ask-test-suite (dynamic-require '(lib "run-tests.ss" "tests" "drscheme")
+                             (let ([ask-test-suite (dynamic-require 'tests/drscheme/run-tests
                                                                     'ask-test-suite)])
                                (ask-test-suite this))))])
             (send (get-button-panel) change-children

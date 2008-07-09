@@ -1,6 +1,6 @@
 (require
  "../locked-pasteboard.ss"
- (lib "click-forwarding-editor.ss" "mrlib"))
+ mrlib/click-forwarding-editor)
 
 (define f (new frame% (width 400) (height 500) (label "test")))
 (define e (new (click-forwarding-editor-mixin (locked-pasteboard-mixin pasteboard%))))

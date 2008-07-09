@@ -1,7 +1,7 @@
 (module tool mzscheme
-  (require (lib "external.ss" "browser")
+  (require browser/external
            mzlib/unit
-           (lib "tool.ss" "drscheme"))
+           drscheme/tool)
   (provide tool@)
 
   ;; to add a preference pannel to drscheme that sets the browser preference

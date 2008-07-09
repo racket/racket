@@ -45,7 +45,7 @@
 		      syntax/struct
 		      syntax/context
 		      mzlib/include
-                      (lib "shared.ss" "stepper" "private"))
+                      stepper/private/shared)
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; run-time helpers

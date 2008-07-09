@@ -1,5 +1,5 @@
 #lang web-server
-(require (lib "web-cell-component.ss" "web-server" "lang"))
+(require web-server/lang/web-cell-component)
 (provide start)
 
 (define (start initial-request)

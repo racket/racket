@@ -1,12 +1,12 @@
 #lang scheme/base
 (require (planet "util.ss" ("schematics" "schemeunit.plt" 2))
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "connection-manager.ss" "web-server" "private")
-         (lib "timer.ss" "web-server" "private")
-         (lib "request-structs.ss" "web-server" "private"))
+         web-server/private/connection-manager
+         web-server/private/timer
+         web-server/private/request-structs)
 (provide request-tests)
 
-(require/expose (lib "request.ss" "web-server" "private")
+(require/expose web-server/private/request
                 (read-bindings&post-data/raw))
 
 ;; mock connection object for test on post body parsing

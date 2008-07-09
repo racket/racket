@@ -429,7 +429,7 @@
   (let ([c #f] [sema (make-semaphore 1)])
     ;; use only when needed so it doesn't blow up on non-unix platforms
     (lambda (passwd salt)
-      (unless c (set! c (dynamic-require '(lib "crypt.ss" "ffi") 'crypt)))
+      (unless c (set! c (dynamic-require 'ffi/crypt 'crypt)))
       ;; crypt is not reentrant
       (call-with-semaphore sema
         (lambda () (bytes->string/utf-8 (c passwd salt)))))))

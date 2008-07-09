@@ -3,7 +3,7 @@
   (require mred
            mzlib/class
            "drscheme-test-util.ss"
-           (lib "gui.ss" "tests" "utils")
+           tests/utils/gui
            framework
            mzlib/pretty)
   

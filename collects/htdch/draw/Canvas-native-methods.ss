@@ -1,6 +1,6 @@
-#lang scheme 
+#lang scheme
 
-(require (lib "support.scm" "htdch" "draw")
+(require (lib "htdch/draw/support.scm")
          mzlib/unit)
 
 (define void-or-true #t)

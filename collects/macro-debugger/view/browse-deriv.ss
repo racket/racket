@@ -5,7 +5,7 @@
            mzlib/unit
            mred
            framework
-           (lib "hierlist.ss" "hierlist"))
+           mrlib/hierlist)
   (require "../model/deriv.ss")
   (provide (all-defined))
 

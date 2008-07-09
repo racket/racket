@@ -1,5 +1,5 @@
 (module text-box-tool mzscheme
-  (require (lib "tool.ss" "drscheme")
+  (require drscheme/tool
            mred
            framework
            "text-snipclass.ss"
@@ -7,7 +7,7 @@
            mzlib/class
 	   mzlib/contract
            string-constants
-           (lib "include-bitmap.ss" "mrlib"))
+           mrlib/include-bitmap)
   
   (provide tool@)
 

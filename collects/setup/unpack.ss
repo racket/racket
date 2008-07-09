@@ -7,7 +7,7 @@
            mzlib/list
            mzlib/port
 	   net/base64
-	   (lib "getinfo.ss" "setup")
+	   setup/getinfo
 	   "dirs.ss")
 
   (provide unpack

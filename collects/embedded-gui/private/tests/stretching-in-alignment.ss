@@ -4,15 +4,15 @@
    mred
    mzlib/etc
    mzlib/class
-   (lib "interface.ss" "mrlib" "private" "aligned-pasteboard")
-   (lib "debug.ss" "mike-lib")
+   mrlib/private/aligned-pasteboard/interface
+   mike-lib/debug
    mzlib/list
    mzlib/match
    (prefix a: "alignment.ss")
-   (lib "click-forwarding-editor.ss" "mrlib")
-   (lib "snip-lib.ss" "mrlib" "private" "aligned-pasteboard")
-   (lib "aligned-pasteboard.ss" "embedded-gui")
-   (lib "stretchable-editor-snip.ss" "embedded-gui"))
+   mrlib/click-forwarding-editor
+   mrlib/private/aligned-pasteboard/snip-lib
+   embedded-gui/aligned-pasteboard
+   embedded-gui/stretchable-editor-snip)
   
   (define f (new frame% (label "f") (width 400) (height 400)))
   (define e (new text%))

@@ -2,7 +2,7 @@
   (require mzlib/class
            "sig.ss"
            "../preferences.ss"
-           (lib "mred-sig.ss" "mred"))
+           mred/mred-sig)
   
   (import mred^
           [prefix frame: framework:frame^]

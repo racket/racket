@@ -1,6 +1,6 @@
 (module base-gm mzscheme
   (require mzlib/list
-	   (lib  "etc.ss"))
+	   mzlib/etc)
   
   (provide assert
            print-each

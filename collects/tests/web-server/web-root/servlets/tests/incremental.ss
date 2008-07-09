@@ -1,4 +1,4 @@
-(require (lib "servlet-sig.ss" "web-server")
+(require web-server/servlet-sig
          mzlib/unitsig)
 
 (unit/sig ()

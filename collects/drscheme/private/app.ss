@@ -6,8 +6,8 @@
          string-constants
          mred
          framework
-         (lib "external.ss" "browser")
-         (lib "getinfo.ss" "setup")
+         browser/external
+         setup/getinfo
          "drsig.ss"
          "../acks.ss")
 

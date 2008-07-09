@@ -2,7 +2,7 @@
 (module struct mzscheme
   (require mzlib/etc
 	   syntax/stx
-           (lib "struct-info.ss" "scheme"))
+           scheme/struct-info)
   (require-for-template mzscheme)
   
   (provide build-struct-names

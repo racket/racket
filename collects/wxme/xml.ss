@@ -1,7 +1,7 @@
 
 (module xml mzscheme
   (require mzlib/class
-           (lib "xml.ss" "xml")
+           xml/xml
            mzlib/list
            "wxme.ss"
            "editor.ss"

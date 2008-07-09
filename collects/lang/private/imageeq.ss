@@ -1,6 +1,6 @@
 (module imageeq mzscheme
   (require mred
-           (lib "cache-image-snip.ss" "mrlib")
+           mrlib/cache-image-snip
            mzlib/class)
   
   (provide image? image=? 

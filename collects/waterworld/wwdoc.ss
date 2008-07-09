@@ -1,5 +1,5 @@
 (module wwdoc mzscheme
-  (require (lib "xml.ss" "xml"))
+  (require xml/xml)
 
   (define *the-file* "ww.html")
   (define *the-page* 

@@ -10,8 +10,8 @@
            framework
            net/url
            net/head
-           (lib "plt-installer.ss" "setup")
-           (lib "bug-report.ss" "help")
+           setup/plt-installer
+           help/bug-report
            scheme/file)
   
   (import [prefix drscheme:unit: drscheme:unit^]

@@ -3,7 +3,7 @@
   (require string-constants
            "sig.ss"
            "../preferences.ss"
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
            mzlib/string
            scheme/path
            mzlib/etc)

@@ -2,9 +2,9 @@
 
 (require mzlib/unit
          scheme/gui/base
-         hierlist/hierlist-sig
-         hierlist/hierlist-unit)
-    
+         "hierlist/hierlist-sig.ss"
+         "hierlist/hierlist-unit.ss")
+
 (define-values/invoke-unit/infer hierlist@)
 
 (provide-signature-elements hierlist^)

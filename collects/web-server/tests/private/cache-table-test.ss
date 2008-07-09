@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "cache-table.ss" "web-server" "private"))
+         web-server/private/cache-table)
 (provide cache-table-tests)
 
 (define cache-table-tests

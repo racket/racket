@@ -1,11 +1,11 @@
 ;; Load this one with MrEd
 
 (load-relative "loadtest.ss")
-(require (lib "image.ss" "teachpack" "htdp")
+(require teachpack/htdp/image
          htdp/error
-         (lib "posn.ss" "lang")
+         lang/posn
          mzlib/list
-         (lib "imageeq.ss" "lang"))
+         lang/imageeq)
 
 (define-values (image-snip1 image-snip2)
   (let ()
@@ -1237,8 +1237,8 @@
 
 (parameterize ((current-namespace (make-base-namespace)))
   (err/rt-test
-    (eval '(module m (lib "htdp-beginner.ss" "lang")
-	     (require (lib "image.ss" "teachpack" "htdp")) overlay))
+    (eval '(module m lang/htdp-beginner
+	     (require teachpack/htdp/image) overlay))
     (lambda (exn)
       (regexp-match #rx"must be applied to arguments" 
 	(exn-message exn)))))

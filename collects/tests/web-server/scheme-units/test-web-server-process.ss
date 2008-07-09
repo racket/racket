@@ -2,7 +2,7 @@
 ;; Test if the Web server can start and stop via the command line.
 ;; Not sure if this is needed, but it was in Paul's.
 (module test-web-server-process mzscheme
-  (require (lib "test.ss" "schemeunit")
+  (require schemeunit/test
            mzlib/process)
 
   (provide test-web-server-process)

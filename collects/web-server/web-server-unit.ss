@@ -13,7 +13,7 @@
 (require "dispatchers/dispatch.ss"
          (prefix-in fsmap: "dispatchers/filesystem-map.ss")
          (prefix-in sequencer: "dispatchers/dispatch-sequencer.ss")
-         (prefix-in timeout: (lib "dispatch-timeout.ss" "web-server" "dispatchers"))
+         (prefix-in timeout: web-server/dispatchers/dispatch-timeout)
          (prefix-in passwords: "dispatchers/dispatch-passwords.ss")
          (prefix-in files: "dispatchers/dispatch-files.ss")
          (prefix-in servlets: "dispatchers/dispatch-servlets.ss")

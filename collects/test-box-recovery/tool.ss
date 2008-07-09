@@ -1,6 +1,6 @@
 
 (module tool mzscheme
-  (require (lib "tool.ss" "drscheme")
+  (require drscheme/tool
            mred
            mzlib/class
            mzlib/unit

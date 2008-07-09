@@ -35,7 +35,9 @@
   (and (file-exists? file)
        (match (contents)
          [(list 'module 'info
-                (or '(lib "infotab.ss" "setup") 'setup/infotab)
+                (or '(lib "infotab.ss" "setup")
+                    '(lib "setup/infotab.ss")
+                    'setup/infotab)
                 expr ...)
           ;; No need to set a reader-guard, since we checked it
           ;; above (a guard will see other uses of #lang for stuff

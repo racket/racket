@@ -292,7 +292,7 @@
   
   
   #|Tests: 
-  (require (lib "testing.scm" "testing"))
+  (require (lib "testing/testing.scm"))
   
   (test== (centered "|" 2) "| ")
   (test== (centered "|" 3) " | ")

@@ -1,18 +1,18 @@
 (module mod-mrpanel mzscheme
   (require mzlib/class
 	   mzlib/class100
-	   (prefix wx: (lib "kernel.ss" "mred" "private"))
-	   (lib "lock.ss" "mred" "private")
-	   (lib "const.ss" "mred" "private")
-	   (lib "check.ss" "mred" "private")
-	   (lib "helper.ss" "mred" "private")
-	   (lib "wx.ss" "mred" "private")
-	   (lib "kw.ss" "mred" "private")
+	   (prefix wx: mred/private/kernel)
+	   mred/private/lock
+	   mred/private/const
+	   mred/private/check
+	   mred/private/helper
+	   mred/private/wx
+	   mred/private/kw
            "mod-wx-panel.ss"
-	   (lib "mrwindow.ss" "mred" "private")
-	   (lib "mrcontainer.ss" "mred" "private")
-	   (lib "mrtabgroup.ss" "mred" "private")
-	   (lib "mrgroupbox.ss" "mred" "private"))
+	   mred/private/mrwindow
+	   mred/private/mrcontainer
+	   mred/private/mrtabgroup
+	   mred/private/mrgroupbox)
 
   (provide #|pane%
 	   vertical-pane%

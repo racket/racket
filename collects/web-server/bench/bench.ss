@@ -2,8 +2,8 @@
 (require #;mzlib/file
          mzlib/list
          mzlib/process
-         (lib "web-server.ss" "web-server")
-         (prefix-in files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
+         web-server/web-server
+         (prefix-in files: web-server/dispatchers/dispatch-files)
          (planet "csv.ss" ("neil" "csv.plt" 1 1)))
 
 (define data-path (collection-path "web-server" "bench" "data"))

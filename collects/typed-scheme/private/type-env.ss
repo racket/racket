@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require (lib "boundmap.ss" "syntax")
+(require syntax/boundmap
          "tc-utils.ss")
 
 (provide register-type

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
-         (lib "web.ss" "web-server" "servlet"))
+         web-server/servlet/web)
 (provide web-tests)
 
 (define url0 (string->url "http://test.com/servlets/example.ss"))

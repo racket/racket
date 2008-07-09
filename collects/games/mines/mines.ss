@@ -9,7 +9,7 @@
          mzlib/class
          mzlib/unit
          mred
-         (lib "include-bitmap.ss" "mrlib"))
+         mrlib/include-bitmap)
 
 (provide game@)
 

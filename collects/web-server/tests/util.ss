@@ -1,14 +1,14 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
-         (lib "connection-manager.ss" "web-server" "private")
+         web-server/private/connection-manager
          (only-in (planet "ssax.ss" ("lizorkin" "ssax.plt" 2 0))
                   ssax:xml->sxml)
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "web-server-structs.ss" "web-server" "private")
+         web-server/private/request-structs
+         web-server/private/web-server-structs
          net/url
          mzlib/pretty
          mzlib/list
-         (lib "timer.ss" "web-server" "private"))
+         web-server/private/timer)
 (provide make-module-eval
          make-eval/mod-path
          make-mock-connection
@@ -53,8 +53,8 @@
      #'(let ([ns (make-base-empty-namespace)])
          (parameterize ([current-namespace ns])
            (namespace-require 'scheme/base)
-           (namespace-require '(lib "abort-resume.ss" "web-server" "lang"))
-           (namespace-require '(lib "serialize.ss"))
+           (namespace-require 'web-server/lang/abort-resume)
+           (namespace-require 'mzlib/serialize)
            (eval '(module m-id . rest))
            (eval '(require 'm-id)))
          
@@ -68,8 +68,8 @@
   (let ([ns (make-base-empty-namespace)])
     (parameterize ([current-namespace ns])
       (namespace-require 'scheme/base)
-      (namespace-require '(lib "abort-resume.ss" "web-server" "lang"))
-      (namespace-require '(lib "serialize.ss"))
+      (namespace-require 'web-server/lang/abort-resume)
+      (namespace-require 'mzlib/serialize)
       (namespace-require pth))
     (lambda (expr)
       (parameterize ([current-namespace ns])

@@ -76,7 +76,7 @@
   
   #| Tests: 
   
-  (require (lib "testing.scm" "testing"))
+  (require (lib "testing/testing.scm"))
   
   (test== (interface "Foo" #f '())
           (string-append 

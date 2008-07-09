@@ -4,7 +4,7 @@
 	   mzlib/class
            mzlib/list
            mzlib/etc
-           (lib "prim.ss" "lang"))
+           lang/prim)
   
   (provide
    connect ; (button% event% -> true) -> true 

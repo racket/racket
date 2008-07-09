@@ -4,7 +4,7 @@
 (require string-constants
          mzlib/class
          mzlib/list
-         (lib "mred-sig.ss" "mred")
+         mred/mred-sig
          mzlib/match
          "../preferences.ss"
          "tex-table.ss"
@@ -30,7 +30,10 @@
               [sexp (and (file-exists? path)
                          (call-with-input-file path read))])
          (match sexp
-           [`(module ,name (lib "keybinding-lang.ss" "framework") ,@(x ...)) 
+           [`(module ,name ,(or `(lib "keybinding-lang.ss" "framework")
+                                `(lib "framework/keybinding-lang.ss")
+                                `framework/keybinding-lang)
+               ,@(x ...)) 
             (let ([km (dynamic-require spec '#%keymap)])
               (hash-set! user-keybindings-files spec km)
               (send global chain-to-keymap km #t))]

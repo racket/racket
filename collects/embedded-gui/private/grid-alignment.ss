@@ -13,7 +13,7 @@
    mzlib/list
    mzlib/match
    (prefix a: "alignment.ss")
-   (lib "click-forwarding-editor.ss" "mrlib")
+   mrlib/click-forwarding-editor
    
    "on-show-pasteboard.ss"
    "really-resized-pasteboard.ss"

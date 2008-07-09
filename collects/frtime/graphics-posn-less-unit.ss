@@ -6,7 +6,7 @@
 
 #lang scheme/unit
 
-  (require (lib "mred-sig.ss" "mred")
+  (require mred/mred-sig
 	   mzlib/class
 	   mzlib/class100
 	   mzlib/etc

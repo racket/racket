@@ -5,12 +5,12 @@
 (require htdp/matrix-sig
          htdp/matrix-render-sig
          htdp/matrix-unit
-         (lib "matrix-snip.ss" "mrlib"))
+         mrlib/matrix-snip)
 
 (require mzlib/class
          mzlib/string
          mred
-         (lib "matrix-snip.ss" "mrlib"))
+         mrlib/matrix-snip)
 
 ;; ---------------------------------------------------------------------------
 

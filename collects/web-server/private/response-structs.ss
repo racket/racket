@@ -1,6 +1,6 @@
 #lang scheme/base
 (require mzlib/contract
-         (lib "xml.ss" "xml")
+         xml/xml
          "request-structs.ss")
 
 (define TEXT/HTML-MIME-TYPE #"text/html; charset=utf-8")

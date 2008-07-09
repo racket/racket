@@ -1,12 +1,12 @@
-(require (prefix annotate: (lib "annotate.ss" "stepper" "private")))
+(require (prefix annotate: stepper/private/annotate))
 (require (prefix kernel: syntax/kerncase))
-(require (lib "syncheck-debug.ss" "drscheme" "private"))
-(require (lib "marks.ss" "stepper" "private"))
+(require drscheme/private/syncheck-debug)
+(require stepper/private/marks)
 (require "tests-common.ss")
 
 (load "/Users/clements/plt/tests/mzscheme/testing.ss")
 
-(reset-namespaces) 
+(reset-namespaces)
 
 (SECTION 'stepper-annotater)
 

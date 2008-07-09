@@ -4,7 +4,7 @@ exec mzscheme -r "$0" "$@"
 |#
 ;; Mike Burns, July 28th, 2004, netgeek@speakeasy.net
 ;; Run from collects/tests/web-server/scheme-units
-(require (lib "text-ui.ss" "schemeunit")
+(require schemeunit/text-ui
          "test-authentication.ss"
          "test-serve-static-html.ss"
          "test-serve-static-jpeg.ss"

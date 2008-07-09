@@ -1,7 +1,5 @@
 (module errortrace-key-syntax mzscheme
-  (require (lib "errortrace-key.ss" "errortrace"))
-  (require-for-syntax (lib "errortrace-key.ss"  "errortrace"))
+  (require errortrace/errortrace-key)
+  (require-for-syntax errortrace/errortrace-key)
   (define errortrace-key-syntax #'errortrace-key)
   (provide errortrace-key-syntax))
-
-

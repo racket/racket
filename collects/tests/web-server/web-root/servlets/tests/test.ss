@@ -1,5 +1,5 @@
 (require mzlib/unitsig)
-(require (lib "servlet-sig.ss" "web-server"))
+(require web-server/servlet-sig)
 (let ([count 0])
   (unit/sig ()
     (import servlet^)

@@ -6,9 +6,9 @@
 (define export #f)
 (define link #f)
 
-(require (lib "mzlib/unit200.ss"))
-(require (lib "mzlib/unitsig200.ss"))
-(require (lib "mzlib/include.ss"))
+(require mzlib/unit200)
+(require mzlib/unitsig200)
+(require mzlib/include)
 
 (Section 'unit/sig)
 

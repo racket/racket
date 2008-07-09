@@ -1,13 +1,12 @@
 #lang scheme/unit
 
 (require "sig.ss"
-         (lib "mred-sig.ss" "mred")
+         mred/mred-sig
          scheme/file
          mzlib/port
          net/url-sig
-         (only-in (lib "html.ss" "html")
-                  read-html-as-xml read-html-comments use-html-spec)
-         (except-in (lib "xml.ss" "xml") read-comments)
+         (only-in html read-html-as-xml read-html-comments use-html-spec)
+         (except-in xml/xml read-comments)
          mzlib/class
          "bullet.ss"
          "option-snip.ss"

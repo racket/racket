@@ -71,4 +71,3 @@
     (cond [(null? l) (make-Nothing)]
           [(= v (car l)) (make-Just v)]
           [else (find v (cdr l))])))
-  

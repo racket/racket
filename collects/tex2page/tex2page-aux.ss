@@ -13,8 +13,8 @@
                    require
                    require-for-syntax
                    provide))
-  (require (lib "process.ss"))
-  (require (lib "date.ss")
+  (require mzlib/process)
+  (require mzlib/date
            (only mzscheme
                  make-hash-table hash-table-get hash-table-put!
                  hash-table-for-each

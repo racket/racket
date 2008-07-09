@@ -1,6 +1,6 @@
 (module time-keystrokes mzscheme
   
-  (require (lib "tool.ss" "drscheme")
+  (require drscheme/tool
            mzlib/list
            mzlib/unit
            mzlib/class

@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "connection-manager.ss" "web-server" "private"))
+         web-server/private/connection-manager)
 (provide connection-manager-tests)
 
 (start-connection-manager (current-custodian))

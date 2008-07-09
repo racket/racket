@@ -5,7 +5,7 @@
            mred
            mzlib/etc
            mzlib/list
-	   (lib "tool.ss" "drscheme")
+	   drscheme/tool
            string-constants)
   
   (provide tool@)

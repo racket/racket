@@ -1,6 +1,6 @@
 
 (module xml-snip-helpers mzscheme
-  (require (lib "xml.ss" "xml")
+  (require xml/xml
            syntax/readerr
            mred
            mzlib/class

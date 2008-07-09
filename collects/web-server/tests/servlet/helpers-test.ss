@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "response-structs.ss" "web-server" "private")
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "helpers.ss" "web-server" "servlet"))
+         web-server/private/response-structs
+         web-server/private/request-structs
+         web-server/servlet/helpers)
 (provide helpers-tests)
 
 (define (dehead hs)

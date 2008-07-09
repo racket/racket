@@ -2,15 +2,15 @@
   (require mzlib/class
 	   mzlib/class100
 	   mzlib/list
-	   (prefix wx: (lib "kernel.ss" "mred" "private"))
-	   (lib "lock.ss" "mred" "private")
-	   (lib "const.ss" "mred" "private")
-	   (lib "helper.ss" "mred" "private")
-	   (lib "check.ss" "mred" "private")
-	   (lib "wx.ss" "mred" "private")
-	   (lib "wxwindow.ss" "mred" "private")
-	   (lib "wxitem.ss" "mred" "private")
-	   (lib "wxcontainer.ss" "mred" "private"))
+	   (prefix wx: mred/private/kernel)
+	   mred/private/lock
+	   mred/private/const
+	   mred/private/helper
+	   mred/private/check
+	   mred/private/wx
+	   mred/private/wxwindow
+	   mred/private/wxitem
+	   mred/private/wxcontainer)
 
   (provide (protect wx-panel%
 		    wx-vertical-panel%

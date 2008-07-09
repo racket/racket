@@ -4,7 +4,7 @@
          mzlib/contract
          mzlib/serialize
          mzlib/pretty
-         (lib "xml.ss" "xml")
+         xml/xml
          net/url)
 (define path-element?
   (or/c string? path? (symbols 'up 'same)))

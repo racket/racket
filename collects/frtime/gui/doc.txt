@@ -2,8 +2,8 @@
   
 MACROS
 -------
-To get the basic macros: 
-(require (lib "mixin-macros.ss" "frtime" "demos" "gui"))
+To get the basic macros:
+(require frtime/demos/gui/mixin-macros)
 
 > (events->callbacks field-name update-call)
 Generates a mixin for allowing an event stream to drive

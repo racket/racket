@@ -5,8 +5,8 @@
            mzlib/class
            mred)
 
-  (require (lib "mred-sig.ss" "mred")
-	   (lib "mred-unit.ss" "mred"))
+  (require mred/mred-sig
+	   mred/mred-unit)
   (require "private/mrpict-sig.ss"
 	   "private/common-sig.ss")
   (require "mrpict-sig.ss"

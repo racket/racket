@@ -1,7 +1,7 @@
 
 (module start "slideshow.ss"
   (require "start-param.ss"
-           (lib "config.ss" "planet")
+           planet/config
 	   mred
            mzlib/class)
 

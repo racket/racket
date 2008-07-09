@@ -4,7 +4,7 @@
   (require mzlib/list)
   (require mzlib/etc)
   (require mred)
-  (require (lib "external.ss" "browser"))
+  (require browser/external)
   
   (define *progname* "WaterWorld")
 

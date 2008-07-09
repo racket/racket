@@ -2,7 +2,7 @@
 (load-relative "loadtest.ss")
 
 (Section 'unit)
-(require (lib "mzlib/unit200.ss"))
+(require mzlib/unit200)
 
 ;; Hide keywords from scheme/unit.ss:
 (define import #f)

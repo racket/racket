@@ -4,7 +4,7 @@
 
 (module graphics-posn-less-unit mzscheme
   (require mzlib/unit
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
            mred
 	   mzlib/class
 	   mzlib/class100

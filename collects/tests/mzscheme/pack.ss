@@ -6,8 +6,8 @@
 
 (Section 'pack)
 
-(require (lib "pack.ss" "setup")
-	 (lib "unpack.ss" "setup")
+(require setup/pack
+	 setup/unpack
 	 mzlib/process
 	 setup/dirs
 	 mzlib/file)

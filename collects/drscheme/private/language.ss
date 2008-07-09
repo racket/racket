@@ -17,7 +17,7 @@
            launcher
            mred
            framework
-           (lib "syntax-browser.ss" "mrlib")
+           mrlib/syntax-browser
            compiler/distribute
            compiler/bundle-dist
            "rep.ss")
@@ -464,7 +464,7 @@
                 (print-convert value))]))
        
        ,(if (memq (simple-settings-annotations setting) '(debug debug/profile test-coverage))
-            `(require (lib "errortrace.ss" "errortrace"))
+            `(require errortrace)
             `(void))
        
        (define (init-code)

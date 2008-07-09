@@ -1,9 +1,9 @@
 ;; Mike Burns, July 8th, 2004, netgeek@speakeasy.net
 ;; Useful assertions
 (module assertions mzscheme
-  (require (lib "test.ss" "schemeunit")
-           (lib "web-server.ss" "web-server")
-           (lib "configuration.ss" "web-server")
+  (require schemeunit/test
+           web-server/web-server
+           web-server/configuration
            net/url
            net/head
            mzlib/contract)

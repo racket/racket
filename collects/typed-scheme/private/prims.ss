@@ -25,20 +25,20 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (require (for-syntax 
           scheme/base
           "type-rep.ss"
-          (lib "match.ss")
+          mzlib/match
           "parse-type.ss"
-          (lib "struct.ss" "syntax")
-          (lib "stx.ss" "syntax")
-          "utils.ss"   
+          syntax/struct
+          syntax/stx
+          "utils.ss"
           "tc-utils.ss"
           "type-name-env.ss"
           "type-contract.ss"))
 
 (require "require-contract.ss"
          "internal-forms.ss"
-         (except-in (lib "contract.ss") ->)
-         (only-in (lib "contract.ss") [-> c->])
-         (lib "struct.ss")
+         (except-in mzlib/contract ->)
+         (only-in mzlib/contract [-> c->])
+         mzlib/struct
          "base-types.ss")
 
 (define-for-syntax (ignore stx) (syntax-property stx 'typechecker:ignore #t))

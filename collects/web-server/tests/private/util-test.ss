@@ -1,9 +1,9 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
-         (lib "xml.ss" "xml")
+         xml/xml
          mzlib/contract
-         (lib "util.ss" "web-server" "private"))
+         web-server/private/util)
 (provide util-tests)
 
 (define util-tests

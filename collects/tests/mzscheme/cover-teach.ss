@@ -7,10 +7,10 @@
 (when compiled?
   (rename-file-or-directory compiled-file saved-file))
 
-(require (lib "errortrace.ss" "errortrace"))
+(require errortrace)
 
 (execute-counts-enabled #t)
-(dynamic-require '(lib "teach.ss" "lang" "private") #f)
+(dynamic-require 'lang/private/teach #f)
 (execute-counts-enabled #f)
 
 (when compiled?

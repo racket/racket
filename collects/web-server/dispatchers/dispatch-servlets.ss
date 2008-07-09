@@ -159,9 +159,9 @@
     (parameterize ([current-namespace (make-servlet-namespace
                                        #:additional-specs
                                        '(web-server/servlet
-                                         (lib "servlet.ss" "web-server" "private")
-                                         (lib "web.ss" "web-server" "servlet")
-                                         (lib "web-cells.ss" "web-server" "servlet")))]
+                                         web-server/private/servlet
+                                         web-server/servlet/web
+                                         web-server/servlet/web-cells))]
                    [current-custodian (make-servlet-custodian)])
       ; XXX load/use-compiled breaks errortrace
       (define s (load/use-compiled a-path))

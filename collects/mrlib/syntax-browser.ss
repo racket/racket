@@ -498,10 +498,10 @@ needed to really make this work:
   
   (define (set-box/f! b v) (when (box? b) (set-box! b v)))
   
-  (define down-bitmap (include-bitmap (lib "turn-down.png" "icons") 'png))
-  (define up-bitmap (include-bitmap (lib "turn-up.png" "icons") 'png))
-  (define down-click-bitmap (include-bitmap (lib "turn-down-click.png" "icons") 'png))
-  (define up-click-bitmap (include-bitmap (lib "turn-up-click.png" "icons") 'png))
+  (define down-bitmap (include-bitmap (lib "icons/turn-down.png") 'png))
+  (define up-bitmap (include-bitmap (lib "icons/turn-up.png") 'png))
+  (define down-click-bitmap (include-bitmap (lib "icons/turn-down-click.png") 'png))
+  (define up-click-bitmap (include-bitmap (lib "icons/turn-up-click.png") 'png))
   (define arrow-snip-height
     (max 10
          (send up-bitmap get-height)

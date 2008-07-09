@@ -1,4 +1,4 @@
-(module bday mzscheme (require (lib "encode-decode.ss" "framework" "private"))
+(module bday mzscheme (require framework/private/encode-decode)
   (decode
                  \5d8f4
               \10ec22010

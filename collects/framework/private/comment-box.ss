@@ -6,7 +6,7 @@
            mred
            "sig.ss"
            "../decorated-editor-snip.ss"
-           (lib "include-bitmap.ss" "mrlib")
+           mrlib/include-bitmap
            string-constants)
   
   (import [prefix text: framework:text^]
@@ -25,7 +25,7 @@
   (send snipclass set-classname (format "~s" '(lib "comment-snip.ss" "framework")))
   (send (get-the-snip-class-list) add snipclass)
   
-  (define bm (include-bitmap (lib "semicolon.gif" "icons")))
+  (define bm (include-bitmap (lib "icons/semicolon.gif")))
   
   (define (editor-keymap-mixin %)
     (class %

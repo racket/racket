@@ -2,7 +2,7 @@
 ;; Test serving files that require authentication.
 (module test-authentication mzscheme
   (require mzlib/contract
-           (lib "test.ss" "schemeunit")
+           schemeunit/test
            net/url
            net/head
            net/base64

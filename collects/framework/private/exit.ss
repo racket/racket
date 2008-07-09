@@ -4,7 +4,7 @@
            "sig.ss"
            "../preferences.ss"
            "../gui-utils.ss"
-           (lib "mred-sig.ss" "mred"))
+           mred/mred-sig)
   
   (import mred^)
   (export (rename framework:exit^

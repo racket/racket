@@ -14,7 +14,7 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
            mred
            mzlib/match
            mzlib/string
-           (lib "marks.ss" "stepper" "private")
+           stepper/private/marks
            mzlib/contract)
   
   (provide render-bindings/snip)

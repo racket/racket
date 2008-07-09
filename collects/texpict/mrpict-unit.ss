@@ -2,7 +2,7 @@
 (module mrpict-unit mzscheme
   (require mzlib/unit)
 
-  (require (lib "mred-sig.ss" "mred"))
+  (require mred/mred-sig)
 
   (require "private/mrpict-sig.ss"
 	   "private/common-sig.ss"

@@ -327,10 +327,9 @@
                        #,(syntax-recertify
 			  #`(#%plain-module-begin
 			     #,((make-syntax-introducer)
-				#'(#%require (lib "errortrace-key.ss" "errortrace")))
+				#'(#%require errortrace/errortrace-key))
 			     #,((make-syntax-introducer)
-				#'(#%require (for-syntax
-                                              (lib "errortrace-key.ss" "errortrace"))))
+				#'(#%require (for-syntax errortrace/errortrace-key)))
 			     body ...)
 			  (list-ref (syntax->list top-e) 3)
 			  orig-inspector

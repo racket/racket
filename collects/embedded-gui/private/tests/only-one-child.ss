@@ -7,7 +7,7 @@
  (prefix a: "../alignment.ss")
  "../alignment-helpers.ss"
  "../dllist.ss"
- (lib "click-forwarding-editor.ss" "mrlib")
+ mrlib/click-forwarding-editor
  "../on-show-pasteboard.ss"
  "../really-resized-pasteboard.ss"
  "../interface.ss"

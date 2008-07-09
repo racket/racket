@@ -2,7 +2,7 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          mzlib/list
          net/url
-         (lib "session.ss" "web-server" "private"))
+         web-server/private/session)
 (provide session-tests)
 
 (define url0 (string->url "http://test.com/foo"))

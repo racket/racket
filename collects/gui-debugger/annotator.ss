@@ -1,7 +1,7 @@
 (module annotator scheme/base
 
   (require (prefix-in kernel: syntax/kerncase)
-           (lib "marks.ss" "gui-debugger")
+           gui-debugger/marks
            mzlib/etc
            (prefix-in srfi: srfi/1/search)
            (for-syntax scheme/base)

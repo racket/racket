@@ -5,7 +5,7 @@
 	   mzlib/class
            mzlib/unit
            mzlib/etc
-           (lib "prim.ss" "lang")
+           lang/prim
 	   mred)
   
   (provide

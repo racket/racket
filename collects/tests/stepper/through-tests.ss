@@ -16,8 +16,8 @@
            (only-in srfi/13 string-contains)
            ;; for xml testing:
            ;; mzlib/class
-           ;; (all-except (lib "xml-snipclass.ss" "xml") snip-class)
-           ;; (all-except (lib "scheme-snipclass.ss" "xml") snip-class)
+           ;; (all-except xml/xml-snipclass snip-class)
+           ;; (all-except xml/scheme-snipclass snip-class)
            ;; mred
            #;(file "/Users/clements/clements/scheme-scraps/eli-debug.ss")
            )

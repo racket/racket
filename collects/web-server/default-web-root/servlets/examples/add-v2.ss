@@ -1,6 +1,6 @@
 #lang scheme/base
 (require web-server/servlet
-         (lib "timeouts.ss" "web-server" "managers"))
+         web-server/managers/timeouts)
 (provide (all-defined-out))
 (define interface-version 'v2)
 (define manager

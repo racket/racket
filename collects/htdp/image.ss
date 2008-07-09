@@ -9,11 +9,11 @@ plt/collects/tests/mzscheme/htdp-image.ss
 
 (require mred
          mzlib/class
-         (lib "cache-image-snip.ss" "mrlib")
+         mrlib/cache-image-snip
          mzlib/math
 	 lang/prim
-         (lib "posn.ss" "lang")
-         (lib "imageeq.ss" "lang" "private")
+         lang/posn
+         lang/private/imageeq
          "error.ss")
 
 (provide-primitives

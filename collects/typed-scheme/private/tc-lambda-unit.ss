@@ -1,7 +1,7 @@
 #lang scheme/unit
 
 (require "signatures.ss"
-         (lib "trace.ss")
+         mzlib/trace
          (except-in "type-rep.ss" make-arr) ;; doesn't need tests
          "type-effect-convenience.ss" ;; maybe needs tests
          "type-environments.ss" ;; doesn't need tests
@@ -13,7 +13,7 @@
          "tc-utils.ss"
          "union.ss"
          "resolve-type.ss"
-         (lib "plt-match.ss")
+         mzlib/plt-match
          (only-in "type-effect-convenience.ss" [make-arr* make-arr]))
 (require (for-template scheme/base "internal-forms.ss"))
 

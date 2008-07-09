@@ -3,11 +3,11 @@
          (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "cache-table.ss" "web-server" "private")
-         (lib "web-server-structs.ss" "web-server" "private")
-         (lib "namespace.ss" "web-server" "configuration")
-         (prefix-in servlets: (lib "dispatch-servlets.ss" "web-server" "dispatchers"))
+         web-server/private/request-structs
+         web-server/private/cache-table
+         web-server/private/web-server-structs
+         web-server/configuration/namespace
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
          "../util.ss")
 (provide dispatch-servlets-tests)
 

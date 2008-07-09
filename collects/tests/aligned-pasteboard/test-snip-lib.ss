@@ -3,9 +3,9 @@
  mzlib/etc
  mzlib/class
  mred
- (lib "private/aligned-pasteboard/snip-lib.ss" "mrlib")
- (lib "private/aligned-pasteboard/aligned-pasteboard.ss" "mrlib")
- (lib "private/aligned-pasteboard/aligned-editor-container.ss" "mrlib"))
+ mrlib/private/aligned-pasteboard/snip-lib
+ mrlib/private/aligned-pasteboard/aligned-pasteboard
+ mrlib/private/aligned-pasteboard/aligned-editor-container)
 
 (printf "running tests for snip-lib.ss~n")
   

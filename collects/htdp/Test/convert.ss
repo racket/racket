@@ -1,7 +1,7 @@
 #lang scheme 
 
-(require (lib "testing.ss" "htdp"))
-(require (lib "convert.ss" "htdp"))
+(require htdp/testing)
+(require htdp/convert)
 
 ;; f2c : num -> num
 ;; to convert a Fahrenheit temperature into a Celsius temperature 

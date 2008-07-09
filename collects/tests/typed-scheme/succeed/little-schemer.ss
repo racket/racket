@@ -1,7 +1,7 @@
 #lang typed-scheme  
-#;(require (lib "etc.ss"))
+#;(require mzlib/etc)
 #;(require "prims.ss")
-(require (lib "match.ss")
+(require mzlib/match
          (for-syntax scheme/base))
 
 (define-type-alias number Number)

@@ -1,6 +1,6 @@
 
 (module code "slideshow.ss"
-  (require (lib "code.ss" "texpict")
+  (require texpict/code
 	   mzlib/unit)
   (require-for-syntax syntax/to-string
                       mzlib/list)

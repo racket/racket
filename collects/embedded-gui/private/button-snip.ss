@@ -205,8 +205,8 @@
   ;; tests
   #|
   (require
-   (lib "locked-pasteboard.ss" "mrlib" "private" "aligned-pasteboard")
-   (lib "click-forwarding-editor.ss" "mrlib"))
+   mrlib/private/aligned-pasteboard/locked-pasteboard
+   mrlib/click-forwarding-editor)
   
   (define (test)
     (define f (new frame% (label "test") (width 200) (height 200)))

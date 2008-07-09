@@ -1,4 +1,4 @@
-#reader(lib "scribble/reader.ss")
+#reader scribble/reader
 #lang scheme/base
 (require "common.ss"
          scribble/decode

@@ -11,14 +11,14 @@
 ; 3. The non-generic parts (record type, time, error) are here.
 ;
 ; load the module with
-;   (require (lib "random-bits.ss" "srfi"))
+;   (require srfi/random-bits)
 ;
 ; history of this file:
 ;   SE, 17-May-2003: initial version
 
 (module random-bits typed-scheme
-  #;(require (lib "9.ss" "srfi"))
-  #;(require (lib "23.ss" "srfi"))
+  #;(require srfi/9)
+  #;(require srfi/23)
 
   (provide 
    random-integer random-real default-random-source

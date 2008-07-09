@@ -1,7 +1,7 @@
 ; test.ss for MzCOM
 ; requires MysterX to be installed
 
-(require (lib "mysterx.ss" "mysterx"))
+(require mysterx)
 (define mzcom (cci/progid "MzCOM.MzObj"))
 
 (define num-errors 0)

@@ -1,3 +1,3 @@
 (module path-dialog mzscheme
-  (require (lib "path-dialog.ss" "mred" "private"))
+  (require mred/private/path-dialog)
   (provide path-dialog%))

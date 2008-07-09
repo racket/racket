@@ -1,5 +1,5 @@
 (module build-plt mzscheme
-  (require (lib "pack.ss" "setup")
+  (require setup/pack
            mzlib/date
            "suite.ss")
   

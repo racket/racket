@@ -9,14 +9,14 @@ trigger runtime errors in check syntax.
 (module syncheck-test mzscheme
   
   (require "drscheme-test-util.ss"
-           (lib "gui.ss" "tests" "utils")
+           tests/utils/gui
            mzlib/etc
            mzlib/class
            mzlib/list
            mzlib/file
            mred
            framework
-           (lib "text-string-style-desc.ss" "mrlib"))
+           mrlib/text-string-style-desc)
   
   (provide run-test)
   

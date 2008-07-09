@@ -16,13 +16,13 @@
 (require/typed explode-path (Path -> (Listof Path)) (lib "file.ss"))
 (require/typed srfi48::format (Port String String top .. -> top)  "patch.ss")
 ;; FIXME - prefix
-#;(require/typed srfi48:format ( Port String String top .. -> top) (prefix-in srfi48: (lib "48.ss" "srfi")))
-(require (lib "match.ss")
-         ;(lib "file.ss")
-         ;(lib "list.ss")
-         ;(lib "etc.ss")
-         (prefix-in srfi13: (lib "13.ss" "srfi"))
-         ;(prefix srfi48: (lib "48.ss" "srfi"))
+#;(require/typed srfi48:format ( Port String String top .. -> top) (prefix-in srfi48: srfi/48))
+(require mzlib/match
+         ;mzlib/file
+         ;mzlib/list
+         ;mzlib/etc
+         (prefix-in srfi13: srfi/13)
+         ;(prefix srfi48: srfi/48)
          )
 
 (define-type-alias Sexpr Any)

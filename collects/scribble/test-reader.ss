@@ -2,7 +2,7 @@
 #lang scheme/base
 (require mzlib/string (for-syntax scheme/base))
 
-#reader(lib "reader.ss" "scribble")
+#reader scribble/reader
 (define tests
   `(
 

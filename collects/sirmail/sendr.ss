@@ -6,12 +6,12 @@
   (require scheme/tcp
            scheme/unit
            scheme/class
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
            framework)
 
   (require scheme/file
 	   mzlib/process
-	   (lib "mzssl.ss" "openssl"))
+	   openssl/mzssl)
 
   (require "sirmails.ss"
 	   "pref.ss"
@@ -23,7 +23,7 @@
 	   net/base64-sig
 	   net/qp-sig)
 
-  (require (lib "hierlist-sig.ss" "hierlist"))
+  (require mrlib/hierlist/hierlist-sig)
 
   (define smtp-passwords (make-hash))
 

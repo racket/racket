@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "defun.ss" "web-server" "lang")
-         (lib "util.ss" "web-server" "lang"))
+         web-server/lang/defun
+         web-server/lang/util)
 (provide defun-tests)
 
 (define-syntax vwrap

@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "anormal.ss" "web-server" "lang")
-         (lib "util.ss" "web-server" "lang"))
+         web-server/lang/anormal
+         web-server/lang/util)
 (provide anormal-tests)
 
 (define (empty-env var)

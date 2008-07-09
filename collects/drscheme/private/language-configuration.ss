@@ -1,7 +1,7 @@
 
 (module language-configuration mzscheme
   (require mzlib/unit
-           (lib "hierlist.ss" "hierlist")
+           mrlib/hierlist
            mzlib/class
            mzlib/contract
            mzlib/kw
@@ -14,7 +14,7 @@
            mzlib/list
            mzlib/etc
            mzlib/file
-           (lib "getinfo.ss" "setup")
+           setup/getinfo
            syntax/toplevel)
   
   (define original-output (current-output-port))

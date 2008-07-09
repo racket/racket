@@ -14,7 +14,7 @@
  "../snip-lib.ss"
  "../interface.ss"
  "../alignment-helpers.ss"
- (lib "click-forwarding-editor.ss" "mrlib")
+ mrlib/click-forwarding-editor
  "../on-show-pasteboard.ss"
  "../really-resized-pasteboard.ss"
  "../interface.ss"
@@ -23,7 +23,7 @@
  "../verthoriz-alignment.ss"
  "../suppress-modify-editor.ss")
   
-(require (lib "print-debug.ss" "mike-lib"))
+(require mike-lib/print-debug)
   
 (define aligned-pasteboard%
   (class (click-forwarding-editor-mixin

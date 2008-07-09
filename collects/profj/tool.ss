@@ -11,9 +11,9 @@
            profj/libs/java/lang/Object profj/libs/java/lang/array
            profj/libs/java/lang/String)
   (require "compile.ss" "parameters.ss" "parsers/lexer.ss" "parser.ss"
-           (lib "test-engine.scm" "test-engine")
-           (lib "java-tests.scm" "test-engine")
-           (lib "test-coverage.scm" "test-engine")
+           (lib "test-engine/test-engine.scm")
+           (lib "test-engine/java-tests.scm")
+           (lib "test-engine/test-coverage.scm")
            (except-in "ast.ss" for)
            "display-java.ss")
 
@@ -1168,7 +1168,7 @@
       
       ;Comment box
       ;;Comment icon
-      (define comment-gif (include-bitmap (lib "slash-slash.gif" "icons")))
+      (define comment-gif (include-bitmap (lib "icons/slash-slash.gif")))
       
       ;;The following code has been taken with small modifications from framework/private/comment-box.ss
       (define snipclass-java-comment%
@@ -1221,7 +1221,7 @@
       (drscheme:language:register-capability 'profj:special:java-comment-box (flat-contract boolean?) #f)
       
       ;;Java interactions box
-      (define ji-gif (include-bitmap (lib "j.gif" "icons")))
+      (define ji-gif (include-bitmap (lib "icons/j.gif")))
       
       (define snipclass-java-interactions%
         (class decorated-editor-snipclass%

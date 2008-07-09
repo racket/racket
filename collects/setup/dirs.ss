@@ -1,7 +1,7 @@
 (module dirs mzscheme
   (require (prefix config: config)
-           (lib "winutf16.ss" "compiler" "private")
-           (lib "mach-o.ss" "compiler" "private"))
+           compiler/private/winutf16
+           compiler/private/mach-o)
 
   (provide (rename config:absolute-installation? absolute-installation?))
 

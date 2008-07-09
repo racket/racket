@@ -1,6 +1,6 @@
 #lang scheme/base
-(require (lib "manual.ss" "scribble")
-         (lib "eval.ss" "scribble")
+(require scribble/manual
+         scribble/eval
          (for-label scheme/base
                     scheme/contract
                     scheme/unit))
@@ -20,8 +20,8 @@
 (define (href-link url label)
   (elem label " (" url ")")) 
 
-(provide (all-from-out (lib "manual.ss" "scribble"))
-         (all-from-out (lib "eval.ss" "scribble"))
+(provide (all-from-out scribble/manual)
+         (all-from-out scribble/eval)
          (for-label (all-from-out scheme/base
                                   scheme/contract
                                   scheme/unit))

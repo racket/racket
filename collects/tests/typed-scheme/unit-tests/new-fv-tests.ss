@@ -96,7 +96,6 @@
                     (check-not-false (subtype p d)))))
   
   (define-go fv-tests meet-join-tests)
-  
-  
-  
+
+
   )

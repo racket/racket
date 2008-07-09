@@ -1,7 +1,7 @@
 ;;; mystests.ss -- test suite for MysterX
 
 (require mzlib/class)
-(require (lib "mysterx.ss" "mysterx"))
+(require mysterx)
 
 (define errors? #f)
 

@@ -2,7 +2,7 @@
 (module utilr mzscheme
   (require mzlib/unit
 	   mzlib/class
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
 	   net/qp-sig
 	   net/base64-sig
 	   (prefix unihead: net/unihead)

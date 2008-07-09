@@ -5,7 +5,7 @@
            "sig.ss"
            "../preferences.ss"
            "../gui-utils.ss"
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
            mzlib/list
            scheme/path)
   

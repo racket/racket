@@ -2,14 +2,13 @@
 
 (require mzlib/class
          mzlib/list
-         (lib "hierlist.ss" "hierlist")
+         mrlib/hierlist
          "sig.ss"
          "../preferences.ss"
          "../gui-utils.ss"
-         (lib "mred-sig.ss" "mred")
+         mred/mred-sig
          scheme/path
          string-constants)
-
 
 (import mred^
         [prefix finder: framework:finder^]

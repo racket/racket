@@ -6,7 +6,7 @@
            "../preferences.ss"
            "../gui-utils.ss"
            mzlib/etc
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
            scheme/path)
   
   (import mred^

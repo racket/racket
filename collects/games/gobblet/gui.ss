@@ -1,5 +1,5 @@
 (module gui mzscheme
-  (require (lib "gl-board.ss" "games" "gl-board-game")
+  (require games/gl-board-game/gl-board
            mzlib/class
 	   mred
            mzlib/file

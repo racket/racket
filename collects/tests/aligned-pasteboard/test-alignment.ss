@@ -3,7 +3,7 @@
  mzlib/etc
  mzlib/list
  mzlib/match
- (lib "private/aligned-pasteboard/alignment.ss" "mrlib"))
+ mrlib/private/aligned-pasteboard/alignment)
 
 ;; los-equal? ((listof rect?) (listof rect?) . -> . boolean?)
 ;; tests the equality of the list of structures

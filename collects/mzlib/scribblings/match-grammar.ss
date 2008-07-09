@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "scribblings/reference/match-parse.ss"))
+(require scribblings/reference/match-parse)
 
 (provide match-grammar)
 

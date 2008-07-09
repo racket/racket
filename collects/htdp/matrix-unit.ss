@@ -2,9 +2,9 @@
 
 (require htdp/matrix-sig
          htdp/matrix-render-sig
-         (lib "matrix-snip.ss" "mrlib")
+         mrlib/matrix-snip
          htdp/error
-         (lib "posn.ss" "lang")
+         lang/posn
          mzlib/class
          mzlib/pconvert
          mzlib/pretty)

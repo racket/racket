@@ -1,6 +1,6 @@
 #lang mzscheme
 
-(require (lib "gl-board.ss" "games" "gl-board-game")
+(require games/gl-board-game/gl-board
          mzlib/class
          mzlib/math
          mred
@@ -9,7 +9,7 @@
          sgl
          sgl/gl
          srfi/25/array
-         (lib "include-bitmap.ss" "mrlib")
+         mrlib/include-bitmap
          "honu-bitmaps.ss")
 (provide game@)
 

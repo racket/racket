@@ -3,7 +3,7 @@
   (require mzlib/class
            mred
            htdp/image
-           (lib "imageeq.ss" "lang" "private" ))
+           lang/private/imageeq)
   
   (provide to-symbol new-object call-back-canvas% overlay-x-y 
            inner->function image-eq? empty-list printer cons-l style-list)

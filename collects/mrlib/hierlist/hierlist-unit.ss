@@ -3,25 +3,25 @@
   (require (all-except mzlib/unit rename)
 	   mzlib/class
 	   mzlib/class100
-	   (lib "mred-sig.ss" "mred")
-	   (lib "include-bitmap.ss" "mrlib")
+	   mred/mred-sig
+	   mrlib/include-bitmap
 	   "hierlist-sig.ss")
 
   (require (rename mzlib/list sort* sort)
 	   mzlib/etc)
 
-  (define turn-up (include-bitmap "../icons/turn-up.png" 'png))
-  (define turn-down (include-bitmap "../icons/turn-down.png" 'png))
-  (define turn-up-click (include-bitmap "../icons/turn-up-click.png" 'png))
-  (define turn-down-click (include-bitmap "../icons/turn-down-click.png" 'png))
+  (define turn-up (include-bitmap "../../icons/turn-up.png" 'png))
+  (define turn-down (include-bitmap "../../icons/turn-down.png" 'png))
+  (define turn-up-click (include-bitmap "../../icons/turn-up-click.png" 'png))
+  (define turn-down-click (include-bitmap "../../icons/turn-down-click.png" 'png))
 
   (provide hierlist@)
   (define-unit hierlist@
     (import mred^)
     (export hierlist^)
     (init-depend mred^)
-    
-      (define-local-member-name 
+
+      (define-local-member-name
 	;; In hierarchical-list%
 	ensure-not-selected)
 
@@ -32,7 +32,7 @@
       (define blue (make-object brush% "BLUE" 'solid))
       (define black-xor (make-object brush% "BLACK" 'hilite))
       (define arrow-cursor (make-object cursor% 'arrow))
-      
+
       (define-values (up-bitmap down-bitmap up-click-bitmap down-click-bitmap)
 	(values turn-up turn-down turn-up-click turn-down-click))
 

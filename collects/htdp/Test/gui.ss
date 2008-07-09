@@ -1,7 +1,7 @@
 ;; The first three lines of this file were inserted by DrScheme. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
 #reader(lib "htdp-advanced-reader.ss" "lang")((modname gui) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ())))
-(require (lib "gui.ss" "htdp"))
+(require htdp/gui)
 
 ;; type in text, choose, click okay, watch message field change, close
 

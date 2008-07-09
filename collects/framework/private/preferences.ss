@@ -34,7 +34,7 @@ the state transitions / contracts are:
            "sig.ss"
            "../gui-utils.ss"
            "../preferences.ss"
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
 	   mzlib/list)
   
   (import mred^

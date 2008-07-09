@@ -298,7 +298,7 @@
    (eq? (ev "6") (ev "(sub1 (* 2 3.5))"))
    (eq? (ev "6") (ev "(sub1 (* 2 x))"))
    --top--
-   (set! ev (make-evaluator 'mzscheme '((lib "list.ss")) '()))
+   (set! ev (make-evaluator 'mzscheme '(mzlib/list) '()))
    --eval--
    (last-pair '(1 2 3)) => '(3)
    (last-pair null) =err> "expected argument of type"

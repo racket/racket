@@ -3,7 +3,7 @@
 
 (Section 'openssl)
 
-(require (lib "mzssl.ss" "openssl"))
+(require openssl/mzssl)
 
 (define pem (build-path (collection-path "openssl")
 			"test.pem"))

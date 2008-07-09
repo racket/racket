@@ -1,5 +1,5 @@
 #lang scheme/base
-(require (lib "request-structs.ss" "web-server" "private")
+(require web-server/private/request-structs
          net/url)
 (provide start)
 

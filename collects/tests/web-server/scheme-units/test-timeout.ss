@@ -1,7 +1,7 @@
 ;; Mike Burns, July 28th, 2004, netgeek@speakeasy.net
 ;; Test if the server does timeout
 (module test-timeout mzscheme
-  (require (lib "test.ss" "schemeunit")
+  (require schemeunit/test
            "assertions.ss"
            )
 

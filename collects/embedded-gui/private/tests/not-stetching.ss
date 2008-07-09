@@ -1,13 +1,13 @@
 (module not-stetching mzscheme
   
   (require
-   (lib "debug.ss" "mike-lib")
+   mike-lib/debug
    mzlib/class
    mzlib/etc
    mred
-   (lib "aligned-pasteboard.ss" "embedded-gui")
-   (lib "stretchable-editor-snip.ss" "embedded-gui")
-   (lib "verthoriz-alignment.ss" "embedded-gui"))
+   embedded-gui/aligned-pasteboard
+   embedded-gui/stretchable-editor-snip
+   embedded-gui/verthoriz-alignment)
   
   (define traced-ses%
     #;(override/trace stretchable-editor-snip%

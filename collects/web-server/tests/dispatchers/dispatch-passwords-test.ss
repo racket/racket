@@ -6,13 +6,13 @@
          net/url
          mzlib/list
          mzlib/serialize
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "dispatch.ss" "web-server" "dispatchers")
-         (prefix-in passwords: (lib "dispatch-passwords.ss" "web-server" "dispatchers"))
+         web-server/private/request-structs
+         web-server/dispatchers/dispatch
+         (prefix-in passwords: web-server/dispatchers/dispatch-passwords)
          "../util.ss")
 (provide dispatch-passwords-tests)
 
-(require/expose (lib "dispatch-passwords.ss" "web-server" "dispatchers")
+(require/expose web-server/dispatchers/dispatch-passwords
                 (read-passwords))
 
 (define default-passwords (build-path (collection-path "web-server") "default-web-root" "passwords"))

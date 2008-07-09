@@ -31,8 +31,8 @@
                  (read-loop (read-syntax temp-file file-port))))))
         (delete-file temp-file))))
   
-;  (require (lib "mz-testing.ss" "tests" "utils")
-;           (lib "sexp-diff.ss" "tests" "utils"))
+;  (require tests/utils/mz-testing
+;           tests/utils/sexp-diff)
 ; (test `((define a 13) 14 15 #f 1)
 ;       map
 ;       syntax-object->datum

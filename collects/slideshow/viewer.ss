@@ -10,7 +10,7 @@
 	   texpict/mrpict
 	   texpict/utils
 	   scheme/math
-	   (lib "include-bitmap.ss" "mrlib")
+	   mrlib/include-bitmap
 	   "sig.ss"
 	   "core.ss"
 	   "private/utils.ss")
@@ -1129,9 +1129,9 @@
       (refresh-page)
       
       (define slideshow-bm
-	(include-bitmap (lib "slideshow.png" "slideshow")))
+	(include-bitmap (lib "slideshow/slideshow.png")))
       (define slideshow-mbm
-	(include-bitmap (lib "mask.xbm" "slideshow")))
+	(include-bitmap (lib "slideshow/mask.xbm")))
 
       (let* ([bm slideshow-bm]
 	     [mbm slideshow-mbm])

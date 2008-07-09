@@ -14,7 +14,7 @@ the settings above should match r5rs
 #lang scheme
 
 (require "drscheme-test-util.ss"
-         (lib "gui.ss" "tests" "utils")
+         tests/utils/gui
          mred
          framework
          (prefix-in fw: framework))

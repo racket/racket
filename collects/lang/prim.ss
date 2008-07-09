@@ -5,11 +5,11 @@
 ;; See manual for more information.
 
 (module prim mzscheme
-  (require (lib "error.ss" "lang")
-	   (rename (lib "htdp-beginner.ss" "lang") beginner-app #%app))
+  (require lang/error
+	   (rename lang/htdp-beginner beginner-app #%app))
   
   (require-for-syntax "private/firstorder.ss"
-                      (lib "shared.ss" "stepper" "private"))
+                      stepper/private/shared)
   
   (provide define-primitive
 	   define-higher-order-primitive

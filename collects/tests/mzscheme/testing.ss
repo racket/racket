@@ -209,7 +209,7 @@ transcript.
     [(expr) (error-test expr exn:application:type?)]
     [(expr exn-type?) (thunk-error-test (lambda () (eval expr)) expr exn-type?)]))
 
-(require (only-in (lib "scheme") [lambda err:mz:lambda])) ; so err/rt-test works with beginner.ss
+(require (only-in scheme [lambda err:mz:lambda])) ; so err/rt-test works with beginner.ss
 (define-syntax err/rt-test
   (lambda (stx)
     (syntax-case stx ()

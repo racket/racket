@@ -2,8 +2,8 @@
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          mzlib/list
          net/url
-         (lib "servlet-url.ss" "web-server" "servlet")
-         (lib "request-structs.ss" "web-server" "private"))
+         web-server/servlet/servlet-url
+         web-server/private/request-structs)
 (provide servlet-url-tests)
 
 (define servlet-url-tests

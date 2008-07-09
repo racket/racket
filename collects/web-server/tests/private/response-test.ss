@@ -1,15 +1,15 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          (planet "util.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "xml.ss" "xml")
+         xml/xml
          (only-in mzlib/file
                   make-temporary-file)
-         (lib "response.ss" "web-server" "private")
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "response-structs.ss" "web-server" "private")
+         web-server/private/response
+         web-server/private/request-structs
+         web-server/private/response-structs
          "../util.ss")
 
-(require/expose (lib "response.ss" "web-server" "private")
+(require/expose web-server/private/response
                 (convert-http-ranges
                  make-content-length-header
                  make-content-range-header

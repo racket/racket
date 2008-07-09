@@ -1,7 +1,7 @@
 ;; This file is is used in the context of sandboxed code, it uses the
 ;; stacktrace interface from errortrace to find uncovered expressions.
 (module sandbox-coverage mzscheme
-  (require (lib "stacktrace.ss" "errortrace") mzlib/unit mzlib/list)
+  (require errortrace/stacktrace mzlib/unit mzlib/list)
 
   ;; Test coverage run-time support
   (define test-coverage-enabled (make-parameter #t))

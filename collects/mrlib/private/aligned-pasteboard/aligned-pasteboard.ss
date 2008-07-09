@@ -1,7 +1,7 @@
 (module aligned-pasteboard mzscheme
   
   (require
-   (lib "click-forwarding-editor.ss" "mrlib")
+   mrlib/click-forwarding-editor
    "geometry-managed-pasteboard.ss"
    "locked-pasteboard.ss")
   

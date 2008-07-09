@@ -1,5 +1,5 @@
-(require (lib "aligned-pasteboard.ss" "embedded-gui")
-         (lib "debug.ss" "mike-lib"))
+(require embedded-gui/aligned-pasteboard
+         mike-lib/debug)
 
 (define f (new frame% (label "f") (width 100) (height 100)))
 (define e (new text%))

@@ -2,7 +2,7 @@
  mzlib/class
  mred
  mzlib/etc
- (lib "aligned-pasteboard.ss" "mrlib"))
+ mrlib/aligned-pasteboard)
 
 (define frame (instantiate frame% () (label "big-min") (width 400) (height 500)))
 (define test-suite (instantiate vertical-pasteboard% ()))

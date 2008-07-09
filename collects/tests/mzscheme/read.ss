@@ -700,7 +700,7 @@
   (test a-special cadr v)
   (test b-special caddr v))
 
-(require (only-in (lib "mzlib/port.ss") [relocate-input-port relocate-input-port]))
+(require (only-in mzlib/port [relocate-input-port relocate-input-port]))
 (define (shift-port p count-lines? deltas)
   (let ([p (relocate-input-port p 
 				(add1 (car deltas))

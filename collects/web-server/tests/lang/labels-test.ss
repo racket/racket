@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "labels.ss" "web-server" "lang"))
+         web-server/lang/labels)
 (provide labels-tests)
 
 (define l1 (make-labeling #"foo"))

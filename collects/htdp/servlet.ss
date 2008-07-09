@@ -2,7 +2,7 @@
 #cs(module servlet mzscheme
      (require web-server/servlet-env
               htdp/error
-              (lib "xml.ss" "xml")
+              xml
               mzlib/etc)
      (provide (all-from web-server/servlet-env)
               (rename wrapped-build-suspender build-suspender))

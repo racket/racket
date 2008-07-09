@@ -1,7 +1,7 @@
 (module installer mzscheme
-  (require (lib "compile.ss" "profj")
-           (prefix colors: (lib "installer.ss" "htdch" "colors"))
-           (prefix geometry: (lib "installer.ss" "htdch" "geometry")))
+  (require profj/compile
+           (prefix colors: htdch/colors/installer)
+           (prefix geometry: htdch/geometry/installer))
   (provide installer)
   
   (define (mprintf . a)

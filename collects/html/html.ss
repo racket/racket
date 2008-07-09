@@ -6,10 +6,10 @@
 	   "html-unit.ss"
 	   "sgml-reader-sig.ss"
 	   "sgml-reader-unit.ss"
-	   (lib "xml.ss" "xml")
-	   (lib "xml-sig.ss" "xml")
-	   (lib "sig.ss" "xml" "private")
-	   (lib "xml-unit.ss" "xml"))
+	   xml/xml
+	   xml/xml-sig
+	   xml/private/sig
+	   xml/xml-unit)
 
   ;; To get read-comments from sgml-reader, we have to
   ;;  avoid the read-comments from XML, so we rename it

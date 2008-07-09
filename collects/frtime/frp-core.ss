@@ -6,7 +6,7 @@
            "erl.ss"
            "heap.ss")
   
-  (require-for-syntax (lib "struct-info.ss" "scheme"))
+  (require-for-syntax scheme/struct-info)
  
   
   

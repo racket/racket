@@ -4,7 +4,7 @@
            scheme/path
            setup/dirs
 	   mzlib/list
-	   (lib "variant.ss" "setup")
+	   setup/variant
 	   dynext/filename-version
 	   "private/macfw.ss"
 	   "private/windlldir.ss"

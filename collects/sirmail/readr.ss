@@ -14,7 +14,7 @@
   (require mzlib/unit
 	   mzlib/class
            mzlib/file
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
            framework
            mzlib/process)
 
@@ -33,13 +33,13 @@
 	   net/base64-sig
 	   net/mime-sig
 	   net/qp-sig
-           (lib "htmltext.ss" "browser"))
+           browser/htmltext)
 
-  (require (lib "hierlist-sig.ss" "hierlist"))
+  (require mrlib/hierlist/hierlist-sig)
 
   (require net/sendurl)
 
-  (require (lib "mzssl.ss" "openssl"))
+  (require openssl/mzssl)
 
   ;; Constant for messages without a title:
   (define no-subject-string "<No subject>")

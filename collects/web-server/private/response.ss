@@ -6,7 +6,7 @@
          mzlib/plt-match
          (only-in srfi/1/list fold filter-map)
          (only-in srfi/13/string string-join)
-         (lib "xml.ss" "xml")
+         xml/xml
          "connection-manager.ss"
          "../private/request-structs.ss"
          "../private/response-structs.ss"

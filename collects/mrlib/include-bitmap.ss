@@ -2,10 +2,10 @@
   (require mred
 	   mzlib/class
 	   mzlib/file
-           (lib "main-collects.ss" "setup"))
+           setup/main-collects)
   (require-for-syntax syntax/path-spec
 		      mzlib/cm-accomplice
-                      (lib "main-collects.ss" "setup"))
+                      setup/main-collects)
 
   (provide include-bitmap
            include-bitmap/relative-to)

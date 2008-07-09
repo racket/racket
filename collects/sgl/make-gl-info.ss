@@ -175,7 +175,7 @@ end-string
                  (provide (all-defined))
                  ,@(map 
                     (lambda (x)
-                      `(define ,x ,(dynamic-require '(lib "make-gl-info-helper.ss" "sgl") x)))
+                      `(define ,x ,(dynamic-require 'sgl/make-gl-info-helper x)))
                     '(gl-byte-size gl-ubyte-size gl-short-size gl-ushort-size
                       gl-int-size gl-uint-size gl-boolean-size gl-sizei-size
                       gl-bitfield-size gl-enum-size gl-float-size gl-double-size

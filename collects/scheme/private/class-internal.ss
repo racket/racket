@@ -11,7 +11,7 @@
                        syntax/name
                        syntax/context
                        syntax/define
-                       (lib "boundmap.ss" "syntax" "private")
+                       syntax/private/boundmap
                        mzlib/stxparam
                        "classidmap.ss"))
 

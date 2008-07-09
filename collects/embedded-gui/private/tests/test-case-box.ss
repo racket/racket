@@ -3,7 +3,7 @@
  mzlib/list
  mred
  mzlib/unitsig
- (lib "tool.ss" "drscheme")
+ drscheme/tool
  mzlib/etc
  mzlib/match
  framework

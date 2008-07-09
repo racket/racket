@@ -1,7 +1,7 @@
 #lang scheme/unit
 
   (require "sig.ss"
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
            mzlib/string
            mzlib/list)
   (import)

@@ -1,7 +1,7 @@
 
 (module sample-solutions-one-window mzscheme
   (require "drscheme-test-util.ss"
-           (lib "gui.ss" "tests" "utils")
+           tests/utils/gui
            mzlib/class
            mzlib/list
            mzlib/file

@@ -11,7 +11,7 @@ wraps the load of the module.)
 (module eopl-tool mzscheme
   (require mzlib/unit
 	   mzlib/class
-	   (lib "tool.ss" "drscheme")
+	   drscheme/tool
            string-constants)
   
   (provide tool@)
@@ -28,7 +28,7 @@ wraps the load of the module.)
 	    (list (string-constant teaching-languages)
                   "Essentials of Programming Languages (2nd ed.)"))
 	  (define/public (get-module)
-	    '(lib "eopl.ss" "eopl"))
+	    '(lib "eopl/eopl.ss"))
 	  (define/public (get-one-line-summary)
 	    "Based on the Friedman, Wand, and Haynes text")
           (define/public (get-language-url)

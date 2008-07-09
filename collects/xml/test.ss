@@ -2,7 +2,7 @@
 ;;  % mzscheme --require test.ss
 
 (module test mzscheme
-  (require (lib "xml.ss" "xml"))
+  (require xml/xml)
 
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

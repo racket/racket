@@ -10,7 +10,7 @@
   
   ;; to ensure this guy is loaded (and the snipclass installed) in the drscheme namespace & eventspace
   ;; these things are for effect only!
-  (require (lib "cache-image-snip.ss" "mrlib")
+  (require mrlib/cache-image-snip
            #;
            (prefix foo htdp/matrix))
   

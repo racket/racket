@@ -4,11 +4,11 @@
 (module sirmail mzscheme
   (require mzlib/unit
 	   mzlib/class
-	   (lib "mred-sig.ss" "mred")
+	   mred/mred-sig
 	   mred
            framework
 	   mzlib/list)
-  
+
   (require "sirmails.ss"
 	   "pref.ss"
 	   "sirmailr.ss")
@@ -26,8 +26,8 @@
 	   net/mime
 	   net/qp)
 
-  (require (lib "hierlist-sig.ss" "hierlist")
-	   (lib "hierlist.ss" "hierlist"))
+  (require mrlib/hierlist/hierlist-sig
+	   mrlib/hierlist)
 
   ;; For testing purposes, cause GC accounting to be
   ;;  enabled:

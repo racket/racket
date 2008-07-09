@@ -1,7 +1,7 @@
 
 (module sirmailr mzscheme
   (require mzlib/unit
-	   (lib "mred-sig.ss" "mred"))
+	   mred/mred-sig)
 
   (require "sirmails.ss")
 
@@ -12,7 +12,7 @@
            net/mime-sig
            net/qp-sig)
   
-  (require (lib "hierlist-sig.ss" "hierlist"))
+  (require mrlib/hierlist/hierlist-sig)
   
   (require "utilr.ss"
            "optionr.ss"

@@ -3,8 +3,8 @@
  mzlib/etc
  mzlib/class
  mred
- (lib "private/aligned-pasteboard/pasteboard-lib.ss" "mrlib")
- (lib "aligned-pasteboard.ss" "mrlib"))
+ mrlib/private/aligned-pasteboard/pasteboard-lib
+ mrlib/aligned-pasteboard)
 
 ;; pasteboard-root: ((is-a?/c aligned-pasteboard<%>) -> (is-a?/c aligned-pasteboard<%>))
 ;; gets the top most aligned pasteboard in the tree of pasteboards and containers

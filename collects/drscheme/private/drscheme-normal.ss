@@ -78,8 +78,8 @@
       (set! key-codes (take key-codes longest-magic-string))))
   
   (let ([set-splash-bitmap
-         (dynamic-require '(lib "splash.ss" "framework") 'set-splash-bitmap)])
-    ((dynamic-require '(lib "splash.ss" "framework") 'set-splash-char-observer)
+         (dynamic-require 'framework/splash 'set-splash-bitmap)])
+    ((dynamic-require 'framework/splash 'set-splash-char-observer)
      (λ (evt)
        (let ([ch (send evt get-key-code)])
          (when (char? ch)
@@ -137,7 +137,7 @@
           [(< angle 0) (normalize-angle (+ angle (* 2 pi)))]
           [else (normalize-angle (- angle (* 2 pi)))]))
       
-      (define splash-canvas ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-canvas)))
+      (define splash-canvas ((dynamic-require 'framework/splash 'get-splash-canvas)))
       (define (draw-single-step dc offset)
         (send bdc draw-bitmap eli 0 0)
         (draw-single-loop omega-str bdc offset (/ main-size 2) (/ main-size 2) 120 32 outer-color)
@@ -184,7 +184,7 @@
       (define (eli-event evt)
         (cond
           [(send evt leaving?)
-           ((dynamic-require '(lib "splash.ss" "framework") 'set-splash-paint-callback) orig-paint)
+           ((dynamic-require 'framework/splash 'set-splash-paint-callback) orig-paint)
            (when gc-b
              (unregister-collecting-blit splash-canvas))
            (send splash-canvas refresh)
@@ -192,7 +192,7 @@
              (kill-thread draw-thread)
              (set! draw-thread #f))]
           [(send evt entering?)
-           ((dynamic-require '(lib "splash.ss" "framework") 'set-splash-paint-callback) eli-paint)
+           ((dynamic-require 'framework/splash 'set-splash-paint-callback) eli-paint)
            (when gc-b
              (register-collecting-blit splash-canvas 
                                        (floor (- (/ main-size 2)
@@ -206,7 +206,7 @@
            (unless draw-thread
              (start-thread))]))
       
-      (define splash-eventspace ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-eventspace)))
+      (define splash-eventspace ((dynamic-require 'framework/splash 'get-splash-eventspace)))
       (define draw-next-state
         (let ([o 0])
           (lambda ()
@@ -231,13 +231,13 @@
                    (draw-next-state)
                    (sleep .01)
                    (loop))))))
-      (define orig-paint ((dynamic-require '(lib "splash.ss" "framework") 'get-splash-paint-callback)))
+      (define orig-paint ((dynamic-require 'framework/splash 'get-splash-paint-callback)))
       
       (draw-next-state)
-      ((dynamic-require '(lib "splash.ss" "framework") 'set-splash-event-callback) eli-event)
+      ((dynamic-require 'framework/splash 'set-splash-event-callback) eli-event)
       (send splash-canvas refresh)))
   
-  ((dynamic-require '(lib "splash.ss" "framework") 'start-splash)
+  ((dynamic-require 'framework/splash 'start-splash)
    (build-path (collection-path "icons") 
                (cond
                  [texas-independence-day?
@@ -267,8 +267,8 @@
                        (label "Break All Threads")
                        (callback
                         (λ (x y)
-                          ((dynamic-require '(lib "key.ss" "drscheme" "private") 'break-threads))))
+                          ((dynamic-require 'drscheme/private/key 'break-threads))))
                        (parent f))])
           (send f show #t)))))
 
-  (dynamic-require '(lib "tool-lib.ss" "drscheme") #f))
+  (dynamic-require 'drscheme/tool-lib #f))

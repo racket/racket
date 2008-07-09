@@ -5,11 +5,11 @@
                   make-temporary-file)
          net/url
          mzlib/list
-         (lib "xml.ss" "xml")
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "util.ss" "web-server" "private")
-         (lib "dispatch.ss" "web-server" "dispatchers")
-         (prefix-in files: (lib "dispatch-files.ss" "web-server" "dispatchers"))
+         xml/xml
+         web-server/private/request-structs
+         web-server/private/util
+         web-server/dispatchers/dispatch
+         (prefix-in files: web-server/dispatchers/dispatch-files)
          "../util.ss")
 (provide dispatch-files-tests)
 

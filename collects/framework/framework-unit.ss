@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require mzlib/unit
-         (lib "mred-sig.ss" "mred"))
+         mred/mred-sig)
 
 (require "private/sig.ss"
          "private/number-snip.ss"

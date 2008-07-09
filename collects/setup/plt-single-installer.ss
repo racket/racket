@@ -6,8 +6,8 @@
 	   "option-sig.ss"
 	   "setup-unit.ss"
 	   "option-unit.ss"
-	   (lib "launcher-sig.ss" "launcher")
-	   (lib "launcher-unit.ss" "launcher")
+	   launcher/launcher-sig
+	   launcher/launcher-unit
 	   dynext/dynext-sig
 	   dynext/dynext-unit
 	   compiler/sig

@@ -74,11 +74,7 @@ all of the names in the tools library, for use defining keybindings
        created empty namespace. This namespace has the following modules 
        copied (with @scheme[namespace-attach-module])
        from DrScheme's original namespace:
-       @itemize{
-       @item{ @scheme['mzscheme]
-       }@item{ @scheme['(lib "mred.ss" "mred")]
-       }}
-     
+       @itemize{@item{@scheme['mzscheme]}@item{@scheme['mred]}}
      }@item{
        @scheme[read-curly-brace-as-paren]
        is @scheme[#t],

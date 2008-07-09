@@ -37,7 +37,7 @@
 (define log-file (make-parameter #f))
 (define-for-syntax logging? #f)
 
-(require (only-in (lib "file.ss") file-name-from-path))
+(require (only-in mzlib/file file-name-from-path))
 
 (define-syntax (printf/log stx)
   (if logging?         

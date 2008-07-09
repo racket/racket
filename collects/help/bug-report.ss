@@ -9,7 +9,7 @@
            mzlib/list
            net/url
            net/uri-codec
-           (lib "htmltext.ss" "browser")
+           browser/htmltext
            setup/dirs
            "private/buginfo.ss")
 

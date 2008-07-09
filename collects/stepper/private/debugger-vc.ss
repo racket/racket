@@ -1,6 +1,6 @@
 (module debugger-vc mzscheme
   (require mzlib/unitsig
-           (lib "debugger-sig.ss" "stepper")
+           stepper/debugger-sig
            mred
            mzlib/class
            framework

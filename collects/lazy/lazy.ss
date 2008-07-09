@@ -1,6 +1,6 @@
 (module lazy mzscheme
 
-  (require-for-syntax (lib "shared.ss" "stepper" "private"))
+  (require-for-syntax stepper/private/shared)
 
   ;; ~ = lazy (or delayed)
   ;; ! = strict (or forced)

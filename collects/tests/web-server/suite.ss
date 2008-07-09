@@ -14,8 +14,8 @@
            mzlib/etc
            "my-url.ss"
            net/base64
-           (lib "xml.ss" "xml")
-           (lib "channel.ss" "web-server"))
+           xml/xml
+           web-server/channel)
 
   (define myprint void)
   

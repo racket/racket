@@ -7,7 +7,7 @@ Various common pieces of code that both the client and server need to access
   
   (require (only-in mzlib/file path-only)
 	   mzlib/port
-           (lib "getinfo.ss" "setup")
+           setup/getinfo
            (prefix-in srfi1: srfi/1)
            "../config.ss"
            "data.ss")

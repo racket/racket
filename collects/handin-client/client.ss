@@ -1,5 +1,5 @@
 (module client mzscheme
-  (require (lib "mzssl.ss" "openssl") "this-collection.ss")
+  (require openssl/mzssl "this-collection.ss")
 
   (provide handin-connect
 	   handin-disconnect

@@ -15,7 +15,7 @@ pict snip :
 |#
 
 (module tool mzscheme
-  (require (lib "tool.ss" "drscheme")
+  (require drscheme/tool
            mred
            mzlib/class
            mzlib/unit
@@ -23,7 +23,7 @@ pict snip :
            string-constants
            framework
            texpict/mrpict
-           (lib "pict-value-snip.ss" "texpict")
+           texpict/pict-value-snip
            mzlib/list
            "private/pict-box-lib.ss"
            "private/image-snipr.ss")
@@ -330,9 +330,9 @@ pict snip :
       (define orig-namespace (current-namespace))
       
       (define (pict->image-snip p)
-        (let* ([pict-width (dynamic-require '(lib "texpict/mrpict.ss") 'pict-width)]
-               [pict-height (dynamic-require '(lib "texpict/mrpict.ss") 'pict-height)]
-               [draw-pict (dynamic-require '(lib "texpict/mrpict.ss") 'draw-pict)]
+        (let* ([pict-width  (dynamic-require 'texpict/mrpict 'pict-width)]
+               [pict-height (dynamic-require 'texpict/mrpict 'pict-height)]
+               [draw-pict   (dynamic-require 'texpict/mrpict 'draw-pict)]
                [bm (make-object bitmap%
                      (max 1 (add1 (inexact->exact (ceiling (pict-width p)))))
                      (max 1 (add1 (inexact->exact (ceiling (pict-height p))))))]
@@ -350,7 +350,7 @@ pict snip :
          ;; this can happen when, for example, there is no mred module
          ;; in the namespace
          (let ([pict? (with-handlers ((exn? (λ (x) #f)))
-                        (dynamic-require '(lib "texpict/mrpict.ss") 'pict?))])
+                        (dynamic-require 'texpict/mrpict 'pict?))])
            (and pict?
                 (pict? x))))
        ;; Converter:
@@ -359,7 +359,7 @@ pict snip :
        (λ () 
          (with-handlers ((exn? void))
            ;; code running in this thunk cannot fail, or else drscheme gets wedged.
-           (dynamic-require '(lib "texpict/mrpict.ss") #f))))
+           (dynamic-require 'texpict/mrpict #f))))
         
       (define lib-pict-snipclass (make-object lib-pict-snipclass%))
       (send lib-pict-snipclass set-version 2)

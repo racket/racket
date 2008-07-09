@@ -2,9 +2,9 @@
   (require mzlib/unit
            "plt-installer-sig.ss"
            "plt-installer-unit.ss"
-           (lib "mred-unit.ss" "mred")
-           (lib "mred-sig.ss" "mred"))
-  
+           mred/mred-unit
+           mred/mred-sig)
+
   (provide-signature-elements setup:plt-installer^)
   (define-compound-unit/infer plt-installer+mred@ 
     (import) (export setup:plt-installer^)

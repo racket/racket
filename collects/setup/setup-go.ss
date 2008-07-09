@@ -28,8 +28,8 @@
   (archives x-archives)
   (specific-planet-dirs x-specific-planet-packages)
 
-  (require (lib "launcher-sig.ss" "launcher")
-	   (lib "launcher-unit.ss" "launcher")
+  (require launcher/launcher-sig
+	   launcher/launcher-unit
 
 	   dynext/dynext-sig
 	   dynext/dynext-unit)

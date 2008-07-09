@@ -6,8 +6,8 @@
            "gui.ss"
 
            mzlib/class
-           (lib "xml.ss" "xml")
-           (lib "htmltext.ss" "browser")
+           xml
+           browser/htmltext
            mred)
 
   (define board-size 250)

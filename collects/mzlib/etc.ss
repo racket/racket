@@ -1,6 +1,6 @@
 #lang mzscheme
 
-(require (lib "main-collects.ss" "setup")
+(require setup/main-collects
          scheme/local
          scheme/bool
          (only scheme/base
@@ -14,7 +14,7 @@
 (require-for-syntax syntax/kerncase
                     syntax/stx
                     syntax/name
-                    (lib "main-collects.ss" "setup")
+                    setup/main-collects
                     "private/stxset.ss")
 
 (provide boolean=? symbol=?

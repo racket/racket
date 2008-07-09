@@ -6,9 +6,9 @@
          mzlib/pretty
          (only-in mzlib/file
                   make-directory*)
-         (lib "configuration-table-structs.ss" "web-server" "configuration")
+         web-server/configuration/configuration-table-structs
          web-server/configuration/configuration-table
-         (lib "util.ss" "web-server" "private"))
+         web-server/private/util)
 (provide
  interface-version timeout
  start)

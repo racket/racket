@@ -1,5 +1,5 @@
 (require mzlib/unitsig
-         (lib "servlet-sig.ss" "web-server")
+         web-server/servlet-sig
          net/url)
 (let ([count 0])
   (unit/sig ()

@@ -672,7 +672,7 @@
   (keybindings-error-installing-file "Erreur durant l'installation des raccourcis clavier provenants du fichier PLaneT ~a:\n\n~a")
   
   (user-defined-keybinding-error "Erreur durant l'exécution du raccourci clavier ~a\n\n~a")
-  (user-defined-keybinding-malformed-file "Le fichier ~a ne contient pas un module écrit dans le langage (lib \"keybinding-lang.ss\" \"framework\").")  
+  (user-defined-keybinding-malformed-file "Le fichier ~a ne contient pas un module écrit dans le langage framework/keybinding-lang.")  
   
   ;; menu items in the "special" menu
   (insert-text-box-item "Insérer une boite texte")

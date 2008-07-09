@@ -1,13 +1,13 @@
 (module other-plt-tests mzscheme
   
   (require (planet "test-compat2.ss" ("schematics" "schemeunit.plt" 2 10)))
-  (require (lib "uri-codec.ss" "net"))
-  (require (lib "pregexp.ss"))
+  (require net/uri-codec)
+  (require mzlib/pregexp)
   
   (require mzlib/plt-match)
   
-  (require (lib "list.ss")
-           (lib "etc.ss"))
+  (require mzlib/list
+           mzlib/etc)
   
   (define-struct shape (color))
   (define-struct (ovoid shape) (x-diam y-diam))

@@ -6,7 +6,7 @@
            mzlib/contract
            mred
            mzlib/match
-           (lib "tool.ss" "drscheme")
+           drscheme/tool
            "marks.ss"
            mrlib/switchable-button
            mrlib/bitmap-label
@@ -14,7 +14,7 @@
            "load-sandbox.ss"
            framework
            string-constants
-           (lib "debugger-language-interface.ss" "lang"))
+           lang/debugger-language-interface)
   
   (provide tool@)
   

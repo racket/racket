@@ -1,6 +1,6 @@
 (module profj-testing scheme
   
-  (require (lib "compile.ss" "profj")
+  (require profj/compile
            (lib "parameters.ss" "profj")
            (lib "display-java.ss" "profj")
            mzlib/class)

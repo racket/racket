@@ -1,9 +1,9 @@
 (module browser mzscheme
   (require mzlib/unit
            mred
-           (lib "mred-sig.ss" "mred")
-           (lib "plt-installer-sig.ss" "setup")
-           (lib "plt-installer.ss" "setup")
+           mred/mred-sig
+           setup/plt-installer-sig
+           setup/plt-installer
            net/tcp-sig
            net/url-sig
            net/url

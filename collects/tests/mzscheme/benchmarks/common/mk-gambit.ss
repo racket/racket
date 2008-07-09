@@ -1,5 +1,5 @@
 
-(require (lib "mzlib/process.ss"))
+(require mzlib/process)
 
 (define name (vector-ref (current-command-line-arguments) 0))
 

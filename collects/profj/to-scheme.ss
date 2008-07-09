@@ -6,7 +6,7 @@
            "parameters.ss"
            scheme/class
            mzlib/etc
-           (prefix-in int-set: (lib "integer-set.ss"))
+           (prefix-in int-set: mzlib/integer-set)
            )
   
   (provide translate-program translate-interactions (struct-out compilation-unit))

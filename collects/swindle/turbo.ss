@@ -30,7 +30,7 @@
        (list* (quote-syntax #%plain-module-begin)
               (datum->syntax-object stx
                                     (list (quote-syntax require-for-syntax)
-                                          '(lib "turbo.ss" "swindle")))
+                                          'swindle/turbo))
               (cdr e))
        stx)
       (raise-syntax-error #f "bad syntax" stx)))
@@ -38,5 +38,5 @@
   ;; (syntax-rules ()
   ;;   [(_ . body)
   ;;    (#%plain-module-begin
-  ;;     (require-for-syntax (lib "turbo.ss" "swindle")) . body)])
+  ;;     (require-for-syntax swindle/turbo) . body)])
   )

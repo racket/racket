@@ -12,13 +12,13 @@ add this test:
 
 (module io mzscheme
   (require "drscheme-test-util.ss"
-           (lib "gui.ss" "tests" "utils")
+           tests/utils/gui
            mzlib/class
            mzlib/list
            mzlib/pretty
            mred
            framework
-           (lib "text-string-style-desc.ss" "mrlib")
+           mrlib/text-string-style-desc
            (prefix fw: framework))
   
   (provide run-test)

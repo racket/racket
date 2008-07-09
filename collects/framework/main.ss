@@ -1,8 +1,8 @@
 #reader scribble/reader
 #lang scheme/gui
 
-(require (lib "mred-unit.ss" "mred")
-         (lib "mred-sig.ss" "mred")
+(require mred/mred-unit
+         mred/mred-sig
          framework/framework-unit
          framework/private/sig
          (for-syntax scheme/base)

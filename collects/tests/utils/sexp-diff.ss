@@ -1,5 +1,5 @@
 (module sexp-diff mzscheme
-  (require (lib "mz-testing.ss" "tests" "utils"))
+  (require tests/utils/mz-testing)
 
   (define-syntax (test-begin stx)
     (syntax-case stx ()

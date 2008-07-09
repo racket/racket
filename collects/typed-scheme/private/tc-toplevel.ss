@@ -23,7 +23,7 @@
          "type-contract.ss"
          (for-template
           "internal-forms.ss"
-          (lib "contract.ss")
+          mzlib/contract
           scheme/base))
 
 (import tc-expr^ check-subforms^)

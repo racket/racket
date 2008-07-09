@@ -637,7 +637,7 @@ please adhere to these guidelines:
   (keybindings-error-installing-file "Error when installing the keybindings ~a:\n\n~a")
   
   (user-defined-keybinding-error "Fejl ved kørsel af brugerdefineret tastebinding ~a\n\n~a")
-  (user-defined-keybinding-malformed-file "Filen ~a indeholder ikke et modul skrevet i sproget (lib \"keybinding-lang.ss\" \"framework\").")  
+  (user-defined-keybinding-malformed-file "Filen ~a indeholder ikke et modul skrevet i sproget framework/keybinding-lang.")  
   
   ;; menu items in the "special" menu
   (insert-text-box-item "Indsæt tekstkasse")

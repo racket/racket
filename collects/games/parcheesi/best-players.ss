@@ -700,7 +700,7 @@ another new board representation (vector of loc's)
                       (cdr ents))])))
     
     #;
-    (require (lib "xml.ss" "xml")
+    (require xml
              "parse.ss")
     #;
     (define (dump-out-candidates candidates)

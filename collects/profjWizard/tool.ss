@@ -4,8 +4,8 @@
            "view.scm"
            "draw-txt.ss"
            "data-defs.scm"
-           (lib "tool.ss" "drscheme")
-           (only (lib "drsig.ss" "drscheme" "private") drscheme:language-configuration^)
+           drscheme/tool
+           (only drscheme/private/drsig drscheme:language-configuration^)
            framework
            mred
            mzlib/unit 

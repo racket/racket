@@ -6,7 +6,7 @@
 (define insp (current-inspector))
 (current-inspector (make-inspector))
 
-(require (lib "mysterx.ss" "mysterx"))
+(require mysterx)
 
 (current-inspector insp)
 

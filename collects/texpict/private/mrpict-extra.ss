@@ -4,7 +4,7 @@
   (require mzlib/class
            mzlib/etc)
 
-  (require (lib "mred-sig.ss" "mred"))
+  (require mred/mred-sig)
 
   (require "mrpict-sig.ss"
 	   "common-sig.ss")

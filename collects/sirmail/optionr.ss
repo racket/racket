@@ -4,7 +4,7 @@
 	   mzlib/string)
 
   (require net/imap-sig
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
 	   framework)
 
   (require "sirmails.ss"

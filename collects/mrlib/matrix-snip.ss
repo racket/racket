@@ -2,7 +2,7 @@
 
 (require mzlib/class
          mzlib/string
-         (lib "cache-image-snip.ss" "mrlib"))
+         mrlib/cache-image-snip)
 
 (provide visible-matrix%
          matrix-snip-class%

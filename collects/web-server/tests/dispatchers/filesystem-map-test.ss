@@ -1,8 +1,8 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
-         (lib "util.ss" "web-server" "private")
-         (lib "filesystem-map.ss" "web-server" "dispatchers"))
+         web-server/private/util
+         web-server/dispatchers/filesystem-map)
 (provide filesystem-map-tests)
 
 (define base-dir (collection-path "web-server"))

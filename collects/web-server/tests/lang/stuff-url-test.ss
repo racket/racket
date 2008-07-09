@@ -1,9 +1,9 @@
 #lang scheme/base
-(require (lib "stuff-url.ss" "web-server" "lang")
+(require web-server/lang/stuff-url
          (planet "test.ss" ("schematics" "schemeunit.plt" 2))
          net/url
          mzlib/serialize
-         "../util.ss")  
+         "../util.ss")
 (provide stuff-url-tests)
 
 (define uri0 (string->url "www.google.com"))  

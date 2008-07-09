@@ -2,28 +2,28 @@
   (require (for-syntax scheme/base)
            scheme/promise
            mzlib/class
-           (lib "include-bitmap.ss" "mrlib")
+           mrlib/include-bitmap
            "bday.ss"
            "sig.ss"
-           (lib "mred-sig.ss" "mred"))
+           mred/mred-sig)
   
   (import mred^)
   (export framework:icon^)
   
-  (define eof-bitmap (delay (include-bitmap (lib "eof.gif" "icons"))))
+  (define eof-bitmap (delay (include-bitmap (lib "icons/eof.gif"))))
   (define (get-eof-bitmap) (force eof-bitmap))
   
-  (define anchor-bitmap (delay (include-bitmap (lib "anchor.gif" "icons"))))
+  (define anchor-bitmap (delay (include-bitmap (lib "icons/anchor.gif"))))
   (define (get-anchor-bitmap) (force anchor-bitmap))
   
-  (define lock-bitmap (delay (include-bitmap (lib "lock.gif" "icons"))))
+  (define lock-bitmap (delay (include-bitmap (lib "icons/lock.gif"))))
   (define (get-lock-bitmap) (force lock-bitmap))
-  (define unlock-bitmap (delay (include-bitmap (lib "unlock.gif" "icons"))))
+  (define unlock-bitmap (delay (include-bitmap (lib "icons/unlock.gif"))))
   (define (get-unlock-bitmap) (force unlock-bitmap))
   
-  (define autowrap-bitmap (delay (include-bitmap (lib "return.xbm" "icons"))))
+  (define autowrap-bitmap (delay (include-bitmap (lib "icons/return.xbm"))))
   (define (get-autowrap-bitmap) (force autowrap-bitmap))
-  (define paren-highlight-bitmap (delay (include-bitmap (lib "paren.xbm" "icons"))))
+  (define paren-highlight-bitmap (delay (include-bitmap (lib "icons/paren.xbm"))))
   (define (get-paren-highlight-bitmap) (force paren-highlight-bitmap))
   
   (define-syntax (make-get-cursor stx)
@@ -46,8 +46,8 @@
   (define get-up/down-cursor (make-get-cursor "up-down-cursor.xbm" "up-down-mask.xbm" 'size-n/s))
   (define get-left/right-cursor (make-get-cursor "left-right-cursor.xbm" "left-right-mask.xbm" 'size-e/w))
   
-  (define mrf-on-bitmap (delay (include-bitmap (lib "mrf.png" "icons"))))
-  (define gc-on-bitmap (delay (include-bitmap (lib "recycle.png" "icons"))))
+  (define mrf-on-bitmap (delay (include-bitmap (lib "icons/mrf.png"))))
+  (define gc-on-bitmap (delay (include-bitmap (lib "icons/recycle.png"))))
   
   (define (make-off-bitmap onb)
     (let* ([bitmap (make-object bitmap%

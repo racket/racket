@@ -1,7 +1,7 @@
 #cs(module master-play mzscheme
   (require 
    "master.ss"
-   (lib "prim.ss" "lang"))
+   lang/prim)
   
   (provide go)
   (define-primitive go go/proc)

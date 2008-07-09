@@ -5,12 +5,12 @@
                   make-temporary-file)
          net/url
          mzlib/list
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "dispatch.ss" "web-server" "dispatchers")
-         (prefix-in host: (lib "dispatch-host.ss" "web-server" "dispatchers")))
+         web-server/private/request-structs
+         web-server/dispatchers/dispatch
+         (prefix-in host: web-server/dispatchers/dispatch-host))
 (provide dispatch-host-tests)
 
-(require/expose (lib "dispatch-host.ss" "web-server" "dispatchers")
+(require/expose web-server/dispatchers/dispatch-host
                 (get-host))
 
 (define lower-url (make-url #f #f "www.plt-scheme.org" #f #t empty empty #f))

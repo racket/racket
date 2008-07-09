@@ -10,7 +10,7 @@
 ;;      (current-print pretty-print-handler)
 
 (module pretty mzscheme
-   (require (lib "port.ss" "mzlib" "private"))
+   (require mzlib/private/port)
 
    (provide pretty-print
 	    pretty-display

@@ -7,7 +7,7 @@
 	   mzlib/list
 	   mzlib/string
 	   "sgml-reader-sig.ss"
-	   (lib "sig.ss" "xml" "private"))
+	   xml/private/sig)
 
   (provide sgml-reader@)
 

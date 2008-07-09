@@ -5,7 +5,7 @@ exec mzscheme -qu "$0" ${1+"$@"}
 
 (module tabulate mzscheme
   (require mzlib/list
-           (lib "xml.ss" "xml")
+           xml/xml
            mzlib/cmdline)
 
   (define base-link-filename (make-parameter #f))

@@ -21,9 +21,9 @@ module browser threading seems wrong.
            (only-in mzlib/etc compose)
            string-constants
            framework
-           (lib "name-message.ss" "mrlib")
-           (lib "bitmap-label.ss" "mrlib")
-           (lib "include-bitmap.ss" "mrlib")
+           mrlib/name-message
+           mrlib/bitmap-label
+           mrlib/include-bitmap
            "drsig.ss"
            "auto-language.ss"
            "insert-large-letters.ss"
@@ -3592,9 +3592,9 @@ module browser threading seems wrong.
         (set! newest-frame this)
         (send definitions-canvas focus)))
     
-    (define running-bitmap (include-bitmap (lib "b-run.png" "icons")))
-    (define waiting-bitmap (include-bitmap (lib "b-wait.png" "icons")))
-    (define waiting2-bitmap (include-bitmap (lib "b-wait2.png" "icons")))
+    (define running-bitmap (include-bitmap (lib "icons/b-run.png")))
+    (define waiting-bitmap (include-bitmap (lib "icons/b-wait.png")))
+    (define waiting2-bitmap (include-bitmap (lib "icons/b-wait2.png")))
     (define running/waiting-bitmaps (list running-bitmap waiting-bitmap waiting2-bitmap))
     (define running-canvas%
       (class canvas%

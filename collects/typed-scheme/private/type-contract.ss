@@ -124,5 +124,5 @@
              #`syntax?
              #`(syntax/c #,(t->c t)))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
-        [else          
+        [else
          (exit (fail))]))))

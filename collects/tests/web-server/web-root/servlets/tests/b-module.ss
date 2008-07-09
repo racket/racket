@@ -1,6 +1,6 @@
 (module b-module mzscheme
   (provide interface-version timeout start)
-  (require (lib "servlet-sig.ss" "web-server"))
+  (require web-server/servlet-sig)
   
   (define interface-version 'v1)
   

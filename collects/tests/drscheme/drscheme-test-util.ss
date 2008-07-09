@@ -6,13 +6,13 @@
 
 (module drscheme-test-util mzscheme
   (require (prefix fw: framework)
-           (lib "hierlist.ss" "hierlist")
+           mrlib/hierlist
            mred
            mzlib/class
            mzlib/list
            mzlib/contract
            mzlib/etc
-           (lib "gui.ss" "tests" "utils")
+           tests/utils/gui
            mzlib/contract)
 
   (provide/contract 

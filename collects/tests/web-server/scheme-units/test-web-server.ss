@@ -1,9 +1,9 @@
 ;; Mike Burns, July 26th, 2004, netgeek@speakeasy.net
 ;; Test the ability to start and stop the server via the library.
 (module test-web-server mzscheme
-  (require (lib "web-server.ss" "web-server")
-           (lib "configuration.ss" "web-server")
-           (lib "test.ss" "schemeunit")
+  (require web-server/web-server
+           web-server/configuration
+           schemeunit/test
            mzlib/etc)
 
   (provide test-web-server)

@@ -30,8 +30,8 @@
          dynext/compile
          dynext/link
          scheme/pretty
-         (lib "pack.ss" "setup")
-         (lib "getinfo.ss" "setup")
+         setup/pack
+         setup/getinfo
          setup/dirs)
 
 (define dest-dir (make-parameter #f))
@@ -511,11 +511,11 @@
    (unless (= 1 (length source-files))
      (error 'mzc "expected a single module source file to embed; given: ~e"
             source-files))
-   (let ([dest ((dynamic-require '(lib "embed.ss" "compiler" "private")
+   (let ([dest ((dynamic-require 'compiler/private/embed
                                  'mzc:embedding-executable-add-suffix)
                 (exe-output)
                 (eq? mode 'gui-exe))])
-     ((dynamic-require '(lib "embed.ss" "compiler" "private")
+     ((dynamic-require 'compiler/private/embed
                        'mzc:create-embedding-executable)
       dest
       #:mred? (eq? mode 'gui-exe)
@@ -542,7 +542,7 @@
    (let ([dest (mods-output)])
      (let-values ([(in out) (make-pipe)])
        (parameterize ([current-output-port out])
-         ((dynamic-require '(lib "embed.ss" "compiler") 'write-module-bundle)
+         ((dynamic-require 'compiler/embed 'write-module-bundle)
           #:modules
           (append (map (lambda (l) `(#f (file ,l))) source-files)
              (map (lambda (l) `(#t (lib ,l))) (exe-embedded-libraries)))))

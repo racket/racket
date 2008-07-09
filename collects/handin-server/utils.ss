@@ -2,7 +2,7 @@
   (require mzlib/list
            mzlib/class
            mred
-           (lib "posn.ss" "lang")
+           lang/posn
            (prefix pc: mzlib/pconvert)
            mzlib/pretty
            (only "main.ss" timeout-control)

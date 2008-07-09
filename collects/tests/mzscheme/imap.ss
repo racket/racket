@@ -10,7 +10,7 @@
 
 (Section 'imap)
 
-(require (lib "mzssl.ss" "openssl")
+(require openssl/mzssl
 	 net/imap
 	 mzlib/etc)
 

@@ -161,7 +161,7 @@
                           (context-record-index cr)
                           (context-record-kind cr)))
   
-  (test-begin (require (lib "mz-testing.ss" "tests" "utils")))
+  (test-begin (require tests/utils/mz-testing))
   
   (test-begin (SECTION 'stepper-lifting))
 

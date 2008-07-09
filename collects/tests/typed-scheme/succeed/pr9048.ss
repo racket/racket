@@ -2,7 +2,7 @@
 
 (module source mzscheme
 
-    (require (lib "contract.ss"))
+    (require mzlib/contract)
 
     (define-struct ast (loc))
 

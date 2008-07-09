@@ -9,8 +9,8 @@
 #lang scheme
 (require string-constants
            framework
-           (prefix-in et: (lib "stacktrace.ss" "errortrace"))
-           (prefix-in tr: (lib "stacktrace.ss" "trace"))
+           (prefix-in et: errortrace/stacktrace)
+           (prefix-in tr: trace/stacktrace)
            mzlib/pretty
            (prefix-in pc: mzlib/pconvert)
            mzlib/file
@@ -20,13 +20,13 @@
            mzlib/struct
            mzlib/compile
            mzlib/struct
-           (lib "tool.ss" "drscheme")
+           drscheme/tool
            mred
-           (lib "bday.ss" "framework" "private")
+           framework/private/bday
            syntax/moddep
-           (lib "cache-image-snip.ss" "mrlib")
+           mrlib/cache-image-snip
            compiler/embed
-           (lib "wxme.ss" "wxme")
+           wxme/wxme
            setup/dirs
            
            ;; this module is shared between the drscheme's namespace (so loaded here) 
@@ -40,7 +40,7 @@
            
            (only-in test-engine/scheme-gui make-formatter)
            (only-in test-engine/scheme-tests scheme-test-data test-format test-execute)
-           (lib "test-display.scm" "test-engine")
+           (lib "test-engine/test-display.scm")
            )
   
   
@@ -1407,4 +1407,3 @@
         
         (drscheme:get/extend:extend-unit-frame frame-tracing-mixin)
         (drscheme:get/extend:extend-tab tab-tracing-mixin))))
-  

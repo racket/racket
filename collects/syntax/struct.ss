@@ -4,7 +4,7 @@
            mzlib/etc
            mzlib/contract
 	   "stx.ss"
-           (lib "struct-info.ss" "scheme"))
+           scheme/struct-info)
   (require (for-template mzscheme))
   
   (provide parse-define-struct

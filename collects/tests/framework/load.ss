@@ -46,5 +46,5 @@
                        (let-values ([(_1 eles _2 _3) (signature-members #'sig #'whatever)])
                          (with-syntax ([eles eles])
                            #''eles))])))
-           (eval '(require (lib "framework-sig.ss" "framework")))
+           (eval '(require framework/framework-sig))
            (eval '(for-each eval (signature->symbols framework^))))))

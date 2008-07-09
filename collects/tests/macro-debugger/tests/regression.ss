@@ -45,8 +45,8 @@
     (test-case "lift in module"
       (check-pred syntax?
                   (stx/hide-none
-                   (trace '(module m mzscheme 
-                             (require (lib "etc.ss"))
+                   (trace '(module m mzscheme
+                             (require mzlib/etc)
                              (define x (begin-lifted 1)))))))
 
     ;; Fixed 2/9/2007: defstx in brules misparsed & mishandled

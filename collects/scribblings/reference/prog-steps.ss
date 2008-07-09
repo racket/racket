@@ -1,9 +1,9 @@
 
 (module prog-steps mzscheme
-  (require (lib "struct.ss" "scribble")
-           (lib "decode.ss" "scribble")
-           (lib "manual.ss" "scribble")
-           (lib "scheme.ss" "scribble")
+  (require scribble/struct
+           scribble/decode
+           scribble/manual
+           scribble/scheme
            mzlib/kw
            mzlib/class
            mzlib/for)

@@ -34,10 +34,10 @@
 (define-type-alias top Any)
 (define-type-alias list-of Listof)
 (require 
-   (except-in (lib "67.ss" "srfi") current-compare =? <?)
+   (except-in srfi/67 current-compare =? <?)
    #;"typed-list.ss"
-   #;(lib "42.ss" "srfi")
-   #;(only (lib "list.ss") foldl))
+   #;srfi/42
+   #;(only mzlib/list foldl))
     
   #;(provide (all-defined))
   (provide comparator Heap elements empty fold heap-node? find-min empty? insert insert* delete-min size union)
@@ -48,9 +48,9 @@
   
   ;; fixme - type aliases should work in require
   
-  (require/typed current-compare (-> (top top -> number)) (lib "67.ss" "srfi"))
-  (require/typed =? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
-  (require/typed <? ((top top -> number) top top -> boolean) (lib "67.ss" "srfi"))
+  (require/typed current-compare (-> (top top -> number)) srfi/67)
+  (require/typed =? ((top top -> number) top top -> boolean) srfi/67)
+  (require/typed <? ((top top -> number) top top -> boolean) srfi/67)
   
   ;;; DATA DEFINITION
   

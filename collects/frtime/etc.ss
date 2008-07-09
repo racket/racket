@@ -1,12 +1,12 @@
 
 (module etc frtime/frtime-lang-only
-  (require (lib "main-collects.ss" "setup"))
+  (require setup/main-collects)
   (require-for-syntax syntax/kerncase
 		      syntax/stx
 		      syntax/name
 		      syntax/context
-		      (lib "main-collects.ss" "setup")
-		      (lib "stxset.ss" "mzlib" "private"))
+		      setup/main-collects
+		      mzlib/private/stxset)
 
   (provide true false
 	   boolean=? symbol=?

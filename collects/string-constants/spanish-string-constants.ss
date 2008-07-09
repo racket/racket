@@ -521,7 +521,7 @@
  (keybindings-choose-user-defined-file "Por favor seleccione un archivo con enlaces de teclas.")
 
  (user-defined-keybinding-error "Error al ejecutar el enlace de teclas ~a\n\n~a")
- (user-defined-keybinding-malformed-file "El archivo ~a no contiene un módulo escrito usando el lenguaje (lib \"keybinding-lang.ss\" \"framework\").")  
+ (user-defined-keybinding-malformed-file "El archivo ~a no contiene un módulo escrito usando el lenguaje framework/keybinding-lang.")  
 
  (insert-text-box-item "Inserta caja de texto")
  (insert-image-item "Inserta imagen...")

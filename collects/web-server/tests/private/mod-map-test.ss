@@ -1,6 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "mod-map.ss" "web-server" "private")
+         web-server/private/mod-map
          mzlib/serialize
          "../util.ss")
 (provide mod-map-tests)

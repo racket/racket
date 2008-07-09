@@ -3,7 +3,7 @@
            mzlib/contract
            mzlib/etc
            mred
-           (lib "debugger-sig.ss" "stepper")
+           stepper/debugger-sig
            "my-macros.ss"
            "debugger-annotate.ss"
            "shared.ss"

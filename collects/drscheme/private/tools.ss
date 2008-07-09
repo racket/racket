@@ -1,7 +1,7 @@
 
 #lang scheme/unit
 
-(require (lib "getinfo.ss" "setup")
+(require setup/getinfo
          mred
          scheme/class
          scheme/list
@@ -350,9 +350,9 @@
       (unless (and (is-a? bitmap bitmap%)
                    (send bitmap ok?))
         (k #f))
-      (let ([splash-eventspace ((dynamic-require '(lib "framework/splash.ss") 'get-splash-eventspace))]
-            [splash-bitmap ((dynamic-require '(lib "framework/splash.ss") 'get-splash-bitmap))]
-            [splash-canvas ((dynamic-require '(lib "framework/splash.ss") 'get-splash-canvas))])
+      (let ([splash-eventspace ((dynamic-require 'framework/splash 'get-splash-eventspace))]
+            [splash-bitmap ((dynamic-require 'framework/splash 'get-splash-bitmap))]
+            [splash-canvas ((dynamic-require 'framework/splash 'get-splash-canvas))])
         
         (unless (and (eventspace? splash-eventspace)
                      (is-a? splash-bitmap bitmap%)
@@ -387,7 +387,7 @@
                    (send bdc set-bitmap #f)
                    (set! bitmap new-b)))
                
-               ((dynamic-require '(lib "framework/splash.ss") 'add-splash-icon)
+               ((dynamic-require 'framework/splash 'add-splash-icon)
                 bitmap tool-bitmap-x translated-tool-bitmap-y)
                (set! tool-bitmap-x (+ tool-bitmap-x tool-bitmap-size tool-bitmap-gap))
                (when ((+ tool-bitmap-x tool-bitmap-gap tool-bitmap-size) . > . (send splash-bitmap get-width))

@@ -18,9 +18,9 @@
            #:error-step)
    (testKE (#%require 5)
            #:error-step)
-   (testKE (#%require (prefix (lib "list.ss")))
+   (testKE (#%require (prefix mzlib/list))
            #:error-step)
-   (testKE (#%require (prefix 5 (lib "list.ss")))
+   (testKE (#%require (prefix 5 mzlib/list))
            #:error-step)]
   [#:suite
    "Definitions"

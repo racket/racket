@@ -34,10 +34,10 @@ A test case:
          net/url-sig
          net/url-structs
          net/head
-         (lib "mred-sig.ss" "mred")
+         mred/mred-sig
          framework
          string-constants
-         (lib "plt-installer-sig.ss" "setup"))
+         setup/plt-installer-sig)
 
    
 (import html^

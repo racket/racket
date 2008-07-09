@@ -1,7 +1,7 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "basic-auth.ss" "web-server" "servlet"))
+         web-server/private/request-structs
+         web-server/servlet/basic-auth)
 (provide basic-auth-tests)
 
 (define basic-auth-tests

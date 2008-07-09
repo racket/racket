@@ -6,13 +6,13 @@
 |#
 
 #cs
-(module hangman-world mzscheme  
+(module hangman-world mzscheme
   (require htdp/world
            htdp/error
-           (lib "prim.ss" "lang")
+           lang/prim
            mzlib/contract
-           mzlib/etc 
-           mzlib/list)       
+           mzlib/etc
+           mzlib/list)
   
   (define (letter? s) (and (symbol? s) (pair? (member s LETTERS))))
   (define LETTERS '(a b c d e f g h i j k l m o p q r s t u v w x y z _))

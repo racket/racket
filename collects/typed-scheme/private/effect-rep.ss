@@ -1,7 +1,7 @@
 #lang scheme/base
 
-(require (lib "plt-match.ss"))
-(require (lib "etc.ss"))
+(require mzlib/plt-match)
+(require mzlib/etc)
 (require "rep-utils.ss" "free-variance.ss")
 
 (de True-Effect () [#:frees #f] [#:fold-rhs #:base])

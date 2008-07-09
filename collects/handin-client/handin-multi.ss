@@ -1,7 +1,7 @@
 (module handin-multi mzscheme
   (require mzlib/class mzlib/list mzlib/string mzlib/port
            mred framework
-           (lib "external.ss" "browser")
+           browser/external
            "info.ss" "client-gui.ss" "this-collection.ss")
 
   (define handin-name (#%info-lookup 'name))

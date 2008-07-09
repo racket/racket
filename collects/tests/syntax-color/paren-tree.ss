@@ -1,6 +1,6 @@
 (load-relative "../mzscheme/loadtest.ss")
 (require mzlib/class
-         (lib "paren-tree.ss" "syntax-color"))
+         syntax-color/paren-tree)
 
 (define t (new paren-tree% (matches '((|(| |)|)
                                       (|[| |]|)))))

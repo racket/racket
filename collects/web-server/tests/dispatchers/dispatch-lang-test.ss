@@ -3,10 +3,10 @@
          (planet "sxml.ss" ("lizorkin" "sxml.plt" 2 0))
          mzlib/etc
          mzlib/list
-         (lib "dispatch.ss" "web-server" "dispatchers")
-         (lib "request-structs.ss" "web-server" "private")
-         (lib "namespace.ss" "web-server" "configuration")
-         (prefix-in lang: (lib "dispatch-lang.ss" "web-server" "dispatchers"))
+         web-server/dispatchers/dispatch
+         web-server/private/request-structs
+         web-server/configuration/namespace
+         (prefix-in lang: web-server/dispatchers/dispatch-lang)
          "../util.ss")
 (provide dispatch-lang-tests)
 

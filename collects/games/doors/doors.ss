@@ -1,8 +1,8 @@
 (module doors mzscheme
-  (require (lib "gl-board.ss" "games" "gl-board-game")
+  (require games/gl-board-game/gl-board
            sgl/gl-vectors
            sgl
-           (lib "bitmap.ss" "sgl")
+           sgl/bitmap
            mred
            mzlib/list
            mzlib/etc

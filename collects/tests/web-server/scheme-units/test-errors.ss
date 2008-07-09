@@ -1,7 +1,7 @@
 ;; Mike Burns, July 28th, 2004, netgeek@speakeasy.net
 ;; Test the error messages for both headers and content.
 (module test-errors mzscheme
-  (require (lib "test.ss" "schemeunit")
+  (require schemeunit/test
            net/url
            "assertions.ss"
            )

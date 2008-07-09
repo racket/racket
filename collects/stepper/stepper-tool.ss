@@ -1,7 +1,7 @@
 (module stepper-tool mzscheme
 
   (require mzlib/contract
-           (lib "tool.ss" "drscheme")
+           drscheme/tool
            mred
            mzlib/pconvert
            string-constants
@@ -16,7 +16,7 @@
            (prefix x: "private/mred-extensions.ss")
            "private/shared.ss"
            "private/model-settings.ss"
-           (lib "stepper-language-interface.ss" "lang")
+           lang/stepper-language-interface
            "xml-sig.ss")
 
   (provide stepper-tool@

@@ -1,12 +1,12 @@
 (module debugger-tool mzscheme
   (require mzlib/contract
-           (lib "tool.ss" "drscheme")
+           drscheme/tool
            mred
            (prefix frame: framework)
            mzlib/unitsig
            mzlib/class
            mzlib/list
-           (lib "bitmap-label.ss" "mrlib")
+           mrlib/bitmap-label
            "debugger-sig.ss"
            "private/debugger-vc.ss"
            "private/debugger-model.ss"

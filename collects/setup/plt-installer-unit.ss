@@ -1,7 +1,7 @@
 
 (module plt-installer-unit mzscheme
   (require mzlib/unit
-           (lib "mred-sig.ss" "mred")
+           mred/mred-sig
            mzlib/class
            mzlib/etc
            "plt-installer-sig.ss"

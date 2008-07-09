@@ -3,7 +3,7 @@
   (require mzlib/unit
            mzlib/class
            framework
-           (lib "mred-sig.ss" "mred"))
+           mred/mred-sig)
   
   (require mzlib/list
            mzlib/etc)
@@ -13,9 +13,9 @@
   
   (require net/imap-sig)
   
-  (require (lib "hierlist-sig.ss" "hierlist"))
+  (require mrlib/hierlist/hierlist-sig)
 
-  (require (lib "mzssl.ss" "openssl"))
+  (require openssl/mzssl)
   
   (provide folder@)
   (define-unit folder@

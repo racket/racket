@@ -1,5 +1,5 @@
 (module xml-snipclass mzscheme
-  (require (lib "xml-snip-helpers.ss" "stepper" "private")
+  (require stepper/private/xml-snip-helpers
            mzlib/class
            mred)
   

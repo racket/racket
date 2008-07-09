@@ -1,5 +1,5 @@
 (module pre-installer mzscheme
-  (require (lib "compile.ss" "profj"))
+  (require profj/compile)
   (provide pre-installer)
   
   (define (pre-installer plthome)

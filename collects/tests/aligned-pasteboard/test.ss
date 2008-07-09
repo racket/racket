@@ -5,7 +5,7 @@
  mred
  mzlib/etc
  mzlib/list
- (lib "aligned-pasteboard.ss" "mrlib")
+ mrlib/aligned-pasteboard
  "snip-dumper.ss")
 
                                                         
