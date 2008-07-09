@@ -3,6 +3,6 @@
     (lambda () 
       (printf "This is 6\n")
       (with-handlers ([void (lambda (exn) (printf "no etc.ss\n"))])
-	(printf "~a\n" (dynamic-require '(lib "etc.ss") 'true))))
+	(printf "~a\n" (dynamic-require 'mzlib/etc 'true))))
     'append))
 

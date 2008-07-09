@@ -1,5 +1,5 @@
 (module embed-me10 mzscheme
-  (require (lib "mzssl.ss" "openssl"))
+  (require openssl/mzssl)
 
   (with-output-to-file "stdout"
     (lambda () 
