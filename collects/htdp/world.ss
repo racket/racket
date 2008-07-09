@@ -1,3 +1,15 @@
+#|
+ workshop experience: 
+
+   stop-when should have a different signature:
+    stop-when : (World -> Boolean) (World -> Image) 
+
+   (stop-when C F) should have this semantics:
+    on each assignment to world,
+    (begin 
+      (set! current-world new-world)
+      (when (C current-world) (render (F current-world))))
+|#
 ;; Fri Jul  4 10:25:47 EDT 2008: added ke=? and key-event? 
 ;; Mon Jun 16 15:38:14 EDT 2008: removed end-of-time and provided stop-when 
 ;;                               also allow repeated setting of callbacks now
