@@ -18,7 +18,7 @@
   (cond [(eq? '_ (syntax-e x))
          (make-Dummy x)]
         [(ddk? x) (raise-syntax-error 'match "incorrect use of ... in pattern"
-                                      #'x)]
+                                      x)]
         [else (make-Var x)]))
 
 ;; stx : syntax of pattern, starting with quote
