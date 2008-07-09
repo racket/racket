@@ -175,6 +175,18 @@ The initial mode enables @method[hierarchical-list% on-select] calls
 always.}
 
 
+@defmethod*[([(on-click-always) boolean?]
+             [(on-click-always [always? any/c]) void?])]{
+
+Gets/sets whether the @method[hierarchical-list% on-click] method is
+called in response to all mouse clicks (as opposed to only when
+selected).  @method[hierarchical-list% on-click] is called before
+@method[hierarchical-list% on-select], if it is called (if the click
+results in selction).
+
+This is initially disabled, by default.}
+
+
 @defmethod*[([(allow-deselect) boolean?]
              [(allow-deselect [allow? any/c]) void?])]{
 
