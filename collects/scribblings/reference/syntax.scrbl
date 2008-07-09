@@ -325,10 +325,20 @@ corresponds to the default @tech{module name resolver}.
  @litchar{/} is the path delimiter (multiple adjacent @litchar{/}s are
  treated as a single delimiter), @litchar{..} accesses the parent
  directory, and @litchar{.} accesses the current directory. The path
- cannot be empty or contain a leading or trailing slash, path
- elements before than the last one cannot include a file suffix,
+ cannot be empty or contain a leading or trailing slash, path elements
+ before than the last one cannot include a file suffix (i.e., a
+ @litchar{.} in an element other than @litchar{.} or @litchar{..}),
  and the only allowed characters are ASCII letters, ASCII digits,
- @litchar{-}, @litchar{+}, @litchar{_}, @litchar{.}, and @litchar{/}.}
+ @litchar{-}, @litchar{+}, @litchar{_}, @litchar{.}, @litchar{/}, and
+ @litchar{%}. Furthermore, a @litchar{%} is allowed only when followed
+ by two lowercase hexadecimal digits, and the digits must form a
+ number that is not the ASCII value of a letter, digit, @litchar{-},
+ @litchar{+}, or @litchar{_}.
+
+ @margin-note{The @litchar{%} provision is intended to support a
+ one-to-one encoding of arbitrary strings as path elements (after
+ UTF-8 encoding). Such encodings are not decoded to arrive at a
+ filename, but instead preserved in the file access.}}
 
  @defsubform[(lib rel-string ...+)]{A path to a module installed into
  a @tech{collection} (see @secref["collects"]). The @scheme[rel-string]s in
@@ -406,17 +416,19 @@ corresponds to the default @tech{module name resolver}.
  ]
 
  and where an @nonterm{elem} is a non-empty sequence of characters
- that are ASCII letters, ASCII digits, @litchar{-}, @litchar{+}, or
- @litchar{_}, and an @nonterm{int} is a non-empty sequence of ASCII
- digits. As this shorthand is expended, a @filepath{.plt} extension is
- added to @nonterm{pkg}, and a @filepath{.ss} extension is added to
+ that are ASCII letters, ASCII digits, @litchar{-}, @litchar{+},
+ @litchar{_}, or @litchar{%} followed by lowercase hexadecimal digits
+ (that do not encode one of the other allowed characters), and an
+ @nonterm{int} is a non-empty sequence of ASCII digits. As this
+ shorthand is expended, a @filepath{.plt} extension is added to
+ @nonterm{pkg}, and a @filepath{.ss} extension is added to
  @scheme{path}; if no @nonterm{path} is included, @filepath{main.ss}
  is used in the expansion.
 
  A @scheme[(planet string)] form is like a @scheme[(planet id)] form
  with the identifier converted to a string, except that the
- @scheme[string] can optionally end with a file extension for a
- @nonterm{path}.
+ @scheme[string] can optionally end with a file extension (i.e., a
+ @litchar{.}) for a @nonterm{path}.
 
  In the more general last form of a @scheme[planet] module path, the
  @scheme[rel-string]s are similar to the @scheme[lib] form, except

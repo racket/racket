@@ -175,8 +175,9 @@ a name is converted to a PLT Scheme module pathname (see @secref[#:doc
 guide-src "module-paths"]) by concatenating the symbols with a
 @litchar{/} separator, and then appending the version integers each
 with a preceeding @litchar{-}. As a special case, when an @|r6rs| path
-contains a single symbol followed by a version, a @schemeidfont{main}
-symbol is effectively inserted after the initial symbol.
+contains a single symbol (optionally followed by a version), a
+@schemeidfont{main} symbol is effectively inserted after the initial
+symbol. See below for further encoding considerations.
 
 When an @|r6rs| library or top-level program refers to another
 library, it can supply version constraints rather than naming a
@@ -190,13 +191,41 @@ search order for file extensions is @filepath{.mzscheme.ss},
 resolving version constraints, these extensions are all tried when
 looking for matches.
 
+
+
+To ensure that all @|r6rs| library names can be converted to a unique
+and distinct library module path, the following conversions are
+applied to each symbol before concatenating them:
+
+@itemize{
+
+ @item{The symbol is encoded using UTF-8, and the resulting bytes are
+ treated as Latin-1 encoded characters. ASCII letters, digits,
+ @litchar{+}, @litchar{-}, and @litchar{_} are left as-is; other
+ characters are replaced by @litchar{%} followed by two lowercase
+ hexadecimal digits. Note that UTF-8 encodes ASCII letters, digits,
+ @|etc| as themselves, so typical library names correspond to readable
+ module paths.}
+
+ @item{If the @|r6rs| library reference has two symbol elements and
+ the second one is @schemeidfont{main} followed by any number of
+ underscores, then an extra underscore is added to that symbol. This
+ conversion avoids a collision between an explicit @schemeidfont{main}
+ and the implicit @schemeidfont{main} when a library path has a single
+ symbol element.}
+
+}
+
 Examples (assuming a typical PLT Scheme installation):
 
 @schemeblock[
 (rnrs io simple (6))  #, @elem{means}  (lib "rnrs/io/simple-6.ss")
 (rnrs)                #, @elem{means}  (lib "rnrs/main-6.ss")
+(rnrs main)           #, @elem{means}  (lib "rnrs/main_.ss")
 (rnrs (6))            #, @elem{means}  (lib "rnrs/main-6.ss")
 (scheme base)         #, @elem{means}  (lib "scheme/base.ss")
+(achtung!)            #, @elem{means}  (lib "achtung%21/main.ss")
+(funco new-λ)         #, @elem{means}  (lib "funco/new-%ce%bb.ss")
 ]
 
 

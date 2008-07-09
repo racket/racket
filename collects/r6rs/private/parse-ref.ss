@@ -1,6 +1,7 @@
 #lang scheme/base
 
 (require "find-version.ss"
+         "encode-name.ss"
          (for-template scheme/base))
 
 (provide parse-import)
@@ -37,10 +38,19 @@
           (andmap identifier? (syntax->list #'(id2 ...)))
           (is-version-reference? #'(vers ...)))
      (let-values ([(coll file)
-                   (let ([strs (map (lambda (id)
-                                      (symbol->string (syntax-e id)))
-                                    (syntax->list #'(id1 id2 ...)))])
-                     (if (= 1 (length strs))
+                   (let* ([strs (map (lambda (id)
+                                       (symbol->string (syntax-e id)))
+                                     (syntax->list #'(id1 id2 ...)))]
+                          [len (length strs)]
+                          [strs (map
+                                 encode-name
+                                 (if (and (= 2 len) (regexp-match? #rx"^main_*$" (cadr strs)))
+                                     ;; rename (X main_*) => (X main__*)
+                                     (list (car strs)
+                                           (string-append (cadr strs) "_"))
+                                     ;; no rename
+                                     strs))])
+                     (if (= 1 len) 
                          (values (list (car strs)) "main")
                          (values (reverse (cdr (reverse strs)))
                                  (car (reverse strs)))))])

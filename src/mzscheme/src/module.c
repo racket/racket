@@ -1818,6 +1818,39 @@ static Scheme_Object *namespace_unprotect_module(int argc, Scheme_Object *argv[]
   return scheme_void;
 }
 
+static int plain_char(int c)
+{
+  return (((c >= 'a') && (c <= 'z'))
+          || ((c >= 'A') && (c <= 'Z'))
+          || ((c >= '0') && (c <= '9'))
+          || (c == '-')
+          || (c == '_')
+          || (c == '+'));
+}
+
+static int ok_hex(int c)
+{
+  return (((c >= 'a') && (c <= 'f'))
+          || ((c >= '0') && (c <= '9')));
+}
+
+static int ok_escape(int c1, int c2)
+{
+  c1 = (((c1 >= 'a') && (c1 <= 'f'))
+        ? (c1 - 'a' + 10)
+        : (c1 - '0'));
+  c2 = (((c2 >= 'a') && (c2 <= 'f'))
+        ? (c2 - 'a' + 10)
+        : (c2 - '0'));
+
+  c1 = (c1 << 4) + c2;
+  
+  if (plain_char(c1))
+    return 0;
+  else
+    return 1;
+}
+
 static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int file_end_ok, int for_planet)
 {
   mzchar *s = SCHEME_CHAR_STR_VAL(obj);
@@ -1929,12 +1962,11 @@ static int ok_path_string(Scheme_Object *obj, int dir_ok, int just_file_ok, int 
       }
       prev_was_slash = 0;
     } else {
-      if (((c >= 'a') && (c <= 'z'))
-          || ((c >= 'A') && (c <= 'Z'))
-          || ((c >= '0') && (c <= '9'))
-          || (c == '-')
-          || (c == '_')
-          || (c == '+')) {
+      if (plain_char(c)
+          || ((c == '%')
+              && ok_hex(s[i+1])
+              && ok_hex(s[i+2])
+              && ok_escape(s[i+1], s[i+2]))) {
         prev_was_slash = 0;
       } else if ((i < start_package_pos) || (i >= end_package_pos))
         return 0;
@@ -1998,13 +2030,12 @@ static int ok_planet_string(Scheme_Object *obj)
 
   while (i--) {
     c = s[i];
-    if (((c >= 'a') && (c <= 'z'))
-        || ((c >= 'A') && (c <= 'Z'))
-        || ((c >= '0') && (c <= '9'))
-        || (c == '.')
-        || (c == '-')
-        || (c == '_')
-        || (c == '+')) {
+    if ((c == '%')
+        && ok_hex(s[i+1])
+        && ok_hex(s[i+2])
+        && ok_escape(s[i+1], s[i+2])) {
+      /* ok */
+    } else if (plain_char(c) || (c == '.')) {
       /* ok */
     } else
       return 0;

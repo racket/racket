@@ -6,7 +6,8 @@
          setup/dirs
          scheme/port
          scheme/file
-         "private/readtable.ss")
+         "private/readtable.ss"
+         "private/encode-name.ss")
 
 (define install-mode (make-parameter #f))
 (define compile-mode (make-parameter #f))
@@ -123,11 +124,23 @@
                      (loop (cdr name)))]))))
 
 (define (name->path name)
-  (let* ([name (if (or (= (length name) 1)
-                       (and (= (length name) 2)
+  (let* ([name (let ([len (length name)])
+                 (cond
+                  [(or (= len 1)
+                       (and (= len 2)
                             (not (symbol? (cadr name)))))
-                   (list* (car name) 'main (cdr name))
-                   name)])
+                   ;; Add implicit "main":
+                   (list* (car name) 'main (cdr name))]
+                  [(and (or (= len 2)
+                            (and (= len 3)
+                                 (not (symbol? (caddr name)))))
+                        (regexp-match #rx"^main_*$" (symbol->string (cadr name))))
+                   ;; Rename (X main_*) => (X main__*)
+                   (list* (car name)
+                          (string->symbol
+                           (string-append (symbol->string (cadr name)) "_"))
+                          (cddr name))]
+                  [else name]))])
     (apply build-path
            (if (install-all-users)
                (find-collects-dir)
@@ -140,7 +153,7 @@
                ;; versioned:
                (list
                 (format "~a~a.ss"
-                        (car name)
+                        (encode-name (car name))
                         (apply
                          string-append
                          (map (lambda (v)
@@ -148,9 +161,9 @@
                               (cadr name)))))]
               [(null? (cdr name))
                ;; unversioned:
-               (list (format "~a.ss" (car name)))]
+               (list (format "~a.ss" (encode-name (car name))))]
               [else
-               (cons (symbol->string (car name))
+               (cons (encode-name (car name))
                      (loop (cdr name)))])))))
 
 ;; ----------------------------------------
