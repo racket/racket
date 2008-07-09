@@ -1,6 +1,8 @@
 #lang scheme/base
 
-(require r6rs/private/exns)
+(require r6rs/private/exns
+         (only-in r6rs/private/conds serious-condition? simple-conditions condition?)
+         (only-in rnrs/io/ports-6 standard-error-port))
 
 (provide with-exception-handler
          guard else =>
@@ -79,8 +81,34 @@
      (raise id)]))
 
 (define (r6rs:raise exn)
-  ;; No barrier
-  (raise exn #f))
+  (parameterize ([uncaught-exception-handler
+                  ;; Simulate an initial exception handler that
+                  ;; behaves as specified in R6RS for non-&serious
+                  ;; exceptions:
+                  (let ([ueh (uncaught-exception-handler)])
+                    (lambda (exn)
+                      (let ([base (if (exn:continuable? exn)
+                                      (exn:continuable-base exn)
+                                      exn)])
+                        (if (serious-condition? base)
+                            (ueh base)
+                            ;; Not &serious, so try to "continue":
+                            (begin
+                              ((error-display-handler)
+                               (if (exn? exn)
+                                   (exn-message exn)
+                                   (format "uncaught exception: ~s"
+                                           exn))
+                               exn)
+                              ;; If it's continuable, then continue
+                              ;; by resuming the old continuation.
+                              ;; (Otherwise, let the a handler-
+                              ;; didn't-escape error get reported.)
+                              (when (exn:continuable? exn)
+                                ((exn:continuable-continuation exn) 
+                                 (lambda () (values)))))))))])
+    ;; No barrier:
+    (raise exn #f)))
 
 (define (raise-continuable exn)
   ((let/cc cont

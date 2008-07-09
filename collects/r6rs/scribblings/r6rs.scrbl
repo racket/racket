@@ -11,7 +11,9 @@
                      rnrs/r5rs-6
                      (only-in scheme/base
                               lib
-                              current-library-collection-paths)))
+                              current-library-collection-paths
+                              parameterize
+                              uncaught-exception-handler)))
 
 @(define guide-src '(lib "scribblings/guide/guide.scrbl"))
 
@@ -254,6 +256,10 @@ several known ways:
        cannot be invoked after control escapes from the raise.
 
        The initial exception handler does not return for
+       non-@scheme[&serious] conditions, but @scheme[raise] and
+       @scheme[raise-continuable] both install an uncaught-exception
+       handler (via @scheme[parameterize] and
+       @scheme[uncaught-exception-handler]) to one that returns for
        non-@scheme[&serious] conditions.}
 
  @item{Inexact numbers are printed without a precision indicator, and
@@ -650,7 +656,7 @@ several known ways:
              (record-field-mutable? #f "r6rs-lib-Z-H-7.html" "node_idx_360")]
 
 @r6rs-module[rnrs/exceptions-6 (rnrs exceptions (6))
-             "r6rs-lib-Z-H-8.html" "node_idx_364" "Exceptions and Conditions"
+             "r6rs-lib-Z-H-8.html" "node_idx_364" "Exceptions"
              (with-exception-handler #f "r6rs-lib-Z-H-8.html" "node_idx_368")
              (raise-continuable #f "r6rs-lib-Z-H-8.html" "node_idx_378")
              (raise #f "r6rs-lib-Z-H-8.html" "node_idx_376")
@@ -661,7 +667,7 @@ several known ways:
 See also @secref["conformance"].
 
 @r6rs-module[rnrs/conditions-6 (rnrs conditions (6))
-             "r6rs-lib-Z-H-8.html" "node_idx_382" "Exceptions and Conditions"
+             "r6rs-lib-Z-H-8.html" "node_idx_382" "Conditions"
              (who-condition? #f "r6rs-lib-Z-H-8.html" "node_idx_456")
              (warning? #f "r6rs-lib-Z-H-8.html" "node_idx_418")
              (violation? #f "r6rs-lib-Z-H-8.html" "node_idx_436")
