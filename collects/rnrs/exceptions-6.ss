@@ -95,11 +95,11 @@
                             ;; Not &serious, so try to "continue":
                             (begin
                               ((error-display-handler)
-                               (if (exn? exn)
-                                   (exn-message exn)
+                               (if (exn? base)
+                                   (exn-message base)
                                    (format "uncaught exception: ~s"
-                                           exn))
-                               exn)
+                                           base))
+                               base)
                               ;; If it's continuable, then continue
                               ;; by resuming the old continuation.
                               ;; (Otherwise, let the a handler-
