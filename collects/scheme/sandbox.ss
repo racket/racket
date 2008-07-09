@@ -373,7 +373,7 @@
 
 (define (evaluate-program program limits uncovered!)
   (when uncovered!
-    (eval `(,#'#%require mzlib/private/sandbox-coverage)))
+    (eval `(,#'#%require scheme/private/sandbox-coverage)))
   ;; the actual evaluation happens under specified limits, if given
   (let ([run (if (and (pair? program) (eq? 'begin (car program)))
                  (lambda () (eval* (cdr program)))
