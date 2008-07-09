@@ -879,10 +879,13 @@ module browser threading seems wrong.
         (unless (is-a? frame -frame<%>)
           (error 'func-defs-canvas "frame is not a drscheme:unit:frame<%>"))
         
-        (define sort-by-name? #f)
-        (define sorting-name (string-constant sort-by-name))
+        (define sort-by-name? (preferences:get 'drscheme:defns-popup-sort-by-name?))
+        (define sorting-name (if sort-by-name?
+                                 (string-constant sort-by-position) 
+                                 (string-constant sort-by-name)))
         (define/private (change-sorting-order)
           (set! sort-by-name? (not sort-by-name?))
+          (preferences:set 'drscheme:defns-popup-sort-by-name? sort-by-name?)
           (set! sorting-name (if sort-by-name?
                                  (string-constant sort-by-position) 
                                  (string-constant sort-by-name))))

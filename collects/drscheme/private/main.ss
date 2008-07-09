@@ -53,6 +53,8 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drscheme:defns-popup-sort-by-name? #f boolean?)
+
 (preferences:set-default 'drscheme:toolbar-state 
                          '(#f . top)
                          (λ (x) (and (pair? x)
