@@ -306,10 +306,11 @@
                    (send dc set-pen p)
                    (send dc set-brush b))))])
 	  (private
+            ;; need to use top-select anyway, because it might want to react to
+            ;; all clicks
 	    [do-select (lambda (on? clicked?)
-			 (unless (eq? (not selected?) 
-				      (not on?))
-			   (top-select (if on? item #f) snip clicked?)))])
+			 (top-select (if on? item #f) snip clicked?
+                                     (not (eq? (not selected?) (not on?)))))])
           (public
             [select (lambda (on?) (do-select on? #f))]
             [click-select (lambda (on?) (do-select on? #t))]
@@ -804,21 +805,32 @@
            [selectable? #t]
            [show-focus? #f]
 	   [on-select-always? #t]
+	   [on-click-always? #f]
 	   [allow-deselect? #f])
 	  (public
 	    [on-select-always
 	     (case-lambda 
 	      [() on-select-always?]
 	      [(v) (set! on-select-always? (and v #t))])]
+	    [on-click-always
+	     (case-lambda 
+	      [() on-click-always?]
+	      [(v) (set! on-click-always? (and v #t))])]
 	    [allow-deselect
 	     (case-lambda 
 	      [() allow-deselect?]
 	      [(v) (set! allow-deselect? (and v #t))])])
           (private
-            [do-select (lambda (item s clicked?)
+            [do-select (lambda (item s clicked? selected?)
+                         (when (and item clicked? on-click-always?)
+                           (on-click item))
                          (cond
+                           [(not selected?)
+                            ;; this wasn't really a selection, only useful if
+                            ;; on-click-always? made us do an on-click above
+                            (void)]
                            [(and selectable?
-                                 item 
+                                 item
                                  (send item get-allow-selection?))
                             (unless (eq? item selected-item)
                               (when selected (send selected show-select #f))
@@ -827,9 +839,9 @@
                               (when selected (send selected show-select #t))
 			      (when (or clicked? on-select-always?)
 				(on-select item)))]
-                           [(and item
-				 clicked?)
-                            (on-click item)]
+                           [(and item clicked?)
+                            (unless on-click-always? ; already called above
+                              (on-click item))]
 			   [allow-deselect?
 			    (when selected-item
 			      (send selected show-select #f)
@@ -838,7 +850,7 @@
 			    (when (or clicked? on-select-always?)
 			      (on-select #f))]))])
           (private-field
-           [top-buffer (make-object hierarchical-list-text% this (lambda (i s c?) (do-select i s c?)) 0 #f)]
+           [top-buffer (make-object hierarchical-list-text% this (lambda (i s c? s?) (do-select i s c? s?)) 0 #f)]
            [selected #f]
            [selected-item #f])
           (sequence
