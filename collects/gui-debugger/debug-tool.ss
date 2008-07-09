@@ -1055,20 +1055,31 @@
             (when (not (string=? msg (send mouse-over-message get-label)))
               (send mouse-over-message set-label msg)))
           
-          (define/override execute-callback
-            (lambda ()
-              (let* ([tab (get-current-tab)])
-                (cond
-                  [(eq? tab (send tab get-master))
-                   (send (get-current-tab) prepare-execution debug?)
-                   (set! debug? #f)
-                   (super execute-callback)]
-                  [else
-                   (message-box
-                    "Message from Debugger"
-                    (format "This file is involved in a debugging session.  To run/debug this file, finish the session for ~a and close or re-run it."
-                            (send (send (send tab get-master) get-defs) get-filename/untitled-name))
-                    this '(ok))]))))
+          (define/public (debug-callback)
+            (let ([tab (get-current-tab)])
+              (cond
+                [(eq? tab (send tab get-master))
+                 (set! debug? #t)
+                 (send (get-current-tab) prepare-execution debug?)
+                 (set! debug? #f)
+                 (execute-callback)]
+                [else
+                 (already-debugging tab)])))
+          
+          (define/override (execute-callback)
+            (let ([tab (get-current-tab)])
+              (cond
+                [(eq? tab (send tab get-master))
+                 (super execute-callback)]
+                [else
+                 (already-debugging tab)])))
+          
+          (define/private (already-debugging tab)
+            (message-box
+             "Debugger"
+             (format "This file is involved in a debugging session.  To run/debug this file, finish the session for ~a and close or re-run it."
+                     (send (send (send tab get-master) get-defs) get-filename/untitled-name))
+             this '(ok)))
           
           (define expr-positions empty)
           (define expr-lengths empty)
@@ -1263,7 +1274,7 @@
                  (label (string-constant debug-tool-button-name))
                  (bitmap debug-bitmap)
                  (parent (make-object vertical-pane% (get-button-panel)))
-                 (callback (λ (button) (set! debug? #t) (execute-callback)))))
+                 (callback (λ (button) (debug-callback)))))
           (inherit register-toolbar-button)
           (register-toolbar-button debug-button)
 
