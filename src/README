@@ -4,10 +4,8 @@ MrEd with DrScheme). For license information, please see the file
 plt/notes/COPYING.LIB.
 
 Compiled binaries, documentation, and up-to-date information are
-available at
-  http://www.drscheme.org/
-  http://www.plt-scheme.org/software/mzscheme/
-  http://www.plt-scheme.org/software/mred/
+available at http://plt-scheme.org/; pre-compiled nightly builds are
+available at http://pre.plt-scheme.org/installers/.
 
 The MzScheme and MrEd source code should compile and execute on
 Windows, Mac OS X, or any Unix/X platform (including Linux).
@@ -15,9 +13,9 @@ Windows, Mac OS X, or any Unix/X platform (including Linux).
 Per-platform instructions are below.
 
 Please report bugs via one of the following:
-  - Help Desk's "submit bug report" link  (preferred)
+  - DrScheme's "submit bug report" menu              (preferred)
   - http://bugs.plt-scheme.org/
-  - bugs@plt-scheme.org                   (last resort)
+  - the mailing list (plt-scheme@list.cs.brown.edu)  (last resort)
 
 -PLT
  scheme@plt-scheme.org
@@ -187,15 +185,6 @@ the Unix instructions below, but note the following:
     you may accumlate many unused versions of the dynamic libraries in
     your installation target.
 
- 4. [Optional] Run `help-desk' to install missing documentation.
-
-    The source distribution (or Subversion-based source) includes only
-    the release notes, and not the rest of the core documentation.
-    Run the newly installed `help-desk' and follow the "Manuals" link
-    to install the rest of the documentation. For a Subversion-based
-    build, the "Manuals" page includes a link to update previously
-    installed documentation.
-
 After an "in-place" install without Subversion, the plt/src directory
 is no longer needed, and it can be safely deleted. Build information
 is recorded in a "buildinfo" file in the installation.
@@ -277,9 +266,8 @@ Under Windows, executables also embed a path to DLLs. For more
 information, see worksp\README.
 
 Paths to all other installation directories are found through the
-"config.ss" library of the "config" collection. See "doc.txt" in the
-"config" collection (for search for "config.ss" in Help Desk) for more
-information.
+"config.ss" library of the "config" collection. Search the
+documentation for "config search paths") for more information.
 
 ========================================================================
  Compiling the OSKit-based Kernel
