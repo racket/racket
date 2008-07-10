@@ -1327,8 +1327,12 @@ static void tcp_close_input(Scheme_Input_Port *port)
   data = (Scheme_Tcp *)port->port_data;
 
 #ifdef USE_SOCKETS_TCP
-  if (!(data->flags & MZ_TCP_ABANDON_INPUT))
-    shutdown(data->tcp, 0);
+  if (!(data->flags & MZ_TCP_ABANDON_INPUT)) {
+    int cr;
+    do { 
+      cr = shutdown(data->tcp, 0);
+    } while ((cr == -1) && (errno == EINTR));
+  }
 #endif
 
   if (--data->b.refcount)
@@ -1519,8 +1523,12 @@ static void tcp_close_output(Scheme_Output_Port *port)
     tcp_flush(port, 0, 0);
 
 #ifdef USE_SOCKETS_TCP
-  if (!(data->flags & MZ_TCP_ABANDON_OUTPUT))
-    shutdown(data->tcp, 1);
+  if (!(data->flags & MZ_TCP_ABANDON_OUTPUT)) {
+    int cr;
+    do { 
+      cr = shutdown(data->tcp, 1);
+    } while ((cr == -1) && (errno == EINTR));
+  }
 #endif
 
   if (--data->b.refcount)
@@ -2158,7 +2166,7 @@ tcp_accept(int argc, Scheme_Object *argv[])
   int was_closed = 0, errid, ready_pos;
   Scheme_Object *listener;
 # ifdef USE_SOCKETS_TCP
-  tcp_t s;
+  tcp_t s, ls;
   unsigned int l;
   GC_CAN_IGNORE char tcp_accept_addr[MZ_SOCK_NAME_MAX_LEN];
 # endif
@@ -2191,12 +2199,12 @@ tcp_accept(int argc, Scheme_Object *argv[])
   scheme_custodian_check_available(NULL, "tcp-accept", "network");
   
 # ifdef USE_SOCKETS_TCP
-  s = ((listener_t *)listener)->s[ready_pos-1];
+  ls = ((listener_t *)listener)->s[ready_pos-1];
 
   l = sizeof(tcp_accept_addr);
 
   do {
-    s = accept(s, (struct sockaddr *)tcp_accept_addr, &l);
+    s = accept(ls, (struct sockaddr *)tcp_accept_addr, &l);
   } while ((s == -1) && (NOT_WINSOCK(errno) == EINTR));
 
   if (s != INVALID_SOCKET) {
