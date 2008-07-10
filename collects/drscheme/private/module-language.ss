@@ -120,12 +120,16 @@
         (super on-execute settings run-in-user-thread)
         (run-in-user-thread
          (λ ()
-           (current-command-line-arguments (module-language-settings-command-line-args settings))
-           (let ([default (current-library-collection-paths)])
-             (current-library-collection-paths
-              (append-map
-               (λ (x) (if (symbol? x) default (list x)))
-               (module-language-settings-collection-paths settings)))))))
+           (current-command-line-arguments
+            (module-language-settings-command-line-args settings))
+           (let* ([default (current-library-collection-paths)]
+                  [cpaths (append-map (λ (x) (if (symbol? x) default (list x)))
+                                      (module-language-settings-collection-paths
+                                       settings))])
+             (when (null? cpaths)
+               (fprintf (current-error-port)
+                        "Warning: your collection paths are empty!\n"))
+             (current-library-collection-paths cpaths)))))
       
       (define/override (get-one-line-summary)
         (string-constant module-language-one-line-summary))
