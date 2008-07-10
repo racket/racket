@@ -316,16 +316,16 @@ Like @scheme[remove], but removes from @scheme[lst] every instance of
 every element of @scheme[v-lst].}
 
 
-@defproc[(remq* [v any/c] [lst list?])
+@defproc[(remq* [v-lst list?] [lst list?])
          list?]{
 
-Returns @scheme[(remove* v lst eq?)].}
+Returns @scheme[(remove* v-lst lst eq?)].}
 
 
-@defproc[(remv* [v any/c] [lst list?])
+@defproc[(remv* [v-lst list?] [lst list?])
          list?]{
 
-Returns @scheme[(remove* v lst eqv?)].}
+Returns @scheme[(remove* v-lst lst eqv?)].}
 
 
 @defproc[(sort [lst list?] [less-than? (any/c any/c . -> . any/c)]
