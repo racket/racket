@@ -361,7 +361,10 @@ function Search(data, term, is_pre, K) {
       fuel--; i++;
     }
     if (i<data.length) t = setTimeout(DoChunk,15);
-    else return K([exacts.length, exacts.concat(matches).concat(wordmatches)]);
+    else {
+      r = [exacts.length, exacts.concat(matches).concat(wordmatches)];
+      if (K) K(r); else return r;
+    }
   };
   if (!K) return DoChunk();
   else { progress(0); t = setTimeout(DoChunk,15); return killer; }
