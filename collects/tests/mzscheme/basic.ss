@@ -2147,6 +2147,9 @@
 (test 2 hash-ref im-t "hello" (lambda () 'none))
 (test #f hash-eq? im-t)
 
+(test #f equal? #hash((x . 0)) #hash((y . 0)))
+(test #t equal? #hash((y . 0)) #hash((y . 0)))
+
 (err/rt-test (hash-set! im-t 1 2))
 (err/rt-test (hash-remove! im-t 1))
 (err/rt-test (make-immutable-hasheq '(1)))

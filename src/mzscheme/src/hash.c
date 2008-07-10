@@ -2388,7 +2388,7 @@ int scheme_hash_tree_equal_rec(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, void 
   for (i = t1->count; i--; ) {
     scheme_hash_tree_index(t1, i, &k, &v);
     v2 = scheme_hash_tree_get(t2, k);
-    if (!v || !v2)
+    if (!v2)
       return 0;
     if (!scheme_recur_equal(v, v2, eql))
       return 0;
