@@ -7,7 +7,7 @@
          mred/mred-sig
          mzlib/match
          "../preferences.ss"
-         "tex-table.ss"
+         mrlib/tex-table
          "sig.ss")
 
   (import mred^

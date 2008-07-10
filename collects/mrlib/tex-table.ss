@@ -1,5 +1,13 @@
 #lang scheme/base
-(provide tex-shortcut-table)
+(require scheme/contract)
+
+(define (string-len-one? x)
+  (and (string? x)
+       (= 1 (string-length x))))
+  
+(provide/contract
+ [tex-shortcut-table
+  (listof (list/c string? string-len-one?))])
 
 (define tex-shortcut-table
   '(("Downarrow" "⇓")
@@ -142,7 +150,7 @@
     ("cong" "≌")
     ("sqsubsetb" "⊏")
     ("sqsupsetb" "⊐")
-    ("neq" "≠")
+    ("neq" #;"≠" "≠")
     ("smile" "⌣")
     ("sqsubseteq" "⊑")
     ("sqsupseteq" "⊒")
