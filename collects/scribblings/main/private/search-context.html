@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!--
+  This page serves as a trampoline -- it finds an "hq" parameter,
+  stores it in a cookie, and continues to the search page.  This
+  avoids having the "hq" argument be on the search page -- since then
+  when you refresh the search you will reset the cookie.
+-->
+<head>
+<meta http-equiv="content-type" content="text-html; charset=utf-8" />
+<title>Search Manuals</title>
+<script type="text/javascript" src="../scribble-common.js"></script>
+</head>
+<body>
+  <noscript>Sorry, you must have JavaScript to use this page.<br></noscript>
+<script>
+
+if (location.search.length > 0) {
+  var paramstrs = location.search.substring(1).split(/[;&]/);
+  var newsearch = null;
+  for (var i=0; i<paramstrs.length; i++) {
+    var param = paramstrs[i].split(/=/);
+    // an empty "hq=" can be used to clear the cookie
+    if (param[0] == "hq") {
+      SetCookie("PLT_PreQuery", ((param.length==2) ? unescape(param[1]) : ""));
+    } else {
+      newsearch = (newsearch == null)
+                    ? paramstrs[i] : (newsearch + "&" + paramstrs[i]);
+    }
+  }
+  newsearch = (newsearch == null) ? "" : ("?" + newsearch);
+  // localtion.replace => jump without leaving the current page in the history
+  // (the new url uses "index.html" and the new search part)
+  location.replace(location.href.replace(/\/[^\/?#]*[?][^#]*/,
+                                         "/index.html" + newsearch));
+} else {
+  // no parameters found? just jump to the search page...
+  location.href = "index.html";
+}
+
+</script>
+</body>
+</html>

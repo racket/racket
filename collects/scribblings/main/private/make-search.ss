@@ -20,6 +20,11 @@
 
 (define-runtime-path search-script "search.js")
 
+;; this file is used as a trampoline to set a context (a pre-filter cookie) and
+;; then hop over to the search page (the search page can do it itself, but it's
+;; to heavy to load twice).
+(define-runtime-path search-context-page "search-context.html")
+
 (define (quote-string str)
   (define (hex4 ch)
     (let ([s (number->string (char->integer (string-ref ch 0)) 16)])
@@ -166,9 +171,10 @@
                  (add-between ms ",\n  "))};
           @||})))
 
-  (let ([js (build-path dest-dir "search.js")])
-    (when (file-exists? js) (delete-file js))
-    (copy-file search-script js))
+  (for ([src (list search-script search-context-page)])
+    (define dest (build-path dest-dir (file-name-from-path file)))
+    (when (file-exists? dest) (delete-file dest))
+    (copy-file src dest))
 
   (list
    (script-ref "plt-index.js"
