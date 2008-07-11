@@ -483,7 +483,7 @@ module browser threading seems wrong.
           
           (define save-file-metadata #f)
           
-          (define/pubment (begin-metadata-changes) 
+          (define/pubment (begin-metadata-changes)
             (set! ignore-edits? #t)
             (inner (void) begin-metadata-changes))
           (define/pubment (end-metadata-changes)
@@ -652,14 +652,18 @@ module browser threading seems wrong.
             already-warned-state)
           (define/pubment (already-warned)
             (set! already-warned-state #t))
-          
+
+          (define really-modified? #f)
           (define ignore-edits? #f)
+
           (define/augment (after-insert x y)
-            (unless ignore-edits? 
+            (unless ignore-edits?
+              (set! really-modified? #t)
               (set! needs-execution-state (string-constant needs-execute-defns-edited)))
             (inner (void) after-insert x y))
           (define/augment (after-delete x y)
             (unless ignore-edits?
+              (set! really-modified? #t)
               (set! needs-execution-state (string-constant needs-execute-defns-edited)))
             (inner (void) after-delete x y))
           
@@ -722,11 +726,9 @@ module browser threading seems wrong.
                             [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
                 (values (/ (+ xl xr) 2)
                         (/ (+ yl yr) 2)))))
-          
-          (define default-changed? #f)
-          (define/augment (on-change) (set! default-changed? #t))
+
           (define/public (still-untouched?)
-            (and (or (= (last-position) 0) (not default-changed?))
+            (and (= (last-position) 0)
                  (not (is-modified?))
                  (not (get-filename))))
           ;; inserts the auto-text if any, and executes the text if so
@@ -735,7 +737,8 @@ module browser threading seems wrong.
               (drscheme:language-configuration:language-settings-language
                next-settings))
             (define auto-text
-              (and (= (last-position) 0) (still-untouched?)
+              (and (not really-modified?)
+                   (not (get-filename))
                    (is-a? lang drscheme:module-language:module-language<%>)
                    (send lang get-auto-text
                          (drscheme:language-configuration:language-settings-settings
@@ -745,7 +748,7 @@ module browser threading seems wrong.
               (insert auto-text)
               (set-modified #f)
               (end-edit-sequence)
-              (set! default-changed? #f)
+              (set! really-modified? #f)
               ;; HACK: click run; would be better to override on-execute and
               ;; make it initialize a working repl, but the problem is that
               ;; doing that in module-language.ss means that it'll either need
@@ -756,11 +759,14 @@ module browser threading seems wrong.
               ;; parser).
               (send (get-top-level-window) execute-callback)))
           (define/private (remove-auto-text)
-            (when (and (still-untouched?) (> (last-position) 0))
+            (when (and (not really-modified?)
+                       (not (get-filename))
+                       (> (last-position) 0))
               (begin-edit-sequence #f)
               (send this erase)
               (set-modified #f)
-              (end-edit-sequence)))
+              (end-edit-sequence)
+              (set! really-modified? #f)))
           
           (inherit invalidate-bitmap-cache)
           (define/public (set-error-arrows arrows)
