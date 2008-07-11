@@ -9,6 +9,7 @@
          scheme/list
          scheme/string
          scheme/match
+         scheme/path
          net/url
          (only-in scheme/class send)
          (only-in xml xexpr->string)
@@ -23,7 +24,7 @@
 ;; this file is used as a trampoline to set a context (a pre-filter cookie) and
 ;; then hop over to the search page (the search page can do it itself, but it's
 ;; to heavy to load twice).
-(define-runtime-path search-context-page "search-context.html")
+(define-runtime-path search-context-page "search-context.htm")
 
 (define (quote-string str)
   (define (hex4 ch)
@@ -172,7 +173,7 @@
           @||})))
 
   (for ([src (list search-script search-context-page)])
-    (define dest (build-path dest-dir (file-name-from-path file)))
+    (define dest (build-path dest-dir (file-name-from-path src)))
     (when (file-exists? dest) (delete-file dest))
     (copy-file src dest))
 
