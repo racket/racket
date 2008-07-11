@@ -251,12 +251,12 @@ paths must end with an additional NUL terminator, and the overall list
 must be less than 1024 bytes long.
 
 As an alternative to editing an exeuctable directly, the
-`create-embedding-executable' procedure from `(lib "embed.ss"
-"compiler")' can be used to change the embedded path. For example, the
-following program clones the MzScheme executable to "/tmp/mz" and
-changes the embedded path in the clone to "/tmp/collects":
+`create-embedding-executable' procedure from `compiler/embed' can be
+used to change the embedded path. For example, the following program
+clones the MzScheme executable to "/tmp/mz" and changes the embedded
+path in the clone to "/tmp/collects":
 
- (require (lib "embed.ss" "compiler"))
+ (require compiler/embed)
  (create-embedding-executable "/tmp/mz" #:collects-path "/tmp/collects")
 
 Similarly, `mzc' in `--exe' or `--gui-exe' mode accepts a `--collects'
@@ -267,7 +267,7 @@ information, see worksp\README.
 
 Paths to all other installation directories are found through the
 "config.ss" library of the "config" collection. Search the
-documentation for "config search paths") for more information.
+documentation for "config search paths" for more information.
 
 ========================================================================
  Compiling the OSKit-based Kernel
