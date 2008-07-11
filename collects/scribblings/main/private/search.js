@@ -30,13 +30,14 @@ function MakePref(label, input) {
 }
 descriptions = new Array();
 function PrefInputArgs(name, desc) {
+  // don't plant `desc' directly in the text -- it might have quotes
   descriptions[name] = desc;
   return 'tabIndex="4" id="'+name+'_pref"'
        +' onkeypress="hide_prefs(event);"'
        +' onchange="set_'+name+'(this); return true;"'
        +' onfocus="saved_status=status_line.innerHTML;'
                  +'status_line.innerHTML=descriptions[\''+name+'\'];"'
-       +' onblur="if (saved_status) status_line.innerHTML=saved_status;"';
+       +' onblur="status_line.innerHTML = saved_status || \'\';"';
 }
 
 function InitializeSearch() {
