@@ -222,7 +222,8 @@
                                     (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
                                          (flatten (correct-list rsts)))]
                                    [(choice-res? rsts)
-                                    (map (lambda (rst) (next-res old-answer new-id old-used tok rst))
+                                    (map (lambda (rst) (next-res old-answer new-id old-used tok 
+                                                                 (update-possible-fail rst rsts)))
                                          (flatten (correct-list (choice-res-matches rsts))))]
                                    [(repeat-res? rsts)
                                     (next-res old-answer new-id old-used tok rsts)]
@@ -335,7 +336,7 @@
                                         (map 
                                          (lambda (rst)
                                            (res-msg 
-                                            (build-error rst (previous? input) (previous? return-name)
+                                            (build-error rst (lambda () (previous? input)) (previous? return-name)
                                                          (car next-preds) look-back look-back-ref used curr-id seen alts last-src)))
                                          rsts)])
                                    (fail-res input 
@@ -385,6 +386,21 @@
                          (rank-choice (map fail-type-may-use fails))
                          fails))
     
+    ;update-possible-rail result result -> result
+    (define (update-possible-fail res back)
+      #;(printf "update-possible-fail ~a, ~a~n" res back)
+      (cond
+        [(and (res? res) (not (res-possible-error res)))
+         (cond 
+           [(res? back)
+            (make-res (res-a res) (res-rest res) (res-msg res) (res-id res) (res-used res)
+                      (res-possible-error back) (res-first-tok res))]
+           [(choice-res? back)
+            (make-res (res-a res) (res-rest res) (res-msg res) (res-id res) (res-used res)
+                      (choice-res-errors back) (res-first-tok res))]
+           [else res])]
+        [else res]))
+    
     ;build-sequence-error: result boolean result string int [U #f string] [listof string] int int -> result
     (define (sequence-error-gen name len)
       (letrec ([repeat->res
@@ -424,14 +440,16 @@
                                         stop)
                                     (res-first-tok inn))]
                          [else inn]))]
-                    [else rpt]))])
+                    [else rpt]))]
+               )
         (lambda (old-res prev prev-name next-pred look-back look-back-ref used id seen alts last-src)
           (cond
-            [(and (pair? old-res) (null? (cdr old-res)) (res? (car old-res))) (car old-res)]
+            [(and (pair? old-res) (null? (cdr old-res)) (res? (car old-res))) 
+             (update-possible-fail (car old-res) look-back)]
             [(and (pair? old-res) (null? (cdr old-res)) (repeat-res? (car old-res)))
              (repeat->res (car old-res) look-back)]
             [(or (and (res? old-res) (res-a old-res)) (choice-res? old-res) (lazy-opts? old-res))
-             old-res]
+             (update-possible-fail old-res look-back)]
             [(repeat-res? old-res) 
              #;(printf "finished on repeat-res for ~a res ~n" name #;old-res)
              (repeat->res old-res look-back)]
@@ -517,7 +535,7 @@
                                       name used 
                                       (+ used (fail-type-may-use fail) next-used)
                                       id kind (reverse seen) expected found 
-                                      (and (res? prev) (res-a prev) (res-msg prev))
+                                      prev
                                       prev-name)))]
                                 [seq-fail (seq-fail-maker fail used)]
                                 [pos-fail 

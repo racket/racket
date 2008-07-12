@@ -14,7 +14,7 @@
   (provide convert-to-string shift not-equal bitwise mod divide-dynamic divide-int 
            divide-float and or cast-primitive cast-reference instanceof-array nullError
            check-eq? dynamic-equal? compare compare-within check-catch check-mutate check-by
-           compare-rand)
+           compare-rand check-effect)
 
   (define (check-eq? obj1 obj2)
     (or (eq? obj1 obj2)
@@ -347,9 +347,10 @@
         result-value)))
   
   ;check-effects: (-> (listof val)) (-> (listof val)) (list string) src object -> boolean
-  (define (check-effects tests checks info src test-obj)
-    (tests)
-    (checks))
+  (define (check-effect tests checks info src test-obj)
+    (let ([app (lambda (thunk) (thunk))])
+      (for-each app tests)
+      (andmap app checks)))
   
   (define (report-check-result res check-kind info values src test-obj)
     (when test-obj 

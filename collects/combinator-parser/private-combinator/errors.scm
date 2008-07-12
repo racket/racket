@@ -56,17 +56,19 @@
                 (collapse-message
                  (add-to-message
                   (msg
-                   (cond 
-                     [(sequence-fail-repeat? fail-type)
-                      (format "Found a repitition of ~a; the required number are present. Expected ~a ~a next."
-                              (sequence-fail-last-seen fail-type) a2 expected)]
-                     [(null? show-sequence)
-                      (format "Expected ~a ~a to begin this ~a, instead found ~a."
-                              a2 expected id-name (input->output-name (sequence-fail-found fail-type)))]
-                     [else
-                      (format "Expected ~a ~a to continue this ~a. Instead, found ~a after ~a."
-                              a2 expected id-name (input->output-name (sequence-fail-found fail-type))
-                              (format-seen show-sequence))]))
+                   (let* ([poss-repeat ((sequence-fail-repeat? fail-type))]
+                          [repeat? (and (res? poss-repeat) (res-a poss-repeat) (res-msg poss-repeat))])
+                     (cond 
+                       [repeat?
+                        (format "Found a repitition of ~a; the required number are present. Expected ~a ~a next."
+                                (sequence-fail-last-seen fail-type) a2 expected)]
+                       [(null? show-sequence)
+                        (format "Expected ~a ~a to begin this ~a, instead found ~a."
+                                a2 expected id-name (input->output-name (sequence-fail-found fail-type)))]
+                       [else
+                        (format "Expected ~a ~a to continue this ~a. Instead, found ~a after ~a."
+                                a2 expected id-name (input->output-name (sequence-fail-found fail-type))
+                                (format-seen show-sequence))])))
                   name curr-id message-to-date))]
                [(misscase) 
                 (collapse-message

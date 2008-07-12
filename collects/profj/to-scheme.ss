@@ -2830,60 +2830,85 @@
                                      ,(type-spec-dim type))
                  (build-src (type-spec-src type))))
   
-  ;converted
   ;translate-array-access: syntax syntax src -> syntax
-  (define translate-array-access
-    (lambda (array index src)
-      (make-syntax #f `(send ,array access ,index) 
-                   (build-src src))))
+  (define (translate-array-access array index src)
+    (make-syntax #f `(send ,array access ,index) 
+                 (build-src src)))
   
-  ;converted
   ;translate-cond: syntax syntax syntax src -> syntax
-  (define translate-cond
-    (lambda (if? then else src)
-      (make-syntax #f `(if ,if? ,then ,else) (build-src src))))
+  (define (translate-cond if? then else src)
+    (make-syntax #f `(if ,if? ,then ,else) (build-src src)))
   
-  ;converted
   ;translate-post-expr: syntax expression symbol src src -> syntax
   (define (translate-post-expr expr exp op key src)
-    (let ([setter (cond
-                    [(and (field-access? (access-name exp))
-                          (not (var-access-static? (field-access-access (access-name exp)))))
-                     (create-set-name (id-string (field-access-field (access-name exp)))
-                                   (var-access-class (field-access-access (access-name exp))))]
-                    [else 'set!])])
-      (make-syntax #f `(begin0
-                         ,expr
-                         (,setter ,expr ( ,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                         ,expr)))
-                   (build-src src))))
+    (let* ([array? (array-access? exp)]           
+           [memb-field? (and
+                         (access? exp)
+                         (field-access? (access-name exp))
+                         (not (var-access-static? (field-access-access (access-name exp)))))]
+           [set-id (gensym 'target-)]
+           [set-val-id (gensym 'val-)]
+           [op (create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))])
+      (make-syntax 
+       #f
+       (cond
+         [memb-field?
+          (let ([field-name (id-string (field-access-field (access-name exp)))]
+                [class-name (var-access-class (field-access-access (access-name exp)))])
+            `(let* ([,set-id ,(translate-expression (field-access-object (access-name exp)))]
+                    [,set-val-id (,(create-get-name field-name class-name)
+                                  ,set-id)])
+               (,(create-set-name field-name class-name) ,set-id (,op ,set-val-id))
+               ,set-val-id))]
+         [array?
+          (let ([index-id (gensym 'index-)])
+            `(let* ([,set-id ,(translate-expression (array-access-name exp))]
+                    [,index-id ,(translate-expression (array-access-index exp))]
+                    [,set-val-id (send ,set-id access ,index-id)])
+               (send ,set-id set ,index-id (,op ,set-val-id))
+               ,set-val-id))]
+         [else `(begin0 ,expr (set! ,expr (,op ,expr)))])
+       (build-src src))))
   
-  ;converted
   ;translate-pre-expr: symbol syntax src src -> syntax
   (define (translate-pre-expr op expr exp key src)
-    (let ([setter (cond
-                    [(and (field-access? (access-name exp))
-                          (not (var-access-static? (field-access-access (access-name exp)))))
-                     (create-set-name (id-string (field-access-field (access-name exp)))
-                                   (var-access-class (field-access-access (access-name exp))))]
-                    [else 'set!])])
-      (make-syntax #f
-                   `(begin
-                      (,setter ,expr (,(create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))
-                                      ,expr))
-                      ,expr)
-                   (build-src src))))
+     (let* ([array? (array-access? exp)]           
+           [memb-field? (and
+                         (access? exp)
+                         (field-access? (access-name exp))
+                         (not (var-access-static? (field-access-access (access-name exp)))))]
+           [set-id (gensym 'target-)]
+           [set-val-id (gensym 'val-)]
+           [op (create-syntax #f (if (eq? op '++) 'add1 'sub1) (build-src key))])
+      (make-syntax 
+       #f
+       (cond
+         [memb-field?
+          (let ([field-name (id-string (field-access-field (access-name exp)))]
+                [class-name (var-access-class (field-access-access (access-name exp)))])
+            `(let* ([,set-id ,(translate-expression (field-access-object (access-name exp)))]
+                    [,set-val-id (,op (,(create-get-name field-name class-name)
+                                       ,set-id))])
+               (,(create-set-name field-name class-name) ,set-id ,set-val-id)
+               ,set-val-id))]
+         [array?
+          (let ([index-id (gensym 'index-)])
+            `(let* ([,set-id ,(translate-expression (array-access-name exp))]
+                    [,index-id ,(translate-expression (array-access-index exp))]
+                    [,set-val-id (,op (send ,set-id access ,index-id))])
+               (send ,set-id set ,index-id ,set-val-id)
+               ,set-val-id))]
+         [else `(begin (set! ,expr (,op ,expr)) ,expr)])
+       (build-src src))))
   
-  ;converted
   ;translate-unary: symbol syntax src src -> syntax
-  (define translate-unary
-    (lambda (op expr key src)
+  (define (translate-unary op expr key src)
       (make-syntax #f  (case op
                          ((-) `(,(create-syntax #f '- (build-src key)) ,expr))
                          ((!) `(,(create-syntax #f 'not (build-src key)) ,expr))
                          ((~) `(,(create-syntax #f '- (build-src key)) (- ,expr) 1))
                          ((+) expr))
-                   (build-src src))))
+                   (build-src src)))
   
   ;translate-cast: type-spec syntax type src
   (define (translate-cast type expr expr-type src)
@@ -3132,8 +3157,11 @@
                                                 obj@)])))))
                                  (map (apply compose (list id-string local-access-name access-name)) ids)
                                  (map expr-types ids))))
-                      ,@(map (lambda (t) `(,t)) ts)
-                      ,@(map (lambda (c) `(,c)) cs))
+                      (javaRuntime:check-effect (list ,@ts) (list ,@cs) 
+                                                (quote ,(map checked-info test))
+                                                (quote ,(src->list src))
+                                                (namespace-variable-value 'current~test~object% #f
+                                                                          (lambda () #f))))
                    (build-src src))))
   
   (require "error-messaging.ss")
