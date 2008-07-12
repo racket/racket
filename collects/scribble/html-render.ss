@@ -964,7 +964,7 @@
                      (loop (cdr ds) (cdr as) (cdr vas))))]))))
       `((table ([cellspacing "0"]
                 ,@(if need-inline?
-                    '([style "display: inline; vertical-align: top;"])
+                    '([style "display: inline-table; vertical-align: text-top;"])
                     null)
                 ,@(case t-style
                     [(boxed)    '([class "boxed"])]
