@@ -1077,6 +1077,7 @@ WARNING: printf is rebound in the body of the unit to always
              get-end-position
              get-snip-position
              get-style-list
+             get-port-name
              is-locked?
              last-position
              lock
@@ -1684,9 +1685,9 @@ WARNING: printf is rebound in the body of the unit to always
     (super-new)
     (init-output-ports)
     (define-values (in-port read-chan clear-input-chan)
-      (start-text-input-port this #f))
+      (start-text-input-port (get-port-name) #f))
     (define-values (in-box-port box-read-chan box-clear-input-chan) 
-      (start-text-input-port this (lambda () (on-box-peek))))))
+      (start-text-input-port (get-port-name) (lambda () (on-box-peek))))))
 
 (define input-box<%>
   (interface ((class->interface text%))
