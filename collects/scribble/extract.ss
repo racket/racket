@@ -5,9 +5,12 @@
          scribble/srcdoc
          (for-syntax scheme/base
                      scheme/path
-                     syntax/path-spec))
+                     syntax/path-spec
+                     (for-syntax scheme/base)))
 
-(provide include-extracted)
+(provide include-extracted
+         provide-extracted
+         include-previously-extracted)
 
 (define-for-syntax (strip-context c)
   (cond
@@ -19,72 +22,124 @@
                     (strip-context (cdr c)))]
    [else c]))
 
+(define-for-syntax (extract orig-path stx)
+  (let ([path (resolve-path-spec orig-path orig-path stx)])
+    (let ([s-exp 
+           (parameterize ([current-namespace (make-base-namespace)]
+                          [read-accept-reader #t]
+                          [current-load-relative-directory
+                           (path-only path)])
+             (expand
+              (with-input-from-file path
+                (lambda ()
+                  (port-count-lines! (current-input-port))
+                  (read-syntax path)))))])
+      (syntax-case s-exp ()
+        [(mod name lang
+              (mod-beg
+               content ...))
+         (with-syntax ([((content id) ...)
+                        (apply
+                         append
+                         (map (lambda (c)
+                                (syntax-case c (#%plain-app void quote-syntax provide/doc)
+                                  [(#%plain-app void (quote-syntax (provide/doc spec ...)))
+                                   (syntax->list #'(spec ...))]
+                                  [_ null]))
+                              (syntax->list #'(content ...))))]
+                       [(req ...)
+                        (map
+                         strip-context
+                         (apply
+                          append
+                          (map (lambda (c)
+                                 (syntax-case c (#%require #%plain-app void quote-syntax require/doc)
+                                   [(#%require spec ...)
+                                    (let loop ([specs (syntax->list #'(spec ...))])
+                                      (cond
+                                       [(null? specs) '()]
+                                       [else (let ([spec (car specs)])
+                                               (syntax-case spec (for-syntax for-meta)
+                                                 [(for-syntax . spec) (loop (cdr specs))]
+                                                 [(for-meta . spec) (loop (cdr specs))]
+                                                 [(for-template . spec) (loop (cdr specs))]
+                                                 [(for-label . spec) (loop (cdr specs))]
+                                                 [(just-meta . spec) (loop (cdr specs))]
+                                                 [_ (cons #`(for-label #,spec) (loop (cdr specs)))]))]))]
+                                   [(#%plain-app void (quote-syntax (require/doc spec ...)))
+                                    (syntax->list #'(spec ...))]
+                                   [_ null]))
+                               (syntax->list #'(content ...)))))]
+                       [orig-tag (datum->syntax #f 'orig)])
+           ;; This template is matched in `filter-info', below
+           #`(begin
+               (#%require (for-label #,(strip-context #'lang))
+                          (for-label #,(strip-context orig-path)) 
+                          req ...)
+               (drop-first (quote-syntax id) (def-it orig-tag content)) ...))]))))
+
 (define-syntax (include-extracted stx)
   (syntax-case stx ()
-    [(_ orig-path) #'(include-extracted orig-path #rx"")] ;; this regexp matches everything
+    [(_ orig-path)
+     (extract #'orig-path stx)]))
+
+(define-syntax (provide-extracted stx)
+  (syntax-case stx ()
+    [(_ orig-path)
+     (with-syntax ([(_begin reqs (_drop-first (_quote-syntax id) def) ...)
+                    (extract #'orig-path stx)])
+       #'(begin
+           (require (for-label (only-in orig-path))) ;; creates build dependency
+           (define-syntax (extracted stx)
+             (syntax-case stx ()
+               [(_ rx)
+                (let-syntax ([quote-syntax/loc 
+                              (lambda (stx)
+                                (syntax-case stx ()
+                                  [(_ s)
+                                   (let loop ([stx #'s])
+                                     (cond
+                                      [(syntax? stx)
+                                       (let ([ctx (datum->syntax stx 'ctx #f #f stx)])
+                                         (let ([s 
+                                                #`(datum->syntax (quote-syntax #,ctx)
+                                                                 #,(loop (syntax-e stx))
+                                                                 #,(and (syntax-position stx)
+                                                                        (vector (let ([s (syntax-source stx)])
+                                                                                  (if (path-string? s)
+                                                                                      s
+                                                                                      (format "~s" s)))
+                                                                                (syntax-line stx)
+                                                                                (syntax-column stx)
+                                                                                (syntax-position stx)
+                                                                                (syntax-span stx))))])
+                                           (let ([p (syntax-property stx 'paren-shape)])
+                                             (if p
+                                                 #`(syntax-property #,s 'paren-shape '#,p)
+                                                 s))))]
+                                      [(pair? stx) #`(cons #,(loop (car stx)) #,(loop (cdr stx)))]
+                                      [(vector? stx) #`(vector #,@(map loop (vector->list stx)))]
+                                      [(box? stx) #`(box #,(loop (unbox stx)))]
+                                      [else #`(quote #,stx)]))]))])
+                  #`(begin #,(quote-syntax/loc reqs)
+                           #,@(filter
+                               values
+                               (map (lambda (i d)
+                                      (if (regexp-match (syntax-e #'rx) (symbol->string i))
+                                          (d)
+                                          #f))
+                                    (list 'id ...)
+                                    (list (lambda () (quote-syntax/loc def)) ...)))))]))
+           (provide extracted)))]))
+
+(define-syntax (include-previously-extracted stx)
+  (syntax-case stx ()
     [(_ orig-path regexp-s)
-     (let ([path (resolve-path-spec #'orig-path #'orig-path stx)]
-           [reg (syntax-e #'regexp-s)])
-       (unless (regexp? reg)
-         (raise-syntax-error #f "expected a literal regular expression as the second argument" stx #'regexp-s))
-       (let ([s-exp 
-              (parameterize ([current-namespace (make-base-namespace)]
-                             [read-accept-reader #t]
-                             [current-load-relative-directory
-                              (path-only path)])
-                (expand
-                 (with-input-from-file path
-                   (lambda ()
-                     (port-count-lines! (current-input-port))
-                     (read-syntax path)))))])
-         (syntax-case s-exp ()
-           [(mod name lang
-                 (mod-beg
-                  content ...))
-            (with-syntax ([(content ...)
-                           (apply
-                            append
-                            (map (lambda (c)
-                                   (syntax-case c (#%plain-app void quote-syntax provide/doc)
-                                     [(#%plain-app void (quote-syntax (provide/doc spec ...)))
-                                      (map
-                                       (λ (x) (syntax-case x () [(docs id) #'docs])) 
-                                       (filter (λ (x)
-                                                 (syntax-case x ()
-                                                   [(stuff id)
-                                                    (regexp-match reg (symbol->string (syntax-e #'id)))]))
-                                               (syntax->list #'(spec ...))))]
-                                     [_ null]))
-                                 (syntax->list #'(content ...))))]
-                          [(req ...)
-                           (map
-                            strip-context
-                            (apply
-                             append
-                             (map (lambda (c)
-                                    (syntax-case c (#%require #%plain-app void quote-syntax require/doc)
-                                      [(#%require spec ...)
-                                       (let loop ([specs (syntax->list #'(spec ...))])
-                                         (cond
-                                           [(null? specs) '()]
-                                           [else (let ([spec (car specs)])
-                                                   (syntax-case spec (for-syntax for-meta)
-                                                     [(for-syntax . spec) (loop (cdr specs))]
-                                                     [(for-meta . spec) (loop (cdr specs))]
-                                                     [(for-template . spec) (loop (cdr specs))]
-                                                     [(for-label . spec) (loop (cdr specs))]
-                                                     [(just-meta . spec) (loop (cdr specs))]
-                                                     [_ (cons #`(for-label #,spec) (loop (cdr specs)))]))]))]
-                                      [(#%plain-app void (quote-syntax (require/doc spec ...)))
-                                       (syntax->list #'(spec ...))]
-                                      [_ null]))
-                                  (syntax->list #'(content ...)))))]
-                          [orig-tag (datum->syntax #f 'orig)])
-              #`(begin
-                  (#%require (for-label #,(strip-context #'lang))
-                             (for-label #,(strip-context #'orig-path)) 
-                             req ...)
-                  (def-it orig-tag content) ...))])))]))
+     (unless (regexp? (syntax-e #'regexp-s))
+       (raise-syntax-error #f "expected a literal regular expression as the second argument" stx #'regexp-s))
+     #`(begin
+         (require (only-in orig-path [#,(datum->syntax #'orig-path 'extracted) extracted]))
+         (extracted regexp-s))]))
 
 (define-for-syntax (revise-context c orig-tag new-tag tag)
   (cond
@@ -94,6 +149,7 @@
          new-tag
          orig-tag)
      (revise-context (syntax-e c) orig-tag new-tag tag)
+     c
      c)]
    [(pair? c) (cons (revise-context (car c) orig-tag new-tag tag)
                     (revise-context (cdr c) orig-tag new-tag tag))]
@@ -109,3 +165,5 @@
         #`(begin
             (require . #,(revise-context #'reqs orig-tag new-tag #'tag))
             #,(revise-context #'doc orig-tag new-tag #'tag)))])))
+
+(define-syntax-rule (drop-first a b) b)

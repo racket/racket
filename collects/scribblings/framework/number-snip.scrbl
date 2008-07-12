@@ -12,4 +12,4 @@
   }
 }
 
-@(include-extracted (lib "main.ss" "framework") #rx"^number-snip:")
+@(include-previously-extracted "main-extracts.ss" #rx"^number-snip:")

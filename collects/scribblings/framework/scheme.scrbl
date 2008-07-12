@@ -270,4 +270,4 @@
 @defclass[scheme:text% (scheme:set-mode-mixin (scheme:text-mixin (text:autocomplete-mixin (mode:host-text-mixin color:text%)))) ()]{}
 @defclass[scheme:text-mode% (scheme:text-mode-mixin color:text-mode%) ()]{}
 
-@(include-extracted (lib "main.ss" "framework") #rx"^scheme:")
+@(include-previously-extracted "main-extracts.ss" #rx"^scheme:")

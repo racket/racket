@@ -5,4 +5,4 @@
 @title{Preferences}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^preferences:")
+@(include-previously-extracted "main-extracts.ss" #rx"^preferences:")

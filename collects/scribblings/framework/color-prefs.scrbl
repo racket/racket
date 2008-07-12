@@ -5,4 +5,4 @@
 @title{Color Prefs}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^color-prefs:")
+@(include-previously-extracted "main-extracts.ss" #rx"^color-prefs:")

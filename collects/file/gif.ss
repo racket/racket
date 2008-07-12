@@ -573,7 +573,7 @@
 
              Given a set of pixels expressed in ARGB format (i.e., each four
              bytes is a set of values for one pixel: alpha, red, blue, and
-             green),@scheme[quantize] produces produces
+             green), @scheme[quantize] produces produces
 
              @(itemize @item{bytes for the image (i.e., a array of colors,
                              expressed as a byte string)}

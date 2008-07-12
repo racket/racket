@@ -45,4 +45,4 @@
   }
 }
 
-@(include-extracted (lib "main.ss" "framework") #rx"^comment-box:")
+@(include-previously-extracted "main-extracts.ss" #rx"^comment-box:")

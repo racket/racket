@@ -15,4 +15,4 @@
   }
 }
 
-@(include-extracted (lib "main.ss" "framework") #rx"^autosave:")
+@(include-previously-extracted "main-extracts.ss" #rx"^autosave:")

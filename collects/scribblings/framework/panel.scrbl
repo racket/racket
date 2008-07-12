@@ -168,4 +168,4 @@
 @defclass[panel:vertical-dragable% (panel:vertical-dragable-mixin (panel:dragable-mixin vertical-panel%)) ()]{}
 @defclass[panel:horizontal-dragable% (panel:horizontal-dragable-mixin (panel:dragable-mixin horizontal-panel%)) ()]{}
 
-@(include-extracted (lib "main.ss" "framework") #rx"^panel:")
+@(include-previously-extracted "main-extracts.ss" #rx"^panel:")

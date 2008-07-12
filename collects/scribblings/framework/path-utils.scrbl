@@ -5,4 +5,4 @@
 @title{Path Utils}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^path-utils:")
+@(include-previously-extracted "main-extracts.ss" #rx"^path-utils:")

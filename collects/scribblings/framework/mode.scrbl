@@ -43,4 +43,4 @@
 (surrogate-methods docs)
 )
 
-@(include-extracted (lib "main.ss" "framework") #rx"^mode:")
+@(include-previously-extracted "main-extracts.ss" #rx"^mode:")

@@ -5,4 +5,4 @@
 @title{Color Model}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^color-model:")
+@(include-previously-extracted "main-extracts.ss" #rx"^color-model:")

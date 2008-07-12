@@ -42,4 +42,4 @@
 }
 @defclass[keymap:aug-keymap% (keymap:aug-keymap-mixin keymap%) ()]{}
 
-@(include-extracted (lib "main.ss" "framework") #rx"^keymap:")
+@(include-previously-extracted "main-extracts.ss" #rx"^keymap:")

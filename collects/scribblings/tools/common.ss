@@ -37,7 +37,7 @@
      (string? (syntax-e #'name))
      (let ([name (syntax-e #'name)])
        (with-syntax ([rx (regexp (format "^drscheme:~a:" name))])
-         #'(include-extracted (lib "tool-lib.ss" "drscheme") rx)))]))
+         #'(include-previously-extracted "tool-lib-extracts.ss" rx)))]))
 
 (provide docs-get/extend)
 (define-syntax (docs-get/extend stx)

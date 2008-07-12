@@ -944,4 +944,4 @@
 @defclass[text:searching% (text:searching-mixin text:backup-autosave%) ()]{}
 @defclass[text:info% (text:info-mixin (editor:info-mixin text:searching%)) ()]{}
 
-@(include-extracted (lib "main.ss" "framework") #rx"^text:")
+@(include-previously-extracted "main-extracts.ss" #rx"^text:")

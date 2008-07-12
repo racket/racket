@@ -5,4 +5,4 @@
 @title{Finder}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^finder:")
+@(include-previously-extracted "main-extracts.ss" #rx"^finder:")

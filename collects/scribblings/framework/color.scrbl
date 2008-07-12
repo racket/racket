@@ -230,4 +230,4 @@
 }
 @defclass[color:text-mode% (color:text-mode-mixin mode:surrogate-text%) ()]{}
 
-@(include-extracted (lib "main.ss" "framework") #rx"^color:")
+@(include-previously-extracted "main-extracts.ss" #rx"^color:")

@@ -5,4 +5,4 @@
 @title{Main}
 
 
-@(include-extracted (lib "main.ss" "framework") #rx"^main:")
+@(include-previously-extracted "main-extracts.ss" #rx"^main:")

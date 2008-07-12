@@ -183,7 +183,7 @@
          (values
           #'[id contract]
           #'(defproc* header . desc)
-          #'(scribble/manual)
+          #'((only-in scribble/manual defproc*))
           #'id))])))
 
 (define-provide/doc-transformer parameter-doc
@@ -204,7 +204,7 @@
          (values
           #'[id (parameter/c contract)]
           #'(defparam id arg-id contract . desc)
-          #'(scribble/manual)
+          #'((only-in scribble/manual defparam))
           #'id))])))
 
 (define-provide/doc-transformer thing-doc
@@ -220,5 +220,5 @@
          (values
           #'[id contract]
           #'(defthing id contract . desc)
-          #'(scribble/manual)
+          #'((only-in scribble/manual defthing))
           #'id))])))
