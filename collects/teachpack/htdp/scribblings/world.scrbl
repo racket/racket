@@ -99,8 +99,8 @@ which is called every time your program should visualize the current world.
 )]{
    Creates and displays a @scheme[width] x @scheme[height] canvas,
    starts the clock, 
-   makes it tick every n seconds, 
-   and makes @scheme[w] the current world. 
+   makes it tick every @scheme[r] seconds, 
+   and makes @scheme[world0] the current world. 
    If it is called with five instead of four arguments and the last one
    (@scheme[animated-gif?]) is @scheme[true], the teachpack allows the
    generation of images from the animation, including an animated GIF image. }
