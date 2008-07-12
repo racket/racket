@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@title{@tt{drscheme:unit}}
+@(tools-title "unit")
 
 @definterface[drscheme:unit:tab<%> (drscheme:rep:context<%>)]{
 @defmethod[(break-callback) void?]{
@@ -277,7 +277,7 @@ It calls
 @method[drscheme:rep:context<%> ensure-rep-shown] and then it calls
 @method[drscheme:rep:text% do-many-text-evals] passing in the result of
 @method[drscheme:unit:frame<%> get-interactions-text] and its entire range, unless the first two characters are 
-"\#!" in which case, it skips the first line.
+@litchar{#!} in which case, it skips the first line.
 
 
 }}
@@ -373,8 +373,8 @@ Returns the result of
 
 }
 
-@defmethod[#:mode override 
-           (get-canvas\%)
+@defmethod[#:mode override
+           (get-canvas%)
            (is-a?/c canvas%)]{
 
 Returns the result of
@@ -422,8 +422,8 @@ Returns the result of
 
 }
 
-@defmethod[#:mode override 
-           (get-editor\%)
+@defmethod[#:mode override
+           (get-editor%)
            (is-a?/c editor<%>)]{
 
 Returns the result of
@@ -602,7 +602,7 @@ Calls result of
            (is-a?/c menu%)]{
 @methspec{
 
-Returns the \scm|"Insert"| menu. 
+Returns the Insert menu.
 
 }}
 
@@ -666,7 +666,7 @@ when the menus are cliked on).
 
 This assumes that the menu items in this menu are not moved
 around, except by the this capability. If they are, things
-can go funny ({\it i.e.}, no good checks are in place).
+can go funny (i.e., no good checks are in place).
 
 Note that the capability must be registered separately, via
 @scheme[drscheme:language:register-capability].
@@ -826,7 +826,6 @@ See also
 
 Initializes the visibility of the save button.
 
-
 }
 
-@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:unit:")
+@(tools-include "unit")

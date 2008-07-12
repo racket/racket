@@ -28,24 +28,37 @@
                     (all-from-out mrlib/switchable-button)
                     (all-from-out framework)))
 
+(provide tools-title tools-include)
+(define (tools-title name)
+  (title (tt (format "drscheme:~a" name))))
+(define-syntax (tools-include stx)
+  (syntax-case stx ()
+    [(_ name)
+     (string? (syntax-e #'name))
+     (let ([name (syntax-e #'name)])
+       (with-syntax ([rx (regexp (format "^drscheme:~a:" name))])
+         #'(include-extracted (lib "tool-lib.ss" "drscheme") rx)))]))
+
 (provide docs-get/extend)
 (define-syntax (docs-get/extend stx)
   (syntax-case stx ()
     [(_ id)
      (identifier? #'id)
-     (with-syntax ([get (datum->syntax 
-                         #'id 
-                         (string->symbol 
-                          (format "drscheme:get/extend:get-~a" (syntax-e #'id))))]
-                   [extend (datum->syntax 
-                         #'id 
-                         (string->symbol 
-                          (format "drscheme:get/extend:extend-~a" (syntax-e #'id))))])
+     (with-syntax ([get (datum->syntax
+                         #'id
+                         (string->symbol
+                          (format "drscheme:get/extend:get-~a"
+                                  (syntax-e #'id))))]
+                   [extend (datum->syntax
+                            #'id
+                            (string->symbol
+                             (format "drscheme:get/extend:extend-~a"
+                                     (syntax-e #'id))))])
        #'(begin
            @defproc*[([(extend (mixin mixin-contract))
                        void?]
                       [(extend (mixin mixin-contract) (before boolean?))
                        void?])]{
-                                Adds a new mixin to the class eventually created in DrScheme.
-                                }
-          @defproc[(get) class?]{Returns the class (with all registered mixins applied).}))]))
+             Adds a new mixin to the class eventually created in DrScheme.}
+          @defproc[(get) class?]{
+            Returns the class (with all registered mixins applied).}))]))

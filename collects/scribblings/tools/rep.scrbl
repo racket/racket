@@ -1,10 +1,8 @@
 #lang scribble/doc
 @(require "common.ss")
-@title{@tt{drscheme:rep}}
+@(tools-title "rep")
 
 @definterface[drscheme:rep:text<%> ()]{
-
-
 }
 
 
@@ -152,7 +150,7 @@ the Run button or the evaluation has been killed.
 
 This thread has all of its parameters initialized according to the
 settings of the current execution.
-See \Mzhyperref{parameters}{mz:parameters}
+See @secref[#:doc '(lib "scribblings/reference/reference.scrbl")]{parameters}
 for more information about parameters.
 
 }
@@ -446,4 +444,4 @@ in the user's world.
 
 }}
 
-@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:rep:")
+@(tools-include "rep")

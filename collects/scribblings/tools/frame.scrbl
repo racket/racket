@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "common.ss")
-@title{@tt{drscheme:frame}}
+@(tools-title "frame")
 
 @defclass[drscheme:frame:name-message% canvas% ()]{
 
@@ -23,7 +23,7 @@ Sets the names that the button shows.
 
 The string @scheme[short-name] is the name that is shown on the button
 and @scheme[name] is shown when the button is clicked on, in a separate
-window. If @scheme[name] is \#f, a message indicating that the file
+window. If @scheme[name] is @scheme[#f], a message indicating that the file
 hasn't been saved is shown.
 
 
@@ -63,7 +63,7 @@ if the
            (file-menu:between-open-and-revert [file-menu (is-a?/c @scheme[menu%])])
            void?]{
 
-Adds an {\it Install .plt File...} menu item, which
+Adds an ``Install .plt File...'' menu item, which
 downloads and installs .plt files from the web, or installs
 them from the local disk. After that, calls the super
 method.
@@ -178,8 +178,7 @@ Returns @scheme[#t].
 
 @definterface[drscheme:frame:basics<%> (frame:standard-menus<%>)]{
 
-This interface is the result of the
-\iscmmixin{drscheme:frame:basics-mixin} 
+This interface is the result of the @scheme[drscheme:frame:basics-mixin]
 
 }
 
@@ -210,7 +209,7 @@ Does nothing.
 
 @defmethod[(get-show-menu)
            (is-a?/c menu%)]{
-\index{View menu}
+@index{View menu}
 
 returns the view menu, for use by the
 @method[drscheme:frame:<%> update-shown] method.
@@ -262,4 +261,4 @@ Does nothing.
 
 }}}
 
-@(include-extracted (lib "tool-lib.ss" "drscheme") #rx"^drscheme:frame:")
+@(tools-include "frame")
