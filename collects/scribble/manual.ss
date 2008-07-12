@@ -2358,10 +2358,10 @@
      (defmethod #:mode public (name arg ...) result-type desc ...)]))
 
 (define-syntax-rule (methimpl body ...)
-  (make-impl (lambda () (list (italic "Default implementation:") body ...))))
+  (make-impl (lambda () (list (italic "Default implementation:") " " body ...))))
 
 (define-syntax-rule (methspec body ...)
-  (make-spec (lambda () (list (italic "Specification:") body ...))))
+  (make-spec (lambda () (list (italic "Specification:") " " body ...))))
 
 (define (*this-obj cname)
   (name-this-object cname))
