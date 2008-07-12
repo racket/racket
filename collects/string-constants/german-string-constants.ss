@@ -287,6 +287,9 @@
  (yes "Ja")
  (no "Nein")
  
+ ;; saving image (right click on an image to see the text)
+ (save-image "Bild abspeichern...")
+
  ;;; preferences
  (preferences "Einstellungen")
  (error-saving-preferences "Fehler beim Speichern der Einstellungen für ~a")
