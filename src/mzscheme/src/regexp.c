@@ -249,21 +249,40 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
       longest_is_ci = 0;
       len = 0;
       for (; scan != 0; scan = regnext(scan)) {
-	if (((rOP(scan) == EXACTLY) || (rOP(scan) == EXACTLY_CI))
-	    && rOPLEN(OPERAND(scan)) >= len) {
-	  /* Skip regmust if it contains a null character: */
-	  rxpos ls = OPSTR(OPERAND(scan));
-	  int ll = rOPLEN(OPERAND(scan)), i;
-	  for (i = 0; i < ll; i++) {
-	    if (!regstr[ls + i])
-	      break;
-	  }
-	  if (i >= ll) {
-	    longest = ls;
-	    len = ll;
-	    longest_is_ci = (rOP(scan) == EXACTLY_CI);
-	  }
-	}
+        int mscan = scan;
+        while (1) {
+          int mop;
+          mop = rOP(mscan);
+          if (((mop == EXACTLY) || (mop == EXACTLY_CI))
+              && rOPLEN(OPERAND(mscan)) >= len) {
+            /* Skip regmust if it contains a null character: */
+            rxpos ls = OPSTR(OPERAND(mscan));
+            int ll = rOPLEN(OPERAND(mscan)), i;
+            for (i = 0; i < ll; i++) {
+              if (!regstr[ls + i])
+                break;
+            }
+            if (i >= ll) {
+              longest = ls;
+              len = ll;
+              longest_is_ci = (rOP(mscan) == EXACTLY_CI);
+            }
+            break;
+          } else if ((mop == EXACTLY1) && (1 >= len)) {
+            /* Skip if it's a null character */
+            if (regstr[OPERAND(mscan)]) {
+              longest = OPERAND(mscan);
+              len = 1;
+              longest_is_ci = 0;
+            }
+            break;
+          } else if ((mop == OPENN) 
+                     || (mop == SAVECONST)
+                     || ((mop >= OPEN) && (mop < CLOSE))) {
+            mscan = NEXT_OP(mscan);
+          } else
+            break;
+        }
       }
       if (longest) {
 	r->regmust = longest;
