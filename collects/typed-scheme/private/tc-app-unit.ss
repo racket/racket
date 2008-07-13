@@ -512,7 +512,7 @@
 (define (tc/app/internal form expected)
   (kernel-syntax-case* form #f 
     (values apply not list list* call-with-values do-make-object make-object cons
-            andmap ormap) ;; the special-cased functions   
+            andmap ormap foldl) ;; the special-cased functions   
     ;; special cases for classes
     [(#%plain-app make-object cl . args)     
      (check-do-make-object #'cl #'args #'() #'())]
@@ -585,6 +585,18 @@
          (match-let* ([ft (tc-expr #'f)]
                       [(tc-result: t) (tc/funapp #'f #'(arg) ft (list (ret ty)) #f)])
            (ret (Un (-val #f) t)))))]
+    ;; foldl of ... argument
+    [(#%plain-app foldl f c arg)
+     (with-handlers ([exn:fail? (lambda _ #f)])
+       (tc/dots #'arg)
+       #t)
+     (let-values ([(ty bound) (tc/dots #'arg)])
+       (parameterize ([current-tvars (extend-env (list bound)
+                                                 (list (make-DottedBoth (make-F bound)))
+                                                 (current-tvars))])
+         (match-let* ([ft (tc-expr #'f)]
+                      [fc (tc-expr #'c)])
+           (tc/funapp #'f #'(arg c) ft (list (ret ty) fc) #f))))]
     ;; default case
     [(#%plain-app f args ...) 
      (tc/funapp #'f #'(args ...) (tc-expr #'f) (map tc-expr (syntax->list #'(args ...))) expected)]))
