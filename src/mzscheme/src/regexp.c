@@ -245,6 +245,7 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
      * strong reason, but sufficient in the absence of others.
      */
     if (flags&SPSTART) {
+      int prev_op = 0;
       longest = 0;
       longest_is_ci = 0;
       len = 0;
@@ -276,13 +277,18 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
               longest_is_ci = 0;
             }
             break;
-          } else if ((mop == OPENN) 
-                     || (mop == SAVECONST)
-                     || ((mop >= OPEN) && (mop < CLOSE))) {
-            mscan = NEXT_OP(mscan);
+          } else if ((mop == BRANCH) && (prev_op != BRANCH)) {
+            int mnext;
+            mnext = NEXT_OP(mscan);
+            if (rOP(mnext) != BRANCH) {
+              /* A branch with only one choice */
+              mscan = OPERAND(mscan);
+            } else
+              break;
           } else
             break;
         }
+        prev_op = rOP(scan);
       }
       if (longest) {
 	r->regmust = longest;
