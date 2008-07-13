@@ -2015,6 +2015,13 @@ Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Objec
     map = scheme_make_pair(a, map);
     
     scheme_hash_set(marked_names, sym, map);
+    {
+      Scheme_Hash_Table *rev_ht;
+      rev_ht = (Scheme_Hash_Table *)scheme_hash_get(marked_names, scheme_false);
+      if (rev_ht) {
+        scheme_hash_set(rev_ht, best_match, scheme_true);
+      }
+    }
   }
 
   return best_match;
@@ -2024,20 +2031,33 @@ int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym
 {
   int i;
   Scheme_Object *l, *a;
+  Scheme_Hash_Table *rev_ht;
 
   if (!marked_names)
     return 0;
 
-  for (i = marked_names->size; i--; ) {
-    l = marked_names->vals[i];
-    if (l) {
-      for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
-	a = SCHEME_CAR(l);
-	if (SAME_OBJ(sym, SCHEME_CDR(a)))
-	  return 1;
+  if (!marked_names->count)
+    return 0;
+
+  rev_ht = (Scheme_Hash_Table *)scheme_hash_get(marked_names, scheme_false);
+
+  if (!rev_ht) {
+    rev_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+
+    for (i = marked_names->size; i--; ) {
+      l = marked_names->vals[i];
+      if (l) {
+        for (; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+          a = SCHEME_CAR(l);
+          scheme_hash_set(rev_ht, SCHEME_CDR(a), scheme_true);
+        }
       }
+      scheme_hash_set(marked_names, scheme_false, (Scheme_Object *)rev_ht);
     }
   }
+
+  if (scheme_hash_get(rev_ht, sym))
+    return 1;
 
   return 0;
 }

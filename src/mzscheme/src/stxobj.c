@@ -4830,7 +4830,9 @@ static Scheme_Object *wraps_to_datum(Scheme_Object *w_in,
                     Scheme_Object *d = scheme_null, *p;
 
                     for (i = mrn->marked_names->size; i--; ) {
-                      if (mrn->marked_names->vals[i]) {
+                      if (mrn->marked_names->vals[i]
+                          /* #f mapping used to store reverse-map cache: */
+                          && !SCHEME_FALSEP(mrn->marked_names->keys[i])) {
                         p = CONS(mrn->marked_names->keys[i],
                                  mrn->marked_names->vals[i]);
                         d = CONS(p, d);
