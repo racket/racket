@@ -22,7 +22,7 @@
 (define verbose (make-parameter #t))
 
 (define-struct doc (src-dir src-spec src-file dest-dir flags under-main? category))
-(define-struct info (doc sci provides undef searches deps known-deps
+(define-struct info (doc get-sci provides undef searches deps known-deps
                      build? time out-time need-run?
                      need-in-write? need-out-write?
                      vers rendered? failed?)
@@ -323,6 +323,23 @@
 (define (read-out-sxref)
   (fasl->s-exp (current-input-port)))
 
+(define (make-sci-cached sci info-out-file setup-printf)
+  (when (verbose)
+    (fprintf (current-error-port) " [Lazy ~a]\n" info-out-file))
+  (let ([b (make-weak-box sci)])
+    (lambda ()
+      (let ([v (weak-box-value b)])
+        (or v
+            (begin
+              (when (verbose)
+                (fprintf (current-error-port) " [Re-load ~a]\n" info-out-file))
+              (let ([v (cadr (with-input-from-file info-out-file read-out-sxref))])
+                (set! b (make-weak-box v))
+                v)))))))
+
+(define (make-sci-computed sci)
+  (lambda () sci))
+
 (define ((get-doc-info only-dirs latex-dest auto-main? auto-user?
                        with-record-error setup-printf)
          doc)
@@ -385,7 +402,10 @@
             (error "old info has wrong version or flags"))
           (make-info
            doc
-           (list-ref v-out 1) ; sci (leave serialized)
+           (make-sci-cached
+            (list-ref v-out 1) ; sci (leave serialized)
+            info-out-file
+            setup-printf)
            (let ([v (list-ref v-out 2)])  ; provides
              (with-my-namespace
               (lambda ()
@@ -438,23 +458,31 @@
                (when (and (verbose) need-out-write?)
                  (fprintf (current-error-port) " [New out ~a]\n" (doc-src-file doc)))
                (gc-point)
-               (make-info doc
-                          sci
-                          defs
-                          (send renderer get-undefined ri)
-                          searches
-                          null ; no deps, yet
-                          null ; no known deps, yet
-                          can-run?
-                          -inf.0
-                          (if need-out-write?
-                              (/ (current-inexact-milliseconds) 1000)
-                              info-out-time)
-                          #t
-                          can-run? need-out-write?
-                          vers
-                          #f
-                          #f))))
+               (let ([info
+                      (make-info doc
+                                 (if need-out-write?
+                                     (make-sci-computed sci)
+                                     (make-sci-cached sci info-out-file setup-printf))
+                                 defs
+                                 (send renderer get-undefined ri)
+                                 searches
+                                 null ; no deps, yet
+                                 null ; no known deps, yet
+                                 can-run?
+                                 -inf.0
+                                 (if need-out-write?
+                                     (/ (current-inexact-milliseconds) 1000)
+                                     info-out-time)
+                                 #t
+                                 can-run? need-out-write?
+                                 vers
+                                 #f
+                                 #f)])
+                 (when need-out-write?
+                   (unless latex-dest 
+                     (render-time "xref-out" (write-out info setup-printf)))
+                   (set-info-need-out-write?! info #f))
+                 info))))
          (lambda () #f))
         #f))))
 
@@ -492,14 +520,14 @@
             (with-my-namespace
              (lambda ()
                (when (info? i)
-                 (send renderer deserialize-info (info-sci i) ci))))))
+                 (send renderer deserialize-info ((info-get-sci i)) ci))))))
          (let* ([ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
                 [sci (render-time "serialize" (send renderer serialize-info ri))]
                 [defs (render-time "defined" (send renderer get-defined ci))]
                 [undef (render-time "undefined" (send renderer get-undefined ri))]
                 [in-delta? (not (equal? (any-order undef)
                                         (any-order (info-undef info))))]
-                [out-delta? (or (not (serialized=? sci (info-sci info)))
+                [out-delta? (or (not (serialized=? sci ((info-get-sci info))))
                                 (not (equal? (any-order defs)
                                              (any-order (info-provides info)))))])
            (when (verbose)
@@ -511,15 +539,15 @@
                      (doc-src-file doc)))
            (when out-delta?
              (set-info-out-time! info (/ (current-inexact-milliseconds) 1000)))
-           (set-info-sci! info sci)
            (set-info-provides! info defs)
            (set-info-undef! info undef)
            (when in-delta? 
              ;; Reset expected dependencies to known dependencies, and recompute later:
              (set-info-deps! info (info-known-deps info)))
            (when (or out-delta? (info-need-out-write? info))
+             (set-info-get-sci! info (make-sci-computed sci))
              (unless latex-dest 
-               (render-time "xref-out" (write-out info)))
+               (render-time "xref-out" (write-out info setup-printf)))
              (set-info-need-out-write?! info #f))
            (when in-delta? (set-info-need-in-write?! info #t))
            (unless latex-dest
@@ -575,7 +603,7 @@
       (lambda ()
         (sel (lambda ()
                (list (list (info-vers info) (doc-flags doc))
-                     (info-sci info)
+                     ((info-get-sci info))
                      (serialize (info-provides info))))
              (lambda ()
                (list (list (info-vers info) (doc-flags doc))
@@ -588,9 +616,13 @@
                            (info-deps info)))
                      (serialize (info-searches info)))))))))
 
-(define (write-out info)
+(define (write-out info setup-printf)
   (make-directory* (doc-dest-dir (info-doc info)))
-  (write- info "out.sxref" (lambda (o i) (write-bytes (s-exp->fasl (o))))))
+  (write- info "out.sxref" (lambda (o i) (write-bytes (s-exp->fasl (o)))))
+  (set-info-get-sci! info
+                     (make-sci-cached ((info-get-sci info))
+                                      (build-path (doc-dest-dir (info-doc info)) "out.sxref")
+                                      setup-printf)))
 (define (write-in info)
   (make-directory* (doc-dest-dir (info-doc info)))
   (write- info "in.sxref" (lambda (o i) (write (i)))))
