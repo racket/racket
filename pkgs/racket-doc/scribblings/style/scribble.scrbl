@@ -27,7 +27,7 @@ Prefer ``function'' to ``procedure.''
 Avoid cut-and-paste for descriptive text. If two functions are
 similar, consider documenting them together with
 @scheme[deftogether]. To abstract a description, consider using
-explicit prose abstraction, such as ``@scheme[x] is like @scheme[@y],
+explicit prose abstraction, such as ``@scheme[x] is like @scheme[y],
 except that ...,'' instead of abstracting the source and instantiating
 it multiple times; often, a prose abstraction is clearer to the reader
 than a hidden abstraction in the document implementation.
