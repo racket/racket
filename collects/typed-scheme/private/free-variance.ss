@@ -62,7 +62,6 @@
 ;; given a set of free variables, remove bound, add bound ...
 (define (fix-bound vs bound)
   (define vs* (hash-map* (lambda (k v) v) vs))
-  (hash-remove! vs* bound)
   (hash-set! vs* bound Dotted)
   vs*)
 
