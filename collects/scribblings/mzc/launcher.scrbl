@@ -258,8 +258,8 @@ The recognized suffixes are as follows:
  @item{@filepath{.filetypes} @'rarr @scheme['file-types] as
        @scheme[read] content (a single S-expression), and
        @scheme['resource-files] as a list constructed by finding
-       @scheme["CFBundleTypeIconFile"] entries in
-       @scheme['file-types]; for use under Mac OS X}
+       @scheme["CFBundleTypeIconFile"] entries in @scheme['file-types]
+       (and filtering duplicates); for use under Mac OS X}
 
  @item{@filepath{.utiexports} @'rarr @scheme['uti-exports] as
        @scheme[read] content (a single S-expression); for use under

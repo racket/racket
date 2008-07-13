@@ -20,6 +20,8 @@
    (array "plt")))
  (("CFBundleTypeName"
    "Scheme Doc Source")
+  ("CFBundleTypeIconFile"
+   "doc")
   ("CFBundleTypeRole"
    "Viewer")
   ("CFBundleTypeOSTypes"

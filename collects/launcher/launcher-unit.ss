@@ -3,6 +3,7 @@
 
 (require scheme/path
          scheme/file
+         scheme/list
 
          compiler/embed
          setup/dirs
@@ -582,7 +583,7 @@
                                     d))])
                          (list
                           (cons 'file-types d)
-                          (cons 'resource-files icon-files))))))))))
+                          (cons 'resource-files (remove-duplicates icon-files)))))))))))
        (let ([l (try 'file-types #".utiexports")])
          (if (null? l)
              l
