@@ -55,7 +55,8 @@ Provides contains the following identifiers.
                                            [#:listen-ip listen-ip (or/c false/c string?) #f]
                                            [#:make-servlet-namespace make-servlet-namespace make-servlet-namespace? (make-make-servlet-namespace)])
          (unit? web-config^)]{
- Reads the S-expression at @scheme[path] and calls @scheme[configuration-table-sexpr->web-config\@] appropriately.
+ Reads the S-expression at @scheme[path] and calls
+ @scheme[configuration-table-sexpr->web-config@] appropriately.
 }
 
 @defproc[(configuration-table-sexpr->web-config\@ [sexpr list?]

@@ -386,9 +386,9 @@ its lexical information, and if the current expansion context is not a
 @tech{module context}.
 
 If a binding of @scheme[inner-identifier] shadows @scheme[id-stx], the
-result is the same as @scheme[(syntax-local-get-shadower
-@scheme[inner-identifier])], except that it has the location and
-properties of @scheme[id-stx].
+result is the same as
+@scheme[(syntax-local-get-shadower inner-identifier)], except that it
+has the location and properties of @scheme[id-stx].
 
 Otherwise, the result is the same as @scheme[id-stx] with its module
 bindings (if any) removed from its lexical information, and the

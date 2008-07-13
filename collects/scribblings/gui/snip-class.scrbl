@@ -551,7 +551,7 @@ The @scheme[x] and @scheme[y] arguments are the snip's
  @scheme[editorx] and @scheme[editory] arguments are the snip's
  @techlink{location} in editor coordinates.  To get @scheme[event]'s x
  @techlink{location} in snip coordinates, subtract @scheme[x] from
- @scheme[(send @scheme[event] get-x)].
+ @scheme[(send event get-x)].
 
 See also @indexed-scheme['handles-events] in @method[snip% get-flags].
 
@@ -581,7 +581,7 @@ The @scheme[x] and @scheme[y] arguments are the snip's
  @scheme[editorx] and @scheme[editory] arguments are the snip's
  @techlink{location} in editor coordinates.  To get @scheme[event]'s x
  @techlink{location} in snip coordinates, subtract @scheme[x] from
- @scheme[(send @scheme[event] get-x)].
+ @scheme[(send event get-x)].
 
 See also @indexed-scheme['handles-events] in @method[snip% get-flags].
 

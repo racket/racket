@@ -153,7 +153,7 @@ string.
 
 @defproc[(bytes->list [bstr bytes?]) (listof byte?)]{ Returns a new
  list of bytes coresponding to the content of @scheme[bstr]. That is,
- the length of the list is @scheme[(bytes-length @scheme[bstr])], and the
+ the length of the list is @scheme[(bytes-length bstr)], and the
  sequence of bytes of @scheme[bstr] are in the same sequence in the
  result list.
 
@@ -162,7 +162,7 @@ string.
 
 @defproc[(list->bytes [lst (listof byte?)]) bytes?]{ Returns a new
  mutable bytes whose content is the list of bytes in @scheme[lst].
- That is, the length of the bytes is @scheme[(length @scheme[lst])], and
+ That is, the length of the bytes is @scheme[(length lst)], and
  the sequence of bytes in @scheme[lst] is in the same sequence in
  the result bytes.
 

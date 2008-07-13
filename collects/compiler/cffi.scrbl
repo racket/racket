@@ -123,7 +123,7 @@ functions to be called through @scheme[c-lambda].
 
 The @scheme[c-include] form expands to a @scheme[c-declare] form using
 the content of a specified file. Use @scheme[(c-include _file)] instead
-of @scheme[(c-declare "#include @scheme[_file]")] when it's easier to
+of @scheme[(c-declare "#include file")] when it's easier to
 have MzScheme resolve the file path than to have the C compiler
 resolve it.
 

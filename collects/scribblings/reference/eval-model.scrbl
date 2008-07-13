@@ -15,17 +15,21 @@
 
 @(define hole (make-element #f (list "[]")))
 @(define (*sub c e) (make-element #f (list c "[" e "]")))
-@(define langle (make-element 'tt (list "<")))
-@(define rangle (make-element 'tt (list ">")))
-@(define comma (make-element 'tt (list ", ")))
 @(define-syntax sub
    (syntax-rules () [(_ a b) (*sub (scheme a) (scheme b))]))
-@(define (*state c e) (make-element #f (list langle c comma e rangle)))
-@(define-syntax state
-   (syntax-rules () [(_ a b) (*state (scheme a) (scheme b))]))
 @(define (frame n)
    (make-element "schemevariable"
                  (list "C" (make-element 'subscript (list (format "~a" n))))))
+@;{
+These are not used; if they do get back in, then it's probably better
+to switch to the usual langle/rangle that is used in syntax definitions.
+@(define langle (make-element 'tt (list "<")))
+@(define rangle (make-element 'tt (list ">")))
+@(define comma (make-element 'tt (list ", ")))
+@(define (*state c e) (make-element #f (list langle c comma e rangle)))
+@(define-syntax state
+   (syntax-rules () [(_ a b) (*state (scheme a) (scheme b))]))
+;}
 
 @;------------------------------------------------------------------------
 @title[#:tag "eval-model"]{Evaluation Model}
@@ -59,7 +63,7 @@ Some simplifications require more than one step. For example:
 
 An expression that is not a @tech{value} can always be partitioned
 into two parts: a @deftech{redex}, which is the part that changed in a
-single-step simplification (show in blue), and the
+single-step simplification (highlighted), and the
 @deftech{continuation}, which is the surrounding expression
 context. In @scheme[(- 4 (+ 1 1))], the redex is @scheme[(+ 1 1)], and
 the continuation is @scheme[(- 4 #, @hole)], where @hole takes the

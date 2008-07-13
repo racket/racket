@@ -203,7 +203,7 @@ otherwise.}
 
 @defproc*[([(- [z number?]) number?]
            [(- [z number?] [w number?] ...+) number?])]{
- When no @scheme[w]s are supplied, returns @scheme[(- 0 #, @scheme[z])].
+ When no @scheme[w]s are supplied, returns @scheme[(- 0 z)].
  Otherwise, returns the subtraction of the @scheme[w]s from @scheme[z]
  working pairwise from left to right.}
 
@@ -219,7 +219,7 @@ otherwise.}
 
 @defproc*[([(/ [z number?]) number?]
            [(/ [z number?] [w number?] ...+) number?])]{
- When no @scheme[w]s are supplied, returns @scheme[(/ 1 #, @scheme[z])].
+ When no @scheme[w]s are supplied, returns @scheme[(/ 1 z)].
  Otherwise, returns the division @scheme[z] by the var[w]s
  working pairwise from left to right.}
 
@@ -576,8 +576,8 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
  (semi-infinite) two's complement representation.  If @scheme[m] is
  non-negative, the integer @scheme[n] is shifted left by @scheme[m] bits;
  i.e., @scheme[m] new zeros are introduced as rightmost digits. If
- @scheme[m] is negative, @scheme[n] is shifted right by @scheme[(- #,
- @scheme[m])] bits; i.e., the rightmost @scheme[m] digits are dropped.
+ @scheme[m] is negative, @scheme[n] is shifted right by @scheme[(- m)]
+ bits; i.e., the rightmost @scheme[m] digits are dropped.
 
 @examples[(arithmetic-shift 1 10) (arithmetic-shift 255 -3)]}
 

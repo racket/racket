@@ -70,7 +70,7 @@ Creates symbols and abbreviates nested lists.
 
 Normally, this form is written with a @litchar{'}, like
 @scheme['(apple banana)], but it can also be written with @scheme[quote], like
-@scheme[((unsyntax @scheme[quote]) (apple banana))].}
+@scheme[(#, @scheme[quote] (apple banana))].}
 
 @; ----------------------------------------
 
@@ -86,8 +86,8 @@ to expression ``unquotes.''
 
 Normally, this form is written with a backquote, @litchar{`}, like
 @scheme[`(apple ,(+ 1 2))], but it can also be written with
-@scheme[quasiquote], like @scheme[((unsyntax @scheme[quasiquote])
-(apple ,(+ 1 2)))].}
+@scheme[quasiquote], like
+@scheme[(#, @scheme[quasiquote] (apple ,(+ 1 2)))].}
 
 
 @deftogether[(

@@ -20,7 +20,7 @@ The list of continuation marks for a key @scheme[_k] and a continuation
  @scheme[null].}
 
  @item{If @scheme[_C]'s first frame contains a mark @scheme[_m] for @scheme[_k],
- then the mark list for @scheme[_C] is @scheme[(cons @scheme[_m] _lst)],
+ then the mark list for @scheme[_C] is @scheme[(cons _m _lst)],
  where @scheme[_lst] is the mark list for @scheme[_k] in @cont[0].}
 
  @item{If @scheme[_C]'s first frame does not contain a mark keyed by

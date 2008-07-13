@@ -23,10 +23,11 @@ default configuration shipped with the server is used. The optional
 port and ip-address arguments override the corresponding portions of
 the @scheme[configuration-table].
 
-The @scheme[configuration-table] is given to @scheme[configuration-table->web-config\@]
-and used to construct a @scheme[web-config^] unit,
-and is linked with the @scheme[web-server\@] unit. The resulting unit is invoked, and
-the server runs until the process is killed.
+The @scheme[configuration-table] is given to
+@scheme[configuration-table->web-config@] and used to construct a
+@scheme[web-config^] unit, and is linked with the
+@scheme[web-server@] unit. The resulting unit is invoked, and the
+server runs until the process is killed.
 
 To run the web server with MrEd, use
 
@@ -49,10 +50,10 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
                 [#:max-waiting max-waiting integer? 40]
                 [#:initial-connection-timeout initial-connection-timeout integer? 60])
          (-> void)]{
- Constructs an appropriate @scheme[dispatch-config^], invokes the @scheme[dispatch-server\@],
- and calls its @scheme[serve] function.
+ Constructs an appropriate @scheme[dispatch-config^], invokes the
+ @scheme[dispatch-server@], and calls its @scheme[serve] function.
 }
-                   
+
 @; XXX Not the right `server' above.
 
 Here's an example of a simple web server that serves files

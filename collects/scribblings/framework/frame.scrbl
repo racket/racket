@@ -541,7 +541,7 @@
 
 
 
-    Calls @scheme[(make-object @method[frame:editor<%> get-editor%])].
+    Calls @scheme[(make-object #, @method[frame:editor<%> get-editor%])].
 
   }
   @defmethod*[(((revert) void))]{
@@ -794,7 +794,7 @@
   }
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
 
-    Returns @scheme[(class->interface @scheme[text%])].
+    Returns @scheme[(class->interface text%)].
   }
 }
 @definterface[frame:pasteboard<%> (frame:editor<%>)]{
@@ -812,7 +812,7 @@
   }
   @defmethod*[#:mode override (((get-editor<%>) interface))]{
 
-    Returns @scheme[(class->interface @scheme[pasteboard%])].
+    Returns @scheme[(class->interface pasteboard%)].
   }
 }
 @definterface[frame:delegate<%> (frame:status-line<%> frame:text<%>)]{

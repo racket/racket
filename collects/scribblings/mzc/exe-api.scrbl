@@ -125,7 +125,7 @@ are provided to the embedding executable. A command-line argument that
 evaluates an expression or loads a file will be executed after the
 embedded code is loaded.
 
-Each element of the @scheme[@:modules] argument @scheme[mod-list] is a
+Each element of the @scheme[#:modules] argument @scheme[mod-list] is a
 two-item list, where the first item is a prefix for the module name,
 and the second item is a module path datum (that's in the format
 understood by the default module name resolver). The prefix can be a

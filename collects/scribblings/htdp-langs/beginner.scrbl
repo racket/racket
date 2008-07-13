@@ -276,7 +276,7 @@ A quoted @scheme[id] is a symbol. A symbol is a constant, like
 
 Normally, a symbol is written with a @litchar{'}, like
 @scheme['apple], but it can also be written with @scheme[quote], like
-@scheme[((unsyntax @scheme[quote]) apple)].
+@scheme[(#, @scheme[quote] apple)].
 
 The @scheme[id] for a symbol is a sequence of characters not including
 a space or one of the following:}

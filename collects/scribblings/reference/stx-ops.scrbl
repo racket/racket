@@ -88,10 +88,10 @@ for the module whose source contains @scheme[stx], or @scheme[#f] if
 
 Unwraps the immediate datum structure from a @tech{syntax object},
 leaving nested syntax structure (if any) in place.  The result of
-@scheme[(syntax-e @scheme[stx])] is one of the following:
+@scheme[(syntax-e stx)] is one of the following:
 
     @itemize{
-    
+
        @item{a symbol}
 
        @item{a @tech{syntax pair} (described below)}

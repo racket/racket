@@ -1472,7 +1472,7 @@ the @scheme[interface-expr]s, and the @scheme[class-clause]s are as in
 
 This forms can only be used at the top level, either within a module
 or outside. The @scheme[class-id] identifier is bound to the new
-class, and @scheme[deserialize-info:@scheme[class-id]] is also
+class, and @scheme[deserialize-info:]@scheme[class-id] is also
 defined; if the definition is within a module, then the latter is
 provided from the module.
 
