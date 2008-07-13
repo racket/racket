@@ -17,4 +17,12 @@
   ("CFBundleTypeOSTypes"
    (array "PLT_" "WXME"))
   ("CFBundleTypeExtensions"
-   (array "plt"))))
+   (array "plt")))
+ (("CFBundleTypeName"
+   "Scheme Doc Source")
+  ("CFBundleTypeRole"
+   "Viewer")
+  ("CFBundleTypeOSTypes"
+   (array "TEXT" "WXME"))
+  ("CFBundleTypeExtensions"
+   (array "scrbl"))))

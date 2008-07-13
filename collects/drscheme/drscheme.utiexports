@@ -12,4 +12,18 @@
                 "TEXT")
     (assoc-pair "public.filename-extension"
                 (array "ss"
-                       "scm"))))))
+                       "scm")))))
+ (("UTTypeConformsTo"
+    (array
+     "public.text"
+     "public.plain-text"))
+   ("UTTypeDescription"
+    "PLT Scheme documentation source")
+   ("UTTypeIdentifier"
+    "org.plt-scheme.scribble")
+   ("UTTypeTagSpecification"
+    (dict
+     (assoc-pair "com.apple.ostype"
+                 "TEXT")
+     (assoc-pair "public.filename-extension"
+                 (array "scrbl"))))))
