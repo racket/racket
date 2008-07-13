@@ -42,9 +42,8 @@
   (define (combine-var v w)
     (cond
       [(eq? v w) v]
-      [(or (eq? v Dotted) (eq? w Dotted))
-       Invariant
-       #;(int-err "Cannot combine Dotted w/ not Dotted: ~a ~a" v w)]
+      [(eq? v Dotted) w]
+      [(eq? w Dotted) v]
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
