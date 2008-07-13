@@ -150,8 +150,10 @@ Returns a new immutable box that contains @scheme[v].}
 
 @defproc[(unbox [box box?]) any/c]{
 
-Returns the content of @scheme[box]. For any @scheme[v],
-@scheme[(unbox (box @scheme[v]))] returns @scheme[v].}
+Returns the content of @scheme[box].}
+
+
+For any @scheme[v], @scheme[(unbox (box v))] returns @scheme[v].
 
 
 @defproc[(set-box! [box (and/c box? (not/c immutable?))]
