@@ -47,16 +47,12 @@
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
-  (for-each
-   (lambda (old-ht)
-     (hash-for-each 
-      old-ht
-      (lambda (sym var)
+  (for* ([old-ht (in-list freess)]
+         [(sym var) (in-hash old-ht)])
         (let* ([sym-var (hash-ref ht sym (lambda () #f))])
           (if sym-var
               (hash-set! ht sym (combine-var var sym-var))
-              (hash-set! ht sym var))))))
-   freess)
+              (hash-set! ht sym var))))
   ht)
 
 ;; given a set of free variables, change bound to ...
@@ -86,22 +82,15 @@
    vs))
 
 (define (hash-map* f ht)
-  (define new-ht (hash-copy ht))
-  (hash-for-each 
-   new-ht
-   (lambda (k v)
-     (hash-set! 
-      new-ht
-      k
-      (f k v))))
+  (define new-ht (make-hasheq))
+  (for ([(k v) (in-hash ht)])
+     (hash-set! new-ht k (f k v)))
   new-ht)
 
 (define (without-below n frees)
-  (define new-ht (hash-copy frees))
-  (hash-for-each 
-   new-ht
-   (lambda (k v)
-     (when (< k n) (hash-remove! new-ht k))))
+  (define new-ht (make-hasheq))
+  (for ([(k v) (in-hash frees)])
+       (when (>= k n) (hash-set! new-ht k v)))
   new-ht)
 
 (provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table
