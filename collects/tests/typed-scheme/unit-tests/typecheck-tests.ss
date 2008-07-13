@@ -642,6 +642,13 @@
                        ys)))
               (-polydots (a) ((list) ((list) (a a) . ->... . N) . ->* . ((list) (a a) . ->... . (-lst N))))]
         
+        ;; We need to make sure that even if a isn't free in the dotted type, that it gets replicated
+        ;; appropriately.
+        [tc-e (inst (plambda: (a ...) [ys : Number ... a]
+                              (apply + ys))
+                    Boolean String Number)
+              (N N N . -> . N)]
+        
         #;[tc-err (let: ([fact : (Number -> Number) (lambda: ([n : Number]) (if (zero? n) 1 (* n (fact (- n 1)))))])
                         (fact 20))]
         
