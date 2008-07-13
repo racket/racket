@@ -185,6 +185,10 @@ process of elimination we can determine that @scheme[t] must be a
 
 @section{Polymorphism}
 
+Typed Scheme offers abstraction over types as well as values.
+
+@subsection{Polymorphic Data Structures}
+
 Virtually every Scheme program uses lists and sexpressions.  Fortunately, Typed
 Scheme can handle these as well.  A simple list processing program can be
 written like this:
@@ -245,6 +249,52 @@ The @scheme[find] function takes a number @scheme[v] and list, and
 produces @scheme[(make-Just v)] when the number is found in the list,
 and @scheme[(make-Nothing)] otherwise.  Therefore, it produces a
 @scheme[(Maybe Number)], just as the annotation specified.  
+
+@subsection{Polymorphic Functions}
+
+Sometimes functions over polymorphic data structures only concern
+themselves with the form of the structure.  For example, one might
+write a function that takes the length of a list of numbers:
+
+@schememod[typed-scheme
+(: list-number-length ((Listof Number) -> Integer))
+(define (list-number-length l)
+  (if (null? l)
+      0
+      (add1 (list-number-length (cdr l)))))]
+
+and also a function that takes the length of a list of strings:
+
+@schememod[typed-scheme
+(: list-string-length ((Listof String) -> Integer))
+(define (list-string-length l)
+  (if (null? l)
+      0
+      (add1 (list-string-length (cdr l)))))]
+
+Notice that both of these functions have almost exactly the same
+definition; the only difference is the name of the function.  This
+is because neither function uses the type of the elements in the
+definition.
+
+We can abstract over the type of the element as follows:
+
+@schememod[typed-scheme
+(: list-length (All (A) ((Listof A) -> Integer)))
+(define (list-length l)
+  (if (null? l)
+      0
+      (add1 (list-length (cdr l)))))]
+
+The new type constructor @scheme[All] takes a list of type
+variables and a body type.  The type variables are allowed to
+appear free in the body of the @scheme[All] form.
+
+@section{Variable-Arity Functions}
+
+@subsection{Uniform Variable-Arity Functions}
+
+@subsection{Non-Uniform Variable-Arity Functions}
 
 @section[#:tag "type-ref"]{Type Reference}
 
