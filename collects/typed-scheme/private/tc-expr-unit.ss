@@ -76,7 +76,7 @@
          ;; use instantiate-poly-dotted, otherwise we do the normal thing.
          (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
            (match (syntax-e last-stx)
-             [(cons last-ty-stx last-id-stx)
+             [(cons last-ty-stx (? identifier? last-id-stx))
               (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
                 (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
               (let* ([last-id (syntax-e last-id-stx)]
