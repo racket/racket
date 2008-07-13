@@ -129,7 +129,7 @@
                  (make-pred-ty (wrapper name))))
      (map (lambda (g t) (cons g (wrapper (->* (list name) t)))) getters external-fld-types/no-parent)
      (if setters?
-         (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) getters external-fld-types/no-parent)
+         (map (lambda (g t) (cons g (wrapper (->* (list name t) -Void)))) setters external-fld-types/no-parent)
          null)))
   (register-type-name nm (wrapper sty))
   (for/list ([e bindings])
@@ -171,7 +171,7 @@
 
 ;; typecheck a non-polymophic struct and register the approriate types
 ;; tc/struct : (U identifier (list identifier identifier)) Listof[identifier] Listof[syntax] -> void
-(define (tc/struct nm/par flds tys [proc-ty #f] #:maker [maker #f] #:constructor-return [cret #f])
+(define (tc/struct nm/par flds tys [proc-ty #f] #:maker [maker #f] #:constructor-return [cret #f] #:mutable [mutable #f])
   ;; get the parent info and create some types and type variables
   (define-values (nm parent-name parent name name-tvar) (parse-parent nm/par))
   ;; parse the field types, and determine if the type is recursive
@@ -186,7 +186,8 @@
                    ;; procedure
                    #:proc-ty proc-ty-parsed
                    #:maker maker
-		   #:constructor-return (and cret (parse-type cret))))
+		   #:constructor-return (and cret (parse-type cret))
+                   #:mutable mutable))
 
 ;; register a struct type
 ;; convenience function for built-in structs

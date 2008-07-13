@@ -54,6 +54,8 @@
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:constructor-return t)) 
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:constructor-return #'t)]

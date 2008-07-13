@@ -305,10 +305,13 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (define-typed-struct stx)
   (syntax-case stx (:)
     [(_ nm ([fld : ty] ...) . opts)
-     (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fld ...) . opts))
-                                         'typechecker:ignore #t)]
-                   [dtsi (internal (syntax/loc stx (define-typed-struct-internal nm ([fld : ty] ...))))])
-       #'(begin d-s dtsi))]
+     (let ([mutable (if (memq '#:mutable (syntax->datum #'opts))
+                        '(#:mutable)
+                        '())])
+       (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fld ...) . opts))
+                                           'typechecker:ignore #t)]
+                     [dtsi (internal (quasisyntax/loc stx (define-typed-struct-internal nm ([fld : ty] ...) #,@mutable)))])
+         #'(begin d-s dtsi)))]
     [(_ (vars ...) nm ([fld : ty] ...) . opts)
      (with-syntax ([d-s (syntax-property (syntax/loc stx (define-struct nm (fld ...) . opts))
                                          'typechecker:ignore #t)]

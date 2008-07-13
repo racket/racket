@@ -105,8 +105,8 @@
      [read (cl-> 
             [(-Port) -Sexp]
             [() -Sexp])]
-     [ormap (-polydots (a b) (->... (list (->... (list a) (b b) B) (-lst a)) ((-lst b) b) B))]
-     [andmap (-polydots (a b) (->... (list (->... (list a) (b b) B) (-lst a)) ((-lst b) b) B))]
+     [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
+     [andmap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
      [newline (cl-> [() -Void]
                     [(-Port) -Void])]
      [not (-> Univ B)]
@@ -256,8 +256,8 @@
                  [(-Pathlike (-> a) Sym) a]))]
      
      [random (cl->
-              [(N) N]
-              [() N])]
+              [(-Integer) -Integer]
+              [() -Integer])]
      
      [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
      [assf  (-poly (a b)
