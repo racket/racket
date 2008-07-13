@@ -43,7 +43,8 @@
     (cond
       [(eq? v w) v]
       [(or (eq? v Dotted) (eq? w Dotted))
-       (int-err "Cannot combine Dotted w/ not Dotted: ~a ~a" v w)]
+       Invariant
+       #;(int-err "Cannot combine Dotted w/ not Dotted: ~a ~a" v w)]
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
@@ -63,7 +64,7 @@
 (define (fix-bound vs bound)
   (define vs* (hash-map* (lambda (k v) v) vs))
   (hash-remove! vs* bound)
-  (hash-set! vs* bound (cons bound Dotted))
+  (hash-set! vs* bound Dotted)
   vs*)
 
 ;; frees -> frees

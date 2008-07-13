@@ -413,7 +413,8 @@
                  [Constant S]
                  [Covariant S]
                  [Contravariant T]
-                 [Invariant S]))]))
+                 [Invariant S]
+                 [Dotted T]))]))
   (match (car (cset-maps C))
     [(cons cmap (struct dmap (dm)))
      (check-vars
