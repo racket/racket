@@ -22,6 +22,8 @@
          setup/getinfo
          setup/unpack
          
+         version/utils
+         
          (prefix-in srfi1: srfi/1)
 
          (for-syntax scheme/base))
@@ -664,8 +666,7 @@
 ;; core-version : string -> boolean
 ;; determines if the given string is something that (version) could've produced
 (define (core-version? s)
-  (and (string? s)
-       (string->mz-version s)))
+  (and (version->integer s) #t))
 
 ;; checkinfo: syntax
 ;; given an info.ss function, a failure function, and a bunch of fields to check,

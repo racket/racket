@@ -1011,8 +1011,16 @@
                       `(span ([class "mywbr"]) " "))
                     (render-other (substring i (cdar m)) part ri))
              (ascii-ize i)))]
-        [(eq? i 'mdash) `(" " ndash " ")]
-        [(symbol? i) (list i)]
+        [(symbol? i)
+         (case i
+           [(mdash) '(" " ndash " ")]
+           ;; use "single left/right-pointing angle quotation mark"
+           ;; -- it's not a correct choice, but works best for now
+           ;;    (see the "Fonts with proper angle brackets"
+           ;;    discussion on the mailing list from June 2008)
+           [(lang) '(8249)]
+           [(rang) '(8250)]
+           [else (list i)])]
         [else (list (format "~s" i))]))
 
     (define/private (ascii-ize s)

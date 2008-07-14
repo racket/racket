@@ -9,6 +9,7 @@ Various common pieces of code that both the client and server need to access
            scheme/path
            scheme/port
            scheme/list
+           version/utils
            "../config.ss"
            "data.ss")
   
@@ -254,49 +255,11 @@ Various common pieces of code that both the client and server need to access
   ;; Converts a string into mz-version.  We need to account
   ;; for the change in numbering style from the 372 era to the 4.0 era.
   (define (string->mz-version str)
-    (define (minor+maint-chunks->minor chunks)
-      (+ (* (string->number (car chunks)) 1000)
-         (if (> (length chunks) 1)
-             (string->number (cadr chunks))
-             0)))
-    
-    (cond
-      ;; Old style numbering with three digits in front.  The first digit
-      ;; goes up to three.
-      [(regexp-match #rx"^([0-3][0-9][0-9])\\.?([.0-9]*)$" str)
-       =>
-       (lambda (ver)
-         (let ([major (string->number (list-ref ver 1))])
-           (cond
-             [(= (string-length (list-ref ver 2)) 0)
-              (make-mz-version major 0)]
-             [else
-              (let* ([minor+maint (regexp-split #rx"\\." (list-ref ver 2))]
-                     [minor (minor+maint-chunks->minor minor+maint)])
-                (make-mz-version major minor))])))]
-      ;; New style numbering
-      [(regexp-match #rx"^([0-9]+)(\\.([.0-9]+))?$" str)
-       =>
-       (lambda (ver)
-         (cond [(list-ref ver 3)
-                (let* ([chunks (regexp-split #rx"\\." (list-ref ver 3))])
-                  (and (andmap (λ (x) (not (equal? x ""))) chunks)
-                       (make-mz-version (+ (* (string->number (list-ref ver 1))
-                                              100)
-                                           (if (> (length chunks) 0)
-                                               (begin
-                                                 (string->number (car chunks)))
-                                               0))
-                                        (if (> (length (cdr chunks)) 0)
-                                            (minor+maint-chunks->minor (cdr chunks))
-                                            0))))]
-               [else
-                (make-mz-version (* (string->number (list-ref ver 1))
-                                    100)
-                                 0)]))]
-      [else #f]))
-  
-  
+    (cond [(version->integer str)
+           => (lambda (v)
+                (let-values ([(q r) (quotient/remainder v 1000000)])
+                  (make-mz-version q r)))]
+          [else #f]))
   
   ;; version<= : mz-version mz-version -> boolean
   ;; determines if a is the version string of an earlier mzscheme release than b
