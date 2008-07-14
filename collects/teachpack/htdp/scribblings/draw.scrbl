@@ -11,7 +11,8 @@
 The teachpack provides two sets of functions: one for drawing into a canvas
 and one for reacting to canvas events. 
 
-@bold{Warning:} @emph{This teachpack is deprecated. We strongly encourage
+@bold{Warning:} @emph{This teachpack is deprecated. Unless you're solving exercises
+taken from @emph{How To Design Programs}, we strongly encourage
 you to use the world teachpack instead; see @secref{world}.}
 
 @section[#:tag "drawing"]{Drawing on a Canvas}
