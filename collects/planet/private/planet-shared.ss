@@ -247,29 +247,7 @@ Various common pieces of code that both the client and server need to access
   
   (define (make-assoc-table-row name path maj min dir required-version type)
     (list name path maj min dir required-version type))
-  
-  (define-struct mz-version (major minor) #:inspector #f)
-  
-  
-  ;; string->mz-version : string -> mz-version | #f
-  ;; Converts a string into mz-version.  We need to account
-  ;; for the change in numbering style from the 372 era to the 4.0 era.
-  (define (string->mz-version str)
-    (cond [(version->integer str)
-           => (lambda (v)
-                (let-values ([(q r) (quotient/remainder v 1000000)])
-                  (make-mz-version q r)))]
-          [else #f]))
-  
-  ;; version<= : mz-version mz-version -> boolean
-  ;; determines if a is the version string of an earlier mzscheme release than b
-  ;;   [n.b. this relies on a guarantee from Matthew that mzscheme version
-  ;;    x1.y1 is older than version x2.y2 iff x1<x2 or x1=x2 and y1<y2]
-  (define (version<= a b)
-    (or (<= (mz-version-major a) (mz-version-major b))
-        (and (= (mz-version-major a) (mz-version-major b))
-             (<= (mz-version-minor a) (mz-version-minor b)))))
-  
+    
   ;; pkg< : pkg pkg -> boolean
   ;; determines if a is an earlier version than b
   ;; [only sensical if a and b are versions of the same package]
@@ -288,11 +266,11 @@ Various common pieces of code that both the client and server need to access
   (define (compatible-version? row spec)
     (let ((required-version (assoc-table-row->required-version row)))
       (or (not required-version)
-          (let ((required (string->mz-version required-version))
-                (provided (string->mz-version (pkg-spec-core-version spec))))
-            (or (not required) 
+          (let ((required (version->integer required-version))
+                (provided (version->integer (pkg-spec-core-version spec))))
+            (or (not required)
                 (not provided)
-                (version<= required provided))))))
+                (<= required provided))))))
   
   ; get-best-match : assoc-table FULL-PKG-SPEC -> PKG | #f
   ; return the best on-disk match for the given package spec
