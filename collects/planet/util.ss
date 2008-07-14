@@ -26,6 +26,8 @@
          
          (prefix-in srfi1: srfi/1)
 
+         (only-in mzlib/etc this-expression-source-directory)
+
          (for-syntax scheme/base))
 
 #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
