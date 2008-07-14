@@ -160,7 +160,7 @@ subdirectory.
 
 ||#
 
-#lang mzscheme
+#lang scheme/base
 
 (define resolver
   (case-lambda
@@ -177,23 +177,23 @@ subdirectory.
                      stx
                      load?)]))
 
-(require mzlib/match
-         mzlib/file
-         mzlib/port
-         mzlib/list
-
-         mzlib/date
+(require scheme/match
+         scheme/path
+         scheme/file
+         scheme/port
+         scheme/date
+         scheme/tcp
+         mzlib/struct
 
          net/url
          net/head
-         mzlib/struct
 
          "config.ss"
          "private/planet-shared.ss"
          "private/linkage.ss"
          "parsereq.ss")
 
-(provide (rename resolver planet-module-name-resolver)
+(provide (rename-out [resolver planet-module-name-resolver])
          resolve-planet-path
          pkg-spec->full-pkg-spec
          get-package-from-cache
@@ -219,13 +219,13 @@ subdirectory.
 (define (establish-diamond-property-monitor)
   (unless VER-CACHE-NAME (set! VER-CACHE-NAME (gensym)))
   (unless (namespace-variable-value VER-CACHE-NAME #t (lambda () #f))
-    (namespace-set-variable-value! VER-CACHE-NAME (make-hash-table 'equal))))
+    (namespace-set-variable-value! VER-CACHE-NAME (make-hash))))
 
 (define (the-version-cache)    (namespace-variable-value VER-CACHE-NAME))
 (define (pkg->diamond-key pkg) (cons (pkg-name pkg) (pkg-route pkg)))
 
 (define (pkg-matches-bounds? pkg bound-info)
-  (match-let ([(maj lo hi) bound-info])
+  (match-let ([(list maj lo hi) bound-info])
     (and (= maj (pkg-maj pkg))
          (or (not lo) (>= (pkg-min pkg) lo))
          (or (not hi) (<= (pkg-min pkg) hi)))))
@@ -235,18 +235,18 @@ subdirectory.
 (define (build-compatibility-fn compat-data)
   (define pre-fn
     (match compat-data
-      [`none (lambda (_) #f)]
-      [`all (lambda (_) #t)]
-      [`(all-except ,vspec ...)
+      ['none (lambda (_) #f)]
+      ['all (lambda (_) #t)]
+      [(list 'all-except vspec ...)
        (let ([bounders (map (λ (x) (version->bounds x (λ (_) #f))) vspec)])
          (if (andmap (lambda (x) x) bounders)
            (lambda (v)
              (not (ormap (lambda (bounder) (pkg-matches-bounds? v bounder))
                          bounders)))
            #f))]
-      [`(only ,vspec ...)
+      [(list 'only vspec ...)
        (let ([bounders (map (λ (x) (version->bounds x (λ (_) #f))) vspec)])
-         (if (andmap (lambda (x) x) bounders)
+         (when (andmap (lambda (x) x) bounders)
            (lambda (v)
              (andmap (lambda (bounder) (pkg-matches-bounds? v bounder))
                      bounders)))
@@ -274,7 +274,7 @@ subdirectory.
 
 (define (add-pkg-to-diamond-registry! pkg stx)
   (let ([loaded-packages
-         (hash-table-get (the-version-cache) (pkg->diamond-key pkg) '())])
+         (hash-ref (the-version-cache) (pkg->diamond-key pkg) '())])
     (unless (list? loaded-packages)
       (error 'PLaneT "Inconsistent state: expected loaded-packages to be a list, received: ~s" loaded-packages))
     (let ([all-violations '()])
@@ -306,9 +306,9 @@ subdirectory.
       (unless (null? all-violations)
         (let ([worst (or (assq values all-violations) (car all-violations))])
           (raise (cadr worst)))))
-    (hash-table-put! (the-version-cache)
-                     (pkg->diamond-key pkg)
-                     (cons (list pkg stx) loaded-packages))))
+    (hash-set! (the-version-cache)
+               (pkg->diamond-key pkg)
+               (cons (list pkg stx) loaded-packages))))
 
 ;; =============================================================================
 ;; MAIN LOGIC
@@ -477,7 +477,7 @@ subdirectory.
 ;; the uninstalled-packages cache, then returns a promise for it
 (define (get-package-from-server pkg)
   (match (download-package pkg)
-    [(#t tmpfile-path maj min)
+    [(list #t tmpfile-path maj min)
      (let* ([upkg (make-uninstalled-pkg tmpfile-path pkg maj min)]
             [cached-path (save-to-uninstalled-pkg-cache! upkg)]
             [final (make-uninstalled-pkg cached-path pkg maj min)])
@@ -485,7 +485,7 @@ subdirectory.
                        (normalize-path cached-path))
          (delete-file tmpfile-path)) ;; remove the tmp file, we're done with it
        final)]
-    [(#f str)
+    [(list #f str)
      (string-append "PLaneT could not find the requested package: " str)]
     [(? string? s)
      (string-append "PLaneT could not download the requested package: " s)]))
@@ -543,7 +543,7 @@ subdirectory.
                    (pkg-spec-name pkg)
                    (current-time))
            ;; oh man is this a bad hack!
-           (parameterize ([current-namespace (make-namespace)])
+           (parameterize ([current-namespace (make-base-namespace)])
              (let ([ipp (dynamic-require 'setup/plt-single-installer
                                          'install-planet-package)])
                (ipp path the-dir (list owner (pkg-spec-name pkg)
@@ -582,9 +582,12 @@ subdirectory.
     (fprintf op "PLaneT/1.0\n")
     (flush-output op)
     (match (read ip)
-      ['ok                        (state:send-pkg-request)]
-      [('invalid (? string? msg)) (state:abort (string-append "protocol version error: " msg))]
-      [bad-msg                    (state:abort (format "server protocol error (received invalid response): ~a" bad-msg))]))
+      ['ok
+       (state:send-pkg-request)]
+      [(list 'invalid (? string? msg))
+       (state:abort (string-append "protocol version error: " msg))]
+      [bad-msg
+       (state:abort (format "server protocol error (received invalid response): ~a" bad-msg))]))
 
   (define (state:send-pkg-request)
     (request-pkg-list (list pkg))
@@ -592,16 +595,16 @@ subdirectory.
 
   (define (state:receive-package)
     (match (read ip)
-      [(_ 'get 'ok (? nat? maj) (? nat? min) (? nat? bytes))
+      [(list _ 'get 'ok (? nat? maj) (? nat? min) (? nat? bytes))
        (let ([filename (make-temporary-file "planettmp~a.plt")])
          (read-char ip) ; throw away newline that must be present
          (read-n-chars-to-file bytes ip filename)
          (list #t filename maj min))]
-      [(_ 'error 'malformed-request (? string? msg))
+      [(list _ 'error 'malformed-request (? string? msg))
        (state:abort (format "Internal error (malformed request): ~a" msg))]
-      [(_ 'get 'error 'not-found (? string? msg))
+      [(list _ 'get 'error 'not-found (? string? msg))
        (state:failure (format "Server had no matching package: ~a" msg))]
-      [(_ 'get 'error (? symbol? code) (? string? msg))
+      [(list _ 'get 'error (? symbol? code) (? string? msg))
        (state:abort (format "Unknown error ~a receiving package: ~a" code msg))]
       [bad-response  (state:abort (format "Server returned malformed message: ~e" bad-response))]))
 
@@ -631,8 +634,8 @@ subdirectory.
 ;; get-http-response-code : header[from net/head] -> string
 ;; gets the HTTP response code in the given header
 (define (get-http-response-code header)
-  (let ([parsed (regexp-match #rx"^HTTP/[^ ]* ([^ ]*)" header)])
-    (and parsed (cadr parsed))))
+  (cond [(regexp-match #rx"^HTTP/[^ ]* ([^ ]*)" header) => cadr]
+        [else #f]))
 
 ;; pkg->download-url : FULL-PKG-SPEC -> url
 ;; gets the download url for the given package
@@ -679,7 +682,7 @@ subdirectory.
                       [maj      (string->number maj/str)]
                       [min      (string->number min/str)]
                       [content-length (string->number content-length/str)]
-                      [op (open-output-file filename 'truncate/replace)])
+                      [op (open-output-file filename #:exists 'truncate/replace)])
                  (copy-port ip op)
                  (close-input-port ip)
                  (close-output-port op)
@@ -727,8 +730,6 @@ subdirectory.
 ;; ============================================================
 ;; UTILITY
 ;; A few small utility functions
-
-(define (last l) (car (last-pair l)))
 
 ;; make-directory*/paths : path -> (listof path)
 ;; like make-directory*, but returns what directories it actually created

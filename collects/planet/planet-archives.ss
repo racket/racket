@@ -1,6 +1,6 @@
-(module planet-archives mzscheme
+#lang scheme/base
+
   (require "private/planet-shared.ss"
-	   mzlib/file
            "config.ss"
            "cachepath.ss")
   
@@ -56,5 +56,3 @@
   (define (get-all-planet-packages)
     (append (get-installed-planet-archives)
             (get-hard-linked-packages)))
-  
-  )

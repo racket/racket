@@ -1,4 +1,4 @@
-#lang scheme
+#lang scheme/base
 
 (require "config.ss"
          "planet-archives.ss"
@@ -10,7 +10,12 @@
          net/url
          xml/xml
          
+         scheme/contract
+         scheme/path
+         scheme/file
          scheme/port
+         scheme/match
+         scheme/class
          
          setup/pack
          setup/plt-single-installer 
@@ -18,7 +23,8 @@
          setup/unpack
          
          (prefix-in srfi1: srfi/1)
-         )
+
+         (for-syntax scheme/base))
 
 #| The util collection provides a number of useful functions for interacting with the PLaneT system. |#
 

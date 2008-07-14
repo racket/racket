@@ -1,4 +1,4 @@
-(module cachepath mzscheme
+#lang scheme/base
 
   (require "config.ss")
   (provide get-planet-cache-path)
@@ -11,4 +11,4 @@
   ;; of directory, it doesn't do that anymore)
   (define (get-planet-cache-path)
     (let ((path (build-path (PLANET-DIR) "cache.ss")))
-      path)))
+      path))

@@ -1,4 +1,5 @@
-(module planet mzscheme
+#lang scheme/base
+
       #|
 This module contains code that implements the `planet' command-line tool.
   
@@ -6,11 +7,11 @@ PLANNED FEATURES:
 * Disable a package without removing it (disabling meaning
   that if it's a tool it won't start w/ DrScheme, etc)
 |#
-  (require mzlib/string
-           mzlib/file
-           (only mzlib/list sort)
-           net/url
-           mzlib/match
+  (require net/url
+           scheme/path
+           scheme/file
+           scheme/match
+           (only-in mzlib/string read-from-string)
            
            "config.ss"
            "private/planet-shared.ss"
@@ -138,7 +139,7 @@ This command does not unpack or install the named .plt file."
       (when (file-exists? pkg)
         (fail "Cannot download, there is a file named ~a in the way" pkg))
       (match (download-package full-pkg-spec)
-        [(#t path maj min) 
+        [(list #t path maj min) 
          (copy-file path pkg)
          (printf "Downloaded ~a package version ~a.~a\n" pkg maj min)]
 	[_ 
@@ -192,7 +193,10 @@ This command does not unpack or install the named .plt file."
         (for-each 
          (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n" l))
          (sort-by-criteria 
-          (map (lambda (x) (match x [(_ owner pkg _ maj min) (list owner pkg maj min)])) normal-packages)
+          (map (lambda (x)
+                 (match x [(list _ owner pkg _ maj min)
+                           (list owner pkg maj min)]))
+               normal-packages)
           (list string<? string=?)
           (list string<? string=?)
           (list < =)
@@ -204,7 +208,10 @@ This command does not unpack or install the named .plt file."
          (lambda (l) (apply printf "  ~a\t~a\t~a ~a\n    --> ~a\n" l))
          (sort-by-criteria 
           (map 
-           (lambda (x) (match x [(dir owner pkg _ maj min) (list owner pkg maj min (path->string dir))]))
+           (lambda (x)
+             (match x
+               [(list dir owner pkg _ maj min)
+                (list owner pkg maj min (path->string dir))]))
            devel-link-packages)
           (list string<? string=?)
           (list string<? string=?)
@@ -287,4 +294,4 @@ This command does not unpack or install the named .plt file."
                    (lambda (e) 
                      (fprintf (current-error-port) "~a\n" (exn-message e))
                      (exit 1))])
-    (start)))
+    (start))

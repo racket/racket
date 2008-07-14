@@ -1,4 +1,5 @@
-(module config mzscheme
+#lang scheme/base
+
   (require "private/define-config.ss") 
   (define-parameters
     (PLANET-SERVER-NAME       "planet.plt-scheme.org")
@@ -20,5 +21,4 @@
     
     (USE-HTTP-DOWNLOADS?       #t)
     (HTTP-DOWNLOAD-SERVLET-URL "http://planet.plt-scheme.org/servlets/planet-servlet.ss")
-    (PLANET-ARCHIVE-FILTER     #f)))
-    
+    (PLANET-ARCHIVE-FILTER     #f))

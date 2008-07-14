@@ -1,8 +1,8 @@
-(module linkage mzscheme
+#lang scheme/base
   
   (require "planet-shared.ss"
            "../config.ss"
-           mzlib/match)
+           scheme/match)
 
   (provide get/linkage
            get-linkage 
@@ -50,16 +50,15 @@
   (define (add-linkage! rmp pkg-spec pkg)
     (when rmp
       (let ((key (get-key rmp pkg-spec)))
-        (hash-table-get 
+        (hash-ref
          (get-linkage-table)
          key
          (lambda ()
            (let ((plist (pkg-as-list pkg)))
              (begin
-               (hash-table-put! (get-linkage-table) key plist)
-               (with-output-to-file (LINKAGE-FILE)
-                 (lambda () (write (list key plist)))
-                 'append)))))))
+               (hash-set! (get-linkage-table) key plist)
+               (with-output-to-file (LINKAGE-FILE) #:exists 'append
+                 (lambda () (write (list key plist))))))))))
     pkg)
   
   ;; remove-linkage! pkg-spec -> void
@@ -68,32 +67,29 @@
     (let ((l (get-linkage-table)))
       
       ;; first remove bad entries from the in-memory hash table
-      (hash-table-for-each 
+      (hash-for-each 
        l
        (lambda (k v)
          (match v
-           [(name route maj min _)
+           [(list name route maj min _)
             (when (and (equal? name (pkg-name pkg))
                        (equal? route (pkg-route pkg))
                        (= maj (pkg-maj pkg))
                        (= min (pkg-min pkg)))
-              (hash-table-remove! l k))]
+              (hash-remove! l k))]
            [_ (void)])))
       
       ;; now write the new table out to disk to keep it in sync
-      (with-output-to-file (LINKAGE-FILE)
+      (with-output-to-file (LINKAGE-FILE) #:exists 'truncate/replace
         (lambda ()
           (printf "\n")
-          (hash-table-for-each 
+          (hash-for-each 
            l
-           (lambda (k v) (write (list k v)))))
-        'truncate/replace)))
+           (lambda (k v) (write (list k v))))))))
   
   ;; kill the whole linkage-table
   (define (remove-all-linkage!)
-    (with-output-to-file (LINKAGE-FILE)
-      (lambda () (printf "\n"))
-      'truncate/replace)
+    (with-output-to-file (LINKAGE-FILE) #:exists 'truncate/replace newline)
     (set! LT #f))
   
   ;; pkg-as-list : PKG -> (list string string nat nat bytes[path])
@@ -111,13 +107,13 @@
   (define (get-linkage rmp pkg-specifier)
     (cond
       [rmp
-       (let ((pkg-fields (hash-table-get
+       (let ((pkg-fields (hash-ref
                           (get-linkage-table)
                           (get-key rmp pkg-specifier)
                           (lambda () #f))))
          (if pkg-fields 
              (with-handlers ([exn:fail? (lambda (e) #f)])
-               (match-let ([(name route maj min pathbytes) pkg-fields])
+               (match-let ([(list name route maj min pathbytes) pkg-fields])
                  (make-pkg name route maj min (bytes->path pathbytes))))
              #f))]
       [else #f]))
@@ -136,6 +132,3 @@
   ; key suitable for marshalling that represents the given resolved-module-path
   (define (get-module-id rmp)
     (path->string (resolved-module-path-name rmp)))
-  
-  )
-

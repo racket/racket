@@ -1,4 +1,5 @@
-(module define-config scheme/base
+#lang scheme/base
+
   (require (for-syntax scheme/base))
 
   (provide define-parameters)
@@ -9,4 +10,4 @@
        (andmap identifier? (syntax->list #'(name ...)))
        #'(begin
            (provide name ...)
-           (define name (make-parameter val)) ...)])))
+           (define name (make-parameter val)) ...)]))
