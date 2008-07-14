@@ -44,6 +44,8 @@
 
 @title[#:tag "pairs"]{Pairs and Lists}
 
+@guideintro["pairs"]{pairs and lists}
+
 @local-table-of-contents[]
 
 A @deftech{pair} combines exactly two values. The first value is

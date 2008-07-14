@@ -3,7 +3,7 @@
           scribble/eval
           "guide-utils.ss")
 
-@title{Pairs and Lists}
+@title[#:tag "pairs"]{Pairs and Lists}
 
 A @deftech{pair} joins two arbitrary values. The @scheme[cons]
 procedure constructs pairs, and the @scheme[car] and @scheme[cdr]

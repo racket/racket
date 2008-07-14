@@ -3,6 +3,8 @@
 
 @title[#:tag "hashtables"]{Hash Tables}
 
+@guideintro["hash-tables"]{hash tables}
+
 A @deftech{hash table} (or simply @deftech{hash}) maps each of its
 keys to a single value. For a given hash table, keys are equivalent
 via @scheme[equal?] or @scheme[eq?], and keys are retained either

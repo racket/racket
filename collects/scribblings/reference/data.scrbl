@@ -133,6 +133,11 @@ for each pair of keywords is the same as using
 @; ------------------------------------------------------------
 @section[#:tag "boxes"]{Boxes}
 
+@guideintro["boxes"]{boxes}
+
+A @deftech{box} is like a single-element vector, normally used as
+minimal mutable storage.
+
 @defproc[(box? [v any/c]) boolean?]{
 
 Returns @scheme[#t] if @scheme[v] is a box, @scheme[#f] otherwise.}

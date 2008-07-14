@@ -3,6 +3,8 @@
 
 @title[#:tag "vectors"]{Vectors}
 
+@guideintro["vectors"]{vectors}
+
 A @deftech{vector} is a fixed-length array with constant-time access
 and update of the vector slots, which are numbered from @scheme[0] to
 one less than the number of slots in the vector.
