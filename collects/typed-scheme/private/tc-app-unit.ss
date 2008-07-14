@@ -345,6 +345,10 @@
     (match d
       [(struct dcon (fixed rest)) (length fixed)]
       [(struct dcon-exact (fixed rest)) (length fixed)]))
+  (define (dmap-rest? d)
+    (match d
+      [(struct dcon (fixed rest)) rest]
+      [(struct dcon-exact (fixed rest)) rest]))
   (if (list? subst)
       (for ([s subst])
            (match s
@@ -353,7 +357,10 @@
              [_ (void)]))
       (for* ([(cmap dmap) (in-pairs (cset-maps subst))]
              [(k v) (dmap-map dmap)])
-            (printf/log "Instantiated ... variable ~a with ~a types\n" k (dmap-length v)))))
+            (printf/log "Instantiated ... variable ~a with ~a types~a\n" k (dmap-length v)
+                        (if (dmap-rest? v)
+                            " and a starred type"
+                            "")))))
 
 (define-syntax (handle-clauses stx)
   (syntax-case stx ()
