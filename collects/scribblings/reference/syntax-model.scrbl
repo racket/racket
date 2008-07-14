@@ -604,7 +604,7 @@ recursively expands only until the form becomes one of the following:
        @scheme[define-values] form before expansion continues. When a
        @scheme[define-syntaxes] form is discovered, the right-hand
        side is expanded and evaluated (as for a
-       @scheme[letrec-values+syntaxes] form_, and a transformer
+       @scheme[letrec-values+syntaxes] form), and a transformer
        binding is installed for the body sequence before expansion
        continues.}
 
