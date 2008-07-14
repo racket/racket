@@ -290,7 +290,7 @@ The new type constructor @scheme[All] takes a list of type
 variables and a body type.  The type variables are allowed to
 appear free in the body of the @scheme[All] form.
 
-@section{Variable-Arity Functions}
+@section{Variable-Arity Functions: Programming with Rest Arguments}
 
 Typed Scheme can handle some uses of rest arguments.
 
