@@ -30,7 +30,7 @@
 ;; is let-binding really necessary? - remember to record the bugs!
 (define (type-annotation stx #:infer [let-binding #f])
   (define (pt prop)
-    (print-size prop)
+    #;(print-size prop)
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))
@@ -51,7 +51,7 @@
 
 (define (type-ascription stx)
   (define (pt prop)
-    (print-size prop)
+    #;(print-size prop)
     (if (syntax? prop)
         (parse-type prop)
         (parse-type/id stx prop)))
@@ -103,8 +103,8 @@
                                       "Expression should produce ~a values, but produces ~a values of types ~a"
                                       (length stxs) (length tys) (stringify tys))
                     (map (lambda (stx ty a)
-                           (cond [a => (lambda (ann) (check-type stx ty ann) (log/extra stx ty ann) ann)]
-                                 [else (log/noann stx ty) ty]))
+                           (cond [a => (lambda (ann) (check-type stx ty ann) #;(log/extra stx ty ann) ann)]
+                                 [else #;(log/noann stx ty) ty]))
                          stxs tys anns))]
                [ty (tc-error/delayed #:ret (map (lambda _ (Un)) stxs) 
                                      "Expression should produce ~a values, but produces one values of type "

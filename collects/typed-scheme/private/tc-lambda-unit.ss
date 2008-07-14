@@ -69,7 +69,7 @@
             ;; otherwise, the simple case
             [else (make-arr arg-types t rest-ty drest null null)])]
          [t (int-err "bad match - not a tc-result: ~a ~a ~a" t ret-ty (syntax->datum body))])))
-    (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+    #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
     (when (or (not (= arg-len tys-len))
               (and rest (and (not rest-ty)
                              (not drest))))
@@ -114,7 +114,7 @@
     [(args ...)       
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (map get-type arg-list)])
-       (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
+       #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) arg-list)
        (with-lexical-env/extend 
         arg-list arg-types
         (match (tc-exprs (syntax->list body))
@@ -130,7 +130,7 @@
     [(args ... . rest)
      (let* ([arg-list (syntax->list #'(args ...))]
             [arg-types (map get-type arg-list)])
-       (for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) (cons #'rest arg-list))
+       #;(for-each (lambda (a) (printf/log "Lambda Var: ~a~n" (syntax-e a))) (cons #'rest arg-list))
        (cond 
          [(dotted? #'rest)
           =>

@@ -337,15 +337,15 @@
      [imag-part (N . -> . N)]
      [magnitude (N . -> . N)]
      [angle (N . -> . N)]
-     [numerator (N . -> . N)]
-     [denominator (N . -> . N)]
+     [numerator (N . -> . -Integer)]
+     [denominator (N . -> . -Integer)]
      [exact->inexact (N . -> . N)]
      [inexact->exact (N . -> . N)]
      [make-string
       (cl->
        [(N) -String]
        [(N -Char) -String])]
-     [arithmetic-shift (N N . -> . N)]
+     [arithmetic-shift (-Integer -Integer . -> . -Integer)]
      [abs (N . -> . N)]
      [substring (cl-> [(-String N) -String]
                       [(-String N N) -String])]
@@ -375,7 +375,7 @@
      [current-error-port (-Param -Output-Port -Output-Port)]
      [current-input-port (-Param -Input-Port -Input-Port)]
      [round (N . -> . N)]
-     [seconds->date (N . -> . (make-Struct 'date #f (list N N N N N N N N B N) #f #f #'date? values))]
+     [seconds->date (N . -> . (make-Name #'date))]
      [current-seconds (-> N)]
      [sqrt (-> N N)]
      [path->string (-> -Path -String)]       
@@ -482,6 +482,7 @@
      [delete-file (-> -Pathlike -Void)]
      [make-namespace (cl->* (-> -Namespace)
                             (-> (*Un (-val 'empty) (-val 'initial)) -Namespace))]
+     [make-base-namespace (-> -Namespace)]
      [eval (-> -Sexp Univ)]
      
      [exit (-> (Un))]

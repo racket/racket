@@ -67,7 +67,7 @@
      (define-syntax n (syntax-rules () [(n . pattern) template]))]))
 
 (define log-file (make-parameter #f))
-(define-for-syntax logging? #f)
+(define-for-syntax logging? #t)
 
 (require (only-in (lib "file.ss") file-name-from-path))
 
@@ -76,9 +76,9 @@
       (syntax-case stx ()
         [(_ fmt . args) 
          #'(when (log-file)
-             (apply fprintf (log-file) (string-append "~a: " fmt) 
-                    (file-name-from-path (object-name (log-file)))
-                    args))])
+             (fprintf (log-file) (string-append "~a: " fmt) 
+                      (file-name-from-path (object-name (log-file)))
+                      . args))])
       #'(void)))
 
 (define (log-file-name src module-name)
@@ -90,7 +90,7 @@
   (syntax-case stx ()
     [(_ file . body)
      (if logging?
-         #'(parameterize ([log-file (open-output-file file 'truncate/replace)])
+         #'(parameterize ([log-file (open-output-file file #:exists 'append)])
              . body)
          #'(begin . body))]))
 

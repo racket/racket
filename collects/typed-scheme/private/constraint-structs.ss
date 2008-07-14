@@ -16,7 +16,7 @@
 (define-struct dcon-exact (fixed rest) #:prefab)
 
 ;; type : c
-;; bound : vars
+;; bound : var
 (define-struct dcon-dotted (type bound) #:prefab)
 
 ;; map : hash mapping variable to dcon or dcon-dotted

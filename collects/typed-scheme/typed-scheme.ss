@@ -40,7 +40,9 @@
   (define module-name (syntax-property stx 'enclosing-module-name))
   ;(printf "BEGIN: ~a~n" (syntax->datum stx))
   (with-logging-to-file 
-   (log-file-name (syntax-src stx) module-name)
+   "/tmp/ts-poly.log"
+   #;
+   (log-file-name (syntax-source stx) module-name)
    (syntax-case stx ()
      [(mb forms ...)
       (nest

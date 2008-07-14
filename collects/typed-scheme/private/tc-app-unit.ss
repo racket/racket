@@ -6,7 +6,7 @@
          "tc-utils.ss"
          "subtype.ss"
          "infer.ss"
-         (only-in "utils.ss" debug in-syntax)
+         (only-in "utils.ss" debug in-syntax printf/log in-pairs)
          "union.ss"
          "type-utils.ss"
          "type-effect-convenience.ss"
@@ -21,6 +21,7 @@
          (for-template 
           "internal-forms.ss" scheme/base 
           (only-in scheme/private/class-internal make-object do-make-object)))
+(require "constraint-structs.ss")
 
 (import tc-expr^ tc-lambda^ tc-dots^)
 (export tc-app^)
@@ -140,6 +141,13 @@
              (stringify (map stringify-domain doms rests drests) "~n\t")
              (stringify-domain arg-tys (if (not tail-bound) tail-ty #f) (if tail-bound (cons tail-ty tail-bound) #f)))]))
 
+(define (do-apply-log subst fun arg)
+  (match* (fun arg)
+          [('star 'list) (printf/log "Polymorphic apply called with uniform rest arg, list argument\n")]
+          [('star 'dots) (printf/log "Polymorphic apply called with uniform rest arg, dotted argument\n")]
+          [('dots 'dots) (printf/log "Polymorphic apply called with non-uniform rest arg, dotted argument\n")])
+  (log-result subst))
+
 (define (tc/apply f args)
   (define f-ty (tc-expr f))
   ;; produces the first n-1 elements of the list, and the last element
@@ -172,6 +180,7 @@
                        (and tail-ty
                             (subtype (apply -lst* arg-tys #:tail (make-Listof tail-ty))
                                      (apply -lst* (car doms*) #:tail (make-Listof (car rests*)))))))
+                (printf/log "Non-poly apply, ... arg\n")
                 (ret (car rngs*))]
                [(and (car rests*)
                      (let ([tail-ty (with-handlers ([exn:fail? (lambda _ #f)])
@@ -179,7 +188,11 @@
                        (and tail-ty
                             (subtype (apply -lst* arg-tys #:tail tail-ty)
                                      (apply -lst* (car doms*) #:tail (make-Listof (car rests*)))))))
-                (ret (car rngs*))]               
+                
+                    (printf/log (if (memq (syntax->datum f) '(+ - * / max min)) 
+                                    "Simple arithmetic non-poly apply\n"
+                                    "Simple non-poly apply\n"))
+                    (ret (car rngs*))]
                [(and (car drests*)
                      (let-values ([(tail-ty tail-bound) 
                                    (with-handlers ([exn:fail? (lambda _ (values #f #f))])
@@ -188,6 +201,7 @@
                             (eq? (cdr (car drests*)) tail-bound)
                             (subtypes arg-tys (car doms*))
                             (subtype tail-ty (car (car drests*))))))                     
+                (printf/log "Non-poly apply, ... arg\n")
                 (ret (car rngs*))]
                [else (loop (cdr doms*) (cdr rngs*) (cdr rests*) (cdr drests*))])))]
     [(tc-result: (Poly: vars (Function: (list (arr: doms rngs rests drests thn-effs els-effs) ..1))))
@@ -269,7 +283,9 @@
                                    (car rests*)
                                    (car rngs*)
                                    (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) 
+                     (do-apply-log substitution 'star 'list)
+                     (ret (subst-all substitution (car rngs*))))]
                ;; actual work, when we have a * function and ... final arg
                [(and (car rests*)
                      tail-bound                     
@@ -282,7 +298,9 @@
                                    (car rests*)
                                    (car rngs*)
                                    (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution) 
+                     (do-apply-log substitution 'star 'dots)
+                     (ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, same bound on ...
                [(and (car drests*)
                      tail-bound
@@ -290,7 +308,9 @@
                      (= (length (car doms*))
                         (length arg-tys))
                      (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*))))
-                => (lambda (substitution) (ret (subst-all substitution (car rngs*))))]
+                => (lambda (substitution)
+                     (do-apply-log substitution 'dots 'dots)
+                     (ret (subst-all substitution (car rngs*))))]
                ;; ... function, ... arg, different bound on ...
                [(and (car drests*)
                      tail-bound
@@ -304,6 +324,7 @@
                        (infer vars (cons tail-ty arg-tys) (cons (car (car drests*)) (car doms*)) (car rngs*) (fv (car rngs*)))))
                 => (lambda (substitution) 
                      (define drest-bound (cdr (car drests*)))
+                     (do-apply-log substitution 'dots 'dots)
                      (ret (substitute-dotted (cadr (assq drest-bound substitution))
                                              tail-bound
                                              drest-bound
@@ -317,6 +338,23 @@
     [(tc-result: f-ty) (tc-error/expr #:return (ret (Un))
                          "Type of argument to apply is not a function type: ~n~a" f-ty)]))
 
+
+
+(define (log-result subst)
+  (define (dmap-length d)
+    (match d
+      [(struct dcon (fixed rest)) (length fixed)]
+      [(struct dcon-exact (fixed rest)) (length fixed)]))
+  (if (list? subst)
+      (for ([s subst])
+           (match s
+             [(list v (list imgs ...) starred)
+              (printf/log "Instantiated ... variable ~a with ~a types\n" v (length imgs))]
+             [_ (void)]))
+      (for* ([(cmap dmap) (in-pairs (cset-maps subst))]
+             [(k v) (dmap-map dmap)])
+            (printf/log "Instantiated ... variable ~a with ~a types\n" k (dmap-length v)))))
+
 (define-syntax (handle-clauses stx)
   (syntax-case stx ()
     [(_  (lsts ... rngs) pred infer t argtypes expected)
@@ -326,6 +364,7 @@
                       #:when (pred vars ... rng))
                      (let ([substitution (infer vars ... rng)])
                        (and substitution
+                            (log-result substitution)
                             (or expected
                                 (ret (subst-all substitution rng))))))             
              (poly-fail t argtypes))))]))
@@ -393,7 +432,10 @@
                    #:return (ret (Un))
                    (string-append "No function domains matched in function application:"
                                   (domain-mismatches t doms rests drests argtypes #f #f)))]
-                 [(subtypes/varargs argtypes (car doms*) (car rests*)) (ret (car rngs))]
+                 [(subtypes/varargs argtypes (car doms*) (car rests*)) 
+                  (when (car rests*)
+                    (printf/log "Simple varargs function application (~a)\n" (syntax->datum f-stx)))
+                  (ret (car rngs))]
                  [else (loop (cdr doms*) (cdr rngs) (cdr rests*))]))]
         ;; simple polymorphic functions, no rest arguments
         [(tc-result: (and t
@@ -411,6 +453,7 @@
                               ;; we want to infer the dotted-var here as well, and we don't use these separately
                               ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
                               (PolyDots: vars (Function: (list (arr: doms rngs rests (and drests #f) thn-effs els-effs) ...))))))
+         (printf/log "Polymorphic varargs function application (~a)\n" (syntax->datum f-stx))
          (handle-clauses (doms rests rngs)
                          (lambda (dom rest rng) (<= (length dom) (length argtypes)))
                          (lambda (dom rest rng) (infer/vararg vars argtypes dom rest rng (fv rng) expected))
@@ -419,6 +462,7 @@
         [(tc-result: (and t (PolyDots: 
                              (and vars (list fixed-vars ... dotted-var))
                              (Function: (list (arr: doms rngs (and #f rests) (cons dtys dbounds) thn-effs els-effs) ...)))))
+         (printf/log "Polymorphic ... function application (~a)\n" (syntax->datum f-stx))
          (handle-clauses (doms dtys dbounds rngs)
                          (lambda (dom dty dbound rng) (and (<= (length dom) (length argtypes))
                                                            (eq? dotted-var dbound)))
