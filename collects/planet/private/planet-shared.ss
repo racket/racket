@@ -5,10 +5,10 @@ Various common pieces of code that both the client and server need to access
 |#
 #lang scheme/base
   
-  (require (only-in mzlib/file path-only)
-	   mzlib/port
-           setup/getinfo
-           (prefix-in srfi1: srfi/1)
+  (require setup/getinfo
+           scheme/path
+           scheme/port
+           scheme/list
            "../config.ss"
            "data.ss")
   
@@ -199,7 +199,7 @@ Various common pieces of code that both the client and server need to access
   ;; also updates auxiliary datastructures that might have dangling pointers to
   ;; the removed links
   (define (filter-link-table! f on-delete)
-    (let-values ([(in-links out-links) (srfi1:partition f (get-hard-link-table))])
+    (let-values ([(in-links out-links) (partition f (get-hard-link-table))])
       (for-each on-delete out-links)
       (save-hard-link-table in-links)))
   

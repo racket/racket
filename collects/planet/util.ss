@@ -10,13 +10,7 @@
          net/url
          xml/xml
          
-         mzlib/file
-         mzlib/list
-         mzlib/etc
-         
-         scheme/contract
          scheme/port
-         scheme/path
          
          setup/pack
          setup/plt-single-installer 
