@@ -45,20 +45,8 @@
             [".1"            #f]
             ["1."            #f]
             ["foo"           #f]
+            ["x.y"           #f]
             ["0"             #f]
             ))
-
-;"planet-shared.ss"> (string->mz-version "1.2.3.4.5")
-;#(struct:mz-version 102 3004)     SHOULD BE #f
-;"planet-shared.ss"> (string->mz-version "1...2")
-;#f
-;"planet-shared.ss"> (string->mz-version ".2")
-;#f
-;"planet-shared.ss"> (string->mz-version "2.")
-;#f
-;"planet-shared.ss"> (string->mz-version "foo")
-;#f
-;"planet-shared.ss"> (string->mz-version "x.y")
-;#f
 
 (report-errs)
