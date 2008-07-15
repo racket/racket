@@ -4,7 +4,7 @@
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
- (only-in scheme/list cons? take drop add-between last)
+ (only-in scheme/list cons? take drop add-between last filter-map)
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in scheme/match/runtime match:error)
@@ -147,6 +147,11 @@
                             . -> .
                             (-lst b))
                            ((a . -> . B) (-lst a) . -> . (-lst a))))]
+     [filter-map (-polydots (c a b)
+                            ((list
+                              ((list a) (b b) . ->... . (-opt c))
+                              (-lst a))
+                             ((-lst b) b) . ->... . (-lst c)))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [last   (-poly (a) ((-lst a) . -> . a))]
