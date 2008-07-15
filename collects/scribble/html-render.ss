@@ -816,7 +816,10 @@
                      ,@(if (null? (element-content e))
                          `(,(format "~s" (tag-key (link-element-tag e) ri)))
                          (render-plain-element e part ri))))))))]
-        [else (render-plain-element e part ri)]))
+        [else 
+         (when (render-element? e)
+           ((render-element-render e) this part ri))
+         (render-plain-element e part ri)]))
 
     (define/private (render-plain-element e part ri)
       (let* ([raw-style (flatten-style (and (element? e) (element-style e)))]

@@ -155,6 +155,11 @@ A @deftech{block} is either a @techlink{table}, an
                          the browser, or for rendering to other
                          formats.}
 
+                   @item{An instance of @scheme[render-element] has a
+                         procedure that is called in the
+                         @techlink{render pass} of document
+                         processing.}
+
              }}}}
 
        @item{A @deftech{delayed block} is an instance of
@@ -543,6 +548,16 @@ normally calls @scheme[collect-put!].
 Unlike @scheme[delayed-element] or @scheme[part-relative-element], the
 element remains intact (i.e., it is not replaced) by either the
 @tech{collect pass} or @tech{resolve pass}.
+
+}
+
+@defstruct[(render-element element) ([render (any/c part? resolve-info? . -> . any)])]{
+
+Like @scheme[delayed-element], but the @scheme[render] procedure is called
+during the @techlink{render pass}.
+
+If a @scheme[render-element] instance is serialized (such as when
+saving collected info), it is reduced to a @scheme[element] instance.
 
 }
 

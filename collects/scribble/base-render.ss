@@ -387,6 +387,8 @@
              (render-content (strip-aux (car v)) part ri)
              (render-content (list "[missing]") part ri)))]
         [(element? i)
+         (when (render-element? i)
+           ((render-element-render i) this part ri))
          (render-content (element-content i) part ri)]
         [(delayed-element? i)
          (render-content (delayed-element-content i ri) part ri)]

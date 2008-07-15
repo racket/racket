@@ -309,7 +309,9 @@
   prop:serializable
   (make-serialize-info
    (lambda (d)
-     (vector (collect-element-collect d)))
+     (vector (make-element
+              (element-style d)
+              (element-content d))))
    #'deserialize-collect-element
    #f
    (or (current-load-relative-directory) (current-directory))))
@@ -322,6 +324,29 @@
  [struct collect-element ([style any/c]
                           [content list?]
                           [collect (collect-info? . -> . any)])])
+
+;; ----------------------------------------
+
+(define-struct (render-element element) (render)
+  #:property
+  prop:serializable
+  (make-serialize-info
+   (lambda (d)
+     (vector (make-element
+              (element-style d)
+              (element-content d))))
+   #'deserialize-render-element
+   #f
+   (or (current-load-relative-directory) (current-directory))))
+
+(provide deserialize-render-element)
+(define deserialize-render-element
+  (make-deserialize-info values values))
+
+(provide/contract
+ [struct render-element ([style any/c]
+                         [content list?]
+                         [render (any/c part? resolve-info? . -> . any)])])
 
 ;; ----------------------------------------
 

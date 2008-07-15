@@ -519,6 +519,7 @@
                     [else (void)])))))))
 
   (when (clean)
+    (setup-printf #f "--- cleaning collections ---")    
     (let ([dependencies (make-hash)])
       ;; Main deletion:
       (for ([cc ccs-to-compile]) (clean-collection cc dependencies))
@@ -555,6 +556,11 @@
 
   (define (do-install-part part)
     (when (if (eq? part 'post) (call-post-install) (call-install))
+      (setup-printf #f (format "--- ~ainstalling collections ---"
+                               (case part
+                                 [(pre) "pre-"]
+                                 [(general) ""]
+                                 [(post) "post-"])))
       (for ([cc ccs-to-compile])
         (let/ec k
           (begin-record-error cc (case part
@@ -659,6 +665,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (when (make-zo)
+    (setup-printf #f "--- compiling collections ---")
     (with-specified-mode
      (lambda ()
        (make-it ".zos"
@@ -871,6 +878,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (when (make-launchers)
+    (setup-printf #f "--- creating launchers ---")
     (let ([name-list
            (lambda (l)
              (unless (list-of relative-path-string? l)

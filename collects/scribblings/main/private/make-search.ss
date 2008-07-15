@@ -24,7 +24,7 @@
 ;; this file is used as a trampoline to set a context (a pre-filter cookie) and
 ;; then hop over to the search page (the search page can do it itself, but it's
 ;; to heavy to load twice).
-(define-runtime-path search-context-page "search-context.htm")
+(define-runtime-path search-context-page "search-context.html")
 
 (define (quote-string str)
   (define (hex4 ch)
@@ -175,15 +175,15 @@
   (for ([src (list search-script search-context-page)])
     (define dest (build-path dest-dir (file-name-from-path src)))
     (when (file-exists? dest) (delete-file dest))
-    (copy-file src dest))
-
-  (list
-   (script-ref "plt-index.js"
-     #:noscript @list{Sorry, you must have JavaScript to use this page.})
-   (script-ref "search.js")
-   (make-element (make-with-attributes #f '((id . "plt_search_container")))
-                 null)))
+    (copy-file src dest)))
 
 (define (make-search user-dir?)
-  (make-delayed-block (lambda (r s i)
-                        (make-paragraph (make-script user-dir? r s i)))))
+  (make-paragraph
+   (list
+    (script-ref "plt-index.js"
+                #:noscript @list{Sorry, you must have JavaScript to use this page.})
+    (script-ref "search.js")
+    (make-render-element (make-with-attributes #f '((id . "plt_search_container")))
+                         null
+                         (lambda (r s i)
+                           (make-script user-dir? r s i))))))

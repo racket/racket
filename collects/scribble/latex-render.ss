@@ -91,6 +91,8 @@
       null)
 
     (define/override (render-element e part ri)
+      (when (render-element? e)
+        ((render-element-render e) this part ri))
       (let ([part-label? (and (link-element? e)
                               (pair? (link-element-tag e))
                               (eq? 'part (car (link-element-tag e)))
