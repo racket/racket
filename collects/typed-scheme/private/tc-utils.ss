@@ -49,6 +49,11 @@
 
 (define-struct err (msg stx) #:prefab)
 
+(define-values (save-errors! restore-errors!)
+  (let ([v (box #f)])
+    (values (lambda () (set-box! v delayed-errors))
+            (lambda () (set! delayed-errors (unbox v))))))
+
 (define (report-all-errors)
   (define (reset!) (set! delayed-errors null))
   (match (reverse delayed-errors)
@@ -58,7 +63,7 @@
      (raise-typecheck-error msg stx)]
     [l
      (let ([stxs
-            (for/list ([e (reverse delayed-errors)])
+            (for/list ([e l])
               (sync (thread (lambda () (raise-typecheck-error (err-msg e) (err-stx e)))))
               (err-stx e))])
        (reset!)
@@ -67,14 +72,25 @@
 
 (define delay-errors? (make-parameter #t))
 
-(define (tc-error/delayed msg #:stx [stx (current-orig-stx)] . rest)
-  (if (delay-errors?)
-      (set! delayed-errors (cons (make-err (apply format msg rest) (list (locate-stx stx))) delayed-errors))
-      (raise-typecheck-error (apply format msg rest) (list (locate-stx stx)))))
+(define (tc-error/delayed msg #:stx [stx* (current-orig-stx)] . rest)
+  (let ([stx (locate-stx stx*)])
+    (unless (syntax? stx)
+      (error "syntax was not syntax" stx (syntax->datum stx*)))
+    (if (delay-errors?)
+        (set! delayed-errors (cons (make-err (apply format msg rest) (list stx)) delayed-errors))
+        (raise-typecheck-error (apply format msg rest) (list stx)))))
 
 ;; produce a type error, using the current syntax
 (define (tc-error msg . rest)  
-  (raise-typecheck-error (apply format msg rest) (list (locate-stx (current-orig-stx)))))
+  (let ([stx (locate-stx (current-orig-stx))])
+    ;; If this isn't original syntax, then we can get some pretty bogus error messages.  Note
+    ;; that this is from a macro expansion, so that introduced vars and such don't confuse the user.
+    (cond
+      [(not (orig-module-stx))
+       (raise-typecheck-error (apply format msg rest) (list stx))]
+      [(eq? (syntax-source (current-orig-stx)) (syntax-source (orig-module-stx)))
+       (raise-typecheck-error (apply format msg rest) (list stx))]
+      [else (raise-typecheck-error (apply format (string-append "Error in macro expansion -- " msg) rest) (list stx))])))
 
 ;; produce a type error, given a particular syntax
 (define (tc-error/stx stx msg . rest)
@@ -89,16 +105,14 @@
 ;; this is used only for printing type names
 (define current-type-names (make-parameter (lambda () '())))
 
-;; error for unbound variables
-(define (lookup-fail e) (tc-error "unbound identifier ~a" e))  
-
-
 ;; for reporting internal errors in the type checker
 (define-struct (exn:fail:tc exn:fail) ())
 
 ;; raise an internal error - typechecker bug!
-(define (int-err msg . args) 
-  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: " (apply format msg args))
+(define (int-err msg . args)  
+  (raise (make-exn:fail:tc (string-append "Internal Typechecker Error: "
+                                          (apply format msg args)
+                                          (format "\nwhile typechecking\n~a" (syntax->datum (current-orig-stx))))
                            (current-continuation-marks))))
 
 (define-syntax (nyi stx)
@@ -116,4 +130,5 @@
 
 (define (add-type-name-reference t)
   (type-name-references (cons t (type-name-references))))
+
 

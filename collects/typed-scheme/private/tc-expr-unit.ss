@@ -2,33 +2,22 @@
 
 
 (require syntax/kerncase
-         syntax/struct
-         syntax/stx
          scheme/match
-         "type-contract.ss"
          "signatures.ss"
-         "tc-structs.ss"
          "type-utils.ss"
          "utils.ss" ;; doesn't need tests
          "type-rep.ss" ;; doesn't need tests
-         "unify.ss" ;; needs tests
-         "infer.ss"
          "type-effect-convenience.ss" ;; maybe needs tests
          "union.ss"
          "subtype.ss" ;; has tests
-         "internal-forms.ss" ;; doesn't need tests
-         "planet-requires.ss" ;; doesn't need tests
-         "type-env.ss" ;; maybe needs tests
          "parse-type.ss" ;; has tests
          "tc-utils.ss" ;; doesn't need tests
-         "type-environments.ss" ;; doesn't need tests
          "lexical-env.ss" ;; maybe needs tests
          "type-annotation.ss" ;; has tests
-         "type-name-env.ss" ;; maybe needs tests
-         "init-envs.ss"
          "effect-rep.ss"
-         "mutated-vars.ss"
-         scheme/private/class-internal)
+         (only-in "type-environments.ss" lookup current-tvars extend-env)
+         scheme/private/class-internal
+         (only-in srfi/1 split-at))
 
 (require (for-template scheme/base scheme/private/class-internal))
 
@@ -62,25 +51,52 @@
     [(regexp? v) -Regexp]
     [else Univ]))
 
+
+(define (do-inst stx ty)
+  (define inst (syntax-property stx 'type-inst))
+  (define (split-last l)
+    (let-values ([(all-but last-list) (split-at l (sub1 (length l)))])
+      (values all-but (car last-list))))
+  (cond [(not inst) ty]
+        [(not (or (Poly? ty) (PolyDots? ty)))
+         (tc-error/expr #:return (ret (Un)) "Cannot instantiate non-polymorphic type ~a" ty)]
+        
+        [(and (Poly? ty)
+              (not (= (length (syntax->list inst)) (Poly-n ty))))
+         (tc-error/expr #:return (ret (Un)) 
+                        "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
+                        ty (Poly-n ty) (length (syntax->list inst)))]
+        [(and (PolyDots? ty) (not (>= (length (syntax->list inst)) (sub1 (PolyDots-n ty)))))
+         ;; we can provide 0 arguments for the ... var
+         (tc-error/expr #:return (ret (Un)) 
+                        "Wrong number of type arguments to polymorphic type ~a:~nexpected at least: ~a~ngot: ~a"
+                        ty (sub1 (PolyDots-n ty)) (length (syntax->list inst)))]
+        [(PolyDots? ty)
+         ;; In this case, we need to check the last thing.  If it's a dotted var, then we need to
+         ;; use instantiate-poly-dotted, otherwise we do the normal thing.
+         (let-values ([(all-but-last last-stx) (split-last (syntax->list inst))])
+           (match (syntax-e last-stx)
+             [(cons last-ty-stx (? identifier? last-id-stx))
+              (unless (Dotted? (lookup (current-tvars) (syntax-e last-id-stx) (lambda _ #f)))
+                (tc-error/stx last-id-stx "~a is not a type variable bound with ..." (syntax-e last-id-stx)))
+              (let* ([last-id (syntax-e last-id-stx)]
+                     [last-ty
+                      (parameterize ([current-tvars (extend-env (list last-id)
+                                                                (list (make-DottedBoth (make-F last-id)))
+                                                                (current-tvars))])
+                        (parse-type last-ty-stx))])
+                (instantiate-poly-dotted ty (map parse-type all-but-last) last-ty last-id))]
+             [_
+              (instantiate-poly ty (map parse-type (syntax->list inst)))]))]
+        [else
+         (instantiate-poly ty (map parse-type (syntax->list inst)))]))
+
 ;; typecheck an identifier
 ;; the identifier has variable effect
 ;; tc-id : identifier -> tc-result
 (define (tc-id id)
-  (let* ([ty (lookup-type/lexical id)]
-         [inst (syntax-property id 'type-inst)])
-    (cond [(and inst
-                (not (Poly? ty)))
-           (tc-error/expr #:return (ret (Un)) "Cannot instantiate non-polymorphic type ~a" ty)]
-          [(and inst
-               (not (= (length (syntax->list inst)) (Poly-n ty))))
-           (tc-error/expr #:return (ret (Un)) 
-                          "Wrong number of type arguments to polymorphic type ~a:~nexpected: ~a~ngot: ~a"
-                          ty (Poly-n ty) (length (syntax->list inst)))]
-          [else
-           (let ([ty* (if inst
-                          (instantiate-poly ty (map parse-type (syntax->list inst)))
-                          ty)])
-             (ret ty* (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id))))])))
+  (let* ([ty (lookup-type/lexical id)])
+    (ret ty (list (make-Var-True-Effect id)) (list (make-Var-False-Effect id)))))
 
 ;; typecheck an expression, but throw away the effect
 ;; tc-expr/t : Expr -> Type
@@ -91,6 +107,8 @@
   (match (tc-expr/check e t)
     [(tc-result: t) t]))
 
+;; check-below : (/\ (Result Type -> Result)
+;;                   (Type Type -> Type))
 (define (check-below tr1 expected)
   (match (list tr1 expected)      
     [(list (tc-result: t1 te1 ee1) t2)
@@ -100,7 +118,7 @@
     [(list t1 t2)
      (unless (subtype t1 t2)
        (tc-error/expr"Expected ~a, but got ~a" t2 t1))
-     (ret expected)]))
+     expected]))
 
 (define (tc-expr/check form expected)
   (parameterize ([current-orig-stx form])
@@ -133,7 +151,7 @@
         [(quote-syntax datum) (ret Any-Syntax)]
         ;; mutation!
         [(set! id val)
-         (match-let* ([(tc-result: id-t) (tc-id #'id)]
+         (match-let* ([(tc-result: id-t) (tc-expr #'id)]
                       [(tc-result: val-t) (tc-expr #'val)])
            (unless (subtype val-t id-t)
              (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
@@ -239,7 +257,7 @@
        (tc/letrec-values #'((name ...) ...) #'(expr ...) #'body form)]        
       ;; mutation!
       [(set! id val)
-       (match-let* ([(tc-result: id-t) (tc-id #'id)]
+       (match-let* ([(tc-result: id-t) (tc-expr #'id)]
                     [(tc-result: val-t) (tc-expr #'val)])
          (unless (subtype val-t id-t)
            (tc-error/expr "Mutation only allowed with compatible types:~n~a is not a subtype of ~a" val-t id-t))
@@ -280,9 +298,13 @@
     (unless (syntax? form) 
       (int-err "bad form input to tc-expr: ~a" form))
     ;; typecheck form
-    (cond [(type-ascription form) => (lambda (ann)
-                                       (tc-expr/check form ann))]
-          [else (internal-tc-expr form)])))
+    (let ([ty (cond [(type-ascription form) => (lambda (ann)
+                                                 (tc-expr/check form ann))]
+                    [else (internal-tc-expr form)])])
+      (match ty
+        [(tc-result: t eff1 eff2)
+         (let ([ty* (do-inst form t)])
+           (ret ty* eff1 eff2))]))))
 
 (define (tc/send rcvr method args [expected #f])
   (match (tc-expr rcvr)

@@ -1,22 +1,25 @@
 #lang scheme/base
 
 (require (for-syntax scheme/base)
+         "tc-utils.ss"
          mzlib/etc)
 
 ;; this file contains support for calculating the free variables/indexes of types
 ;; actual computation is done in rep-utils.ss  and type-rep.ss
 
-(define-values (Covariant Contravariant Invariant Constant)
+(define-values (Covariant Contravariant Invariant Constant Dotted)
   (let ()
     (define-struct Variance () #:inspector #f)
     (define-struct (Covariant Variance) () #:inspector #f)
     (define-struct (Contravariant Variance) () #:inspector #f)
     (define-struct (Invariant Variance) () #:inspector #f)
     (define-struct (Constant Variance) () #:inspector #f)
-    (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant))))
+    ;; not really a variance, but is disjoint with the others
+    (define-struct (Dotted Variance) () #:inspector #f)
+    (values (make-Covariant) (make-Contravariant) (make-Invariant) (make-Constant) (make-Dotted))))
 
 
-(provide Covariant Contravariant Invariant Constant)
+(provide Covariant Contravariant Invariant Constant Dotted)
 
 ;; hashtables for keeping track of free variables and indexes
 (define index-table (make-weak-hasheq))
@@ -39,20 +42,28 @@
   (define (combine-var v w)
     (cond
       [(eq? v w) v]
+      [(eq? v Dotted) w]
+      [(eq? w Dotted) v]
       [(eq? v Constant) w]
       [(eq? w Constant) v]
       [else Invariant]))
-  (for-each
-   (lambda (old-ht)
-     (hash-for-each 
-      old-ht
-      (lambda (sym var)
+  (for* ([old-ht (in-list freess)]
+         [(sym var) (in-hash old-ht)])
         (let* ([sym-var (hash-ref ht sym (lambda () #f))])
           (if sym-var
               (hash-set! ht sym (combine-var var sym-var))
-              (hash-set! ht sym var))))))
-   freess)
+              (hash-set! ht sym var))))
   ht)
+
+;; given a set of free variables, change bound to ...
+;; (if bound wasn't free, this will add it as Dotted
+;;  appropriately so that things that expect to see
+;;  it as "free" will -- fixes the case where the
+;;  dotted pre-type base doesn't use the bound).
+(define (fix-bound vs bound)
+  (define vs* (hash-map* (lambda (k v) v) vs))
+  (hash-set! vs* bound Dotted)
+  vs*)
 
 ;; frees -> frees
 (define (flip-variances vs)
@@ -71,25 +82,19 @@
    vs))
 
 (define (hash-map* f ht)
-  (define new-ht (hash-copy ht))
-  (hash-for-each 
-   new-ht
-   (lambda (k v)
-     (hash-set! 
-      new-ht
-      k
-      (f k v))))
+  (define new-ht (make-hasheq))
+  (for ([(k v) (in-hash ht)])
+     (hash-set! new-ht k (f k v)))
   new-ht)
 
 (define (without-below n frees)
-  (define new-ht (hash-copy frees))
-  (hash-for-each 
-   new-ht
-   (lambda (k v)
-     (when (< k n) (hash-remove! new-ht k))))
+  (define new-ht (make-hasheq))
+  (for ([(k v) (in-hash frees)])
+       (when (>= k n) (hash-set! new-ht k v)))
   new-ht)
 
-(provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table)
+(provide combine-frees flip-variances without-below unless-in-table var-table index-table empty-hash-table
+         fix-bound)
 
 (define-syntax (unless-in-table stx) 
   (syntax-case stx ()

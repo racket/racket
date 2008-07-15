@@ -2,19 +2,33 @@
 (require scheme/unit)
 (provide (all-defined-out))
 
-;; cycle 1
+(define-signature dmap^
+  (dmap-meet))
 
-(define-signature type-printer^
-  (print-type has-name print-effect)) ;; done
+(define-signature promote-demote^
+  (var-promote var-demote))
+
+(define-signature constraints^
+  (exn:infer?
+   fail-sym
+   ;; inference failure - masked before it gets to the user program
+   (define-syntaxes (fail!)
+     (syntax-rules ()
+       [(_ s t) (raise fail-sym)]))
+   cset-meet cset-meet*
+   no-constraint
+   empty-cset
+   insert
+   cset-combine
+   c-meet))
+
+(define-signature restrict^
+  (restrict))
 
 (define-signature infer^
-  (unify1 fv fv/list unfold)) ;; done 
+  (infer infer/vararg infer/dots))
 
-(define-signature subst^
-  (subst subst-all)) ;; done
 
-(define-signature type-equal^
-  (type-equal? type-compare type<? rename tc-result-equal?)) ;; done
 
 ;; cycle 2
 
@@ -38,4 +52,7 @@
 
 (define-signature tc-let^
   (tc/let-values tc/letrec-values tc/let-values/check tc/letrec-values/check))
+
+(define-signature tc-dots^
+  (tc/dots))
 

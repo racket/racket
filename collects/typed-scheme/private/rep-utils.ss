@@ -144,7 +144,7 @@
                                    (hash-set! var-table v fvs)
                                    (hash-set! index-table v fis))
                                   v)))])])
-               #'(begin
+               #`(begin
                    (define-struct (nm parent) flds #:inspector #f)
                    (define-match-expander ex
                      (lambda (s)
@@ -152,7 +152,7 @@
                         (syntax-case s ()
                           [(__ . fs) (quasisyntax/loc s (struct nm #, (syntax/loc #'fs (_ . fs))))]))))
                    (begin-for-syntax
-                     (hash-set! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs)))
+                     (hash-set! ht-stx 'kw-stx (list #'ex #'flds bfs-fold-rhs #'#,stx)))
                    intern
                    provides
                    frees)))])))

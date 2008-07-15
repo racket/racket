@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "type-rep.ss" "unify.ss" "union.ss" "infer.ss" "subtype.ss"
+(require "type-rep.ss" "union.ss" "subtype.ss"
          "type-utils.ss" "resolve-type.ss" "type-effect-convenience.ss"         
          mzlib/plt-match mzlib/trace)
 

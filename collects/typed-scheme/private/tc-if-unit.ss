@@ -10,7 +10,7 @@
          "subtype.ss"
          (only-in "remove-intersect.ss" 
                   [remove *remove])
-         "infer-ops.ss"
+         "infer.ss"
          "union.ss"
          "type-utils.ss"
          "tc-utils.ss"

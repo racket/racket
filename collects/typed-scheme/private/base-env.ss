@@ -1,11 +1,14 @@
+
 #lang scheme/base
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
 (require
  "extra-procs.ss"
- (only-in scheme/list cons? take drop add-between last)
+ (only-in scheme/list cons? take drop add-between last filter-map)
+ (only-in rnrs/lists-6 fold-left)
  '#%paramz
- (only-in scheme/match/runtime match:error))
+ (only-in scheme/match/runtime match:error)
+ scheme/promise)
 
 
 
@@ -102,11 +105,8 @@
      [read (cl-> 
             [(-Port) -Sexp]
             [() -Sexp])]
-     [ormap (-poly (a b) ((-> a b) (-lst a) . -> . b))]
-     [andmap (-poly (a b c d e) 
-                    (cl->*
-                     ((-> a b) (-lst a) . -> . b)
-                     ((-> c d e) (-lst c) (-lst d) . -> . e)))]
+     [ormap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
+     [andmap (-polydots (a c b) (->... (list (->... (list a) (b b) c) (-lst a)) ((-lst b) b) c))]
      [newline (cl-> [() -Void]
                     [(-Port) -Void])]
      [not (-> Univ B)]
@@ -125,16 +125,14 @@
      [list? (make-pred-ty (-lst Univ))]
      [list (-poly (a) (->* '() a (-lst a)))]
      [procedure? (make-pred-ty (make-Function (list (make-top-arr))))]
-     [map 
-      (-poly (a b c d)
-             (cl-> [((-> a b) (-lst a)) (-lst b)]
-                   [((-> a b c) (-lst a) (-lst b)) (-lst c)]
-                   [((-> a b c d) (-lst a) (-lst b) (-lst c)) (-lst d)]))]
-     [for-each 
-      (-poly (a b c d)
-             (cl-> [((-> a b) (-lst a)) -Void]
-                   [((-> a b c) (-lst a) (-lst b)) -Void]
-                   [((-> a b c d) (-lst a) (-lst b) (-lst c)) -Void]))]
+     [map (-polydots (c a b) ((list ((list a) (b b) . ->... . c) (-lst a))
+                              ((-lst b) b) . ->... .(-lst c)))]
+     [for-each (-polydots (c a b) ((list ((list a) (b b) . ->... . Univ) (-lst a))
+                                   ((-lst b) b) . ->... . -Void))]
+     [fold-left (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+                                    ((-lst b) b) . ->... . c))]
+     [fold-right (-polydots (c a b) ((list ((list c a) (b b) . ->... . c) c (-lst a))
+                                     ((-lst b) b) . ->... . c))]
      [foldl
       (-poly (a b c)
              (cl-> [((a b . -> . b) b (make-lst a)) b]
@@ -149,6 +147,11 @@
                             . -> .
                             (-lst b))
                            ((a . -> . B) (-lst a) . -> . (-lst a))))]
+     [filter-map (-polydots (c a b)
+                            ((list
+                              ((list a) (b b) . ->... . (-opt c))
+                              (-lst a))
+                             ((-lst b) b) . ->... . (-lst c)))]
      [take   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [drop   (-poly (a) ((-lst a) -Integer . -> . (-lst a)))]
      [last   (-poly (a) ((-lst a) . -> . a))]
@@ -258,8 +261,8 @@
                  [(-Pathlike (-> a) Sym) a]))]
      
      [random (cl->
-              [(N) N]
-              [() N])]
+              [(-Integer) -Integer]
+              [() -Integer])]
      
      [assoc (-poly (a b) (a (-lst (-pair a b)) . -> . (-opt (-pair a b))))]
      [assf  (-poly (a b)
@@ -339,15 +342,15 @@
      [imag-part (N . -> . N)]
      [magnitude (N . -> . N)]
      [angle (N . -> . N)]
-     [numerator (N . -> . N)]
-     [denominator (N . -> . N)]
+     [numerator (N . -> . -Integer)]
+     [denominator (N . -> . -Integer)]
      [exact->inexact (N . -> . N)]
      [inexact->exact (N . -> . N)]
      [make-string
       (cl->
        [(N) -String]
        [(N -Char) -String])]
-     [arithmetic-shift (N N . -> . N)]
+     [arithmetic-shift (-Integer -Integer . -> . -Integer)]
      [abs (N . -> . N)]
      [substring (cl-> [(-String N) -String]
                       [(-String N N) -String])]
@@ -377,7 +380,7 @@
      [current-error-port (-Param -Output-Port -Output-Port)]
      [current-input-port (-Param -Input-Port -Input-Port)]
      [round (N . -> . N)]
-     [seconds->date (N . -> . (make-Struct 'date #f (list N N N N N N N N B N) #f #f #'date? values))]
+     [seconds->date (N . -> . (make-Name #'date))]
      [current-seconds (-> N)]
      [sqrt (-> N N)]
      [path->string (-> -Path -String)]       
@@ -418,17 +421,16 @@
                  [(-Input-Port Sym) -String])]
      [copy-file (-> -Pathlike -Pathlike -Void)]  
      [bytes->string/utf-8 (-> -Bytes -String)]
+     
      ;; language
      [(expand '(this-language))
       Sym
       string-constants/string-constant]
-     ;; make-promise 
-     
+     ;; make-promise      
      [(cadr (syntax->list (expand '(delay 3))))
       (-poly (a) (-> (-> a) (-Promise a)))
       scheme/promise]
-     ;; qq-append
-     
+     ;; qq-append     
      [(cadr (syntax->list (expand '`(,@'() 1)))) 
       (-poly (a b) 
              (cl->*
@@ -485,6 +487,7 @@
      [delete-file (-> -Pathlike -Void)]
      [make-namespace (cl->* (-> -Namespace)
                             (-> (*Un (-val 'empty) (-val 'initial)) -Namespace))]
+     [make-base-namespace (-> -Namespace)]
      [eval (-> -Sexp Univ)]
      
      [exit (-> (Un))]
@@ -509,6 +512,9 @@
      [syntax? (make-pred-ty (-Syntax Univ))]
      [syntax-property (-poly (a) (cl->* (-> (-Syntax a) Univ Univ (-Syntax a))
                                         (-> (-Syntax Univ) Univ Univ)))]
+     
+     [values* (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
+     [call-with-values* (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
      )))
 
 (begin-for-syntax 

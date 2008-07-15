@@ -33,7 +33,7 @@
    (for-each expr->type
              clauses
              exprs 
-             (map list->values-ty types))
+             (map -values types))
    (if expected 
        (tc-exprs/check (syntax->list body) expected)
        (tc-exprs (syntax->list body)))))

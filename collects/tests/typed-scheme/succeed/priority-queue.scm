@@ -80,7 +80,7 @@
 
 ;; FIXME -- too many annotations needed on cons
 (pdefine: (a) (insert* [xs : (list-of a)] [ps : (list-of number)] [pq : (priority-queue a)]) : (priority-queue a)
-          (make (heap:insert* (map #{#{cons @ number a} :: (number a -> (cons number a))} ps xs) (heap pq))))
+          (make (heap:insert* (map #{cons @ number a} ps xs) (heap pq))))
 
 (pdefine: (a) (delete-min [pq : (priority-queue a)]) : (priority-queue a)
 	  (let ([h (heap pq)])

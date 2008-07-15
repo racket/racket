@@ -1,7 +1,7 @@
 #lang scheme/base
 
 (require syntax/boundmap
-         "tc-utils.ss")
+         "tc-utils.ss" "type-utils.ss")
 
 (provide register-type
          finish-register-type

@@ -17,15 +17,15 @@
 (apply + '(2 3 4))
 
 
-(define: f : (number boolean .. -> number)
-  (lambda: ([x : number] . [y : boolean])
+(define: f : (number boolean * -> number)
+  (lambda: ([x : number] . [y : boolean *])
            (if (and (pair? y) (car y)) x (- x))))
 
-(define: f-cl : (number boolean .. -> number)
-  (case-lambda: [([x : number] . [y : boolean])
+(define: f-cl : (number boolean * -> number)
+  (case-lambda: [([x : number] . [y : boolean *])
 		 (if (and (pair? y) (car y)) x (- x))]))
 
-(define: (f* [x : number] . [y : boolean]) : number
+(define: (f* [x : number] . [y : boolean *]) : number
   (if (and (pair? y) (car y)) x (- x)))
 
 (f 3)

@@ -1,30 +1,11 @@
 #lang scheme/base
 
 (require (only-in srfi/1/list s:member)
-         syntax/kerncase syntax/struct syntax/stx
+         syntax/kerncase 
          mzlib/trace
          "type-contract.ss"
-         "signatures.ss"
-         "tc-structs.ss"
-         "utils.ss" ;; doesn't need tests
-         "type-rep.ss" ;; doesn't need tests
-         "unify.ss" ;; needs tests
-         "infer.ss"
-         "type-effect-convenience.ss" ;; maybe needs tests
-         "union.ss"
-         "subtype.ss" ;; has tests
-         "internal-forms.ss" ;; doesn't need tests
-         "planet-requires.ss" ;; doesn't need tests
-         "type-env.ss" ;; maybe needs tests
-         "parse-type.ss" ;; has tests
-         "tc-utils.ss" ;; doesn't need tests
-         "type-environments.ss" ;; doesn't need tests
-         "lexical-env.ss" ;; maybe needs tests
-         "type-annotation.ss" ;; has tests
-         "type-name-env.ss" ;; maybe needs tests
-         "init-envs.ss"
-         "effect-rep.ss"
-         "mutated-vars.ss"
+         "type-rep.ss"
+         "tc-utils.ss"
          "def-binding.ss")
 
 (require (for-template scheme/base

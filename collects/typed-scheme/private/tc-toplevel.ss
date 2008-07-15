@@ -54,6 +54,8 @@
       ;; define-typed-struct
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...))) (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)))]
+      [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:mutable)) (#%plain-app values)))
+       (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:mutable #t)]
       [(define-values () (begin (quote-syntax (define-typed-struct-internal nm ([fld : ty] ...) #:maker m #:constructor-return t)) 
                                 (#%plain-app values)))
        (tc/struct #'nm (syntax->list #'(fld ...)) (syntax->list #'(ty ...)) #:maker #'m #:constructor-return #'t)]
@@ -90,11 +92,15 @@
             (map (lambda (s) (make-def-binding s (lookup-type s))) vars)]
            ;; special case to infer types for top level defines - should handle the multiple values case here
            [(and (= 1 (length vars)) 
-                 (with-handlers ([exn:fail? (lambda _ #f)]) (tc-expr #'expr)))
+                 (with-handlers ([exn:fail? (lambda _ #f)])
+                   (save-errors!)
+                   (begin0 (tc-expr #'expr)
+                           (restore-errors!))))
             => (match-lambda 
                  [(tc-result: t)
                   (register-type (car vars) t)
-                  (list (make-def-binding (car vars) t))])]
+                  (list (make-def-binding (car vars) t))]
+                 [t (int-err "~a is not a tc-result" t)])]
            [else
             (tc-error "Untyped definition : ~a" (map syntax-e vars))]))]
       
@@ -150,7 +156,7 @@
       [(define-values (var ...) expr)
        (let* ([vars (syntax->list #'(var ...))]
               [ts (map lookup-type vars)])
-         (tc-expr/check #'expr (list->values-ty ts)))
+         (tc-expr/check #'expr (-values ts)))
        (void)]
       
       ;; to handle the top-level, we have to recur into begins

@@ -6,7 +6,9 @@
          make-empty-env
          extend-env
          extend/values
-         initial-tvar-env)
+         dotted-env
+         initial-tvar-env
+         with-dotted-env/extend)
 
 (require scheme/match
          "tc-utils.ss")
@@ -22,6 +24,10 @@
 (define current-tvars (make-parameter initial-tvar-env))  
 
 (define (make-empty-env p?) (make-env p? '()))
+
+;; the environment for types of ... variables
+(define dotted-env (make-parameter (make-empty-env free-identifier=?)))
+
 
 
 ;; extend that works on single arguments
@@ -56,3 +62,7 @@
                  [else (extend-env (list ks) (list vs) env)]))
          env kss vss))
 
+;; run code in an extended dotted env
+(define-syntax with-dotted-env/extend
+  (syntax-rules ()
+    [(_ i t v . b) (parameterize ([dotted-env (extend/values (list i) (list (cons t v)) (dotted-env))]) . b)]))

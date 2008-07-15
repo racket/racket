@@ -2,7 +2,7 @@
 
 (define-type-alias Int Integer)
 
-(: foo (Int -> Int))
+(: foo ( -> Int))
 (define (foo)
  (: loop (Int -> Int))
  (define (loop x)

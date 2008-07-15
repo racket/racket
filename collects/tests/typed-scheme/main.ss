@@ -4,8 +4,8 @@
 
 (require (planet schematics/schemeunit/test)
          (planet schematics/schemeunit/text-ui)
-         #;(planet schematics/schemeunit/graphical-ui)
          mzlib/etc
+         compiler/compiler
          scheme/match
          "unit-tests/all-tests.ss"
          "unit-tests/test-utils.ss")
@@ -20,23 +20,26 @@
    (lambda (val)
      (and (exn? val)
           (for/and ([e args])
-                   (if (procedure? e)
-                       (e val)
-                       (begin
-                         (regexp-match e (exn-message val)))))))
+                   (cond [(procedure? e) (e val)]
+                         [(number? e)
+                          (and (exn:fail:syntax? val)
+                               (= e (length (exn:fail:syntax-exprs val))))]
+                         [else                          
+                          (regexp-match e (exn-message val))]))))
    args))
   
 (define (exn-pred p)
   (let ([sexp (with-handlers
-                  ([values (lambda _ #f)])
-                (let ([prt (open-input-file p)])
-                  (begin0 (begin (read-line prt 'any) 
-                                 (read prt))
-                          (close-input-port prt))))])   
+                  ([exn:fail? (lambda _ #f)])
+                (call-with-input-file
+                 p
+                 (lambda (prt) 
+                   (read-line prt 'any) (read prt))))])
     (match sexp
       [(list-rest 'exn-pred e)
        (eval `(exn-matches . ,e) (namespace-anchor->namespace a))]
-      [_ (exn-matches ".*typecheck.*" exn:fail:syntax?)])))
+      [_ 
+       (exn-matches ".*typecheck.*" exn:fail:syntax?)])))
 
 (define (mk-tests dir loader test)
   (lambda ()
@@ -50,20 +53,23 @@
           (build-path path p)
           (lambda ()
             (parameterize ([read-accept-reader #t]
-                           [current-load-relative-directory 
-                            path])
+                           [current-load-relative-directory path]
+                           [current-directory path])
               (with-output-to-file "/dev/null" #:exists 'append
                 (lambda () (loader p)))))))))
     (apply test-suite dir
            tests)))
 
+(define (dr p)
+  ((compile-zos #f) (list p) 'auto)
+  (parameterize ([current-namespace (make-base-empty-namespace)])    
+    (dynamic-require `(file ,(path->string p)) #f)))
+
 (define succ-tests (mk-tests "succeed" 
-                             (lambda (p) (parameterize ([current-namespace (make-base-empty-namespace)])
-                                           (dynamic-require `(file ,(path->string p)) #f)))
+                             dr
                              (lambda (p thnk) (check-not-exn thnk))))
 (define fail-tests (mk-tests "fail"
-                             (lambda (p) (parameterize ([current-namespace (make-base-empty-namespace)])
-                                           (dynamic-require `(file ,(path->string p)) #f)))
+                             dr
                              (lambda (p thnk)
                                (define-values (pred info) (exn-pred p))
                                (with-check-info

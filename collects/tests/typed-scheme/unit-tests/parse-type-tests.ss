@@ -69,7 +69,7 @@
    [(Number -> Number) (t:-> N N)]
    [(Number -> Number) (t:-> N N)]
    [(Number Number Number Boolean -> Number) (N N N B . t:-> . N)]
-   [(Number Number Number .. -> Boolean) ((list N N) N . ->* . B)]
+   [(Number Number Number * -> Boolean) ((list N N) N . ->* . B)]
    ;[((. Number) -> Number) (->* (list) N N)] ;; not legal syntax
    [(U Number Boolean) (Un N B)]
    [(U Number Boolean Number) (Un N B)]

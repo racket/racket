@@ -80,13 +80,13 @@
            (define (f a)
              (define-values (dom* rngs* rst)
                (match a
-                 [(arr: dom (Values: rngs) #f _ _)
+                 [(arr: dom (Values: rngs) #f #f _ _)
                   (values (map t->c dom) (map t->c rngs) #f)]
-                 [(arr: dom rng #f _ _)
+                 [(arr: dom rng #f #f _ _)
                   (values (map t->c dom) (list (t->c rng)) #f)]
-                 [(arr: dom (Values: rngs) rst _ _)
+                 [(arr: dom (Values: rngs) rst #f _ _)
                   (values (map t->c dom) (map t->c rngs) (t->c rst))]
-                 [(arr: dom rng rst _ _)
+                 [(arr: dom rng rst #f _ _)
                   (values (map t->c dom) (list (t->c rng)) (t->c rst))]))
              (with-syntax 
                  ([(dom* ...) dom*]
@@ -124,5 +124,7 @@
              #`syntax?
              #`(syntax/c #,(t->c t)))]
         [(Value: v) #`(flat-named-contract #,(format "~a" v) (lambda (x) (equal? x '#,v)))]
-        [else
+        [(Param: in out) #`(parameter/c #,(t->c out))]
+        [else          
          (exit (fail))]))))
+

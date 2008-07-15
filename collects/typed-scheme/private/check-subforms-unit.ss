@@ -1,32 +1,15 @@
 #lang scheme/unit
 
 (require syntax/kerncase
-         syntax/struct
-         syntax/stx
          scheme/match
-         "type-contract.ss"
          "signatures.ss"
-         "tc-structs.ss"
          "type-utils.ss"
-         "utils.ss" ;; doesn't need tests
          "type-rep.ss" ;; doesn't need tests
-         "unify.ss" ;; needs tests
-         "infer.ss"
          "type-effect-convenience.ss" ;; maybe needs tests
          "union.ss"
          "subtype.ss" ;; has tests
-         "internal-forms.ss" ;; doesn't need tests
-         "planet-requires.ss" ;; doesn't need tests
-         "type-env.ss" ;; maybe needs tests
-         "parse-type.ss" ;; has tests
          "tc-utils.ss" ;; doesn't need tests
-         "type-environments.ss" ;; doesn't need tests
-         "lexical-env.ss" ;; maybe needs tests
-         "type-annotation.ss" ;; has tests
-         "type-name-env.ss" ;; maybe needs tests
-         "init-envs.ss"
-         "effect-rep.ss"
-         "mutated-vars.ss")
+         )
 
 (import tc-if^ tc-lambda^ tc-app^ tc-let^ tc-expr^)
 (export check-subforms^)
@@ -38,7 +21,7 @@
   (define body-ty #f)    
   (define (get-result-ty t)
     (match t
-      [(Function: (list (arr: _ rngs _ _ _) ...)) (apply Un rngs)]
+      [(Function: (list (arr: _ rngs #f _ _ _) ...)) (apply Un rngs)]
       [_ (tc-error "Internal error in get-result-ty: not a function type: ~n~a" t)]))
   (let loop ([form form])
     (parameterize ([current-orig-stx form])
