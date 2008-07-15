@@ -1,12 +1,9 @@
 
-(module gif mzscheme
-  (require mzlib/class
-           mzlib/file
-           mred
+(module gif scheme/base
+  (require scheme/gui/base
+           scheme/class
            net/gifwrite
-           mzlib/contract
-           mzlib/kw
-           mzlib/etc)
+           scheme/contract)
 
   (provide write-gif
            write-animated-gif)
@@ -69,7 +66,7 @@
   (define (write-gif bm filename)
     (write-gifs (list bm) #f filename #f))
 
-  (define/kw (write-animated-gif bms delay filename #:key [one-at-a-time? #f])
+  (define (write-animated-gif bms delay filename #:one-at-a-time? [one-at-a-time? #f])
     (write-gifs bms delay filename one-at-a-time?))
 
   )

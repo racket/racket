@@ -415,7 +415,8 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 
 #define SCHEME_NULLP(obj)    SAME_OBJ(obj, scheme_null)
 #define SCHEME_PAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_pair_type)
-#define SCHEME_MUTABLE_PAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_mutable_pair_type)
+#define SCHEME_MPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_mutable_pair_type)
+#define SCHEME_MUTABLE_PAIRP(obj)    SCHEME_MPAIRP(obj)
 #define SCHEME_LISTP(obj)    (SCHEME_NULLP(obj) || SCHEME_PAIRP(obj))
 
 #define SCHEME_RPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_raw_pair_type)
@@ -528,6 +529,9 @@ typedef long (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_data)
 #define SCHEME_CADR(obj)     (SCHEME_CAR (SCHEME_CDR (obj)))
 #define SCHEME_CAAR(obj)     (SCHEME_CAR (SCHEME_CAR (obj)))
 #define SCHEME_CDDR(obj)     (SCHEME_CDR (SCHEME_CDR (obj)))
+
+#define SCHEME_MCAR(obj)      (((Scheme_Simple_Object *)(obj))->u.pair_val.car)
+#define SCHEME_MCDR(obj)      (((Scheme_Simple_Object *)(obj))->u.pair_val.cdr)
 
 #define SCHEME_VEC_SIZE(obj) (((Scheme_Vector *)(obj))->size)
 #define SCHEME_VEC_ELS(obj)  (((Scheme_Vector *)(obj))->els)

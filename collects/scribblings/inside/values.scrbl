@@ -28,7 +28,7 @@ of the type. For example, @cpp{scheme_make_pair} takes two
 @cpp{Scheme_Object*} values and returns the @scheme[cons] of the
 values.
 
-The macro @cppi{SCHEME_TYPE} takes a @cpp{Scheme_Object *} and returns
+The macro @cppdef{SCHEME_TYPE} takes a @cpp{Scheme_Object *} and returns
 the type of the object. This macro performs the tag-bit check, and
 returns @cppi{scheme_integer_type} when the value is an immediate
 integer; otherwise, @cpp{SCHEME_TYPE} follows the pointer to get the
@@ -73,136 +73,140 @@ types:
  @cpp{scheme_true} and @cpp{scheme_false} are the only values of this
  type; use @cpp{SCHEME_FALSEP} to recognize @cpp{scheme_false} and use
  @cpp{SCHEME_TRUEP} to recognize anything except @cpp{scheme_false};
- test for this type with @cppi{SCHEME_BOOLP}}
+ test for this type with @cppdef{SCHEME_BOOLP}}
 
- @item{@cppdef{scheme_char_type} --- @cppi{SCHEME_CHAR_VAL}
+ @item{@cppdef{scheme_char_type} --- @cppdef{SCHEME_CHAR_VAL}
  extracts the character (of type @cppi{mzchar}); test for this type
- with @cppi{SCHEME_CHARP}}
+ with @cppdef{SCHEME_CHARP}}
 
  @item{@cppdef{scheme_integer_type} --- fixnum integers, which are
  identified via the tag bit rather than following a pointer to this
- @cpp{Scheme_Type} value; @cppi{SCHEME_INT_VAL} extracts the integer;
- test for this type with @cppi{SCHEME_INTP}}
+ @cpp{Scheme_Type} value; @cppdef{SCHEME_INT_VAL} extracts the integer;
+ test for this type with @cppdef{SCHEME_INTP}}
 
  @item{@cppdef{scheme_double_type} --- flonum inexact numbers;
- @cppi{SCHEME_FLOAT_VAL} or @cppi{SCHEME_DBL_VAL} extracts the
- floating-point value; test for this type with @cppi{SCHEME_DBLP}}
+ @cppdef{SCHEME_FLOAT_VAL} or @cppdef{SCHEME_DBL_VAL} extracts the
+ floating-point value; test for this type with @cppdef{SCHEME_DBLP}}
 
  @item{@cppdef{scheme_float_type} --- single-precision flonum
  inexact numbers, when specifically enabled when compiling PLT Scheme;
- @cppi{SCHEME_FLOAT_VAL} or @cppi{SCHEME_FLT_VAL} extracts the
- floating-point value; test for this type with @cppi{SCHEME_FLTP}}
+ @cppi{SCHEME_FLOAT_VAL} or @cppdef{SCHEME_FLT_VAL} extracts the
+ floating-point value; test for this type with @cppdef{SCHEME_FLTP}}
 
  @item{@cppdef{scheme_bignum_type} --- test for this type with
- @cppi{SCHEME_BIGNUMP}}
+ @cppdef{SCHEME_BIGNUMP}}
  
  @item{@cppdef{scheme_rational_type} --- test for this type with
- @cppi{SCHEME_RATIONALP}}
+ @cppdef{SCHEME_RATIONALP}}
 
  @item{@cppdef{scheme_complex_type} --- test for this type or
- @cpp{scheme_complex_izi_type} with @cppi{SCHEME_COMPLEXP}}
+ @cpp{scheme_complex_izi_type} with @cppdef{SCHEME_COMPLEXP}}
 
  @item{@cppdef{scheme_complex_izi_type} --- complex number with an inexact
  zero imaginary part (so it counts as a real number); test for this
- type specifically with @cppi{SCHEME_COMPLEX_IZIP}}
+ type specifically with @cppdef{SCHEME_COMPLEX_IZIP}}
 
  @item{@cppdef{scheme_char_string_type} --- @index['("strings"
- "conversion to C")]{@cppi{SCHEME_CHAR_STR_VAL}} extracts the string
+ "conversion to C")]{@cppdef{SCHEME_CHAR_STR_VAL}} extracts the string
  as a @cpp{mzchar*}; the string is always nul-terminated, but may also
  contain embedded nul characters, and the Scheme string is modified if
- this string is modified; @cppi{SCHEME_CHAR_STRLEN_VAL} extracts the
+ this string is modified; @cppdef{SCHEME_CHAR_STRLEN_VAL} extracts the
  string length (in characters, not counting the nul terminator); test
- for this type with @cppi{SCHEME_CHAR_STRINGP}}
+ for this type with @cppdef{SCHEME_CHAR_STRINGP}}
 
  @item{@cppdef{scheme_byte_string_type} ---
- @cppi{SCHEME_BYTE_STR_VAL} extracts the string as a @cpp{char*}; the
+ @cppdef{SCHEME_BYTE_STR_VAL} extracts the string as a @cpp{char*}; the
  string is always nul-terminated, but may also contain embedded nul
  characters, and the Scheme string is modified if this string is
- modified; @cppi{SCHEME_BYTE_STRLEN_VAL} extracts the string length
+ modified; @cppdef{SCHEME_BYTE_STRLEN_VAL} extracts the string length
  (in bytes, not counting the nul terminator); test for this type with
- @cppi{SCHEME_BYTE_STRINGP}}
+ @cppdef{SCHEME_BYTE_STRINGP}}
 
  @item{@cppdef{scheme_path_type} --- 
- @index['("strings" "conversion to C")] @cppi{SCHEME_PATH_VAL}
+ @index['("strings" "conversion to C")] @cppdef{SCHEME_PATH_VAL}
  extracts the path as a @cpp{char*}; the string is always
- nul-terminated; @cppi{SCHEME_PATH_LEN} extracts the path length (in
+ nul-terminated; @cppdef{SCHEME_PATH_LEN} extracts the path length (in
  bytes, not counting the nul terminator); test for this type with
- @cppi{SCHEME_PATHP}}
+ @cppdef{SCHEME_PATHP}}
 
- @item{@cppdef{scheme_symbol_type} --- @cppi{SCHEME_SYM_VAL}
+ @item{@cppdef{scheme_symbol_type} --- @cppdef{SCHEME_SYM_VAL}
  extracts the symbol's string as a @cpp{char*} UTF-8 encoding (do not
- modify this string); @cppi{SCHEME_SYM_LEN} extracts the number of
+ modify this string); @cppdef{SCHEME_SYM_LEN} extracts the number of
  bytes in the symbol name (not counting the nul terminator); test for
- this type with @cppi{SCHEME_SYMBOLP}; 3m: see @secref["im:3m"] for
+ this type with @cppdef{SCHEME_SYMBOLP}; 3m: see @secref["im:3m"] for
  a caution about @cppi{SCHEME_SYM_VAL}}
 
- @item{@cppdef{scheme_keyword_type} --- @cppi{SCHEME_KEYWORD_VAL}
+ @item{@cppdef{scheme_keyword_type} --- @cppdef{SCHEME_KEYWORD_VAL}
  extracts the keywors's string (without the leading hash colon) as a
  @cpp{char*} UTF-8 encoding (do not modify this string);
- @cppi{SCHEME_KEYWORD_LEN} extracts the number of bytes in the keyword
+ @cppdef{SCHEME_KEYWORD_LEN} extracts the number of bytes in the keyword
  name (not counting the nul terminator); test for this type with
- @cppi{SCHEME_KEYWORDP}; 3m: see @secref["im:3m"] for a caution
+ @cppdef{SCHEME_KEYWORDP}; 3m: see @secref["im:3m"] for a caution
  about @cppi{SCHEME_KEYWORD_VAL}}
 
- @item{@cppdef{scheme_box_type} --- @cppi{SCHEME_BOX_VAL}
+ @item{@cppdef{scheme_box_type} --- @cppdef{SCHEME_BOX_VAL}
  extracts/sets the boxed value; test for this type with
- @cppi{SCHEME_BOXP}}
+ @cppdef{SCHEME_BOXP}}
 
- @item{@cppdef{scheme_pair_type} --- @cppi{SCHEME_CAR} extracts/sets
- the @scheme{car} and @cppi{SCHEME_CDR} extracts/sets the
- @scheme{cdr}; test for this type with @cppi{SCHEME_PAIRP}}
+ @item{@cppdef{scheme_pair_type} --- @cppdef{SCHEME_CAR} extracts/sets
+ the @scheme[car] and @cppdef{SCHEME_CDR} extracts/sets the
+ @scheme[cdr]; test for this type with @cppdef{SCHEME_PAIRP}}
 
- @item{@cppdef{scheme_vector_type} --- @cppi{SCHEME_VEC_SIZE}
- extracts the length and @cppi{SCHEME_VEC_ELS} extracts the array of
+ @item{@cppdef{scheme_mutable_pair_type} --- @cppdef{SCHEME_MCAR} extracts/sets
+ the @scheme[mcar] and @cppdef{SCHEME_MCDR} extracts/sets the
+ @scheme[mcdr]; test for this type with @cppdef{SCHEME_MPAIRP}}
+
+ @item{@cppdef{scheme_vector_type} --- @cppdef{SCHEME_VEC_SIZE}
+ extracts the length and @cppdef{SCHEME_VEC_ELS} extracts the array of
  Scheme values (the Scheme vector is modified when this array is
- modified); test for this type with @cppi{SCHEME_VECTORP}; 3m: see
+ modified); test for this type with @cppdef{SCHEME_VECTORP}; 3m: see
  @secref["im:3m"] for a caution about @cppi{SCHEME_VEC_ELS}}
 
  @item{@cppdef{scheme_structure_type} --- structure instances; test
- for this type with @cppi{SCHEME_STRUCTP}}
+ for this type with @cppdef{SCHEME_STRUCTP}}
 
  @item{@cppdef{scheme_struct_type_type} --- structure types; test for
- this type with @cppi{SCHEME_STRUCT_TYPEP}}
+ this type with @cppdef{SCHEME_STRUCT_TYPEP}}
 
  @item{@cppdef{scheme_struct_property_type} --- structure type
  properties}
 
- @item{@cppdef{scheme_input_port_type} --- @cppi{SCHEME_INPORT_VAL}
+ @item{@cppdef{scheme_input_port_type} --- @cppdef{SCHEME_INPORT_VAL}
  extracts/sets the user data pointer; test for just this type with
- @cppi{SCHEME_INPORTP}, but use @cppi{SCHEME_INPUT_PORTP} to recognize
+ @cppdef{SCHEME_INPORTP}, but use @cppdef{SCHEME_INPUT_PORTP} to recognize
  all input ports (including structures with the
  @scheme[prop:input-port] property)}
 
- @item{@cppdef{scheme_output_port_type} --- @cppi{SCHEME_OUTPORT_VAL}
+ @item{@cppdef{scheme_output_port_type} --- @cppdef{SCHEME_OUTPORT_VAL}
  extracts/sets the user data pointer; test for just this type with
- @cppi{SCHEME_OUTPORTP}, but use @cppi{SCHEME_OUTPUT_PORTP} to
+ @cppdef{SCHEME_OUTPORTP}, but use @cppdef{SCHEME_OUTPUT_PORTP} to
  recognize all output ports (including structures with the
  @scheme[prop:output-port] property)}
 
  @item{@cppdef{scheme_thread_type} --- thread descriptors; test for
- this type with @cppi{SCHEME_THREADP}}
+ this type with @cppdef{SCHEME_THREADP}}
 
  @item{@cppdef{scheme_sema_type} --- semaphores; test for this type
- with @cppi{SCHEME_SEMAP}}
+ with @cppdef{SCHEME_SEMAP}}
 
  @item{@cppdef{scheme_hash_table_type} --- test for this type with
- @cppi{SCHEME_HASHTP}}
+ @cppdef{SCHEME_HASHTP}}
 
  @item{@cppdef{scheme_bucket_table_type} --- test for this type with
- @cppi{SCHEME_BUCKTP}}
+ @cppdef{SCHEME_BUCKTP}}
 
  @item{@cppdef{scheme_weak_box_type} --- test for this type with
- @cppi{SCHEME_WEAKP}; @cppi{SCHEME_WEAK_PTR} extracts the contained
+ @cppdef{SCHEME_WEAKP}; @cppdef{SCHEME_WEAK_PTR} extracts the contained
  object, or @cpp{NULL} after the content is collected; do not set the
  content of a weak box}
 
  @item{@cppdef{scheme_namespace_type} --- namespaces; test for this
- type with @cppi{SCHEME_NAMESPACEP}}
+ type with @cppdef{SCHEME_NAMESPACEP}}
 
  @item{@cppdef{scheme_cpointer_type} --- @|void-const| pointer with a
- type-describing @cpp{Scheme_Object}; @cppi{SCHEME_CPTR_VAL} extracts
- the pointer and @cppi{SCHEME_CPTR_TYPE} extracts the type tag object;
- test for this type with @cppi{SCHEME_CPTRP}.  The tag is used when
+ type-describing @cpp{Scheme_Object}; @cppdef{SCHEME_CPTR_VAL} extracts
+ the pointer and @cppdef{SCHEME_CPTR_TYPE} extracts the type tag object;
+ test for this type with @cppdef{SCHEME_CPTRP}.  The tag is used when
  printing such objects when it's a symbol, a byte string, a string, or
  a pair holding one of these in its car.}
 
@@ -229,11 +233,11 @@ The following are the procedure types:
  procedure}
 
  @item{@cppdef{scheme_native_closure_type} --- a procedure with
- native code generated by the just-in-time compiler}}
+ native code generated by the just-in-time compiler}
 
 }
 
-The predicate @cppi{SCHEME_PROCP} returns 1 for all procedure types
+The predicate @cppdef{SCHEME_PROCP} returns 1 for all procedure types
  and 0 for anything else.
 
 The following are additional number predicates:
@@ -263,19 +267,19 @@ There are six global constants:
 @itemize{
 
  @item{@cppdef{scheme_null} --- test for this value with
- @cppi{SCHEME_NULLP}}
+ @cppdef{SCHEME_NULLP}}
 
  @item{@cppdef{scheme_eof} --- test for this value with
- @cppi{SCHEME_EOFP}}
+ @cppdef{SCHEME_EOFP}}
 
  @item{@cppdef{scheme_true}}
 
  @item{@cppdef{scheme_false} --- test for this value with
- @cppi{SCHEME_FALSEP}; test @italic{against} it with
- @cppi{SCHEME_TRUEP}}
+ @cppdef{SCHEME_FALSEP}; test @italic{against} it with
+ @cppdef{SCHEME_TRUEP}}
 
  @item{@cppdef{scheme_void} --- test for this value with
- @cppi{SCHEME_VOIDP}}
+ @cppdef{SCHEME_VOIDP}}
 
  @item{@cppdef{scheme_undefined}}
 
@@ -290,11 +294,11 @@ As noted in @secref["im:unicode"], a Scheme character is a Unicode
  are @cpp{mzchar} arrays. PLT Scheme also supplies byte strings, which
  are @cpp{char} arrays.
 
-For a character string @var{s}, @cpp{SCHEME_CHAR_STR_VAL(@var{s})}
+For a character string @var{s}, @cpp{@cpp{SCHEME_CHAR_STR_VAL}(@var{s})}
  produces a pointer to @cpp{mzchar}s, not @cpp{char}s. Convert a
  character string to its UTF-8 encoding as byte string with
  @cpp{scheme_char_string_to_byte_string}. For a byte string
- @var{bs}, @cpp{SCHEME_BYTE_STR_VAL(@var{bs})} produces a pointer
+ @var{bs}, @cpp{@cpp{SCHEME_BYTE_STR_VAL}(@var{bs})} produces a pointer
  to @cpp{char}s. The function
  @cpp{scheme_byte_string_to_char_string} decodes a byte string as
  UTF-8 and produces a character string. The functions
@@ -682,7 +686,7 @@ Creates a C-pointer object that encapsulates both @var{ptr} and @var{offset}.
 Installs a printer to be used for printing (or writing or displaying)
  values that have the type tag @var{type}.
 
-The type of @var{printer} is defined as follows:\cppIndex{scheme_Type_Printer}
+The type of @var{printer} is defined as follows:
 
 @verbatim[#:indent 2]{
  typedef void (*Scheme_Type_Printer)(Scheme_Object *v, int dis,

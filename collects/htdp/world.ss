@@ -1,4 +1,4 @@
-#lang mzscheme 
+#lang scheme/base
 
 #|
  workshop experience: 
@@ -61,15 +61,16 @@ Matthew
 ;; Fri Dec  9 21:39:03 EST 2005: remoevd (update ... produce ...); added on-redraw 
 ;; Thu Dec  1 17:03:03 EST 2005: fixed place-image; all coordinates okay now
 
-(require mzlib/class
-         mzlib/kw
-         mzlib/etc
+(require scheme/class
+         scheme/local
+         scheme/bool
          mred
          htdp/error
          htdp/image
-         (only lang/htdp-beginner image?)
+         (only-in lang/htdp-beginner image?)
          mrlib/cache-image-snip
-         lang/prim)
+         lang/prim
+         (for-syntax scheme/base))
 
 (require mrlib/gif)
 (require mzlib/runtime-path)
@@ -98,7 +99,7 @@ Matthew
 
 ;; image manipulation functions:
 ;; =============================
-(provide (all-from htdp/image))
+(provide (all-from-out htdp/image))
 
 (provide
  ;; Scene is Image with pinhole in origin 
@@ -811,9 +812,9 @@ Matthew
             [callback (lambda (before after)
                         (string->symbol 
                          (string-append before n:str "-callback" after)))]
-            [name (datum->syntax-object stx (callback "" ""))]
-            [name0 (datum->syntax-object stx (callback "" "0"))]
-            [set-name (datum->syntax-object stx (callback "set-" ""))])
+            [name (datum->syntax stx (callback "" ""))]
+            [name0 (datum->syntax stx (callback "" "0"))]
+            [set-name (datum->syntax stx (callback "set-" ""))])
        #`(define-values (#,name #,name0 #,set-name)
            (values 
             void void 

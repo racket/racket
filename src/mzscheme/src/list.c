@@ -859,9 +859,9 @@ scheme_checked_cdr (int argc, Scheme_Object *argv[])
 Scheme_Object *
 scheme_checked_mcar (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_MUTABLE_PAIRP(argv[0]))
+  if (!SCHEME_MPAIRP(argv[0]))
     scheme_wrong_type("mcar", "mutable-pair", 0, argc, argv);
-  return (SCHEME_CAR (argv[0]));
+  return (SCHEME_MCAR (argv[0]));
 }
 
 Scheme_Object *
@@ -870,26 +870,26 @@ scheme_checked_mcdr (int argc, Scheme_Object *argv[])
   if (!SCHEME_MUTABLE_PAIRP(argv[0]))
     scheme_wrong_type("mcdr", "mutable-pair", 0, argc, argv);
 
-  return (SCHEME_CDR (argv[0]));
+  return (SCHEME_MCDR (argv[0]));
 }
 
 Scheme_Object *
 scheme_checked_set_mcar (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_MUTABLE_PAIRP(argv[0]))
+  if (!SCHEME_MPAIRP(argv[0]))
     scheme_wrong_type("set-mcar!", "mutable-pair", 0, argc, argv);
 
-  SCHEME_CAR(argv[0]) = argv[1];
+  SCHEME_MCAR(argv[0]) = argv[1];
   return scheme_void;
 }
 
 Scheme_Object *
 scheme_checked_set_mcdr (int argc, Scheme_Object *argv[])
 {
-  if (!SCHEME_MUTABLE_PAIRP(argv[0]))
+  if (!SCHEME_MPAIRP(argv[0]))
     scheme_wrong_type("set-mcdr!", "mutable-pair", 0, argc, argv);
 
-  SCHEME_CDR(argv[0]) = argv[1];
+  SCHEME_MCDR(argv[0]) = argv[1];
   return scheme_void;
 }
 

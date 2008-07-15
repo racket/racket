@@ -4187,8 +4187,8 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 1, 0);
       CHECK_LIMIT();
 
-      jit_stxi_p((long)&SCHEME_CAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
-      jit_stxi_p((long)&SCHEME_CDR(0x0) + sizeof(long), JIT_V1, JIT_R1);
+      jit_stxi_p((long)&SCHEME_MCAR(0x0) + sizeof(long), JIT_V1, JIT_R0);
+      jit_stxi_p((long)&SCHEME_MCDR(0x0) + sizeof(long), JIT_V1, JIT_R1);
       jit_addi_p(JIT_R0, JIT_V1, sizeof(long));
 #else
       /* Non-inlined alloc */
