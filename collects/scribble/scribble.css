@@ -480,3 +480,7 @@ i {
   margin: 0em;
   padding: 0em;
 }
+
+.noborder img {
+  border: 0;
+}

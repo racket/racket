@@ -2,6 +2,7 @@
 
 (require scribble/manual
          scribble/decode
+         scribble/struct
          setup/main-collects)
 (provide (all-from-out scribble/manual)
          selflink
@@ -16,9 +17,12 @@
   (make-splice
    (list
     (title #:tag subcol 
-           (image (path->main-collects-relative
-                   (build-path (collection-path "games" subcol)
-                               (format "~a.png" subcol))))
+           (make-element
+            "noborder"
+            (list
+             (image (path->main-collects-relative
+                     (build-path (collection-path "games" subcol)
+                                 (format "~a.png" subcol))))))
            " " (onscreen name) " --- " subtitle)
     (margin-note "To play "
                  (onscreen name)
