@@ -381,8 +381,12 @@ assigned to @scheme[B].  Then @scheme[B] in each copy is
 replaced with the corresponding type from the sequence.
 
 So the type of @scheme[(inst map Integer Boolean String Number)]
-is @scheme[((Boolean String Number -> Integer) (Listof Boolean)
-(Listof String) (Listof Number) -> (Listof Integer))].
+is
+
+@scheme[((Boolean String Number -> Integer)
+         (Listof Boolean) (Listof String) (Listof Number)
+         ->
+         (Listof Integer))].
 
 @section[#:tag "type-ref"]{Type Reference}
 
