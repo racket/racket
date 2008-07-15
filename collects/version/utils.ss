@@ -64,7 +64,7 @@
 
 ;; general sanity check, performed once when loaded
 (unless (and (< (string->number (car (regexp-match #rx"^[0-9]+" (version)))) 49)
-             (integer? (version->integer version)))
+             (integer? (version->integer (version))))
   ;; When this happens, we got to numbers that can be confused with old version
   ;; numbers, and the above code should be modified.  With the current rate of
   ;; changes, this should happen in more 150 years.  Either programming is
