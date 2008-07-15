@@ -554,7 +554,8 @@
              (let ([dir (doc-dest-dir doc)])
                (unless (directory-exists? dir) (make-directory dir))
                (for ([f (directory-list dir)]
-                     #:when (regexp-match? #"[.](?:html|png|js)$" (path-element->bytes f)))
+                     #:when (not (regexp-match? #"[.]sxref$"
+                                                (path-element->bytes f))))
                  (delete-file (build-path dir f)))))
            (render-time
             "render"
