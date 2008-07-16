@@ -181,9 +181,10 @@
   (make-paragraph
    (list
     (script-ref "plt-index.js"
-                #:noscript @list{Sorry, you must have JavaScript to use this page.})
+                #:noscript
+                @list{Sorry, you must have JavaScript to use this page.})
     (script-ref "search.js")
-    (make-render-element (make-with-attributes #f '((id . "plt_search_container")))
-                         null
-                         (lambda (r s i)
-                           (make-script user-dir? r s i))))))
+    (make-render-element
+     (make-with-attributes #f '((id . "plt_search_container")))
+     null
+     (lambda (r s i) (make-script user-dir? r s i))))))
