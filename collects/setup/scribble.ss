@@ -552,11 +552,14 @@
            (when in-delta? (set-info-need-in-write?! info #t))
            (unless latex-dest
              (let ([dir (doc-dest-dir doc)])
-               (unless (directory-exists? dir) (make-directory dir))
-               (for ([f (directory-list dir)]
-                     #:when (not (regexp-match? #"[.]sxref$"
-                                                (path-element->bytes f))))
-                 (delete-file (build-path dir f)))))
+               (if (not (directory-exists? dir))
+                 (make-directory dir)
+                 (for ([f (directory-list dir)]
+                       #:when
+                       (and (file-exists? f)
+                            (not (regexp-match? #"[.]sxref$"
+                                                (path-element->bytes f)))))
+                   (delete-file (build-path dir f))))))
            (render-time
             "render"
             (with-record-error
