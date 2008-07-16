@@ -154,7 +154,8 @@
        (eq? (syntax-e #'quot) 'quote)
        (-val (syntax-e #'t))]
       [(All (vars ... v dd) t)
-       (and (eq? (syntax-e #'All) 'All)
+       (and (or (eq? (syntax-e #'All) 'All)
+                (eq? (syntax-e #'All) '∀))
             (eq? (syntax-e #'dd) '...)
             (andmap identifier? (syntax->list #'(v vars ...))))
        (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
@@ -165,7 +166,8 @@
          (parameterize ([current-tvars (extend-env (cons v vars) (cons tv tvars) (current-tvars))])
            (make-PolyDots (append vars (list v)) (parse-type #'t))))]
       [(All (vars ...) t) 
-       (and (eq? (syntax-e #'All) 'All)
+       (and (or (eq? (syntax-e #'All) 'All)
+                (eq? (syntax-e #'All) '∀))
             (andmap identifier? (syntax->list #'(vars ...))))
        (let* ([vars (map syntax-e (syntax->list #'(vars ...)))]
               [tvars (map make-F vars)])
