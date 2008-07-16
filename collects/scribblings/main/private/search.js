@@ -383,6 +383,17 @@ function PreFilter() {
 var last_search_term, last_search_term_raw;
 var search_results = [], first_search_result, exact_results_num;
 var kill_bg_search = function(){ return; };
+var search_timer = false;
+function DoDelayedSearch() {
+  // the whole delayed search thing was done to avoid redundant searching that
+  // get the UI stuck, but now the search happens on a "thread" anyway, so it
+  // might not be needed
+  var term = query.value;
+  if (term == last_search_term_raw) return;
+  kill_bg_search();
+  if (search_timer) clearTimeout(search_timer);
+  search_timer = setTimeout(DoSearch, type_delay);
+}
 function DoSearch() {
   var term = query.value;
   if (term == last_search_term_raw) return;
@@ -506,7 +517,6 @@ function UpdateResults() {
   saved_status = false;
 }
 
-var search_timer = false;
 function HandleKeyEvent(event) {
   var key = null;
   if (typeof event == "string") key = event;
@@ -547,14 +557,9 @@ function HandleKeyEvent(event) {
       }
       return false;
   }
-  // what if we get a key just before the results are shown?  we might
-  // get them displayed and then the new search begins.  this can be
-  // solved by using kill_bg_search() here, but then *all* keys abort
-  // the current search, and that's a problem in case the new key
-  // won't make DoSearch start a new search (like Enter or using Tab).
-  // so leave it without that.
-  if (search_timer) clearTimeout(search_timer);
-  search_timer = setTimeout(DoSearch, type_delay);
+  // this function is called via onkeydown, which is happens before the change
+  // is visible; so use a timer to call this after the input field is updated
+  setTimeout(DoDelayedSearch, 0);
   return true;
 }
 key_handler = HandleKeyEvent;
