@@ -1,0 +1,40 @@
+#lang scheme
+
+(require (for-syntax srfi/1))
+
+; from John: 
+
+;; define/checks
+;; won't work with more than eight arguments (at least it's a static failure...)
+(define-syntax (define/checks stx)
+  (syntax-case stx ()
+      [(_ (fun-name (argname checker) ...) body ...)
+       (let* ([num-args (length (syntax->list #`(argname ...)))]
+              [posn-names (take (list #'"first" #'"second" #'"third" #'"fourth" #'"fifth" #'"sixth" #'"seventh" #'"eighth")
+                                num-args)])
+         (with-syntax ([(posn-name ...) (datum->syntax #f posn-names)])
+           (with-syntax ([(check-call ...) #`((checker (quote fun-name) argname posn-name) ...)])
+             #`(define (fun-name argname ...)
+                 check-call
+                 ...
+                 body
+                 ...))))]))
+
+
+(define (check-image f s x)
+  (unless (string? s) 
+    (error f "string expected as ~a argument, given ~e " x s)))
+
+(define-struct position (x y))
+
+(define (check-coordinate f s x)
+  (unless (position? s)
+    (error f "position expected as ~a argument, given ~e" x s)))
+
+;; plonk a shape down at some given set of coordinates
+;; plonk-at : shape number number -> shapelist
+(define/checks (plonk-at [shape check-image]
+                         [x check-coordinate]
+                         [y check-coordinate])
+  (list (make-position (make-position x y) shape)))
+
