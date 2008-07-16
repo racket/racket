@@ -205,9 +205,12 @@
   ;; select-piece! : -> void
   ;; effect: to decrease pieces-left and to pick the next thing to be drawn 
   (define (select-piece!)
-    (when (> pieces-left 0)
-      (set! pieces-left (sub1 pieces-left))
-      (vector-ref PARTS pieces-left)))
+    (if (> pieces-left 0)
+        (begin
+          (set! pieces-left (sub1 pieces-left))
+          (vector-ref PARTS pieces-left))
+        ;; (<= pieces-left 0)
+        (vector-ref PARTS 1)))
   ;; the-end? : -> boolean
   ;; to check whether the hangman is complet 
   (define (the-end?) (zero? pieces-left))
@@ -268,7 +271,15 @@
     (set! uncover
           (lambda (word)
             (apply string-append (map (lambda (x) (format "~a" x)) word))))
-    (initialize rv dr status))
+    (initialize (lambda (x y z) 
+                  (define r (rv x y z))
+                  (check-result (object-name rv) list? "list of symbols" r)
+                  r)
+                (lambda (x) 
+                  (define r (dr x))
+                  (check-result (object-name dr) boolean? "boolean" r)
+                  r)
+                status))
   
   ;; initialize : as it says ...
   ;; the gui, the guess, the picture, the reveal function the draw-next function
