@@ -154,7 +154,7 @@
       (define/public (data->snip data)
         (cond
           [(not (list? data)) (make-null-cache-image-snip)]
-          [(= (length data 4))
+          [(= (length data) 4)
            ;; this is the case for old save files
            ;; if the width is zero, the height 
            ;; will automatically also be zero
