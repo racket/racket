@@ -16,13 +16,13 @@ how many times, if at all, the letter occurs in the secret word.
 The teachpack provides all the drawing operations from @secref{draw} for
 managing a canvas into which the ``hangman'' is drawn.
 
-@defproc[(hangman [make-word (-> symbol? symbol? symbol? word?)][reveal (-> word? word? boolean?)][draw-next-part (-> symbol? true)]) true]{
+@defproc[(hangman [make-word (-> symbol? symbol? symbol? word?)][reveal (-> word? word? word?)][draw-next-part (-> symbol? true)]) true]{
 Chooses a ``secret'' three-letter word and uses the given functions to
 manage the @emph{Hangman} game.}
 
 @defproc[(hangman-list
 	   [reveal-for-list (-> symbol? (list-of symbol?) (list-of symbol?)
-			        boolean?)]
+			        (list-of symbol?))]
 	   [draw-next-part (-> symbol? true)]) true]{
 Chooses a ``secret'' word---a list of symbolic letters---and uses the given
 functions to manage the @emph{Hangman} game: 
