@@ -104,11 +104,11 @@
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (provide always? list-of)
+  (provide always? list-of maybe)
 
   (define always?
     (lambda (x) #t))
-  
+
   (define list-of
     (lambda (pred . l)
       (let ((all-preds (cons pred l)))
@@ -125,6 +125,12 @@
 		      ((car preds) (mcar obj))
 		      (loop (mcdr obj) (cdr preds))))))))))
 
+  (define maybe
+    (lambda (pred)
+      (lambda (obj)
+        (or (pred obj)
+            (eqv? obj #f)))))
+
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define empty null)
@@ -134,7 +140,10 @@
 	   empty           ;; for constructor-based printing
 	   trace untrace   ;; debugging
            require module  ;; we allow full use of modules
-	   provide)        ;; in case someone wants to use a module
+	   provide         ;; in case someone wants to use a module
+           make-parameter  ;;  /
+           parameterize    ;; < Mitch asked for these
+           print-struct)   ;;  \
 
   (define-syntax r5rs-out
     (syntax-rules ()
