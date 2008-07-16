@@ -5,6 +5,7 @@
 
 ;; --------------------------------------------------------------------------
 (provide check-arg check-arity check-proc check-result check-list-list
+         check-fun-res
          natural?
          find-non tp-exn? number->ord)
 
@@ -15,6 +16,14 @@
 (define (find-non pred? l)
   (let ([r (filter (compose not pred?) l)])
     (if (null? r) #f (car r))))
+
+
+;(: check-fun-res (∀ (γ) (∀ (β α ...) (α ...α -> β)) (_ -γ-> boolean) _ -> γ))
+(define (check-fun-res f pred? type)
+  (lambda x 
+    (define r (apply f x))
+    (check-result (object-name f) pred? type r)
+    r))
 
 #| Tests ------------------------------------------------------------------
   (not (find-non list? '((1 2 3) (a b c))))
