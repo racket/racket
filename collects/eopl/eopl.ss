@@ -123,12 +123,6 @@
 		      ((car preds) (car obj))
 		      (loop (cdr obj) (cdr preds))))))))))
 
-  (define maybe
-    (lambda (pred)
-      (lambda (obj)
-        (or (pred obj)
-            (eqv? obj #f)))))
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define empty null)
@@ -136,9 +130,8 @@
   (define maybe
     (lambda (pred)
       (lambda (obj)
-        (or
-         (pred obj)
-         (eqv? obj #f)))))
+        (or (pred obj)
+            (eqv? obj #f)))))
 
   (provide time            ;; useful to compare implementations
 	   collect-garbage ;; useful with `time'
