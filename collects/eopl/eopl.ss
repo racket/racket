@@ -2,9 +2,7 @@
   (require "datatype.ss"
 	   "private/sllgen.ss"
 	   mzlib/trace
-	   mzlib/pretty
-           (rename r5rs r5rs:define define)
-           (rename r5rs r5rs:quote quote))
+	   mzlib/pretty)
   (require-for-syntax "private/slldef.ss")
 
   (provide define-datatype
@@ -13,15 +11,15 @@
   ;; Special def that saves a quoted value at compile time in case
   ;; it's needed for `sllgen:make-define-datatypes':
   (define-syntax (eopl-define stx)
-    (syntax-case stx (r5rs:quote)
-      [(_ name (r5rs:quote def))
+    (syntax-case stx (quote)
+      [(_ name (quote def))
        (identifier? (syntax name))
        (syntax/loc stx
 	 (begin
 	   (begin-for-syntax (hash-table-put! sllgen-def 'name (quote-syntax def)))
-	   (define name (r5rs:quote def))))]
+	   (define name (quote def))))]
       [(_ . rest)
-       (syntax/loc stx (r5rs:define . rest))]))
+       (syntax/loc stx (define . rest))]))
 
   (provide (rename eopl-define define))
 
@@ -121,9 +119,9 @@
 		 ;; if preds is empty, but list isn't, then recycle
 		 (loop obj all-preds)
 		 ;; otherwise check and element and recur.
-		 (and (mpair? obj)
-		      ((car preds) (mcar obj))
-		      (loop (mcdr obj) (cdr preds))))))))))
+		 (and (pair? obj)
+		      ((car preds) (car obj))
+		      (loop (cdr obj) (cdr preds))))))))))
 
   (define maybe
     (lambda (pred)
@@ -135,22 +133,80 @@
 
   (define empty null)
 
+  (define maybe
+    (lambda (pred)
+      (lambda (obj)
+        (or
+         (pred obj)
+         (eqv? obj #f)))))
+
   (provide time            ;; useful to compare implementations
 	   collect-garbage ;; useful with `time'
 	   empty           ;; for constructor-based printing
 	   trace untrace   ;; debugging
            require module  ;; we allow full use of modules
 	   provide         ;; in case someone wants to use a module
-           make-parameter  ;;  /
-           parameterize    ;; < Mitch asked for these
-           print-struct)   ;;  \
+           make-parameter
+           print-struct
+           maybe)
 
-  (define-syntax r5rs-out
-    (syntax-rules ()
-      [(_) (begin
-             (require (all-except r5rs 
-                                  define
-                                  call-with-current-continuation))
-             (provide (all-from-except r5rs 
-                                       r5rs:define)))]))
-  (r5rs-out))
+  (provide unquote unquote-splicing 
+           quote quasiquote if 
+           lambda letrec define-syntax delay let let* let-syntax letrec-syntax
+           and or cond case do
+	   begin set!
+           ;; => else  ;  not bound in `mzscheme'
+
+           (rename #%plain-module-begin #%module-begin)
+	   #%app #%datum #%top #%top-interaction 
+           #%require #%provide #%expression
+
+           (for-syntax syntax-rules ...)
+           cons car cdr pair? map for-each
+           caar cadr cdar cddr
+           caaar caadr cadar caddr cdaar cdadr cddar cdddr
+           caaaar caaadr caadar caaddr cadaar cadadr caddar cadddr
+           cdaaar cdaadr cdadar cdaddr cddaar cddadr cdddar cddddr
+           = < > <= >= max min + - * / 
+           abs gcd lcm exp log sin cos tan not eq?
+           make-string
+           symbol->string string->symbol make-rectangular 
+           exact->inexact inexact->exact number->string string->number 
+           rationalize output-port? current-input-port current-output-port current-error-port 
+           open-input-file open-output-file close-input-port close-output-port
+           with-output-to-file transcript-on transcript-off flush-output
+           string-length string-ci<=? string-ci>=? string-append 
+           string-fill!
+           string->list list->string
+           vector-length vector-fill!
+           vector->list list->vector
+           char-alphabetic? char-numeric? char-whitespace? 
+           char-upper-case? char-lower-case? char->integer integer->char char-downcase
+           call-with-output-file call-with-input-file with-input-from-file
+           apply symbol?
+           null?
+           list? list length append reverse list-tail
+           list-ref memq memv member assq assv assoc
+           procedure?
+           number? complex? real? rational? integer? exact? inexact? zero?
+           positive? negative? odd? even? 
+           quotient remainder modulo floor ceiling truncate round 
+           numerator denominator asin acos atan sqrt
+           expt make-polar real-part imag-part angle magnitude input-port?
+           read read-char peek-char eof-object?
+           char-ready? 
+           write display
+           newline write-char load 
+           string? string string-ref string-set! string=? substring string-copy
+           string-ci=? string<? string>? string<=? string>=? string-ci<? string-ci>?
+           vector? make-vector vector vector-ref vector-set! 
+           char? char=? char<? char>? char<=? char>=? 
+           char-ci=? char-ci<? char-ci>? char-ci<=? char-ci>=? 
+           char-upcase boolean? eqv? equal? 
+           force
+           call-with-values values dynamic-wind
+           eval
+           #|
+           scheme-report-environment null-environment interaction-environment
+           |#
+           ))

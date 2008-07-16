@@ -2088,9 +2088,5 @@
   (define sllgen:apply-reduction
     (lambda (lhs opcode args)
       (apply (eval opcode)
-	     (map (lambda (v)
-                    (if (list? v)
-                        (list->mlist v)
-                        v))
-                  args))))
+	     args)))
   )
