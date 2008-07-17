@@ -227,7 +227,14 @@
             (identifier? #'ellipses)
             (free-identifier=? #'ellipses #'(... ...)))
        (box (cons (loop #'expr #f #f)
-                  (loop #'rest #f #t)))]
+                  (let rloop ([rest #'rest])
+                    (syntax-case rest ()
+                      [(ellipses . rest)
+                       (and (identifier? #'ellipses)
+                            (free-identifier=? #'ellipses #'(... ...)))
+                       ;; keep going:
+                       (rloop #'rest)]
+                      [else (loop rest #f #t)]))))]
       [(a . b) (let ([a (loop #'a in-ellipses? #f)]
                      [b (loop #'b in-ellipses? counting?)])
                  (if (or a b counting?)
