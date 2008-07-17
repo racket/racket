@@ -214,8 +214,8 @@
             ((and (not from-record) to-record (class-record-class? to-record))
              (type=? object-type to))
             ((and (not from-record) to-record)
-             (or (type=? serializable-type to type-recs)
-                 (type=? cloneable-type to type-recs)))
+             (or (type=? serializable-type to)
+                 (type=? cloneable-type to)))
             (else
              (or (type=? (array-type-type to) (array-type-type from))
                  (castable? (array-type-type from)

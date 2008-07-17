@@ -2510,7 +2510,7 @@
             (if (close-to-keyword? tok 'within)
                 (parse-error
                  (format "Expected 'within' for range of check, found ~a which is similar to 'within'. Check capitolization and spelling."
-                         out))
+                         out) ps end)
                 cur-tok))))
         ((name)
          (case kind

@@ -1201,7 +1201,7 @@
       (when (ref-type? type)
         (add-required c-class (ref-type-class/iface type) (ref-type-path type) type-recs))
       (when (eq? 'string type)
-        (add-required c-class "String" '("java" "lang")))
+        (add-required c-class "String" '("java" "lang") type-recs))
       (when (and in-env? (not (properties-field? (var-type-properties in-env?))))
         (illegal-redefinition (field-name local) (field-src local)))
       (if is-var-init?
@@ -2296,7 +2296,7 @@
       (member s `("if" "return"))))
   
   (define (error-file-exists? class type-recs) #f)
-  (define (call-provided-error) null)
+  (define (call-provided-error a b c) null)
   
   ;check-method-args: (list type) (list type) id type src type-records -> void
   (define (check-method-args args atypes name exp-type src type-recs)
@@ -2946,7 +2946,7 @@
       (when (eq? actual-t 'void)
         (check-rand-type-error 'void level actual-t er-ts (expr-src actual)))
       (when (null? er-ts)
-        (check-rand-type-error 'empty level actual-t src))
+        (check-rand-type-error 'empty level actual-t 'none src))
       
       (and
        (andmap
