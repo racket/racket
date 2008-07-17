@@ -111,16 +111,33 @@ The image-comparison operator that is also provided by
 
 @; ----------------------------------------------------------------------
 
-@section{Higher-order Primitives in @italic{HtDP} Beginner}
+@section{Primitives in @italic{HtDP} Beginner}
 
 @defmodule[lang/prim]
 
-The @schememodname[lang/prim] module defines two syntactic forms for
-use by the implementors of teachpacks, which the teachpack is to be
+The @schememodname[lang/prim] module several syntactic forms for
+use by the implementors of teachpacks, when the teachpack is to be
 used with the @|htdp| Beginner Student
 languages. In Beginner Student, primitive names (for built-in
 procedures) are distinguished from other types of expressions, so that
 they can be syntactically restricted to application positions.
+
+@defform[(define-primitive id proc-id)]{
+
+  Defines @scheme[id] to be a primitive operator whose implementation
+  is @scheme[proc-id], and that takes no procedures as
+  arguments. Normally, @scheme[id] is exported from the teachpack and
+  @scheme[proc-id] is not.}
+
+@defform[(provide-primitive id)]{
+
+  Like @scheme[define-primitive], but the existing function @scheme[id] is
+  exported as the primitive operator named @scheme[id]. An alternative
+  to @scheme[define-primitive].}
+
+@defform[(provide-primitives id ...)]{
+
+  Multiple-identifier version of @scheme[provide-primitive].}
 
 @defform[(define-higher-order-primitive id proc-id (arg ...))]{
 
@@ -140,23 +157,7 @@ they can be syntactically restricted to application positions.
 
 @defform[(provide-higher-order-primitive id (arg ...))]{
 
-  Like @scheme[define-higher-order-primitive], but the function
+  Like @scheme[define-higher-order-primitive], but the existing function
   @scheme[id] is exported as the primitive operator named
-  @scheme[id].}
-
-@defform[(define-primitive id proc-id)]{
-
-  Defines @scheme[id] to be a primitive operator whose implementation
-  is @scheme[proc-id], and that takes no procedures as
-  arguments. Normally, @scheme[id] is exported from the teachpack and
-  @scheme[proc-id] is not.}
-
-@defform[(provide-primitive id)]{
-
-  Like @scheme[define-primitive], but the function @scheme[id] is
-  exported as the primitive operator named @scheme[id].}
-
-@defform[(provide-primitives id ...)]{
-
-  Multiple-identifier version of @scheme[provide-primitive].}
+  @scheme[id]. An alternative to @scheme[define-higher-order-primitive].}
 
