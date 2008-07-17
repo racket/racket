@@ -2256,9 +2256,7 @@ module browser threading seems wrong.
             
             (let ([start 0])
               (send definitions-text split-snip start)
-              (let* ([name (if (method-in-interface? 'get-port-name (object-interface definitions-text))
-                               (send definitions-text get-port-name)
-                               (send definitions-text get-filename))]
+              (let* ([name (send definitions-text get-port-name)]
                      [text-port (open-input-text-editor definitions-text start 'end values name #t)])
                 (port-count-lines! text-port)
                 (let* ([line (send definitions-text position-paragraph start)]

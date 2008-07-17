@@ -46,11 +46,8 @@
                                    (let* ([text (drscheme:language:text/pos-text input)]
                                           [start (drscheme:language:text/pos-start input)]
                                           [end (drscheme:language:text/pos-end input)]
-                                          [name (if (method-in-interface? 'get-port-name 
-                                                                          (object-interface text))
-                                                    (send text get-port-name)
-                                                    (send text get-filename))]
-                                          [text-port (open-input-text-editor text start end values name)])
+                                          [text-port (open-input-text-editor text start end values
+                                                                             (send text get-port-name))])
                                      (port-count-lines! text-port)
                                      (let* ([line (send text position-paragraph start)]
                                             [column (- start (send text paragraph-start-position line))]
