@@ -49,7 +49,7 @@
                 (with-handlers ((exn:fail? (λ (x) (error 'teachpack (missing-tp-message tp)))))
                   (unless (file-exists? (build-path (apply collection-path (cddr tp))
                                                     (cadr tp)))
-                    (error))))
+                    (error "fail"))))
               teachpacks)
              (rewrite-module
               (expand

@@ -651,6 +651,8 @@ thread_val {
   gcMARK(pr->current_local_bindings);
 
   gcMARK(pr->current_mt);
+
+  gcMARK(pr->constant_folding);
   
   gcMARK(pr->overflow_reply);
 
@@ -1047,6 +1049,27 @@ mark_pipe {
   gcBYTES_TO_WORDS(sizeof(Scheme_Pipe));
 }
 
+mark_logger {
+ mark:
+  Scheme_Logger *l = (Scheme_Logger *)p;
+  gcMARK(l->name);
+  gcMARK(l->parent);
+  gcMARK(l->readers);
+  gcMARK(l->timestamp);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
+}
+
+mark_log_reader {
+ mark:
+  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK(lr->ch);
+  gcMARK(lr->head);
+  gcMARK(lr->tail);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
+}
+
 END type;
 
 /**********************************************************************/
@@ -1111,6 +1134,7 @@ mark_optimize_info {
   gcMARK(i->top_level_consts);
   gcMARK(i->transitive_use);
   gcMARK(i->transitive_use_len);
+  gcMARK(i->context);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

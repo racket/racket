@@ -28,6 +28,10 @@
 #ifdef DOS_FILE_SYSTEM
 # include <windows.h>
 #endif
+#ifdef USE_C_SYSLOG
+# include <syslog.h>
+# include <stdarg.h>
+#endif
 
 #define mzVA_ARG(x, y) HIDE_FROM_XFORM(va_arg(x, y))
 #define TMP_CMARK_VALUE scheme_parameterization_key
@@ -39,6 +43,8 @@ scheme_console_printf_t scheme_get_console_printf() { return scheme_console_prin
 void (*scheme_console_output)(char *str, long len);
 Scheme_Exit_Proc scheme_exit;
 void scheme_set_exit(Scheme_Exit_Proc p) { scheme_exit = p; }
+
+Scheme_Logger *scheme_main_logger;
 
 #ifdef MEMORY_COUNTING_ON
 long scheme_misc_count;
@@ -64,9 +70,22 @@ static Scheme_Object *emergency_error_display_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_error_value_string_proc(int, Scheme_Object *[]);
 static Scheme_Object *def_exit_handler_proc(int, Scheme_Object *[]);
 
+static Scheme_Object *log_message(int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_level_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_logger(int argc, Scheme_Object *argv[]);
+static Scheme_Object *logger_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *current_logger(int argc, Scheme_Object *argv[]);
+static Scheme_Object *logger_name(int argc, Scheme_Object *argv[]);
+static Scheme_Object *make_log_reader(int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_reader_p(int argc, Scheme_Object *argv[]);
+static int log_reader_get(Scheme_Object *ch, Scheme_Schedule_Info *sinfo);
+
 static Scheme_Object *do_raise(Scheme_Object *arg, int need_debug, int barrier);
 
 static Scheme_Object *nested_exn_handler(void *old_exn, int argc, Scheme_Object *argv[]);
+
+static Scheme_Logger *make_a_logger(Scheme_Logger *parent, Scheme_Object *name);
+static void update_want_level(Scheme_Logger *logger);
 
 static Scheme_Object *def_err_val_proc;
 static Scheme_Object *def_error_esc_proc;
@@ -81,6 +100,19 @@ static Scheme_Object *check_arity_property_value_ok(int argc, Scheme_Object *arg
 static char *init_buf(long *len, long *blen);
 static char *prepared_buf;
 static long prepared_buf_len;
+
+static Scheme_Object *fatal_symbol, *error_symbol, *warning_symbol, *info_symbol, *debug_symbol;
+#ifndef INIT_SYSLOG_LEVEL
+# define INIT_SYSLOG_LEVEL 0
+#endif
+static int init_syslog_level = INIT_SYSLOG_LEVEL, init_stderr_level = SCHEME_LOG_ERROR;
+void scheme_set_logging(int syslog_level, int stderr_level)
+{
+  if (syslog_level > -1)
+    init_syslog_level = syslog_level;
+  if (stderr_level > -1)
+    init_stderr_level = stderr_level;
+}
 
 typedef struct {
   int args;
@@ -563,6 +595,49 @@ void scheme_init_error(Scheme_Env *env)
                                                     0, 1),
 			     env);
 
+  scheme_add_global_constant("log-message",
+			     scheme_make_prim_w_arity(log_message,
+                                                      "log-message",
+                                                      4, 4),
+			     env);
+  scheme_add_global_constant("log-level?",
+			     scheme_make_noncm_prim(log_level_p,
+                                                    "log-level?",
+                                                    2, 2),
+			     env);
+  scheme_add_global_constant("make-logger",
+			     scheme_make_noncm_prim(make_logger,
+                                                    "make-logger",
+                                                    1, 2),
+			     env);
+  scheme_add_global_constant("logger?",
+			     scheme_make_folding_prim(logger_p,
+                                                      "logger?",
+                                                      1, 1, 1),
+			     env);
+  scheme_add_global_constant("logger-name",
+			     scheme_make_folding_prim(logger_name,
+                                                      "logger-name",
+                                                      1, 1, 1),
+			     env);
+  scheme_add_global_constant("make-log-receiver",
+			     scheme_make_noncm_prim(make_log_reader,
+                                                    "make-log-receiver",
+                                                    2, 2),
+			     env);
+  scheme_add_global_constant("log-receiver?",
+			     scheme_make_folding_prim(log_reader_p,
+                                                      "log-receiver?",
+                                                      1, 1, 1),
+			     env);
+  scheme_add_global_constant("current-logger",
+			     scheme_register_parameter(current_logger,
+						       "current-logger",
+						       MZCONFIG_LOGGER),
+			     env);
+
+  scheme_add_evt(scheme_log_reader_type, (Scheme_Ready_Fun)log_reader_get, NULL, NULL, 1);
+
   REGISTER_SO(scheme_def_exit_proc);
   scheme_def_exit_proc = scheme_make_prim_w_arity(def_exit_handler_proc,
 						  "default-exit-handler",
@@ -576,6 +651,25 @@ void scheme_init_error(Scheme_Env *env)
   REGISTER_SO(prepared_buf);
   prepared_buf = "";
   prepared_buf = init_buf(NULL, &prepared_buf_len);
+
+  REGISTER_SO(fatal_symbol);
+  REGISTER_SO(error_symbol);
+  REGISTER_SO(warning_symbol);
+  REGISTER_SO(info_symbol);
+  REGISTER_SO(debug_symbol);
+  fatal_symbol = scheme_intern_symbol("fatal");
+  error_symbol = scheme_intern_symbol("error");
+  warning_symbol = scheme_intern_symbol("warning");
+  info_symbol = scheme_intern_symbol("info");
+  debug_symbol = scheme_intern_symbol("debug");
+
+  {
+    REGISTER_SO(scheme_main_logger);
+    scheme_main_logger = make_a_logger(NULL, NULL);
+    scheme_main_logger->syslog_level = init_syslog_level;
+    scheme_main_logger->stderr_level = init_stderr_level;
+    scheme_set_root_param(MZCONFIG_LOGGER, (Scheme_Object *)scheme_main_logger);
+  }
 
   REGISTER_SO(arity_property);
   {
@@ -631,8 +725,15 @@ scheme_inescapeable_error(const char *a, const char *b)
 static void
 call_error(char *buffer, int len, Scheme_Object *exn)
 {
-  if (scheme_current_thread->skip_error) {
-    scheme_longjmp (scheme_error_buf, 1);
+  if (scheme_current_thread->constant_folding) {
+    if (SCHEME_TRUEP(scheme_current_thread->constant_folding))
+      scheme_log(NULL,
+                 SCHEME_LOG_WARNING,
+                 0,
+                 "optimizer constant-fold attempt failed%s: %s",
+                 scheme_optimize_context_to_string(scheme_current_thread->constant_folding),
+                 buffer);
+    scheme_longjmp(scheme_error_buf, 1);
   } else {
     mz_jmp_buf savebuf;
     Scheme_Object *p[2], *display_handler, *escape_handler, *v;
@@ -801,6 +902,47 @@ void scheme_warning(char *msg, ...)
 
   scheme_write_byte_string(buffer, len,
 			   scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PORT));
+}
+
+void scheme_log(Scheme_Logger *logger, int level, int flags,
+                char *msg, ...)
+{
+  GC_CAN_IGNORE va_list args;
+  char *buffer;
+  long len;
+
+  if (logger) {
+    if (logger->local_timestamp == *logger->timestamp)
+      if (logger->want_level < level)
+        return;
+  }
+
+  /* Precise GC: Don't allocate before getting hidden args off stack */
+  buffer = prepared_buf;
+
+  HIDE_FROM_XFORM(va_start(args, msg));
+  len = sch_vsprintf(buffer, prepared_buf_len, msg, args);
+  HIDE_FROM_XFORM(va_end(args));
+
+  prepared_buf = init_buf(NULL, &prepared_buf_len);
+
+  buffer[len] = 0;
+
+  scheme_log_message(logger, level, buffer, len, NULL);
+}
+
+int scheme_log_level_p(Scheme_Logger *logger, int level)
+{
+  if (!logger) {
+    Scheme_Config *config;
+    config = scheme_current_config();
+    logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
+  }
+
+  if (logger->local_timestamp < *logger->timestamp)
+    update_want_level(logger);
+
+  return (logger->want_level >= level);
 }
 
 static char *error_write_to_string_w_max(Scheme_Object *v, int len, int *lenout)
@@ -2203,6 +2345,36 @@ static Scheme_Object *error_print_srcloc(int argc, Scheme_Object *argv[])
 			     -1, NULL, NULL, 1);
 }
 
+void scheme_write_proc_context(Scheme_Object *port, int print_width,
+                               Scheme_Object *name, 
+                               Scheme_Object *src, Scheme_Object *line, 
+                               Scheme_Object *col, Scheme_Object *pos,
+                               int generated)
+{
+  if (src) {
+    scheme_display_w_max(src, port, print_width);
+    if (line && SCHEME_TRUEP(line)) {
+      /* Line + column */
+      scheme_write_byte_string(":", 1, port);
+      scheme_display_w_max(line, port, print_width);
+      scheme_write_byte_string(":", 1, port);
+      scheme_display_w_max(col, port, print_width);
+    } else {
+      /* Position */
+      scheme_write_byte_string("::", 2, port);
+      scheme_display_w_max(pos, port, print_width);
+    }
+    
+    if (SCHEME_TRUEP(name)) {
+      scheme_write_byte_string(": ", 2, port);
+    }
+  }
+  
+  if (SCHEME_TRUEP(name)) {
+    scheme_display_w_max(name, port, print_width);
+  }
+}
+
 static Scheme_Object *
 def_error_display_proc(int argc, Scheme_Object *argv[])
 {
@@ -2260,29 +2432,20 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
 	  loc = SCHEME_CDR(name);
 	  name = SCHEME_CAR(name);
 
-	  if (SCHEME_TRUEP(loc)) {
-	    Scheme_Structure *sloc = (Scheme_Structure *)loc;
-	    scheme_display_w_max(sloc->slots[0], port, print_width);
-	    if (SCHEME_TRUEP(sloc->slots[1])) {
-	      /* Line + column */
-	      scheme_write_byte_string(":", 1, port);
-	      scheme_display_w_max(sloc->slots[1], port, print_width);
-	      scheme_write_byte_string(":", 1, port);
-	      scheme_display_w_max(sloc->slots[2], port, print_width);
-	    } else {
-	      /* Position */
-	      scheme_write_byte_string("::", 2, port);
-	      scheme_display_w_max(sloc->slots[3], port, print_width);
-	    }
+          if (SCHEME_TRUEP(loc)) {
+            Scheme_Structure *sloc = (Scheme_Structure *)loc;
+            scheme_write_proc_context(port, print_width, 
+                                      name, 
+                                      sloc->slots[0], sloc->slots[1],
+                                      sloc->slots[2], sloc->slots[3],
+                                      0);
+          } else {
+            scheme_write_proc_context(port, print_width, 
+                                      name, 
+                                      NULL, NULL, NULL, NULL, 
+                                      0);
+          }
 
-	    if (SCHEME_TRUEP(name)) {
-	      scheme_write_byte_string(": ", 2, port);
-	    }
-	  }
-
-	  if (SCHEME_TRUEP(name)) {
-	    scheme_display_w_max(name, port, print_width);
-	  }
 	  scheme_write_byte_string("\n", 1, port);
 	  l = SCHEME_CDR(l);
 	  --max_cnt;
@@ -2476,6 +2639,456 @@ scheme_do_exit(int argc, Scheme_Object *argv[])
 void scheme_immediate_exit(int status)
 {
   exit(status);
+}
+
+/***********************************************************************/
+
+void update_want_level(Scheme_Logger *logger)
+{
+  Scheme_Log_Reader *lr;
+  Scheme_Object *stack = NULL, *queue, *b, *prev;
+  Scheme_Logger *parent = logger;
+  int want_level;
+
+  while (parent) {
+    stack = scheme_make_raw_pair((Scheme_Object *)parent, stack);
+
+    if (parent->local_timestamp < *parent->timestamp)
+      parent = parent->parent;
+    else
+      parent = NULL;
+  }
+
+  want_level = 0;
+  while (stack) {
+    parent = (Scheme_Logger *)SCHEME_CAR(stack);
+    
+    if (parent->local_timestamp < *parent->timestamp) {
+      queue = parent->readers;
+      prev = NULL;
+      while (queue) {
+        b = SCHEME_CAR(queue);
+        lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
+        if (lr) {
+          if (lr->want_level > want_level)
+            want_level = lr->want_level;
+        } else {
+          if (prev)
+            SCHEME_CDR(prev) = SCHEME_CDR(queue);
+          else
+            parent->readers = SCHEME_CDR(queue);
+        }
+        queue = SCHEME_CDR(queue);
+      }
+
+      if (parent->syslog_level > want_level)
+        want_level = parent->syslog_level;
+      if (parent->stderr_level > want_level)
+        want_level = parent->stderr_level;    
+      
+      parent->want_level = want_level;
+      parent->local_timestamp = *parent->timestamp;
+    } else {
+      want_level = parent->want_level;
+    }
+
+    stack = SCHEME_CDR(stack);
+  }
+}
+
+#ifdef USE_WINDOWS_EVENT_LOG
+static int event_procs_ready;
+typedef HANDLE (WINAPI *mzRegisterEventSourceProc)(LPCTSTR lpUNCServerName, LPCTSTR lpSourceName);
+typedef BOOL (WINAPI *mzReportEventProc)(HANDLE hEventLog, WORD wType, WORD wCategory, DWORD dwEventID,
+						                 PSID lpUserSid, WORD wNumStrings, DWORD dwDataSize, LPCTSTR* lpStrings,
+							             LPVOID lpRawData);
+static mzRegisterEventSourceProc mzRegisterEventSource;
+static mzReportEventProc mzReportEvent;
+#endif
+
+void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len, Scheme_Object *data)
+{
+  Scheme_Logger *orig_logger;
+  Scheme_Object *queue, *q, *msg = NULL, *b;
+  Scheme_Log_Reader *lr;
+
+  if (!logger) {
+    Scheme_Config *config;
+    config = scheme_current_config();
+    logger = (Scheme_Logger *)scheme_get_param(config, MZCONFIG_LOGGER);
+  }
+
+  if (logger->local_timestamp < *logger->timestamp)
+    update_want_level(logger);
+
+  orig_logger = logger;
+
+  while (logger) {
+    if (logger->want_level < level)
+      return;
+  
+    if (logger->syslog_level >= level) {
+#ifdef USE_C_SYSLOG
+      int pri;
+      switch (level) {
+      case SCHEME_LOG_FATAL:
+        pri = LOG_CRIT;
+        break;
+      case SCHEME_LOG_ERROR:
+        pri = LOG_ERR;
+        break;
+      case SCHEME_LOG_WARNING:
+        pri = LOG_WARNING;
+        break;
+      case SCHEME_LOG_INFO:
+        pri = LOG_INFO;
+        break;
+      case SCHEME_LOG_DEBUG:
+      default:
+        pri = LOG_DEBUG;
+        break;
+      }
+      if (orig_logger->name)
+        syslog(pri, "%s: %s", SCHEME_SYM_VAL(orig_logger->name), buffer);
+      else
+        syslog(pri, "%s", buffer);
+#endif
+#ifdef USE_WINDOWS_EVENT_LOG
+      if (!event_procs_ready) {
+        HMODULE hm;
+        hm = LoadLibrary("advapi32.dll");
+        if (hm) {
+          mzRegisterEventSource = (mzRegisterEventSourceProc)GetProcAddress(hm, "RegisterEventSourceA");
+          mzReportEvent = (mzReportEventProc)GetProcAddress(hm, "ReportEventA");
+        }
+        event_procs_ready = 1;
+      }
+      if (mzRegisterEventSource) {
+        static HANDLE hEventLog;
+        WORD ty;
+        unsigned long sev;
+        LPCTSTR a[1];
+
+        if (!hEventLog) {
+          Scheme_Object *cmd;
+          cmd = scheme_get_run_cmd();
+          hEventLog = mzRegisterEventSource(NULL, SCHEME_PATH_VAL(cmd));
+        }
+
+        switch (level) {
+        case SCHEME_LOG_FATAL:
+          ty = EVENTLOG_ERROR_TYPE;
+          sev = 3;
+          break;
+        case SCHEME_LOG_ERROR:
+          ty = EVENTLOG_ERROR_TYPE;
+          sev = 3;
+          break;
+        case SCHEME_LOG_WARNING:
+          ty = EVENTLOG_WARNING_TYPE;
+          sev = 2;
+          break;
+        case SCHEME_LOG_INFO:
+          ty = EVENTLOG_INFORMATION_TYPE;
+          sev = 1;
+          break;
+        case SCHEME_LOG_DEBUG:
+        default:
+          ty = EVENTLOG_AUDIT_SUCCESS;
+          sev = 0;
+          break;
+        }
+        if (orig_logger->name) {
+          char *naya;
+          long slen;
+          slen = SCHEME_SYM_LEN(orig_logger->name);
+          naya = (char *)scheme_malloc_atomic(slen + 2 + len + 1);
+          memcpy(naya, SCHEME_SYM_VAL(orig_logger->name), slen);
+          memcpy(naya + slen, ": ", 2);
+          memcpy(naya + slen + 2, buffer, len);
+          naya[slen + 2 + len] = 0;
+          buffer = naya;
+		  len += slen + 2;
+        }
+		a[0] = buffer;
+		mzReportEvent(hEventLog, ty, 1 /* category */,
+                      (sev << 30) | 2 /* message */,
+                      NULL, 
+                      1, 0,
+                      a, NULL);
+      }
+#endif
+    }
+    if (logger->stderr_level >= level) {
+      if (orig_logger->name) {
+        long slen;
+        slen = SCHEME_SYM_LEN(orig_logger->name);
+        fwrite(SCHEME_SYM_VAL(orig_logger->name), slen, 1, stderr);
+        fwrite(": ", 2, 1, stderr);
+      }
+      fwrite(buffer, len, 1, stderr);
+      fwrite("\n", 1, 1, stderr);
+    }
+
+    queue = logger->readers;
+    while (queue) {
+      b = SCHEME_CAR(queue);
+      lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
+      if (lr) {
+        if (lr->want_level >= level) {
+          if (!msg) {
+            Scheme_Object *v;
+            msg = scheme_make_vector(3, NULL);
+            switch (level) {
+            case SCHEME_LOG_FATAL:
+              v = fatal_symbol;
+              break;
+            case SCHEME_LOG_ERROR:
+              v = error_symbol;
+              break;
+            case SCHEME_LOG_WARNING:
+              v = warning_symbol;
+              break;
+            case SCHEME_LOG_INFO:
+              v = info_symbol;
+              break;
+            case SCHEME_LOG_DEBUG:
+            default:
+              v = debug_symbol;
+              break;
+            }
+            SCHEME_VEC_ELS(msg)[0] = v;
+          
+            if (orig_logger->name) {
+              /* Add logger name prefix: */
+              long slen;
+              char *cp;
+              slen = SCHEME_SYM_LEN(orig_logger->name);
+              cp = scheme_malloc_atomic(slen + len + 2);
+              memcpy(cp, SCHEME_SYM_VAL(orig_logger->name), slen);
+              memcpy(cp + slen, ": ", 2);
+              memcpy(cp + slen + 2, buffer, len + 1);
+              len += slen + 2;
+              buffer = cp;
+            }
+
+            v = scheme_make_sized_utf8_string(buffer, len);
+            SCHEME_SET_CHAR_STRING_IMMUTABLE(v);
+            SCHEME_VEC_ELS(msg)[1] = v;
+            SCHEME_VEC_ELS(msg)[2] = (data ? data : scheme_false);
+          }
+          if (!lr->tail
+              && scheme_try_channel_put(lr->ch, msg)) {
+            /* delivered immediately */
+          } else {
+            /* enqueue */
+            q = scheme_make_raw_pair(msg, NULL);
+            if (lr->tail)
+              SCHEME_CDR(lr->tail) = q;
+            else
+              lr->head = q;
+            lr->tail = q;
+          }
+        }
+      }
+      queue = SCHEME_CDR(queue);
+    }
+
+    logger = logger->parent;
+  }
+}
+
+static int extract_level(const char *who, int which, int argc, Scheme_Object **argv)
+{
+  Scheme_Object *v;
+  int level;
+
+  v = argv[which];
+  if (SAME_OBJ(v, fatal_symbol))
+    level = SCHEME_LOG_FATAL;
+  else if (SAME_OBJ(v, error_symbol))
+    level = SCHEME_LOG_ERROR;
+  else if (SAME_OBJ(v, warning_symbol))
+    level = SCHEME_LOG_WARNING;
+  else if (SAME_OBJ(v, info_symbol))
+    level = SCHEME_LOG_INFO;
+  else if (SAME_OBJ(v, debug_symbol))
+    level = SCHEME_LOG_DEBUG;
+  else {
+    scheme_wrong_type(who, "'fatal, 'error, 'warning, 'info, or 'debug", which, argc, argv);
+    return 0;
+  }
+  
+  return level;
+}
+
+static Scheme_Object *
+log_message(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+  Scheme_Object *bytes;
+  int level;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_type("log-message", "logger", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+
+  level = extract_level("log-message", 1, argc, argv);
+
+  bytes = argv[2];
+  if (!SCHEME_CHAR_STRINGP(bytes))
+    scheme_wrong_type("log-message", "string", 2, argc, argv);
+  bytes = scheme_char_string_to_byte_string(bytes);
+  
+  scheme_log_message(logger, level, SCHEME_BYTE_STR_VAL(bytes), SCHEME_BYTE_STRLEN_VAL(bytes), argv[3]);
+
+  return scheme_void;
+}
+
+static Scheme_Object *
+log_level_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+  int level;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_type("log-level?", "logger", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+
+  level = extract_level("log-level?", 1, argc, argv);
+
+  if (logger->local_timestamp < *logger->timestamp)
+    update_want_level(logger);
+
+  return ((logger->want_level >= level) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+make_logger(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *parent;
+
+  if (argc) {
+    if (!SCHEME_FALSEP(argv[0]) && !SCHEME_SYMBOLP(argv[0]))
+      scheme_wrong_type("make-logger", "symbol or #f", 0, argc, argv);
+
+    if (argc > 1) {
+      if (SCHEME_FALSEP(argv[1]))
+        parent = NULL;
+      else {
+        if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_logger_type))
+          scheme_wrong_type("make-logger", "logger or #f", 1, argc, argv);
+        parent = (Scheme_Logger *)argv[1];
+      }
+    } else
+      parent = NULL;
+  } else
+    parent = NULL;
+
+  return (Scheme_Object *)make_a_logger(parent, 
+                                        (argc 
+                                         ? (SCHEME_FALSEP(argv[1]) ? NULL : argv[1])
+                                         : NULL));
+}
+
+static Scheme_Logger *make_a_logger(Scheme_Logger *parent, Scheme_Object *name)
+{
+  Scheme_Logger *logger;
+
+  logger = MALLOC_ONE_TAGGED(Scheme_Logger);
+  logger->so.type = scheme_logger_type;
+  logger->parent = parent;
+  if (parent) {
+    logger->timestamp = parent->timestamp;
+  } else {
+    long *timestamp;
+    timestamp = MALLOC_ONE_ATOMIC(long);
+    *timestamp = 1;
+    logger->timestamp = timestamp;
+  }
+  logger->name = name;
+
+  return logger;
+}
+
+static Scheme_Object *
+logger_p(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type)
+          ? scheme_true
+          : scheme_false);
+}
+
+static Scheme_Object *
+current_logger(int argc, Scheme_Object *argv[])
+{
+  return scheme_param_config("current-logger",
+			     scheme_make_integer(MZCONFIG_LOGGER),
+			     argc, argv,
+			     -1, logger_p, "logger", 0);
+}
+
+static Scheme_Object *
+logger_name(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_type("logger-name", "logger", 0, argc, argv);
+
+  return ((Scheme_Logger *)argv[0])->name;
+}
+
+static Scheme_Object *
+make_log_reader(int argc, Scheme_Object *argv[])
+{
+  Scheme_Logger *logger;
+  Scheme_Log_Reader *lr;
+  Scheme_Object *ch, *q;
+  int level;
+
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
+    scheme_wrong_type("make-log-receiver", "logger", 0, argc, argv);
+  logger = (Scheme_Logger *)argv[0];
+
+  level = extract_level("make-log-receiver", 1, argc, argv);
+
+  lr = MALLOC_ONE_TAGGED(Scheme_Log_Reader);
+  lr->so.type = scheme_log_reader_type;
+  lr->want_level = level;
+
+  ch = scheme_make_channel();
+  lr->ch = ch;
+
+  q = scheme_make_raw_pair(scheme_make_weak_box((Scheme_Object *)lr), logger->readers);
+  logger->readers = q;
+  *logger->timestamp += 1;
+
+  return (Scheme_Object *)lr;
+}
+
+static Scheme_Object *
+log_reader_p(int argc, Scheme_Object *argv[])
+{
+  return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_log_reader_type)
+          ? scheme_true
+          : scheme_false);
+}
+
+static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
+{
+  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)_lr;
+
+  if (lr->head) {
+    Scheme_Object *v;
+    v = SCHEME_CAR(lr->head);
+    lr->head = SCHEME_CDR(lr->head);
+    if (!lr->head)
+      lr->tail = NULL;
+    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 0);
+    return 1;
+  } else {
+    scheme_set_sync_target(sinfo, lr->ch, NULL, NULL, 0, 0);
+    return 0;
+  }
 }
 
 /***********************************************************************/
@@ -2700,7 +3313,20 @@ do_raise(Scheme_Object *arg, int need_debug, int eb)
 {
   Scheme_Thread *p = scheme_current_thread;
 
-  if (p->skip_error) {
+  if (p->constant_folding) {
+    if (SCHEME_TRUEP(p->constant_folding)) {
+      const char *msg;
+      if (need_debug) {
+        msg = scheme_display_to_string(((Scheme_Structure *)arg)->slots[0], NULL);
+      } else
+        msg = scheme_write_to_string(arg, NULL);
+      scheme_log(NULL,
+                 SCHEME_LOG_WARNING,
+                 0,
+                 "warning%s: optimizer constant-fold attempt failed: %s",
+                 scheme_optimize_context_to_string(p->constant_folding),
+                 msg);
+    }
     scheme_longjmp (scheme_error_buf, 1);
   }
   

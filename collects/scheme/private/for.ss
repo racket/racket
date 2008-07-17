@@ -673,15 +673,15 @@
                         [loop-arg ...]) ...) (reverse (syntax->list #'binds))])
          #'(let-values (outer-binding ... ...)
              outer-check ...
-             (let comp-loop ([fold-var fold-init] ...
-                             loop-binding ... ...)
+             (let for-loop ([fold-var fold-init] ...
+                            loop-binding ... ...)
                (if (and pos-guard ...)
                    (let-values (inner-binding ... ...)
                      (if (and pre-guard ...)
                          (let-values ([(fold-var ...)
                                        (for/foldX/derived [orig-stx nested? #f ()] ([fold-var fold-var] ...) rest expr1 . body)])
                            (if (and post-guard ...)
-                               (comp-loop fold-var ... loop-arg ... ...)
+                               (for-loop fold-var ... loop-arg ... ...)
                                (values* fold-var ...)))
                          (values* fold-var ...)))
                    (values* fold-var ...)))))]

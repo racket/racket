@@ -106,7 +106,7 @@
 			pieces)])
 	  (if p
 	      (set-piece-enabled?! p (and on? #t))
-	      (raise-mismatch-error "no matching piece: " info))))
+	      (raise-mismatch-error 'enable-piece "no matching piece: " info))))
       
       ;; enabled?: info -> boolean
       (define/public (enabled? info)
@@ -115,7 +115,7 @@
                         pieces)))
           (if p
               (piece-enabled? p)
-              (raise-mismatch-error "no matching piece: " info))))
+              (raise-mismatch-error 'enabled? "no matching piece: " info))))
       
       ;; remove-piece: info ->
       ;; Removes all pieces whose info is equal? to p-i from this board.

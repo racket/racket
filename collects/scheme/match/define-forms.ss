@@ -40,8 +40,8 @@
             (for/list ([ps pss])
               (unless (= (length (syntax->list ps)) len)
                 (raise-syntax-error
-                 'match "unequal number of patterns in match clauses"
-                 stx ps ps1)))
+                 #f "unequal number of patterns in match clauses"
+                 stx ps)))
             (with-syntax ([(vars ...) (generate-temporaries (car pss))])
               (syntax/loc stx
                 (lambda (vars ...) (match* (vars ...) [pats . rhs] ...)))))]))

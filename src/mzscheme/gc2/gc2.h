@@ -88,6 +88,7 @@ GC2_EXTERN void GC_register_thread(void *, void *);
 
 GC2_EXTERN void (*GC_collect_start_callback)(void);
 GC2_EXTERN void (*GC_collect_end_callback)(void);
+GC2_EXTERN void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 /*
    Called by GC before/after performing a collection. Used by MzScheme
    to zero out some data and record collection times. The end

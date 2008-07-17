@@ -20,7 +20,7 @@
 (define-for-syntax (join . args)
   (define (->string x)
     (cond [(string? x) x]
-          [(symbol? x) (symbol->string)]
+          [(symbol? x) (symbol->string x)]
           [(identifier? x) (symbol->string (syntax-e x))]
           [else (error '->string)]))
   (string->symbol (apply string-append (map ->string args))))

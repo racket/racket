@@ -206,11 +206,16 @@ Scheme_Object *scheme_exn_handler_key;
 Scheme_Object *scheme_break_enabled_key;
 
 long scheme_total_gc_time;
-static long start_this_gc_time;
+static long start_this_gc_time, end_this_gc_time;
+#ifndef MZ_PRECISE_GC
 extern MZ_DLLIMPORT void (*GC_collect_start_callback)(void);
 extern MZ_DLLIMPORT void (*GC_collect_end_callback)(void);
+#endif
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
+#ifdef MZ_PRECISE_GC
+static void inform_GC(int major_gc, long pre_used, long post_used);
+#endif
 
 static volatile short delayed_break_ready = 0;
 static Scheme_Thread *main_break_target_thread;
@@ -2105,6 +2110,9 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
     GC_collect_start_callback = get_ready_for_GC;
     GC_collect_end_callback = done_with_GC;
+#ifdef MZ_PRECISE_GC
+    GC_collect_inform_callback = inform_GC;
+#endif
 
 #ifdef LINK_EXTENSIONS_BY_TABLE
     scheme_current_thread_ptr = &scheme_current_thread;
@@ -7184,8 +7192,23 @@ static void done_with_GC()
   scheme_block_child_signals(0);
 #endif
 
-  scheme_total_gc_time += (scheme_get_process_milliseconds() - start_this_gc_time);
+  end_this_gc_time = scheme_get_process_milliseconds();
+  scheme_total_gc_time += (end_this_gc_time - start_this_gc_time);
 }
+
+#ifdef MZ_PRECISE_GC
+static void inform_GC(int major_gc, long pre_used, long post_used)
+{
+  if (scheme_main_logger)
+    scheme_log(scheme_main_logger,
+               SCHEME_LOG_INFO, 0,
+               "GC [%s] at %ld bytes; %ld collected in %ld msec",
+               (major_gc ? "major" : "minor"),
+               pre_used, pre_used - post_used,
+               end_this_gc_time - start_this_gc_time);
+}
+#endif
+
 
 #ifdef MZ_XFORM
 END_XFORM_SKIP;

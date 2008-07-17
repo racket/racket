@@ -16,7 +16,7 @@
   (provide/contract 
    ;[make-debug-info (-> any? binding-set? varref-set? any? boolean? syntax?)] ; (location tail-bound free label lifting? -> mark-stx)
    [expose-mark (-> mark? (list/c any/c symbol? (listof (list/c identifier? any/c))))]
-   [make-top-level-mark (syntax? . -> . syntax?)]
+   ;[make-top-level-mark (syntax? . -> . syntax?)]
    [lookup-all-bindings ((identifier? . -> . boolean?) mark-list? . -> . (listof any/c))]
    [lookup-first-binding ((identifier? . -> . boolean?) mark-list? ( -> any) . -> . any)]
    [lookup-binding (mark-list? identifier? . -> . any)])
@@ -179,5 +179,6 @@
   (define (assemble-debug-info tail-bound free-vars label lifting?)
     (map make-mark-binding-stx free-vars))
   
+  #;
   (define (make-top-level-mark source-expr)
     (make-full-mark source-expr 'top-level null)))

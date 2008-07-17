@@ -9,6 +9,7 @@
 @include-section["filesystem.scrbl"]
 @include-section["networking.scrbl"]
 @include-section["subprocess.scrbl"]
+@include-section["logging.scrbl"]
 @include-section["time.scrbl"]
 @include-section["runtime.scrbl"]
 @include-section["cmdline.scrbl"]

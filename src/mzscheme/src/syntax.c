@@ -3018,7 +3018,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
        to (let-values ([id e] ...) body) for simple e. */
     if ((pre_body->count != 1)
         && is_values_apply(value)
-        && scheme_omittable_expr(value, pre_body->count, -1, 0)) {
+        && scheme_omittable_expr(value, pre_body->count, -1, 0, info)) {
       if (!pre_body->count && !i) {
         /* We want to drop the clause entirely, but doing it
            here messes up the loop for letrec. So wait and 
@@ -3225,7 +3225,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline)
       }
     }
     if (!used
-        && scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0)) {
+        && scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info)) {
       for (j = pre_body->count; j--; ) {
         if (pre_body->flags[j] & SCHEME_WAS_USED) {
           pre_body->flags[j] -= SCHEME_WAS_USED;
@@ -3604,7 +3604,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
         }
         if (j >= 0)
           break;
-        if (!scheme_omittable_expr(clv->value, clv->count, -1, 0))
+        if (!scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL))
           break;
       }
       if (i < 0) {
@@ -5478,7 +5478,7 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
 
   save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase);
 
-  if (scheme_omittable_expr(a, 1, -1, 0)) {
+  if (scheme_omittable_expr(a, 1, -1, 0, NULL)) {
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {

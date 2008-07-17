@@ -115,12 +115,12 @@
       [($ B l _ r)            (let ([height-left  (check l)]
                                     [height-right (check r)])
                                 (if (not (= height-left height-right))
-                                    (error)
+                                    (error "fail")
                                     (+ height-left 1)))]
       [($ R l _ r)            (let ([height-left  (check l)]
                                     [height-right (check r)])
                                 (if (not (= height-left height-right))
-                                    (error)
+                                    (error "fail")
                                     height-left))]))
   
   ;;; SET OPERATIONS
@@ -208,7 +208,7 @@
       (match s1
         [($ B _ _ _) s1]
         [($ R a y b) (B- a y b)]
-        [()          (error)])))
+        [()          (error "fail")])))
   
   (define (insert/combiner cmp x s combine)
     (define (ins s)
@@ -232,7 +232,7 @@
       (match s1
         [($ B _ _ _) s1]
         [($ R a y b) (B- a y b)]
-        [()          (error)])))
+        [()          (error "fail")])))
   
   (define (insert* cmp xs s)
     (list:foldl (lambda (x acc) (insert cmp x acc)) s xs))
@@ -251,7 +251,7 @@
       [($ R ($ B t1 x1 t2) x2 t3)              (values (lbalance (R- t1 x1 t2) x2 t3) #f)]
       [($ B ($ B t1 x1 t2) x2 t3)              (values (lbalance (R- t1 x1 t2) x2 t3) #t)]
       [($ B ($ R t1 x1 ($ B t2 x2 t3)) x3 t4)  (values (B- t1 x1 (lbalance (R- t2 x2 t3) x3 t4)) #f)]
-      [_                                       (error)]))
+      [_                                       (error "fail")]))
   
   ;  (* [unbalanced_right] repares invariant (2) when the black height of the 
   ;     right son exceeds (by 1) the black height of the left son *)
@@ -261,7 +261,7 @@
       [($ R t1 x1 ($ B t2 x2 t3))             (values (rbalance t1 x1 (R- t2 x2 t3)) #f)]
       [($ B t1 x1 ($ B t2 x2 t3))             (values (rbalance t1 x1 (R- t2 x2 t3)) #t)]
       [($ B t1 x1 ($ R ($ B t2 x2 t3) x3 t4)) (values (B- (rbalance t1 x1 (R- t2 x2 t3)) x3 t4) #f)]
-      [_                                      (error)]))
+      [_                                      (error "fail")]))
   
   
   ;  (* [remove_min s = (s',m,b)] extracts the minimum [m] of [s], [s'] being the
@@ -274,7 +274,7 @@
       ;  minimum is reached 
       [($ B () x ())           (values empty x #t)]
       [($ B () x ($ R l y r))  (values (B- l y r) x #f)]
-      [($ B () _ ($ B _ _ _))  (error)]
+      [($ B () _ ($ B _ _ _))  (error "fail")]
       [($ R () x r)            (values r x #f)]
       ;  minimum is recursively extracted from [l]
       [($ B l x r)                (let-values ([(l1 m d) (remove-min l)])
@@ -377,11 +377,11 @@
         [(= k 0)  (cond
                     [(= n 0) (cons '() sl)]
                     [else    (match sl
-                               [()       (error)]
+                               [()       (error "fail")]
                                [(x . sl) (cons (R- empty x empty) sl)])])]
         [else     (let ([n1 (quotient (- n 1) 2)])
                     (match (build sl n1 (- k 1))
-                      [(_ . ())       (error)]
+                      [(_ . ())       (error "fail")]
                       [(l . (x . sl)) (match-let ([(r . sl) (build sl (sub1 (- n n1)) (- k 1))])
                                         (cons (B- r x l) sl))]))]))
     (let ([n (length sl)])

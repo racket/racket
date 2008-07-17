@@ -4652,11 +4652,14 @@ static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info)
 {
   Scheme_Module *m = (Scheme_Module *)data;
-  Scheme_Object *e, *vars;
+  Scheme_Object *e, *vars, *old_context;
   int start_simltaneous = 0, i_m, cnt;
   Scheme_Object *cl_first = NULL, *cl_last = NULL;
   Scheme_Hash_Table *consts = NULL, *ready_table = NULL, *re_consts = NULL;
   int cont;
+
+  old_context = info->context;
+  info->context = (Scheme_Object *)m;
 
   cnt = SCHEME_VEC_SIZE(m->body);
   for (i_m = 0; i_m < cnt; i_m++) {
@@ -4678,7 +4681,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	e = SCHEME_CDR(e);
 
 	n = scheme_list_length(vars);
-	cont = scheme_omittable_expr(e, n, -1, 0);
+	cont = scheme_omittable_expr(e, n, -1, 0, info);
       
 	if ((n == 1) && scheme_compiled_propagate_ok(e, info)) {
 	  Scheme_Toplevel *tl;
@@ -4749,7 +4752,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
 	  }
 	}
       } else {
-	cont = scheme_omittable_expr(e, -1, -1, 0);
+	cont = scheme_omittable_expr(e, -1, -1, 0, NULL);
       }
       if (i_m + 1 == cnt)
 	cont = 0;
@@ -4824,7 +4827,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
     for (i_m = 0; i_m < cnt; i_m++) {
       /* Optimize this expression: */
       e = SCHEME_VEC_ELS(m->body)[i_m];
-      if (scheme_omittable_expr(e, -1, -1, 0)) {
+      if (scheme_omittable_expr(e, -1, -1, 0, NULL)) {
         can_omit++;
       }
     }
@@ -4835,13 +4838,15 @@ module_optimize(Scheme_Object *data, Optimize_Info *info)
       for (i_m = 0; i_m < cnt; i_m++) {
         /* Optimize this expression: */
         e = SCHEME_VEC_ELS(m->body)[i_m];
-        if (!scheme_omittable_expr(e, -1, -1, 0)) {
+        if (!scheme_omittable_expr(e, -1, -1, 0, NULL)) {
           SCHEME_VEC_ELS(vec)[j++] = e;
         }
       }
       m->body = vec;
     }
   }
+
+  info->context = old_context;
 
   /* Exp-time body was optimized during compilation */
 
@@ -4862,7 +4867,7 @@ static int is_functional(Scheme_Object *e, int len, int fuel)
 
   t = SCHEME_TYPE(e);
 
-  if (scheme_omittable_expr(e, len, fuel, 1))
+  if (scheme_omittable_expr(e, len, fuel, 1, NULL))
     return 1;
 
   if (t == scheme_sequence_type) {
@@ -5974,6 +5979,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
 	  m = scheme_compile_expr_lift_to_let(code, eenv, &mrec, 0);
 
 	  oi = scheme_optimize_info_create();
+          oi->context = (Scheme_Object *)env->genv->module;
 	  m = scheme_optimize_expr(m, oi);
 	  
 	  /* Simplify only in compile mode; it is too slow in expand mode. */
@@ -6215,7 +6221,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *form, Scheme_Comp_Env *env,
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL)) {
 	if (prev)
 	  SCHEME_CDR(prev) = next;
 	else

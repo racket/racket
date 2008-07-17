@@ -54,21 +54,21 @@
               (make-hash)
               (if (eq? a 'weak)
                   (make-weak-hasheq)
-                  (raise-mismatch-error "make-hash-table: bad argument: " a)))]
+                  (raise-mismatch-error 'make-hash-table "bad argument: " a)))]
      [(a b) (if (or (and (eq? a 'equal)
                          (eq? b 'weak))
                     (and (eq? a 'weak)
                          (eq? b 'equal)))
                 (make-weak-hash)
-                (raise-mismatch-error "make-hash-table: bad arguments: " (list a b)))]))
+                (raise-mismatch-error 'make-hash-table "bad arguments: " (list a b)))]))
 
   (define make-immutable-hash-table
     (case-lambda
      [(l) (make-immutable-hasheq l)]
      [(l a) (if (eq? a 'equal)
                 (make-immutable-hash l)
-                (raise-mismatch-error "make-immutable-hash-table: bad argument: " a))]))
-
+                (raise-mismatch-error 'make-immutable-hash-table "bad argument: " a))]))
+  
   (define hash-table?
     (case-lambda
      [(v) (hash? v)]
@@ -78,7 +78,7 @@
                 (if (eq? a 'weak)
                     (and (hash? v)
                          (hash-weak? v))
-                    (raise-mismatch-error "hash-table?: bad argument: " a)))]
+                    (raise-mismatch-error 'hash-table? "bad argument: " a)))]
      [(v a b) (if (or (and (eq? a 'equal)
                            (eq? b 'weak))
                       (and (eq? a 'weak)
@@ -86,4 +86,4 @@
                   (and (hash? v)
                        (not (hash-eq? v))
                        (hash-weak? v))
-                  (raise-mismatch-error "hash-table?: bad arguments: " (list a b)))])))
+                  (raise-mismatch-error 'hash-table? "bad arguments: " (list a b)))])))

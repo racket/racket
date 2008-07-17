@@ -39,8 +39,8 @@
 	     (if (or (ok-lib-path? m)
                      (and (list? m)
                           (= (length m) 2)
-                          (ok-lib-path? (car m)
-                          (ok-lib-path? (cadr m)))))
+                          (ok-lib-path? (car m))
+                          (ok-lib-path? (cadr m))))
                  (let ([m (if (ok-lib-path? m)
                               m
                               (car m))])

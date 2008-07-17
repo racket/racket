@@ -301,24 +301,26 @@ import.}
 
 Dynamically instantiates the module specified by @scheme[mod] for
 @tech{phase} 0 in the current namespace's registry, if it is not yet
-instantiated. If @scheme[mod] is not a symbol, the current
+@tech{instantiate}d. If @scheme[mod] is not a symbol, the current
 @tech{module name resolver} may load a module declaration to resolve
 it (see @scheme[current-module-name-resolver]); the path is resolved
 relative to @scheme[current-load-relative-directory] and/or
 @scheme[current-directory].
 
-If @scheme[provided] is @scheme[#f], then the result is
-@|void-const|. Otherwise, when @scheme[provided] is a symbol, the
-value of the module's export with the given name is returned. If the
-module exports @scheme[provide] as syntax, then a use of the binding
-is expanded and evaluated (in a fresh namespace to which the module is
-attached). If the module has no such exported variable or syntax, or
-if the variable is protected (see @secref["modprotect"]), the
-@exnraise[exn:fail:contract].
+If @scheme[provided] is @scheme[#f], then the result is @|void-const|,
+and the module is not @tech{visit}ed (see
+@secref["mod-parse"]). Otherwise, when @scheme[provided] is a symbol,
+the value of the module's export with the given name is returned, and
+still the module is not @tech{visit}ed. If the module exports
+@scheme[provide] as syntax, then a use of the binding is expanded and
+evaluated in a fresh namespace to which the module is attached, which
+means that the module is @tech{visit}ed. If the module has no such
+exported variable or syntax, or if the variable is protected (see
+@secref["modprotect"]), the @exnraise[exn:fail:contract].
 
 If @scheme[provided] is @|void-const|, then the module is
-@tech{visit}ed (see @secref["mod-parse"]), but not
-@tech{instantiate}d. The result is @|void-const|.}
+@tech{visit}ed but not @tech{instantiate}d (see
+@secref["mod-parse"]). The result is @|void-const|.}
 
 
 @defproc[(dynamic-require-for-syntax [mod module-path?]

@@ -249,7 +249,7 @@
                 
                 (define (narrow-grimace flip?)
                   (grimace
-                   (* 1.2 w) (* h 0.9) (- (* 0.1 pi)) 15
+                   (* 1.2 w) (* h 0.9) (- (* 0.1 pi))
                    flip?))
                 
                 (define (large-smile flip?)

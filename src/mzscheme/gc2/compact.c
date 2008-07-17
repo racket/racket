@@ -147,6 +147,7 @@ static int current_mark_type;
 /********************* Client hooks *********************/
 void (*GC_collect_start_callback)(void);
 void (*GC_collect_end_callback)(void);
+void (*GC_collect_inform_callback)(int major_gc, long pre_used, long post_used);
 void (*GC_out_of_memory)(void);
 unsigned long (*GC_get_thread_stack_base)(void);
 

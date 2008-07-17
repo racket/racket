@@ -944,7 +944,7 @@ Scheme_Object *
 scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
 {
   Scheme_Closure_Data *data;
-  Scheme_Object *code;
+  Scheme_Object *code, *ctx;
   Closure_Info *cl;
   mzshort dcs, *dcm;
   int i;
@@ -956,6 +956,14 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
 
   info = scheme_optimize_info_add_frame(info, data->num_params, data->num_params,
 					SCHEME_LAMBDA_FRAME);
+  if (info->context && SCHEME_PAIRP(info->context))
+    ctx = scheme_make_pair((Scheme_Object *)data,
+                           SCHEME_CDR(info->context));
+  else if (info->context)
+    ctx = scheme_make_pair((Scheme_Object *)data, info->context);
+  else
+    ctx = (Scheme_Object *)data;
+  info->context = ctx;
 
   cl = (Closure_Info *)data->closure_map;
   for (i = 0; i < data->num_params; i++) {
@@ -3197,7 +3205,9 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
   } else {
     Scheme_Object *name;
 
-    if (type == scheme_closure_type) {
+    if (type == scheme_compiled_unclosed_procedure_type) {
+      name = ((Scheme_Closure_Data *)p)->name;
+    } else if (type == scheme_closure_type) {
       name = SCHEME_COMPILED_CLOS_CODE(p)->name;
     } else {
       /* Native closure: */

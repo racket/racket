@@ -154,7 +154,7 @@
         [(pair? strs)
          (apply build-path (string->path/win (car strs))
                 (map string->path-element/same (cdr strs)))]
-        [else (build-path)]) ; error
+        [else (error 'file://->path "no path elements: ~e" url)])
       (let ([elems (map string->path-element/same strs)])
         (if (url-path-absolute? url)
           (apply build-path (bytes->path #"/" 'unix) elems)

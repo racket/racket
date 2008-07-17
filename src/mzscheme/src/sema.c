@@ -955,6 +955,19 @@ Scheme_Object *scheme_make_channel_put_evt(Scheme_Object *ch, Scheme_Object *v)
   return (Scheme_Object *)cp;
 }
 
+int scheme_try_channel_put(Scheme_Object *ch, Scheme_Object *v)
+{
+  if (((Scheme_Channel *)ch)->get_first) {
+    Scheme_Object *a[2];
+    v = scheme_make_channel_put_evt(ch, v);
+    a[0] = scheme_make_integer(0);
+    a[1] = v;
+    v = scheme_sync_timeout(2, a);
+    return SCHEME_TRUEP(v);
+  } else
+    return 0;
+}
+
 static Scheme_Object *make_channel_put(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_CHANNELP(argv[0]))

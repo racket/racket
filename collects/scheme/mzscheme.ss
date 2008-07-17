@@ -22,7 +22,8 @@
 
   (#%provide require require-for-syntax require-for-template require-for-label
              provide provide-for-syntax provide-for-label
-             (all-from-except "private/more-scheme.ss" case old-case)
+             (all-from-except "private/more-scheme.ss" case old-case 
+                              log-fatal log-error log-warning log-info log-debug)
              (rename old-case case)
              (all-from "private/misc.ss")
              (all-from-except "private/stxcase-scheme.ss" _)
@@ -55,7 +56,9 @@
                               hash-copy hash-count
                               hash-map hash-for-each 
                               hash-iterate-first hash-iterate-next
-                              hash-iterate-value hash-iterate-key)
+                              hash-iterate-value hash-iterate-key
+                              log-message log-level? make-logger logger? current-logger logger-name
+                              make-log-receiver log-receiver?)
              (rename syntax->datum syntax-object->datum)
              (rename datum->syntax datum->syntax-object)
              (rename free-identifier=? module-identifier=?)

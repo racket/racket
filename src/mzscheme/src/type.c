@@ -266,6 +266,9 @@ scheme_init_type (Scheme_Env *env)
 
   set_name(scheme_already_comp_type, "<internal:already-compiled>");
 
+  set_name(scheme_logger_type, "<logger>");
+  set_name(scheme_log_reader_type, "<log-receiver>");
+
   set_name(_scheme_values_types_, "<resurrected>");
   set_name(_scheme_compiled_values_types_, "<internal>");
 
@@ -609,6 +612,9 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
 
   GC_REG_TRAV(scheme_resolved_module_path_type, small_object);
+
+  GC_REG_TRAV(scheme_logger_type, mark_logger);
+  GC_REG_TRAV(scheme_log_reader_type, mark_log_reader);
 
   GC_REG_TRAV(scheme_rt_runstack, runstack_val);
 }

@@ -138,6 +138,10 @@ void (*scheme_signal_error)(const char *msg, ...);
 void (*scheme_raise_exn)(int exnid, ...);
 void (*scheme_warning)(char *msg, ...);
 void (*scheme_raise)(Scheme_Object *exn);
+int (*scheme_log_level_p)(Scheme_Logger *logger, int level);
+void (*scheme_log)(Scheme_Logger *logger, int level, int flags,
+                          char *msg, ...);
+void (*scheme_log_message)(Scheme_Logger *logger, int level, char *buffer, long len, Scheme_Object *data);
 void (*scheme_wrong_count)(const char *name, int minc, int maxc,
 				  int argc, Scheme_Object **argv);
 void (*scheme_wrong_count_m)(const char *name, int minc, int maxc,

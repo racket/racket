@@ -256,10 +256,13 @@ registry}. The inspector of the module invocation in
 @scheme[dest-namespace] is the same as inspector of the invocation in
 @scheme[src-namespace].
 
-If @scheme[modname] does not refer to an instantiated module in
+If @scheme[modname] does not refer to an @tech{instantiate}d module in
 @scheme[src-namespace], or if the name of any module to be attached
 already has a different declaration or instance in
-@scheme[dest-namespace], then the @exnraise[exn:fail:contract].
+@scheme[dest-namespace], then the @exnraise[exn:fail:contract].  If
+the module to attach has not been @tech{visit}ed (see
+@secref["mod-parse"]), then it is @tech{visit}ed in the original
+namespace before being attached.
 
 If @scheme[src-namespace] and @scheme[dest-namespace] do not have the
 same @tech{base phase}, then the @exnraise[exn:fail:contract].}

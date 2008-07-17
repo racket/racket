@@ -576,7 +576,7 @@
                         (message-box
                          "Open" (format "~s is not a GCalc file." f)
                          gcalc-frame '(ok)))])
-                  (or (equal? "GCALC" (read)) (error))
+                  (or (equal? "GCALC" (read)) (error "gcalc"))
                   (set-file-name! f)
                   (for-each (lambda (c) ((custom-setter c) (read))) customs)
                   (send main-cell set-contents! (validate-contents (read)))

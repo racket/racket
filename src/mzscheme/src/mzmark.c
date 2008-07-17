@@ -1636,6 +1636,8 @@ static int thread_val_MARK(void *p) {
   gcMARK(pr->current_local_bindings);
 
   gcMARK(pr->current_mt);
+
+  gcMARK(pr->constant_folding);
   
   gcMARK(pr->overflow_reply);
 
@@ -1737,6 +1739,8 @@ static int thread_val_FIXUP(void *p) {
   gcFIXUP(pr->current_local_bindings);
 
   gcFIXUP(pr->current_mt);
+
+  gcFIXUP(pr->constant_folding);
   
   gcFIXUP(pr->overflow_reply);
 
@@ -2637,6 +2641,62 @@ static int mark_pipe_FIXUP(void *p) {
 #define mark_pipe_IS_CONST_SIZE 1
 
 
+static int mark_logger_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
+}
+
+static int mark_logger_MARK(void *p) {
+  Scheme_Logger *l = (Scheme_Logger *)p;
+  gcMARK(l->name);
+  gcMARK(l->parent);
+  gcMARK(l->readers);
+  gcMARK(l->timestamp);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
+}
+
+static int mark_logger_FIXUP(void *p) {
+  Scheme_Logger *l = (Scheme_Logger *)p;
+  gcFIXUP(l->name);
+  gcFIXUP(l->parent);
+  gcFIXUP(l->readers);
+  gcFIXUP(l->timestamp);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Logger));
+}
+
+#define mark_logger_IS_ATOMIC 0
+#define mark_logger_IS_CONST_SIZE 1
+
+
+static int mark_log_reader_SIZE(void *p) {
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
+}
+
+static int mark_log_reader_MARK(void *p) {
+  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcMARK(lr->ch);
+  gcMARK(lr->head);
+  gcMARK(lr->tail);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
+}
+
+static int mark_log_reader_FIXUP(void *p) {
+  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
+  gcFIXUP(lr->ch);
+  gcFIXUP(lr->head);
+  gcFIXUP(lr->tail);
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
+}
+
+#define mark_log_reader_IS_ATOMIC 0
+#define mark_log_reader_IS_CONST_SIZE 1
+
+
 #endif  /* TYPE */
 
 /**********************************************************************/
@@ -2765,6 +2825,7 @@ static int mark_optimize_info_MARK(void *p) {
   gcMARK(i->top_level_consts);
   gcMARK(i->transitive_use);
   gcMARK(i->transitive_use_len);
+  gcMARK(i->context);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -2781,6 +2842,7 @@ static int mark_optimize_info_FIXUP(void *p) {
   gcFIXUP(i->top_level_consts);
   gcFIXUP(i->transitive_use);
   gcFIXUP(i->transitive_use_len);
+  gcFIXUP(i->context);
 
   return
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));

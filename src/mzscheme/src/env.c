@@ -3237,6 +3237,7 @@ Optimize_Info *scheme_optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->letrec_not_twice = info->letrec_not_twice;
   naya->enforce_const = info->enforce_const;
   naya->top_level_consts = info->top_level_consts;
+  naya->context = info->context;
 
   return naya;
 }

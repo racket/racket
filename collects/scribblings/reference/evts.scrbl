@@ -38,129 +38,134 @@ types can generate events (see @scheme[prop:evt]).
 
 @itemize{
 
- @item{@scheme[semaphore] --- a semaphore is ready when
+ @item{@scheme[_semaphore] --- a semaphore is ready when
  @scheme[semaphore-wait] would not block.  @ResultItself{semaphore}.}
 
- @item{@scheme[semaphore-peek] --- a semaphore-peek event returned by
- @scheme[semaphore-peek-evt] applied to @scheme[semaphore] is ready
- exactly when @scheme[semaphore] is
+ @item{@scheme[_semaphore-peek] --- a semaphore-peek event returned by
+ @scheme[semaphore-peek-evt] applied to @scheme[_semaphore] is ready
+ exactly when @scheme[_semaphore] is
  ready. @ResultItself{semaphore-peek}.}
 
- @item{@scheme[channel] --- a channel returned by
+ @item{@scheme[_channel] --- a channel returned by
  @scheme[make-channel] is ready when @scheme[channel-get] would not
  block. The channel's result as an event is the same as the
  @scheme[channel-get] result.}
 
- @item{@scheme[channel-put] --- an event returned by
- @scheme[channel-put-evt] applied to @scheme[channel] is ready when
+ @item{@scheme[_channel-put] --- an event returned by
+ @scheme[channel-put-evt] applied to @scheme[_channel] is ready when
  @scheme[channel-put] would not block on
- @scheme[channel]. @ResultItself{channel-put}.}
+ @scheme[_channel]. @ResultItself{channel-put}.}
 
- @item{@scheme[input-port] --- an input port is ready as an event when
+ @item{@scheme[_input-port] --- an input port is ready as an event when
  @scheme[read-byte] would not block. @ResultItself{input-port}.}
 
- @item{@scheme[output-port] --- an output port is ready when
+ @item{@scheme[_output-port] --- an output port is ready when
  @scheme[write-bytes-avail] would not block or
  when the port contains buffered characters and
  @scheme[write-bytes-avail*] can flush part of the buffer (although
  @scheme[write-bytes-avail] might block). @ResultItself{output-port}.}
 
- @item{@scheme[progress] --- an event produced by
- @scheme[port-progress-evt] applied to @scheme[input-port] is ready after
- any subsequent read from @scheme[input-port]. @ResultItself{progress}.}
+ @item{@scheme[_progress] --- an event produced by
+ @scheme[port-progress-evt] applied to @scheme[_input-port] is ready after
+ any subsequent read from @scheme[_input-port]. @ResultItself{progress}.}
 
- @item{@scheme[tcp-listener] --- a TCP listener is ready when
+ @item{@scheme[_tcp-listener] --- a TCP listener is ready when
  @scheme[tcp-accept] would not block.  @ResultItself{listener}.}
 
- @item{@scheme[thd] --- a thread is ready when @scheme[thread-wait]
+ @item{@scheme[_thd] --- a thread is ready when @scheme[thread-wait]
  would not block. @ResultItself{thread}.}
 
- @item{@scheme[thread-dead] --- an event returned by
+ @item{@scheme[_thread-dead] --- an event returned by
  @scheme[thread-dead-evt] applied to @scheme[thd] is ready when
  @scheme[thd] has terminated.  @ResultItself{thread-dead}.}
 
- @item{@scheme[thread-resume] --- an event returned by
+ @item{@scheme[_thread-resume] --- an event returned by
  @scheme[thread-resume-evt] applied to @scheme[thd] is ready when
  @scheme[thd] subsequently resumes execution (if it was not already
  running). The event's result is @scheme[thd].}
 
- @item{@scheme[thread-suspend] --- an event returned by
+ @item{@scheme[_thread-suspend] --- an event returned by
  @scheme[thread-suspend-evt] applied to @scheme[thd] is ready when
  @scheme[thd] subsequently suspends execution (if it was not already
  suspended).  The event's result is @scheme[thd].}
 
- @item{@scheme[alarm] --- an event returned by @scheme[alarm-evt] is
+ @item{@scheme[_alarm] --- an event returned by @scheme[alarm-evt] is
  ready after a particular date and time.  @ResultItself{alarm}.}
 
- @item{@scheme[subprocess] --- a subprocess is ready when
+ @item{@scheme[_subprocess] --- a subprocess is ready when
  @scheme[subprocess-wait] would not block.
  @ResultItself{subprocess}.}
 
- @item{@scheme[will-executor] --- a will executor is ready when
+ @item{@scheme[_will-executor] --- a will executor is ready when
  @scheme[will-execute] would not block.
  @ResultItself{will-executor}.}
 
- @item{@scheme[udp] --- an event returned by @scheme[udp-send-evt] or
+ @item{@scheme[_udp] --- an event returned by @scheme[udp-send-evt] or
  @scheme[udp-receive!-evt] is ready when a send or receive on the
  original socket would block, respectively. @ResultItself{udp}.}
 
- @item{@scheme[choice] --- an event returned by @scheme[choice-evt] is
- ready when one or more of the @scheme[evt]s supplied to
- @scheme[chocie-evt] are ready. If the choice event is chosen, one of
- its ready @scheme[evt]s is chosen pseudo-randomly, and the result is
- the chosen @scheme[evt]'s result.}
+ @item{@scheme[_log-receiver] --- a @tech{log receiver} as produced by
+ @scheme[make-log-receiver] is ready when a logged message is
+ available. The event's result is a vector, as described with
+ @scheme[make-log-receiver].}
 
- @item{@scheme[wrap] --- an event returned by @scheme[wrap-evt]
- applied to @scheme[evt] and @scheme[proc] is ready when @scheme[evt] is
- ready. The event's result is obtained by a call to @scheme[proc] (with
+ @item{@scheme[_choice] --- an event returned by @scheme[choice-evt] is
+ ready when one or more of the @scheme[_evt]s supplied to
+ @scheme[chocie-evt] are ready. If the choice event is chosen, one of
+ its ready @scheme[_evt]s is chosen pseudo-randomly, and the result is
+ the chosen @scheme[_evt]'s result.}
+
+ @item{@scheme[_wrap] --- an event returned by @scheme[wrap-evt]
+ applied to @scheme[_evt] and @scheme[_proc] is ready when @scheme[_evt] is
+ ready. The event's result is obtained by a call to @scheme[_proc] (with
  breaks disabled) on the result of @scheme[evt].}
 
- @item{@scheme[handle] --- an event returned by @scheme[handle-evt]
- applied to @scheme[evt] and @scheme[proc] is ready when @scheme[evt] is
- ready. The event's result is obtained by a tail call to @scheme[proc] on
- the result of @scheme[evt].}
+ @item{@scheme[_handle] --- an event returned by @scheme[handle-evt]
+ applied to @scheme[_evt] and @scheme[_proc] is ready when @scheme[_evt] is
+ ready. The event's result is obtained by a tail call to @scheme[_proc] on
+ the result of @scheme[_evt].}
 
- @item{@elemtag["guard-evt"]{@scheme[guard]} --- an event returned by @scheme[guard-evt] applied
- to @scheme[thunk] generates a new event every time that @scheme[guard] is
+ @item{@elemtag["guard-evt"]{@scheme[_guard]} --- an event returned by @scheme[guard-evt] applied
+ to @scheme[_thunk] generates a new event every time that @scheme[_guard] is
  used with @scheme[sync] (or whenever it is part of a choice event
  used with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[thunk] when the synchronization begins; if @scheme[thunk]
- returns a non-event, then @scheme[thunk]'s result is replaced with an
- event that is ready and whose result is @scheme[guard].}
+ calling @scheme[_thunk] when the synchronization begins; if @scheme[_thunk]
+ returns a non-event, then @scheme[_thunk]'s result is replaced with an
+ event that is ready and whose result is @scheme[_guard].}
 
- @item{@elemtag["nack-guard-evt"]{@scheme[nack-guard]} --- an event
- returned by @scheme[nack-guard-evt] applied to @scheme[proc]
- generates a new event every time that @scheme[nack-guard] is used
+ @item{@elemtag["nack-guard-evt"]{@scheme[_nack-guard]} --- an event
+ returned by @scheme[nack-guard-evt] applied to @scheme[_proc]
+ generates a new event every time that @scheme[_nack-guard] is used
  with @scheme[sync] (or whenever it is part of a choice event used
  with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[proc] with a NACK (``negative acknowledgment'') event
- when the synchronization begins; if @scheme[proc] returns a
- non-event, then @scheme[proc]'s result is replaced with an event that
- is ready and whose result is @scheme[nack-guard].
+ calling @scheme[_proc] with a NACK (``negative acknowledgment'') event
+ when the synchronization begins; if @scheme[_proc] returns a
+ non-event, then @scheme[_proc]'s result is replaced with an event that
+ is ready and whose result is @scheme[_nack-guard].
 
- If the event from @scheme[proc] is not ultimately chosen as the
- unblocked event, then the NACK event supplied to @scheme[proc]
+ If the event from @scheme[_proc] is not ultimately chosen as the
+ unblocked event, then the NACK event supplied to @scheme[_proc]
  becomes ready with a @|void-const| value.  This NACK event becomes ready
  when the event is abandoned because some other event is chosen,
  because the synchronizing thread is dead, or because control escaped
- from the call to @scheme[sync] (even if @scheme[nack-guard]'s @scheme[proc]
- has not yet returned a value). If the event returned by @scheme[proc] is
+ from the call to @scheme[sync] (even if @scheme[_nack-guard]'s @scheme[_proc]
+ has not yet returned a value). If the event returned by @scheme[_proc] is
  chosen, then the NACK event never becomes ready.}
 
- @item{@elemtag["poll-guard-evt"]{@scheme[poll-guard]} --- an event
- returned by @scheme[poll-guard-evt] applied to @scheme[proc]
+ @item{@elemtag["poll-guard-evt"]{@scheme[_poll-guard]} --- an event
+ returned by @scheme[poll-guard-evt] applied to @scheme[_proc]
  generates a new event every time that @scheme[poll-guard] is used
  with @scheme[sync] (or whenever it is part of a choice event used
  with @scheme[sync], etc.); the generated event is the result of
- calling @scheme[proc] with a boolean: @scheme[#t] if the event will
+ calling @scheme[_proc] with a boolean: @scheme[#t] if the event will
  be used for a poll, @scheme[#f] for a blocking synchronization.
 
- If @scheme[#t] is supplied to @scheme[proc], if breaks are disabled, if
+ If @scheme[#t] is supplied to @scheme[_proc], if breaks are disabled, if
  the polling thread is not terminated, and if polling the resulting
  event produces a result, the event will certainly be chosen for its
  result.}
 
- @item{@scheme[struct] --- a structure whose type has the
+ @item{@scheme[_struct] --- a structure whose type has the
  @scheme[prop:evt] property identifies/generates an event through the
  property.}
 
@@ -169,7 +174,7 @@ types can generate events (see @scheme[prop:evt]).
 
  @item{@scheme[never-evt] --- a constant event that is never ready.}
 
- @item{@elemtag["system-idle-evt"]{@scheme[idle]} --- an event
+ @item{@elemtag["system-idle-evt"]{@scheme[_idle]} --- an event
    produced by @scheme[system-idle-evt] is ready when, if this event
    were replaced by @scheme[never-evt], no thread in the system would
    be available to run.  In other words, all threads must be suspended

@@ -1313,6 +1313,7 @@ void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w);
 void scheme_post_syncing_nacks(Syncing *syncing);
 
 int scheme_try_channel_get(Scheme_Object *ch);
+int scheme_try_channel_put(Scheme_Object *ch, Scheme_Object *v);
 
 /*========================================================================*/
 /*                                 numbers                                */
@@ -1843,6 +1844,8 @@ typedef struct Optimize_Info
   int transitive_use_pos; /* set to pos + 1 when optimizing a letrec-bound procedure */
   mzshort **transitive_use;
   int *transitive_use_len;
+
+  Scheme_Object *context; /* for logging */
 } Optimize_Info;
 
 typedef struct Scheme_Object *(*Scheme_Syntax_Optimizer)(Scheme_Object *data, Optimize_Info *info);
@@ -1872,7 +1875,7 @@ typedef struct Scheme_Closure_Data
   mzshort closure_size;
   mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_REF_ARGS, followed by bit array */
   Scheme_Object *code;
-  Scheme_Object *name;
+  Scheme_Object *name; /* name or (vector name src line col pos span generated?) */
 #ifdef MZ_USE_JIT
   union {
     struct Scheme_Closure_Data *jit_clone;
@@ -2293,7 +2296,8 @@ void scheme_prepare_env_renames(Scheme_Env *env, int kind);
 int scheme_used_app_only(Scheme_Comp_Env *env, int which);
 int scheme_used_ever(Scheme_Comp_Env *env, int which);
 
-int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved);
+int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
+                          Optimize_Info *warn_info);
 
 int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
@@ -2721,6 +2725,33 @@ Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, long a);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure);
 
+struct Scheme_Logger {
+  Scheme_Object so;
+  Scheme_Object *name;
+  Scheme_Logger *parent;
+  int want_level;
+  long *timestamp, local_timestamp; /* determines when want_level is up-to-date */
+  int syslog_level, stderr_level;
+  Scheme_Object *readers; /* list of weak boxes */
+};
+
+typedef struct Scheme_Log_Reader {
+  Scheme_Object so;
+  int want_level;
+  Scheme_Object *ch;
+  Scheme_Object *head, *tail;
+} Scheme_Log_Reader;
+
+extern Scheme_Logger *scheme_main_logger;
+
+char *scheme_optimize_context_to_string(Scheme_Object *context);
+
+void scheme_write_proc_context(Scheme_Object *port, int print_width,
+                               Scheme_Object *name, 
+                               Scheme_Object *src, Scheme_Object *line, 
+                               Scheme_Object *col, Scheme_Object *pos,
+                               int generated);
+
 /*========================================================================*/
 /*                         filesystem utilities                           */
 /*========================================================================*/
@@ -2773,6 +2804,7 @@ int scheme_is_special_filename(const char *_f, int not_nul);
 #endif
 
 char *scheme_get_exec_path(void);
+Scheme_Object *scheme_get_run_cmd(void);
 
 Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, long fd);
 

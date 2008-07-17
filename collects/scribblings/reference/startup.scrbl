@@ -40,11 +40,11 @@ The core PLT Scheme run-time system is available in two main variants:
 @section[#:tag "init-actions"]{Initialization}
 
 On startup, the top-level environment contains no bindings---not even
-for function application. Primitive modules with names that start with
-@schemeidfont{#%} are defined, but they are not meant for direct use,
-and the set of such modules can change.  For example, the
-@indexed-scheme['#%kernel] module is eventually used to bootstrap the
-implemetation of @schememodname[scheme/base], and
+@scheme[#%app] for function application. Primitive modules with names
+that start with @schemeidfont{#%} are defined, but they are not meant
+for direct use, and the set of such modules can change.  For example,
+the @indexed-scheme['#%kernel] module is eventually used to bootstrap
+the implemetation of @schememodname[scheme/base], and
 @scheme['#%mred-kernel] is used for @schememodname[scheme/gui/base].
 
 The first action of MzScheme or MrEd is to initialize
@@ -249,6 +249,18 @@ flags:
         instead of text mode, for the process's input, out, and error
         ports. This flag currently has no effect, because binary mode
         is always used.}
+
+  @item{@FlagFirst{W} @nonterm{level} or @DFlagFirst{warn}
+        @nonterm{level} : Sets the logging level for writing events to
+        the original error port. The possible @nonterm{level} values
+        are the same as for the @envvar{PLTSTDERR} environment
+        variable. See @secref["logging"] for more information.}
+
+  @item{@FlagFirst{L} @nonterm{level} or @DFlagFirst{syslog}
+        @nonterm{level} : Sets the logging level for writing events to
+        the system log. The possible @nonterm{level} values
+        are the same as for the @envvar{PLTSYSLOG} environment
+        variable. See @secref["logging"] for more information.}
 
  }}
 

@@ -226,7 +226,7 @@
         +nan.0
         1.0)]
    [else
-    (raise-type-error "real number" y)]))
+    (raise-type-error 'div "real number" y)]))
 
 (define (mod x y)
   (- x (* (div x y) y)))

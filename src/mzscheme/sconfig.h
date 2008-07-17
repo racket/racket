@@ -509,6 +509,9 @@
 # define GETENV_FUNCTION
 # define DIR_FUNCTION
 
+# define USE_WINDOWS_EVENT_LOG
+# define INIT_SYSLOG_LEVEL SCHEME_LOG_ERROR
+
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
@@ -650,6 +653,8 @@
 #endif
 
 # include "uconfig.h"
+
+# define INIT_SYSLOG_LEVEL SCHEME_LOG_ERROR
 
 # undef HAS_STANDARD_IOB
 # define HAS_BSD_IOB
@@ -978,6 +983,13 @@
      
  /* MKDIR_NO_MODE_FLAG specifies that mkdir() takes only one argument,
      instead of a directory name and mode flags. */
+
+ /* USE_C_SYSLOG uses the C syslog library for logging. */
+
+ /* USE_WINDOWS_EVENT_LOG uses the Windows event log API for logging. */
+
+ /* INIT_SYSLOG_LEVEL sets the initial level for filtering messages
+    sent to syslog. It default to 0 (i.e., no events). */
 
   /***********************/
  /*       Ports         */

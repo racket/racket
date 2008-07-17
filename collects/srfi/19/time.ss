@@ -1233,7 +1233,8 @@
       ((char=? ch #\8) 8)
       ((char=? ch #\9) 9)
       (else (tm:time-error 'bad-date-template-string
-                           (list "Non-integer character" ch)))))
+                           'digit-char
+                           ch))))
   
   ;; read an integer upto n characters long on port; upto -> #f if any length
   (define (tm:integer-reader upto port)

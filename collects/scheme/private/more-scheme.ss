@@ -330,9 +330,29 @@
 	    (printf "cpu time: ~s real time: ~s gc time: ~s~n" cpu user gc)
 	    (apply values v)))])))
 
+  (define-syntax (log-it stx)
+    (syntax-case stx ()
+      [(_ id mode str-expr) 
+       #'(let ([l (current-logger)])
+           (when (log-level? l 'mode)
+             (log-message l 'mode str-expr (current-continuation-marks))))]))
+  (define-syntax (define-log stx)
+    (syntax-case stx ()
+      [(_ id mode) 
+       #'(define-syntax (id stx)
+           (syntax-case stx ()
+             [(_ str-expr)
+              #'(log-it id mode str-expr)]))]))
+  (define-log log-fatal fatal)
+  (define-log log-error error)
+  (define-log log-warning warning)
+  (define-log log-info info)
+  (define-log log-debug debug)
+
   (#%provide case old-case do
              parameterize parameterize* current-parameterization call-with-parameterization
              parameterize-break current-break-parameterization call-with-break-parameterization
              with-handlers with-handlers* call-with-exception-handler
              set!-values
-             let/cc fluid-let time))
+             let/cc fluid-let time
+             log-fatal log-error log-warning log-info log-debug))

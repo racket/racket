@@ -70,7 +70,7 @@
              (version-match? cand v))
            (cdr vers))]
    [(eq? (car vers) 'not)
-    (not (version-match? (cadr vers)))]
+    (not (version-match? cand (cadr vers)))]
    [(sub-version-match? (car cand) (car vers))
     (version-match? (cdr cand) (cdr vers))]
    [else #f]))

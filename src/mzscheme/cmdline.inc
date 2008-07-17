@@ -381,6 +381,43 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
   return exit_val;
 }
 
+static int get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, char *str)
+{
+  if (!strcmp(str, "none"))
+    return 0;
+  else if (!strcmp(str, "fatal"))
+    return SCHEME_LOG_FATAL;
+  else if (!strcmp(str, "error"))
+    return SCHEME_LOG_ERROR;
+  else if (!strcmp(str, "warning"))
+    return SCHEME_LOG_WARNING;
+  else if (!strcmp(str, "info"))
+    return SCHEME_LOG_INFO;
+  else if (!strcmp(str, "debug"))
+    return SCHEME_LOG_DEBUG;
+
+  PRINTF("%s: %s level %s%s%s must be one of the following:\n"
+         "  none fatal error warning info or debug\n"
+         " given: %s\n",
+         prog, what, 
+         real_switch ? "after " : "in ",
+         real_switch ? real_switch : envvar,
+         real_switch ? " switch" : " envrionment variable",
+         str);
+  return -1;
+}
+
+static int get_arg_log_level(char *prog, char *real_switch, const char *what, int argc, char **argv)
+{
+  if (argc < 2) {
+    PRINTF("%s: missing %s level after %s switch\n", 
+           prog, what, real_switch);
+    return -1;
+  }
+
+  return get_log_level(prog, real_switch, NULL, what, argv[1]);
+}
+
 #ifdef USE_OSKIT_CONSOLE
 /* Hack to disable normal input mode: */
 int osk_not_console = 0;
@@ -425,6 +462,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   int was_config_flag = 0, saw_nc_flag = 0;
   int no_compiled = 0;
   int init_ns = 0, no_init_ns = 0;
+  int syslog_level = -1, stderr_level = -1;
   FinishArgs *fa;
   FinishArgsAtoms *fa_a;
 
@@ -629,6 +667,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-i";
     else if (!strcmp("--binary", argv[0]))
       argv[0] = "-b";
+    else if (!strcmp("--warn", argv[0]))
+      argv[0] = "-W";
+    else if (!strcmp("--syslog", argv[0]))
+      argv[0] = "-L";
     else if (!strcmp("--collects", argv[0]))
       argv[0] = "-X";
     else if (!strcmp("--search", argv[0]))
@@ -857,6 +899,22 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	  osk_not_console = 1;
 	  break;
 #endif
+        case 'W':
+          stderr_level = get_arg_log_level(prog, real_switch, "stderr", argc, argv);
+          if (stderr_level < 0)
+            goto show_need_help;
+          --argc;
+          argv++;
+          was_config_flag = 1;
+          break;
+	case 'L':
+          syslog_level = get_arg_log_level(prog, real_switch, "syslog", argc, argv);
+          if (syslog_level < 0)
+            goto show_need_help;
+          --argc;
+          argv++;
+          was_config_flag = 1;
+          break;
 	default:
           specific_switch[0] = *str;
           specific_switch[1] = 0;
@@ -921,6 +979,25 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #endif
   }
 #endif /* DONT_PARSE_COMMAND_LINE */
+
+#ifdef GETENV_FUNCTION
+  if (syslog_level < 0) {
+    char *s;
+    s = getenv("PLTSYSLOG");
+    if (s) {
+      syslog_level = get_log_level(prog, NULL, "PLTSYSLOG", "syslog", s);
+    }
+  }
+  if (stderr_level < 0) {
+    char *s;
+    s = getenv("PLTSTDERR");
+    if (s) {
+      stderr_level = get_log_level(prog, NULL, "PLTSTDERR", "stderr", s);
+    }
+  }
+#endif
+
+  scheme_set_logging(syslog_level, stderr_level);
 
   global_env = mk_basic_env();
 
@@ -1071,6 +1148,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
 # endif
          "  -d, --no-delay: Disable on-demand loading of syntax and code\n"
 	 "  -b, --binary : Read stdin and write stdout/stderr in binary mode\n"
+	 "  -W <level>, --warn <level> : Set stderr logging to <level>\n"
+	 "  -L <level>, --syslog <level> : Set syslog logging to <level>\n"
 	 " Meta options:\n"
 	 "  -- : No argument following this switch is used as a switch\n"
 	 "  -h, --help : Show this information and exits, ignoring other options\n"

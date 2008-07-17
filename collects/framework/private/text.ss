@@ -2822,7 +2822,8 @@ designates the character that triggers autocompletion
        [else
         (raise (make-exn:fail:contract
                 (string->immutable-string
-                 (format "parameter ~a: expected ~a, given: ~e" name description v))))]))))
+                 (format "parameter ~a: expected ~a, given: ~e" name description v))
+                (current-continuation-marks)))]))))
 
 (define autocomplete-append-after
   (make-guarded-parameter 'append-after "string" "" string?))

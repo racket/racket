@@ -686,7 +686,7 @@
 				   #f
 				   "bad grammar clause"
 				   stx
-				   (car #f))]
+				   (car clauses))]
 				 [_else
 				  (loop (cdr clauses)
 					cfg-start

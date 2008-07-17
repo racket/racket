@@ -403,7 +403,7 @@
 		    stx
 		    (#,set-stx #,id #,(add-identifier/pos (apply-certs certs #'x) li trans?) #,(loop #'e))))]
 	      [(#%variable-reference e)
-	       (add-literal stx li)]
+	       (add-literal stx li safe-vector-ref-stx id)]
 	      [(if e ...)
 	       (quasisyntax/loc+props 
 		stx

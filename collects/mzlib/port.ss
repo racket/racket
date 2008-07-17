@@ -1627,7 +1627,7 @@
                         (begin
                           (when (> len2 (bytes-length out-bytes))
                             (raise-insane-decoding-length))
-                          (bytes-copy out-bytes 0 s2 start2 (+ start2 len2))
+                          (bytes-copy! out-bytes 0 s2 start2 (+ start2 len2))
                           (set! out-start 0)
                           (set! out-end len2)
                           used))]

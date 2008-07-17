@@ -1010,7 +1010,7 @@ typedef struct Scheme_Thread {
 
   struct Scheme_Marshal_Tables *current_mt;
 
-  char skip_error;
+  Scheme_Object *constant_folding; /* compiler hack */
 
   Scheme_Object *(*overflow_k)(void);
   Scheme_Object *overflow_reply;
@@ -1210,6 +1210,8 @@ enum {
 
   MZCONFIG_EXPAND_OBSERVE,
 
+  MZCONFIG_LOGGER,
+
   __MZCONFIG_BUILTIN_COUNT__
 };
 
@@ -1329,6 +1331,14 @@ struct Scheme_Output_Port
 #else
 # include "../src/schexn.h"
 #endif
+
+#define SCHEME_LOG_FATAL   1
+#define SCHEME_LOG_ERROR   2
+#define SCHEME_LOG_WARNING 3
+#define SCHEME_LOG_INFO    4
+#define SCHEME_LOG_DEBUG   5
+
+typedef struct Scheme_Logger Scheme_Logger;
 
 /*========================================================================*/
 /*                               security                                 */
@@ -1634,8 +1644,10 @@ MZ_EXTERN void scheme_set_binary_mode_stdio(int);
 MZ_EXTERN void scheme_set_startup_use_jit(int);
 MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
+MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
+
 
 MZ_EXTERN Scheme_Thread *scheme_current_thread;
 MZ_EXTERN Scheme_Thread *scheme_first_thread;
