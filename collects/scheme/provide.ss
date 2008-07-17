@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base scheme/provide-transform))
+(require (for-syntax scheme/base scheme/provide-transform scheme/list
+                     "private/at-syntax.ss"))
 
 (provide matching-identifiers-out)
 (define-syntax matching-identifiers-out
@@ -13,3 +14,24 @@
           (filter (lambda (e)
                     (regexp-match? rx (symbol->string (export-out-sym e))))
                   (expand-export #'spec modes)))]))))
+
+(provide filtered-out)
+(define-syntax filtered-out
+  (make-provide-transformer
+   (lambda (stx modes)
+     (syntax-case stx ()
+       [(_ proc spec)
+        (let ([proc (at-syntax #'proc)])
+          (filter-map
+           (lambda (e)
+             (let* ([s1 (symbol->string (export-out-sym e))]
+                    [s2 (proc s1)])
+               (cond [(equal? s1 s2) e]
+                     [(string? s2) (make-export (export-local-id e)
+                                                (string->symbol  s2)
+                                                (export-mode     e)
+                                                (export-protect? e)
+                                                (export-orig-stx e))]
+                     [(not s2) #f]
+                     [else (error 'filtered-out "bad result: ~e" s2)])))
+           (expand-export #'spec modes)))]))))

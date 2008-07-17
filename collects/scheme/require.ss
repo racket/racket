@@ -1,6 +1,7 @@
 #lang scheme/base
 
-(require (for-syntax scheme/base scheme/require-transform))
+(require (for-syntax scheme/base scheme/require-transform scheme/list
+                     "private/at-syntax.ss"))
 
 (provide matching-identifiers-in)
 (define-syntax matching-identifiers-in
@@ -34,3 +35,31 @@
                             (not (memq (syntax-e (import-local-id i)) subs)))
                           imports)
                   sources))]))))
+
+(provide filtered-in)
+(define-syntax filtered-in
+  (make-require-transformer
+   (lambda (stx)
+     (syntax-case stx ()
+       [(_ proc spec)
+        (let ([proc (at-syntax #'proc)])
+          (define-values [imports sources] (expand-import #'spec))
+          (values
+           (filter-map
+            (lambda (i)
+              (let* ([id (import-local-id i)]
+                     [s1 (symbol->string (syntax-e id))]
+                     [s2 (proc s1)])
+                (cond [(equal? s1 s2) i]
+                      [(string? s2) (make-import (datum->syntax
+                                                  id (string->symbol s2) id)
+                                                 (import-src-sym i)
+                                                 (import-src-mod-path i)
+                                                 (import-mode i)
+                                                 (import-req-mode i)
+                                                 (import-orig-mode i)
+                                                 (import-orig-stx i))]
+                      [(not s2) #f]
+                      [else (error 'filtered-in "bad result: ~e" s2)])))
+            imports)
+           sources))]))))
