@@ -140,6 +140,7 @@
            require module  ;; we allow full use of modules
 	   provide         ;; in case someone wants to use a module
            make-parameter
+           parameterize
            print-struct
            maybe)
 
