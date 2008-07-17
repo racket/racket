@@ -1938,7 +1938,7 @@
   ;; table ::= ((non-terminal alternative ...) ...)
   ;; alternative ::= (list-of-items action ...) 
   ;; action ::= (TERM symbol) | (NON-TERM symbol) | (GOTO symbol) 
-  ;;            | (EMIT-LIST) | (REDUCE symbol)
+  ;;            | (EMIT-LIST) | (REDUCE proc)
 
   ;; The token register can either contain an token or '() -- the latter
   ;; signifying an empty buffer, to be filled when necessary.
@@ -2087,6 +2087,5 @@
   
   (define sllgen:apply-reduction
     (lambda (lhs opcode args)
-      (apply (eval opcode)
-	     args)))
+      (apply opcode args)))
   )
