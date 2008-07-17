@@ -11,6 +11,8 @@
 (test #t log-receiver? (make-log-receiver (current-logger) 'error))
 (test #f log-receiver? (current-logger))
 
+(test #f logger-name (make-logger))
+
 (arity-test make-logger 0 2)
 
 ; --------------------

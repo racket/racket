@@ -608,7 +608,7 @@ void scheme_init_error(Scheme_Env *env)
   scheme_add_global_constant("make-logger",
 			     scheme_make_noncm_prim(make_logger,
                                                     "make-logger",
-                                                    1, 2),
+                                                    0, 2),
 			     env);
   scheme_add_global_constant("logger?",
 			     scheme_make_folding_prim(logger_p,
@@ -2987,7 +2987,7 @@ make_logger(int argc, Scheme_Object *argv[])
 
   return (Scheme_Object *)make_a_logger(parent, 
                                         (argc 
-                                         ? (SCHEME_FALSEP(argv[1]) ? NULL : argv[1])
+                                         ? (SCHEME_FALSEP(argv[0]) ? NULL : argv[0])
                                          : NULL));
 }
 
@@ -3031,10 +3031,13 @@ current_logger(int argc, Scheme_Object *argv[])
 static Scheme_Object *
 logger_name(int argc, Scheme_Object *argv[])
 {
+  Scheme_Object *name;
+
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
     scheme_wrong_type("logger-name", "logger", 0, argc, argv);
 
-  return ((Scheme_Logger *)argv[0])->name;
+  name = ((Scheme_Logger *)argv[0])->name;
+  return (name ? name : scheme_false);
 }
 
 static Scheme_Object *
