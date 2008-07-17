@@ -26,7 +26,7 @@ record events from the core run-time system. For example, an
 also created: one that writes events to the process's original error
 output port, and one that writes events to the system log. The level
 of written events in each case is system-specific, and the default can
-be changed through command-line flags (@secref["mz-cmdline"]) or
+be changed through command-line flags (see @secref["mz-cmdline"]) or
 through environment variables:
 
 @itemize{
@@ -144,8 +144,8 @@ is equivalent to
 
 @schemeblock[
 (let ([l (current-logger)])
-  (when (log-level? l '_level)
-   (log-message l '_level string-expr 
+  (when (log-level? l '#, @scheme[_level])
+   (log-message l '#, @scheme[_level] string-expr 
                 (current-continuation-marks))))
 ]}
 
