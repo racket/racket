@@ -447,7 +447,7 @@
                 (bytes->string/utf-8
                  (car (or (if (string=? prefix "\\")
                               (regexp-match #px"^x[0-9a-fA-F]+;(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port)
-                              (regexp-match #px"^(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
+                              (regexp-match #px"^(?:#[xXdDbBoOeEiI])*(?:\\\\x[0-9a-fA-F]+;|[^\\\\\\s\\[\\]()#\";,'`])*" port))
                           '(#"")))))])
     (cond
      [(regexp-match? #rx"^[a-zA-Z!$%&*/:<=>?^_~][a-zA-Z0-9+!$%&*/:<=>?^_~.@-]*$" thing)

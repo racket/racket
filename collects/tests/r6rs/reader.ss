@@ -71,7 +71,9 @@
      "#O+23761236721631263126371263712"
      "#O+0"
      "#O-0"
-     "#O0")
+     "#O0"
+     "#i#xf/e"
+     "#x#if/e")
     
     (test (read (open-string-input-port "#\\nul")) 
           (integer->char #x0))
