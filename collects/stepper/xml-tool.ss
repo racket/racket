@@ -79,10 +79,10 @@
                 (when admin
                   (send admin resized this #t)))))
           
-          (define/public (read-special file line col pos)
+          (define/public (read-special source line col pos)
             (xml-read-special eliminate-whitespace-in-empty-tags?
 			      this
-			      file
+			      source
 			      line
 			      col
 			      pos))
@@ -169,8 +169,8 @@
           
           (inherit get-editor)
           
-          (define/public (read-special file line col pos)
-            (scheme-read-special this file line col pos))
+          (define/public (read-special source line col pos)
+            (scheme-read-special this source line col pos))
           
           (define/override (make-editor) (new (get-scheme-box-text%)))
           

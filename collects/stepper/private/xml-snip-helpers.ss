@@ -12,16 +12,15 @@
            scheme-read-special
            scheme-snip<%>)
   
-  (define (scheme-read-special snip file line col pos)
+  (define (scheme-read-special snip source line col pos)
     (let ([text (send snip get-editor)]
           [splice? (send snip get-splice?)])
       (when (= 0 (send text last-position))
-        (let-values ([(txt line col pos) (find-position-in-outer snip)])
-          (raise-read-error 
+        (raise-read-error 
            (if splice?
                "read: bad syntax: empty scheme splice box"
                "read: bad syntax: empty scheme box")
-           (get-source-name txt) line col pos 1)))
+           source line col pos 1))
       (let* ([source-name (get-source-name text)]
              [stx (read-syntax source-name
                                (open-input-text-editor text 0 'end values source-name))])
@@ -40,13 +39,12 @@
       [else
        (send text get-filename)]))
   
-  (define (xml-read-special eliminate-whitespace-in-empty-tags? snip file line col pos)
+  (define (xml-read-special eliminate-whitespace-in-empty-tags? snip source line col pos)
     (let ([editor (send snip get-editor)]
           [old-locked #f])
       (when (= 0 (send editor last-position))
-        (let-values ([(txt line col pos) (find-position-in-outer snip)])
-          (raise-read-error "read: bad syntax: empty xml box"
-                            (get-source-name txt) line col pos 1)))
+        (raise-read-error "read: bad syntax: empty xml box"
+                            source line col pos 1))
       (dynamic-wind
        (lambda () 
          (set! old-locked (send editor is-locked?))
@@ -157,19 +155,4 @@
   ;; deteremines if a snip can be expanded here
   (define (transformable? snip)
     (or (is-a? snip xml-snip<%>)
-        (is-a? snip scheme-snip<%>)))
-  
-  ;; find-in-position-in-outer : 
-  ;;    editor-snip -> (values (union #f text%) (union #f number) (union #f number) (union #f number))
-  (define (find-position-in-outer editor-snip)
-    (let/ec k
-      (let ([fail (lambda () (k #f #f #f #f))])
-        (let ([admin (send editor-snip get-admin)])
-          (unless admin (fail))
-          (let ([outer-editor (send admin get-editor)])
-            (unless (is-a? outer-editor text%) (fail))
-            (let ([pos (send outer-editor get-snip-position editor-snip)])
-              (unless pos (fail))
-              (let* ([line (send outer-editor position-paragraph pos)]
-                     [line-start (send outer-editor paragraph-start-position line)])
-                (values outer-editor (+ line 1) (+ (- pos line-start) 1) (+ pos 1))))))))))
+        (is-a? snip scheme-snip<%>))))
