@@ -3,7 +3,7 @@
 
 #lang scheme/base
 
-(require mzlib/string syntax/readerr)
+(require syntax/readerr)
 
 ;; ----------------------------------------------------------------------------
 ;; utilities for syntax specifications below
