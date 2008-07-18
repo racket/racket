@@ -737,7 +737,7 @@ instead of
   @schemeblock[
     (require (filtered-in
               (lambda (name)
-                (and (regexp-match? #rx"[a-z-]+")
+                (and (regexp-match? #rx"[a-z-]+" name)
                      (regexp-replace
                       #rx"-" (string-titlecase name) "")))
               scheme/base))]
@@ -767,7 +767,7 @@ instead of
   @schemeblock[
     (provide (filtered-out
               (lambda (name)
-                (and (regexp-match? #rx"[a-z-]+")
+                (and (regexp-match? #rx"[a-z-]+" name)
                      (regexp-replace
                       #rx"-" (string-titlecase name) "")))
               (all-defined-out)))]
