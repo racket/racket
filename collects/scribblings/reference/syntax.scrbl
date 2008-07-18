@@ -765,7 +765,7 @@ instead of
 
   For example,
   @schemeblock[
-    (require (filtered-out
+    (provide (filtered-out
               (lambda (name)
                 (and (regexp-match? #rx"[a-z-]+")
                      (regexp-replace
