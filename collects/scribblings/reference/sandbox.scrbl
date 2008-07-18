@@ -451,6 +451,12 @@ A parameter that determines the procedure used to create the inspector
 for sandboxed evaluation. The procedure is called when initializing an
 evaluator, and the default parameter value is @scheme[make-inspector].}
 
+@defparam[sandbox-make-logger make (-> logger?)]{
+
+A parameter that determines the procedure used to create the logger
+for sandboxed evaluation. The procedure is called when initializing an
+evaluator, and the default parameter value is @scheme[current-logger].}
+
 @; ----------------------------------------------------------------------
 
 @section{Interacting with Evaluators}
