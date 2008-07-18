@@ -304,9 +304,14 @@ and port. If a socket is not bound before it is used with a sending
 procedure @scheme[udp-send], @scheme[udp-send-to], etc., the sending
 procedure binds the socket to a random local port. Similarly, if an
 event from @scheme[udp-send-evt] or @scheme[udp-send-to-evt] is chosen
-for a synchronization (see @secref["sync"]), the socket is bound;
-if the event is not chosen, the socket may or may not become
-bound. The binding of a bound socket cannot be changed.
+for a synchronization (see @secref["sync"]), the socket is bound; if
+the event is not chosen, the socket may or may not become bound. 
+
+The binding of a bound socket cannot be changed, with one exception:
+on some systems, if the socket is bound automatically when sending, if
+the socket is disconnected via @scheme[udp-connect!], and if the
+socket is later used again in a send, then the later send may change
+the socket's automatic binding.
 
 If @scheme[udp-socket] is already bound or closed, the
 @exnraise[exn:fail:network].}

@@ -100,7 +100,15 @@
 (sleep 0.05)
 (test udp2-r sync udp2-r)
 (test udp2-r sync udp2-r)
-(test (list 10 "127.0.0.1" udp1-port) sync (udp-receive!-evt udp2 us1))
+(test (list 10 "127.0.0.1") 
+      ;; Above disconnect may change udp1's auto-assigned port,
+      ;;  so don't check the port number:
+      (lambda (l)
+        (if (and (list? l)
+                 (= 3 (length l)))
+            (list (car l) (cadr l))
+            l))
+      (sync (udp-receive!-evt udp2 us1)))
 (test #f sync/timeout 0.05 udp2-r)
 (test #f sync/timeout 0.05 (udp-receive!-evt udp2 us1))
 
