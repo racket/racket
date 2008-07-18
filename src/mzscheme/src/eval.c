@@ -1085,7 +1085,7 @@ static Scheme_Object *try_apply(Scheme_Object *f, Scheme_Object *args, Scheme_Ob
   Scheme_Object * volatile result;
   mz_jmp_buf *savebuf, newbuf;
 
-  scheme_current_thread->constant_folding = context;
+  scheme_current_thread->constant_folding = (context ? context : scheme_true);
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
 
