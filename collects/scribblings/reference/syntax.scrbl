@@ -725,6 +725,25 @@ instead of
   @scheme[require-spec], but omitting those imports that would be
   imported by one of the @scheme[subtracted-spec]s.}
 
+@defform[(filtered-in proc-expr require-spec)]{ The @scheme[proc-expr]
+  should evaluate to a single-argument procedure, which is applied on
+  each of the names (as strings) that are to be required according to
+  @scheme[require-spec].  For each name, the procedure should return
+  either a string (possibly different if you want it renamed), or
+  @scheme[#f] to exclude the name.  (Note that @scheme[proc-expr] is a
+  syntax-time expression.)
+
+  For example,
+  @schemeblock[
+    (require (filtered-in
+              (lambda (name)
+                (and (regexp-match? #rx"[a-z-]+")
+                     (regexp-replace
+                      #rx"-" (string-titlecase name) "")))
+              scheme/base))]
+  will get the @scheme[scheme/base] bindings that match the regexp,
+  and renamed to use ``caml case''.}
+
 @; --------------------
 
 @subsection{Additional @scheme[provide] Forms}
@@ -735,6 +754,25 @@ instead of
   @scheme[provide-spec], but omitting the export of each binding with
   an external name that matches @scheme[regexp]. The @scheme[regexp]
   must be a literal regular expression (see @secref["regexp"]).}
+
+@defform[(filtered-out proc-expr provide-spec)]{ The
+  @scheme[proc-expr] should evaluate to a single-argument procedure,
+  which is applied on each of the names (as strings) that are to be
+  provided according to @scheme[provide-spec].  For each name, the
+  procedure should return either a string (possibly different if you
+  want it renamed), or @scheme[#f] to exclude the name.  (Note that
+  @scheme[proc-expr] is a syntax-time expression.)
+
+  For example,
+  @schemeblock[
+    (require (filtered-out
+              (lambda (name)
+                (and (regexp-match? #rx"[a-z-]+")
+                     (regexp-replace
+                      #rx"-" (string-titlecase name) "")))
+              (all-defined-out)))]
+  will provide all defined bindings that match the regexp, and renamed
+  to use ``caml case''.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "quote"]{Literals: @scheme[quote] and @scheme[#%datum]}
