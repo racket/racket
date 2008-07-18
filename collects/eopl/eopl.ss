@@ -122,16 +122,16 @@
 		 (and (pair? obj)
 		      ((car preds) (car obj))
 		      (loop (cdr obj) (cdr preds))))))))))
-
-  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define empty null)
-
+  
   (define maybe
     (lambda (pred)
       (lambda (obj)
         (or (pred obj)
             (eqv? obj #f)))))
+
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define empty null)
 
   (provide time            ;; useful to compare implementations
 	   collect-garbage ;; useful with `time'
@@ -141,8 +141,7 @@
 	   provide         ;; in case someone wants to use a module
            make-parameter
            parameterize
-           print-struct
-           maybe)
+           print-struct)
 
   (provide unquote unquote-splicing 
            quote quasiquote if 
