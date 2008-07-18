@@ -18,6 +18,7 @@
          sandbox-path-permissions
          sandbox-network-guard
          sandbox-make-inspector
+         sandbox-make-logger
          sandbox-eval-limits
          kill-evaluator
          break-evaluator
@@ -132,6 +133,8 @@
 (define sandbox-security-guard (make-parameter default-sandbox-guard))
 
 (define sandbox-make-inspector (make-parameter make-inspector))
+
+(define sandbox-make-logger (make-parameter current-logger))
 
 ;; computes permissions that are needed for require specs (`read' for all
 ;; files and "compiled" subdirs, `exists' for the base-dir)
@@ -586,6 +589,7 @@
     [current-security-guard (sandbox-security-guard)]
     [exit-handler (lambda x (error 'exit "user code cannot exit"))]
     [current-inspector ((sandbox-make-inspector))]
+    [current-logger ((sandbox-make-logger))]
     ;; This breaks because we need to load some libraries that are trusted
     ;; [current-code-inspector (make-inspector)]
     ;; Note the above definition of `current-eventspace': in MzScheme, it
