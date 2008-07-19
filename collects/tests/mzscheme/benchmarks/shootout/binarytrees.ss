@@ -21,7 +21,8 @@
 (define (check t)
   (if (leaf? t)
       (leaf-val t)
-      (+ (node-val t) (- (check (node-left t)) (check (node-right t))))))
+      (+ (node-val t) (- (check (node-left t)) 
+                         (check (node-right t))))))
 
 (define (main n)
   (let* ((min-depth 4)
@@ -31,17 +32,16 @@
               stretch-depth
               (check (make 0 stretch-depth))))
     (let ((long-lived-tree (make 0 max-depth)))
-      (do ((d 4 (+ d 2))
-           (c 0 0))
-          ((> d max-depth))
+      (for ((d (in-range 4 (add1 max-depth) 2)))
         (let ((iterations (arithmetic-shift 1 (+ (- max-depth d) min-depth))))
-          (do ((i 0 (+ i 1)))
-              ((>= i iterations))
-            (set! c (+ c (check (make i d)) (check (make (- i) d)))))
           (printf "~a\t trees of depth ~a\t check: ~a\n"
                   (* 2 iterations)
                   d
-                  c)))
+                  (for/fold ([c 0])
+                            ([i (in-range iterations)])
+                    (+ c 
+                       (check (make i d)) 
+                       (check (make (- i) d)))))))
       (printf "long lived tree of depth ~a\t check: ~a\n"
               max-depth
               (check long-lived-tree)))))
