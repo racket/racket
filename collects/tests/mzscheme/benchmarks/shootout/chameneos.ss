@@ -14,9 +14,9 @@
     [(blue)
      (case c2 [(yellow) 'red] [(red) 'yellow] [else c1])]))
   
-(for* ([a '(blue red yellow)]
-       [b '(blue red yellow)])
-  (printf "~a + ~a -> ~a\n" a b (change a b)))
+(let ([colors '(blue red yellow)])
+  (for* ([a colors][b colors])
+    (printf "~a + ~a -> ~a\n" a b (change a b))))
 
 (define (place meeting-ch n)
   (thread

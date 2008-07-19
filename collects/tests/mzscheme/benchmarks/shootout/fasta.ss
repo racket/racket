@@ -46,11 +46,9 @@
 
 (define (make-cumulative-table frequency-table)
   (let ([cumulative 0.0])
-    (map
-     (lambda (x) 
-       (set! cumulative (+ cumulative (cdr x))) 
-       (cons (char->integer (car x)) cumulative))
-     frequency-table)))
+    (for/list ([x frequency-table])
+      (set! cumulative (+ cumulative (cdr x))) 
+      (cons (char->integer (car x)) cumulative))))
 
 ;; -------------
 
@@ -61,12 +59,10 @@
 
 (define (select-random cumulative-table)
   (let ((rvalue (random-next 1.0)))
-    (select-over-threshold rvalue cumulative-table)))
-
-(define (select-over-threshold rvalue table)
-  (if (<= rvalue (cdar table))
-      (caar table)
-      (select-over-threshold rvalue (cdr table))))
+    (let select-over-threshold ([table cumulative-table])
+      (if (<= rvalue (cdar table))
+          (caar table)
+          (select-over-threshold (cdr table))))))
 
 ;; -------------
 
@@ -93,13 +89,10 @@
     (display (string-append +segmarker+ id " " desc "\n") out)
     (let loop-o ((n n_))
       (unless (<= n 0)
-        (let ((m (min n line-length)))
-          (let loop-i ((i 0))
-            (unless (>= i m)
-              (write-byte (select-random cumulative-table) out)
-              (loop-i (add1 i))))
-          (newline out)
-          (loop-o (- n line-length)))))))
+        (for ([i (in-range (min n line-length))])
+          (write-byte (select-random cumulative-table) out))
+        (newline out)
+        (loop-o (- n line-length))))))
 
 ;; -------------------------------
   
