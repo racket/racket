@@ -168,29 +168,27 @@
 (define solutions null)
 
 (define (solve-cell! cell board)
-  (cond
-   [(to-go . <= . 0)
-    ;; Got enough solutions
-    (void)]
-   [(= board #x3FFFFFFFFFFFF)
-    ;; Solved
-    (add-solutions!)]
-   [(not (clear? board cell))
-    ;; Cell full
-    (solve-cell! (sub1 cell) board)]
-   [(cell . < . 0)
-    ;; Out of board
-    (void)]
-   [else
-    (for ([color (in-range 10)])
-      (when (zero? (vector-ref masks color))
-        (for ([mask (in-list (vector-ref
-                              (vector-ref masks-at-cell cell)
-                              color))])
-          (when (zero? (bitwise-and mask board))
-            (vector-set! masks color mask)
-            (solve-cell! (sub1 cell) (bitwise-ior board mask))
-            (vector-set! masks color 0)))))]))
+  (when (and (positive? to-go)
+             (not (negative? cell)))
+    ;; Need solutions and not off board
+    (cond
+     [(= board #x3FFFFFFFFFFFF)
+      ;; Solved
+      (add-solutions!)]
+     [(not (clear? board cell))
+      ;; Cell full, so try next
+      (solve-cell! (sub1 cell) board)]
+     [else
+      ;; Recur
+      (for ([color (in-range 10)])
+        (when (zero? (vector-ref masks color))
+          (for ([mask (in-list (vector-ref
+                                (vector-ref masks-at-cell cell)
+                                color))])
+            (when (zero? (bitwise-and mask board))
+              (vector-set! masks color mask)
+              (solve-cell! (sub1 cell) (bitwise-ior board mask))
+              (vector-set! masks color 0)))))])))
 
 (define (add-solutions!)
   (let ([digits
