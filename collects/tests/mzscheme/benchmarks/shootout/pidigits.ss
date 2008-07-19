@@ -31,7 +31,7 @@
                     (digit k q r s t (sub1 n) row 1))
                   (begin
                     (printf "~a" y)
-                    (digit k q r s t(sub1 n) row (add1 col)))))
+                    (digit k q r s t (sub1 n) row (add1 col)))))
             (let-values ([(q r s t) (mk q r s t k)])
               (digit (add1 k) q r s t n row col))))
       (printf "~a\t:~a\n"

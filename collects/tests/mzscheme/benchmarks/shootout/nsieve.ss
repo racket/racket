@@ -7,44 +7,37 @@
 ;; Written by Dima Dorfman, 2004
 ;; Converted to MzScheme by Brent Fulgham
 
-(module nsieve mzscheme
-  (require (only srfi/13 string-index string-pad))
+#lang scheme/base
+(require scheme/cmdline)
 
-  (define (nsieve m)
-    (let ((a (make-vector m #t)))
-      (let loop ((i 2) (n 0))
-        (if (< i m)
-            (begin
-	      (if (vector-ref a i)
-	          (begin
-		    (let clear ((j (+ i i)))
-		      (if (< j m)
-		          (begin
-			    (vector-set! a j #f)
-			    (clear (+ j i)))))
-		      (loop (+ 1 i) (+ 1 n)))
-		  (loop (+ 1 i) n)))
-	    n))))
+(define (nsieve m)
+  (let ((a (make-vector m #t)))
+    (let loop ((i 2) (n 0))
+      (if (< i m)
+          (if (vector-ref a i)
+              (begin
+                (let clear ((j (+ i i)))
+                  (when (< j m)
+                    (vector-set! a j #f)
+                    (clear (+ j i))))
+                (loop (+ 1 i) (+ 1 n)))
+              (loop (+ 1 i) n))
+          n))))
 
-  (define (test n)
-    (let* ((m (* (expt 2 n) 10000))
-           (count (nsieve m)))
-      (printf "Primes up to ~a ~a~%"
-              (string-pad (number->string m) 8)
-              (string-pad (number->string count) 8))))
+(define (string-pad s len)
+  (string-append (make-string (- len (string-length s)) #\space)
+                 s))
 
-  (define (main args)
-    (if (< (vector-length args) 1)
-        (begin
-          (display "An argument is required") (newline) 2)
-        (let ((n (string->number (vector-ref args 0))))
-	  (if (not n)
-	      (begin
-                (display "An integer is required") (newline) 2)
-	      (begin
-	        (if (>= n 0) (test n))
-	        (if (>= n 1) (test (- n 1)))
-	        (if (>= n 2) (test (- n 2)))
-	         0)))))
+(define (test n)
+  (let* ((m (* (expt 2 n) 10000))
+         (count (nsieve m)))
+    (printf "Primes up to ~a ~a\n"
+            (string-pad (number->string m) 8)
+            (string-pad (number->string count) 8))))
 
-  (main (current-command-line-arguments)))
+(define (main n)
+  (when (>= n 0) (test n))
+  (when (>= n 1) (test (- n 1)))
+  (when (>= n 2) (test (- n 2))))
+
+(command-line #:args (n) (main (string->number n)))

@@ -1,10 +1,5 @@
-;;; http://shootout.alioth.debian.org/
-;;;
-;;; Contributed by Eli Barzilay
+#lang scheme/base
 
-(module sumcol mzscheme
-  (let loop ([acc 0])
-    (let ([n (read)])
-      (if (eof-object? n)
-	  (printf "~a\n" acc)
-	  (loop (+ acc n))))))
+(for/fold ([acc 0])
+    ([n (in-lines)])
+  (+ acc (string->number n)))

@@ -145,9 +145,8 @@ Correct output N = 1000 is
   (offset-momentum system)
   
   (printf "~a~%" (real->decimal-string (energy system) 9))
-  
-  (do ((i 1 (+ i 1)))
-      ((< n i))
+
+  (for ([i (in-range 0 n)])
     (advance system 0.01))
   
   (printf "~a~%" (real->decimal-string (energy system) 9)))

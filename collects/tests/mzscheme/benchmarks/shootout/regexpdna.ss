@@ -10,80 +10,79 @@
 ;; Contributed by Anthony Borla
 ;; ---------------------------------------------------------------------
 
-(module regexpdna mzscheme
+#lang scheme/base
+(require scheme/port)
 
-  (require mzlib/port)
-  
-  ;; -------------------------------
-  
-  (define VARIANTS
-    '(#"agggtaaa|tttaccct" #"[cgt]gggtaaa|tttaccc[acg]" #"a[act]ggtaaa|tttacc[agt]t"
-      #"ag[act]gtaaa|tttac[agt]ct" #"agg[act]taaa|ttta[agt]cct" #"aggg[acg]aaa|ttt[cgt]ccct"
-      #"agggt[cgt]aa|tt[acg]accct" #"agggta[cgt]a|t[acg]taccct" #"agggtaa[cgt]|[acg]ttaccct"))
+;; -------------------------------
+
+(define VARIANTS
+  '(#"agggtaaa|tttaccct" #"[cgt]gggtaaa|tttaccc[acg]" #"a[act]ggtaaa|tttacc[agt]t"
+    #"ag[act]gtaaa|tttac[agt]ct" #"agg[act]taaa|ttta[agt]cct" #"aggg[acg]aaa|ttt[cgt]ccct"
+    #"agggt[cgt]aa|tt[acg]accct" #"agggta[cgt]a|t[acg]taccct" #"agggtaa[cgt]|[acg]ttaccct"))
 
 
-  (define IUBS
-    '((#"B" #"(c|g|t)") (#"D" #"(a|g|t)") (#"H" #"(a|c|t)")
-      (#"K" #"(g|t)") (#"M" #"(a|c)") (#"N" #"(a|c|g|t)")
-      (#"R" #"(a|g)") (#"S" #"(c|g)") (#"V" #"(a|c|g)")
-      (#"W" #"(a|t)") (#"Y" #"(c|t)")))
+(define IUBS
+  '((#"B" #"(c|g|t)") (#"D" #"(a|g|t)") (#"H" #"(a|c|t)")
+    (#"K" #"(g|t)") (#"M" #"(a|c)") (#"N" #"(a|c|g|t)")
+    (#"R" #"(a|g)") (#"S" #"(c|g)") (#"V" #"(a|c|g)")
+    (#"W" #"(a|t)") (#"Y" #"(c|t)")))
 
-  ;; -------------------------------
+;; -------------------------------
 
-  (define (ci-byte-regexp s)
-    (byte-regexp (bytes-append #"(?i:" s #")")))
+(define (ci-byte-regexp s)
+  (byte-regexp (bytes-append #"(?i:" s #")")))
 
-  ;; -------------------------------
-  
-  (define (match-count str rx offset cnt)
-    (let ([m (regexp-match-positions rx str offset)])
-      (if m
-	  (match-count str rx (cdar m) (add1 cnt))
-	  cnt)))
+;; -------------------------------
 
-  ;; --------------
-  
-  (define (replace-all rx str new)
-    (let ([out (open-output-bytes)])
-      (let loop ([pos 0])
-      	(let ([m (regexp-match-positions rx str pos)])
-	  (if m
-	      (begin
-		(write-bytes str out pos (caar m))
-		(write-bytes new out)
-		(loop (cdar m)))
-	      (write-bytes str out pos))))
-      (get-output-bytes out)))
+(define (match-count str rx offset cnt)
+  (let ([m (regexp-match-positions rx str offset)])
+    (if m
+        (match-count str rx (cdar m) (add1 cnt))
+        cnt)))
 
-  ;; -------------------------------
+;; --------------
 
-  (define (input->bytes)
-    (let ([b (open-output-bytes)])
-      (copy-port (current-input-port) b)
-      (get-output-bytes b)))
+(define (replace-all rx str new)
+  (let ([out (open-output-bytes)])
+    (let loop ([pos 0])
+      (let ([m (regexp-match-positions rx str pos)])
+        (if m
+            (begin
+              (write-bytes str out pos (caar m))
+              (write-bytes new out)
+              (loop (cdar m)))
+            (write-bytes str out pos))))
+    (get-output-bytes out)))
 
-  ;; -------------------------------
-  
-  ;; Load sequence and record its length
-  (let* ([orig (input->bytes)]
-	 [filtered (replace-all #rx#"(>.*?\n)|\n" orig #"")])
+;; -------------------------------
 
-    ;; Perform regexp counts
-    (for-each
-     (lambda (i)
-       (printf "~a ~a\n" i (match-count filtered (ci-byte-regexp i) 0 0)))
-     VARIANTS)
+(define (input->bytes)
+  (let ([b (open-output-bytes)])
+    (copy-port (current-input-port) b)
+    (get-output-bytes b)))
 
-    ;; Perform regexp replacements, and record sequence length
-    (let ([replaced
-	   (let loop ([sequence filtered]
-		      [IUBS IUBS])
-	     (if (null? IUBS)
-		 sequence
-		 (loop (replace-all (byte-regexp (caar IUBS)) sequence (cadar IUBS))
-		       (cdr IUBS))))])
-      ;; Print statistics
-      (printf "~%~A~%~A~%~A~%" 
-	      (bytes-length orig)
-	      (bytes-length filtered)
-	      (bytes-length replaced)))))
+;; -------------------------------
+
+;; Load sequence and record its length
+(let* ([orig (input->bytes)]
+       [filtered (replace-all #rx#"(>.*?\n)|\n" orig #"")])
+
+  ;; Perform regexp counts
+  (for-each
+   (lambda (i)
+     (printf "~a ~a\n" i (match-count filtered (ci-byte-regexp i) 0 0)))
+   VARIANTS)
+
+  ;; Perform regexp replacements, and record sequence length
+  (let ([replaced
+         (let loop ([sequence filtered]
+                    [IUBS IUBS])
+           (if (null? IUBS)
+               sequence
+               (loop (replace-all (byte-regexp (caar IUBS)) sequence (cadar IUBS))
+                     (cdr IUBS))))])
+    ;; Print statistics
+    (printf "~%~A~%~A~%~A~%" 
+            (bytes-length orig)
+            (bytes-length filtered)
+            (bytes-length replaced))))

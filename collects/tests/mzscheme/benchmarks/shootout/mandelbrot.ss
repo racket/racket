@@ -5,11 +5,8 @@
 ;; Derived from the Chicken variant, which was
 ;; Contributed by Anthony Borla
 
-;; Note: as of version 350, this benchmark spends much of
-;;  its time GCing; it runs 2 times as fast in mzscheme3m.
-
 ;; The version that uses complex number is a little
-;; more elegant, but slower:
+;; more elegant, but much slower:
 ;;  (define (mandelbrot iterations x y n ci)
 ;;    (let ((c (+ (- (/ (* 2.0 x) n) 1.5) 
 ;;                (* ci 0.0+1.0i))))
@@ -19,62 +16,64 @@
 ;;	 [(> (magnitude z) 2.0) 0]
 ;;	 [else (loop (add1 i) (+ (* z z) c))]))))
  
+#lang scheme/base
+(require scheme/cmdline)
 
-(module mandelbrot mzscheme
+(define +limit-sqr+ 4.0)
 
-  ;; -------------------------------
-  
-  (define +limit-sqr+ 4.0)
+(define +iterations+ 50)
 
-  (define +iterations+ 50)
+;; -------------------------------
 
-  ;; -------------------------------
-  
-  (define (mandelbrot iterations x y n ci)
-    (let ((cr (- (/ (* 2.0 x) n) 1.5)))
-      (let loop ((i 0) (zr 0.0) (zi 0.0))
-	(if (> i iterations)
-	    1
-	    (let ((zrq (* zr zr)) 
-		  (ziq (* zi zi)))
-	      (cond
-	       ((> (+ zrq ziq) +limit-sqr+) 0)
-	       (else (loop (add1 i) (+ (- zrq ziq) cr) (+ (* 2.0 (* zr zi)) ci)))))))))
-  
-  ;; -------------------------------
-  
-  (define (main args)
-    (let ((n (string->number (vector-ref args 0)))
-	  (out (current-output-port)))
+(define (mandelbrot iterations x y n ci)
+  (let ((cr (- (/ (* 2.0 x) n) 1.5)))
+    (let loop ((i 0) (zr 0.0) (zi 0.0))
+      (if (> i iterations)
+          1
+          (let ((zrq (* zr zr)) 
+                (ziq (* zi zi)))
+            (cond
+             ((> (+ zrq ziq) +limit-sqr+) 0)
+             (else (loop (add1 i) 
+                         (+ (- zrq ziq) cr) 
+                         (+ (* 2.0 (* zr zi)) ci)))))))))
 
-      (fprintf out "P4\n~a ~a\n" n n)
+;; -------------------------------
 
-      (let loop-y ((y 0))
+(define (main n)
+  (let ((out (current-output-port)))
 
-	(when (< y n)
-	   
-	  (let ([ci (- (/ (* 2.0 y) n) 1.0)])
-	    
-	    (let loop-x ((x 0) (bitnum 0) (byteacc 0))
+    (fprintf out "P4\n~a ~a\n" n n)
 
-	      (if (< x n)
-		  (let ([bitnum (add1 bitnum)]
-			[byteacc (+ (arithmetic-shift byteacc 1) 
-				    (mandelbrot +iterations+ x y n ci))])
+    (let loop-y ((y 0))
 
-		    (cond
-		     ((= bitnum 8)
-		      (write-byte byteacc out)
-		      (loop-x (add1 x) 0 0))
-		     
-		     [else (loop-x (add1 x) bitnum byteacc)]))
+      (when (< y n)
+        
+        (let ([ci (- (/ (* 2.0 y) n) 1.0)])
+          
+          (let loop-x ((x 0) (bitnum 0) (byteacc 0))
 
-		  (begin
-		    (when (positive? bitnum)
-		      (write-byte (arithmetic-shift byteacc (- 8 (bitwise-and n #x7))) out))
+            (if (< x n)
+                (let ([bitnum (add1 bitnum)]
+                      [byteacc (+ (arithmetic-shift byteacc 1) 
+                                  (mandelbrot +iterations+ x y n ci))])
 
-		    (loop-y (add1 y))))))))))
+                  (cond
+                   ((= bitnum 8)
+                    (write-byte byteacc out)
+                    (loop-x (add1 x) 0 0))
+                   
+                   [else (loop-x (add1 x) bitnum byteacc)]))
 
-  ;; -------------------------------
-  
-  (main (current-command-line-arguments)))
+                (begin
+                  (when (positive? bitnum)
+                    (write-byte (arithmetic-shift byteacc 
+                                                  (- 8 (bitwise-and n #x7))) 
+                                out))
+
+                  (loop-y (add1 y))))))))))
+
+;; -------------------------------
+
+(command-line #:args (n)
+              (main (string->number n)))
