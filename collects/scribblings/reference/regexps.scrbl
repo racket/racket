@@ -561,7 +561,11 @@ Performs a match using @scheme[pattern] on @scheme[input], and then
 returns a string or byte string in which the matching portion of
 @scheme[input] is replaced with @scheme[insert].  If @scheme[pattern]
 matches no part of @scheme[input], then @scheme[iput] is returned
-unmodified.
+unmodified.  @scheme[insert] can be either a (byte) string, or a
+function that returns a (byte) string --- in this case, the function
+is applied on the list of values that @scheme[regexp-match] would
+return (i.e., the first argument is the complete match, and then one
+argument for each parenthesized sub-expression).
 
 If @scheme[pattern] is a string or character regexp and @scheme[input]
 is a string, then @scheme[insert] must be a string or a procedure that
