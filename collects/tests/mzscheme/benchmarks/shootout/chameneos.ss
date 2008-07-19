@@ -1,5 +1,7 @@
 ;;; The Great Computer Language Shootout
 ;;; http://shootout.alioth.debian.org/
+;;;
+;;; Uses PLT Scheme threads
 
 #lang scheme/base
 (require scheme/cmdline

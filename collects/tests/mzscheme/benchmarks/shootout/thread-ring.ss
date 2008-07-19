@@ -1,3 +1,5 @@
+;; Uses PLT Scheme threads
+
 #lang scheme/base
 (require scheme/cmdline)
 
