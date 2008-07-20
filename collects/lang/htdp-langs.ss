@@ -148,7 +148,7 @@
             (and (list? l)
                  (andmap (λ (x)
                            (and (list? x)
-                                (andmap string? x)))
+                                (andmap (λ (x) (or (string? x) (symbol? x))) x)))
                          l)))
           
           (inherit get-allow-sharing? get-use-function-output-syntax? 
