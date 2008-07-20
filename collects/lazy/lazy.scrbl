@@ -70,7 +70,7 @@ which will sequence things properly. (Note: This is similar to
 threading monads through your code---only use @scheme[begin] where
 order matters.)
 
-Mizing lazy and strict code is simple: you just write the lazy code in
+Mixing lazy and strict code is simple: you just write the lazy code in
 the lazy language, and strict code as usual. The lazy language treats
 imported functions (those that were not defined in the lazy language)
 as strict, and on the strict side you only need to force (possibly
