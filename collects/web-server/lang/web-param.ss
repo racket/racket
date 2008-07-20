@@ -53,5 +53,6 @@
   (syntax-case stx ()
     [(_ ([wp ve] ...) e ...)
      (with-syntax ([(v ...) (generate-temporaries (syntax->list #'(ve ...)))])
-       #'(let ([v ve] ...)
-           (web-parameterize/values ([wp v] ...) e ...)))]))
+       (syntax/loc stx
+         (let ([v ve] ...)
+           (web-parameterize/values ([wp v] ...) e ...))))]))

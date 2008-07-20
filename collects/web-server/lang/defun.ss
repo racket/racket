@@ -1,10 +1,11 @@
 #lang scheme/base
 (require (for-template scheme/base)
          syntax/kerncase
+         #;syntax/free-vars
+         "freevars.ss"
          mzlib/list
          mzlib/plt-match
          "util.ss"
-         "freevars.ss"
          "../private/closure.ss")
 (provide defun)
 
