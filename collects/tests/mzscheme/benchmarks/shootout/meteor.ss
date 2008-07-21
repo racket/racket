@@ -215,14 +215,14 @@
       (set! to-go (- to-go 2)))))
 
 (define (print-solution solution)
-  (newline)
   (for ([y (in-range height)])
     (for ([x (in-range width)])
       (display (string-ref solution (+ x (* y width))))
       (display " "))
     (display "\n")
     (when (even? y)
-      (display " "))))
+      (display " ")))
+  (newline))
 
 (define (solve! n)
   (set! to-go n)
@@ -230,6 +230,6 @@
 
 (command-line #:args (n) (solve! (string->number n)))
 (let ([solutions (sort solutions string<?)])
-  (printf "~a solutions found\n" (length solutions))
+  (printf "~a solutions found\n\n" (length solutions))
   (print-solution (car solutions))
   (print-solution (list-ref solutions (sub1 (length solutions)))))

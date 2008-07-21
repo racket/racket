@@ -47,6 +47,7 @@
          (match (channel-get ch)
            [(cons other-color other-name)
             ;; Meet:
+            (sleep) ; avoid imbalance from weak fairness
             (loop (change color other-color) 
                   (add1 met)
                   (+ same (if (eq? name other-name)
