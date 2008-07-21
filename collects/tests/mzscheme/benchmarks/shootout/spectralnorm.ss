@@ -27,7 +27,7 @@
 
 ;; return element i,j of infinite matrix A
 (define (A i j)
-  (/ 1.0 (+ (* (+ i j) (/ (+ i (+ j 1)) 2)) (+ i 1))))
+  (/ 1.0 (+ (* (+ i j) (/ (+ i (+ j 1)) 2.0)) (+ i 1))))
 
 ;; multiply vector v by matrix A
 (define (MultiplyAv n v Av)
