@@ -2,6 +2,8 @@ Version 4.1
 Changed namespaces to have a base phase; for example, calling
  eval at compile-time uses a phase-1 namespace
 Added logging facilities: make-logger, etc.
+Added "inheritance" to structure type properties, and change
+ prop:procedure from scheme/base to better support keywords
 
 Version 4.0, June 2008
 >> See MzScheme_4.txt

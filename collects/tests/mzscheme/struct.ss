@@ -7,7 +7,7 @@
 	     [(prop:p2 p2? p2-ref) (make-struct-type-property 'prop2)]
 	     [(insp1) (make-inspector)]
 	     [(insp2) (make-inspector)])
-  (arity-test make-struct-type-property 1 2)
+  (arity-test make-struct-type-property 1 3)
   (test 3 primitive-result-arity make-struct-type-property)
   (arity-test p? 1 1)
   (arity-test p-ref 1 1)
@@ -323,10 +323,12 @@
 		      (cons b a))
 		    2 values values '(2 . 1) t-insp))
 
-(err/rt-test (let-values ([(s:s make-s s? s-ref s-set!)
-			   (make-struct-type 'a #f 1 1 #f null (current-inspector) 0)])
-	       (make-struct-type 'b s:s 1 1 #f null (current-inspector) 0))
-	     exn:application:mismatch?)
+;; Override super-struct procedure spec:
+(let-values ([(s:s make-s s? s-ref s-set!)
+              (make-struct-type 'a #f 1 1 #f null (current-inspector) 0)])
+  (let-values ([(s:b make-b b? b-ref s-set!)
+                (make-struct-type 'b s:s 1 1 #f null (current-inspector) 0)])
+    (test 11 (make-b 1 add1) 10)))
 
 (let-values ([(type make pred sel set) (make-struct-type 'p #f 1 0 #f null (current-inspector) (lambda () 5))])
   (let ([useless (make 7)])
@@ -632,6 +634,68 @@
 		base2-l x132 1
 		two132-a x132 6
 		one32-y x132 4))))
+
+;; ------------------------------------------------------------
+;; Property type supers
+
+(require (only-in mzscheme [prop:procedure mz:prop:procedure])) ; more primitive - no keywords
+
+(let ([try
+       (lambda (base prop:procedure)
+         (err/rt-test (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0) 
+                                                             (cons prop:procedure 0))
+                                        #f #f '(0)))
+         (err/rt-test (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0)) #f 0))
+         (let-values ([(prop:s s? s-get)
+                       (make-struct-type-property 's #f (list (cons prop:procedure (lambda (v) (add1 v)))))])
+           (define-struct a (x y) #:super base #:property prop:s 0)
+           (test 0 s-get struct:a)
+           (test #t procedure-struct-type? struct:a)
+           (test 5 (make-a 1 (lambda (v) (+ 2 v))) 3)
+
+           (err/rt-test (make-struct-type-property 't #f 10))
+           (err/rt-test (make-struct-type-property 't #f (list (cons prop:s 10))))
+           (err/rt-test (make-struct-type-property 't #f (list (cons prop:s void) (cons prop:procedure void))))
+
+           (let-values ([(prop:t t? t-get)
+                         (make-struct-type-property 't #f (list (cons prop:s (lambda (v) (add1 v)))))]
+                        [(prop:u u? u-get)
+                         (make-struct-type-property 'u)])
+             (define-struct b (x y z) #:super base #:property prop:u '? #:property prop:t 0)
+             (test 8 (make-b 1 2 (lambda (v) (- v 4))) 12)
+             (test 0 t-get struct:b)
+             (test 1 s-get struct:b)
+             (test '? u-get struct:b)
+
+             (let-values ([(prop:w w? w-get)
+                           (make-struct-type-property 'w (lambda (v s) (sub1 v)) (list (cons prop:u values)))]
+                          [(prop:z z? z-get)
+                           (make-struct-type-property 'z #f (list (cons prop:u values)))])
+               (define-struct c () #:super base #:property prop:w 10)
+               (test 9 w-get struct:c)
+               (test 9 u-get struct:c) ; i.e., after guard
+
+               (err/rt-test (make-struct-type '? base 0 0 #f (list (cons prop:w 3) (cons prop:z 3))))
+               (err/rt-test (make-struct-type '? base 3 0 #f (list (cons prop:s 0) (cons prop:t 0)) #f #f '(0 1 2)))
+               (err/rt-test (make-struct-type '? base 3 0 #f (list (cons prop:s 0) (cons prop:procedure 0)) #f #f '(0 1 2)))
+               ))))])
+
+  (try #f mz:prop:procedure)
+  (try #f prop:procedure)
+  (let ([props (map (lambda (n)
+                      (let-values ([(prop ? -get) (make-struct-type-property n)])
+                        prop))
+                    '(a b c d e f g h j i))])
+    (let-values ([(s: make-s s? s-ref s-set!)
+                  (make-struct-type 'base #f 0 0 #f (map (lambda (p) (cons p 5)) props))])
+      (try s: mz:prop:procedure)
+      (try s: prop:procedure))))
+
+(let ()
+  (define-struct a (x y) #:property prop:procedure (lambda (s v #:kw [kw #f]) (list (a-x s) v kw)))
+  (test '(1 3 #f) (make-a 1 2) 3)
+  (test '(1 3 8) 'kw ((make-a 1 2) 3 #:kw 8))
+  (test-values '(() (#:kw)) (lambda () (procedure-keywords (make-a 1 2)))))
 
 ;; ------------------------------------------------------------
 ;; Check that struct definiton sequences work:

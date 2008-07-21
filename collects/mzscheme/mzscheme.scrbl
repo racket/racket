@@ -16,7 +16,7 @@
 
 @(define-syntax-rule (def-base base-define base-define-struct
                                base-if base-cond base-case base-top-interaction
-                               base-open-input-file base-apply
+                               base-open-input-file base-apply base-prop:procedure
                                base-free-identifier=? base-free-template-identifier=?
                                base-free-transformer-identifier=? base-free-label-identifier=?)
    (begin
@@ -29,13 +29,14 @@
     (define base-top-interaction (scheme #%top-interaction))
     (define base-open-input-file (scheme open-input-file))
     (define base-apply (scheme apply))
+    (define base-prop:procedure (scheme prop:procedure))
     (define base-free-identifier=? (scheme free-identifier=?))
     (define base-free-template-identifier=? (scheme free-template-identifier=?))
     (define base-free-transformer-identifier=? (scheme free-transformer-identifier=?))
     (define base-free-label-identifier=? (scheme free-label-identifier=?))))
 @(def-base base-define base-define-struct
            base-if base-cond base-case base-top-interaction
-           base-open-input-file base-apply
+           base-open-input-file base-apply base-prop:procedure
            base-free-identifier=? base-free-template-identifier=?
            base-free-transformer-identifier=? base-free-label-identifier=?)
 
@@ -200,6 +201,16 @@ The same as @|base-top-interaction| in @schememodname[scheme/base].}
 
 Like @base-apply from @schememodname[scheme/base], but without support
 for keyword arguments.}
+
+@defthing[prop:procedure struct-type-property?]{
+
+Like @base-prop:procedure from @schememodname[scheme/base], but even
+if the property's value for a structure type is a procedure that
+accepts keyword arguments, then instances of the structure type still
+do not accept keyword arguments. (In contrast, if the property's value
+is an integer for a field index, then a keyword-accepting procedure in
+the field for an instance causes the instance to accept keyword
+arguments.)}
 
 @deftogether[(
 @defproc[(open-input-file [file path-string?] [mode (one-of/c 'text 'binary) 'binary])

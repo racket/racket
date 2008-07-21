@@ -20,6 +20,7 @@
 */
 
 #include "schpriv.h"
+#include "schmach.h"
 
 #define PROP_USE_HT_COUNT 5
 
@@ -360,7 +361,7 @@ scheme_init_struct (Scheme_Env *env)
   scheme_add_global_constant("make-struct-type-property", 
 			    scheme_make_prim_w_arity2(make_struct_type_property,
 						      "make-struct-type-property",
-						      1, 2,
+						      1, 3,
 						      3, 3),
 			    env);
 
@@ -751,16 +752,63 @@ static Scheme_Object *prop_accessor(int argc, Scheme_Object **args, Scheme_Objec
 static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
 {
   Scheme_Struct_Property *p;
-  Scheme_Object *a[3], *v;
+  Scheme_Object *a[3], *v, *supers = scheme_null;
   char *name;
   int len;
 
   if (!SCHEME_SYMBOLP(argv[0]))
     scheme_wrong_type("make-struct-type-property", "symbol", 0, argc, argv);
-  if ((argc > 1)
-      && SCHEME_TRUEP(argv[1])
-      && !scheme_check_proc_arity(NULL, 2, 1, argc, argv)) {
-    scheme_wrong_type("make-struct-type-property", "procedure (arity 2) or #f", 1, argc, argv);
+  if (argc > 1) {
+    if (SCHEME_TRUEP(argv[1])
+        && !scheme_check_proc_arity(NULL, 2, 1, argc, argv))
+      scheme_wrong_type("make-struct-type-property", "procedure (arity 2) or #f", 1, argc, argv);
+
+    if (argc > 2) {
+      supers = argv[2];
+      if (scheme_proper_list_length(supers) < 0)
+        supers = NULL;
+      else {
+        Scheme_Object *pr;
+        for (pr = supers; supers && SCHEME_PAIRP(pr); pr = SCHEME_CDR(pr)) {
+          v = SCHEME_CAR(pr);
+          if (!SCHEME_PAIRP(v)) {
+            supers = NULL;
+          } else {
+            if (!SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(v)), scheme_struct_property_type))
+              supers = NULL;
+            a[0] = SCHEME_CDR(v);
+            if (!scheme_check_proc_arity(NULL, 1, 0, 1, a))
+              supers = NULL;
+          }
+        }
+      }
+
+      if (!supers) {
+        scheme_wrong_type("make-struct-type-property", 
+                          "list of pairs of structure type properties and procedures (arity 1)", 
+                          2, argc, argv);
+      }
+
+      if (SCHEME_PAIRP(supers) && SCHEME_PAIRP(SCHEME_CDR(supers))) {
+        /* check for duplicates */
+        Scheme_Hash_Table *ht;
+        Scheme_Object *stack = supers;
+        ht = scheme_make_hash_table(SCHEME_hash_ptr);
+        while (SCHEME_PAIRP(stack)) {
+          v = SCHEME_CAR(stack);
+          if (SCHEME_PAIRP(v)) v = SCHEME_CAR(v); /* appended item */
+          p = (Scheme_Struct_Property *)v;
+          stack = SCHEME_CDR(stack);
+          if (scheme_hash_get(ht, (Scheme_Object *)p)) {
+            scheme_arg_mismatch("make-struct-type-property", 
+                                "super structure type property appears twice in given hierarchy: ",
+                                (Scheme_Object *)p);
+          }
+          scheme_hash_set(ht, (Scheme_Object *)p, scheme_true);
+          stack = scheme_append(p->supers, stack);
+        }
+      }
+    }
   }
 
   p = MALLOC_ONE_TAGGED(Scheme_Struct_Property);
@@ -768,6 +816,7 @@ static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
   p->name = argv[0];
   if ((argc > 1) && SCHEME_TRUEP(argv[1]))
     p->guard = argv[1];
+  p->supers = supers;
 
   a[0] = (Scheme_Object *)p;
 
@@ -828,20 +877,61 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
 {
   Scheme_Struct_Property *p = (Scheme_Struct_Property *)prop;
 
-  if (p->guard) {
-    Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
+  if (SAME_OBJ(prop, proc_property)) {
+    /* prop:procedure guard: */
+    Scheme_Object *orig_v = v;
+    if (SCHEME_INTP(v) || SCHEME_BIGNUMP(v)) {
+      long pos;
 
-    a[0] = (Scheme_Object *)t;
-    get_struct_type_info(1, a, info, 1);
+      if (SCHEME_INTP(v))
+	pos = SCHEME_INT_VAL(v);
+      else
+	pos = t->num_slots; /* too big */
 
-    l = scheme_build_list(mzNUM_ST_INFO, info);
+      if (pos >= t->num_islots) {
+	scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", v);
+	return NULL;
+      }
 
-    a[0] = v;
-    a[1] = l;
-    
-    return _scheme_apply(p->guard, 2, a);
-  } else
+      if (t->name_pos > 0) {
+        Scheme_Struct_Type *parent_type;
+        parent_type = t->parent_types[t->name_pos - 1];
+
+	pos += parent_type->num_slots;
+	v = scheme_make_integer(pos);
+      }
+    }
+
+    t->proc_attr = v;
+
+    if (SCHEME_INTP(v)) {
+      long pos;
+      pos = SCHEME_INT_VAL(v);
+      if (!t->immutables || !t->immutables[pos]) {
+        scheme_arg_mismatch("make-struct-type", 
+                            "field is not specified as immutable for a prop:procedure index: ", 
+                            orig_v);
+      }
+    }
+
     return v;
+  } else {
+    /* Normal guard handling: */
+    if (p->guard) {
+      Scheme_Object *a[2], *info[mzNUM_ST_INFO], *l;
+
+      a[0] = (Scheme_Object *)t;
+      get_struct_type_info(1, a, info, 1);
+
+      l = scheme_build_list(mzNUM_ST_INFO, info);
+
+      a[0] = v;
+      a[1] = l;
+    
+      return _scheme_apply(p->guard, 2, a);
+    } else
+      return v;
+  }
 }
 
 /*========================================================================*/
@@ -2627,6 +2717,77 @@ Scheme_Object *scheme_make_struct_exptime(Scheme_Object **names, int count,
 /*                             struct type                                */
 /*========================================================================*/
 
+static Scheme_Object *count_k(void);
+
+static int count_non_proc_props(Scheme_Object *props)
+{
+  Scheme_Struct_Property *p;
+  Scheme_Object *v;
+  int count = 0;
+
+  {
+#include "mzstkchk.h"
+    {
+      scheme_current_thread->ku.k.p1 = (void *)props;
+      return SCHEME_INT_VAL(scheme_handle_stack_overflow(count_k));
+    }
+  }
+  SCHEME_USE_FUEL(1);
+
+  for (; SCHEME_PAIRP(props); props = SCHEME_CDR(props)) {
+    v = SCHEME_CAR(props);
+    p = (Scheme_Struct_Property *)SCHEME_CAR(v);
+    if (!SAME_OBJ((Scheme_Object *)p, proc_property))
+      count++;
+    if (p->supers) {
+      count += count_non_proc_props(p->supers);
+    }
+  }
+
+  return count;
+}
+
+static Scheme_Object *count_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *props = (Scheme_Object *)p->ku.k.p1;
+  int c;
+
+  p->ku.k.p1 = NULL;
+
+  c = count_non_proc_props(props);
+
+  return scheme_make_integer(c);
+}
+
+static Scheme_Object *append_super_props(Scheme_Struct_Property *p, Scheme_Object *arg, Scheme_Object *orig)
+{
+  Scheme_Object *first = NULL, *last = NULL, *props, *pr, *v, *a[1];
+
+  if (p->supers) {
+    props = p->supers;
+    for (; SCHEME_PAIRP(props); props = SCHEME_CDR(props)) {
+      v = SCHEME_CAR(props);
+
+      a[0] = arg;
+      v = scheme_make_pair(SCHEME_CAR(v), _scheme_apply(SCHEME_CDR(v), 1, a));
+
+      pr = scheme_make_pair(v, scheme_null);
+      if (last)
+        SCHEME_CDR(last) = pr;
+      else
+        first = pr;
+      last = pr;
+    }
+  }
+
+  if (last) {
+    SCHEME_CDR(last) = orig;
+    return first;
+  } else
+    return orig;
+}
+
 static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base, int blen,
 					Scheme_Object *parent,
 					Scheme_Object *inspector,
@@ -2640,7 +2801,6 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 {
   Scheme_Struct_Type *struct_type, *parent_type;
   int j, depth;
-  int props_delta = 0, prop_needs_const = 0;
   
   parent_type = (Scheme_Struct_Type *)parent;
 
@@ -2711,58 +2871,9 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
     uninit_val = scheme_false;
   struct_type->uninit_val = uninit_val;
 
-  if (props) {
-    Scheme_Object *l;
-    for (l = props; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      if (SAME_OBJ(SCHEME_CAAR(l), proc_property)) {
-        if (proc_attr) {
-          scheme_arg_mismatch("make-struct-type", 
-                              "given both a prop:procedure property value and a procedure specification: ", 
-                              proc_attr);
-        }
-        proc_attr = SCHEME_CDR(SCHEME_CAR(l));
-        if (SCHEME_INTP(proc_attr))
-          prop_needs_const = 1;
-        props_delta = 1;
-        break;
-      }
-    }
-  }
-
-  if (proc_attr) {
-    Scheme_Object *pa = proc_attr;
-
-    if (SCHEME_INTP(pa) || SCHEME_BIGNUMP(pa)) {
-      long pos;
-
-      if (SCHEME_INTP(pa))
-	pos = SCHEME_INT_VAL(pa);
-      else
-	pos = struct_type->num_slots; /* too big */
-
-      if (pos >= struct_type->num_islots) {
-	scheme_arg_mismatch("make-struct-type", "index for procedure >= initialized-field count: ", pa);
-	return NULL;
-      }
-
-      if (parent_type) {
-	if (parent_type->proc_attr) {
-	  scheme_arg_mismatch("make-struct-type", 
-			      "parent type already has procedure specification, new one disallowed: ",
-			      pa);
-	  return NULL;
-	}
-
-	pos += parent_type->num_slots;
-	pa = scheme_make_integer(pos);
-      }
-    }
-
-    struct_type->proc_attr = pa;
-  }
-
   if ((struct_type->proc_attr && SCHEME_INTP(struct_type->proc_attr))
-      || !SCHEME_NULLP(immutable_pos_list)) {
+      || !SCHEME_NULLP(immutable_pos_list)
+      || (proc_attr && SCHEME_INTP(proc_attr))) {
     Scheme_Object *l, *a;
     char *ims;
     int n, p;
@@ -2773,9 +2884,12 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
     ims = (char *)scheme_malloc_atomic(n);
     memset(ims, 0, n);
 
-    if (proc_attr && SCHEME_INTP(proc_attr) && !prop_needs_const) {
+    if (proc_attr && SCHEME_INTP(proc_attr)) {
       p = SCHEME_INT_VAL(proc_attr);
-      ims[p] = 1;
+      if (parent_type)
+        p += parent_type->num_slots;
+      if (p < struct_type->num_slots)
+        ims[p] = 1;
     }
 
     for (l = immutable_pos_list; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
@@ -2801,15 +2915,6 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
       ims[p] = 1;
     }
-
-    if (proc_attr && SCHEME_INTP(proc_attr) && prop_needs_const) {
-      p = SCHEME_INT_VAL(proc_attr);
-      if (!ims[p]) {
-        scheme_arg_mismatch("make-struct-type", 
-                            "field is not specified as immutable for a prop:procedure index: ", 
-                            proc_attr);
-      }
-    }
     
     struct_type->immutables = ims;
   }
@@ -2817,14 +2922,19 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
   /* We add properties last, because a property guard receives a
      struct-type descriptor. */
 
+  if (proc_attr)
+    props = scheme_append(props ? props : scheme_null, 
+                          scheme_make_pair(scheme_make_pair(proc_property, proc_attr),
+                                           scheme_null));
+
   if (props) {
-    int num_props, i;
+    int num_props, i, proc_prop_set = 0;
     Scheme_Hash_Table *can_override;
     Scheme_Object *l, *a, *prop, *propv;
 
     can_override = scheme_make_hash_table(SCHEME_hash_ptr);
 
-    num_props = scheme_list_length(props) - props_delta;
+    num_props = count_non_proc_props(props);
     if ((struct_type->num_props < 0) || (struct_type->num_props + num_props > PROP_USE_HT_COUNT)) {
       Scheme_Hash_Table *ht;
 
@@ -2849,27 +2959,30 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
       }
 
       /* Add new props: */
-      for (l = props; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      for (l = props; SCHEME_PAIRP(l); ) {
 	a = SCHEME_CAR(l);
 	prop = SCHEME_CAR(a);
-        if (SAME_OBJ(prop, proc_property)) {
-          if (props_delta)
-            props_delta = 0;
-          else
+        
+        if (scheme_hash_get(ht, prop)) {
+          /* Property is already in the superstruct_type */
+          if (!scheme_hash_get(can_override, prop))
             break;
-        } else {
-          if (scheme_hash_get(ht, prop)) {
-            /* Property is already in the superstruct_type */
-            if (!scheme_hash_get(can_override, prop))
-              break;
-            /* otherwise we override */
-            scheme_hash_set(can_override, prop, NULL);
-          }
-          
-          propv = guard_property(prop, SCHEME_CDR(a), struct_type);
-          
-          scheme_hash_set(ht, prop, propv);
+          /* otherwise we override */
+          scheme_hash_set(can_override, prop, NULL);
+        } else if (SAME_OBJ(prop, proc_property)) {
+          if (proc_prop_set)
+            break;
         }
+        
+        propv = guard_property(prop, SCHEME_CDR(a), struct_type);
+        
+        l = SCHEME_CDR(l);
+        l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
+        
+        if (SAME_OBJ(prop, proc_property))
+          proc_prop_set = 1;
+        else
+          scheme_hash_set(ht, prop, propv);
       }
 
       struct_type->props = (Scheme_Object **)ht;
@@ -2890,18 +3003,17 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
       num_props = i;
 
-      for (l = props; SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
+      for (l = props; SCHEME_PAIRP(l); ) {
 	a = SCHEME_CAR(l);
 
 	prop = SCHEME_CAR(a);
 
+        /* Check whether already in table: */
         if (SAME_OBJ(prop, proc_property)) {
-          if (props_delta)
-            props_delta = 0;
-          else
+          if (proc_prop_set)
             break;
+          j = 0;
         } else {
-          /* Check whether already in table: */
           for (j = 0; j < num_props; j++) {
             if (SAME_OBJ(SCHEME_CAR(pa[j]), prop))
               break;
@@ -2912,19 +3024,27 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
               break; 
             /* overriding it: */
             scheme_hash_set(can_override, prop, NULL);
-          } else {
+          } else
             num_props++;
-          }
+        }
+        
+        propv = guard_property(prop, SCHEME_CDR(a), struct_type);
 
-          propv = guard_property(prop, SCHEME_CDR(a), struct_type);
-
+        l = SCHEME_CDR(l);
+        l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
+        
+        if (SAME_OBJ(prop, proc_property))
+          proc_prop_set = 1;
+        else {
           a = scheme_make_pair(prop, propv);
           pa[j] = a;
         }
       }
-      
-      struct_type->num_props = num_props;
-      struct_type->props = pa;
+     
+      if (num_props) {
+        struct_type->num_props = num_props;
+        struct_type->props = pa;
+      }
     }
 
     if (!SCHEME_NULLP(l)) {

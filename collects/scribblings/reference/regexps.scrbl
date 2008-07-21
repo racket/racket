@@ -553,19 +553,22 @@ an end-of-file if @scheme[input] is an input port).
 @defproc[(regexp-replace [pattern (or/c string? bytes? regexp? byte-regexp?)]
                          [input (or/c string? bytes?)]
                          [insert (or/c string? bytes? 
-                                       (string? . -> . string?)
-                                       (bytes? . -> . bytes?))])
+                                       ((string?) () #:rest (listof string?) . ->* . string?)
+                                       ((bytes?) () #:rest (listof bytes?) . ->* . bytes?))])
          (or/c string? bytes?)]{
 
 Performs a match using @scheme[pattern] on @scheme[input], and then
 returns a string or byte string in which the matching portion of
 @scheme[input] is replaced with @scheme[insert].  If @scheme[pattern]
 matches no part of @scheme[input], then @scheme[iput] is returned
-unmodified.  @scheme[insert] can be either a (byte) string, or a
-function that returns a (byte) string --- in this case, the function
-is applied on the list of values that @scheme[regexp-match] would
-return (i.e., the first argument is the complete match, and then one
-argument for each parenthesized sub-expression).
+unmodified.
+
+The @scheme[insert] argument can be either a (byte) string, or a
+function that returns a (byte) string. In the latter case, the
+function is applied on the list of values that @scheme[regexp-match]
+would return (i.e., the first argument is the complete match, and then
+one argument for each parenthesized sub-expression) to obtain a
+replacement (byte) string.
 
 If @scheme[pattern] is a string or character regexp and @scheme[input]
 is a string, then @scheme[insert] must be a string or a procedure that

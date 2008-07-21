@@ -144,7 +144,7 @@ table td {
   margin-right: 2em;
 }
 .tocset td {
-  vertical-align: top;
+  vertical-align: text-top;
 }
 
 .tocview {
@@ -387,7 +387,7 @@ i {
 
 .inlinetop{
   display: inline;
-  vertical-align: top;
+  vertical-align: text-top;
 }
 
 .together {
@@ -395,7 +395,7 @@ i {
 }
 
 .prototype td {
-  vertical-align: top;
+  vertical-align: text-top;
 }
 .longprototype td {
   vertical-align: bottom;
@@ -406,7 +406,7 @@ i {
 }
 
 .argcontract td {
-  vertical-align: top;
+  vertical-align: text-top;
 }
 
 .ghost {
@@ -458,7 +458,7 @@ i {
 .techoutside:hover>.techinside { color: inherit; }
 
 .bibliography td {
-  vertical-align: top;
+  vertical-align: text-top;
 }
 
 .imageleft {

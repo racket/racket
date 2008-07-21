@@ -507,6 +507,7 @@ typedef struct Scheme_Struct_Property {
   Scheme_Object so;
   Scheme_Object *name; /* a symbol */
   Scheme_Object *guard; /* NULL or a procedure */
+  Scheme_Object *supers; /* implied properties: listof (cons <prop> <proc>) */
 } Scheme_Struct_Property;
 
 int scheme_inspector_sees_part(Scheme_Object *s, Scheme_Object *insp, int pos);

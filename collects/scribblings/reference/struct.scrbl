@@ -119,9 +119,12 @@ are initialized with @scheme[auto-v]. The total field count (including
 
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
-@scheme[cdr] is an arbitrary value. See @secref["structprops"] for
-more information about properties. When @scheme[inspector] is
-@scheme['prefab], then @scheme[props] must be @scheme[null].
+@scheme[cdr] is an arbitrary value. Each property in @scheme[props]
+must be distinct, including properties that are automatically added by
+properties that are directly included in @scheme[props]. See
+@secref["structprops"] for more information about properties. When
+@scheme[inspector] is @scheme['prefab], then @scheme[props] must be
+@scheme[null].
 
 The @scheme[inspector] argument normally controls access to reflective
 information about the structure type and its instances; see
@@ -133,9 +136,9 @@ If @scheme[proc-spec] is an integer or procedure, instances of the
 structure type act as procedures. See @scheme[prop:procedure] for
 further information.  Providing a non-@scheme[#f] value for
 @scheme[proc-spec] is the same as pairing the value with
-@scheme[prop:procedure] in @scheme[props], plus including
-@scheme[proc-spec] in @scheme[immutables] when
-@scheme[proc-spec] is an integer.
+@scheme[prop:procedure] at the end of @scheme[props], plus including
+@scheme[proc-spec] in @scheme[immutables] when @scheme[proc-spec] is
+an integer.
 
 The @scheme[immutables] argument provides a list of field
 positions. Each element in the list must be unique, otherwise
@@ -274,12 +277,15 @@ A @deftech{structure type property} allows per-type information to be
  property value with a new value.
 
 @defproc[(make-struct-type-property [name symbol?]
-                                    [guard (or/c procedure? false/c) #f])
+                                    [guard (or/c procedure? false/c) #f]
+                                    [supers (listof (cons/c struct-type-property?
+                                                            (any/c . -> . any/c)))
+                                            null])
          (values struct-type-property?
                  procedure?
                  procedure?)]{
 
- Creates a new structure type property and returns three values:
+Creates a new structure type property and returns three values:
 
 @itemize{
 
@@ -317,6 +323,14 @@ inappropriate for the property), the @scheme[guard] can raise an
 exception. Such an exception prevents @scheme[make-struct-type] from
 returning a structure type descriptor.
 
+The optional @scheme[supers] argument is a list of properties that are
+automatically associated with some structure type when the newly
+created property is associated to the structure type. Each property in
+@scheme[supers] is paired with a procedure that receives the value
+supplied for the new property (after it is processed by
+@scheme[guard]) and returns a value for the associated property (which
+is then sent to that property's guard, of any).
+
 @examples[
 #:eval struct-eval
 (define-values (prop:p p? p-ref) (make-struct-type-property 'p))
@@ -333,6 +347,15 @@ returning a structure type descriptor.
 (define-values (struct:b make-b b? b-ref b-set!)
   (make-struct-type 'b #f 0 0 #f))
 (p? struct:b)
+
+(define-values (prop:q q? q-ref) (make-struct-type-property 
+                                  'q (lambda (v si) (add1 v))
+                                  (list (cons prop:p sqrt))))
+(define-values (struct:c make-c c? c-ref c-set!)
+  (make-struct-type 'c #f 0 0 'uninit
+                    (list (cons prop:q 8))))
+(q-ref struct:c)
+(p-ref struct:c)
 ]}
 
 @defproc[(struct-type-property? [v any/c]) boolean?]{

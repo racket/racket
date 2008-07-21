@@ -17,10 +17,11 @@
              (rename *make-keyword-procedure make-keyword-procedure)
              keyword-apply
              procedure-keywords
-             procedure-reduce-keyword-arity)
+             procedure-reduce-keyword-arity
+             new-prop:procedure)
   
   ;; ----------------------------------------
-  
+
   (-define-struct keyword-procedure (proc required allowed))
   (define-values (struct:keyword-method make-km keyword-method? km-ref km-set!)
     (make-struct-type 'procedure
@@ -113,6 +114,11 @@
                                     (list (cons prop:arity-string generate-arity-string))
                                     (current-inspector) fail-proc)])
       mk))
+
+  ;; Allows keyword application to see into a "method"-style procedure attribute:
+  (define-values (new-prop:procedure new-procedure? new-procedure-ref)
+    (make-struct-type-property 'procedure #f
+                               (list (cons prop:procedure values))))
   
   ;; ----------------------------------------
 
@@ -188,11 +194,16 @@
      [(keyword-procedure? p)
       (values (keyword-procedure-required p)
               (keyword-procedure-allowed p))]
-     [(procedure? p) 
-      (let ([p (procedure-extract-target p)])
-        (if p
-            (procedure-keywords p)
-            (values null null)))]
+     [(procedure? p)
+      (let ([p2 (procedure-extract-target p)])
+        (if p2
+            (procedure-keywords p2)
+            (if (new-procedure? p)
+                (let ([v (new-procedure-ref p)])
+                  (if (procedure? v)
+                      (procedure-keywords v)
+                      (values null null)))
+                (values null null))))]
      [else (raise-type-error 'procedure-keywords
                              "procedure"
                              p)]))
@@ -716,7 +727,7 @@
   ;; Extracts the procedure using the keyword-argument protocol.
   ;; If `p' doesn't accept keywords, make up a procedure that
   ;; reports an error.
-  (define (keyword-procedure-extract kws n p)
+  (define (keyword-procedure-extract/method kws n p method-n)
     (if (and (keyword-procedure? p)
              (procedure-arity-includes? (keyword-procedure-proc p) n)
              (let-values ([(missing-kw extra-kw) (check-kw-args p kws)])
@@ -727,22 +738,35 @@
         (let ([p2 (if (keyword-procedure? p)
                       #f
                       (if (procedure? p)
-                          (procedure-extract-target p)
+                          (or (procedure-extract-target p)
+                              (and (new-procedure? p)
+                                   'method))
                           #f))])
           (if p2
               ;; Maybe the target is ok:
-              (keyword-procedure-extract kws n p2)
+              (if (eq? p2 'method)
+                  ;; Build wrapper method:
+                  (let ([p3 (keyword-procedure-extract/method kws (add1 n)
+                                                              (new-procedure-ref p)
+                                                              (add1 method-n))])
+                    (lambda (kws kw-args . args)
+                      (apply p3 kws kw-args (cons p args))))
+                  ;; Recur:
+                  (keyword-procedure-extract/method kws n p2 method-n))
               ;; Not ok, period:
               (lambda (kws kw-args . args)
                 (let-values ([(missing-kw extra-kw)
                               (if (keyword-procedure? p)
                                   (check-kw-args p kws)
                                   (values #f (car kws)))]
-                             [(n) (if (and (positive? n)
-                                           (or (keyword-method? p)
-                                               (okm? p)))
-                                      (sub1 n)
-                                      n)])
+                             [(n) (let ([method-n (+ method-n
+                                                     (if (or (keyword-method? p)
+                                                             (okm? p))
+                                                         1
+                                                         0))])
+                                    (if (n . >= . method-n)
+                                        (- n method-n)
+                                        n))])
                   (let ([args-str
                          (if (and (null? args)
                                   (null? kws))
@@ -791,6 +815,8 @@
                                p
                                args-str)))
                       (current-continuation-marks))))))))))
+  (define (keyword-procedure-extract kws n p)
+    (keyword-procedure-extract/method kws n p 0))
 
   ;; setting procedure arity
   (define (procedure-reduce-keyword-arity proc arity req-kw allowed-kw)

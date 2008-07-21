@@ -1863,6 +1863,7 @@ mark_struct_property {
   Scheme_Struct_Property *i = (Scheme_Struct_Property *)p;
   gcMARK(i->name);
   gcMARK(i->guard);
+  gcMARK(i->supers);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Property));
 }

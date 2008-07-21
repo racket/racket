@@ -257,11 +257,12 @@ immutability of procedure fields disallows cycles in the procedure
 graph, so that the procedure call will eventually continue with a
 non-structure procedure.) That procedure receives all of the arguments
 from the application expression. The procedure's name (see
-@scheme[object-name]) and arity (see @scheme[procedure-arity]) are also
-used for the name and arity of the structure. If the value in the
-designated field is not a procedure, then the instance behaves like
-@scheme[(case-lambda)] (i.e., a procedure which does not accept any
-number of arguments). See also @scheme[procedure-extract-target].
+@scheme[object-name]), arity (see @scheme[procedure-arity]), and
+keyword protocol (see @scheme[procedure-keywords]) are also used for
+the name, arity, and keyword protocol of the structure. If the value
+in the designated field is not a procedure, then the instance behaves
+like @scheme[(case-lambda)] (i.e., a procedure which does not accept
+any number of arguments). See also @scheme[procedure-extract-target].
 
 Providing an integer @scheme[proc-spec] argument to
 @scheme[make-struct-type] is the same as both supplying the value with
@@ -283,16 +284,18 @@ redundant and disallowed).
 ]
 
 When the @scheme[prop:procedure] value is a procedure, it should
-accept at least one argument. When an instance of the structure is
-used in an application expression, the property-value procedure is
-called with the instance as the first argument. The remaining
-arguments to the property-value procedure are the arguments from the
-application expression. Thus, if the application expression contained
-five arguments, the property-value procedure is called with six
-arguments. The name of the instance (see @scheme[object-name]) is
-unaffected by the property-value procedure, but the instance's arity
-is determined by subtracting one from every possible argument count of
-the property-value procedure. If the property-value procedure cannot
+accept at least one non-keyword argument. When an instance of the
+structure is used in an application expression, the property-value
+procedure is called with the instance as the first argument. The
+remaining arguments to the property-value procedure are the arguments
+from the application expression (including keyword arguments). Thus,
+if the application expression provides five non-keyword arguments, the
+property-value procedure is called with six non-keyword arguments. The
+name of the instance (see @scheme[object-name]) and its keyword
+protocol (see @scheme[procedure-keywords]) are unaffected by the
+property-value procedure, but the instance's arity is determined by
+subtracting one from every possible non-keyword argument count of the
+property-value procedure. If the property-value procedure cannot
 accept at least one argument, then the instance behaves like
 @scheme[(case-lambda)].
 
@@ -315,14 +318,7 @@ is disallowed).
 (fish-weight wanda)
 (for-each wanda '(1 2 3))
 (fish-weight wanda)
-]
-
-If a structure type generates procedure instances, then subtypes of
-the type also generate procedure instances. The instances behave the
-same as instances of the original type. When a @scheme[prop:procedure]
-property or non-@scheme[#f] @scheme[proc-spec] is supplied to
-@scheme[make-struct-type] with a supertype that already behaves as a
-procedure, the @exnraise[exn:fail:contract].}
+]}
 
 @defproc[(procedure-struct-type? [type struct-type?]) boolean?]{
 
@@ -336,7 +332,15 @@ If @scheme[proc] is an instance of a structure type with property
 @scheme[prop:procedure], and if the property value indicates a field
 of the structure, and if the field value is a procedure, then
 @scheme[procedure-extract-target] returns the field value. Otherwise,
-the result if @scheme[#f].}
+the result if @scheme[#f].
+
+When a @scheme[prop:procedure] property value is a procedure, the
+procedure is @emph{not} returned by
+@scheme[procedure-extract-target]. Such a procedure is different from
+one accessed through a structure field, because it consumes an extra
+argument, which is always the structure that was applied as a
+procedure. Keeping the procedure private ensures that is it always
+called with a suitable first argument.}
 
 @defthing[prop:arity-string struct-type-property?]{
 

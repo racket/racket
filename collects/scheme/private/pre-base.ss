@@ -64,11 +64,12 @@
              (rename new-define define)
              (rename new-app #%app)
              (rename new-apply apply)
+             (rename new-prop:procedure prop:procedure)
              (rename #%app #%plain-app)
              (rename lambda #%plain-lambda)
              (rename #%module-begin #%plain-module-begin)
              (rename module-begin #%module-begin)
-             (all-from-except '#%kernel lambda λ #%app #%module-begin apply)
+             (all-from-except '#%kernel lambda λ #%app #%module-begin apply prop:procedure)
              (all-from "reqprov.ss")
              (all-from "for.ss")
              #%top-interaction
