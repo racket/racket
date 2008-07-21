@@ -177,6 +177,11 @@
                      (foo (+ x 3))))
           45)
 
+    (test/exn (letrec ([x y]
+                       [y x])
+                'should-not-get-here)
+              &assertion)
+
     ;; 11.4.1
     ;; (These tests are especially silly, since they really
     ;;  have to work to get this far.)

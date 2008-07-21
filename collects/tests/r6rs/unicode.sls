@@ -98,6 +98,11 @@
     (test (string-titlecase "r6rs") "R6Rs")
     (test (string-titlecase "R6RS") "R6Rs")
 
+    (test (string-downcase "A\x3A3;'x") "a\x3C3;'x") ; ' is a MidLetter
+
+    ;; There should be a test here that fails on PLT Scheme based on word-breaking
+    ;; according to Unicode Annex 29 --- but I can't figure out out.
+
     (test (string-ci<? "a" "Z") #t)
     (test (string-ci<? "A" "z") #t)
     (test (string-ci<? "Z" "a") #f)

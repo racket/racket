@@ -107,7 +107,9 @@
     (unless (if (and (real? expected)
                      (nan? expected))
                 (nan? got)
-                (equal? got expected))
+                (or (equal? got expected)
+                    (and (expected-exception? expected)
+                         (expected-exception? got))))
       (set! failures
             (cons (list expr got expected)
                   failures))))

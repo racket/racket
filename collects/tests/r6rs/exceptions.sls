@@ -72,6 +72,20 @@
     (test/exn (with-exception-handler (lambda (x) 0)
                                       (lambda () (error #f "bad")))
               &non-continuable)
+
+    
+    (let ([v '()])
+      (test (guard (exn [(equal? exn 5) 'five])
+                   ;; `guard' should jump back in before re-raising
+                   (guard (exn [(equal? exn 6) 'six])
+                          (dynamic-wind
+                              (lambda () (set! v (cons 'in v)))
+                              (lambda () (raise 5))
+                              (lambda () (set! v (cons 'out v))))))
+            'five)
+      (test v '(out in out in)))
+      
+
       
     ;;
     ))
