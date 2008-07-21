@@ -36,7 +36,7 @@
   (define (approx v)
     (let ([n (* (inexact v) 1000.0)])
       (+ (round (real-part n))
-         (* (round (imag-part n)) +1i))))
+         (* (round (imag-part n)) (sqrt -1)))))
 
   (define-syntax test/exn
     (syntax-rules ()
@@ -133,6 +133,3 @@
           (display " of ")
           (display checked)
           (display " tests failed.\n")))))
-
-          
-
