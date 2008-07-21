@@ -206,6 +206,16 @@
 }
 @definterface[text:searching<%> (editor:keymap<%> text:basic<%>)]{
   Any object matching this interface can be searched.
+
+@defmethod[(set-searching-str [str (or/c false/c string?)] [cs? boolean? #t]) void?]{
+
+  If @scheme[str] is not @scheme[#f], then this method highlights
+  every occurrence of @scheme[str] in the editor. If @scheme[str] is
+  @scheme[#f], then it clears all of the highlighting in the buffer.
+
+  If @scheme[cs?] is @scheme[#f], the search is case-insensitive, and
+  otherwise it is case-sensitive.
+}
 }
 @defmixin[text:searching-mixin (editor:keymap<%> text:basic<%>) (text:searching<%>)]{
   This 

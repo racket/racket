@@ -1,15 +1,13 @@
 #lang scheme/unit
   (require string-constants
-           mzlib/class
+           scheme/class
            mzlib/include
            "sig.ss"
            "../preferences.ss"
            "../gui-utils.ss"
            "bday.ss"
            mred/mred-sig
-           mzlib/list
-           scheme/path
-           mzlib/etc)
+           scheme/path)
   
   (import mred^
           [prefix group: framework:group^]
@@ -61,7 +59,7 @@
               menus))
   
   (define add-snip-menu-items
-    (opt-lambda (edit-menu c% [func void])
+    (lambda (edit-menu c% [func void])
       (let* ([get-edit-target-object
               (λ ()
                 (let ([menu-bar
@@ -1087,7 +1085,7 @@
           (make-object %)))
       
       (define/public save
-        (opt-lambda ([format 'same])
+        (lambda ([format 'same])
           (let* ([ed (get-editor)]
                  [filename (send ed get-filename)])
             (if filename
@@ -1095,7 +1093,7 @@
                 (save-as format)))))
       
       (define/public save-as
-        (opt-lambda ([format 'same])
+        (lambda ([format 'same])
           (let* ([editor (get-editor)]
                  [name (send editor get-filename)])
             (let-values ([(base name)
@@ -1837,10 +1835,9 @@
     (set! searching-direction x))
   
   (define old-search-highlight void)
-  (define clear-search-highlight
-    (λ ()
-      (begin (old-search-highlight)
-             (set! old-search-highlight void))))
+  (define (clear-search-highlight)
+    (old-search-highlight)
+    (set! old-search-highlight void))
   (define reset-search-anchor
     (let ([color (make-object color% "BLUE")])
       (λ (edit)
@@ -1856,14 +1853,14 @@
                  (send edit highlight-range position position color #f))))))
   
   (define find-string-embedded
-    (opt-lambda (edit
-                 str
-                 [direction 'forward]
-                 [start 'start]
-                 [end 'eof]
-                 [get-start #t]
-                 [case-sensitive? #t]
-                 [pop-out? #f])
+    (lambda (edit
+             str
+             [direction 'forward]
+             [start 'start]
+             [end 'eof]
+             [get-start #t]
+             [case-sensitive? #t]
+             [pop-out? #f])
       (unless (member direction '(forward backward))
         (error 'find-string-embedded
                "expected ~e or ~e as first argument, got: ~e" 'forward 'backward direction))
@@ -1951,7 +1948,7 @@
         (and searching-frame
              (send searching-frame get-text-to-search)))
       (define/public search
-        (opt-lambda ([reset-search-anchor? #t] [beep? #t] [wrap? #t])
+        (lambda ([reset-search-anchor? #t] [beep? #t] [wrap? #t])
           (when searching-frame
             (let* ([string (get-text)]
                    [top-searching-edit (get-searching-edit)]
@@ -2002,6 +1999,16 @@
                         (send text end-edit-sequence)
                         
                         #t))])
+              
+              #;
+              (send (get-searching-edit) 
+                    set-searching-str 
+                    (and (not (preferences:get 'framework:search-using-dialog?)) 
+                         (if (equal? string "")
+                             #f
+                             string))
+                    case-sensitive?)
+              
               (if (string=? string "")
                   (not-found top-searching-edit #t)
                   (begin
@@ -2141,13 +2148,16 @@
       
       (define/public (get-text-to-search)
         (error 'get-text-to-search "abstract method in searchable-mixin"))
+      
       (define/public hide-search
-        (opt-lambda ([startup? #f])
+        (lambda ([startup? #f])
           (when search-gui-built?
             (send super-root change-children
                   (λ (l)
                     (remove search-panel l))))
           (clear-search-highlight)
+          #;
+          (send (get-text-to-search) set-searching-str #f #f)
           (unless startup?
             (let ([canvas (send (get-text-to-search) get-canvas)])
               (when canvas
@@ -2168,6 +2178,12 @@
           (show/hide-replace (send (get-text-to-search) is-locked?))
           (send search-panel focus)
           (send find-edit set-position 0 (send find-edit last-position))
+          
+          #;
+          (send (get-text-to-search) set-searching-str 
+                (send find-edit get-text)
+                (send find-edit get-case-sensitive?))
+          
           (unless (memq search-panel (send super-root get-children))
             (send super-root add-child search-panel))
           (reset-search-anchor (get-text-to-search))))
@@ -2300,33 +2316,31 @@
                   [else
                    find-canvas])
                 focus)))
-      (define move-to-search-or-search
-        (λ ()
-          (set-searching-frame this)
-          (unhide-search)
-          (cond
-            [(preferences:get 'framework:search-using-dialog?)
-             (search-dialog this)]
-            [else
-             (if (or (send find-canvas has-focus?)
-                     (send replace-canvas has-focus?))
-                 (search-again 'forward)
-                 (send find-canvas focus))])))
-      (define move-to-search-or-reverse-search
-        (λ ()
-          (set-searching-frame this)
-          (unhide-search)
-          (cond
-            [(preferences:get 'framework:search-using-dialog?)
-             (search-again 'backward)
-             (set-searching-direction 'forward)]
-            [else
-             (if (or (send find-canvas has-focus?)
-                     (send replace-canvas has-focus?))
-                 (search-again 'backward)
-                 (send find-canvas focus))])))
+      (define (move-to-search-or-search)
+        (set-searching-frame this)
+        (unhide-search)
+        (cond
+          [(preferences:get 'framework:search-using-dialog?)
+           (search-dialog this)]
+          [else
+           (if (or (send find-canvas has-focus?)
+                   (send replace-canvas has-focus?))
+               (search-again 'forward)
+               (send find-canvas focus))]))
+      (define (move-to-search-or-reverse-search)
+        (set-searching-frame this)
+        (unhide-search)
+        (cond
+          [(preferences:get 'framework:search-using-dialog?)
+           (search-again 'backward)
+           (set-searching-direction 'forward)]
+          [else
+           (if (or (send find-canvas has-focus?)
+                   (send replace-canvas has-focus?))
+               (search-again 'backward)
+               (send find-canvas focus))]))
       (define search-again
-        (opt-lambda ([direction searching-direction] [beep? #t])
+        (lambda ([direction searching-direction] [beep? #t])
           (set-searching-frame this)
           (unhide-search)
           (set-search-direction direction)
