@@ -47,8 +47,7 @@ WARNING: printf is rebound in the body of the unit to always
   (void))
 
 (define-struct range (start end b/w-bitmap color caret-space?))
-(define-struct rectangle (left top right bottom b/w-bitmap color))
-
+(define-struct rectangle (left top right bottom b/w-bitmap color) #:inspector #f)
 
 (define-values (register-port-name! lookup-port-name)
   ;; port-name->editor-ht: (hashof symbol (weakboxof editor:basic<%>))
@@ -122,7 +121,8 @@ WARNING: printf is rebound in the body of the unit to always
     
     (define highlight-pen #f)
     (define highlight-brush #f)
-    
+    (define highlight-tmp-color #f)
+
     (define range-rectangles null)
     (define ranges null)
     
@@ -282,6 +282,21 @@ WARNING: printf is rebound in the body of the unit to always
               (foldl (λ (x l) (append (new-rectangles x) l))
                      null ranges))))
     
+    (define delayed-highlights? #f)
+    (define todo void)
+    
+    (define/augment (on-edit-sequence)
+      (set! delayed-highlights? #t)
+      (inner (void) on-edit-sequence))
+    
+    (define/augment (after-edit-sequence)
+      (set! delayed-highlights? #f)
+      (unless (eq? todo void)
+        ;; don't redraw unless something changed
+        (redraw-highlights todo)
+        (set! todo void))
+      (inner (void) after-edit-sequence))
+    
     (define/public highlight-range
       (opt-lambda (start end color [bitmap #f] [caret-space? #f] [priority 'low])
         (unless (let ([exact-pos-int?
@@ -297,24 +312,45 @@ WARNING: printf is rebound in the body of the unit to always
           (error 'highlight-range "expected a color for the third argument, got ~s" color))
         
         (let ([l (make-range start end bitmap color caret-space?)])
-          (invalidate-rectangles range-rectangles)
-          (set! ranges (if (eq? priority 'high) (cons l ranges) (append ranges (list l))))
-          (recompute-range-rectangles)
-          (invalidate-rectangles range-rectangles)
+          (cond
+            [delayed-highlights?
+             (set! todo
+                   (let ([old-todo todo])
+                     (λ ()
+                       (old-todo)
+                       (set! ranges (if (eq? priority 'high) (cons l ranges) (append ranges (list l)))))))]
+            [else
+             (redraw-highlights 
+              (λ ()
+                (set! ranges (if (eq? priority 'high) (cons l ranges) (append ranges (list l))))))])
           (λ () (unhighlight-range start end color bitmap caret-space?)))))
+    
+    (define/private (redraw-highlights todo)
+      (let ([old-rectangles range-rectangles])
+        (todo)
+        (recompute-range-rectangles)
+        (invalidate-rectangles (append old-rectangles range-rectangles))))
     
     (define/public unhighlight-range
       (opt-lambda (start end color [bitmap #f] [caret-space? #f])
-        (let ([old-rectangles range-rectangles])
-          (set! ranges
-                (let loop ([r ranges])
-                  (cond
-                    [(null? r) r]
-                    [else (if (matching-rectangle? (car r) start end color bitmap caret-space?)
-                              (cdr r)
-                              (cons (car r) (loop (cdr r))))])))
-          (recompute-range-rectangles)
-          (invalidate-rectangles old-rectangles))))
+        (let ([new-todo
+               (λ ()
+                 (set! ranges
+                       (let loop ([r ranges])
+                         (cond
+                           [(null? r) r]
+                           [else (if (matching-rectangle? (car r) start end color bitmap caret-space?)
+                                     (cdr r)
+                                     (cons (car r) (loop (cdr r))))]))))])
+          (cond
+            [delayed-highlights?
+             (set! todo
+                   (let ([old-todo todo])
+                     (λ ()
+                       (old-todo)
+                       (new-todo))))]
+            [else
+             (redraw-highlights new-todo)]))))
     
     (define/private (matching-rectangle? r start end color bitmap caret-space?)
       (and (equal? start (range-start r))
@@ -326,62 +362,64 @@ WARNING: printf is rebound in the body of the unit to always
     (define/override (on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
       (super on-paint before dc left-margin top-margin right-margin bottom-margin dx dy draw-caret)
       (recompute-range-rectangles)
-      (let ([b1 (box 0)]
-            [b2 (box 0)]
-            [b3 (box 0)]
-            [b4 (box 0)])
+      (let-values ([(view-x view-y view-width view-height)
+                    (let ([b1 (box 0)]
+                          [b2 (box 0)]
+                          [b3 (box 0)]
+                          [b4 (box 0)])
+                      (send (get-admin) get-view b1 b2 b3 b4)
+                      (values (unbox b1)
+                              (unbox b2)
+                              (unbox b3)
+                              (unbox b4)))])
+        
         (for-each
          (λ (rectangle)
-           (let-values ([(view-x view-y view-width view-height)
-                         (begin 
-                           (send (get-admin) get-view b1 b2 b3 b4)
-                           (values (unbox b1)
-                                   (unbox b2)
-                                   (unbox b3)
-                                   (unbox b4)))])
-             (let* ([old-pen (send dc get-pen)]
-                    [old-brush (send dc get-brush)]
-                    [b/w-bitmap (rectangle-b/w-bitmap rectangle)]
-                    [color (let* ([rc (rectangle-color rectangle)]
-                                  [tmpc (make-object color% 0 0 0)])
-                             (if rc
-                                 (begin (send dc try-color rc tmpc)
-                                        (if (<= (color-model:rgb-color-distance
-                                                 (send rc red)
-                                                 (send rc green)
-                                                 (send rc blue)
-                                                 (send tmpc red)
-                                                 (send tmpc green)
-                                                 (send tmpc blue))
-                                                18)
-                                            rc
-                                            #f))
-                                 rc))]
-                    [first-number (λ (x y) (if (number? x) x y))]
-                    [left (max left-margin (first-number (rectangle-left rectangle) view-x))]
-                    [top (max top-margin (rectangle-top rectangle))]
-                    [right (min right-margin
-                                (first-number 
-                                 (rectangle-right rectangle)
-                                 (+ view-x view-width)))]
-                    [bottom (min bottom-margin (rectangle-bottom rectangle))]
-                    [width (max 0 (- right left))]
-                    [height (max 0 (- bottom top))])
-               (let/ec k
-                 (cond
-                   [(and before color)
-                    (send dc set-pen (send the-pen-list find-or-create-pen color 0 'solid))
-                    (send dc set-brush (send the-brush-list find-or-create-brush color 'solid))]
-                   [(and (not before) (not color) b/w-bitmap)
-                    (unless highlight-pen
-                      (set! highlight-pen (make-object pen% "BLACK" 0 'solid)))
-                    (unless highlight-brush
-                      (set! highlight-brush (make-object brush% "black" 'solid)))
-                    (send highlight-pen set-stipple b/w-bitmap)
-                    (send highlight-brush set-stipple b/w-bitmap)
-                    (send dc set-pen highlight-pen)
-                    (send dc set-brush highlight-brush)]
-                   [else (k (void))])
+           (let* ([old-pen (send dc get-pen)]
+                  [old-brush (send dc get-brush)]
+                  [b/w-bitmap (rectangle-b/w-bitmap rectangle)]
+                  [color (let ([rc (rectangle-color rectangle)])
+                           (if rc
+                               (begin (unless highlight-tmp-color
+                                        (set! highlight-tmp-color (make-object color% 0 0 0)))
+                                      (send dc try-color rc highlight-tmp-color)
+                                      (if (<= (color-model:rgb-color-distance
+                                               (send rc red)
+                                               (send rc green)
+                                               (send rc blue)
+                                               (send highlight-tmp-color red)
+                                               (send highlight-tmp-color green)
+                                               (send highlight-tmp-color blue))
+                                              18)
+                                          rc
+                                          #f))
+                               rc))]
+                  [first-number (λ (x y) (if (number? x) x y))]
+                  [left (max left-margin (first-number (rectangle-left rectangle) view-x))]
+                  [top (max top-margin (rectangle-top rectangle))]
+                  [right (min right-margin
+                              (first-number 
+                               (rectangle-right rectangle)
+                               (+ view-x view-width)))]
+                  [bottom (min bottom-margin (rectangle-bottom rectangle))]
+                  [width (max 0 (- right left))]
+                  [height (max 0 (- bottom top))])
+             (let ([skip-it? #f])
+               (cond
+                 [(and before color)
+                  (send dc set-pen (send the-pen-list find-or-create-pen color 0 'solid))
+                  (send dc set-brush (send the-brush-list find-or-create-brush color 'solid))]
+                 [(and (not before) (not color) b/w-bitmap)
+                  (unless highlight-pen
+                    (set! highlight-pen (make-object pen% "BLACK" 0 'solid)))
+                  (unless highlight-brush
+                    (set! highlight-brush (make-object brush% "black" 'solid)))
+                  (send highlight-pen set-stipple b/w-bitmap)
+                  (send highlight-brush set-stipple b/w-bitmap)
+                  (send dc set-pen highlight-pen)
+                  (send dc set-brush highlight-brush)]
+                 [else (set! skip-it? #t)])
+               (unless skip-it? 
                  (send dc draw-rectangle (+ left dx) (+ top dy) width height)
                  (send dc set-pen old-pen)
                  (send dc set-brush old-brush)))))
