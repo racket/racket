@@ -3086,7 +3086,7 @@
           [r (map translate-expression range)]
           [extracted-info (checked-info test)])
       (make-syntax #f
-                   `(javaRuntime:compare-rand ,t ,r ,extracted-info (quote ,(src->list src))
+                   `(javaRuntime:compare-rand ,t (list ,@r) ,extracted-info (quote ,(src->list src))
                                               (namespace-variable-value 'current~test~object% #f
                                                                         (lambda () #f))
                                               )

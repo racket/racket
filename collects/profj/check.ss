@@ -2938,7 +2938,7 @@
                             [curr (check-e e env)])
                        (cons (type/env-e curr)
                              (cons (type/env-t curr) (cdr acc)))))
-                   (list (type/env-e actual-t))
+                   (list (type/env-e actual-te))
                    expt-range)
             #;(check-e expt-range (type/env-e actual-te))]
            [er-ts (cdr expt-range-te)]
