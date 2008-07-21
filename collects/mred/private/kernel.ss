@@ -868,6 +868,7 @@
     line-end-position
     line-start-position
     line-location
+    position-locations
     position-location
     position-line
     set-between-threshold
