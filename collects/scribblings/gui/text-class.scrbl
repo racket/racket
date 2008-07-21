@@ -1611,7 +1611,7 @@ See @|ateoldiscuss| for a discussion of @scheme[at-eol?].
                               [whole-line? any/c #f])
            void?]{
 
-Returns the @techlink{location} of a given @techlink{position}. 
+Returns the @techlink{location} of a given @techlink{position}. See also @method[text% position-locations].
 
 @boxisfillnull[(scheme x) @elem{the x-@techlink{location} of the @techlink{position} @scheme[start] in editor
 coordinates} ]
@@ -1633,6 +1633,22 @@ maximum bottom @techlink{location} for the whole line is returned in @scheme[y].
 
 }
 
+
+@defmethod[(position-locations [start nonnegative-exact-integer?]
+                               [top-x (or/c (box/c real?) false/c) #f]
+                               [top-y (or/c (box/c real?) false/c) #f]
+                               [bottom-x (or/c (box/c real?) false/c) #f]
+                               [bottom-y (or/c (box/c real?) false/c) #f]
+                               [at-eol? any/c #f]
+                               [whole-line? any/c #f])
+           void?]{
+
+Like @method[text% position-location], but returns both the ``top''
+and ``bottom'' results at once.
+
+@|OVD| @|FCA|
+
+}
 
 @defmethod[(position-paragraph [start nonnegative-exact-integer?]
                                [at-eol? any/c #f])

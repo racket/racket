@@ -108,9 +108,9 @@
 	    (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12)))
 	    (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12)))
 
-	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12) (cons prop:p 12))) exn:application:mismatch?)
-	    (err/rt-test (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12) (cons prop:p3 12))) exn:application:mismatch?)
-	    (err/rt-test (make-struct-type 'bb #f 0 0 #f (list (cons prop:p 12) (cons prop:p2 12) (cons prop:p 12))) exn:application:mismatch?)
+	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons prop:p 12) (cons prop:p 13))) exn:application:mismatch?)
+	    (err/rt-test (make-struct-type 'bb btype 0 0 #f (list (cons prop:p3 12) (cons prop:p3 13))) exn:application:mismatch?)
+	    (err/rt-test (make-struct-type 'bb #f 0 0 #f (list (cons prop:p 12) (cons prop:p2 12) (cons prop:p 13))) exn:application:mismatch?)
 	    (err/rt-test (make-struct-type 'bb type 0 0 #f (list (cons (let-values ([(p p? p-v)
 										     (make-struct-type-property 'p (lambda (v s)
 														     ;; this guard will fail!
@@ -643,9 +643,19 @@
 (let ([try
        (lambda (base prop:procedure)
          (err/rt-test (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0) 
-                                                             (cons prop:procedure 0))
+                                                             (cons prop:procedure 1))
                                         #f #f '(0)))
-         (err/rt-test (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0)) #f 0))
+         ;; Ok to re-set to same value:
+         (test #t list? (call-with-values
+                            (lambda () (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0) 
+                                                                              (cons prop:procedure 0))
+                                                         #f #f '(0)))
+                          list))
+         (err/rt-test (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0)) #f 1))
+         (test #t list? (call-with-values
+                            (lambda () (make-struct-type '? base 1 0 #f (list (cons prop:procedure 0)) #f 0))
+                          list))
+
          (let-values ([(prop:s s? s-get)
                        (make-struct-type-property 's #f (list (cons prop:procedure (lambda (v) (add1 v)))))])
            (define-struct a (x y) #:super base #:property prop:s 0)
@@ -655,7 +665,19 @@
 
            (err/rt-test (make-struct-type-property 't #f 10))
            (err/rt-test (make-struct-type-property 't #f (list (cons prop:s 10))))
-           (err/rt-test (make-struct-type-property 't #f (list (cons prop:s void) (cons prop:procedure void))))
+
+           ;; Allow multiple inheritances of a property at this stage, because we can't in general
+           ;;  tell whether the results will be eq?
+           (test #t list?
+                 (call-with-values
+                     (lambda ()
+                       (make-struct-type-property 't #f (list (cons prop:s void) (cons prop:s values))))
+                   list))
+           (test #t list?
+                 (call-with-values
+                     (lambda ()
+                       (make-struct-type-property 't #f (list (cons prop:s void) (cons prop:procedure values))))
+                   list))
 
            (let-values ([(prop:t t? t-get)
                          (make-struct-type-property 't #f (list (cons prop:s (lambda (v) (add1 v)))))]

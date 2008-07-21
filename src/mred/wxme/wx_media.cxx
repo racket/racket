@@ -3645,8 +3645,10 @@ long wxMediaEdit::PositionLine(long start, Bool eol)
   return line->GetLine();
 }
 
-void wxMediaEdit::PositionLocation(long start, double *x, double *y, 
-				   Bool top, Bool eol, Bool wholeLine)
+void wxMediaEdit::PositionLocations(long start, 
+                                    double *tx, double *ty, 
+                                    double *bx, double *by, 
+                                    Bool eol, Bool wholeLine)
 {
   double horiz, h, descent, space, topy;
   int align;
@@ -3662,44 +3664,44 @@ void wxMediaEdit::PositionLocation(long start, double *x, double *y,
 
   if (start <= 0) {
     if (wholeLine) {
-      if (x) {
+      if (tx || bx) {
 	double xl;
 	xl = firstLine->GetLeftLocation(maxWidth);
-	*x = xl;
+	if (tx) *tx = xl;
+        if (bx) *bx = xl;
       } 
-      if (y) {
+      if (ty || by) {
 	double yl;
 	yl = firstLine->GetLocation();
-	*y = yl;
-	if (!top)
-	  (*y) += firstLine->h;
+	if (ty) *ty = yl;
+	if (by) *by = yl + firstLine->h;
       }
       return;
     }
     line = firstLine;
   } else if (start >= len) {
     if (extraLine && !eol) {
-      if (y)
-	*y = totalHeight - (top ? extraLineH : 0);
-      if (x)
-	*x = 0;
+      if (ty) *ty = totalHeight - extraLineH;
+      if (by) *by = totalHeight;
+      if (tx) *tx = 0;
+      if (bx) *bx = 0;
       return;
     } 
 
     line = lastLine;
 
     if (wholeLine || !len) {
-      if (x) {
+      if (tx || bx) {
 	double xl;
 	xl = line->GetRightLocation(maxWidth);
-	*x = xl;
+	if (tx) *tx = xl;
+	if (bx) *bx = xl;
       }
-      if (y) {
+      if (ty || by) {
 	double yl;
 	yl = lastLine->GetLocation();
-	*y = yl;
-	if (!top)
-	  (*y) += lastLine->h;
+        if (ty) *ty = yl;
+        if (by) *by = yl + lastLine->h;
       }
       return;
     }
@@ -3707,14 +3709,13 @@ void wxMediaEdit::PositionLocation(long start, double *x, double *y,
     line = lineRoot->FindLine(PositionLine(start, eol));
 
     if (wholeLine) {
-      if (y) {
+      if (by || ty) {
 	double yl;
 	yl = line->GetLocation();
-	*y = yl;
-	if (!top)
-	  (*y) += line->h;
+        if (ty) *ty = yl;
+        if (by) *by = yl + line->h;
       }
-      if (!x)
+      if (!tx && !bx)
 	return;
     }
   }
@@ -3765,7 +3766,7 @@ void wxMediaEdit::PositionLocation(long start, double *x, double *y,
   }
 
 
-  if (x) {
+  if (tx || bx) {
     double xv;
 
     if (start && !dc) {
@@ -3778,10 +3779,11 @@ void wxMediaEdit::PositionLocation(long start, double *x, double *y,
     }
       
     xv = horiz + (start ? snip->PartialOffset(dc, horiz, topy, start) : 0);
-    *x = xv;
+    if (tx) *tx = xv;
+    if (bx) *bx = xv;
   }
 
-  if (!wholeLine && y) {
+  if (!wholeLine && (ty || by)) {
     if (!dc) {
       dc = admin->GetDC();
       if (!dc) {
@@ -3793,19 +3795,36 @@ void wxMediaEdit::PositionLocation(long start, double *x, double *y,
     h = descent = space = 0.0;
     snip->GetExtent(dc, horiz, topy, NULL, &h, &descent, &space);
     align = snip->style->GetAlignment();
-    if (align == wxALIGN_BOTTOM)
-      *y = topy + line->bottombase + descent - (top ? h : 0);
-    else if (align == wxALIGN_TOP)
-      *y = topy + line->topbase - space + (top ? 0 : h);
-    else {
+    if (align == wxALIGN_BOTTOM) {
+      double yl;
+      yl = topy + line->bottombase + descent;
+      if (ty) *ty = yl - h;
+      if (by) *by = yl;
+    } else if (align == wxALIGN_TOP) {
+      double yl;
+      yl = topy + line->topbase - space;
+      if (ty) *ty = yl;
+      if (by) *by = yl + h;
+    } else {
+      double yl;
       h = (h - descent - space) / 2;
-      *y = topy + ((line->topbase + line->bottombase) / 2)
-	+ (top ? (- h - space) : (h + descent));
+      yl = topy + ((line->topbase + line->bottombase) / 2);
+      if (ty) *ty = yl - h - space;
+      if (by) *by = yl + h + descent;
     }
   }
 
   writeLocked = wl;
   flowLocked = fl;
+}
+
+void wxMediaEdit::PositionLocation(long start, double *x, double *y, 
+				   Bool top, Bool eol, Bool wholeLine)
+{
+  PositionLocations(start, 
+                    top ? x : NULL, top ? y : NULL,
+                    top ? NULL : x, top ? NULL : y,
+                    eol, wholeLine);
 }
 
 double wxMediaEdit::LineLocation(long i, Bool top)

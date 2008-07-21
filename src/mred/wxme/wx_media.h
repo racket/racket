@@ -272,6 +272,10 @@ class wxMediaEdit : public wxMediaBuffer
 			double *x = NULL, double *y = NULL, 
 			Bool front = TRUE, Bool eol = FALSE,
 			Bool wholeLine = FALSE);
+  void PositionLocations(long start, 
+                         double *tx, double *ty, 
+                         double *bx, double *by, 
+                         Bool eol = FALSE, Bool wholeLine = FALSE);
   double LineLocation(long line, Bool top = TRUE);
 
   /* Get first/last caret position in a line: */

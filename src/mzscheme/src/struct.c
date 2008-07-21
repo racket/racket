@@ -788,26 +788,6 @@ static Scheme_Object *make_struct_type_property(int argc, Scheme_Object *argv[])
                           "list of pairs of structure type properties and procedures (arity 1)", 
                           2, argc, argv);
       }
-
-      if (SCHEME_PAIRP(supers) && SCHEME_PAIRP(SCHEME_CDR(supers))) {
-        /* check for duplicates */
-        Scheme_Hash_Table *ht;
-        Scheme_Object *stack = supers;
-        ht = scheme_make_hash_table(SCHEME_hash_ptr);
-        while (SCHEME_PAIRP(stack)) {
-          v = SCHEME_CAR(stack);
-          if (SCHEME_PAIRP(v)) v = SCHEME_CAR(v); /* appended item */
-          p = (Scheme_Struct_Property *)v;
-          stack = SCHEME_CDR(stack);
-          if (scheme_hash_get(ht, (Scheme_Object *)p)) {
-            scheme_arg_mismatch("make-struct-type-property", 
-                                "super structure type property appears twice in given hierarchy: ",
-                                (Scheme_Object *)p);
-          }
-          scheme_hash_set(ht, (Scheme_Object *)p, scheme_true);
-          stack = scheme_append(p->supers, stack);
-        }
-      }
     }
   }
 
@@ -914,7 +894,7 @@ static Scheme_Object *guard_property(Scheme_Object *prop, Scheme_Object *v, Sche
       }
     }
 
-    return v;
+    return orig_v;
   } else {
     /* Normal guard handling: */
     if (p->guard) {
@@ -2928,9 +2908,10 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
                                            scheme_null));
 
   if (props) {
-    int num_props, i, proc_prop_set = 0;
+    int num_props, i;
+    Scheme_Object *proc_prop_set = NULL;
     Scheme_Hash_Table *can_override;
-    Scheme_Object *l, *a, *prop, *propv;
+    Scheme_Object *l, *a, *prop, *propv, *oldv;
 
     can_override = scheme_make_hash_table(SCHEME_hash_ptr);
 
@@ -2963,24 +2944,29 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 	a = SCHEME_CAR(l);
 	prop = SCHEME_CAR(a);
         
-        if (scheme_hash_get(ht, prop)) {
-          /* Property is already in the superstruct_type */
-          if (!scheme_hash_get(can_override, prop))
-            break;
-          /* otherwise we override */
-          scheme_hash_set(can_override, prop, NULL);
-        } else if (SAME_OBJ(prop, proc_property)) {
-          if (proc_prop_set)
-            break;
-        }
-        
         propv = guard_property(prop, SCHEME_CDR(a), struct_type);
+        
+        if (SAME_OBJ(prop, proc_property)) {
+          if (proc_prop_set && !SAME_OBJ(proc_prop_set, propv))
+            break;
+        } else {
+          oldv = scheme_hash_get(ht, prop);
+          if (oldv) {
+            /* Property is already in the superstruct_type */
+            if (!scheme_hash_get(can_override, prop)) {
+              if (!SAME_OBJ(oldv, propv))
+                break;
+            }
+            /* otherwise we override */
+            scheme_hash_set(can_override, prop, NULL);
+          }
+        }
         
         l = SCHEME_CDR(l);
         l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
         
         if (SAME_OBJ(prop, proc_property))
-          proc_prop_set = 1;
+          proc_prop_set = propv;
         else
           scheme_hash_set(ht, prop, propv);
       }
@@ -3008,9 +2994,11 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
 
 	prop = SCHEME_CAR(a);
 
+        propv = guard_property(prop, SCHEME_CDR(a), struct_type);
+
         /* Check whether already in table: */
         if (SAME_OBJ(prop, proc_property)) {
-          if (proc_prop_set)
+          if (proc_prop_set && !SAME_OBJ(proc_prop_set, propv))
             break;
           j = 0;
         } else {
@@ -3020,21 +3008,21 @@ static Scheme_Object *_make_struct_type(Scheme_Object *basesym, const char *base
           }
           if (j < num_props) {
             /* already there */
-            if (!scheme_hash_get(can_override, prop))
-              break; 
+            if (!scheme_hash_get(can_override, prop)) {
+              if (!SAME_OBJ(propv, SCHEME_CDR(pa[j])))
+                break; 
+            }
             /* overriding it: */
             scheme_hash_set(can_override, prop, NULL);
           } else
             num_props++;
         }
         
-        propv = guard_property(prop, SCHEME_CDR(a), struct_type);
-
         l = SCHEME_CDR(l);
         l = append_super_props((Scheme_Struct_Property *)prop, propv, l);
         
         if (SAME_OBJ(prop, proc_property))
-          proc_prop_set = 1;
+          proc_prop_set = propv;
         else {
           a = scheme_make_pair(prop, propv);
           pa[j] = a;

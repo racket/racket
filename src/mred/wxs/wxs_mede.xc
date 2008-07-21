@@ -152,6 +152,7 @@
 
 @ "position-line" : long PositionLine(nnlong,bool=FALSE);
 @ "position-location" :  void PositionLocation(nnlong,double?=NULL,double?=NULL,bool=TRUE,bool=FALSE,bool=FALSE);
+@ "position-locations" :  void PositionLocations(nnlong,double?,double?,double?,double?,bool=FALSE,bool=FALSE);
 @ "line-location" : double LineLocation(nnlong,bool=TRUE);
 
 @ "line-start-position" : long LineStartPosition(nnlong,bool=TRUE);

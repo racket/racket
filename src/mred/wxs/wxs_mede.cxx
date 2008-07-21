@@ -5607,6 +5607,71 @@ static Scheme_Object *os_wxMediaEditLineLocation(int n,  Scheme_Object *p[])
   return WITH_REMEMBERED_STACK(scheme_make_double(r));
 }
 
+static Scheme_Object *os_wxMediaEditPositionLocations(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaEdit_class, "position-locations in text%", n, p);
+  nnlong x0;
+  double _x1;
+  double* x1 = &_x1;
+  double _x2;
+  double* x2 = &_x2;
+  double _x3;
+  double* x3 = &_x3;
+  double _x4;
+  double* x4 = &_x4;
+  Bool x5;
+  Bool x6;
+  Scheme_Object *sbox_tmp;
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+  x0 = WITH_VAR_STACK(objscheme_unbundle_nonnegative_integer(p[POFFSET+0], "position-locations in text%"));
+  if (XC_SCHEME_NULLP(p[POFFSET+1]))
+    x1 = NULL;
+  else
+    *x1 = (sbox_tmp = WITH_VAR_STACK(objscheme_nullable_unbox(p[POFFSET+1], "position-locations in text%")), WITH_VAR_STACK(objscheme_unbundle_double(sbox_tmp, "position-locations in text%"", extracting boxed argument")));
+  if (XC_SCHEME_NULLP(p[POFFSET+2]))
+    x2 = NULL;
+  else
+    *x2 = (sbox_tmp = WITH_VAR_STACK(objscheme_nullable_unbox(p[POFFSET+2], "position-locations in text%")), WITH_VAR_STACK(objscheme_unbundle_double(sbox_tmp, "position-locations in text%"", extracting boxed argument")));
+  if (XC_SCHEME_NULLP(p[POFFSET+3]))
+    x3 = NULL;
+  else
+    *x3 = (sbox_tmp = WITH_VAR_STACK(objscheme_nullable_unbox(p[POFFSET+3], "position-locations in text%")), WITH_VAR_STACK(objscheme_unbundle_double(sbox_tmp, "position-locations in text%"", extracting boxed argument")));
+  if (XC_SCHEME_NULLP(p[POFFSET+4]))
+    x4 = NULL;
+  else
+    *x4 = (sbox_tmp = WITH_VAR_STACK(objscheme_nullable_unbox(p[POFFSET+4], "position-locations in text%")), WITH_VAR_STACK(objscheme_unbundle_double(sbox_tmp, "position-locations in text%"", extracting boxed argument")));
+  if (n > (POFFSET+5)) {
+    x5 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+5], "position-locations in text%"));
+  } else
+    x5 = FALSE;
+  if (n > (POFFSET+6)) {
+    x6 = WITH_VAR_STACK(objscheme_unbundle_bool(p[POFFSET+6], "position-locations in text%"));
+  } else
+    x6 = FALSE;
+
+  
+  WITH_VAR_STACK(((wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->PositionLocations(x0, x1, x2, x3, x4, x5, x6));
+
+  
+  if (n > (POFFSET+1) && !XC_SCHEME_NULLP(p[POFFSET+1]))
+    { Scheme_Object *sbv_ = WITH_VAR_STACK(scheme_make_double(_x1)); WITH_VAR_STACK(objscheme_set_box(p[POFFSET+1], sbv_)); } 
+  if (n > (POFFSET+2) && !XC_SCHEME_NULLP(p[POFFSET+2]))
+    { Scheme_Object *sbv_ = WITH_VAR_STACK(scheme_make_double(_x2)); WITH_VAR_STACK(objscheme_set_box(p[POFFSET+2], sbv_)); } 
+  if (n > (POFFSET+3) && !XC_SCHEME_NULLP(p[POFFSET+3]))
+    { Scheme_Object *sbv_ = WITH_VAR_STACK(scheme_make_double(_x3)); WITH_VAR_STACK(objscheme_set_box(p[POFFSET+3], sbv_)); } 
+  if (n > (POFFSET+4) && !XC_SCHEME_NULLP(p[POFFSET+4]))
+    { Scheme_Object *sbv_ = WITH_VAR_STACK(scheme_make_double(_x4)); WITH_VAR_STACK(objscheme_set_box(p[POFFSET+4], sbv_)); } 
+  
+  READY_TO_RETURN;
+  return scheme_void;
+}
+
 static Scheme_Object *os_wxMediaEditPositionLocation(int n,  Scheme_Object *p[])
 {
   WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
@@ -8569,7 +8634,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaEdit_class);
 
-  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 150));
+  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 151));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "call-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditCallClickback, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "remove-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditRemoveClickback, 2, 2));
@@ -8636,6 +8701,7 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "line-end-position" " method", (Scheme_Method_Prim *)os_wxMediaEditLineEndPosition, 1, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "line-start-position" " method", (Scheme_Method_Prim *)os_wxMediaEditLineStartPosition, 1, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "line-location" " method", (Scheme_Method_Prim *)os_wxMediaEditLineLocation, 1, 2));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "position-locations" " method", (Scheme_Method_Prim *)os_wxMediaEditPositionLocations, 5, 7));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "position-location" " method", (Scheme_Method_Prim *)os_wxMediaEditPositionLocation, 1, 6));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "position-line" " method", (Scheme_Method_Prim *)os_wxMediaEditPositionLine, 1, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "set-between-threshold" " method", (Scheme_Method_Prim *)os_wxMediaEditSetBetweenThreshold, 1, 1));

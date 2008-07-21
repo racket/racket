@@ -119,12 +119,13 @@ are initialized with @scheme[auto-v]. The total field count (including
 
 The @scheme[props] argument is a list of pairs, where the @scheme[car]
 of each pair is a structure type property descriptor, and the
-@scheme[cdr] is an arbitrary value. Each property in @scheme[props]
-must be distinct, including properties that are automatically added by
-properties that are directly included in @scheme[props]. See
-@secref["structprops"] for more information about properties. When
-@scheme[inspector] is @scheme['prefab], then @scheme[props] must be
-@scheme[null].
+@scheme[cdr] is an arbitrary value. A property can be specified
+multiple times in in @scheme[props] (including properties that are
+automatically added by properties that are directly included in
+@scheme[props]) only if the associated values are @scheme[eq?],
+otherwise the @exnraise[exn:fail:contract]. See @secref["structprops"]
+for more information about properties. When @scheme[inspector] is
+@scheme['prefab], then @scheme[props] must be @scheme[null].
 
 The @scheme[inspector] argument normally controls access to reflective
 information about the structure type and its instances; see
