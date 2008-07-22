@@ -516,6 +516,7 @@ static Scheme_Object *bundle_symset_bitmapType(int v) {
 
 
 
+
 // W are Methods not intended to be overriden by the user,
 // but acutally are implemented with virtual
 

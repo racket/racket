@@ -1988,6 +1988,30 @@ The @scheme[show-errors?] argument is no longer used.
 }
 
 
+@defmethod[(scroll-editor-to [localx real?]
+                             [localy real?]
+                             [width (and/c real? (not/c negative?))]
+                             [height (and/c real? (not/c negative?))]
+                             [refresh? any/c]
+                             [bias (one-of/c 'start 'end 'none)])
+           boolean?]{
+
+Causes the editor to be scrolled so that a given @techlink{location}
+ is visible. If the editor is scrolled, @scheme[#t] is returned,
+ otherwise @scheme[#f] is returned.
+
+This method is normally called indirectly by @method[editor<%>
+ scroll-to] or @xmethod[text% scroll-to-position] to implement
+ scrolling.
+
+The default implementation forwards the request to the
+@method[editor-admin% scroll-to] method of the current administrator,
+if any (see @method[editor<%> get-admin]). If the editor has no
+administrator, @scheme[#f] is returned.
+
+}
+
+
 @defmethod[(scroll-line-location [pos (and/c exact? integer?)])
            (and/c real? (not/c negative?))]{
 
@@ -2010,8 +2034,13 @@ For @scheme[text%] objects: @|FCA| @|EVD|
 
 Called (indirectly) by snips within the editor: it causes the editor
  to be scrolled so that a given @techlink{location} range within a
- given snip is visible. If the editor is scrolled, @scheme[#t] is
- returned, otherwise @scheme[#f] is returned.
+ given snip is visible. If the editor is scrolled immediately,
+ @scheme[#t] is returned, otherwise @scheme[#f] is returned.
+
+If refreshing is delayed (see @method[editor<%> refresh-delayed?]),
+ then the scroll request is saved until the delay has ended. The
+ scroll is performed (immediately or later) by calling
+ @method[editor<%> scroll-editor-to].
 
 The @scheme[localx], @scheme[localy], @scheme[width], and @scheme[height]
  arguments specify the area that needs to be visible in @scheme[snip]'s

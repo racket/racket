@@ -182,6 +182,9 @@ class wxMediaBuffer : public wxObject
   virtual long NumScrollLines() = 0;
   virtual long FindScrollLine(double y) = 0;
 
+  virtual Bool AdminScrollTo(double localx, double localy, double w, double h,
+                             Bool refresh = TRUE, int bias = 0);
+
   virtual wxMediaBuffer *CopySelf(void) = 0;
   virtual void CopySelfTo(wxMediaBuffer *b);
   virtual double GetDescent(void) = 0;

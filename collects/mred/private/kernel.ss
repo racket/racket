@@ -252,6 +252,7 @@
     release-snip
     on-snip-modified
     set-modified
+    scroll-editor-to
     set-snip-data
     get-snip-data
     needs-update
@@ -928,6 +929,7 @@
     release-snip
     on-snip-modified
     set-modified
+    scroll-editor-to
     set-snip-data
     get-snip-data
     needs-update
@@ -1141,6 +1143,7 @@
     release-snip
     on-snip-modified
     set-modified
+    scroll-editor-to
     set-snip-data
     get-snip-data
     needs-update

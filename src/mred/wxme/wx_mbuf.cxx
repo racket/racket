@@ -2559,6 +2559,14 @@ void wxMediaBuffer::SetInactiveCaretThreshold(int v)
   inactiveCaretThreshold = v;
 }
 
+Bool wxMediaBuffer::AdminScrollTo(double localx, double localy, double w, double h,
+                                  Bool refresh, int bias)
+{
+  if (admin)
+    return admin->ScrollTo(localx, localy, w, h, refresh, bias);
+  else
+    return FALSE;
+}
 
 void wxMediaBuffer::OnPaint(Bool WXUNUSED(pre),
 			    wxDC *WXUNUSED(dc), 

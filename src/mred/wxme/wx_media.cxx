@@ -1001,7 +1001,7 @@ Bool wxMediaEdit::ScrollToPosition(long start, Bool ateol, Bool refresh,
   w = botx - topx;
   h = boty - topy;
 
-  return admin->ScrollTo(topx, topy, w, h, refresh, bias);
+  return AdminScrollTo(topx, topy, w, h, refresh, bias);
 }
 
 Bool wxMediaEdit::ScrollToPosition(long start, Bool ateol, long end, int bias)
@@ -4398,7 +4398,7 @@ Bool wxMediaEdit::ScrollTo(wxSnip *snip, double localx, double localy,
 	return FALSE;
     } else
       x = y = 0;
-    if (admin->ScrollTo(x + localx, y + localy, w, h, refresh, bias)) {
+    if (AdminScrollTo(x + localx, y + localy, w, h, refresh, bias)) {
       if (!refresh)
 	refreshAll = TRUE;
       return TRUE;

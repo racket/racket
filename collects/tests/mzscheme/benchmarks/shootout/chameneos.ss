@@ -94,6 +94,7 @@
 
 (let ([n (command-line #:args (n) (string->number n))])
   (go n '(blue red yellow))
-  (go n '(blue red yellow red yellow blue red yellow red blue)))
+  (go n '(blue red yellow red yellow blue red yellow red blue))
+  (newline))
 
   

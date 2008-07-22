@@ -2028,7 +2028,7 @@ Bool wxMediaPasteboard::ScrollTo(wxSnip *snip,
 
     GetSnipLocation(snip, &x, &y);
 
-    if (admin->ScrollTo(x + localx, y + localy, w, h, refresh, bias)) {
+    if (AdminScrollTo(x + localx, y + localy, w, h, refresh, bias)) {
       if (!refresh) {
 	updateTop = 0;
 	updateLeft = 0;

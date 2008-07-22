@@ -1706,12 +1706,18 @@ When the specified range cannot fit in the visible area, @scheme[bias]
  displayed. Otherwise, @scheme[bias] must be @scheme['none].
 
 If the editor is scrolled, then the editor is redrawn and the return
- value is @scheme[#t]; otherwise, the return value is @scheme[#f].
+ value is @scheme[#t]; otherwise, the return value is @scheme[#f].  If
+ refreshing is delayed (see @method[editor<%> refresh-delayed?]), then
+ the scroll request is saved until the delay has ended. The scroll is
+ performed (immediately or later) by calling @method[editor<%>
+ scroll-editor-to].
 
 Scrolling is disallowed when the editor is internally locked for
  reflowing (see also @|lockdiscuss|). 
 
-The system may scroll the editor without calling this method.
+The system may scroll the editor without calling this method. For
+ example, a canvas displaying an editor might scroll the editor to
+ handle a scrollbar event.
 
 }
 

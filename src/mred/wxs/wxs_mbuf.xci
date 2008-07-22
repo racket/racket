@@ -54,6 +54,8 @@
 @ Y "get-snip-data" : wxBufferData^ GetSnipData(wxSnip!); : : : : XrZERO
 @ Y "set-snip-data" : void SetSnipData(wxSnip!, wxBufferData^);
 
+@ Y "scroll-editor-to" : bool AdminScrollTo(double,double,nndouble,nndouble,bool,SYM[bias]); : : : : XrZERO
+
 @ Z "set-modified" : void SetModified(bool);
 @ Z "on-snip-modified" : void OnSnipModified(wxSnip!,bool);
 
