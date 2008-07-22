@@ -578,6 +578,14 @@ WARNING: printf is rebound in the body of the unit to always
       (redo-search)
       (inner (void) after-delete start len))
     
+    (inherit get-top-level-window)
+    (define/override (on-focus on?)
+      (let ([f (get-top-level-window)])
+        (when (is-a? f frame:searchable<%>)
+          (when on?
+            (send f set-text-to-search this))))
+      (super on-focus on?))
+    
     (inherit highlight-range begin-edit-sequence end-edit-sequence find-string)
     
     (define clear-regions void)

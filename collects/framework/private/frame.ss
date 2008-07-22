@@ -1670,111 +1670,112 @@
     (init-find/replace-edits)
     (keymap:call/text-keymap-initializer
      (λ ()
-       (let* ([to-be-searched-text (send frame get-text-to-search)]
-              [to-be-searched-canvas (send to-be-searched-text get-canvas)]
-              
-              [allow-replace? (not (send to-be-searched-text is-locked?))]
-              
-              [dialog (new dialog% 
-                           (label (if allow-replace?
-                                      (string-constant find-and-replace)
-                                      (string-constant find)))
-                           (parent frame)
-                           (style '(no-sheet)))]
-              
-              [copy-text
-               (λ (from to)
-                 (send to erase)
-                 (let loop ([snip (send from find-first-snip)])
-                   (when snip
-                     (send to insert (send snip copy))
-                     (loop (send snip next)))))]
-              
-              [text-keymap/editor%
-               (class text:keymap%
-                 (define/override (get-keymaps)
-                   (if (preferences:get 'framework:menu-bindings)
-                       (append (list (keymap:get-editor))
-                               (super get-keymaps))
-                       (append (super get-keymaps)
-                               (list (keymap:get-editor)))))
-                 (inherit set-styles-fixed)
-                 (super-new)
-                 (set-styles-fixed #t))]
-              
-              
-              [find-panel (make-object horizontal-panel% dialog)]
-              [find-message (make-object message% (string-constant find) find-panel)]
-              [f-text (make-object text-keymap/editor%)]
-              [find-canvas (make-object editor-canvas% find-panel f-text
-                             '(hide-hscroll hide-vscroll))]
-              
-              [replace-panel (make-object horizontal-panel% dialog)]
-              [replace-message (make-object message% (string-constant replace) replace-panel)]
-              [r-text (make-object text-keymap/editor%)]
-              [replace-canvas (make-object editor-canvas% replace-panel r-text
-                                '(hide-hscroll hide-vscroll))]
-              
-              [button-panel (make-object horizontal-panel% dialog)]
-              
-              [prefs-panel  (make-object horizontal-panel% dialog)]
-              [sensitive-check-box-callback (λ () (send find-edit toggle-case-sensitive))]
-              [sensitive-check-box (make-object check-box% 
-                                     (string-constant find-case-sensitive)
-                                     prefs-panel (λ (x y) (sensitive-check-box-callback)))]
-              [dummy (begin (send sensitive-check-box set-value (send find-edit get-case-sensitive?))
-                            (send prefs-panel set-alignment 'center 'center))]
-              [update-texts
-               (λ ()
-                 (send find-edit stop-searching)
-                 (copy-text f-text find-edit)
-                 (send find-edit start-searching)
-                 (copy-text r-text replace-edit))]
-              
-              [find-button (make-object button% (string-constant find) button-panel 
-                             (λ x
-                               (update-texts)
-                               (send frame search-again))
-                             '(border))]
-              [replace-button (make-object button% (string-constant replace) button-panel
-                                (λ x
-                                  (update-texts)
-                                  (send frame replace)))]
-              [replace-and-find-button (make-object button% (string-constant replace&find-again)
-                                         button-panel
-                                         (λ x
-                                           (update-texts)
-                                           (send frame replace&search)))]
-              [replace-to-end-button
-               (make-object button% (string-constant replace-to-end) button-panel
-                 (λ x
-                   (update-texts)
-                   (send frame replace-all)))]
-              
-              [dock-button (make-object button%
-                             (string-constant dock)
-                             button-panel
-                             (λ (btn evt)
-                               (update-texts)
-                               (preferences:set 'framework:search-using-dialog? #f)
-                               (send frame unhide-search)))]
-              
-              [close
-               (λ ()
-                 (when to-be-searched-canvas
-                   (send to-be-searched-canvas force-display-focus #f))
-                 (send dialog show #f))]
-              
-              [close-button (make-object button% (string-constant close) button-panel
-                              (λ (x y)
-                                (close)))]
-              
-              [remove-pref-callback
-               (preferences:add-callback 
-                'framework:search-using-dialog?
-                (λ (p v)
-                  (unless v
-                    (close))))])
+       (let ([to-be-searched-text (send frame get-text-to-search)])
+         (when to-be-searched-text
+           (let* ([to-be-searched-canvas (send to-be-searched-text get-canvas)]
+                  
+                  [allow-replace? (not (send to-be-searched-text is-locked?))]
+                  
+                  [dialog (new dialog% 
+                               (label (if allow-replace?
+                                          (string-constant find-and-replace)
+                                          (string-constant find)))
+                               (parent frame)
+                               (style '(no-sheet)))]
+                  
+                  [copy-text
+                   (λ (from to)
+                     (send to erase)
+                     (let loop ([snip (send from find-first-snip)])
+                       (when snip
+                         (send to insert (send snip copy))
+                         (loop (send snip next)))))]
+                  
+                  [text-keymap/editor%
+                   (class text:keymap%
+                     (define/override (get-keymaps)
+                       (if (preferences:get 'framework:menu-bindings)
+                           (append (list (keymap:get-editor))
+                                   (super get-keymaps))
+                           (append (super get-keymaps)
+                                   (list (keymap:get-editor)))))
+                     (inherit set-styles-fixed)
+                     (super-new)
+                     (set-styles-fixed #t))]
+                  
+                  
+                  [find-panel (make-object horizontal-panel% dialog)]
+                  [find-message (make-object message% (string-constant find) find-panel)]
+                  [f-text (make-object text-keymap/editor%)]
+                  [find-canvas (make-object editor-canvas% find-panel f-text
+                                 '(hide-hscroll hide-vscroll))]
+                  
+                  [replace-panel (make-object horizontal-panel% dialog)]
+                  [replace-message (make-object message% (string-constant replace) replace-panel)]
+                  [r-text (make-object text-keymap/editor%)]
+                  [replace-canvas (make-object editor-canvas% replace-panel r-text
+                                    '(hide-hscroll hide-vscroll))]
+                  
+                  [button-panel (make-object horizontal-panel% dialog)]
+                  
+                  [prefs-panel  (make-object horizontal-panel% dialog)]
+                  [sensitive-check-box-callback (λ () (send find-edit toggle-case-sensitive))]
+                  [sensitive-check-box (make-object check-box% 
+                                         (string-constant find-case-sensitive)
+                                         prefs-panel (λ (x y) (sensitive-check-box-callback)))]
+                  [dummy (begin (send sensitive-check-box set-value (send find-edit get-case-sensitive?))
+                                (send prefs-panel set-alignment 'center 'center))]
+                  [update-texts
+                   (λ ()
+                     (send find-edit stop-searching)
+                     (copy-text f-text find-edit)
+                     (send find-edit start-searching)
+                     (copy-text r-text replace-edit))]
+                  
+                  [find-button (make-object button% (string-constant find) button-panel 
+                                 (λ x
+                                   (update-texts)
+                                   (send frame search-again))
+                                 '(border))]
+                  [replace-button (make-object button% (string-constant replace) button-panel
+                                    (λ x
+                                      (update-texts)
+                                      (send frame replace)))]
+                  [replace-and-find-button (make-object button% (string-constant replace&find-again)
+                                             button-panel
+                                             (λ x
+                                               (update-texts)
+                                               (send frame replace&search)))]
+                  [replace-to-end-button
+                   (make-object button% (string-constant replace-to-end) button-panel
+                     (λ x
+                       (update-texts)
+                       (send frame replace-all)))]
+                  
+                  [dock-button (make-object button%
+                                 (string-constant dock)
+                                 button-panel
+                                 (λ (btn evt)
+                                   (update-texts)
+                                   (preferences:set 'framework:search-using-dialog? #f)
+                                   (send frame unhide-search)))]
+                  
+                  [close
+                   (λ ()
+                     (when to-be-searched-canvas
+                       (send to-be-searched-canvas force-display-focus #f))
+                     (send dialog show #f))]
+                  
+                  [close-button (make-object button% (string-constant close) button-panel
+                                  (λ (x y)
+                                    (close)))]
+                  
+                  [remove-pref-callback
+                   (preferences:add-callback 
+                    'framework:search-using-dialog?
+                    (λ (p v)
+                      (unless v
+                        (close))))])
          
          (unless allow-replace?
            (send button-panel change-children
@@ -1811,10 +1812,11 @@
          (when to-be-searched-canvas
            (send to-be-searched-canvas force-display-focus #t))
          (send dialog show #t)
-         (remove-pref-callback)))))
+         (remove-pref-callback)))))))
   
   (define searchable<%> (interface (basic<%>)
                           get-text-to-search
+                          set-text-to-search
                           hide-search
                           unhide-search
                           set-search-direction
@@ -1951,54 +1953,54 @@
         (lambda ([reset-search-anchor? #t] [beep? #t] [wrap? #t])
           (when searching-frame
             (let* ([string (get-text)]
-                   [top-searching-edit (get-searching-edit)]
-                   
-                   [searching-edit (let ([focus-snip (send top-searching-edit get-focus-snip)])
-                                     (if focus-snip
-                                         (send focus-snip get-editor)
-                                         top-searching-edit))]
-                   
-                   [not-found
-                    (λ (found-edit skip-beep?)
-                      (send found-edit set-position search-anchor)
-                      (when (and beep?
-                                 (not skip-beep?))
-                        (bell))
-                      #f)]
-                   [found
-                    (λ (text first-pos)
-                      (let ([last-pos ((if (eq? searching-direction 'forward) + -)
-                                       first-pos (string-length string))])
-                        (send text begin-edit-sequence)
-                        (send text set-caret-owner #f 'display)
-                        (send text set-position
-                              (min first-pos last-pos)
-                              (max first-pos last-pos)
-                              #f #f 'local)
-                        
-                        
-                        ;; scroll to the middle if the search result isn't already visible
-                        (let ([search-result-line (send text position-line (send text get-start-position))]
-                              [bt (box 0)]
-                              [bb (box 0)])
-                          (send text get-visible-line-range bt bb #f)
-                          (unless (<= (unbox bt) search-result-line (unbox bb))
-                            (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
-                                   [last-pos (send text position-line (send text last-position))]
-                                   [top-pos (send text line-start-position 
-                                                  (max (min (- search-result-line half) last-pos) 0))]
-                                   [bottom-pos (send text line-start-position 
-                                                     (max 0
-                                                          (min (+ search-result-line half)
-                                                               last-pos)))])
-                              (send text scroll-to-position 
-                                    top-pos
-                                    #f
-                                    bottom-pos))))
-                        
-                        (send text end-edit-sequence)
-                        
-                        #t))])
+                   [top-searching-edit (get-searching-edit)])
+              (when top-searching-edit
+                (let ([searching-edit (let ([focus-snip (send top-searching-edit get-focus-snip)])
+                                        (if focus-snip
+                                            (send focus-snip get-editor)
+                                            top-searching-edit))]
+                      
+                      [not-found
+                       (λ (found-edit skip-beep?)
+                         (send found-edit set-position search-anchor)
+                         (when (and beep?
+                                    (not skip-beep?))
+                           (bell))
+                         #f)]
+                      [found
+                       (λ (text first-pos)
+                         (let ([last-pos ((if (eq? searching-direction 'forward) + -)
+                                          first-pos (string-length string))])
+                           (send text begin-edit-sequence)
+                           (send text set-caret-owner #f 'display)
+                           (send text set-position
+                                 (min first-pos last-pos)
+                                 (max first-pos last-pos)
+                                 #f #f 'local)
+                           
+                           
+                           ;; scroll to the middle if the search result isn't already visible
+                           (let ([search-result-line (send text position-line (send text get-start-position))]
+                                 [bt (box 0)]
+                                 [bb (box 0)])
+                             (send text get-visible-line-range bt bb #f)
+                             (unless (<= (unbox bt) search-result-line (unbox bb))
+                               (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
+                                      [last-pos (send text position-line (send text last-position))]
+                                      [top-pos (send text line-start-position 
+                                                     (max (min (- search-result-line half) last-pos) 0))]
+                                      [bottom-pos (send text line-start-position 
+                                                        (max 0
+                                                             (min (+ search-result-line half)
+                                                                  last-pos)))])
+                                 (send text scroll-to-position 
+                                       top-pos
+                                       #f
+                                       bottom-pos))))
+                           
+                           (send text end-edit-sequence)
+                           
+                           #t))])
               
               #;
               (send (get-searching-edit) 
@@ -2039,7 +2041,7 @@
                                      (found found-edit pos))))
                              (not-found found-edit #f))]
                         [else
-                         (found found-edit first-pos)]))))))))
+                         (found found-edit first-pos)]))))))))))
       (field [dont-search #f]
              [case-sensitive? (preferences:get 'framework:case-sensitive-search?)])
       (define/public (toggle-case-sensitive)
@@ -2055,7 +2057,7 @@
         (when on?
           (let ([edit (get-searching-edit)])
             (when edit
-              (reset-search-anchor (get-searching-edit)))))
+              (reset-search-anchor edit))))
         (super on-focus on?))
       (define/augment (after-insert x y)
         (unless dont-search
@@ -2142,12 +2144,15 @@
       (define/override (on-activate on?)
         (unless hidden?
           (if on?
-              (reset-search-anchor (get-text-to-search))
+              (let ([txt (get-text-to-search)])
+                (when txt
+                  (reset-search-anchor txt)))
               (clear-search-highlight)))
         (super on-activate on?))
       
-      (define/public (get-text-to-search)
-        (error 'get-text-to-search "abstract method in searchable-mixin"))
+      (define text-to-search #f)
+      (define/public (set-text-to-search txt) (set! text-to-search txt))
+      (define/public-final (get-text-to-search) text-to-search)
       
       (define/public hide-search
         (lambda ([startup? #f])
@@ -2156,13 +2161,14 @@
                   (λ (l)
                     (remove search-panel l))))
           (clear-search-highlight)
-          #;
-          (send (get-text-to-search) set-searching-str #f #f)
-          (unless startup?
-            (let ([canvas (send (get-text-to-search) get-canvas)])
-              (when canvas
-                (send canvas force-display-focus #f)
-                (send canvas focus))))
+          (let ([txt (get-text-to-search)])
+            (when txt
+              #;(send txt set-searching-str #f #f)
+              (unless startup?
+                (let ([canvas (send txt get-canvas)])
+                  (when canvas
+                    (send canvas force-display-focus #f)
+                    (send canvas focus))))))
           (set! hidden? #t)))
       
       (define/public (unhide-search)
@@ -2172,21 +2178,24 @@
           
           (build-search-gui-in-frame)
           
-          (let ([canvas (send (get-text-to-search) get-canvas)])
-            (when canvas
-              (send canvas force-display-focus #t)))
-          (show/hide-replace (send (get-text-to-search) is-locked?))
-          (send search-panel focus)
-          (send find-edit set-position 0 (send find-edit last-position))
-          
-          #;
-          (send (get-text-to-search) set-searching-str 
-                (send find-edit get-text)
-                (send find-edit get-case-sensitive?))
-          
-          (unless (memq search-panel (send super-root get-children))
-            (send super-root add-child search-panel))
-          (reset-search-anchor (get-text-to-search))))
+          (let ([txt (get-text-to-search)])
+            (when txt
+              (let ([canvas (send txt get-canvas)])
+                (when canvas
+                  (send canvas force-display-focus #t))))
+            (show/hide-replace (and txt (send txt is-locked?)))
+            (send search-panel focus)
+            (send find-edit set-position 0 (send find-edit last-position))
+            
+            #;
+            (send txt set-searching-str 
+                  (send find-edit get-text)
+                  (send find-edit get-case-sensitive?))
+            
+            (unless (memq search-panel (send super-root get-children))
+              (send super-root add-child search-panel))
+            (when txt
+              (reset-search-anchor txt)))))
       
       (define/private (undock)
         (preferences:set 'framework:search-using-dialog? #t)
@@ -2252,46 +2261,51 @@
               (send find-edit get-text 0 (send find-edit last-position)))))))
       (define (replace&search)
         (let ([text (get-text-to-search)])
-          (send text begin-edit-sequence)
-          (when (replace)
-            (search-again))
-          (send text end-edit-sequence)))
+          (when text
+            (send text begin-edit-sequence)
+            (when (replace)
+              (search-again))
+            (send text end-edit-sequence))))
       (define (replace-all)
-        (let* ([replacee-edit (get-text-to-search)]
-               [embeded-replacee-edit (find-embedded-focus-editor replacee-edit)]
-               [pos (if (eq? searching-direction 'forward)
-                        (send embeded-replacee-edit get-start-position)
-                        (send embeded-replacee-edit get-end-position))]
-               [done? (if (eq? 'forward searching-direction)
-                          (λ (x) (>= x (send replacee-edit last-position)))
-                          (λ (x) (<= x 0)))])
-          (send replacee-edit begin-edit-sequence)
-          (when (search-again)
-            (send embeded-replacee-edit set-position pos)
-            (let loop ()
-              (when (send find-edit search #t #f #f)
-                (replace)
-                (loop))))
-          (send replacee-edit end-edit-sequence)))
+        (let ([replacee-edit (get-text-to-search)])
+          (when replacee-edit
+            (let* ([embeded-replacee-edit (find-embedded-focus-editor replacee-edit)]
+                   [pos (if (eq? searching-direction 'forward)
+                            (send embeded-replacee-edit get-start-position)
+                            (send embeded-replacee-edit get-end-position))]
+                   [done? (if (eq? 'forward searching-direction)
+                              (λ (x) (>= x (send replacee-edit last-position)))
+                              (λ (x) (<= x 0)))])
+              (send replacee-edit begin-edit-sequence)
+              (when (search-again)
+                (send embeded-replacee-edit set-position pos)
+                (let loop ()
+                  (when (send find-edit search #t #f #f)
+                    (replace)
+                    (loop))))
+              (send replacee-edit end-edit-sequence)))))
       (define (replace)
-        (let* ([search-text (send find-edit get-text)]
-               [replacee-edit (find-embedded-focus-editor (get-text-to-search))]
-               [replacee-start (send replacee-edit get-start-position)]
-               [new-text (send replace-edit get-text)]
-               [replacee (send replacee-edit get-text
-                               replacee-start
-                               (send replacee-edit get-end-position))]
-               [cmp 
-                (if (send find-edit get-case-sensitive?)
-                    string=?
-                    string-ci=?)])
-          (if (cmp replacee search-text)
-              (begin (send replacee-edit insert new-text)
-                     (send replacee-edit set-position
-                           replacee-start
-                           (+ replacee-start (string-length new-text)))
-                     #t)
-              #f)))
+        (let ([search-text (send find-edit get-text)]
+              [replacee-edit (let ([txt (get-text-to-search)])
+                               (and txt 
+                                    (find-embedded-focus-editor txt)))])
+          (and replacee-edit
+               (let* ([replacee-start (send replacee-edit get-start-position)]
+                      [new-text (send replace-edit get-text)]
+                      [replacee (send replacee-edit get-text
+                                      replacee-start
+                                      (send replacee-edit get-end-position))]
+                      [cmp 
+                       (if (send find-edit get-case-sensitive?)
+                           string=?
+                           string-ci=?)])
+                 (if (cmp replacee search-text)
+                     (begin (send replacee-edit insert new-text)
+                            (send replacee-edit set-position
+                                  replacee-start
+                                  (+ replacee-start (string-length new-text)))
+                            #t)
+                     #f)))))
       
       (define/private (find-embedded-focus-editor editor)
         (let loop ([editor editor])
@@ -2308,14 +2322,15 @@
         (when find-canvas
           (set-searching-frame this)
           (unhide-search)
-          (send (cond
-                  [(send find-canvas has-focus?)
-                   replace-canvas]
-                  [(send replace-canvas has-focus?)
-                   (send (get-text-to-search) get-canvas)]
-                  [else
-                   find-canvas])
-                focus)))
+          (cond
+            [(send find-canvas has-focus?)
+             (send replace-canvas focus)]
+            [(send replace-canvas has-focus?)
+             (let ([txt (get-text-to-search)])
+               (when txt
+                 (send (send txt get-canvas) focus)))]
+            [else
+             (send find-canvas focus)])))
       (define (move-to-search-or-search)
         (set-searching-frame this)
         (unhide-search)
@@ -2422,7 +2437,9 @@
                                                      'forward
                                                      'backward)])
                                     (set-search-direction forward)
-                                    (reset-search-anchor (get-text-to-search)))))))
+                                    (let ([txt (get-text-to-search)])
+                                      (when txt
+                                        (reset-search-anchor txt))))))))
             
             (define _10
               (begin
@@ -2472,8 +2489,6 @@
   (define searchable-text-mixin
     (mixin (text<%> searchable<%>) (searchable-text<%>)
       (inherit get-editor)
-      (define/override (get-text-to-search)
-        (get-editor))
       (define/override (get-editor<%>) text:searching<%>)
       (define/override (get-editor%) text:searching%)
       (super-new)))

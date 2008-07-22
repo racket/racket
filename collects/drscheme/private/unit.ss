@@ -1577,10 +1577,6 @@ module browser threading seems wrong.
         (define/public (make-searchable canvas)
           (update-info)
           (set! search-canvas canvas))
-        (define/override (get-text-to-search)
-          (if search-canvas
-              (send search-canvas get-editor)
-              (get-editor)))
         
         (define was-locked? #f)
         
@@ -2497,6 +2493,7 @@ module browser threading seems wrong.
                    (list x y w h)))
                (send txt get-canvases)))
         
+        (inherit set-text-to-search)
         (define/private (restore-visible-tab-regions)
           (define (set-visible-regions txt regions ints?)
             (when regions
@@ -2543,8 +2540,12 @@ module browser threading seems wrong.
             (set-visible-regions definitions-text vd #f)
             (set-visible-regions interactions-text vi #t))
           (case (send current-tab get-focus-d/i)
-            [(defs) (send (car definitions-canvases) focus)]
-            [(ints) (send (car interactions-canvases) focus)]))
+            [(defs) 
+             (send (car definitions-canvases) focus)
+             (set-text-to-search (send (car definitions-canvases) get-editor))]
+            [(ints)
+             (send (car interactions-canvases) focus)
+             (set-text-to-search (send (car interactions-canvases) get-editor))]))
         
         (define/private (pathname-equal? p1 p2)
           (with-handlers ([exn:fail:filesystem? (λ (x) #f)])

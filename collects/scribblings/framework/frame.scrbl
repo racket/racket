@@ -886,12 +886,12 @@
 }
 @definterface[frame:searchable<%> (frame:basic<%>)]{
   Frames that implement this interface support searching.
-  @defmethod*[(((get-text-to-search) (instance (subclass?/c text%))))]{
-    Override this method to specify which text to search.
-
-
-    Returns the result of
-    @method[frame:editor<%> get-editor].
+  @defmethod*[(((get-text-to-search) (is-a?/c (subclass?/c text%))))]{
+    Returns the last value passed to 
+    @method[frame:searchable<%> set-text-to-search].
+  }
+  @defmethod[(set-text-to-search [txt (or/c false/c (is-a?/c (subclass?/c text%)))]) void?]{
+    Sets the current text to be searched.
   }
   @defmethod*[(((hide-search) void))]{
     This method hides the searching information on the bottom of the

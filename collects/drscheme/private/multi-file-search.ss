@@ -356,11 +356,6 @@
             (frame:searchable-mixin
              frame:standard-menus%))
       (init-field name)
-      
-      (field [text-to-search #f])
-      (define/public (set-text-to-search text) (set! text-to-search text))
-      (define/override (get-text-to-search) text-to-search)
-      
       (define/override (on-size w h)
         (preferences:set 'drscheme:multi-file-search:frame-size (cons w h))
         (super on-size w h))
