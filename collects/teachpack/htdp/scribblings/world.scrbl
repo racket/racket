@@ -21,9 +21,12 @@ The teachpack assumes working knowledge of the basic image manipulation
 primitives and introduces a special kind of image: a scene. 
 
 @deftech{Scene}@;
-@schemeblock[(and/c image?
-                  (lambda (i)
-                    (and (= (pinhole-x i) 0) (= (pinhole-y i) 0))))]
+@schemeblock[
+;; Image -> Boolean 
+(define (focus-at-0-0 i)	     
+  (and (= (pinhole-x i) 0) (= (pinhole-y i) 0)))
+
+(and/c image? focus-at-0-0)]
 
 The teachpack can display only @tech{Scene}s, which are images whose
 pinholes are at position @scheme[(0,0)].
