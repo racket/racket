@@ -15,7 +15,7 @@ of an expression to the values for the clause:
 
 Each @scheme[_datum] will be compared to the result of the first
 @scheme[_expr] using @scheme[eqv?]. Since @scheme[eqv?] doesn't work on
-many kinds of values, notably symbols and lists, each @scheme[_datum]
+many kinds of values, notably strings and lists, each @scheme[_datum]
 is typically a number, symbol, or boolean.
 
 Multiple @scheme[_datum]s can be supplied for each clause, and the

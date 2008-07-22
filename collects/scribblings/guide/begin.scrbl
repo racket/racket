@@ -43,7 +43,7 @@ sometimes said to have an @defterm{implicit begin}.
 @defexamples[
 (define (print-triangle height)
   (cond
-    [(not (positive? height))
+    [(positive? height)
      (display (make-string height #\*))
      (newline)
      (print-triangle (sub1 height))]))

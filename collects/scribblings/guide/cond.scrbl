@@ -62,15 +62,15 @@ the answer.
 
 @specform[(and expr ...)]
 
-An @scheme[or] form produces @scheme[#f] if any of its @scheme[expr]s
+An @scheme[and] form produces @scheme[#f] if any of its @scheme[_expr]s
 produces @scheme[#f]. Otherwise, it produces the value of its last
 @scheme[_expr]. As a special case, @scheme[(and)] produces
 @scheme[#t].
 
 @specform[(or expr ...)]
 
-The @scheme[and] form produces @scheme[#f] if any of its
-@scheme[_expr]s produces @scheme[#f]. Otherwise, it produces the first
+The @scheme[or] form produces @scheme[#f] if all of its
+@scheme[_expr]s produce @scheme[#f]. Otherwise, it produces the first
 non-@scheme[#f] value from its @scheme[expr]s.  As a special case,
 @scheme[(or)] produces @scheme[#f].
 
@@ -87,7 +87,7 @@ non-@scheme[#f] value from its @scheme[expr]s.  As a special case,
 If evaluation reaches the last @scheme[_expr] of an @scheme[and] or
 @scheme[or] form, then the @scheme[_expr]'s value directly determines
 the @scheme[and] or @scheme[or] result. Therefore, the last
-@scheme[expr] is in tail position, which means that the above
+@scheme[_expr] is in tail position, which means that the above
 @scheme[got-milk?] function runs in constant space.
 
 @guideother{@secref["tail-recursion"] introduces tail calls and tail positions.}

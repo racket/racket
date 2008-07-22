@@ -99,7 +99,7 @@ extra first argument. Also, a starting ``current'' value must be
 provided before the lists:
 
 @interaction[
-(foldl (lambda (v elem)
+(foldl (lambda (elem v)
          (+ v (* elem elem)))
        0
        '(1 2 3))
