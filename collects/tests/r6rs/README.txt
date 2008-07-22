@@ -1,5 +1,5 @@
 
-R6RS Test Suite
+------------------------- An R6RS Test Suite -------------------------
 
 ======================================================================
 Files
@@ -9,17 +9,43 @@ Files that end ".sps" are R6RS programs. The main one is "main.sps",
 which runs all the tests.
 
 Files that end ".sls" are R6RS libraries. For example, "base.sls" is a
-library that implements tests for `(r6rs base)'. Many R6RS
-implementations will auto-load ".sls" files if you set up your
-directoties right.
+library that implements `(tests r6rs base)', which is a set of tests
+for `(rnrs base)'. Many R6RS implementations will auto-load ".sls"
+files if you put the directory of tests in the right place.
 
-In general, for each `(r6rs <id> ... <id>)' in the standard:
+In general, for each `(rnrs <id> ... <id>)' in the standard:
 
  * There's a library of tests "<id>/.../<id>.sls". It defines and
    exports a function `run-<id>-...<id>-tests'.
 
- * There's a program "run/<id>/.../<id>.sps" that runs just the
-   library's tests and reports the results.
+ * There's a program "run/<id>/.../<id>.sps" that imports
+   "<id>/.../<id>.sls", runs the tests, and reports the results.
+
+And then there's "main.sps", which runs all the tests. Also,
+"test.sls" implements `(tests r6rs test)', which implements the
+testing utilities that are used by all the other libraries.
+
+======================================================================
+Limitations and Feedback
+======================================================================
+
+One goal of this test suite is to avoid using `eval' (except when
+specifcally testing `eval'). Avoiding `eval' makes the test suite as
+useful as possible to ahead-of-time compilers that implement `eval'
+with a separate interpreter. A drawback of the current approach,
+however, is that if an R6RS implementation doesn't supply one binding
+or does not support a bit of syntax used in a set of tests, then the
+whole set of tests fails to load.
+
+A related problem is that each set of sets is placed into one function
+that runs all the tests. This format creates a block of code that is
+much larger than in a typical program, which might give some compilers
+trouble.
+
+In any case, reports of bugs (in the tests) and new tests would be
+very much appreciated. File either as a PLT Scheme bug report at
+
+   http://bugs.plt-scheme.org
 
 ======================================================================
 Hints on running the tests
@@ -38,6 +64,9 @@ or run an individual library's test, such as "run/program.sps" as
   cd <somewhere>
   ikarus --r6rs-script tests/r6rs/run/program.sps
 
+As of Ikarus 0.3.0+ (revision 1548), many libraries fail to load,
+mostly because condition names cannot be used as expressions.
+
 Larceny
 -------
 
@@ -48,6 +77,9 @@ Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps"
 or run an individual library's test, such as "run/program.sps" as
 
   larceny -path <somewhere> -r6rs -program run/program.sps
+
+As of Larceny 0.962, some of the test suites (such as "base.sls") were
+too large to load on our test machine.
 
 PLT Scheme
 ----------
@@ -66,7 +98,8 @@ perhaps in the location reported by
               (version) "collects"
               "tests" "r6rs")
 
-You could also play with the PLTCOLLECTS environment variable.
+As of PLT Scheme 4.0.2.5, two tests fail. They correspond to
+documented non-conformance with R6RS.
 
 Ypsilon
 -------
@@ -83,12 +116,3 @@ Load the library declarations that you're interested in. For `(rnrs
    * Eval `(run-<id>-...<id>-tests)'
    * Eval `(import tests r6rs test)'
    * Eval `(show-test-results)'
-
-======================================================================
-Feedback
-======================================================================
-
-Reports of bugs (in the tests) and new tests would be very much
-appreciated. File either as a PLT Scheme bug report at
-
-   http://bugs.plt-scheme.org

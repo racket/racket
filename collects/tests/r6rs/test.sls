@@ -24,9 +24,12 @@
        (begin
          ;; (write 'expr) (newline)
          (check-test 'expr
-                     (guard (c [#t (make-err c)])
-                            expr)
+                     (catch-exns (lambda () expr))
                      expected))]))
+
+   (define (catch-exns thunk)
+      (guard (c [#t (make-err c)])
+        (thunk)))
 
   (define-syntax test/approx
     (syntax-rules ()
