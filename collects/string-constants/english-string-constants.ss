@@ -652,7 +652,11 @@ please adhere to these guidelines:
 
  (find-again-info "Search for the same string as before")
  (find-again-menu-item "Find Again")
- 
+
+  (find-again-backwards-info "Search for the same string as before, but backwards")
+ (find-again-backwards-menu-item "Find Again Backwards")
+
+  
  (replace-and-find-again-info "Replace the current text and search for the same string as before")
  (replace-and-find-again-menu-item "Replace && Find Again")
 
