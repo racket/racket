@@ -2,7 +2,7 @@
 ------------------------- An R6RS Test Suite -------------------------
 
 ======================================================================
-Files
+Files and libraries
 ======================================================================
 
 Files that end ".sps" are R6RS programs. The main one is "main.sps",
@@ -21,12 +21,13 @@ In general, for each `(rnrs <id> ... <id>)' in the standard:
  * There's a program "run/<id>/.../<id>.sps" that imports
    "<id>/.../<id>.sls", runs the tests, and reports the results.
 
-And then there's "main.sps", which runs all the tests. Also,
-"test.sls" implements `(tests r6rs test)', which implements the
-testing utilities that are used by all the other libraries.
+And then there's "main.sps", which runs all the tests (as noted
+above). Also, "test.sls" implements `(tests r6rs test)', which
+implements the testing utilities that are used by all the other
+libraries.
 
 ======================================================================
-Limitations and Feedback
+Limitations and feedback
 ======================================================================
 
 One goal of this test suite is to avoid using `eval' (except when
@@ -65,7 +66,8 @@ or run an individual library's test, such as "run/program.sps" as
   ikarus --r6rs-script tests/r6rs/run/program.sps
 
 As of Ikarus 0.3.0+ (revision 1548), many libraries fail to load,
-mostly because condition names cannot be used as expressions.
+mostly because condition names like &error cannot be used as
+expressions.
 
 Larceny
 -------
@@ -78,8 +80,9 @@ or run an individual library's test, such as "run/program.sps" as
 
   larceny -path <somewhere> -r6rs -program run/program.sps
 
-As of Larceny 0.962, some of the test suites (such as "base.sls") were
-too large to load on our test machine.
+As of Larceny 0.962, many test suites (such as "base.sls") take too
+long and use too much memory to load on our machine; probably the test
+functions are too big.
 
 PLT Scheme
 ----------
