@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "common.ss")
+@(require "common.ss"
+          (for-label scheme/file))
 
 @title[#:tag "mredprefs"]{Preferences}
 
@@ -7,7 +8,7 @@ MrEd supports a number of preferences for global configuration. The
  MrEd preferences are stored in the common file reported by
  @scheme[find-system-path] for @indexed-scheme['pref-file], and
  preference values can be retrieved and changed through
- @scheme[get-preference] and @scheme[set-preference]. However, MrEd
+ @scheme[get-preference] and @scheme[put-preferences]. However, MrEd
  reads most preferences once at startup (all except the
  @Resource{playcmd}).
 

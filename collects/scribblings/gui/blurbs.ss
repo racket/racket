@@ -253,11 +253,17 @@ information@|details|, even if the editor currently has delayed refreshing (see
                         (hspace 1)
                         (bytes->string/latin-1 name))))
   
+  (define (res-sym s)
+    (string->symbol (string-append "MrEd:" s)))
+
   (define (Resource s)
-    @elem{@to-element[`(quote ,(string->symbol (string-append "MrEd:" s)))]
+    @elem{@to-element[`(quote ,(res-sym s))]
           preference})
   (define (ResourceFirst s) ; fixme -- add index
-    (Resource s))
+    (let ([r (Resource s)])
+      (index* (list (format "~a preference" (res-sym s)))
+              (list r) 
+              r)))
 
   (define (edsnipsize a b c)
     @elem{An @scheme[editor-snip%] normally stretches to wrap around the size
