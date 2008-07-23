@@ -319,21 +319,32 @@ function Id(x) {
   return x;
 }
 
+var indicators =
+  (function() {
+    // construct indicator lines that look like: "--->..."
+    var i, j, s, a = new Array();
+    for (i=0; i<11; i++) {
+      s = "";
+      for (j=0; j<10; j++) {
+        s += (j==9 && i==10) ? "&#9632;"
+           : (j<i)  ? "&mdash;"
+           : (j==i) ? "&#9658;"
+           : "&middot;";
+      }
+      a.push("&nbsp;<tt>"+s+"</tt>");
+    }
+    return a;
+   }());
 function MakeShowProgress() {
   var orig = status_line.innerHTML;
-  var indicators = [
-    ">.........", "->........", "-->.......", "--->......", "---->.....",
-    "----->....", "------>...", "------->..", "-------->.", "--------->",
-    "---------*"];
   return function(n) {
     status_line.innerHTML =
-      orig + "&nbsp;<tt>"
-      + indicators[Math.round(10*n/search_data.length)] + "</tt>";
+      orig + indicators[Math.round(10*n/search_data.length)];
   }
 }
 
 function Search(data, term, is_pre, K) {
-  // `K' is a continuation, if this run is supposed to happen in a "thread"
+  // `K' is a continuation if this run is supposed to happen in a "thread"
   // false otherwise
   var t = false;
   var killer = function() { if (t) clearTimeout(t); };
