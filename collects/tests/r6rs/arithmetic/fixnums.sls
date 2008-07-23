@@ -22,11 +22,14 @@
            [s1 (div0 s (expt 2 (fixnum-width)))])
       (values s0 s1)))
 
+  (define (vals->list f a b c)
+    (call-with-values (lambda () (f a b c)) list))
+
   (define-syntax carry-test
     (syntax-rules ()
       [(_ fxop/carry fxop/carry-reference fx1 fx2 fx3)
-       (test (call-with-values (lambda () (fxop/carry fx1 fx2 fx3)) list)
-             (call-with-values (lambda () (fxop/carry-reference fx1 fx2 fx3)) list))]))
+       (test (vals->list fxop/carry fx1 fx2 fx3)
+             (vals->list fxop/carry-reference fx1 fx2 fx3))]))
 
   (define-syntax carry-tests
     (syntax-rules ()
