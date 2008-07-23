@@ -261,9 +261,9 @@
     (test/approx (flexpt 10.0 3.0) 1000.0)
 
     (test (no-infinities-violation? (make-no-infinities-violation)) #t)
-    (test ((record-predicate &no-infinities) (make-no-infinities-violation)) #t)
+    (test ((record-predicate (record-type-descriptor &no-infinities)) (make-no-infinities-violation)) #t)
     (test (no-nans-violation? (make-no-nans-violation)) #t)
-    (test ((record-predicate &no-nans) (make-no-nans-violation)) #t)
+    (test ((record-predicate (record-type-descriptor &no-nans)) (make-no-nans-violation)) #t)
 
     (test/approx (fixnum->flonum 2) 2.0)
 

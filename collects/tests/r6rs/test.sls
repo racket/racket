@@ -78,7 +78,7 @@
   (define-syntax test/unspec-or-exn
     (syntax-rules ()
       [(_ expr condition)
-       (test (guard (c [((condition-predicate condition) c)
+       (test (guard (c [((condition-predicate (record-type-descriptor condition)) c)
                         'unspec])
                     (begin expr 'unspec))
              'unspec)]))
