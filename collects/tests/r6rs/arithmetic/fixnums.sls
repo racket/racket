@@ -37,7 +37,9 @@
       [(_ 1 n (m ...) ps)
        (begin (carry-tests 2 n m ps) ...)]
       [(_ 2 n m (p ...))
-       (begin (carry-test fx*/carry fx*/carry-reference n m p) ...)]))
+       (begin (carry-test fx*/carry fx*/carry-reference n m p) ...
+              (carry-test fx+/carry fx+/carry-reference n m p) ...
+              (carry-test fx-/carry fx-/carry-reference n m p) ...)]))
 
   (define (run-arithmetic-fixnums-tests)
 
@@ -181,7 +183,7 @@
     (test (fx- (greatest-fixnum) (greatest-fixnum)) 0)
     (test (fx- (least-fixnum) (least-fixnum)) 0)
 
-    ;; If you put N numbers here, it expads to N^3 tests!
+    ;; If you put N numbers here, it expands to O(N^3) tests!
     (carry-tests 0 [0 1 2 -1 -2 38734 -3843 2484598 -348732487 (greatest-fixnum) (least-fixnum)])
 
     (test (fxdiv 123 10) 12)

@@ -414,20 +414,20 @@
     (let ([p (open-file-input/output-port "io-tmp1"
                                           (file-options no-fail)
                                           'none
-                                          (make-transcoder (utf-8-codec)))])
+                                          (make-transcoder (latin-1-codec)))])
       (test/unspec (put-string p "berry"))
       (test/unspec (close-port p)))
     (let ([p (open-file-input/output-port "io-tmp1"
                                           (file-options no-fail no-truncate)
                                           'none
-                                          (make-transcoder (utf-8-codec)))])
+                                          (make-transcoder (latin-1-codec)))])
       (test (get-string-n p 4) "berr")
       (test/unspec (put-string p "apple"))
       (test/unspec (close-port p)))
     (let ([p (open-file-input/output-port "io-tmp1"
                                           (file-options no-fail no-truncate)
                                           'none
-                                          (make-transcoder (utf-8-codec)))])
+                                          (make-transcoder (latin-1-codec)))])
       (test (get-string-n p 10) "berrapple")
       (test/unspec (close-port p)))
 
