@@ -100,7 +100,6 @@
     (test (point-y p1) 17)
 
     (test (record-rtd p1) (record-type-descriptor point))
-    (test point (record-type-descriptor point))
     
     (test (ex1-f ex1-i1) '(1 2 3))
 
@@ -117,33 +116,33 @@
     (test (record? p1) #t)
     (test (record? ex3-i1) #f)
 
-    (test (record-type-name point) 'point)
-    (test (record-type-name cpoint2) 'cpoint2)
-    (test (record-type-name ex1) 'ex1)
+    (test (record-type-name (record-type-descriptor point)) 'point)
+    (test (record-type-name (record-type-descriptor cpoint2)) 'cpoint2)
+    (test (record-type-name (record-type-descriptor ex1)) 'ex1)
 
-    (test (record-type-parent point) #f)
-    (test (record-type-parent cpoint2) point)
+    (test (record-type-parent (record-type-descriptor point)) #f)
+    (test (record-type-parent (record-type-descriptor cpoint2)) (record-type-descriptor point))
 
-    (test (record-type-uid point) 'point-4893d957-e00b-11d9-817f-00111175eb9e)
-    (test/unspec (record-type-uid cpoint2))
-    (test/unspec (record-type-uid ex1))
+    (test (record-type-uid (record-type-descriptor point)) 'point-4893d957-e00b-11d9-817f-00111175eb9e)
+    (test/unspec (record-type-uid (record-type-descriptor cpoint2)))
+    (test/unspec (record-type-uid (record-type-descriptor ex1)))
 
-    (test (record-type-generative? point) #f)
-    (test (record-type-generative? cpoint2) #t)
-    (test (record-type-generative? ex1) #t)
+    (test (record-type-generative? (record-type-descriptor point)) #f)
+    (test (record-type-generative? (record-type-descriptor cpoint2)) #t)
+    (test (record-type-generative? (record-type-descriptor ex1)) #t)
 
-    (test (record-type-sealed? point) #f)
-    (test (record-type-sealed? ex3) #t)
+    (test (record-type-sealed? (record-type-descriptor point)) #f)
+    (test (record-type-sealed? (record-type-descriptor ex3)) #t)
       
-    (test (record-type-opaque? point) #f)
-    (test (record-type-opaque? ex3) #t)
+    (test (record-type-opaque? (record-type-descriptor point)) #f)
+    (test (record-type-opaque? (record-type-descriptor ex3)) #t)
       
-    (test (record-type-field-names point) '#(x y))
-    (test (record-type-field-names cpoint2) '#(rgb))
+    (test (record-type-field-names (record-type-descriptor point)) '#(x y))
+    (test (record-type-field-names (record-type-descriptor cpoint2)) '#(rgb))
     
-    (test (record-field-mutable? point 0) #f)
-    (test (record-field-mutable? point 1) #t)
-    (test (record-field-mutable? cpoint 0) #t)
+    (test (record-field-mutable? (record-type-descriptor point) 0) #f)
+    (test (record-field-mutable? (record-type-descriptor point) 1) #t)
+    (test (record-field-mutable? (record-type-descriptor cpoint) 0) #t)
 
     ;;
     ))
