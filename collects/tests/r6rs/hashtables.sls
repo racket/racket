@@ -7,7 +7,7 @@
 
   (define-syntax test-ht
     (syntax-rules ()
-      [(_ mk ([key val] ...)
+      [(_ mk key=? ([key val] ...)
           key/r orig-val new-val
           key/a a-val
           key/rm)
@@ -41,7 +41,7 @@
            (test (vector-length (let-values ([(k e) (hashtable-entries h)])
                                   e))
                  (hashtable-size h))
-           (test (exists (lambda (v) (eq? v key/r))
+           (test (exists (lambda (v) (key=? v key/r))
                          (vector->list (hashtable-keys h)))
                  #t)
 
@@ -113,7 +113,7 @@
                         '(#(3 2 1)  . #(three two one))))
             #t))
     
-    (test-ht (make-eq-hashtable)
+    (test-ht (make-eq-hashtable) eq?
              (['a 7] ['b "bee"]
               [#t 8] [#f 9]
               ['c 123456789101112])
@@ -121,7 +121,7 @@
              'd 12
              'c)
     
-    (test-ht (make-eqv-hashtable)
+    (test-ht (make-eqv-hashtable) eqv?
              (['a 7] [#\b "bee"]
               [#t 8] [0.0 85]
               [123456789101112 'c])
@@ -135,7 +135,8 @@
                         (string->number a)))])
       (test-ht (make-hashtable val-of
                                (lambda (a b)
-                                 (= (val-of a) (val-of b))))
+                                 (= (val-of a) (val-of b)))) 
+               equal?
                ([1 'one]["2" 'two]
                 [3 'three]["4" 'four])
                2 'two 'er
@@ -158,7 +159,7 @@
 
     (test (string-hash "a") (string-hash (make-string 1 #\a)))
     (test (string-hash "aaaaa") (string-hash (make-string 5 #\a)))
-    (test (string-ci-hash "aAaAA") (string-hash (make-string 5 #\a)))
+    (test (string-ci-hash "aAaAA") (string-ci-hash (make-string 5 #\a)))
 
     (test (symbol-hash 'a) (symbol-hash 'a))
 
