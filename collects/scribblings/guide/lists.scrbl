@@ -219,7 +219,6 @@ local function @scheme[iter] that accumulates the length in an
 argument @scheme[len]:
 
 @schemeblock[
-#:eval list-eval
 (define (my-length lst)
   (code:comment #, @t{local function @scheme[iter]:})
   (define (iter lst len)
@@ -262,7 +261,6 @@ accumulating the result list. The only catch is that the accumulated
 list will be backwards, so you'll have to reverse it at the very end:
 
 @schemeblock[
-#:eval list-eval
 (define (my-map f lst)
   (define (iter lst backward-result)
     (cond
