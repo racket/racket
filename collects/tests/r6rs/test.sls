@@ -9,6 +9,7 @@
           test/unspec
           test/unspec-or-exn
           test/output/unspec
+          run-test
           report-test-results)
   (import (rnrs))
 
@@ -23,9 +24,9 @@
       [(_ expr expected)
        (begin
          ;; (write 'expr) (newline)
-         (check-test 'expr
-                     (catch-exns (lambda () expr))
-                     expected))]))
+         (run-test 'expr
+                   (catch-exns (lambda () expr))
+                   expected))]))
 
    (define (catch-exns thunk)
       (guard (c [#t (make-err c)])
@@ -60,14 +61,14 @@
   (define-syntax test/output
     (syntax-rules ()
       [(_ expr expected str)
-       (check-test 'expr
-                   (capture-output
-                    (lambda ()
-                      (check-test 'expr
-                                  (guard (c [#t (make-err c)])
-                                         expr)
-                                  expected)))
-                   str)]))
+       (run-test 'expr
+                 (capture-output
+                  (lambda ()
+                    (run-test 'expr
+                              (guard (c [#t (make-err c)])
+                                     expr)
+                              expected)))
+                 str)]))
 
   (define-syntax test/unspec
     (syntax-rules ()
@@ -105,7 +106,7 @@
           (if (file-exists? "tmp-catch-out")
               (delete-file "tmp-catch-out")))))
   
-  (define (check-test expr got expected)
+  (define (run-test expr got expected)
     (set! checked (+ 1 checked))
     (unless (if (and (real? expected)
                      (nan? expected))

@@ -28,21 +28,23 @@
   (define-syntax carry-test
     (syntax-rules ()
       [(_ fxop/carry fxop/carry-reference fx1 fx2 fx3)
-       (test (vals->list fxop/carry fx1 fx2 fx3)
-             (vals->list fxop/carry-reference fx1 fx2 fx3))]))
+       (run-test `(fxop/carry ,fx1 ,fx2 ,fx3)
+                 (vals->list fxop/carry fx1 fx2 fx3)
+                 (vals->list fxop/carry-reference fx1 fx2 fx3))]))
 
-  (define-syntax carry-tests
-    (syntax-rules ()
-      [(_ 0 nums)
-       (carry-tests 0 nums nums nums)]
-      [(_ 0 (n ...) ms ps)
-       (begin (carry-tests 1 n ms ps) ...)]
-      [(_ 1 n (m ...) ps)
-       (begin (carry-tests 2 n m ps) ...)]
-      [(_ 2 n m (p ...))
-       (begin (carry-test fx*/carry fx*/carry-reference n m p) ...
-              (carry-test fx+/carry fx+/carry-reference n m p) ...
-              (carry-test fx-/carry fx-/carry-reference n m p) ...)]))
+  (define (carry-tests l)
+    (for-each 
+     (lambda (n)
+       (for-each 
+        (lambda (m)
+          (for-each 
+           (lambda (p)
+             (carry-test fx*/carry fx*/carry-reference n m p)
+             (carry-test fx+/carry fx+/carry-reference n m p)
+             (carry-test fx-/carry fx-/carry-reference n m p))
+           l))
+        l))
+     l))
 
   (define (run-arithmetic-fixnums-tests)
 
@@ -186,8 +188,9 @@
     (test (fx- (greatest-fixnum) (greatest-fixnum)) 0)
     (test (fx- (least-fixnum) (least-fixnum)) 0)
 
-    ;; If you put N numbers here, it expands to O(N^3) tests!
-    (carry-tests 0 [0 1 2 -1 -2 38734 -3843 2484598 -348732487 (greatest-fixnum) (least-fixnum)])
+    ;; If you put N numbers here, it runs to O(N^3) tests!
+    (carry-tests (list 0 1 2 -1 -2 38734 -3843 2484598 -348732487 
+                       (greatest-fixnum) (least-fixnum)))
 
     (test (fxdiv 123 10) 12)
     (test (fxmod 123 10) 3)
