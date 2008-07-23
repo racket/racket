@@ -2,8 +2,8 @@
 
 function GetCookie(key, def) {
   if (document.cookie.length <= 0) return def;
-  var cookiestrs = document.cookie.split(/; */);
-  for (var i in cookiestrs) {
+  var i, cookiestrs = document.cookie.split(/; */);
+  for (i = 0; i < cookiestrs.length; i++) {
     var cur = cookiestrs[i];
     var eql = cur.indexOf('=');
     if (eql >= 0 && cur.substring(0,eql) == key)
