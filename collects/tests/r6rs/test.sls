@@ -44,7 +44,7 @@
   (define-syntax test/exn
     (syntax-rules ()
       [(_ expr condition)
-       (test (guard (c [((condition-predicate condition) c)
+       (test (guard (c [((condition-predicate (record-type-descriptor condition)) c)
                         (make-expected-exception)])
                     expr)
              (make-expected-exception))]))

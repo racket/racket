@@ -38,10 +38,10 @@ however, is that if an R6RS implementation doesn't supply one binding
 or does not support a bit of syntax used in a set of tests, then the
 whole set of tests fails to load.
 
-A related problem is that each set of sets is placed into one function
-that runs all the tests. This format creates a block of code that is
-much larger than in a typical program, which might give some compilers
-trouble.
+A related problem is that each set of tests is placed into one
+function that runs all the tests. This format creates a block of code
+that is much larger than in a typical program, which might give some
+compilers trouble.
 
 In any case, reports of bugs (in the tests) and new tests would be
 very much appreciated. File either as a PLT Scheme bug report at
@@ -65,9 +65,10 @@ or run an individual library's test, such as "run/program.sps" as
   cd <somewhere>
   ikarus --r6rs-script tests/r6rs/run/program.sps
 
-As of Ikarus 0.3.0+ (revision 1548), many libraries fail to load,
-mostly because condition names like &error cannot be used as
-expressions.
+As of Ikarus 0.3.0+ (revision 1548), a few libraries fail to load ---
+mostly because some syntax (such as complex numbers) isn't supported,
+or some unimplemented feature is used in the set-up for a test (so it
+isn't protected by an exception handler).
 
 Larceny
 -------

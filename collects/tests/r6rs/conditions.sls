@@ -14,8 +14,8 @@
          (let ([v (make arg ...)])
            (test (sel v) arg) ...
            'ok)
-         (test ((record-predicate &parent) (make arg ...)) #t)
-         (test (record-type-parent &c) &parent))]))
+         (test ((record-predicate (record-type-descriptor &parent)) (make arg ...)) #t)
+         (test (record-type-parent (record-type-descriptor &c)) (record-type-descriptor &parent)))]))
 
   ;; ----------------------------------------
 
