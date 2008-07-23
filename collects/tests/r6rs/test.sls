@@ -109,7 +109,7 @@
     (set! checked (+ 1 checked))
     (unless (if (and (real? expected)
                      (nan? expected))
-                (nan? got)
+                (and (real? got) (nan? got))
                 (or (equal? got expected)
                     (and (expected-exception? expected)
                          (expected-exception? got))))

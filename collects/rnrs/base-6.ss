@@ -195,16 +195,22 @@
            (integer? (real-part o)))))
 
 (define (finite? n)
-  (not (or (eqv? n +inf.0)
-           (eqv? n -inf.0)
-           (eqv? n +nan.0))))
-
+  (if (real? n)
+      (not (or (eqv? n +inf.0)
+               (eqv? n -inf.0)
+               (eqv? n +nan.0)))
+      (raise-type-error 'infinite? "real" n)))
+  
 (define (infinite? n)
-  (or (eqv? n +inf.0)
-      (eqv? n -inf.0)))
+  (if (real? n)
+      (or (eqv? n +inf.0)
+          (eqv? n -inf.0))
+      (raise-type-error 'infinite? "real" n)))
 
 (define (nan? n)
-  (eqv? n +nan.0))
+  (if (real? n)
+      (eqv? n +nan.0)
+      (raise-type-error 'nan? "real" n)))
 
 ;; Someone needs to look more closely at div and mod.
 ;; I started with the code from Enger04, and poked it
