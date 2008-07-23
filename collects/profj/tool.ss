@@ -728,7 +728,7 @@
                  (let ((end? (eof-object? (peek-char-or-special port))))
                    (if end? 
                        eof 
-                       (datum->syntax #f `(parse-java-full-program ,(parse port (get-defn-editor name) #;(quote name) level)
+                       (datum->syntax #f `(parse-java-full-program ,(parse port name level)
                                                                    ,name) #f)))))))
           (define/public (front-end/interaction port settings)
             (mred? #t)
