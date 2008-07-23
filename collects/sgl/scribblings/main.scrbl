@@ -44,7 +44,7 @@ The @schememodname[sgl] module is not as complete as the
 (gl-end)
 ]]
 
-@defstruct[selection-record ([min-z real?] [max-z real?] [stack ....])]{
+@defstruct[gl-selection-record ([min-z real?] [max-z real?] [stack ....])]{
 
 Represents a selection.}
 
@@ -153,7 +153,6 @@ gl-pop-attrib
 gl-pop-client-attrib
 gl-pop-matrix
 gl-pop-name
-gl-process-selection
 gl-project
 gl-push-matrix
 gl-push-name
@@ -196,22 +195,22 @@ gl-window-pos-v
 Scheme-style variants of the OpenGL functions.}
 
 
-@defproc[(process-selection [vec gl-uint-vector?]
-                            [hits exact-nonnegative-integer?])
-         (listof selection-record?)]{
+@defproc[(gl-process-selection [vec gl-uint-vector?]
+                               [hits exact-nonnegative-integer?])
+         (listof gl-selection-record?)]{
 
 Parses the contents of @scheme[vec] from the format used by
 @scheme[glSelectBuffer].  The second argument should be the number of
 hits as returned by @scheme[glRenderMode].}
 
 
-@defproc[(get-gl-version-number) exact-nonnegative-integer?]{
+@defproc[(gl-get-gl-version-number) exact-nonnegative-integer?]{
 
 Returns the run-time OpenGL version number as an integer: @scheme[10],
 @scheme[11], @scheme[12], @scheme[13], @scheme[14], @scheme[15], or
 @scheme[20].}
 
-@defproc[(get-glu-version-number) exact-nonnegative-integer?]{
+@defproc[(gl-get-glu-version-number) exact-nonnegative-integer?]{
 
 Returns the run-time GLU version number as an integer: @scheme[10],
 @scheme[11], @scheme[12], or @scheme[13].}
