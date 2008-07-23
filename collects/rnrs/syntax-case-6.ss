@@ -240,12 +240,10 @@
                  (if (or a b counting?)
                      (cons a b)
                      #f))]
-      [#(a ...) (let ([as (map (lambda (a)
-                                 (loop a in-ellipses? #f))
-                               (syntax->list #'(a ...)))])
-                  (if (ormap values as)
-                      (list->vector as)
-                      #f))]
+      [#(a ...) (let ([as (loop (syntax->list #'(a ...))
+                                in-ellipses?
+                                #f)])
+                  (and as (vector as)))]
       [a
        (identifier? #'a)
        (ormap (lambda (pat-var)
@@ -278,7 +276,12 @@
       (mcons (unwrap (car p) (car mapping))
              (unwrap (cdr p) (cdr mapping))))]
    [(vector? mapping)
-    (list->vector (mlist->list (unwrap (vector->list (syntax-e stx)) (vector->list mapping))))]
+    (list->vector (let loop ([v (unwrap (vector->list (syntax-e stx))
+                                        (vector-ref mapping 0))])
+                    (cond
+                     [(null? v) null]
+                     [(mpair? v) (cons (mcar v) (loop (mcdr v)))]
+                     [(syntax? v) (syntax->list v)])))]
    [(null? mapping) null]
    [(box? mapping)
     ;; ellipses
