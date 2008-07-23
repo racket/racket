@@ -65,11 +65,6 @@ or run an individual library's test, such as "run/program.sps" as
   cd <somewhere>
   ikarus --r6rs-script tests/r6rs/run/program.sps
 
-As of Ikarus 0.3.0+ (revision 1548), a few libraries fail to load ---
-mostly because some syntax (such as complex numbers) isn't supported,
-or some unimplemented feature is used in the set-up for a test (so it
-isn't protected by an exception handler).
-
 Larceny
 -------
 
@@ -80,10 +75,6 @@ Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps"
 or run an individual library's test, such as "run/program.sps" as
 
   larceny -path <somewhere> -r6rs -program run/program.sps
-
-As of Larceny 0.962, many test suites (such as "base.sls") take too
-long and use too much memory to load on our machine; probably the test
-functions are too big.
 
 PLT Scheme
 ----------
