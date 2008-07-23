@@ -7,8 +7,9 @@
   (provide malgol-lexer malgol-parser)
   
   
-  (define-tokens regular (ID LITNUM STRING))
-  (define-empty-tokens keywords (PROCEDURE SEMI BEGIN IN END IF ELSE EQUALS EOF))
+  (define-tokens regular (ID LITNUM STRING LBRACK RBRACK COMMA LPAREN RPAREN))
+  (define-empty-tokens keywords (PROCEDURE SEMI BEGIN IN END IF THEN ELSE EQUALS EOF
+                                           ARROW TRUE FALSE DATATYPE CASES))
   
   (display (equal? (token-ID "foo") (token-ID "foo"))) (newline)
   
@@ -19,13 +20,13 @@
     (digit (:/ "0" "9"))
     (id-cont (:or id-start digit)))
   
-  (define example-lexer 
+  (define malgol-lexer 
     (lexer ((eof) (token-EOF))
            (whitespace (malgol-lexer input-port))
            ("=" (token-EQUALS))
            (";" (token-SEMI))
            ("begin" (token-BEGIN))
-           ("end" (token-end))
+           ("end" (token-END))
            ((:+ digit) (token-LITNUM lexeme))
            ((:: id-start (:* id-cont)) (token-ID lexeme))
            ((:: #\" (:* (:or (:~ #\") "\\\"")) #\") (token-STRING (substring lexeme 1 (- (string-length lexeme) 1))))))

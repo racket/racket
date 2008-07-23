@@ -1,16 +1,18 @@
+#lang scheme
+
 ;; An interactive calculator inspired by the calculator example in the bison manual.
 
 
 ;; Import the parser and lexer generators.
 (require parser-tools/yacc
          parser-tools/lex
-         (prefix : parser-tools/lex-sre))
+         (prefix-in : parser-tools/lex-sre))
 
 (define-tokens value-tokens (NUM VAR FNCT))
 (define-empty-tokens op-tokens (newline = OP CP + - * / ^ EOF NEG))
 
 ;; A hash table to store variable values in for the calculator
-(define vars (make-hash-table))
+(define vars (make-hash))
 
 (define-lex-abbrevs
  (lower-letter (:/ "a" "z"))
@@ -61,8 +63,8 @@
            [(exp) $1])
     
     (exp [(NUM) $1]
-         [(VAR) (hash-table-get vars $1 (lambda () 0))]
-         [(VAR = exp) (begin (hash-table-put! vars $1 $3)
+         [(VAR) (hash-ref vars $1 (lambda () 0))]
+         [(VAR = exp) (begin (hash-set! vars $1 $3)
                              $3)]
          [(FNCT OP exp CP) ($1 $3)]
          [(exp + exp) (+ $1 $3)]
@@ -79,10 +81,9 @@
   (letrec ((one-line
 	    (lambda ()
 	      (let ((result (calcp (lambda () (calcl ip)))))
-		(if result
-		    (begin
-		      (printf "~a~n" result)
-		      (one-line)))))))
+		(when result
+                  (printf "~a~n" result)
+                  (one-line))))))
     (one-line)))
 
-(calc (open-input-string "(1 + 2 * 3) - (1+2)*3"))
+(calc (open-input-string "x=1\n(x + 2 * 3) - (1+2)*3"))
