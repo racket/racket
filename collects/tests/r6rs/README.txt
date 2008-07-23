@@ -5,7 +5,7 @@
 Files and libraries
 ======================================================================
 
-Files that end ".sps" are R6RS programs. The main one is "main.sps",
+Files that end ".sps" are R6RS programs. The main one is "run.sps",
 which runs all the tests.
 
 Files that end ".sls" are R6RS libraries. For example, "base.sls" is a
@@ -21,10 +21,13 @@ In general, for each `(rnrs <id> ... <id>)' in the standard:
  * There's a program "run/<id>/.../<id>.sps" that imports
    "<id>/.../<id>.sls", runs the tests, and reports the results.
 
-And then there's "main.sps", which runs all the tests (as noted
+And then there's "run.sps", which runs all the tests (as noted
 above). Also, "test.sls" implements `(tests r6rs test)', which
 implements the testing utilities that are used by all the other
 libraries.
+
+The "run-via-eval.sps" program is similar to "run.ss", but it
+runs each set of tests via `eval'.
 
 ======================================================================
 Limitations and feedback
