@@ -160,6 +160,7 @@
     (test (string-hash "a") (string-hash (make-string 1 #\a)))
     (test (string-hash "aaaaa") (string-hash (make-string 5 #\a)))
     (test (string-ci-hash "aAaAA") (string-ci-hash (make-string 5 #\a)))
+    (test (string-ci-hash "aAaAA") (string-ci-hash (make-string 5 #\A)))
 
     (test (symbol-hash 'a) (symbol-hash 'a))
 
