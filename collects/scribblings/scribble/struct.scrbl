@@ -331,7 +331,9 @@ A @techlink{paragraph} has a list of @tech{elements}.
 @defstruct[(styled-paragraph paragraph) ([style any/c])]{
 
 The @scheme[style] is normally a string that corresponds to a CSS
-class for HTML output.
+class for HTML output, in which case a @tt{<div>} block is generated
+instead of a @tt{<p>} block. A base style can also be a
+@scheme[with-attributes] instance to add arbitrary HTML attributes.
 
 }
 
@@ -344,7 +346,43 @@ the table can span multiple columns by using @scheme['cont] instead of
 a flow in the following columns (i.e., for all but the first in a set
 of cells that contain a single flow).
 
-}
+The @scheme[style] can be any of the following:
+
+@itemize[
+
+ @item{A string that corresponds to a CSS class for
+       HTML output.}
+
+ @item{@scheme['boxed] to render as a definition.}
+
+ @item{@scheme['centered] to render centered horizontally.}
+
+ @item{@scheme['at-left] to render left-aligned (HTML only).}
+
+ @item{@scheme['at-right] to render right-aligned (HTML only).}
+
+ @item{An association list with the following optional mappings:
+
+       @itemize[ 
+ 
+         @item{@scheme['style] to a string for a CSS class for HTML output.}
+
+         @item{@scheme['row-styles] to a list of association lists,
+               one for each row in the table. Each of these nested
+               association lists maps @scheme['alignment] and
+               @scheme['valignment] to a list of symbols an
+               @scheme[#f]s, one for each column. The symbols in an
+               @scheme['alignment] list can be @scheme['left],
+               @scheme['right], or @scheme['center]. The symbols in a
+               @scheme['valignment] list can be @scheme['top],
+               @scheme['baseline], or @scheme['bottom].}
+
+         ]}
+
+  @item{an instance of @scheme[with-attributes], which combines a base
+       style with a set of additional HTML attributes.}
+
+]}
 
 
 @defstruct[itemization ([flows (listof flow?)])]{
@@ -565,7 +603,10 @@ saving collected info), it is reduced to a @scheme[element] instance.
                             [assoc (listof (cons/c symbol? string?))])]{
 
 Used for an @scheme[element]'s style to combine a base style with
-arbitrary HTML attributes.}
+arbitrary HTML attributes. When the @scheme[style] field is itself an
+instance of @scheme[with-attributes], its content is automatically
+flattened into the enclosing @scheme[with-attributes] when it is used
+(when, e.g., rendering an @tech{element} or a styled @tech{paragraph}).}
 
 
 @defstruct[collected-info ([number (listof (or/c false/c integer?))]

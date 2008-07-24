@@ -1030,7 +1030,7 @@
 }
 @defmixin[frame:searchable-text-mixin (frame:text<%> frame:searchable<%>) (frame:searchable-text<%>)]{
 
-  @defmethod*[#:mode override (((get-text-to-search) (instanceof text%)))]{
+  @defmethod*[#:mode override-final (((get-text-to-search) (instanceof text%)))]{
 
     Returns the result of
     @method[frame:editor<%> get-editor].

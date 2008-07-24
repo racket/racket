@@ -106,6 +106,12 @@
 
 (define-serializable-struct literal-anchor (string))
 
+(define (style->attribs raw-style)
+  (if (with-attributes? raw-style)
+      (map (lambda (p) (list (car p) (cdr p)))
+           (with-attributes-assoc raw-style))
+      null))
+
 #; ; no need for these index-local searches
 #reader scribble/reader (begin ; easier to format
 
@@ -758,11 +764,21 @@
       ;; HACK: for the search, we need to be able to render a `div'
       ;; with an `id' attribute, `p' will probably work fine instead
       ;; of `div' since it's a block element.  Do this for now.
-      (let ([contents (super render-paragraph p part ri)]
-            [style (and (styled-paragraph? p) (styled-paragraph-style p))])
+      (let* ([contents (super render-paragraph p part ri)]
+             [raw-style (and (styled-paragraph? p) 
+                             (flatten-style (styled-paragraph-style p)))]
+             [style (if (with-attributes? raw-style)
+                        (with-attributes-style raw-style)
+                        raw-style)])
         (if (and (pair? style) (eq? (car style) 'div))
           `((div-hack ,(cdr style) ,@contents))
-          `((p ,(if style `([class ,style]) `()) ,@contents)))))
+          `((,(if (string? style) 'div 'p) 
+             ,(append
+               (if (string? style)
+                   `([class ,style]) 
+                   `()) 
+               (style->attribs raw-style))
+             ,@contents)))))
 
     (define/override (render-element e part ri)
       (cond
@@ -828,13 +844,9 @@
     (define/private (render-plain-element e part ri)
       (let* ([raw-style (flatten-style (and (element? e) (element-style e)))]
              [style (if (with-attributes? raw-style)
-                      (with-attributes-style raw-style)
-                      raw-style)])
-        (define (attribs)
-          (if (with-attributes? raw-style)
-            (map (lambda (p) (list (car p) (cdr p)))
-                 (with-attributes-assoc raw-style))
-            null))
+                        (with-attributes-style raw-style)
+                        raw-style)])
+        (define (attribs) (style->attribs raw-style))
         (define (render* [x 'span])
           ;; x can be a tag name, or a list of attributes, or a tag followed by
           ;; a list of attributes (internal use: no error checking!)
@@ -929,7 +941,10 @@
           [else (render*)])))
 
     (define/override (render-table t part ri need-inline?)
-      (define t-style (table-style t))
+      (define raw-style (flatten-style (table-style t)))
+      (define t-style (if (with-attributes? raw-style)
+                          (with-attributes-style raw-style)
+                          raw-style))
       (define t-style-get (if (and (pair? t-style) (list? t-style))
                             (lambda (k) (assoc k t-style))
                             (lambda (k) #f)))
@@ -981,7 +996,8 @@
                     [else null])
                 ,@(let ([a (t-style-get 'style)])
                     (if (and a (string? (cadr a))) `([class ,(cadr a)]) null))
-                ,@(if (string? t-style) `([class ,t-style]) null))
+                ,@(if (string? t-style) `([class ,t-style]) null)
+                ,@(style->attribs raw-style))
           ,@(map make-row
                  (table-flowss t)
                  (cdr (or (t-style-get 'row-styles)

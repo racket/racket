@@ -627,19 +627,39 @@ Like @scheme[defconstructor], but the constructor is
 annotated to indicate that additional initialization arguments are
 accepted and propagated to the superclass.}
 
-@defform[(defmethod (id arg-spec ...)
-                    result-contract-expr-datum
-                    pre-flow ...)]{
+@defform/subs[#:literals (override override-final public-final 
+                          augment augment-final pubment extend extend-final)
+              (defmethod maybe-mode (id arg-spec ...)
+                         result-contract-expr-datum
+                         pre-flow ...)
+              ([maybe-mode code:blank
+                           (code:line #:mode override)
+                           (code:line #:mode override-final)
+                           (code:line #:mode public-final)
+                           (code:line #:mode augment)
+                           (code:line #:mode augment-final)
+                           (code:line #:mode pubment)
+                           (code:line #:mode extend)
+                           (code:line #:mode extend-final)])]{
 
 Like @scheme[defproc], but for a method within a @scheme[defclass] or
-@scheme[definterface] body.}
+@scheme[definterface] body.
 
-@defform[(defmethod* ([(id arg-spec ...)
+The @scheme[maybe-mode] specifies whether the method overrides a
+method from a superclass, and so on. (For these purposes, use
+@scheme[#:mode override] when refining a method of an implemented
+interface.) The @scheme[extend] mode is like @scheme[override], but
+the description of the method should describe only extensions to the
+superclass implementation.}
+
+@defform[(defmethod* maybe-mode
+                     ([(id arg-spec ...)
                        result-contract-expr-datum] ...)
                      pre-flow ...)]{
 
 Like @scheme[defproc*], but for a method within a @scheme[defclass] or
-@scheme[definterface] body.}
+@scheme[definterface] body. The @scheme[maybe-mode] specification is as in
+@scheme[defmethod].}
 
 
 @defform[(method class/intf-id method-id)]{

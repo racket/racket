@@ -444,17 +444,17 @@ The values bound to initialization variables are
 }
 
 If an initialization argument is not provided for an initialization
-variable that has an associated @scheme[default-value-expr], then the
-@scheme[default-value-expr] expression is evaluated to obtain a value
-for the variable. A @scheme[default-value-expr] is only evaluated when
+variable that has an associated @scheme[_default-value-expr], then the
+@scheme[_default-value-expr] expression is evaluated to obtain a value
+for the variable. A @scheme[_default-value-expr] is only evaluated when
 an argument is not provided for its variable. The environment of
-@scheme[default-value-expr] includes all of the initialization
+@scheme[_default-value-expr] includes all of the initialization
 variables, all of the fields, and all of the methods of the class. If
-multiple @scheme[default-value-expr]s are evaluated, they are
+multiple @scheme[_default-value-expr]s are evaluated, they are
 evaluated from left to right. Object creation and field initialization
 are described in detail in @secref["objcreation"].
 
-If an initialization variable has no @scheme[default-value-expr], then
+If an initialization variable has no @scheme[_default-value-expr], then
 the object creation or superclass initialization call must supply an
 argument for the variable, otherwise the @exnraise[exn:fail:object].
 

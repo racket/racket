@@ -2322,18 +2322,27 @@
      (with-syntax ([cname (syntax-parameter-value #'current-class)]
                    [name1 (car (syntax->list #'(name ...)))])
        (with-syntax ([(extra ...)
-                      (case (syntax-e #'mode)
-                        [(pubment)
-                         #'((t "Refine this method with "
-                               (scheme augment) "."))]
-                        [(override extend augment)
-                         #'((t (case (syntax-e #'mode)
-                                 [(override) "Overrides "]
-                                 [(extend) "Extends "]
-                                 [(augment) "Augments "])
-                               (*xmethod/super (quote-syntax/loc cname) 'name1)
-                               "."))]
-                        [else null])])
+                      (let ([finality
+                             (lambda ()
+                               (case (syntax-e #'mode)
+                                 [(override-final public-final extend-final)
+                                  #'(" This method is final, so it cannot be overiddden.")]
+                                 [(augment-final)
+                                  #'(" This method is final, so it cannot be augmented.")]
+                                 [else null]))])
+                        (case (syntax-e #'mode)
+                          [(pubment)
+                           #'((t "Refine this method with "
+                                 (scheme augment) "."))]
+                          [(override override-final extend augment)
+                           #`((t (case (syntax-e #'mode)
+                                   [(override override-final) "Overrides "]
+                                   [(extend extend-final) "Extends "]
+                                   [(augment augment-final) "Augments "])
+                                 (*xmethod/super (quote-syntax/loc cname) 'name1)
+                                 "."
+                                 #,@(finality)))]
+                          [else null]))])
          #'(make-meth '(name ...)
                       'mode
                       (lambda ()
