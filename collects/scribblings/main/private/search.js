@@ -730,6 +730,7 @@ function TogglePanel(name) {
   if (panel_shown) {
     document.getElementById(panel_shown+"_panel").style.display = "block";
     document.getElementById("close_panel").style.display = "block";
+    document.getElementById(panel_shown+"_panel").scrollIntoView();
   }
 }
 toggle_panel = TogglePanel;
