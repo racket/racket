@@ -1,4 +1,14 @@
 ------------------------------
+        Version 4.1
+------------------------------
+
+  . get-text-to-search is not a public-final
+    method. Searching now works by the to-be-searched
+    text notifying the frame (instead of the frame asking
+    which text should be searched) so probably you can 
+    just remove the overridden method.
+
+------------------------------
         Version 4.0.2
 ------------------------------
 
