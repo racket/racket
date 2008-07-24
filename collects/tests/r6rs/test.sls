@@ -19,6 +19,9 @@
   (define-record-type expected-exception
     (fields))
 
+  (define-record-type multiple-results
+    (fields values))
+
   (define-syntax test
     (syntax-rules ()
       [(_ expr expected)
@@ -55,8 +58,8 @@
       [(_ expr val ...)
        (test (call-with-values
                  (lambda () expr)
-               list)
-             (list val ...))]))
+               (lambda results (make-multiple-results results)))
+             (make-multiple-results (list val ...)))]))
 
   (define-syntax test/output
     (syntax-rules ()
@@ -106,14 +109,24 @@
           (if (file-exists? "tmp-catch-out")
               (delete-file "tmp-catch-out")))))
   
+  (define (same-result? got expected)
+    (cond
+     [(and (real? expected) (nan? expected))
+      (and (real? got) (nan? got))]
+     [(expected-exception? expected)
+      (expected-exception? got)]
+     [(multiple-results? expected)
+      (and (multiple-results? got)
+           (= (length (multiple-results-values expected))
+              (length (multiple-results-values got)))
+           (for-all same-result?
+                    (multiple-results-values expected)
+                    (multiple-results-values got)))]
+     [else (equal? got expected)]))
+    
   (define (run-test expr got expected)
     (set! checked (+ 1 checked))
-    (unless (if (and (real? expected)
-                     (nan? expected))
-                (and (real? got) (nan? got))
-                (or (equal? got expected)
-                    (and (expected-exception? expected)
-                         (expected-exception? got))))
+    (unless (same-result? got expected)
       (set! failures
             (cons (list expr got expected)
                   failures))))
