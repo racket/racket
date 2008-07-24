@@ -186,6 +186,13 @@
                 bytevector-s64-native-set!)
   (make-integer-ops 8))
 
+(define (check-offset size k)
+  (unless (and (exact-nonnegative-integer? k)
+               (zero? (bitwise-and (sub1 size) k)))
+    (raise-type-error 'bytevector-operation 
+                      (format "exact nonnegative integer multiple of ~a" size)
+                      k)))
+
 (define (make-ieee-ops size)
   (values
    ;; -ref
@@ -194,6 +201,7 @@
      (floating-point-bytes->real bytes (eq? endianness 'big) k (+ k size)))
    ;; -native-ref
    (lambda (bytes k)
+     (check-offset size k)
      (floating-point-bytes->real bytes (system-big-endian?) k (+ k size)))
    ;; -set!
    (lambda (bytes k n endianness)
@@ -201,6 +209,7 @@
      (real->floating-point-bytes n size (eq? endianness 'big) bytes k))
    ;; -native-set!
    (lambda (bytes k n)
+     (check-offset size k)
      (real->floating-point-bytes n size (system-big-endian?) bytes k)
      (void))))
 
