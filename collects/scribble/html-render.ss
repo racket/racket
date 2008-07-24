@@ -355,8 +355,13 @@
       null)
 
     (define/public (render-toc-view d ri)
+      (define sub-parts-on-other-page?
+        (and (pair? (part-parts d))
+             (part-whole-page? (car (part-parts d)) ri)))
       (define toc-chain
-        (let loop ([d d] [r (if (pair? (part-parts d)) (list d) '())])
+        (let loop ([d d] [r (if sub-parts-on-other-page?
+                                (list d)
+                                '())])
           (cond [(collected-info-parent (part-collected-info d ri))
                  => (lambda (p) (loop p (cons p r)))]
                 [(pair? r) r]
@@ -383,7 +388,10 @@
         (define-values (title num) (toc-item->title+num t #f))
         (define children (part-parts t)) ; note: might be empty
         (define id (format "tocview_~a" i))
-        (define expand? (eq? t (last toc-chain)))
+        (define last? (eq? t (last toc-chain)))
+        (define expand? (and last?
+                             (or (collected-info-parent (part-collected-info d ri)) ;; => last isn't this page
+                                 sub-parts-on-other-page?))) ;; => last is this page, and it's useful to list subs
         (define top? (eq? t top))
         (define header
           `(table ([cellspacing "0"] [cellpadding "0"])
@@ -403,10 +411,12 @@
            ,(if top? `(div ([class "tocviewtitle"]) ,header) header)
            ,(if (null? children)
               ""
-              `(div ([class "tocviewsublist"]
-                     [style ,(format "display: ~a; margin-bottom: ~aem;"
-                                     (if expand? 'block 'none)
-                                     (if top? 0 1))]
+              `(div ([class ,(cond
+                              [(and top? last?) "tocviewsublistonly"]
+                              [top? "tocviewsublisttop"]
+                              [last? "tocviewsublistbottom"]
+                              [else "tocviewsublist"])]
+                     [style ,(format "display: ~a;" (if expand? 'block 'none))]
                      [id ,id])
                  (table ([cellspacing "0"] [cellpadding "0"])
                    ,@(for/list ([c children])

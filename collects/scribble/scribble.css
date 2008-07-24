@@ -158,19 +158,28 @@ table td {
   background-color: #f0f0e0;
 }
 
-.tocviewlist {
-  margin: 0.2em;
+.tocviewlist, .tocsublist {
+  margin-left: 0.2em;
+  margin-right: 0.2em;
+  padding-top: 0.2em;
+  padding-bottom: 0.2em;
 }
 .tocviewlist table {
   font-size: 82%;
 }
 
-.tocviewsublist {
+.tocviewsublist, .tocviewsublistonly, .tocviewsublisttop, .tocviewsublistbottom {
   margin-left: 0.4em;
   border-left: 1px solid #bbf;
   padding-left: 0.8em;
 }
-.tocviewsublist table {
+.tocviewsublist {
+   margin-bottom: 1em;
+}
+.tocviewsublist table, 
+.tocviewsublistonly table,
+.tocviewsublisttop table, 
+.tocviewsublistbottom table {
   font-size: 75%;
 }
 
@@ -191,11 +200,9 @@ table td {
 .tocviewtoggle {
   text-decoration: none;
   color: blue;
+  font-size: 75%; /* looks better, and avoids bounce when toggling sub-sections due to font alignments */
 }
 
-.tocsublist {
-  margin: 0.2em;
-}
 .tocsublist td {
   padding-left: 1em;
   text-indent: -1em;
