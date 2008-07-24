@@ -33,8 +33,8 @@ See also @scheme[choice%].
                                           'deleted)) 
                         '(single)]
                  [selection (or/c nonnegative-exact-integer? false/c) #f]
-                 [font (is-a?/c font%) @scheme[view-control-font]]
-                 [label-font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) view-control-font]
+                 [label-font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

@@ -1457,6 +1457,18 @@ Returns a @scheme[tab-snip%] instance.
 
 
 @defmethod[#:mode pubment 
+           (on-reflow)
+           void?]{
+
+@methspec{
+Called after @tech{locations} have changed and are recomputed for the editor.
+}
+@methimpl{
+
+Does nothing.
+}}
+
+@defmethod[#:mode pubment 
            (on-set-size-constraint)
            void?]{
 

@@ -408,6 +408,7 @@ class wxMediaEdit : public wxMediaBuffer
   virtual wxTabSnip *OnNewTabSnip();
 
   wxBitmap *SetAutowrapBitmap(wxBitmap *bm);
+  virtual void OnReflow(void);
 
   void HideCaret(Bool hide);
   Bool CaretHidden(void);

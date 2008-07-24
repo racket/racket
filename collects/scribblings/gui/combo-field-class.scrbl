@@ -22,7 +22,7 @@ A @scheme[combo-field%] object is a @scheme[text-field%]
                  [style (listof (one-of/c 'horizontal-label 'vertical-label 
                                           'deleted)) 
                         null]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

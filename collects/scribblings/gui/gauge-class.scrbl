@@ -18,7 +18,7 @@ of the gauge.
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(horizontal)]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

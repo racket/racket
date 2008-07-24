@@ -905,6 +905,7 @@ static l_TYPE l_POINT *l_MAKE_ARRAY(Scheme_Object *l, l_INTTYPE *c, char *who)
 
 
 
+
 static void WordbreakCallbackToScheme(wxMediaEdit *,long*,long*,int,Scheme_Object *);
 
 
@@ -975,6 +976,7 @@ class os_wxMediaEdit : public wxMediaEdit {
 
   os_wxMediaEdit CONSTRUCTOR_ARGS((nndouble x0 = 1.0, double* x1 = NULL, int x2 = 0));
   ~os_wxMediaEdit();
+  void OnReflow();
   class wxTabSnip* OnNewTabSnip();
   class wxTextSnip* OnNewTextSnip();
   void SetRegionData(nnlong x0, nnlong x1, class wxBufferData* x2);
@@ -1074,6 +1076,40 @@ CONSTRUCTOR_INIT(: wxMediaEdit(x0, x1, x2))
 os_wxMediaEdit::~os_wxMediaEdit()
 {
     objscheme_destroy(this, (Scheme_Object *) __gc_external);
+}
+
+static Scheme_Object *os_wxMediaEditOnReflow(int n, Scheme_Object *p[]);
+
+void os_wxMediaEdit::OnReflow()
+{
+  Scheme_Object *p[POFFSET+0] INIT_NULLED_ARRAY({ NULLED_OUT });
+  Scheme_Object *v;
+  Scheme_Object *method INIT_NULLED_OUT;
+#ifdef MZ_PRECISE_GC
+  os_wxMediaEdit *sElF = this;
+#endif
+  static void *mcache = 0;
+
+  SETUP_VAR_STACK(5);
+  VAR_STACK_PUSH(0, method);
+  VAR_STACK_PUSH(1, sElF);
+  VAR_STACK_PUSH_ARRAY(2, p, POFFSET+0);
+  SET_VAR_STACK();
+
+  method = objscheme_find_method((Scheme_Object *) ASSELF __gc_external, os_wxMediaEdit_class, "on-reflow", &mcache);
+  if (!method || OBJSCHEME_PRIM_METHOD(method, os_wxMediaEditOnReflow)) {
+    SET_VAR_STACK();
+    READY_TO_RETURN; ASSELF wxMediaEdit::OnReflow();
+  } else {
+  
+  
+  p[0] = (Scheme_Object *) ASSELF __gc_external;
+
+  v = WITH_VAR_STACK(scheme_apply(method, POFFSET+0, p));
+  
+  
+     READY_TO_RETURN;
+  }
 }
 
 static Scheme_Object *os_wxMediaEditOnNewTabSnip(int n, Scheme_Object *p[]);
@@ -3949,6 +3985,29 @@ static Scheme_Object *os_wxMediaEditSetAutowrapBitmap(int n,  Scheme_Object *p[]
   
   READY_TO_RETURN;
   return WITH_REMEMBERED_STACK(objscheme_bundle_wxBitmap(r));
+}
+
+static Scheme_Object *os_wxMediaEditOnReflow(int n,  Scheme_Object *p[])
+{
+  WXS_USE_ARGUMENT(n) WXS_USE_ARGUMENT(p)
+  REMEMBER_VAR_STACK();
+  objscheme_check_valid(os_wxMediaEdit_class, "on-reflow in text%", n, p);
+
+  SETUP_VAR_STACK_REMEMBERED(1);
+  VAR_STACK_PUSH(0, p);
+
+  
+
+  
+  if (((Scheme_Class_Object *)p[0])->primflag)
+    WITH_VAR_STACK(((os_wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->wxMediaEdit::OnReflow());
+  else
+    WITH_VAR_STACK(((wxMediaEdit *)((Scheme_Class_Object *)p[0])->primdata)->OnReflow());
+
+  
+  
+  READY_TO_RETURN;
+  return scheme_void;
 }
 
 static Scheme_Object *os_wxMediaEditOnNewTabSnip(int n,  Scheme_Object *p[])
@@ -8717,13 +8776,14 @@ void objscheme_setup_wxMediaEdit(Scheme_Env *env)
 
   wxREGGLOB(os_wxMediaEdit_class);
 
-  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 152));
+  os_wxMediaEdit_class = WITH_VAR_STACK(objscheme_def_prim_class(env, "text%", "editor%", (Scheme_Method_Prim *)os_wxMediaEdit_ConstructScheme, 153));
 
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "call-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditCallClickback, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "remove-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditRemoveClickback, 2, 2));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "set-clickback" " method", (Scheme_Method_Prim *)os_wxMediaEditSetClickback, 3, 5));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "set-wordbreak-func" " method", (Scheme_Method_Prim *)os_wxMediaEditSetWordbreakFunc, 1, 1));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "set-autowrap-bitmap" " method", (Scheme_Method_Prim *)os_wxMediaEditSetAutowrapBitmap, 1, 1));
+  WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-reflow" " method", (Scheme_Method_Prim *)os_wxMediaEditOnReflow, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-new-tab-snip" " method", (Scheme_Method_Prim *)os_wxMediaEditOnNewTabSnip, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "on-new-string-snip" " method", (Scheme_Method_Prim *)os_wxMediaEditOnNewTextSnip, 0, 0));
   WITH_VAR_STACK(scheme_add_method_w_arity(os_wxMediaEdit_class, "caret-hidden?" " method", (Scheme_Method_Prim *)os_wxMediaEditCaretHidden, 0, 0));

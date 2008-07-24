@@ -809,6 +809,7 @@
     set-clickback
     set-wordbreak-func
     set-autowrap-bitmap
+    on-reflow
     on-new-tab-snip
     on-new-string-snip
     caret-hidden?

@@ -338,6 +338,10 @@
     (sequence
       (apply super-init name args))))
 
+(define (auto-mixin c% v)
+  (class c%
+    (super-new [auto-resize v])))
+
 (define return-bmp 
   (make-object bitmap2% (icons-path "return.xbm") 'xbm))
 (define bb-bmp
@@ -352,7 +356,7 @@
       (cons 'vertical-label l)
       l))
 
-(define (make-ctls ip cp lp add-testers ep radio-h? label-h? null-label? stretchy? alt-inits? font)
+(define (make-ctls ip cp lp add-testers ep radio-h? label-h? null-label? stretchy? alt-inits? msg-auto? font)
   
   (define-values (l il)
     (let ([p (make-object horizontal-panel% ip)])
@@ -360,8 +364,8 @@
       (send p stretchable-height stretchy?)
       
       (let ()
-	(define l (make-object (trace-mixin message%) "L\u03B9&st" #;"Messag&\u03A3" p null ($ font))) ; \u03A3 is eta
-	(define il (make-object (trace-mixin message%) return-bmp p null ($ font)))
+	(define l (make-object (trace-mixin (auto-mixin message% msg-auto?)) "L\u03B9&st" p null ($ font)))
+	(define il (make-object (trace-mixin (auto-mixin message% msg-auto?)) return-bmp p null ($ font)))
 	
 	(add-testers "Message" l)
 	(add-change-label "Message" l lp #f OTHER-LABEL)
@@ -544,7 +548,7 @@
 (define float-frame? #f)
 (define no-caption? #f)
 
-(define (big-frame h-radio? v-label? null-label? stretchy? font initially-disabled? alternate-init?)
+(define (big-frame h-radio? v-label? null-label? stretchy? font initially-disabled? alternate-init? msg-auto?)
   (define f (make-frame (if use-dialogs?
 			    active-dialog%
 			    active-frame%)
@@ -586,7 +590,7 @@
   (send tp set-label "Sub-sub panel")
   (add-testers "Sub-sub-panel" tp)
 
-  (let ([ctls (make-ctls tp cp lp add-testers ep h-radio? v-label? null-label? stretchy? alternate-init? font)])
+  (let ([ctls (make-ctls tp cp lp add-testers ep h-radio? v-label? null-label? stretchy? alternate-init? msg-auto? font)])
     (add-focus-note f ep)
     (send f set-info ep)
     
@@ -598,7 +602,7 @@
   (set! prev-frame f)
   f)
 
-(define (med-frame plain-slider? label-h? null-label? stretchy? font initially-disabled? alternate-init?)
+(define (med-frame plain-slider? label-h? null-label? stretchy? font initially-disabled? alternate-init? msg-auto?)
   (define f2 (make-frame (if use-dialogs?
 			    active-dialog%
 			    active-frame%)
@@ -2218,7 +2222,7 @@
 		 (lambda (b e) (choose-next l)))))
 
 (define make-selector-and-runner
-  (lambda (p1 p2 radios? size maker)
+  (lambda (p1 p2 radios? msg? size maker)
     (define (make-radio-box lbl choices panel cb)
       (let ([g (instantiate group-box-panel% (lbl panel))])
 	(if (= (length choices) 2)
@@ -2265,10 +2269,19 @@
 				      special-font)
 				(send font-radio get-selection))
 		      (positive? (send enabled-radio get-selection))
-		      (positive? (send selection-radio get-selection))))))
+		      (positive? (send selection-radio get-selection))
+                      (and message-auto
+                           (send message-auto get-value))))))
+
+    (define message-auto
+      (and msg?
+           (new check-box% 
+                [parent p2]
+                [label "Auto-Size Message"])))
+    
     #t))
 
-(make-selector-and-runner bp1 bp2 #t "Big" big-frame)
-(make-selector-and-runner mp1 mp2 #f "Medium" med-frame)
+(make-selector-and-runner bp1 bp2 #t #t "Big" big-frame)
+(make-selector-and-runner mp1 mp2 #f #f "Medium" med-frame)
 
 (send selector show #t)

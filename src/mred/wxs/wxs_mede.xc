@@ -245,6 +245,8 @@
 @ v "on-new-string-snip" : wxTextSnip! OnNewTextSnip();
 @ v "on-new-tab-snip" : wxTabSnip! OnNewTabSnip();
 
+@ v "on-reflow" : void OnReflow();
+
 @ "set-autowrap-bitmap" : wxBitmap^ SetAutowrapBitmap(wxBitmap^);
 
 static void WordbreakCallbackToScheme(wxMediaEdit *,long*,long*,int,Scheme_Object *);

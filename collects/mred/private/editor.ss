@@ -409,7 +409,8 @@
 		  ((void) on-set-size-constraint)
 		  ((void) after-set-size-constraint)
 		  ((void) after-split-snip s)
-		  ((void) after-merge-snips s))
+		  ((void) after-merge-snips s)
+                  ((void) on-reflow))
       
       (super-make-object line-spacing tab-stops)
       (when aw?

@@ -181,7 +181,8 @@
   (define get-window-text-extent
     (let ([bm #f][dc #f])
       (case-lambda
-       [(string font)
+       [(string font) (get-window-text-extent string font #f)]
+       [(string font combine?)
 	(check-string 'get-window-text-extent string)
 	(check-instance 'get-window-text-extent wx:font% 'font% #f font)
 	(unless bm
@@ -190,7 +191,7 @@
 	  (send dc set-bitmap bm))
 	(unless (send bm ok?)
 	  (error 'get-window-text-extent "couldn't allocate sizing bitmap"))
-	(let-values ([(w h d a) (send dc get-text-extent string font)])
+	(let-values ([(w h d a) (send dc get-text-extent string font combine?)])
 	  (values (inexact->exact w) (inexact->exact h)))])))
 
   

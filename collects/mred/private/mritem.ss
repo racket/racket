@@ -6,6 +6,7 @@
 	   "lock.ss"
 	   "const.ss"
 	   "kw.ss"
+           "gdi.ss"
 	   "check.ss"
 	   "helper.ss"
 	   "wx.ss"
@@ -97,10 +98,53 @@
 			  (cb (wx->proxy w) e)))
 	cb))
 
+  (define zero-bitmap #f)
+
   (define message%
-    (class100*/kw basic-control% () [(label parent [style null]) control%-keywords]
+    (class100*/kw basic-control% () [(label parent [style null]) control%-keywords [auto-resize #f]]
+      (sequence ; abuse of `sequence'!
+        (inherit/super [super-min-width min-width] 
+                       [super-min-height min-height]
+                       [super-get-label get-label]
+                       [super-get-font get-font]))
+      (private-field
+       [do-auto-resize? auto-resize]
+       [orig-font (or (no-val->#f font)
+                      normal-control-font)]
+       [dx 0]
+       [dy 0])
       (override
-	[label-checker  (lambda () check-label-string-or-bitmap)]) ; module-local method
+	[label-checker  (lambda () check-label-string-or-bitmap)] ; module-local method
+      	[set-label (entry-point
+		    (lambda (l)
+                      (super set-label l)
+                      (when do-auto-resize?
+                        (do-auto-resize))))])
+      (private
+        [strip-amp (lambda (s) (if (string? s)
+                                   (regexp-replace* #rx"&(.)" s "\\1")
+                                   s))]
+        [do-auto-resize (lambda ()
+                          (let ([s (strip-amp (super-get-label))])
+                            (cond
+                             [(symbol? s) (void)]
+                             [(string? s)
+                              (let-values ([(mw mh) (get-window-text-extent s orig-font #t)])
+                                (super-min-width (+ dx mw))
+                                (super-min-height (+ dy mh)))]
+                             [(s . is-a? . wx:bitmap%)
+                              (super-min-width (+ dx (send s get-width)))
+                              (super-min-height (+ dy (send s get-height)))])))])
+      (public
+        [(auto-resize-parm auto-resize)
+         (case-lambda
+          [() do-auto-resize?]
+          [(on?) 
+           (as-entry
+            (lambda ()
+              (set! do-auto-resize? (and #t))
+              (when on?
+                (do-auto-resize))))])])
       (sequence
 	(let ([cwho '(constructor message)])
 	  (check-label-string/bitmap/iconsym cwho label)
@@ -109,13 +153,51 @@
 	  (check-font cwho font))
 	(as-entry
 	 (lambda ()
-	   (super-init (lambda () (make-object wx-message% this this
-					       (mred->wx-container parent)
-					       label -1 -1 style (no-val->#f font)))
+	   (super-init (lambda () 
+                         (let ([m (make-object wx-message% this this
+                                               (mred->wx-container parent)
+                                               (if do-auto-resize? 
+                                                   (cond
+                                                    [(string? label) ""]
+                                                    [(label . is-a? . wx:bitmap%)
+                                                     (unless zero-bitmap
+                                                       (set! zero-bitmap (make-object wx:bitmap% 1 1)))
+                                                     zero-bitmap]
+                                                    [else label])
+                                                   label)
+                                               -1 -1 style (no-val->#f font))])
+                           ;; Record dx & dy:
+                           (let ([w (box 0)] [h (box 0)])
+                             (send m get-size w h)
+                             (let-values ([(mw mh) (cond
+                                                    [(string? label)
+                                                     (let ([s (if do-auto-resize?
+                                                                  ""
+                                                                  (strip-amp label))]
+                                                           [font orig-font])
+                                                       (if (equal? s "")
+                                                           (let-values ([(w h) (get-window-text-extent " " font)])
+                                                             (values 0 h))
+                                                           (get-window-text-extent s font)))]
+                                                    [(label . is-a? . wx:bitmap%)
+                                                     (if do-auto-resize?
+                                                         (values 1 1)
+                                                         (values (send label get-width)
+                                                                 (send label get-height)))]
+                                                    [else (values 0 0)])])
+                               (set! dx (- (unbox w) mw))
+                               (set! dy (- (unbox h) mh))))
+                           ;; If auto-resize, install label now:
+                           (when (and do-auto-resize?
+                                      (not (symbol? label)))
+                             (send m set-label label))
+                           m))
 		       (lambda () 
 			 (let ([cwho '(constructor message)])
 			   (check-container-ready cwho parent)))
-		       label parent void #f))))))
+		       label parent void #f)
+           (when do-auto-resize?
+             (do-auto-resize)))))))
 
   (define button%
     (class100*/kw basic-control% () [(label parent [callback (lambda (b e) (void))] [style null]) control%-keywords]

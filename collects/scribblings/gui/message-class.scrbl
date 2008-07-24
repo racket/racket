@@ -13,14 +13,15 @@ A message control is a static line of text or a static bitmap. The
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) 
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'deleted)) null]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
                  [min-width (integer-in 0 10000) _graphical-minimum-width]
                  [min-height (integer-in 0 10000) _graphical-minimum-height]
                  [stretchable-width any/c #f]
-                 [stretchable-height any/c #f])]{
+                 [stretchable-height any/c #f]
+                 [auto-resize any/c #f])]{
 
 Creates a string or bitmap message initially showing @scheme[label].
  @bitmaplabeluse[label] An @indexed-scheme['app],
@@ -35,6 +36,20 @@ Creates a string or bitmap message initially showing @scheme[label].
 @DeletedStyleNote{message}
 
 @FontKWs[] @WindowKWs[] @SubareaKWs[] @AreaKWs[]
+
+If @scheme[auto-resize] is not @scheme[#f], then automatic resizing is
+initially enanbled (see @method[message% auto-resize]), and the
+@scheme[message%] object's @tech{graphical minimum size} is as small as
+possible.
+
+}
+
+@defmethod*[([(auto-resize) boolean?]
+             [(auto-resize [on? any/c]) void?])]{
+
+Reports or sets whether the @scheme[message%]'s @method[area<%> min-width] and
+@method[area<%> min-height] are automatically set when the label is changed
+via @method[message% set-label].
 
 }
 

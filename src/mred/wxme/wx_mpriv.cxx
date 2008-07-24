@@ -1964,6 +1964,12 @@ void wxMediaEdit::RecalcLines(wxDC *dc, Bool calcGraphics)
 
   if (resized && admin)
     admin->Resized(FALSE);
+
+  OnReflow();
+}
+
+void wxMediaEdit::OnReflow(void)
+{
 }
 
 wxBitmap *wxMediaEdit::SetAutowrapBitmap(wxBitmap *bm)

@@ -1050,9 +1050,8 @@
 	(set! icon #f))
       
       (define sm-super-frame%
-        (frame:searchable-mixin
-         (frame:standard-menus-mixin
-          frame:basic%)))
+        (frame:standard-menus-mixin
+         frame:basic%))
       
       (define sm-frame%
 	(class sm-super-frame%
@@ -1140,8 +1139,6 @@
           ;; -------------------- Misc. --------------------
           
           (inherit get-edit-target-object)
-          (define/override (get-text-to-search) 
-            (send message get-editor))
           
           [define/override on-size
             (lambda (w h)

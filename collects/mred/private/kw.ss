@@ -33,7 +33,7 @@
 
   (define-syntax (class100*/kw stx)
     (syntax-case stx ()
-      [(_ base (intf ...) ((base-init ...) keywords) . rest)
+      [(_ base (intf ...) ((base-init ...) keywords post-init ...) . rest)
        (let ([kws (syntax-local-value #'keywords)])
 	 (with-syntax ([super-init (datum->syntax-object 
 				    stx
@@ -61,5 +61,5 @@
 				  #'(super-instantiate (arg (... ...))
 						       [new-kw new-kw] (... ...)))]))])
 	       (class100*
-		   base (intf ...) (base-init ... new-init ...)
+		   base (intf ...) (base-init ... new-init ... post-init ...)
 		   . rest))))])))

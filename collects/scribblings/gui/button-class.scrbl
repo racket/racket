@@ -12,7 +12,7 @@ Whenever a button is clicked by the user, the button's callback
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [callback ((is-a?/c button%) (is-a?/c control-event%) . -> . any) (lambda (b e) (void))]
                  [style (one-of/c 'border 'deleted) null]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

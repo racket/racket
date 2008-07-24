@@ -186,14 +186,16 @@ following expression gets a command line for starting a browser:
 See also @scheme[write-resource].}
 
 @defproc[(get-window-text-extent [string string]
-                                 [font (is-a?/c font%)])
+                                 [font (is-a?/c font%)]
+                                 [combine? any/c #f])
          (values nonnegative-exact-integer?
                  nonnegative-exact-integer?)]{
 
 Returns the pixel size of a string drawn as a window's label or value
-when drawn with the given font.
+when drawn with the given font. The optional @scheme[combine?]
+argument is as for @xmethod[dc<%> get-text-extent].
 
-See also @method[dc<%> get-text-extent].
+See also @xmethod[dc<%> get-text-extent].
 }
 
 @defproc[(graphical-read-eval-print-loop [eval-eventspace eventspace #f]

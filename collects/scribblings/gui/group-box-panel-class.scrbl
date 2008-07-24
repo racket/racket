@@ -15,7 +15,7 @@ Unlike most panel classes, a group-box panel's horizontal and vertical
                  [parent (or/c (is-a?/c frame%) (is-a?/c dialog%)
                                (is-a?/c panel%) (is-a?/c pane%))]
                  [style (listof (one-of/c 'deleted)) null]
-                 [font (is-a?/c font%) @scheme[small-control-font]]
+                 [font (is-a?/c font%) small-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]

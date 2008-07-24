@@ -47,7 +47,7 @@ The keymap for the text field's editor is initialized by calling the
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(single)]
-                 [font (is-a?/c font%) @scheme[normal-control-font]]
+                 [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
                  [horiz-margin (integer-in 0 1000) 2]
