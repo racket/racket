@@ -770,8 +770,8 @@
              [style (if (with-attributes? raw-style)
                         (with-attributes-style raw-style)
                         raw-style)])
-        (if (and (pair? style) (eq? (car style) 'div))
-          `((div-hack ,(cdr style) ,@contents))
+        (if (and (pair? style) (eq? (car style) 'div-hack))
+          `((div ,(cdr style) ,@contents))
           `((,(if (string? style) 'div 'p) 
              ,(append
                (if (string? style)
