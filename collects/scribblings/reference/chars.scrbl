@@ -7,8 +7,6 @@
 
 @guideintro["characters"]{characters}
 
-@local-table-of-contents[]
-
 MzScheme characters range over Unicode scalar values, which includes
 characters whose values range from @schemevalfont{#x0} to
 @schemevalfont{#x10FFFF}, but not including @schemevalfont{#xD800} to

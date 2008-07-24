@@ -355,13 +355,13 @@
       null)
 
     (define/public (render-toc-view d ri)
+      (define has-sub-parts?
+        (pair? (part-parts d)))
       (define sub-parts-on-other-page?
         (and (pair? (part-parts d))
              (part-whole-page? (car (part-parts d)) ri)))
       (define toc-chain
-        (let loop ([d d] [r (if sub-parts-on-other-page?
-                                (list d)
-                                '())])
+        (let loop ([d d] [r (if has-sub-parts? (list d) '())])
           (cond [(collected-info-parent (part-collected-info d ri))
                  => (lambda (p) (loop p (cons p r)))]
                 [(pair? r) r]
@@ -389,9 +389,18 @@
         (define children (part-parts t)) ; note: might be empty
         (define id (format "tocview_~a" i))
         (define last? (eq? t (last toc-chain)))
-        (define expand? (and last?
-                             (or (collected-info-parent (part-collected-info d ri)) ;; => last isn't this page
-                                 sub-parts-on-other-page?))) ;; => last is this page, and it's useful to list subs
+        (define expand? (or (and last? 
+                                 (or (not has-sub-parts?)
+                                     sub-parts-on-other-page?))
+                            (and has-sub-parts?
+                                 (not sub-parts-on-other-page?)
+                                 ;; next-to-last?
+                                 (let loop ([l toc-chain])
+                                   (cond
+                                    [(null? l) #f]
+                                    [(eq? t (car l))
+                                     (and (pair? (cdr l)) (null? (cddr l)))]
+                                    [else (loop (cdr l))])))))
         (define top? (eq? t top))
         (define header
           `(table ([cellspacing "0"] [cellpadding "0"])

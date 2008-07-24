@@ -5,8 +5,6 @@
 
 @guideintro["strings"]{strings}
 
-@local-table-of-contents[]
-
 A @deftech{string} is a fixed-length array of
 @seclink["characters"]{characters}.
 
