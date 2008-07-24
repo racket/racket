@@ -233,7 +233,7 @@
                     (unless highlight-begin
                       (error 'format-whole-step "no highlight-begin to match highlight-end"))
                     (set! clear-highlight-thunks
-                          (cons (highlight-range highlight-begin highlight-end highlight-color #f #f)
+                          (cons (highlight-range highlight-begin highlight-end highlight-color)
                                 clear-highlight-thunks))
                     (set! highlight-begin #f))))]
              ;; mflatt: MAJOR HACK - this setting needs to come from the language
