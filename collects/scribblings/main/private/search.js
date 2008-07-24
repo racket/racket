@@ -1,12 +1,14 @@
 // Globally visible bindings
 var key_handler, toggle_panel, hide_prefs, new_query, refine_query,
-    set_pre_query, set_show_manuals, set_show_manual_titles, set_results_num,
-    set_type_delay, set_highlight_color, status_line, saved_status = false;
+    set_pre_query, set_context_query, set_show_manuals, set_show_manual_titles,
+    set_results_num, set_type_delay, set_highlight_color, status_line,
+    saved_status = false, pre_query_label_line;
 
 (function(){
 
 // Configuration options (use || in case a cookie exists but is empty)
 var pre_query          = GetCookie("PLT_PreQuery","");
+var pre_query_label    = GetCookie("PLT_PreQueryLabel",""); // no prefs UI
 var manual_settings    = parseInt(GetCookie("PLT_ManualSettings",1));
 var show_manuals       = manual_settings % 10;
 var show_manual_titles = ((manual_settings - show_manuals) / 10) > 0;
@@ -15,13 +17,15 @@ var type_delay         = (parseInt(GetCookie("PLT_TypeDelay",false)) || 150);
 var highlight_color    = (GetCookie("PLT_HighlightColor",false) || "#ffd");
 var background_color   = "#f8f8f8";
 
-var query, results_container, result_links, prev_page_link, next_page_link;
+var query, results_container, result_links;
+var prev_page_link1, prev_page_link2, next_page_link1, next_page_link2;
 
 // tabIndex fields are set:
 //   1 query
 //   2 index links
 //   3 help/pref toggle
 //   4 pref widgets
+//   5 clear current pre-filter context
 //  -1 prev/next page (un-tab-able)
 
 function MakePref(label, input) {
@@ -37,131 +41,181 @@ function PrefInputArgs(name, desc) {
        +' onchange="set_'+name+'(this); return true;"'
        +' onfocus="saved_status=status_line.innerHTML;'
                  +'status_line.innerHTML=descriptions[\''+name+'\'];"'
-       +' onblur="status_line.innerHTML = saved_status || \'\';"';
+       +' onblur="status_line.innerHTML=(saved_status || \'\');"';
+}
+
+function MakeChevrons(num, middle) {
+  return '<div style="text-align: center;">'
+          +'<a href="#" title="Previous Page" id="prev_page_link'+num+'"'
+            +' tabIndex="-1"'
+            +' style="float: left; text-decoration: none; font-weight: bold;'
+                   +' font-family: monospace;"'
+            +' onclick="key_handler(\'PgUp\'); return false;"'
+            +'>&lt;&lt;</a>'
+          +'<a href="#" title="Next Page" id="next_page_link'+num+'" '
+            +'tabIndex="-1"'
+            +' style="float: right; text-decoration: none; font-weight: bold;'
+                   +' font-family: monospace;"'
+            +' onclick="key_handler(\'PgDn\'); return false;"'
+            +'>&gt;&gt;</a>'
+          +middle
+        +'</div>';
+}
+
+function MakePreQueryItem(qry, desc) {
+  return '<li><a href="?hq='+encodeURIComponent(qry)+'" tabIndex="4"'
+              +' title="set this as your pre-filter context"'
+              +' style="text-decoration: none;"'
+              +' onclick="return new_query(this,\''
+                                   +encodeURIComponent(desc)
+                                   +'\');">'
+              + desc.replace(/{{/g, "<tt><b>").replace(/}}/g, "</b></tt>")
+           + '</a></li>';
+}
+
+function MakeIcon(label,title,action) {
+  return '<a href="#" title="'+title+'" tabIndex="3"'
+          +' style="text-decoration: none; color: black;'
+                 +' font-weight: bold; font-family: monospace;"'
+          +' onclick="'+action+'; return false;"'
+          +'>'+label+'</a>'
 }
 
 function InitializeSearch() {
   var n;
-  n = document.getElementById("plt_search_container").parentNode;
-  // hack the table in
-  n.innerHTML = ''
-    +'<table width="100%" cellspacing="0" cellpadding="0"'
-          +' bgcolor='+background_color+' style="margin: 0em; padding: 0em;">'
-    +'<tr><td align="center" colspan="2">'
-      +'<input type="text" id="search_box" style="width: 100%;"'
-            +' tabIndex="1" onkeydown="return key_handler(event);"'
-            +' onkeydown="return key_handler(null);" />'
-    +'</td><td class="nobreak">'
-      +'<a href="#" title="help" tabIndex="3"'
-        +' style="text-decoration: none; font-weight: bold; color: black;"'
-        +' onclick="toggle_panel(\'help\'); return false;"'
-        +'><tt><b>[?]</b></tt></a>'
-      +'<a href="#" title="preferences" tabIndex="3"'
-        +' style="text-decoration: none; font-weight: bold; color: black;"'
-        +' onclick="toggle_panel(\'prefs\'); return false;"'
-        +'><tt><b>[!]</b></tt></a>'
-    +'</td></tr>'
-    +'<tr><td colspan="3" class="smaller" style="padding: 0em;">'
-    +'<div id="help_panel"'
-        +' style="display: none; border: 1px solid #222; border-top: 0px;'
-               +' font-family: arial, sans-serif; margin: 0em 0em 1em 0em;'
-               +' padding: 0.5em; background-color: #f0f0f0;">'
-      +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
-      +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and'
-         +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
-         +' results.</li>'
-      +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only identifiers'
-         +' from modules that (partially) match'
-         +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
-         +' itself will restrict results to bound names only.</li>'
-      +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
-         +' &ldquo;<tt>M:<i>str</i></tt>&rdquo;, but'
-         +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
-         +' exactly.</li>'
-      +'<li>&ldquo;<tt>T:<i>str</i></tt>&rdquo; restricts results to ones in'
-         +' the &ldquo;<tt><i>str</i></tt>&rdquo; manual (naming the directory'
-         +' where the manual is found).</li>'
-      +'<li>Entries that correspond to bindings have module links that create'
-         +' a query restricted to bindings in that module (using'
-         +' &ldquo;<tt>L:</tt>&rdquo;), other entries have similar links for'
-         +' restricting results to a specific manual (using'
-         +' &ldquo;<tt>T:</tt>&rdquo;); you can control whether manual links'
-         +' appear (and how) in the preferences.</li>'
-      +'<li>Right-clicking these links refines the current query instead of'
-         +' changing it (but some browsers don\'t support this).</li>'
-      +'</ul>'
-    +'</div></td></tr>'
-    +'<tr><td colspan="3" class="smaller" style="padding: 0em;">'
-    +'<div id="prefs_panel"'
-        +' style="display: none; border: 1px solid #222; border-top: 0px;'
-               +' font-family: arial, sans-serif; margin: 0em 0em 1em 0em;'
-               +' padding: 0.5em; background-color: #f0f0f0;">'
-    +'<table width="100%" align="center" style="margin: 0em 2em;">'
-      + MakePref('Show manuals',
-         '<select '
-                 +PrefInputArgs("show_manuals",
-                                "Controls when manual links are shown")
-                 +'>'
-           +'<option>never</option>'
-           +'<option>except identifiers</option>'
-           +'<option>always</option>'
-         +'</select>'
-         +'<input type="checkbox" '
-                 +PrefInputArgs("show_manual_titles",
-                                "Controls how manual links are shown")
-                 +'>'
-         +' use titles')
-      + MakePref('Results per page',
-         '<input type="text" '
-                 +PrefInputArgs("results_num",
-                                "How many results to show on the page")
-                 +'>')
-      + MakePref('Type delay',
-         '<input type="text" '
-                 +PrefInputArgs("type_delay",
-                                "The delay to wait (in msec) before search"
-                                +" results are updated")
-                 +'>')
-      + MakePref('Exact matches color',
-         '<input type="text" '
-                 +PrefInputArgs("highlight_color",
-                                "The color to use for highlighting exact"
-                                +" matches (a known color name or #RGB)")
-                 +'>')
-      + MakePref('Pre-Query',
-         '<input type="text" '
-                 +PrefInputArgs("pre_query",
-                   "A &ldquo;context&rdquo; query that is implicitly added to"
-                   +" all searches, for example, &ldquo;<tt>M:</tt>&rdquo; to"
-                   +" search only bindings, &ldquo;<tt>T:reference</tt>&rdquo;"
-                   +" to search only the reference manual")
-                 +'>')
-    +'</table></div></td></tr>'
-    +'<tr valign="top"><td align="left">'
-      +'<a href="#" title="Previous Page" id="prev_page_link" tabIndex="-1"'
-        +' style="text-decoration: none; font-weight: bold;"'
-        +' onclick="key_handler(\'PgUp\'); return false;"'
-        +'><tt><b>&lt;&lt;</b></tt></a>'
-    +'</td><td align="center" width="100%">'
-      +'<span id="search_status"'
-           +' style="color: #601515; font-weight: bold;">&nbsp;</span>'
-    +'</td><td align="right">'
-      +'<a href="#" title="Next Page" id="next_page_link" tabIndex="-1"'
-        +' style="text-decoration: none; font-weight: bold;"'
-        +' onclick="key_handler(\'PgDn\'); return false;"'
-        +'><tt><b>&gt;&gt;</b></tt></a>'
-    +'</td></tr>'
-    +'<tr><td colspan="3">'
-      +'<span id="search_result"'
-           +' style="display: none;'
-           +' margin: 0.1em 0em; padding: 0.25em 1em;"></span>'
-    +'</td></tr>'
-    +'</table>';
+  n = document.getElementById("plt_search_container");
+  // hack the dom widgets in
+  var panelbgcolor = "background-color: #f0f0f0;"
+  var panelstyle =
+    'style="display: none; border: 1px solid #222; border-top: 0px;'
+         +' font-family: arial, sans-serif; margin: 0em 0em 1em 0em;'
+         +' padding: 0.5em; '+panelbgcolor+'"';
+  n.innerHTML =
+    '<div style="width: 100%; margin: 0em; padding: 0em;'
+              +' background-color: '+background_color+';">'
+      +'<div style="'+panelbgcolor+'">'
+        +'<div style="float: right; border-color: #222; border-style: solid;'
+                   +' border-width: 1px 1px 0px 0px;">'
+          +MakeIcon("[?]", "help",        "toggle_panel(\'help\')")
+          +MakeIcon("[!]", "preferences", "toggle_panel(\'prefs\')")
+        +'</div>'
+        +'<input type="text" id="search_box" style="width: 90%;"'
+              +' tabIndex="1" onkeydown="return key_handler(event);"'
+              +' onkeydown="return key_handler(null);" />'
+      +'</div>'
+      +'<div id="close_panel"'
+          +' style="display: none; float: right;'
+                 +' margin: 0.2em 0.5em; '+panelbgcolor+'">'
+        +MakeIcon("&#10005;", "close", "toggle_panel(false)")
+      +'</div>'
+      +'<div id="help_panel" '+panelstyle+'>'
+        +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
+        +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and'
+           +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
+           +' results.</li>'
+        +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
+           +' identifiers from modules that (partially) match'
+           +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
+           +' itself will restrict results to bound names only.</li>'
+        +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
+           +' &ldquo;<tt>M:<i>str</i></tt>&rdquo;, but'
+           +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
+           +' exactly.</li>'
+        +'<li>&ldquo;<tt>T:<i>str</i></tt>&rdquo; restricts results to ones in'
+           +' the &ldquo;<tt><i>str</i></tt>&rdquo; manual (naming the'
+           +' directory where the manual is found).</li>'
+        +'<li>Entries that correspond to bindings have module links that'
+           +' create a query restricted to bindings in that module (using'
+           +' &ldquo;<tt>L:</tt>&rdquo;), other entries have similar links for'
+           +' restricting results to a specific manual (using'
+           +' &ldquo;<tt>T:</tt>&rdquo;); you can control whether manual links'
+           +' appear (and how) in the preferences.</li>'
+        +'<li>Right-clicking these links refines the current query instead of'
+           +' changing it (but some browsers don\'t support this).</li>'
+        +'</ul>'
+      +'</div>'
+      +'<div id="prefs_panel" '+panelstyle+'>'
+        +'<table align="center" style="margin: 0em 2em;">'
+        + MakePref('Show manuals',
+           '<select '
+                   +PrefInputArgs("show_manuals",
+                                  "Controls when manual links are shown")
+                   +'>'
+             +'<option>never</option>'
+             +'<option>except identifiers</option>'
+             +'<option>always</option>'
+           +'</select>'
+           +'<input type="checkbox" '
+                   +PrefInputArgs("show_manual_titles",
+                                  "Controls how manual links are shown")
+                   +'>'
+           +' use titles')
+        + MakePref('Results per page',
+           '<input type="text" '
+                   +PrefInputArgs("results_num",
+                                  "How many results to show on the page")
+                   +'>')
+        + MakePref('Type delay',
+           '<input type="text" '
+                   +PrefInputArgs("type_delay",
+                                  "The delay to wait (in msec) before search"
+                                  +" results are updated")
+                   +'>')
+        + MakePref('Exact matches color',
+           '<input type="text" '
+                   +PrefInputArgs("highlight_color",
+                                  "The color to use for highlighting exact"
+                                  +" matches (a known color name or #RGB)")
+                   +'>')
+        + MakePref('Pre-Query',
+           '<input type="text" '
+                   +PrefInputArgs("pre_query",
+                     "A &ldquo;context&rdquo; query that is implicitly added"
+                     +" to all searches")
+                   +'>&nbsp;'
+           +'<a style="font-size: 82%; color: #444; text-decoration: none;"'
+             +' href="#" onclick="toggle_panel(\'contexts\'); return false;">'
+            +'[more]</a>')
+        +'</table>'
+      +'</div>'
+      +'<div id="contexts_panel" '+panelstyle+'>'
+        +'<table align="center" style="margin: 0em 2em;">'
+          + MakePref('Pre-Query',
+             '<input type="text" '
+                     +PrefInputArgs("context_query",
+                       "A &ldquo;context&rdquo; query that is implicitly added"
+                       +" to all searches")
+                     +'>')
+        +'</table>'
+        +'Clicking the following links will set your pre-query context to a'
+        +' few common choices:'
+        +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
+        +MakePreQueryItem("M:", "Bindings")
+        +MakePreQueryItem("T:reference", "Reference manual")
+        +MakePreQueryItem("M:scheme", "{{scheme}} bindings")
+        +MakePreQueryItem("M:scheme/base", "{{scheme/base}} bindings")
+        +'</ul>'
+      +'</div>'
+      +MakeChevrons(1,
+        '<span id="search_status"'
+            +' style="color: #601515; font-weight: bold;">&nbsp;</span>')
+      +'<div>'
+        +'<div id="search_result"'
+             +' style="display: none;'
+             +' margin: 0.1em 0em; padding: 0.25em 1em;"></div>'
+      +'</div>'
+      +'<br />'
+      +MakeChevrons(2,
+        '<span id="pre_query_label" style="color: #444;">&nbsp;</span>')
+    +'</div>';
   // get the widgets we use
   query = document.getElementById("search_box");
   status_line = document.getElementById("search_status");
-  prev_page_link = document.getElementById("prev_page_link");
-  next_page_link = document.getElementById("next_page_link");
+  pre_query_label_line = document.getElementById("pre_query_label");
+  prev_page_link1 = document.getElementById("prev_page_link1");
+  prev_page_link2 = document.getElementById("prev_page_link2");
+  next_page_link1 = document.getElementById("next_page_link1");
+  next_page_link2 = document.getElementById("next_page_link2");
   // result_links is the array of result link <container,link> pairs
   result_links = new Array();
   n = document.getElementById("search_result");
@@ -257,8 +311,20 @@ function MinComparesRx(pats, str) {
 }
 
 function NormalizeSpaces(str) {
-  return str.replace(/\s\s*/g," ")              // single spaces
-            .replace(/^ /,"").replace(/ $/,""); // trim edge spaces
+  // use single spaces first, then trim edge spaces
+  return str.replace(/\s\s*/g," ").replace(/^ /,"").replace(/ $/,"");
+}
+
+function SanitizeHTML(str) {
+  // Minimal protection against bad html strings
+  // HACK: we don't want to actually parse these things, but we do want a way
+  // to have tt text, so use a "{{...}}" markup for that.
+  return str.replace(/[&]/g, "&amp;")
+            .replace(/>/g,   "&gt;")
+            .replace(/</g,   "&lt;")
+            .replace(/\"/g,  "&quot;")
+            .replace(/{{/g,  "<tt><b>")
+            .replace(/}}/g,  "</b></tt>");
 }
 
 function UrlToManual(url) {
@@ -387,6 +453,34 @@ var search_data; // pre-filtered searchable index data
 function PreFilter() {
   pre_query = NormalizeSpaces(pre_query);
   search_data = Search(plt_search_data, pre_query, true, false)[1];
+  if (pre_query == "") {
+    pre_query_label_line.innerHTML =
+      '<a href="#" tabIndex="5"'
+       +' title="Edit pre-filter context"'
+       +' style="text-decoration: none; color: #444;'
+              +' font-size: 82%; font-weight: bold;"'
+       +' onclick="toggle_panel(\'contexts\'); return false;">'
+       +'[set context]</a>';
+  } else {
+    pre_query_label_line.innerHTML =
+      'Context:&nbsp;'
+      + (((pre_query_label != "") && pre_query_label)
+         ? SanitizeHTML(pre_query_label)
+         : ('&ldquo;' + SanitizeHTML(pre_query) + '&rdquo;'))
+      + '&nbsp;<a href="?hq=" tabIndex="5"'
+                  +' title="Clear pre-filter context"'
+                  +' style="text-decoration: none; color: #444;'
+                         +' font-size: 82%; font-weight: bold;"'
+                  +' onclick="return new_query(this,\'\');">'
+               +'[clear</a>'
+             +'/'
+             +'<a href="#" tabIndex="5"'
+                  +' title="Edit pre-filter context"'
+                  +' style="text-decoration: none; color: #444;'
+                         +' font-size: 82%; font-weight: bold;"'
+                  +' onclick="toggle_panel(\'contexts\'); return false;">'
+               +'modify]</a>';
+  }
   last_search_term = null;
   last_search_term_raw = null;
 }
@@ -459,11 +553,12 @@ function UpdateResults() {
         for (var j=0; j<desc.length; j++)
           note +=
             (j==0 ? "" : ", ")
-            + '<a href="?q=L:' + encodeURIComponent(desc[j]) + '"'
+            + '<a href="?q=' + encodeURIComponent("L:"+desc[j]) + '"'
                +' class="schememod" tabIndex="2"'
-               +' title="show bindings from the '+desc[j]+' module"'
+               +' title="show bindings from the '+desc[j]+' module'
+                       +' (right-click to refine current query)"'
                +' style="text-decoration: none; color: #006;"'
-               +' onclick="return new_query(this);"'
+               +' onclick="return new_query(this,\'\');"'
                +' oncontextmenu="return refine_query(this);">'
             + desc[j] + '</a>';
       } else if (desc == "module") {
@@ -475,9 +570,10 @@ function UpdateResults() {
         note = (note ? (note + " ") : "");
         note += '<span class="smaller">in</span> '
                 + '<a href="?q=T:' + manual + '" tabIndex="2"'
-                   +' title="show entries from the '+manual+' manual"'
+                   +' title="show entries from the '+manual+' manual'
+                           +' (right-click to refine current query)"'
                    +' style="text-decoration: none; color: #006;"'
-                   +' onclick="return new_query(this);"'
+                   +' onclick="return new_query(this,\'\');"'
                    +' oncontextmenu="return refine_query(this);">'
                 + ((typeof idx == "number")
                    ? ('<i>'+UncompactHtml(search_data[idx][2])+'</i>')
@@ -509,6 +605,7 @@ function UpdateResults() {
            + '<div style="color: black; font-size: 82%;">'
            + '(Make sure your spelling is correct'
            + (last_search_term.search(/ /)>=0 ? ', or try fewer keywords' : '')
+           + ((pre_query != "") ? ', or clear the search context' : '')
            + ')</div>';
   } else if (search_results.length <= results_num)
     status_line.innerHTML = "Showing all matches" + exact;
@@ -520,9 +617,9 @@ function UpdateResults() {
       + exact
       + " of " + search_results.length
       + ((search_results.length==search_data.length) ? "" : " matches");
-  prev_page_link.style.color =
+  prev_page_link1.style.color = prev_page_link2.style.color =
     (first_search_result-results_num >= 0) ? "black" : "#e0e0e0";
-  next_page_link.style.color =
+  next_page_link1.style.color = next_page_link2.style.color =
     (first_search_result+results_num < search_results.length)
     ? "black" : "#e0e0e0";
   saved_status = false;
@@ -575,17 +672,22 @@ function HandleKeyEvent(event) {
 }
 key_handler = HandleKeyEvent;
 
-// use this one to set the query field without jumping to the current
-// url again, since some browsers will reload the whole page for that
-// (it would be nice if there was a way to add it to the history too)
-function NewQuery(node) {
-  var m = node.href.search(/[?]q=[^?&;]+$/);
-  if (m < 0) return true;
-  else {
-    query.value = decodeURIComponent(node.href.substring(m+3));
+// use this one to set the query field without jumping to the current url
+// again, since some browsers will reload the whole page for that (it would be
+// nice if there was an easy way to add it to the history too)
+function NewQuery(node,label) {
+  var m, href = node.href;
+  if ((m = href.search(/[?]q=[^?&;]+$/)) >= 0) { // `q' cannot be empty
+    query.value = decodeURIComponent(href.substring(m+3));
     query.focus();
     DoSearch();
     return false;
+  } else if ((m = href.search(/[?]hq=[^?&;]*$/)) >= 0) { // `hq' can
+    SetPreQuery(decodeURIComponent(href.substring(m+4)),
+                decodeURIComponent(label));
+    return false;
+  } else {
+    return true;
   }
 }
 new_query = NewQuery;
@@ -599,7 +701,7 @@ function RefineQuery(node) {
   m = decodeURIComponent(node.href.substring(m+3));
   if (query.value.indexOf(m) >= 0) return true;
   else {
-    query.value = m + " " + query.value;
+    query.value = query.value + " " + m;
     query.focus();
     DoSearch();
     return false;
@@ -609,8 +711,10 @@ refine_query = RefineQuery;
 
 var panel_shown = false;
 function TogglePanel(name) {
-  if (panel_shown)
+  if (panel_shown) {
     document.getElementById(panel_shown+"_panel").style.display = "none";
+    document.getElementById("close_panel").style.display = "none";
+  }
   panel_shown = ((panel_shown != name) && name);
   if (panel_shown == "prefs") {
     document.getElementById("pre_query_pref").value = pre_query;
@@ -620,9 +724,13 @@ function TogglePanel(name) {
     document.getElementById("results_num_pref").value = results_num;
     document.getElementById("type_delay_pref").value = type_delay;
     document.getElementById("highlight_color_pref").value = highlight_color;
+  } else if (panel_shown == "contexts") {
+    document.getElementById("context_query_pref").value = pre_query;
   }
-  if (panel_shown)
+  if (panel_shown) {
     document.getElementById(panel_shown+"_panel").style.display = "block";
+    document.getElementById("close_panel").style.display = "block";
+  }
 }
 toggle_panel = TogglePanel;
 
@@ -643,15 +751,23 @@ function SetShowManuals(inp) {
 }
 set_show_manuals = SetShowManuals;
 
-function SetPreQuery(inp) {
-  if (inp.value != pre_query) {
-    pre_query = inp.value;
+function SetPreQuery(inp,label) {
+  // can be called with the input object, or with a string
+  if (typeof inp != "string") inp = inp.value;
+  if (inp != pre_query) {
+    pre_query = inp;
     SetCookie("PLT_PreQuery", pre_query);
+    label = label || "";
+    pre_query_label = label;
+    SetCookie("PLT_PreQueryLabel",label);
     PreFilter();
+    document.getElementById("pre_query_pref").value = pre_query;
+    document.getElementById("context_query_pref").value   = pre_query;
     DoSearch();
   }
 }
-set_pre_query = SetPreQuery;
+set_pre_query     = SetPreQuery;
+set_context_query = SetPreQuery; // a different widget, same effect
 
 function SetShowManuals(inp) {
   if (inp.selectedIndex != show_manuals) {
