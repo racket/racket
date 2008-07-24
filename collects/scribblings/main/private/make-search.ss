@@ -188,4 +188,4 @@
       (script-ref "search.js")
       (make-render-element null null
                            (lambda (r s i) (make-script user-dir? r s i)))))
-    (make-styled-paragraph '() '(div-hack [id "plt_search_container"])))))
+    (make-styled-paragraph '() '(div [id "plt_search_container"])))))
