@@ -56,10 +56,12 @@
   (define-syntax test/values
     (syntax-rules ()
       [(_ expr val ...)
-       (test (call-with-values
-                 (lambda () expr)
-               (lambda results (make-multiple-results results)))
-             (make-multiple-results (list val ...)))]))
+       (run-test 'expr
+                 (catch-exns (lambda () 
+                               (call-with-values
+                                   (lambda () expr)
+                                 (lambda results (make-multiple-results results)))))
+                 (make-multiple-results (list val ...)))]))
 
   (define-syntax test/output
     (syntax-rules ()
@@ -131,6 +133,15 @@
             (cons (list expr got expected)
                   failures))))
 
+  (define (write-result prefix v)
+    (if (multiple-results? v)
+        (for-each (lambda (v)
+                    (write-result prefix v))
+                  (multiple-results-values v))
+        (begin
+          (display prefix)
+          (write v))))
+
   (define (report-test-results)
     (if (null? failures)
         (begin
@@ -142,10 +153,10 @@
           (for-each (lambda (t)
                       (display "Expression:\n ")
                       (write (car t))
-                      (display "\nResult:\n ")
-                      (write (cadr t))
-                      (display "\nExpected:\n ")
-                      (write (caddr t))
+                      (display "\nResult:")
+                      (write-result "\n " (cadr t))
+                      (display "\nExpected:")
+                      (write-result "\n " (caddr t))
                       (display "\n\n"))
                     (reverse failures))
           (display (length failures))
