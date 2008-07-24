@@ -280,6 +280,7 @@
     
     (define (variable-declaration type expr share-type? end? name)
       (let* ([var-name (string-append name " declaration")]
+             [no-share (sequence (type (^ identifier)) id var-name)]
              [init (sequence ((^ identifier) EQUAL expr) id var-name)]
              [f (choose (identifier init) var-name)]
              [s&e (sequence (type (comma-sep f name)) id var-name)]
@@ -293,6 +294,9 @@
                 [expr (choose (e base) var-name)]
                 [else base])])
         (cond
+          [(and end? (not share-type?) expr)
+           (sequence ((^ no-share) (choose (SEMI_COLON (sequence (EQUAL expr SEMI_COLON) id (string-append name " initialization")))))
+                     id var-name)]
           [end? (sequence (decl SEMI_COLON) id (string-append name " definition"))]
           [else decl])))
     )

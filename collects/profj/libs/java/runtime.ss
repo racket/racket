@@ -315,8 +315,7 @@
                  (ormap (lambda (e-v) (java-equal? test-val e-v null null 0.001 #t))
                         expected-vals))]
            [res-list (list range test-val)])
-      (if
-       (in-check-mutate?)
+      (if (in-check-mutate?)
        (stored-checks (cons (list (and (not fail?) result) 'check-rand info res-list src test-obj)
                             (stored-checks)))
        (report-check-result (and (not fail?) result) 'check-rand info res-list src test-obj))
@@ -362,11 +361,11 @@
               src))))
 
   (define (compose-message test-obj check-kind info values mutate-message)
-    (letrec ((test-format (construct-info-msg info))
-             (eval-exception-raised? #f)
-             (comp-exception-raised? #f)
-             (exception-not-error? #f)
-             (formatted-values (map (lambda (v) 
+    (letrec ([test-format (construct-info-msg info)]
+             [eval-exception-raised? #f]
+             [comp-exception-raised? #f]
+             [exception-not-error? #f]
+             [formatted-values (map (lambda (v) 
                                       (cond
                                         [(and (pair? v) (eq? (car v) exception))
                                          (if (equal? (cadddr v) "eval")
@@ -374,18 +373,22 @@
                                              (set! comp-exception-raised? #t))
                                          (set! exception-not-error? (cadr v))
                                          (send test-obj format-value (caddr v))]
-                                        [else (send test-obj format-value v)])) values))
-             (expected-format
+                                        [(pair? v)
+                                         (map (lambda (v) (send test-obj format-value v)) v)]
+                                        [else (send test-obj format-value v)])) values)]
+             [expected-format
               (case check-kind
                 ((check-expect check-by) "to produce ")
                 ((check-rand) "to produce one of ")
-                ((check-catch) "to throw an instance of "))))
+                ((check-catch) "to throw an instance of "))])
       (cond 
         [(not (eq? 'check-by check-kind))
          (append (list (if mutate-message mutate-message "check expected ")
                        test-format
-                       expected-format
-                       (first formatted-values))
+                       expected-format)
+                 (if (eq? 'check-rand check-kind)
+                     (list-format (first formatted-values))
+                     (list (first formatted-values)))
                  (case check-kind
                    ((check-expect)
                     (append (if (= (length formatted-values) 3)
@@ -427,6 +430,20 @@
                " to compare to " (first formatted-values)
                " using " (third formatted-values)
                ". This value did not match the expectation.")])))
+  
+  (define (list-format l)
+    (cond
+      [(= (length l) 1) l]
+      [(= (length l) 2) (list (car l) "or" (cadr l))]
+      [else
+       (letrec ([ins 
+                 (lambda (l)
+                   (cond
+                     [(null? l) l]
+                     [(null? (cdr l)) (list " or" (car l))]
+                     [else 
+                      (cons (car l) (cons "," (ins (cdr l))))]))])
+         (ins l))]))
 
   ;construct-info-msg (list symbol string ...) -> string
   (define (construct-info-msg info)

@@ -342,7 +342,9 @@
                                    (fail-res input 
                                              (make-options-fail 
                                               (rank-choice (map fail-type-chance fails))
-                                              last-src
+                                              (if (equal? last-src (list 1 0 1 0))
+                                                  (map fail-type-src fails)
+                                                  last-src)
                                               seq-name
                                               (rank-choice (map fail-type-used fails))
                                               (rank-choice (map fail-type-may-use fails)) fails)))]
@@ -465,17 +467,17 @@
                                       (cond 
                                         [(and (repeat-res? look-back)
                                               (fail-type? (repeat-res-stop look-back))
-                                              (>= (fail-type-chance (repeat-res-stop look-back))
+                                              (> (fail-type-chance (repeat-res-stop look-back))
                                                   (fail-type-chance fail)))
                                          (repeat-res-stop look-back)]
                                         [(and (choice-res? look-back)
                                               (choice-res-errors look-back)
-                                              (>= (fail-type-chance (choice-res-errors look-back))
+                                              (> (fail-type-chance (choice-res-errors look-back))
                                                   (fail-type-chance fail)))
                                          (choice-res-errors look-back)]
                                         [(and (res? look-back)
                                               (fail-type? (res-possible-error look-back))
-                                              (>= (fail-type-chance (res-possible-error look-back))
+                                              (> (fail-type-chance (res-possible-error look-back))
                                                   (fail-type-chance fail)))
                                          (res-possible-error look-back)]
                                         [else #f])]
@@ -553,7 +555,7 @@
                              (printf "opt-fails ~a~n" opt-fails))
                            (if pos-fail
                                (make-options-fail (rank-choice (map fail-type-chance opt-fails))
-                                                  #f
+                                                  (map fail-type-src opt-fails)
                                                   name
                                                   (rank-choice (map fail-type-used opt-fails))
                                                   (rank-choice (map fail-type-may-use opt-fails))

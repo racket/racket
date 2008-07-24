@@ -18,7 +18,12 @@
     (define (fail-type->message fail-type message-to-date)
       (let* ([name (fail-type-name fail-type)]
              [a (a/an name)]
-             [msg (lambda (m) (make-err m (fail-type-src fail-type)))])
+             [msg (lambda (m) 
+                    (make-err m
+                              (if (and (list? (fail-type-src fail-type))
+                                       (list? (car (fail-type-src fail-type))))
+                                  (car (fail-type-src fail-type))
+                                  (fail-type-src fail-type))))])
         #;(printf "fail-type->message ~a~n" fail-type)
         (cond
           [(terminal-fail? fail-type)
