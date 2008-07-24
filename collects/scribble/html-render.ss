@@ -755,10 +755,14 @@
       (render-flow* p part ri start-inline? #t))
 
     (define/override (render-paragraph p part ri)
-      `((p ,(if (styled-paragraph? p)
-              `([class ,(styled-paragraph-style p)])
-              `())
-          ,@(super render-paragraph p part ri))))
+      ;; HACK: for the search, we need to be able to render a `div'
+      ;; with an `id' attribute, `p' will probably work fine instead
+      ;; of `div' since it's a block element.  Do this for now.
+      (let ([contents (super render-paragraph p part ri)]
+            [style (and (styled-paragraph? p) (styled-paragraph-style p))])
+        (if (and (pair? style) (eq? (car style) 'div))
+          `((div-hack ,(cdr style) ,@contents))
+          `((p ,(if style `([class ,style]) `()) ,@contents)))))
 
     (define/override (render-element e part ri)
       (cond
