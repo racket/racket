@@ -113,6 +113,8 @@ function InitializeSearch() {
         +'<li>Hit <tt>PageUp</tt>/<tt>PageDown</tt> and'
            +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
            +' results.</li>'
+        +'<li>Search terms are all required, use'
+           +' &ldquo;<tt>-<i>str</i></tt>&rdquo; to negate a term.'
         +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
            +' identifiers from modules that (partially) match'
            +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
@@ -341,10 +343,18 @@ function UrlToManual(url) {
 //   "L:schem" (only module names that match `schem')
 
 function CompileTerm(term) {
-  var flag = ((term.search(/^[LMT]:/)==0) && term.substring(0,1));
-  if (flag) term = term.substring(2);
+  var op = false;
+  // the first part avoids a single "-" from removing everything
+  if (term != "-" && term.search(/^(-|[LMT]:)/) == 0) {
+    op = term.substring(0,1);
+    term = RegExp.rightContext;
+  }
   term = term.toLowerCase();
-  switch(flag) {
+  switch(op) {
+  case "-":
+    op = CompileTerm(term);
+    // return C_exact if it's not found, so it doesn't disqualify exact matches
+    return function(x) { return (op(x) >= C_match) ? C_fail : C_exact; }
   case "L":
     return function(x) {
       if (!x[3]) return C_fail;
@@ -414,7 +424,7 @@ function Search(data, term, is_pre, K) {
   // false otherwise
   var t = false;
   var killer = function() { if (t) clearTimeout(t); };
-  // term comes with normalized spaces (trimmed, and no doubles)
+  // term comes with normalized spaces (trimmed, and no double spaces)
   var preds = (term=="") ? [] : term.split(/ /);
   for (var i=0; i<preds.length; i++) preds[i] = CompileTerm(preds[i]);
   if (preds.length == 0) {
@@ -493,9 +503,6 @@ function DoDelayedSearch() {
   // the whole delayed search thing was done to avoid redundant searching that
   // get the UI stuck, but now the search happens on a "thread" anyway, so it
   // might not be needed
-  var term = query.value;
-  if (term == last_search_term_raw) return;
-  kill_bg_search();
   if (search_timer) clearTimeout(search_timer);
   search_timer = setTimeout(DoSearch, type_delay);
 }
