@@ -3,6 +3,7 @@
 (library (tests r6rs test)
   (export test
           test/approx
+          test/alts
           test/exn
           test/values
           test/output
@@ -22,6 +23,12 @@
   (define-record-type multiple-results
     (fields values))
 
+  (define-record-type approx
+    (fields value))
+
+  (define-record-type alts
+    (fields values))
+
   (define-syntax test
     (syntax-rules ()
       [(_ expr expected)
@@ -33,17 +40,48 @@
 
    (define (catch-exns thunk)
       (guard (c [#t (make-err c)])
-        (thunk)))
+        (call-with-values thunk
+          (lambda x
+            (if (= 1 (length x))
+                (car x)
+                (make-multiple-results x))))))
 
   (define-syntax test/approx
     (syntax-rules ()
       [(_ expr expected)
-       (test (approx expr) (approx expected))]))
+       (run-test 'expr
+                 (make-approx expr)
+                 (make-approx expected))]))
 
-  (define (approx v)
-    (let ([n (* (inexact v) 1000.0)])
-      (+ (round (real-part n))
-         (* (round (imag-part n)) (sqrt -1)))))
+  (define-syntax test/alts
+    (syntax-rules ()
+      [(_ expr expected0 expected ...)
+       (run-test 'expr
+                 expr
+                 (make-alts (list expected0 expected ...)))]))
+
+  (define (good-enough? x y)
+    ;; relative error should be with 0.1%, but greater
+    ;; relative error is allowed when the expected value
+    ;; is near zero.
+    (cond ((not (number? x)) #f)
+          ((not (number? y)) #f)
+          ((or (not (real? x))
+               (not (real? y)))
+           (and (good-enough? (real-part x) (real-part	y))
+                (good-enough? (imag-part x) (imag-part	y))))
+          ((infinite? x)
+           (=	x (* 2.0 y)))
+          ((infinite? y)
+           (= (* 2.0 x) y))
+          ((nan? y)
+           (nan? x))
+          ((> (magnitude y) 1e-6)
+           (< (/ (magnitude (- x y))
+                 (magnitude y))
+              1e-3))
+          (else
+           (< (magnitude (- x y)) 1e-6))))
 
   (define-syntax test/exn
     (syntax-rules ()
@@ -57,10 +95,7 @@
     (syntax-rules ()
       [(_ expr val ...)
        (run-test 'expr
-                 (catch-exns (lambda () 
-                               (call-with-values
-                                   (lambda () expr)
-                                 (lambda results (make-multiple-results results)))))
+                 (catch-exns (lambda () expr))
                  (make-multiple-results (list val ...)))]))
 
   (define-syntax test/output
@@ -117,6 +152,10 @@
       (and (real? got) (nan? got))]
      [(expected-exception? expected)
       (expected-exception? got)]
+     [(approx? expected)
+      (and (approx? got)
+           (good-enough? (approx-value expected)
+                         (approx-value got)))]
      [(multiple-results? expected)
       (and (multiple-results? got)
            (= (length (multiple-results-values expected))
@@ -124,6 +163,9 @@
            (for-all same-result?
                     (multiple-results-values expected)
                     (multiple-results-values got)))]
+     [(alts? expected)
+      (exists (lambda (e) (same-result? got e))
+              (alts-values expected))]
      [else (equal? got expected)]))
     
   (define (run-test expr got expected)
@@ -134,13 +176,25 @@
                   failures))))
 
   (define (write-result prefix v)
-    (if (multiple-results? v)
-        (for-each (lambda (v)
-                    (write-result prefix v))
-                  (multiple-results-values v))
-        (begin
-          (display prefix)
-          (write v))))
+    (cond
+     [(multiple-results? v)
+      (for-each (lambda (v)
+                  (write-result prefix v))
+                (multiple-results-values v))]
+     [(approx? v)
+      (display prefix)
+      (display "approximately ")
+      (write (approx-value v))]
+     [(alts? v)
+      (write-result (string-append prefix "   ")
+                    (car (alts-values v)))
+      (for-each (lambda (v)
+                  (write-result (string-append prefix "OR ")
+                                v))
+                (cdr (alts-values v)))]
+     [else
+      (display prefix)
+      (write v)]))
 
   (define (report-test-results)
     (if (null? failures)

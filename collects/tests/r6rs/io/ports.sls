@@ -37,15 +37,13 @@
          (test (string->bytevector "apple\x85;"
                                    (make-transcoder (latin-1-codec)))
                #vu8(97 112 112 108 101 #x85))
-         (test (let ([v (string->bytevector "app\x03BB;e"
-                                            (make-transcoder (utf-16-codec)))])
-                 ;; Could be LE or BE:
-                 (if (= (bytevector-u8-ref v 0) #xFE)
-                     v
-                     (if (equal? v #vu8(#xFF #xFE 97 0 112 0 112 0 #xBB #x3 101 0))
-                         #vu8(#xFE #xFF 0 97 0 112 0 112 #x3 #xBB 0 101)
-                         v)))
-               #vu8(#xFE #xFF 0 97 0 112 0 112 #x3 #xBB 0 101))
+         (test/alts (string->bytevector "app\x03BB;e"
+                                        (make-transcoder (utf-16-codec)))
+                    ;; Could be LE or BE, with or without BOM:
+                    #vu8(#xFF #xFE 97 0 112 0 112 0 #xBB #x3 101 0)
+                    #vu8(#xFE #xFF 0 97 0 112 0 112 #x3 #xBB 0 101)
+                    #vu8(97 0 112 0 112 0 #xBB #x3 101 0)
+                    #vu8(0 97 0 112 0 112 #x3 #xBB 0 101))
          (test (string->bytevector "a\nb"
                                    (make-transcoder (utf-8-codec) 'lf))
                #vu8(97 10 98))
