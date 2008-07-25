@@ -15,9 +15,21 @@
     (send-url/file path #:fragment fragment #:query query)))
 
 (define (perform-search str [context #f])
-  (let* ([page (if context "search-context.htm" "index.html")]
-         [query (format "q=~a" (uri-encode str))]
-         [query (if context
-                  (format "~a&hq=~a" query (uri-encode context))
-                  query)])
+  ;; `context' can be a pre-filter query string to use for a context,
+  ;; optionally a list of one and a label to display for that context.
+  ;; In any case, when a context is specified, the search actually
+  ;; goes through the search-context.html page which tranpolines to
+  ;; the main search page after setting the cookies (so when the
+  ;; search page is refreshed it won't reset the context).
+  (let* ([label   (and (list? context) (= 2 (length context)) (cadr context))]
+         [context (if (pair? context) (car context) context)]
+         [page    (if context "search-context.htm" "index.html")]
+         [query   (format "q=~a" (uri-encode str))]
+         [query   (if context
+                    (format "~a&hq=~a~a"
+                            query (uri-encode context)
+                            (if label
+                              (format "&label=~a" (uri-encode label))
+                              ""))
+                    query)])
     (send-main-page #:sub (string-append search-dir page) #:query query)))
