@@ -1001,6 +1001,12 @@
 		     (lambda args
 		       (send APPLE-CHECK-ID check #t)))
 	(make-object button%
+		     "Delete/Restore Check" mfbp
+		     (lambda args
+                       (if (send APPLE-CHECK-ID is-deleted?)
+                           (send APPLE-CHECK-ID restore)
+                           (send APPLE-CHECK-ID delete))))
+	(make-object button%
 		     "Toggle Menubar Enable" mfbp
 		     (lambda args
 		       (send menu-bar enable (not (send menu-bar is-enabled?)))))
