@@ -263,7 +263,8 @@
         (queue-callback
          (λ ()
            (send* rep (insert-warning "\nInteractions disabled.")
-                      (set-show-no-user-evaluation-message? #f))
+                      (set-show-no-user-evaluation-message? #f)
+                      (highlight-errors/exn exn))
            (semaphore-post s))))
       (semaphore-wait s))
     (custodian-shutdown-all (send rep get-user-custodian)))
