@@ -124,7 +124,8 @@
     (test (for-all even? '(13 . 14)) #f)
     (test (for-all cons '(1 2 3) '(a b c)) '(3 . c))
     (test (for-all (lambda (a b) (= a 1)) '(1 2 3) '(a b c)) #f)
-    (test (for-all (lambda (a b) (= a 1)) '(1 2) '(a b c)) #f)
+    ;; R6RS merely says that this *should* work, but not must:
+    ;; (test (for-all (lambda (a b) (= a 1)) '(1 2) '(a b c)) #f)
     (test (fold-left + 0 '(1 2 3 4 5)) 15)
     (test (fold-left (lambda (a b) (cons b a)) '() '(1 2 3 4 5))
           '(5 4 3 2 1))

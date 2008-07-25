@@ -197,7 +197,6 @@
              (let ([v #'#(x ...)])
                (list (syntax->datum v) (vector? v)))])
           '(#() #t))
-    (test (vector? #'#(1 2 3)) #f)
     (test (syntax-case #'(1) ()
             [(_) (syntax->datum #'_)])
           '_)

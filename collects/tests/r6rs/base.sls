@@ -1301,7 +1301,7 @@
 
     ;; 11.15
     (test (apply + (list 3 4))               7)
-    (test ((compose sqrt *) 12 75)               30)
+    (test/approx ((compose sqrt *) 12 75)    30)
     
     (test (call-with-current-continuation
            (lambda (exit)
