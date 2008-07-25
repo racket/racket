@@ -789,15 +789,13 @@
              [style (if (with-attributes? raw-style)
                         (with-attributes-style raw-style)
                         raw-style)])
-        (if (and (pair? style) (eq? (car style) 'div-hack))
-          `((div ,(cdr style) ,@contents))
-          `((,(if (string? style) 'div 'p) 
-             ,(append
-               (if (string? style)
-                   `([class ,style]) 
-                   `()) 
-               (style->attribs raw-style))
-             ,@contents)))))
+        `((,(if (eq? style 'div) 'div 'p)
+           ,(append
+             (if (string? style)
+                 `([class ,style]) 
+                 `()) 
+             (style->attribs raw-style))
+           ,@contents))))
 
     (define/override (render-element e part ri)
       (cond

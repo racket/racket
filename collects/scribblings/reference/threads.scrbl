@@ -12,10 +12,10 @@ When a thread is created, it is placed into the management of the
 managers added through @scheme[thread-resume].
 
 A thread that has not terminated can be garbage collected (see
-@secref["gc-model"]) if it is unreachable and suspended, or if it
-is unreachable and blocked on a set of unreachable events through
-@scheme[semaphore-wait] or @scheme[semaphore-wait/enable-break],
-@scheme[channel-put] or @scheme[channel-get], @scheme[sync] or
+@secref["gc-model"]) if it is unreachable and suspended or if it is
+unreachable and blocked on only unreachable events through
+@scheme[semaphore-wait], @scheme[semaphore-wait/enable-break],
+@scheme[channel-put], @scheme[channel-get], @scheme[sync],
 @scheme[sync/enable-break], or @scheme[thread-wait].
 
 @margin-note{In MrEd, a handler thread for an eventspace is blocked on

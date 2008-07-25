@@ -79,14 +79,24 @@
 
     (define/override (render-paragraph p part ri)
       (printf "\n\n")
-      (let ([margin? (and (styled-paragraph? p)
-                          (equal? "refpara" (styled-paragraph-style p)))])
-        (when margin?
-          (printf "\\marginpar{\\footnotesize "))
+      (let ([style (and (styled-paragraph? p)
+                        (let ([s (flatten-style
+                                  (styled-paragraph-style p))])
+                          (if (with-attributes? s)
+                              (let ([base (with-attributes-style s)])
+                                (if (eq? base 'div)
+                                    (let ([a (assq 'class (with-attributes-assoc s))])
+                                      (if a
+                                          (cdr a)
+                                          base))
+                                    base))
+                              s)))])
+        (when (string? style)
+          (printf "\\~a{" style))
         (if (toc-paragraph? p)
           (printf "\\newpage \\tableofcontents \\newpage")
           (super render-paragraph p part ri))
-        (when margin? (printf "}")))
+        (when (string? style) (printf "}")))
       (printf "\n\n")
       null)
 

@@ -150,8 +150,8 @@ Calls a thunk and returns the value. While the thunk is being called,
               void?])]{
 
 Enables or disables force-focus mode.  In force-focus mode, the caret
- of the editor displayed in this canvas will always be visible, even
- when the canvas does not actually have the keyboard focus.
+ or selection of the editor displayed in this canvas is drawn even
+ when the canvas does not have the keyboard focus.
 
 }
 

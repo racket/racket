@@ -330,12 +330,22 @@ A @techlink{paragraph} has a list of @tech{elements}.
 
 @defstruct[(styled-paragraph paragraph) ([style any/c])]{
 
-The @scheme[style] is normally a string that corresponds to a CSS
-class for HTML output, in which case a @tt{<div>} block is generated
-instead of a @tt{<p>} block. A base style can also be a
-@scheme[with-attributes] instance to add arbitrary HTML attributes.
+The @scheme[style] can be
 
-}
+@itemize[
+
+ @item{A string that corresponds to a CSS class for HTML output or a
+       macro for Latex output.}
+
+ @item{An instance of @scheme[with-attributes], which combines a base
+       style with a set of additional HTML attributes.}
+
+ @item{The symbol @scheme['div], which generates @tt{<div>} HTML
+       output instead of @tt{<p>}. For Latex output, a string for a
+       macro name is extracted from the @scheme['class] mapping of a
+       @scheme[with-attributes] wrapper, if one is present.}
+
+]}
 
 
 @defstruct[table ([style any/c]
@@ -379,7 +389,7 @@ The @scheme[style] can be any of the following:
 
          ]}
 
-  @item{an instance of @scheme[with-attributes], which combines a base
+  @item{An instance of @scheme[with-attributes], which combines a base
        style with a set of additional HTML attributes.}
 
 ]}
