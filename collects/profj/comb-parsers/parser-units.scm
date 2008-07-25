@@ -24,44 +24,46 @@
       (when (position-token? x)
         (set! x (position-token-token x)))
       (case (token-name x)
-           [(PIPE) "|"]
-           [(OR) "||"]
-           [(OREQUAL) "|="]
-           [(EQUAL) "="]
-           [(GT) ">"]
-           [(LT) "<"]
-           [(LTEQ) "<="]
-           [(GTEQ) ">="]
-           [(PLUS) "+"]
-           [(MINUS) "-"]
-           [(TIMES) "*"]
-           [(DIVIDE) "/"]
-           [(^T) "^"]
-           [(O_PAREN) "("]
-           [(C_PAREN) ")"]
-           [(O_BRACE) "{"]
-           [(C_BRACE) "}"]
-           [(O_BRACKET) "["]
-           [(C_BRACKET) "]"]
-           [(SEMI_COLON) ";"]
-           [(PERIOD) "."]
-           [(COMMA) ","]
-           [(NULL_LIT) "null"]
-           [(TRUE_LIT) "true"]
-           [(FALSE_LIT) "false"]
-           [(EOF) "end of input"]
-           [(caseT) "case"]
-           [(doT) "do"]
-           [(elseT) "else"]
-           [(ifT) "if"]
-           [(voidT) "void"]
-           [(STRING_LIT) (format "\"~a\"" (token-value x))]
-           [(CHAR_LIT) (format "'~a'" (token-value x))]
-           [(INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT
-                         HEX_LIT OCT_LIT HEXL_LIT OCTL_LIT) (token-value x)]
-           [(IDENTIFIER) (format "identifier ~a" (token-value x))]
-           [(STRING_ERROR) (format "misformatted string ~a" (token-value x))]
-           [else (token-name x)]))
+        [(PIPE) "|"]
+        [(OR) "||"]
+        [(OREQUAL) "|="]
+        [(EQUAL) "="]
+        [(GT) ">"]
+        [(LT) "<"]
+        [(LTEQ) "<="]
+        [(GTEQ) ">="]
+        [(PLUS) "+"]
+        [(MINUS) "-"]
+        [(TIMES) "*"]
+        [(DIVIDE) "/"]
+        [(^T) "^"]
+        [(O_PAREN) "("]
+        [(C_PAREN) ")"]
+        [(O_BRACE) "{"]
+        [(C_BRACE) "}"]
+        [(O_BRACKET) "["]
+        [(C_BRACKET) "]"]
+        [(SEMI_COLON) ";"]
+        [(PERIOD) "."]
+        [(COMMA) ","]
+        [(NULL_LIT) "null"]
+        [(TRUE_LIT) "true"]
+        [(FALSE_LIT) "false"]
+        [(EOF) "end of input"]
+        [(caseT) "case"]
+        [(doT) "do"]
+        [(elseT) "else"]
+        [(ifT) "if"]
+        [(voidT) "void"]
+        [(STRING_LIT) (format "\"~a\"" (token-value x))]
+        [(CHAR_LIT) (format "'~a'" (token-value x))]
+        [(INTEGER_LIT LONG_LIT FLOAT_LIT DOUBLE_LIT) (token-value x)]
+        
+        [(HEX_LIT HEXL_LIT) (format "hex formatted number ~a" (token-value x))]
+        [(OCT_LIT OCTL_LIT) (format "octal formatted number ~a" (token-value x))]
+        [(IDENTIFIER) (format "identifier ~a" (token-value x))]
+        [(STRING_ERROR) (format "misformatted string ~a" (token-value x))]
+        [else (token-name x)]))
     
     (define (java-keyword? t)
       (memq  t `(? this super new instanceof while try throw synchronized switch return ifT goto for finally
@@ -99,7 +101,7 @@
                               (implements 
                                "mplements" "iplements" "impements" "implments" "impleents" "implemnts" "implemets" "implemens"
                                "implement")
-                              (void "oid" "vid" "voi" "viod")
+                              (void "oid" "vid" "voi" "viod" "vod")
                               (for "fo" "fore" "fro")
                               (super "uper" "sper" "supr" "supe" "supper")
                               (public "ublic" "pblic" "pulic" "pubic" "publc" "publi" "pubilc")
@@ -372,7 +374,11 @@
        "method invocation"))
     
     (define method-call-end
-      (choose
+      (sequence (PERIOD (^ identifier) O_PAREN (choose (C_PAREN
+                                                        (sequence ((comma-sep (eta expression) "arguments") C_PAREN) id))))
+                id "method invocation")
+      
+      #;(choose
        ((sequence (PERIOD (^ identifier) O_PAREN C_PAREN) id)
         (sequence (PERIOD (^ identifier) O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
        "method invocation"))
@@ -652,7 +658,7 @@
               "expression"))
     
     (define expression
-      (sequence (unique-base (repeat-greedy unique-end)) id "expression"))
+      (sequence (unique-base (repeat unique-end)) id "expression"))
     
     (define statement
       (choose ((return-s #f) (if-s (block #f) #f)) "statement"))

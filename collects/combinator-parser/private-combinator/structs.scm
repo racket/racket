@@ -18,12 +18,12 @@
   (define-struct fail-type (chance src name used may-use) #:transparent #:mutable)
   ;(make-terminal-fail float fail-src string symbol 'a)
   (define-struct (terminal-fail fail-type) (kind found))
-  ;(make-sequence-fail float fail-src string symbol (list string) string 'a boolean string)
-  (define-struct (sequence-fail fail-type) (id kind correct expected found repeat? last-seen))
+  ;(make-sequence-fail float fail-src string symbol (list string) string 'a (-> boolean) string)
+  (define-struct (sequence-fail fail-type) (id kind correct expected found repeat? last-seen) #:transparent)
   ;(make-choice-fail float fail-src string int (list string) (list fail-type) boolean)
   (define-struct (choice-fail fail-type) (options names ended? (messages #:mutable)) #:transparent)
   ;(make-options-fail float #f #f (list fail-type))
-  (define-struct (options-fail fail-type) ((opts #:mutable)))
+  (define-struct (options-fail fail-type) ((opts #:mutable)) #:transparent)
   
   ;result = res | choice-res | repeat-res | (listof (U res choice-res))
   
