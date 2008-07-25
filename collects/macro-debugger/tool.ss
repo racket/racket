@@ -220,10 +220,7 @@
             (and (equal? main-group (string-constant legacy-languages))
                  (or (member second 
                              (list (string-constant r5rs-language-name)
-                                   "Swindle"))
-                     (member third
-                             (list (string-constant mzscheme-w/debug)
-                                   (string-constant mred-w/debug)
+                                   "Swindle"
                                    (string-constant pretty-big-scheme))))))))
     
     ;; Macro debugger code
