@@ -298,9 +298,11 @@
                                        (or/c (cons/c string? string?) false/c)
                                        (cons "(define" "(define ...)"))
 
+;; The default is #f to keep whatever the user chose as their context.
+;; If it's "", then we will kill the user's choice.
 (drscheme:language:register-capability 'drscheme:help-context-term
                                        (or/c false/c string?)
-                                       "")
+                                       #f)
 
 (drscheme:language:register-capability 'drscheme:special:insert-fraction (flat-contract boolean?) #t)
 (drscheme:language:register-capability 'drscheme:special:insert-large-letters (flat-contract boolean?) #t)
