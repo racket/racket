@@ -1978,6 +1978,8 @@
             (unless hidden?
               (send find-edit text-to-search-changed old new))))))
     
+    (define/public-final (get-text-to-search) text-to-search)
+            
     (define/public (search-results-changed)
       (when find-edit
         (when text-to-search
@@ -1986,8 +1988,6 @@
             (let ([is-red? (and (zero? new-hits) 
                                 (not (zero? (send find-edit last-position))))])
               (send find-canvas set-red is-red?))))))
-            
-    (define/public-final (get-text-to-search) text-to-search)
 
     (define/public (search-hidden?) hidden?)
     

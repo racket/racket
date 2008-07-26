@@ -1,9 +1,7 @@
-#lang scribble/doc
-@(require scribble/manual scribble/extract scheme/include)
-@(require (for-label framework))
-@(require (for-label scheme/gui))
-@(require (for-syntax (prefix-in s: scribble/reader)))
-@title{Frame}
+#lang scribble/doc @(require scribble/manual
+scribble/extract scheme/include) @(require (for-label
+framework)) @(require (for-label scheme/gui)) @(require
+(for-syntax (prefix-in s: scribble/reader))) @title{Frame}
 
 @definterface[frame:basic<%> (frame%)]{
   Classes matching this interface support the basic 
@@ -76,14 +74,14 @@
               (show #f)))])]
 
   }
-  @defmethod*[(((editing-this-file? (filename path)) boolean))]{
+  @defmethod*[(((editing-this-file? (filename path)) boolean?))]{
     Indicates if this frame contains this buffer (and can edit
     that file).
 
 
     Returns @scheme[#f].
   }
-  @defmethod*[(((get-filename (temp (union |#f| (box boolean)) |#f|)) (union |#f| path)))]{
+  @defmethod*[(((get-filename (temp (union |#f| (box boolean?)) |#f|)) (union |#f| path)))]{
     This returns the filename that the frame is currently being saved as,
     or @scheme[#f] if there is no appropriate filename.
 
@@ -119,7 +117,7 @@
 
   See also
   @scheme[frame:reorder-menus].
-  @defmethod*[#:mode override (((show (on? boolean)) void))]{
+  @defmethod*[#:mode override (((show (on? boolean?)) void))]{
 
     Calls the super method.
 
@@ -127,7 +125,7 @@
     frame group and when it is @scheme[#f], removes the frame
     from the group.
   }
-  @defmethod*[#:mode override (((can-exit?) boolean))]{
+  @defmethod*[#:mode override (((can-exit?) boolean?))]{
 
     This, together with
     @method[frame:basic-mixin on-exit]
@@ -254,7 +252,7 @@
     frames open, it calls
     @scheme[exit:exit].
   }
-  @defmethod*[#:mode override (((on-activate (on? boolean)) void))]{
+  @defmethod*[#:mode override (((on-activate (on? boolean?)) void))]{
 
     Calls
     @method[group:% set-active-frame]
@@ -384,7 +382,7 @@
     @method[frame:info<%> is-info-hidden?].
 
   }
-  @defmethod*[(((is-info-hidden?) boolean))]{
+  @defmethod*[(((is-info-hidden?) boolean?))]{
     Result indicates if the show info panel has been explicitly hidden with
     @method[frame:info<%> hide-info].
 
@@ -416,7 +414,7 @@
   constructed with
   @scheme[editor:info-mixin]
   and display it.
-  @defmethod*[(((set-macro-recording (on? boolean)) void))]{
+  @defmethod*[(((set-macro-recording (on? boolean?)) void))]{
     Shows/hides the icon in the info bar that indicates if a
     macro recording is in progress.
 
@@ -551,7 +549,7 @@
     is a
     @scheme[text%], the start and end positions are restored.
   }
-  @defmethod*[(((save (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean))]{
+  @defmethod*[(((save (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
     Saves the file being edited, possibly calling
     @method[frame:editor<%> save-as]
     if the editor has no filename yet.
@@ -562,7 +560,7 @@
     the user is prompted for a new filename) and returns
     @scheme[#t] if not.
   }
-  @defmethod*[(((save-as (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean))]{
+  @defmethod*[(((save-as (format (union (quote guess) (quote standard) (quote text) (quote text-force-cr) (quote same) (quote copy)) (quote same))) boolean?))]{
     Queries the use for a file name and saves the file with that name.
 
 
@@ -600,7 +598,7 @@
     Returns the filename in the editor returned by
     @method[frame:editor<%> get-editor].
   }
-  @defmethod*[#:mode override (((editing-this-file? (filename path)) boolean))]{
+  @defmethod*[#:mode override (((editing-this-file? (filename path)) boolean?))]{
 
     Returns @scheme[#t] if the filename is the file that this
     frame is editing.
@@ -644,7 +642,7 @@
     if they still want to continue, calls
     @method[frame:editor<%> revert].
   }
-  @defmethod*[#:mode override (((file-menu:create-revert?) boolean))]{
+  @defmethod*[#:mode override (((file-menu:create-revert?) boolean?))]{
 
     returns #t
   }
@@ -652,7 +650,7 @@
 
     Saves the file in the editor.
   }
-  @defmethod*[#:mode override (((file-menu:create-save?) boolean))]{
+  @defmethod*[#:mode override (((file-menu:create-save?) boolean?))]{
 
     returns #t
   }
@@ -663,7 +661,7 @@
     @method[frame:editor<%> save-as]
     with no arguments.
   }
-  @defmethod*[#:mode override (((file-menu:create-save-as?) boolean))]{
+  @defmethod*[#:mode override (((file-menu:create-save-as?) boolean?))]{
 
     returns #t
   }
@@ -679,7 +677,7 @@
     @scheme[preferences:get]
     with @scheme['framework:print-output-mode].
   }
-  @defmethod*[#:mode override (((file-menu:create-print?) boolean))]{
+  @defmethod*[#:mode override (((file-menu:create-print?) boolean?))]{
 
     returns #t
   }
@@ -706,7 +704,7 @@
 
     Returns the result of (@scheme[application:current-app-name])
   }
-  @defmethod*[#:mode override (((help-menu:create-about?) boolean))]{
+  @defmethod*[#:mode override (((help-menu:create-about?) boolean?))]{
 
     returns #t
   }
@@ -771,7 +769,7 @@
     @method[group:% get-open-here-frame]
     is @scheme[eq?] to @scheme[this].
   }
-  @defmethod*[#:mode override (((on-activate (on? boolean)) void))]{
+  @defmethod*[#:mode override (((on-activate (on? boolean?)) void))]{
 
     When @scheme[on?] is @scheme[#t], calls
     @method[group:% set-open-here-frame]
@@ -825,7 +823,7 @@
     Returns the delegate text.
 
   }
-  @defmethod*[(((delegated-text-shown?) boolean))]{
+  @defmethod*[(((delegated-text-shown?) boolean?))]{
     Returns @scheme[#t] if the delegate is visible, and
     @scheme[#f] if it isn't.
 
@@ -934,9 +932,17 @@
   }
   @defmethod[(get-case-sensitive-search?) boolean?]{
     Returns @scheme[#t] if the search is currently case-sensitive.
+    (This method's value depends on the preference 
+     @scheme['framework:case-sensitive-search?], but 
+     the preference is only consulted when the frame is created.)
   }
   @defmethod[(search-results-changed) void?]{
-    This method is called to notify the frame when 
+
+    This method is called to notify the frame when the
+    search results have changed somehow. It triggers an
+    update to the red highlighting in the search window (if
+    there are no hits, but yet there is a string to search
+    for) and to the number of matches reported.
   }
 
 }
@@ -945,43 +951,85 @@
   @scheme[editor<%>]
   in this frame.
 
-  @defmethod*[#:mode override (((edit-menu:find-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
+  @defmethod*[#:mode override (((edit-menu:find-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Calls
-    @method[frame:searchable<%> move-to-search-or-search].
+    @method[frame:searchable<%> search].
   }
-  @defmethod*[#:mode override (((edit-menu:create-find?) boolean))]{
-
-    returns #t
+  @defmethod*[#:mode override (((edit-menu:create-find?) boolean?))]{
+    returns @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:find-again-callback) boolean))]{
+  @defmethod*[#:mode override (((edit-menu:find-backwards-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
-    Returns @scheme[#t], and searches for the same text that was last
-    searched for in the text.
+    Calls
+    @method[frame:searchable<%> search].
   }
-  @defmethod*[#:mode override (((edit-menu:create-find-again?) boolean))]{
-
-    returns #t
+  @defmethod*[#:mode override (((edit-menu:create-find-backwards?) boolean?))]{
+    returns @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-callback) boolean))]{
 
-    Returns @scheme[#t], and if the selected text matches the current text
-    in the find box, replaces it with the contents of the replace box and
-    searches for the next occurrence of the text in the find box.
-
-
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-callback) boolean?))]{
+    Calls @method[frame:searchable<%> replace&search].
   }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-on-demand (item menu-item%)) void))]{
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-on-demand (item menu-item%)) void))]{
 
     Disables @scheme[item] when
     @method[frame:searchable<%> can-replace?]
     returns @scheme[#f] and enables it when that method returns
     @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again?) boolean))]{
+  @defmethod*[#:mode override (((edit-menu:create-replace-and-find?) boolean?))]{
 
-    returns @scheme[#t]
+    returns @scheme[#t].
   }
+
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-callback) boolean?))]{
+    Calls @method[frame:searchable<%> replace&search].
+  }
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-on-demand (item menu-item%)) void))]{
+
+    Disables @scheme[item] when
+    @method[frame:searchable<%> can-replace?]
+    returns @scheme[#f] and enables it when that method returns
+    @scheme[#t].
+  }
+  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-backwards?) boolean?))]{
+
+    returns @scheme[#t].
+  }
+
+  @defmethod*[#:mode override (((edit-menu:replace-all-callback) boolean?))]{
+    Calls @method[frame:searchable<%> replace-all].
+  }
+  @defmethod*[#:mode override (((edit-menu:replace-all-on-demand (item menu-item%)) void))]{
+
+    Disables @scheme[item] when
+    @method[frame:searchable<%> can-replace?]
+    returns @scheme[#f] and enables it when that method returns
+    @scheme[#t].
+  }
+  @defmethod*[#:mode override (((edit-menu:create-replace-all?) boolean?))]{
+    returns @scheme[#t].
+  }
+
+  @defmethod*[#:mode override (((edit-menu:find-case-sensitive-callback) boolean?))]{
+     Updates the state of the case-sensitive searching for this frame,
+     and sets the @scheme['framework:case-sensitive-search?] preference
+     for later frames.
+  }
+  @defmethod*[#:mode override (((edit-menu:find-case-sensitive-on-demand (item menu-item%)) void))]{
+
+    Checks @scheme[item] when searching is case-sensitive and unchecks
+    it otherwise.
+  }
+  @defmethod*[#:mode override (((edit-menu:create-find-case-sensitive) boolean?))]{
+
+    returns @scheme[#t].
+  }
+
+
+
+
   @defmethod*[#:mode override (((make-root-area-container) (is-a?/c area-container<%>)))]{
 
     Builds a panel for the searching information.
