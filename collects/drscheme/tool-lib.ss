@@ -991,6 +991,12 @@ all of the names in the tools library, for use defining keybindings
               (cons "(define" "(define ...)")]{
            specifies the prefix that the define popup should look for and what
            label it should have, or @scheme[#f] if it should not appear at all}
+         @cap[drscheme:help-context-term (or/c false/c string?) #f]{
+           specifies a context query for documentation searches that are
+           initiated in this language, can be @scheme[#f] (no change to the
+           user's setting) or a string to be used as a context query (note: the
+           context is later maintained as a cookie, @scheme[""] is different
+           from @scheme[#f] in that it clears the stored context)}
          @cap[drscheme:special:insert-fraction boolean? #t]{
            determines if the insert fraction menu item in the special menu is
            visible}
