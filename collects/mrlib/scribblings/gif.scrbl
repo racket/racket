@@ -25,7 +25,8 @@ transparent pixels in the generated GIF image.}
                                                     (-> (is-a?/c bitmap%))))]
                              [delay-csec (integer-in 0 #xFFFFFFFF)]
                              [filename path-string]
-                             [#:one-at-a-time? one-at-a-time? any/c #f])
+                             [#:one-at-a-time? one-at-a-time? any/c #f]
+                             [#:last-frame-delay last-frame-delay (or/c (integer-in 0 #xFFFFFFFF) false/c) #f])
          void?]{
 
 Writes the bitmaps in @scheme[bitmap-list] to @scheme[filename] as an
@@ -48,3 +49,7 @@ written to the file one at a time; that is, for each thunk in
 another thunk is called. A drawback to this approach is that a
 separate colortable is written for each frame in the animation, which
 can make the resulting file large.}
+
+If @scheme[last-frame-delay] is not false, a delay of last-frame-delay
+will be added to the last frame.  @scheme[last-frame-delay] is in 1/100s of a
+second units.
