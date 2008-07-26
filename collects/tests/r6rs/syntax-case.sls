@@ -224,8 +224,8 @@
     (test (syntax->datum #'(a . b)) '(a . b))
 
     (test (syntax->datum '1) 1)
-    (test (syntax->datum '(a . b)) '(a . b))
-    (test (syntax->datum '(a b)) '(a b))
+    (test (syntax->datum '(1 . 2)) '(1 . 2))
+    (test (syntax->datum '(1 2)) '(1 2))
     (test (syntax->datum (cons #'a #'b)) '(a . b))
     (test (syntax->datum (vector #'a #'b)) '#(a b))
     (test (syntax->datum '#(a b)) '#(a b))
