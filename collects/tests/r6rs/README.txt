@@ -55,7 +55,7 @@ very much appreciated. File either as a PLT Scheme bug report at
 Hints on running the tests
 ======================================================================
 
-Ikarus
+Ikarus (version 0.0.3+)
 ------
 
 Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps"
@@ -68,7 +68,7 @@ or run an individual library's test, such as "run/program.sps" as
   cd <somewhere>
   ikarus --r6rs-script tests/r6rs/run/program.sps
 
-Larceny
+Larceny (version 0.962)
 -------
 
 Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps"
@@ -79,7 +79,7 @@ or run an individual library's test, such as "run/program.sps" as
 
   larceny -path <somewhere> -r6rs -program run/program.sps
 
-PLT Scheme
+PLT Scheme (version 4.0.2.5)
 ----------
 
 If you get an SVN-based or the "Full" nightly build, then these tests are
@@ -96,21 +96,18 @@ perhaps in the location reported by
               (version) "collects"
               "tests" "r6rs")
 
-As of PLT Scheme 4.0.2.5, two tests fail. They correspond to
-documented non-conformance with R6RS.
+Two tests fail; they correspond to documented non-conformance with
+R6RS.
 
-Ypsilon
+Ypsilon (verion 0.9.5-update2)
 -------
 
-[If there's a library-autoload mechanism, we didn't figure it
- out. Better ideas are welcome...]
+Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps":
 
-Load the library declarations that you're interested in. For `(rnrs
-<id> ... <id>)':
+  cd <somewhere>
+  ypsilon --sitelib=. --no-letrec-check tests/r6rs/run.sps
 
-   * Load "test.sls"
-   * Load "<id>/...<id>.sls"
-   * Eval `(import tests r6rs <id> ... <id>)'
-   * Eval `(run-<id>-...<id>-tests)'
-   * Eval `(import tests r6rs test)'
-   * Eval `(show-test-results)'
+or run an individual library's test, such as "run/program.sps" as
+
+  cd <somewhere>
+  ypsilon --sitelib=. --no-letrec-check tests/r6rs/run/program.sps
