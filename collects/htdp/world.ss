@@ -728,6 +728,15 @@ Matthew
 (define (add-event type . stuff)
   (set! event-history (cons (cons type stuff) event-history)))
 
+
+;; zfill: natural-number natural-number -> string
+;; Converts a-num to a string, adding leading zeros to make it at least as long as a-len.
+(define (zfill a-num a-len)
+  (let ([n (number->string a-num)])
+    (string-append (build-string (max (- a-len (string-length n)) 0)
+                                 (lambda (i) #\0))
+                   n)))
+
 ;; --> Void
 ;; re-play the history of events, creating a png per step, create animated gif
 ;; effect: write to user-chosen file 
@@ -754,7 +763,7 @@ Matthew
     (define bm (make-bitmap)) 
     (set! bitmap-list (cons bm bitmap-list))
     (set! image-count (+ image-count 1))
-    (send bm save-file (format "i~a.png" image-count) 'png))
+    (send bm save-file (format "i~a.png" (zfill image-count (string-length (number->string total)))) 'png))
   ;; --- choose place 
   (define target:dir
     (let* ([cd (current-directory)]
