@@ -1,6 +1,6 @@
 #reader scribble/reader
 #lang scheme
-
+(provide main)
 (require scheme/pretty
          scheme/runtime-path)
 (require "standard-menus-items.ss")
@@ -66,7 +66,9 @@
                              (parent ,(menu-item-menu-name item))
                              (help-string (,(an-item->help-string-name item)))
                              (demand-callback (λ (menu-item) (,(an-item->on-demand-name item) menu-item))))
-                       `(new (get-menu-item%)
+                       `(new ,(if (a-checkable-item? item)
+                                  '(get-checkable-menu-item%)
+                                  '(get-menu-item%))
                              (label (,(an-item->string-name item)))
                              (parent ,(menu-item-menu-name item))
                              (callback (let ([,callback-name (λ (item evt) (,callback-name item evt))])

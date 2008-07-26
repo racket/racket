@@ -473,7 +473,6 @@ please adhere to these guidelines:
   (dock "Minimer")
   (undock "Gendan")
   (replace&find-again "Erstat og Søg igen") ;;; need double & to get a single &
-  (replace-to-end "Erstat til slutning")
   (forward "Frem")
   (backward "Tilbage")
   (hide "Skjul")

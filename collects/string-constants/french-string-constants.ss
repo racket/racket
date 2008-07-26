@@ -501,7 +501,6 @@
   (dock "Attacher")
   (undock "Détacher")
   (replace&find-again "Remplacer && chercher à nouveau") ;;; need double & to get a single &
-  (replace-to-end "Remplacer jusqu'à la fin")
   (forward "En avant")
   (backward "En arrière")
   (hide "Cacher")

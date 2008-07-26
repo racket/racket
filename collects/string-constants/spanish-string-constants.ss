@@ -367,7 +367,6 @@
  (dock "Atracar")
  (undock "Des-atracar")
  (replace&find-again "Reemplazar && Vuelve a buscar") ;;; need double & to get a single &
- (replace-to-end "Reemplazar hasta el final")
  (forward "Hacia adelante")
  (backward "Hacia atrás")
  (hide "Esconder")

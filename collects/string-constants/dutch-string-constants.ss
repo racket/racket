@@ -274,7 +274,6 @@
  (dock "Aanhaken")
  (undock "Zweven")
  (replace&find-again "Vervang && Zoek opnieuw") ;;; need double & to get a single &
- (replace-to-end "Vervang tot einde")
  (forward "Voorwaarts")
  (backward "Terug")
  (hide "Sluiten")

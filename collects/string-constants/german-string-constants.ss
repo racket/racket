@@ -407,7 +407,6 @@
  (dock "Andocken")
  (undock "Ablegen")
  (replace&find-again "Nochmals Suchen && Ersetzen") ;;; need double & to get a single &
- (replace-to-end "Ersetzen bis zum Ende")
  (forward "Vorwärts")
  (backward "Rückwärts")
  (hide "Ausblenden")

@@ -436,7 +436,6 @@
   (dock "面板")
   (undock "对话框")
   (replace&find-again "替换并查找下一个") ;;; need double & to get a single &
-  (replace-to-end "全部替换")
   (forward "下一个")
   (backward "上一个")
   (hide "隐藏")

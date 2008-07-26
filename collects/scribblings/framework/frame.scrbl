@@ -886,12 +886,42 @@
 }
 @definterface[frame:searchable<%> (frame:basic<%>)]{
   Frames that implement this interface support searching.
+  @defmethod[(search (direction (symbols 'forward 'backward))) void?]{
+    Searches for the text in the search edit in the result of
+    @method[frame:searchable<%> get-text-to-search]. 
+
+    If the text is found and it sets the selection to the
+    found text. 
+  }
+  @defmethod*[(((replace&search) boolean?))]{
+    If the selection is currently active and set to a 
+    region that matches the search string, this method
+    replaces the selected region with the contents of
+    the replace editor and then does another search.
+  }
+  @defmethod*[(((replace-all) void?))]{
+    Loops through the text from the beginning to the end, replacing
+    all occurrences of the search string with the contents of the replace
+    edit. 
+  }
+  @defmethod*[(((can-replace?) boolean?))]{
+    Returns @scheme[#t] if a replace command would succeed
+    in replacing the current selection with the replace string.
+
+    Specifically, returns @scheme[#t] when the selected text
+    in the result of @method[frame:searchable<%>
+    get-text-to-search] is the same as the text in the find
+    text and the replace editor is visible.
+  }
   @defmethod*[(((get-text-to-search) (is-a?/c (subclass?/c text%))))]{
     Returns the last value passed to 
     @method[frame:searchable<%> set-text-to-search].
   }
   @defmethod[(set-text-to-search [txt (or/c false/c (is-a?/c (subclass?/c text%)))]) void?]{
     Sets the current text to be searched.
+  }
+  @defmethod[(search-hidden?) boolean?]{
+    Returns @scheme[#t] if the search subwindow is visiable and @scheme[#f] otherwise.
   }
   @defmethod*[(((hide-search) void))]{
     This method hides the searching information on the bottom of the
@@ -902,79 +932,19 @@
     When the searching sub window is hidden, makes it visible.
 
   }
-  @defmethod*[(((set-search-direction (dir (union -1 1))) void))]{
-    Sets the direction that future searches will be performed.
-
-
-    If @scheme[dir] is @scheme[1] searches will be performed forwards and if 
-    @scheme[dir] is @scheme[-1] searches will be performed backwards.
+  @defmethod[(get-case-sensitive-search?) boolean?]{
+    Returns @scheme[#t] if the search is currently case-sensitive.
   }
-  @defmethod*[(((replace&search) boolean))]{
-    Calls
-    @method[frame:searchable<%> replace]
-    and if it returns @scheme[#t], calls 
-    @method[frame:searchable<%> search-again].
-
+  @defmethod[(search-results-changed) void?]{
+    This method is called to notify the frame when 
   }
-  @defmethod*[(((replace-all) void))]{
-    Loops through the text from the current position to the end, replacing
-    all occurrences of the search string with the contents of the replace
-    edit. Only searches forward, does not loop around to the beginning of
-    the text.
 
-  }
-  @defmethod*[(((replace) boolean))]{
-    If the selected text matches the search string, this method replaces
-    the text with the contents of the replace text. If the replace was
-    successful, @scheme[#t] is returned. Otherwise, @scheme[#f] is returned.
-
-  }
-  @defmethod*[(((can-replace?) boolean))]{
-    Returns @scheme[#t] if a replace command would succeed. 
-
-
-    Defaultly is @scheme[#t] when the selected text in the result of
-    @method[frame:searchable<%> get-text-to-search]
-    is the same as the text in the find text.
-  }
-  @defmethod*[(((toggle-search-focus) void))]{
-    Toggles the keyboard focus between the searching edit, the replacing edit and the result of
-    @method[frame:searchable<%> get-text-to-search].
-
-  }
-  @defmethod*[(((move-to-search-or-search) (union boolean void)))]{
-    This method moves the focus to the text that contains the search
-    string, or if the focus is there already, performs a forward search.
-
-    It returns void if the focus was not to the search text, otherwise it
-    returns a boolean indicating the success of the search.
-
-
-  }
-  @defmethod*[(((move-to-search-or-reverse-search) (union boolean void)))]{
-    This method moves the focus to the text that contains the search
-    string, or if the focus is there already, performs a reverse search.
-
-    It returns void if the focus was not to the search text, otherwise it
-    returns a boolean indicating the success of the search.
-
-  }
-  @defmethod*[(((search-again (direction Symbol (rm previous searching direction)) (beep? bool |#t|)) boolean))]{
-    Searches for the text in the search edit in the result of
-    @method[frame:searchable<%> get-text-to-search]. 
-
-
-    Returns @scheme[#t] if the text is found and sets the selection to the
-    found text. If the text is not found it returns @scheme[#f].
-  }
 }
 @defmixin[frame:searchable-mixin (frame:standard-menus<%>) (frame:searchable<%>)]{
   This mixin adds support for searching in the
   @scheme[editor<%>]
   in this frame.
 
-  The result of this mixin uses the same initialization arguments as the
-  mixin's argument.
   @defmethod*[#:mode override (((edit-menu:find-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void))]{
 
     Calls
@@ -1016,10 +986,6 @@
 
     Builds a panel for the searching information.
   }
-  @defmethod*[#:mode override (((on-activate) void))]{
-
-    When the frame is activated, searches will take place in this frame.
-  }
   @defmethod*[#:mode augment (((on-close) void))]{
 
     Cleans up after the searching frame.
@@ -1043,7 +1009,7 @@
   @defmethod*[#:mode override (((get-editor%) (is-a?/c editor<%>)))]{
 
     Returns
-    @scheme[text:searching%].
+    @scheme[(text:searching-mixin (super get-editor%))].
   }
 }
 @defclass[frame:basic% (frame:register-group-mixin (frame:basic-mixin frame%)) ()]{}

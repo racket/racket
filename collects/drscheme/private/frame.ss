@@ -93,22 +93,20 @@
                   [(opt) "a:"]))
               (send item get-shortcut-prefix))))
       
-      [define/private copy-hash-table
-        (λ (ht)
-          (let ([res (make-hasheq)])
-            (hash-for-each
-             ht
-             (λ (x y) (hash-set! res x y)))
-            res))]
-      [define/private can-show-keybindings?
-        (λ ()
-          (let ([edit-object (get-edit-target-object)])
-            (and edit-object
-                 (is-a? edit-object editor<%>)
-                 (let ([keymap (send edit-object get-keymap)])
-                   (is-a? keymap keymap:aug-keymap<%>)))))]
+      (define/private (copy-hash-table ht)
+        (let ([res (make-hasheq)])
+          (hash-for-each
+           ht
+           (λ (x y) (hash-set! res x y)))
+          res))
+      (define/private (can-show-keybindings?)
+        (let ([edit-object (get-edit-target-object)])
+          (and edit-object
+               (is-a? edit-object editor<%>)
+               (let ([keymap (send edit-object get-keymap)])
+                 (is-a? keymap keymap:aug-keymap<%>)))))
       
-      [define/private (show-keybindings)
+      (define/private (show-keybindings)
         (if (can-show-keybindings?)
             (let* ([edit-object (get-edit-target-object)]
                    [keymap (send edit-object get-keymap)]
@@ -124,7 +122,7 @@
                      w/menus
                      (λ (x y) (string-ci<=? (cadr x) (cadr y))))])
               (show-keybindings-to-user structured-list this))
-            (bell))]
+            (bell)))
       
       (define/private (bound-by-menu? binding menu-table)
         (ormap (λ (constituent)

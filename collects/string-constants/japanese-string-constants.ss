@@ -486,7 +486,6 @@ please adhere to these guidelines:
  (dock "結合")
  (undock "分離")
  (replace&find-again "置換＋再検索") ;;; need double & to get a single &
- (replace-to-end "最後まで置換")
  (forward "前方")
  (backward "後方")
  (hide "隠す")

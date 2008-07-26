@@ -509,7 +509,6 @@ please adhere to these guidelines:
  (dock "Dock")
  (undock "Undock")
  (replace&find-again "Replace && Find Again") ;;; need double & to get a single &
- (replace-to-end "Replace to End")
  (forward "Forward")
  (backward "Backward")
  (hide "Hide")
@@ -647,19 +646,24 @@ please adhere to these guidelines:
  (select-all-info "Select the entire document")
  (select-all-menu-item "Select A&ll")
  
- (find-info "Search for a string")
- (find-menu-item "Find...")
+ (find-info "Skip to the next occurrence of the string in the find window")
+ (find-menu-item "Find")
 
- (find-again-info "Search for the same string as before")
- (find-again-menu-item "Find Again")
-
-  (find-again-backwards-info "Search for the same string as before, but backwards")
- (find-again-backwards-menu-item "Find Again Backwards")
-
+ (find-backwards-info "Skip to the previous occurrence of the string in the find window")
+ (find-backwards-menu-item "Find Backwards")
   
- (replace-and-find-again-info "Replace the current text and search for the same string as before")
- (replace-and-find-again-menu-item "Replace && Find Again")
+ (replace-and-find-info "Replace the current text and skip to the next occurrence")
+ (replace-and-find-menu-item "Replace && Find")
 
+ (replace-and-find-backwards-info "Replace the current text and skip to the previous occurrence")
+ (replace-and-find-backwards-menu-item "Replace && Find Backwards")
+  
+  (replace-all-info "Replace all occurrences of the search string")
+  (replace-all-menu-item "Replace All")
+  
+  (find-case-sensitive-info "Toggles between case-sensitive and case-insensitive search")
+  (find-case-sensitive-menu-item "Find Case Sensitive")
+  
   (complete-word "Complete Word") ; the complete word menu item in the edit menu
   (no-completions "... no completions available") ; shows up in the completions menu when there are no completions (in italics)
   

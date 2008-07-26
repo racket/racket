@@ -537,9 +537,6 @@ added get-regions
                                    (if (is-a? color color%)
                                        color
                                        (if color mismatch-color (get-match-color)))
-                                   (and (send (icon:get-paren-highlight-bitmap)
-                                              ok?)
-                                        (icon:get-paren-highlight-bitmap))
                                    (= caret-pos (+ start-pos start)))])
         (set! clear-old-locations
               (let ([old clear-old-locations])

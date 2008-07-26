@@ -67,10 +67,7 @@
                            edit-menu:create-redo?
                            ;edit-menu:create-cut?
                            ;edit-menu:create-paste?
-                           edit-menu:create-clear?
-                           ;edit-menu:create-find?
-                           ;edit-menu:create-find-again?
-                           edit-menu:create-replace-and-find-again?)
+                           edit-menu:create-clear?)
 
     (define file-menu (get-file-menu))
     (define edit-menu (get-edit-menu))

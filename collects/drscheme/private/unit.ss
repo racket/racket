@@ -1622,10 +1622,11 @@ module browser threading seems wrong.
                                            (drscheme:language-configuration:language-settings-settings settings))
                                      ""
                                      (string-append " " (string-constant custom)))))
-            (let ([label (send scheme-menu get-label)]
-                  [new-label (send language capability-value 'drscheme:language-menu-title)])
-              (unless (equal? label new-label)
-                (send scheme-menu set-label new-label)))))
+            (when (is-a? scheme-menu menu%)
+              (let ([label (send scheme-menu get-label)]
+                    [new-label (send language capability-value 'drscheme:language-menu-title)])
+                (unless (equal? label new-label)
+                  (send scheme-menu set-label new-label))))))
         
         (define/public (get-language-menu) scheme-menu)
         
@@ -2982,6 +2983,7 @@ module browser threading seems wrong.
           (super file-menu:between-print-and-close file-menu))
         
         (define/override (edit-menu:between-find-and-preferences edit-menu)
+          (super edit-menu:between-find-and-preferences edit-menu)
           (new menu-item%
                [label (string-constant complete-word)]
                [shortcut #\/]
@@ -2994,7 +2996,6 @@ module browser threading seems wrong.
                                (is-a? ed text:autocomplete<%>)))))]
                [callback (λ (x y)
                            (send (get-edit-target-object) auto-complete))])
-          (super edit-menu:between-find-and-preferences edit-menu)
           (add-modes-submenu edit-menu))
         
         ;; capability-menu-items : hash-table[menu -o> (listof (list menu-item number key)))
@@ -3009,13 +3010,12 @@ module browser threading seems wrong.
               (hash-set! capability-menu-items menu (cons this-one old-ones)))))
         
         (define/private (update-items/capability menu)
-          (let ([new-items (get-items/capability menu)])
+          (let ([new-items (begin '(get-items/capability menu)
+                                  (send menu get-items))])
             (for-each (λ (i) (send i delete)) (send menu get-items))
             (for-each (λ (i) (send i restore)) new-items)))
         (define/private (get-items/capability menu)
-          (let loop ([capability-items 
-                      (reverse
-                       (hash-ref capability-menu-items menu (λ () '())))]
+          (let loop ([capability-items (reverse (hash-ref capability-menu-items menu '()))]
                      [all-items (send menu get-items)]
                      [i 0])
             (cond
@@ -3161,7 +3161,8 @@ module browser threading seems wrong.
                           (method text)))))]
                  [show/hide-capability-menus
                   (λ ()
-                    (for-each (λ (menu) (update-items/capability menu)) (send (get-menu-bar) get-items)))])
+                    (for-each (λ (menu) (update-items/capability menu))
+                              (send (get-menu-bar) get-items)))])
             
             (make-object menu:can-restore-menu-item%
               (string-constant choose-language-menu-item-label)

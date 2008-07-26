@@ -956,6 +956,31 @@
               (send text insert "\n")
               #t)]
            
+           [shift-focus
+            (λ (adjust)
+              (λ (text event)
+                (when (is-a? text editor:basic<%>)
+                (let ([frame (send text get-top-level-window)])
+                  (let ([found-one? #f])
+                    (let/ec k
+                      (let ([go
+                             (λ ()
+                               (let loop ([obj frame])
+                                 (cond
+                                   [(and found-one? (is-a? obj editor-canvas%))
+                                    (send obj focus)
+                                    (k (void))]
+                                   [(and (is-a? obj window<%>) (send obj has-focus?))
+                                    (set! found-one? #t)]
+                                   [(is-a? obj area-container<%>)
+                                    (for-each loop (adjust (send obj get-children)))])))])
+                        (go)
+                        ;;; when we get here, we either didn't find the focus anywhere,
+                        ;;; or the last editor-canvas had the focus. either way,
+                        ;;; the next thing should get the focus
+                        (set! found-one? #t)
+                        (go))))))))]
+           
            [TeX-compress
             (let* ([biggest (apply max (map (λ (x) (string-length (car x))) tex-shortcut-table))])
               (λ (text event)
@@ -991,6 +1016,9 @@
                (add (format "insert ~a" c) 
                     (λ (txt evt) (send txt insert c)))))
            (string->list (string-append greek-letters Greek-letters)))
+          
+          (add "shift-focus" (shift-focus values))
+          (add "shift-focus-backwards" (shift-focus reverse))
           
           (add "TeX compress" TeX-compress)
           (add "newline" newline)
@@ -1262,6 +1290,12 @@
           (map ":rightbuttonseq" "mouse-popup-menu")
           
           (map "c:c;c:r" "make-read-only")
+          
+          (map "c:x;o" "shift-focus")
+          (map "c:x;p" "shift-focus-backwards")
+          (map "c:f6" "shift-focus")
+          (map "a:tab" "shift-focus")
+          (map "a:s:tab" "shift-focus-backwards")
           ))))
   
   (define setup-search
@@ -1292,9 +1326,7 @@
                         (send kmap add-function name func))])
           
           (add "move-to-search-or-search" 
-               (send-frame (λ (f) (send f move-to-search-or-search)))) ;; key 1
-          (add "move-to-search-or-reverse-search" 
-               (send-frame (λ (f) (send f move-to-search-or-reverse-search)))) ;; key 1b, backwards
+               (send-frame (λ (f) (send f move-to-search-or-back)))) ;; key 1
           (add "find-string-again" 
                (send-frame (λ (f) (send f search-again)))) ;; key 2
           (add "toggle-search-focus" 

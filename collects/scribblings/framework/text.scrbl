@@ -7,28 +7,36 @@
 @definterface[text:basic<%> (editor:basic<%> text%)]{
   Classes matching this interface are expected to implement the basic
   functionality needed by the framework.
-  @defmethod*[(((highlight-range (start exact-integer) (end exact-integer) (color (instance color%)) (bitmap (union |#f| (instance bitmap%)) |#f|) (caret-space boolean |#f|) (priority (union (quote high) (quote low)) (quote low))) (-> void)))]{
+  @defmethod*[(((highlight-range (start exact-nonnegative-integer?)
+                                 (end exact-nonnegative-integer?)
+                                 (color (or/c string? (is-a?/c color%)))
+                                 (caret-space boolean? #f)
+                                 (priority (symbols 'high 'low) 'low)
+                                 (style (symbols 'rectangle 'ellipse) 'rectangle))
+                (-> void)))]{
     This function highlights a region of text in the buffer.
 
+    The range between @scheme[start] and @scheme[end] will
+    be highlighted with the color in color, if the style is
+    @scheme['rectangle] (the default). If the style is
+    @scheme['ellipse], then the outline of an ellipse is
+    drawn around the range in the editor, using the color.
 
-    The range between @scheme[start] and @scheme[end] will be highlighted with the
-    color in color, and @scheme[bitmap] will be painted over the range of text in
-    black and white. If @scheme[bitmap] is @scheme[#f], the range will be inverted,
-    using the platform specific xor. This method is not recommended, because the
-    selection is also displayed using xor.
-
-    If @scheme[caret-space?] is not @scheme[#f], the left edge of the range
-    will be one pixel short, to leave space for the caret. The caret does
-    not interfere with the right hand side of the range. Note that under X
-    windows the caret is drawn with XOR, which means almost anything can
-    happen. So if the caret is in the middle of the range it may be hard
-    to see, or if it is on the left of the range and @scheme[caret-space?] is
+    If @scheme[caret-space?] is not @scheme[#f], the left
+    edge of the range will be one pixel short, to leave
+    space for the caret. The caret does not interfere with
+    the right hand side of the range. Note that under some
+    platforms, the caret is drawn with XOR, which means
+    almost anything can happen. So if the caret is in the
+    middle of the range it may be hard to see, or if it is
+    on the left of the range and @scheme[caret-space?] is
     @scheme[#f] it may also be hard to see.
 
-    The @scheme[priority] argument indicates the relative priority for
-    drawing overlapping regions. If two regions overlap and have different
-    priorities, the region with @scheme['high] priority will be drawn second
-    and only it will be visible in the overlapping region.
+    The @scheme[priority] argument indicates the relative
+    priority for drawing overlapping regions. If two regions
+    overlap and have different priorities, the region with
+    @scheme['high] priority will be drawn second and only it
+    will be visible in the overlapping region.
 
     This method returns a thunk, which, when invoked, will turn off
     the highlighting from this range.
@@ -36,15 +44,19 @@
     See also
     @method[text:basic<%> unhighlight-range].
   }
-  @defmethod*[(((unhighlight-range (start exact-integer) (end exact-integer) (color (instance color%)) (bitmap (union |#f| (instance bitmap%)) |#f|) (caret-space boolean |#f|)) void))]{
+  @defmethod*[(((unhighlight-range
+                   (start exact-nonnegative-integer?)
+                   (end exact-nonnegative-integer?)
+                   (color (or/c string? (is-a?/c color%)))
+                   (caret-space boolean? #f)
+                   (style (symbols 'rectangle 'ellipse) 'rectangle))
+ void))]{
     This method removes the highlight from a region of text in
     the buffer. 
-
 
     The region must match up to a region specified
     from an earlier call to 
     @method[text:basic<%> highlight-range].
-
   }
   @defmethod*[(((get-highlighted-ranges) (listof range)))]{
 
@@ -216,6 +228,10 @@
   If @scheme[cs?] is @scheme[#f], the search is case-insensitive, and
   otherwise it is case-sensitive.
 }
+@defmethod[(get-search-hits) number?] {
+  Returns the number of hits for the search in the buffer, based on the
+  count found last time that a search happened. 
+}
 }
 @defmixin[text:searching-mixin (editor:keymap<%> text:basic<%>) (text:searching<%>)]{
   This 
@@ -229,6 +245,18 @@
     This returns a list containing the super-class's keymaps, plus the
     result of
     @scheme[keymap:get-search]
+  }
+
+  @defmethod[#:mode augment (after-insert [start nonnegative-exact-integer?][len nonnegative-exact-integer?]) void?]{
+    Re-does any search now that the contents of the window have changed.
+  }
+  @defmethod[#:mode augment (after-delete [start nonnegative-exact-integer?][len nonnegative-exact-integer?]) void?]{
+    Re-does any search now that the contents of the window have changed.
+  }
+
+  @defmethod[#:mode override (on-focus [on? boolean?]) void?]{
+    Tells the frame containing the editor to search based on this editor via
+    the @method[frame:searchable<%> set-text-to-search] method.
   }
 }
 @definterface[text:return<%> (text%)]{

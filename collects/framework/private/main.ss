@@ -20,6 +20,29 @@
   
   (application-preferences-handler (λ () (preferences:show-dialog)))
   
+  (let ([search/replace-string-predicate
+         (λ (l) 
+           (and (list? l)
+                (andmap 
+                 (λ (x) (or (string? x) (is-a? x snip%)))
+                 l)))])
+    (preferences:set-default 'framework:search-string 
+                             '() 
+                             search/replace-string-predicate)
+    (preferences:set-default 'framework:replace-string 
+                             '() 
+                             search/replace-string-predicate))
+  
+  ;; marshalling for this one will just lose information. Too bad.
+  (preferences:set-un/marshall 'framework:search-string 
+                               (λ (l)
+                                 (map (λ (x) 
+                                        (if (is-a? x snip%)
+                                            (send x get-text 0 (send x get-count))
+                                            x))
+                                      l))
+                               values)
+                               
   (preferences:set-default 'framework:paren-color-scheme 'basic-grey symbol?)
   
   (preferences:set-default 'framework:square-bracket:cond/offset

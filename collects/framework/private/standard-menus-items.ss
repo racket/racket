@@ -21,6 +21,7 @@
  (struct-out between)
  
  (struct-out an-item)
+ (struct-out a-checkable-item)
  (struct-out a-submenu-item) 
  
  ;; an-item -> symbol
@@ -78,6 +79,7 @@
    on-demand
    create))
 (define-struct (a-submenu-item an-item) ())
+(define-struct (a-checkable-item an-item) ())
 
 (define (an-item->callback-name item)
   (string->symbol
@@ -357,22 +359,46 @@
                       '(string-constant find-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
-        (make-an-item 'edit-menu 'find-again 
-                      '(string-constant find-again-info)
+        (make-an-item 'edit-menu 'find-backwards
+                      '(string-constant find-backwards-info)
+                      '(λ (item control) (void))
+                      #\f
+                      '(cons 'shift (get-default-shortcut-prefix))
+                      '(string-constant find-backwards-menu-item)
+                      edit-menu:edit-target-on-demand
+                      #f)
+        (make-an-item 'edit-menu 'replace-and-find 
+                      '(string-constant replace-and-find-info)
                       '(λ (item control) (void))
                       #\g
                       '(get-default-shortcut-prefix)
-                      '(string-constant find-again-menu-item)
+                      '(string-constant replace-and-find-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
-        (make-an-item 'edit-menu 'replace-and-find-again 
-                      '(string-constant replace-and-find-again-info)
+        (make-an-item 'edit-menu 'replace-and-find-backwards 
+                      '(string-constant replace-and-find-backwards-info)
                       '(λ (item control) (void))
-                      '(if (eq? (system-type) 'macosx) #f #\h)
-                      '(get-default-shortcut-prefix)
-                      '(string-constant replace-and-find-again-menu-item)
+                      #\g
+                      '(cons 'shift (get-default-shortcut-prefix))
+                      '(string-constant replace-and-find-backwards-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
+        (make-an-item 'edit-menu 'replace-all 
+                      '(string-constant replace-all-info)
+                      '(λ (item control) (void))
+                      #f
+                      '(get-default-shortcut-prefix)
+                      '(string-constant replace-all-menu-item)
+                      edit-menu:edit-target-on-demand
+                      #f)
+        (make-a-checkable-item 'edit-menu 'find-case-sensitive
+                               '(string-constant find-case-sensitive-info)
+                               '(λ (item control) (void))
+                               #f
+                               '(get-default-shortcut-prefix)
+                               '(string-constant find-case-sensitive-menu-item)
+                               edit-menu:edit-target-on-demand
+                               #f)
         
         (make-between 'edit-menu 'find 'preferences 'nothing-with-standard-menus)
         (make-an-item 'edit-menu 'preferences 

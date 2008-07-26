@@ -474,7 +474,6 @@ please adhere to these guidelines:
  (dock "Esconder")
  (undock "Não Esconder")
  (replace&find-again "Substituir && Procurar de Novo") ;;; need double & to get a single &
- (replace-to-end "Substituir até ao Fim")
  (forward "Avançar")
  (backward "Recuar")
  (hide "Esconder")
