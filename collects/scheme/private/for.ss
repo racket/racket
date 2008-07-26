@@ -736,7 +736,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
 
-  (define-for-syntax (for-variant-stx stx derived-id-stx fold-bind-stx wrap rhs-wrap combine multi?)
+  (define-for-syntax (for-variant-stx stx derived-id-stx fold-bind-stx wrap rhs-wrap combine)
     (with-syntax ([derived-id derived-id-stx]
                   [fold-bind fold-bind-stx])
       (syntax-case stx ()
@@ -747,9 +747,8 @@
                                          null
                                          (syntax-case (car bs) ()
                                            [[ids rhs]
-                                            (if multi?
-                                                (andmap identifier? (or (syntax->list #'ids) '(#f)))
-                                                (identifier? #'ids))
+                                            (or (identifier? #'ids)
+                                                (andmap identifier? (or (syntax->list #'ids) '(#f))))
                                             (cons #`[ids #,(rhs-wrap #'rhs)]
                                                   (loop (cdr bs)))]
                                            [#:when (cons (car bs)
@@ -757,7 +756,7 @@
                                                               null
                                                               (cons (cadr bs) (loop (cddr bs)))))]
                                            [_
-                                            ;; a syntax error; les the /derived form handle it, and 
+                                            ;; a syntax error; let the /derived form handle it, and 
                                             ;; no need to wrap any more:
                                             bs])))])
            (quasisyntax/loc stx
@@ -769,15 +768,15 @@
 
   (define-syntax define-syntax-via-derived
     (syntax-rules ()
-      [(_ id derived-id fold-bind wrap rhs-wrap combine multi?)
-       (define-syntax (id stx) (for-variant-stx stx #'derived-id #'fold-bind wrap rhs-wrap combine multi?))]))
+      [(_ id derived-id fold-bind wrap rhs-wrap combine)
+       (define-syntax (id stx) (for-variant-stx stx #'derived-id #'fold-bind wrap rhs-wrap combine))]))
   
   (define-syntax define-for-variants
     (syntax-rules ()
       [(_ (for for*) fold-bind wrap rhs-wrap combine)
        (begin
-         (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine #f)
-         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine #f))]))
+         (define-syntax-via-derived for for/fold/derived fold-bind wrap rhs-wrap combine)
+         (define-syntax-via-derived for* for*/fold/derived fold-bind wrap rhs-wrap combine))]))
 
   (define-syntax (for/fold stx)
     (syntax-case stx ()

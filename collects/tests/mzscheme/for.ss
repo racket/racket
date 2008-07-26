@@ -145,5 +145,18 @@
       (for/hash ([v (in-hash-values #hash((a . 1) (b . 2) (c . 3)))])
                 (values v v)))
 
+(test 1 'parallel-or-first
+      (for/or (((a b) (in-parallel '(1 #f) '(#t #f)))) 
+              a))
+(test 1 'parallel-or-last
+      (for/or (((a b) (in-parallel '(#f 1) '(#t #f)))) 
+              a))
+(test #f 'parallel-and-first
+      (for/and (((a b) (in-parallel '(1 #f) '(#t #f)))) 
+              a))
+(test #f 'parallel-and-last
+      (for/and (((a b) (in-parallel '(#f 1) '(#t #f)))) 
+              a))
+
 
 (report-errs)
