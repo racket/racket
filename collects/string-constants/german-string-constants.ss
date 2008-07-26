@@ -542,16 +542,20 @@
  (clear-info "Lösche die Selektion, ohne das Clipboard dabei zu ändern oder etwas einzufügen")
  (clear-menu-item-windows "&Löschen")
 
- (select-all-info "Selektiere das gesamte Dokument")
+ (select-all-info "Gesamtes Dokument selektieren")
  (select-all-menu-item "&Alles selektieren")
  
- (find-info "Suche eine Zeichenkette")
- (find-menu-item "Suche...")
+ (find-info "Zeichenkette suchen")
+ (find-menu-item "Suchen...")
 
- (find-again-info "Suche die gleiche Zeichenkette nochmal")
- (find-again-menu-item "Suche nochmal")
+ (find-again-info "Die gleiche Zeichenkette nochmal suchen")
+ (find-again-menu-item "Nochmal suchen")
  
- (replace-and-find-again-info "Ersetze den aktuellen Text und suche dann das gleiche nochmal")
+
+ (find-again-backwards-info "Die gleiche Zeichenkette nochmal suchen, aber rückwärts")
+ (find-again-backwards-menu-item "Nochmal suchen, rückwärts")
+
+ (replace-and-find-again-info "Den aktuellen Text ersetzen und dann nochmal suchen")
  (replace-and-find-again-menu-item "Ersetzen && nochmal suchen")
 
  (complete-word "Wort vervollständigen") ; the complete word menu item in the edit menu
