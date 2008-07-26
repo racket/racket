@@ -72,18 +72,20 @@
      [(vector? d) (for-each loop (vector->list d))]))
   (datum->syntax id (convert-mpairs datum)))
 
-(define (r6rs:syntax->datum stx)
-  (cond
-   [(syntax? stx)
-    (convert-pairs (syntax->datum stx))]
-   [(mpair? stx) (mcons (r6rs:syntax->datum
-                         (mcar stx))
-                        (r6rs:syntax->datum
-                         (mcdr stx)))]
-   [(vector? stx) (list->vector
-                   (map r6rs:syntax->datum
-                        (vector->list stx)))]
-   [else stx]))
+(define (r6rs:syntax->datum orig-stx)
+  (let loop ([stx orig-stx])
+    (cond
+     [(syntax? stx)
+      (convert-pairs (syntax->datum stx))]
+     [(mpair? stx) (mcons (loop (mcar stx))
+                          (loop (mcdr stx)))]
+     [(vector? stx) (list->vector
+                     (map loop (vector->list stx)))]
+     [(symbol? stx) (raise-type-error 
+                     'syntax->datum 
+                     (format "syntax (symbol '~s disallowed)" stx)
+                     orig-stx)]
+     [else stx])))
 
 (define (r6rs:generate-temporaries l)
   (list->mlist
