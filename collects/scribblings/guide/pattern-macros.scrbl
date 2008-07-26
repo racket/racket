@@ -273,7 +273,7 @@ pattern (as opposed to being a pattern variable.
 @schemeblock[
 (define-syntax clock
   (syntax-id-rules (set!)
-    [(set! cock e) (put-clock! e)]
+    [(set! clock e) (put-clock! e)]
     [(clock a ...) ((get-clock) a ...)]
     [clock (get-clock)]))
 ]
@@ -304,7 +304,7 @@ Naturally, we can implement @scheme[define-get/put-id] as a macro:
 (define-syntax-rule (define-get/put-id id get put!)
   (define-syntax clock
     (syntax-id-rules (set!)
-      [(set! cock e) (put-clock! e)]
+      [(set! clock e) (put-clock! e)]
       [(clock a (... ...)) ((get-clock) a (... ...))]
       [clock (get-clock)])))
 ]
