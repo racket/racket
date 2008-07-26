@@ -781,7 +781,7 @@ Matthew
   (define intv (if (> +inf.0 *the-delta* 0) (inexact->exact (floor (* 100 *the-delta*))) 5))
   (when (file-exists? ANIMATED-GIF-FILE)
     (delete-file ANIMATED-GIF-FILE))
-  (write-animated-gif bitmap-list intv ANIMATED-GIF-FILE #:one-at-a-time? #t))
+  (write-animated-gif bitmap-list intv ANIMATED-GIF-FILE #:one-at-a-time? #t #:last-frame-delay 500))
 
 (define ANIMATED-GIF-FILE "i-animated.gif")
 
