@@ -2,15 +2,23 @@
 
 @(require scribble/manual "shared.ss"
           (for-label scheme
-                     teachpack/htdp/image
-                     teachpack/htdp/world
-                     lang/private/imageeq))
+                     teachpack/htdp/matrix
+                     lang/posn))
 
 @teachpack["matrix"]{Matrix Operations}
 
-The teachpack supports matrices and matrix operations. A matrix is just a
-rectangle of 'objects'. It is displayed as an image, just like the images
-from @secref["image"]. 
+The experimental teachpack supports matrices and matrix operations. A
+matrix is just a rectangle of 'objects'. It is displayed as an image, just
+like the images from @secref["image"]. Matrices are images and, indeed,
+scenes in the sense of the @secref["world"]. 
+
+The operations access a matrix in the usual (school-mathematics) manner:
+row first, column second. 
+
+The operations aren't tuned for efficiency so don't expect to build
+programs that process lots of data. 
+
+
 
 @declare-exporting[teachpack/htdp/matrix]
 
@@ -36,19 +44,20 @@ creates a rectangle from this matrix @scheme[m]}
 @defproc[(make-matrix [n natural-number/c][m natural-number/c][l (Listof X)]) matrix?]{
 creates an @scheme[n] by @scheme[m] matrix from @scheme[l] 
 
-NOTE: make-matrix would consume an optional number of entries, if it were
-like make-vector}
+NOTE: @scheme[make-matrix] would consume an optional number of entries, if
+it were like @scheme[make-vector]}
 
-@defproc[(build-matrix [n natural-number/c][m natural-number/c]
-                       [f (-> natural-number/c natural-number/c any)])
-         matrix?]{
-creates an @scheme[n] by @scheme[m] matrix by applying @scheme[f] to (0,0),
-(0,1), ..., (n-1,m-1)}
+@defproc[(build-matrix 
+  [n natural-number/c][m natural-number/c]
+  [f (-> (and/c natural-number/c (</c m)) (and/c natural-number/c (</c n)) any/c)])
+ matrix?]{
+creates an @scheme[n] by @scheme[m] matrix by applying @scheme[f] to @scheme[(0,0)],
+@scheme[(0,1)], ..., (@scheme[(sub1 m),(sub1 n)])}
 
-@defproc[(matrix-ref [m matrix?][i natural-number/c][j natural-number/c]) any]{
+@defproc[(matrix-ref [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]) any/c]{
 retrieve the item at (@scheme[i],@scheme[j]) in matrix @scheme[m]}
 
-@defproc[(matrix-set [m matrix?][i natural-number/c][j natural-number/c] 
+@defproc[(matrix-set [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))] 
 		     [x any/c]) 
          matrix?]{
 creates a new matrix with @scheme[x] at (@scheme[i],@scheme[j]) and all
@@ -61,11 +70,11 @@ such that @scheme[(P (matrix-ref M i j))] holds}
 @defproc[(matrix-render [m matrix?]) (unsyntax @tech{Rectangle})]{
 renders this matrix @scheme[m] as a rectangle of strings}
 
-@defproc[(matrix-minor [m matrix?][i natural-number/c][j natural-number/c]) 
+@defproc[(matrix-minor [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]) 
           matrix?]{ 
 creates a matrix minor from @scheme[m] at (@scheme[i],@scheme[j])}
 
-@defproc[(matrix-set! [m matrix?][i natural-number/c][j natural-number/c]
+@defproc[(matrix-set! [m matrix?][i (and/c natural-number/c (</c (matrix-rows m)))][j (and/c natural-number/c (</c (matrix-rows m)))]
 		      [x any/c])
          matrix?]{
 like @scheme[matrix-set] but uses a destructive update}
