@@ -11,16 +11,16 @@
   @defmethod[(get-color) (or/c string? (is-a?/c color%))]{
     Returns the color used to draw the background part of the snip.
   }
-  @defmethod[(get-menu) (or/c false/c (is-a?/c popup-menu%))] {
+  @defmethod[(get-menu) (or/c false/c (is-a?/c popup-menu%))]{
     Returns a popup menu that is used when clicking on the top part of the snip.
   }
-  @defmethod[(get-position) (symbols 'top-right 'left-top)] {
+  @defmethod[(get-position) (symbols 'top-right 'left-top)]{
     Returns the location of the image and the clickable
      region. The symbol @scheme['top-right] indicates top portion is clickable
      and icon on right. The symbol @scheme['left-top] means left portion is
      clickable and icon on top.
   }
-  @defmethod[(reset-min-sizes) void?] {
+  @defmethod[(reset-min-sizes) void?]{
     Sets the minimum sizes based on the result of 
     @method[editor-snip:decorated<%> get-corner-bitmap].
   }
@@ -37,10 +37,10 @@
            "white" 
            "black")]
   }
-  @defmethod[(get-menu) (or/c false/c (is-a?/c popup-menu%))] {
+  @defmethod[(get-menu) (or/c false/c (is-a?/c popup-menu%))]{
     Returns @scheme[#f].
  }
-  @defmethod[(get-position) (symbols 'top-right 'left-top)] {
+  @defmethod[(get-position) (symbols 'top-right 'left-top)]{
     Returns @scheme['top-right].
   }
 }

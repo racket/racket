@@ -228,7 +228,7 @@
   If @scheme[cs?] is @scheme[#f], the search is case-insensitive, and
   otherwise it is case-sensitive.
 }
-@defmethod[(get-search-hits) number?] {
+@defmethod[(get-search-hits) number?]{
   Returns the number of hits for the search in the buffer, based on the
   count found last time that a search happened. 
 }
