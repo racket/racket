@@ -344,6 +344,8 @@
                  [(#\u03A3) "$\\Sigma$"]
                  [(#\u03BA) "$\\kappa$"]
                  [(#\u03B1) "$\\alpha$"]
+                 [(#\u03B2) "$\\beta$"]
+                 [(#\u03B3) "$\\gamma$"]
                  [(#\u03BF) "o"] ; omicron
                  [(#\u03C3) "$\\sigma$"]
                  [(#\u03C2) "$\\varsigma$"]
