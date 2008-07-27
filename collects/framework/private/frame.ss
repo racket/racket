@@ -1895,6 +1895,11 @@
     (set-styles-fixed #t)))
 
 (define search/replace-keymap (new keymap%))
+(send search/replace-keymap map-function "return" "find")
+(send search/replace-keymap add-function "find"
+      (λ (text evt)
+        (send (send text get-top-level-window) search 'forward)))
+
 (send search/replace-keymap map-function "esc" "hide-search")
 (send search/replace-keymap add-function "hide-search"
       (λ (text evt)
