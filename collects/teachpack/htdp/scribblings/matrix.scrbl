@@ -12,13 +12,13 @@ matrix is just a rectangle of 'objects'. It is displayed as an image, just
 like the images from @secref["image"]. Matrices are images and, indeed,
 scenes in the sense of the @secref["world"]. 
 
+@emph{No educational materials involving matrices exist.}
+
 The operations access a matrix in the usual (school-mathematics) manner:
 row first, column second. 
 
 The operations aren't tuned for efficiency so don't expect to build
 programs that process lots of data. 
-
-
 
 @declare-exporting[teachpack/htdp/matrix]
 
@@ -49,7 +49,9 @@ it were like @scheme[make-vector]}
 
 @defproc[(build-matrix 
   [n natural-number/c][m natural-number/c]
-  [f (-> (and/c natural-number/c (</c m)) (and/c natural-number/c (</c n)) any/c)])
+  [f (-> (and/c natural-number/c (</c m)) 
+	 (and/c natural-number/c (</c n))
+	 any/c)])
  matrix?]{
 creates an @scheme[n] by @scheme[m] matrix by applying @scheme[f] to @scheme[(0,0)],
 @scheme[(0,1)], ..., (@scheme[(sub1 m),(sub1 n)])}
