@@ -90,7 +90,8 @@
                   [(meta) "m:"]
                   [(ctl) "c:"]
                   [(shift) "s:"]
-                  [(opt) "a:"]))
+                  [(opt option) "a:"]
+                  [else (error 'menu-item->prefix-string "unknown prefix ~s\n" prefix)]))
               (send item get-shortcut-prefix))))
       
       (define/private (copy-hash-table ht)

@@ -1325,42 +1325,27 @@
                [add-m (λ (name func)
                         (send kmap add-function name func))])
           
-          (add "move-to-search-or-search" 
-               (send-frame (λ (f) (send f move-to-search-or-back)))) ;; key 1
-          (add "find-string-again" 
-               (send-frame (λ (f) (send f search-again)))) ;; key 2
-          (add "toggle-search-focus" 
-               (send-frame (λ (f) (send f toggle-search-focus)))) ;; key 3
-          (add "hide-search" 
-               (send-frame (λ (f) (send f hide-search)))) ;; key 4
+          (add "search forward" 
+               (send-frame (λ (f) (send f search 'forward))))
+          (add "search backward" 
+               (send-frame (λ (f) (send f search 'backward))))
+          (add "replace & search forward" 
+               (send-frame (λ (f) (send f replace&search 'forward))))
+          (add "replace & search backward" 
+               (send-frame (λ (f) (send f replace&search 'backward))))
           
+          (add "hide-search" 
+               (send-frame (λ (f) (send f hide-search))))
+          
+          (map "c:g" "hide-search")
+          (map "f3" "search forward")
+          (map "c:s" "search forward")
+          (map "c:r" "replace & search forward")
+          (map "c:s:s" "search backward")
+          (map "c:s:r" "replace & search backward")
           (case (system-type)
             [(unix)
-             (map "c:s" "move-to-search-or-search")
-             (map-meta "%" "move-to-search-or-search")
-             (map "c:r" "move-to-search-or-reverse-search")
-             (map "f3" "find-string-again")
-             (map "c:i" "toggle-search-focus")
-             (map "c:g" "hide-search")]
-            [(windows)
-             (map "c:r" "move-to-search-or-reverse-search")
-             (map "f3" "find-string-again")
-             (map "c:g" "find-string-again")	     
-             
-             ;; covered by menu
-             ;(map "c:f" "move-to-search-or-search")
-             
-             (map "c:i" "toggle-search-focus")]
-            [(macos macosx)
-             (map "c:s" "move-to-search-or-search")
-             (map "c:g" "hide-search")
-             
-             ;; covered by menu
-             ;(map "d:f" "move-to-search-or-search")
-             
-             (map "c:r" "move-to-search-or-reverse-search")
-             (map "d:g" "find-string-again")
-             (map "c:i" "toggle-search-focus")])))))
+             (map-meta "%" "search forward")])))))
   
   (define setup-file
     (let* ([get-outer-editor ;; : text% -> text%
