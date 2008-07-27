@@ -513,6 +513,9 @@ please adhere to these guidelines:
  (backward "Backward")
  (hide "Hide")
  (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
+  (toggle-find-focus "Toggle Search Focus") ;; menu item
+  (toggle-find-focus-info "Toggles the keyboard focus between the window being searched and the search bar")
+  
   
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "Search in Files...")
@@ -711,10 +714,7 @@ please adhere to these guidelines:
  (show-module-browser "Show Module Browser")
  (hide-module-browser "Hide Module Browser")
 
-  (show-find-bar "Show Find Bar")
-  (hide-find-bar "Hide Find Bar")
-  
- (help-menu-label "&Help")
+  (help-menu-label "&Help")
  (about-info "Credits and details for this application")
  (about-menu-item "About...")
  

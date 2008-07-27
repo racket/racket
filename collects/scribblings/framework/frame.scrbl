@@ -1026,7 +1026,15 @@ framework)) @(require (for-label scheme/gui)) @(require
     Checks @scheme[item] when searching is case-sensitive and unchecks
     it otherwise.
   }
-  @defmethod*[#:mode override (((edit-menu:create-find-case-sensitive) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:create-find-case-sensitive?) boolean?))]{
+
+    returns @scheme[#t].
+  }
+
+  @defmethod*[#:mode override (((edit-menu:toggle-find-focus-callback) boolean?))]{
+     toggles the focus between the find window and the window being searched.
+  }
+  @defmethod*[#:mode override (((edit-menu:create-toggle-find-focus?) boolean?))]{
 
     returns @scheme[#t].
   }

@@ -391,6 +391,18 @@
                       '(string-constant replace-all-menu-item)
                       edit-menu:edit-target-on-demand
                       #f)
+        (make-an-item 'edit-menu 'toggle-find-focus
+                      '(string-constant toggle-find-focus-info)
+                      '(λ (item control) (void))
+                      #\f
+                      '(cons (case (system-type)
+                               [(macosx) 'option]
+                               [else 'alt])
+                             (get-default-shortcut-prefix))
+                      '(string-constant toggle-find-focus)
+                      '(λ (item) (void))
+                      #f)
+
         (make-a-checkable-item 'edit-menu 'find-case-sensitive
                                '(string-constant find-case-sensitive-info)
                                '(λ (item control) (void))

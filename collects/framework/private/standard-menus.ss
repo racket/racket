@@ -146,6 +146,12 @@
    edit-menu:replace-all-help-string
    edit-menu:replace-all-on-demand
    edit-menu:create-replace-all?
+   edit-menu:toggle-find-focus-callback
+   edit-menu:get-toggle-find-focus-item
+   edit-menu:toggle-find-focus-string
+   edit-menu:toggle-find-focus-help-string
+   edit-menu:toggle-find-focus-on-demand
+   edit-menu:create-toggle-find-focus?
    edit-menu:find-case-sensitive-callback
    edit-menu:get-find-case-sensitive-item
    edit-menu:find-case-sensitive-string
@@ -179,7 +185,8 @@
       'framework:menu-bindings
       (λ (p v)
         (let loop ((menu (get-menu-bar)))
-          (when (is-a? menu menu:can-restore<%>) (if v (send menu restore-keybinding) (send menu set-shortcut #f)))
+          (when (is-a? menu menu:can-restore<%>)
+            (if v (send menu restore-keybinding) (send menu set-shortcut #f)))
           (when (is-a? menu menu:can-restore-underscore<%>)
             (if v (send menu restore-underscores) (send menu erase-underscores)))
           (when (is-a? menu menu-item-container<%>) (for-each loop (send menu get-items)))))))
@@ -249,7 +256,9 @@
    (define/public (file-menu:get-quit-item) file-menu:quit-item)
    (define/public
     (file-menu:quit-string)
-    (if (eq? (system-type) 'windows) (string-constant quit-menu-item-windows) (string-constant quit-menu-item-others)))
+    (if (eq? (system-type) 'windows)
+      (string-constant quit-menu-item-windows)
+      (string-constant quit-menu-item-others)))
    (define/public (file-menu:quit-help-string) (string-constant quit-info))
    (define/public file-menu:quit-on-demand (λ (menu-item) (void)))
    (define/public (file-menu:create-quit?) (not (current-eventspace-has-standard-menus?)))
@@ -402,8 +411,12 @@
    (define/public (edit-menu:create-replace-and-find?) #f)
    (define/public edit-menu:replace-and-find-backwards-callback (λ (item control) (void)))
    (define/public (edit-menu:get-replace-and-find-backwards-item) edit-menu:replace-and-find-backwards-item)
-   (define/public (edit-menu:replace-and-find-backwards-string) (string-constant replace-and-find-backwards-menu-item))
-   (define/public (edit-menu:replace-and-find-backwards-help-string) (string-constant replace-and-find-backwards-info))
+   (define/public
+    (edit-menu:replace-and-find-backwards-string)
+    (string-constant replace-and-find-backwards-menu-item))
+   (define/public
+    (edit-menu:replace-and-find-backwards-help-string)
+    (string-constant replace-and-find-backwards-info))
    (define/public
     edit-menu:replace-and-find-backwards-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
@@ -416,6 +429,12 @@
     edit-menu:replace-all-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-replace-all?) #f)
+   (define/public edit-menu:toggle-find-focus-callback (λ (item control) (void)))
+   (define/public (edit-menu:get-toggle-find-focus-item) edit-menu:toggle-find-focus-item)
+   (define/public (edit-menu:toggle-find-focus-string) (string-constant toggle-find-focus))
+   (define/public (edit-menu:toggle-find-focus-help-string) (string-constant toggle-find-focus-info))
+   (define/public edit-menu:toggle-find-focus-on-demand (λ (item) (void)))
+   (define/public (edit-menu:create-toggle-find-focus?) #f)
    (define/public edit-menu:find-case-sensitive-callback (λ (item control) (void)))
    (define/public (edit-menu:get-find-case-sensitive-item) edit-menu:find-case-sensitive-item)
    (define/public (edit-menu:find-case-sensitive-string) (string-constant find-case-sensitive-menu-item))
@@ -453,7 +472,8 @@
            (label (file-menu:new-string))
            (parent file-menu)
            (callback
-            (let ((file-menu:new-callback (λ (item evt) (file-menu:new-callback item evt)))) file-menu:new-callback))
+            (let ((file-menu:new-callback (λ (item evt) (file-menu:new-callback item evt))))
+              file-menu:new-callback))
            (shortcut #\n)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (file-menu:new-help-string))
@@ -466,7 +486,8 @@
            (label (file-menu:open-string))
            (parent file-menu)
            (callback
-            (let ((file-menu:open-callback (λ (item evt) (file-menu:open-callback item evt)))) file-menu:open-callback))
+            (let ((file-menu:open-callback (λ (item evt) (file-menu:open-callback item evt))))
+              file-menu:open-callback))
            (shortcut #\o)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (file-menu:open-help-string))
@@ -501,7 +522,8 @@
            (label (file-menu:save-string))
            (parent file-menu)
            (callback
-            (let ((file-menu:save-callback (λ (item evt) (file-menu:save-callback item evt)))) file-menu:save-callback))
+            (let ((file-menu:save-callback (λ (item evt) (file-menu:save-callback item evt))))
+              file-menu:save-callback))
            (shortcut #\s)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (file-menu:save-help-string))
@@ -555,7 +577,8 @@
            (label (file-menu:quit-string))
            (parent file-menu)
            (callback
-            (let ((file-menu:quit-callback (λ (item evt) (file-menu:quit-callback item evt)))) file-menu:quit-callback))
+            (let ((file-menu:quit-callback (λ (item evt) (file-menu:quit-callback item evt))))
+              file-menu:quit-callback))
            (shortcut #\q)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (file-menu:quit-help-string))
@@ -568,7 +591,8 @@
            (label (edit-menu:undo-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:undo-callback (λ (item evt) (edit-menu:undo-callback item evt)))) edit-menu:undo-callback))
+            (let ((edit-menu:undo-callback (λ (item evt) (edit-menu:undo-callback item evt))))
+              edit-menu:undo-callback))
            (shortcut #\z)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:undo-help-string))
@@ -580,10 +604,13 @@
            (label (edit-menu:redo-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:redo-callback (λ (item evt) (edit-menu:redo-callback item evt)))) edit-menu:redo-callback))
+            (let ((edit-menu:redo-callback (λ (item evt) (edit-menu:redo-callback item evt))))
+              edit-menu:redo-callback))
            (shortcut (if (eq? (system-type) 'windows) #\y #\z))
            (shortcut-prefix
-            (if (eq? (system-type) 'windows) (get-default-shortcut-prefix) (cons 'shift (get-default-shortcut-prefix))))
+            (if (eq? (system-type) 'windows)
+              (get-default-shortcut-prefix)
+              (cons 'shift (get-default-shortcut-prefix))))
            (help-string (edit-menu:redo-help-string))
            (demand-callback (λ (menu-item) (edit-menu:redo-on-demand menu-item))))))
    (edit-menu:between-redo-and-cut (get-edit-menu))
@@ -594,7 +621,8 @@
            (label (edit-menu:cut-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:cut-callback (λ (item evt) (edit-menu:cut-callback item evt)))) edit-menu:cut-callback))
+            (let ((edit-menu:cut-callback (λ (item evt) (edit-menu:cut-callback item evt))))
+              edit-menu:cut-callback))
            (shortcut #\x)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:cut-help-string))
@@ -607,7 +635,8 @@
            (label (edit-menu:copy-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:copy-callback (λ (item evt) (edit-menu:copy-callback item evt)))) edit-menu:copy-callback))
+            (let ((edit-menu:copy-callback (λ (item evt) (edit-menu:copy-callback item evt))))
+              edit-menu:copy-callback))
            (shortcut #\c)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:copy-help-string))
@@ -662,7 +691,8 @@
            (label (edit-menu:find-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:find-callback (λ (item evt) (edit-menu:find-callback item evt)))) edit-menu:find-callback))
+            (let ((edit-menu:find-callback (λ (item evt) (edit-menu:find-callback item evt))))
+              edit-menu:find-callback))
            (shortcut #\f)
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:find-help-string))
@@ -687,7 +717,8 @@
            (label (edit-menu:replace-and-find-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:replace-and-find-callback (λ (item evt) (edit-menu:replace-and-find-callback item evt))))
+            (let ((edit-menu:replace-and-find-callback
+                   (λ (item evt) (edit-menu:replace-and-find-callback item evt))))
               edit-menu:replace-and-find-callback))
            (shortcut #\g)
            (shortcut-prefix (get-default-shortcut-prefix))
@@ -720,6 +751,21 @@
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:replace-all-help-string))
            (demand-callback (λ (menu-item) (edit-menu:replace-all-on-demand menu-item))))))
+   (define edit-menu:toggle-find-focus-item
+     (and (edit-menu:create-toggle-find-focus?)
+          (new
+           (get-menu-item%)
+           (label (edit-menu:toggle-find-focus-string))
+           (parent edit-menu)
+           (callback
+            (let ((edit-menu:toggle-find-focus-callback
+                   (λ (item evt) (edit-menu:toggle-find-focus-callback item evt))))
+              edit-menu:toggle-find-focus-callback))
+           (shortcut #\f)
+           (shortcut-prefix
+            (cons (case (system-type) ((macosx) 'option) (else 'alt)) (get-default-shortcut-prefix)))
+           (help-string (edit-menu:toggle-find-focus-help-string))
+           (demand-callback (λ (menu-item) (edit-menu:toggle-find-focus-on-demand menu-item))))))
    (define edit-menu:find-case-sensitive-item
      (and (edit-menu:create-find-case-sensitive?)
           (new

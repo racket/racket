@@ -293,6 +293,18 @@
 
 @(defmethod (edit-menu:replace-all-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant replace-all-info)) ".")
 
+@(defmethod (edit-menu:get-toggle-find-focus-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-toggle-find-focus?) ").")
+
+@(defmethod (edit-menu:create-toggle-find-focus?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")
+
+@(defmethod (edit-menu:toggle-find-focus-callback (item (is-a?/c menu-item%)) (control (is-a?/c control-event%))) void? "Defaults to " (schemeblock (void)) " ")
+
+@(defmethod (edit-menu:toggle-find-focus-on-demand (item (is-a?/c menu-item%))) void? "The menu item's on-demand proc calls this method." "\n" "\n" "Defaults to " (schemeblock (void)))
+
+@(defmethod (edit-menu:toggle-find-focus-string) string? "The result of this method is used as the name of the " (scheme menu-item%) "." "\n" "\n" "Defaults to " (scheme (string-constant toggle-find-focus)) ".")
+
+@(defmethod (edit-menu:toggle-find-focus-help-string) string? "The result of this method is used as the help string" "\n" "when the " (scheme menu-item%) " object is created." "\n" "\n" "Defaults to " (scheme (string-constant toggle-find-focus-info)) ".")
+
 @(defmethod (edit-menu:get-find-case-sensitive-item) (or/c false/c (is-a?/c menu-item%)) "This method returns the " (scheme menu-item%) " object corresponding" "\n" "to this menu item, if it has been created (as controlled by" "\n" (method frame:standard-menus<%> edit-menu:create-find-case-sensitive?) ").")
 
 @(defmethod (edit-menu:create-find-case-sensitive?) boolean? "The result of this method determines if the corresponding" "\n" "menu item is created. Override it to control the creation of the menu item." "\n" "\n" "Defaults to " (scheme #f) ".")

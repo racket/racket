@@ -1956,10 +1956,23 @@
     (define/override (edit-menu:find-case-sensitive-on-demand item) (send item check case-sensitive-search?))
     (define/override (edit-menu:create-find-case-sensitive?) #t)
 
-    (define/override (edit-menu:replace-all-callback menu evt) #t)
+    (define/override (edit-menu:replace-all-callback menu evt) (replace-all) #t)
     (define/override (edit-menu:replace-all-on-demand item) (send item enable (can-replace?)))
     (define/override (edit-menu:create-replace-all?) #t)
 
+    (define/override (edit-menu:create-toggle-find-focus?) #t)
+    (define/override (edit-menu:toggle-find-focus-callback menu evt)
+      (cond
+        [hidden?
+         (unhide-search #t)]
+        [(or (not text-to-search)
+             (send (send text-to-search get-canvas) has-focus?))
+         (send find-canvas focus)]
+        [else
+         (let ([canvas (send text-to-search get-canvas)])
+           (when canvas
+             (send canvas focus)))]))
+    
     (define/override make-root-area-container
       (λ (% parent)
         (let* ([s-root (super make-root-area-container
