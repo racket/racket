@@ -1299,6 +1299,9 @@ module browser threading seems wrong.
                  get-area-container
                  update-info
                  get-file-menu
+                 search-hidden?
+                 unhide-search
+                 hide-search
                  file-menu:get-close-item
                  file-menu:get-save-item
                  file-menu:get-save-as-item
@@ -2634,7 +2637,23 @@ module browser threading seems wrong.
                     (update-shown))
                   #\e
                   (string-constant interactions-menu-item-help-string)))
-          
+          (new menu:can-restore-menu-item%
+               [shortcut #\f]
+               [shortcut-prefix (cons (case (system-type)
+                                        [(macosx) 'option]
+                                        [else 'alt])
+                                      (get-default-shortcut-prefix))]
+               [parent (get-show-menu)]
+               [label (string-constant show-find-bar)]
+               [callback
+                (λ (menu evt)
+                  (cond
+                    [(search-hidden?)
+                     (send menu set-label (string-constant hide-find-bar))
+                     (unhide-search #t)]
+                    [else
+                     (send menu set-label (string-constant hide-find-bar))
+                     (hide-search)]))])
           (new menu:can-restore-menu-item%
                (shortcut #\u)
                (label 

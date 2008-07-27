@@ -2004,7 +2004,7 @@
             (send canvas focus))))
       (set! hidden? #t))
     
-    (define/public (unhide-search)
+    (define/public (unhide-search focus?)
       (when hidden?
         (set! hidden? #f)
         (build-search-gui-in-frame)
@@ -2012,7 +2012,8 @@
         (send find-edit text-to-search-changed #f text-to-search)
         (unless (memq search/replace-panel (send super-root get-children))
           (send super-root add-child search/replace-panel))
-        (send (send find-edit get-canvas) focus)))
+        (when focus?
+          (send (send find-edit get-canvas) focus))))
     
     (define/public (can-replace?)
       (let ([tx (get-text-to-search)])
@@ -2029,24 +2030,17 @@
                 (send find-edit get-text 0 (send find-edit last-position))))))))
     
     (define/public (search searching-direction)
-      (cond
-        [hidden?
-         (unhide-search)]
-        [else
-         (send find-edit search searching-direction #t)
-         (void)]))
+      (unhide-search #f)
+      (send find-edit search searching-direction #t))
     
     (define/public (replace&search dir)
-      (cond
-        [hidden?
-         (unhide-search)]
-        [else
-         (let ([text (get-text-to-search)])
-           (when text
-             (send text begin-edit-sequence)
-             (when (replace)
-               (search dir))
-             (send text end-edit-sequence)))]))
+      (unhide-search #f)
+      (let ([text (get-text-to-search)])
+        (when text
+          (send text begin-edit-sequence)
+          (when (replace)
+            (search dir))
+          (send text end-edit-sequence))))
     
     (define/private (replace)
       (let ([replacee-text (let ([txt (get-text-to-search)])
@@ -2075,36 +2069,33 @@
              (loop prev))])))
     
     (define/public (replace-all)
-      (cond
-        [hidden?
-         (unhide-search)]
-        [else
-         (let ([txt (get-text-to-search)])
-           (when txt
-             (let ([search-str (send find-edit get-text)]
-                   [ht (make-hasheq)])
-               (send txt begin-edit-sequence)
-               (hash-set! ht txt #t)
-               (let loop ([txt (pop-all-the-way-out txt)]
-                          [pos 0])
-                 (let-values ([(found-txt found-pos) (find-string-embedded txt
-                                                                           search-str
-                                                                           'forward
-                                                                           pos
-                                                                           'eof
-                                                                           #f
-                                                                           case-sensitive-search?
-                                                                           #t)])
-                   (cond
-                     [found-pos
-                      (unless (hash-ref ht txt #f)
-                        (hash-set! ht txt #t)
-                        (send txt begin-edit-sequence))
-                      (send found-txt set-position (- found-pos (string-length search-str)) found-pos)
-                      (replace)
-                      (loop found-txt (send found-txt get-end-position))]
-                     [else (void)])))
-               (hash-for-each ht (λ (txt _) (send txt end-edit-sequence))))))]))
+      (unhide-search #f)
+      (let ([txt (get-text-to-search)])
+        (when txt
+          (let ([search-str (send find-edit get-text)]
+                [ht (make-hasheq)])
+            (send txt begin-edit-sequence)
+            (hash-set! ht txt #t)
+            (let loop ([txt (pop-all-the-way-out txt)]
+                       [pos 0])
+              (let-values ([(found-txt found-pos) (find-string-embedded txt
+                                                                        search-str
+                                                                        'forward
+                                                                        pos
+                                                                        'eof
+                                                                        #f
+                                                                        case-sensitive-search?
+                                                                        #t)])
+                (cond
+                  [found-pos
+                   (unless (hash-ref ht txt #f)
+                     (hash-set! ht txt #t)
+                     (send txt begin-edit-sequence))
+                   (send found-txt set-position (- found-pos (string-length search-str)) found-pos)
+                   (replace)
+                   (loop found-txt (send found-txt get-end-position))]
+                  [else (void)])))
+            (hash-for-each ht (λ (txt _) (send txt end-edit-sequence)))))))
                              
     (define/private (pop-all-the-way-out txt)
       (let ([admin (send txt get-admin)])

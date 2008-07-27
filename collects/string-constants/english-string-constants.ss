@@ -711,6 +711,9 @@ please adhere to these guidelines:
  (show-module-browser "Show Module Browser")
  (hide-module-browser "Hide Module Browser")
 
+  (show-find-bar "Show Find Bar")
+  (hide-find-bar "Hide Find Bar")
+  
  (help-menu-label "&Help")
  (about-info "Credits and details for this application")
  (about-menu-item "About...")

@@ -926,9 +926,11 @@ framework)) @(require (for-label scheme/gui)) @(require
     frame.
 
   }
-  @defmethod*[(((unhide-search) void))]{
-    When the searching sub window is hidden, makes it visible.
-
+  @defmethod*[(((unhide-search [move-focus? boolean? #f]) void))]{
+    When the searching sub window is hidden, makes it visible. If 
+    @scheme[move-focus?] is @scheme[#f], the focus is not moved,
+    but if it is any other value, the focus is moved to the find
+    window.
   }
   @defmethod[(get-case-sensitive-search?) boolean?]{
     Returns @scheme[#t] if the search is currently case-sensitive.
@@ -953,7 +955,7 @@ framework)) @(require (for-label scheme/gui)) @(require
 
   @defmethod*[#:mode override (((edit-menu:find-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
-    Calls
+    Calls @method[frame:searchable unhide-search] and then 
     @method[frame:searchable<%> search].
   }
   @defmethod*[#:mode override (((edit-menu:create-find?) boolean?))]{
@@ -961,7 +963,7 @@ framework)) @(require (for-label scheme/gui)) @(require
   }
   @defmethod*[#:mode override (((edit-menu:find-backwards-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
-    Calls
+    Calls @method[frame:searchable unhide-search] and then 
     @method[frame:searchable<%> search].
   }
   @defmethod*[#:mode override (((edit-menu:create-find-backwards?) boolean?))]{
@@ -969,7 +971,8 @@ framework)) @(require (for-label scheme/gui)) @(require
   }
 
   @defmethod*[#:mode override (((edit-menu:replace-and-find-callback) boolean?))]{
-    Calls @method[frame:searchable<%> replace&search].
+    Calls @method[frame:searchable unhide-search] and then 
+    calls @method[frame:searchable<%> replace&search].
   }
   @defmethod*[#:mode override (((edit-menu:replace-and-find-on-demand (item menu-item%)) void))]{
 
@@ -984,7 +987,8 @@ framework)) @(require (for-label scheme/gui)) @(require
   }
 
   @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-callback) boolean?))]{
-    Calls @method[frame:searchable<%> replace&search].
+    Calls @method[frame:searchable unhide-search] and then 
+    calls @method[frame:searchable<%> replace&search].
   }
   @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-on-demand (item menu-item%)) void))]{
 
