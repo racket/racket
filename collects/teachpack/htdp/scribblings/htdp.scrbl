@@ -24,6 +24,8 @@
 @include-section["elevator.scrbl"]
 @include-section["show-queen.scrbl"]
 
+@include-section["matrix.scrbl"]
+
 @;-- what do those do? --
 
 @;include-section["guess-gui.scrbl"]
