@@ -508,13 +508,11 @@ please adhere to these guidelines:
  (replace "Replace")
  (dock "Dock")
  (undock "Undock")
- (replace&find-again "Replace && Find Again") ;;; need double & to get a single &
+ (replace&find "Replace && Find") ;;; need double & to get a single &
  (forward "Forward")
  (backward "Backward")
  (hide "Hide")
  (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
-  (toggle-find-focus "Toggle Search Focus") ;; menu item
-  (toggle-find-focus-info "Toggles the keyboard focus between the window being searched and the search bar")
   
   
  ;;; multi-file-search
@@ -649,17 +647,20 @@ please adhere to these guidelines:
  (select-all-info "Select the entire document")
  (select-all-menu-item "Select A&ll")
  
- (find-info "Skip to the next occurrence of the string in the find window")
- (find-menu-item "Find")
-
- (find-backwards-info "Skip to the previous occurrence of the string in the find window")
- (find-backwards-menu-item "Find Backwards")
+  (find-menu-item "Find") ;; menu item
+  (find-info "Toggles the keyboard focus between the window being searched and the search bar")
   
- (replace-and-find-info "Replace the current text and skip to the next occurrence")
- (replace-and-find-menu-item "Replace && Find")
+ (find-again-info "Skip to the next occurrence of the string in the find window")
+ (find-again-menu-item "Find Again")
+  
+  (find-again-backwards-info "Skip to the previous occurrence of the string in the find window")
+ (find-again-backwards-menu-item "Find Again Backwards")
+  
+ (replace-and-find-again-info "Replace the current text and skip to the next occurrence")
+ (replace-and-find-again-menu-item "Replace && Find Again")
 
- (replace-and-find-backwards-info "Replace the current text and skip to the previous occurrence")
- (replace-and-find-backwards-menu-item "Replace && Find Backwards")
+ (replace-and-find-again-backwards-info "Replace the current text and skip to the previous occurrence")
+ (replace-and-find-again-backwards-menu-item "Replace && Find Again Backwards")
   
   (replace-all-info "Replace all occurrences of the search string")
   (replace-all-menu-item "Replace All")

@@ -1829,12 +1829,14 @@
                       [else
                        (found found-edit first-pos)]))))))))
     
+    (define callback-queued? #f)
     (define/private (update-searching-str)
       (let ([tlw (get-top-level-window)])
         (when tlw
           (let ([txt (send tlw get-text-to-search)])
             (when txt
               (update-searching-str/cs txt (get-case-sensitive-search?)))))))
+         
     
     (define/public (text-to-search-changed old new)
       (when old
@@ -1895,6 +1897,17 @@
     (set-styles-fixed #t)))
 
 (define search/replace-keymap (new keymap%))
+(send search/replace-keymap map-function "tab" "switch-between-search-and-replace")
+(send search/replace-keymap add-function "switch-between-search-and-replace"
+      (λ (text evt)
+        (let ([find-txt (send (send text get-top-level-window) get-find-edit)]
+              [replace-txt (send (send text get-top-level-window) get-replace-edit)])
+          (cond
+            [(eq? find-txt text)
+             (send (send replace-txt get-canvas) focus)]
+            [(eq? replace-txt text)
+             (send (send find-txt get-canvas) focus)]))))
+
 (send search/replace-keymap map-function "return" "find")
 (send search/replace-keymap add-function "find"
       (λ (text evt)
@@ -1928,7 +1941,10 @@
       (super on-paint))
     (super-new)))
 
-(define-local-member-name update-matches)
+(define-local-member-name 
+  update-matches 
+  get-find-edit
+  get-replace-edit)
 
 (define searchable-mixin
   (mixin (standard-menus<%>) (searchable<%>)
@@ -1937,20 +1953,35 @@
     (define case-sensitive-search? (preferences:get 'framework:case-sensitive-search?))
     (define/public (get-case-sensitive-search?) case-sensitive-search?)
     
-    (define/override (edit-menu:find-callback menu evt) (search 'forward) #t)
+    (define/override (edit-menu:find-callback menu evt) 
+      (cond
+        [hidden?
+         (unhide-search #t)]
+        [(or (not text-to-search)
+             (send (send text-to-search get-canvas) has-focus?))
+         (send find-edit set-position 0 (send find-edit last-position))
+         (send find-canvas focus)]
+        [else
+         (let ([canvas (send text-to-search get-canvas)])
+           (when canvas
+             (send canvas focus)))])
+      #t)
     (define/override (edit-menu:create-find?) #t)
     
-    (define/override (edit-menu:find-backwards-callback menu evt) (search 'backward) #t)
-    (define/override (edit-menu:create-find-backwards?) #t)
+    (define/override (edit-menu:find-again-callback menu evt) (search 'forward) #t)
+    (define/override (edit-menu:create-find-again?) #t)
     
-    (define/override (edit-menu:replace-and-find-callback menu evt) (replace&search 'forward) #t)
-    (define/override (edit-menu:replace-and-find-on-demand item) (send item enable (can-replace?)))
-    (define/override (edit-menu:create-replace-and-find?) #t)
+    (define/override (edit-menu:find-again-backwards-callback menu evt) (search 'backward) #t)
+    (define/override (edit-menu:create-find-again-backwards?) #t)
     
-    (define/override (edit-menu:replace-and-find-backwards-callback menu evt) (replace&search 'backward) #t)
-    (define/override (edit-menu:replace-and-find-backwards-on-demand item)
+    (define/override (edit-menu:replace-and-find-again-callback menu evt) (replace&search 'forward) #t)
+    (define/override (edit-menu:replace-and-find-again-on-demand item) (send item enable (can-replace?)))
+    (define/override (edit-menu:create-replace-and-find-again?) #t)
+    
+    (define/override (edit-menu:replace-and-find-again-backwards-callback menu evt) (replace&search 'backward) #t)
+    (define/override (edit-menu:replace-and-find-again-backwards-on-demand item)
       (send item enable (can-replace?)))
-    (define/override edit-menu:create-replace-and-find-backwards? (λ () #t))
+    (define/override edit-menu:create-replace-and-find-again-backwards? (λ () #t))
     
     (define/override (edit-menu:find-case-sensitive-callback menu evt) 
       (set! case-sensitive-search? (not case-sensitive-search?))
@@ -1965,19 +1996,6 @@
     (define/override (edit-menu:replace-all-on-demand item) (send item enable (can-replace?)))
     (define/override (edit-menu:create-replace-all?) #t)
 
-    (define/override (edit-menu:create-toggle-find-focus?) #t)
-    (define/override (edit-menu:toggle-find-focus-callback menu evt)
-      (cond
-        [hidden?
-         (unhide-search #t)]
-        [(or (not text-to-search)
-             (send (send text-to-search get-canvas) has-focus?))
-         (send find-canvas focus)]
-        [else
-         (let ([canvas (send text-to-search get-canvas)])
-           (when canvas
-             (send canvas focus)))]))
-    
     (define/override make-root-area-container
       (λ (% parent)
         (let* ([s-root (super make-root-area-container
@@ -2026,11 +2044,11 @@
       (when hidden?
         (set! hidden? #f)
         (build-search-gui-in-frame)
-        (send find-edit set-position 0 (send find-edit last-position))
         (send find-edit text-to-search-changed #f text-to-search)
         (unless (memq search/replace-panel (send super-root get-children))
           (send super-root add-child search/replace-panel))
         (when focus?
+          (send find-edit set-position 0 (send find-edit last-position))
           (send (send find-edit get-canvas) focus))))
     
     (define/public (can-replace?)
@@ -2143,6 +2161,9 @@
     (define find-edit #f)
     (define replace-edit #f)
     
+    (define/public (get-find-edit) find-edit)
+    (define/public (get-replace-edit) replace-edit)
+    
     (inherit begin-container-sequence end-container-sequence)
     
     (define/private (build-search-gui-in-frame)
@@ -2155,14 +2176,17 @@
           (define _0 (set! search/replace-panel (new horizontal-panel% 
                                                      [parent super-root]
                                                      [stretchable-height #f])))
-          (define search-panel (new horizontal-panel% 
-                                    [parent search/replace-panel]
-                                    [stretchable-height #f]))
-          (define replace-panel (new horizontal-panel%
-                                     [parent search/replace-panel]
-                                     [stretchable-height #f]))
+          (define search-panel
+            (new horizontal-panel% 
+                 [parent search/replace-panel]
+                 [stretchable-height #f]))
+          (define replace-panel
+            (new horizontal-panel%
+                 [parent search/replace-panel]
+                 [stretchable-height #f]))
           (define _1 (set! find-canvas (new searchable-canvas%
                                             [style '(hide-hscroll hide-vscroll)]
+                                            [vertical-inset 2]
                                             [parent search-panel]
                                             [editor find-edit]
                                             [line-count 1]
@@ -2170,16 +2194,19 @@
                                             [stretchable-width #t])))
           (define _3 (set! replace-canvas (new searchable-canvas%
                                                [style '(hide-hscroll hide-vscroll)]
+                                               [vertical-inset 2]
                                                [parent replace-panel]
                                                [editor replace-edit]
                                                [line-count 1]
                                                [stretchable-height #f]
                                                [stretchable-width #t])))
           
-          (define search-button (make-object button% 
-                                  (string-constant find)
-                                  search-panel
-                                  (λ (x y) (search 'forward))))
+          (define search-button (new button% 
+                                  [label (string-constant find)]
+                                  [vert-margin 0]
+                                  [parent search-panel]
+                                  [callback (λ (x y) (search 'forward))]
+                                  [font small-control-font]))
           
           (define hits-panel (new vertical-panel%
                                   [parent search-panel]
@@ -2189,37 +2216,47 @@
           
           (define num-msg (new message% 
                                [label "0"] 
+                               [vert-margin 0]
                                [auto-resize #t]
-                               [font small-control-font]
+                               [font tiny-control-font]
                                [parent hits-panel]))
-          (define mth-msg (new message%
-                               [label "Matches"]
-                               [font small-control-font]
-                               [parent hits-panel]))
+          (define matches-msg (new message% 
+                                   [label "Matches"] 
+                                   [vert-margin 0]
+                                   [font tiny-control-font]
+                                   [parent hits-panel]))
+          
           (define _6 (set! update-matches
                            (λ (m) 
-                             (send mth-msg set-label (if (= m 1) "Match" "Matches"))
-                             (send num-msg set-label 
-                                   (list->string
-                                    (reverse
-                                     (let loop ([chars (reverse (string->list (format "~a" m)))])
-                                       (cond
-                                         [(<= (length chars) 3)
-                                          chars]
-                                         [else (list* (list-ref chars 0)
-                                                      (list-ref chars 1)
-                                                      (list-ref chars 2)
-                                                      #\,
-                                                      (loop (cdddr chars)))]))))))))
+                             (let ([number 
+                                    (list->string
+                                     (reverse
+                                      (let loop ([chars (reverse (string->list (format "~a" m)))])
+                                        (cond
+                                          [(<= (length chars) 3)
+                                           chars]
+                                          [else (list* (list-ref chars 0)
+                                                       (list-ref chars 1)
+                                                       (list-ref chars 2)
+                                                       #\,
+                                                       (loop (cdddr chars)))]))))])
+                               (send num-msg set-label number)
+                               (send matches-msg set-label (if (= m 1) "Match" "Matches"))))))
           
-          (define replace-all-button (make-object button% 
-                                       (string-constant replace-all-menu-item)
-                                       replace-panel
-                                       (λ x (replace-all))))
+          (define replace&search-button
+            (new button% 
+                 [label (string-constant replace&find)]
+                 [vert-margin 0]
+                 [parent replace-panel]
+                 [font small-control-font]
+                 [callback (λ (x y) (replace&search 'forward))]))
           
-          (define hide-button (make-object button% (string-constant hide)
-                                search/replace-panel
-                                (λ args (hide-search))))
+          (define hide-button (new button% 
+                                   [label (string-constant hide)]
+                                   [vert-margin 0]
+                                   [parent search/replace-panel]
+                                   [font small-control-font]
+                                   [callback (λ (x y) (hide-search))]))
           
           (void))
         (end-container-sequence)))

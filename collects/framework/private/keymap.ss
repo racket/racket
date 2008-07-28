@@ -967,7 +967,9 @@
                              (λ ()
                                (let loop ([obj frame])
                                  (cond
-                                   [(and found-one? (is-a? obj editor-canvas%))
+                                   [(and found-one? 
+                                         (is-a? obj editor-canvas%)
+                                         (is-a? (send obj get-editor) editor:keymap<%>))
                                     (send obj focus)
                                     (k (void))]
                                    [(and (is-a? obj window<%>) (send obj has-focus?))

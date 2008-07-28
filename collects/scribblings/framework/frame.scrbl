@@ -953,51 +953,60 @@ framework)) @(require (for-label scheme/gui)) @(require
   @scheme[editor<%>]
   in this frame.
 
-  @defmethod*[#:mode override (((edit-menu:find-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
-
-    Calls @method[frame:searchable unhide-search] and then 
-    @method[frame:searchable<%> search].
+  @defmethod*[#:mode override (((edit-menu:find-callback) boolean?))]{
+     Toggles the focus between the find window and the window being searched.
+     When moving to the window with the search string, selects the entire
+     range in the buffer.
   }
   @defmethod*[#:mode override (((edit-menu:create-find?) boolean?))]{
     returns @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:find-backwards-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+
+  @defmethod*[#:mode override (((edit-menu:find-again-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
 
     Calls @method[frame:searchable unhide-search] and then 
     @method[frame:searchable<%> search].
   }
-  @defmethod*[#:mode override (((edit-menu:create-find-backwards?) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:create-find-again?) boolean?))]{
+    returns @scheme[#t].
+  }
+  @defmethod*[#:mode override (((edit-menu:find-again-backwards-callback (item (is-a?/c menu-item%)) (evt (is-a?/c control-event%))) void?))]{
+
+    Calls @method[frame:searchable unhide-search] and then 
+    @method[frame:searchable<%> search].
+  }
+  @defmethod*[#:mode override (((edit-menu:create-find-again-backwards?) boolean?))]{
     returns @scheme[#t].
   }
 
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-callback) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-callback) boolean?))]{
     Calls @method[frame:searchable unhide-search] and then 
     calls @method[frame:searchable<%> replace&search].
   }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-on-demand (item menu-item%)) void))]{
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-on-demand (item menu-item%)) void))]{
 
     Disables @scheme[item] when
     @method[frame:searchable<%> can-replace?]
     returns @scheme[#f] and enables it when that method returns
     @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:create-replace-and-find?) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again?) boolean?))]{
 
     returns @scheme[#t].
   }
 
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-callback) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-backwards-callback) boolean?))]{
     Calls @method[frame:searchable unhide-search] and then 
     calls @method[frame:searchable<%> replace&search].
   }
-  @defmethod*[#:mode override (((edit-menu:replace-and-find-backwards-on-demand (item menu-item%)) void))]{
+  @defmethod*[#:mode override (((edit-menu:replace-and-find-again-backwards-on-demand (item menu-item%)) void))]{
 
     Disables @scheme[item] when
     @method[frame:searchable<%> can-replace?]
     returns @scheme[#f] and enables it when that method returns
     @scheme[#t].
   }
-  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-backwards?) boolean?))]{
+  @defmethod*[#:mode override (((edit-menu:create-replace-and-find-again-backwards?) boolean?))]{
 
     returns @scheme[#t].
   }
@@ -1030,17 +1039,6 @@ framework)) @(require (for-label scheme/gui)) @(require
 
     returns @scheme[#t].
   }
-
-  @defmethod*[#:mode override (((edit-menu:toggle-find-focus-callback) boolean?))]{
-     toggles the focus between the find window and the window being searched.
-  }
-  @defmethod*[#:mode override (((edit-menu:create-toggle-find-focus?) boolean?))]{
-
-    returns @scheme[#t].
-  }
-
-
-
 
   @defmethod*[#:mode override (((make-root-area-container) (is-a?/c area-container<%>)))]{
 

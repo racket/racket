@@ -122,36 +122,36 @@
    edit-menu:find-help-string
    edit-menu:find-on-demand
    edit-menu:create-find?
-   edit-menu:find-backwards-callback
-   edit-menu:get-find-backwards-item
-   edit-menu:find-backwards-string
-   edit-menu:find-backwards-help-string
-   edit-menu:find-backwards-on-demand
-   edit-menu:create-find-backwards?
-   edit-menu:replace-and-find-callback
-   edit-menu:get-replace-and-find-item
-   edit-menu:replace-and-find-string
-   edit-menu:replace-and-find-help-string
-   edit-menu:replace-and-find-on-demand
-   edit-menu:create-replace-and-find?
-   edit-menu:replace-and-find-backwards-callback
-   edit-menu:get-replace-and-find-backwards-item
-   edit-menu:replace-and-find-backwards-string
-   edit-menu:replace-and-find-backwards-help-string
-   edit-menu:replace-and-find-backwards-on-demand
-   edit-menu:create-replace-and-find-backwards?
+   edit-menu:find-again-callback
+   edit-menu:get-find-again-item
+   edit-menu:find-again-string
+   edit-menu:find-again-help-string
+   edit-menu:find-again-on-demand
+   edit-menu:create-find-again?
+   edit-menu:find-again-backwards-callback
+   edit-menu:get-find-again-backwards-item
+   edit-menu:find-again-backwards-string
+   edit-menu:find-again-backwards-help-string
+   edit-menu:find-again-backwards-on-demand
+   edit-menu:create-find-again-backwards?
+   edit-menu:replace-and-find-again-callback
+   edit-menu:get-replace-and-find-again-item
+   edit-menu:replace-and-find-again-string
+   edit-menu:replace-and-find-again-help-string
+   edit-menu:replace-and-find-again-on-demand
+   edit-menu:create-replace-and-find-again?
+   edit-menu:replace-and-find-again-backwards-callback
+   edit-menu:get-replace-and-find-again-backwards-item
+   edit-menu:replace-and-find-again-backwards-string
+   edit-menu:replace-and-find-again-backwards-help-string
+   edit-menu:replace-and-find-again-backwards-on-demand
+   edit-menu:create-replace-and-find-again-backwards?
    edit-menu:replace-all-callback
    edit-menu:get-replace-all-item
    edit-menu:replace-all-string
    edit-menu:replace-all-help-string
    edit-menu:replace-all-on-demand
    edit-menu:create-replace-all?
-   edit-menu:toggle-find-focus-callback
-   edit-menu:get-toggle-find-focus-item
-   edit-menu:toggle-find-focus-string
-   edit-menu:toggle-find-focus-help-string
-   edit-menu:toggle-find-focus-on-demand
-   edit-menu:create-toggle-find-focus?
    edit-menu:find-case-sensitive-callback
    edit-menu:get-find-case-sensitive-item
    edit-menu:find-case-sensitive-string
@@ -393,34 +393,44 @@
     edit-menu:find-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-find?) #f)
-   (define/public edit-menu:find-backwards-callback (λ (item control) (void)))
-   (define/public (edit-menu:get-find-backwards-item) edit-menu:find-backwards-item)
-   (define/public (edit-menu:find-backwards-string) (string-constant find-backwards-menu-item))
-   (define/public (edit-menu:find-backwards-help-string) (string-constant find-backwards-info))
+   (define/public edit-menu:find-again-callback (λ (item control) (void)))
+   (define/public (edit-menu:get-find-again-item) edit-menu:find-again-item)
+   (define/public (edit-menu:find-again-string) (string-constant find-again-menu-item))
+   (define/public (edit-menu:find-again-help-string) (string-constant find-again-info))
    (define/public
-    edit-menu:find-backwards-on-demand
+    edit-menu:find-again-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
-   (define/public (edit-menu:create-find-backwards?) #f)
-   (define/public edit-menu:replace-and-find-callback (λ (item control) (void)))
-   (define/public (edit-menu:get-replace-and-find-item) edit-menu:replace-and-find-item)
-   (define/public (edit-menu:replace-and-find-string) (string-constant replace-and-find-menu-item))
-   (define/public (edit-menu:replace-and-find-help-string) (string-constant replace-and-find-info))
+   (define/public (edit-menu:create-find-again?) #f)
+   (define/public edit-menu:find-again-backwards-callback (λ (item control) (void)))
+   (define/public (edit-menu:get-find-again-backwards-item) edit-menu:find-again-backwards-item)
+   (define/public (edit-menu:find-again-backwards-string) (string-constant find-again-backwards-menu-item))
+   (define/public (edit-menu:find-again-backwards-help-string) (string-constant find-again-backwards-info))
    (define/public
-    edit-menu:replace-and-find-on-demand
+    edit-menu:find-again-backwards-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
-   (define/public (edit-menu:create-replace-and-find?) #f)
-   (define/public edit-menu:replace-and-find-backwards-callback (λ (item control) (void)))
-   (define/public (edit-menu:get-replace-and-find-backwards-item) edit-menu:replace-and-find-backwards-item)
+   (define/public (edit-menu:create-find-again-backwards?) #f)
+   (define/public edit-menu:replace-and-find-again-callback (λ (item control) (void)))
+   (define/public (edit-menu:get-replace-and-find-again-item) edit-menu:replace-and-find-again-item)
+   (define/public (edit-menu:replace-and-find-again-string) (string-constant replace-and-find-again-menu-item))
+   (define/public (edit-menu:replace-and-find-again-help-string) (string-constant replace-and-find-again-info))
    (define/public
-    (edit-menu:replace-and-find-backwards-string)
-    (string-constant replace-and-find-backwards-menu-item))
-   (define/public
-    (edit-menu:replace-and-find-backwards-help-string)
-    (string-constant replace-and-find-backwards-info))
-   (define/public
-    edit-menu:replace-and-find-backwards-on-demand
+    edit-menu:replace-and-find-again-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
-   (define/public (edit-menu:create-replace-and-find-backwards?) #f)
+   (define/public (edit-menu:create-replace-and-find-again?) #f)
+   (define/public edit-menu:replace-and-find-again-backwards-callback (λ (item control) (void)))
+   (define/public
+    (edit-menu:get-replace-and-find-again-backwards-item)
+    edit-menu:replace-and-find-again-backwards-item)
+   (define/public
+    (edit-menu:replace-and-find-again-backwards-string)
+    (string-constant replace-and-find-again-backwards-menu-item))
+   (define/public
+    (edit-menu:replace-and-find-again-backwards-help-string)
+    (string-constant replace-and-find-again-backwards-info))
+   (define/public
+    edit-menu:replace-and-find-again-backwards-on-demand
+    (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
+   (define/public (edit-menu:create-replace-and-find-again-backwards?) #f)
    (define/public edit-menu:replace-all-callback (λ (item control) (void)))
    (define/public (edit-menu:get-replace-all-item) edit-menu:replace-all-item)
    (define/public (edit-menu:replace-all-string) (string-constant replace-all-menu-item))
@@ -429,12 +439,6 @@
     edit-menu:replace-all-on-demand
     (λ (item) (send item enable (let ((target (get-edit-target-object))) (and target (is-a? target editor<%>))))))
    (define/public (edit-menu:create-replace-all?) #f)
-   (define/public edit-menu:toggle-find-focus-callback (λ (item control) (void)))
-   (define/public (edit-menu:get-toggle-find-focus-item) edit-menu:toggle-find-focus-item)
-   (define/public (edit-menu:toggle-find-focus-string) (string-constant toggle-find-focus))
-   (define/public (edit-menu:toggle-find-focus-help-string) (string-constant toggle-find-focus-info))
-   (define/public edit-menu:toggle-find-focus-on-demand (λ (item) (void)))
-   (define/public (edit-menu:create-toggle-find-focus?) #f)
    (define/public edit-menu:find-case-sensitive-callback (λ (item control) (void)))
    (define/public (edit-menu:get-find-case-sensitive-item) edit-menu:find-case-sensitive-item)
    (define/public (edit-menu:find-case-sensitive-string) (string-constant find-case-sensitive-menu-item))
@@ -697,47 +701,61 @@
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:find-help-string))
            (demand-callback (λ (menu-item) (edit-menu:find-on-demand menu-item))))))
-   (define edit-menu:find-backwards-item
-     (and (edit-menu:create-find-backwards?)
+   (define edit-menu:find-again-item
+     (and (edit-menu:create-find-again?)
           (new
            (get-menu-item%)
-           (label (edit-menu:find-backwards-string))
+           (label (edit-menu:find-again-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:find-backwards-callback (λ (item evt) (edit-menu:find-backwards-callback item evt))))
-              edit-menu:find-backwards-callback))
-           (shortcut #\f)
-           (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
-           (help-string (edit-menu:find-backwards-help-string))
-           (demand-callback (λ (menu-item) (edit-menu:find-backwards-on-demand menu-item))))))
-   (define edit-menu:replace-and-find-item
-     (and (edit-menu:create-replace-and-find?)
-          (new
-           (get-menu-item%)
-           (label (edit-menu:replace-and-find-string))
-           (parent edit-menu)
-           (callback
-            (let ((edit-menu:replace-and-find-callback
-                   (λ (item evt) (edit-menu:replace-and-find-callback item evt))))
-              edit-menu:replace-and-find-callback))
+            (let ((edit-menu:find-again-callback (λ (item evt) (edit-menu:find-again-callback item evt))))
+              edit-menu:find-again-callback))
            (shortcut #\g)
            (shortcut-prefix (get-default-shortcut-prefix))
-           (help-string (edit-menu:replace-and-find-help-string))
-           (demand-callback (λ (menu-item) (edit-menu:replace-and-find-on-demand menu-item))))))
-   (define edit-menu:replace-and-find-backwards-item
-     (and (edit-menu:create-replace-and-find-backwards?)
+           (help-string (edit-menu:find-again-help-string))
+           (demand-callback (λ (menu-item) (edit-menu:find-again-on-demand menu-item))))))
+   (define edit-menu:find-again-backwards-item
+     (and (edit-menu:create-find-again-backwards?)
           (new
            (get-menu-item%)
-           (label (edit-menu:replace-and-find-backwards-string))
+           (label (edit-menu:find-again-backwards-string))
            (parent edit-menu)
            (callback
-            (let ((edit-menu:replace-and-find-backwards-callback
-                   (λ (item evt) (edit-menu:replace-and-find-backwards-callback item evt))))
-              edit-menu:replace-and-find-backwards-callback))
+            (let ((edit-menu:find-again-backwards-callback
+                   (λ (item evt) (edit-menu:find-again-backwards-callback item evt))))
+              edit-menu:find-again-backwards-callback))
            (shortcut #\g)
            (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
-           (help-string (edit-menu:replace-and-find-backwards-help-string))
-           (demand-callback (λ (menu-item) (edit-menu:replace-and-find-backwards-on-demand menu-item))))))
+           (help-string (edit-menu:find-again-backwards-help-string))
+           (demand-callback (λ (menu-item) (edit-menu:find-again-backwards-on-demand menu-item))))))
+   (define edit-menu:replace-and-find-again-item
+     (and (edit-menu:create-replace-and-find-again?)
+          (new
+           (get-menu-item%)
+           (label (edit-menu:replace-and-find-again-string))
+           (parent edit-menu)
+           (callback
+            (let ((edit-menu:replace-and-find-again-callback
+                   (λ (item evt) (edit-menu:replace-and-find-again-callback item evt))))
+              edit-menu:replace-and-find-again-callback))
+           (shortcut #\r)
+           (shortcut-prefix (get-default-shortcut-prefix))
+           (help-string (edit-menu:replace-and-find-again-help-string))
+           (demand-callback (λ (menu-item) (edit-menu:replace-and-find-again-on-demand menu-item))))))
+   (define edit-menu:replace-and-find-again-backwards-item
+     (and (edit-menu:create-replace-and-find-again-backwards?)
+          (new
+           (get-menu-item%)
+           (label (edit-menu:replace-and-find-again-backwards-string))
+           (parent edit-menu)
+           (callback
+            (let ((edit-menu:replace-and-find-again-backwards-callback
+                   (λ (item evt) (edit-menu:replace-and-find-again-backwards-callback item evt))))
+              edit-menu:replace-and-find-again-backwards-callback))
+           (shortcut #\r)
+           (shortcut-prefix (cons 'shift (get-default-shortcut-prefix)))
+           (help-string (edit-menu:replace-and-find-again-backwards-help-string))
+           (demand-callback (λ (menu-item) (edit-menu:replace-and-find-again-backwards-on-demand menu-item))))))
    (define edit-menu:replace-all-item
      (and (edit-menu:create-replace-all?)
           (new
@@ -751,21 +769,6 @@
            (shortcut-prefix (get-default-shortcut-prefix))
            (help-string (edit-menu:replace-all-help-string))
            (demand-callback (λ (menu-item) (edit-menu:replace-all-on-demand menu-item))))))
-   (define edit-menu:toggle-find-focus-item
-     (and (edit-menu:create-toggle-find-focus?)
-          (new
-           (get-menu-item%)
-           (label (edit-menu:toggle-find-focus-string))
-           (parent edit-menu)
-           (callback
-            (let ((edit-menu:toggle-find-focus-callback
-                   (λ (item evt) (edit-menu:toggle-find-focus-callback item evt))))
-              edit-menu:toggle-find-focus-callback))
-           (shortcut #\f)
-           (shortcut-prefix
-            (cons (case (system-type) ((macosx) 'option) (else 'alt)) (get-default-shortcut-prefix)))
-           (help-string (edit-menu:toggle-find-focus-help-string))
-           (demand-callback (λ (menu-item) (edit-menu:toggle-find-focus-on-demand menu-item))))))
    (define edit-menu:find-case-sensitive-item
      (and (edit-menu:create-find-case-sensitive?)
           (new

@@ -279,15 +279,12 @@ WARNING: printf is rebound in the body of the unit to always
                          ;; we don't need to consider the first or the last line, 
                          ;; since they are already covered
                          ;; by `start-x' and `end-x'
-                         (let loop ([l start-x]
-                                    [r end-x]
-                                    [line (+ (position-line start start-eol?) 1)])
+                         (let loop ([l (min start-x end-x)]
+                                    [r (max start-x end-x)]
+                                    [line (position-line start start-eol?)])
                            
                            (cond
-                             [(>= line end-line) 
-                              ;; techincally, the > should not be needed, but we
-                              ;; would rather have bad drawing than an infinite loop
-                              ;; in the case that there is a bug ...
+                             [(> line end-line) 
                               (cons
                                (make-rectangle l
                                                top-start-y
@@ -301,8 +298,8 @@ WARNING: printf is rebound in the body of the unit to always
                                     [line-end (line-end-position line)])
                                 (position-location line-start b1 #f #t)
                                 (position-location line-end b2 #f #t)
-                                (loop (min (unbox b1) l)
-                                      (max (unbox b2) r)
+                                (loop (min (unbox b1) (unbox b2) l)
+                                      (max (unbox b1) (unbox b2) r)
                                       (+ line 1)))])))]
                       [else
                        (list*
@@ -627,18 +624,26 @@ WARNING: printf is rebound in the body of the unit to always
     
     (define updating-search? #f)
     
+    (define timer #f)
     (define/private (content-changed)
       (when searching-str
-        (run-after-edit-sequence
-         (λ ()
-           (set! updating-search? #t)
-           (redo-search)
-           (let ([tlw (get-top-level-window)])
-             (when (and tlw
-                        (is-a? tlw frame:searchable<%>))
-               (send tlw search-results-changed)))
-           (set! updating-search? #f))
-         'framework:search-results-changed)))
+        (unless timer
+          (set! timer
+                (new timer%
+                     [notify-callback
+                      (λ ()
+                        (run-after-edit-sequence
+                         (λ ()
+                           (set! updating-search? #t)
+                           (redo-search)
+                           (let ([tlw (get-top-level-window)])
+                             (when (and tlw
+                                        (is-a? tlw frame:searchable<%>))
+                               (send tlw search-results-changed)))
+                           (set! updating-search? #f))
+                         'framework:search-results-changed))]
+                     [just-once? #t])))
+        (send timer start 500 #t)))
     
     (inherit get-top-level-window)
     (define/override (on-focus on?)

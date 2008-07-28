@@ -306,7 +306,19 @@ TODO
           (λ (obj evt)
             (with-drs-frame 
              obj
-             (λ (frame) (send frame prev-tab))))))
+             (λ (frame) (send frame prev-tab)))))
+    (send drs-bindings-keymap add-function
+          "collapse"
+          (λ (obj evt)
+            (with-drs-frame 
+             obj
+             (λ (frame) (send frame collapse)))))
+    (send drs-bindings-keymap add-function
+          "split"
+          (λ (obj evt)
+            (with-drs-frame 
+             obj
+             (λ (frame) (send frame split))))))
   
   (send drs-bindings-keymap map-function "f5" "execute")
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
@@ -316,6 +328,9 @@ TODO
   (send drs-bindings-keymap map-function "d:s:left" "prev-tab")
   (send drs-bindings-keymap map-function "c:pagedown" "next-tab")
   (send drs-bindings-keymap map-function "c:pageup" "prev-tab")
+  
+  (send drs-bindings-keymap map-function "c:x;0" "collapse")
+  (send drs-bindings-keymap map-function "c:x;2" "split")
   
   (define (get-drs-bindings-keymap) drs-bindings-keymap)
   
