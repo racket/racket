@@ -336,7 +336,7 @@
     
     (define new-class
       (choose ((sequence (new name O_PAREN C_PAREN) id)
-               (sequence (new name O_PAREN (comma-sep expression@ #;(eta expression) "arguments") C_PAREN) id))
+               (sequence (new name O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
               "class instantiation"))
     
     (define (new-array type-name)
