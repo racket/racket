@@ -1756,16 +1756,17 @@
               (when text-to-search
                 (let ([anchor-pos (send text-to-search get-anchor-pos)])
                   (when anchor-pos
-                    (send text-to-search begin-edit-sequence)
-                    (send text-to-search set-position anchor-pos anchor-pos)
-                    (search 'forward #t #t #f)
-                    (send text-to-search end-edit-sequence)))))))))
+                    (cond
+                      [(equal? "" (get-text))
+                       (send text-to-search set-position anchor-pos anchor-pos)]
+                      [else
+                       (search 'forward #t #t #f anchor-pos)])))))))))
     
     (define/private (get-searching-text)
       (let ([frame (get-top-level-window)])
         (and frame
              (send frame get-text-to-search))))
-    (define/public (search [searching-direction 'forward] [beep? #t] [wrap? #t] [move-anchor? #t])
+    (define/public (search [searching-direction 'forward] [beep? #t] [wrap? #t] [move-anchor? #t] [search-start-position #f])
       (let* ([string (get-text)]
              [top-searching-edit (get-searching-text)])
         (when top-searching-edit
@@ -1828,12 +1829,15 @@
                 (not-found top-searching-edit #t)
                 (let-values ([(found-edit first-pos)
                               (find-string-embedded
-                               searching-edit
+                               (if search-start-position 
+                                   top-searching-edit
+                                   searching-edit)
                                string
                                searching-direction
-                               (if (eq? 'forward searching-direction)
-                                   (send searching-edit get-end-position)
-                                   (send searching-edit get-start-position))
+                               (or search-start-position
+                                   (if (eq? 'forward searching-direction)
+                                       (send searching-edit get-end-position)
+                                       (send searching-edit get-start-position)))
                                'eof #t
                                (get-case-sensitive-search?)
                                #t)])

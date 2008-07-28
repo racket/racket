@@ -624,13 +624,19 @@ WARNING: printf is rebound in the body of the unit to always
     (define clear-anchor void)
     
     (define/public (set-search-anchor position)
-      (when (preferences:get 'framework:anchored-search)
-        (clear-anchor)
-        (set! anchor-pos position)
-        (set! clear-anchor 
-              (let ([t1 (highlight-range anchor-pos anchor-pos "red" #f 'low 'dot)]
-                    [t2 (highlight-range anchor-pos anchor-pos "red")])
-                (λ () (t1) (t2))))))
+      (cond
+        [position
+         (when (preferences:get 'framework:anchored-search)
+           (clear-anchor)
+           (set! anchor-pos position)
+           (set! clear-anchor 
+                 (let ([t1 (highlight-range anchor-pos anchor-pos "red" #f 'low 'dot)]
+                       [t2 (highlight-range anchor-pos anchor-pos "red")])
+                   (λ () (t1) (t2)))))]
+        [else
+         (clear-anchor)
+         (set! clear-anchor void)
+         (set! anchor-pos #f)]))
     
     (define/public (get-search-hits) search-hits)
     
