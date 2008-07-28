@@ -207,7 +207,7 @@ WARNING: printf is rebound in the body of the unit to always
                              
                              [adjust (λ (w f) 
                                        (+ w (f (case (rectangle-style r)
-                                                 [(ellipse) 8]
+                                                 [(dot ellipse) 8]
                                                  [else 0]))))]
                              [this-left (if (number? (rectangle-left r))
                                             (adjust (rectangle-left r) -)
@@ -364,7 +364,12 @@ WARNING: printf is rebound in the body of the unit to always
       (unless (or (is-a? color color%)
                   (and (string? color)
                        (send the-color-database find-color color)))
-        (error 'highlight-range "expected a color or a string in the the-color-database for the third argument, got ~s" color))
+        (error 'highlight-range "expected a color or a string in the the-color-database for the third argument, got ~e" color))
+      (unless (memq style '(rectangle ellipse dot))
+        (error 'highlight-range "expected one of 'rectangle, 'ellipse, or 'dot as the style, got ~e" style))
+      (when (eq? style 'dot)
+        (unless (= start end)
+          (error 'highlight-range "when the style is 'dot, the start and end regions must be the same")))
       
       (let* ([color (if (is-a? color color%)
                         color
@@ -470,6 +475,12 @@ WARNING: printf is rebound in the body of the unit to always
                                           rc]))])
                           (when color
                             (case (rectangle-style rectangle)
+                              [(dot)
+                               (let ([cx left]
+                                     [cy bottom])
+                                 (send dc set-pen "black" 1 'transparent)
+                                 (send dc set-brush color 'solid)
+                                 (send dc draw-ellipse (+ dx cx -3) (+ dy cy -3) 6 6))]
                               [(ellipse)
                                (send dc set-pen color 3 'solid)
                                (send dc set-brush "black" 'transparent)
@@ -593,11 +604,13 @@ WARNING: printf is rebound in the body of the unit to always
 (define searching<%> 
   (interface (editor:keymap<%> basic<%>)
     set-searching-str
+    set-search-anchor
     get-search-hits))
 
 (define searching-mixin
   (mixin (editor:keymap<%> basic<%>) (searching<%>)
-    (inherit run-after-edit-sequence invalidate-bitmap-cache)
+    (inherit run-after-edit-sequence invalidate-bitmap-cache
+             get-start-position)
 
     (define/override (get-keymaps)
       (cons (keymap:get-search) (super get-keymaps)))
@@ -605,6 +618,20 @@ WARNING: printf is rebound in the body of the unit to always
     (define searching-str #f)
     (define case-sensitive? #f)
     (define search-hits 0)
+    
+    (define anchor-pos #f)
+    (define/public (get-anchor-pos) anchor-pos)
+    (define clear-anchor void)
+    
+    (define/public (set-search-anchor position)
+      (when (preferences:get 'framework:anchored-search)
+        (clear-anchor)
+        (set! anchor-pos position)
+        (set! clear-anchor 
+              (let ([t1 (highlight-range anchor-pos anchor-pos "red" #f 'low 'dot)]
+                    [t2 (highlight-range anchor-pos anchor-pos "red")])
+                (λ () (t1) (t2))))))
+    
     (define/public (get-search-hits) search-hits)
     
     (define/public (set-searching-str s [cs? #t])

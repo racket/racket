@@ -443,6 +443,10 @@ the state transitions / contracts are:
                                  (λ (b) 
                                    (if b 'postscript 'standard))
                                  (λ (n) (eq? 'postscript n))))
+                   (make-check editor-panel
+                               'framework:anchored-search
+                               "Anchor based search"
+                               values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))
   

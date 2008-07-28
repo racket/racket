@@ -12,7 +12,7 @@
                                  (color (or/c string? (is-a?/c color%)))
                                  (caret-space boolean? #f)
                                  (priority (symbols 'high 'low) 'low)
-                                 (style (symbols 'rectangle 'ellipse) 'rectangle))
+                                 (style (symbols 'rectangle 'ellipse 'dot) 'rectangle))
                 (-> void)))]{
     This function highlights a region of text in the buffer.
 
@@ -20,7 +20,11 @@
     be highlighted with the color in color, if the style is
     @scheme['rectangle] (the default). If the style is
     @scheme['ellipse], then the outline of an ellipse is
-    drawn around the range in the editor, using the color.
+    drawn around the range in the editor, using the color. 
+
+    If the style is @scheme['dot], then @scheme[start] and
+    @scheme[end] must be the same, and a dot is drawn at the bottom of
+    that position in the editor.
 
     If @scheme[caret-space?] is not @scheme[#f], the left
     edge of the range will be one pixel short, to leave
@@ -231,6 +235,10 @@
 @defmethod[(get-search-hits) number?]{
   Returns the number of hits for the search in the buffer, based on the
   count found last time that a search happened. 
+}
+@defmethod[(set-search-anchor [position number?]) void?]{
+  Sets the anchor's position in the editor. Only takes effect if
+  the @scheme['framework:anchored-search] preference is on.
 }
 }
 @defmixin[text:searching-mixin (editor:keymap<%> text:basic<%>) (text:searching<%>)]{

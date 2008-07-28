@@ -1730,104 +1730,134 @@
         (and frame
              (send frame get-case-sensitive-search?))))
     
+    (define/override (on-focus on?)
+      (when on?
+        (let ([frame (get-top-level-window)])
+          (when frame
+            (let ([text-to-search (send frame get-text-to-search)])
+              (when text-to-search
+                (send text-to-search set-search-anchor (send text-to-search get-start-position)))))))
+      (super on-focus on?))
+    
     (define/augment (after-insert x y)
       (update-searching-str)
+      (trigger-jump)
       (inner (void) after-insert x y))
     (define/augment (after-delete x y)
       (update-searching-str)
+      (trigger-jump)
       (inner (void) after-delete x y))
+    
+    (define/private (trigger-jump)
+      (when (preferences:get 'framework:anchored-search)
+        (let ([frame (get-top-level-window)])
+          (when frame
+            (let ([text-to-search (send frame get-text-to-search)])
+              (when text-to-search
+                (let ([anchor-pos (send text-to-search get-anchor-pos)])
+                  (when anchor-pos
+                    (send text-to-search begin-edit-sequence)
+                    (send text-to-search set-position anchor-pos anchor-pos)
+                    (search 'forward #t #t #f)
+                    (send text-to-search end-edit-sequence)))))))))
     
     (define/private (get-searching-text)
       (let ([frame (get-top-level-window)])
         (and frame
              (send frame get-text-to-search))))
-    (define/public search
-      (lambda ([searching-direction 'forward] [beep? #t] [wrap? #t])
-        (let* ([string (get-text)]
-               [top-searching-edit (get-searching-text)])
-          (when top-searching-edit
-            (let ([searching-edit (let ([focus-snip (send top-searching-edit get-focus-snip)])
-                                    (if focus-snip
-                                        (send focus-snip get-editor)
-                                        top-searching-edit))]
-                  
-                  [not-found
-                   (λ (found-edit skip-beep?)
-                     (when (and beep?
-                                (not skip-beep?))
-                       (bell))
-                     #f)]
-                  [found
-                   (λ (text first-pos)
-                     (let ([last-pos ((if (eq? searching-direction 'forward) + -)
-                                      first-pos (string-length string))])
-                       (send text begin-edit-sequence)
-                       (send text set-caret-owner #f 'display)
-                       (send text set-position
-                             (min first-pos last-pos)
-                             (max first-pos last-pos)
-                             #f #f 'local)
-                       
-                       
-                       ;; scroll to the middle if the search result isn't already visible
-                       (let ([search-result-line (send text position-line (send text get-start-position))]
-                             [bt (box 0)]
-                             [bb (box 0)])
-                         (send text get-visible-line-range bt bb #f)
-                         (unless (<= (unbox bt) search-result-line (unbox bb))
-                           (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
-                                  [last-pos (send text position-line (send text last-position))]
-                                  [top-pos (send text line-start-position 
-                                                 (max (min (- search-result-line half) last-pos) 0))]
-                                  [bottom-pos (send text line-start-position 
-                                                    (max 0
-                                                         (min (+ search-result-line half)
-                                                              last-pos)))])
-                             (send text scroll-to-position 
-                                   top-pos
-                                   #f
-                                   bottom-pos))))
-                       
-                       (send text end-edit-sequence)
-                       
-                       #t))])
-              
-              (update-searching-str)
-              
-              (if (string=? string "")
-                  (not-found top-searching-edit #t)
-                  (let-values ([(found-edit first-pos)
-                                (find-string-embedded
-                                 searching-edit
-                                 string
-                                 searching-direction
-                                 (if (eq? 'forward searching-direction)
-                                     (send searching-edit get-end-position)
-                                     (send searching-edit get-start-position))
-                                 'eof #t
-                                 (get-case-sensitive-search?)
-                                 #t)])
-                    (cond
-                      [(not first-pos)
-                       (if wrap?
-                           (begin
-                             (let-values ([(found-edit pos)
-                                           (find-string-embedded
-                                            top-searching-edit
-                                            string 
-                                            searching-direction
-                                            (if (eq? 'forward searching-direction)
-                                                0
-                                                (send searching-edit last-position))
-                                            'eof #t
-                                            (get-case-sensitive-search?)
-                                            #f)])
-                               (if (not pos)
-                                   (not-found found-edit #f)
-                                   (found found-edit pos))))
-                           (not-found found-edit #f))]
-                      [else
-                       (found found-edit first-pos)]))))))))
+    (define/public (search [searching-direction 'forward] [beep? #t] [wrap? #t] [move-anchor? #t])
+      (let* ([string (get-text)]
+             [top-searching-edit (get-searching-text)])
+        (when top-searching-edit
+          (let ([searching-edit (let ([focus-snip (send top-searching-edit get-focus-snip)])
+                                  (if focus-snip
+                                      (send focus-snip get-editor)
+                                      top-searching-edit))]
+                
+                [not-found
+                 (λ (found-edit skip-beep?)
+                   (when (and beep?
+                              (not skip-beep?))
+                     (bell))
+                   #f)]
+                [found
+                 (λ (text first-pos)
+                   (let ([last-pos ((if (eq? searching-direction 'forward) + -)
+                                    first-pos (string-length string))])
+                     (send text begin-edit-sequence)
+                     (send text set-caret-owner #f 'display)
+                     (send text set-position
+                           (min first-pos last-pos)
+                           (max first-pos last-pos)
+                           #f #f 'local)
+                     
+                     
+                     ;; scroll to the middle if the search result isn't already visible
+                     (let ([search-result-line (send text position-line (send text get-start-position))]
+                           [bt (box 0)]
+                           [bb (box 0)])
+                       (send text get-visible-line-range bt bb #f)
+                       (unless (<= (unbox bt) search-result-line (unbox bb))
+                         (let* ([half (sub1 (quotient (- (unbox bb) (unbox bt)) 2))]
+                                [last-pos (send text position-line (send text last-position))]
+                                [top-pos (send text line-start-position 
+                                               (max (min (- search-result-line half) last-pos) 0))]
+                                [bottom-pos (send text line-start-position 
+                                                  (max 0
+                                                       (min (+ search-result-line half)
+                                                            last-pos)))])
+                           (send text scroll-to-position 
+                                 top-pos
+                                 #f
+                                 bottom-pos))))
+                     
+                     (when move-anchor?
+                       (when (is-a? text text:searching<%>)
+                         (send text set-search-anchor
+                               (if (eq? searching-direction 'forward)
+                                   (max first-pos last-pos)
+                                   (min first-pos last-pos)))))
+                     
+                     (send text end-edit-sequence)
+                     
+                     #t))])
+            
+            (update-searching-str)
+            
+            (if (string=? string "")
+                (not-found top-searching-edit #t)
+                (let-values ([(found-edit first-pos)
+                              (find-string-embedded
+                               searching-edit
+                               string
+                               searching-direction
+                               (if (eq? 'forward searching-direction)
+                                   (send searching-edit get-end-position)
+                                   (send searching-edit get-start-position))
+                               'eof #t
+                               (get-case-sensitive-search?)
+                               #t)])
+                  (cond
+                    [(not first-pos)
+                     (if wrap?
+                         (begin
+                           (let-values ([(found-edit pos)
+                                         (find-string-embedded
+                                          top-searching-edit
+                                          string 
+                                          searching-direction
+                                          (if (eq? 'forward searching-direction)
+                                              0
+                                              (send searching-edit last-position))
+                                          'eof #t
+                                          (get-case-sensitive-search?)
+                                          #f)])
+                             (if (not pos)
+                                 (not-found found-edit #f)
+                                 (found found-edit pos))))
+                         (not-found found-edit #f))]
+                    [else
+                     (found found-edit first-pos)])))))))
     
     (define callback-queued? #f)
     (define/private (update-searching-str)
@@ -1916,7 +1946,14 @@
 (send search/replace-keymap map-function "esc" "hide-search")
 (send search/replace-keymap add-function "hide-search"
       (λ (text evt)
-        (send (send text get-top-level-window) hide-search)))
+        (let ([tlw (send text get-top-level-window)])
+          (when (preferences:get 'framework:anchored-search)
+            (let ([text-to-search (send tlw get-text-to-search)])
+              (when text-to-search
+                (let ([anchor-pos (send text-to-search get-anchor-pos)])
+                  (when anchor-pos 
+                    (send text-to-search set-position anchor-pos))))))
+          (send tlw hide-search))))
 
 (define searchable-canvas% 
   (class editor-canvas% 
