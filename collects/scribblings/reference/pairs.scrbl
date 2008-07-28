@@ -168,12 +168,10 @@ reverse order.}
          list?]{
 
 Applies @scheme[proc] to the elements of the @scheme[lst]s from the
- first elements to the last. The @scheme[proc] argument must
- accept the same number of arguments as the number of supplied
- @scheme[lst]s, and all @scheme[lst]s must have the same number of
- elements.  The result is a list containing each result of
- @scheme[proc].}
-
+ first elements to the last. The @scheme[proc] argument must accept
+ the same number of arguments as the number of supplied @scheme[lst]s,
+ and all @scheme[lst]s must have the same number of elements.  The
+ result is a list containing each result of @scheme[proc] in order.}
 
 @defproc[(andmap [proc procedure?] [lst list?] ...+)
           any]{
