@@ -3,7 +3,8 @@
   (require scheme/pretty
            (for-syntax scheme/base))
 
-  (provide trace untrace)
+  (provide trace untrace
+           current-trace-notify)
 
   (define max-dash-space-depth 10)
   (define number-nesting-depth 6)
@@ -75,7 +76,34 @@
 	      (insert-prefix level first rest)
 	      (values first rest))))))
 
+  (define current-trace-notify
+    (make-parameter (lambda (s)
+                      (display s)
+                      (newline))
+                    (lambda (p)
+                      (unless (and (procedure? p)
+                                   (procedure-arity-includes? p 1))
+                        (raise-type-error 'current-trace-notify
+                                          "procedure (arity 1)"
+                                          p))
+                      p)))
+
+  (define (as-trace-notify thunk)
+    (let ([p (open-output-bytes)])
+      (parameterize ([current-output-port p])
+        (thunk))
+      (let ([b (get-output-bytes p #t 0 
+                                 ;; drop newline:
+                                 (sub1 (file-position p)))])
+        ((current-trace-notify) (bytes->string/utf-8 b)))))
+
   (define -:trace-print-args
+    (lambda (name args kws kw-vals level)
+      (as-trace-notify
+       (lambda ()
+         (trace-print-args name args kws kw-vals level)))))
+
+  (define trace-print-args
     (lambda (name args kws kw-vals level)
       (let-values (((first rest)
 		    (build-prefixes level)))
@@ -96,6 +124,12 @@
                                 (apply append (map list kws kw-vals))))))))
 
   (define -:trace-print-results
+    (lambda (name results level)
+      (as-trace-notify
+       (lambda ()
+         (trace-print-results name results level)))))
+
+  (define trace-print-results
     (lambda (name results level)
       (let-values (((first rest)
 		    (build-prefixes level)))
@@ -131,6 +165,7 @@
 				  (string-length rest)
 				  0))))
 	      (for-each pretty-print (cdr results)))))))))
+
 
   ;; A traced-proc struct instance acts like a procedure,
   ;;  but preserves the original, too.

@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "common.ss"
-          (for-label mzlib/trace))
+          (for-label mzlib/trace
+                     scheme/pretty))
 
 @mzlib[#:mode title trace]
 
@@ -12,8 +13,9 @@ available in Chez Scheme.
 Each @scheme[id] must be bound to a procedure in the environment of
 the @scheme[trace] expression.  Each @scheme[id] is @scheme[set!]ed to
 a new procedure that traces procedure calls and returns by printing
-the arguments and results of the call.  If multiple values are
-returned, each value is displayed starting on a separate line.
+the arguments and results of the call via
+@scheme[current-trace-notify].  If multiple values are returned, each
+value is displayed starting on a separate line.
 
 When traced procedures invoke each other, nested invocations are shown
 by printing a nesting prefix. If the nesting depth grows to ten and
@@ -46,3 +48,11 @@ the current value of a @scheme[id] is not a procedure installed by
 The result of an @scheme[untrace] expression is @|void-const|.}
 
 
+@defparam[current-trace-notify proc (string? . -> . any)]{
+
+A parameter that determines the way that trace output is
+displayed. The string given to @scheme[proc] is a trace; it does not
+end with a newline, but it may contain internal newlines. Each call or
+result is converted into a string using @scheme[pretty-print].  The
+parameter's default value prints the given string followed by a newline to
+@scheme[(current-output-port)].}
