@@ -168,8 +168,7 @@ reverse order.}
          list?]{
 
 Applies @scheme[proc] to the elements of the @scheme[lst]s from the
- first elements to the last, returning @scheme[#f] as soon as any
- application returns @scheme[#f]. The @scheme[proc] argument must
+ first elements to the last. The @scheme[proc] argument must
  accept the same number of arguments as the number of supplied
  @scheme[lst]s, and all @scheme[lst]s must have the same number of
  elements.  The result is a list containing each result of
