@@ -51,7 +51,7 @@ Returns a list of symbols that indicates the keyboard prefix used for the menu
 @item{@scheme['meta] --- Meta (X only)}
 @item{@scheme['ctl] --- Control}
 @item{@scheme['shift] --- Shift}
-@item{@scheme['opt] --- Option (Mac OS X only)}
+@item{@scheme['option] --- Option (Mac OS X only)}
 }
 
 Under X, at most one of @scheme['alt] and @scheme['meta] can be

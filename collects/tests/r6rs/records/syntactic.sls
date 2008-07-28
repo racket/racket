@@ -80,6 +80,11 @@
     (sealed #t) (opaque #t))
   
   (define ex3-i1 (make-ex3 1 2 17))
+
+  (define-record-type (tag make-tag tag?))
+  (define-record-type (otag make-otag otag?) (opaque #t))
+  (define-record-type (stag make-stag stag?) (sealed #t))
+  (define-record-type (ostag make-ostag ostag?) (opaque #t) (sealed #t))
   
   ;; ----------------------------------------
 
@@ -143,6 +148,28 @@
     (test (record-field-mutable? (record-type-descriptor point) 0) #f)
     (test (record-field-mutable? (record-type-descriptor point) 1) #t)
     (test (record-field-mutable? (record-type-descriptor cpoint) 0) #t)
+
+    ;; Tests from Alan Watson:
+    (test (eqv? (equal? (make-tag) (make-tag)) (eqv? (make-tag) (make-tag)))
+          #t)
+    (test (eqv? (equal? (make-otag) (make-otag)) (eqv? (make-otag) (make-otag)))
+          #t)
+    (test (eqv? (equal? (make-stag) (make-stag)) (eqv? (make-stag) (make-stag)))
+          #t)
+    (test (eqv? (equal? (make-ostag) (make-ostag)) (eqv? (make-ostag) (make-ostag)))
+          #t)
+    (test (let ([t (make-tag)])
+            (eqv? (equal? t t) (eqv? t t)))
+          #t)
+    (test (let ([t (make-otag)])
+            (eqv? (equal? t t) (eqv? t t)))
+          #t)
+    (test (let ([t (make-stag)])
+            (eqv? (equal? t t) (eqv? t t)))
+          #t)
+    (test (let ([t (make-ostag)])
+            (eqv? (equal? t t) (eqv? t t)))
+          #t)
 
     ;;
     ))

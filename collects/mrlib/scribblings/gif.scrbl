@@ -48,8 +48,8 @@ written to the file one at a time; that is, for each thunk in
 @scheme[bitmap-list], its result is written and discarded before
 another thunk is called. A drawback to this approach is that a
 separate colortable is written for each frame in the animation, which
-can make the resulting file large.}
+can make the resulting file large.
 
-If @scheme[last-frame-delay] is not false, a delay of last-frame-delay
-will be added to the last frame.  @scheme[last-frame-delay] is in 1/100s of a
-second units.
+If @scheme[last-frame-delay] is not false, a delay of
+@scheme[last-frame-delay] (in 1/100s of a second) will be added to the
+last frame.}

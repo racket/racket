@@ -182,6 +182,12 @@
                 'should-not-get-here)
               &assertion)
 
+    (test (letrec ([x (if (eq? (cons 1 2) (cons 1 2))
+                          x
+                          1)]) 
+            x)
+          1)
+
     ;; 11.4.1
     ;; (These tests are especially silly, since they really
     ;;  have to work to get this far.)

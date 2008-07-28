@@ -52,7 +52,16 @@
                                     (and supertype
                                          (vector-type-struct-type supertype))
                                     (length field-mutability) 0 #f
-                                    (list (cons prop:typed-vector bx))
+                                    (append (list (cons prop:typed-vector bx))
+                                            (if opaque?
+                                                null
+                                                ;; `equal?' shouldn't work on transparent structs:
+                                                (list
+                                                 (cons prop:equal+hash
+                                                       (list 
+                                                        (lambda (a b equal?) (eqv? a b))
+                                                        (lambda (a hash-code) (hash-code a))
+                                                        (lambda (a hash-code) (hash-code a)))))))
                                     (and opaque? (current-inspector))
                                     #f ; not a procedure
                                     (let loop ([field-mutability field-mutability]

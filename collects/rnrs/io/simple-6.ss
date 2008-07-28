@@ -73,6 +73,7 @@
 (define (r6rs:display v [out (r6rs:current-output-port)])
   (unless (r6rs:textual-port? out)
     (raise-type-error 'display "textual port" out))
+  ;; Should we make mpairs print with parens?
   (display v out))
 
 (define (r6rs:write v [out (r6rs:current-output-port)])
