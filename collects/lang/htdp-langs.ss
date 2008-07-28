@@ -533,6 +533,15 @@
                keywords]
               [(drscheme:teachpack-menu-items) htdp-teachpack-callbacks]
               [(drscheme:special:insert-lambda) #f]
+              [(drscheme:help-context-term)
+               (let* ([m (get-module)]
+                      [m (and m (pair? m) (pair? (cdr m)) (cadr m))]
+                      [m (and m (regexp-match #rx"^(lang/[^/.]+).ss$"))]
+                      [m (and m (cadr m))])
+                 (if m
+                   (format "L:~a" m)
+                   (error 'drscheme:help-context-term
+                          "internal error: unexpected module spec")))]
               [(tests:test-menu tests:dock-menu) #t]
               [else (inner (drscheme:language:get-capability-default key) 
                            capability-value

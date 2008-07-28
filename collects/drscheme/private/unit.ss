@@ -151,7 +151,7 @@ module browser threading seems wrong.
                          str 
                          (- 200 (string-length (string-constant search-help-desk-for)))))
                        menu
-                       (λ x (help-desk:help-desk str)))))))
+                       (λ x (help-desk:help-desk str #|!!!!|#)))))))
            
            (when (is-a? text editor:basic<%>)
              (let-values ([(pos text) (send text get-pos/text event)])

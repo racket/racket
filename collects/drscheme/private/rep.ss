@@ -283,8 +283,8 @@ TODO
                                                  (and (is-a? tlw drscheme:unit:frame<%>)
                                                       (send (send tlw get-definitions-text)
                                                             get-next-settings)))))])
-                          (drscheme:help-desk:help-desk str))))]
-                 [else                   
+                          (drscheme:help-desk:help-desk str #|!!!!!!|#))))]
+                 [else
                   (drscheme:help-desk:help-desk)])))))
     
     (send drs-bindings-keymap add-function
