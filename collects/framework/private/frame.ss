@@ -1947,13 +1947,21 @@
 (send search/replace-keymap add-function "hide-search"
       (λ (text evt)
         (let ([tlw (send text get-top-level-window)])
-          (when (preferences:get 'framework:anchored-search)
-            (let ([text-to-search (send tlw get-text-to-search)])
-              (when text-to-search
-                (let ([anchor-pos (send text-to-search get-anchor-pos)])
-                  (when anchor-pos 
-                    (send text-to-search set-position anchor-pos))))))
-          (send tlw hide-search))))
+          (when tlw
+            (send tlw hide-search)))))
+
+(send search/replace-keymap map-function "c:g" "hide-search-and-snap-back")
+(send search/replace-keymap add-function "hide-search-and-snap-back"
+      (λ (text evt)
+        (let ([tlw (send text get-top-level-window)])
+          (when tlw
+            (when (preferences:get 'framework:anchored-search)
+              (let ([text-to-search (send tlw get-text-to-search)])
+                (when text-to-search
+                  (let ([anchor-pos (send text-to-search get-anchor-pos)])
+                    (when anchor-pos 
+                      (send text-to-search set-position anchor-pos))))))
+            (send tlw hide-search)))))
 
 (define searchable-canvas% 
   (class editor-canvas% 
