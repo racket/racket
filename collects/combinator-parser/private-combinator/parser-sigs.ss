@@ -25,7 +25,8 @@
        (syntax->list #`(id ...
                         #,@(map (lambda (e) #`(define-syntaxes 
                                                 (#,(datum->syntax e (string->symbol (format "~a@" (syntax-e e)))))
-                                                (values (syntax-id-rules () [_ #'(eta #,e)]))))
+                                                (values (syntax-id-rules () 
+                                                          [_ (eta #,e)]))))
                                 (syntax->list #'(id ...)))))]))
   
   (define-signature language-dictionary^ (misspelled misscap missclass))
