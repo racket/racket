@@ -236,7 +236,7 @@
   Returns the number of hits for the search in the buffer, based on the
   count found last time that a search happened. 
 }
-@defmethod[(set-search-anchor [position number?]) void?]{
+@defmethod[(set-search-anchor [position (or/c false/c number?)]) void?]{
   Sets the anchor's position in the editor. Only takes effect if
   the @scheme['framework:anchored-search] preference is on.
 }
