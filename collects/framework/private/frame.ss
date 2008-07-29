@@ -1519,7 +1519,6 @@
                 (invalidate-bitmap-cache x y w h)))))))
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
-      (super on-paint before? dc left top right bottom dx dy draw-caret)
       (when (and before?
                  start-para
                  end-para)
@@ -1542,7 +1541,8 @@
                     w
                     h)))
           (send dc set-pen old-pen)
-          (send dc set-brush old-brush))))
+          (send dc set-brush old-brush)))
+      (super on-paint before? dc left top right bottom dx dy draw-caret))
     
     
     ;; get-rectangle : number number -> 
