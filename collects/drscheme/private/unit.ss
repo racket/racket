@@ -124,24 +124,25 @@ module browser threading seems wrong.
              (let* ([end (send text get-end-position)]
                     [start (send text get-start-position)])
                (unless (= 0 (send text last-position))
-                 (let ([str (if (= end start)
-                                (find-symbol
-                                 text
-                                 (call-with-values
-                                  (λ ()
-                                    (send text dc-location-to-editor-location
-                                          (send event get-x)
-                                          (send event get-y)))
-                                  (λ (x y)
-                                    (send text find-position x y))))
-                                (send text get-text start end))]
-                       [language
-                        (let ([canvas (send text get-canvas)])
-                          (and canvas
-                               (let ([tlw (send canvas get-top-level-window)])
-                                 (and (is-a? tlw -frame<%>)
-                                      (send (send tlw get-definitions-text)
-                                            get-next-settings)))))])
+                 (let* ([str (if (= end start)
+                                 (find-symbol
+                                  text
+                                  (call-with-values
+                                   (λ ()
+                                     (send text dc-location-to-editor-location
+                                           (send event get-x)
+                                           (send event get-y)))
+                                   (λ (x y)
+                                     (send text find-position x y))))
+                                 (send text get-text start end))]
+                        ;; almost the same code as "search-help-desk" in "rep.ss"
+                        [l (send text get-canvas)]
+                        [l (and l (send l get-top-level-window))]
+                        [l (and l (is-a? l -frame<%>) (send l get-definitions-text))]
+                        [l (and l (send l get-next-settings))]
+                        [l (and l (drscheme:language-configuration:language-settings-language l))]
+                        [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
+                        [name (and l (send l get-language-name))])
                    (unless (string=? str "")
                      (add-sep)
                      (make-object menu-item%
@@ -151,7 +152,7 @@ module browser threading seems wrong.
                          str 
                          (- 200 (string-length (string-constant search-help-desk-for)))))
                        menu
-                       (λ x (help-desk:help-desk str #|!!!!|#)))))))
+                       (λ x (help-desk:help-desk str (list ctxt name))))))))
            
            (when (is-a? text editor:basic<%>)
              (let-values ([(pos text) (send text get-pos/text event)])

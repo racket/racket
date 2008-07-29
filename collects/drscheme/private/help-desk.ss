@@ -66,12 +66,8 @@
 (define (goto-plt-license)
   (send-main-page "license/index.html"))
 
-(define (help-desk [key #f] #:module [mod #f] #:manual [man #f])
-  (if (or key mod man)
-    (perform-search (string-append (or key "")
-                                   (if mod (format " L:~a" mod) "")
-                                   (if man (format " T:~a" man) "")))
-    (send-main-page)))
+(define (help-desk [key #f] [context #f])
+  (if key (perform-search key context) (send-main-page)))
 
 ;; here for legacy code that should be removed
 (define (get-docs) '())

@@ -252,73 +252,44 @@ TODO
            (eq? fn-name stacktrace-runtime-name))))
   
   (define drs-bindings-keymap (make-object keymap:aug-keymap%))
-  
-  (let ([with-drs-frame
-         (λ (obj f)
-           (when (is-a? obj editor<%>)
-             (let ([canvas (send obj get-canvas)])
-               (when canvas
-                 (let ([frame (send canvas get-top-level-window)])
-                   (when (is-a? frame drscheme:unit:frame%)
-                     (f frame)))))))])
-    
-    (send drs-bindings-keymap add-function
-          "search-help-desk"
+
+  (let* ([get-frame
+          (λ (obj)
+            (and (is-a? obj editor<%>)
+                 (let ([canvas (send obj get-canvas)])
+                   (and canvas
+                        (let ([frame (send canvas get-top-level-window)])
+                          (and (is-a? frame drscheme:unit:frame%)
+                               frame))))))]
+         [add-drs-function
+          (λ (name f)
+            (send drs-bindings-keymap add-function name
+                  (λ (obj evt) (cond [(get-frame obj) => f]))))])
+    (send drs-bindings-keymap add-function "search-help-desk"
           (λ (obj evt)
-            (with-drs-frame
-             obj
-             (λ (frame)
-               (cond
-                 [(is-a? obj text%)
-                  (let* ([start (send obj get-start-position)]
-                         [end (send obj get-end-position)]
-                         [str (if (= start end)
-                                  (drscheme:unit:find-symbol obj start)
-                                  (send obj get-text start end))])
-                    (if (equal? "" str)
-                        (drscheme:help-desk:help-desk)
-                        (let ([language (let ([canvas (send obj get-canvas)])
-                                          (and canvas
-                                               (let ([tlw (send canvas get-top-level-window)])
-                                                 (and (is-a? tlw drscheme:unit:frame<%>)
-                                                      (send (send tlw get-definitions-text)
-                                                            get-next-settings)))))])
-                          (drscheme:help-desk:help-desk str #|!!!!!!|#))))]
-                 [else
-                  (drscheme:help-desk:help-desk)])))))
-    
-    (send drs-bindings-keymap add-function
-          "execute"
-          (λ (obj evt)
-            (with-drs-frame
-             obj
-             (λ (frame)
-               (send frame execute-callback)))))
-    
-    (send drs-bindings-keymap add-function
-          "next-tab"
-          (λ (obj evt)
-            (with-drs-frame 
-             obj
-             (λ (frame) (send frame next-tab)))))
-    (send drs-bindings-keymap add-function
-          "prev-tab"
-          (λ (obj evt)
-            (with-drs-frame 
-             obj
-             (λ (frame) (send frame prev-tab)))))
-    (send drs-bindings-keymap add-function
-          "collapse"
-          (λ (obj evt)
-            (with-drs-frame 
-             obj
-             (λ (frame) (send frame collapse)))))
-    (send drs-bindings-keymap add-function
-          "split"
-          (λ (obj evt)
-            (with-drs-frame 
-             obj
-             (λ (frame) (send frame split))))))
+            (if (not (and (is-a? obj text%) (get-frame obj))) ; is `get-frame' needed?
+              (drscheme:help-desk:help-desk)
+              (let* ([start (send obj get-start-position)]
+                     [end (send obj get-end-position)]
+                     [str (if (= start end)
+                            (drscheme:unit:find-symbol obj start)
+                            (send obj get-text start end))])
+                (if (or (not str) (equal? "" str))
+                  (drscheme:help-desk:help-desk)
+                  (let* ([l (send obj get-canvas)]
+                         [l (and l (send l get-top-level-window))]
+                         [l (and l (is-a? l drscheme:unit:frame<%>) (send l get-definitions-text))]
+                         [l (and l (send l get-next-settings))]
+                         [l (and l (drscheme:language-configuration:language-settings-language l))]
+                         [ctxt (and l (send l capability-value 'drscheme:help-context-term))]
+                         [name (and l (send l get-language-name))])
+                    (drscheme:help-desk:help-desk
+                     str (and ctxt (list ctxt name)))))))))
+    (add-drs-function "execute"  (λ (frame) (send frame execute-callback)))
+    (add-drs-function "next-tab" (λ (frame) (send frame next-tab)))
+    (add-drs-function "prev-tab" (λ (frame) (send frame prev-tab)))
+    (add-drs-function "collapse" (λ (frame) (send frame collapse)))
+    (add-drs-function "split"    (λ (frame) (send frame split))))
   
   (send drs-bindings-keymap map-function "f5" "execute")
   (send drs-bindings-keymap map-function "f1" "search-help-desk")
