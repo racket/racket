@@ -4,6 +4,8 @@ Changed namespaces to have a base phase; for example, calling
 Added logging facilities: make-logger, etc.
 Added "inheritance" to structure type properties, and change
  prop:procedure from scheme/base to better support keywords
+Added bitwise-bit-set?
+Added in-value
 
 Version 4.0, June 2008
 >> See MzScheme_4.txt

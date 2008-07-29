@@ -71,6 +71,7 @@ static Scheme_Object *even_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_or (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_xor (int argc, Scheme_Object *argv[]);
 static Scheme_Object *bitwise_not (int argc, Scheme_Object *argv[]);
+static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *integer_length (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gcd (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lcm (int argc, Scheme_Object *argv[]);
@@ -307,6 +308,10 @@ scheme_init_number (Scheme_Env *env)
   p = scheme_make_folding_prim(bitwise_not, "bitwise-not", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_UNARY_INLINED;
   scheme_add_global_constant("bitwise-not", p, env);
+
+  p = scheme_make_folding_prim(bitwise_bit_set_p, "bitwise-bit-set?", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
+  scheme_add_global_constant("bitwise-bit-set?", p, env);
 
   p = scheme_make_folding_prim(scheme_bitwise_shift, "arithmetic-shift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= SCHEME_PRIM_IS_BINARY_INLINED;
@@ -2488,6 +2493,57 @@ scheme_bitwise_shift(int argc, Scheme_Object *argv[])
   }
 
   return scheme_bignum_shift(v, shift);
+}
+
+static Scheme_Object *bitwise_bit_set_p (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *so, *sb;
+
+  so = argv[0];
+  if (!SCHEME_EXACT_INTEGERP(so)) {
+    scheme_wrong_type("bitwise-bit-set?", "exact integer", 0, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
+  sb = argv[1];
+  if (SCHEME_INTP(sb)) {
+    long v;
+    v = SCHEME_INT_VAL(sb);
+    if (v < 0) {
+      scheme_wrong_type("bitwise-bit-set?", "nonnegative exact integer", 1, argc, argv);
+      ESCAPED_BEFORE_HERE;
+    }
+    if (SCHEME_INTP(so)) {
+      if (v < (sizeof(long) * 8))
+        return ((((long)1 << v) & SCHEME_INT_VAL(so)) ? scheme_true : scheme_false);
+      else
+        return ((SCHEME_INT_VAL(so) < 0) ? scheme_true : scheme_false);
+    } else {
+      bigdig d;
+      long vd, vb;
+      vd = v / (sizeof(bigdig) * 8);
+      vb = v & ((sizeof(bigdig) * 8) - 1);
+      if (vd >= ((Scheme_Bignum *)so)->len)
+        return (SCHEME_BIGPOS(so) ? scheme_false : scheme_true);
+      if (SCHEME_BIGPOS(so)) {
+        d = ((Scheme_Bignum *)so)->digits[vd];
+        return ((((bigdig)1 << vb) & d) ? scheme_true : scheme_false);
+      } else {
+        /* Testing a bit in a negative bignum. Just use the slow way for now. */
+        Scheme_Object *bit;
+        bit = scheme_bignum_shift(scheme_make_bignum(1), v);
+        bit = scheme_bignum_and(bit, so);
+        return (SAME_OBJ(bit, scheme_make_integer(0)) ? scheme_false : scheme_true);
+      }
+    }
+  } else if (SCHEME_BIGNUMP(sb) && SCHEME_BIGPOS(sb)) {
+    if (SCHEME_INTP(so))
+      return ((SCHEME_INT_VAL(so) < 0) ? scheme_true : scheme_false);
+    else
+      return (SCHEME_BIGPOS(so) ? scheme_false : scheme_true);
+  } else {
+    scheme_wrong_type("bitwise-bit-set?", "nonnegative exact integer", 1, argc, argv);
+    ESCAPED_BEFORE_HERE;
+  }
 }
 
 static Scheme_Object *

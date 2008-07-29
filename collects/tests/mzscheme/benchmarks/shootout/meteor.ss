@@ -49,7 +49,7 @@
        (y . < . height)))
 
 (define (clear? board pos)
-  (zero? (bitwise-and board (arithmetic-shift 1 pos))))
+  (not (bitwise-bit-set? board pos)))
 (define (set board pos)
   (bitwise-ior board (arithmetic-shift 1 pos)))
 
@@ -146,15 +146,15 @@
     (for ([piece (in-list pieces)]
           [color (in-naturals)])
       (let loop ([masks (sort (all-bitmasks piece color) >)]
-                 [cell-mask (arithmetic-shift 1 (sub1 (* width height)))]
+                 [cell-bit (sub1 (* width height))]
                  [cell-counter (sub1 (* width height))])
         (if (null? masks)
             masks-at-cell
-            (if (= (bitwise-and (car masks) cell-mask) cell-mask)
+            (if (bitwise-bit-set? (car masks) cell-bit)
                 (let ([vec (vector-ref masks-at-cell cell-counter)])
                   (vector-set! vec color (cons (car masks) (vector-ref vec color)))
-                  (loop (cdr masks) cell-mask cell-counter))
-                (loop masks (arithmetic-shift cell-mask -1) (sub1 cell-counter))))))
+                  (loop (cdr masks) cell-bit cell-counter))
+                (loop masks (sub1 cell-bit) (sub1 cell-counter))))))
     (for ([v (in-vector masks-at-cell)])
       (for ([j (in-naturals)]
             [val (in-vector v)])

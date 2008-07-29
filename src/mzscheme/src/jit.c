@@ -2854,6 +2854,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
         cmp = 0 -> = or zero?
         cmp = +/-1 -> >=/<=
         cmp = +/-2 -> >/< or positive/negative?
+        cmp = 3 -> bitwise-bit-test?
  */
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refd = NULL, *refdt = NULL, *refslow;
@@ -2866,7 +2867,10 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	&& SCHEME_INT_SMALL_ENOUGH(rand2)
 	&& ((arith != 6)
 	    || ((SCHEME_INT_VAL(rand2) <= MAX_TRY_SHIFT)
-		&& (SCHEME_INT_VAL(rand2) >= -MAX_TRY_SHIFT)))) {
+		&& (SCHEME_INT_VAL(rand2) >= -MAX_TRY_SHIFT)))
+        && ((cmp != 3)
+	    || ((SCHEME_INT_VAL(rand2) <= MAX_TRY_SHIFT)
+		&& (SCHEME_INT_VAL(rand2) >= 0)))) {
       /* Second is constant, so use constant mode.
 	 For arithmetic shift, only do this if the constant
 	 is in range. */
@@ -2874,7 +2878,8 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       rand2 = NULL;
     } else if (SCHEME_INTP(rand)
 	       && SCHEME_INT_SMALL_ENOUGH(rand)
-	       && (arith != 6)) {
+	       && (arith != 6)
+               && (cmp != 3)) {
       /* First is constant; swap argument order and use constant mode. */
       v = SCHEME_INT_VAL(rand);
       cmp = -cmp;
@@ -3250,7 +3255,23 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   } else {
     /* If second is constant, first arg is in JIT_R0. */
     /* Otherwise, first arg is in JIT_R1, second is in JIT_R0 */
+    /* Jump to ref3 to produce false */
     switch (cmp) {
+    case -3:
+      if (rand2) {
+        (void)jit_blti_l(refslow, JIT_R1, 0);
+        (void)jit_bgti_l(refslow, JIT_R1, (long)scheme_make_integer(MAX_TRY_SHIFT));
+        jit_rshi_l(JIT_R1, JIT_R1, 1);
+        jit_addi_l(JIT_V1, JIT_R1, 1);
+        jit_movi_l(JIT_R2, 1);
+        jit_lshr_l(JIT_R2, JIT_R2, JIT_V1);
+        ref3 = jit_bmcr_l(jit_forward(), JIT_R0, JIT_R2);
+      } else {
+        /* shouldn't get here */
+        scheme_signal_error("bitwise-bit-test? constant in wrong position");
+        ref3 = NULL;
+      }
+      break;
     case -2:
       if (rand2) {
 	ref3 = jit_bger_l(jit_forward(), JIT_R1, JIT_R0);
@@ -3280,11 +3301,24 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       }
       break;
     case 2:
-    default:
       if (rand2) {
 	ref3 = jit_bler_l(jit_forward(), JIT_R1, JIT_R0);
       } else {
 	ref3 = jit_blei_l(jit_forward(), JIT_R0, (long)scheme_make_integer(v));
+      }
+      break;
+    default:
+    case 3:
+      if (rand2) {
+        (void)jit_blti_l(refslow, JIT_R0, 0);
+        (void)jit_bgti_l(refslow, JIT_R0, (long)scheme_make_integer(MAX_TRY_SHIFT));
+        jit_rshi_l(JIT_R0, JIT_R0, 1);
+        jit_addi_l(JIT_R0, JIT_R0, 1);
+        jit_movi_l(JIT_V1, 1);
+        jit_lshr_l(JIT_R0, JIT_V1, JIT_R0);
+        ref3 = jit_bmcr_l(jit_forward(), JIT_R1, JIT_R0);
+      } else {
+        ref3 = jit_bmci_l(jit_forward(), JIT_R0, 1 << (v+1));
       }
       break;
     }
@@ -4091,6 +4125,9 @@ static int generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     return 1;
   } else if (IS_NAMED_PRIM(rator, ">")) {
     generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 2, 0, for_branch, branch_short);
+    return 1;
+  } else if (IS_NAMED_PRIM(rator, "bitwise-bit-set?")) {
+    generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, 3, 0, for_branch, branch_short);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "char=?")) {
     generate_binary_char(jitter, app, for_branch, branch_short);

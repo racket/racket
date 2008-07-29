@@ -400,6 +400,7 @@ fast-seq (in-range expr expr)
          (in-vector expr)
          (in-string expr)
          (in-bytes expr)
+         (in-value expr)
          (stop-before fast-seq predicate-expr)
          (stop-after fast-seq predicate-expr)
 ]

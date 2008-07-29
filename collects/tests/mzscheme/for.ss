@@ -158,5 +158,10 @@
       (for/and (((a b) (in-parallel '(#f 1) '(#t #f)))) 
               a))
 
+(test '(11) 'in-value (for/list ([i (in-value 11)]) i))
+(let-values ([(more? next) (sequence-generate (in-value 13))])
+  (test #t more?)
+  (test 13 next)
+  (test #f more?))
 
 (report-errs)

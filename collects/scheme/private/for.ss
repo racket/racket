@@ -42,6 +42,7 @@
              stop-before
              stop-after
              (rename *in-indexed in-indexed)
+             (rename *in-value in-value)
              
              sequence?
              sequence-generate
@@ -553,6 +554,15 @@
                                        (lambda (val idx) (pre-cont? val))
                                        (lambda (pos val idx) (post-cont? pos val)))))))
 
+  (define (in-value v)
+    (make-do-sequence (lambda ()
+                        (values (lambda (pos) v)
+                                (lambda (pos) #f)
+                                #t
+                                (lambda (pos) pos)
+                                (lambda (val) #t)
+                                (lambda (pos val) #t)))))
+
   ;; ----------------------------------------
 
   (define (in-parallel . sequences)
@@ -1016,4 +1026,13 @@
     (lambda (stx)
       (syntax-case stx ()
         [((id1 id2) (_ gen-expr))
-         #'[(id1 id2) (in-parallel gen-expr (*in-naturals))]]))))
+         #'[(id1 id2) (in-parallel gen-expr (*in-naturals))]])))
+
+  (define-sequence-syntax *in-value
+    (lambda () #'in-value)
+    (lambda (stx)
+      (syntax-case stx ()
+        [((id) (_ expr))
+         #'[(id)
+            (:do-in ([(id) expr])
+                    #t () #t () #t #f ())]]))))

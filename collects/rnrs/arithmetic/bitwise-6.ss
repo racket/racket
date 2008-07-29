@@ -40,11 +40,6 @@
             (loop (arithmetic-shift b -1) (add1 pos))
             pos))))
 
-(define (bitwise-bit-set? b n)
-  (unless (exact-nonnegative-integer? n)
-    (raise-type-error 'bitwise-bit-set? "exact nonnegative integer" n))
-  (eq? 1 (bitwise-and (arithmetic-shift b (- n)) 1)))
-
 (define (bitwise-copy-bit b n bit)
   (unless (exact-nonnegative-integer? n)
     (raise-type-error 'bitwise-copy-bit "exact nonnegative integer" n))
