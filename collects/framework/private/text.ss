@@ -805,6 +805,8 @@ WARNING: printf is rebound in the body of the unit to always
       (let ([cpy (make-object 1-pixel-string-snip%
                    (get-text 0 (get-count)))])
         (send cpy set-flags (get-flags))))
+    (define/override (partial-offset dc x y len)
+      len)
     (define/override (get-extent dc x y wb hb db sb lb rb)
       (cond
         [(memq 'invisible (get-flags))
@@ -818,42 +820,73 @@ WARNING: printf is rebound in the body of the unit to always
       (set/f! rb 0))
     
     (define cache-function #f)
-    
-    (define/override (insert s len pos)
-      (set! cache-function #f)
-      (super insert s len pos))
-    
-    ;; for-each/sections : string -> dc number number -> void
-    (define/private (for-each/sections str)
-      (let loop ([n (string-length str)]
-                 [len 0]
-                 [blank? #t])
-        (cond
-          [(zero? n)
-           (if blank?
-               (λ (dc x y) (void))
-               (λ (dc x y)
-                 (send dc draw-line (+ x n) y (+ x n (- len 1)) y)))]
-          [else
-           (let ([white? (char-whitespace? (string-ref str (- n 1)))])
-             (cond
-               [(eq? white? blank?)
-                (loop (- n 1) (+ len 1) blank?)]
-               [else
-                (let ([res (loop (- n 1) 1 (not blank?))])
-                  (if blank?
-                      res
-                      (λ (dc x y)
-                        (send dc draw-line (+ x n) y (+ x n (- len 1)) y)
-                        (res dc x y))))]))])))
+    (define cache-str #f)
     
     (define/override (draw dc x y left top right bottom dx dy draw-caret)
       (let ([str (get-text 0 (get-count))])
-        (unless cache-function
-          (set! cache-function (for-each/sections str)))
-        (when (<= top y bottom)
-          (cache-function dc x y))))
+        (when (or (not cache-function)
+                  (not (equal? cache-str str)))
+          (set! cache-function (for-each/sections str))
+          (set! cache-str str)))
+      (when (<= top y bottom)
+        (cache-function dc x y)))
+    
     (apply super-make-object args)))
+
+;; for-each/sections : string -> dc number number -> void
+(define (for-each/sections str)
+  (let ([str-len (string-length str)])
+    (cond
+      [(zero? str-len)
+       void]
+      [else
+       (let loop ([i 1]
+                  [len 1]
+                  [start 0]
+                  [blank? (char-whitespace? (string-ref str 0))])
+         (cond
+           [(= i str-len)
+            (if blank?
+                void
+                (λ (dc x y)
+                  (send dc draw-line (+ x start) y (+ x start (- len 1)) y)))]
+           [else
+            (let ([white? (char-whitespace? (string-ref str i))])
+              (cond
+                [(eq? white? blank?)
+                 (loop (+ i 1) (+ len 1) start blank?)]
+                [else
+                 (let ([res (loop (+ i 1) 1 i (not blank?))])
+                   (if blank?
+                       res
+                       (λ (dc x y)
+                         (res dc x y)
+                         (send dc draw-line (+ x start) y (+ x start (- len 1)) y))))]))]))])))
+
+#;
+(let ()
+  ;; test cases for for-each/section
+  (define (run-fe/s str)
+    (let ([calls '()])
+      ((for-each/sections str)
+       (new (class object%
+              (define/public (draw-line x1 y1 x2 y2)
+                (set! calls (cons (list x1 x2) calls)))
+              (super-new)))
+       0
+       0)
+      calls))
+  
+  (equal? (run-fe/s "") '())
+  (equal? (run-fe/s "a") '((0 0)))
+  (equal? (run-fe/s " ") '())
+  (equal? (run-fe/s "ab") '((0 1)))
+  (equal? (run-fe/s "ab c") '((0 1) (3 3)))
+  (equal? (run-fe/s "a bc") '((0 0) (2 3)))
+  (equal? (run-fe/s "a b c d") '((0 0) (2 2) (4 4) (6 6)))
+  (equal? (run-fe/s "a b c d    ") '((0 0) (2 2) (4 4) (6 6)))
+  (equal? (run-fe/s "abc def ghi") '((0 2) (4 6) (8 10)))
+  (equal? (run-fe/s "abc   def   ghi") '((0 2) (6 8) (12 14))))
 
 (define 1-pixel-tab-snip%
   (class tab-snip%
@@ -1022,7 +1055,7 @@ WARNING: printf is rebound in the body of the unit to always
         (send delegate lock #f)
         (split-snip start)
         (split-snip (+ start len))
-        (let loop ([snip (find-snip (+ start len) 'before)])
+        (let loop ([snip (find-snip (+ start len) 'before-or-none)])
           (when snip
             (unless ((get-snip-position snip) . < . start)
               (send delegate insert (copy snip) start start)
