@@ -23,7 +23,7 @@
   ;; search page is refreshed it won't reset the context).
   (let* ([label   (and (list? context) (= 2 (length context)) (cadr context))]
          [context (if (pair? context) (car context) context)]
-         [page    (if context "search-context.htm" "index.html")]
+         [page    (if context "search-context.html" "index.html")]
          [query   (format "q=~a" (uri-encode str))]
          [query   (if context
                     (format "~a&hq=~a~a"
