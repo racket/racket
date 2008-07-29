@@ -536,7 +536,7 @@
               [(drscheme:help-context-term)
                (let* ([m (get-module)]
                       [m (and m (pair? m) (pair? (cdr m)) (cadr m))]
-                      [m (and m (regexp-match #rx"^(lang/[^/.]+).ss$"))]
+                      [m (and m (regexp-match #rx"^(lang/[^/.]+).ss$" m))]
                       [m (and m (cadr m))])
                  (if m
                    (format "L:~a" m)
