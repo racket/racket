@@ -944,8 +944,10 @@ WARNING: printf is rebound in the body of the unit to always
 
 (define delegate-mixin
   (mixin (basic<%>) (delegate<%>) 
-    (inherit split-snip find-snip get-snip-position
-             find-first-snip get-style-list set-tabs)
+    (inherit split-snip find-snip 
+             get-snip-position
+             find-first-snip 
+             get-style-list set-tabs)
     
     (define linked-snips #f)
     

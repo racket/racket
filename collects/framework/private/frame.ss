@@ -2080,14 +2080,14 @@
       (when search-gui-built?
         (send super-root change-children
               (λ (l)
-                (remove search/replace-panel l))))
-      (clear-search-highlight)
-      (send find-edit text-to-search-changed text-to-search #f)
-      (when text-to-search
-        (send text-to-search set-search-anchor #f)
-        (let ([canvas (send text-to-search get-canvas)])
-          (when canvas
-            (send canvas focus))))
+                (remove search/replace-panel l)))
+        (clear-search-highlight)
+        (send find-edit text-to-search-changed text-to-search #f)
+        (when text-to-search
+          (send text-to-search set-search-anchor #f)
+          (let ([canvas (send text-to-search get-canvas)])
+            (when canvas
+              (send canvas focus)))))
       (set! hidden? #t))
     
     (define/public (unhide-search focus?)
