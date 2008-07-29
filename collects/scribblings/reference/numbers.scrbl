@@ -569,6 +569,15 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
 @examples[(bitwise-not 5) (bitwise-not -1)]}
 
 
+@defproc[(bitwise-bit-set? [n exact-integer?] [m exact-nonnegative-integer?])
+         boolean?]{
+
+Returns @scheme[(not (zero? (bitwise-and n (arithmetic-shift 1 m))))],
+but normally without allocating intermediate results.
+
+@examples[(bitwise-bit-set? 5 0) (bitwise-bit-set? 5 2) (bitwise-bit-set? -5 (expt 2 700))]}
+
+
 @defproc[(arithmetic-shift [n exact-integer?] [m exact-integer?])
  exact-integer?]{ Returns the bitwise ``shift'' of @scheme[n] in its
  (semi-infinite) two's complement representation.  If @scheme[m] is
@@ -578,7 +587,6 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
  bits; i.e., the rightmost @scheme[m] digits are dropped.
 
 @examples[(arithmetic-shift 1 10) (arithmetic-shift 255 -3)]}
-
 
 @defproc[(integer-length [n exact-integer?]) exact-integer?]{ Returns
  the number of bits in the (semi-infinite) two's complement

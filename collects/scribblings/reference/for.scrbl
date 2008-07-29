@@ -312,29 +312,28 @@ parallel iterations.}
 @section{Do Loops}
 
 @defform/subs[(do ([id init-expr step-expr-maybe] ...)
-                  (cont?-expr finish-expr ...)
+                  (stop?-expr finish-expr ...)
                 expr ...+)
               ([step-expr-maybe code:blank
                                 step-expr])]{
 
 Iteratively evaluates the @scheme[expr]s for as long as
-@scheme[cont-expr?] returns @scheme[#t].
+@scheme[stop-expr?] returns @scheme[#f].
 
 To initialize the loop, the @scheme[init-expr]s are evaluated in order
 and bound to the corresponding @scheme[id]s. The @scheme[id]s are
 bound in all expressions within the form other than the
 @scheme[init-expr]s.
 
-After he @scheme[id]s are bound, then @scheme[cont?-expr] is
-evaluated. If it produces a true value, then each @scheme[expr] is
-evaluated for its side-effect. The @scheme[id]s are then updated with
-the values of the @scheme[step-expr]s, where the default
-@scheme[step-expr] for @scheme[id] is just @scheme[id]. Iteration
-continues by evaluating @scheme[cont?-expr].
+After he @scheme[id]s are bound, then @scheme[stop?-expr] is
+evaluated. If it produces @scheme[#f], each @scheme[expr] is evaluated
+for its side-effect. The @scheme[id]s are then updated with the values
+of the @scheme[step-expr]s, where the default @scheme[step-expr] for
+@scheme[id] is just @scheme[id]. Iteration continues by evaluating
+@scheme[cont?-expr].
 
-When @scheme[cont?-expr] produces @scheme[#f], then the
+When @scheme[stop?-expr] produces a true value, then the
 @scheme[finish-expr]s are evaluated in order, and the last one is
 evaluated in tail position to produce the overall value for the
 @scheme[do] form. If no @scheme[finish-expr] is provided, the value of
 the @scheme[do] form is @|void-const|.}
-

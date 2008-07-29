@@ -122,6 +122,11 @@ its value from @scheme[hash] (as opposed to using @scheme[hash] directly
 as a sequence to get the key and value as separate values for each
 element).}
 
+@defproc[(in-value [v any/c]) sequence]{
+Returns a sequence that produces a single value: @scheme[v]. This form
+is mostly useful for @scheme[let]-like bindings in forms such as
+@scheme[for*/list].}
+
 @defproc[(in-indexed [seq sequence?]) sequence?]{Returns a sequence
 where each element has two values: the value produced by @scheme[seq],
 and a non-negative exact integer starting with @scheme[0]. The
