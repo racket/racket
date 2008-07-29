@@ -26,9 +26,9 @@ See also @scheme[tcp-redirect] and @scheme[make-ssl-tcp@].
 
 @defsignature[tcp^ ()]{
 
-@defproc[(tcp-listen [port-no (and/c nonnegative-exact-integer?
+@defproc[(tcp-listen [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
-                     [max-allow-wait nonnegative-exact-integer? 4]
+                     [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? false/c) #f]) 
          #, @sigelem[tcp^ tcp-listener?]]{
@@ -36,10 +36,10 @@ See also @scheme[tcp-redirect] and @scheme[make-ssl-tcp@].
 Like @scheme[tcp-listen] from @schememodname[scheme/tcp].}
 
 @defproc[(tcp-connect [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
                       [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c nonnegative-exact-integer?
+                      [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
                                            false/c)
                                      #f])
@@ -48,10 +48,10 @@ Like @scheme[tcp-listen] from @schememodname[scheme/tcp].}
 Like @scheme[tcp-connect] from @schememodname[scheme/tcp].}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
                       [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c nonnegative-exact-integer?
+                      [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
                                            false/c)])
           (values input-port? output-port?)]{
