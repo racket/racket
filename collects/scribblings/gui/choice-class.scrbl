@@ -25,7 +25,7 @@ See also
                  [style (listof (one-of/c 'horizontal-label 'vertical-label
                                           'deleted)) 
                    null]
-                 [selection nonnegative-exact-integer? 0]
+                 [selection exact-nonnegative-integer? 0]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]

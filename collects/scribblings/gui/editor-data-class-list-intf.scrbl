@@ -25,12 +25,12 @@ Finds a snip data class from the list with the given name, returning
 }
 
 @defmethod[(find-position [class (is-a?/c editor-data-class%)])
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 Returns an index into the list for the specified class.
 
 }
 
-@defmethod[(nth [n nonnegative-exact-integer?])
+@defmethod[(nth [n exact-nonnegative-integer?])
            (or/c (is-a?/c editor-data-class%) false/c)]{
 Returns the @scheme[n]th class in the list (counting from 0), returning
  @scheme[#f] if the list has @scheme[n] or less classes.
@@ -38,7 +38,7 @@ Returns the @scheme[n]th class in the list (counting from 0), returning
 }
 
 @defmethod[(number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the number of editor data classes in the list.
 

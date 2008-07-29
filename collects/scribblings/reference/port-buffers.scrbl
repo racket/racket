@@ -76,8 +76,8 @@ If @scheme[mode] is not provided, the current mode is returned, or
 @scheme[file-stream-port] is an input port and @scheme[mode] is
 @scheme['line], the @exnraise[exn:fail:contract].}
 
-@defproc*[([(file-position [port port?]) nonnegative-exact-integer?]
-           [(file-position [port port?] [pos (or/c nonnegative-exact-integer? eof-object?)]) void?])]{
+@defproc*[([(file-position [port port?]) exact-nonnegative-integer?]
+           [(file-position [port port?] [pos (or/c exact-nonnegative-integer? eof-object?)]) void?])]{
 
 Returns or sets the current read/write position of @scheme[port]. 
 

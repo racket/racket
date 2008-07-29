@@ -377,9 +377,9 @@ If @scheme[style] includes @scheme['password], the dialog's text field
                                 [message (or/c string? false/c)]
                                 [choices (listof string?)]
                                 [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) false/c) #f]
-                                [init-choices (listof nonnegative-exact-integer?) null]
+                                [init-choices (listof exact-nonnegative-integer?) null]
                                 [style (listof (one-of/c 'single 'multiple 'extended)) '(single)])
-         (or/c (listof nonnegative-exact-integer?) false/c)]{
+         (or/c (listof exact-nonnegative-integer?) false/c)]{
 
 Gets a list box selection from the user via a modal dialog, using
  @scheme[parent] as the parent window if it is specified. The dialog's

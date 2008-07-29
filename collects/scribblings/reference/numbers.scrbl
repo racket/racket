@@ -593,7 +593,7 @@ produces @scheme[+nan.0] in the case that neither @scheme[y] nor
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [generator pseudo-random-generator?
                                (current-pseudo-random-generator)])
-            nonnegative-exact-integer?]
+            exact-nonnegative-integer?]
            [(random [generator pseudo-random-generator?
                                (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
@@ -700,7 +700,7 @@ which can be overriden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
           (string->number "111" 7)  (string->number "#b111" 7)]
 }
 
-@defproc[(real->decimal-string [n real?] [decimal-digits nonnegative-exact-integer? 2])
+@defproc[(real->decimal-string [n real?] [decimal-digits exact-nonnegative-integer? 2])
          string?]{
 
 Prints @scheme[n] into a string and returns the string. The printed

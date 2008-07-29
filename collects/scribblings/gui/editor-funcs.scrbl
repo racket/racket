@@ -209,8 +209,8 @@ Opens @scheme[filename] (in @scheme['binary] mode) and checks whether it looks
 }
 
 @defproc[(open-input-text-editor [text-editor (is-a?/c text%)]
-                                 [start-position nonnegative-exact-integer? 0]
-                                 [end-position (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
+                                 [start-position exact-nonnegative-integer? 0]
+                                 [end-position (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
                                  [snip-filter ((is-a?/c snip%) . -> . any/c) (lambda (s) s)]
                                  [port-name any/c @scheme[text-editor]]
                                  [expect-to-read-all? any/c #f])
@@ -257,7 +257,7 @@ The result port must not be used if @scheme[text-editor] changes in any
 }
 
 @defproc[(open-output-text-editor [text-editor (is-a?/c text%)]
-                                  [start-position (or/c nonnegative-exact-integer? (one/of 'end)) 'end]
+                                  [start-position (or/c exact-nonnegative-integer? (one/of 'end)) 'end]
                                   [special-filter (any/c . -> . any/c) (lambda (x) x)]
                                   [port-name any/c @scheme[text-editor]])
          output-port]{

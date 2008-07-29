@@ -32,14 +32,14 @@ Returns @scheme[#t] if @scheme[v] is a @tech{C type}, @scheme[#f]
 otherwise.}
 
 
-@defproc*[([(ctype-sizeof [type ctype?]) nonnegative-exact-integer?]
-           [(ctype-alignof [ctype ctype?]) nonnegative-exact-integer?])]{
+@defproc*[([(ctype-sizeof [type ctype?]) exact-nonnegative-integer?]
+           [(ctype-alignof [ctype ctype?]) exact-nonnegative-integer?])]{
 
 Returns the size or alignment of a given @scheme[type] for the current
 platform.}
 
 
-@defproc[(compiler-sizeof [sym symbol?]) nonnegative-exact-integer?]{
+@defproc[(compiler-sizeof [sym symbol?]) exact-nonnegative-integer?]{
 
 Possible values for @scheme[symbol] are @scheme['int], @scheme['char],
 @scheme['short], @scheme['long], @scheme['*], @scheme['void],

@@ -22,7 +22,7 @@ Returns @scheme[#t] if there has been an error reading from the
 }
 
 @defmethod[(read [data (and/c bytes? (not/c immutable?))])
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Reads characters to fill the supplied vector. The return value is the
  number of characters read, which may be less than the number
@@ -33,14 +33,14 @@ Reads characters to fill the supplied vector. The return value is the
 }
 
 
-@defmethod[(seek [pos nonnegative-exact-integer?])
+@defmethod[(seek [pos exact-nonnegative-integer?])
            void?]{
 
 Moves to the specified absolute position in the stream.
 
 }
 
-@defmethod[(skip [n nonnegative-exact-integer?])
+@defmethod[(skip [n exact-nonnegative-integer?])
            void?]{
 
 Skips past the next @scheme[n] characters in the stream.
@@ -48,7 +48,7 @@ Skips past the next @scheme[n] characters in the stream.
 }
 
 @defmethod[(tell)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the current stream position.
 

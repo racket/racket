@@ -19,7 +19,7 @@ thread is eventually unblocked.
 In addition to its use with semaphore-specific procedures, semaphores
 can be used as events; see @secref["sync"].
 
-@defproc[(make-semaphore [init nonnegative-exact-integer? 0]) semaphore?]{
+@defproc[(make-semaphore [init exact-nonnegative-integer? 0]) semaphore?]{
 
 Creates and returns a new semaphore with the counter initially set to
 @scheme[init]. If @scheme[init-k] is larger than a semaphore's maximum

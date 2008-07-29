@@ -28,7 +28,7 @@ Whenever the user changes the selected radio button, the radio box's
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(vertical)]
-                 [selection nonnegative-exact-integer? 0]
+                 [selection exact-nonnegative-integer? 0]
                  [font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
                  [vert-margin (integer-in 0 1000) 2]
@@ -75,7 +75,7 @@ By default, the first radio button is initially selected. If
 @defmethod*[#:mode override 
             ([(enable [enable? any/c])
               void?]
-             [(enable [n nonnegative-exact-integer?]
+             [(enable [n exact-nonnegative-integer?]
                       [enable? any/c])
               void?])]{
 
@@ -90,7 +90,7 @@ If two arguments are provided, then if @scheme[enable?] is
 }
 
 
-@defmethod[(get-item-label [n nonnegative-exact-integer?])
+@defmethod[(get-item-label [n exact-nonnegative-integer?])
            string?]{
 
 Gets the label of a radio button by position. Radio buttons are
@@ -99,7 +99,7 @@ Gets the label of a radio button by position. Radio buttons are
 
 }
 
-@defmethod[(get-item-plain-label [n nonnegative-exact-integer?])
+@defmethod[(get-item-plain-label [n exact-nonnegative-integer?])
            string?]{
 
 Like @method[radio-box% get-item-label], except that the label must be
@@ -108,14 +108,14 @@ a string and @litchar{&}s in the label are removed.
 }
 
 @defmethod[(get-number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the number of radio buttons in the radio box.
 
 }
 
 @defmethod[(get-selection)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Gets the position of the selected radio button. Radio buttons are
 numbered from @scheme[0].
@@ -125,7 +125,7 @@ numbered from @scheme[0].
 @defmethod*[#:mode override 
             ([(is-enabled?)
               boolean?]
-             [(is-enabled? [n nonnegative-exact-integer?])
+             [(is-enabled? [n exact-nonnegative-integer?])
               boolean?])]{
 
 If no arguments are provided, the enable state of the entire radio box
@@ -139,7 +139,7 @@ box, @|MismatchExn|.
 
 }
 
-@defmethod[(set-selection [n nonnegative-exact-integer?])
+@defmethod[(set-selection [n exact-nonnegative-integer?])
            void?]{
 
 Sets the selected radio button by position. (The control's callback

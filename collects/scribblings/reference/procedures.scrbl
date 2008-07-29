@@ -226,7 +226,7 @@ must require no more keywords than the ones listed din
 (show #:init 0 1 2 3 #:extra 4 #:more 7)
 ]}
 
-@defstruct[arity-at-least ([value nonnegative-exact-integer?])]{
+@defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
 
 This structure type is used for the result of @scheme[procedure-arity].
 See also @scheme[procedure-arity?].}

@@ -13,9 +13,9 @@
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
 
-@defproc[(tcp-listen [port-no (and/c nonnegative-exact-integer?
+@defproc[(tcp-listen [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
-                     [max-allow-wait nonnegative-exact-integer? 4]
+                     [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? false/c) #f]) 
          tcp-listener?]
@@ -62,10 +62,10 @@ If the server cannot be started by @scheme[tcp-listen], the
 
 
 @defproc[(tcp-connect [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
                       [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c nonnegative-exact-integer?
+                      [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
                                            false/c)
                                      #f])
@@ -119,10 +119,10 @@ If a connection cannot be established by @scheme[tcp-connect], the
 @exnraise[exn:fail:network].}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                      (integer-in 1 65535))]
                       [local-hostname (or/c string? false/c) #f]
-                      [local-port-no (or/c (and/c nonnegative-exact-integer?
+                      [local-port-no (or/c (and/c exact-nonnegative-integer?
                                                   (integer-in 1 65535))
                                            false/c)])
           (values input-port? output-port?)]{
@@ -283,7 +283,7 @@ non-@scheme[#f], then the socket's protocol family is IPv4.}
 
 @defproc[(udp-bind! [udp-socket udp?]
                     [hostname-string (or/c string? false/c)]
-                    [port-no (and/c nonnegative-exact-integer?
+                    [port-no (and/c exact-nonnegative-integer?
                                     (integer-in 1 65535))])
          void?]{
 
@@ -319,7 +319,7 @@ If @scheme[udp-socket] is already bound or closed, the
 
 @defproc[(udp-connect! [udp-socket udp?]
                        [hostname-string (or/c string? false/c)]
-                       [port-no (or/c (and/c nonnegative-exact-integer?
+                       [port-no (or/c (and/c exact-nonnegative-integer?
                                              (integer-in 1 65535))
                                       false/c)])
          void?]{
@@ -344,11 +344,11 @@ If @scheme[udp-socket] is closed, the @exnraise[exn:fail:network].}
 
 @defproc[(udp-send-to [udp-socket udp?]
                       [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                       (integer-in 1 65535))]
                       [bstr bytes?]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          void]{
 
 Sends @scheme[(subbytes bytes start-pos end-pos)] as a datagram from
@@ -368,8 +368,8 @@ If @scheme[udp-socket] is closed or connected, the
 
 @defproc[(udp-send [udp-socket udp?]
                    [bstr bytes?]
-                   [start-pos nonnegative-exact-integer? 0]
-                   [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                   [start-pos exact-nonnegative-integer? 0]
+                   [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          void]{
 
 Like @scheme[udp-send-to], except that @scheme[udp-socket] must be
@@ -379,11 +379,11 @@ connected, and the datagram goes to the connection target.  If
 
 @defproc[(udp-send-to* [udp-socket udp?]
                        [hostname string?]
-                       [port-no (and/c nonnegative-exact-integer?
+                       [port-no (and/c exact-nonnegative-integer?
                                        (integer-in 1 65535))]
                        [bstr bytes?]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          boolean?]{
 
 Like @scheme[udp-send-to], but never blocks; if the socket's outgoing
@@ -392,8 +392,8 @@ otherwise the datagram is queued and the result is @scheme[#t].}
 
 @defproc[(udp-send* [udp-socket udp?]
                     [bstr bytes?]
-                    [start-pos nonnegative-exact-integer? 0]
-                    [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                    [start-pos exact-nonnegative-integer? 0]
+                    [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          boolean?]{
 
 Like @scheme[udp-send], except that (like @scheme[udp-send-to]) it
@@ -401,11 +401,11 @@ never blocks and returns @scheme[#f] or @scheme[#t].}
 
 @defproc[(udp-send-to/enable-break [udp-socket udp?]
                       [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                       (integer-in 1 65535))]
                       [bstr bytes?]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          void]{
 
 Like @scheme[udp-send-to], but breaking is enabled (see
@@ -417,8 +417,8 @@ is raised, but not both.}
 
 @defproc[(udp-send/enable-break [udp-socket udp?]
                    [bstr bytes?]
-                   [start-pos nonnegative-exact-integer? 0]
-                   [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                   [start-pos exact-nonnegative-integer? 0]
+                   [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          void]{
 
 Like @scheme[udp-send], except that breaks are enabled like
@@ -427,9 +427,9 @@ Like @scheme[udp-send], except that breaks are enabled like
 
 @defproc[(udp-receive! [udp-socket udp?]
                        [bstr (and/c bytes? (not immutable?))]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (values nonnegative-exact-integer?
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (values exact-nonnegative-integer?
                  string?
                  (integer-in 1 65535))]{
 
@@ -454,9 +454,9 @@ the length of @scheme[bstr], the @exnraise[exn:fail:contract].}
 
 @defproc[(udp-receive!* [udp-socket udp?]
                        [bstr (and/c bytes? (not immutable?))]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (values (or/c nonnegative-exact-integer? false/c)
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (values (or/c exact-nonnegative-integer? false/c)
                  (or/c string? false/c)
                  (or/c (integer-in 1 65535) false/c))]{
 
@@ -465,9 +465,9 @@ datagram is available, the three result values are all @scheme[#f].}
 
 @defproc[(udp-receive!/enable-break [udp-socket udp?]
                        [bstr (and/c bytes? (not immutable?))]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (values nonnegative-exact-integer?
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (values exact-nonnegative-integer?
                  string?
                  (integer-in 1 65535))]{
 
@@ -517,11 +517,11 @@ would block.}
 
 @defproc[(udp-send-to-evt [udp-socket udp?]
                       [hostname string?]
-                      [port-no (and/c nonnegative-exact-integer?
+                      [port-no (and/c exact-nonnegative-integer?
                                       (integer-in 1 65535))]
                       [bstr bytes?]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          evt?]{
 
 Returns a @tech{synchronizable event}. The event is in a blocking
@@ -534,8 +534,8 @@ bstr start-pos end-pos)], and the synchronization result is
 
 @defproc[(udp-send-evt [udp-socket udp?]
                       [bstr bytes?]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          evt?]{
 
 Returns a @tech{synchronizable event}. The event is in a blocking
@@ -549,8 +549,8 @@ attempt.}
 
 @defproc[(udp-receive!-evt [udp-socket udp?]
                        [bstr (and/c bytes? (not immutable?))]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (bytes-length bstr)])
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          evt?]{
 
 Returns a @tech{synchronizable event}. The event is in a blocking

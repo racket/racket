@@ -56,7 +56,7 @@ Like @scheme[list->cblock], but for Scheme vectors.}
 
 @declare-exporting[scribblings/foreign/unsafe-foreign]
 
-@defproc[(cblock->list [cblock any/c][type ctype?][length nonnegative-exact-integer?])
+@defproc[(cblock->list [cblock any/c][type ctype?][length exact-nonnegative-integer?])
          list?]{
 
 Converts C @scheme[cblock], which is a vector of @scheme[type]s, to a
@@ -65,7 +65,7 @@ Scheme list.  The arguments are the same as in the
 there is no way to know where the block ends.}
 
 
-@defproc[(cblock->vector [cblock any/c][type ctype?][length nonnegative-exact-integer?])
+@defproc[(cblock->vector [cblock any/c][type ctype?][length exact-nonnegative-integer?])
          vector?]{
 
 Like @scheme[cblock->vector], but for Scheme vectors.}

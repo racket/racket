@@ -73,18 +73,18 @@ Returns a newly allocated list with the same elements as
 
 
 @defproc[(mlength [mlst mlist?])
-         nonnegative-exact-integer?]{
+         exact-nonnegative-integer?]{
 
 Returns the number of elements in @scheme[mlst].}
 
 
-@defproc[(mlist-ref [mlst mlist?][pos nonnegative-exact-integer?])
+@defproc[(mlist-ref [mlst mlist?][pos exact-nonnegative-integer?])
          any/c]{
 
 Like @scheme[list-ref], but for @tech{mutable lists}.}
 
 
-@defproc[(mlist-tail [mlst mlist?][pos nonnegative-exact-integer?])
+@defproc[(mlist-tail [mlst mlist?][pos exact-nonnegative-integer?])
          any/c]{
 
 Like @scheme[list-tail], but for @tech{mutable lists}.}

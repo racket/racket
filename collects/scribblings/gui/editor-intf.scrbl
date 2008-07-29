@@ -543,7 +543,7 @@ The first snip in a text editor is the one at @techlink{position}
 }
 
 @defmethod[(find-scroll-line [location real?])
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Maps a vertical @techlink{location} within the editor to a vertical
  scroll position.
@@ -1215,7 +1215,7 @@ The @scheme[localx], @scheme[localy], @scheme[width], and @scheme[height]
 
 
 @defmethod[(num-scroll-lines)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Reports the number of scroll positions available within the editor.
 
@@ -2206,7 +2206,7 @@ Setting the height is disallowed when the editor is internally locked
 }
 
 
-@defmethod[(set-max-undo-history [count (or/c nonnegative-exact-integer? (one/of 'forever))])
+@defmethod[(set-max-undo-history [count (or/c exact-nonnegative-integer? (one/of 'forever))])
            void?]{
 
 Sets the maximum number of undoables that will be remembered by the

@@ -149,7 +149,7 @@
     See
     @method[text:basic<%> set-styles-fixed].
   }
-  @defmethod*[#:mode augment (((after-insert (start nonnegative-exact-integer?) (len nonnegative-exact-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
 
     See
     @method[text:basic<%> set-styles-fixed].
@@ -209,7 +209,7 @@
     Starts an edit-sequence by calling
     @method[editor<%> begin-edit-sequence].
   }
-  @defmethod*[#:mode augment (((after-insert (start nonnegative-exact-integer?) (len nonnegative-exact-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
 
     Replaces all non-breaking space characters
     @scheme[(integer->char 160)]
@@ -255,10 +255,10 @@
     @scheme[keymap:get-search]
   }
 
-  @defmethod[#:mode augment (after-insert [start nonnegative-exact-integer?][len nonnegative-exact-integer?]) void?]{
+  @defmethod[#:mode augment (after-insert [start exact-nonnegative-integer?][len exact-nonnegative-integer?]) void?]{
     Re-does any search now that the contents of the window have changed.
   }
-  @defmethod[#:mode augment (after-delete [start nonnegative-exact-integer?][len nonnegative-exact-integer?]) void?]{
+  @defmethod[#:mode augment (after-delete [start exact-nonnegative-integer?][len exact-nonnegative-integer?]) void?]{
     Re-does any search now that the contents of the window have changed.
   }
 
@@ -512,7 +512,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode augment (((after-insert (start nonnegative-exact-integer?) (len nonnegative-exact-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-insert (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
 
     Calls the
     @method[frame:text-info<%> editor-position-changed]
@@ -522,7 +522,7 @@
     @scheme[top-level-window<%>]
     as the frame.
   }
-  @defmethod*[#:mode augment (((after-delete (start nonnegative-exact-integer?) (len nonnegative-exact-integer?)) void))]{
+  @defmethod*[#:mode augment (((after-delete (start exact-nonnegative-integer?) (len exact-nonnegative-integer?)) void))]{
 
     Calls the
     @method[frame:text-info<%> editor-position-changed]

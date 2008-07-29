@@ -87,7 +87,7 @@ for end users.}
 
 
 @defproc*[([(raise-type-error [name symbol?][expected string?][v any/c]) any]
-           [(raise-type-error [name symbol?][expected string?][bad-pos nonnegative-exact-integer?][v any/c]) any])]{
+           [(raise-type-error [name symbol?][expected string?][bad-pos exact-nonnegative-integer?][v any/c]) any])]{
 
 Creates an @scheme[exn:fail:contract] value and @scheme[raise]s it as
 an exception.  The @scheme[name] argument is used as the source
@@ -331,7 +331,7 @@ A parameter whose value is used as the maximum number of characters
 used to print a Scheme value that is embedded in a primitive error
 message.}
 
-@defparam[error-print-context-length cnt nonnegative-exact-integer?]{
+@defparam[error-print-context-length cnt exact-nonnegative-integer?]{
 
 A parameter whose value is used by the default error display handler
 as the maximum number of lines of context (or ``stack trace'') to
@@ -339,7 +339,7 @@ print; a single ``...'' line is printed if more lines are available
 after the first @scheme[cnt] lines. A @scheme[0] value for
 @scheme[cnt] disables context printing entirely.}
 
-@defparam[error-value->string-handler proc (any/c nonnegative-exact-integer?
+@defparam[error-value->string-handler proc (any/c exact-nonnegative-integer?
                                                   . -> .
                                                   string?)]{
 
@@ -526,10 +526,10 @@ Returns the @scheme[srcloc]-getting procedure associated with @scheme[v].}
 
 
 @defstruct[srcloc ([source any/c]
-                   [line (or/c positive-exact-integer? false/c)]
-                   [column (or/c nonnegative-exact-integer? false/c)]
-                   [position (or/c positive-exact-integer? false/c)]
-                   [span (or/c nonnegative-exact-integer? false/c)])
+                   [line (or/c exact-positive-integer? false/c)]
+                   [column (or/c exact-nonnegative-integer? false/c)]
+                   [position (or/c exact-positive-integer? false/c)]
+                   [span (or/c exact-nonnegative-integer? false/c)])
                   #:inspector #f]{
 
 The fields of an @scheme[srcloc] instance are as follows:

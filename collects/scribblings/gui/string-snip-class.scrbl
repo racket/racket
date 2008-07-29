@@ -8,7 +8,7 @@ An instance of @scheme[string-snip%] is created automatically when
  on-new-string-snip].
 
 
-@defconstructor*/make[(([allocsize nonnegative-exact-integer? 0])
+@defconstructor*/make[(([allocsize exact-nonnegative-integer? 0])
                        ([s string?]))]{
 
 Creates a string snip whose initial content is @scheme[s], if
@@ -20,8 +20,8 @@ Creates a string snip whose initial content is @scheme[s], if
 
 
 @defmethod[(insert [s string?]
-                   [len nonnegative-exact-integer?]
-                   [pos nonnegative-exact-integer? 0])
+                   [len exact-nonnegative-integer?]
+                   [pos exact-nonnegative-integer? 0])
            void?]{
 
 Inserts @scheme[s] (with length @scheme[len]) into the snip at relative
@@ -30,7 +30,7 @@ Inserts @scheme[s] (with length @scheme[len]) into the snip at relative
 }
 
 
-@defmethod[(read [len nonnegative-exact-integer?]
+@defmethod[(read [len exact-nonnegative-integer?]
                  [f (is-a?/c editor-stream-in%)])
            void?]{
 

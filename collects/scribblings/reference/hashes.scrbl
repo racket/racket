@@ -193,7 +193,7 @@ caveat above about concurrent modification.}
 
 
 @defproc[(hash-count [hash hash?])
-         nonnegative-exact-integer?]{
+         exact-nonnegative-integer?]{
 
 Returns the number of keys mapped by @scheme[hash]. If
 @scheme[hash] is not created with @scheme['weak], then the
@@ -203,7 +203,7 @@ above about concurrent modification.}
 
 
 @defproc[(hash-iterate-first [hash hash?])
-         (or/c false/c nonnegative-exact-integer?)]{
+         (or/c false/c exact-nonnegative-integer?)]{
 
 Returns @scheme[#f] if @scheme[hash] contains no elements, otherwise
 it returns an integer that is a index to the first element in the hash
@@ -214,8 +214,8 @@ refer to the first item only as long as no items are added to or
 removed from @scheme[hash].}
 
 @defproc[(hash-iterate-next [hash hash?]
-                            [pos nonnegative-exact-integer?])
-         (or/c false/c nonnegative-exact-integer?)]{
+                            [pos exact-nonnegative-integer?])
+         (or/c false/c exact-nonnegative-integer?)]{
 
 Returns either an integer that is an index to the element in
 @scheme[hash] after the element indexed by @scheme[pos] (which is not
@@ -227,7 +227,7 @@ only as long as no items are added to or removed from @scheme[hash].}
 
 
 @defproc[(hash-iterate-key [hash hash?]
-                           [pos nonnegative-exact-integer?])
+                           [pos exact-nonnegative-integer?])
          any]{
 
 Returns the key for the element in @scheme[hash] at index
@@ -236,7 +236,7 @@ Returns the key for the element in @scheme[hash] at index
 
 
 @defproc[(hash-iterate-value [hash hash?]
-                             [pos nonnegative-exact-integer?])
+                             [pos exact-nonnegative-integer?])
          any]{
 
 Returns the value for the element in @scheme[hash] at index

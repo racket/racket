@@ -150,7 +150,7 @@ an element with style @scheme[#f].}
 @def-style-proc[subscript]
 @def-style-proc[superscript]
 
-@defproc[(hspace [n nonnegative-exact-integer?]) element?]{
+@defproc[(hspace [n exact-nonnegative-integer?]) element?]{
 
 Produces an element containing @scheme[n] spaces and style
 @scheme['hspace].}

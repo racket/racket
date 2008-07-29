@@ -72,11 +72,11 @@ Returns two values:
 
 @defproc[(struct-type-info [struct-type struct-type?])
          (values symbol?
-                 nonnegative-exact-integer?
-                 nonnegative-exact-integer?
+                 exact-nonnegative-integer?
+                 exact-nonnegative-integer?
                  struct-accessor-procedure?
                  struct-mutator-procedure?
-                 (listof nonnegative-exact-integer?)
+                 (listof exact-nonnegative-integer?)
                  (or/c struct-type? false/c)
                  boolean?)]{
 

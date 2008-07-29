@@ -27,7 +27,7 @@ of the sequence. See also @scheme[in-vector].
 Returns @scheme[#t] if @scheme[v] is a vector, @scheme[#f] otherwise.}
 
 
-@defproc[(make-vector [size nonnegative-exact-integer?]
+@defproc[(make-vector [size exact-nonnegative-integer?]
                       [v any/c 0]) vector?]{
 
 Returns a mutable vector with @scheme[size] slots, where all slots are
@@ -50,19 +50,19 @@ order.}
 
 
 
-@defproc[(vector-length [vec vector?]) nonnegative-exact-integer?]{
+@defproc[(vector-length [vec vector?]) exact-nonnegative-integer?]{
 
 Returns the length of @scheme[vec] (i.e., the number of slots in the
 vector).}
 
-@defproc[(vector-ref [vec vector?][pos nonnegative-exact-integer?]) any/c]{
+@defproc[(vector-ref [vec vector?][pos exact-nonnegative-integer?]) any/c]{
 
 Returns the element in slot @scheme[pos] of @scheme[vec]. The first
 slot is position @scheme[0], and the last slot is one less than
 @scheme[(vector-length vec)].}
 
 @defproc[(vector-set! [vec (and/c vector? (not/c immutable?))]
-                      [pos nonnegative-exact-integer?]
+                      [pos exact-nonnegative-integer?]
                       [v any/c])
          void?]{
 
@@ -121,8 +121,8 @@ Changes all slots of @scheme[vec] to contain @scheme[v].}
 
 
 @defproc[(vector->values [vec vector?]
-                         [start-pos nonnegative-exact-integer? 0]
-                         [end-pos nonnegative-exact-integer? (vector-length vec)])
+                         [start-pos exact-nonnegative-integer? 0]
+                         [end-pos exact-nonnegative-integer? (vector-length vec)])
          any]{
 
 Returns @math{@scheme[end-pos] - @scheme[start-pos]} values, which are

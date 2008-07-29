@@ -91,7 +91,7 @@ notify-on-change].
 }
 
 
-@defmethod[(index-to-style [i nonnegative-exact-integer?])
+@defmethod[(index-to-style [i exact-nonnegative-integer?])
            (or/c (is-a?/c style<%>) false/c)]{
 
 Returns the style associated with the given index, or @scheme[#f] for
@@ -136,7 +136,7 @@ The return value from @method[style-list% notify-on-change] is an
 
 
 @defmethod[(number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the number of styles in the list.
 
@@ -152,7 +152,7 @@ Like @method[style-list% new-named-style], except that if the name is
 }
 
 @defmethod[(style-to-index [style (is-a?/c style<%>)])
-           (or/c nonnegative-exact-integer? false/c)]{
+           (or/c exact-nonnegative-integer? false/c)]{
 
 Returns the index for a particular style. The index for a style's base
  style (and shift style, if it is a join style) is guaranteed to be

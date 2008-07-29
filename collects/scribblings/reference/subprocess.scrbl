@@ -90,7 +90,7 @@ Blocks until the process represented by @scheme[subproc] terminates.}
 
 @defproc[(subprocess-status [subproc subprocess?]) 
          (or/c (one-of/c 'running)
-               nonnegative-exact-integer?)]{
+               exact-nonnegative-integer?)]{
 
 Returns @indexed-scheme['running] if the process represented by
 @scheme[subproc] is still running, or its exit code otherwise. The
@@ -111,7 +111,7 @@ might handle the signal without terminating). Under Windows, no action
 is taken when @scheme[force?] is @scheme[#f].}
 
 
-@defproc[(subprocess-pid [subproce subprocess?]) nonnegative-exact-integer?]{
+@defproc[(subprocess-pid [subproce subprocess?]) exact-nonnegative-integer?]{
 
 Returns the operating system's numerical ID (if any) for the process
 represented by @scheme[subproc], valid only as long as the process is
@@ -265,7 +265,7 @@ Like @scheme[system*], but returns the exit code like
 @defproc[(process [command string?])
          (list input-port?
                output-port?
-               nonnegative-exact-integer?
+               exact-nonnegative-integer?
                input-port?
                ((one-of/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 

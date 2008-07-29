@@ -1627,7 +1627,7 @@ methods whose names are local (i.e., declared with
 @scheme[define-local-member-names]).}
 
 
-@defproc[(object-method-arity-includes? [object object?][sym symbol?][cnt nonnegative-exact-integer?])
+@defproc[(object-method-arity-includes? [object object?][sym symbol?][cnt exact-nonnegative-integer?])
          boolean?]{
 
 Returns @scheme[#t] if @scheme[object] has a method named @scheme[sym]
@@ -1662,10 +1662,10 @@ K%
 
 @defproc[(class-info [class class?])
          (values symbol?
-                 nonnegative-exact-integer?
+                 exact-nonnegative-integer?
                  (listof symbol?)
-                 (any/c nonnegative-exact-integer? . -> . any/c)
-                 (any/c nonnegative-exact-integer? any/c . -> . any/c)
+                 (any/c exact-nonnegative-integer? . -> . any/c)
+                 (any/c exact-nonnegative-integer? any/c . -> . any/c)
                  (or/c class? false/c)
                  boolean?)]{
 

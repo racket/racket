@@ -13,14 +13,14 @@ Under X and Mac OS X, flushes pending display messages such that the
 }
 
 @defproc[(get-display-depth)
-         nonnegative-exact-integer?]{
+         exact-nonnegative-integer?]{
 
 Returns the depth of the main display (a value of 1 denotes a monochrome display).
 
 }
 
 @defproc[(get-display-left-top-inset [avoid-bars? bool @scheme[#f]])
-         (values nonnegative-exact-integer? nonnegative-exact-integer?)]{
+         (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 When the optional argument is @scheme[#f] (the default), this function
  returns the offset of the main screen's origin from the
@@ -36,7 +36,7 @@ When the optional argument is true, this function returns the amount
 }
 
 @defproc[(get-display-size [full-screen? bool @scheme[#f]])
-         (values nonnegative-exact-integer? nonnegative-exact-integer?)]{
+         (values exact-nonnegative-integer? exact-nonnegative-integer?)]{
 
 @index["screen resolution"]{Gets} the physical size of the display in
  pixels.  Under Windows, this size does not include the task bar by

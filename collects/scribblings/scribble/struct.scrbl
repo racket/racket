@@ -689,14 +689,14 @@ Like @scheme[content->string], but for a single @tech{element}.
 
 }
 
-@defproc[(element-width (element any/c)) nonnegative-exact-integer?]{
+@defproc[(element-width (element any/c)) exact-nonnegative-integer?]{
 
 Returns the width in characters of the given @tech{element}.
 
 }
 
 
-@defproc[(block-width (e block?)) nonnegative-exact-integer?]{
+@defproc[(block-width (e block?)) exact-nonnegative-integer?]{
 
 Returns the width in characters of the given @tech{block}.}
 

@@ -12,8 +12,8 @@ module provides a toolbox for creating cards games.}
 @section{Creating Tables and Cards}
 
 @defproc[(make-table [title string? "Cards"] 
-                     [w nonnegative-exact-integer? 7]
-                     [h nonnegative-exact-integer? 3])
+                     [w exact-nonnegative-integer? 7]
+                     [h exact-nonnegative-integer? 3])
          table<%>]{
 
 Returns a table.  The table is named by @scheme[title], and it is
@@ -153,7 +153,7 @@ Create an instance with @scheme[make-table].
 @defmethod[(add-cards [cards (listof (is-a?/c card<%>))]
                       [x real?]
                       [y real?]
-                      [offset-proc (nonnegative-exact-integer? 
+                      [offset-proc (exact-nonnegative-integer? 
                                     . -> . (values real? real?))
                                    (lambda (i) (values 0 0))])
             void?]{
@@ -196,7 +196,7 @@ Removes @scheme[card] from the table.}
 @defmethod[(move-cards [cards (listof (is-a?/c card<%>))]
                        [x real?]
                        [y real?]
-                       [offset-proc (nonnegative-exact-integer? . -> . (values real? real?))
+                       [offset-proc (exact-nonnegative-integer? . -> . (values real? real?))
                                     (lambda (i) (values 0 0))])
             void?]{
 
@@ -251,8 +251,8 @@ Removes @scheme[card] from the table.}
  Returns a list of all cards on the table in stacking order from front
  to back.}
 
-@defmethod*[([(table-width) nonnegative-exact-integer?]
-             [(table-height) nonnegative-exact-integer?])]{
+@defmethod*[([(table-width) exact-nonnegative-integer?]
+             [(table-height) exact-nonnegative-integer?])]{
 
  Returns the width/height of the table in pixels.}
 
@@ -382,12 +382,12 @@ Removes @scheme[card] from the table.}
 
 Create instances with @scheme[make-deck] or @scheme[make-card].
 
-@defmethod[(card-width) nonnegative-exact-integer?]{
+@defmethod[(card-width) exact-nonnegative-integer?]{
 
  Returns the width of the card in pixels.  All cards have the same
  width.}
 
-@defmethod[(card-height) nonnegative-exact-integer?]{
+@defmethod[(card-height) exact-nonnegative-integer?]{
 
  Returns the height of the card in pixels. All cards have the same
  height.}

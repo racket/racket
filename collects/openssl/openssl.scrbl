@@ -126,7 +126,7 @@ Returns @scheme[#t] if @scheme[v] is a value produced by
 
 @defproc[(ssl-listen
 	  (port-no (integer-in 1 65535))
-	  [queue-k nonnegative-exact-integer?]
+	  [queue-k exact-nonnegative-integer?]
 	  [reuse? any/c #f]
 	  [hostname-or-#f (or/c string? false/c) #f]
 	  [server-protocol

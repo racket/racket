@@ -30,7 +30,7 @@ Reading from a bad stream always gives @scheme[0].
 }
 
 
-@defmethod[(get-bytes [len (or/c (box/c nonnegative-exact-integer?) false/c) #f])
+@defmethod[(get-bytes [len (or/c (box/c exact-nonnegative-integer?) false/c) #f])
            (or/c bytes? false/c)]{
 
 Like @method[editor-stream-in% get-unterminated-bytes], but the last
@@ -69,7 +69,7 @@ Returns the next floating-point value in the stream.
 
 }
 
-@defmethod[(get-unterminated-bytes [len (or/c (box/c nonnegative-exact-integer?) false/c) #f])
+@defmethod[(get-unterminated-bytes [len (or/c (box/c exact-nonnegative-integer?) false/c) #f])
            (or/c bytes? false/c)]{
 
 Returns the next byte string from the stream.  Reading from a bad
@@ -83,7 +83,7 @@ Note that when @method[editor-stream-out% put] is not given a byte
 
 }
 
-@defmethod[(jump-to [pos nonnegative-exact-integer?])
+@defmethod[(jump-to [pos exact-nonnegative-integer?])
            void?]{
 
 Jumps to a given position in the stream.
@@ -105,7 +105,7 @@ See @method[editor-stream-in% set-boundary].
 
 }
 
-@defmethod[(set-boundary [n nonnegative-exact-integer?])
+@defmethod[(set-boundary [n exact-nonnegative-integer?])
            void?]{
 
 Sets a file-reading boundary at @scheme[n] bytes past the current
@@ -122,7 +122,7 @@ Boundaries help keep a subroutine from reading too much data leading
 }
 
 
-@defmethod[(skip [n nonnegative-exact-integer?])
+@defmethod[(skip [n exact-nonnegative-integer?])
            void?]{
 
 Skips past the next @scheme[n] bytes in the stream.
@@ -130,7 +130,7 @@ Skips past the next @scheme[n] bytes in the stream.
 }
 
 @defmethod[(tell)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the current stream position.
 

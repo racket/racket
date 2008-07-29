@@ -22,8 +22,8 @@ The same as @scheme[(write-char #\newline out)].}
 
 @defproc[(write-string [str string?]
                        [out output-port? (current-output-port)]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (string-length str)])
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (string-length str)])
          void?]{
 
 Writes characters to @scheme[out] from @scheme[str] starting from
@@ -37,17 +37,17 @@ is always @scheme[(- end-pos start-pos)].}
 
 @defproc[(write-bytes [bstr bytes?]
                       [out output-port? (current-output-port)]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)])
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          void?]{
 
 Like @scheme[write-string], but writes bytes instead of characters.}
 
 @defproc[(write-bytes-avail [bstr bytes?]
                             [out output-port? (current-output-port)]
-                            [start-pos nonnegative-exact-integer? 0]
-                            [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         nonnegative-exact-integer?]{
+                            [start-pos exact-nonnegative-integer? 0]
+                            [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         exact-nonnegative-integer?]{
 
 Like @scheme[write-bytes], but returns without blocking after writing
 as many bytes as it can immediately flush. It blocks only if no bytes
@@ -67,9 +67,9 @@ is raised.}
 
 @defproc[(write-bytes-avail* [bstr bytes?]
                              [out output-port? (current-output-port)]
-                             [start-pos nonnegative-exact-integer? 0]
-                             [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c nonnegative-exact-integer? false/c)]{
+                             [start-pos exact-nonnegative-integer? 0]
+                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-nonnegative-integer? false/c)]{
 
 Like @scheme[write-bytes-avail], but never blocks, returns @scheme[#f]
 if the port contains buffered data that cannot be written immediately,
@@ -78,9 +78,9 @@ flushed but no additional bytes can be written immediately.}
 
 @defproc[(write-bytes-avail/enable-break [bstr bytes?]
                                          [out output-port? (current-output-port)]
-                                         [start-pos nonnegative-exact-integer? 0]
-                                         [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         nonnegative-exact-integer?]{
+                                         [start-pos exact-nonnegative-integer? 0]
+                                         [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         exact-nonnegative-integer?]{
 
 Like @scheme[write-bytes-avail], except that breaks are enabled during
 the write. The procedure provides a guarantee about the interaction of
@@ -106,8 +106,8 @@ is written.}
 
 @defproc[(write-bytes-avail-evt [bstr bytes?]
                                 [out output-port? (current-output-port)]
-                                [start-pos nonnegative-exact-integer? 0]
-                                [end-pos nonnegative-exact-integer? (bytes-length bstr)]) 
+                                [start-pos exact-nonnegative-integer? 0]
+                                [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
          evt?]{
 
 Similar to @scheme[write-bytes-avail], but instead of writing bytes

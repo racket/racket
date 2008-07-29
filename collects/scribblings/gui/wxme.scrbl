@@ -185,9 +185,9 @@ An interface to be implemented by values returned from a snip reader.
 The only method is @method[readable<%> read-special].
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 Like @method[readable-snip<%> read-special], but for non-graphical
@@ -413,9 +413,9 @@ No data is available.
 }
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 Generates a special comment using @scheme[make-special-comment]. The
@@ -446,9 +446,9 @@ Returns @scheme[#t] if whitespace is elimited from the contained XML
 literal, @scheme[#f] otherwise.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 Generates a @scheme[quasiquote] S-expression that enclosed the XML,
@@ -480,9 +480,9 @@ Returns @scheme[#t] if the box corresponds to a splicing unquote,
 @scheme[#f] for a non-splicing unquote.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 Generates an S-expression for the code in the box.}
@@ -511,9 +511,9 @@ mode.
 No data is available.}
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 Generates a string containing the text.}

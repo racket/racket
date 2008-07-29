@@ -364,7 +364,7 @@ See also @method[dc<%> set-smoothing] for information on the
                       [x real?]
                       [y real?]
                       [combine? any/c #f]
-                      [offset nonnegative-exact-integer? 0]
+                      [offset exact-nonnegative-integer? 0]
                       [angle real? 0])
            void?]{
 
@@ -557,7 +557,7 @@ set-text-background].
 @defmethod[(get-text-extent [string string?]
                             [font (or/c (is-a?/c font%) false/c) #f]
                             [combine? any/c #f]
-                            [offset nonnegative-exact-integer? 0])
+                            [offset exact-nonnegative-integer? 0])
            (values nonnegative-real? 
                    nonnegative-real?
                    nonnegative-real? 

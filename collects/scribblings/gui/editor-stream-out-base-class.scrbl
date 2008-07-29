@@ -22,7 +22,7 @@ Returns @scheme[#t] if there has been an error writing to the stream,
 
 }
 
-@defmethod[(seek [pos nonnegative-exact-integer?])
+@defmethod[(seek [pos exact-nonnegative-integer?])
            void?]{
 
 Moves to the specified absolute position in the stream.
@@ -30,7 +30,7 @@ Moves to the specified absolute position in the stream.
 }
 
 @defmethod[(tell)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the current stream position.
 

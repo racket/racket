@@ -188,8 +188,8 @@ See also @scheme[write-resource].}
 @defproc[(get-window-text-extent [string string]
                                  [font (is-a?/c font%)]
                                  [combine? any/c #f])
-         (values nonnegative-exact-integer?
-                 nonnegative-exact-integer?)]{
+         (values exact-nonnegative-integer?
+                 exact-nonnegative-integer?)]{
 
 Returns the pixel size of a string drawn as a window's label or value
 when drawn with the given font. The optional @scheme[combine?]

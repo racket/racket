@@ -48,13 +48,13 @@ input ports as it becomes available.}
           [get-location (or/c 
                          (->
                           (values
-                           (or/c positive-exact-integer? false/c)
-                           (or/c nonnegative-exact-integer? false/c)
-                           (or/c positive-exact-integer? false/c)))
+                           (or/c exact-positive-integer? false/c)
+                           (or/c exact-nonnegative-integer? false/c)
+                           (or/c exact-positive-integer? false/c)))
                          false/c)
                         #f]
           [count-lines! (-> any) void]
-          [init-position positive-exact-integer? 1]
+          [init-position exact-positive-integer? 1]
           [buffer-mode (or/c (case-> ((one-of/c 'block 'none) . -> . any)
                                      (-> (one-of/c 'block 'none #f)))
                              false/c)

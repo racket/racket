@@ -66,7 +66,7 @@ The label string @scheme[choice] can contain @litchar{&}, which (in
 
 }
 
-@defmethod[(delete [n nonnegative-exact-integer?])
+@defmethod[(delete [n exact-nonnegative-integer?])
            void?]{
 
 Deletes an existing tab. If @scheme[n] is equal to or larger than the
@@ -74,7 +74,7 @@ Deletes an existing tab. If @scheme[n] is equal to or larger than the
 
 }
 
-@defmethod[(get-item-label [n nonnegative-exact-integer?])
+@defmethod[(get-item-label [n exact-nonnegative-integer?])
            string?]{
 
 Gets the label of a tab by position. Tabs are numbered from @scheme[0].
@@ -84,14 +84,14 @@ If @scheme[n] is equal to or larger than the number of tabs in the panel,
 }
 
 @defmethod[(get-number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the number of tabs on the panel.
 
 }
 
 @defmethod[(get-selection)
-           (or/c nonnegative-exact-integer? false/c)]{
+           (or/c exact-nonnegative-integer? false/c)]{
 
 Returns the index (counting from 0) of the currently selected tab.  If
  the panel has no tabs, the result is @scheme[#f].
@@ -106,7 +106,7 @@ Removes all tabs from the panel and installs tabs with the given
 
 }
 
-@defmethod[(set-item-label [n nonnegative-exact-integer?]
+@defmethod[(set-item-label [n exact-nonnegative-integer?]
                            [label label-string?])
            string?]{
 
@@ -115,7 +115,7 @@ Set the label for tab @scheme[n] to @scheme[label]. If @scheme[n] is equal to
 
 }
 
-@defmethod[(set-selection [n nonnegative-exact-integer?])
+@defmethod[(set-selection [n exact-nonnegative-integer?])
            void?]{
 
 Sets the currently selected tab by index (counting from 0).

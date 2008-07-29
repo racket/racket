@@ -117,12 +117,12 @@ is the value produced by @scheme[(proc _i)].
 @section{List Operations}
 
 @defproc[(length [lst list?])
-         nonnegative-exact-integer?]{
+         exact-nonnegative-integer?]{
 
 Returns the number of elements in @scheme[lst].}
 
 
-@defproc[(list-ref [lst any/c] [pos nonnegative-exact-integer?])
+@defproc[(list-ref [lst any/c] [pos exact-nonnegative-integer?])
          any/c]{
 
 Returns the element of @scheme[lst] at position @scheme[pos], where
@@ -134,7 +134,7 @@ The @scheme[lst] argument need not actually be a list; @scheme[lst]
 must merely start with a chain of at least @scheme[pos] pairs.}
 
 
-@defproc[(list-tail [lst any/c] [pos nonnegative-exact-integer?])
+@defproc[(list-tail [lst any/c] [pos exact-nonnegative-integer?])
          any/c]{
 
 Returns the list after the first @scheme[pos] elements of
@@ -515,7 +515,7 @@ Like @scheme[assoc], but finds an element using the predicate
 @defproc[(last-pair [p pair?]) pair?]{
 Returns the last pair of a (possibly improper) list.}
 
-@defproc[(take [lst any/c] [pos nonnegative-exact-integer?]) list?]{
+@defproc[(take [lst any/c] [pos exact-nonnegative-integer?]) list?]{
 Returns a fresh list whose elements are the first @scheme[pos] elements of
 @scheme[lst].  If @scheme[lst] has fewer than
 @scheme[pos] elements, the @exnraise[exn:fail:contract].
@@ -528,10 +528,10 @@ must merely start with a chain of at least @scheme[pos] pairs.
  (take 'non-list 0)
 ]}
 
-@defproc[(drop [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
+@defproc[(drop [lst any/c] [pos exact-nonnegative-integer?]) any/c]{
 Just like @scheme[list-tail].}
 
-@defproc[(split-at [lst any/c] [pos nonnegative-exact-integer?])
+@defproc[(split-at [lst any/c] [pos exact-nonnegative-integer?])
          (values list? any/c)]{
 Returns the same result as
 
@@ -539,7 +539,7 @@ Returns the same result as
 
 except that it can be faster.}
 
-@defproc[(take-right [lst any/c] [pos nonnegative-exact-integer?]) any/c]{
+@defproc[(take-right [lst any/c] [pos exact-nonnegative-integer?]) any/c]{
 Returns the @scheme[list]'s @scheme[pos]-length tail. If @scheme[lst]
 has fewer than @scheme[pos] elements, then the
 @exnraise[exn:fail:contract].
@@ -552,7 +552,7 @@ must merely end with a chain of at least @scheme[pos] pairs.
  (take-right 'non-list 0)
 ]}
 
-@defproc[(drop-right [lst any/c] [pos nonnegative-exact-integer?]) list?]{
+@defproc[(drop-right [lst any/c] [pos exact-nonnegative-integer?]) list?]{
 Returns a fresh list whose elements are the prefix of @scheme[lst],
 dropping its @scheme[pos]-length tail. If @scheme[lst] has fewer than
 @scheme[pos] elements, then the @exnraise[exn:fail:contract].
@@ -565,7 +565,7 @@ must merely end with a chain of at least @scheme[pos] pairs.
  (drop-right 'non-list 0)
 ]}
 
-@defproc[(split-at-right [lst any/c] [pos nonnegative-exact-integer?])
+@defproc[(split-at-right [lst any/c] [pos exact-nonnegative-integer?])
          (values list? any/c)]{
 Returns the same result as
 

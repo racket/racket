@@ -50,9 +50,9 @@ counting is automatically enabled for the port. Line counting cannot
 be disabled for a port after it is enabled.}
 
 @defproc[(port-next-location [port port?]) 
-         (values (or/c positive-exact-integer? false/c)
-                 (or/c nonnegative-exact-integer? false/c)
-                 (or/c positive-exact-integer? false/c))]{
+         (values (or/c exact-positive-integer? false/c)
+                 (or/c exact-nonnegative-integer? false/c)
+                 (or/c exact-positive-integer? false/c))]{
 
 Returns three values: an integer or @scheme[#f] for the line number of
 the next read/written item, an integer or @scheme[#f] for the next

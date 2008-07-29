@@ -233,7 +233,7 @@ side-effects of @scheme[proc]) in an unspecified order. The procedure
 
 
 @defproc[(dict-count [dict dict?])
-         nonnegative-exact-integer?]{
+         exact-nonnegative-integer?]{
 
 Returns the number of keys mapped by @scheme[dict], usually in
 constant time.

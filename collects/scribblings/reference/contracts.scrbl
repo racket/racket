@@ -145,7 +145,7 @@ between @scheme[j] and @scheme[k], inclusive.}
 A flat contract that requires the input to be an exact non-negative integer.}
 
 
-@defproc[(string-len/c [len nonnegative-exact-integer?]) flat-contract?]{
+@defproc[(string-len/c [len exact-nonnegative-integer?]) flat-contract?]{
 
 Returns a flat contract that recognizes strings that have fewer than
 @scheme[len] characters.}

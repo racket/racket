@@ -16,8 +16,8 @@ The library also re-exports: @scheme[pregexp], and it re-exports
 @deftogether[(
 @defproc[(pregexp-match [pattern (or/c string? bytes? regexp? byte-regexp?)]
                        [input (or/c string? bytes? input-port?)]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos (or/c nonnegative-exact-integer? false/c) #f]
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos (or/c exact-nonnegative-integer? false/c) #f]
                        [output-port (or/c output-port? false/c) #f])
          (or/c (listof (or/c (cons (or/c string? bytes?)
                                    (or/c string? bytes?))
@@ -25,17 +25,17 @@ The library also re-exports: @scheme[pregexp], and it re-exports
                false/c)]
 @defproc[(pregexp-match-positions [pattern (or/c string? bytes? regexp? byte-regexp?)]
                         [input (or/c string? bytes? input-port?)]
-                        [start-pos nonnegative-exact-integer? 0]
-                        [end-pos (or/c nonnegative-exact-integer? false/c) #f]
+                        [start-pos exact-nonnegative-integer? 0]
+                        [end-pos (or/c exact-nonnegative-integer? false/c) #f]
                         [output-port (or/c output-port? false/c) #f])
-          (or/c (listof (or/c (cons nonnegative-exact-integer?
-                                    nonnegative-exact-integer?)
+          (or/c (listof (or/c (cons exact-nonnegative-integer?
+                                    exact-nonnegative-integer?)
                               false/c))
                 false/c)]
 @defproc[(pregexp-split [pattern (or/c string? bytes? regexp? byte-regexp?)]
                        [input (or/c string? bytes? input-port?)]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos (or/c nonnegative-exact-integer? false/c) #f])
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos (or/c exact-nonnegative-integer? false/c) #f])
          (listof (or/c string? bytes?))]
 @defproc[(pregexp-replace [pattern (or/c string? bytes? regexp? byte-regexp?)]
                          [input (or/c string? bytes?)]

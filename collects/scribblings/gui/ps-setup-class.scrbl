@@ -168,8 +168,8 @@ Sets the printer command used to print a file under X. See
 
 }
 
-@defmethod[(set-editor-margin [h nonnegative-exact-integer?]
-                              [v nonnegative-exact-integer?])
+@defmethod[(set-editor-margin [h exact-nonnegative-integer?]
+                              [v exact-nonnegative-integer?])
            void?]{
 
 Sets the horizontal and vertical margins used when printing an editor

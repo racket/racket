@@ -924,7 +924,7 @@ factor. If the factor is greater tham 1, the color is lightened by
 dividing the gap between the RGB components and 255 by the factor.}
 
 @defproc[(color-series [dc (is-a?/c dc<%>)]
-                       [max-step nonnegative-exact-integer?]
+                       [max-step exact-nonnegative-integer?]
                        [step-delta (and/c exact? positive?)]
                        [start (or/c string? (is-a?/c color%))]
                        [end (or/c string? (is-a?/c color%))]
@@ -978,8 +978,8 @@ repeated calls to @scheme[draw-pict].}
 
 
 @defproc[(show-pict [pict pict?]
-                    [w (or/c false/c nonnegative-exact-integer?) #f] 
-                    [h (or/c false/c nonnegative-exact-integer?) #f])
+                    [w (or/c false/c exact-nonnegative-integer?) #f] 
+                    [h (or/c false/c exact-nonnegative-integer?) #f])
          void?]{
 
 Opens a frame that displays @scheme[pict].  The frame adds one method,

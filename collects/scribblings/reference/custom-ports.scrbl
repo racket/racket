@@ -11,31 +11,31 @@ written.
 
 @defproc[(make-input-port [name any/c]
                           [read-in (bytes? 
-                                    . -> . (one-of/c nonnegative-exact-integer?
+                                    . -> . (one-of/c exact-nonnegative-integer?
                                                      eof-object?
                                                      procedure?
                                                      evt?))]
-                          [peek (bytes? nonnegative-exact-integer? (or/c evt? false/c)
-                                        . -> . (one-of/c nonnegative-exact-integer?
+                          [peek (bytes? exact-nonnegative-integer? (or/c evt? false/c)
+                                        . -> . (one-of/c exact-nonnegative-integer?
                                                          eof-object?
                                                          procedure?
                                                          evt?
                                                          false/c))]
                           [close (-> any)]
                           [get-progress-evt (or/c (-> evt?) false/c) #f]
-                          [commit (or/c (positive-exact-integer? evt? evt? . -> . any)
+                          [commit (or/c (exact-positive-integer? evt? evt? . -> . any)
                                         false/c) 
                                   #f]
                           [get-location (or/c 
                                          (() 
                                           . ->* . 
-                                          ((or/c positive-exact-integer? false/c)
-                                           (or/c nonnegative-exact-integer? false/c)
-                                           (or/c positive-exact-integer? false/c)))
+                                          ((or/c exact-positive-integer? false/c)
+                                           (or/c exact-nonnegative-integer? false/c)
+                                           (or/c exact-positive-integer? false/c)))
                                          false/c)
                                         #f]
                           [count-lines! (-> any) void]
-                          [init-position positive-exact-integer? 1]
+                          [init-position exact-positive-integer? 1]
                           [buffer-mode (or/c (case-> ((one-of/c 'block 'none) . -> . any)
                                                      (-> (one-of/c 'block 'none #f)))
                                              false/c)
@@ -653,12 +653,12 @@ s
 
 @defproc[(make-output-port [name any/c]
                            [evt evt?]
-                           [write-out (bytes? nonnegative-exact-integer?
-                                              nonnegative-exact-integer?
+                           [write-out (bytes? exact-nonnegative-integer?
+                                              exact-nonnegative-integer?
                                               boolean?
                                               boolean?
                                               . -> .
-                                              (or/c nonnegative-exact-integer?
+                                              (or/c exact-nonnegative-integer?
                                                     false/c
                                                     evt?))]
                            [close (-> any)]
@@ -670,8 +670,8 @@ s
                                                     false/c)
                                               #f]
                            [get-write-evt (or/c
-                                           (bytes? nonnegative-exact-integer?
-                                                   nonnegative-exact-integer?
+                                           (bytes? exact-nonnegative-integer?
+                                                   exact-nonnegative-integer?
                                                    . -> .
                                                    evt?)
                                            false/c)
@@ -683,13 +683,13 @@ s
                            [get-location (or/c 
                                           (() 
                                            . ->* . 
-                                           ((or/c positive-exact-integer? false/c)
-                                            (or/c nonnegative-exact-integer? false/c)
-                                            (or/c positive-exact-integer? false/c)))
+                                           ((or/c exact-positive-integer? false/c)
+                                            (or/c exact-nonnegative-integer? false/c)
+                                            (or/c exact-positive-integer? false/c)))
                                           false/c)
                                          #f]
                            [count-lines! (-> any) void]
-                           [init-position positive-exact-integer? 1]
+                           [init-position exact-positive-integer? 1]
                            [buffer-mode (or/c (case-> 
                                                ((one-of/c 'block 'line 'none) . -> . any)
                                                (-> (one-of/c 'block 'line 'none #f)))

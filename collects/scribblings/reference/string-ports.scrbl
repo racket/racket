@@ -31,8 +31,8 @@ same as @scheme[open-output-bytes].}
 
 @defproc[(get-output-bytes [out output-port?]
                            [reset? any/c #f]
-                           [start-pos nonnegative-exact-integer? 0]
-                           [end-pos nonnegative-exact-integer? #f])
+                           [start-pos exact-nonnegative-integer? 0]
+                           [end-pos exact-nonnegative-integer? #f])
          bytes?]{
 
 Returns the bytes accumulated in @scheme[out] so far in a

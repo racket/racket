@@ -110,7 +110,7 @@ The default value of this parameter is therefore @scheme[#t], making
 it mimic plain I/O interactions.}
 
 
-@defparam[max-history n nonnegative-exact-integer?]{
+@defparam[max-history n exact-nonnegative-integer?]{
 
 A parameter that determines the number of history entries to save,
 defaults to @scheme[100].}
@@ -194,7 +194,7 @@ the user via the up-arrow key.}
 Adds the given byte string to the @|readline| history, which is
 accessible to the user via the up-arrow key.}
 
-@defproc[(history-length) nonnegative-exact-integer?]{
+@defproc[(history-length) exact-nonnegative-integer?]{
 
 Returns the length of the history list.}
 

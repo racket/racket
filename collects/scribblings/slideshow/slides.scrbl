@@ -386,7 +386,7 @@ triggered via the @DFlag{condense} command-line flag.}
 
 @section{Configuration}
 
-@defparam[current-font-size n nonnegative-exact-integer?]{
+@defparam[current-font-size n exact-nonnegative-integer?]{
 
 Parameter that determines he font size used by @scheme[t],
 @scheme[para], etc. The default size is @scheme[32].}
@@ -400,13 +400,13 @@ initial values include @scheme['swiss], @scheme["Verdana"], and
 @scheme["Gill Sans"].}
 
 
-@defparam[current-line-sep n nonnegative-exact-integer?]{
+@defparam[current-line-sep n exact-nonnegative-integer?]{
 
 Parameter that controls the amount of space used between lines by
 @scheme[para], @scheme[item], and @scheme[subitem].}
 
 
-@defparam[current-para-width n nonnegative-exact-integer?]{
+@defparam[current-para-width n exact-nonnegative-integer?]{
 
 Parameter that controls the width of a pict created by
 @scheme[para], @scheme[item], and @scheme[subitem].}
@@ -419,7 +419,7 @@ title. The default is @scheme["black"].}
 
 
 @defparam[current-slide-assembler proc ((or/c string? false/c)
-                                        nonnegative-exact-integer?
+                                        exact-nonnegative-integer?
                                         pict?
                                         . -> .
                                         pict?)]{

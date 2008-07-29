@@ -283,7 +283,7 @@ given file or directory path. On error (e.g., if no such file exists),
 the @exnraise[exn:fail:filesystem]. Under @|AllUnix|, permissions are
 checked for the current effective user instead of the real user.}
 
-@defproc[(file-size [path path-string?]) nonnegative-exact-integer?]{
+@defproc[(file-size [path path-string?]) exact-nonnegative-integer?]{
 
 Returns the (logical) size of the specified file in bytes. Under Mac
 OS X, this size excludes the resource-fork size. On error (e.g., if no

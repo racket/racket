@@ -423,15 +423,15 @@ Closes the given converter, so that it can no longer be used with
 
 @defproc[(bytes-convert [converter bytes-converter?]
                         [src-bstr bytes?]
-                        [src-start-pos nonnegative-exact-integer? 0]
-                        [src-end-pos nonnegative-exact-integer? (bytes-length src-bstr)]
+                        [src-start-pos exact-nonnegative-integer? 0]
+                        [src-end-pos exact-nonnegative-integer? (bytes-length src-bstr)]
                         [dest-bstr (or/c bytes? false/c) #f]
-                        [dest-start-pos nonnegative-exact-integer? 0]
-                        [dest-end-pos (or/c nonnegative-exact-integer? false/c)
+                        [dest-start-pos exact-nonnegative-integer? 0]
+                        [dest-end-pos (or/c exact-nonnegative-integer? false/c)
                                       (and dest-bstr
                                            (bytes-length dest-bstr))])
-          (values (or/c bytes? nonnegative-exact-integer?)
-                  nonnegative-exact-integer?
+          (values (or/c bytes? exact-nonnegative-integer?)
+                  exact-nonnegative-integer?
                   (one-of 'complete 'continues 'aborts 'error))]{
 
 Converts the bytes from @scheme[src-start-pos] to @scheme[src-end-pos]
@@ -499,11 +499,11 @@ sequence and reset the converter, use @scheme[bytes-convert-end].}
 
 @defproc[(bytes-convert-end [converter bytes-converter?]
                             [dest-bstr (or/c bytes? false/c) #f]
-                            [dest-start-pos nonnegative-exact-integer? 0]
-                            [dest-end-pos (or/c nonnegative-exact-integer? false/c)
+                            [dest-start-pos exact-nonnegative-integer? 0]
+                            [dest-end-pos (or/c exact-nonnegative-integer? false/c)
                                           (and dest-bstr
                                                (bytes-length dest-bstr))])
-          (values (or/c bytes? nonnegative-exact-integer?)
+          (values (or/c bytes? exact-nonnegative-integer?)
                   (one-of 'complete 'continues))]{
 
 Like @scheme[bytes-convert], but instead of converting bytes, this

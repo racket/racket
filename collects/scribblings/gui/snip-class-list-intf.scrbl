@@ -27,13 +27,13 @@ Finds a snip class from the list with the given name, returning
 }
 
 @defmethod[(find-position [class (is-a?/c snip-class%)])
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns an index into the list for the specified class.
 
 }
 
-@defmethod[(nth [n nonnegative-exact-integer?])
+@defmethod[(nth [n exact-nonnegative-integer?])
            (or/c (is-a?/c snip-class%) false/c)]{
 
 Returns the @scheme[n]th class in the list, or @scheme[#f] if
@@ -42,7 +42,7 @@ Returns the @scheme[n]th class in the list, or @scheme[#f] if
 }
 
 @defmethod[(number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the number of snip classes in the list.
 

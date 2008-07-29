@@ -7,7 +7,7 @@ A Scheme @deftech{pipe} is internal to Scheme, and not related to
 OS-level pipes (which are @tech{file-stream ports}) for communicating
 between different processes.
 
-@defproc[(make-pipe [limit positive-exact-integer? #f]
+@defproc[(make-pipe [limit exact-positive-integer? #f]
                     [input-name any/c 'pipe]
                     [output-name any/c 'pipe])
          (values input-port? output-port?)]{

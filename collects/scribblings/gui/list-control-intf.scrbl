@@ -37,7 +37,7 @@ Removes all user-selectable items from the control.
 }
 
 @defmethod[(find-string [s string])
-           (or/c nonnegative-exact-integer? false/c)]{
+           (or/c exact-nonnegative-integer? false/c)]{
 Finds a user-selectable item matching the given string. If no matching
  choice is found, @scheme[#f] is returned, otherwise the index of the
  matching choice is returned (items are indexed from @scheme[0]).
@@ -45,14 +45,14 @@ Finds a user-selectable item matching the given string. If no matching
 }
 
 @defmethod[(get-number)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 Returns the number of user-selectable items in the control (which is
  also one more than the greatest index in the list control).
 
 }
 
 @defmethod[(get-selection)
-           (or/c nonnegative-exact-integer? false/c)]{
+           (or/c exact-nonnegative-integer? false/c)]{
 Returns the index of the currently selected item (items are indexed
  from @scheme[0]). If the choice item currently contains no choices or no
  selections, @scheme[#f] is returned.  If multiple selections are
@@ -61,7 +61,7 @@ Returns the index of the currently selected item (items are indexed
 
 }
 
-@defmethod[(get-string [n nonnegative-exact-integer?])
+@defmethod[(get-string [n exact-nonnegative-integer?])
            (and/c immutable? label-string?)]{
 
 Returns the item for the given index (items are indexed from
@@ -79,7 +79,7 @@ Returns the currently selected item.  If the control currently
 
 }
 
-@defmethod[(set-selection [n nonnegative-exact-integer?])
+@defmethod[(set-selection [n exact-nonnegative-integer?])
            void?]{
 Selects the item specified by the given index (items are indexed from
  @scheme[0]). If the given index larger than the greatest index in the

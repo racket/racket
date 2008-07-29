@@ -61,7 +61,7 @@ the bitmap is selected into another DC, attached as a button label, etc.).
 }
 
 @defmethod[(get-depth)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Gets the color depth of the bitmap. See also @method[bitmap%
 is-color?].

@@ -11,14 +11,14 @@ An @scheme[editor-snip%] object is a @scheme[snip%] object that
 
 @defconstructor[([editor (or/c (is-a?/c text%) false/c) #f]
                  [with-border? any/c #t]
-                 [left-margin nonnegative-exact-integer? 5]
-                 [top-margin nonnegative-exact-integer? 5]
-                 [right-margin nonnegative-exact-integer? 5]
-                 [bottom-margin nonnegative-exact-integer? 5]
-                 [left-inset nonnegative-exact-integer? 1]
-                 [top-inset nonnegative-exact-integer? 1]
-                 [right-inset nonnegative-exact-integer? 1]
-                 [bottom-inset nonnegative-exact-integer? 1]
+                 [left-margin exact-nonnegative-integer? 5]
+                 [top-margin exact-nonnegative-integer? 5]
+                 [right-margin exact-nonnegative-integer? 5]
+                 [bottom-margin exact-nonnegative-integer? 5]
+                 [left-inset exact-nonnegative-integer? 1]
+                 [top-inset exact-nonnegative-integer? 1]
+                 [right-inset exact-nonnegative-integer? 1]
+                 [bottom-inset exact-nonnegative-integer? 1]
                  [min-width (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
                  [max-width (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
                  [min-height (or/c (and/c real? (not/c negative?)) (one/of 'none)) 'none]
@@ -120,10 +120,10 @@ If the editor is a text editor, then @scheme[1] is normally subtracted
 }
 
 
-@defmethod[(get-inset [l (box/c nonnegative-exact-integer?)]
-                      [t (box/c nonnegative-exact-integer?)]
-                      [r (box/c nonnegative-exact-integer?)]
-                      [b (box/c nonnegative-exact-integer?)])
+@defmethod[(get-inset [l (box/c exact-nonnegative-integer?)]
+                      [t (box/c exact-nonnegative-integer?)]
+                      [r (box/c exact-nonnegative-integer?)]
+                      [b (box/c exact-nonnegative-integer?)])
            void?]{
 
 Gets the current border insets for the snip. The inset sets how much space
@@ -137,10 +137,10 @@ is left between the edge of the snip and the border.
 }
 
 
-@defmethod[(get-margin [l (box/c nonnegative-exact-integer?)]
-                       [t (box/c nonnegative-exact-integer?)]
-                       [r (box/c nonnegative-exact-integer?)]
-                       [b (box/c nonnegative-exact-integer?)])
+@defmethod[(get-margin [l (box/c exact-nonnegative-integer?)]
+                       [t (box/c exact-nonnegative-integer?)]
+                       [r (box/c exact-nonnegative-integer?)]
+                       [b (box/c exact-nonnegative-integer?)])
            void?]{
 
 Gets the current margins for the snip. The margin sets how much space
@@ -244,10 +244,10 @@ When an @scheme[editor-snip%] object is not inserted in an editor, it
 
 }
 
-@defmethod[(set-inset [l nonnegative-exact-integer?]
-                      [t nonnegative-exact-integer?]
-                      [r nonnegative-exact-integer?]
-                      [b nonnegative-exact-integer?])
+@defmethod[(set-inset [l exact-nonnegative-integer?]
+                      [t exact-nonnegative-integer?]
+                      [r exact-nonnegative-integer?]
+                      [b exact-nonnegative-integer?])
            void?]{
 
 Sets the current border insets for the snip. The inset sets how much
@@ -256,10 +256,10 @@ Sets the current border insets for the snip. The inset sets how much
 }
 
 
-@defmethod[(set-margin [l nonnegative-exact-integer?]
-                       [t nonnegative-exact-integer?]
-                       [r nonnegative-exact-integer?]
-                       [b nonnegative-exact-integer?])
+@defmethod[(set-margin [l exact-nonnegative-integer?]
+                       [t exact-nonnegative-integer?]
+                       [r exact-nonnegative-integer?]
+                       [b exact-nonnegative-integer?])
            void?]{
 
 Sets the current margins for the snip. The margin sets how much space

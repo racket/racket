@@ -19,7 +19,7 @@ object that is marshaled as part of compiled code; see also
 
 
 @defproc[(syntax-line [stx syntax?]) 
-         (or/c positive-exact-integer?
+         (or/c exact-positive-integer?
                false/c)]{
 
 Returns the line number (positive exact integer) for the start of the
@@ -43,7 +43,7 @@ about marshaling compiled @tech{syntax object}s.}
 
 
 @defproc[(syntax-position [stx syntax?])
-         (or/c positive-exact-integer?
+         (or/c exact-positive-integer?
                false/c)]{
 
 Returns the character position (positive exact integer) for the start

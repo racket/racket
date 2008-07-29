@@ -10,9 +10,9 @@ A @scheme[readable-snip<%>] object is treated specially by the port
  generate the read result for the snip.
 
 @defmethod[(read-special [source any/c]
-                         [line (or/c nonnegative-exact-integer? false/c)]
-                         [column (or/c nonnegative-exact-integer? false/c)]
-                         [position (or/c nonnegative-exact-integer? false/c)])
+                         [line (or/c exact-nonnegative-integer? false/c)]
+                         [column (or/c exact-nonnegative-integer? false/c)]
+                         [position (or/c exact-nonnegative-integer? false/c)])
            any/c]{
 
 The arguments are the same as the arguments to a procedure returned by

@@ -18,7 +18,7 @@ An out-stream base---possibly an
 
 }
 
-@defmethod[(jump-to [pos nonnegative-exact-integer?])
+@defmethod[(jump-to [pos exact-nonnegative-integer?])
            void?]{
 Jumps to a given position in the stream.
 
@@ -49,7 +49,7 @@ This method is called by @scheme[write-editor-global-header].
 
 }
 
-@defmethod*[([(put [n nonnegative-exact-integer?]
+@defmethod*[([(put [n exact-nonnegative-integer?]
                    [v bytes?])
               (is-a?/c editor-stream-out%)]
              [(put [v bytes?])
@@ -90,7 +90,7 @@ Numbers written to a stream with @method[editor-stream-out% put-fixed]
 }
 
 @defmethod[(tell)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Returns the current stream position.
 

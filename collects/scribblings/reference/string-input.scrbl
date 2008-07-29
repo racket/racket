@@ -70,7 +70,7 @@ is opened in text mode, @scheme['linefeed] is usually the appropriate
          (or/c bytes? eof-object?)]{
 Like @scheme[read-line], but reads bytes and produces a byte string.}
 
-@defproc[(read-string [amt nonnegative-exact-integer?]
+@defproc[(read-string [amt exact-nonnegative-integer?]
                       [in input-port? (current-input-port)])
          (or/c string? eof-object)]{
 
@@ -91,16 +91,16 @@ If an error occurs during reading, some characters may be lost; that
 is, if @scheme[read-string] successfully reads some characters before
 encountering an error, the characters are dropped.}
 
-@defproc[(read-bytes [amt nonnegative-exact-integer?]
+@defproc[(read-bytes [amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object)]{
 Like @scheme[read-string], but reads bytes and produces a byte string.}
 
 @defproc[(read-string! [str (and/c string? (not/c immutable?))]
                        [in input-port? (current-input-port)]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (string-length str)])
-         (or/c positive-exact-integer? eof-object?)]{
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (string-length str)])
+         (or/c exact-positive-integer? eof-object?)]{
 
 Reads characters from @scheme[in] like @scheme[read-string], but puts
 them into @scheme[str] starting from index @scheme[start-pos]
@@ -120,17 +120,17 @@ not modified at indices @math{@scheme[start-pos]+m} though
 
 @defproc[(read-bytes! [bstr bytes?]
                       [in input-port? (current-input-port)]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c positive-exact-integer? eof-object?)]{
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-positive-integer? eof-object?)]{
 Like @scheme[read-string!], but reads bytes, puts them into a byte
 string, and returns the number of bytes read.}
 
 @defproc[(read-bytes-avail! [bstr bytes?]
                             [in input-port? (current-input-port)]
-                            [start-pos nonnegative-exact-integer? 0]
-                            [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c positive-exact-integer? eof-object? procedure?)]{
+                            [start-pos exact-nonnegative-integer? 0]
+                            [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-positive-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes!], but it returns without blocking after
 reading immediately-available bytes, and it may return a procedure for
@@ -156,9 +156,9 @@ as are available before a special value in the port's stream.}
 
 @defproc[(read-bytes-avail!* [bstr bytes?]
                              [in input-port? (current-input-port)]
-                             [start-pos nonnegative-exact-integer? 0]
-                             [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c nonnegative-exact-integer? eof-object? procedure?)]{
+                             [start-pos exact-nonnegative-integer? 0]
+                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes-avail!], but returns @scheme[0] immediately if
 no bytes (or specials) are available for reading and the end-of-file
@@ -166,9 +166,9 @@ is not reached.}
 
 @defproc[(read-bytes-avail!/enable-break [bstr bytes?]
                                          [in input-port? (current-input-port)]
-                                         [start-pos nonnegative-exact-integer? 0]
-                                         [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c positive-exact-integer? eof-object? procedure?)]{
+                                         [start-pos exact-nonnegative-integer? 0]
+                                         [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-positive-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes-avail!], but breaks are enabled during the
 read (see also @secref["breakhandler"]). If breaking is disabled
@@ -177,8 +177,8 @@ when @scheme[read-bytes-avail!/enable-break] is called, and if the
 no bytes will have been read from @scheme[in].}
 
 
-@defproc[(peek-string [amt nonnegative-exact-integer?]
-                      [skip-bytes-amt nonnegative-exact-integer?]
+@defproc[(peek-string [amt exact-nonnegative-integer?]
+                      [skip-bytes-amt exact-nonnegative-integer?]
                       [in input-port? (current-input-port)])
          (or/c string? eof-object)]{
 
@@ -204,37 +204,37 @@ If a port produces @scheme[eof] mid-stream, peek skips beyond the
 @scheme[eof] always produce @scheme[eof] until the @scheme[eof] is
 read.}
 
-@defproc[(peek-bytes [amt nonnegative-exact-integer?]
-                     [skip-bytes-amt nonnegative-exact-integer?]
+@defproc[(peek-bytes [amt exact-nonnegative-integer?]
+                     [skip-bytes-amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
          (or/c bytes? eof-object)]{
 Like @scheme[peek-string], but peeks bytes and produces a byte string.}
 
 @defproc[(peek-string! [str (and/c string? (not/c immutable?))]
-                       [skip-bytes-amt nonnegative-exact-integer?]
+                       [skip-bytes-amt exact-nonnegative-integer?]
                        [in input-port? (current-input-port)]
-                       [start-pos nonnegative-exact-integer? 0]
-                       [end-pos nonnegative-exact-integer? (string-length str)])
-         (or/c positive-exact-integer? eof-object?)]{
+                       [start-pos exact-nonnegative-integer? 0]
+                       [end-pos exact-nonnegative-integer? (string-length str)])
+         (or/c exact-positive-integer? eof-object?)]{
 Like @scheme[read-string!], but for peeking, and with a
 @scheme[skip-bytes-amt] argument like @scheme[peek-string].}
 
 @defproc[(peek-bytes! [bstr (and/c bytes? (not/c immutable?))]
-                      [skip-bytes-amt nonnegative-exact-integer?]
+                      [skip-bytes-amt exact-nonnegative-integer?]
                       [in input-port? (current-input-port)]
-                      [start-pos nonnegative-exact-integer? 0]
-                      [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c positive-exact-integer? eof-object?)]{
+                      [start-pos exact-nonnegative-integer? 0]
+                      [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-positive-integer? eof-object?)]{
 Like @scheme[peek-string!], but peeks bytes, puts them into a byte
 string, and returns the number of bytes read.}
 
 @defproc[(peek-bytes-avail! [bstr (and/c bytes? (not/c immutable?))]
-                            [skip-bytes-amt nonnegative-exact-integer?]
+                            [skip-bytes-amt exact-nonnegative-integer?]
                             [progress (or/c evt? false/c) #f]
                             [in input-port? (current-input-port)]
-                            [start-pos nonnegative-exact-integer? 0]
-                            [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c nonnegative-exact-integer? eof-object? procedure?)]{
+                            [start-pos exact-nonnegative-integer? 0]
+                            [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes-avail!], but for peeking, and with two extra
 arguments. The @scheme[skip-bytes-amt] argument is as in
@@ -253,12 +253,12 @@ The result of @scheme[peek-bytes-avail!] is @scheme[0] only in the
 case that @scheme[progress] becomes ready before bytes are peeked.}
 
 @defproc[(peek-bytes-avail!* [bstr (and/c bytes? (not/c immutable?))]
-                             [skip-bytes-amt nonnegative-exact-integer?]
+                             [skip-bytes-amt exact-nonnegative-integer?]
                              [progress (or/c evt? false/c) #f]
                              [in input-port? (current-input-port)]
-                             [start-pos nonnegative-exact-integer? 0]
-                             [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c nonnegative-exact-integer? eof-object? procedure?)]{
+                             [start-pos exact-nonnegative-integer? 0]
+                             [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 
 Like @scheme[read-bytes-avail!*], but for peeking, and with
 @scheme[skip-bytes-amt] and @scheme[progress] arguments like
@@ -267,12 +267,12 @@ return before even @scheme[skip-amt] bytes are available from the
 port.}
 
 @defproc[(peek-bytes-avail!/enable-break [bstr (and/c bytes? (not/c immutable?))]
-                                         [skip-bytes-amt nonnegative-exact-integer?]
+                                         [skip-bytes-amt exact-nonnegative-integer?]
                                          [progress (or/c evt? false/c) #f]
                                          [in input-port? (current-input-port)]
-                                         [start-pos nonnegative-exact-integer? 0]
-                                         [end-pos nonnegative-exact-integer? (bytes-length bstr)])
-         (or/c nonnegative-exact-integer? eof-object? procedure?)]{
+                                         [start-pos exact-nonnegative-integer? 0]
+                                         [end-pos exact-nonnegative-integer? (bytes-length bstr)])
+         (or/c exact-nonnegative-integer? eof-object? procedure?)]{
 Like @scheme[read-bytes-avail!/enable-break], but for peeking, and
 with @scheme[skip-bytes-amt] and @scheme[progress] arguments like
 @scheme[peek-bytes-avail!].}
@@ -293,7 +293,7 @@ Like @scheme[read-char-or-special], but reads and returns a byte
 instead of a character.}
 
 @defproc[(peek-char [in input-port? (current-input-port)]
-                    [skip-bytes-amt nonnegative-exact-integer? 0])
+                    [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c character? eof-object?)]{
 
 Like @scheme[read-char], but peeks instead of reading, and skipping
@@ -301,21 +301,21 @@ Like @scheme[read-char], but peeks instead of reading, and skipping
 port.}
 
 @defproc[(peek-byte [in input-port? (current-input-port)]
-                    [skip-bytes-amt nonnegative-exact-integer? 0])
+                    [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c byte? eof-object?)]{
 
 Like @scheme[peek-char], but reads and returns a byte instead of a
 character.}
 
 @defproc[(peek-char-or-special [in input-port? (current-input-port)]
-                               [skip-bytes-amt nonnegative-exact-integer? 0])
+                               [skip-bytes-amt exact-nonnegative-integer? 0])
          (or/c character? eof-object? any/c)]{
 
 Like @scheme[peek-char], but if the input port returns a non-byte
 value after @scheme[skip-bytes-amt] byte positions, it is returned.}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
-                               [skip-bytes-amt nonnegative-exact-integer? 0]
+                               [skip-bytes-amt exact-nonnegative-integer? 0]
                                [progress (or/c evt? false/c) #f])
          (or/c character? eof-object? any/c)]{
 
@@ -339,7 +339,7 @@ for @scheme[in]. All built-in kinds of ports support progress events,
 but ports created with @scheme[make-input-port] (see
 @secref["customport"]) may not.}
  
-@defproc[(port-commit-peeked [amt nonnegative-exact-integer?]
+@defproc[(port-commit-peeked [amt exact-nonnegative-integer?]
                              [progress evt?]
                              [evt evt?]
                              [in input-port? (current-input-port)])

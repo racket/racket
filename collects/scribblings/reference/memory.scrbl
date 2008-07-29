@@ -167,7 +167,7 @@ The @scheme[collect-garbage] procedure provides some control over the
 timing of collections, but garbage will obviously be collected even if
 this procedure is never called.}
 
-@defproc[(current-memory-use [cust custodian? #f]) nonnegative-exact-integer?]{
+@defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 
 Returns an estimate of the number of bytes of memory occupied by
 reachable data from @scheme[cust]. (The estimate is calculated

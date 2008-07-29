@@ -32,7 +32,7 @@ See also @scheme[choice%].
                                           'vertical-label 'horizontal-label 
                                           'deleted)) 
                         '(single)]
-                 [selection (or/c nonnegative-exact-integer? false/c) #f]
+                 [selection (or/c exact-nonnegative-integer? false/c) #f]
                  [font (is-a?/c font%) view-control-font]
                  [label-font (is-a?/c font%) normal-control-font]
                  [enabled any/c #t]
@@ -110,7 +110,7 @@ See also @xmethod[list-control<%> append].
 }
 
 
-@defmethod[(delete [n nonnegative-exact-integer?])
+@defmethod[(delete [n exact-nonnegative-integer?])
            void?]{
 
 Deletes the item indexed by @scheme[n]. @|lbnumnote| If @scheme[n] is equal
@@ -121,7 +121,7 @@ Selected items that are not deleted remain selected, and no other
 
 }
 
-@defmethod[(get-data [n nonnegative-exact-integer?])
+@defmethod[(get-data [n exact-nonnegative-integer?])
            any/c]{
 
 Returns the data for the item indexed by @scheme[n], or @scheme[#f]
@@ -135,7 +135,7 @@ See also @method[list-box% append] and @method[list-box% set-data].
 
 
 @defmethod[(get-first-visible-item)
-           nonnegative-exact-integer?]{
+           exact-nonnegative-integer?]{
 
 Reports the index of the item currently scrolled to the top of the
  list box. @|lbnumnote|
@@ -151,7 +151,7 @@ Returns the font used for the control's label, which is optionally
 }
 
 @defmethod[(get-selections)
-           (listof nonnegative-exact-integer?)]{
+           (listof exact-nonnegative-integer?)]{
 
 Returns a list of indices for all currently selected items.
  @|lbnumnote|
@@ -162,7 +162,7 @@ For single-selection lists, the result is always either @scheme[null] or
 }
 
 
-@defmethod[(is-selected? [n nonnegative-exact-integer?])
+@defmethod[(is-selected? [n exact-nonnegative-integer?])
            boolean?]{
 
 Returns @scheme[#t] if the item index by @scheme[n] is selected,
@@ -175,7 +175,7 @@ Returns @scheme[#t] if the item index by @scheme[n] is selected,
 }
 
 @defmethod[(number-of-visible-items)
-           positive-exact-integer?]{
+           exact-positive-integer?]{
 
 Returns the maximum number of items in the list box that are visible
  to the user with the control's current size (rounding down if the
@@ -183,7 +183,7 @@ Returns the maximum number of items in the list box that are visible
 
 }
 
-@defmethod[(select [n nonnegative-exact-integer?]
+@defmethod[(select [n exact-nonnegative-integer?]
                    [select? any/c #t])
            void?]{
 
@@ -212,7 +212,7 @@ Clears the list box and installs a new list of items.
 }
 
 
-@defmethod[(set-data [n nonnegative-exact-integer?]
+@defmethod[(set-data [n exact-nonnegative-integer?]
                      [data any/c])
            void?]{
 
@@ -225,7 +225,7 @@ See also @method[list-box% append].
 }
 
 
-@defmethod[(set-first-visible-item [n nonnegative-exact-integer?])
+@defmethod[(set-first-visible-item [n exact-nonnegative-integer?])
            void?]{
 
 Scrolls the list box so that the item indexed by @scheme[n] is at the
@@ -238,7 +238,7 @@ Scrolls the list box so that the item indexed by @scheme[n] is at the
 }
 
 
-@defmethod[(set-string [n nonnegative-exact-integer?]
+@defmethod[(set-string [n exact-nonnegative-integer?]
                        [label label-string?])
            void?]{
 
