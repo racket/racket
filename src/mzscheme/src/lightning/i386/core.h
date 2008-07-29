@@ -48,6 +48,7 @@ struct jit_local_state {
   int   long_jumps;
   int   nextarg_geti;
 #else
+  int   tiny_jumps;
   int	framesize;
 #endif
   int	argssize;
@@ -514,7 +515,9 @@ static int jit_arg_reg_order[] = { _EDI, _ESI, _EDX, _ECX };
 # define jit_patch_ucbranch_at(jump_pc,v) (_jitl.long_jumps ? jit_patch_long_at((jump_pc)-3, v) : jit_patch_short_at(jump_pc, v))
 # define jit_ret() (POPQr(_R13), POPQr(_R12), POPQr(_EBX), POPQr(_EBP), RET_())
 #else
-#define jit_patch_long_at(jump_pc,v)  (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v) - (jump_pc)))
+#define jit_patch_long_at(jump_pc,v)  (_jitl.tiny_jumps \
+                                       ? (*_PSC((jump_pc) - sizeof(char)) = _jit_SC((jit_insn *)(v) - (jump_pc))) \
+                                       : (*_PSL((jump_pc) - sizeof(long)) = _jit_SL((jit_insn *)(v) - (jump_pc))))
 # define jit_patch_branch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
 # define jit_patch_ucbranch_at(jump_pc,v)  jit_patch_long_at(jump_pc, v)
 # define jit_ret() (POPLr(_EDI), POPLr(_ESI), POPLr(_EBX), POPLr(_EBP), RET_())

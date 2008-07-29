@@ -550,7 +550,9 @@ typedef _uc		jit_insn;
                                 ? _OO_D32(0x0f80|(CC), (long)(D) ) \
                                 : (_O_D8(0x70|(nCC), _jit_UL(_jit.x.pc) + 13), JMPm((long)D, 0, 0, 0)))
 #else
-# define JCCim(CC,nCC,D,B,I,S)		((_r0P(B) && _r0P(I)) ? _OO_D32	(0x0f80|(CC)		,(long)(D)		) : \
+# define JCCim(CC,nCC,D,B,I,S)		((_r0P(B) && _r0P(I)) ? (_jitl.tiny_jumps \
+                                                                 ? _O_D8(0x70|(CC), D) \
+                                                                 : _OO_D32	(0x0f80|(CC)		,(long)(D)		)) : \
 								JITFAIL("illegal mode in conditional jump"))
 #endif
 
@@ -594,7 +596,9 @@ typedef _uc		jit_insn;
                         ? _O_D32(0xe9, (long)(D)) \
                         : (MOVQir((D), JIT_REXTMP), _qO_Mrm(0xff,_b11,_b100,_r8(JIT_REXTMP))))
 #else
-# define JMPm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? _O_D32	(0xe9			,(long)(D)		) : \
+# define JMPm(D,B,I,S)			((_r0P(B) && _r0P(I)) ? (_jitl.tiny_jumps \
+                                                                 ? _O_D8(0xeB, D) \
+                                                                 : _O_D32	(0xe9			,(long)(D)		)) : \
 								JITFAIL("illegal mode in direct jump"))
 #endif
 
