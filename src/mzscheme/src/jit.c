@@ -1874,7 +1874,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     }
   }
 
-  /* Check for inlined prim types */
+  /* Check for inlined native type */
   if (!direct_native) {
     ref = jit_bmsi_ul(jit_forward(), JIT_V1, 0x1);
     jit_ldr_s(JIT_R1, JIT_V1);
@@ -1906,7 +1906,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
   jit_str_i(JIT_R1, JIT_R2);
 #endif
-  
+
   /* Fast inlined-native jump ok (proc will check argc, if necessary) */
   {
     jit_insn *refr;
@@ -6095,7 +6095,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   ref = jit_bner_p(jit_forward(), JIT_RUNSTACK, JIT_R2);
   /* Also, check that the runstack is big enough with the revised
-     max_let_depth. We can use JIT_V2 here because RUNSTACK_BASE isnot
+     max_let_depth. We can use JIT_V2 here because RUNSTACK_BASE is not
      yet ready: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
   jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
