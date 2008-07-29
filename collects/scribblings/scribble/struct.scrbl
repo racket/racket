@@ -274,6 +274,12 @@ are as follows:
 
  @item{@scheme['hidden] --- the part title is not shown in rendered output.}
 
+ @item{@scheme['quiet] --- in HTML output and most other output modes,
+       hides entries for sub-parts of this part in a
+       @scheme[table-of-contents] or @scheme[local-table-of-contents]
+       listing except when those sub-parts are top-level entries in
+       the listing.}
+
  @item{@scheme['no-toc] --- as a style for the main part of a
        document, causes the HTML output to not include a margin box
        for the main table of contents; the ``on this page'' box that
