@@ -331,22 +331,14 @@ bitmap.}
 
 @section{Pict Combiners}
 
-@defproc*[([(vl-append [pict pict?] ...) pict?]
-           [(vl-append [d real?] [pict pict?] ...) pict?]
-           [(vc-append [pict pict?] ...) pict?]
-           [(vc-append [d real?] [pict pict?] ...) pict?]
-           [(vr-append [pict pict?] ...) pict?]
-           [(vr-append [d real?] [pict pict?] ...) pict?]
-           [(ht-append [pict pict?] ...) pict?]
-           [(ht-append [d real?] [pict pict?] ...) pict?]
-           [(htl-append [pict pict?] ...) pict?]
-           [(htl-append [d real?] [pict pict?] ...) pict?]
-           [(hc-append [pict pict?] ...) pict?]
-           [(hc-append [d real?] [pict pict?] ...) pict?]
-           [(hbl-append [pict pict?] ...) pict?]
-           [(hbl-append [d real?] [pict pict?] ...) pict?]
-           [(hb-append [pict pict?] ...) pict?]
-           [(hb-append [d real?] [pict pict?] ...) pict?])]{
+@defproc*[([(vl-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(vc-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(vr-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(ht-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(htl-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(hc-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(hbl-append [d real? 0.0] [pict pict?] ...) pict?]
+           [(hb-append [d real? 0.0] [pict pict?] ...) pict?])]{
 
 Creates a new pict as a column (for @scheme[v...-append]) or row (for
 @scheme[h...-append]) of other picts. The optional @scheme[d] argument
