@@ -67,7 +67,7 @@
      (define-syntax n (syntax-rules () [(n . pattern) template]))]))
 
 (define log-file (make-parameter #f))
-(define-for-syntax logging? #t)
+(define-for-syntax logging? #f)
 
 (require (only-in mzlib/file file-name-from-path))
 

@@ -39,55 +39,59 @@
 (define-syntax (module-begin stx)
   (define module-name (syntax-property stx 'enclosing-module-name))
   ;(printf "BEGIN: ~a~n" (syntax->datum stx))
-  (syntax-case stx ()
-    [(mb forms ...)
-     (nest
-      ([begin (set-box! typed-context? #t)
-              (start-timing module-name)]
-       [with-handlers
-           ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
-             (lambda (e) (tc-error "Internal error: ~a" e))])]
-       [parameterize (;; a cheat to avoid units
-                      [infer-param infer]
-                      ;; do we report multiple errors
-                      [delay-errors? #t]
-                      ;; this parameter is for parsing types
-                      [current-tvars initial-tvar-env]
-                      ;; this parameter is just for printing types
-                      ;; this is a parameter to avoid dependency issues
-                      [current-type-names
-                       (lambda ()
-                         (append 
-                          (type-name-env-map (lambda (id ty)
-                                               (cons (syntax-e id) ty)))
-                          (type-alias-env-map (lambda (id ty)
-                                                (cons (syntax-e id) ty)))))]
-                      ;; reinitialize seen type variables
-                      [type-name-references null])]
-       [begin (do-time "Initialized Envs")]
-       ;; local-expand the module
-       ;; pmb = #%plain-module-begin                            
-       [with-syntax ([new-mod 
-                      (local-expand (syntax/loc stx
-                                      (#%plain-module-begin 
-                                       forms ...))
-                                    'module-begin 
-                                    null)])]
-       [with-syntax ([(pmb body2 ...) #'new-mod])]
-       [begin (do-time "Local Expand Done")]
-       [with-syntax ([after-code (parameterize ([orig-module-stx stx]
-                                                [expanded-module-stx #'new-mod])
-                                   (type-check #'(body2 ...)))]
-                     [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
-                     [(transformed-body ...) (remove-provides #'(body2 ...))])]
-       [with-syntax ([(transformed-body ...) (change-contract-fixups #'(transformed-body ...))])])
-      (do-time "Typechecked")
-      #;(printf "checked ~a~n" module-name)
-      #;(printf "created ~a types~n" (count!))
-      #;(printf "tried to create ~a types~n" (all-count!))
-      #;(printf "created ~a union types~n" (union-count!))
-      ;; reconstruct the module with the extra code
-      #'(#%module-begin transformed-body ... after-code check-syntax-help))]))
+  (with-logging-to-file 
+   (build-path (find-system-path 'tempdir) "ts-poly.log")
+   #;
+   (log-file-name (syntax-source stx) module-name)
+   (syntax-case stx ()
+     [(mb forms ...)
+      (nest
+          ([begin (set-box! typed-context? #t)
+                  (start-timing module-name)]
+           [with-handlers
+               ([(lambda (e) (and catch-errors? (exn:fail? e) (not (exn:fail:syntax? e))))
+                 (lambda (e) (tc-error "Internal error: ~a" e))])]
+           [parameterize (;; a cheat to avoid units
+                          [infer-param infer]
+                          ;; do we report multiple errors
+                          [delay-errors? #t]
+                          ;; this parameter is for parsing types
+                          [current-tvars initial-tvar-env]
+                          ;; this parameter is just for printing types
+                          ;; this is a parameter to avoid dependency issues
+                          [current-type-names
+                           (lambda ()
+                             (append 
+                              (type-name-env-map (lambda (id ty)
+                                                   (cons (syntax-e id) ty)))
+                              (type-alias-env-map (lambda (id ty)
+                                                    (cons (syntax-e id) ty)))))]
+                          ;; reinitialize seen type variables
+                          [type-name-references null])]
+           [begin (do-time "Initialized Envs")]
+           ;; local-expand the module
+           ;; pmb = #%plain-module-begin                            
+           [with-syntax ([new-mod 
+                          (local-expand (syntax/loc stx
+                                          (#%plain-module-begin 
+                                           forms ...))
+                                        'module-begin 
+                                        null)])]
+           [with-syntax ([(pmb body2 ...) #'new-mod])]
+           [begin (do-time "Local Expand Done")]
+           [with-syntax ([after-code (parameterize ([orig-module-stx stx]
+                                                    [expanded-module-stx #'new-mod])
+                                       (type-check #'(body2 ...)))]
+                         [check-syntax-help (syntax-property #'(void) 'disappeared-use (type-name-references))]
+                         [(transformed-body ...) (remove-provides #'(body2 ...))])]
+           [with-syntax ([(transformed-body ...) (change-contract-fixups #'(transformed-body ...))])])
+        (do-time "Typechecked")
+        #;(printf "checked ~a~n" module-name)
+        #;(printf "created ~a types~n" (count!))
+        #;(printf "tried to create ~a types~n" (all-count!))
+        #;(printf "created ~a union types~n" (union-count!))
+        ;; reconstruct the module with the extra code
+        #'(#%module-begin transformed-body ... after-code check-syntax-help))])))
 
 (define-syntax (top-interaction stx)
   (syntax-case stx ()
