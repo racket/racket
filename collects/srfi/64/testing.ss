@@ -257,7 +257,8 @@
       (when (output-port? log)
         (display "Group end: " log)
         (display (car (test-runner-group-stack runner)) log)
-        (newline log)))
+        (newline log)
+        (flush-output log)))
     #f)
   
   (define (%test-on-bad-count-write runner count expected-count port)
