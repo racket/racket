@@ -258,8 +258,19 @@
                        [(not snip-admin)
                         (t)] ;; refresh-delayed? is always #t when there is no admin.
                        [(is-a? snip-admin editor-snip-editor-admin<%>)
-                        (send (send (send (send snip-admin get-snip) get-admin) get-editor)
-                              run-after-edit-sequence t sym)]
+                        (let loop ([ed this])
+                          (let ([snip-admin (send ed get-admin)])
+                            (if (is-a? snip-admin editor-snip-editor-admin<%>)
+                                (let ([up-one
+                                       (send (send (send snip-admin get-snip) get-admin) get-editor)])
+                                  (if (is-a? up-one basic<%>)
+                                      (send up-one run-after-edit-sequence t sym)
+                                      (loop up-one)))
+                                
+                                ;; here we are in an embdedded editor that is not
+                                ;; in an edit sequence and the "parents" of the embdedded editor
+                                ;; are all non-basic<%> objects, so we just run the thunk now.
+                                (t))))]
                        [else
                         '(message-box "run-after-edit-sequence error"
                                       (format "refresh-delayed? is #t but snip admin, ~s, is not an editor-snip-editor-admin<%>"
