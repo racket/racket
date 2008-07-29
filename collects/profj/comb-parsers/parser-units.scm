@@ -336,12 +336,12 @@
     
     (define new-class
       (choose ((sequence (new name O_PAREN C_PAREN) id)
-               (sequence (new name O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+               (sequence (new name O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
               "class instantiation"))
     
     (define (new-array type-name)
-      (sequence (new type-name O_BRACKET (eta expression) C_BRACKET 
-                     (repeat (sequence (O_BRACKET (eta expression) C_BRACKET) id))
+      (sequence (new type-name O_BRACKET expression@ C_BRACKET 
+                     (repeat (sequence (O_BRACKET expression@ C_BRACKET) id))
                      (repeat (sequence (O_BRACKET C_BRACKET) id)))
                 id "array instantiation"))
     
@@ -349,71 +349,71 @@
       (sequence (PERIOD identifier) id "field access"))
     
     (define array-access-end
-      (sequence (O_BRACKET (eta expression) C_BRACKET) id "array access"))
+      (sequence (O_BRACKET expression@ C_BRACKET) id "array access"))
     
     (define (array-init-maker contents)
       (sequence (O_BRACE (comma-sep contents "array elements") C_BRACE) id "array initializations"))
     
     (define array-init
-      (letrec ([base-init (array-init-maker (eta expression))]
+      (letrec ([base-init (array-init-maker expression@)]
                [simple-init (array-init-maker 
-                             (choose ((eta expression) base-init (eta init)) "array initializations"))]
-               [init (array-init-maker (choose ((eta expression) simple-init) "array initialization"))])
+                             (choose (expression@ base-init (eta init)) "array initializations"))]
+               [init (array-init-maker (choose (expression@ simple-init) "array initialization"))])
         init #;(sequence (new type-name init) "array initialization")))
     
     (define (binary-expression-end op)
-      (sequence (op (eta expression)) id "binary expression"))
+      (sequence (op expression@) id "binary expression"))
     
     (define if-expr-end 
-      (sequence (? (eta expression) : (eta expression)) id "conditional expression"))
+      (sequence (? expression@ : expression@) id "conditional expression"))
     
     (define simple-method-call
       (choose
        ((sequence ((^ identifier) O_PAREN C_PAREN) id)
-        (sequence ((^ identifier) O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+        (sequence ((^ identifier) O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
        "method invocation"))
     
     (define method-call-end
       (sequence (PERIOD (^ identifier) O_PAREN (choose (C_PAREN
-                                                        (sequence ((comma-sep (eta expression) "arguments") C_PAREN) id))))
+                                                        (sequence ((comma-sep expression@ "arguments") C_PAREN) id))))
                 id "method invocation")
       
       #;(choose
        ((sequence (PERIOD (^ identifier) O_PAREN C_PAREN) id)
-        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+        (sequence (PERIOD (^ identifier) O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
        "method invocation"))
     
     (define (assignment asignee op)
-      (sequence ((^ asignee) op (eta expression)) id "assignment"))
+      (sequence ((^ asignee) op expression@) id "assignment"))
     
     (define unary-assignment-front
-      (choose ((sequence (++ (eta expression)) id)
-               (sequence (-- (eta expression)) id)) "unary modification"))
+      (choose ((sequence (++ expression@) id)
+               (sequence (-- expression@) id)) "unary modification"))
     
     (define (unary-assignment-back base)
       (choose ((sequence (base ++) id)
                (sequence (base --) id)) "unary modification"))
     
     (define (cast type)
-      (sequence (O_PAREN type C_PAREN (eta expression)) id "cast expression"))
+      (sequence (O_PAREN type C_PAREN expression@) id "cast expression"))
     
     (define instanceof-back
       (sequence (instanceof name) id "instanceof expression"))
     
     (define super-ctor
       (choose ((sequence (super O_PAREN C_PAREN) id)
-               (sequence (super O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+               (sequence (super O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
               "super constructor call"))
     
     (define super-call
       (choose ((sequence (super PERIOD identifier O_PAREN C_PAREN) id)
-               (sequence (super PERIOD identifier O_PAREN (comma-sep (eta expression) "arguments") C_PAREN) id))
+               (sequence (super PERIOD identifier O_PAREN (comma-sep expression@ "arguments") C_PAREN) id))
               "super method invocation"))
     
     (define checks
       (choose
-       ((sequence (check (eta expression) expect (eta expression) within (eta expression)) id)
-        (sequence (check (eta expression) expect (eta expression)) id))
+       ((sequence (check expression@ expect expression@ within expression@) id)
+        (sequence (check expression@ expect expression@) id))
        "check expression"))
     
     )
@@ -438,18 +438,18 @@
     
     (define this-call
       (choose ((sequence (this O_PAREN C_PAREN SEMI_COLON) id)
-               (sequence (this O_PAREN (comma-sep (eta expression) "arguments") C_PAREN SEMI_COLON) id)) "this constructor call"))
+               (sequence (this O_PAREN (comma-sep expression@ "arguments") C_PAREN SEMI_COLON) id)) "this constructor call"))
     
     (define super-ctor-call
       (choose ((sequence (super O_PAREN C_PAREN SEMI_COLON) id)
-               (sequence (super O_PAREN (comma-sep (eta expression) "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
+               (sequence (super O_PAREN (comma-sep expression@ "arguments") C_PAREN SEMI_COLON) id)) "super constructor call"))
     
     (define (block repeat?)
       (let ([body (if repeat? (repeat-greedy (eta statement)) (eta statement))])
         (sequence (O_BRACE body C_BRACE) id "block statement")))
     
     (define expression-stmt
-      (sequence ((eta expression) SEMI_COLON) id "statement"))
+      (sequence (expression@ SEMI_COLON) id "statement"))
     
     (define (while-l stmt)
       (sequence (while O_PAREN expression C_PAREN stmt) id "while loop"))
