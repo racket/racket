@@ -819,15 +819,22 @@ WARNING: printf is rebound in the body of the unit to always
       (set/f! lb 0)
       (set/f! rb 0))
     
-    (define cache-function #f)
-    (define cache-str #f)
+    (define cache-function void)
+    (define cache-str (make-string 1 #\space))
+    (define container-str (make-string 1 #\space))
+    
+    (inherit get-text!)
     
     (define/override (draw dc x y left top right bottom dx dy draw-caret)
-      (let ([str (get-text 0 (get-count))])
-        (when (or (not cache-function)
-                  (not (equal? cache-str str)))
-          (set! cache-function (for-each/sections str))
-          (set! cache-str str)))
+      (let ([len (get-count)])
+        (unless (= len (string-length container-str))
+          (set! container-str (make-string len #\space))
+          (set! cache-function void))
+        (get-text! container-str 0 len 0)
+        (unless (string=? container-str cache-str)
+          (set! cache-function (for-each/sections container-str))
+          (set! cache-str (make-string len #\space))
+          (get-text! cache-str 0 len 0)))
       (when (<= top y bottom)
         (cache-function dc x y)))
     
@@ -989,7 +996,6 @@ WARNING: printf is rebound in the body of the unit to always
                     (send delegate last-position)
                     (send delegate last-position))
               (loop (send snip next)))))
-        
         (for-each
          (λ (range)
            (send delegate unhighlight-range 
