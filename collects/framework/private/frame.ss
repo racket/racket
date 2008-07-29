@@ -2084,6 +2084,7 @@
       (clear-search-highlight)
       (send find-edit text-to-search-changed text-to-search #f)
       (when text-to-search
+        (send text-to-search set-search-anchor #f)
         (let ([canvas (send text-to-search get-canvas)])
           (when canvas
             (send canvas focus))))
