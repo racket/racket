@@ -5,6 +5,35 @@
           (for-label scheme/base
                      scheme/contract
 		     redex))
+
+@;{
+
+I usually use an `ellipsis' non-terminal to make it more explicit that
+the "..." (the only production of `ellipsis') is literal.
+- Hide quoted text -
+
+At Wed, 30 Jul 2008 12:49:43 -0500, "Robby Findler" wrote:
+> Also, how have you been notating a literal ellipsis in the docs? That
+> is, the "c" below should really be a literal ellipsis (as disctinct
+> from a repetition of "b")?
+
+}
+
+
+@;{
+
+I use `defidform'. See `else' for an example.
+- Hide quoted text -
+
+At Wed, 30 Jul 2008 13:03:07 -0500, "Robby Findler" wrote:
+> One more question: I export --> and fresh from collects/redex/main.ss
+> so that I can signal a syntax error if they are used outside of
+> reduction-relation. But this causes scribble to complain when I don't
+> document them. Is there a standard way to document them?
+>
+> Robby
+}
+
 @(declare-exporting redex)
 @title{@bold{PLT Redex}: an embedded DSL for debugging operational semantics}
 
