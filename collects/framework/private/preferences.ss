@@ -445,7 +445,7 @@ the state transitions / contracts are:
                                  (λ (n) (eq? 'postscript n))))
                    (make-check editor-panel
                                'framework:anchored-search
-                               "Anchor based search"
+                               (string-constant find-anchor-based)
                                values values)
                    (editor-panel-procs editor-panel))))])
       (add-editor-checkbox-panel)))

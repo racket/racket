@@ -513,7 +513,7 @@ please adhere to these guidelines:
  (backward "Backward")
  (hide "Hide")
  (find-case-sensitive "Case sensitive")  ;; the check box in both the docked & undocked search
-  
+  (find-anchor-based "Search using anchors")
   
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "Search in Files...")
