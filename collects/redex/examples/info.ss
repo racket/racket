@@ -1,2 +1,3 @@
-(module info (lib "infotab.ss" "setup")
-  (define name "Reduction Semantics examples"))
+#lang setup/infotab
+
+(define name "Reduction Semantics examples")
