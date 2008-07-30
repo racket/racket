@@ -946,7 +946,7 @@
                        (list (list (scheme id) (schemeblock0/form clause) ...)
                              ...)))]
     [(_ [id clause ...] ...)
-     (schemegrammar #:literals () [id clause ...] ...)]))
+     (schemegrammar* #:literals () [id clause ...] ...)]))
 (define-syntax-rule (var id)
   (*var 'id))
 (define-syntax-rule (svar id)
