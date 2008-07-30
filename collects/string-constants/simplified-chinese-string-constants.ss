@@ -435,7 +435,7 @@
   (replace "替换")
   (dock "面板")
   (undock "对话框")
-  (replace&find-again "替换并查找下一个") ;;; need double & to get a single &
+  (replace&find "替换并查找") ;;; need double & to get a single &
   (forward "下一个")
   (backward "上一个")
   (hide "隐藏")
@@ -573,14 +573,26 @@
   (select-all-info "选中整个文件")
   (select-all-menu-item "全选(&L)")
   
-  (find-info "搜索某个字符串")
-  (find-menu-item "查找...")
+  (find-menu-item "查找") ;; menu item
+  (find-info "在主窗口和搜索栏之间切换光标位置")
   
-  (find-again-info "继续搜索该字符串")
+  (find-again-info "跳至该文本的下一个出现")
   (find-again-menu-item "查找下一个")
   
-  (replace-and-find-again-info "替换当前文本，然后继续查找原字符串")
+  (find-again-backwards-info "跳至该文本的前一个出现")
+  (find-again-backwards-menu-item "查找上一个")
+  
+  (replace-and-find-again-info "替换当前文本，同时查找下一个出现")
   (replace-and-find-again-menu-item "替换并查找下一个")
+  
+  (replace-and-find-again-backwards-info "替换当前文本，同时查找前一个出现")
+  (replace-and-find-again-backwards-menu-item "替换并查找上一个")
+  
+  (replace-all-info "替换搜索字符串的全部出现")
+  (replace-all-menu-item "全部替换")
+  
+  (find-case-sensitive-info "设置搜索大小写敏感或不敏感")
+  (find-case-sensitive-menu-item "大小写敏感")
   
   (complete-word "自动完成") ; the complete word menu item in the edit menu
   (no-completions "... 无") ; shows up in the completions menu when there are no completions (in italics)
@@ -630,7 +642,7 @@
   (hide-module-browser "隐藏module浏览器")
   
   (help-menu-label "帮助(&H)")
-  (about-info "本程序的详细信息以及致谢名单")
+  (about-info "本软件的详细信息以及致谢名单")
   (about-menu-item "关于...")
   
   ;; open here's new menu item
@@ -1148,7 +1160,7 @@
   ;; warnings about closing a drscheme frame when the program
   ;; might still be doing something interesting
   (program-is-still-running "定义窗口中的程序还在运行中。强制退出？")
-  (program-has-open-windows "定义窗口中的打开了其他窗口。强行关闭这些窗口？")
+  (program-has-open-windows "定义窗口中的程序打开了其他窗口。强行关闭这些窗口？")
   
   ;; Profj
   (profj-insert-java-comment-box "插入Java注释框")
