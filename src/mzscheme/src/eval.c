@@ -1835,7 +1835,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
 
     if (!SAME_OBJ(menv, env)) {
-      varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, insp, pos, 0, NULL);
+      varname = scheme_check_accessible_in_module(menv, insp, NULL, varname, NULL, NULL, 
+                                                  insp, pos, 0, NULL, env);
     }
   }
 
@@ -5551,7 +5552,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer, form);
       SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
       return form;
-    } else if (rec[drec].comp && SAME_OBJ(var, normal)) {
+    } else if (rec[drec].comp && SAME_OBJ(var, normal) && !rec[drec].observer) {
       /* Skip creation of intermediate form */
       Scheme_Syntax *f;
       taking_shortcut = 1;

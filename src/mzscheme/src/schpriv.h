@@ -2592,7 +2592,7 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 						 Scheme_Object *symbol, Scheme_Object *stx, 
 						 Scheme_Object *certs, Scheme_Object *unexp_insp,
 						 int position, int want_pos,
-						 int *_protected);
+						 int *_protected, Scheme_Env *from_env);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,

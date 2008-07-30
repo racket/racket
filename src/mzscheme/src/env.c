@@ -2654,7 +2654,8 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
       scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
 					find_id, src_find_id, certs, NULL, -2, 0, 
-					NULL);
+					NULL,
+                                        env->genv);
   } else {
     /* Only try syntax table if there's not an explicit (later)
        variable mapping: */
@@ -2678,7 +2679,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     else
       pos = scheme_check_accessible_in_module(genv, env->insp, in_modidx, 
 					      find_id, src_find_id, certs, NULL, -1, 1,
-					      _protected);
+					      _protected, env->genv);
     modpos = SCHEME_INT_VAL(pos);
   } else
     modpos = -1;

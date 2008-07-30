@@ -3229,7 +3229,8 @@ static void check_certified(Scheme_Object *stx, Scheme_Object *certs,
 Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *prot_insp, Scheme_Object *in_modidx,
 						 Scheme_Object *symbol, Scheme_Object *stx,
 						 Scheme_Object *certs, Scheme_Object *unexp_insp,
-						 int position, int want_pos, int *_protected)
+						 int position, int want_pos, int *_protected,
+                                                 Scheme_Env *from_env)
      /* Returns the actual name when !want_pos, needed in case of
 	uninterned names.  Otherwise, returns a position value on success.
 	If position < -1, then merely checks for protected syntax.
@@ -3354,10 +3355,27 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
     symbol = stx;
     stx = NULL;
   }
-  scheme_wrong_syntax("compile", stx, symbol, 
-		      "variable not provided (directly or indirectly%s) from module: %D",
-		      (position >= 0) ? " and at the expected position" : "",
-		      env->module->modname);
+
+  {
+    const char *srcstr;
+    long srclen;
+    
+    if (from_env->module)
+      srcstr = scheme_display_to_string(from_env->module->modname, &srclen);
+    else {
+      srcstr = "";
+      srclen = 0;
+    }
+    
+    scheme_wrong_syntax("link", stx, symbol, 
+                        "module mismatch, probably from old bytecode whose dependencies have changed: "
+                        "variable not provided (directly or indirectly%s) from module: %D %s%t",
+                        (position >= 0) ? " and at the expected position" : "",
+                        env->module->modname,
+                        srclen ? "accessed from module: " : "",
+                        srcstr, srclen);
+  }
+
   return NULL;
 }
 
