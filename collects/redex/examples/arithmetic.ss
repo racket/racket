@@ -1,6 +1,5 @@
-(module arithmetic mzscheme
-  (require (planet robby/redex:5/reduction-semantics)
-           (planet robby/redex:5/gui))
+#lang scheme
+(require redex)
   
   (define-language lang
     (e (binop e e)
@@ -39,4 +38,4 @@
      [(--> (in-hole e-ctxt_1 a) (in-hole e-ctxt_1 b))
       (c--> a b)]))
   
-  (traces reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2)))))
+  (traces reductions (term (- (* (sqrt 36) (/ 1 2)) (+ 1 2))))
