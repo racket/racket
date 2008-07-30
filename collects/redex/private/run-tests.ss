@@ -11,7 +11,6 @@
            "term-test.ss"
            "tl-test.ss"
            "matcher-test.ss"
-           "schemeunit-test.ss"
            "lw-test.ss")
   
   (printf "\nWARNING: didn't run color-test.ss or subst-test.ss\n"))

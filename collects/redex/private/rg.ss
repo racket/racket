@@ -86,23 +86,20 @@ To do a better job of not generating programs with free variables,
       (pick-from-list bound-vars random)))
 
 (define (pick-char attempt lang-chars [random random])
-  (let ([lang (< attempt 50)]
-        [ascii (and (>= attempt ascii-chars-threshold)
-                    (< attempt tex-chars-threshold))]
-        [tex (and (>= attempt tex-chars-threshold) 
-                  (< attempt chinese-chars-threshold))])
-    (if (or lang (not (exotic-char? random)))
-        (pick-from-list lang-chars random)
-        (if (or ascii (not (exotic-char? random)))
-            (let ([i (random (- #x7E #x20 1))]
-                  [_ (- (char->integer #\_) #x20)])
-              (integer->char (+ #x20 (if (= i _) (add1 i) i))))
-            (if (or tex (not (exotic-char? random)))
-                (car (string->list (pick-from-list (map cadr tex-shortcut-table) random)))
-                (integer->char (+ #x4E00 (random (- #x9FCF #x4E00)))))))))
+  (if (and (not (null? lang-chars)) 
+           (or (< attempt ascii-chars-threshold)
+               (not (exotic-char? random))))
+      (pick-from-list lang-chars random)
+      (if (or (< attempt tex-chars-threshold) (not (exotic-char? random)))
+          (let ([i (random (- #x7E #x20 1))]
+                [_ (- (char->integer #\_) #x20)])
+            (integer->char (+ #x20 (if (= i _) (add1 i) i))))
+          (if (or (< attempt chinese-chars-threshold) (not (exotic-char? random)))
+              (car (string->list (pick-from-list (map cadr tex-shortcut-table) random)))
+              (integer->char (+ #x4E00 (random (- #x9FCF #x4E00))))))))
 
 (define (random-string lang-chars lang-lits length attempt [random random])
-  (if (use-lang-literal? random)
+  (if (and (not (null? lang-lits)) (use-lang-literal? random))
       (pick-from-list lang-lits random)
       (list->string (build-list length (λ (_) (pick-char attempt lang-chars random))))))
 
@@ -135,96 +132,110 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt bound-vars size)
+  (define (generate-nt nt bound-vars size holes)
     (let loop ([nts (compiled-lang-lang lang)])
       (cond
         [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
         [(eq? (nt-name (car nts)) nt) 
          (let* ([prods (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))]
-                [rhs ((next-non-terminal-decision) prods bound-vars size)])
-           (generate-pat (rhs-pattern rhs) bound-vars (rhs-var-info rhs) (max 0 (sub1 size))))]
+                [rhs ((next-non-terminal-decision) prods bound-vars size)]
+                [size (max 0 (sub1 size))])
+           (generate-pat (rhs-pattern rhs) bound-vars (rhs-var-info rhs) size holes))]
         [else (loop (cdr nts))])))
     
   (define-struct found-vars (nt source bound-vars found-nt?))
-  (define (generate-pat pat bound-vars var-info size)
+  (define (generate-pat pat bound-vars var-info size holes)
     (let* ([found-vars-table (map (λ (binds) (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
                                   var-info)]
-           [found-nt? #f]
            [bindings (make-immutable-hasheq null)]
            [mismatches (make-immutable-hasheq null)])
-      (let loop ([pat pat])
+      (let loop ([pat pat] [holes holes])
+        (define (generate/retry #:gen [gen (λ (p) (loop p holes))] success? . subpatterns)
+          (let ([old-fvt found-vars-table] 
+                [old-bindings bindings]
+                [old-mismatches mismatches])
+            (let retry ([remaining generation-retries])
+              (if (zero? remaining)
+                  (generation-failure pat)
+                  (let ([generated (map gen subpatterns)])
+                    (if (apply success? generated)
+                        (if (= 1 (length generated))
+                            (car generated)
+                            generated)
+                        (begin
+                          (set! found-vars-table old-fvt)
+                          (set! bindings old-bindings)
+                          (set! mismatches old-mismatches)
+                          (retry (sub1 remaining)))))))))
+        
+        (define (generate-hole name)
+          (let* ([not-in-hole (gensym)]
+                 [generate-contractum (hash-ref holes name not-in-hole)])
+            (if (eq? generate-contractum not-in-hole)
+                (if name (make-hole/intern name) (term hole))
+                (generate-contractum))))
         (match pat
           [`number ((next-number-decision) random-numbers)]
           [`(variable-except ,vars ...)
-           (let try () (let ([var (loop 'variable)]) (if (memq var vars) (try) var)))]
+           (generate/retry (λ (var) (not (memq var vars))) 'variable)]
           [`variable ((next-variable-decision) lang-chars lang-lits bound-vars attempt)]
           [`(variable-prefix ,prefix) 
-           (string->symbol (string-append (symbol->string prefix) (symbol->string (loop 'variable))))]
+           (string->symbol (string-append (symbol->string prefix)
+                                          (symbol->string (loop 'variable holes))))]
           [`string ((next-string-decision) lang-chars lang-lits attempt)]
           [`(side-condition ,pattern ,(? procedure? condition))
-           (let ([old-fvt found-vars-table] 
-                 [old-bindings bindings]
-                 [old-mismatches mismatches])
-             (let retry ([remaining generation-retries])
-               (if (zero? remaining)
-                   (generation-failure pat)
-                   (let ([term (loop pattern)])
-                     (if (condition (make-bindings (hash-map bindings (λ (name exp) (make-bind name exp)))))
-                         term
-                         (begin
-                           (set! found-vars-table old-fvt)
-                           (set! bindings old-bindings)
-                           (set! mismatches old-mismatches)
-                           (retry (sub1 remaining))))))))]
+           (define (condition-bindings bindings)
+             (make-bindings (hash-map bindings (λ (name exp) (make-bind name exp)))))
+           (generate/retry (λ _ (condition (condition-bindings bindings))) pattern)]
           [`(side-condition ,pattern ,uncompiled-condition)
            (error 'generate "side-condition not compiled: ~s" pat)]
-          [`(name ,id ,p)
+          [`(name ,(? symbol? id) ,p)
            (define (generate/record)
-             (let ([term (loop p)])
+             (let ([term (loop p holes)])
                (set! bindings (hash-set bindings id term))
                term))
            (hash-ref bindings id generate/record)]
+          [`hole (generate-hole #f)]
+          [`(in-hole ,context ,contractum)
+           (loop context (hash-set holes #f (λ () (loop contractum holes))))]
+          [`(hole ,(? symbol? name)) (generate-hole name)]
+          [`(in-named-hole ,name ,context ,contractum)
+           (loop context (hash-set holes name (λ () (loop contractum holes))))]
           [(and (? symbol?) (? (λ (x) (or (is-nt? lang x) (underscored-built-in? x)))))
-           (define (update/generate undecorated decorated)
-             (let* ([new-bound-vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
-                    [term (if (underscored-built-in? pat)
-                              (loop undecorated)
-                              (generate-nt undecorated new-bound-vars size))])
-               (values term (extend-found-vars decorated term found-vars-table))))
+           (define ((generate-nt/underscored decorated) undecorated)
+             (let* ([vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
+                    [term (if (is-nt? lang undecorated)
+                              (generate-nt undecorated vars size holes)
+                              (generate-pat undecorated vars null size holes))])
+               (begin
+                 (set! found-vars-table (extend-found-vars decorated term found-vars-table))
+                 term)))
            (match (symbol->string pat)
              [(regexp #rx"^([^_]*)_[^_]*$" (list _ undecorated))
-              (hash-ref 
+              (hash-ref
                bindings pat
-               (λ () 
-                 (let-values ([(term fvt) (update/generate (string->symbol undecorated) pat)])
-                   (set! found-vars-table fvt)
+               (λ ()
+                 (let ([term ((generate-nt/underscored pat) (string->symbol undecorated))])
                    (set! bindings (hash-set bindings pat term))
                    term)))]
-             [(regexp #rx"([^_]*)_!_[^_]*$" (list _ undecorated)) 
-              (let loop ([remaining generation-retries])
-                (if (zero? remaining)
-                    (generation-failure pat)
-                    (let-values ([(term fvt) (update/generate (string->symbol undecorated) pat)])
-                      (let ([others (hash-ref mismatches pat (λ () null))])
-                        (if (member term others)
-                            (loop (sub1 remaining))
-                            (begin 
-                              (set! found-vars-table fvt)
-                              (set! mismatches 
-                                    (hash-set mismatches pat (cons term others)))
-                              term))))))]
-             [else 
-              (let-values ([(term fvt) (update/generate pat pat)])
-                (begin (set! found-vars-table fvt) term))])]
+             [(regexp #rx"([^_]*)_!_[^_]*$" (list _ undecorated))
+              (let* ([prior (hash-ref mismatches pat null)]
+                     [term (generate/retry 
+                            (λ (t) (not (member t prior)))
+                            (string->symbol undecorated)
+                            #:gen (generate-nt/underscored pat))])
+                (set! mismatches (hash-set mismatches pat (cons term prior)))
+                term)]
+             [else ((generate-nt/underscored pat) pat)])]
           [(or (? symbol?) (? number?) (? string?) (? boolean?)) pat]
           [(? null? pat) '()]
           [(? pair? pat)
            (if (or (null? (cdr pat))
                    (not (eq? '... (cadr pat))))
-               (cons (loop (car pat))
-                     (loop (cdr pat)))
-               (append (build-list ((next-sequence-decision)) (λ (i) (loop (car pat))))
-                       (loop (cddr pat))))]
+               (cons (loop (car pat) holes)
+                     (loop (cdr pat) holes))
+               (append (build-list ((next-sequence-decision)) (λ (i) (loop (car pat) holes)))
+                       (loop (cddr pat) holes)))]
           [else
            (error 'generate "unknown pattern ~s\n" pat)]))))
   
@@ -260,7 +271,7 @@ To do a better job of not generating programs with free variables,
          [else found-vars]))
      found-vars-table))
   
-  (generate-pat nt '() '() size))
+  (generate-pat nt '() '() size (make-immutable-hash null)))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -340,7 +351,8 @@ To do a better job of not generating programs with free variables,
 
 ;; underscored-built-in? : symbol -> boolean
 (define (underscored-built-in? sym) 
-  (not (false? (memq (symbol->nt sym) underscore-allowed))))
+  (not (false? (and (memq #\_ (string->list (symbol->string sym)))
+                    (memq (symbol->nt sym) underscore-allowed)))))
 
 (define (try lang nt pred? #:attempts [attempts 1000] #:size [size 6])
   (let loop ([i attempts])

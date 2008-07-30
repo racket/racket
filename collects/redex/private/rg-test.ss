@@ -5,7 +5,7 @@
          "matcher.ss"
          "term.ss"
          "rg.ss")
-  
+
 (reset-count)
 
 
@@ -58,7 +58,8 @@
 
 (let ()
   (define-language lang
-    (a (side-condition "strin_g" #t) 1/2 #t))
+    (a (side-condition "strin_g" #t) 1/2 #t)
+    (b ()))
   (let* ([literals (sort (lang-literals lang) string<=?)]
          [chars (sort (unique-chars literals) char<=?)])
     (test literals '("1/2" "side-condition" "strin_g"))
@@ -94,21 +95,39 @@
     (test (pick-var chars lits null 0 (make-random '(0 0 1 1 2 1 0))) 'dcb)
     (test (pick-var chars lits '(x) 0 (make-random '(1 0))) 'x)))
 
+(let ()
+  (define-language empty)
+  (let* ([lits (sort (lang-literals empty) string<=?)]
+         [chars (sort (unique-chars lits) char<=?)])
+    (test (pick-char 0 chars (make-random '(65))) #\a)
+    (test (random-string chars lits 1 0 (make-random '(65))) "a")))
+
 (define (rhs-matching pat prods)
   (cond [(null? prods) (error 'rhs-matching "no rhs matching ~s" pat)]
         [(equal? (rhs-pattern (car prods)) pat) (car prods)]
         [else (rhs-matching pat (cdr prods))]))
 
+(define-syntax expect-exn
+  (syntax-rules ()
+    [(_ expr)
+     (with-handlers ([exn:fail? (λ (x) x)])
+       (begin
+         expr
+         (let ()
+           (define-struct exn-not-raised ())
+           (make-exn-not-raised))))]))
+
 (let ()
   (define-language l (a (a b) (a b c) c))
   (test (rhs-matching '(a b c) (nt-rhs (car (compiled-lang-lang l))))
         (cadr (nt-rhs (car (compiled-lang-lang l)))))
-  (test (with-handlers ([exn:fail? exn-message])
-          (rhs-matching '(a c) (nt-rhs (car (compiled-lang-lang l)))))
+  (test (exn-message (expect-exn (rhs-matching '(a c) (nt-rhs (car (compiled-lang-lang l))))))
         #rx"no rhs matching"))
 
 (define (select-pattern pat)
   (λ (prods . _) (rhs-matching pat prods)))
+
+(define (patterns . ps) (map select-pattern ps))
 
 (define (iterator name items)
   (let ([bi (box items)])
@@ -120,7 +139,7 @@
 (let ([iter (iterator 'test-iterator '(a b))])
   (test (iter) 'a)
   (test (iter) 'b)
-  (test (with-handlers ([exn:fail? exn-message]) (iter)) #rx"empty"))
+  (test (exn-message (expect-exn (iter))) #rx"empty"))
 
 (define (decisions #:var [var pick-var] 
                    #:nt [nt pick-nt]
@@ -147,10 +166,10 @@
    (generate 
     lc 'e 1 0
     (decisions #:var (list (λ _ 'x) (λ _'x))
-               #:nt (list (select-pattern '(λ (x) e))
-                          (select-pattern '(variable-except λ))
-                          (select-pattern 'x)
-                          (select-pattern '(variable-except λ))))) 
+               #:nt (patterns '(λ (x) e)
+                              '(variable-except λ)
+                              'x
+                              '(variable-except λ)))) 
    '(λ (x) x))
   
   ;; Generate pattern that's not a non-terminal
@@ -183,14 +202,15 @@
     (e (e e) x (e (x) λ) #:binds x e)
     (x (variable-except λ)))
   (test 
-   (with-handlers ([exn:fail? exn-message])
+   (exn-message 
+    (expect-exn 
      (generate 
       postfix 'e 2 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y))
-                 #:nt (list (select-pattern '(e (x) λ))
-                            (select-pattern 'x)
-                            (select-pattern '(variable-except λ))
-                            (select-pattern '(variable-except λ))))))
+                 #:nt (patterns '(e (x) λ)
+                                'x
+                                '(variable-except λ)
+                                '(variable-except λ))))))
    #rx"kludge"))
 
 ;; variable-except pattern
@@ -200,7 +220,7 @@
   (test
    (generate
     var 'e 2 0
-    (decisions #:nt (list (select-pattern '(variable-except x y)))
+    (decisions #:nt (patterns '(variable-except x y))
                #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'z))))
    'z))
 
@@ -227,11 +247,11 @@
      (generate 
       lc 'e 10 0
       (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ (c l b a) (k b)))
-                 #:nt (list (select-pattern '(λ (x ...) e))
-                            (select-pattern '(variable-except λ))
-                            (select-pattern '(variable-except λ))
-                            (select-pattern 'x)
-                            (select-pattern '(variable-except λ)))
+                 #:nt (patterns '(λ (x ...) e)
+                                '(variable-except λ)
+                                '(variable-except λ)
+                                'x
+                                '(variable-except λ))
                  #:seq (list (λ () 2)))))
    '(y x)))
 
@@ -241,7 +261,7 @@
    (generate
     lang 'e 5 0
     (decisions #:var (list (λ _ 'x))
-               #:nt (list (select-pattern '(variable-prefix pf)))))
+               #:nt (patterns '(variable-prefix pf))))
    'pfx))
 
 (let ()
@@ -257,25 +277,33 @@
   (test
    (generate
     lang 'e 5 0
-    (decisions #:nt (list (select-pattern '(e_1 e_2 e e_1 e_2)) 
-                          (select-pattern 'number)
-                          (select-pattern 'number)
-                          (select-pattern 'number))
+    (decisions #:nt (patterns '(e_1 e_2 e e_1 e_2) 
+                              'number
+                              'number
+                              'number)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
    '(2 3 4 2 3)))
 
 (let ()
   (define-language lang
-    (e (x x_1 x_1) #:binds x x_1)
+    (e (x x_1 x_1) #:binds x x_1
+       (x variable_1) #:binds x variable_1)
     (x variable))
   (test
    (let/ec k
      (generate
       lang 'e 5 0
       (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b)))
-                 #:nt (list (select-pattern '(x x_1 x_1)) 
-                            (select-pattern 'variable)
-                            (select-pattern 'variable)))))
+                 #:nt (patterns '(x x_1 x_1) 
+                                'variable
+                                'variable))))
+   '(x))
+  (test
+   (let/ec k
+     (generate
+      lang 'e 5 0
+      (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b)))
+                 #:nt (patterns '(x variable_1) 'variable))))
    '(x)))
 
 (let ()
@@ -284,7 +312,7 @@
   (test
    (generate
     lang 'e 5 0
-    (decisions #:nt (list (select-pattern '(number_!_1 number_!_2 number_!_1 number_!_2)))
+    (decisions #:nt (patterns '(number_!_1 number_!_2 number_!_1 number_!_2))
                #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2) (λ _ 3))))
    '(1 1 2 3)))
 
@@ -293,7 +321,7 @@
     (a (b_!_1 b_!_1 b_!_1))
     (b 1 2))
   (test
-   (with-handlers ([exn:fail? exn-message]) (generate lang 'a 5000 0))
+   (exn-message (expect-exn (generate lang 'a 5000 0)))
    #rx"unable"))
 
 (let ()
@@ -304,13 +332,13 @@
    (generate
     lang 'e 5 0
     (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'x) (λ _ 'y) (λ _ 'z))
-               #:nt (list (select-pattern '(x_!_1 ...))
-                          (select-pattern 'variable)
-                          (select-pattern 'variable)
-                          (select-pattern 'variable)
-                          (select-pattern 'variable)
-                          (select-pattern 'variable)
-                          (select-pattern 'variable))
+               #:nt (patterns '(x_!_1 ...)
+                              'variable
+                              'variable
+                              'variable
+                              'variable
+                              'variable
+                              'variable)
                #:seq (list (λ _ 3))))
    '(x y z)))
 
@@ -334,8 +362,7 @@
     (e (side-condition (x_1 x_!_2 x_!_2) (not (eq? (term x_1) 'x))))
     (x variable))
   (test (generate lang 'b 5 0) 43)
-  (test (with-handlers ([exn:fail? exn-message])
-          (generate lang 'c 5 0))
+  (test (exn-message (expect-exn (generate lang 'c 5 0)))
         #rx"unable to generate")
   (test ; binding works for with side-conditions failure/retry
    (let/ec k
@@ -347,7 +374,7 @@
    (generate
     lang 'e 5 0
     (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'x) (λ _ 'y))))
-  '(y x y)))
+   '(y x y)))
 
 (let ()
   (define-language lang
@@ -362,6 +389,35 @@
   (test (generate lang 'e 5 0) '(0 0))
   (test (generate lang 'f 5 0) '(0 0)))
 
+(let ()
+  (define-language lang
+    (a number (+ a a))
+    (A hole (+ a A) (+ A a))
+    (B (6 (hole h)))
+    (C hole)
+    (d (x (in-hole C y)) #:binds x y)
+    (x variable)
+    (y variable))
+  (test 
+   (generate 
+    lang '(in-hole A number ) 5 0
+    (decisions 
+     #:nt (patterns '(+ a A) '(+ a a) 'number 'number '(+ A a) 'hole '(+ a a) 'number 'number)
+     #:num (build-list 5 (λ (x) (λ (_) x)))))
+   '(+ (+ 0 1) (+ 2 (+ 3 4))))
+  (test (generate lang '(in-named-hole h B 3) 5 0) '(6 3))
+  (test (generate lang '(in-hole (in-hole ((in-hole hole 4) hole) 3) 5) 5 0) '(4 3))
+  (test (generate lang 'hole 5 0) (term hole))
+  (test (generate lang '(hole h) 5 0) (term (hole h)))
+  (test (generate lang '(variable_1 (in-hole C variable_1)) 5 0
+                  (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
+        '(x x))
+  (test (generate lang '(variable_!_1 (in-hole C variable_!_1) variable_!_1) 5 0
+                  (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'z))))
+        '(x y z))
+  (test (let/ec k (generate lang 'd 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
+        '(x)))
+
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
     (parameterize ([current-error-port port])
@@ -375,7 +431,7 @@
   (test (output-error-port (λ () (try lang 'e (λ (x) #t))))
         #rx"No failures")
   (test (output-error-port (λ () (try lang 'e (λ (x) #f))))
-        "FAILED!\n4\n")
+        #rx"FAILED")
   (test (output-error-port 
          (λ () (check lang (d_1 e d_2) (equal? '(5 5 4) (term (d_2 d_1 e))) 1 5)))
         #rx"No failures"))
