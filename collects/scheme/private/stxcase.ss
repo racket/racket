@@ -227,15 +227,13 @@
                                 [elem-did-var? (cdr clause)])
                             (let ([m (loop match-elem (stx-vector-ref e pos) cap)])
                               (and m
-                                   (if (null? (cdr p))
-                                       m
-                                       (let ([body (vloop (cdr p) (add1 pos))])
-                                         (and body
-                                              (if elem-did-var?
-                                                  (if (null? body)
-                                                      m
-                                                      (append m body))
-                                                  body))))))))])))]
+                                   (let ([body (vloop (cdr p) (add1 pos))])
+                                     (and body
+                                          (if elem-did-var?
+                                              (if (null? body)
+                                                  m
+                                                  (append m body))
+                                              body)))))))])))]
               [(eq? i 'prefab)
                (and (stx-prefab? (vector-ref i 1) e)
                     (loop (vector-ref i 2) (cdr (vector->list (struct->vector (syntax-e e)))) cap))]
