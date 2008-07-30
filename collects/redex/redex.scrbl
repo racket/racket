@@ -5,7 +5,7 @@
           (for-label scheme/base
                      scheme/contract
 		     redex))
-
+@(declare-exporting redex)
 @title{@bold{PLT Redex}: an embedded DSL for debugging operational semantics}
 
 This collection provides these files:
@@ -75,28 +75,29 @@ this tool:
 The _reduction-semantics.ss_ library defines a pattern
 language, used in various ways:
 
-  pattern = any
-          | number
-          | string
-          | variable
-          | (variable-except <symbol> ...)
-          | (variable-prefix <symbol>)
-          | variable-not-otherwise-mentioned
-          | hole
-          | (hole <symbol-or-false>)
-          | <symbol>
-          | (name <symbol> <pattern>)
-          | (in-hole <pattern> <pattern>)
-          | (in-named-hole <symbol> <pattern> <pattern>)
-          | (hide-hole <pattern>)
-          | (side-condition <pattern> <guard>)
-          | (cross <symbol>)
-          | (<pattern-sequence> ...)
-          | <scheme-constant>
-
-  pattern-sequence = pattern 
-                   | ...            ;; literal ellipsis
-                   | ..._<id>
+@(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole in-named-hole side-condition cross) 
+   [pattern any 
+            number 
+            string 
+            variable 
+            (variable-except symbol ...)
+            (variable-prefix symbol)
+            variable-not-otherwise-mentioned
+            hole
+            (hole symbol-or-false)
+            symbol
+            (name symbol pattern)
+            (in-hole pattern pattern)
+            (in-named-hole symbol pattern pattern)
+            (hide-hole pattern)
+            (side-condition pattern guard)
+            (cross symbol)
+            (pattern-sequence ...)
+            scheme-constant]
+   [pattern-sequence 
+     pattern 
+     ...            ;; literal ellipsis
+     ..._id])
 
 The patterns match sexpressions. The _any_ pattern matches
 any sepxression. The _number_ pattern matches any
@@ -272,9 +273,10 @@ two matches occur, one where x is bound to '() and y is
 bound to '(a a) and one where x is bound to '(a a) and y is
 bound to '().
 
-> (define-language <lang-name> (non-terminal-spec pattern ...) ...)     SYNTAX
-   non-terminal-spec = symbol 
-                     | (symbol ...)
+@defform/subs[(define-language lang-name 
+                (non-terminal-spec pattern ...)
+                ...)
+              ([non-terminal-spec symbol (symbol ...)])]{
 
 This form defines the grammar of a language. It allows the
 definition of recursive patterns, much like a BNF, but for
@@ -291,6 +293,7 @@ productions.
 As a simple example of a grammar, this is the lambda
 calculus:
 
+@schemeblock[
   (define-language lc-lang
     (e (e e ...)
        x
@@ -299,28 +302,34 @@ calculus:
        hole)
     (v (lambda (x ...) e))
     (x variable-not-otherwise-mentioned))
+]
 
-with non-terminals e for the expression language, x for
-variables, c for the evaluation contexts and v for values.
+with non-terminals @scheme[e] for the expression language, @scheme[x] for
+variables, @scheme[c] for the evaluation contexts and @scheme[v] for values.
+}
 
-> (define-extended-language <language> <language> (non-terminal pattern ...) ...)
+@defform[(define-extended-language language language
+           (non-terminal pattern ...)
+           ...)]{
 
 This form extends a language with some new, replaced, or
 extended non-terminals. For example, this language:
 
+@schemeblock[
   (define-extended-language lc-num-lang
     lc-lang
-    (e ....     ;;; extend the previous `e' non-terminal
+    (e ....     (code:comment "extend the previous `e' non-terminal")
        +
        number)
     (v ....
        + 
        number)
     (x (variable-except lambda +)))
+]
 
-extends lc-lang with two new alternatives for both the `e'
-and `v' nonterminal, replaces the `x' non-terminal with a
-new one, and carries the `c' non-terminal forward. 
+extends lc-lang with two new alternatives for both the @scheme[e]
+and @scheme[v] nonterminal, replaces the @scheme[x] non-terminal with a
+new one, and carries the @scheme[c] non-terminal forward. 
 
 The four-period ellipses indicates that the new language's
 non-terminal has all of the alternatives from the original
@@ -335,18 +344,23 @@ non-terminals to the language.
 If a language is has a group of multiple non-terminals
 defined together, extending any one of those non-terminals
 extends all of them.
+}
 
-> language-nts :: (compiled-lang? . -> . (listof symbol?))
+@defproc[(language-nts [lang compiled-lang?]) (listof symbol?)]{
 
 Returns the list of non-terminals (as symbols) that are
 defined by this language.
+}
 
-> compiled-lang? :: (any? . -> . boolean?)
+@defproc[(compiled-lang? [l any/c]) boolean?]{
 
 Returns #t if its argument was produced by `language', #f
 otherwise.
+}
 
-> (term-let ([tl-pat expr] ...) body)           SYNTAX
+@defform/subs[(term-let ([tl-pat expr] ...) body)
+              ([tl-pat identifier (tl-pat-ele ...)]
+               [tl-pat-ele tl-pat (code:line tl-pat ellipses)])]{
 
 Matches each given id pattern to the value yielded by
 evaluating the corresponding expr and binds each variable in
@@ -355,11 +369,6 @@ below). These bindings are then accessible to the `term'
 syntactic form.
 
 Identifier-patterns are terms in the following grammar:
-
-    tl-pat ::= identifier
-             | (tl-pat-ele ...)
-tl-pat-ele ::= tl-pat
-             | tl-pat ellipses
 
 where ellipses is the literal symbol consisting of three
 dots (and the ... indicates repetition as usual). If tl-pat
@@ -371,8 +380,9 @@ corresponding list element. There may be a single ellipsis
 in any list pattern; if one is present, the pattern before
 the ellipses may match multiple adjacent elements in the
 list value (possibly none).
+}
 
-> (term s-expr)                                 SYNTAX
+@defform[(term s-expr)]{
 
 This form is used for construction of new s-expressions in
 the right-hand sides of reductions. It behaves similarly to
@@ -384,17 +394,21 @@ same manner as syntax-case patterns).
 
 For example,
 
+@schemeblock[
 (term-let ([body '(+ x 1)]
            [(expr ...) '(+ - (values * /))]
            [((id ...) ...) '((a) (b) (c d))])
   (term (let-values ([(id ...) expr] ...) body)))
+]
 
 evaluates to
 
+@schemeblock[
 '(let-values ([(a) +] 
               [(b) -] 
               [(c d) (values * /)]) 
    (+ x 1))
+]
 
 It is an error for a term variable to appear in an
 expression with an ellipsis-depth different from the depth
@@ -404,26 +418,26 @@ different lengths to appear together inside an ellipsis.
 
 The special forms recognized by term are:
 
-  (in-hole a b)
+@itemize{
+@item{@scheme[(in-hole a b)]
 
     This is the dual to the pattern `in-hole' -- it accepts
     a context and an expression and uses `plug' to combine
     them.
-
-  (in-named-hole name a b)
+}@item{@scheme[(in-named-hole name a b)]
 
     Like in-hole, but substitutes into a hole with a particular name.
 
-  hole
+}@item{@scheme[hole]
 
    This produces a hole.
-
-  (hole name)
+}@item{@scheme[(hole name)]
 
     This produces a hole with the name `name'. To produce an unnamed
     hole, use #f as the name.
+}}}
 
-> (term-match <language> [<pattern> <expression] ...)   SYNTAX
+@defform[(term-match language [pattern expression] ...)]{
 
 This produces a procedure that accepts term (or quoted)
 expressions and checks them against each pattern. The
@@ -431,48 +445,48 @@ function returns a list of the values of the expression
 where the pattern matches. If one of the patterns matches
 multiple times, the expression is evaluated multiple times,
 once with the bindings in the pattern for each match.
+}
 
-> (term-match/single <language> [<pattern> <expression] ...)   SYNTAX
+@defform[(term-match/single language [pattern expression] ...)]{
 
 This produces a procedure that accepts term (or quoted)
 expressions and checks them against each pattern. The
 function returns the expression behind the first sucessful
 match. If that pattern produces multiple matches, an error
 is signaled. If no patterns match, an error is signaled.
+}
 
-> (reduction-relation <language> <reduction-case> ...)  SYNTAX
+@defform/subs[#:literals (--> fresh side-condition where) 
+              (reduction-relation language reduction-case ...)
+              ((reduction-case (--> pattern exp extras ...))
+               (extras name
+                       (fresh <fresh-clause> ...)
+                       (side-condition <guard> ...)
+                       (where <tl-pat> e))
+               (fresh-clause var ((var1 ...) (var2 ...))))]{
 
-  <reduction-case> =  (--> <lhs-pattern> <rhs-exp> <extras> ...)
-  <extras> = 
-      <name>
-    | (fresh <fresh-clause> ...)
-    | (side-condition <guard> ...)
-    | (where <tl-pat> e)
-  <fresh-clause> = 
-      var
-    | ((var1 ...) (var2 ...))
-
-Defines a reduction relation casewise, one case for each of
-the clauses beginning with -->. Each of the <lhs-pattern>s
-refers to the <language>, and binds variables in the
-<rhs-exp>. The <rhs-exp> behave like the argument to `term'.
+Defines a reduction relation casewise, one case for each of the
+clauses beginning with @scheme[-->]. Each of the @scheme[pattern]s
+refers to the @scheme[language], and binds variables in the
+@scheme[exp]. The @scheme[exp] behave like the argument to
+@scheme[term].
 
 Following the lhs & rhs specs can be the name of the
 reduction rule, declarations of some fresh variables, and/or
-some side-conditions. The <name> can either be a literal
+some side-conditions. The name can either be a literal
 name (identifier), or a literal string. 
 
 The fresh variables clause generates variables that do not
-occur in the term being matched. If the <fresh-clause> is a
+occur in the term being matched. If the @scheme[fresh-clause] is a
 variable, that variable is used both as a binding in the
 rhs-exp and as the prefix for the freshly generated
 variable. 
 
-The second case of a <fresh-clause> is used when you want to
+The second case of a @scheme[fresh-clause] is used when you want to
 generate a sequence of variables. In that case, the ellipses
 are literal ellipses; that is, you must actually write
 ellipses in your rule. The variable var1 is like the
-variable in first case of a <fresh-clause>, namely it is
+variable in first case of a @scheme[fresh-clause], namely it is
 used to determine the prefix of the generated variables and
 it is bound in the right-hand side of the reduction rule,
 but unlike the single-variable fresh clause, it is bound to
@@ -484,13 +498,14 @@ The side-conditions are expected to all hold, and have the
 format of the second argument to the side-condition pattern,
 described above.
 
-Each where clauses binds a variable and the side-conditions
-(and where clauses) that follow the where declaration are in
+Each @scheme[where] clauses binds a variable and the side-conditions
+(and @scheme[where] clauses) that follow the where declaration are in
 scope of the where declaration. The bindings are the same as
-bindings in a term-let expression.
+bindings in a @scheme[term-let] expression.
 
 As an example, this
 
+@schemeblock[
   (reduction-relation
    lc-lang
    (--> (in-hole c_1 ((lambda (variable_i ...) e_body) v_i ...))
@@ -499,15 +514,18 @@ As an example, this
                              (term (v_i ...)) 
                              (term (variable_i ...))))
         beta-v))
+]
 
 defines a reduction relation for the lambda-calculus above.
+}
 
-> (reduction-relation 
-    <language>
-    (<arrow-var> <lhs-pattern> <rhs-exp>) ...
-    with
-    [(<arrow> <lhs-pattern> <rhs-exp>)
-     (<arrow-var> <var> <var>)] ...)
+@defform/none[#:literals (with reduction-relation)
+         (reduction-relation 
+          language
+          (arrow-var pattern exp) ...
+          with
+          [(arrow pattern exp)
+           (arrow-var var var)] ...)]{
 
 Defines a reduction relation with shortcuts. As above, the
 first section defines clauses of the reduction relation, but
@@ -525,6 +543,7 @@ terms of the main --> relation.
 
 For example, this
 
+@schemeblock[
   (reduction-relation
    lc-num-lang
    (==> ((lambda (variable_i ...) e_body) v_i ...)
@@ -538,12 +557,14 @@ For example, this
    with
    [(--> (in-hole c_1 a) (in-hole c_1 b))
     (==> a b)])
+]
   
 defines reductions for the lambda calculus with numbers,
-where the ==> relation is defined by reducing in the context
-c.
+where the @tt{==>} relation is defined by reducing in the context
+@tt{c}.
+}
 
-> (extend-reduction-relation <reduction-relation> <language> <more> ...)
+@defform[(extend-reduction-relation reduction-relation language more ...)]{
 
 This form extends the reduction relation in its first
 argument with the rules specified in <more>. They should
@@ -557,18 +578,20 @@ rule is removed.
 In addition to adding the rules specified to the existing
 relation, this form also reinterprets the rules in the
 original reduction, using the new language.
-
-> union-reduction-relations :: (reduction-relation? ... -> reduction-relation?)
+}
+@defproc[(union-reduction-relations [r reduction-relation?] ...) reduction-relation?]{
 
 Combines all of the argument reduction relations into a
 single reduction relation that steps when any of the
 arguments would have stepped.
+}
 
-> reduction-relation->rule-names :: 
-     (reduction-relation? . -> . (listof (union false/c symbol?)))
+@defproc[(reduction-relation->rule-names [r reduction-relation?])
+         (listof (union false/c symbol?))]{
 
 Returns the names of all of the reduction relation's clauses
 (or false if there is no name for a given clause).
+}
 
 > (compatible-closure <reduction-relation> <lang> <non-terminal>) SYNTAX
 
