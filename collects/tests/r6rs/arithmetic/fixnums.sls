@@ -48,8 +48,6 @@
 
   (define (run-arithmetic-fixnums-tests)
 
-    (test/exn (fx- (least-fixnum)) &implementation-restriction)
-
     (test (fxfirst-bit-set 0)         -1)
     (test (fxfirst-bit-set 1)         0)
     (test (fxfirst-bit-set -4)        2)
@@ -174,10 +172,15 @@
     (test (fx+ (greatest-fixnum) (least-fixnum)) -1)
     (test (fx+ 0 (greatest-fixnum)) (greatest-fixnum))
     (test (fx+ 0 (least-fixnum)) (least-fixnum))
+    (test/exn (fx+ (greatest-fixnum) 1) &implementation-restriction)
+    (test/exn (fx+ (least-fixnum) -1) &implementation-restriction)
+
     (test (fx* 3 17) 51)
     (test (fx* 1 (least-fixnum)) (least-fixnum))
     (test (fx* 1 (greatest-fixnum)) (greatest-fixnum))
     (test (fx* -1 (greatest-fixnum)) (+ (least-fixnum) 1))
+    (test/exn (fx* (greatest-fixnum) 2) &implementation-restriction)
+    (test/exn (fx* (least-fixnum) -1) &implementation-restriction)
     
     (test (fx- 1) -1)
     (test (fx- -1) 1)
@@ -187,6 +190,9 @@
     (test (fx- (greatest-fixnum) 1) (- (greatest-fixnum) 1))
     (test (fx- (greatest-fixnum) (greatest-fixnum)) 0)
     (test (fx- (least-fixnum) (least-fixnum)) 0)
+
+    (test/exn (fx- (least-fixnum)) &implementation-restriction)
+    (test/exn (fx- (least-fixnum) 1) &implementation-restriction)
 
     ;; If you put N numbers here, it runs to O(N^3) tests!
     (carry-tests (list 0 1 2 -1 -2 38734 -3843 2484598 -348732487 
@@ -296,6 +302,7 @@
     (test (fxarithmetic-shift -1 -1) -1)
     (test (fxarithmetic-shift -10 2) -40)
     (test (fxarithmetic-shift -40 -2) -10)
+    (test/exn (fxarithmetic-shift (greatest-fixnum) 1) &implementation-restriction)
 
     (test (fxarithmetic-shift-left 1 1) 2)
     (test (fxarithmetic-shift-right 1 1) 0)
@@ -305,6 +312,7 @@
     (test (fxarithmetic-shift-right -1 1) -1)
     (test (fxarithmetic-shift-left -10 2) -40)
     (test (fxarithmetic-shift-right -40 2) -10)
+    (test/exn (fxarithmetic-shift-left (greatest-fixnum) 1) &implementation-restriction)
 
     (test (fxrotate-bit-field 10 0 2 0) 10)
     (test (fxrotate-bit-field 10 0 2 1) 9)

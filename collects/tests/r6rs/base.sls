@@ -512,6 +512,7 @@
     (test (= +inf.0 +inf.0)            #t)
     (test (= -inf.0 +inf.0)            #f)
     (test (= -inf.0 -inf.0)            #t)
+    (test (= +nan.0 +nan.0)            #f)
 
     (try-reals
      (lambda (x)
@@ -831,7 +832,8 @@
     (test/approx (atan -inf.0) -1.5707963267948965)
     (test/approx (atan +inf.0) 1.5707963267948965)
     (test/approx (log -1.0+0.0i) 0.0+3.141592653589793i)
-    (test/approx (log -1.0-0.0i) 0.0-3.141592653589793i)
+    (unless (eqv? 0.0 -0.0)
+      (test/approx (log -1.0-0.0i) 0.0-3.141592653589793i))
 
     (test/approx (sqrt 5) 2.23606797749979)
     (test/approx (sqrt -5) 0.0+2.23606797749979i)
@@ -867,7 +869,8 @@
 
     (test/approx (angle -1.0)         3.141592653589793)
     (test/approx (angle -1.0+0.0i)    3.141592653589793)
-    (test/approx (angle -1.0-0.0i)    -3.141592653589793)
+    (unless (eqv? 0.0 -0.0)
+      (test/approx (angle -1.0-0.0i)    -3.141592653589793))
     (test (angle +inf.0)       0.0)
     (test/approx (angle -inf.0)       3.141592653589793)
 
