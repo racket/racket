@@ -168,7 +168,6 @@ static Scheme_Object *top_expander;
 static Scheme_Object *stop_expander;
 
 static Scheme_Object *quick_stx;
-static int taking_shortcut;
 
 Scheme_Object *scheme_stack_dump_key;
 
@@ -4634,6 +4633,7 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
     dest[i].certs = src[drec].certs;
     /* should be always NULL */
     dest[i].observer = src[drec].observer;
+    dest[i].pre_unwrapped = 0;
   }
 }
 
@@ -4651,6 +4651,7 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
     dest[i].value_name = scheme_false;
     dest[i].certs = src[drec].certs;
     dest[i].observer = src[drec].observer;
+    dest[i].pre_unwrapped = 0;
   }
 }
 
@@ -4672,6 +4673,7 @@ void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
   lam[dlrec].value_name = scheme_false;
   lam[dlrec].certs = src[drec].certs;
   lam[dlrec].observer = src[drec].observer;
+  lam[dlrec].pre_unwrapped = 0;
 }
 
 void scheme_merge_lambda_rec(Scheme_Compile_Info *src, int drec,
@@ -4918,6 +4920,7 @@ static void *compile_k(void)
     rec.value_name = scheme_false;
     rec.certs = NULL;
     rec.observer = NULL;
+    rec.pre_unwrapped = 0;
 
     cenv = scheme_new_comp_env(genv, insp, SCHEME_TOPLEVEL_FRAME);
 
@@ -5556,7 +5559,7 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     } else if (rec[drec].comp && SAME_OBJ(var, normal) && !rec[drec].observer) {
       /* Skip creation of intermediate form */
       Scheme_Syntax *f;
-      taking_shortcut = 1;
+      rec[drec].pre_unwrapped = 1;
       f = (Scheme_Syntax *)SCHEME_SYNTAX(var);
       if (can_recycle_stx && !quick_stx)
         quick_stx = can_recycle_stx;
@@ -5678,9 +5681,10 @@ compile_expand_app(Scheme_Object *forms, Scheme_Comp_Env *env,
 		   Scheme_Compile_Expand_Info *rec, int drec)
 {
   Scheme_Object *form, *naya;
-  int tsc = taking_shortcut;
+  int tsc;
 
-  taking_shortcut = 0;
+  tsc = rec[drec].pre_unwrapped;
+  rec[drec].pre_unwrapped = 0;
 
   scheme_rec_add_certs(rec, drec, forms);
   if (tsc) {
@@ -5907,9 +5911,9 @@ datum_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec
 {
   Scheme_Object *c, *v;
 
-  if (taking_shortcut) {
+  if (rec[drec].pre_unwrapped) {
     c = form;
-    taking_shortcut = 0;
+    rec[drec].pre_unwrapped = 0;
   } else {
     c = SCHEME_STX_CDR(form);
     /* Need datum->syntax, in case c is a list: */
@@ -5947,13 +5951,13 @@ datum_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec
                                 0, 2);
 }
 
-static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Comp_Env *env)
+static Scheme_Object *check_top(const char *when, Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Object *c;
 
-  if (taking_shortcut) {
+  if (rec[drec].pre_unwrapped) {
     c = form;
-    taking_shortcut = 0;
+    rec[drec].pre_unwrapped = 0;
   } else
     c = SCHEME_STX_CDR(form);
 
@@ -6009,7 +6013,7 @@ top_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
 {
   Scheme_Object *c;
 
-  c = check_top(scheme_compile_stx_string, form, env);
+  c = check_top(scheme_compile_stx_string, form, env, rec, drec);
 
   c = scheme_tl_id_sym(env->genv, c, NULL, 0, NULL);
 
@@ -6031,7 +6035,7 @@ static Scheme_Object *
 top_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
   SCHEME_EXPAND_OBSERVE_PRIM_TOP(erec[drec].observer);
-  check_top(scheme_expand_stx_string, form, env);
+  check_top(scheme_expand_stx_string, form, env, erec, drec);
   return form;
 }
 
@@ -8757,6 +8761,7 @@ static void *expand_k(void)
     erec1.value_name = scheme_false;
     erec1.certs = certs;
     erec1.observer = observer;
+    erec1.pre_unwrapped = 0;
 
     if (catch_lifts_key)
       scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env), scheme_false, catch_lifts_key);
@@ -9576,13 +9581,13 @@ local_eval(int argc, Scheme_Object **argv)
 	  
   stx_env->in_modidx = scheme_current_thread->current_local_modidx;
   if (!SCHEME_FALSEP(expr)) {
-
     Scheme_Compile_Expand_Info rec;
     rec.comp = 0;
     rec.depth = -1;
     rec.value_name = scheme_false;
     rec.certs = certs;
     rec.observer = observer;
+    rec.pre_unwrapped = 0;
     
     /* Evaluate and bind syntaxes */
     expr = scheme_add_remove_mark(expr, scheme_current_thread->current_local_mark);

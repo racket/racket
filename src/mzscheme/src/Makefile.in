@@ -26,7 +26,6 @@ OBJS =  salloc.@LTO@ \
 	fun.@LTO@ \
         gmp.@LTO@ \
 	hash.@LTO@ \
-	image.@LTO@ \
 	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
@@ -66,7 +65,6 @@ SRCS =  $(srcdir)/salloc.c \
 	$(srcdir)/fun.c \
 	$(srcdir)/gmp/gmp.c \
 	$(srcdir)/hash.c \
-	$(srcdir)/image.c \
 	$(srcdir)/jit.c \
 	$(srcdir)/list.c \
 	$(srcdir)/module.c \
@@ -170,8 +168,6 @@ gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h
 	$(CC) $(CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(srcdir)/hash.c
 	$(CC) $(CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
-image.@LTO@: $(srcdir)/image.c
-	$(CC) $(CFLAGS) -c $(srcdir)/image.c -o image.@LTO@
 jit.@LTO@: $(srcdir)/jit.c
 	$(CC) $(CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
 list.@LTO@: $(srcdir)/list.c

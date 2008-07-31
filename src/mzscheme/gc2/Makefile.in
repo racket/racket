@@ -47,7 +47,6 @@ OBJS =  salloc.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
 	hash.@LTO@ \
-	image.@LTO@ \
 	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
@@ -91,7 +90,6 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/file.c \
 	$(XSRCDIR)/fun.c \
 	$(XSRCDIR)/hash.c \
-	$(XSRCDIR)/image.c \
 	$(XSRCDIR)/jit.c \
 	$(XSRCDIR)/list.c \
 	$(XSRCDIR)/module.c \
@@ -164,8 +162,6 @@ $(XSRCDIR)/fun.c: ../src/fun.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/fun.c $(SRCDIR)/fun.c
 $(XSRCDIR)/hash.c: ../src/hash.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/hash.c $(SRCDIR)/hash.c
-$(XSRCDIR)/image.c: ../src/image.@LTO@ $(XFORMDEP)
-	$(XFORM) $(XSRCDIR)/image.c $(SRCDIR)/image.c
 $(XSRCDIR)/jit.c: ../src/jit.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/jit.c $(SRCDIR)/jit.c
 $(XSRCDIR)/module.c: ../src/module.@LTO@ $(XFORMDEP)
@@ -246,8 +242,6 @@ fun.@LTO@: $(XSRCDIR)/fun.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
 hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
-image.@LTO@: $(XSRCDIR)/image.c
-	$(CC) $(CFLAGS) -c $(XSRCDIR)/image.c -o image.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/jit.c -o jit.@LTO@
 list.@LTO@: $(XSRCDIR)/list.c

@@ -36,7 +36,6 @@
     "file"
     "fun"
     "hash"
-    "image"
     "jit"
     "list"
     "module"

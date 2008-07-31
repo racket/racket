@@ -5371,6 +5371,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   rec1.value_name = NULL;
   rec1.certs = rec[drec].certs;
   rec1.observer = NULL;
+  rec1.pre_unwrapped = 0;
 
   if (for_stx) {
     names = defn_targets_syntax(names, exp_env, &rec1, 0);
@@ -5561,6 +5562,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.value_name = NULL;
   mrec.certs = certs;
   mrec.observer = NULL;
+  mrec.pre_unwrapped = 0;
 
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
 

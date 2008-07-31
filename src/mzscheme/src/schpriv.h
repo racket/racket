@@ -1775,6 +1775,7 @@ typedef struct Scheme_Compile_Expand_Info
   Scheme_Object *observer;
   char dont_mark_local_use;
   char resolve_module_ids;
+  char pre_unwrapped;
   int depth;
 } Scheme_Compile_Expand_Info;
 

@@ -341,3 +341,8 @@ unix-cygwin-install-3m:
 
 unix-cygwin-install-3m-final:
 	$(MAKE) unix-install-3m-final
+
+# Generate plt-gdbinit ----------------------------------------
+
+mz-gdbinit: $(srcdir)/mk-gdbinit.ss $(srcdir)/src/stypes.h
+	mzscheme $(srcdir)/mk-gdbinit.ss

@@ -1703,11 +1703,6 @@ MZ_EXTERN void scheme_check_threads(void);
 MZ_EXTERN void scheme_wake_up(void);
 MZ_EXTERN int scheme_get_external_event_fd(void);
 
-/* image dump enabling startup: */
-MZ_EXTERN int scheme_image_main(int argc, char **argv);
-MZ_EXTERN int (*scheme_actual_main)(int argc, char **argv);
-MZ_EXTERN void scheme_set_actual_main(int (*m)(int argc, char **argv));
-
 /* GC registration: */
 MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
 MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
