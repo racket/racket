@@ -4,7 +4,8 @@
            scheme/class
            scheme/list
            net/gifwrite
-           scheme/contract)
+           scheme/contract
+           (prefix-in octree: file/octree-quantize))
   
   (provide write-gif
            write-animated-gif)
@@ -43,7 +44,7 @@
                  (let ([last-argb-thunk (last argb-thunks)])
                    (for-each (lambda (argb-thunk)
                                (let-values ([(pixels colormap transparent)
-                                             (quantize (argb-thunk))])
+                                             (octree:quantize (argb-thunk))])
                                  (when (or transparent delay)
                                    (gif-add-control gif 'any #f (or delay 0) transparent))
                                  (gif-add-image gif 0 0 w h #f colormap pixels)
@@ -54,7 +55,7 @@
                  (gif-end gif))))
             ;; Build images and quantize all at once:
             (let-values ([(pixels colormap transparent)
-                          (quantize (apply bytes-append (map (lambda (t) (t)) argb-thunks)))])
+                          (octree:quantize (apply bytes-append (map (lambda (t) (t)) argb-thunks)))])
               (call-with-output-file*
                filename
                (lambda (p)

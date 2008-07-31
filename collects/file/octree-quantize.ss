@@ -3,6 +3,12 @@
          scheme/contract
          scheme/gui/base)
 
+;; This is an implementation of the Octree Quantization algorithm.  This implementation 
+;; follows the sketch in:
+;;
+;; Dean Clark.  Color Quantization using Octrees.  Dr. Dobbs Portal, January 1, 1996.
+;; http://www.ddj.com/184409805
+
 
 ;; quantize: bytes (integer-in 1 255) -> (values bytes gif-colormap color)
 ;; Adaptively quantizes 24-bit image data to fit within, at most, 256 colors
