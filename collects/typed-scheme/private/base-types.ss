@@ -82,7 +82,7 @@
   
   
   -> U mu Un All Opaque Vectorof
-  Parameter Tuple Class
+  Parameter Tuple Class Values
   )  
 
 (provide-extra-tnames)

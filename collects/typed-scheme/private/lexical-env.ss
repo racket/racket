@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require "type-environments.ss" "tc-utils.ss" "type-env.ss" "mutated-vars.ss" "type-utils.ss")
+(require "type-environments.ss" "tc-utils.ss" "type-env.ss" "mutated-vars.ss" "type-utils.ss" "type-effect-convenience.ss")
 
 (provide (all-defined-out))
 
@@ -23,9 +23,11 @@
   (lookup (lexical-env) i 
           (lambda (i) (lookup-type 
                        i (lambda () 
-                           (if (lookup (dotted-env) i (lambda _ #f))
-                               (tc-error/expr "Rest variable ~a with ... type used in an inappropriate context" (syntax-e i))
-                               (lookup-fail (syntax-e i))))))))
+                           (cond [(lookup (dotted-env) i (lambda _ #f))
+                                  =>
+                                  (lambda (a)
+                                    (-lst (substitute Univ (cdr a) (car a))))]
+                                 [else (lookup-fail (syntax-e i))]))))))
 
 ;; refine the type of i in the lexical env
 ;; (identifier type -> type) identifier -> environment
