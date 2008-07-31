@@ -301,7 +301,6 @@
  (enable-keybindings-in-menus "Habilita enlaces de teclas en los menús")
  (automatically-to-ps "Imprime automáticamente a un archivo en postscript")
  (option-as-meta "Tratar cualquier tecla como meta") ;; macos/macos x only
- (separate-dialog-for-searching "Use el diálogo adecuado para buscar")
  (reuse-existing-frames "Reutilizar marcos existentes cuando se abre un nuevo archivo")
  (default-fonts "Fuentes por omisión")
  (paren-match-color "Color de resaltado de paréntesis") ; in prefs dialog

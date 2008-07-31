@@ -401,7 +401,6 @@ please adhere to these guidelines:
   (enable-keybindings-in-menus "Slå tastaturgenveje i menuer til")
   (automatically-to-ps "Udskriv automatisk til postscriptfil")
   (option-as-meta "Brugtion option-tasten som meta") ;; macos/macos x only  
-  (separate-dialog-for-searching "Brug separat dialog til søgning")
   (reuse-existing-frames "Genbrug gamle vinduer, når nye filer åbnes")
   (default-fonts "Standardskrifttyper")
   (paren-match-color "Parentesfremhævningsfarve") ; in prefs dialog

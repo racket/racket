@@ -224,7 +224,6 @@
  (display-line-numbers "Toon regelnummers (geen letternummers) in buffer") ; -- 'buffer' is not wrong, but unclear
  (enable-keybindings-in-menus "Gebruik sneltoetsen in menus")
  (automatically-to-ps "Automatically print to postscript file")
- (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Verstek-lettertypen")
  

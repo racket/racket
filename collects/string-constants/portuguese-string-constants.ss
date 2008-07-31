@@ -403,7 +403,6 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "Activar ligações de teclas nos menus")
  (automatically-to-ps "Imprimir automaticamente para um ficheiro postscript")
  (option-as-meta "Tratar tecla option como meta") ;; macos/macos x only
- (separate-dialog-for-searching "Usar janela em separado para a procura")
  (reuse-existing-frames "Reutilizar janelas já existentes para abrir novos ficheiros")
  (default-fonts "Fontes por Defeito")
  (paren-match-color "Cor de iluminação dos parêntesis"); in prefs dialog

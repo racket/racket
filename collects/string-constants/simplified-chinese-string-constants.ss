@@ -352,7 +352,6 @@
   (enable-keybindings-in-menus "允许使用菜单中的快捷键")
   (automatically-to-ps "自动打印成postscript文件")
   (command-as-meta "将command键当作meta") ;; macos/macos x only
-  (separate-dialog-for-searching "使用单独的搜索对话框")
   (reuse-existing-frames "在打开新文件时，使用现有的框架")
   (default-fonts "默认字体")
   (paren-match-color "高亮显示括号所使用的颜色") ; in prefs dialog

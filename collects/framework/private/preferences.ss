@@ -414,10 +414,6 @@ the state transitions / contracts are:
                                (string-constant wrap-words-in-editor-buffers)
                                values values)
                    (make-check editor-panel 
-                               'framework:search-using-dialog?
-                               (string-constant separate-dialog-for-searching)
-                               values values)
-                   (make-check editor-panel 
                                'framework:open-here?
                                (string-constant reuse-existing-frames)
                                values values)

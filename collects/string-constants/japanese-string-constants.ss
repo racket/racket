@@ -407,7 +407,6 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "メニューのキーバインドを有効にする")
  (automatically-to-ps "自動的に PostScript ファイルに印刷する")
  (command-as-meta "Command キーを Meta キーとして処理する") ;; macos/macos x only
- (separate-dialog-for-searching "検索に別のダイアログを使う")
  (reuse-existing-frames "新しいファイルを開くときに既存のフレームを再利用する")
  (default-fonts "既定のフォント")
  (basic-gray-paren-match-color "基本グレー括弧の強調表示カラー") ; in prefs dialog

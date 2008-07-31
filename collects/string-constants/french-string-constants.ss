@@ -417,7 +417,6 @@
   (enable-keybindings-in-menus "Raccourcis clavier dans les menus.")
   (automatically-to-ps "Imprimer automatiquement dans un fichier postscript.")
   (command-as-meta "Utiliser la touche de commande comme touche meta") ;; macos/macos x only
-  (separate-dialog-for-searching "Utiliser un dialogue séparé pour les recherches.")
   (reuse-existing-frames "Réutiliser les fenêtres existantes lors de l'ouverture de nouveaux fichiers")
   (default-fonts "Polices par défaut")
   (basic-gray-paren-match-color "Couleur grise simple de surlignage des parenthèses") ; in prefs dialog

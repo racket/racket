@@ -425,7 +425,6 @@ please adhere to these guidelines:
  (enable-keybindings-in-menus "Enable keybindings in menus")
  (automatically-to-ps "Automatically print to PostScript file")
  (command-as-meta "Treat command key as meta") ;; macos/macos x only
- (separate-dialog-for-searching "Use separate dialog for searching")
  (reuse-existing-frames "Reuse existing frames when opening new files")
  (default-fonts "Default Fonts")
  (basic-gray-paren-match-color "Basic gray parenthesis highlight color") ; in prefs dialog

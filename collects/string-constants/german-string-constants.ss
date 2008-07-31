@@ -321,7 +321,6 @@
  (enable-keybindings-in-menus "Tastenbelegung für Menüs")
  (automatically-to-ps "Automatisch in PostScript-Datei drucken")
  (command-as-meta "Command-Taste als Meta behandeln") ;; macos/macos x only
- (separate-dialog-for-searching "Für Textsuche separaten Dialog verwenden")
  (reuse-existing-frames "Existierende Fenster für neu geöffnete Dateien wiederverwenden")
  (default-fonts "Standard-Fonts")
  (basic-gray-paren-match-color "Farbe für Klammern-Hervorhebung \"Grau Standard\"") ; in prefs dialog
