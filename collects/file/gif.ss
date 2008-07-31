@@ -586,26 +586,12 @@
              The conversion treats alpha values less than 128 as transparent
              pixels, and other alpha values as solid.
 
-             The quantization process uses Octrees @cite["gervautz1990"] to construct an adaptive
+             The quantization process uses Octrees @cite["Gervautz1990"] to construct an adaptive
              palette for all (non-transparent) colors in the image.  This implementation is
-             based on an article by Dean Clark @cite["clark1996"]. 
+             based on an article by Dean Clark @cite["Clark1996"]. 
              
              To convert a collection of images all with the same quantization,
              simply append them for the input of a single call of
-             @scheme[quantize], and then break apart the result bytes.
-             
-             @(bibliography
-               (bib-entry #:key "gervautz1990"
-                          #:author "M. Gervautz and W. Purgathofer"
-                          #:title "A simple method for color quantization: Octree quantization"
-                          #:location "Graphics Gems"
-                          #:date "1990")
-               
-               (bib-entry #:key "clark1996"
-                          #:author "Dean Clark"
-                          #:title "Color Quantization using Octrees"
-                          #:location "Dr. Dobbs Journal"
-                          #:date "January 1, 1996"
-                          #:url "http://www.ddj.com/184409805"))}))
+             @scheme[quantize], and then break apart the result bytes.}))
 (define (quantize argb)
   (octree:quantize argb))
