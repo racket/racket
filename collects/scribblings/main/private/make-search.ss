@@ -122,7 +122,7 @@
                               (error "internal error: unexpected tooltip"))]
                            [else body])])
                (values (compact-url href) (compact-body body)))]
-            [else (error "something bad happened")])))
+            [else (error "unexpected value rendered: ~e" e)])))
       (define (lib->name lib)
         (quote-string (let loop ([lib lib])
                         (match lib
