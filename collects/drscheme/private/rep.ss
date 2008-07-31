@@ -643,34 +643,45 @@ TODO
       (define/public (highlight-errors raw-locs raw-error-arrows)
         (let* ([cleanup-locs
                 (λ (locs)
-                  (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
-                                        (number? (srcloc-position loc))
-                                        (number? (srcloc-span loc))))
-                          (map (λ (srcloc)
-                                 (cond
-                                   [(send definitions-text port-name-matches? (srcloc-source srcloc))
-                                    (make-srcloc definitions-text
-                                                 (srcloc-line srcloc)
-                                                 (srcloc-column srcloc)
-                                                 (srcloc-position srcloc)
-                                                 (srcloc-span srcloc))]
-                                   [(port-name-matches? (srcloc-source srcloc))
-                                    (make-srcloc this
-                                                 (srcloc-line srcloc)
-                                                 (srcloc-column srcloc)
-                                                 (srcloc-position srcloc)
-                                                 (srcloc-span srcloc))]
-                                   [(and (symbol? (srcloc-source srcloc))
-                                         (text:lookup-port-name (srcloc-source srcloc)))
-                                    =>
-                                    (lambda (editor)
-                                      (make-srcloc editor
+                  (let ([ht (make-hasheq)])
+                    (filter (λ (loc) (and (is-a? (srcloc-source loc) text:basic<%>)
+                                          (number? (srcloc-position loc))
+                                          (number? (srcloc-span loc))))
+                            (map (λ (srcloc)
+                                   (cond
+                                     [(hash-ref ht (srcloc-source srcloc) #f)
+                                      =>
+                                      (λ (e) 
+                                        (make-srcloc e
+                                                     (srcloc-line srcloc)
+                                                     (srcloc-column srcloc)
+                                                     (srcloc-position srcloc)
+                                                     (srcloc-span srcloc)))]
+                                     [(send definitions-text port-name-matches? (srcloc-source srcloc))
+                                      (hash-set! ht (srcloc-source srcloc) definitions-text)
+                                      (make-srcloc definitions-text
                                                    (srcloc-line srcloc)
                                                    (srcloc-column srcloc)
                                                    (srcloc-position srcloc)
-                                                   (srcloc-span srcloc)))]
-                                   [else srcloc]))
-                               locs)))]
+                                                   (srcloc-span srcloc))]
+                                     [(port-name-matches? (srcloc-source srcloc))
+                                      (hash-set! ht (srcloc-source srcloc) definitions-text)
+                                      (make-srcloc this
+                                                   (srcloc-line srcloc)
+                                                   (srcloc-column srcloc)
+                                                   (srcloc-position srcloc)
+                                                   (srcloc-span srcloc))]
+                                     [(and (symbol? (srcloc-source srcloc))
+                                           (text:lookup-port-name (srcloc-source srcloc)))
+                                      =>
+                                      (lambda (editor)
+                                        (make-srcloc editor
+                                                     (srcloc-line srcloc)
+                                                     (srcloc-column srcloc)
+                                                     (srcloc-position srcloc)
+                                                     (srcloc-span srcloc)))]
+                                     [else srcloc]))
+                                 locs))))]
                [locs (cleanup-locs raw-locs)]
                [error-arrows (and raw-error-arrows (cleanup-locs raw-error-arrows))])
           
