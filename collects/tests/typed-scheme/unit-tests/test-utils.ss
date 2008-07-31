@@ -32,7 +32,7 @@
 (define (run . ts)
   (test/text-ui (mk-suite ts)))
 
-(define (test/gui suite) ((dynamic-require '(planet schematics/schemeunit/graphical-ui) 'test/graphical-ui) suite))
+(define (test/gui suite) ((dynamic-require '(planet schematics/schemeunit:2/graphical-ui) 'test/graphical-ui) suite))
 
 (define (run/gui . ts)
   (test/gui (mk-suite ts)))
