@@ -3,7 +3,7 @@
           (for-label mrlib/gif
                      file/gif))
 
-@title{GIF and Animated GFI Writing}
+@title{GIF and Animated GIF Writing}
 
 @defmodule[mrlib/gif]
 
