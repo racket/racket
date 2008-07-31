@@ -14,7 +14,7 @@
 ;; Adaptively quantizes 24-bit image data to fit within, at most, 256 colors
 ;; (including the transparent color.)  The signature is meant to match the
 ;; function provided by file/gif.
-(define (quantize argb #:palette (palette 255))
+(define (quantize argb #:palette [palette 255])
   (let* ([an-octree (make-octree-from-argb argb palette)]
          [len (bytes-length argb)]
          [dest (make-bytes (/ len 4))])
@@ -33,13 +33,11 @@
     (values dest (vector->list (octree-palette an-octree)) TRANSPARENT-INDEX)))
 
 
-
-
 ;; make-octree-from-argb: bytes positive-number -> octree
 ;; Constructs an octree ready to quantize the colors from an-argb.
 (define (make-octree-from-argb an-argb n)
   (unless (> n 0)
-    (raise (make-exn:fail:octree "n must be positive" (current-continuation-marks))))
+    (raise-type-error 'make-octree-from-argb "positive number" n))
   (let ([an-octree (new-octree)]
         [len (bytes-length an-argb)])
     (let make-octree-loop ([i 0])
@@ -64,10 +62,7 @@
 (define (alpha-opaque? a)
   (>= a 128))
 
-
 (define TRANSPARENT-INDEX 0)
-
-
 
 ;; quantize-bitmap: bitmap positive-number -> bitmap
 ;; Given a bitmap, returns a new bitmap quantized to, at most, n colors.
@@ -108,42 +103,33 @@
       (send dc set-bitmap #f)
       new-bm)))
 
-
 ;; The maximum level height of an octree.
 (define MAX-LEVEL 7)
-
 
 (define byte/c (integer-in 0 255))
 (define octet/c (integer-in 0 7))
 
 
-
-(define-struct (exn:fail:octree exn:fail) ())
-
-
-;; A color is an (vector byte byte byte)
-
+;; A color is a (vector byte byte byte)
 
 ;; An octree is a:
-(define-struct octree (root             ;; node
-                       leaf-count       ;; number
-                       reduction-heads  ;; (vectorof (or/c node #f))
-                       palette          ;; (vectorof (or/c color #f))
-                       )
+(define-struct octree (root            ; node
+                       leaf-count      ; number
+                       reduction-heads ; (vectorof (or/c node #f))
+                       palette)        ; (vectorof (or/c color #f))
   #:mutable)
 ;; reduction-heads is used to accelerate the search for a reduction candidate.
 
 
 ;; A subtree node is a:
-(define-struct node (leaf?          ;; bool
-                     npixels        ;; number  -- number of pixels this subtree node represents
-                     redsum         ;; number
-                     greensum       ;; number
-                     bluesum        ;; number
-                     children       ;; (vectorof (or/c #f node))
-                     next           ;; (or/c #f node)
-                     palette-index  ;; (or/c #f (integer-in 0 255))
-                     )
+(define-struct node (leaf?          ; bool
+                     npixels        ; number  -- number of pixels this subtree node represents
+                     redsum         ; number
+                     greensum       ; number
+                     bluesum        ; number
+                     children       ; (vectorof (or/c #f node))
+                     next           ; (or/c #f node)
+                     palette-index) ; (or/c #f (integer-in 0 255))
   #:mutable)
 ;; node-next is used to accelerate the search for a reduction candidate.
 
@@ -161,25 +147,22 @@
                                )]
          [an-octree
           (make-octree root-node
-                       0 ;; no leaves so far
-                       (make-vector (add1 MAX-LEVEL) #f) ;; no reductions so far
-                       (make-vector 256 #(0 0 0))        ;; the palette
-                       )])
+                       0 ; no leaves so far
+                       (make-vector (add1 MAX-LEVEL) #f) ; no reductions so far
+                       (make-vector 256 #(0 0 0)))])        ; the palette
     ;; Although we'll almost never reduce to this level, initialize the first
     ;; reducible node to the root, for completeness sake.
     (vector-set! (octree-reduction-heads an-octree) 0 root-node)
     an-octree))
 
 
-
 ;; rgb->index: natural-number byte byte byte -> octet
 ;; Given a level and an (r,g,b) triplet, returns an octet that can be used
 ;; as an index into our octree structure.
 (define (rgb->index level r g b)
-  (bitwise-ior
-   (bitwise-and 4 (arithmetic-shift r (- level 5)))
-   (bitwise-and 2 (arithmetic-shift g (- level 6)))
-   (bitwise-and 1 (arithmetic-shift b (- level 7)))))
+  (bitwise-ior (bitwise-and 4 (arithmetic-shift r (- level 5)))
+               (bitwise-and 2 (arithmetic-shift g (- level 6)))
+               (bitwise-and 1 (arithmetic-shift b (- level 7)))))
 
 
 ;; octree-insert-color!: octree byte byte byte -> void
@@ -217,11 +200,11 @@
                  (cond
                    [(= level MAX-LEVEL)
                     ;; If we added a leaf, mark it in the octree.
-                    (set-octree-leaf-count! an-octree 
+                    (set-octree-leaf-count! an-octree
                                             (add1 (octree-leaf-count an-octree)))]
                    [else
                     ;; Attach the node as a reducible node if it's interior.
-                    (set-node-next! 
+                    (set-node-next!
                      new-node (vector-ref (octree-reduction-heads an-octree)
                                           (add1 level)))
                     (vector-set! (octree-reduction-heads an-octree) 
@@ -235,8 +218,7 @@
 ;; octree-reduce!: octree -> void
 ;; Reduces one of the subtrees, collapsing the children into a single node.
 (define (octree-reduce! an-octree)
-  (let ([candidate (pop-reduction-candidate! an-octree)])
-    (node-reduce! candidate an-octree)))
+  (node-reduce! (pop-reduction-candidate! an-octree) an-octree))
 
 
 ;; node-reduce!: node octree -> void
@@ -286,10 +268,9 @@
     (for ([child (in-vector (node-children a-node))]
           #:when (and child (not (node-leaf? child))))
       (loop child)
-      
       (when (interior-node-one-leaf-child? a-node)
         (node-reduce! a-node an-octree))))
-  
+
   ;; Attach palette entries.
   (let ([current-palette-index 1])
     (let loop ([a-node (octree-root an-octree)])
@@ -314,16 +295,14 @@
          (node-leaf? (car child-list)))))
 
 
-
 ;; octree-lookup: octree byte byte byte -> (values byte byte byte)
 ;; Returns the palettized color.
 (define (octree-lookup an-octree r g b)
-  (let ([index 
-         (node-lookup-index (octree-root an-octree) an-octree r g b 0)])
-    (let ([vec (vector-ref (octree-palette an-octree) index)])
-      (values (vector-ref vec 0)
-              (vector-ref vec 1)
-              (vector-ref vec 2)))))
+  (let* ([index (node-lookup-index (octree-root an-octree) an-octree r g b 0)]
+         [vec (vector-ref (octree-palette an-octree) index)])
+    (values (vector-ref vec 0)
+            (vector-ref vec 1)
+            (vector-ref vec 2))))
 
 
 ;; octree-lookup-index: octree byte byte byte -> byte
@@ -337,18 +316,14 @@
 (define (node-lookup-index a-node an-octree r g b level)
   (let loop ([a-node a-node]
              [level level])
-    (cond [(node-leaf? a-node)
-           (node-palette-index a-node)]
-          [else
-           (let ([child (vector-ref (node-children a-node) (rgb->index level r g b))])
-             (unless child
-               (raise (make-exn:fail:octree 
-                       (format 
-                        "octree-lookup: Color (~a, ~a, ~a) not previously inserted"
-                        r g b)
-                       (current-continuation-marks))))
-             (loop child (add1 level)))])))
-
+    (if (node-leaf? a-node)
+      (node-palette-index a-node)
+      (let ([child (vector-ref (node-children a-node) (rgb->index level r g b))])
+        (unless child
+          (error 'node-lookup-index
+                 "color (~a, ~a, ~a) not previously inserted"
+                 r g b))
+        (loop child (add1 level))))))
 
 
 (define color? byte?)
@@ -369,31 +344,30 @@
        (zero? (remainder (bytes-length b) 4))))
 
 
-(provide/contract  [quantize ((argb-bytes?) (#:palette (integer-in 1 255)) 
-                                            . ->* . (values bytes? gif-colormap? color?))]
-                   [quantize-bitmap ((is-a?/c bitmap%) natural-number/c 
-                                                      . -> .
-                                                      (is-a?/c bitmap%))]
-                   
-                   [struct (exn:fail:octree exn:fail) ((message string?)
-                                                       (continuation-marks continuation-mark-set?))]
-                   [struct octree 
-                          ((root node?)
-                           (leaf-count natural-number/c)
-                           (reduction-heads (vectorof (or/c node? false/c)))
-                           (palette (vectorof (vector/c byte/c byte/c byte/c))))]
-                   [struct node
-                          ((leaf? boolean?)
-                           (npixels natural-number/c)
-                           (redsum natural-number/c)
-                           (greensum natural-number/c)
-                           (bluesum natural-number/c)
-                           (children (vectorof (or/c false/c node?)))
-                           (next (or/c node? false/c))
-                           (palette-index byte/c))]
-                   [new-octree (-> octree?)]
-                   [octree-insert-color! (octree? byte/c byte/c byte/c . -> . any)]
-                   [octree-lookup (octree? byte/c byte/c byte/c . -> . (values byte/c byte/c byte/c))]
-                   [octree-reduce! (octree? . -> . any)]
-                   [octree-finalize! (octree? . -> . any)]
-                   [rgb->index (natural-number/c byte/c byte/c byte/c . -> . octet/c)])
+(provide/contract
+ [quantize ((argb-bytes?) (#:palette [integer-in 1 255])
+            . ->* . (values bytes? gif-colormap? color?))]
+ [quantize-bitmap
+  ([is-a?/c bitmap%] natural-number/c . -> . [is-a?/c bitmap%])]
+
+ [struct octree
+         ([root node?]
+          [leaf-count natural-number/c]
+          [reduction-heads (vectorof (or/c node? false/c))]
+          [palette (vectorof (vector/c byte/c byte/c byte/c))])]
+ [struct node
+         ([leaf? boolean?]
+          [npixels natural-number/c]
+          [redsum natural-number/c]
+          [greensum natural-number/c]
+          [bluesum natural-number/c]
+          [children (vectorof (or/c false/c node?))]
+          [next (or/c node? false/c)]
+          [palette-index byte/c])]
+ [new-octree (-> octree?)]
+ [octree-insert-color! (octree? byte/c byte/c byte/c . -> . any)]
+ [octree-lookup
+  (octree? byte/c byte/c byte/c . -> . (values byte/c byte/c byte/c))]
+ [octree-reduce! (octree? . -> . any)]
+ [octree-finalize! (octree? . -> . any)]
+ [rgb->index (natural-number/c byte/c byte/c byte/c . -> . octet/c)])
