@@ -4,19 +4,16 @@
            (for-syntax '#%kernel "private/stxcase-scheme.ss"))
 (#%provide lazy delay force promise?)
 
-;; This module implements "lazy promises" and a `force' that is iterated
-;; through them.
+;; This module implements "lazy" (composable) promises and a `force'
+;; that is iterated through them.
 
 ;; This is similar to the *new* version of srfi-45 -- see the
-;; post-finalization discussion at http://srfi.schemers.org/srfi-45/
-;; for more details; specifically, this version is the `lazy2' version
-;; from
-;; http://srfi.schemers.org/srfi-45/post-mail-archive/msg00013.html
-;; and (a `lazy3' variant of `force' that deals with multiple values
-;; is included and commented).  Note: if you use only `force'+`delay'
-;; it behaves as in Scheme (except that `force' is identity for non
-;; promise values), and `force'+`lazy' are sufficient for implementing
-;; the lazy language.
+;; post-finalization discussion at http://srfi.schemers.org/srfi-45/ for
+;; more details; specifically, this version is the `lazy2' version from
+;; http://srfi.schemers.org/srfi-45/post-mail-archive/msg00013.html.
+;; Note: if you use only `force'+`delay' it behaves as in Scheme (except
+;; that `force' is identity for non promise values), and `force'+`lazy'
+;; are sufficient for implementing the lazy language.
 
 (define (promise-printer promise port write?)
   (let loop ([p (promise-val promise)])
@@ -70,7 +67,7 @@
 ;; Creates a promise that does not compose
 ;;   X = (force (delay X)) = (force (lazy (delay X)))
 ;;                         = (force (lazy^n (delay X)))
-;;   X = (force (force (delay (delay X)))) =/= (force (delay (delay X)))
+;;   X = (force (force (delay (delay X)))) != (force (delay (delay X)))
 ;; so each sequence of `(lazy^n o delay)^m' requires m `force's and a
 ;; sequence of `(lazy^n o delay)^m o lazy^k' requires m+1 `force's (for k>0)
 ;; (This is not needed with a lazy language (see the above URL for details),
@@ -105,12 +102,11 @@
 ;; this is uuused durinc computation to avoid reentrant loops (which makes it
 ;; non-r5rs, but there's no good uses for allowing that)
 (define (running proc)
+  ;; important: be careful not to close over the thunk!
   (let ([name (object-name proc)])
-    ;; important: be careful not to close over the thunk!
-    (lambda ()
-      (if name
-        (error 'force "reentrant promise ~v" name)
-        (error 'force "reentrant promise")))))
+    (if name
+      (lambda () (error 'force "reentrant promise ~v" name))
+      (lambda () (error 'force "reentrant promise")))))
 
 (define (force promise)
   (if (promise? promise)
