@@ -13,6 +13,19 @@
     (proc -inf.0)
     (proc +nan.0))
 
+  (define-syntax try-bad-divs
+    (syntax-rules ()
+      [(_ op)
+       'nothing
+       ;; The spec is unclear whether the following
+       ;; are allowed to raise exceptions.
+       #;
+       (begin
+         (test/unspec (op 1.0 0.0))
+         (test/unspec (op +inf.0 1.0))
+         (test/unspec (op -inf.0 1.0))
+         (test/unspec (op +nan.0 1.0)))]))
+
   (define (run-arithmetic-flonums-tests)
 
     (test (fl=? +inf.0 +inf.0)            #t)
@@ -209,6 +222,10 @@
 
     (test/values (fldiv-and-mod -123.0 10.0) -13.0 7.0)
 
+    (try-bad-divs fldiv)
+    (try-bad-divs flmod)
+    (try-bad-divs fldiv-and-mod)
+
     (test (fldiv0 123.0 10.0) 12.0)
     (test (flmod0 123.0 10.0) 3.0)
     (test (fldiv0 123.0 -10.0) -12.0)
@@ -219,6 +236,10 @@
     (test (flmod0 -123.0 -10.0) -3.0)
 
     (test/values (fldiv0-and-mod0 -123.0 10.0) -12.0 -3.0)
+
+    (try-bad-divs fldiv0)
+    (try-bad-divs flmod0)
+    (try-bad-divs fldiv0-and-mod0)
 
     (test (flfloor 3.1) 3.0)
     (test (flfloor -3.1) -4.0)

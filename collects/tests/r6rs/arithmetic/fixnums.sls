@@ -220,6 +220,13 @@
 
     (test/values (fxdiv0-and-mod0 -123 10) -12 -3)
 
+    (test/exn (fxdiv 1 0) &assertion)
+    (test/exn (fxmod 1 0) &assertion)
+    (test/exn (fxdiv-and-mod 1 0) &assertion)
+    (test/exn (fxdiv0 1 0) &assertion)
+    (test/exn (fxmod0 1 0) &assertion)
+    (test/exn (fxdiv0-and-mod0 1 0) &assertion)
+
     (test (fxnot 0) -1)
     (test (fxnot -2) 1)
     (test (fxnot 1) -2)

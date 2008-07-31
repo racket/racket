@@ -58,6 +58,16 @@
          (test (< (mod0 x1 x2) (abs (/ x2 2))) #t)
          (test (+ (* (div0 x1 x2) x2) (mod0 x1 x2)) x1))]))
 
+  (define-syntax try-bad-divs
+    (syntax-rules ()
+      [(_ op)
+       (begin
+         (test/exn (op 1 0) &assertion)
+         (test/exn (op 1 0.0) &assertion)
+         (test/exn (op +inf.0 1) &assertion)
+         (test/exn (op -inf.0 1) &assertion)
+         (test/exn (op +nan.0 1) &assertion))]))
+
   (define-syntax test-string-to-number
     (syntax-rules ()
       [(_ [str num] ...) (begin (test (string->number str) num) ...)]))
@@ -782,6 +792,13 @@
     (divmod-test/? +17.0 -inf.0)
     (divmod-test/? -17.0 +inf.0)
     (divmod-test/? -17.0 -inf.0)
+
+    (try-bad-divs div)
+    (try-bad-divs mod)
+    (try-bad-divs div-and-mod)
+    (try-bad-divs div0)
+    (try-bad-divs mod0)
+    (try-bad-divs div0-and-mod0)
 
     (test (gcd 32 -36)                            4)
     (test (gcd)                                   0)
