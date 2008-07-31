@@ -5285,7 +5285,8 @@ scheme_compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       }
     } else {
       scheme_wrong_syntax(NULL, NULL, SCHEME_PTR1_VAL(var), 
-                          "expanded syntax not in its original context");
+                          "expanded syntax not in its original lexical context"
+                          " (extra bindings or marks in the current context)");
     }
   }
 
