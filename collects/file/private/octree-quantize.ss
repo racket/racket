@@ -1,7 +1,6 @@
 #lang scheme/base
 (require scheme/class
-         scheme/contract
-         scheme/gui/base)
+         scheme/contract)
 
 ;; This is an implementation of the Octree Quantization algorithm.  This implementation 
 ;; follows the sketch in:
@@ -66,6 +65,7 @@
 
 ;; quantize-bitmap: bitmap positive-number -> bitmap
 ;; Given a bitmap, returns a new bitmap quantized to, at most, n colors.
+#;
 (define (quantize-bitmap bm n)
   (let* ([width (send bm get-width)]
          [height (send bm get-height)]
@@ -347,6 +347,7 @@
 (provide/contract
  [quantize ((argb-bytes?) (#:palette [integer-in 1 255])
             . ->* . (values bytes? gif-colormap? color?))]
+ #;
  [quantize-bitmap
   ([is-a?/c bitmap%] natural-number/c . -> . [is-a?/c bitmap%])]
 
