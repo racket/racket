@@ -17,7 +17,8 @@
 #reader scribble/reader
 #lang scheme/base
 (require scheme/contract
-         scribble/srcdoc)
+         scribble/srcdoc
+         (prefix-in octree: file/private/octree-quantize))
 
 (require/doc scheme/base
              scribble/manual)
@@ -566,6 +567,7 @@
             ()
             . ->d .
             (values [_ bytes?] [_ gif-colormap?] [_ (or/c false/c color?)]))
+
            @{Each image in a GIF stream is limited to 256 colors, including the
              transparent ``color,'' if any. The @scheme[quantize] function
              converts a 24-bit image (plus alpha channel) into an
@@ -584,88 +586,26 @@
              The conversion treats alpha values less than 128 as transparent
              pixels, and other alpha values as solid.
 
-             The quantization process first attempts to use all
-             (non-transparent) colors in the image. if that fails, it reduces
-             the image to 12-bit color (3 bits per each of red, green, and
-             blue) by rounding up pixel values, and tries again.  If that
-             fails, it reduces the image to 6-bit color (2 bits per each of
-             red, green, and blue).
-
+             The quantization process uses Octrees @cite["gervautz1990"] to construct an adaptive
+             palette for all (non-transparent) colors in the image.  This implementation is
+             based on an article by Dean Clark @cite["clark1996"]. 
+             
              To convert a collection of images all with the same quantization,
              simply append them for the input of a single call of
-             @scheme[quantize], and then break apart the result bytes.}))
+             @scheme[quantize], and then break apart the result bytes.
+             
+             @(bibliography
+               (bib-entry #:key "gervautz1990"
+                          #:author "M. Gervautz and W. Purgathofer"
+                          #:title "A simple method for color quantization: Octree quantization"
+                          #:location "Graphics Gems"
+                          #:date "1990")
+               
+               (bib-entry #:key "clark1996"
+                          #:author "Dean Clark"
+                          #:title "Color Quantization using Octrees"
+                          #:location "Dr. Dobbs Journal"
+                          #:date "January 1, 1996"
+                          #:url "http://www.ddj.com/184409805"))}))
 (define (quantize argb)
-  (let* ([len (quotient (bytes-length argb) 4)]
-         [result (make-bytes len)]
-         [rgb-key (lambda (r g b)
-                    (bitwise-ior (bitwise-ior (arithmetic-shift r 16)
-                                              (arithmetic-shift g 8))
-                                 b))]
-         [key->rgb (lambda (k)
-                     (vector (arithmetic-shift k -16)
-                             (bitwise-and #xFF (arithmetic-shift k -8))
-                             (bitwise-and #xFF k)))])
-    (let loop ([masks (list
-                       ;; 8 bits per color
-                       (lambda (v) v)
-                       ;; 4 bits per color
-                       (lambda (v)
-                         (bitwise-ior
-                          (bitwise-ior
-                           v
-                           (arithmetic-shift (bitwise-and v #x55) 1))
-                          (arithmetic-shift (bitwise-and v #xCC) -1)))
-                       ;; 1 bit per color
-                       (lambda (v)
-                         (if (v . > . 127)
-                           255
-                           0)))])
-      (let ([mask (car masks)]
-            [transparent #f]
-            [table (make-hasheq)] ; relying on fixnums
-            [idx 0])
-        ;; Iterate over image to count colors
-        ;; (as reduced by mask)
-        (let loop ([i 0][pos 0])
-          (unless (= i len)
-            (let ([this-idx
-                   (if ((bytes-ref argb pos) . < . 128)
-                     (begin
-                       (unless transparent
-                         (set! transparent idx)
-                         (set! idx (add1 idx)))
-                       transparent)
-                     (let ([vec (rgb-key
-                                 (mask (bytes-ref argb (+ 1 pos)))
-                                 (mask (bytes-ref argb (+ 2 pos)))
-                                 (mask (bytes-ref argb (+ 3 pos))))])
-                       (let ([v (hash-ref table vec #f)])
-                         (or v
-                             (begin
-                               (hash-set! table vec idx)
-                               (set! idx (add1 idx))
-                               (sub1 idx))))))])
-              (unless (= this-idx 256)
-                (bytes-set! result i this-idx)
-                (loop (add1 i) (+ pos 4))))))
-        (if ((hash-count table) . > . (if transparent 255 256))
-          ;; Try again
-          (loop (cdr masks))
-          ;; Found an ok quantization
-          (values result
-                  (let* ([cnt (+ (hash-count table)
-                                 (if transparent 1 0))]
-                         [size (cond
-                                 [(<= cnt 2) 2]
-                                 [(<= cnt 4) 4]
-                                 [(<= cnt 8) 8]
-                                 [(<= cnt 16) 16]
-                                 [(<= cnt 32) 32]
-                                 [(<= cnt 64) 64]
-                                 [(<= cnt 128) 128]
-                                 [else 256])]
-                         [t (make-vector size #(0 0 0))])
-                    (for ([(k v) table])
-                      (vector-set! t v (key->rgb k)))
-                    (vector->list t))
-                  transparent))))))
+  (octree:quantize argb))
