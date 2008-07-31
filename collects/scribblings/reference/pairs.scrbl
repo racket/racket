@@ -690,8 +690,8 @@ the resulting graph, where at most one copy is created for any given
 value.
 
 Since the copied vales can be immutable, and since the copy is also
-immutable, @scheme[make-reader-graph] can cycles involving only
-immutable pairs, vectors, boxes, and hash tables. 
+immutable, @scheme[make-reader-graph] can create cycles involving only
+immutable pairs, vectors, boxes, and hash tables.
 
 Only the following kinds of values are copied and traversed to detect
 placeholders:
@@ -700,7 +700,7 @@ placeholders:
 
  @item{pairs}
 
- @item{immutable pairs (as created by @scheme[mcons])}
+ @item{mutable pairs (as created by @scheme[mcons])}
 
  @item{vectors, both mutable and immutable}
 
