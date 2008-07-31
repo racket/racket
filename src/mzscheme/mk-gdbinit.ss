@@ -40,14 +40,13 @@ define psox
     set $OT = $O->type
   end
   printf "Scheme_Object %p type=%d\n", $O, $OT
-  indent $arg1
   psoq $O $arg1
 end
 
 define psoq
 indent $arg1
 if (((int)$arg0) & 0x1)
-  printf "fixnum %d", (((int)$arg0) >> 1)
+  printf "scheme_integer_type %d", (((int)$arg0) >> 1)
 else
   set $O = ((Scheme_Object*) ($arg0))
   set $OT = $O->type
@@ -60,7 +59,7 @@ else
     set $index = $SSO->u.ptr_int_val.pint
     set $object = (Scheme_Object *) $SSO->u.ptr_int_val.ptr
     printf "scheme_syntax_type index=%d\n", $index
-    pso $object $arg1+1
+    psox $object $arg1+1
   end
   if ( $OT == <<scheme_application2_type>> )
     printf "scheme_application2_type\n"
@@ -69,10 +68,10 @@ else
     set $RAND = $AP->rand
     indent $arg1
     printf "rator="
-    pso $RATOR $arg1+1
+    psox $RATOR $arg1+1
     indent $arg1
     printf "rand="
-    pso $RAND $arg1+1
+    psox $RAND $arg1+1
   end
   if ( $OT == <<scheme_sequence_type>> )
     printf "scheme_sequence\n"
@@ -83,7 +82,7 @@ else
     while ( $cnt < $size ) 
       p $cnt
       p $seq->array[$cnt]
-      pso $seq->array[$cnt] $arg1+1
+      psox $seq->array[$cnt] $arg1+1
       set $cnt++
     end
     $OT = 0
@@ -102,20 +101,20 @@ else
     p *$code
     set $name = $code->name
     p *$name
-    #pso $name $arg+1
+    #psox $name $arg+1
     printf "scheme_closure_type code2\n"
-    pso $code->code $arg+1
+    psox $code->code $arg+1
     $OT = <<scheme_closure_type>>
   end
   if ( $OT == <<scheme_structure_type>>)
     printf "scheme_structure_type\n"
   end
   if ( $OT == <<scheme_unix_path_type>>)
-    printf "scheme_unix_path_type"
+    printf "scheme_unix_path_type "
     p (char *)((Scheme_Simple_Object *)$O)->u.byte_str_val.string_val
   end
   if ( $OT == <<scheme_symbol_type>> )
-    printf "scheme_symbol_type %s %p", (char *)((Scheme_Symbol*) $O)->s, $O
+    printf "scheme_symbol_type %s", (char *)((Scheme_Symbol*) $O)->s
   end
   if ( $OT == <<scheme_null_type>> )
     printf "scheme_null"
@@ -127,10 +126,10 @@ else
     set $CDR = $SSO->u.pair_val.cdr
     indent $arg1
     printf "car=\n"
-    pso $CAR $arg1+1
+    psox $CAR $arg1+1
     indent $arg1
     printf "cdr=\n"
-    pso $CDR $arg1+1
+    psox $CDR $arg1+1
   end
   if ( $OT == <<scheme_vector_type>> )
     set $vector = ((struct Scheme_Vector *) $O)
@@ -139,7 +138,7 @@ else
     set $cnt = 0
     while ( $cnt < $size ) 
       p $cnt
-      pso $vector->els[$cnt] $arg1+1
+      psox $vector->els[$cnt] $arg1+1
       set $cnt++
     end
   end
@@ -160,19 +159,19 @@ else
     set $modidx = ((Scheme_Modidx *) $O)
     indent $arg1
     printf "path="
-    pso $modidx->path $arg1+1
+    psox $modidx->path $arg1+1
     indent $arg1
     printf "base="
-    pso $modidx->base $arg1+1
+    psox $modidx->base $arg1+1
     indent $arg1
     printf "resolved="
-    pso $modidx->resolved $arg1+1
+    psox $modidx->resolved $arg1+1
   end
   if ( $OT == <<scheme_namespace_type>>)
     printf "scheme_namespace_type\n"
     set $env = ((Scheme_Env*)$O)
     if ($env->module != 0)
-      pso $env->module $arg1+1
+      psox $env->module $arg1+1
     else
       indent $arg1
       printf "top-level\n"
@@ -184,7 +183,7 @@ else
     p *$stx
     indent $arg1
     printf "content="
-    pso $stx->val $arg1+1
+    psox $stx->val $arg1+1
     set $srcloc = $stx->srcloc
     set $name = ($stx->srcloc->src)
     set $name = (char *)((Scheme_Simple_Object *)$name)->u.byte_str_val.string_val
@@ -195,12 +194,12 @@ else
     printf "scheme_compilation_top_type\n"
     set $top = ((Scheme_Compilation_Top*)$O)
     p *$top
-    pso $top->code $arg1+1
+    psox $top->code $arg1+1
   end
   if ( $OT == <<scheme_module_type>>)
     printf "scheme_module_type\n"
     set $module = ((Scheme_Module*)$O)
-    pso $module->modname $arg1+1
+    psox $module->modname $arg1+1
   end
   if ( $OT == <<scheme_resolved_module_path_type>>)
     set $OO = (((Scheme_Small_Object *)$arg0)->u.ptr_val)
@@ -224,11 +223,11 @@ define psht
         set $item = $ht->keys[$cnt]
         indent $arg1
         printf "key=\n"
-        psoq $item $arg1+1
+        psox $item $arg1+1
         set $item = $ht->vals[$cnt]
         indent $arg1
         printf "val=\n"
-        psoq $item $arg1+1
+        psox $item $arg1+1
       end
       set $cnt++
     end
