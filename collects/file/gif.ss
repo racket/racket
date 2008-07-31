@@ -568,8 +568,8 @@
             (values [_ bytes?] [_ gif-colormap?] [_ (or/c false/c color?)]))
            @{Each image in a GIF stream is limited to 256 colors, including the
              transparent ``color,'' if any. The @scheme[quantize] function
-             helps converts a 24-bit image (plus alpha channel) into an
-             indexed-color image,reducing the number of colors if necessary.
+             converts a 24-bit image (plus alpha channel) into an
+             indexed-color image, reducing the number of colors if necessary.
 
              Given a set of pixels expressed in ARGB format (i.e., each four
              bytes is a set of values for one pixel: alpha, red, blue, and
