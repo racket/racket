@@ -99,15 +99,15 @@ perhaps in the location reported by
 Two tests fail; they correspond to documented non-conformance with
 R6RS.
 
-Ypsilon (verion 0.9.5-update2)
+Ypsilon (version 0.9.6)
 -------
 
 Put this directory at "<somewhere>/tests/r6rs" and run with "run.sps":
 
   cd <somewhere>
-  ypsilon --sitelib=. --no-letrec-check tests/r6rs/run.sps
+  ypsilon --sitelib=. --clean-acc tests/r6rs/run.sps
 
 or run an individual library's test, such as "run/program.sps" as
 
   cd <somewhere>
-  ypsilon --sitelib=. --no-letrec-check tests/r6rs/run/program.sps
+  ypsilon --sitelib=. --clean-acc tests/r6rs/run/program.sps 
