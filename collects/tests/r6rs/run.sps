@@ -25,7 +25,8 @@
         (tests r6rs eval)
         (tests r6rs mutable-pairs)
         (tests r6rs mutable-strings)
-        (tests r6rs r5rs))
+        (tests r6rs r5rs)
+        (tests r6rs contrib))
 
 (run-base-tests)
 
@@ -52,6 +53,7 @@
 (run-mutable-pairs-tests)
 (run-mutable-strings-tests)
 (run-r5rs-tests)
+(run-contrib-tests)
 
 (report-test-results)
 

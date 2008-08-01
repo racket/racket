@@ -31,6 +31,7 @@
 (test-library run-mutable-pairs-tests      (tests r6rs mutable-pairs))
 (test-library run-mutable-strings-tests    (tests r6rs mutable-strings))
 (test-library run-r5rs-tests               (tests r6rs r5rs))
+(test-library run-contrib-tests            (tests r6rs contrib))
 
 (report-test-results)
 

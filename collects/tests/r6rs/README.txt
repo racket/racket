@@ -21,17 +21,29 @@ In general, for each `(rnrs <id> ... <id>)' in the standard:
  * There's a program "run/<id>/.../<id>.sps" that imports
    "<id>/.../<id>.sls", runs the tests, and reports the results.
 
-And then there's "run.sps", which runs all the tests (as noted
-above). Also, "test.sls" implements `(tests r6rs test)', which
-implements the testing utilities that are used by all the other
-libraries.
+And then there's 
 
-The "run-via-eval.sps" program is similar to "run.ss", but it
-runs each set of tests via `eval'.
+ * "run.sps", which runs all the tests (as noted above)
+
+ * "run-via-eval.sps", which is similar to "run.ss" but runs each set
+    of tests via `eval'
+
+ * "test.sls", containing `(tests r6rs test)', which implements the
+   testing utilities that are used by all the other libraries
+
+ * "contrib.sls" and "run/contrib.sps", which implement and run
+   contributed tests; these tests might be contributed when someone
+   finds a bug in an implementation that seems worth testing in other
+   implementations; also, they may be difficult to pin to a particular
+   R6RS library; finally, they may use extra libraries from the
+   "contrib" sub-directory
 
 ======================================================================
 Limitations and feedback
 ======================================================================
+
+The test suite tries to cover all of the bindings of R6RS, and it
+tries to check a variety of uses
 
 One goal of this test suite is to avoid using `eval' (except when
 specifcally testing `eval'). Avoiding `eval' makes the test suite as
