@@ -287,6 +287,14 @@
            #`(1 #`(#,(+ 3 4) #,#,(+ 1 1))))
           '(1 #`(#,(+ 3 4) #,2)))
 
+    (test (unwrap
+           (syntax-case #'(weird-letrec ([x 1][y 7]) x) ()
+             [(_ ([v e] ...) . b)
+              #'(let ()
+                  (define v) ...
+                  . b)]))
+          '(let () (define x) (define y) x))
+
     (test/exn (syntax-violation #f "bad" 7) &syntax)
     (test/exn (syntax-violation 'form "bad" 7) &syntax)
     (test/exn (syntax-violation #f "bad" #'7) &syntax)

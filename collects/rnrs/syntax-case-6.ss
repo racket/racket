@@ -253,6 +253,47 @@
               pattern-vars)]
       [_ #f])))
 
+(define-for-syntax (group-ellipses tmpl umap)
+  (define (stx-cdr s) (if (syntax? s) (cdr (syntax-e s)) (cdr s)))
+  (let loop ([tmpl tmpl][umap umap])
+    (if (not umap)
+        tmpl
+        (syntax-case tmpl ()
+          [(ellipses expr)
+           (and (identifier? #'ellipses)
+                (free-identifier=? #'ellipses #'(... ...)))
+           tmpl]
+          [(expr ellipses . rest)
+           (and (identifier? #'ellipses)
+                (free-identifier=? #'ellipses #'(... ...)))
+           (let rloop ([rest (stx-cdr (stx-cdr tmpl))]
+                       [accum (list #'ellipses (loop #'expr
+                                                     (car (unbox umap))))])
+             (syntax-case rest ()
+               [(ellipses . _)
+                (and (identifier? #'ellipses)
+                     (free-identifier=? #'ellipses #'(... ...)))
+                ;; keep going:
+                (rloop (stx-cdr rest) (cons #'ellipses accum))]
+               [_ (cons (datum->syntax #f (reverse accum))
+                        (loop rest (cdr (unbox umap))))]))]
+          [(a . b) (let ([n (cons (loop #'a (car umap))
+                                  (loop (cdr (if (syntax? tmpl)
+                                                 (syntax-e tmpl)
+                                                 tmpl))
+                                        (cdr umap)))])
+                     (if (syntax? tmpl)
+                         (datum->syntax tmpl n tmpl tmpl tmpl)
+                         n))]
+          [#(a ...) (datum->syntax 
+                     tmpl
+                     (list->vector (loop (syntax->list #'(a ...))
+                                         (vector-ref umap 0)))
+                     tmpl
+                     tmpl
+                     tmpl)]
+          [_ tmpl]))))
+
 (define (unwrap stx mapping)
   (cond
    [(not mapping)
@@ -289,32 +330,13 @@
     ;; ellipses
     (let* ([mapping (unbox mapping)]
            [rest-mapping (cdr mapping)]
-           [rest-size 
-            ;; count number of cons cells we need at the end:
-            (let loop ([m rest-mapping])
-              (if (pair? m)
-                  (add1 (loop (cdr m)))
-                  0))]
-           [repeat-stx (reverse
-                        (list-tail (let loop ([stx stx][accum null])
-                                     (let ([p (if (syntax? stx)
-                                                  (syntax-e stx)
-                                                  stx)])
-                                       (if (pair? p)
-                                           (loop (cdr p) (cons (car p) accum))
-                                           accum)))
-                                   rest-size))]
-           [rest-stx (let loop ([stx stx][size (length repeat-stx)])
-                       (if (zero? size)
-                           stx
-                           (let ([p (if (syntax? stx)
-                                        (syntax-e stx)
-                                        stx)])
-                             (loop (cdr p) (sub1 size)))))])
+           [p (if (syntax? stx) (syntax-e stx) stx)]
+           [repeat-stx (car p)]
+           [rest-stx (cdr p)])
       (let ([repeats (list->mlist
                       (map (lambda (rep)
                              (unwrap rep (car mapping)))
-                           repeat-stx))]
+                           (syntax->list repeat-stx)))]
             [rest-mapping 
              ;; collapse #fs to single #f:
              (if (let loop ([rest-mapping rest-mapping])
@@ -338,10 +360,19 @@
 (define-syntax (r6rs:syntax stx)
   (syntax-case stx ()
     [(_ tmpl)
-     (quasisyntax/loc stx
-       (unwrap #,(syntax/loc stx (syntax tmpl))
-               '#,(make-unwrap-map #'tmpl
-                                   (syntax-parameter-value #'pattern-vars))))]
+     (let ([umap (make-unwrap-map #'tmpl
+                                  (syntax-parameter-value #'pattern-vars))])
+       (quasisyntax/loc stx
+         (unwrap (if #f
+                     ;; Process tmpl first, so that syntax errors are reported
+                     ;; usinf the original source.
+                     #,(syntax/loc stx (syntax tmpl))
+                     ;; Convert tmpl to group ...-created repetitions together,
+                     ;;  so that `unwrap' can tell which result came from which
+                     ;;  template:
+                     #,(with-syntax ([tmpl (group-ellipses #'tmpl umap)])
+                         (syntax/loc stx (syntax tmpl))))
+                 '#,umap)))]
     [(_ . rest) (syntax/loc stx (syntax . rest))]))
 
 ;; ----------------------------------------
