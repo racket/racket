@@ -1609,8 +1609,8 @@ expands to a definition of the first form where the @scheme[expr] is a
 
 @note-lib-only[scheme/provide-syntax]
 
-@defform[(define-provide-syntax id expr)
-         (define-provide-syntax (id args ...) body ...+)]{
+@defform*[[(define-provide-syntax id expr)
+           (define-provide-syntax (id args ...) body ...+)]]{
 
 The first form is like @scheme[define-syntax], but for a
 @scheme[provide] sub-form. The @scheme[proc-expr] must produce a
