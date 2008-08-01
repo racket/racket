@@ -15,7 +15,13 @@
 (define-syntax (define-require-syntax stx)
   (syntax-case stx ()
     [(_ id proc)
-     (symbol? (syntax-e #'id))
-     #'(define-syntax id
+     (identifier? #'id)
+     (syntax/loc stx
+       (define-syntax id
          (let ([cert (syntax-local-require-certifier)])
-           (make-require-macro cert proc)))]))
+           (make-require-macro cert proc))))]
+    [(_ (id . args) . body)
+     (identifier? #'id)
+     (syntax/loc stx
+       (define-require-syntax id
+         (lambda args . body)))]))

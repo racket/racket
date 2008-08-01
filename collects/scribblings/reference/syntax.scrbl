@@ -1587,15 +1587,21 @@ bound (at @tech{phase level} 1).}
 
 @note-lib-only[scheme/require-syntax]
 
-@defform[(define-require-syntax id proc-expr)]{
+@defform*[[(define-require-syntax id expr)
+           (define-require-syntax (id args ...) body ...+)]]{
 
-Like @scheme[define-syntax], but for a @scheme[require] sub-form. The
-@scheme[proc-expr] must produce a procedure that accepts and returns a
-syntax object representing a @scheme[require] sub-form.
+The first form is like @scheme[define-syntax], but for a
+@scheme[require] sub-form. The @scheme[proc-expr] must produce a
+procedure that accepts and returns a syntax object representing a
+@scheme[require] sub-form.
 
 This form expands to @scheme[define-syntax] with a use of
 @scheme[make-require-transformer]; see @secref["require-trans"] for
-more information.}
+more information.
+
+The second form is a shorthand the same as for @scheme[define-syntax]; it
+expands to a definition of the first form where the @scheme[expr] is a
+@scheme[lambda] form.}
 
 @; ----------------------------------------------------------------------
 
@@ -1603,15 +1609,21 @@ more information.}
 
 @note-lib-only[scheme/provide-syntax]
 
-@defform[(define-provide-syntax id proc-expr)]{
+@defform[(define-provide-syntax id expr)
+         (define-provide-syntax (id args ...) body ...+)]{
 
-Like @scheme[define-syntax], but for a @scheme[provide] sub-form. The
-@scheme[proc-expr] must produce a procedure that accepts and returns a
-syntax object representing a @scheme[provide] sub-form.
+The first form is like @scheme[define-syntax], but for a
+@scheme[provide] sub-form. The @scheme[proc-expr] must produce a
+procedure that accepts and returns a syntax object representing a
+@scheme[provide] sub-form.
 
 This form expands to @scheme[define-syntax] with a use of
 @scheme[make-provide-transformer]; see @secref["provide-trans"] for
-more information.}
+more information.
+
+The second form is a shorthand the same as for @scheme[define-syntax]; it
+expands to a definition of the first form where the @scheme[expr] is a
+@scheme[lambda] form.}
 
 @;------------------------------------------------------------------------
 @section[#:tag "begin"]{Sequencing: @scheme[begin], @scheme[begin0], and @scheme[begin-for-syntax]}

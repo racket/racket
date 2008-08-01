@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(provide define-provide-syntax )
+(provide define-provide-syntax)
 
 (require (for-syntax scheme/base
                      scheme/provide-transform))
@@ -15,7 +15,13 @@
 (define-syntax (define-provide-syntax stx)
   (syntax-case stx ()
     [(_ id proc)
-     (symbol? (syntax-e #'id))
-     #'(define-syntax id
+     (identifier? #'id)
+     (syntax/loc stx
+       (define-syntax id
          (let ([cert (syntax-local-provide-certifier)])
-           (make-provide-macro cert proc)))]))
+           (make-provide-macro cert proc))))]
+    [(_ (id . args) . body)
+     (identifier? #'id)
+     (syntax/loc stx
+       (define-provide-syntax id
+         (lambda args . body)))]))
