@@ -700,8 +700,6 @@ placeholders:
 
  @item{pairs}
 
- @item{mutable pairs (as created by @scheme[mcons])}
-
  @item{vectors, both mutable and immutable}
 
  @item{boxes, both mutable and immutable}
