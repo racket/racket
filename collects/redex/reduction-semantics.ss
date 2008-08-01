@@ -7,7 +7,7 @@
          "private/rg.ss"
          "private/loc-wrapper.ss")
 
-(provide (all-from-out "private/rg.ss"))
+#;(provide (all-from-out "private/rg.ss"))
 
 (provide reduction-relation 
          --> fresh with ;; keywords for reduction-relation
