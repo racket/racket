@@ -17,5 +17,9 @@
 (define-syntax (require/contract stx)
   (syntax-case stx ()
     [(require/contract nm cnt lib)
+     (identifier? #'nm)
      #`(begin (require (only-in lib [nm tmp]))     
+              (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]
+    [(require/contract (orig-nm nm) cnt lib)     
+     #`(begin (require (only-in lib [orig-nm tmp]))
               (define-ignored nm (contract cnt tmp '#,(syntax->datum #'nm) 'never-happen (quote-syntax nm))))]))

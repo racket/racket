@@ -59,24 +59,25 @@ This file defines two sorts of primitives. All of them are provided into any mod
      #'(begin (require/typed nm ty lib) ...)]
     [(_ nm ty lib)
      (identifier? #'nm)
-     (quasisyntax/loc stx (begin 
-                            #,(syntax-property (syntax-property #'(define cnt* #f)
-                                                                'typechecker:contract-def #'ty)
-                                               'typechecker:ignore #t)
-                            #,(internal #'(require/typed-internal nm ty))
-                            #,(syntax-property #'(require/contract nm cnt* lib)
-                                               'typechecker:ignore #t)))]
-    [(_ (rename internal-nm nm) ty lib)
-     (raise-syntax-error "rename not currently supported" stx)
-     #; #;
-     (identifier? #'nm)
-     (quasisyntax/loc stx (begin 
-                            #,(syntax-property (syntax-property #'(define cnt* #f)
-                                                                'typechecker:contract-def #'ty)
-                                               'typechecker:ignore #t)
-                            #,(internal #'(require/typed-internal internal-nm ty))
-                            #,(syntax-property #'(require/contract nm cnt* lib)
-                                               'typechecker:ignore #t)))]))      
+     (with-syntax ([(cnt*) (syntax->datum #'(nm))])
+       (quasisyntax/loc stx (begin 
+                              #,(syntax-property (syntax-property #'(define cnt* #f)
+                                                                  'typechecker:contract-def #'ty)
+                                                 'typechecker:ignore #t)
+                              #,(internal #'(require/typed-internal nm ty))
+                              #,(syntax-property #'(require/contract nm cnt* lib)
+                                                 'typechecker:ignore #t))))]
+    [(_ (orig-nm nm) ty lib)
+     (and (identifier? #'nm)
+          (identifier? #'orig-nm))
+     (with-syntax ([(cnt*) (syntax->datum #'(nm))])
+       (quasisyntax/loc stx (begin 
+                              #,(syntax-property (syntax-property #'(define cnt* #f)
+                                                                  'typechecker:contract-def #'ty)
+                                                 'typechecker:ignore #t)
+                              #,(internal #'(require/typed-internal nm ty))
+                              #,(syntax-property #'(require/contract (orig-nm nm) cnt* lib)
+                                                 'typechecker:ignore #t))))]))      
 
 (define-syntax (require/opaque-type stx)
   (syntax-case stx ()
