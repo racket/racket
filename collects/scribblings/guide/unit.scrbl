@@ -491,7 +491,7 @@ conveniences---such as allowing overriding of methods or especially
 simple application to values---that make them suitable for different
 purposes.
 
-The @scheme[module] form is more fundamental that the others, in a
+The @scheme[module] form is more fundamental than the others, in a
 sense. After all, a program fragment cannot reliably refer to
 @scheme[lambda], @scheme[class], or @scheme[unit] form without the
 namespace management provided by @scheme[module]. At the same time,

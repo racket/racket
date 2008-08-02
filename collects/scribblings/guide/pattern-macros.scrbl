@@ -318,7 +318,7 @@ usual role in the generated macro, instead of the generating macro.
 
 @section[#:tag "pattern-macro-example"]{Extended Example: Call-by-Reference Functions}
 
-We can use pattern-matching macros to implement add a form to Scheme
+We can use pattern-matching macros to add a form to Scheme
 for defining first-order @deftech{call-by-reference} functions. When a
 call-by-reference function body mutates its formal argument, the
 mutation applies to variables that are supplied as actual arguments in

@@ -123,7 +123,7 @@ predicate:
 
 @section[#:tag "prompt"]{Prompts and Aborts}
 
-When an exception is raised control, escapes out of an arbitrary deep
+When an exception is raised, control escapes out of an arbitrary deep
 evaluation context to the point where the exception is caught---or all
 the way out if the expression is never caught:
 

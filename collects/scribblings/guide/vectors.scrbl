@@ -31,7 +31,7 @@ written directly as expressions are immutable.
 Vector can be converted to lists and vice-versa via
 @scheme[list->vector] and @scheme[vector->list]; such conversions are
 particularly useful in combination with predefined procedures on
-lists. When allocating extra lists seems too expensive, use consider
+lists. When allocating extra lists seems too expensive, consider
 using looping forms like @scheme[fold-for], which recognize vectors as
 well as lists.
 

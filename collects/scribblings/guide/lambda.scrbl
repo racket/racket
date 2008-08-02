@@ -144,7 +144,10 @@ calls with keywords.}
 @specform/subs[
 (lambda gen-formals
   body ...+)
-([arg arg-id
+([gen-formals (arg ...)
+              rest-id
+              (arg ...+ . rest-id)]
+ [arg arg-id
       [arg-id default-expr]
       (code:line arg-keyword arg-id)
       (code:line arg-keyword [arg-id default-expr])])

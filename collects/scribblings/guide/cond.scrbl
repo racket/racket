@@ -8,7 +8,7 @@
 Most functions used for branching, such as @scheme[<] and
 @scheme[string?], produce either @scheme[#t] or @scheme[#f]. Scheme's
 branching forms, however, treat any value other than @scheme[#f] as
-true. We we say a @defterm{true value} to mean any value other than
+true. We say a @defterm{true value} to mean any value other than
 @scheme[#f].
 
 This convention for ``true value'' meshes well with protocols where
@@ -45,7 +45,7 @@ the @scheme[_test-expr] is always evaluated. If it produces any value
 other than @scheme[#f], then @scheme[_then-expr] is
 evaluated. Otherwise, @scheme[_else-expr] is evaluated.
 
-An @scheme[if] form must have both an @scheme[_then-expr] and an
+An @scheme[if] form must have both a @scheme[_then-expr] and an
 @scheme[_else-expr]; the latter is not optional. To perform (or skip)
 side-effects based on a @scheme[_test-expr], use @scheme[when] or
 @scheme[unless], which we describe later in @secref["begin"].

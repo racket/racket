@@ -267,7 +267,7 @@ fails, because the namespace does not include the primitive modules on
 which @scheme[scheme] is built.
 
 To make a namespace useful, some modules much be @deftech{attached}
-from an existing namespace. Attaching a module adjust the mapping of
+from an existing namespace. Attaching a module adjusts the mapping of
 module names to instances by transitively copying entries (the module
 and all its imports) from an existing namespace's mapping. Normally,
 instead of just attaching the primitive modules---whose names and

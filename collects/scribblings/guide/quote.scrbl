@@ -47,7 +47,7 @@ more typically used for symbols and lists, which have other meanings
 
 An expression
 
-@specform[(quote #,(scheme _datum))]
+@specform[(quote #, @schemevarfont{datum})]
 
 is a shorthand for
 
