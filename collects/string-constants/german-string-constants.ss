@@ -405,11 +405,12 @@
  (replace "Ersetzen")
  (dock "Andocken")
  (undock "Ablegen")
- (replace&find-again "Nochmals Suchen && Ersetzen") ;;; need double & to get a single &
+ (replace&find "Ersetzen && Suchen") ;;; need double & to get a single &
  (forward "Vorwärts")
  (backward "Rückwärts")
  (hide "Ausblenden")
  (find-case-sensitive "Groß-/Kleinschreibung beachten")
+ (find-anchor-based "Suchen mit Ankern")
  
  ;;; multi-file-search
  (mfs-multi-file-search-menu-item "In Dateien suchen...")
@@ -543,18 +544,26 @@
  (select-all-info "Gesamtes Dokument selektieren")
  (select-all-menu-item "&Alles selektieren")
  
- (find-info "Zeichenkette suchen")
- (find-menu-item "Suchen...")
+ (find-info "Zum nächsten Vorkommen der Zeichenkette aus dem Such-Fenster springen")
+ (find-menu-item "Suchen")
 
  (find-again-info "Die gleiche Zeichenkette nochmal suchen")
  (find-again-menu-item "Nochmal suchen")
- 
 
- (find-again-backwards-info "Die gleiche Zeichenkette nochmal suchen, aber rückwärts")
- (find-again-backwards-menu-item "Nochmal suchen, rückwärts")
+ (find-again-backwards-info "Zum vorherigen Vorkommen der Zeichenkette aus dem Such-Fenster springen")
+ (find-again-backwards-menu-item "Rückwärts nochmal suchen")
 
  (replace-and-find-again-info "Den aktuellen Text ersetzen und dann nochmal suchen")
  (replace-and-find-again-menu-item "Ersetzen && nochmal suchen")
+
+ (replace-and-find-again-backwards-info "Den aktuellen Text ersetzen und dann nochmal rückwärtssuchen")
+ (replace-and-find-again-backwards-menu-item "Ersetzen && rückwärts nochmal suchen")
+
+ (replace-all-info "Alle Vorkommen der Such-Zeichenkette ersetzen")
+ (replace-all-menu-item "Alle ersetzen")
+ 
+ (find-case-sensitive-info "Schaltet zwischen Groß-/Kleinschreibung berücksichtigendem und nicht berücksichtigendem Suchen um")
+ (find-case-sensitive-menu-item "Suchen mit Groß-/Kleinschreibung")
 
  (complete-word "Wort vervollständigen") ; the complete word menu item in the edit menu
  (no-completions "... keine Vervollständigungen verfügbar") ; shows up in the completions menu when there are no completions (in italics)
