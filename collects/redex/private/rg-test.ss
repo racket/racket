@@ -145,6 +145,7 @@
                    #:nt [nt pick-nt]
                    #:str [str pick-string]
                    #:num [num pick-from-list]
+                   #:any [any pick-any]
                    #:seq [seq pick-length])
   (define-syntax decision
     (syntax-rules ()
@@ -154,6 +155,7 @@
         (define next-non-terminal-decision (decision nt))
         (define next-number-decision (decision num))
         (define next-string-decision (decision str))
+        (define next-any-decision (decision any))
         (define next-sequence-decision (decision seq))))
 
 (let ()
@@ -417,6 +419,41 @@
         '(x y z))
   (test (let/ec k (generate lang 'd 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
         '(x)))
+
+(let ()
+  (define-language lc
+      (e (e e) (+ e e) x v)
+      (v (λ (x) e) number)
+      (x variable-not-otherwise-mentioned))
+  (test (generate lc 'x 5 0 (decisions #:var (list (λ _ 'λ) (λ _ '+) (λ _ 'x))))
+        'x))
+
+(let ()
+  (define-language four 
+    (e 4)
+    (f 5))
+  
+  ;; `any' pattern
+  (test (call-with-values (λ () (pick-any four (make-random (list 0 1)))) list)
+        (list four 'f))
+  (test (call-with-values (λ () (pick-any four (make-random (list 1)))) list)
+        (list sexp 'sexp))
+  (test (generate four 'any 5 0 (decisions #:any (list (λ _ (values four 'e))))) 4)
+  (test (generate four 'any 5 0 
+                  (decisions #:any (list (λ _ (values sexp 'sexp)))
+                             #:nt (list (select-pattern '(sexp ...))
+                                        (select-pattern 'string)
+                                        (select-pattern 'string)
+                                        (select-pattern 'string))
+                             #:seq (list (λ _ 3))
+                             #:str (list (λ _ "foo") (λ _ "bar") (λ _ "baz"))))
+        '("foo" "bar" "baz")))
+
+;; `hide-hole' pattern
+(let ()
+  (define-language lang
+    (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
+  (test (generate lang 'e 5 0) (term ((hole #f) 1))))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])

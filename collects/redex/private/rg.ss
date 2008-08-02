@@ -103,6 +103,11 @@ To do a better job of not generating programs with free variables,
       (pick-from-list lang-lits random)
       (list->string (build-list length (λ (_) (pick-char attempt lang-chars random))))))
 
+(define (pick-any lang [random random]) 
+  (if (zero? (random 5))
+      (values lang (pick-from-list (map nt-name (compiled-lang-lang lang)) random))
+      (values sexp (nt-name (car (compiled-lang-lang sexp))))))
+
 (define (pick-string lang-chars lang-lits attempt [random random])
   (random-string lang-chars lang-lits (pick-length random) attempt random))
 
@@ -123,6 +128,9 @@ To do a better job of not generating programs with free variables,
 (define (generation-failure pat)
   (error 'generate "unable to generate pattern ~s in ~s attempts" 
          pat generation-retries))
+
+;; used in generating the `any' pattern
+(define-language sexp (sexp variable string number hole (sexp ...)))
 
 (define (generate lang nt size attempt [decisions@ random-decisions@])
   (define-values/invoke-unit decisions@
@@ -179,6 +187,8 @@ To do a better job of not generating programs with free variables,
           [`(variable-except ,vars ...)
            (generate/retry (λ (var) (not (memq var vars))) 'variable)]
           [`variable ((next-variable-decision) lang-chars lang-lits bound-vars attempt)]
+          [`variable-not-otherwise-mentioned
+           (generate/retry (λ (var) (not (memq var (compiled-lang-literals lang)))) 'variable)]
           [`(variable-prefix ,prefix) 
            (string->symbol (string-append (symbol->string prefix)
                                           (symbol->string (loop 'variable holes))))]
@@ -201,6 +211,10 @@ To do a better job of not generating programs with free variables,
           [`(hole ,(? symbol? name)) (generate-hole name)]
           [`(in-named-hole ,name ,context ,contractum)
            (loop context (hash-set holes name (λ () (loop contractum holes))))]
+          [`(hide-hole ,pattern) (loop pattern (make-immutable-hasheq null))]
+          [`any
+           (let-values ([(lang nt) ((next-any-decision) lang)])
+             (generate lang nt size attempt decisions@))]
           [(and (? symbol?) (? (λ (x) (or (is-nt? lang x) (underscored-built-in? x)))))
            (define ((generate-nt/underscored decorated) undecorated)
              (let* ([vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
@@ -271,7 +285,7 @@ To do a better job of not generating programs with free variables,
          [else found-vars]))
      found-vars-table))
   
-  (generate-pat nt '() '() size (make-immutable-hash null)))
+  (generate-pat nt '() '() size (make-immutable-hasheq null)))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -359,10 +373,11 @@ To do a better job of not generating programs with free variables,
     (if (zero? i)
         (fprintf (current-error-port) "No failures in ~a attempts\n" attempts)
         (let ([t (generate lang nt size (- attempts i))])
-          (if (pred? t) 
+          (if (with-handlers ([exn:fail? (λ (exn) (error 'try "checking ~s: ~s" t exn))])
+                (pred? t)) 
               (loop (- i 1))
               (begin
-                (fprintf (current-error-port) "FAILED!\n")
+                (fprintf (current-error-port) "FAILED after ~s attempt(s)!\n" (add1 (- attempts i)))
                 (pretty-print t (current-error-port))))))))
 
 (define-syntax check
@@ -379,6 +394,7 @@ To do a better job of not generating programs with free variables,
    next-number-decision
    next-non-terminal-decision
    next-sequence-decision
+   next-any-decision
    next-string-decision))
 
 (define random-decisions@
@@ -387,6 +403,7 @@ To do a better job of not generating programs with free variables,
         (define (next-number-decision) pick-from-list)
         (define (next-non-terminal-decision) pick-nt)
         (define (next-sequence-decision) pick-length)
+        (define (next-any-decision) pick-any)
         (define (next-string-decision) pick-string)))
 
 (define (sexp? x)
@@ -394,7 +411,7 @@ To do a better job of not generating programs with free variables,
 
 (provide pick-from-list pick-var pick-length min-prods decisions^ 
          is-nt? lang-literals pick-char random-string pick-string
-         check pick-nt unique-chars)
+         check pick-nt unique-chars pick-any sexp)
 
 (provide/contract
  [generate any/c]
