@@ -12,6 +12,8 @@
 
   CHANGES:
 
+  - define-metafunction and co. now use a different syntax.
+
   - zero occurrences of a hole when matching an `in-hole' now
     correctly fails.
 
