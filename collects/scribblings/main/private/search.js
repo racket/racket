@@ -114,7 +114,7 @@ function InitializeSearch() {
            +' <tt>C+Enter</tt>/<tt>S+C+Enter</tt> to scroll through the'
            +' results.</li>'
         +'<li>Search terms are all required, use'
-           +' &ldquo;<tt>-<i>str</i></tt>&rdquo; to negate a term.'
+           +' &ldquo;<tt>N:<i>str</i></tt>&rdquo; to negate a term.'
         +'<li>Use &ldquo;<tt>M:<i>str</i></tt>&rdquo; to match only'
            +' identifiers from modules that (partially) match'
            +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
@@ -343,15 +343,11 @@ function UrlToManual(url) {
 //   "L:schem" (only module names that match `schem')
 
 function CompileTerm(term) {
-  var op = false;
-  // the first part avoids a single "-" from removing everything
-  if (term != "-" && term.search(/^(-|[LMT]:)/) == 0) {
-    op = term.substring(0,1);
-    term = RegExp.rightContext;
-  }
+  var op = ((term.search(/^[LMT]:/) == 0) && term.substring(0,1));
+  if (op) term = term.substring(2);
   term = term.toLowerCase();
   switch(op) {
-  case "-":
+  case "N":
     op = CompileTerm(term);
     // return C_exact if it's not found, so it doesn't disqualify exact matches
     return function(x) { return (op(x) >= C_match) ? C_fail : C_exact; }
