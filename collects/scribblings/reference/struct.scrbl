@@ -447,7 +447,7 @@ is inaccessible.)}
 
 Returns @scheme[#f] if @scheme[v] is not an instance of a
 @tech{prefab} structure type. Otherwise, the result is the shorted key
-that could be with @scheme[make-prefab-struct] to create an instance
+that could be used with @scheme[make-prefab-struct] to create an instance
 of the structure type.
 
 @examples[
