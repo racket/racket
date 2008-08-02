@@ -455,6 +455,7 @@ of the structure type.
 (define-struct cat (name) #:prefab)
 (define-struct (cute-cat cat) (shipping-dest) #:prefab)
 (make-cute-cat "Nermel" "Abu Dhabi")
+(prefab-struct-key (make-cute-cat "Nermel" "Abu Dhabi"))
 ]}
 
 
