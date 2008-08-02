@@ -205,20 +205,18 @@
 ;                                                                                             
 
   
-  (define-metafunction f
-    grammar
-    [(side-condition (number_1 number_2)
-                     (< (term number_1)
-                        (term number_2)))
+  (define-metafunction grammar
+    [(f (side-condition (number_1 number_2)
+                        (< (term number_1)
+                           (term number_2))))
      x]
-    [(number 1) y]
-    [(number_1 2) ,(+ (term number_1) 2)]
-    [(4 4) q]
-    [(4 4) r])
+    [(f (number 1)) y]
+    [(f (number_1 2)) ,(+ (term number_1) 2)]
+    [(f (4 4)) q]
+    [(f (4 4)) r])
 
-  (define-metafunction g
-    grammar
-    [X x])
+  (define-metafunction grammar
+    [(g X) x])
   
   (test (term (f (1 17))) 'x)
   (test (term (f (11 1))) 'y)
@@ -230,9 +228,8 @@
   
   ;; match one clause two ways => error
   (let ()
-    (define-metafunction ll
-      empty-language
-      [(number_1 ... number_2 ...) 4])
+    (define-metafunction empty-language
+      [(ll (number_1 ... number_2 ...)) 4])
     (test (with-handlers ((exn? (λ (x) 'exn-raised))) 
             (term (ll ()))
             'no-exn)
@@ -246,111 +243,110 @@
   (test (with-handlers ((exn? (λ (x) 'exn-raised))) (term (f mis-match)) 'no-exn)
         'exn-raised)
 
-  (define-metafunction h
-    grammar
-    [(M_1 M_2) ((h M_2) (h M_1))]
-    [number_1 ,(+ (term number_1) 1)])
+  (define-metafunction grammar
+    [(h (M_1 M_2)) ((h M_2) (h M_1))]
+    [(h number_1) ,(+ (term number_1) 1)])
   
   (test (term (h ((1 2) 3)))
         (term (4 (3 2))))
   
-  (define-metafunction h2
-    grammar
-    [(Q_1 ...) ((h2 Q_1) ...)]
-    [variable z])
+  (define-metafunction grammar
+    [(h2 (Q_1 ...)) ((h2 Q_1) ...)]
+    [(h2 variable) z])
   
   (test (term (h2 ((x y) a b c)))
         (term ((z z) z z z)))
   
   (let ()
-    (define-metafunction f empty-language
-      [(1) 1]
-      [(2) 2]
-      [3 3])
-    (test (in-domain? (term 1) f) #f)
-    (test (in-domain? (term (1)) f) #t)
-    (test (in-domain? (term ((1))) f) #f)
-    (test (in-domain? (term 3) f) #t)
-    (test (in-domain? (term 4) f) #f))
+    (define-metafunction empty-language
+      [(f (1)) 1]
+      [(f (2)) 2]
+      [(f 3) 3])
+    (test (in-domain? (f 1)) #f)
+    (test (in-domain? (f (1))) #t)
+    (test (in-domain? (f ((1)))) #f)
+    (test (in-domain? (f 3)) #t)
+    (test (in-domain? (f 4)) #f))
   
   (let ()
-    (define-multi-args-metafunction f empty-language
-      [(1) 1]
-      [(2) 2]
-      [(3 4) 3])
-    (test (in-domain? (term 1) f) #f)
-    (test (in-domain? (term (1)) f) #t)
-    (test (in-domain? (term ((1))) f) #f)
-    (test (in-domain? (term (3 4)) f) #t)
-    (test (in-domain? (term 3) f) #f))
+    (define-metafunction empty-language
+      f : number -> number
+      [(f 1) 1])
+    (test (in-domain? (f 1)) #t)
+    (test (in-domain? (f 2)) #t)
+    (test (in-domain? (f x)) #f))
+  
+  (let ()
+    (define-metafunction empty-language
+      [(f x) x])
+    (test 
+     (term-let ((y 'x))
+               (in-domain? (f y)))
+     #t)
+    (test 
+     (term-let ((y 'z))
+               (in-domain? (f y)))
+     #f))
   
   ;; mutually recursive metafunctions
-  (define-metafunction odd
-    grammar
-    [zero #f]
-    [(add1 UN_1) (even UN_1)])
+  (define-metafunction grammar
+    [(odd zero) #f]
+    [(odd (add1 UN_1)) (even UN_1)])
   
-  (define-metafunction even
-    grammar
-    [zero #t]
-    [(add1 UN_1) (odd UN_1)])
+  (define-metafunction grammar
+    [(even zero) #t]
+    [(even (add1 UN_1)) (odd UN_1)])
   
   (test (term (odd (add1 (add1 (add1 (add1 zero))))))
         (term #f))
     
   (let ()
-    (define-metafunction pRe
-      empty-language
-      [xxx 1])
+    (define-metafunction empty-language
+      [(pRe xxx) 1])
     
-    (define-metafunction Merge-Exns
-      empty-language
-      [any_1 any_1])
+    (define-metafunction empty-language
+      [(Merge-Exns any_1) any_1])
     
     (test (term (pRe (Merge-Exns xxx)))
           1))
   
   (let ()
-    (define-metafunction f
-      empty-language
-      [(x) ,(term-let ([var-should-be-lookedup 'y]) (term (f var-should-be-lookedup)))]
-      [y y]
-      [var-should-be-lookedup var-should-be-lookedup]) ;; taking this case is bad!
+    (define-metafunction empty-language
+      [(f (x)) ,(term-let ([var-should-be-lookedup 'y]) (term (f var-should-be-lookedup)))]
+      [(f y) y]
+      [(f var-should-be-lookedup) var-should-be-lookedup]) ;; taking this case is bad!
     
     (test (term (f (x))) (term y)))
   
   (let ()
-    (define-metafunction f
-      empty-language
-      [(x) (x ,@(term-let ([var-should-be-lookedup 'y]) (term (f var-should-be-lookedup))) x)]
-      [y (y)]
-      [var-should-be-lookedup (var-should-be-lookedup)]) ;; taking this case is bad!
+    (define-metafunction empty-language
+      [(f (x)) (x ,@(term-let ([var-should-be-lookedup 'y]) (term (f var-should-be-lookedup))) x)]
+      [(f y) (y)]
+      [(f var-should-be-lookedup) (var-should-be-lookedup)]) ;; taking this case is bad!
     
     (test (term (f (x))) (term (x y x))))
   
   (let ()
-    (define-metafunction f
-      empty-language
-      [(any_1 any_2)
+    (define-metafunction empty-language
+      [(f (any_1 any_2))
        case1
        (side-condition (not (equal? (term any_1) (term any_2))))
        (side-condition (not (equal? (term any_1) 'x)))]
-      [(any_1 any_2)
+      [(f (any_1 any_2))
        case2
        (side-condition (not (equal? (term any_1) (term any_2))))]
-      [(any_1 any_2)
+      [(f (any_1 any_2))
        case3])
     (test (term (f (q r))) (term case1))
     (test (term (f (x y))) (term case2))
     (test (term (f (x x))) (term case3)))
 
   (let ()
-    (define-metafunction f
-      empty-language
-      [(n number) (n number)]
-      [(a any) (a any)]
-      [(v variable) (v variable)]
-      [(s string) (s string)])
+    (define-metafunction empty-language
+      [(f (n number)) (n number)]
+      [(f (a any)) (a any)]
+      [(f (v variable)) (v variable)]
+      [(f (s string)) (s string)])
     (test (term (f (n 1))) (term (n 1)))
     (test (term (f (a (#f "x" whatever)))) (term (a (#f "x" whatever))))
     (test (term (f (v x))) (term (v x)))
@@ -358,48 +354,48 @@
   
   ;; test ..._1 patterns
   (let ()
-    (define-metafunction zip empty-language
-      [((variable_id ..._1) (number_val ..._1))
+    (define-metafunction empty-language
+      [(zip ((variable_id ..._1) (number_val ..._1)))
        ((variable_id number_val) ...)])
     
     (test (term (zip ((a b) (1 2)))) (term ((a 1) (b 2)))))
   
   (let ()
-    (define-multi-args-metafunction f empty-language
-      [(any_1 any_2 any_3) (any_3 any_2 any_1)])
+    (define-metafunction empty-language
+      [(f any_1 any_2 any_3) (any_3 any_2 any_1)])
     (test (term (f 1 2 3)) 
           (term (3 2 1))))
   
   (let ()
-    (define-metafunction f empty-language
-      [(any_1 any_2 any_3) 3])
-    (define-metafunction/extension g empty-language f
-      [(any_1 any_2) 2])
+    (define-metafunction empty-language
+      [(f (any_1 any_2 any_3)) 3])
+    (define-metafunction/extension f empty-language
+      [(g (any_1 any_2)) 2])
     (test (term (g (1 2))) 2)
     (test (term (g (1 2 3))) 3))
   
   (let ()
-    (define-multi-args-metafunction f empty-language
-      [(any_1 any_2 any_3) 3])
-    (define-multi-args-metafunction/extension g empty-language f
-      [(any_1 any_2) 2])
+    (define-metafunction empty-language
+      [(f any_1 any_2 any_3) 3])
+    (define-metafunction/extension f empty-language
+      [(g any_1 any_2) 2])
     (test (term (g 1 2)) 2)
     (test (term (g 1 2 3)) 3))
   
   (let ()
-    (define-multi-args-metafunction f empty-language
-      [(number_1 number_2) (f number_1)])
-    (define-multi-args-metafunction/extension g empty-language f
-      [(number_1) number_1])
-    (define-multi-args-metafunction h empty-language
-      [(number_1 number_2) (h number_1)]
-      [(number_1) number_1])
+    (define-metafunction empty-language
+      [(f number_1 number_2) (f number_1)])
+    (define-metafunction/extension f empty-language
+      [(g number_1) number_1])
+    (define-metafunction empty-language
+      [(h number_1 number_2) (h number_1)]
+      [(h number_1) number_1])
     (test (term (g 11 17)) 11)
     (test (term (h 11 17)) 11))
   
   (let ()
-    (define-metafunction f empty-language
-      [(number_1 number_2) 
+    (define-metafunction empty-language
+      [(f (number_1 number_2))
        number_3
        (where number_3 (+ (term number_1) (term number_2)))])
     (test (term (f (11 17))) 28))
@@ -862,13 +858,12 @@
         1)
   
   (require (lib "list.ss"))
-  ;; free-vars : e -> (listof x)
-  (define-metafunction free-vars
-    lc-lang
-    [(e_1 e_2 ...) 
+  (define-metafunction lc-lang
+    free-vars : e -> (listof x)
+    [(free-vars (e_1 e_2 ...))
      ,(apply append (term ((free-vars e_1) (free-vars e_2) ...)))]
-    [x_1 ,(list (term x_1))]
-    [(lambda (x_1 ...) e_1)
+    [(free-vars x_1) ,(list (term x_1))]
+    [(free-vars (lambda (x_1 ...) e_1))
      ,(foldr remq (term (free-vars e_1)) (term (x_1 ...)))])
   
   (test (term (free-vars (lambda (x) (x y))))

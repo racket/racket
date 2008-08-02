@@ -31,15 +31,6 @@
            (and (identifier? (syntax f))
                 (term-fn? (syntax-local-value (syntax f) (λ () #f))))
            (let ([term-fn (syntax-local-value (syntax f) (λ () #f))])
-             
-             (unless (term-fn-multi-arg? term-fn)
-               (let ([arg-count (length (syntax->list #'(arg ...)))])
-                 (unless (= 1 arg-count)
-                   (raise-syntax-error 'term 
-                                       (format "single argument metafunction supplied with ~a arguments"
-                                               arg-count)
-                                       orig-stx
-                                       stx))))
              (with-syntax ([f (term-fn-get-id term-fn)]
                            [(f-results) (generate-temporaries '(f-results))])
                (let d-loop ([arg-dots (loop (syntax (arg ...)) depth)]
@@ -121,20 +112,19 @@
        (with-syntax ([(g ...) (generate-temporaries (syntax (f ...)))])
          (syntax 
           (let ([g rhs] ...)
-            (let-syntax ([f (make-term-fn #'g #t)] ...)
+            (let-syntax ([f (make-term-fn #'g)] ...)
               body1
               body2 ...))))]))
   
   (define-syntax (term-define-fn stx)
     (syntax-case stx ()
-      [(_ id exp multi-arg?)
+      [(_ id exp)
        (with-syntax ([(id2) (generate-temporaries (syntax (id)))])
          (syntax
           (begin
             (define id2 exp)
             (define-syntax id
-              (make-term-fn ((syntax-local-certifier) #'id2)
-                            multi-arg?)))))]))
+              (make-term-fn ((syntax-local-certifier) #'id2))))))]))
   
   (define-syntax (term-let stx)
     (syntax-case stx ()

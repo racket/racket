@@ -34,8 +34,8 @@
          (extend-reduction-relation red lang (--> 1 2)))
         "extended-reduction-relation.png")
   
-  (define-multi-args-metafunction S lang
-    [(x v e) e])
+  (define-metafunction lang
+    [(S x v e) e])
   
   (test (metafunction->pict S)
         "metafunction.png")

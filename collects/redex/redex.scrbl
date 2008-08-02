@@ -622,23 +622,26 @@ Returns the names of all of the reduction relation's clauses
 (or false if there is no name for a given clause).
 }
 
-> (compatible-closure <reduction-relation> <lang> <non-terminal>) SYNTAX
+@defform[(compatible-closure reduction-relation lang non-terminal)]{
 
 This accepts a reduction, a language, the name of a
 non-terminal in the language and returns the compatible
 closure of the reduction for the specified non-terminal.
+}
 
-> (context-closure <reduction-relation> <lang> <pattern>) SYNTAX
+@defform[(context-closure reduction-relation lang pattern)]{
 
 This accepts a reduction, a language, a pattern representing
 a context (ie, that can be used as the first argument to
 `in-hole'; often just a non-terminal) in the language and
 returns the closure of the reduction in that context.
+}
 
-> (define-metafunction name <language-exp>
-     [<pattern> <rhs-expression> (side-condition <exp>) ...] ...)     SYNTAX
+@defform[(define-metafunction language-exp
+           [(name pattern ...) exp (side-condition exp) ...] 
+           ...)]{
 
-The `define-metafunction' form builds a function on
+The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
 expressions. The first argument indicates the language used
 to resolve non-terminals in the pattern expressions. Each of
@@ -646,8 +649,8 @@ the rhs-expressions is implicitly wrapped in `term'. In
 addition, recursive calls in the right-hand side of the
 metafunction clauses should appear inside `term'. 
 
-If specified, the side-conditions are collected with an
-`and' and used as guards on the case being matched. The
+If specified, the side-conditions are collected with 
+@scheme[and] and used as guards on the case being matched. The
 argument to each side-condition should be a Scheme
 expression, and the pattern variables in the <pattern> are
 bound in that expression.
@@ -655,14 +658,15 @@ bound in that expression.
 As an example, this metafunction finds the free variables in
 an expression in the lc-lang above:
 
-  ;; free-vars : e -> (listof x)
-  (define-metafunction free-vars
-    lc-lang
-    [(e_1 e_2 ...) 
+@schemeblock[
+  (define-metafunction lc-lang
+    free-vars : e -> (x ...)
+    [(free-vars (e_1 e_2 ...))
      ,(apply append (term ((free-vars e_1) (free-vars e_2) ...)))]
-    [x_1 ,(list (term x_1))]
-    [(lambda (x_1 ...) e_1)
+    [(free-vars x_1) ,(list (term x_1))]
+    [(free-vars (lambda (x_1 ...) e_1))
      ,(foldr remq (term (free-vars e_1)) (term (x_1 ...)))])
+]
 
 The first argument to define-metafunction is the grammar
 (defined above). Following that are three cases, one for
@@ -673,49 +677,22 @@ application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a lambda expression are
 the free variables of the body, minus the bound parameters.
+}
 
-> (define-metafunction/extension name <language-exp> extending-name
-     [<pattern> <rhs-expression> (side-condition <exp>) ...] ...)     SYNTAX   
-
+@defform[(define-metafunction/extension extending-name language-exp 
+           [(name pattern ...) rhs-expression (side-condition <exp>) ...]
+           ...)]{
 This defines a metafunction as an extension of an existing
 one. The extended metafunction behaves as if the original
 patterns were in this definitions, with the name of the
-function fixed up so that recursive functions behave as expected.
+function fixed up to be @scheme[extending-name]. 
+}
 
-> (define-multi-args-metafunction name <language-exp>
-     [<pattern> <rhs-expression> (side-condition <exp>) ...] ...)     SYNTAX
-
-Like define-metafunction, this defines a
-metafunction. Unlike it, this defines a metafunction that
-accepts multiple arguments. 
-
-There are two significant differences:
-
-  - patterns match the entire argument list, rather than just
-    matching the single argument
-  - the typesetting for define-multi-args-metafunction uses
-    commas to separate the arguments in the definition
-    and at the callsites. 
-
-> (define-multi-arg-metafunction/extension name <language-exp> extending-name
-     [<pattern> <rhs-expression> (side-condition <exp>) ...] ...)     SYNTAX   
-
-Like define-metafunction/extension, this defines a
-metafunction as an extension of an existing one, but this
-time for multi-argument metafunctions.
-
-> (in-domain? <term> <metafunction-name>)
-
-Returns #t if <term> is in the domain of the specified
-metafunction. 
-
-If the metafunction is defined with define-metafunction,
-then the term representing the argument should appear
-exactly as it appears in a call to the metafunction.
-
-If the metafunction is defined with
-define-multi-args-metafunction, then the arguments should
-be parenthesized.
+@defform[(in-domain? (metafunction-name term ...))]{
+Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
+legtimate inputs according to @scheme[metafunction-name]'s contract,
+and @scheme[#f] otherwise.
+}
 
 > (test-equal e1 e2)                            SYNTAX
 

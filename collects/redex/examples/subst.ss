@@ -5,20 +5,18 @@
 (define-language subst-lang
   (x variable))
 
-(define-metafunction subst-n 
-  subst-lang
-  [((x_1 any_1) (x_2 any_2) ... any_3)
+(define-metafunction subst-lang
+  [(subst-n ((x_1 any_1) (x_2 any_2) ... any_3))
    (subst (x_1 any_1 (subst-n ((x_2 any_2) ... any_3))))]
-  [(any_3) any_3])
+  [(subst-n (any_3)) any_3])
 
-(define-metafunction subst
-  subst-lang
+(define-metafunction subst-lang
   ;; 1. x_1 bound, so don't continue in λ body
-  [(x_1 any_1 (λ (x_2 ... x_1 x_3 ...) any_2))
+  [(subst (x_1 any_1 (λ (x_2 ... x_1 x_3 ...) any_2)))
    (λ (x_2 ... x_1 x_3 ...) any_2)
    (side-condition (not (member (term x_1) (term (x_2 ...)))))]
   ;; 2. general purpose capture avoiding case
-  [(x_1 any_1 (λ (x_2 ...) any_2))
+  [(subst (x_1 any_1 (λ (x_2 ...) any_2)))
    ,(term-let ([(x_new ...)
                 (variables-not-in (term (x_1 any_1 any_2)) 
                                   (term (x_2 ...)))])
@@ -26,22 +24,21 @@
                (λ (x_new ...) 
                  (subst (x_1 any_1 (subst-vars ((x_2 x_new) ... any_2)))))))]
   ;; 3. replace x_1 with e_1
-  [(x_1 any_1 x_1) any_1]
+  [(subst (x_1 any_1 x_1)) any_1]
   ;; 4. x_1 and x_2 are different, so don't replace
-  [(x_1 any_1 x_2) x_2]
+  [(subst (x_1 any_1 x_2)) x_2]
   ;; the last two cases cover all other expression forms
-  [(x_1 any_1 (any_2 ...))
+  [(subst (x_1 any_1 (any_2 ...)))
    ((subst (x_1 any_1 any_2)) ...)]
-  [(x_1 any_1 any_2) any_2])
+  [(subst (x_1 any_1 any_2)) any_2])
 
-(define-metafunction subst-vars
-  subst-lang
-  [((x_1 any_1) x_1) any_1]
-  [((x_1 any_1) (any_2 ...)) ((subst-vars ((x_1 any_1) any_2)) ...)]
-  [((x_1 any_1) any_2) any_2]
-  [((x_1 any_1) (x_2 any_2) ... any_3) 
+(define-metafunction subst-lang
+  [(subst-vars ((x_1 any_1) x_1)) any_1]
+  [(subst-vars ((x_1 any_1) (any_2 ...))) ((subst-vars ((x_1 any_1) any_2)) ...)]
+  [(subst-vars ((x_1 any_1) any_2)) any_2]
+  [(subst-vars ((x_1 any_1) (x_2 any_2) ... any_3)) 
    (subst-vars ((x_1 any_1) (subst-vars ((x_2 any_2) ... any_3))))]
-  [(any) any])
+  [(subst-vars (any)) any])
 
 (begin
   (test-equal (term (subst (x y x))) (term y))

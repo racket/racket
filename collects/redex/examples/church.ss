@@ -28,23 +28,24 @@
    (--> (in-hole e-ctxt_1 (let (x_1 v_1) e_1))
         (in-hole e-ctxt_1 (subst (x_1 v_1 e_1))))))
 
-(define-metafunction subst
-  lang
-  [(x_1 e_1 (lambda (x_1) e_2)) (lambda (x_1) e_2)]
-  [(x_1 e_1 (lambda (x_2) e_2)) 
+(define-metafunction lang
+  [(subst (x_1 e_1 (lambda (x_1) e_2))) (lambda (x_1) e_2)]
+  [(subst (x_1 e_1 (lambda (x_2) e_2))) 
    ,(term-let ((x_new (variable-not-in (term e_1) (term x_2))))
       (term (lambda (x_new) (subst (x_1 e_1 (subst (x_2 x_new e_2)))))))]
-  [(x_1 e_1 (let (x_1 e_2) e_3)) (let (x_1 (subst (x_1 e_1 e_2))) e_3)]
-  [(x_1 e_1 (let (x_2 e_2) e_3))
+  [(subst (x_1 e_1 (let (x_1 e_2) e_3))) (let (x_1 (subst (x_1 e_1 e_2))) e_3)]
+  [(subst (x_1 e_1 (let (x_2 e_2) e_3)))
    ,(term-let ((x_new (variable-not-in (term e_1) (term x_2))))
       (term (let (x_2 (subst (x_1 e_1 e_2))) (subst (x_1 e_1 (subst (x_2 x_new e_3)))))))]
-  [(x_1 e_1 x_1) e_1]
-  [(x_1 e_1 x_2) x_2]
-  [(x_1 e_1 (app e_2 e_3)) (app (subst (x_1 e_1 e_2))
-                                (subst (x_1 e_1 e_3)))]
-  [(x_1 e_1 (+ e_2 e_3)) (+ (subst (x_1 e_1 e_2))
-                            (subst (x_1 e_1 e_3)))]
-  [(x_1 e_1 number_1) number_1])
+  [(subst (x_1 e_1 x_1)) e_1]
+  [(subst (x_1 e_1 x_2)) x_2]
+  [(subst (x_1 e_1 (app e_2 e_3)))
+   (app (subst (x_1 e_1 e_2))
+        (subst (x_1 e_1 e_3)))]
+  [(subst (x_1 e_1 (+ e_2 e_3)))
+   (+ (subst (x_1 e_1 e_2))
+      (subst (x_1 e_1 e_3)))]
+  [(subst (x_1 e_1 number_1)) number_1])
 
 (traces lang reductions
         '(let (plus (lambda (m) 

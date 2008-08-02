@@ -103,10 +103,10 @@ reflects the (broken) spec).
                         quote))
       (not (prim-op? (term x))))))
 
-(define-metafunction beg-e-subst lang
-  [(x v x) v]
-  [(x v (any_1 ...)) ((beg-e-subst (x v any_1)) ...)]
-  [(x v any) any])
+(define-metafunction lang
+  [(beg-e-subst (x v x)) v]
+  [(beg-e-subst (x v (any_1 ...))) ((beg-e-subst (x v any_1)) ...)]
+  [(beg-e-subst (x v any)) any])
 
 (define (maker? v)
   (and (symbol? v)

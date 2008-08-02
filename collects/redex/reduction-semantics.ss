@@ -26,8 +26,6 @@
          none?
          define-metafunction
          define-metafunction/extension
-         define-multi-args-metafunction
-         define-multi-args-metafunction/extension
          metafunction
          in-domain?)
 

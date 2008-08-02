@@ -25,11 +25,7 @@
   (language->pict var-not-ab #f)
   
   (let ()
-    (define-metafunction zero empty-language [any_in 0])
-    (metafunction->pict zero))
-  
-  (let ()
-    (define-multi-args-metafunction zero empty-language [(any_in any_out) 0])
+    (define-metafunction empty-language [(zero any_in) 0])
     (metafunction->pict zero))
 
   (reduction-relation->pict

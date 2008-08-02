@@ -95,9 +95,7 @@
             #,(syntax-column stx)
             #f
             #f
-            #,(if (term-fn-multi-arg? (syntax-local-value #'x))
-                  #''multi
-                  #''single))]
+            'multi)]
         [x 
          (identifier? #'x)
          #`(init-loc-wrapper 
