@@ -914,9 +914,13 @@ Returns @scheme[#t] if @scheme[v] is a promise, @scheme[#f] otherwise.}
 
 @; ----------------------------------------
 
-@srfi[62]{S-expression comments}
+@; no actual library for this
+@section[#:tag "srfi-62" #:style 'unnumbered]{SRFI 62: S-expression comments}
 
-This SRFI's syntax is part of PLT Scheme's default reader.
+Original specification: @link["../srfi-std/srfi-62.html"]{SRFI 62}
+
+This SRFI's syntax is part of PLT Scheme's default reader (no
+@scheme[require] is needed).
 
 @; ----------------------------------------
 
