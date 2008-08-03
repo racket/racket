@@ -221,10 +221,6 @@
                 ;; forces them to conflict with each other.
                 (list (cons 'lib (map path->string collection-p)) 1 0))))
 
-  ;; remove-falses : listof (union X #f) -> listof X
-  ;; returns the non-false elements of l in order
-  (define (remove-falses l) (filter values l))
-
   ;; planet-spec->planet-list : (list string string nat nat) -> (list path string string (listof string) nat nat) | #f
   ;; converts a planet package spec into the information needed to create a cc structure
   (define (planet-spec->planet-list spec)
@@ -267,11 +263,11 @@
 
   (define planet-dirs-to-compile
     (if (make-planet)
-      (remove-falses (map (lambda (spec) (apply planet->cc spec))
-                          (if no-specific-collections?
-                            (get-all-planet-packages)
-                            (remove-falses (map planet-spec->planet-list
-                                                x-specific-planet-dirs)))))
+      (filter-map (lambda (spec) (apply planet->cc spec))
+                  (if no-specific-collections?
+                    (get-all-planet-packages)
+                    (filter-map planet-spec->planet-list
+                                x-specific-planet-dirs)))
       null))
 
   (define all-collections
@@ -306,10 +302,10 @@
                              (and (directory-exists? (build-path ccp p))
                                   (not (member (path->string p) omit))))
                            (directory-list ccp))])
-        (remove-falses (make-subs cc subs))))
-    (remove-falses
-     (let loop ([l collections-to-compile])
-       (apply append (map (lambda (cc) (cons cc (loop (get-subs cc)))) l)))))
+        (filter values (make-subs cc subs))))
+    (filter values
+            (let loop ([l collections-to-compile])
+              (append-map (lambda (cc) (cons cc (loop (get-subs cc)))) l))))
 
   (define (plt-collection-closure collections-to-compile)
     (collection-closure
@@ -395,9 +391,8 @@
       (if no-specific-collections?
         all-collections
         (check-again-all
-         (remove-falses
-          (map (lambda (c) (collection->cc (map string->path c)))
-               x-specific-collections)))))))
+         (filter-map (lambda (c) (collection->cc (map string->path c)))
+                     x-specific-collections))))))
 
   (set! planet-dirs-to-compile
         (sort-collections
