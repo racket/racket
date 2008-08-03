@@ -2,8 +2,8 @@
 
 (provide go go/text)
 
-(require (planet schematics/schemeunit/test)
-         (planet schematics/schemeunit/text-ui)
+(require (planet schematics/schemeunit:2/test)
+         (planet schematics/schemeunit:2/text-ui)
          mzlib/etc
          compiler/compiler
          scheme/match
