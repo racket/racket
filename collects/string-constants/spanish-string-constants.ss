@@ -790,7 +790,7 @@
  (teaching-languages "Languajes de Enseñanza")
  (experimental-languages "Languajes Experimentales") 
  (no-language-chosen "No ha seleccionado un lenguaje")
- (pretty-big-scheme "Muy Grande (incluye MrEd y Avanzado)")
+ (pretty-big-scheme "Muy Grande")
  (pretty-big-scheme-one-line-summary "Añade syntaxis y funciones de los lenguajes HtDP")
  (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, sin ornamentos")

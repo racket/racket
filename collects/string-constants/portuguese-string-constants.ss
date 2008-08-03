@@ -898,7 +898,7 @@ please adhere to these guidelines:
  (advanced-student "Advanced Student")
  (advanced-one-line-summary "Intermediate plus lambda and mutation")
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
- (pretty-big-scheme "Pretty Big (includes MrEd and Advanced)")
+ (pretty-big-scheme "Pretty Big")
  (pretty-big-scheme-one-line-summary "Adds syntax and functions from the HtDP languages")
  (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, with no frills")

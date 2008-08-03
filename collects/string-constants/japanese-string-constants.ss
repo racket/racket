@@ -953,7 +953,7 @@ please adhere to these guidelines:
  (advanced-student "Advanced Student")
  (advanced-one-line-summary "Intermediate ＋ lambda と mutation")
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
- (pretty-big-scheme "Pretty Big (MrEd と Advanced Student を含む)")
+ (pretty-big-scheme "Pretty Big")
  (pretty-big-scheme-one-line-summary "syntax と HtDP 言語の関数を追加")
  (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "純粋な R5RS")

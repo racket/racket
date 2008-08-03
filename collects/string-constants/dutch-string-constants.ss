@@ -626,7 +626,7 @@
  (advanced-student "Gevorderde")
  (advanced-one-line-summary "Middenmoot, plus lambda en mutatie")
  (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
- (pretty-big-scheme "Vrij groot (bevat MrEd en Gevorderde)")
+ (pretty-big-scheme "Vrij groot")
  (pretty-big-scheme-one-line-summary "Inclusief syntaxis and functies van de HtDP-talen")
  (r5rs-language-name "R5RS")
  (r5rs-one-line-summary "R5RS, kaal")

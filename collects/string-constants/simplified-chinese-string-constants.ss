@@ -938,7 +938,7 @@
   (advanced-student "高级")
   (advanced-one-line-summary "在中级的基础上，增加了lambda和赋值")
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "相当大（包括MrEd和HtDP高级）")
+  (pretty-big-scheme "相当大")
   (pretty-big-scheme-one-line-summary "增加了HtDP(程序设计方法)语言的语法和函数")
   (r5rs-lang-name "R5RS")
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")

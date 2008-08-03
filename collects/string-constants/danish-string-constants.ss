@@ -924,7 +924,7 @@ please adhere to these guidelines:
   (advanced-student "Rutineret")
   (advanced-one-line-summary "Øvet med lambda og mutation")
   (how-to-design-programs "How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "Temmelig omfattende Scheme (inklusiv MrEd og Avanceret)")
+  (pretty-big-scheme "Temmelig omfattende Scheme")
   (pretty-big-scheme-one-line-summary "Grafisk, med mange standardbiblioteker")
   (r5rs-language-name "R5RS")
   (r5rs-one-line-summary "R5RS, uden dikkedarer")
