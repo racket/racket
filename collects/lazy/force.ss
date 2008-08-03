@@ -1,77 +1,92 @@
-(module force "mz-without-promises.ss"
-  (require "promise.ss")
-  (provide (all-defined-except do-!!))
+#lang scheme/base
 
-  (define-syntax ~ (make-rename-transformer #'lazy))
-  (define ! force)
+(require scheme/promise (for-syntax scheme/base))
 
-  (define (!! x) (do-!! x #f))
-  ;; Similar to the above, but wrap procedure values too
-  (define (!!! x) (do-!! x #t))
-  ;; Force just a top-level list structure, similar to the above.
-  ;; (todo: this and the next assumes no cycles.)
-  (define (!list x)
-    (let loop ([x x])
-      (let ([x (! x)]) (when (mpair? x) (set-mcdr! x (loop (mcdr x)))) x)))
-  ;; Force a top-level list structure and the first level of values, again,
-  ;; similar to the above.
-  (define (!!list x)
-    (let loop ([x x])
-      (let ([x (! x)])
-        (when (mpair? x)
-          (set-mcar! x (! (mcar x)))
-          (set-mcdr! x (loop (mcdr x)))) x)))
-  ;; Force and split resulting values.
-  (define (!values x)
-    (split-values (! x)))
-  ;; Similar, but forces the actual values too.
-  (define (!!values x)
+(provide (all-defined-out))
+
+(define-syntax ~ (make-rename-transformer #'lazy))
+(define ! force)
+(define ~? promise?)
+
+;; force a top-level list structure; works with improper lists (will force the
+;; dotted item when it checks if its a pair); does not handle cycles
+(define (!list x)
+  (let ([x (! x)])
+    (if (list? x) ; cheap check,
+      x           ; and big savings on this case
+      (let loop ([x x])
+        (if (pair? x)
+          ;; avoid allocating when possible
+          (let ([r (loop (! (cdr x)))]) (if (eq? r (cdr x)) x (cons (car x) r)))
+          x)))))
+
+;; similar to !list, but also force the values in the list
+(define (!!list x)
+  (let ([x (! x)])
+    (if (list? x)                   ; cheap check,
+      (if (ormap ~? x) (map ! x) x) ; and big savings on these cases
+      (let loop ([x x])
+        (if (pair? x)
+          ;; avoid allocating when possible
+          (if (~? (car x))
+            (cons (! (car x)) (loop (! (cdr x))))
+            (let ([r (loop (! (cdr x)))])
+              (if (eq? r (cdr x)) x (cons (car x) r))))
+          x)))))
+
+(define (!! x)
+  ;; Recursively force the input value, preserving sharing (usually indirectly
+  ;; specified through self-referential promises).  The result is a copy of the
+  ;; input structure, where the scan goes down the structure that
+  ;; `make-reader-graph' handles.
+  (define t (make-weak-hasheq))
+  (define placeholders? #f)
+  (define (loop x)
     (let ([x (! x)])
-      (if (multiple-values? x)
-        (apply values (map ! (multiple-values-values x)))
-        x)))
-
-  ;; Multiple values are problematic: MzScheme promises can use multiple
-  ;; values, but to carry that out `call-with-values' should be used in all
-  ;; places that deal with multiple values, which will make the whole thing
-  ;; much slower (about twice in tight loops) -- but multiple values are rarely
-  ;; used (spceifically, students never use them).  So `values' is redefined to
-  ;; produce a first-class tuple-holding struct, and `split-values' turns that
-  ;; into multiple values.
-  (define-struct multiple-values (values))
-  (define (split-values x)
-    (let ([x (! x)])
-      (if (multiple-values? x) (apply values (multiple-values-values x)) x)))
-
-  ;; Force a nested structure -- we don't distinguish values from promises so
-  ;; it's fine to destructively modify the structure.
-  (define (do-!! x translate-procedures?)
-    (define table (make-hash-table)) ; avoid loops due to sharing
-    (split-values ; see below
-     (let loop ([x x])
-       (let ([x (! x)])
-         (unless (hash-table-get table x (lambda () #f))
-           (hash-table-put! table x #t)
-           (cond [(mpair? x)
-                  (set-mcar! x (loop (car x)))
-                  (set-mcdr! x (loop (cdr x)))]
-                 [(vector? x)
-                  (let vloop ([i 0])
-                    (when (< i (vector-length x))
-                      (vector-set! x i (loop (vector-ref x i)))
-                      (vloop (add1 i))))]
-                 [(box? x) (set-box! x (loop (unbox x)))]
-                 [(struct? x)
-                  (let-values ([(type skipped?) (struct-info x)])
-                    (if type
-                      (let*-values ([(name initk autok ref set imms spr skp?)
-                                     (struct-type-info type)]
-                                    [(k) (+ initk autok)])
-                        (let sloop ([i 0])
-                          (unless (= i k)
-                            (set x i (loop (ref x i)))
-                            (sloop (add1 i)))))
-                      x))]))
-         (if (and (procedure? x) translate-procedures?)
-           (lambda args (do-!! (apply x args) #t))
-           x))))))
+      ;; * Save on placeholder allocation (which will hopefully save work
+      ;;   recopying values again when passed through `make-reader-graph') --
+      ;;   basic idea: scan the value recursively, marking values as visited
+      ;;   *before* we go inside; when we get to a value that was marked,
+      ;;   create a placeholder and use it as the mark (or use the mark value
+      ;;   if it's already a placeholder); finally, if after we finished
+      ;;   scanning a value -- if we see that its mark was changed to a
+      ;;   placeholder, then put the value in it.
+      ;; * Looks like we could modify the structure if it's mutable instead of
+      ;;   copying it, but that might leave the original copy with a
+      ;;   placeholder in it.
+      (define-syntax-rule (do-value expr)
+        (let ([y (hash-ref t x #f)])
+          (cond ;; first visit to this value
+                [(not y) (hash-set! t x #t)
+                         (let* ([r expr] [y (hash-ref t x #f)])
+                           (when (placeholder? y)
+                             (placeholder-set! y r)
+                             (set! placeholders? #t))
+                           r)]
+                ;; already visited it twice => share the placeholder
+                [(placeholder? y) y]
+                ;; second visit => create a placeholder request
+                [else (let ([p (make-placeholder #f)]) (hash-set! t x p) p)])))
+      ;; deal with only with values that `make-reader-graph' can handle (for
+      ;; example, no mpairs) -- otherwise we can get back placeholder values
+      ;; (TODO: hash tables)
+      (cond [(pair? x)
+             (do-value (cons (loop (car x)) (loop (cdr x))))]
+            [(vector? x)
+             (do-value (let* ([len (vector-length x)] [v (make-vector len)])
+                         (for ([i (in-range len)])
+                           (vector-set! v i (loop (vector-ref x i))))
+                         (if (immutable? x) (vector->immutable-vector v) v)))]
+            [(box? x)
+             (do-value ((if (immutable? x) box-immutable box)
+                        (loop (unbox x))))]
+            [else
+             (let ([k (prefab-struct-key x)])
+               (if k
+                 (do-value (let ([v (struct->vector x)])
+                             (for ([i (in-range 1 (vector-length v))])
+                               (vector-set! v i (loop (vector-ref v i))))
+                             (apply make-prefab-struct k
+                                    (cdr (vector->list v)))))
+                 x))])))
+  (let ([x (loop x)]) (if placeholders? (make-reader-graph x) x)))

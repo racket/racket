@@ -52,8 +52,8 @@
   ;; the exposed `!' (and other similar !s) must be a special form in the lazy
   ;; language -- but this is achieved through the lazy #%app (~!%app below)
   ;; that treats it (and the others) specially: uses mzscheme's application
-  (define-for-syntax strict-forms
-    (syntax->list #'(! !! !!! !list !!list !values !!values)))
+  (define-for-syntax strict-names
+    (syntax->list #'(! !! !list !!list !values !!values)))
 
   ;; --------------------------------------------------------------------------
   ;; Determine laziness
@@ -138,6 +138,27 @@
     ;; like ~begin, delaying the whole thing is necessary to tie the evaluation
     ;; to whenever the value is actually forced
     (~ (parameterize ([param (! val)] ...) (~begin body ...))))
+
+  ;; Multiple values are problematic: MzScheme promises can use multiple
+  ;; values, but to carry that out `call-with-values' should be used in all
+  ;; places that deal with multiple values, which will make the whole thing
+  ;; much slower (about twice in tight loops) -- but multiple values are rarely
+  ;; used (spceifically, students never use them).  So `values' is redefined to
+  ;; produce a first-class tuple-holding struct, and `split-values' turns that
+  ;; into multiple values.
+  (define-struct multiple-values (values))
+  (define (split-values x)
+    (let ([x (! x)])
+      (if (multiple-values? x) (apply values (multiple-values-values x)) x)))
+  ;; Force and split resulting values.
+  (define (!values x)
+    (split-values (! x)))
+  ;; Similar, but forces the actual values too.
+  (define (!!values x)
+    (let ([x (! x)])
+      (if (multiple-values? x)
+        (apply values (map ! (multiple-values-values x)))
+        x)))
 
   (define* (~values . xs) (make-multiple-values xs))
 
@@ -236,7 +257,7 @@
        (cond [(let ([f #'f])
                (and (identifier? f)
                     (ormap (lambda (s) (module-identifier=? f s))
-                           strict-forms)))
+                           strict-names)))
               ;; strict function => special forms => use plain application
               (syntax/loc stx (f x ...))]
              [(toplevel?)
@@ -558,7 +579,7 @@
             [(pair? l) (cons (car l) (~ (loop (sub1 n) (! (cdr l)))))]
             [else (error 'take "not a proper list: ~e" l)])))
 
-  ;; not like Haskell's `take' that consumes a list
+  ;; not like Haskell's `cycle' that consumes a list
   (define* (cycle . l)
     (letrec ([r (~ (~append (! l) r))])
       r))
@@ -682,9 +703,9 @@
   ;; --------------------------------------------------------------------------
   ;; Provide everything except some renamed stuff
 
-  (define-syntax (provide-strict-forms stx)
-    #`(provide #,@strict-forms))
-  (provide-strict-forms)
+  (define-syntax (provide-strict-names stx)
+    #`(provide #,@strict-names))
+  (provide-strict-names)
 
   (define-syntax (renaming-provide stx)
     (syntax-case stx ()
