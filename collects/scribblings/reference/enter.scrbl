@@ -4,7 +4,7 @@
 
 @title[#:tag "enter"]{Interactive Module Loading}
 
-@note-lib[scheme/enter]
+@note-init-lib[scheme/enter]
 
 @defform*[[(enter! module-path)
            (enter! #f)]]{

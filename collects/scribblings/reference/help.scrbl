@@ -6,14 +6,7 @@
 
 @title{Interactive Help}
 
-@declare-exporting[scheme/help scheme/init]
-                   
-@defmodule*/no-declare[(scheme/help)]{The @scheme[help] form documented
-in this section is provided by the @schememodname[scheme/help] and
-@schememodname[scheme/init] libraries, which means that it is
-available when @exec{mzscheme} is started with no command-line
-arguments. It is not provided by @scheme[scheme] or
-@scheme[scheme/base].}
+@note-init-lib[scheme/help]
 
 @deftogether[(
 @defidform[help]

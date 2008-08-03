@@ -7,8 +7,9 @@
 
 @defmodule*/no-declare[(scheme/init)]{The @schememodname[scheme/init]
 library is the default start-up library for MzScheme. It re-exports
-the @schememodname[scheme] and @schememodname[scheme/help] libraries,
-and it sets @scheme[current-print] to use @scheme[pretty-print].}
+the @schememodname[scheme], @schememodname[scheme/enter] and
+@schememodname[scheme/help] libraries, and it sets
+@scheme[current-print] to use @scheme[pretty-print].}
 
 @defmodule*/no-declare[(scheme/gui/init)]{The
 @schememodname[scheme/gui/init] library is the default start-up

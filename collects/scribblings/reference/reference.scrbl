@@ -1,25 +1,19 @@
 #lang scribble/doc
-@(require "mz.ss"
-          scribble/struct)
+@(require "mz.ss" scribble/struct scheme/list)
 
 @(define (scheme-extra-libs)
-  (make-delayed-element
-   (lambda (renderer p ri)
-     (let ([keys (resolve-get-keys p ri (lambda (v)
-                                          (eq? (car v) 'scheme-extra-lib)))])
-      (let ([keys (sort keys string<?
-                        #:key (lambda (k)
-                                (symbol->string (cadr k)))
-                        #:cache-keys? #t)])
-        (let loop ([keys keys])
-          (cond
-            [(null? keys) '("")]
-            [(null? (cdr keys)) (list ", and "
-                                      (resolve-get p ri (car keys)))]
-            [else (list* ", " (resolve-get p ri (car keys))
-                         (loop (cdr keys)))])))))
-   (lambda () "...")
-   (lambda () "...")))
+   (make-delayed-element
+    (lambda (renderer p ri)
+      (let ([mods (append-map
+                   (lambda (k) (list ", " (resolve-get p ri k)))
+                   (sort (resolve-get-keys
+                          p ri (lambda (v) (eq? (car v) 'scheme-extra-lib)))
+                         string<?
+                         #:key (lambda (k) (symbol->string (cadr k)))
+                         #:cache-keys? #t))])
+        `(,@(drop-right mods 2) ", and " ,(last mods))))
+    (lambda () "...")
+    (lambda () "...")))
 
 @title{@bold{Reference}: PLT Scheme}
 

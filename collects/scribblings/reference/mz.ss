@@ -32,11 +32,29 @@
               " and "
               (schememodname scheme)
               " libraries, but not " (schememodname scheme/base)
-              "." 
+              "."
               . more)))]
       [(_ lib . more)
        (note-lib lib #:use-sources () . more)]))
-      
+
+  (provide note-init-lib)
+  (define-syntax note-init-lib
+    (syntax-rules ()
+      [(_ lib #:use-sources (src ...) . more)
+       (begin
+         (declare-exporting lib scheme/init #:use-sources (src ...))
+         (defmodule*/no-declare (lib)
+           (t "The bindings documented in this section are provided by the "
+              (schememodname lib)
+              " and "
+              (schememodname scheme/init)
+              " libraries, which means that they ara available when "
+              (exec "mzscheme") " is started with no command-line arguments."
+              " They are not provided by " (schememodname scheme/base)
+              " or " (schememodname scheme) "."
+              . more)))]
+      [(_ lib . more)
+       (note-init-lib lib #:use-sources () . more)]))
 
   (provide note-lib-only)
   (define-syntax note-lib-only
