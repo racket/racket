@@ -30,7 +30,8 @@
 
 (define (user-doc? doc)
   (or (memq 'user-doc-root (doc-flags doc))
-      (memq 'user-doc (doc-flags doc))))
+      (memq 'user-doc (doc-flags doc))
+      (not (doc-under-main? doc))))
 
 (define (filter-user-docs docs make-user?)
   (cond ;; Specifically disabled user stuff, filter
