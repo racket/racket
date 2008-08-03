@@ -659,17 +659,17 @@ argument to each side-condition should be a Scheme
 expression, and the pattern variables in the <pattern> are
 bound in that expression.
 
-As an example, this metafunction finds the free variables in
+As an example, these metafunctions finds the free variables in
 an expression in the lc-lang above:
 
 @schemeblock[
-  (define-metafunction lc-lang
-    free-vars : e -> (x ...)
-    [(free-vars (e_1 e_2 ...))
-     ,(apply append (term ((free-vars e_1) (free-vars e_2) ...)))]
-    [(free-vars x_1) ,(list (term x_1))]
-    [(free-vars (lambda (x_1 ...) e_1))
-     ,(foldr remq (term (free-vars e_1)) (term (x_1 ...)))])
+    (define-metafunction lc-lang
+      free-vars : e -> (listof x)
+      [(free-vars (e_1 e_2 ...))
+       (∪ (free-vars e_1) (free-vars e_2) ...)]
+      [(free-vars x) (x)]
+      [(free-vars (lambda (x ...) e))
+       (- (free-vars e) (x ...))])
 ]
 
 The first argument to define-metafunction is the grammar
@@ -681,6 +681,33 @@ application are the free variables of each of the subterms;
 the free variables of a variable is just the variable
 itself, and the free variables of a lambda expression are
 the free variables of the body, minus the bound parameters.
+
+Here are the helper metafunctions used above.
+
+@schemeblock[
+    (define-metafunction lc-lang
+      ∪ : (x ...) ... -> (x ...)
+      [(∪ (x_1 ...) (x_2 ...) (x_3 ...) ...)
+       (∪ (x_1 ... x_2 ...) (x_3 ...) ...)]
+      [(∪ (x_1 ...))
+       (x_1 ...)]
+      [(∪) ()])
+    
+    (define-metafunction lc-lang
+      - : (x ...) (x ...) -> (x ...)
+      [(- (x ...) ()) (x ...)]
+      [(- (x_1 ... x_2 x_3 ...) (x_2 x_4 ...))
+       (- (x_1 ... x_3 ...) (x_2 x_4 ...))
+       (side-condition (not (memq (term x_2) (term (x_3 ...)))))]
+      [(- (x_1 ...) (x_2 x_3 ...))
+       (- (x_1 ...) (x_3 ...))])
+]
+
+Note the side-condition in the second case of @scheme[-]. It
+ensures that there is a unique match for that case. Without
+it, @scheme[(term (- (x x) x))] would lead to an ambiguous
+match.
+
 }
 
 @defform[(define-metafunction/extension extending-name language-exp 

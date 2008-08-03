@@ -400,6 +400,14 @@
        (where number_3 (+ (term number_1) (term number_2)))])
     (test (term (f (11 17))) 28))
   
+  (let ()
+    (define-language x-lang
+      (x variable))
+    (define-metafunction x-lang
+      f : x x -> x
+      [(f x_1 x_2) x_1])
+    (test (term (f p q)) (term p)))
+  
 
 ;                                                                                                                                
 ;                                                                                                                                
@@ -858,16 +866,42 @@
         1)
   
   (require (lib "list.ss"))
-  (define-metafunction lc-lang
-    free-vars : e -> (listof x)
-    [(free-vars (e_1 e_2 ...))
-     ,(apply append (term ((free-vars e_1) (free-vars e_2) ...)))]
-    [(free-vars x_1) ,(list (term x_1))]
-    [(free-vars (lambda (x_1 ...) e_1))
-     ,(foldr remq (term (free-vars e_1)) (term (x_1 ...)))])
-  
-  (test (term (free-vars (lambda (x) (x y))))
-        (list 'y))
+  (let ()
+    (define-metafunction lc-lang
+      free-vars : e -> (listof x)
+      [(free-vars (e_1 e_2 ...))
+       (∪ (free-vars e_1) (free-vars e_2) ...)]
+      [(free-vars x) (x)]
+      [(free-vars (lambda (x ...) e))
+       (- (free-vars e) (x ...))])
+    
+    (define-metafunction lc-lang
+      ∪ : (x ...) ... -> (x ...)
+      [(∪ (x_1 ...) (x_2 ...) (x_3 ...) ...)
+       (∪ (x_1 ... x_2 ...) (x_3 ...) ...)]
+      [(∪ (x_1 ...))
+       (x_1 ...)]
+      [(∪) ()])
+    
+    (define-metafunction lc-lang
+      - : (x ...) (x ...) -> (x ...)
+      [(- (x ...) ()) (x ...)]
+      [(- (x_1 ... x_2 x_3 ...) (x_2 x_4 ...))
+       (- (x_1 ... x_3 ...) (x_2 x_4 ...))
+       (side-condition (not (memq (term x_2) (term (x_3 ...)))))]
+      [(- (x_1 ...) (x_2 x_3 ...))
+       (- (x_1 ...) (x_3 ...))])
+    
+    (test (term (∪)) (term ()))
+    (test (term (∪ (x y) (z a) (b c))) (term (x y z a b c)))
+    
+    (test (term (- (x y) ())) (term (x y)))
+    (test (term (- (x y) (x))) (term (y)))
+    (test (term (- (y x) (x))) (term (y)))
+    (test (term (- (x x x x x) (x))) (term ()))
+    
+    (test (term (free-vars (lambda (x) (x y)))) (list 'y))
+    (test (term (free-vars (a (b (c (d e)))))) (term (a b c d e))))
 
   (test (variable-not-in (term (x y z)) 'x)
         (term x1))

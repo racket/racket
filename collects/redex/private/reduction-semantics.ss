@@ -992,7 +992,7 @@
 (define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat rng-contract-pat name)
   (let ([compiled-patterns (append old-cps
                                    (map (λ (pat) (compile-pattern lang pat #t)) patterns))]
-        [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #t))]
+        [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
         [rng-compiled-pattern (compile-pattern lang rng-contract-pat #t)])
     (values
      (wrap
