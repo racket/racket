@@ -3182,17 +3182,17 @@ module browser threading seems wrong.
                     #\t
                     (string-constant execute-menu-item-help-string)))
             (make-object menu:can-restore-menu-item%
-              (string-constant break-menu-item-label)
+              (string-constant ask-quit-menu-item-label)
               scheme-menu
               (λ (_1 _2) (send current-tab break-callback))
               #\b
-              (string-constant break-menu-item-help-string))
+              (string-constant ask-quit-menu-item-help-string))
             (make-object menu:can-restore-menu-item%
-              (string-constant kill-menu-item-label)
+              (string-constant force-quit-menu-item-label)
               scheme-menu
               (λ (_1 _2) (send interactions-text kill-evaluation))
               #\k
-              (string-constant kill-menu-item-help-string))
+              (string-constant force-quit-menu-item-help-string))
             (when (custodian-memory-accounting-available?)
               (new menu-item%
                    [label (string-constant limit-memory-menu-item-label)]
