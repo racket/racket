@@ -637,9 +637,13 @@ a context (ie, that can be used as the first argument to
 returns the closure of the reduction in that context.
 }
 
-@defform[(define-metafunction language-exp
-           [(name pattern ...) exp (side-condition exp) ...] 
-           ...)]{
+@defform/subs[#:literals (: ->)
+              (define-metafunction language-exp
+               contract
+               [(name pattern ...) exp (side-condition exp) ...] 
+               ...)
+               ([contract (code:line) 
+                          (code:line id : pattern ... -> pattern)])]{
 
 The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -680,8 +684,10 @@ the free variables of the body, minus the bound parameters.
 }
 
 @defform[(define-metafunction/extension extending-name language-exp 
+           contract
            [(name pattern ...) rhs-expression (side-condition <exp>) ...]
            ...)]{
+
 This defines a metafunction as an extension of an existing
 one. The extended metafunction behaves as if the original
 patterns were in this definitions, with the name of the
