@@ -793,26 +793,25 @@
     (unless (file-exists? (build-path (collection-path "setup") "scribble.ss"))
       (make-docs #f)))
 
-  (define (doc:verbose)
+  (define (set-doc:verbose)
     (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-      (dynamic-require 'setup/scribble 'verbose)))
-  (define (doc:setup-scribblings)
-    (parameterize ([current-namespace (namespace-anchor->empty-namespace anchor)])
-      (dynamic-require 'setup/scribble 'setup-scribblings)))
+      ((dynamic-require 'setup/scribble 'verbose) (verbose))))
+  (define (doc:setup-scribblings latex-dest auto-start-doc?)
+    (parameterize ([current-namespace (namespace-anchor->empty-namespace
+                                       anchor)])
+      ((dynamic-require 'setup/scribble 'setup-scribblings)
+       (if no-specific-collections? #f (map cc-path ccs-to-compile))
+       latex-dest auto-start-doc? (make-user)
+       (lambda (what go alt) (record-error what "Building docs" go alt))
+       setup-printf)))
 
   (when (make-docs)
     (setup-printf #f "--- building documentation ---")
-    ((doc:verbose) (verbose))
+    (set-doc:verbose)
     (with-handlers ([exn:fail?
                      (lambda (exn)
                        (setup-printf #f "docs failure: ~a" (exn->string exn)))])
-      ((doc:setup-scribblings)
-       (if no-specific-collections? #f (map cc-path ccs-to-compile))
-       #f
-       (not (null? (archives)))
-       (make-user)
-       (lambda (what go alt) (record-error what "Building docs" go alt))
-       setup-printf)))
+      (doc:setup-scribblings #f (not (null? (archives))))))
 
   (define (render-pdf file)
     (define cmd
@@ -853,15 +852,8 @@
           void
           (lambda ()
             (make-directory tmp-dir)
-            ((doc:verbose) (verbose))
-            ((doc:setup-scribblings)
-             (if no-specific-collections? #f (map cc-path ccs-to-compile))
-             tmp-dir
-             #f
-             (make-user)
-             (lambda (what go alt)
-               (record-error what "Building pdf docs" go alt))
-             setup-printf)
+            (set-doc:verbose)
+            (doc:setup-scribblings tmp-dir #f)
             (parameterize ([current-directory tmp-dir])
               (for ([f (directory-list)]
                     #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
