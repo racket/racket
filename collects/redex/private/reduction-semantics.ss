@@ -131,7 +131,8 @@
                               acc)))]))))))
       (reduction-relation-make-procs red))
      (reduction-relation-rule-names red)
-     (reduction-relation-lws red))))
+     (reduction-relation-lws red)
+     `any)))
 
 (define-syntax (--> stx) (raise-syntax-error '--> "used outside of reduction-relation"))
 (define-syntax (fresh stx) (raise-syntax-error 'fresh "used outside of reduction-relation"))
@@ -187,20 +188,27 @@
 (define-syntax-set (do-reduction-relation)
   (define (do-reduction-relation/proc stx)
     (syntax-case stx ()
-      [(_ id orig-reduction-relation allow-zero-rules? lang args ...)
+      [(_ id orig-reduction-relation allow-zero-rules? lang w/domain-args ...)
        (identifier? #'lang)
-       (with-syntax ([(rules ...) (before-with (syntax (args ...)))]
-                     [(shortcuts ...) (after-with (syntax (args ...)))])
-         (with-syntax ([(lws ...) (map rule->lws (syntax->list #'(rules ...)))])
-           (reduction-relation/helper 
-            stx
-            (syntax-e #'id)
-            #'orig-reduction-relation
-            (syntax lang)
-            (syntax->list (syntax (rules ...)))
-            (syntax->list (syntax (shortcuts ...)))
-            #'(list lws ...)
-            (syntax-e #'allow-zero-rules?))))]
+       (let-values ([(args domain-pattern)
+                     (syntax-case #'(w/domain-args ...) ()
+                       [(#:domain pat args ...)
+                        (values (syntax (args ...)) #'pat)]
+                       [else
+                        (values (syntax (w/domain-args ...)) #'any)])])
+         (with-syntax ([(rules ...) (before-with args)]
+                       [(shortcuts ...) (after-with args)])
+           (with-syntax ([(lws ...) (map rule->lws (syntax->list #'(rules ...)))])
+             (reduction-relation/helper 
+              stx
+              (syntax-e #'id)
+              #'orig-reduction-relation
+              (syntax lang)
+              (syntax->list (syntax (rules ...)))
+              (syntax->list (syntax (shortcuts ...)))
+              #'(list lws ...)
+              (syntax-e #'allow-zero-rules?)
+              domain-pattern))))]
       [(_ id orig-reduction-relation lang args ...)
        (raise-syntax-error (syntax-e #'id) 
                            "expected an identifier for the language name"
@@ -311,7 +319,7 @@
                                          (to-lw where-expr))
                                    ...))))]))
   
-  (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts lws allow-zero-rules?)
+  (define (reduction-relation/helper stx orig-name orig-red-expr lang-id rules shortcuts lws allow-zero-rules? domain-pattern)
     (let ([ht (make-module-identifier-mapping)]
           [all-top-levels '()]
           [withs (make-module-identifier-mapping)])
@@ -370,17 +378,27 @@
                         (for-each loop nexts)))))
                 all-top-levels)
       
-      (let ([name-ht (make-hasheq)])
+      (let ([name-ht (make-hasheq)]
+            [lang-nts (language-id-nts lang-id orig-name)])
         (with-syntax ([lang-id lang-id]
                       [(top-level ...) (get-choices stx orig-name ht lang-id (syntax -->) name-ht lang-id allow-zero-rules?)]
                       [(rule-names ...) (hash-map name-ht (λ (k v) k))]
-                      [lws lws])
+                      [lws lws]
+                      
+                      [domain-pattern-side-conditions-rewritten
+                       (rewrite-side-conditions/check-errs
+                        lang-nts
+                        orig-name
+                        #t
+                        domain-pattern)])
+                      
           #`(build-reduction-relation
              #,orig-red-expr
              lang-id
              (list top-level ...)
              '(rule-names ...)
-             lws)))))
+             lws
+             `domain-pattern-side-conditions-rewritten)))))
   
   #|    
     ;; relation-tree = 
@@ -653,7 +671,8 @@
      first-lang
      (reverse (apply append (map reduction-relation-make-procs lst)))
      (hash-map name-ht (λ (k v) k))
-     (apply append (map reduction-relation-lws lst)))))
+     (apply append (map reduction-relation-lws lst))
+     `any)))
 
 (define (do-node-match lhs-frm-id lhs-to-id pat rhs-proc child-make-proc)
   ;; need call to make-rewrite-proc

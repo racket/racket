@@ -40,7 +40,9 @@
                                                           '()
                                                           '()))
 
-(define (build-reduction-relation orig-reduction-relation lang make-procs rule-names lws)
+;; the domain pattern isn't actually used here.
+;; I started to add it, but didn't finish. -robby
+(define (build-reduction-relation orig-reduction-relation lang make-procs rule-names lws domain-pattern)
   (cond
     [orig-reduction-relation
      (let* ([new-names (map rewrite-proc-name make-procs)]

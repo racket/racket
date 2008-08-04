@@ -406,7 +406,8 @@
     (define-metafunction x-lang
       f : x x -> x
       [(f x_1 x_2) x_1])
-    (test (term (f p q)) (term p)))
+    (test (term (f p q)) (term p))
+    (test (in-domain? (f p q)) #t))
   
 
 ;                                                                                                                                

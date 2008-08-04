@@ -486,8 +486,10 @@ is signaled. If no patterns match, an error is signaled.
 }
 
 @defform/subs[#:literals (--> fresh side-condition where) 
-              (reduction-relation language reduction-case ...)
-              ((reduction-case (--> pattern exp extras ...))
+              (reduction-relation language domain reduction-case ...)
+              ((domain (code:line) 
+	               (code:line #:domain pattern))
+               (reduction-case (--> pattern exp extras ...))
                (extras name
                        (fresh <fresh-clause> ...)
                        (side-condition <guard> ...)
@@ -727,24 +729,34 @@ legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
 }
 
-> (test-equal e1 e2)                            SYNTAX
+@defidform[-->]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[-->] form is an
+  error elsewhere.  }
 
-Tests to see if e1 is equal to e2.
+@defidform[fresh]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[-->] form is an
+  error elsewhere.  }
 
-> (test--> reduction-relation e1 e2 ...)        SYNTAX
+@defform[(test-equal e1 e2)]{
 
-Tests to see if the value of e1 (which should be a term),
-reduces to the e2s.
+Tests to see if @scheme[e1] is equal to @scheme[e2].
+}
 
-> (test-predicate p? e)                         SYNTAX
+@defform[(test--> reduction-relation e1 e2 ...)]{
 
-Tests to see if the value of `e' matches the predicate p?.
+Tests to see if the value of @scheme[e1] (which should be a term),
+reduces to the @scheme[e2]s under @scheme[reduction-relation].
+}
 
-> test-results :: (-> void?)
+@defform[(test-predicate p? e)]{
+Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].
+}
 
+@defproc[(test-results) void?]{
 Prints out how many tests passed and failed, and resets the
 counters so that next time this function is called, it
 prints the test results for the next round of tests.
+}
 
 > plug :: (any? any? . -> . any)
 
