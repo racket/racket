@@ -21,6 +21,7 @@ To do a better job of not generating programs with free variables,
          "reduction-semantics.ss"
          "underscore-allowed.ss"
          "term.ss"
+         (for-syntax "rewrite-side-conditions.ss")
          mrlib/tex-table)
 
 (define random-numbers '(0 1 -1 17 8))
@@ -132,7 +133,7 @@ To do a better job of not generating programs with free variables,
 ;; used in generating the `any' pattern
 (define-language sexp (sexp variable string number hole (sexp ...)))
 
-(define (generate lang nt size attempt [decisions@ random-decisions@])
+(define (generate* lang nt size attempt [decisions@ random-decisions@])
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -197,8 +198,6 @@ To do a better job of not generating programs with free variables,
            (define (condition-bindings bindings)
              (make-bindings (hash-map bindings (λ (name exp) (make-bind name exp)))))
            (generate/retry (λ _ (condition (condition-bindings bindings))) pattern)]
-          [`(side-condition ,pattern ,uncompiled-condition)
-           (error 'generate "side-condition not compiled: ~s" pat)]
           [`(name ,(? symbol? id) ,p)
            (define (generate/record)
              (let ([term (loop p holes)])
@@ -214,7 +213,7 @@ To do a better job of not generating programs with free variables,
           [`(hide-hole ,pattern) (loop pattern (make-immutable-hasheq null))]
           [`any
            (let-values ([(lang nt) ((next-any-decision) lang)])
-             (generate lang nt size attempt decisions@))]
+             (generate* lang nt size attempt decisions@))]
           [(and (? symbol?) (? (λ (x) (or (is-nt? lang x) (underscored-built-in? x)))))
            (define ((generate-nt/underscored decorated) undecorated)
              (let* ([vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
@@ -368,26 +367,35 @@ To do a better job of not generating programs with free variables,
   (not (false? (and (memq #\_ (string->list (symbol->string sym)))
                     (memq (symbol->nt sym) underscore-allowed)))))
 
-(define (try lang nt pred? #:attempts [attempts 1000] #:size [size 6])
-  (let loop ([i attempts])
-    (if (zero? i)
-        (fprintf (current-error-port) "No failures in ~a attempts\n" attempts)
-        (let ([t (generate lang nt size (- attempts i))])
-          (if (with-handlers ([exn:fail? (λ (exn) (error 'try "checking ~s: ~s" t exn))])
-                (pred? t)) 
-              (loop (- i 1))
-              (begin
-                (fprintf (current-error-port) "FAILED after ~s attempt(s)!\n" (add1 (- attempts i)))
-                (pretty-print t (current-error-port))))))))
-
 (define-syntax check
   (syntax-rules ()
-    [(_ lang (id ...) expr attempts size)
-     (try lang (quote (id ...)) 
-          (λ (pat) 
-            (let-values ([(id ...) (apply values pat)])
-              (term-let ([id id] ...) expr)))
-          #:attempts attempts #:size size)]))
+    [(_ lang ([id pat] ...) attempts size property)
+     (let loop ([remaining attempts])
+       (if (zero? remaining)
+           #t
+           (let ([attempt (add1 (- attempts remaining))])
+             (term-let 
+              ([id (generate lang pat size attempt)] ...)
+              (let ([generated (term ((,'id id) ...))])
+                (if (with-handlers 
+                        ([exn:fail? (λ (exn) (error 'check "term ~s raises ~s" generated exn))])
+                      property)
+                    (loop (sub1 remaining))
+                    (format "failed after ~s attempts: ~s" 
+                            attempt generated)))))))]))
+
+(define-syntax (generate stx)
+  (syntax-case stx ()
+    [(_ lang pat size attempt)
+     (syntax (generate lang pat size attempt random-decisions@))]
+    [(_ lang pat size attempt decisions@)
+     (with-syntax ([rewritten 
+                    (rewrite-side-conditions/check-errs 
+                     (language-id-nts #'lang 'generate)
+                     'generate
+                     #f
+                     #'pat)])
+       (syntax (generate* lang `rewritten size attempt decisions@)))]))
 
 (define-signature decisions^
   (next-variable-decision
@@ -411,12 +419,8 @@ To do a better job of not generating programs with free variables,
 
 (provide pick-from-list pick-var pick-length min-prods decisions^ 
          is-nt? lang-literals pick-char random-string pick-string
-         check pick-nt unique-chars pick-any sexp)
+         check pick-nt unique-chars pick-any sexp generate)
 
 (provide/contract
- [generate any/c]
- [try (->* (compiled-lang? sexp?  (-> any/c any))
-           (#:attempts number? #:size number?)
-           void?)]
  [find-base-cases (-> compiled-lang? hash?)])
 
