@@ -1435,6 +1435,8 @@
                        (send text find-position editor-x editor-y)))]
               [(or (send evt entering?)
                    (send evt moving?))
+               (when (send evt entering?)
+                 (send delegate-frame open-status-line 'plt:delegate))
                (let-values ([(editor-x editor-y)
                              (send text dc-location-to-editor-location 
                                    (send evt get-x)
@@ -1451,7 +1453,8 @@
                      [else
                       (send delegate-frame update-status-line 'plt:delegate #f)])))]
               [(send evt leaving?)
-               (send delegate-frame update-status-line 'plt:delegate #f)])))))
+               (send delegate-frame update-status-line 'plt:delegate #f)
+               (send delegate-frame close-status-line 'plt:delegate)])))))
     (super-new)))
 
 (define (at-most-200 s)
@@ -1607,13 +1610,11 @@
     
     (inherit close-status-line open-status-line)
     (define/public (hide-delegated-text)
-      (close-status-line 'plt:delegate)
       (set! shown? #f)
       (send (get-delegated-text) set-delegate #f)
       (send super-root change-children
             (λ (l) (list rest-panel))))
     (define/public (show-delegated-text)
-      (open-status-line 'plt:delegate)
       (set! shown? #t)
       (send (get-delegated-text) set-delegate delegatee)
       (send super-root change-children
@@ -1658,7 +1659,6 @@
     (inherit get-editor)
     (if (preferences:get 'framework:show-delegate?)
         (begin
-          (open-status-line 'plt:delegate)
           (send (get-delegated-text) set-delegate delegatee)
           (send super-root change-children
                 (λ (l) (list rest-panel delegate-ec))))
