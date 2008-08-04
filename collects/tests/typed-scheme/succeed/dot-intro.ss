@@ -7,3 +7,10 @@
 (define y
   (plambda: (a ...) ([x : Number] . [y : a ... a])
     (ormap null? (map list y))))
+
+
+(plambda: (a ...) ([x : Number] . [y : Number ... a])
+  y)
+
+(plambda: (a ...) ([x : Number] . [y : Number ... a])
+  (map add1 y))
