@@ -95,7 +95,7 @@
     (define cert-key (gensym 'for-cert))
     
     (define (certify-clause src-stx clause certifier introducer)
-      ;; This is slightly painful. The painsion into `:do-in' involves a lot of pieces
+      ;; This is slightly painful. The expansion into `:do-in' involves a lot of pieces
       ;; that are no treated as sub-expressions. We have to push the certificates
       ;; down to all the relevant identifiers and expressions:
       (define (recert s) (syntax-recertify s src-stx (current-inspector) cert-key))
@@ -385,19 +385,39 @@
   (define (:list-gen l)
     (values car cdr l pair? (lambda (x) #t) (lambda (p x) #t)))
 
-  (define (in-vector l)
-    (unless (vector? l) (raise-type-error 'in-vector "vector" l))
-    (make-do-sequence (lambda () (:vector-gen l))))
+  (define in-vector
+    (case-lambda
+     [(v) (in-vector v 0 (vector-length v) 1)]
+     [(v start) (in-vector v start (vector-length v) 1)]
+     [(v start stop) (in-vector v start stop 1)]
+     [(v start stop step)
+      (unless (vector? v) (raise-type-error 'in-vector "vector" v))
+      (when (and (< start stop) (< step 0))
+        (raise-mismatch-error 'in-vector "start is less than stop but step is negative" (list start stop step)))
+      (when (and (< stop start) (> step 0))
+        (raise-mismatch-error 'in-vector "stop is less than start but step is positive" (list start stop step)))
+      (when (zero? step)
+        (raise-mismatch-error 'in-vector "step is zero" step))
+      (make-do-sequence (lambda () (:vector-gen v start stop step)))]))
 
-  (define (:vector-gen v)
-    (let ([len (vector-length v)])
-      (values (lambda (i)
-                (vector-ref v i))
-              add1
-              0
-              (lambda (i) (< i len))
-              (lambda (x) #t)
-              (lambda (x y) #t))))
+  (define :vector-gen
+    (case-lambda 
+      [(v) (:vector-gen v 0 (vector-length v) 1)]
+      [(v start stop step)
+       (values
+        ;; pos->element
+        (lambda (i) (vector-ref v i))
+        ;; next-pos
+        ;; Minor optimisation.  I assume add1 is faster than \x.x+1
+        (if (= step 1) add1 (lambda (i) (+ i step)))
+        ;; initial pos
+        start
+        ;; continue?
+        (if (> step 0)
+            (lambda (i) (< i stop))
+            (lambda (i) (> i stop)))
+        (lambda (x) #t)
+        (lambda (x y) #t))]))
 
   (define (in-string l)
     (unless (string? l) (raise-type-error 'in-string "string" l))
@@ -970,12 +990,13 @@
                                       vector-length-id
                                       in-vector-id
                                       vector-ref-id)
-     (lambda (stx)
+     (define (in-vector-like stx)
        (with-syntax ([vector? vector?-id]
                      [in-vector in-vector-id]
                      [vector-length vector-length-id]
                      [vector-ref vector-ref-id])
          (syntax-case stx ()
+           ;; Fast case
            [((id) (_ vec-expr))
             #'[(id)
                (:do-in
@@ -998,7 +1019,53 @@
                 #t
                 ;; loop args
                 ((add1 pos)))]]
-           [_ #f]))))
+           ;; General case
+           [((id) (_ vec-expr start))
+            (in-vector-like (syntax ((id) (_ vec-expr start #f 1))))]
+           [((id) (_ vec-expr start stop))
+            (in-vector-like (syntax ((id) (_ vec-expr start stop 1))))]
+           [((id) (_ vec-expr start stop step))
+            #`[(id)
+               (:do-in
+                ;; Outer bindings
+                ;; Prevent multiple evaluation
+                ([(v* stop*) (let ([vec vec-expr]
+                                   [stop* stop])
+                               (if stop*
+                                   (values vec stop*)
+                                   (values vec (vector-length vec))))]
+                 [(start*) start]
+                 [(step*) step])
+                ;; Outer check
+                (when (or (zero? step*)
+                          (and (< start* stop*) (< step* 0))
+                          (and (< start* stop*) (< step* 0)))
+                  (if (vector? v*)
+                      ;; Let in-vector report the error
+                      (in-vector v* start* stop* step*)
+                      (raise-type-error in-vector
+                                        "start, stop, and step incompatible"
+                                        (list start* stop* step*))))
+                ;; Loop bindings
+                ([idx start*])
+                ;; Pos guard
+                #,(cond
+                    [(not (number? (syntax-e #'step)))
+                      #`(if (step* . >= . 0) (< idx stop*) (> idx stop*))]
+                    [((syntax-e #'step) . >= . 0)
+                      #'(< idx stop*)]
+                    [else
+                      #'(> idx stop*)])
+                ;; Inner bindings
+                ([(id) (vector-ref v* idx)])
+                ;; Pre guard
+                #t
+                ;; Post guard
+                #t
+                ;; Loop args
+                ((+ idx step)))]]
+           [_ #f])))
+          in-vector-like)
   
   (define-sequence-syntax *in-vector
     (lambda () #'in-vector)
