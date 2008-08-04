@@ -2,9 +2,17 @@
 @(require scribble/manual
           scribble/bnf
           scribble/eval
+          (for-syntax scheme/base)
           (for-label scheme/base
                      scheme/contract
 		     redex))
+
+@(define-syntax (defpattech stx)
+   (syntax-case stx ()
+     [(_ arg)
+      (identifier? #'arg)
+      (with-syntax ([as (symbol->string (syntax-e #'arg))])
+      #'@index['("Redex Pattern" as)]{@deftech{as}})]))
 
 @;{
 
@@ -101,7 +109,7 @@ this tool:
 
 ======================================================================
 
-The _reduction-semantics.ss_ library defines a pattern
+The _reduction-semantics.ss_ library defines a @deftech{pattern}
 language, used in various ways:
 
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole in-named-hole side-condition cross) 
@@ -125,12 +133,21 @@ language, used in various ways:
             scheme-constant]
    [pattern-sequence 
      pattern 
-     ...            ;; literal ellipsis
+     (code:line ... (code:comment "literal ellipsis"))
      ..._id])
 
-The patterns match sexpressions. The _any_ pattern matches
-any sepxression. The _number_ pattern matches any
-number. The _string_ pattern matches any string. Those three
+@itemize{
+
+@item{The any
+@;{@defpattech[any]}
+pattern matches
+any sepxression.}
+
+@item{The number
+@;{@defpattech[number]}
+pattern matches any number.}}
+
+The _string_ pattern matches any string. Those three
 patterns may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
 were an implicit `name' pattern) and match the portion
