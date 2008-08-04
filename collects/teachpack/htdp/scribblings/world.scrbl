@@ -8,6 +8,11 @@
 
 @teachpack["world"]{Simulations and Animations}
 
+@emph{Note}: For a quick and educational introduction to the teachpack, see
+@link["http://www.ccs.neu.edu/home/matthias/HtDP/Prologue/book.html"]{How
+to Design Programs, Second Edition: Prologue}. The purpose of this
+documentation is to give experienced Schemers a concise overview for using
+the library and for incorporating it elsewhere. 
 
 The teachpack provides two sets of tools. The first allows students to
 create and display a series of animated scenes, i.e., a simulation. The
