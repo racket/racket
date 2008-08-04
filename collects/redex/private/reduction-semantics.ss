@@ -192,6 +192,8 @@
        (identifier? #'lang)
        (let-values ([(args domain-pattern)
                      (syntax-case #'(w/domain-args ...) ()
+                       ;; commented out this case to diable domain specifications
+                       #;
                        [(#:domain pat args ...)
                         (values (syntax (args ...)) #'pat)]
                        [else

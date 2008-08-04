@@ -486,10 +486,8 @@ is signaled. If no patterns match, an error is signaled.
 }
 
 @defform/subs[#:literals (--> fresh side-condition where) 
-              (reduction-relation language domain reduction-case ...)
-              ((domain (code:line) 
-	               (code:line #:domain pattern))
-               (reduction-case (--> pattern exp extras ...))
+              (reduction-relation language reduction-case ...)
+              ((reduction-case (--> pattern exp extras ...))
                (extras name
                        (fresh <fresh-clause> ...)
                        (side-condition <guard> ...)
