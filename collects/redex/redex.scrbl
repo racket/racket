@@ -20,6 +20,12 @@
       (identifier? #'arg)
       #`(tech #,(symbol->string (syntax-e #'arg)))]))
 
+@(define-syntax (pattern stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech "pattern") args ...)]
+    [x (identifier? #'x) #'(tech "pattern")]))
+
 @;{
 
 I usually use an `ellipsis' non-terminal to make it more explicit that
@@ -48,11 +54,20 @@ At Wed, 30 Jul 2008 13:03:07 -0500, "Robby Findler" wrote:
 > Robby
 }
 
-@(declare-exporting redex)
 @title{@bold{PLT Redex}: an embedded DSL for debugging operational semantics}
 
-This collection provides these files:
+PLT Redex consists of a domain-specific language for specifying
+reduction semantics, plus a suite of tools for working with the
+semantics. To load Redex use:
+@defmodule[redex]
+which provides all of the names documented in this library.
 
+The module @schememodname[redex/reduction-semantics] provides only the
+names defined in the first section of this manual, but it also does
+not require any GUI code, making it suitable for use with
+@tt{mzscheme} scripts.
+
+@;{
   _reduction-semantics.ss_: the core reduction semantics
   library
 
@@ -113,9 +128,18 @@ this tool:
   type system can be written as a rewritten system (see
   Kuan, MacQueen, Findler in ESOP 2007 for more).
 
-======================================================================
+}
 
-The _reduction-semantics.ss_ library defines a @deftech{pattern}
+@section{Reduction Semantics}
+
+@defmodule[redex/reduction-semantics]
+
+This section describes the all of the exports of 
+@schememodname[redex/reduction-semantics], each of which is
+also exported by @schememodname[redex].
+
+
+The @tt{reduction-semantics.ss} library defines a @deftech{pattern}
 language, used in various ways:
 
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole in-named-hole side-condition cross) 
@@ -144,54 +168,54 @@ language, used in various ways:
 
 @itemize{
 
-@item{The @defpattech[any] pattern matches any sepxression.
-This pattern may also be suffixed with an underscore and another
+@item{The @defpattech[any] @pattern matches any sepxression.
+This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
-were an implicit @pattech[name] pattern) and match the portion
+were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
 }
 
-@item{The @defpattech[number] pattern matches any number.
-This pattern may also be suffixed with an underscore and another
+@item{The @defpattech[number] @pattern matches any number.
+This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
-were an implicit @pattech[name] pattern) and match the portion
+were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
 }
 
-@item{The @defpattech[string] pattern matches any string. 
-This pattern may also be suffixed with an underscore and another
+@item{The @defpattech[string] @pattern matches any string. 
+This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
-were an implicit @pattech[name] pattern) and match the portion
+were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
 }
 
-@item{The @defpattech[variable] pattern matches any symbol.
-This pattern may also be suffixed with an underscore and another
+@item{The @defpattech[variable] @pattern matches any symbol.
+This @pattern may also be suffixed with an underscore and another
 identifier, in which case they bind the full name (as if it
-were an implicit @pattech[name] pattern) and match the portion
+were an implicit @pattech[name] @pattern) and match the portion
 before the underscore.
 }
 
-@item{The @defpattech[variable-except] pattern matches any symbol except those
+@item{The @defpattech[variable-except] @pattern matches any symbol except those
 listed in its argument. This is useful for ensuring that
 keywords in the language are not accidentally captured by
 variables. 
 }
 
-@item{ The @defpattech[variable-prefix] pattern matches any symbol
+@item{ The @defpattech[variable-prefix] @pattern matches any symbol
 that begins with the given prefix. }
 
-@item{The @defpattech[variable-not-otherwise-mentioned] pattern matches any
+@item{The @defpattech[variable-not-otherwise-mentioned] @pattern matches any
 symbol except those that are used as literals elsewhere in
 the language.
 }
 
-@item{The @defpattech[hole] pattern matches anything when inside a matching
+@item{The @defpattech[hole] @pattern matches anything when inside a matching
 the first argument to an @pattech[in-hole] pattern. Otherwise, 
 it matches only the hole.
 }
 
-@item{The @defpattech[symbol] pattern stands for a literal symbol that must
+@item{The @defpattech[symbol] @pattern stands for a literal symbol that must
 match exactly, unless it is the name of a non-terminal in a
 relevant language or contains an underscore. 
 
@@ -199,14 +223,14 @@ If it is a non-terminal, it matches any of the right-hand
 sides of that non-terminal.
 
 If the symbol is a non-terminal followed by an underscore,
-for example @tt{e_1}, it is implicitly the same as a name pattern
+for example @tt{e_1}, it is implicitly the same as a name @pattern
 that matches only the non-terminal, @tt{(@pattech[name] e_1 e)} for the
 example. Accordingly, repeated uses of the same name are
 constrainted to match the same expression.
 
 If the symbol is a non-terminal followed by @tt{_!_}, for example
 @tt{e_!_1}, it is also treated as a pattern, but repeated uses of
-the same pattern are constrained to be different. For
+the same @pattern are constrained to be different. For
 example, this pattern:
 
 @schemeblock[(e_!_1 e_!_1 e_!_1)]
@@ -214,61 +238,61 @@ example, this pattern:
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
 
-Unlike the @tt{_} patterns, the @tt{_!_} patterns do not bind names.
+Unlike a @tt{_} pattern, the @tt{_!_} patterns do not bind names.
 
 If @tt{_} names and @tt{_!_} are mixed, they are treated as
-separate. That is, this pattern @tt{(e_1 e_!_1)} matches just the
+separate. That is, this @pattern @tt{(e_1 e_!_1)} matches just the
 same things as @tt{(e e)}, but the second doesn't bind any
 variables.
 
 If the symbol otherwise has an underscore, it is an error.
 }
 
-@item{The pattern @tt{(@defpattech[name] symbol pattern)}
-matches @tt{pattern} and binds using it to the name @tt{symbol}. 
+@item{The @pattern @tt{(@defpattech[name] symbol @pattern)}
+matches @tt{@pattern} and binds using it to the name @tt{symbol}. 
 }
 
-@item{The @tt{(@defpattech[in-hole] pattern pattern)} pattern matches the first
-pattern. This match must include exactly one match against the second
-pattern. If there are zero matches or more than one match, an
-exception is raised.
+@item{The @tt{(@defpattech[in-hole] @pattern @pattern)} @pattern
+matches the first pattern. This match must include exactly one match
+against the second pattern. If there are zero matches or more
+than one match, an exception is raised.
 
-When matching the first argument of in-hole, the `hole' pattern
+When matching the first argument of in-hole, the `hole' @pattern
 matches any sexpression. Then, the sexpression that matched the hole
-pattern is used to match against the second pattern.
+@pattern is used to match against the second pattern.
 }
 
-@item{The @tt{(@defpattech[hide-hole] pattern)} pattern matches what
-the embedded pattern matches but if the pattern matcher is
+@item{The @tt{(@defpattech[hide-hole] @pattern)} @pattern matches what
+the embedded @pattern matches but if the @pattern matcher is
 looking for a decomposition, it ignores any holes found in
 that pattern.
 }
 
-@item{The @tt{(@defpattech[side-condition] pattern guard)} pattern matches
-what the embedded pattern matches, and then the guard expression is
-evaluated. If it returns @scheme[#f], the pattern fails to match, and if it
-returns anything else, the pattern matches. In addition, any
-occurrences of `name' in the pattern are bound using @scheme[term-let]
+@item{The @tt{(@defpattech[side-condition] @pattern guard)} @pattern matches
+what the embedded @pattern matches, and then the guard expression is
+evaluated. If it returns @scheme[#f], the @pattern fails to match, and if it
+returns anything else, the @pattern matches. In addition, any
+occurrences of `name' in the @pattern are bound using @scheme[term-let]
 in the guard.
 }
 
-@item{The @tt{(@defpattech[cross] symbol)} pattern is used for the compatible
+@item{The @tt{(@defpattech[cross] symbol)} @pattern is used for the compatible
 closure functions. If the language contains a non-terminal with the
-same name as <symbol>, the pattern @tt{(cross symbol)} matches the
+same name as <symbol>, the @pattern @tt{(cross symbol)} matches the
 context that corresponds to the compatible closure of that
 non-terminal.
 }
 
 @item{The @tt{(@defpattech[pattern-sequence] ...)}
-pattern matches a sexpression
+@pattern matches a sexpression
 list, where each pattern-sequence element matches an element
-of the list. In addition, if a list pattern contains an
+of the list. In addition, if a list @pattern contains an
 ellipsis, the ellipsis is not treated as a literal, instead
-it matches any number of duplications of the pattern that
+it matches any number of duplications of the @pattern that
 came before the ellipses (including 0). Furthermore, each
-@tt{(@pattech[name] symbol pattern)} in the duplicated pattern binds a
+@tt{(@pattech[name] symbol @pattern)} in the duplicated @pattern binds a
 list of matches to @tt{symbol}, instead of a single match.  (A
-nested duplicated pattern creates a list of list matches,
+nested duplicated @pattern creates a list of list matches,
 etc.) Ellipses may be placed anywhere inside the row of
 patterns, except in the first position or immediately after
 another ellipses.
@@ -281,14 +305,14 @@ matches this sexpression:
 
 @schemeblock[(term (a a))]
 
-three different ways. One where the first @tt{a} in the pattern
+three different ways. One where the first @tt{a} in the @pattern
 matches nothing, and the second matches both of the
-occurrences of @tt{a}, one where each named pattern matches a
+occurrences of @tt{a}, one where each named @pattern matches a
 single @tt{a} and one where the first matches both and the
 second matches nothing.
 
 If the ellipses is named (ie, has an underscore and a name
-following it, like a variable may), the pattern matcher
+following it, like a variable may), the @pattern matcher
 records the length of the list and ensures that any other
 occurrences of the same named ellipses must have the same
 length. 
@@ -301,12 +325,12 @@ only matches this sexpression:
 
 @schemeblock[(term (a a))]
 
-one way, with each named pattern matching a single a. Unlike
+one way, with each named @pattern matching a single a. Unlike
 the above, the two patterns with mismatched lengths is ruled
 out, due to the underscores following the ellipses.
 
 Also, like underscore patterns above, if an underscore
-pattern begins with @tt{..._!_}, then the lengths must be
+@pattern begins with @tt{..._!_}, then the lengths must be
 different.
 
 Thus, with the pattern:
@@ -326,7 +350,7 @@ bound to @scheme['()].
 }
 
 @defform/subs[(define-language lang-name 
-                (non-terminal-spec pattern ...)
+                (non-terminal-spec #, @pattern ...)
                 ...)
               ([non-terminal-spec symbol (symbol ...)])]{
 
@@ -660,6 +684,11 @@ a context (ie, that can be used as the first argument to
 returns the closure of the reduction in that context.
 }
 
+@defproc[(reduction-relation? [v any/c]) boolean?]{
+  Returns @scheme[#t] if its argument is a reduction-relation, and
+  @scheme[#f] otherwise.
+}
+
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
                contract
@@ -756,6 +785,10 @@ and @scheme[#f] otherwise.
 
 @defidform[fresh]{ Recognized specially within
   @scheme[reduction-relation]. A @scheme[-->] form is an
+  error elsewhere.  }
+
+@defidform[with]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[with] form is an
   error elsewhere.  }
 
 @defform[(test-equal e1 e2)]{
@@ -863,11 +896,6 @@ produce variables that are always distinct.
 
 @defstruct[bind ([name symbol?] [exp any?])]{
 
-> make-bind :: (symbol? any? . -> . bind?)
-> bind? :: (any? . -> . boolean?)
-> bind-name :: (bind? . -> . symbol?)
-> bind-exp :: (bind? . -> . any?)
-
 Instances of this struct are returned by @scheme[redex-match].
 Each @scheme[bind] associates a name with an s-expression from the
 language, or a list of such s-expressions, if the @tt{(@pattech[name] ...)}
@@ -912,7 +940,7 @@ you might also try simplifying the pattern as well as
 simplifying the expression).
 
 
-======================================================================
+@section{GUI}
 
 The _gui.ss_ library provides the following functions:
 
@@ -1090,9 +1118,9 @@ the stepper and traces.
 
 These four parameters control the color of the edges in the graph.
 
-======================================================================
+@section{Typesetting}
 
-The _pict.ss_ library provides functions designed to
+The @tt{pict.ss} library provides functions designed to
 automatically typeset grammars, reduction relations, and
 metafunction written with plt redex. 
 
