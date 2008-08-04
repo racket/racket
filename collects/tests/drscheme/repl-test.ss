@@ -1302,7 +1302,7 @@ This produces an ACK message
         (printf "tests finished: ~a failed out of ~a total\n" failures tests)))
   
   (define (run-test-in-language-level raw?)
-    (let ([level (list "Pretty Big (includes MrEd and Advanced Student)")])
+    (let ([level (list #rx"Pretty Big")])
       (printf "running tests ~a debugging\n" (if raw? "without" "with"))
       (if raw?
           (begin

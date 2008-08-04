@@ -45,7 +45,7 @@ the settings above should match r5rs
 ;                                                                               
 
 (define (pretty-big)
-  (parameterize ([language (list "Pretty Big (includes MrEd and Advanced Student)")])
+  (parameterize ([language (list #rx"Pretty Big")])
     
     (check-top-of-repl)
     
