@@ -65,7 +65,7 @@ Like @cpp{scheme_equal_hash_key2}, but accepts an extra value for
 cycle tracking. This procedure is meant to be called by a secondary
 hashing procedure installed with @cpp{scheme_set_type_equality}.}
 
-@function[(long scheme_build_list
+@function[(Scheme_Object* scheme_build_list
            [int c]
            [Scheme_Object** elems])]{
 
