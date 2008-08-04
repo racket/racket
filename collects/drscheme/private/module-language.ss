@@ -49,8 +49,7 @@
   ;;             -> (implements drscheme:language:language<%>)
   (define (module-mixin %)
     (class* % (drscheme:language:language<%> module-language<%>)
-      (define/override (use-namespace-require/copy?) #t)
-      (field [iteration-number 0])
+      (define/override (use-namespace-require/copy?) #f)
       
       (define/augment (capability-value key)
         (cond
@@ -116,7 +115,6 @@
                                     (cadddr marshalled)))))))))
       
       (define/override (on-execute settings run-in-user-thread)
-        (set! iteration-number 0)
         (super on-execute settings run-in-user-thread)
         (run-in-user-thread
          (λ ()
@@ -138,67 +136,93 @@
       (define/public (get-auto-text settings)
         (module-language-settings-auto-text settings))
       
+      ;; utility for the front-end methods: return a function that will return
+      ;; each of the given syntax values on each call, executing thunks when
+      ;; included; when done with the list, use the given getter thunk.
+      (define (expr-getter getter . exprs/thunks)
+        (define (loop)
+          (if (null? exprs/thunks)
+            (getter)
+            (let ([x (car exprs/thunks)])
+              (set! exprs/thunks (cdr exprs/thunks))
+              (if (procedure? x) (begin (x) (loop)) x))))
+        loop)
+      
       (inherit get-reader)
+      (define hopeless-repl (make-thread-cell #t))
+      
       (define/override (front-end/interaction port settings)
         (if (thread-cell-ref hopeless-repl)
             (raise-hopeless-syntax-error)
             (super front-end/interaction port settings)))
       
+      ;; This is used to setup the user environment.  There's a subtle hack
+      ;; here: instead of doing things like (namespace-require ...), construct
+      ;; and return a #'(require ...) syntax: this way when we're not going to
+      ;; run the code (eg, when it's used by the syntax checker or the macro
+      ;; debugger), it won't run.
       (define/override (front-end/complete-program port settings)
-        (let* ([super-thunk (λ () ((get-reader) (object-name port) port))]
-               [path (get-filename port)]
-               [module-name #f]
-               [get-require-module-name
-                (λ ()
-                  ;; "clearing out" the module-name via datum->syntax ensures
-                  ;; that check syntax doesn't think the original module name
-                  ;; is being used in this require (so it doesn't get turned red)
-                  (datum->syntax #'here (syntax-e module-name)))])
-          (λ ()
-            (set! iteration-number (+ iteration-number 1))
-            (case iteration-number
-              [(1)
-               #`(current-module-declare-name
-                  (if #,path
-                      (make-resolved-module-path '#,path)
-                      #f))]
-              [(2)
-               (let ([super-result
-                      ;; just reading the definitions might be a syntax error,
-                      ;; possibly due to bad language (eg, no foo/lang/reader)
-                      (with-handlers ([exn? (λ (e)
-                                              (raise-hopeless-exception
+        (define (super-thunk) ((get-reader) (object-name port) port))
+        (define path (cond [(get-filename port)
+                            => (compose simplify-path cleanse-path)]
+                           [else #f]))
+        (define-values (name lang module-expr)
+          (let ([expr
+                 ;; just reading the definitions might be a syntax error,
+                 ;; possibly due to bad language (eg, no foo/lang/reader)
+                 (with-handlers ([exn? (λ (e) (raise-hopeless-exception
                                                e "invalid module text"))])
-                        (super-thunk))])
-                 (if (eof-object? super-result)
-                   (raise-hopeless-syntax-error)
-                   (let-values ([(name new-module)
-                                 (transform-module path super-result)])
-                     (set! module-name name)
-                     new-module)))]
-              [(3)
-               (let ([super-result (super-thunk)])
-                 (if (eof-object? super-result)
-                   #`(current-module-declare-name #f)
-                   (raise-hopeless-syntax-error
-                    "there can only be one expression in the definitions window"
-                    super-result)))]
-              [(4)
-               (thread-cell-set! hopeless-repl #f)
-               (if path
-                   #`(begin ((current-module-name-resolver)
-                             (make-resolved-module-path #,path))
-                            (call-with-continuation-prompt
-                             (λ () (dynamic-require #,path #f))))
-                   #`(call-with-continuation-prompt
-                      (λ () (dynamic-require ''#,(get-require-module-name) #f))))]
-              [(5)
-               (if path
-                   #`(#%app current-namespace (#%app module->namespace #,path))
-                   #`(#%app current-namespace
-                            (#%app module->namespace
-                                   ''#,(get-require-module-name))))]
-              [else eof]))))
+                   (super-thunk))])
+            (when (eof-object? expr) (raise-hopeless-syntax-error))
+            (let ([more (super-thunk)])
+              (unless (eof-object? more)
+                (raise-hopeless-syntax-error
+                 "there can only be one expression in the definitions window"
+                 more)))
+            (transform-module path expr)))
+        (define require-spec
+          (or path
+              ;; "clearing out" the module-name via datum->syntax ensures that
+              ;; check syntax doesn't think the original module name is being
+              ;; used in this require (so it doesn't get turned red)
+              (quasisyntax ''#,(datum->syntax #'here (syntax-e name)))))
+        (define default-handler (uncaught-exception-handler))
+        (define ns (current-namespace))
+        (expr-getter (λ () eof)
+         #`(current-module-declare-name
+            (and #,path (make-resolved-module-path '#,path)))
+         ;; We now need to send the module definition, but that might lead to
+         ;; syntax errors, so set an exception handler first -- if there's an
+         ;; error, try to require the language module in so we're left with a
+         ;; working repl.  Also check that there's a `#%top-interaction'
+         ;; binding, and barf if not, since it's most likely a mistake of using
+         ;; a plain module as a language.
+         (λ ()
+           (uncaught-exception-handler
+            (λ (e)
+              (uncaught-exception-handler default-handler)
+              (parameterize ([current-namespace ns])
+                (with-handlers ([void (λ (e) (raise-hopeless-syntax-error
+                                              "invalid language" lang))])
+                  (namespace-require (syntax->datum lang)))
+                (unless (memq '#%top-interaction (namespace-mapped-symbols ns))
+                  (raise-hopeless-syntax-error
+                   "invalid language (existing module, but no language bindings)"
+                   lang)))
+              (thread-cell-set! hopeless-repl #f)
+              (default-handler e))))
+         module-expr
+         (λ () (uncaught-exception-handler default-handler)) ; restore handler
+         #`(current-module-declare-name #f)
+         (if path
+           #`(#%app (#%app current-module-name-resolver)
+                    (#%app make-resolved-module-path #,path))
+           void)
+         ;; the prompt makes it continue after an error
+         #`(#%app call-with-continuation-prompt
+                  (λ () (#%app dynamic-require #,require-spec #f)))
+         #`(#%app current-namespace (#%app module->namespace #,require-spec))
+         (λ () (thread-cell-set! hopeless-repl #f))))
       
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
@@ -247,7 +271,6 @@
        [language-position (list "Module")]
        [language-numbers (list -32768)])))
   
-  (define hopeless-repl (make-thread-cell #t))
   (define (raise-hopeless-exception exn [prefix #f])
     (define rep (drscheme:rep:current-rep))
     ;; if we don't have the drscheme rep, then we just raise the exception as
@@ -451,12 +474,9 @@
        (install-auto-text (module-language-settings-auto-text settings))
        (update-buttons)]))
   
-  ;; transform-module : (union #f string) syntax
+  ;; transform-module : (union #f path) syntax
   ;;   -> (values syntax[name-of-module] syntax[module])
   ;; = User =
-  ;; in addition to exporting everything, the result module's name
-  ;; is the fully path-expanded name with a directory prefix, 
-  ;; if the file has been saved
   (define (transform-module filename stx)
     (define-values (mod name lang body)
       (syntax-case stx ()
@@ -476,31 +496,7 @@
     (let* (;; rewrite the module to use the scheme/base version of `module'
            [mod  (datum->syntax #'here 'module mod)]
            [expr (datum->syntax stx `(,mod ,name ,lang . ,body) stx)])
-      (define (only-language exn)
-        (let* ([lang-only (datum->syntax stx `(,mod ,name ,lang) stx)]
-               [lang-only (with-handlers ([void (λ (e) #f)])
-                            (expand lang-only))])
-          (if lang-only
-            (begin
-              ((error-display-handler) (exn-message exn) exn)
-              ;; probably best to not say anything here
-              ;; (send (drscheme:rep:current-rep) insert-warning
-              ;;       "Definitions not in effect")
-              lang-only)
-            ;; say that it's an invalid language only if it doesn't resolve
-            ;; properly, because the language can be fine but throw a syntax
-            ;; error when there are no body expressions (for example, the
-            ;; syntax/module-reader language)
-            (raise-hopeless-exception
-             exn
-             (with-handlers ([void (lambda (_)
-                                     "invalid language specification")])
-               ((current-module-name-resolver) 'scheme #f #f)
-               #f)))))
-      ;; Expand the module expression, so we can catch an syntax errors and
-      ;; provide a repl with the base language in that case.
-      (define expr* (with-handlers ([exn? only-language]) (expand expr)))
-      (values name expr*)))
+      (values name lang expr)))
   
   ;; get-filename : port -> (union string #f)
   ;; extracts the file the definitions window is being saved in, if any.
@@ -522,7 +518,7 @@
                              filename))))))]
         [else #f])))
   
-  ;; check-filename-matches : string datum syntax -> void
+  ;; check-filename-matches : path datum syntax -> void
   (define (check-filename-matches filename datum unexpanded-stx)
     (let-values ([(base name dir?) (split-path filename)])
       (let ([expected (string->symbol
