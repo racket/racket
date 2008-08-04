@@ -123,7 +123,7 @@
   (define switch
     (opt-lambda (e [init undefined])
       (let* ([init (box init)]
-             [e-b (hold e (unbox init))]
+             [e-b (hold e (unbox init) #t)]
              [ret (proc->signal:switching
                    (case-lambda [() (value-now (unbox init))]
                                 [(msg) e])
@@ -281,12 +281,20 @@
   
   ; hold : a event[a] -> behavior[a]
   (define hold 
-    (opt-lambda (e [init undefined])
-      (let ([val init])
+    (opt-lambda (e [init undefined] [allow-behaviors? #f])
+      (let ([val init]
+            [warn-about-behaviors? #t])
         (lift #t (lambda (es) (let ([events (event-set-events es)])
                                 (when (and (= (current-logical-time) (event-set-time es))
                                            (cons? events))
                                   (set! val (first (last-pair (event-set-events es)))))
+                                (when (and (behavior? val) (not allow-behaviors?))
+                                  (set! val (value-now val))
+                                  (when warn-about-behaviors?
+                                    (thread
+                                      (lambda ()
+                                        (error "hold: input event had a behavior; snapshotting to prevent nested behavior")))
+                                    (set! warn-about-behaviors? #f)))
                                 val))
               e))))
   
