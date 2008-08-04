@@ -12,14 +12,17 @@
                                  (color (or/c string? (is-a?/c color%)))
                                  (caret-space boolean? #f)
                                  (priority (symbols 'high 'low) 'low)
-                                 (style (symbols 'rectangle 'ellipse 'dot) 'rectangle))
+                                 (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
                 (-> void)))]{
     This function highlights a region of text in the buffer.
 
     The range between @scheme[start] and @scheme[end] will
     be highlighted with the color in color, if the style is
-    @scheme['rectangle] (the default). If the style is
-    @scheme['ellipse], then the outline of an ellipse is
+    @scheme['rectangle] (the default). 
+    If the style is @scheme['ellipse], then an ellipse is drawn
+    around the range in the editor, using the color.
+    If the style is
+    @scheme['hollow-ellipse], then the outline of an ellipse is
     drawn around the range in the editor, using the color. 
 
     If the style is @scheme['dot], then @scheme[start] and
@@ -53,7 +56,7 @@
                    (end exact-nonnegative-integer?)
                    (color (or/c string? (is-a?/c color%)))
                    (caret-space boolean? #f)
-                   (style (symbols 'rectangle 'ellipse) 'rectangle))
+                   (style (symbols 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
  void))]{
     This method removes the highlight from a region of text in
     the buffer. 

@@ -1730,13 +1730,25 @@
         (and frame
              (send frame get-case-sensitive-search?))))
     
-    (define/override (on-focus on?)
-      (when on?
-        (let ([frame (get-top-level-window)])
-          (when frame
-            (let ([text-to-search (send frame get-text-to-search)])
-              (when text-to-search
-                (send text-to-search set-search-anchor (send text-to-search get-start-position)))))))
+    ;; search-yellow : (or/c #f (-> void))
+    ;; if #f, that means the editor does not have the focus
+    ;; if a function, then this is a callback that removes the yellow
+    ;; highlighting from the text-to-search (if any).
+    (define search-yellow #f)
+    
+    (define/override (on-focus on?)  
+      (let ([frame (get-top-level-window)])
+        (when frame
+          (let ([text-to-search (send frame get-text-to-search)])
+            (when text-to-search
+              (cond
+                [on?
+                 (set! search-yellow void)
+                 (send text-to-search set-search-anchor (send text-to-search get-start-position))]
+                [else
+                 (when search-yellow
+                   (search-yellow)
+                   (set! search-yellow #f))])))))
       (super on-focus on?))
     
     (define/augment (after-insert x y)
@@ -1783,14 +1795,13 @@
                    #f)]
                 [found
                  (λ (text first-pos)
-                   (let ([last-pos ((if (eq? searching-direction 'forward) + -)
-                                    first-pos (string-length string))])
+                   (let* ([last-pos ((if (eq? searching-direction 'forward) + -)
+                                     first-pos (string-length string))]
+                          [start-pos (min first-pos last-pos)]
+                          [end-pos (max first-pos last-pos)])
                      (send text begin-edit-sequence)
                      (send text set-caret-owner #f 'display)
-                     (send text set-position
-                           (min first-pos last-pos)
-                           (max first-pos last-pos)
-                           #f #f 'local)
+                     (send text set-position start-pos end-pos #f #f 'local)
                      
                      
                      ;; scroll to the middle if the search result isn't already visible
@@ -1812,12 +1823,17 @@
                                  #f
                                  bottom-pos))))
                      
+                     (when search-yellow
+                       (search-yellow)
+                       (set! search-yellow
+                             (send text highlight-range start-pos end-pos "khaki" #f 'low 'ellipse)))
+                     
                      (when move-anchor?
                        (when (is-a? text text:searching<%>)
                          (send text set-search-anchor
                                (if (eq? searching-direction 'forward)
-                                   (max first-pos last-pos)
-                                   (min first-pos last-pos)))))
+                                   end-pos
+                                   start-pos))))
                      
                      (send text end-edit-sequence)
                      
@@ -1874,20 +1890,16 @@
     
     (define/public (text-to-search-changed old new)
       (when old
-        (for-each
-         (λ (canvas) (send canvas force-display-focus #f))
-         (send old get-canvases))
         (send old set-searching-str #f))
       (when new
-        (for-each
-         (λ (canvas) (send canvas force-display-focus #t))
-         (send new get-canvases))
         (update-searching-str/cs new (get-case-sensitive-search?))))
     
     (define/public (case-sensitivity-changed)
       (update-searching-str))
       
     (define/private (update-searching-str/cs txt cs?)
+      (when search-yellow
+        (search-yellow))
       (let ([str (get-text)])
         (send txt set-searching-str 
               (if (equal? str "") #f str)

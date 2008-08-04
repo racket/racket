@@ -207,7 +207,7 @@ WARNING: printf is rebound in the body of the unit to always
                              
                              [adjust (λ (w f) 
                                        (+ w (f (case (rectangle-style r)
-                                                 [(dot ellipse) 8]
+                                                 [(dot hollow-ellipse) 8]
                                                  [else 0]))))]
                              [this-left (if (number? (rectangle-left r))
                                             (adjust (rectangle-left r) -)
@@ -273,12 +273,9 @@ WARNING: printf is rebound in the body of the unit to always
                                         style
                                         color)
                         rst)]
-                      [(eq? style 'ellipse) 
+                      [(or (eq? style 'hollow-ellipse)
+                           (eq? style 'ellipse))
                        (let ([end-line (position-line end end-eol?)])
-                         ;; for this loop,
-                         ;; we don't need to consider the first or the last line, 
-                         ;; since they are already covered
-                         ;; by `start-x' and `end-x'
                          (let loop ([l (min start-x end-x)]
                                     [r (max start-x end-x)]
                                     [line (position-line start start-eol?)])
@@ -365,8 +362,8 @@ WARNING: printf is rebound in the body of the unit to always
                   (and (string? color)
                        (send the-color-database find-color color)))
         (error 'highlight-range "expected a color or a string in the the-color-database for the third argument, got ~e" color))
-      (unless (memq style '(rectangle ellipse dot))
-        (error 'highlight-range "expected one of 'rectangle, 'ellipse, or 'dot as the style, got ~e" style))
+      (unless (memq style '(rectangle hollow-ellipse ellipse dot))
+        (error 'highlight-range "expected one of 'rectangle, 'ellipse 'hollow-ellipse, or 'dot as the style, got ~e" style))
       (when (eq? style 'dot)
         (unless (= start end)
           (error 'highlight-range "when the style is 'dot, the start and end regions must be the same")))
@@ -481,7 +478,7 @@ WARNING: printf is rebound in the body of the unit to always
                                  (send dc set-pen "black" 1 'transparent)
                                  (send dc set-brush color 'solid)
                                  (send dc draw-ellipse (+ dx cx -3) (+ dy cy -3) 6 6))]
-                              [(ellipse)
+                              [(hollow-ellipse)
                                (send dc set-pen color 3 'solid)
                                (send dc set-brush "black" 'transparent)
                                (send dc draw-ellipse 
@@ -492,7 +489,11 @@ WARNING: printf is rebound in the body of the unit to always
                               [(rectangle)
                                (send dc set-pen color 1 'transparent)
                                (send dc set-brush color 'solid)
-                               (send dc draw-rectangle (+ left dx) (+ top dy) width height)]))))))])
+                               (send dc draw-rectangle (+ left dx) (+ top dy) width height)]
+                              [(ellipse)
+                               (send dc set-pen color 1 'transparent)
+                               (send dc set-brush color 'solid)
+                               (send dc draw-ellipse (+ left dx) (+ top dy) width height)]))))))])
             (send dc set-smoothing 'aligned)
             (for-each color-rectangle range-rectangles)
             (send dc set-smoothing old-smoothing)
@@ -703,7 +704,7 @@ WARNING: printf is rebound in the body of the unit to always
                                                     searching-str)])
                  (set! search-hits (+ search-hits counts))
                  (let ([old clear-regions]
-                       [new (highlight-range next end "plum" #f 'low 'ellipse)])
+                       [new (highlight-range next end "plum" #f 'low 'hollow-ellipse)])
                    (set! clear-regions (λ () (old) (new))))
                  (loop end (+ n 1))))))]
         [else
