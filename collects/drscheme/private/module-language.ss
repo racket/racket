@@ -152,9 +152,28 @@
       (define hopeless-repl (make-thread-cell #t))
       
       (define/override (front-end/interaction port settings)
-        (if (thread-cell-ref hopeless-repl)
-            (raise-hopeless-syntax-error)
-            (super front-end/interaction port settings)))
+        (let ([x (thread-cell-ref hopeless-repl)])
+          (cond
+            [(not x) (super front-end/interaction port settings)]
+            [(not (syntax? x)) (raise-hopeless-syntax-error)]
+            ;; this means that there was a problem getting into the
+            ;; module's namespace, and we have a language to try to require
+            [else
+             (let ([default-handler (uncaught-exception-handler)])
+               (expr-getter (super front-end/interaction port settings)
+                #`(current-module-declare-name #f)
+                (λ ()
+                  (uncaught-exception-handler
+                   (λ (e)
+                     (uncaught-exception-handler default-handler)
+                     (raise-hopeless-syntax-error "invalid language" x))))
+                #`(require #,x)
+                (λ ()
+                  (uncaught-exception-handler default-handler)
+                  (unless (memq '#%top-interaction (namespace-mapped-symbols))
+                    (raise-hopeless-syntax-error
+                     "invalid language (existing module, but no language bindings)"
+                     x)))))])))
       
       ;; This is used to setup the user environment.  There's a subtle hack
       ;; here: instead of doing things like (namespace-require ...), construct
@@ -186,36 +205,15 @@
               ;; check syntax doesn't think the original module name is being
               ;; used in this require (so it doesn't get turned red)
               (quasisyntax ''#,(datum->syntax #'here (syntax-e name)))))
-        (define default-handler (uncaught-exception-handler))
-        (define ns (current-namespace))
+        ;; we have a language, so put it here, so front-end/interaction can
+        ;; require the language if we fail to go into the module -- most
+        ;; commonly due to a syntax error, in attempt to still provide a
+        ;; working repl
+        (thread-cell-set! hopeless-repl lang)
         (expr-getter (λ () eof)
          #`(current-module-declare-name
             (and #,path (make-resolved-module-path '#,path)))
-         ;; We now need to send the module definition, but that might lead to
-         ;; syntax errors, so set an exception handler first -- if there's an
-         ;; error, try to require the language module in so we're left with a
-         ;; working repl.  Also check that there's a `#%top-interaction'
-         ;; binding, and barf if not, since it's most likely a mistake of using
-         ;; a plain module as a language.
-         (λ ()
-           (uncaught-exception-handler
-            (λ (e)
-              (define e1 #f)
-              (uncaught-exception-handler default-handler)
-              ;; use this to catch the error so it can be raised instead of e
-              (with-handlers ([void (lambda (e) (set! e1 e))])
-                (parameterize ([current-namespace ns])
-                  (with-handlers ([void (λ (e) (raise-hopeless-syntax-error
-                                                "invalid language" lang))])
-                    (namespace-require (syntax->datum lang)))
-                  (unless (memq '#%top-interaction (namespace-mapped-symbols ns))
-                    (raise-hopeless-syntax-error
-                     "invalid language (existing module, but no language bindings)"
-                     lang))))
-              (thread-cell-set! hopeless-repl #f)
-              (default-handler (or e1 e)))))
          module-expr
-         (λ () (uncaught-exception-handler default-handler)) ; restore handler
          #`(current-module-declare-name #f)
          (if path
            #`(#%app (#%app current-module-name-resolver)
