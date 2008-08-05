@@ -168,9 +168,15 @@
 % the following are the default font assignments for
 % words in code.  Change them to suit personal taste
 
-\def\keywordfont#1{{\bf #1}}
-\def\variablefont#1{{\it #1\/}}
-\def\constantfont#1{{\sf #1}}
+\ifusinglatex
+  \def\keywordfont#1{{\bfseries #1}}
+  \def\variablefont#1{{\itshape #1\/}}
+  \def\constantfont#1{{\sffamily #1}}
+\else
+  \def\keywordfont#1{{\bf #1}}
+  \def\variablefont#1{{\it #1\/}}
+  \def\constantfont#1{{\sf #1}}
+\fi
 \def\datafont#1{\constantfont{#1}}
 
 \let\schemecodehook\relax
@@ -536,7 +542,14 @@
 \def\slatexseparateincludes{%
 \gdef\include##1{{\def\subjobname{##1}%
 \sch@mefilenamecount=-1
-\@include##1 }}}
+\@include##1 }}
+%
+% package subfile lets us structure documents; I want SLaTeX to support it
+%\newcommand\subfile[1]{\begingroup\skip@preamble\input{#1}\endgroup}
+\gdef\subfile##1{{\def\subjobname{##1}%
+\sch@mefilenamecount=-1
+\skip@preamble
+\input{##1} }}}
 
 % convenient abbreviations for characters
 
