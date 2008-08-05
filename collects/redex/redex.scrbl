@@ -4,6 +4,8 @@
           scribble/eval
           (for-syntax scheme/base)
           (for-label scheme/base
+	  	     scheme/gui
+                     scheme/pretty
                      scheme/contract
 		     redex))
 
@@ -19,6 +21,12 @@
      [(_ arg)
       (identifier? #'arg)
       #`(tech #,(symbol->string (syntax-e #'arg)))]))
+
+@(define-syntax (ttpattern stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech (tt "pattern")) args ...)]
+    [x (identifier? #'x) #'(tech (tt "pattern"))]))
 
 @(define-syntax (pattern stx)
    (syntax-case stx ()
@@ -138,6 +146,7 @@ This section describes the all of the exports of
 @schememodname[redex/reduction-semantics], each of which is
 also exported by @schememodname[redex].
 
+@subsection{Patterns}
 
 The @tt{reduction-semantics.ss} library defines a @deftech{pattern}
 language, used in various ways:
@@ -211,7 +220,7 @@ the language.
 }
 
 @item{The @defpattech[hole] @pattern matches anything when inside a matching
-the first argument to an @pattech[in-hole] pattern. Otherwise, 
+the first argument to an @pattech[in-hole] @|pattern|. Otherwise, 
 it matches only the hole.
 }
 
@@ -229,16 +238,16 @@ example. Accordingly, repeated uses of the same name are
 constrainted to match the same expression.
 
 If the symbol is a non-terminal followed by @tt{_!_}, for example
-@tt{e_!_1}, it is also treated as a pattern, but repeated uses of
+@tt{e_!_1}, it is also treated as a @|pattern|, but repeated uses of
 the same @pattern are constrained to be different. For
-example, this pattern:
+example, this @|pattern|:
 
 @schemeblock[(e_!_1 e_!_1 e_!_1)]
 
 matches lists of three @tt{e}s, but where all three of them are
 distinct.
 
-Unlike a @tt{_} pattern, the @tt{_!_} patterns do not bind names.
+Unlike a @tt{_} @|pattern|, the @tt{_!_} @|pattern|s do not bind names.
 
 If @tt{_} names and @tt{_!_} are mixed, they are treated as
 separate. That is, this @pattern @tt{(e_1 e_!_1)} matches just the
@@ -248,27 +257,27 @@ variables.
 If the symbol otherwise has an underscore, it is an error.
 }
 
-@item{The @pattern @tt{(@defpattech[name] symbol @pattern)}
+@item{The @pattern @tt{(@defpattech[name] symbol @ttpattern)}
 matches @tt{@pattern} and binds using it to the name @tt{symbol}. 
 }
 
-@item{The @tt{(@defpattech[in-hole] @pattern @pattern)} @pattern
-matches the first pattern. This match must include exactly one match
-against the second pattern. If there are zero matches or more
+@item{The @tt{(@defpattech[in-hole] @ttpattern @ttpattern)} @pattern
+matches the first @|pattern|. This match must include exactly one match
+against the second @|pattern|. If there are zero matches or more
 than one match, an exception is raised.
 
 When matching the first argument of in-hole, the `hole' @pattern
 matches any sexpression. Then, the sexpression that matched the hole
-@pattern is used to match against the second pattern.
+@pattern is used to match against the second @|pattern|.
 }
 
-@item{The @tt{(@defpattech[hide-hole] @pattern)} @pattern matches what
+@item{The @tt{(@defpattech[hide-hole] @ttpattern)} @pattern matches what
 the embedded @pattern matches but if the @pattern matcher is
 looking for a decomposition, it ignores any holes found in
-that pattern.
+that @|pattern|.
 }
 
-@item{The @tt{(@defpattech[side-condition] @pattern guard)} @pattern matches
+@item{The @tt{(@defpattech[side-condition] @ttpattern guard)} @pattern matches
 what the embedded @pattern matches, and then the guard expression is
 evaluated. If it returns @scheme[#f], the @pattern fails to match, and if it
 returns anything else, the @pattern matches. In addition, any
@@ -290,14 +299,14 @@ of the list. In addition, if a list @pattern contains an
 ellipsis, the ellipsis is not treated as a literal, instead
 it matches any number of duplications of the @pattern that
 came before the ellipses (including 0). Furthermore, each
-@tt{(@pattech[name] symbol @pattern)} in the duplicated @pattern binds a
+@tt{(@pattech[name] symbol @ttpattern)} in the duplicated @pattern binds a
 list of matches to @tt{symbol}, instead of a single match.  (A
 nested duplicated @pattern creates a list of list matches,
 etc.) Ellipses may be placed anywhere inside the row of
-patterns, except in the first position or immediately after
+@|pattern|s, except in the first position or immediately after
 another ellipses.
 
-Multiple ellipses are allowed. For example, this pattern:
+Multiple ellipses are allowed. For example, this @|pattern|:
 
 @schemeblock[((name x a) ... (name y a) ...)]
 
@@ -317,7 +326,7 @@ records the length of the list and ensures that any other
 occurrences of the same named ellipses must have the same
 length. 
 
-As an example, this pattern:
+As an example, this @|pattern|:
 
 @schemeblock[((name x a) ..._1 (name y a) ..._1)]
 
@@ -326,14 +335,14 @@ only matches this sexpression:
 @schemeblock[(term (a a))]
 
 one way, with each named @pattern matching a single a. Unlike
-the above, the two patterns with mismatched lengths is ruled
+the above, the two @|pattern|s with mismatched lengths is ruled
 out, due to the underscores following the ellipses.
 
-Also, like underscore patterns above, if an underscore
+Also, like underscore @|pattern|s above, if an underscore
 @pattern begins with @tt{..._!_}, then the lengths must be
 different.
 
-Thus, with the pattern:
+Thus, with the @|pattern|:
 
 @schemeblock[((name x a) ..._!_1 (name y a) ..._!_1)]
 
@@ -349,15 +358,190 @@ bound to @scheme['()].
 }
 }
 
+@defform*[[(redex-match lang pattern any)
+           (redex-match lang pattern)]]{
+          
+If @scheme[redex-match] receives three arguments, it
+matches the pattern (in the language) against its third
+argument. If it matches, this returns a list of match
+structures describing the matches. If it fails, it returns
+@scheme[#f].
+
+If @scheme[redex-match] receives only two arguments, it
+builds a procedure for efficiently testing if expressions
+match the pattern, using the language @scheme[lang]. The
+procedures accepts a single expression and if the expresion
+matches, it returns a list of match structures describing the
+matches. If the match fails, the procedure returns @scheme[#f].
+}
+
+@defproc[(match? [val any/c]) boolean?]{
+
+Determines if a value is a @tt{match} structure.
+}
+
+@defproc[(match-bindings [m match?]) (listof bind?)]{
+
+This returns a bindings structure (see below) that
+binds the pattern variables in this match.
+}
+
+@defstruct[bind ([name symbol?] [exp any?])]{
+
+Instances of this struct are returned by @scheme[redex-match].
+Each @scheme[bind] associates a name with an s-expression from the
+language, or a list of such s-expressions, if the @tt{(@pattech[name] ...)}
+clause is followed by an ellipsis.  Nested ellipses produce
+nested lists.
+}
+
+@defform[(term s-expr)]{
+
+This form is used for construction of new s-expressions in
+the right-hand sides of reductions. It behaves similarly to
+quasiquote except for a few special forms that are
+recognized (listed below) and that names bound by `term-let' are
+implicitly substituted with the values that those names were
+bound to, expanding ellipses as in-place sublists (in the
+same manner as syntax-case patterns).
+
+For example,
+
+@schemeblock[
+(term-let ([body '(+ x 1)]
+           [(expr ...) '(+ - (values * /))]
+           [((id ...) ...) '((a) (b) (c d))])
+  (term (let-values ([(id ...) expr] ...) body)))
+]
+
+evaluates to
+
+@schemeblock[
+'(let-values ([(a) +] 
+              [(b) -] 
+              [(c d) (values * /)]) 
+   (+ x 1))
+]
+
+It is an error for a term variable to appear in an
+expression with an ellipsis-depth different from the depth
+with which it was bound by `term-let'. It is also an error
+for two `term-let'-bound identifiers bound to lists of
+different lengths to appear together inside an ellipsis.
+
+The special forms recognized by term are:
+
+@itemize{
+@item{@scheme[(in-hole a b)]
+    This is the dual to the @pattern `in-hole' -- it accepts
+    a context and an expression and uses `plug' to combine
+    them.
+}@item{@scheme[(in-named-hole name a b)]
+
+    Like in-hole, but substitutes into a hole with a particular name.
+
+}@item{@scheme[hole]
+
+   This produces a hole.
+}@item{@scheme[(hole name)]
+
+    This produces a hole with the name `name'. To produce an unnamed
+    hole, use #f as the name.
+}}}
+
+@defform/subs[(term-let ([tl-pat expr] ...) body)
+              ([tl-pat identifier (tl-pat-ele ...)]
+               [tl-pat-ele tl-pat (code:line tl-pat ellipses)])]{
+
+Matches each given id pattern to the value yielded by
+evaluating the corresponding expr and binds each variable in
+the id pattern to the appropriate value (described
+below). These bindings are then accessible to the `term'
+syntactic form.
+
+Identifier-patterns are terms in the following grammar:
+
+where ellipses is the literal symbol consisting of three
+dots (and the ... indicates repetition as usual). If tl-pat
+is an identifier, it matches any value and binds it to the
+identifier, for use inside `term'. If it is a list, it
+matches only if the value being matched is a list value and
+only if every subpattern recursively matches the
+corresponding list element. There may be a single ellipsis
+in any list pattern; if one is present, the pattern before
+the ellipses may match multiple adjacent elements in the
+list value (possibly none).
+}
+
+@defform[(term-match language [#, @|ttpattern| expression] ...)]{
+
+This produces a procedure that accepts term (or quoted)
+expressions and checks them against each pattern. The
+function returns a list of the values of the expression
+where the pattern matches. If one of the patterns matches
+multiple times, the expression is evaluated multiple times,
+once with the bindings in the pattern for each match.
+}
+
+@defform[(term-match/single language [#, @|ttpattern| expression] ...)]{
+
+This produces a procedure that accepts term (or quoted)
+expressions and checks them against each pattern. The
+function returns the expression behind the first sucessful
+match. If that pattern produces multiple matches, an error
+is signaled. If no patterns match, an error is signaled.
+}
+
+@defproc[(plug [context any?] [expression any?]) any]{
+
+The first argument to this function is an sexpression to
+plug into. The second argument is the sexpression to replace
+in the first argument. It returns the replaced term. This is
+also used when a @scheme[term] sub-expression contains @pattech[in-hole].
+}
+
+@defproc[(variable-not-in [t any?] [var symbol?]) symbol?]{
+
+This helper function accepts an sexpression and a
+variable. It returns a variable not in the sexpression with
+a prefix the same as the second argument.
+
+}
+
+@defproc[(variables-not-in [t any?] [vars (listof symbol?)]) (listof symbol?)]{
+
+This function, like variable-not-in, makes variables that do
+no occur in its first argument, but it returns a list of
+such variables, one for each variable in its second
+argument. 
+
+Does not expect the input symbols to be distinct, but does
+produce variables that are always distinct.
+}
+
+@defproc[(set-cache-size! [size (or/c false/c positive-integer?)]) void?]{
+
+Changes the cache size; a #f disables the cache
+entirely. The default size is 350.
+
+The cache is per-pattern (ie, each pattern has a cache of
+size at most 350 (by default)) and is a simple table that
+maps expressions to how they matched the pattern. When the
+cache gets full, it is thrown away and a new cache is
+started.
+}
+
+@subsection{Languages}
+
 @defform/subs[(define-language lang-name 
-                (non-terminal-spec #, @pattern ...)
+                (non-terminal-spec #, @|ttpattern| ...)
                 ...)
               ([non-terminal-spec symbol (symbol ...)])]{
 
 This form defines the grammar of a language. It allows the
-definition of recursive patterns, much like a BNF, but for
+definition of recursive @|pattern|s, much like a BNF, but for
 regular-tree grammars. It goes beyond their expressive
-power, however, because repeated `name' patterns and
+power, however, because repeated `name' @|pattern|s and
 side-conditions can restrict matches in a context-sensitive
 way.
 
@@ -385,7 +569,7 @@ variables, @scheme[c] for the evaluation contexts and @scheme[v] for values.
 }
 
 @defform[(define-extended-language language language
-           (non-terminal pattern ...)
+           (non-terminal #, @|ttpattern| ...)
            ...)]{
 
 This form extends a language with some new, replaced, or
@@ -434,107 +618,11 @@ Returns #t if its argument was produced by `language', #f
 otherwise.
 }
 
-@defform/subs[(term-let ([tl-pat expr] ...) body)
-              ([tl-pat identifier (tl-pat-ele ...)]
-               [tl-pat-ele tl-pat (code:line tl-pat ellipses)])]{
-
-Matches each given id pattern to the value yielded by
-evaluating the corresponding expr and binds each variable in
-the id pattern to the appropriate value (described
-below). These bindings are then accessible to the `term'
-syntactic form.
-
-Identifier-patterns are terms in the following grammar:
-
-where ellipses is the literal symbol consisting of three
-dots (and the ... indicates repetition as usual). If tl-pat
-is an identifier, it matches any value and binds it to the
-identifier, for use inside `term'. If it is a list, it
-matches only if the value being matched is a list value and
-only if every subpattern recursively matches the
-corresponding list element. There may be a single ellipsis
-in any list pattern; if one is present, the pattern before
-the ellipses may match multiple adjacent elements in the
-list value (possibly none).
-}
-
-@defform[(term s-expr)]{
-
-This form is used for construction of new s-expressions in
-the right-hand sides of reductions. It behaves similarly to
-quasiquote except for a few special forms that are
-recognized (listed below) and that names bound by `term-let' are
-implicitly substituted with the values that those names were
-bound to, expanding ellipses as in-place sublists (in the
-same manner as syntax-case patterns).
-
-For example,
-
-@schemeblock[
-(term-let ([body '(+ x 1)]
-           [(expr ...) '(+ - (values * /))]
-           [((id ...) ...) '((a) (b) (c d))])
-  (term (let-values ([(id ...) expr] ...) body)))
-]
-
-evaluates to
-
-@schemeblock[
-'(let-values ([(a) +] 
-              [(b) -] 
-              [(c d) (values * /)]) 
-   (+ x 1))
-]
-
-It is an error for a term variable to appear in an
-expression with an ellipsis-depth different from the depth
-with which it was bound by `term-let'. It is also an error
-for two `term-let'-bound identifiers bound to lists of
-different lengths to appear together inside an ellipsis.
-
-The special forms recognized by term are:
-
-@itemize{
-@item{@scheme[(in-hole a b)]
-
-    This is the dual to the pattern `in-hole' -- it accepts
-    a context and an expression and uses `plug' to combine
-    them.
-}@item{@scheme[(in-named-hole name a b)]
-
-    Like in-hole, but substitutes into a hole with a particular name.
-
-}@item{@scheme[hole]
-
-   This produces a hole.
-}@item{@scheme[(hole name)]
-
-    This produces a hole with the name `name'. To produce an unnamed
-    hole, use #f as the name.
-}}}
-
-@defform[(term-match language [pattern expression] ...)]{
-
-This produces a procedure that accepts term (or quoted)
-expressions and checks them against each pattern. The
-function returns a list of the values of the expression
-where the pattern matches. If one of the patterns matches
-multiple times, the expression is evaluated multiple times,
-once with the bindings in the pattern for each match.
-}
-
-@defform[(term-match/single language [pattern expression] ...)]{
-
-This produces a procedure that accepts term (or quoted)
-expressions and checks them against each pattern. The
-function returns the expression behind the first sucessful
-match. If that pattern produces multiple matches, an error
-is signaled. If no patterns match, an error is signaled.
-}
+@subsection{Reduction Relations}
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language reduction-case ...)
-              ((reduction-case (--> pattern exp extras ...))
+              ((reduction-case (--> #, @|ttpattern| exp extras ...))
                (extras name
                        (fresh <fresh-clause> ...)
                        (side-condition <guard> ...)
@@ -689,6 +777,47 @@ returns the closure of the reduction in that context.
   @scheme[#f] otherwise.
 }
 
+@defproc[(apply-reduction-relation [r reduction-relation?] [t any?]) (listof any?)]{
+
+This accepts reduction relation, a term, and returns a
+list of terms that the term reduces to.
+}
+
+@defproc[(apply-reduction-relation/tag-with-names
+          [r reduction-relation?]
+          [t any/c])
+         (listof (list/c (union false/c string?) any/c))]{
+
+Like @scheme[apply-reduction-relation], but the result indicates the
+names of the reductions that were used.
+}
+
+@defproc[(apply-reduction-relation*
+          [r reduction-relation?]
+          [t any?])
+         (listof (listof any?))]{
+
+apply-reduction-relation* accepts a list of reductions and a
+term. It returns the results of following every reduction
+path from the term. If there are infinite reduction
+sequences starting at the term, this function will not
+terminate.
+}
+
+@defidform[-->]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[-->] form is an
+  error elsewhere.  }
+
+@defidform[fresh]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[-->] form is an
+  error elsewhere.  }
+
+@defidform[with]{ Recognized specially within
+  @scheme[reduction-relation]. A @scheme[with] form is an
+  error elsewhere.  }
+
+@subsection{Metafunctions}
+
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
                contract
@@ -779,17 +908,7 @@ legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
 }
 
-@defidform[-->]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[-->] form is an
-  error elsewhere.  }
-
-@defidform[fresh]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[-->] form is an
-  error elsewhere.  }
-
-@defidform[with]{ Recognized specially within
-  @scheme[reduction-relation]. A @scheme[with] form is an
-  error elsewhere.  }
+@subsection{Testing}
 
 @defform[(test-equal e1 e2)]{
 
@@ -810,109 +929,6 @@ Tests to see if the value of @scheme[e] matches the predicate @scheme[p?].
 Prints out how many tests passed and failed, and resets the
 counters so that next time this function is called, it
 prints the test results for the next round of tests.
-}
-
-@defproc[(plug [context any?] [expression any?]) any]{
-
-The first argument to this function is an sexpression to
-plug into. The second argument is the sexpression to replace
-in the first argument. It returns the replaced term. This is
-also used when a @scheme[term] sub-expression contains @pattech[in-hole].
-}
-
-@defproc[(apply-reduction-relation [r reduction-relation?] [t any?]) (listof any?)]{
-
-This accepts reduction relation, a term, and returns a
-list of terms that the term reduces to.
-}
-
-@defproc[(apply-reduction-relation/tag-with-names
-          [r reduction-relation?]
-          [t any/c])
-         (listof (list/c (union false/c string?) any/c))]{
-
-Like @scheme[apply-reduction-relation], but the result indicates the
-names of the reductions that were used.
-}
-
-@defproc[(apply-reduction-relation*
-          [r reduction-relation?]
-          [t any?])
-         (listof (listof any?))]{
-
-apply-reduction-relation* accepts a list of reductions and a
-term. It returns the results of following every reduction
-path from the term. If there are infinite reduction
-sequences starting at the term, this function will not
-terminate.
-}
-
-@defform*[[(redex-match lang pattern any)
-           (redex-match lang pattern)]]{
-          
-If @scheme[redex-match] receives three arguments, it
-matches the pattern (in the language) against its third
-argument. If it matches, this returns a list of match
-structures describing the matches. If it fails, it returns
-@scheme[#f].
-
-If @scheme[redex-match] receives only two arguments, it
-builds a procedure for efficiently testing if expressions
-match the pattern, using the language @scheme[lang]. The
-procedures accepts a single expression and if the expresion
-matches, it returns a list of match structures describing the
-matches. If the match fails, the procedure returns @scheme[#f].
-}
-
-@defproc[(match? [val any/c]) boolean?]{
-
-Determines if a value is a @tt{match} structure.
-}
-
-@defproc[(match-bindings [m match?]) (listof bind?)]{
-
-This returns a bindings structure (see below) that
-binds the pattern variables in this match.
-}
-
-@defproc[(variable-not-in [t any?] [var symbol?]) symbol?]{
-
-This helper function accepts an sexpression and a
-variable. It returns a variable not in the sexpression with
-a prefix the same as the second argument.
-
-}
-
-@defproc[(variables-not-in [t any?] [vars (listof symbol?)]) (listof symbol?)]{
-
-This function, like variable-not-in, makes variables that do
-no occur in its first argument, but it returns a list of
-such variables, one for each variable in its second
-argument. 
-
-Does not expect the input symbols to be distinct, but does
-produce variables that are always distinct.
-}
-
-@defstruct[bind ([name symbol?] [exp any?])]{
-
-Instances of this struct are returned by @scheme[redex-match].
-Each @scheme[bind] associates a name with an s-expression from the
-language, or a list of such s-expressions, if the @tt{(@pattech[name] ...)}
-clause is followed by an ellipsis.  Nested ellipses produce
-nested lists.
-}
-
-@defproc[(set-cache-size! [size (or/c false/c positive-integer?)]) void?]{
-
-Changes the cache size; a #f disables the cache
-entirely. The default size is 350.
-
-The cache is per-pattern (ie, each pattern has a cache of
-size at most 350 (by default)) and is a simple table that
-maps expressions to how they matched the pattern. When the
-cache gets full, it is thrown away and a new cache is
-started.
 }
 
 @deftech{Debugging PLT Redex Programs}
@@ -941,78 +957,38 @@ simplifying the expression).
 
 
 @section{GUI}
+@defmodule[redex/gui]
 
-The _gui.ss_ library provides the following functions:
+This section describes the GUI tools that Redex provides for
+exploring reduction sequences.
 
-> (stepper reductions expr [pp]) ::
-    (opt-> (compiled-lang?
-            reduction-relation?
-            any/c)
-           ((or/c (any -> string)
-                  (any output-port number (is-a?/c text%) -> void)))
-           void?)
-
-This function opens a stepper window for exploring the
-behavior of its third argument in the reduction system
-described by its first two arguments. 
-
-The pp function is used to specially print expressions. It
-must either accept one or four arguments. If it accepts one
-argument, it will be passed each term and is expected to
-return a string to display the term.
-
-If the pp function takes four arguments, it should render
-its first argument into the port (its second argument) with
-width at most given by the number (its third argument). The
-final argument is the text where the port is connected --
-characters written to the port go to the end of the editor.
-
-The default pp, provided as default-pretty-printer, uses
-MzLib's pretty-print function. See threads.ss in the
-examples directory for an example use of the one-argument
-form of this argument and ho-contracts.ss in the examples
-directory for an example use of its four-argument form.
-
-> (stepper/seed reductions seed [pp]) ::
-    (opt-> (compiled-lang?
-            reduction-relation?
-            (cons/c any/c (listof any/c)))
-           ((or/c (any -> string)
-                  (any output-port number (is-a?/c text%) -> void)))
-           void?)
-
-Like `stepper', this function opens a stepper window, but it
-seeds it with the reduction-sequence supplied in `terms'.
-
-> (traces reductions expr 
-          #:pred [pred (lambda (x) #t)]
-          #:pp [pp default-pretty-printer] 
-          #:colors [colors '()]
-          #:multiple? [multiple? #f])
-  lang : language
-  reductions : (listof reduction)
-  expr : (or/c (listof sexp) sexp)
-  multiple : boolean  --- controls interpretation of expr
-  pred : (or/c (sexp -> any)
-               (sexp term-node? any))
-  pp : (or/c (any -> string)
-             (any output-port number (is-a?/c text%) -> void))
-  colors : (listof (list string string))
+@defproc[(traces [reductions reduction-relation?] 
+                 [expr (or/c any/c (listof any/c))]
+                 [#:multiple? multiple? boolean? #f]
+                 [#:pred pred
+                         (or/c (sexp -> any) (sexp term-node? any))
+                         (lambda (x) #t)]
+                 [#:pp pp
+                       (or/c (any -> string)
+                             (any output-port number (is-a?/c text%) -> void))
+                       default-pretty-printer]
+                 [#:colors colors (listof (list string string)) '()])
+         void?]{
 
 This function opens a new window and inserts each expression
-in expr (if multiple is #t -- if multiple is #f, then expr
-is treated as a single expression). Then, it reduces the
-terms until either reduction-steps-cutoff (see below)
-different terms are found, or no more reductions can
-occur. It inserts each new term into the gui. Clicking the
-`reduce' button reduces until reduction-steps-cutoff more
-terms are found.
+in expr (if @scheme[multiple?] is #t -- if
+@scheme[multiple?] is #f, then expr is treated as a single
+expression). Then, it reduces the terms until at least
+@scheme[reduction-steps-cutoff] (see below) different terms are
+found, or no more reductions can occur. It inserts each new
+term into the gui. Clicking the @onscreen{reduce} button reduces
+until reduction-steps-cutoff more terms are found.
 
 The pred function indicates if a term has a particular
-property. If it returns #f, the term is displayed with a
-pink background. If it returns a string or a color% object,
+property. If it returns @scheme[#f], the term is displayed with a
+pink background. If it returns a string or a @scheme[color%] object,
 the term is displayed with a background of that color (using
-the-color-database<%> to map the string to a color). If it
+@scheme[the-color-database] to map the string to a color). If it
 returns any other value, the term is displayed normally. If
 the pred function accepts two arguments, a term-node
 corresponding to the term is passed to the predicate. This
@@ -1020,22 +996,61 @@ lets the predicate function explore the (names of the)
 reductions that led to this term, using term-node-children,
 term-node-parents, and term-node-labels.
 
-The pred function may be called more than once per node. In
+The @scheme[pred] function may be called more than once per node. In
 particular, it is called each time an edge is added to a
 node. The latest value returned determines the color.
 
-The pp argument is the same as to the stepper functions
-(above).
+The @scheme[pp] function is used to specially print expressions. It
+must either accept one or four arguments. If it accepts one
+argument, it will be passed each term and is expected to
+return a string to display the term.
 
-The colors argument, if provided, specifies a list of
+If the @scheme[pp] function takes four arguments, it should render
+its first argument into the port (its second argument) with
+width at most given by the number (its third argument). The
+final argument is the text where the port is connected --
+characters written to the port go to the end of the editor.
+
+The default value of @scheme[pp], provided as
+@scheme[default-pretty-printer], uses MzLib's
+@scheme[pretty-print] function.
+
+The @scheme[colors] argument, if provided, specifies a list of
 reduction-name/color-string pairs. The traces gui will color
 arrows drawn because of the given reduction name with the
 given color instead of using the default color.
 
 You can save the contents of the window as a postscript file
 from the menus.
+}
 
-> term-node-children :: (-> term-node (listof term-node))
+@defproc[(stepper [reductions reduction-relation?] 
+                  [t any/c] 
+                  [pp (or/c (any -> string)
+                            (any output-port number (is-a?/c text%) -> void))
+                      default-pretty-printer])
+          void?]{
+
+This function opens a stepper window for exploring the
+behavior of its third argument in the reduction system
+described by its first two arguments. 
+
+The @scheme[pp] argument is the same as to the
+@scheme[traces] functions (above).
+}
+
+@defproc[(stepper/seed [reductions reduction-relation?]
+                       [seed (cons/c any/c (listof any/c))]
+                       [pp (or/c (any -> string)
+                                 (any output-port number (is-a?/c text%) -> void))
+                           default-pretty-printer])
+         void?]{
+
+Like @scheme[stepper], this function opens a stepper window, but it
+seeds it with the reduction-sequence supplied in @scheme[seed].
+}
+
+@defproc[(term-node-children [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the children (ie, terms that this term
 reduces to) of the given node.
@@ -1043,8 +1058,9 @@ reduces to) of the given node.
 Note that this function does not return all terms that this
 term reduces to -- only those that are currently in the
 graph.
+}
 
-> term-node-parents :: (-> term-node (listof term-node))
+@defproc[(term-node-parents [tn term-node?]) (listof term-node?)]{
 
 Returns a list of the parents (ie, terms that reduced to the
 current term) of the given node.
@@ -1052,77 +1068,77 @@ current term) of the given node.
 Note that this function does not return all terms that
 reduce to this one -- only those that are currently in the
 graph.
-
-> term-node-labels :: (-> term-node (listof (union false/c string)))
+}
+@defproc[(term-node-labels [tn term-node]) (listof (or/c false/c string?))]{
 
 Returns a list of the names of the reductions that led to
 the given node, in the same order as the result of
-term-node-parents. If the list contains #f, that means that
+term-node-parents. If the list contains @scheme[#f], that means that
 the corresponding step does not have a label.
+}
 
-> term-node-set-color! :: 
-   (-> term-node? 
-       (or/c string? (is-a?/c color%) false/c)
-       void?)
+@defproc[(term-node-set-color! [tn term-node?] [color (or/c string? (is-a?/c color%) false/c)]) void?]{
 
 Changes the highlighting of the node; if its second argument
-is #f, the coloring is removed, otherwise the color is set
-to the specified color% object or the color named by the
-string. The color-database<%> is used to convert the string
-to a color% object.
+is @scheme[#f], the coloring is removed, otherwise the color is set
+to the specified @scheme[color%] object or the color named by the
+string. The @scheme[color-database<%>] is used to convert the string
+to a @scheme[color%] object.
+}
 
-> term-node-set-red! :: (-> term-node boolean void?)
+@defproc[(term-node-set-red! [tn term-node?] [red? boolean?]) void?]{
 
 Changes the highlighting of the node; if its second argument
-is #t, the term is colored pink, if it is #f, the term is
+is @scheme[#t], the term is colored pink, if it is @scheme[#f], the term is
 not colored specially.
 
-> term-node-expr :: (-> term-node any)
+}
+
+@defproc[(term-node-expr [tn term-node?]) any]{
 
 Returns the expression in this node.
+}
 
-> term-node? :: (-> any boolean)
+@defproc[(term-node? [v any/c]) boolean?]{
 
 Recognizes term nodes.
+}
 
-> (reduction-steps-cutoff)
-> (reduction-steps-cutoff number)
+@defparam[reduction-steps-cutoff cutoff number?]{
 
-A parameter that controls how many steps the `traces' function
+A parameter that controls how many steps the @scheme[traces] function
 takes before stopping.
+}
 
-> (initial-font-size)
-> (initial-font-size number)
+@defparam[initial-font-size size number?]{
 
 A parameter that controls the initial font size for the terms shown
 in the GUI window.
+}
 
-> (initial-char-width)
-> (initial-char-width number)
+@defparam[initial-char-width width number?]{
 
 A parameter that determines the initial width of the boxes
 where terms are displayed (measured in characters) for both
 the stepper and traces.
+}
 
-> (dark-pen-color color-or-string)
-> (dark-pen-color) => color-or-string
-
-> (dark-brush-color color-or-string)
-> (dark-brush-color) => color-or-string
-
-> (light-pen-color color-or-string)
-> (light-pen-color) => color-or-string
-
-> (light-brush-color color-or-string)
-> (light-brush-color) => color-or-string
+@deftogether[[
+@defparam[dark-pen-color color (or/c string? (is-a?/c color<%>))]{}
+@defparam[dark-brush-color color (or/c string? (is-a?/c color<%>))]{}
+@defparam[light-pen-color color (or/c string? (is-a?/c color<%>))]{}
+@defparam[light-brush-color color (or/c string? (is-a?/c color<%>))]{}]]{
 
 These four parameters control the color of the edges in the graph.
+}
 
 @section{Typesetting}
 
-The @tt{pict.ss} library provides functions designed to
-automatically typeset grammars, reduction relations, and
-metafunction written with plt redex. 
+@defmodule[redex/pict]
+
+The @schememodname[redex/pict] library provides functions
+designed to automatically typeset grammars, reduction
+relations, and metafunction written with plt redex.
 
 Each grammar, reduction relation, and metafunction can be
 saved in a .ps file (as encapsulated postscript), or can be
@@ -1139,9 +1155,11 @@ If you are only using the picts to experiment in DrScheme's
 REPL, be sure your program is in the GUI library, and
 contains this header:
 
-  #lang scheme/gui
-  (require texpict/mrpict)
-  (dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
+@schememod[
+scheme/gui
+(require texpict/mrpict)
+(dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
+]
 
 Be sure to remove the call to dc-for-text-size before you
 generate .ps files, otherwise the font spacing will be wrong
