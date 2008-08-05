@@ -5,6 +5,8 @@
 
   (define argv (current-command-line-arguments))
   
+  (define no-latex (make-parameter #f))
+  
   (case (system-type)
     [(macos)
      
