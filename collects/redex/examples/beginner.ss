@@ -918,6 +918,6 @@ reflects the (broken) spec).
         false)))))
 
 ;; timing test
-;#;
+#;
 (time (run-tests)
       (run-big-test))

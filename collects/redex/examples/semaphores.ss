@@ -149,15 +149,13 @@ semaphores make things much more predictable...
            (in-hole c (void))
            e_after ...)))))
 
-(stepper lang
-         reductions
+(stepper reductions
          `((store (y (list)))
            (semas)
            (threads (set! y (cons 1 y))
                     (set! y (cons 2 y)))))
 
-(stepper lang
-         reductions
+(stepper reductions
          `((store (y (list)))
            (semas (x 1))
            (threads (begin (semaphore-wait (semaphore x)) 

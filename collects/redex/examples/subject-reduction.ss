@@ -32,7 +32,7 @@
    
    ;; this rules calls subst with the wrong arguments, which is caught by the example below.
    (--> (in-hole c_1 ((lambda (x_format t_1) e_body) v_actual))
-        (in-hole c_1 (subst x_format v_actual e_body))
+        (in-hole c_1 (subst (x_format e_body v_actual)))
         βv)))
 
 (define (type-check term)
@@ -64,6 +64,43 @@
     (lambda (term2)
       (and t1
            (equal? (type-check term2) t1)))))
+
+(define-language subst-lang
+  (x variable))
+
+(define-metafunction subst-lang
+  [(subst-n ((x_1 any_1) (x_2 any_2) ... any_3))
+   (subst (x_1 any_1 (subst-n ((x_2 any_2) ... any_3))))]
+  [(subst-n (any_3)) any_3])
+
+(define-metafunction subst-lang
+  ;; 1. x_1 bound, so don't continue in λ body
+  [(subst (x_1 any_1 (λ (x_1 t) any_2)))
+   (λ (x_1 t) any_2)]
+  ;; 2. general purpose capture avoiding case
+  [(subst (x_1 any_1 (λ (x_2 t) any_2)))
+   ,(term-let ([x_new
+                (variable-not-in (term (x_1 any_1 any_2)) 
+                                 (term x_2))])
+              (term 
+               (λ (x_new t) 
+                 (subst (x_1 any_1 (subst-vars ((x_2 x_new) any_2)))))))]
+  ;; 3. replace x_1 with e_1
+  [(subst (x_1 any_1 x_1)) any_1]
+  ;; 4. x_1 and x_2 are different, so don't replace
+  [(subst (x_1 any_1 x_2)) x_2]
+  ;; the last two cases cover all other expression forms
+  [(subst (x_1 any_1 (any_2 ...)))
+   ((subst (x_1 any_1 any_2)) ...)]
+  [(subst (x_1 any_1 any_2)) any_2])
+
+(define-metafunction subst-lang
+  [(subst-vars ((x_1 any_1) x_1)) any_1]
+  [(subst-vars ((x_1 any_1) (any_2 ...))) ((subst-vars ((x_1 any_1) any_2)) ...)]
+  [(subst-vars ((x_1 any_1) any_2)) any_2]
+  [(subst-vars ((x_1 any_1) (x_2 any_2) ... any_3)) 
+   (subst-vars ((x_1 any_1) (subst-vars ((x_2 any_2) ... any_3))))]
+  [(subst-vars (any)) any])
 
 (define (show term)
   (traces reductions term #:pred (pred term)))

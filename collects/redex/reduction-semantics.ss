@@ -4,8 +4,7 @@
 (require "private/reduction-semantics.ss"
          "private/matcher.ss"
          "private/term.ss"
-         "private/rg.ss"
-         "private/loc-wrapper.ss")
+         "private/rg.ss")
 
 #;(provide (all-from-out "private/rg.ss"))
 
@@ -39,9 +38,6 @@
          test-->
          test-predicate
          test-results)
-
-(provide to-lw
-         (struct-out lw))
 
 (provide/contract
  [reduction-relation->rule-names (-> reduction-relation? (listof symbol?))]

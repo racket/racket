@@ -74,13 +74,14 @@
            (set! x (+ x -1))
            (set! x (+ x 1))))
         
+        #:pp
         (lambda (exp)
           (match exp
             [`((store (x ,x)) (threads ,t1 ,t2))
              (format "~a ~a ~a" x (count t1) (count t2))])))
 
 (parameterize ([initial-char-width 16])
-  (stepper threads reductions '((store) (threads 
-                                         (+ 1 1)
-                                         (+ 1 1)
-                                         (+ 1 1)))))
+  (stepper reductions '((store) (threads 
+                                 (+ 1 1)
+                                 (+ 1 1)
+                                 (+ 1 1)))))

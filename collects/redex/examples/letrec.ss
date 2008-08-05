@@ -117,7 +117,7 @@ BUG: letrec & let are not handled properly by substitution
    with
    [(--> a ,(collect (term b))) (==> a b)]))
 
-(define (run e) (traces lang reductions `((store) ,e)))
+(define (run e) (traces reductions `((store) ,e)))
 
 (run '(letrec ((f (lambda (x)
                     (letrec ((y (f 1))) 

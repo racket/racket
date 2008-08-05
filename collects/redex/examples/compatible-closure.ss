@@ -14,4 +14,4 @@
 
 (define ->r (compatible-closure r grammar B))
 
-(traces grammar ->r '((f * f) * (t * f)))
+(traces ->r '((f * f) * (t * f)))

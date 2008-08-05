@@ -54,38 +54,11 @@
 (define (make-w b c c*) `(,c ((,c ((,b ,c) ((,c ((,b j) ,c*)) ,c*))) ,c*)))
 (define (make-s b c w) `((,b ((,b (,b ,w)) ,c)) (,b ,b)))
 
-(traces lang
-        relation
+(traces relation
         (list 
          `((,c* abs1) abs2)
          `(((,(make-c 'c*) abs1) abs2) abs3)
          `(((,(make-b 'c) abs1) abs2) abs3)
          `((,(make-w 'b 'c 'c*) abs1) abs2)
          `(((,(make-s 'b 'c 'w) abs1) abs2) abs3))
-        #:multiple #t)
-
-(require (lib "pretty.ss"))
-#;
-(let loop ([t (make-s (make-b (make-c c*))
-                      (make-c c*)
-                      (make-w (make-b (make-c c*))
-                              (make-c c*)
-                              c*))]
-           [i 0])
-  (when (zero? (modulo i 100))
-    (display i)
-    (display " ")
-    (flush-output))
-  (let ([next (apply-reduction-relation ij-relation t)])
-    (if (null? next)
-        (begin (newline) 
-               (pretty-print t))
-        (loop (car next) (+ i 1)))))
-
-#;
-(traces lang ij-relation
-        (make-s (make-b (make-c c*))
-                (make-c c*)
-                (make-w (make-b (make-c c*))
-                        (make-c c*)
-                        c*)))
+        #:multiple? #t)

@@ -83,9 +83,9 @@ semantics.
 
 This is a reference manual for Redex. See
 @link["http://www.cs.uchicago.edu/~robby/plt-redex/"]{
- @tt{http://www.cs.uchicago.edu/~robby/plt-redex/}
-}
-for a gentler overview.
+@tt{http://www.cs.uchicago.edu/~robby/plt-redex/}} for a gentler
+overview. (See also the @tt{examples} subdirectory in the @tt{redex}
+collection.)
 
 To load Redex use: @defmodule[redex] which provides all of
 the names documented in this library.
@@ -1415,8 +1415,6 @@ it. The thunk may be invoked multiple times when rendering a
 single reduction relation.
 }
 
-@subsection{Pink & LW}
-
 @deftech{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
@@ -1501,23 +1499,35 @@ explanation of logical-space):
 }
 
 
-A _lw_ is a struct:
-  (build-lw element posnum posnum posnum posnum)
-with selectors:
->  lw-e :: lw -> element
->  lw-line :: lw -> posnum
->  lw-line-span :: lw -> posnum
->  lw-column :: lw -> posnum
->  lw-column-span :: lw -> posnum
+@subsection{LW}
 
-An _element_ is either:
-  string
-  symbol
-  pict
-  (listof lw)
+@deftogether[[
+@defproc[(build-lw [e (or/c string? symbol? pict? (listof lw?))]
+                   [line exact-positive-integer?]
+                   [line-span exact-positive-integer?]
+                   [column exact-positive-integer?]
+                   [column-span exact-positive-integer?]) 
+         lw?]{}
+@defproc[(lw-e (lw lw?)) (or/c string? symbol? pict? (listof lw?))]{}
+@defproc[(lw-line (lw lw?)) exact-positive-integer?]{}
+@defproc[(lw-line-span (lw lw?)) exact-positive-integer?]{}
+@defproc[(lw-column (lw lw?)) exact-positive-integer?]{}
+@defproc[(lw-column-span (lw lw?)) exact-positive-integer?]{}
+@defproc[(lw? (v any/c)) boolean?]{}
+@defidform[lw]{}]]{
 
-The lw data structure corresponds represents a
-pattern or a Scheme expression that is to be typeset. 
+The lw data structure corresponds represents a pattern or a Scheme
+expression that is to be typeset.  The functions listed above
+construct @scheme[lw] structs, select fields out of them, and
+recognize them. The @scheme[lw] binding can be used with
+@scheme[copy-struct].
+}
+
+@defform[(to-lw arg)]{
+
+This form turns its argument into lw structs that
+contain all of the spacing information just as it would appear
+when being used to typeset.
 
 Each sub-expression corresponds to its own lw, and
 the element indicates what kind of subexpression it is. If
@@ -1595,6 +1605,7 @@ will be lined up underneath each other, but the relative
 positions of "boys" and "fudge" will be determined by the
 natural size of the words as they rendered in the
 appropriate font.
+}
 
 There are two helper functions that make building
 lws easier:
@@ -1614,12 +1625,6 @@ just before or just after that argument. The line-span and
 column-span of the new lw is always zero.
 }
 
-@defform[(to-lw arg)]{
-
-This form turns its argument into lw structs that
-contain all of the spacing information just as it would appear
-when being used to typeset.
-}
 
 @index-section[]
 

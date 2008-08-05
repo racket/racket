@@ -74,6 +74,9 @@
  lw-column
  lw-column-span)
 
+(provide to-lw
+         (struct-out lw))
+
 (provide/contract
  [just-before (-> (or/c pict? string? symbol?) lw? lw?)]
  [just-after (-> (or/c pict? string? symbol?) lw? lw?)])

@@ -47,7 +47,7 @@
       (subst (x_1 e_1 e_3)))]
   [(subst (x_1 e_1 number_1)) number_1])
 
-(traces lang reductions
+(traces reductions
         '(let (plus (lambda (m) 
                       (lambda (n) 
                         (lambda (s)

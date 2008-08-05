@@ -31,6 +31,6 @@
         (in-hole c_1 (subst (variable_x v_arg e_body)))
         βv)))
 
-(traces lang reductions '((lambda (x) (x x)) (lambda (x) (x x))))
-(traces lang reductions '((call/cc call/cc) (call/cc call/cc)))
-(traces lang reductions '((lambda (x) ((call/cc call/cc) x)) (call/cc call/cc)))
+(traces reductions '((lambda (x) (x x)) (lambda (x) (x x))))
+(traces reductions '((call/cc call/cc) (call/cc call/cc)))
+(traces reductions '((lambda (x) ((call/cc call/cc) x)) (call/cc call/cc)))
