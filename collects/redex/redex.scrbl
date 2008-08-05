@@ -7,6 +7,7 @@
 	  	     scheme/gui
                      scheme/pretty
                      scheme/contract
+		     (only-in slideshow/pict text)
 		     redex))
 
 @(define-syntax (defpattech stx)
@@ -378,8 +379,8 @@ bound to @scheme['()].
 }
 }
 
-@defform*[[(redex-match lang pattern any)
-           (redex-match lang pattern)]]{
+@defform*[[(redex-match lang #, @|ttpattern| any)
+           (redex-match lang #, @|ttpattern|)]]{
           
 If @scheme[redex-match] receives three arguments, it
 matches the pattern (in the language) against its third
@@ -683,20 +684,19 @@ all non-GUI portions of Redex) and also exported by
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language reduction-case ...)
-              ((reduction-case (--> #, @|ttpattern| exp extras ...))
+              ((reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...))
                (extras name
-                       (fresh <fresh-clause> ...)
-                       (side-condition <guard> ...)
-                       (where <tl-pat> e))
+                       (fresh fresh-clause ...)
+                       (side-condition scheme-expression ...)
+                       (where tl-pat scheme-expression))
                (fresh-clause var ((var1 ...) (var2 ...))))]{
 
 Defines a reduction relation casewise, one case for each of the
 clauses beginning with @scheme[-->]. Each of the @scheme[pattern]s
 refers to the @scheme[language], and binds variables in the
-@scheme[exp]. The @scheme[exp] behave like the argument to
-@scheme[term].
+@|tttterm|. 
 
-Following the lhs & rhs specs can be the name of the
+Following the @|pattern| and @|tterm| can be the name of the
 reduction rule, declarations of some fresh variables, and/or
 some side-conditions. The name can either be a literal
 name (identifier), or a literal string. 
@@ -747,9 +747,9 @@ defines a reduction relation for the lambda-calculus above.
 @defform/none[#:literals (with reduction-relation)
          (reduction-relation 
           language
-          (arrow-var pattern exp) ...
+          (arrow-var #, @|ttpattern| #, @|tttterm|) ...
           with
-          [(arrow pattern exp)
+          [(arrow #, @|ttpattern| #, @|tttterm|)
            (arrow-var var var)] ...)]{
 
 Defines a reduction relation with shortcuts. As above, the
@@ -762,11 +762,11 @@ Each of the clauses after the `with' define new relations
 in terms of other definitions after the `with' clause or in
 terms of the main --> relation.
 
-[ NOTE: `fresh' is always fresh with respect to the entire
-  term, not just with respect to the part that matches the
-  right-hand-side of the newly defined arrow. ]
+@scheme[fresh] is always fresh with respect to the entire
+term, not just with respect to the part that matches the
+right-hand-side of the newly defined arrow.
 
-For example, this
+As an example, this
 
 @schemeblock[
   (reduction-relation
@@ -794,7 +794,7 @@ where the @tt{==>} relation is defined by reducing in the context
 This form extends the reduction relation in its first
 argument with the rules specified in <more>. They should
 have the same shape as the the rules (including the `with'
-clause) in an ordinary reduction-relation.
+clause) in an ordinary @scheme[reduction-relation].
 
 If the original reduction-relation has a rule with the same
 name as one of the rules specified in the extension, the old
@@ -804,7 +804,8 @@ In addition to adding the rules specified to the existing
 relation, this form also reinterprets the rules in the
 original reduction, using the new language.
 }
-@defproc[(union-reduction-relations [r reduction-relation?] ...) reduction-relation?]{
+@defproc[(union-reduction-relations [r reduction-relation?] ...) 
+         reduction-relation?]{
 
 Combines all of the argument reduction relations into a
 single reduction relation that steps when any of the
@@ -887,10 +888,10 @@ all non-GUI portions of Redex) and also exported by
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
                contract
-               [(name pattern ...) exp (side-condition exp) ...] 
+               [(name #, @|ttpattern| ...) #, @|tttterm| (side-condition scheme-expression) ...] 
                ...)
                ([contract (code:line) 
-                          (code:line id : pattern ... -> pattern)])]{
+                          (code:line id : #, @|ttpattern| ... -> #, @|ttpattern|)])]{
 
 The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side
@@ -959,7 +960,7 @@ match.
 
 @defform[(define-metafunction/extension extending-name language-exp 
            contract
-           [(name pattern ...) rhs-expression (side-condition <exp>) ...]
+           [(name #, @|ttpattern| ...) #, @|tttterm| (side-condition scheme-expression) ...]
            ...)]{
 
 This defines a metafunction as an extension of an existing
@@ -968,7 +969,7 @@ patterns were in this definitions, with the name of the
 function fixed up to be @scheme[extending-name]. 
 }
 
-@defform[(in-domain? (metafunction-name term ...))]{
+@defform[(in-domain? (metafunction-name #, @|tttterm| ...))]{
 Returns @scheme[#t] if the inputs specified to @scheme[metafunction-name] are
 legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
@@ -1081,10 +1082,6 @@ its first argument into the port (its second argument) with
 width at most given by the number (its third argument). The
 final argument is the text where the port is connected --
 characters written to the port go to the end of the editor.
-
-The default value of @scheme[pp], provided as
-@scheme[default-pretty-printer], uses MzLib's
-@scheme[pretty-print] function.
 
 The @scheme[colors] argument, if provided, specifies a list of
 reduction-name/color-string pairs. The traces gui will color
@@ -1203,6 +1200,13 @@ the stepper and traces.
 These four parameters control the color of the edges in the graph.
 }
 
+@defproc[(default-pretty-printer [v any] [port output-port] [width number] [text (is-a?/c text%)]) void?]{
+
+This is the default value of @scheme[pp] used by @scheme[traces] and
+@scheme[stepper] and it uses
+@scheme[pretty-print].
+}
+
 @section{Typesetting}
 
 @defmodule[redex/pict]
@@ -1229,24 +1233,26 @@ contains this header:
 @schememod[
 scheme/gui
 (require texpict/mrpict)
-(dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
+(dc-for-text-size
+ (make-object bitmap-dc%
+  (make-object bitmap% 1 1)))
 ]
 
 Be sure to remove the call to dc-for-text-size before you
 generate .ps files, otherwise the font spacing will be wrong
 in the .ps file.
 
-> language->pict ::
-  (->* (compiled-lang? 
-        (or/c false/c (cons/c symbol? (listof symbol?))))
-       ((or/c false/c (cons/c symbol? (listof symbol?))))
-      pict?)
+@subsection{Pict & PostScript Generators}
 
-> language->ps ::
-  (->* (compiled-lang?
-        (or/c path? string?))
-       ((or/c false/c (cons/c symbol? (listof symbol?))))
-       void?)
+@deftogether[[
+@defproc[(language->pict (lang compiled-lang?)
+                         (nts (or/c false/c (cons/c symbol? (listof symbol?))) #f))
+         pict?]{}
+@defproc[(language->ps (lang compiled-lang?)
+                       (filename (or/c path? string?))
+                       (nts (or/c false/c (cons/c symbol? (listof symbol?))) #f))
+         void?]{}]]{
+
 
 These two functions turn a languages into picts. The first
 argument is the language, and the second is a list of
@@ -1254,10 +1260,11 @@ non-terminals that should appear in the pict. It may only
 contain symbols that are in the language's set of
 non-terminals.
 
-For language->ps, the path argument is a filename for the
+For @scheme[language->ps], the path argument is a filename for the
 PostScript file.
+}
 
-> extend-language-show-union : (parameter/c boolean?)
+@defparam[extend-language-show-union show? boolean?]{
 
 If this is #t, then a language constructed with
 extend-language is shown as if the language had been
@@ -1265,40 +1272,46 @@ constructed directly with `language'. If it is #f, then only
 the last extension to the language is shown (with
 four-period ellipses, just like in the concrete syntax).
 
-Defaultly #f.
+Defaultly @scheme[#f].
 
 Note that the #t variant can look a little bit strange if
 .... are used and the original version of the language has
 multi-line right-hand sides.
+}
 
-> reduction-relation->pict :: 
-    (opt-> (reduction-relation?)
-           ((or/c false/c (listof (union string? symbol?))))
-           pict?)
-
-> reduction-relation->ps ::
-    (opt-> (reduction-relation?
-            (union string? path?))
-           ((or/c false/c (listof (union string? symbol?))))
-           void?)
+@deftogether[[
+@defproc[(reduction-relation->pict 
+           (r reduction-relation?)
+           (rules (or/c false/c (listof (union string? symbol?))) #f))
+          pict?]{}
+@defproc[(reduction-relation->ps
+           (r reduction-relation?)
+           (file (or/c string? path?))
+           (rules (or/c false/c (listof (union string? symbol?))) #f))
+          pict?]{}]]{
 
 These two functions turn reduction relations into picts.
 
 The optional lists determine which reduction rules are shown
 in the pict.
+}
 
-> (metafunction->pict metafunction-name) -> pict
-> (metafunction->ps metafunction-name (union path? string?)) -> void
+@deftogether[[
+@defform[(metafunction->pict metafunction-name)]{}
+@defform[(metafunction->ps metafunction-name filename)]{}]]{
 
-These two syntactic forms turn metafunctions into picts
+These two syntactic forms turn metafunctions into picts. The second
+accepts a string or a path for @scheme[filename] and saves the
+PostScript in that file.
+}
 
-There are also customization parameters:
+@subsection{Customization}
 
-> rule-pict-style :: 
-  (parameter/c (symbols 'vertical 
+@defparam[rule-pict-style style
+               (symbols 'vertical 
                         'compact-vertical
                         'vertical-overlapping-side-conditions
-                        'horizontal))
+                        'horizontal)]{
 
 This parameter controls the style used for the reduction
 relation. It can be either horizontal, where the left and
@@ -1308,33 +1321,37 @@ reduction rule are above each other. The vertical mode also
 has a variant where the side-conditions don't contribute to
 the width of the pict, but are just overlaid on the second
 line of each rule.
+}
 
-> arrow-space :: (parameter/c natural-number/c)
+@defparam[arrow-space space natural-number/c]{
 
 This parameter controls the amount of extra horizontal space
 around the reduction relation arrow. Defaults to 0.
+}
 
-> horizontal-label-space :: (parameter/c natural-number/c)
+@defparam[horizontal-label-space space natural-number/c]{
 
 This parameter controls the amount of extra space before the
 label on each rule, but only in horizontal mode. Defaults to
 0.
+}
 
-> metafunction-pict-style :: 
-  (parameter/c (symbols 'left-right 'up-down))
+@defparam[metafunction-pict-style style (parameter/c (symbols 'left-right 'up-down))]{
 
 This parameter controls the style used for typesetting
 metafunctions. The 'left-right style means that the
 results of calling the metafunction are displayed to the 
 right of the arguments and the 'up-down style means that
 the results are displayed below the arguments.
+}
 
-> label-style :: (parameter/c text-style/c)
-> literal-style :: (parameter/c text-style/c)
-> metafunction-style :: (parameter/c text-style/c)
-> non-terminal-style :: (parameter/c text-style/c)
-> non-terminal-subscript-style :: (parameter/c text-style/c)
-> default-style :: (parameter/c text-style/c)
+@deftogether[[
+@defparam[label-style style text-style/c]{}
+@defparam[literal-style style text-style/c]{}
+@defparam[metafunction-style style text-style/c]{}
+@defparam[non-terminal-style style text-style/c]{}
+@defparam[non-terminal-subscript-style style text-style/c]{}
+@defparam[default-style style text-style/c]{}]]{
 
 These parameters determine the font used for various text in
 the picts. See `text' in the texpict collection for
@@ -1356,46 +1373,51 @@ The default-style is used for parenthesis, the dot in dotted
 lists, spaces, the separator words in the grammar, the
 "where" and "fresh" in side-conditions, and other places
 where the other parameters aren't used.
+}
 
-> label-font-size :: (parameter/c (and/c (between/c 1 255) integer?))
-> metafunction-font-size :: (parameter/c (and/c (between/c 1 255) integer?))
-> default-font-size :: (parameter/c (and/c (between/c 1 255) integer?))
+@deftogether[[
+@defparam[label-font-size size (and/c (between/c 1 255) integer?)]{}
+@defparam[metafunction-font-size size (and/c (between/c 1 255) integer?)]{}
+@defparam[default-font-size size (and/c (between/c 1 255) integer?)]{}]]{
 
 These parameters control the various font sizes. The
 default-font-size is used for all of the font sizes except
 labels and metafunctions.
+}
 
-> reduction-relation-rule-separation :: 
-  (parameter/c (and/c integer? positive? exact?))  
+@defparam[reduction-relation-rule-separation sep (parameter/c (and/c integer? positive? exact?))]{  
 
 Controls the amount of space between clauses in a reduction
 relation. Defaults to 4.
+}
 
-> curly-quotes-for-strings :: (parameter/c boolean?)
+@defparam[curly-quotes-for-strings on? boolean?]{
 
 Controls if the open and close quotes for strings are turned
 into “ and ” or are left as merely ".
 
 Defaults to #t.
+}
 
-> current-text :: (parameter/c (-> string? text-style/c number? pict?))
+@defparam[current-text proc (-> string? text-style/c number? pict?)]{
 
 This parameter's function is called whenever Redex typesets
 some part of a grammar, reduction relation, or
-metafunction. It defaults to mrpict.ss's `text' function.
+metafunction. It defaults to slideshow's @scheme[text] function.
+}
 
-> set-arrow-pict! :: (-> symbol? (-> pict?) void?)
+@defparam[set-arrow-pict! proc (-> symbol? (-> pict?) void?)]{
 
 This functions sets the pict for a given reduction-relation
 symbol. When typesetting a reduction relation that uses the
 symbol, the thunk will be invoked to get a pict to render
 it. The thunk may be invoked multiple times when rendering a
 single reduction relation.
+}
 
-============================================================
+@subsection{Pink & LW}
 
-_Removing the pink background from PLT Redex rendered picts and ps files_
-_Rewriting patterns during typesetting for PLT Redex_
+@deftech{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
 unquoted Scheme code or side-conditions, they are rendered
@@ -1408,35 +1430,37 @@ implementation of those operations.
 
 To replace the pink code, use:
 
-> (with-unquote-rewriter proc expression)
+@defform[(with-unquote-rewriter proc expression)]{
 
-It installs `proc' the current unqoute rewriter and
+It installs @scheme[proc] the current unqoute rewriter and
 evaluates expression. If that expression computes any picts,
 the unquote rewriter specified is used to remap them.
 
-The 'proc' should be a function of one argument. It receives
+The @scheme[proc] should be a function of one argument. It receives
 a lw struct as an argument and should return
 another lw that contains a rewritten version of the
 code.
+}
 
-> (with-atomic-rewriter name-symbol string-or-thunk-returning-pict expression)
+@defform[(with-atomic-rewriter name-symbol string-or-thunk-returning-pict expression)]{
 
 This extends the current set of atomic-rewriters with one
 new one that rewrites the value of name-symbol to
 string-or-pict-returning-thunk (applied, in the case of a
 thunk), during the evaluation of expression.
 
-name-symbol is expected to evaluate to a symbol. The value
+@scheme[name-symbol] is expected to evaluate to a symbol. The value
 of string-or-thunk-returning-pict is used whever the symbol
 appears in a pattern.
+}
 
-> (with-compound-rewriter name-symbol proc expression)
+@defform[(with-compound-rewriter name-symbol proc expression)]{
 
 This extends the current set of compound-rewriters with one
 new one that rewrites the value of name-symbol via proc,
 during the evaluation of expression.
 
-name-symbol is expected to evaluate to a symbol. The value
+@scheme[name-symbol] is expected to evaluate to a symbol. The value
 of proc is called with a (listof lw) -- see below
 for details on the shape of lw, and is expected to
 return a new (listof (union lw string pict)),
@@ -1452,15 +1476,20 @@ lw structs for each of the non-lws in the
 list (see the description of lw below for an
 explanation of logical-space):
 
- 0: If there are two adjacent lws, then the logical
-    space between them is filled with whitespace.
+@itemize{
+@item{
+    If there are two adjacent lws, then the logical
+    space between them is filled with whitespace.}
 
- 1: If there is a pair of lws with just a single
+@item{
+    If there is a pair of lws with just a single
     non-lw between them, a lw will be
     created (containing the non-lw) that uses all
     of the available logical space between the lws.
+}
 
- 2: If there are two adjacent non-lws between two
+@item{
+    If there are two adjacent non-lws between two
     lws, the first non-lw is rendered
     right after the first lw with a logical space
     of zero, and the second is rendered right before the
@@ -1468,11 +1497,9 @@ explanation of logical-space):
     the logical space between the two lws is
     absorbed by a new lw that renders using no
     actual space in the typeset version.
+}}
+}
 
-============================================================
-
-The lw data structure corresponds represents a
-pattern or a Scheme expression that is to be typeset. 
 
 A _lw_ is a struct:
   (build-lw element posnum posnum posnum posnum)
@@ -1489,6 +1516,9 @@ An _element_ is either:
   pict
   (listof lw)
 
+The lw data structure corresponds represents a
+pattern or a Scheme expression that is to be typeset. 
+
 Each sub-expression corresponds to its own lw, and
 the element indicates what kind of subexpression it is. If
 the element is a list, then the lw corresponds to a
@@ -1500,29 +1530,35 @@ be a lw in the third-to-last position for the dot.
 
 For example, this expression:
 
-  (a)
+@schemeblock[(a)]
 
 becomes this lw (assuming the above expression
 appears as the first thing in the file):
 
+@schemeblock[
      (build-lw (list (build-lw "(" 0 0 0 1)
                               (build-lw 'a 0 0 1 1)
                               (build-lw ")" 0 0 2 1))
                         0 0 0 3)
+]
 
 If there is some whitespace in the sequence, like this one:
 
+@schemeblock[
   (a b)
+]
 
 then there is no lw that corresponds to that
 whitespace; instead there is a logical gap between the
 lws.
 
+@schemeblock[
      (build-lw (list (build-lw "(" 0 0 0 1)
                      (build-lw 'a 0 0 1 1)
                      (build-lw 'b 0 0 3 1)
                      (build-lw ")" 0 0 4 1))
                0 0 0 5)
+]
 
 In general, identifiers are represented with symbols and
 parenthesis are represented with strings and picts can be
@@ -1549,8 +1585,10 @@ the logical space (ie, the line/column &
 line-span/column-span) fields of the lws. As an
 example, if this is the original pattern:
 
+@schemeblock[
    (all good boys
         deserve fudge)
+]
 
 then the leftmost edges of the words "good" and "deserve"
 will be lined up underneath each other, but the relative
@@ -1561,135 +1599,27 @@ appropriate font.
 There are two helper functions that make building
 lws easier:
 
-> just-before :: (-> (or/c pict? string? symbol?) 
-                     lw?
-                     lw?)
-> just-after :: (-> (or/c pict? string? symbol?) 
-                    lw?
-                    lw?)
+@deftogether[[
+@defproc[(just-before [stuff (or/c pict? string? symbol?)]
+                      [lw lw?])
+                     lw?]{}
+@defproc[(just-after [stuff (or/c pict? string? symbol?)]
+                     [lw lw?])
+                    lw?]{}]]{
 
 These functions build new lws whose contents are
 the first argument, and whose line and column are based on
 the second argument, making the new loc wrapper be either
 just before or just after that argument. The line-span and
 column-span of the new lw is always zero.
+}
 
-> (to-lw arg)                               SYNTAX
+@defform[(to-lw arg)]{
 
 This form turns its argument into lw structs that
 contain all of the spacing information just as it would appear
 when being used to typeset.
-
-======================================================================
-
-The _iswim.ss_ module in the "examples" sub-collection defines a
-grammar and reductions from "Programming Languages and Lambda Calculi"
-by Felleisen and Flatt.
-
-       Example S-expression forms of ISWIM expressions:
-         Book                     S-expr
-         ----                     ------
-         (lambda x . x)           ("lam" x x)
-         (+ '1` '2`)              ("+" 1 2)
-         ((lambda y y) '7`)       (("lam" y y) 7)
-
-       CK machine:
-         Book                     S-expr
-         ----                     ------
-         <(lambda x . x), mt>     (("lam" x x) : "mt")
-
-       CEK machine:
-         Book                     S-expr
-         ----                     ------
-         <<(lambda x . x),        ((("lam" x x)
-           {<X,<5,{}>>}>,           : ((X (5 : ()))))
-          mt>                      : "mt")
-         
-       The full grammar:
-
-         (language (M (M M)
-                      (o1 M)
-                      (o2 M M)
-                      V)
-                   (V X
-                      ("lam" variable M)
-                      b)
-                   (X variable)
-                   (b number)
-                   (o1 "add1" "sub1" "iszero")
-                   (o2 "+" "-" "*" "^")
-                   (on o1 o2)
-                   
-                   ;; Evaluation contexts:
-                   (E hole
-                      (E M)
-                      (V E)
-                      (o1 E)
-                      (o2 E M)
-                      (o2 V E))
-     
-                   ;; Continuations (CK machine):
-                   (k "mt"
-                      ("fun" V k)
-                      ("arg" M k)
-                      ("narg" (V ... on) (M ...) k))
-     
-                   ;; Environments and closures (CEK):
-                   (env ((X = vcl) ...))
-                   (cl (M : env))
-                   (vcl (V- : env))
-                   
-                   ;; Values that are not variables:
-                   (V- ("lam" variable M)
-                       b)
-     
-                   ;; Continuations with closures (CEK);
-                   (k- "mt"
-                       ("fun" vcl k-)
-                       ("arg" cl k-)
-                       ("narg" (vcl ... on) (cl ...) k-)))
-     
-       The following are provided by "iswim.ss":
-
-               Grammar and substitution:
->                 iswim-grammar :: compiled-lang?
->                 M? :: (any? . -> . boolean?)
->                 V? :: (any? . -> . boolean?)
->                 o1? :: (any? . -> . boolean?)
->                 o2? :: (any? . -> . boolean?)
->                 on? :: (any? . -> . boolean?)
->                 k? :: (any? . -> . boolean?)
->                 env? :: (any? . -> . boolean?)
->                 cl? :: (any? . -> . boolean?)
->                 vcl? :: (any? . -> . boolean?)
->                 k-? :: (any? . -> . boolean?)
->                 iswim-subst :: (M? symbol? M? . -> . M?)
->                 empty-env :: env?
->                 env-extend :: (env? symbol? vcl? . -> . env?)
->                 env-lookup :: (env? symbol? . -> . (union false? vcl?))
-               Reductions:
->                 beta_v :: reduction-relation?
->                 delta :: reduction-relation?
->                 ->v :: reduction-relation?
->                 :->v :: reduction-relation?
-               Abbreviations:
->                 if0 :: (M? M? M? . -> . M?)
->                 true :: M?
->                 false :: M?
->                 mkpair :: M?
->                 fst :: M?
->                 snd :: M?
->                 Y_v :: M?
->                 sum :: M?
-               Helpers:
->                 delta*1 :: (o1? V? . -> . (union false? V?))
-                     delta as a function for unary operations.
->                 delta*2 :: (o2? V? V? . -> . (union false? V?))
-                     delta as a function for binary operations.
->                 delta*n :: (on? (listof V?) . -> . (union false? V?))
-                     delta as a function for any operation.
-
-
+}
 
 @index-section[]
 
