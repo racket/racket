@@ -13,9 +13,19 @@
      (when (equal? (vector) argv)
        (fprintf (current-error-port) "pdf-slatex: expected a file on the command line\n")
        (exit 1))
-     (let ([result
-            (parameterize ([error-escape-handler exit])
-              (pdf-slatex (vector-ref argv 0)))])
+     (let* ([filename
+             (command-line
+              #:program "slatex"
+              #:once-each
+              [("-n" "--no-latex") "Just preprocess, don't run LaTeX"
+                                   (no-latex #t)]
+              #:args (filename)
+              filename)]
+            [result
+             (parameterize ([error-escape-handler exit])
+               (if (no-latex)
+                   (slatex/no-latex filename)
+                   (pdf-slatex filename)))])
        (if result
            (exit)
            (exit 1)))]))
