@@ -34,6 +34,18 @@
      #'((tech "pattern") args ...)]
     [x (identifier? #'x) #'(tech "pattern")]))
 
+@(define-syntax (tttterm stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech (tt "term")) args ...)]
+    [x (identifier? #'x) #'(tech (tt "term"))]))
+
+@(define-syntax (tterm stx)
+   (syntax-case stx ()
+    [(_ args ...)
+     #'((tech "term") args ...)]
+    [x (identifier? #'x) #'(tech "term")]))
+
 @;{
 
 I usually use an `ellipsis' non-terminal to make it more explicit that
@@ -66,14 +78,21 @@ At Wed, 30 Jul 2008 13:03:07 -0500, "Robby Findler" wrote:
 
 PLT Redex consists of a domain-specific language for specifying
 reduction semantics, plus a suite of tools for working with the
-semantics. To load Redex use:
-@defmodule[redex]
-which provides all of the names documented in this library.
+semantics. 
 
-The module @schememodname[redex/reduction-semantics] provides only the
-names defined in the first section of this manual, but it also does
-not require any GUI code, making it suitable for use with
-@tt{mzscheme} scripts.
+This is a reference manual for Redex. See
+@link["http://www.cs.uchicago.edu/~robby/plt-redex/"]{
+ @tt{http://www.cs.uchicago.edu/~robby/plt-redex/}
+}
+for a gentler overview.
+
+To load Redex use: @defmodule[redex] which provides all of
+the names documented in this library.
+
+The module @schememodname[redex/reduction-semantics]
+provides only the non-GUI portions of what is described in
+this manual (everything except the last two sections),
+making it suitable for use with @tt{mzscheme} scripts.
 
 @;{
   _reduction-semantics.ss_: the core reduction semantics
@@ -138,18 +157,19 @@ this tool:
 
 }
 
-@section{Reduction Semantics}
+@table-of-contents[]
+
+@section{Patterns}
 
 @defmodule[redex/reduction-semantics]
 
-This section describes the all of the exports of 
-@schememodname[redex/reduction-semantics], each of which is
-also exported by @schememodname[redex].
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
 
-@subsection{Patterns}
-
-The @tt{reduction-semantics.ss} library defines a @deftech{pattern}
-language, used in various ways:
+This section covers Redex's @deftech{pattern} language, used
+in various ways:
 
 @(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole in-named-hole side-condition cross) 
    [pattern any 
@@ -395,12 +415,76 @@ clause is followed by an ellipsis.  Nested ellipses produce
 nested lists.
 }
 
-@defform[(term s-expr)]{
+@defproc[(set-cache-size! [size (or/c false/c positive-integer?)]) void?]{
 
-This form is used for construction of new s-expressions in
+Changes the cache size; a #f disables the cache
+entirely. The default size is 350.
+
+The cache is per-pattern (ie, each pattern has a cache of
+size at most 350 (by default)) and is a simple table that
+maps expressions to how they matched the pattern. When the
+cache gets full, it is thrown away and a new cache is
+started.
+}
+
+@section{Terms}
+
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
+
+Object langauge expressions in Redex are written using
+@scheme[term]. It is similar to Scheme's @scheme[quote] (in
+many cases it is identical) in that it constructs lists as
+the visible representation of terms. 
+
+The grammar of @deftech{term}s is (note that an ellipsis
+stands for repetition unless otherwise indicated):
+
+@(schemegrammar* #:literals (in-hole hole) 
+   [term identifier
+         (term-sequence ...)
+         ,scheme-expression
+         (in-hole term term)
+         hole
+         #t #f
+	 string]
+   [term-sequence 
+     term
+     (code:line ... (code:comment "literal ellipsis"))])
+
+@itemize{
+
+@item{A term written @tt{identifier} is equivalent to the
+corresponding symbol, unless the identifier is bound by
+@scheme[term-let] (or in a @|pattern| elsewhere) or is
+@tt{hole} (as below).  }
+
+@item{A term written @tt{(term-sequence ...)} constructs a list of
+the terms constructed by the sequence elements.}
+
+@item{A term written @scheme[,scheme-expression] evaluates the @scheme[scheme-expression] and substitutes its value into the term at that point.}
+
+@item{A term written @tt{(in-hole @|tttterm| @|tttterm|)}
+ is the dual to the @pattern `in-hole' -- it accepts
+ a context and an expression and uses @scheme[plug] to combine
+them.}
+
+@item{A term written @tt{hole} produces a hole.}
+
+@item{A term written as a literal boolean or a string
+produces the boolean or the string.}
+}
+
+@defform[(term #, @|tttterm|)]{
+
+This form is used for construction of a term.
+
+ in
 the right-hand sides of reductions. It behaves similarly to
 quasiquote except for a few special forms that are
-recognized (listed below) and that names bound by `term-let' are
+recognized (listed below) and that names bound by @scheme[term-let] are
 implicitly substituted with the values that those names were
 bound to, expanding ellipses as in-place sublists (in the
 same manner as syntax-case patterns).
@@ -425,33 +509,14 @@ evaluates to
 
 It is an error for a term variable to appear in an
 expression with an ellipsis-depth different from the depth
-with which it was bound by `term-let'. It is also an error
-for two `term-let'-bound identifiers bound to lists of
+with which it was bound by @scheme[term-let]. It is also an error
+for two @scheme[term-let]-bound identifiers bound to lists of
 different lengths to appear together inside an ellipsis.
-
-The special forms recognized by term are:
-
-@itemize{
-@item{@scheme[(in-hole a b)]
-    This is the dual to the @pattern `in-hole' -- it accepts
-    a context and an expression and uses `plug' to combine
-    them.
-}@item{@scheme[(in-named-hole name a b)]
-
-    Like in-hole, but substitutes into a hole with a particular name.
-
-}@item{@scheme[hole]
-
-   This produces a hole.
-}@item{@scheme[(hole name)]
-
-    This produces a hole with the name `name'. To produce an unnamed
-    hole, use #f as the name.
-}}}
+}
 
 @defform/subs[(term-let ([tl-pat expr] ...) body)
               ([tl-pat identifier (tl-pat-ele ...)]
-               [tl-pat-ele tl-pat (code:line tl-pat ellipses)])]{
+               [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Matches each given id pattern to the value yielded by
 evaluating the corresponding expr and binds each variable in
@@ -459,18 +524,16 @@ the id pattern to the appropriate value (described
 below). These bindings are then accessible to the `term'
 syntactic form.
 
-Identifier-patterns are terms in the following grammar:
-
-where ellipses is the literal symbol consisting of three
-dots (and the ... indicates repetition as usual). If tl-pat
-is an identifier, it matches any value and binds it to the
-identifier, for use inside `term'. If it is a list, it
-matches only if the value being matched is a list value and
-only if every subpattern recursively matches the
-corresponding list element. There may be a single ellipsis
-in any list pattern; if one is present, the pattern before
-the ellipses may match multiple adjacent elements in the
-list value (possibly none).
+Note that each @scheme[ellipsis] should be the literal
+symbol consisting of three dots (and the ... elsewhere
+indicates repetition as usual). If @scheme[tl-pat] is an identifier,
+it matches any value and binds it to the identifier, for use
+inside @scheme[term]. If it is a list, it matches only if the value
+being matched is a list value and only if every subpattern
+recursively matches the corresponding list element. There
+may be a single ellipsis in any list pattern; if one is
+present, the pattern before the ellipses may match multiple
+adjacent elements in the list value (possibly none).  
 }
 
 @defform[(term-match language [#, @|ttpattern| expression] ...)]{
@@ -497,7 +560,7 @@ is signaled. If no patterns match, an error is signaled.
 The first argument to this function is an sexpression to
 plug into. The second argument is the sexpression to replace
 in the first argument. It returns the replaced term. This is
-also used when a @scheme[term] sub-expression contains @pattech[in-hole].
+also used when a @scheme[term] sub-expression contains @tt{in-hole}.
 }
 
 @defproc[(variable-not-in [t any?] [var symbol?]) symbol?]{
@@ -519,19 +582,12 @@ Does not expect the input symbols to be distinct, but does
 produce variables that are always distinct.
 }
 
-@defproc[(set-cache-size! [size (or/c false/c positive-integer?)]) void?]{
+@section{Languages}
 
-Changes the cache size; a #f disables the cache
-entirely. The default size is 350.
-
-The cache is per-pattern (ie, each pattern has a cache of
-size at most 350 (by default)) and is a simple table that
-maps expressions to how they matched the pattern. When the
-cache gets full, it is thrown away and a new cache is
-started.
-}
-
-@subsection{Languages}
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
 
 @defform/subs[(define-language lang-name 
                 (non-terminal-spec #, @|ttpattern| ...)
@@ -618,7 +674,12 @@ Returns #t if its argument was produced by `language', #f
 otherwise.
 }
 
-@subsection{Reduction Relations}
+@section{Reduction Relations}
+
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language reduction-case ...)
@@ -816,7 +877,12 @@ terminate.
   @scheme[reduction-relation]. A @scheme[with] form is an
   error elsewhere.  }
 
-@subsection{Metafunctions}
+@section{Metafunctions}
+
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
 
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
@@ -908,7 +974,12 @@ legtimate inputs according to @scheme[metafunction-name]'s contract,
 and @scheme[#f] otherwise.
 }
 
-@subsection{Testing}
+@section{Testing}
+
+All of the exports in this section are provided both by
+@schememodname[redex/reduction-semantics] (which includes
+all non-GUI portions of Redex) and also exported by
+@schememodname[redex] (which includes all of Redex).
 
 @defform[(test-equal e1 e2)]{
 
