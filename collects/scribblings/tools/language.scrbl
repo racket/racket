@@ -682,19 +682,36 @@ or
 and the use of the expanded code dictates which applies.
 
 See also
-@method[drscheme:language:language<%> front-end/interaction].
+@method[drscheme:language:language<%> front-end/interaction]
+and
+@method[drscheme:language:language<%> front-end/finished-complete-program].
+}
 
+@defmethod[(front-end/finished-complete-program [settings settings]) any]{
+  This method is called when @onscreen{Run} is clicked, but only after
+  @method[drscheme:language:language<%> front-end/complete-program]
+  has been called. Specifically, 
+  @method[drscheme:language:language<%> front-end/complete-program] is
+  first called to get a thunk that reads from the program. That thunk
+  is called some number of times, eventually returning @scheme[eof-object],
+  or raising an exception. Then, this method is called.
+ 
+  This method is called on the user's main eventspace thread, and without
+  a prompt or other control delimiter. It must return without raising an
+  error, or else the DrScheme window will be wedged.
 }
 
 @defmethod[(front-end/interaction [port input-port]
                                   [settings settings])
            (-> (or/c sexp/c syntax? eof-object?))]{
 This method is just like
-@method[drscheme:language:language<%> front-end/complete-program] except that it is called with program fragments, 
-for example the expressions entered in the interactions
-window. It is also used in other contexts by
-tools to expand single expressions.
+@method[drscheme:language:language<%> front-end/complete-program]
+except that it is called with program fragments, for example the
+expressions entered in the interactions window. It is also used in
+other contexts by tools to expand single expressions.
 
+See also
+@method[drscheme:langauge:language<%> front-end/finished-complete-program].
 }
 
 @defmethod[(get-comment-character)

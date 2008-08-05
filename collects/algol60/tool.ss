@@ -49,6 +49,7 @@
 
       (define lang%
         (class* object% (drscheme:language:language<%>)
+          (define/public (front-end/finished-complete-program settings) (void))
           (define/public (extra-repl-information settings port) (void))
           (define/public (get-reader-module) #f)
           (define/public (get-metadata a b) #f)

@@ -42,6 +42,7 @@
       default-settings?
       
       front-end/complete-program
+      front-end/finished-complete-program
       front-end/interaction
       config-panel
       on-execute
@@ -479,6 +480,9 @@
     (mixin (module-based-language<%>) (language<%>)
       (inherit get-module get-transformer-module use-namespace-require/copy-from-setting?
                get-init-code use-mred-launcher get-reader)
+      
+      (define/public (front-end/finished-complete-program settings) (void))
+      (define/public (module-based-language->language-mixin settings) (void))
       
       (define/pubment (capability-value s) 
         (inner (get-capability-default s) capability-value s))

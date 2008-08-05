@@ -1103,6 +1103,8 @@ TODO
              (update-running #f)
              (cleanup)
              (flush-output (get-value-port))
+             (when complete-program?
+               (send lang front-end/finished-complete-program settings))
              (queue-system-callback/sync
               (get-user-thread)
               (λ () ; =Kernel=, =Handler= 
