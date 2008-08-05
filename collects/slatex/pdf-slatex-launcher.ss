@@ -1,6 +1,7 @@
 
 (module pdf-slatex-launcher mzscheme
-  (require "slatex-wrapper.ss")
+  (require "slatex-wrapper.ss"
+           scheme/cmdline)
 
   (define argv (current-command-line-arguments))
   
