@@ -313,7 +313,7 @@
        [(tc-result: (Value: (? symbol? s)))
         (let* ([ftype (cond [(assq s methods) => cadr]
                             [else (tc-error/expr "send: method ~a not understood by class ~a" s c)])]
-               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)))])
+               [ret-ty (tc/funapp rcvr args (ret ftype) (map tc-expr (syntax->list args)) expected)])
           (if expected
               (begin (check-below ret-ty expected) (ret expected))
               ret-ty))]
