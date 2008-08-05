@@ -1321,18 +1321,21 @@ This produces an ACK message
       (let/ec escape 
         (for-each (run-single-test (get-int-pos) escape raw?) test-data))))
   
+  (define kill-menu-item "Force the Program to Quit")
+  
   (define (kill-tests)
+    
+    (next-test)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
-    
-    (test:menu-select "Scheme" "Kill")
-    
+    (test:menu-select "Scheme" kill-menu-item)
     (let ([win (wait-for-new-frame drscheme-frame)])
       (test:button-push "OK")
       (let ([drs2 (wait-for-new-frame win)])
         (unless (eq? drs2 drscheme-frame)
           (error 'kill-test1 "expected original drscheme frame to come back to the front"))))
     
+    (next-test)
     (type-in-definitions drscheme-frame "(kill-thread (current-thread))")
     (do-execute drscheme-frame #f)
     (let ([win (wait-for-new-frame drscheme-frame)])
@@ -1341,6 +1344,7 @@ This produces an ACK message
         (unless (eq? drs2 drscheme-frame)
           (error 'kill-test2 "expected original drscheme frame to come back to the front"))))
     
+    (next-test)
     (clear-definitions drscheme-frame)
     (do-execute drscheme-frame)
     (type-in-definitions
@@ -1348,7 +1352,7 @@ This produces an ACK message
      "(define (f) (queue-callback f) (error 'ouch)) (f)")
     (do-execute drscheme-frame #f)
     (sleep 1/2)
-    (test:menu-select "Scheme" "Kill")
+    (test:menu-select "Scheme" kill-menu-item)
     (let ([win (wait-for-new-frame drscheme-frame null 360)])
       (test:button-push "OK")
       (let ([drs2 (wait-for-new-frame win)])
@@ -1378,10 +1382,10 @@ This produces an ACK message
       
       (let* ([end (- (get-int-pos) 1)]
              [output (fetch-output drscheme-frame start end)]
-             [expected "reference to undefined identifier: x"])
+             [expected "{stop-multi.png} {stop-22x22.png} reference to undefined identifier: x"])
         (unless (equal? output expected)
           (failure)
-          (fprintf (current-error-port) "callcc-test: expected ~s, got ~s" expected output)))))
+          (fprintf (current-error-port) "callcc-test: expected ~s, got ~s\n" expected output)))))
   
   (define (random-seed-test)
     (define expression
@@ -1449,10 +1453,10 @@ This produces an ACK message
   
   (run-test-in-language-level #f)
   (run-test-in-language-level #t)
-  ;(kill-tests)
-  ;(callcc-test)
-  ;(top-interaction-test)
-  ;(final-report)
+  (kill-tests)
+  (callcc-test)
+  (top-interaction-test)
+  (final-report)
   )
 
 
