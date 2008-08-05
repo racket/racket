@@ -269,7 +269,7 @@ profile todo:
   
   ;; error-display-handler/stacktrace : string any (listof srcloc) -> void
   (define (error-display-handler/stacktrace msg exn [pre-stack #f])
-    (let* ([stack (or ;pre-stack
+    (let* ([stack (or pre-stack
                       (if (exn? exn)
                           (map cdr (filter cdr (continuation-mark-set->context (exn-continuation-marks exn))))
                           '()))]
