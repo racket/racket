@@ -141,7 +141,7 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt bound-vars size holes)
+  (define (generate-nt nt bound-vars size in-hole)
     (let loop ([nts (compiled-lang-lang lang)])
       (cond
         [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
@@ -149,17 +149,17 @@ To do a better job of not generating programs with free variables,
          (let* ([prods (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))]
                 [rhs ((next-non-terminal-decision) prods bound-vars size)]
                 [size (max 0 (sub1 size))])
-           (generate-pat (rhs-pattern rhs) bound-vars (rhs-var-info rhs) size holes))]
+           (generate-pat (rhs-pattern rhs) bound-vars (rhs-var-info rhs) size in-hole))]
         [else (loop (cdr nts))])))
     
   (define-struct found-vars (nt source bound-vars found-nt?))
-  (define (generate-pat pat bound-vars var-info size holes)
+  (define (generate-pat pat bound-vars var-info size in-hole)
     (let* ([found-vars-table (map (λ (binds) (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
                                   var-info)]
            [bindings (make-immutable-hasheq null)]
            [mismatches (make-immutable-hasheq null)])
-      (let loop ([pat pat] [holes holes])
-        (define (generate/retry #:gen [gen (λ (p) (loop p holes))] success? . subpatterns)
+      (let loop ([pat pat] [in-hole in-hole])
+        (define (generate/retry #:gen [gen (λ (p) (loop p in-hole))] success? . subpatterns)
           (let ([old-fvt found-vars-table] 
                 [old-bindings bindings]
                 [old-mismatches mismatches])
@@ -176,13 +176,6 @@ To do a better job of not generating programs with free variables,
                           (set! bindings old-bindings)
                           (set! mismatches old-mismatches)
                           (retry (sub1 remaining)))))))))
-        
-        (define (generate-hole name)
-          (let* ([not-in-hole (gensym)]
-                 [generate-contractum (hash-ref holes name not-in-hole)])
-            (if (eq? generate-contractum not-in-hole)
-                the-hole
-                (generate-contractum))))
         (match pat
           [`number ((next-number-decision) random-numbers)]
           [`(variable-except ,vars ...)
@@ -192,7 +185,7 @@ To do a better job of not generating programs with free variables,
            (generate/retry (λ (var) (not (memq var (compiled-lang-literals lang)))) 'variable)]
           [`(variable-prefix ,prefix) 
            (string->symbol (string-append (symbol->string prefix)
-                                          (symbol->string (loop 'variable holes))))]
+                                          (symbol->string (loop 'variable in-hole))))]
           [`string ((next-string-decision) lang-chars lang-lits attempt)]
           [`(side-condition ,pattern ,(? procedure? condition))
            (define (condition-bindings bindings)
@@ -200,14 +193,14 @@ To do a better job of not generating programs with free variables,
            (generate/retry (λ _ (condition (condition-bindings bindings))) pattern)]
           [`(name ,(? symbol? id) ,p)
            (define (generate/record)
-             (let ([term (loop p holes)])
+             (let ([term (loop p in-hole)])
                (set! bindings (hash-set bindings id term))
                term))
            (hash-ref bindings id generate/record)]
-          [`hole (generate-hole #f)]
+          [`hole (if in-hole (in-hole) the-hole)]
           [`(in-hole ,context ,contractum)
-           (loop context (hash-set holes #f (λ () (loop contractum holes))))]
-          [`(hide-hole ,pattern) (loop pattern (make-immutable-hasheq null))]
+           (loop context (λ () (loop contractum in-hole)))]
+          [`(hide-hole ,pattern) (loop pattern #f)]
           [`any
            (let-values ([(lang nt) ((next-any-decision) lang)])
              (generate* lang nt size attempt decisions@))]
@@ -215,8 +208,8 @@ To do a better job of not generating programs with free variables,
            (define ((generate-nt/underscored decorated) undecorated)
              (let* ([vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
                     [term (if (is-nt? lang undecorated)
-                              (generate-nt undecorated vars size holes)
-                              (generate-pat undecorated vars null size holes))])
+                              (generate-nt undecorated vars size in-hole)
+                              (generate-pat undecorated vars null size in-hole))])
                (begin
                  (set! found-vars-table (extend-found-vars decorated term found-vars-table))
                  term)))
@@ -242,10 +235,10 @@ To do a better job of not generating programs with free variables,
           [(? pair? pat)
            (if (or (null? (cdr pat))
                    (not (eq? '... (cadr pat))))
-               (cons (loop (car pat) holes)
-                     (loop (cdr pat) holes))
-               (append (build-list ((next-sequence-decision)) (λ (i) (loop (car pat) holes)))
-                       (loop (cddr pat) holes)))]
+               (cons (loop (car pat) in-hole)
+                     (loop (cdr pat) in-hole))
+               (append (build-list ((next-sequence-decision)) (λ (i) (loop (car pat) in-hole)))
+                       (loop (cddr pat) in-hole)))]
           [else
            (error 'generate "unknown pattern ~s\n" pat)]))))
   
@@ -281,7 +274,7 @@ To do a better job of not generating programs with free variables,
          [else found-vars]))
      found-vars-table))
   
-  (generate-pat nt '() '() size (make-immutable-hasheq null)))
+  (generate-pat nt '() '() size #f))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)

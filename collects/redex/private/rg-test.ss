@@ -410,7 +410,8 @@
      #:nt (patterns '(+ a A) '(+ a a) 'number 'number '(+ A a) 'hole '(+ a a) 'number 'number)
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 0 1) (+ 2 (+ 3 4))))
-  (test (generate lang (in-hole (in-hole ((in-hole hole 4) hole) 3) 5) 5 0) '(4 3))
+  
+  (test (generate lang (in-hole (in-hole (1 hole) hole) 5) 5 0) '(1 5))
   (test (generate lang hole 5 0) (term hole))
   (test (generate lang (hole h) 5 0) (term (hole h)))
   (test (generate lang (variable_1 (in-hole C variable_1)) 5 0
