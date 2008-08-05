@@ -101,7 +101,7 @@
                                (bind-exp snd))))]
       [(and (hole? fst)
             (hole? snd))
-       (equal? (hole-name fst) (hole-name snd))]
+       #t]
       [else (equal? fst snd)])))
 
 ;; rib-lt : rib rib -> boolean

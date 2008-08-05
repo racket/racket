@@ -410,7 +410,6 @@
      #:nt (patterns '(+ a A) '(+ a a) 'number 'number '(+ A a) 'hole '(+ a a) 'number 'number)
      #:num (build-list 5 (λ (x) (λ (_) x)))))
    '(+ (+ 0 1) (+ 2 (+ 3 4))))
-  (test (generate lang (in-named-hole h B 3) 5 0) '(6 3))
   (test (generate lang (in-hole (in-hole ((in-hole hole 4) hole) 3) 5) 5 0) '(4 3))
   (test (generate lang hole 5 0) (term hole))
   (test (generate lang (hole h) 5 0) (term (hole h)))
@@ -456,7 +455,7 @@
 (let ()
   (define-language lang
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
-  (test (generate lang e 5 0) (term ((hole #f) 1))))
+  (test (generate lang e 5 0) (term (hole 1))))
 
 (define (output-error-port thunk)
   (let ([port (open-output-string)])

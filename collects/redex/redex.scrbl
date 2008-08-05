@@ -172,7 +172,7 @@ all non-GUI portions of Redex) and also exported by
 This section covers Redex's @deftech{pattern} language, used
 in various ways:
 
-@(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole in-named-hole side-condition cross) 
+@(schemegrammar* #:literals (any number string variable variable-except variable-prefix variable-not-otherwise-mentioned hole name in-hole side-condition cross) 
    [pattern any 
             number 
             string 
@@ -181,11 +181,9 @@ in various ways:
             (variable-prefix symbol)
             variable-not-otherwise-mentioned
             hole
-            (hole symbol-or-false)
             symbol
             (name symbol pattern)
             (in-hole pattern pattern)
-            (in-named-hole symbol pattern pattern)
             (hide-hole pattern)
             (side-condition pattern guard)
             (cross symbol)
@@ -333,7 +331,7 @@ Multiple ellipses are allowed. For example, this @|pattern|:
 
 matches this sexpression:
 
-@schemeblock[(term (a a))]
+@schemeblock[(#, @|tttterm| (a a))]
 
 three different ways. One where the first @tt{a} in the @pattern
 matches nothing, and the second matches both of the
@@ -353,7 +351,7 @@ As an example, this @|pattern|:
 
 only matches this sexpression:
 
-@schemeblock[(term (a a))]
+@schemeblock[(#, @|tttterm| (a a))]
 
 one way, with each named @pattern matching a single a. Unlike
 the above, the two @|pattern|s with mismatched lengths is ruled
@@ -369,7 +367,7 @@ Thus, with the @|pattern|:
 
 and the expression
 
-@schemeblock[(term (a a))]
+@schemeblock[(#, @|tttterm| (a a))]
 
 two matches occur, one where @tt{x} is bound to @scheme['()] and
 @tt{y} is bound to @scheme['(a a)] and one where @tt{x} is bound to
@@ -453,6 +451,7 @@ stands for repetition unless otherwise indicated):
 	 string]
    [term-sequence 
      term
+     ,@scheme-expression
      (code:line ... (code:comment "literal ellipsis"))])
 
 @itemize{
@@ -465,7 +464,13 @@ corresponding symbol, unless the identifier is bound by
 @item{A term written @tt{(term-sequence ...)} constructs a list of
 the terms constructed by the sequence elements.}
 
-@item{A term written @scheme[,scheme-expression] evaluates the @scheme[scheme-expression] and substitutes its value into the term at that point.}
+@item{A term written @scheme[,scheme-expression] evaluates the
+@scheme[scheme-expression] and substitutes its value into the term at
+that point.}
+
+@item{A term written @scheme[,@scheme-expression] evaluates the
+@scheme[scheme-expression], which must produce a list. It then splices
+the contents of the list into the expression at that point in the sequence.}
 
 @item{A term written @tt{(in-hole @|tttterm| @|tttterm|)}
  is the dual to the @pattern `in-hole' -- it accepts

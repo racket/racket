@@ -86,10 +86,9 @@ before the pattern compiler is invoked.
   ;;                                     pict-builder
   ;;                                     (listof symbol)
   ;;                                     (listof (listof symbol))) -- keeps track of `primary' non-terminals
-  ;; hole-info = (union #f none symbol)
+  ;; hole-info = (union #f none)
   ;;               #f means we're not in a `in-hole' context
-  ;;               none means we're looking for a normal hole
-  ;;               symbol means we're looking for a named hole named by the symbol
+  ;;               none means we're looking for a hole
   
   (define-struct compiled-lang (lang ht list-ht across-ht across-list-ht has-hole-ht
                                      cache bind-names-cache pict-builder literals
@@ -208,10 +207,7 @@ before the pattern compiler is invoked.
          (loop p1)
          (loop p2)]
         [`(hide-hole ,p) (loop p)]
-	[`(in-named-hole ,s ,p1 ,p2)
-         (loop p1)
-         (loop p2)]
-	[`(side-condition ,p ,g)
+        [`(side-condition ,p ,g)
          (loop p)]
 	[`(cross ,s) (void)]
 	[_
@@ -235,7 +231,6 @@ before the pattern compiler is invoked.
          [`(variable-prefix ,var) #f]
          [`variable-not-otherwise-mentioned #f]
          [`hole #t]
-         [`(hole ,(? symbol? hole-name)) #t]
          [(? string?) #f]
          [(? symbol?)
           ;; cannot be a non-terminal, otherwise this function isn't called
@@ -245,8 +240,6 @@ before the pattern compiler is invoked.
          [`(in-hole ,context ,contractum)
            (recur contractum)]
          [`(hide-hole ,arg) #f]
-         [`(in-named-hole ,hole-name ,context ,contractum)
-           (recur contractum)]
          [`(side-condition ,pat ,condition)
            (recur pat)]
          [(? list?)
@@ -354,7 +347,6 @@ before the pattern compiler is invoked.
            [`(variable-prefix ,var) (lambda (l) pattern)]
            [`variable-not-otherwise-mentioned (λ (l) pattern)]
            [`hole  (lambda (l) 'hole)]
-           [`(hole ,(? symbol? hole-name)) (lambda (l) `(hole ,hole-name))]
            [(? string?) (lambda (l) pattern)]
            [(? symbol?) 
             (cond
@@ -382,13 +374,6 @@ before the pattern compiler is invoked.
             (let ([m (loop p)])
               (lambda (l)
                 `(hide-hole ,(m l))))]
-           [`(in-named-hole ,hole-name ,context ,contractum)
-            (let ([match-context (loop context)]
-                  [match-contractum (loop contractum)])
-              (lambda (l)
-                `(in-named-hole ,hole-name
-                                ,(match-context l)
-                                ,(match-contractum l))))]
            [`(side-condition ,pat ,condition)
             (let ([patf (loop pat)])
               (lambda (l)
@@ -468,7 +453,6 @@ before the pattern compiler is invoked.
       [`variable-not-otherwise-mentioned #f]
       [`(variable-prefix ,var) #f]
       [`hole  #t]
-      [`(hole ,(? symbol? hole-name)) #t]
       [(? string?) #f]
       [(? symbol?)
        (handle-symbol pattern)]
@@ -478,8 +462,6 @@ before the pattern compiler is invoked.
         (recur context)]
       [`(hide-hole ,p)
        (recur p)]
-      [`(in-named-hole ,hole-name ,context ,contractum)
-        (recur context)]
       [`(side-condition ,pat ,condition)
         (recur pat)]
       [(? list?)
@@ -518,7 +500,6 @@ before the pattern compiler is invoked.
       [`variable-not-otherwise-mentioned #t]
       [`(variable-prefix ,prefix) #t]
       [`hole #t]
-      [`(hole ,(? symbol? hole-name)) #t]
       [(? string?) #t]
       [(? symbol?) (handle-sym pattern)]
       [`(name ,name ,pat)
@@ -527,8 +508,6 @@ before the pattern compiler is invoked.
         (recur context)]
       [`(hide-hole ,p)
        (recur p)]
-      [`(in-named-hole ,hole-name ,context ,contractum)
-        (recur context)]
       [`(side-condition ,pat ,condition)
         (recur pat)]
       [(? list?)
@@ -742,12 +721,6 @@ before the pattern compiler is invoked.
                      (map (λ (match) (make-mtch (mtch-bindings match) (mtch-context match) none))
                           matches))))
             #f))]
-        [`(in-named-hole ,hole-id ,context ,contractum) 
-          (let-values ([(match-context ctxt-has-hole?) (compile-pattern/default-cache context)]
-                       [(match-contractum contractum-has-hole?) (compile-pattern/default-cache contractum)])
-            (values
-             (match-in-hole context contractum exp match-context match-contractum hole-id)
-             (or ctxt-has-hole? contractum-has-hole?)))]
         
         [`(side-condition ,pat ,condition)
           (let-values ([(match-pat has-hole?) (compile-pattern/default-cache pat)])
@@ -1124,15 +1097,14 @@ before the pattern compiler is invoked.
     (let ([mis-matched-hole
            (λ (exp)
              (and (hole? exp)
-                  (equal? (hole-name exp) hole-id)
                   (list (make-mtch (make-bindings '())
-                                   (make-hole/intern (hole-name exp))
+                                   the-hole
                                    none))))])
       (lambda (exp hole-info)
         (if hole-info
             (if (eq? hole-id hole-info)
                 (list (make-mtch (make-bindings '())
-                                 (make-hole/intern hole-info)
+                                 the-hole
                                  exp))
                 (mis-matched-hole exp))
             (mis-matched-hole exp)))))
@@ -1467,7 +1439,6 @@ before the pattern compiler is invoked.
              (loop pat (cons (make-bind name '()) ribs)))]
         [`(in-hole ,context ,contractum) (loop context (loop contractum ribs))]
         [`(hide-hole ,p) (loop p ribs)]
-        [`(in-named-hole ,hole-name ,context ,contractum) (loop context (loop contractum ribs))]
         [`(side-condition ,pat ,test) (loop pat ribs)]
         [(? list?)
          (let-values ([(rewritten has-hole?) (rewrite-ellipses non-underscore-binder? pattern (lambda (x) (values x #f)))])
@@ -1540,28 +1511,11 @@ before the pattern compiler is invoked.
 
 |#
   (define (context? x) #t)
-  (define-values (make-hole/intern hole-name hole?)
+  (define-values (the-hole hole?)
     (let ()
       (define-struct hole () #f)
-      (define-struct (named-hole hole) (name) #f)
-      (define (hole-name h)
-        (cond
-          [(named-hole? h) 
-           (named-hole-name h)]
-          [(hole? h)
-           none]
-          [else (error 'hole-name "expected a hole, given ~e" h)]))
-      (define (make-hole/intern a)
-        (or (hash-table-get hole-cache a #f)
-            (let ([h (make-named-hole a)])
-              (hash-table-put! hole-cache a h)
-              h)))
-      (define the-hole?
-        (let ([hole? (λ (x) (or (hole? x) (named-hole? x)))])
-          hole?))
-      (define hole-cache (make-hash-table 'equal))
-      (hash-table-put! hole-cache none (make-hole)) ;; see the cache to avoid a case in make-hole/intern
-      (values make-hole/intern hole-name the-hole?)))
+      (define the-hole (make-hole))
+      (values the-hole hole?)))
   
   (define (build-flat-context exp) exp)
   (define (build-cons-context e1 e2) (cons e1 e2))
@@ -1583,8 +1537,7 @@ before the pattern compiler is invoked.
                         (cdr exp)
                         (loop (cdr exp))))]
              
-             [(and (hole? exp) 
-                   (equal? (hole-name exp) hole-info))
+             [(hole? exp)
               (set! done? #t)
               hole-stuff]
              [else exp])))]))
@@ -1642,6 +1595,6 @@ before the pattern compiler is invoked.
            none? none
            
            make-repeat
-           make-hole/intern hole? hole-name
+           the-hole hole?
            rewrite-ellipses
            build-compatible-context-language))

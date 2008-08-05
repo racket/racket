@@ -181,7 +181,7 @@ To do a better job of not generating programs with free variables,
           (let* ([not-in-hole (gensym)]
                  [generate-contractum (hash-ref holes name not-in-hole)])
             (if (eq? generate-contractum not-in-hole)
-                (if name (make-hole/intern name) (term hole))
+                the-hole
                 (generate-contractum))))
         (match pat
           [`number ((next-number-decision) random-numbers)]
@@ -207,9 +207,6 @@ To do a better job of not generating programs with free variables,
           [`hole (generate-hole #f)]
           [`(in-hole ,context ,contractum)
            (loop context (hash-set holes #f (λ () (loop contractum holes))))]
-          [`(hole ,(? symbol? name)) (generate-hole name)]
-          [`(in-named-hole ,name ,context ,contractum)
-           (loop context (hash-set holes name (λ () (loop contractum holes))))]
           [`(hide-hole ,pattern) (loop pattern (make-immutable-hasheq null))]
           [`any
            (let-values ([(lang nt) ((next-any-decision) lang)])

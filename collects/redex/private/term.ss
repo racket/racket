@@ -72,13 +72,7 @@
            (syntax (unsyntax (plug (term id) (term body))))]
           [(in-hole . x)
            (raise-syntax-error 'term "malformed in-hole" orig-stx stx)]
-          [(in-named-hole name id body)
-           (syntax (unsyntax (plug (term id) (term body) (or (term name) none))))]
-          [(in-named-hole . x)
-           (raise-syntax-error 'term "malformed in-named-hole" orig-stx stx)]
-          [hole (syntax (unsyntax (make-hole/intern none)))]
-          [(hole #f) (syntax (unsyntax (make-hole/intern none)))]
-          [(hole stuff) (syntax (unsyntax (make-hole/intern 'stuff)))]
+          [hole (syntax (unsyntax the-hole))]
           [(x ...)
            (with-syntax ([(x-rewrite ...) 
                           (let i-loop ([xs (syntax->list (syntax (x ...)))])
