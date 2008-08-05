@@ -200,17 +200,20 @@
          (λ ()
            (uncaught-exception-handler
             (λ (e)
+              (define e1 #f)
               (uncaught-exception-handler default-handler)
-              (parameterize ([current-namespace ns])
-                (with-handlers ([void (λ (e) (raise-hopeless-syntax-error
-                                              "invalid language" lang))])
-                  (namespace-require (syntax->datum lang)))
-                (unless (memq '#%top-interaction (namespace-mapped-symbols ns))
-                  (raise-hopeless-syntax-error
-                   "invalid language (existing module, but no language bindings)"
-                   lang)))
+              ;; use this to catch the error so it can be raised instead of e
+              (with-handlers ([void (lambda (e) (set! e1 e))])
+                (parameterize ([current-namespace ns])
+                  (with-handlers ([void (λ (e) (raise-hopeless-syntax-error
+                                                "invalid language" lang))])
+                    (namespace-require (syntax->datum lang)))
+                  (unless (memq '#%top-interaction (namespace-mapped-symbols ns))
+                    (raise-hopeless-syntax-error
+                     "invalid language (existing module, but no language bindings)"
+                     lang))))
               (thread-cell-set! hopeless-repl #f)
-              (default-handler e))))
+              (default-handler (or e1 e)))))
          module-expr
          (λ () (uncaught-exception-handler default-handler)) ; restore handler
          #`(current-module-declare-name #f)
