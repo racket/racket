@@ -376,10 +376,20 @@
     (cond
       [cancel? (void)]
       [(from-web?)
-       (install-plt-from-url (send url-text-field get-value) parent)]
+       (install-plt-from-url (trim-whitespace (send url-text-field get-value)) parent)]
       [else 
        (parameterize ([error-display-handler drscheme:init:original-error-display-handler])
          (run-installer (string->path (send file-text-field get-value))))]))
+  
+  ;; trim-whitespace: string -> string
+  ;; Trims the whitespace surrounding a string.
+  (define (trim-whitespace a-str)
+    (cond
+      [(regexp-match #px"^\\s*(.*[^\\s])\\s*$"
+                     a-str)
+       => second]
+      [else
+       a-str]))
   
   ;; install-plt-from-url : string (union #f dialog%) -> void
   ;; downloads and installs a .plt file from the given url
