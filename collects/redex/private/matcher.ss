@@ -196,7 +196,6 @@ before the pattern compiler is invoked.
 	[`(variable-prefix ,s) (void)]
         [`variable-not-otherwise-mentioned (void)]
 	[`hole (void)]
-	[`(hole ,s) (void)]
 	[(? symbol? s) 
          (unless (regexp-match #rx"_" (symbol->string s))
            (unless (regexp-match #rx"^\\.\\.\\." (symbol->string s))
@@ -653,8 +652,6 @@ before the pattern compiler is invoked.
           #f)]
         [`hole
           (values (match-hole none) #t)]
-        [`(hole ,hole-id)
-          (values (match-hole (or hole-id none)) #t)]
         [(? string?)
          (values
           (lambda (exp hole-info)
