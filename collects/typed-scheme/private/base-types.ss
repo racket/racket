@@ -39,7 +39,7 @@
                       [(_ mod) 
                        (datum->syntax
                         stx
-                        `(require . ,(map (lambda (nm* nms*) (datum->syntax stx `(rename ,#'mod ,nm* ,nms*)))
+                        `(require . ,(map (lambda (nm* nms*) (datum->syntax stx `(rename-in ,#'mod [,nm* ,nms*])))
                                           (list 'nm ...)
                                           (list #'nms ...))))]))                  
                   (define-syntax provider (lambda (stx) #'(begin (provide (rename-out [nms nm])) ...)))
