@@ -149,7 +149,7 @@ static int use_perma_cache = 1;
 
 static Scheme_Object *read_list(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
-				int closer,
+				int opener, int closer,
 				int shape, int use_stack,
 				Scheme_Hash_Table **ht,
 				Scheme_Object *indentation,
@@ -172,7 +172,7 @@ static Scheme_Object *read_quote(char *who, Scheme_Object *quote_symbol, int len
 				 ReadParams *params);
 static Scheme_Object *read_vector(Scheme_Object *port, Scheme_Object *stxsrc,
 				  long line, long col, long pos,
-				  char closer,
+				  int opener, char closer,
 				  long reqLen, const mzchar *reqBuffer,
 				  Scheme_Hash_Table **ht,
 				  Scheme_Object *indentation,
@@ -211,7 +211,7 @@ static Scheme_Object *read_box(Scheme_Object *port, Scheme_Object *stxsrc,
 			       ReadParams *params);
 static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
-				char closer, int eq,
+				int opener, char closer, int eq,
 				Scheme_Hash_Table **ht,
 				Scheme_Object *indentation,
 				ReadParams *params);
@@ -981,19 +981,19 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
       unexpected_closer(ch, port, stxsrc, line, col, pos, indentation, params);
       return NULL;
     case '(':
-      return read_list(port, stxsrc, line, col, pos, ')', mz_shape_cons, 0, ht, indentation, params);
+      return read_list(port, stxsrc, line, col, pos, ch, ')', mz_shape_cons, 0, ht, indentation, params);
     case '[':
       if (!params->square_brackets_are_parens) {
 	scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: illegal use of open square bracket");
 	return NULL;
       } else
-	return read_list(port, stxsrc, line, col, pos, ']', mz_shape_cons, 0, ht, indentation, params);
+	return read_list(port, stxsrc, line, col, pos, ch, ']', mz_shape_cons, 0, ht, indentation, params);
     case '{':
       if (!params->curly_braces_are_parens) {
 	scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: illegal use of open curly brace");
 	return NULL;
       } else
-	return read_list(port, stxsrc, line, col, pos, '}', mz_shape_cons, 0, ht, indentation, params);
+	return read_list(port, stxsrc, line, col, pos, ch, '}', mz_shape_cons, 0, ht, indentation, params);
     case '|':
       special_value = read_symbol(ch, 1, port, stxsrc, line, col, pos, ht, indentation, params, table);
       break;
@@ -1133,7 +1133,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	  break;
 	case '(':
 	  if (!params->honu_mode) {
-	    return read_vector(port, stxsrc, line, col, pos, ')', -1, NULL, ht, indentation, params);
+	    return read_vector(port, stxsrc, line, col, pos, ch, ')', -1, NULL, ht, indentation, params);
 	  }
 	  break;
 	case '[':
@@ -1142,7 +1142,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation, "read: bad syntax `#['");
 	      return NULL;
 	    } else
-	      return read_vector(port, stxsrc, line, col, pos, ']', -1, NULL, ht, indentation, params);
+	      return read_vector(port, stxsrc, line, col, pos, ch, ']', -1, NULL, ht, indentation, params);
 	  }
 	  break;
 	case '{':
@@ -1151,7 +1151,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      scheme_read_err(port, stxsrc, line, col, pos, 2, 0, indentation, "read: bad syntax `#{'");
 	      return NULL;
 	    } else
-	      return read_vector(port, stxsrc, line, col, pos, '}', -1, NULL, ht, indentation, params);
+	      return read_vector(port, stxsrc, line, col, pos, ch, '}', -1, NULL, ht, indentation, params);
 	  }
 	  break;
 	case '\\':
@@ -1241,7 +1241,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
               else if (effective_ch == '{')
                 ch = '}';
 
-              v = read_vector(port, stxsrc, line, col, pos, ch, -1, NULL, ht, indentation, params);
+              v = read_vector(port, stxsrc, line, col, pos, orig_ch, ch, -1, NULL, ht, indentation, params);
               if (stxsrc)
                 v = SCHEME_STX_VAL(v);
 
@@ -1626,11 +1626,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
                 effective_ch = readtable_effective_char(table, ch);
 
 		if (effective_ch == '(')
-		  return read_hash(port, stxsrc, line, col, pos, ')', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, ')', (scanpos == 4), ht, indentation, params);
 		if (effective_ch == '[' && params->square_brackets_are_parens)
-		  return read_hash(port, stxsrc, line, col, pos, ']', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, ']', (scanpos == 4), ht, indentation, params);
 		if (effective_ch == '{' && params->curly_braces_are_parens)
-		  return read_hash(port, stxsrc, line, col, pos, '}', (scanpos == 4), ht, indentation, params);
+		  return read_hash(port, stxsrc, line, col, pos, ch, '}', (scanpos == 4), ht, indentation, params);
 	      }
 
 	      /* Report an error. So far, we read 'ha', then scanpos chars of str, then ch. */
@@ -1778,11 +1778,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
             effective_ch = readtable_effective_char(table, ch);
 
 	    if (effective_ch == '(')
-	      return read_vector(port, stxsrc, line, col, pos, ')', vector_length, vecbuf, ht, indentation, params);
+	      return read_vector(port, stxsrc, line, col, pos, ch, ')', vector_length, vecbuf, ht, indentation, params);
 	    if (effective_ch == '[' && params->square_brackets_are_parens)
-	      return read_vector(port, stxsrc, line, col, pos, ']', vector_length, vecbuf, ht, indentation, params);
+	      return read_vector(port, stxsrc, line, col, pos, ch, ']', vector_length, vecbuf, ht, indentation, params);
 	    if (effective_ch == '{' && params->curly_braces_are_parens)
-	      return read_vector(port, stxsrc, line, col, pos, '}', vector_length, vecbuf, ht, indentation, params);
+	      return read_vector(port, stxsrc, line, col, pos, ch, '}', vector_length, vecbuf, ht, indentation, params);
 
 	    if (ch == '#' && (vector_length != -1)) {
 	      /* Not a vector after all: a graph reference */
@@ -2591,7 +2591,7 @@ static Scheme_Object *combine_angle_brackets(Scheme_Object *list);
 static Scheme_Object *
 read_list(Scheme_Object *port,
 	  Scheme_Object *stxsrc, long line, long col, long pos,
-	  int closer, int shape, int use_stack,
+	  int opener, int closer, int shape, int use_stack,
 	  Scheme_Hash_Table **ht,
 	  Scheme_Object *indentation,
 	  ReadParams *params)
@@ -2646,7 +2646,10 @@ read_list(Scheme_Object *port,
       }
 
       scheme_read_err(port, stxsrc, startline, startcol, start, MINSPAN(port, start, init_span), EOF, indentation,
-		      "read: expected a %s%s", closer_name(params, closer), suggestion);
+		      "read: expected a %s to close `%c'%s", 
+                      closer_name(params, closer), 
+                      opener,
+                      suggestion);
       return NULL;
     }
 
@@ -2727,7 +2730,7 @@ read_list(Scheme_Object *port,
 	long xl, xc, xp;
 	scheme_tell_all(port, &xl, &xc, &xp);
 	car = read_list(port, stxsrc, xl, xc, xp,
-			((effective_ch == '(') ? ')' : ((effective_ch == '[') ? ']' : '}')),
+			ch, ((effective_ch == '(') ? ')' : ((effective_ch == '[') ? ']' : '}')),
 			mz_shape_hash_elem, use_stack, ht, indentation, params);
 	/* car is guaranteed to have an appropriate shape */
       }
@@ -3336,7 +3339,7 @@ char *scheme_extract_indentation_suggestions(Scheme_Object *indentation)
 static Scheme_Object *
 read_vector (Scheme_Object *port,
 	     Scheme_Object *stxsrc, long line, long col, long pos,
-	     char closer,
+	     int opener, char closer,
 	     long requestLength, const mzchar *reqBuffer,
 	     Scheme_Hash_Table **ht,
 	     Scheme_Object *indentation, ReadParams *params)
@@ -3346,7 +3349,7 @@ read_vector (Scheme_Object *port,
   Scheme_Object *lresult, *obj, *vec, **els;
   int len, i;
 
-  lresult = read_list(port, stxsrc, line, col, pos, closer, mz_shape_vec, 1, ht, indentation, params);
+  lresult = read_list(port, stxsrc, line, col, pos, opener, closer, mz_shape_vec, 1, ht, indentation, params);
 
   if (requestLength == -2) {
     scheme_raise_out_of_memory("read", "making vector of size %5", reqBuffer);
@@ -4027,14 +4030,14 @@ static Scheme_Object *read_box(Scheme_Object *port,
 /* "(" has been read */
 static Scheme_Object *read_hash(Scheme_Object *port, Scheme_Object *stxsrc,
 				long line, long col, long pos,
-				char closer,  int eq,
+				int opener, char closer,  int eq,
 				Scheme_Hash_Table **ht,
 				Scheme_Object *indentation, ReadParams *params)
 {
   Scheme_Object *l;
 
   /* using mz_shape_hash_list ensures that l is a list of pairs */
-  l = read_list(port, stxsrc, line, col, pos, closer, mz_shape_hash_list, 0, ht, indentation, params);
+  l = read_list(port, stxsrc, line, col, pos, opener, closer, mz_shape_hash_list, 0, ht, indentation, params);
 
   if (stxsrc) {
     Scheme_Object *key, *val;
