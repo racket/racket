@@ -196,7 +196,7 @@
             (namespace-require lang))
           (unless (memq '#%top-interaction (namespace-mapped-symbols))
             (raise-hopeless-syntax-error
-             "invalid language (existing module, but no language bindings)"
+             "invalid language (no #%top-interaction binding)"
              lang)))
         (define (*init)
           ;; the prompt makes it continue after an error
