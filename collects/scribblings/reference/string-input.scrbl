@@ -72,7 +72,7 @@ Like @scheme[read-line], but reads bytes and produces a byte string.}
 
 @defproc[(read-string [amt exact-nonnegative-integer?]
                       [in input-port? (current-input-port)])
-         (or/c string? eof-object)]{
+         (or/c string? eof-object?)]{
 
 Returns a string containing the next @scheme[amt] characters from
 @scheme[in].
@@ -93,7 +93,7 @@ encountering an error, the characters are dropped.}
 
 @defproc[(read-bytes [amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
-         (or/c bytes? eof-object)]{
+         (or/c bytes? eof-object?)]{
 Like @scheme[read-string], but reads bytes and produces a byte string.}
 
 @defproc[(read-string! [str (and/c string? (not/c immutable?))]
@@ -180,7 +180,7 @@ no bytes will have been read from @scheme[in].}
 @defproc[(peek-string [amt exact-nonnegative-integer?]
                       [skip-bytes-amt exact-nonnegative-integer?]
                       [in input-port? (current-input-port)])
-         (or/c string? eof-object)]{
+         (or/c string? eof-object?)]{
 
 Similar to @scheme[read-string], except that the returned characters
 are preserved in the port for future reads. (More precisely, undecoded
@@ -207,7 +207,7 @@ read.}
 @defproc[(peek-bytes [amt exact-nonnegative-integer?]
                      [skip-bytes-amt exact-nonnegative-integer?]
                      [in input-port? (current-input-port)])
-         (or/c bytes? eof-object)]{
+         (or/c bytes? eof-object?)]{
 Like @scheme[peek-string], but peeks bytes and produces a byte string.}
 
 @defproc[(peek-string! [str (and/c string? (not/c immutable?))]

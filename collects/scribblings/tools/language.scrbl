@@ -693,7 +693,7 @@ and
   has been called. Specifically, 
   @method[drscheme:language:language<%> front-end/complete-program] is
   first called to get a thunk that reads from the program. That thunk
-  is called some number of times, eventually returning @scheme[eof-object],
+  is called some number of times, eventually returning @scheme[eof],
   or raising an exception. Then, this method is called.
  
   This method is called on the user's main eventspace thread, and without
