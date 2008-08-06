@@ -28,6 +28,8 @@
            clear-definitions
            type-in-definitions
            type-in-interactions
+           paste-in-definitions
+           paste-in-interactions
            type-string
            wait
            wait-pending
@@ -188,26 +190,30 @@
     (fw:test:menu-select "Edit" (if (eq? (system-type) 'macos)
 				    "Clear"
 				    "Delete")))
-    
-  
-  (define (type-in-definitions frame str)
-    (type-in-definitions/interactions (lambda (x) (send x get-definitions-canvas)) frame str))
-  (define (type-in-interactions frame str)
-    (type-in-definitions/interactions (lambda (x) (send x get-interactions-canvas)) frame str))
 
-  (define (type-in-definitions/interactions get-canvas frame str/sexp)
+  (define (type-in-definitions frame str)
+    (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #f))
+  (define (type-in-interactions frame str)
+    (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #f))
+  (define (paste-in-definitions frame str)
+    (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #t))
+  (define (paste-in-interactions frame str)
+    (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #t))
+
+  (define (put-in-frame get-canvas frame str/sexp paste?)
     (let ([str (if (string? str/sexp)
 		   str/sexp
 		   (let ([port (open-output-string)])
 		     (parameterize ([current-output-port port])
 		       (write str/sexp port))
 		     (get-output-string port)))])
-      (verify-drscheme-frame-frontmost 'type-in-definitions/interactions frame)
+      (verify-drscheme-frame-frontmost 'put-in-frame frame)
       (let ([canvas (get-canvas frame)])
 	(fw:test:new-window canvas)
-	(send (send canvas get-editor) set-caret-owner #f)
-	(type-string str))))
-  
+	(let ([editor (send canvas get-editor)])
+          (send editor set-caret-owner #f)
+          (if paste? (send editor insert str) (type-string str))))))
+
   ;; type-string : string -> void
   ;; to call test:keystroke repeatedly with the characters
   (define (type-string str)
