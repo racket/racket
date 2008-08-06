@@ -1,10 +1,12 @@
 #lang scheme/gui
 (require "drscheme-test-util.ss" mzlib/etc framework scheme/string)
 
-(provide test t run-test in-here write-test-modules)
+(provide test t rx run-test in-here write-test-modules)
 
-;; utility to use with scribble/reader
+;; utilities to use with scribble/reader
 (define t string-append)
+(define (rx . strs)
+  (regexp (regexp-replace* #rx" *\n *" (string-append* strs) ".*")))
 
 (define-struct test (definitions  ; string
                      interactions ; (union #f string)
@@ -50,7 +52,7 @@
                      get-text
                      (send interactions-text paragraph-start-position 2)
                      (send interactions-text paragraph-end-position 2))])
-          (unless (string=? "> " after-execute-output)
+          (unless (or (test-all? test) (string=? "> " after-execute-output))
             (printf "FAILED: ~a\n        ~a\n        expected no output after execution, got: ~s\n"
                     (test-definitions test)
                     (or (test-interactions test) 'no-interactions)
@@ -80,9 +82,7 @@
                   (test-definitions test)
                   (or (test-interactions test) 'no-interactions)
                   (test-result test)
-                  text)
-          (sleep 1000
-                 ))))))
+                  text))))))
 
 (define (run-test)
   (set-language-level! '("Module") #t)

@@ -172,6 +172,11 @@
                  more)))
             (transform-module path expr)))
         (define modspec (or path `',(syntax-e name)))
+        (define (check-interactive-language)
+          (unless (memq '#%top-interaction (namespace-mapped-symbols))
+            (raise-hopeless-syntax-error
+             "invalid language (no #%top-interaction binding)"
+             lang)))
         ;; We're about to send the module expression to drscheme now, the rest
         ;; of the setup is done in `front-end/finished-complete-program' below,
         ;; so use `repl-init-thunk' to store an appropriate continuation for
@@ -194,15 +199,13 @@
                                   (raise-hopeless-exception
                                    e "invalid language specification"))])
             (namespace-require lang))
-          (unless (memq '#%top-interaction (namespace-mapped-symbols))
-            (raise-hopeless-syntax-error
-             "invalid language (no #%top-interaction binding)"
-             lang)))
+          (check-interactive-language))
         (define (*init)
           ;; the prompt makes it continue after an error
           (call-with-continuation-prompt
            (λ () (dynamic-require modspec #f)))
-          (current-namespace (module->namespace modspec)))
+          (current-namespace (module->namespace modspec))
+          (check-interactive-language))
         ;; here's where they're all combined with the module expression
         (expr-getter *pre module-expr *post))
       
