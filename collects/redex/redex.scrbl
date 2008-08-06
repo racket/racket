@@ -82,10 +82,9 @@ reduction semantics, plus a suite of tools for working with the
 semantics. 
 
 This is a reference manual for Redex. See
-@link["http://www.cs.uchicago.edu/~robby/plt-redex/"]{
-@tt{http://www.cs.uchicago.edu/~robby/plt-redex/}} for a gentler
-overview. (See also the @tt{examples} subdirectory in the @tt{redex}
-collection.)
+@link["http://redex.plt-scheme.org/"]{@tt{http://redex.plt-scheme.org/}}
+for a gentler overview. (See also the @tt{examples} subdirectory in
+the @tt{redex} collection.)
 
 To load Redex use: @defmodule[redex] which provides all of
 the names documented in this library.
