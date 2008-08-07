@@ -1,4 +1,4 @@
-("robby" "redex.plt" 5 0)
+PLT v4.1
 
   EXTENSIONS:
 
@@ -64,6 +64,10 @@
 
   - an extended language can now define multiple non-terminals
     together
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+below here were the versions of Redex that appeared in PLaneT
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 ("robby" "redex.plt" 4 4)
 
