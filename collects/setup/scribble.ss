@@ -34,7 +34,7 @@
 
 (define (filter-user-docs docs make-user?)
   (cond ;; Specifically disabled user stuff, filter
-        [(not make-user?) (filter main-doc? docs) (exit)]
+        [(not make-user?) (filter main-doc? docs)]
         ;; If we've built user-specific before, keep building
         [(file-exists? (build-path (find-user-doc-dir) "index.html")) docs]
         ;; Otherwise, see if we need it:
