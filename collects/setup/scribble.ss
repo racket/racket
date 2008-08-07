@@ -4,6 +4,7 @@
          "dirs.ss"
          "private/path-utils.ss"
          "main-collects.ss"
+         "main-doc.ss"
          scheme/class
          scheme/list
          scheme/file
@@ -28,14 +29,12 @@
                      vers rendered? failed?)
   #:mutable)
 
-(define (user-doc? doc)
-  (or (memq 'user-doc-root (doc-flags doc))
-      (memq 'user-doc (doc-flags doc))
-      (not (doc-under-main? doc))))
+(define (main-doc? doc)
+  (pair? (path->main-doc-relative (doc-dest-dir doc))))
 
 (define (filter-user-docs docs make-user?)
   (cond ;; Specifically disabled user stuff, filter
-        [(not make-user?) (filter-not user-doc? docs)]
+        [(not make-user?) (filter main-doc? docs) (exit)]
         ;; If we've built user-specific before, keep building
         [(file-exists? (build-path (find-user-doc-dir) "index.html")) docs]
         ;; Otherwise, see if we need it:
@@ -44,7 +43,7 @@
                            (memq 'no-depend-on (doc-flags doc)))))
                 docs)
          docs]
-        [else (filter-not user-doc? docs)])) ; Don't need them, so drop them
+        [else (filter main-doc? docs)])) ; Don't need them, so drop them
 
 (define (setup-scribblings
          only-dirs          ; limits doc builds
