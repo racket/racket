@@ -196,8 +196,9 @@
           (current-module-declare-name #f)
           ;; syntax error => try to require the language to get a working repl
           (with-handlers ([void (λ (e)
-                                  (raise-hopeless-exception
-                                   e "invalid language specification"))])
+                                  (raise-hopeless-syntax-error
+                                   "invalid language specification"
+                                   lang))])
             (namespace-require lang))
           (check-interactive-language))
         (define (*init)

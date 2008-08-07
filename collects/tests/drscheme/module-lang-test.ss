@@ -199,3 +199,12 @@
           Module Language: invalid language \(no #%top-interaction binding\)
           Interactions disabled}
       #t)
+(test @t{(module xx (file "@in-here{this-file-does-not-exist}")
+           (define x 1)
+           (* x 123))}
+      #f
+      @rx{cannot open input file
+          No such file or directory
+          Module Language: invalid language specification
+          Interactions disabled}
+      #t)
