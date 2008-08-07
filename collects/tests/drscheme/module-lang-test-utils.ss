@@ -41,7 +41,7 @@
 (define (single-test test)
   (let/ec k
     (clear-definitions drs)
-    (paste-in-definitions drs (test-definitions test))
+    (insert-in-definitions drs (test-definitions test))
     (do-execute drs)
 
     (let ([ints (test-interactions test)])

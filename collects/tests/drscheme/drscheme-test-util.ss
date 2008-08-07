@@ -28,8 +28,8 @@
            clear-definitions
            type-in-definitions
            type-in-interactions
-           paste-in-definitions
-           paste-in-interactions
+           insert-in-definitions
+           insert-in-interactions
            type-string
            wait
            wait-pending
@@ -195,9 +195,9 @@
     (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #f))
   (define (type-in-interactions frame str)
     (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #f))
-  (define (paste-in-definitions frame str)
+  (define (insert-in-definitions frame str)
     (put-in-frame (lambda (x) (send x get-definitions-canvas)) frame str #t))
-  (define (paste-in-interactions frame str)
+  (define (insert-in-interactions frame str)
     (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #t))
 
   (define (put-in-frame get-canvas frame str/sexp paste?)
