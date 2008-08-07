@@ -1,10 +1,10 @@
 #lang setup/infotab
 
 (define name "Test Suites")
-(define tools '(("tool.ss" "drscheme")))
-(define tool-names '("DrScheme Test Suites"))
+(define tools '(("tool.ss" "drscheme") ("time-keystrokes.ss" "drscheme")))
+(define tool-names '("DrScheme Test Suites" "Time Keystrokes"))
 
-(define compile-omit-paths 
+(define compile-omit-paths
   '("aligned-pasteboard"
     "honu"
     "match"
