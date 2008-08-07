@@ -208,3 +208,12 @@
           Module Language: invalid language specification
           Interactions disabled}
       #t)
+
+(test @t{#lang scheme/load
+         (module m mzscheme (provide x) (define x 2))
+         (require 'm)
+         (printf "~s\n" x)
+         (flush-output)}
+      #f
+      @t{2})
+
