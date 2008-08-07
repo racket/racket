@@ -156,12 +156,12 @@ To do a better job of not generating programs with free variables,
   (define (generate-pat pat bound-vars var-info size in-hole)
     (let* ([found-vars-table (map (λ (binds) (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
                                   var-info)]
-           [bindings (make-immutable-hasheq null)]
+           [matches (make-immutable-hasheq null)]
            [mismatches (make-immutable-hasheq null)])
       (let loop ([pat pat] [in-hole in-hole])
         (define (generate/retry #:gen [gen (λ (p) (loop p in-hole))] success? . subpatterns)
           (let ([old-fvt found-vars-table] 
-                [old-bindings bindings]
+                [old-matches matches]
                 [old-mismatches mismatches])
             (let retry ([remaining generation-retries])
               (if (zero? remaining)
@@ -173,7 +173,7 @@ To do a better job of not generating programs with free variables,
                             generated)
                         (begin
                           (set! found-vars-table old-fvt)
-                          (set! bindings old-bindings)
+                          (set! matches old-matches)
                           (set! mismatches old-mismatches)
                           (retry (sub1 remaining)))))))))
         (match pat
@@ -190,13 +190,13 @@ To do a better job of not generating programs with free variables,
           [`(side-condition ,pattern ,(? procedure? condition))
            (define (condition-bindings bindings)
              (make-bindings (hash-map bindings (λ (name exp) (make-bind name exp)))))
-           (generate/retry (λ _ (condition (condition-bindings bindings))) pattern)]
+           (generate/retry (λ _ (condition (condition-bindings matches))) pattern)]
           [`(name ,(? symbol? id) ,p)
            (define (generate/record)
              (let ([term (loop p in-hole)])
-               (set! bindings (hash-set bindings id term))
+               (set! matches (hash-set matches id term))
                term))
-           (hash-ref bindings id generate/record)]
+           (hash-ref matches id generate/record)]
           [`hole (if in-hole (in-hole) the-hole)]
           [`(in-hole ,context ,contractum)
            (loop context (λ () (loop contractum in-hole)))]
@@ -216,10 +216,10 @@ To do a better job of not generating programs with free variables,
            (match (symbol->string pat)
              [(regexp #rx"^([^_]*)_[^_]*$" (list _ undecorated))
               (hash-ref
-               bindings pat
+               matches pat
                (λ ()
                  (let ([term ((generate-nt/underscored pat) (string->symbol undecorated))])
-                   (set! bindings (hash-set bindings pat term))
+                   (set! matches (hash-set matches pat term))
                    term)))]
              [(regexp #rx"([^_]*)_!_[^_]*$" (list _ undecorated))
               (let* ([prior (hash-ref mismatches pat null)]
@@ -232,13 +232,20 @@ To do a better job of not generating programs with free variables,
              [else ((generate-nt/underscored pat) pat)])]
           [(or (? symbol?) (? number?) (? string?) (? boolean?)) pat]
           [(? null? pat) '()]
-          [(? pair? pat)
-           (if (or (null? (cdr pat))
-                   (not (eq? '... (cadr pat))))
-               (cons (loop (car pat) in-hole)
-                     (loop (cdr pat) in-hole))
-               (append (build-list ((next-sequence-decision)) (λ (i) (loop (car pat) in-hole)))
-                       (loop (cddr pat) in-hole)))]
+          [(list-rest seq '... rest)
+           (loop (expand-sequence seq ((next-sequence-decision)) rest) in-hole)]
+          [(list-rest seq (? named-ellipsis? name) rest)
+           (let* ([match-len (hash-ref matches name #f)]
+                  [seq-len 
+                   (if match-len 
+                       match-len
+                       (let ([len ((next-sequence-decision))])
+                         (begin
+                           (set! matches (hash-set matches name len))
+                           len)))])
+             (loop (expand-sequence seq seq-len rest) in-hole))]
+          [(list-rest pat rest)
+           (cons (loop pat in-hole) (loop rest in-hole))]
           [else
            (error 'generate "unknown pattern ~s\n" pat)]))))
   
@@ -273,6 +280,12 @@ To do a better job of not generating programs with free variables,
                            #t)]
          [else found-vars]))
      found-vars-table))
+  
+  (define (expand-sequence seq-pat seq-len rest-pat)
+    (let loop ([remaining seq-len] [acc-pat rest-pat])
+      (if (zero? remaining) 
+          acc-pat
+          (loop (sub1 remaining) (cons seq-pat acc-pat)))))
   
   (generate-pat nt '() '() size #f))
 
@@ -354,8 +367,15 @@ To do a better job of not generating programs with free variables,
 
 ;; underscored-built-in? : symbol -> boolean
 (define (underscored-built-in? sym) 
-  (not (false? (and (memq #\_ (string->list (symbol->string sym)))
-                    (memq (symbol->nt sym) underscore-allowed)))))
+  (and (memq #\_ (string->list (symbol->string sym)))
+       (memq (symbol->nt sym) underscore-allowed)
+       #t))
+
+;; named-ellipsis? : any -> boolean
+(define (named-ellipsis? x)
+  (and (symbol? x)
+       (memq #\_ (string->list (symbol->string x)))
+       (eq? (symbol->nt x) '...)))
 
 (define-syntax check
   (syntax-rules ()

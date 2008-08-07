@@ -458,6 +458,16 @@
     (e (hide-hole (in-hole ((hide-hole hole) hole) 1))))
   (test (generate lang e 5 0) (term (hole 1))))
 
+;; named ellipses
+(let ()
+  (define-language empty)
+  (test 
+   (generate empty (number ..._1 variable ..._2 number ..._1) 5 0
+             (decisions #:seq (list (λ () 2) (λ () 3))
+                        #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'z))
+                        #:num (build-list 4 (λ (x) (λ (_) x)))))
+   '(0 1 x y z 2 3)))
+
 (define (output-error-port thunk)
   (let ([port (open-output-string)])
     (parameterize ([current-error-port port])
