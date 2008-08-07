@@ -326,9 +326,9 @@
     (cond
       [(do-sequence? v) ((do-sequence-ref v 0))]
       [(list? v) (:list-gen v)]
-      [(vector? v) (:vector-gen v)]
-      [(string? v) (:string-gen v)]
-      [(bytes? v) (:bytes-gen v)]
+      [(vector? v) (:vector-gen v 0 (vector-length v) 1)]
+      [(string? v) (:string-gen v 0 (string-length v) 1)]
+      [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
       [(input-port? v) (:input-port-gen v)]
       [(hash? v) (:hash-key+val-gen v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
@@ -385,67 +385,87 @@
   (define (:list-gen l)
     (values car cdr l pair? (lambda (x) #t) (lambda (p x) #t)))
 
+
+  (define (check-ranges who start stop step)
+    (unless (exact-nonnegative-integer? start) (raise-type-error who "exact non-negative integer" start))
+    (unless (exact-nonnegative-integer? stop) (raise-type-error who "exact non-negative integer or #f" stop))
+    (unless (and (exact-integer? step) (not (zero? step)))
+      (raise-type-error who "exact non-zero integer" step))
+    (when (and (< start stop) (< step 0))
+      (raise-mismatch-error who (format "start: ~a less than stop: ~a but given negative step: "
+                                        start stop)
+                            step))
+    (when (and (< stop start) (> step 0))
+      (raise-mismatch-error who (format "start: ~a more than stop: ~a but given positive step: "
+                                        start stop)
+                            step)))
+
   (define in-vector
     (case-lambda
-     [(v) (in-vector v 0 (vector-length v) 1)]
-     [(v start) (in-vector v start (vector-length v) 1)]
+     [(v) (in-vector v 0 #f 1)]
+     [(v start) (in-vector v start #f 1)]
      [(v start stop) (in-vector v start stop 1)]
      [(v start stop step)
       (unless (vector? v) (raise-type-error 'in-vector "vector" v))
-      (when (and (< start stop) (< step 0))
-        (raise-mismatch-error 'in-vector "start is less than stop but step is negative" (list start stop step)))
-      (when (and (< stop start) (> step 0))
-        (raise-mismatch-error 'in-vector "stop is less than start but step is positive" (list start stop step)))
-      (when (zero? step)
-        (raise-mismatch-error 'in-vector "step is zero" step))
-      (make-do-sequence (lambda () (:vector-gen v start stop step)))]))
+      (let ([stop (or stop (vector-length v))])
+        (check-ranges 'in-vector start stop step)
+        (make-do-sequence (lambda () (:vector-gen v start stop step))))]))
 
-  (define :vector-gen
-    (case-lambda 
-      [(v) (:vector-gen v 0 (vector-length v) 1)]
-      [(v start stop step)
-       (values
-        ;; pos->element
-        (lambda (i) (vector-ref v i))
-        ;; next-pos
-        ;; Minor optimisation.  I assume add1 is faster than \x.x+1
-        (if (= step 1) add1 (lambda (i) (+ i step)))
-        ;; initial pos
-        start
-        ;; continue?
-        (if (> step 0)
+  (define (:vector-gen v start stop step)
+    (values
+     ;; pos->element
+     (lambda (i) (vector-ref v i))
+     ;; next-pos
+     ;; Minor optimisation.  I assume add1 is faster than \x.x+1
+     (if (= step 1) add1 (lambda (i) (+ i step)))
+     ;; initial pos
+     start
+     ;; continue?
+     (if (> step 0)
+         (lambda (i) (< i stop))
+         (lambda (i) (> i stop)))
+     (lambda (x) #t)
+     (lambda (x y) #t)))
+
+  (define in-string
+    (case-lambda
+     [(l) (in-string l 0 #f 1)]
+     [(l start) (in-string l start #f 1)]
+     [(l start stop) (in-string l start stop 1)]
+     [(l start stop step)
+      (unless (string? l) (raise-type-error 'in-string "string" l))
+      (let ([stop (or stop (string-length l))])
+        (check-ranges 'in-string start stop step)
+        (make-do-sequence (lambda () (:string-gen l start stop step))))]))
+
+  (define (:string-gen v start stop step)
+    (values (lambda (i)
+              (string-ref v i))
+            (if (= step 1) add1 (lambda (x) (+ x step)))
+            start
             (lambda (i) (< i stop))
-            (lambda (i) (> i stop)))
-        (lambda (x) #t)
-        (lambda (x y) #t))]))
+            (lambda (x) #t)
+            (lambda (x y) #t)))
 
-  (define (in-string l)
-    (unless (string? l) (raise-type-error 'in-string "string" l))
-    (make-do-sequence (lambda () (:string-gen l))))
+  (define in-bytes
+    (case-lambda
+     [(l) (in-bytes l 0 #f 1)]
+     [(l start) (in-bytes l start #f 1)]
+     [(l start stop) (in-bytes l start stop 1)]
+     [(l start stop step)
+      (unless (bytes? l) (raise-type-error 'in-bytes "bytes" l))
+      (let ([stop (or stop (bytes-length l))])
+        (check-ranges 'in-bytes start stop step)
+        (make-do-sequence (lambda () (:bytes-gen l start stop step))))]))
 
-  (define (:string-gen v)
-    (let ([len (string-length v)])
-      (values (lambda (i)
-                (string-ref v i))
-              add1
-              0
-              (lambda (i) (< i len))
-              (lambda (x) #t)
-              (lambda (x y) #t))))
-
-  (define (in-bytes l)
-    (unless (bytes? l) (raise-type-error 'in-bytes "bytes" l))
-    (make-do-sequence (lambda () (:bytes-gen l))))
-
-  (define (:bytes-gen v)
-    (let ([len (bytes-length v)])
-      (values (lambda (i)
-                (bytes-ref v i))
-              add1
-              0
-              (lambda (i) (< i len))
-              (lambda (x) #t)
-              (lambda (x y) #t))))
+  (define (:bytes-gen v start stop step)
+    (values (lambda (i)
+              (bytes-ref v i))
+            (if (= step 1) add1 (lambda (x) (+ x step)))
+            start
+            (lambda (i) (< i stop))
+            (lambda (x) #t)
+            (lambda (x y) #t)))
   
   (define (in-input-port-bytes l)
     (unless (input-port? l) (raise-type-error 'in-input-port-bytes "input-port" l))
@@ -1031,21 +1051,21 @@
                 ;; Prevent multiple evaluation
                 ([(v* stop*) (let ([vec vec-expr]
                                    [stop* stop])
-                               (if stop*
-                                   (values vec stop*)
-                                   (values vec (vector-length vec))))]
+                               (if (and (not stop*) (vector? vec))
+                                   (values vec (vector-length vec))
+                                   (values vec stop*)))]
                  [(start*) start]
                  [(step*) step])
                 ;; Outer check
-                (when (or (zero? step*)
+                (when (or (not (vector? v*))
+                          (not (exact-integer? start*))
+                          (not (exact-integer? stop*))
+                          (not (exact-integer? step*))
+                          (zero? step*)
                           (and (< start* stop*) (< step* 0))
-                          (and (< start* stop*) (< step* 0)))
-                  (if (vector? v*)
-                      ;; Let in-vector report the error
-                      (in-vector v* start* stop* step*)
-                      (raise-type-error in-vector
-                                        "start, stop, and step incompatible"
-                                        (list start* stop* step*))))
+                          (and (> start* stop*) (> step* 0)))
+                  ;; Let in-vector report the error
+                  (in-vector v* start* stop* step*))
                 ;; Loop bindings
                 ([idx start*])
                 ;; Pos guard
