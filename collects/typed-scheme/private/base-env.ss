@@ -1,4 +1,3 @@
-
 #lang scheme/base
 
 ;; these are libraries providing functions we add types to that are not in scheme/base
@@ -8,7 +7,8 @@
  (only-in rnrs/lists-6 fold-left)
  '#%paramz
  (only-in scheme/match/runtime match:error)
- scheme/promise)
+ scheme/promise
+ string-constants/string-constant)
 
 
 
@@ -35,17 +35,63 @@
 
 (provide (for-syntax initial-env initialize-others))
 
-(define-for-syntax initial-env
-  (let ([make-lst make-Listof]
-        [make-lst/elements -pair])
-    (make-env
+(define-syntax (define-initial-env stx)
+    (syntax-case stx ()
+      [(_ initial-env make-promise-ty language-ty qq-append-ty [id ty] ...)
+       (with-syntax ([(_ make-promise . _)
+                      (local-expand #'(delay 3)
+                                    'expression
+                                    null)]
+                     [language
+                      (local-expand #'(this-language)
+                                    'expression
+                                    null)]
+                     [(_ qq-append . _)
+                      (local-expand #'`(,@'() 1)
+                                    'expression
+                                    null)])
+         #`(define-for-syntax initial-env
+             (make-env
+              [make-promise make-promise-ty]
+              [language language-ty]
+              [qq-append qq-append-ty]
+              [id ty] ...)))]))
+
+
+(define-initial-env initial-env
+  ;; make-promise
+  (-poly (a) (-> (-> a) (-Promise a)))
+  ;; language
+  Sym
+  ;; qq-append
+  (-poly (a b) 
+         (cl->*
+          (-> (-lst a) (-val '()) (-lst a))
+          (-> (-lst a) (-lst b) (-lst (*Un a b)))))
+  #|;; language
+     [(expand '(this-language))
+      Sym
+      string-constants/string-constant]
+     ;; make-promise      
+     [(cadr (syntax->list (expand '(delay 3))))
+      (-poly (a) (-> (-> a) (-Promise a)))
+      scheme/promise]
+     ;; qq-append     
+     [(cadr (syntax->list (expand '`(,@'() 1)))) 
+      (-poly (a b) 
+             (cl->*
+              (-> (-lst a) (-val '()) (-lst a))
+              (-> (-lst a) (-lst b) (-lst (*Un a b)))))]
+|#
+     
+     
      
      [raise (Univ . -> . (Un))]
      
      (car (make-Poly (list 'a 'b) (cl-> [((-pair (-v a) (-v b))) (-v a)]
-                                        [((make-lst (-v a))) (-v a)])))
+                                        [((make-Listof (-v a))) (-v a)])))
      [first (make-Poly (list 'a 'b) (cl-> [((-pair (-v a) (-v b))) (-v a)]
-                                          [((make-lst (-v a))) (-v a)]))]
+                                          [((make-Listof (-v a))) (-v a)]))]
      [second (-poly (a b c)
                     (cl->                
                      [((-pair a (-pair b c))) b]
@@ -66,9 +112,9 @@
      (caddr (-poly (a) (-> (-lst a) a)))
      (cadddr (-poly (a) (-> (-lst a) a)))
      (cdr (make-Poly (list 'a 'b) (cl-> [((-pair (-v a) (-v b))) (-v b)]
-                                        [((make-lst (-v a))) (make-lst (-v a))])))
-     (cddr (make-Poly (list 'a) (-> (make-lst (-v a)) (make-lst (-v a)))))
-     (cdddr (make-Poly (list 'a) (-> (make-lst (-v a)) (make-lst (-v a)))))
+                                        [((make-Listof (-v a))) (make-Listof (-v a))])))
+     (cddr (make-Poly (list 'a) (-> (make-Listof (-v a)) (make-Listof (-v a)))))
+     (cdddr (make-Poly (list 'a) (-> (make-Listof (-v a)) (make-Listof (-v a)))))
      (cons (-poly (a b) 
                   (cl-> [(a (-lst a)) (-lst a)]
                         [(a b) (-pair a b)])))
@@ -135,8 +181,8 @@
                                      ((-lst b) b) . ->... . c))]
      [foldl
       (-poly (a b c)
-             (cl-> [((a b . -> . b) b (make-lst a)) b]
-                   [((a b c . -> . c) c (make-lst a) (make-lst b)) c]))]
+             (cl-> [((a b . -> . b) b (make-Listof a)) b]
+                   [((a b c . -> . c) c (make-Listof a) (make-Listof b)) c]))]
      [foldr  (-poly (a b c) ((a b . -> . b) b (-lst a) . -> . b))]
      [filter (-poly (a b) (cl->*
                            ((a . -> . B
@@ -185,8 +231,8 @@
      [printf (->* (list -String) Univ -Void)]
      [fprintf (->* (list -Output-Port -String) Univ -Void)]
      [format (->* (list -String) Univ -String)]   
-     (fst (make-Poly (list 'a 'b) (-> (make-lst/elements (-v a) (-v b)) (-v a))))
-     (snd (make-Poly (list 'a 'b) (-> (make-lst/elements (-v a) (-v b)) (-v b))))
+     (fst (make-Poly (list 'a 'b) (-> (-pair (-v a) (-v b)) (-v a))))
+     (snd (make-Poly (list 'a 'b) (-> (-pair (-v a) (-v b)) (-v b))))
      
      (= (->* (list N N) N B))
      (>= (->* (list N N) N B))
@@ -205,11 +251,11 @@
       (make-Poly (list 'a) ((make-Vector (-v a)) N . -> . (-v a)))]
      [build-vector (-poly (a) (-Integer (-Integer . -> . a) . -> . (make-Vector a)))]
      [build-list (-poly (a) (-Integer (-Integer . -> . a) . -> . (-lst a)))]
-     [reverse (make-Poly '(a) (-> (make-lst (-v a)) (make-lst (-v a))))]
+     [reverse (make-Poly '(a) (-> (make-Listof (-v a)) (make-Listof (-v a))))]
      [append (-poly (a) (->* (list) (-lst a) (-lst a)))]
-     [length (make-Poly '(a) (-> (make-lst (-v a)) -Integer))]
-     [memq (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
-     [memv (make-Poly (list 'a) (-> (-v a) (make-lst (-v a)) (-opt (make-lst (-v a)))))]
+     [length (make-Poly '(a) (-> (make-Listof (-v a)) -Integer))]
+     [memq (make-Poly (list 'a) (-> (-v a) (make-Listof (-v a)) (-opt (make-Listof (-v a)))))]
+     [memv (make-Poly (list 'a) (-> (-v a) (make-Listof (-v a)) (-opt (make-Listof (-v a)))))]
      [memf (-poly (a) ((a . -> . B) (-lst a) . -> . (-opt (-lst a))))]
      [member 
       (-poly (a) (a (-lst a) . -> . (-opt (-lst a))))]
@@ -431,21 +477,6 @@
      [copy-file (-> -Pathlike -Pathlike -Void)]  
      [bytes->string/utf-8 (-> -Bytes -String)]
      
-     ;; language
-     [(expand '(this-language))
-      Sym
-      string-constants/string-constant]
-     ;; make-promise      
-     [(cadr (syntax->list (expand '(delay 3))))
-      (-poly (a) (-> (-> a) (-Promise a)))
-      scheme/promise]
-     ;; qq-append     
-     [(cadr (syntax->list (expand '`(,@'() 1)))) 
-      (-poly (a b) 
-             (cl->*
-              (-> (-lst a) (-val '()) (-lst a))
-              (-> (-lst a) (-lst b) (-lst (*Un a b)))))]
-     
      [force (-poly (a) (-> (-Promise a) a))]
      [bytes<? (->* (list -Bytes) -Bytes B)]
      [regexp-replace* 
@@ -524,7 +555,7 @@
      
      [values* (-polydots (a) (null (a a) . ->... . (make-ValuesDots null a 'a)))]
      [call-with-values* (-polydots (b a) ((-> (make-ValuesDots null a 'a)) (null (a a) . ->... . b) . -> .  b))]
-     )))
+     )
 
 (begin-for-syntax 
   #;(printf "running base-env~n")
