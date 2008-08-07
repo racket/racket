@@ -49,9 +49,9 @@
 ;;        - can also hold a raising-a-value thunk on exceptions and other
 ;;          `raise'd values (actually, applicable structs for printouts)
 
+;; Creates a `composable' promise
+;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
 (define-syntax (lazy stx)
-  ;; Creates a `composable' promise
-  ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
   (syntax-case stx ()
     [(lazy expr) (with-syntax ([proc (syntax-property
                                       (syntax/loc stx (lambda () expr))
