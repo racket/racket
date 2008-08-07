@@ -47,10 +47,11 @@
 ;; - <thunk>: usually a delayed promise,
 ;;        - can also hold a `running' thunk that will throw a reentrant error
 ;;        - can also hold a raising-a-value thunk on exceptions and other
-;;          `rais'ed values (actually, applicable structs for printouts)
-;; Creates a `composable' promise
-;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
+;;          `raise'd values (actually, applicable structs for printouts)
+
 (define-syntax (lazy stx)
+  ;; Creates a `composable' promise
+  ;;   X = (force (lazy X)) = (force (lazy (lazy X))) = (force (lazy^n X))
   (syntax-case stx ()
     [(lazy expr) (with-syntax ([proc (syntax-property
                                       (syntax/loc stx (lambda () expr))
