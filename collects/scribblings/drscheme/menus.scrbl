@@ -123,15 +123,34 @@ blinking caret. Each window maintains its own Undo and Redo history.
   @item{@defmenuitem{Wrap Text} Toggles between wrapped text and
   unwrapped text in the window.}
 
- @item{@defmenuitem{Find...} Opens a search dialog or, depending on the 
- preferences, an interactive searching window attached to the frame.}
+ @item{@defmenuitem{Find...} Opens an interactive search
+ window at the bottom of the frame and moves the insertion
+ point to the search string editor (or out of it, if the
+ insertion point is already there.
+
+ See also @secref["Searching"].
+
+}
 
  @item{@defmenuitem{Find Again} Finds the next occurrence of the text 
- that was last searched for.}
+ in the search window.}
+  
+ @item{@defmenuitem{Find Again Backwards} Finds the next occurrence of the text 
+ in the search window, but searching backwards.}
   
 @item{@defmenuitem{Replace & Find Again} Replaces the selection with the
   replace string (if it matches the find string) and finds the next
-  occurrence of the text that was last searched for.}
+  occurrence of the text that was last searched for, looking forwards.}
+
+@item{@defmenuitem{Replace & Find Again Backwards} Replaces the selection with the
+  replace string (if it matches the find string) and finds the next
+  occurrence of the text that was last searched for, looking backwards.}
+
+@item{@defmenuitem{Replace All} Replaces all occurrences of
+the search string with the replace string.}
+
+@item{@defmenuitem{Find Case Sensitive} Toggles between
+case-sensitive and case-insensitive search.}
   
 @item{@defmenuitem{Keybindings} 
 @itemize{
@@ -145,6 +164,9 @@ blinking caret. Each window maintains its own Undo and Redo history.
   for more information.}
 
 }}
+
+@item{@defmenuitem{Complete Word} Completes the word at the
+insertion point, using the manuals as a source of completions.}
 
  @item{@defmenuitem{Preferences...} Opens the preferences dialog. See
   @secref["prefs-explanation"]. (Under Mac OS X, this menu item is in

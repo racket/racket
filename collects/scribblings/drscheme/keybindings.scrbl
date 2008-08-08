@@ -139,7 +139,7 @@ window to the interactions window (or the search window, if it is open).}
 @keybinding["C-x C-w"]{save file under new name}
 ]
 
-@section{Searching}
+@section{Search}
 
 @itemize[
 @keybinding["C-s"]{search for string forward}

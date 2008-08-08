@@ -195,7 +195,7 @@ on the languages that DrScheme supports.
 
 @; ----------------------------------------------------------------------
 
-@section[#:tag "editor"]{The Editor}
+@section[#:tag "editor"]{Editing with Parentheses}
 
 @index['("flashing parenthesis matches")]{@index['("gray highlight
 regions")]{In}} Scheme mode, especially, DrScheme's editor provides
@@ -271,7 +271,44 @@ bracket converter.
  
 @; -------------------------------
 
-@subsection{Tabbed Editing}
+@section{Searching}
+
+DrScheme's search and replace feature is interactive,
+similar to those in Safari, Firefox, and Emacs, but with a
+few differences.
+
+To start a search, first select the @onscreen{Find} menu
+item from the @onscreen{Edit} menu. This will open a small
+editor at the bottom of the DrScheme window. Start typing in
+there and, as you type, all occurrences of the string you're
+searching for will be circled in the editor window. Watch
+the space right next to the search window to see how many
+occurrences of the search string there are in your
+file. When you're ready, you use the @onscreen{Find Again}
+menu item to jump to the first occurrence of the search
+string. This will color in one of the circles. Use
+@onscreen{Find Again} a second time to jump to the next
+occurrence.
+
+If you click back into the definitions window, the
+@onscreen{Find Again} menu item, DrScheme will move the
+selection to the next occurrence of the search string.
+
+DrScheme also supports a mode where typing in the search
+editor takes you directly to the next occurrence of the
+search string, without selecting the @onscreen{Find Again}
+menu item. In the preference dialog, in the
+@onscreen{Editing} sectino and then in the
+@onscreen{General} section is a checkbox labelled
+@onscreen{Search using anchors}. When it is checked,
+DrScheme shows a little red dot and a red line indicating
+where the @deftech{search anchor} is. When the search anchor
+is enabled, typing in the search window jumps to the first 
+occurrence of the search string after the anchor.
+
+@; -------------------------------
+
+@section{Tabbed Editing}
 
 DrScheme's allows you to edit multiple files in a single window via
 tabs. The @menuitem["File" "New Tab"] menu item creates a new tab to
