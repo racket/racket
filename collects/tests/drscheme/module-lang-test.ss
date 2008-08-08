@@ -219,11 +219,29 @@
                              " support a REPL \\(no #%top-interaction\\)\n*$"))
       #t)
 
+;; test scheme/load behavior
 (test @t{#lang scheme/load
          (module m mzscheme (provide x) (define x 2))
          (require 'm)
          (printf "~s\n" x)
          (flush-output)}
       #f
-      @t{2})
+      "2")
+(test @t{#lang scheme/load
+         (module m mzscheme (provide x) (define x 2))
+         (module n scheme/base (require 'm) (provide y) (define y (* x x)))
+         (require 'n)
+         (printf "~s\n" y)
+         (flush-output)}
+      #f
+      "4")
 
+;; test protection against user-code changing the namespace
+(test @t{#lang scheme/base
+         (current-namespace (make-base-namespace))}
+      "(+ 1 2)"
+      "3")
+(test @t{#lang scheme/base
+         (current-namespace (make-base-empty-namespace))}
+      "(+ 1 2)"
+      "3")
