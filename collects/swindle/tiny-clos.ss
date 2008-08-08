@@ -1915,6 +1915,7 @@
 ;;>> <immutable>
 ;;>> <pair>
 ;;>> <mutable-pair>
+;;>> <mpair>
 ;;>> <immutable-pair>
 ;;>> <list>
 ;;>> <nonempty-list>
@@ -2002,6 +2003,7 @@
 (defprimclass <immutable>)
 (defprimclass <pair> <sequence>)
 (defprimclass <mutable-pair> <pair> <mutable>)
+(define* <mpair> <mutable-pair>) ; alias
 (defprimclass <immutable-pair> <pair> <immutable>)
 (defprimclass <list> <sequence>)
 (defprimclass <nonempty-list> <pair> <list> <immutable>)
@@ -2204,6 +2206,7 @@
 ;;>       <sequence> : <primitive-class>
 ;;>         <pair> : <primitive-class>
 ;;>           <mutable-pair> : <primitive-class>
+;;>           <mpair> : <primitive-class>  ; alias for <mutable-pair>
 ;;>           <immutable-pair> : <primitive-class>
 ;;>           <nonempty-list> : <primitive-class>
 ;;>         <list> : <primitive-class>
@@ -2220,6 +2223,7 @@
 ;;>           <path> : <primitive-class>
 ;;>       <mutable> : <primitive-class>
 ;;>         <mutable-pair> : <primitive-class>
+;;>         <mpair> : <primitive-class>  ; alias for <mutable-pair>
 ;;>         <mutable-string-like> : <primitive-class>
 ;;>           <mutable-string> : <primitive-class>
 ;;>           <mutable-bytes> : <primitive-class>

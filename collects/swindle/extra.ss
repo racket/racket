@@ -461,49 +461,50 @@
 (define printer:too-deep "#?#")
 (define printer:too-long "...")
 
+;; use a single implementation for both pairs and mpairs, punctuation
+;; shorthands for pairs only
 (defmethod (print-object [o <pair>] esc? port)
-  (cond
-   [(null? o) (mz:display "()" port)]
-   [(and (pair? (cdr o)) (null? (cddr o))
-         (memq (car o) '(quote quasiquote unquote unquote-splicing
-                               syntax quasisyntax unsyntax unsyntax-splicing)))
-    (mz:display (case (car o)
-                  [(quote)             "'"]
-                  [(quasiquote)        "`"]
-                  [(unquote)           ","]
-                  [(unquote-splicing)  ",@"]
-                  [(syntax)            "#'"]
-                  [(quasisyntax)       "#`"]
-                  [(unsyntax)          "#,"]
-                  [(unsyntax-splicing) "#,@"])
-                port)
-    (print-object (cadr o) esc? port)]
-   [(eq? (*print-level*) 0) (mz:display printer:too-deep port)]
-   [else
-    (mz:display "(" port)
-    (if (eq? (*print-length*) 0)
-      (mz:display printer:too-long port)
-      (parameterize ([*print-level* (sub1 (or (*print-level*) 0))])
-        (print-object (car o) esc? port)
-        (do ([o (cdr o) (if (pair? o) (cdr o) '())]
-             [n (sub1 (or (*print-length*) 0)) (sub1 n)])
-            [(or (null? o)
-                 (and (zero? n)
-                      (begin (mz:display " " port)
-                             (mz:display printer:too-long port)
-                             #t)))]
-          (if (pair? o)
-            (begin (mz:display " " port) (print-object (car o) esc? port))
-            (begin (mz:display " . " port) (print-object o esc? port))))))
-    (mz:display ")" port)]))
+  (let ([punct (and (pair? (cdr o)) (null? (cddr o))
+                    (assq (car o)
+                          '([quote "'"] [quasiquote "`"] [unquote ","]
+                            [unquote-splicing ",@"]
+                            [syntax "#'"] [quasisyntax "#`"] [unsyntax "#,"]
+                            [unsyntax-splicing "#,@"])))])
+    (if punct
+      (begin (mz:display (cadr punct) port) (print-object (cadr o) esc? port))
+      (print-pair o esc? port "(" ")" pair? car cdr))))
+(defmethod (print-object [o <mutable-pair>] esc? port)
+  (print-pair o esc? port "{" "}" mpair? mcar mcdr))
+(define (print-pair p esc? port open close pair? car cdr)
+  (define level (*print-level*))
+  (if (eq? level 0)
+    (mz:display printer:too-deep port)
+    (begin
+      (mz:display open port)
+      (if (eq? (*print-length*) 0)
+        (mz:display printer:too-long port)
+        (parameterize ([*print-level* (and level (sub1 level))])
+          (print-object (car p) esc? port)
+          (do ([p (cdr p) (if (pair? p) (cdr p) '())]
+               [n (sub1 (or (*print-length*) 0)) (sub1 n)])
+              [(or (null? p)
+                   (and (zero? n)
+                        (begin (mz:display " " port)
+                               (mz:display printer:too-long port)
+                               #t)))]
+            (if (pair? p)
+              (begin (mz:display " " port) (print-object (car p) esc? port))
+              (begin (mz:display " . " port) (print-object p esc? port))))))
+      (mz:display close port))))
 
 (defmethod (print-object [o <vector>] esc? port)
-  (cond [(eq? (*print-level*) 0) (mz:display printer:too-deep port)]
+  (define level (*print-level*))
+  (cond [(eq? level 0) (mz:display printer:too-deep port)]
         [(zero? (vector-length o)) (mz:display "#()" port)]
         [else (mz:display "#(" port)
               (if (eq? (*print-length*) 0)
                 (mz:display printer:too-long port)
-                (parameterize ([*print-level* (sub1 (or (*print-level*) 0))])
+                (parameterize ([*print-level* (and level (sub1 level))])
                   (print-object (vector-ref o 0) esc? port)
                   (let ([len (if (*print-length*)
                                (min (vector-length o) (*print-length*))
@@ -546,13 +547,14 @@
 ;;>   which should be embedded in a method that is to be added to
 ;;>   `print-object'.
 (define* (print-object-with-slots o esc? port)
-  (if (eq? (*print-level*) 0)
+  (define level (*print-level*))
+  (if (eq? level 0)
     (mz:display printer:too-deep port)
     (let ([class (class-of o)])
       (mz:display "#<" port)
       (mz:display (name-sans-<> (class-name class)) port)
       (mz:display ":" port)
-      (parameterize ([*print-level* (sub1 (or (*print-level*) 0))])
+      (parameterize ([*print-level* (and level (sub1 level))])
         (do ([s (class-slots class) (cdr s)]
              [n (or (*print-length*) -1) (sub1 n)])
             [(or (null? s)
