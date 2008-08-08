@@ -178,6 +178,7 @@ style-list%
 style<%>
 subarea<%>
 subwindow<%>
+system-position-ok-before-cancel?
 tab-snip%
 text%
 text-editor-load-handler

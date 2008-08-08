@@ -28,6 +28,7 @@
 	   "private/snipfile.ss"
 	   "private/repl.ss"
 	   "private/afm.ss"
+           "private/helper.ss"
            "private/dynamic.ss")
 
   ;; Initialize AFM/PS:
@@ -300,4 +301,5 @@
 	   file-creator-and-type
 	   current-ps-afm-file-paths
 	   current-ps-cmap-file-paths
-	   hide-cursor-until-moved))
+	   hide-cursor-until-moved
+           system-position-ok-before-cancel?))

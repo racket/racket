@@ -20,7 +20,9 @@
 		    traverse
 		    object->position
 		    container->children
-		    filter-overlapping))
+		    filter-overlapping
+                    system-position-ok-before-cancel?
+                    ok-cancel))
 
   ;; this structure holds the information that a child will need to send
   ;; to its parent when the parent must resize itself.
@@ -318,4 +320,14 @@
 				  (<= py y py2) (<= py y2 py2)))))
 		     rest)
 	      rest
-	      (cons first rest))))))
+	      (cons first rest)))))
+
+  (define (system-position-ok-before-cancel?)
+    (eq? (system-type) 'windows))
+  
+  (define (ok-cancel mk-ok mk-cancel)
+    (if (system-position-ok-before-cancel?)
+        (values (mk-ok) (mk-cancel))
+        (let ([c (mk-cancel)]
+              [o (mk-ok)])
+          (values o c)))))

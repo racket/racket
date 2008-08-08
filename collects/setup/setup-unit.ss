@@ -188,7 +188,7 @@
                  "Internal error: cc had invalid info-path: ~e" path))))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
-                    "ignoring `compile-subcollections' entry in info ~a\n"
+                    "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
     (and (not (or (regexp-match? #rx"^[.]" basename)

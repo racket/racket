@@ -84,8 +84,14 @@
 			       ;; Spacer:
 			       (make-object pane% bp))
 			      (void))]
-	       [cancel-button (make-object button% "Cancel" bp (done #f))]
-	       [ok-button (make-object button% "OK" bp (done #t) '(border))]
+               [ok+cancel (call-with-values
+                              (lambda () 
+                                (ok-cancel
+                                 (lambda () (make-object button% "OK" bp (done #t) '(border)))
+                                 (lambda () (make-object button% "Cancel" bp (done #f)))))
+                            cons)]
+	       [ok-button (car ok+cancel)]
+	       [cancel-button (cdr ok+cancel)]
 	       [reset-font 
 		(lambda (font)
 		  (let* ([facen (if font

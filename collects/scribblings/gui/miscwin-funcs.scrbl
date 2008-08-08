@@ -420,10 +420,16 @@ If the AppleEvent reply contains a value that cannot be
  the method. If no Scheme window is at the given coordinates, or if it
  is covered by a non-Scheme window at (@scheme[x], @scheme[y]),
  @scheme[#f] is returned.
-
-
-
 }
+
+
+@defproc[(system-position-ok-before-cancel?) boolean?]{
+
+Returns @scheme[#t] under Windows---indicating that a dialog with
+@onscreen{OK} and @onscreen{Cancel} buttons should place the
+@onscreen{OK} button on to left of the @onscreen{Cancel} button---and
+returns @scheme[#f] under Mac OS X and X.}
+
 
 @defthing[the-clipboard (is-a?/c clipboard<%>)]{
 

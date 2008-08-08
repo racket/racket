@@ -183,7 +183,7 @@
 			      (mk-button button3 3 (memq 'default=3 style))))])
 		(cond 
 		 [(or (memq 'number-order style)
-		      (not (memq (system-type) '(macos macosx)))) 
+		      (memq (system-type) '(windows)))
 		  (mk-1)
 		  (mk-2)
 		  (mk-3)]
