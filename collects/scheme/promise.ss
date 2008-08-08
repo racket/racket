@@ -100,7 +100,7 @@
         (set-promise-val! root (list v))
         v))))
 
-;; this is uuused durinc computation to avoid reentrant loops (which makes it
+;; this is used during computation to avoid reentrant loops (which makes it
 ;; non-r5rs, but there's no good uses for allowing that)
 (define (running proc)
   ;; important: be careful not to close over the thunk!
