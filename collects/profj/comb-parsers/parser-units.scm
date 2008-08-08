@@ -710,6 +710,17 @@
                super-call
                checks) "expression"))
     
+    (define assignee-base
+      (choose (this
+               identifier
+               new-class
+               simple-method-call
+               (sequence (O_PAREN (eta expression) C_PAREN) id "parened expression")
+               (sequence (! (eta expression)) id "conditional expression")
+               (sequence (MINUS (eta expression)) id "negation expression")
+               (cast (value+name-type prim-type))
+               super-call) "assignee"))
+    
     (define unique-end
       (choose (field-access-end
                method-call-end
@@ -726,7 +737,7 @@
                (sequence (unique-base (repeat unique-end) method-call-end) id "method call")
                (assignment 
                 (choose (identifier
-                         (sequence (unique-base (repeat unique-end) field-access-end) id))
+                         (sequence (assignee-base (repeat unique-end) field-access-end) id))
                         "assignee")
                 EQUAL)) "expression"))
     

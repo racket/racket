@@ -445,7 +445,7 @@
        [(LeftHandSide AssignmentOperator #;CheckExpression IDENTIFIER)
 	(make-assignment #f (build-src 3) $1 $2 #;$3 
                          (make-access #f (build-src 3 3)
-                                      (make-local-access 
+                                      (list 
                                        (make-id $3 (build-src 3 3)))) (build-src 2 2))])
       
       (LeftHandSide
