@@ -174,9 +174,10 @@
         (define modspec (or path `',(syntax-e name)))
         (define (check-interactive-language)
           (unless (memq '#%top-interaction (namespace-mapped-symbols))
-            (raise-hopeless-syntax-error
-             "invalid language (no #%top-interaction binding)"
-             lang)))
+            (raise-hopeless-exception
+             #f #f ; no error message, just a suffix
+             (format "~s does not support a REPL (no #%top-interaction)"
+                     (syntax->datum lang)))))
         ;; We're about to send the module expression to drscheme now, the rest
         ;; of the setup is done in `front-end/finished-complete-program' below,
         ;; so use `repl-init-thunk' to store an appropriate continuation for
@@ -261,23 +262,31 @@
        [language-position (list "Module")]
        [language-numbers (list -32768)])))
   
-  (define (raise-hopeless-exception exn [prefix #f])
+  ;; can be called with #f to just kill the repl (in case we want to kill it
+  ;; but keep the highlighting of a previous error)
+  (define (raise-hopeless-exception exn [prefix #f] [suffix #f])
     (define rep (drscheme:rep:current-rep))
-    ;; if we don't have the drscheme rep, then we just raise the exception as
-    ;; normal.  (It can happen in some rare cases like having a single empty
-    ;; scheme box in the definitions.)
-    (unless rep (raise exn))
+    ;; Throw an error as usual if we don't have the drscheme rep, then we just
+    ;; raise the exception as normal.  (It can happen in some rare cases like
+    ;; having a single empty scheme box in the definitions.)
+    (unless rep (if exn (raise exn) (error "\nInteractions disabled")))
     (when prefix (fprintf (current-error-port) "Module Language: ~a\n" prefix))
-    ((error-display-handler) (exn-message exn) exn)
+    (when exn ((error-display-handler) (exn-message exn) exn))
+    ;; these are needed, otherwise the warning can appear before the output
+    (flush-output (current-output-port))
+    (flush-output (current-error-port))
     ;; do the rep-related work carefully -- using drscheme's eventspace, and
     ;; wait for it to finish before we continue.
-    (let ([s (make-semaphore 0)])
+    (let ([s (make-semaphore 0)]
+          [msg (string-append "\nInteractions disabled"
+                              (if suffix (string-append ": " suffix) "."))])
       (parameterize ([current-eventspace drscheme:init:system-eventspace])
         (queue-callback
          (λ ()
-           (send* rep (insert-warning "\nInteractions disabled.")
-                      (set-show-no-user-evaluation-message? #f)
-                      (highlight-errors/exn exn))
+           (send rep call-without-reset-highlighting
+             (λ ()
+               (send* rep (insert-warning msg)
+                          (set-show-no-user-evaluation-message? #f))))
            (semaphore-post s))))
       (semaphore-wait s))
     (custodian-shutdown-all (send rep get-user-custodian)))

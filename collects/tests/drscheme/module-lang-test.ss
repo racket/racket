@@ -159,6 +159,7 @@
 (test @t{(module m (file "@in-here{module-lang-test-tmp1.ss}") 1 2 3)}
       @t{1} ;; just make sure no errors.
       "1")
+
 ;; check that we have a working repl in the right language after
 ;; syntax errors, unless it's a bad language
 (test @t{#lang scheme
@@ -182,13 +183,13 @@
       @rx{. /: division by zero
           123}
       #t)
-(test @t{(module xx scheme/list ;"xx.ss" ;scheme/list
+(test @t{(module xx scheme/list
            (define x 1)
            (define y (/ 0)))}
       #f
       @rx{no #%module-begin binding in the module's language
-          Module Language: invalid language \(no #%top-interaction binding\)
-          Interactions disabled}
+          Interactions disabled:
+          does not support a REPL \(no #%top-interaction\)}
       #t)
 (test @t{(module xx (file "@in-here{module-lang-test-tmp4.ss}")
            (define x 1)
@@ -196,8 +197,9 @@
       #f
       @rx{444
           123
-          Module Language: invalid language \(no #%top-interaction binding\)
-          Interactions disabled}
+          Interactions disabled:
+          does not support a REPL \(no #%top-interaction\)
+          }
       #t)
 (test @t{(module xx (file "@in-here{this-file-does-not-exist}")
            (define x 1)
@@ -207,6 +209,14 @@
           No such file or directory
           Module Language: invalid language specification
           Interactions disabled}
+      #t)
+(test @t{#lang setup/infotab}
+      #f
+      ;; test the complete buffer, to make sure that there is no error
+      (regexp (string-append "^Welcome to DrScheme, [^\n]*\n"
+                             "Language: Module[^\n]*\n\n"
+                             "Interactions disabled: setup/infotab does not"
+                             " support a REPL \\(no #%top-interaction\\)\n*$"))
       #t)
 
 (test @t{#lang scheme/load
