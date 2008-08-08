@@ -10,14 +10,15 @@
                  [height (or/c exact-nonnegative-integer? (one-of/c 'default)) 'default]
                  [x (or/c exact-integer? (one-of/c 'default)) 'default]
                  [y (or/c exact-integer? (one-of/c 'default)) 'default]
-                 [style (listof (any-of/c 'iconize 'maximize 'no-system-menu
-                                          'no-thick-border 'scrollbars))])]{
+                 [style-options
+                  (listof (any-of/c 'iconize 'maximize 'no-system-menu
+                                    'no-thick-border 'scrollbars))])]{
 
   Creates an instance of a MysterX browser. The @scheme[label]
   argument is a string for the document caption, with default .  The
   @scheme[width], @scheme[height], @scheme[x], and @scheme[y] give the
   size and placement of the browser window on the desktop, with
-  defaults provided by Windows.  When @scheme[style-list] includes
+  defaults provided by Windows.  When @scheme[style-options] includes
   @scheme['scrollbars], the vertical scrollbar is disabled if
   scrolling is unnecessary, and the horizontal scrollbar disappears if
   scrolling is unnecessary.
