@@ -729,7 +729,7 @@ module browser threading seems wrong.
                         (/ (+ yl yr) 2)))))
 
           (define/public (still-untouched?)
-            (and (= (last-position) 0)
+            (and (or (= (last-position) 0) (not really-modified?))
                  (not (is-modified?))
                  (not (get-filename))))
           ;; inserts the auto-text if any, and executes the text if so
