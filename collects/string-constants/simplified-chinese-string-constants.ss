@@ -113,15 +113,15 @@
   (cs-name-duplication-error "你所选择的新名称~s与当前辖域内现有标识符相同。")
   (cs-rename-anyway "强制重命名")
   (cs-status-init "语法检查：为用户代码初始化环境")
-  (cs-status-coloring-program "语法检查：用颜色标注表达式")
-  (cs-status-eval-compile-time "语法检查：编译时eval")
-  (cs-status-expanding-expression "语法检查：扩展表达式")
+  (cs-status-coloring-program "语法检查：为程序着色")
+  (cs-status-eval-compile-time "语法检查：编译程序")
+  (cs-status-expanding-expression "语法检查：展开表达式")
   (cs-mouse-over-import "绑定~s由~s导入")
   
   (cs-view-docs "察看~a的文档")
   
-  (cs-lexical-variable "词汇变量")
-  (cs-imported-variable "导入变量")
+  (cs-lexical-variable "lexical变量")
+  (cs-imported-variable "imported的变量")
   
   ;;; info bar at botttom of drscheme frame
   (collect-button-label "垃圾回收")
@@ -129,7 +129,7 @@
   (auto-extend-selection "自动扩展")
   (overwrite "覆盖")
   (running "运行中")
-  (not-running "停止中")
+  (not-running "静止中")
   
   ;;; misc
   (welcome-to-something "欢迎来到~a")
@@ -153,7 +153,7 @@
   (needs-execute-teachpack-changed
    "警告：教学包改变了。请单击“运行”。")
   (needs-execute-defns-edited
-   "警告：定义窗口改变了。请单击“运行”。")
+   "警告：定义视窗改变了。请单击“运行”。")
   (file-is-not-saved "文件\"~a\"还没有保存过")
   
   (save "保存")
@@ -235,7 +235,7 @@
   (plt:hd:help-desk-about-string
    "Help Desk是PLT软件的信息来源，其中包含了DrScheme，MzScheme和MrEd的全部信息。\n\n版本~a\n版权所有(c)~a-~a PLT")
   (plt:hd:help-on-help "关于帮助的帮助")
-  (plt:hd:help-on-help-details "关于使用Help Desk的帮助，请参见Help Desk主页中的第一个链接“Help Desk”。（要进入Help Desk的主页，请单击Help Desk窗口上方的“主页”按钮。）")
+  (plt:hd:help-on-help-details "关于使用Help Desk的帮助，请参见Help Desk主页中的第一个链接“Help Desk”。（要进入Help Desk的主页，请单击Help Desk视窗上方的“主页”按钮。）")
   (reload "刷新") ;; refresh the page in a web browser
   (plt:hd:ask-about-separate-browser
    "你选择了一个指向万维网的链接。请问您是要在Help Desk中打开该页面，还是想使用浏览器程序浏览网页？")
@@ -243,7 +243,7 @@
   (plt:hd:separate-browser "网络浏览器") ;; other choice for the above string (also in a button)
   (plt:hd:external-link-in-help "在Help中的外部URL")
   (plt:hd:use-homebrew-browser "对于外部URL，使用Help Desk浏览")
-  (plt:hd:new-help-desk "新的Help Desk窗口")
+  (plt:hd:new-help-desk "新的Help Desk视窗")
   
   ;; in the Help Desk language dialog, title on the right.
   (plt:hd:manual-search-ordering "搜索手册的顺序")
@@ -267,7 +267,7 @@
   (proxy-use-proxy "使用代理服务器：")
   (proxy-host "地址")
   (proxy-port "端口")
-  (proxy-bad-host "非法的代理服务器")
+  (proxy-bad-host "无效代理服务器")
   
   ;; browser
   (rewind-in-browser-history "后退")
@@ -278,8 +278,8 @@
   (browser-command-line-label "命令行：") ; label for radio button that is followed by text boxes
   (choose-browser "选择浏览器")
   (no-browser "以后再询问")
-  (browser-cmdline-expl-line-1 "(命令行由pre-text，URL和post-text连接而成，") ; explanatory text for dialog, line 1
-  (browser-cmdline-expl-line-2 "中间不含任何空格)") ; ... line 2. (Anyone need more lines?)
+  (browser-cmdline-expl-line-1 "(命令行由前缀文字，URL和后缀文字") ; explanatory text for dialog, line 1
+  (browser-cmdline-expl-line-2 "连接而成，中间不含任何空格)") ; ... line 2. (Anyone need more lines?)
   (install? "安装？")  ;; if a .plt file is found (title of dialog)
   (you-have-selected-an-installable-package "你选择了一个可以安装的软件包。")
   (do-you-want-to-install-it? "是否安装？")
@@ -352,15 +352,15 @@
   (enable-keybindings-in-menus "允许使用菜单中的快捷键")
   (automatically-to-ps "自动打印成postscript文件")
   (command-as-meta "将command键当作meta") ;; macos/macos x only
-  (reuse-existing-frames "在打开新文件时，使用现有的框架")
+  (reuse-existing-frames "在打开新文件时，使用现有的视窗")
   (default-fonts "默认字体")
   (paren-match-color "高亮显示括号所使用的颜色") ; in prefs dialog
   (online-coloring-active "实时根据语法用颜色标记程序")
-  (open-files-in-tabs "在不同的标签下打开多个文件（不使用多个窗口）")
-  (show-interactions-on-execute "在运行程序时自动打开交互窗口")
+  (open-files-in-tabs "在不同的标签下打开多个文件（不使用多个视窗）")
+  (show-interactions-on-execute "在运行程序时自动打开交互视窗")
   (switch-to-module-language-automatically "打开module文件时自动切换至module语言")
-  (interactions-beside-definitions "将定义窗口和交互窗口左右放置") ;; in preferences, below the checkbox one line above this one
-  (limit-interactions-size "限制交互窗口的大小")
+  (interactions-beside-definitions "将定义视窗和交互视窗左右放置") ;; in preferences, below the checkbox one line above this one
+  (limit-interactions-size "限制交互视窗的大小")
   (background-color "背景颜色")
   (default-text-color "默认颜色") ;; used for configuring colors, but doesn't need the word "color"
   (choose-a-background-color "请选择背景颜色")
@@ -395,7 +395,7 @@
   (font-smoothing-default "使用系统默认")
   (select-font-name "选择字体")
   (example-text "示例文字")
-  (only-warn-once "当定义窗口和交互窗口不同步时，仅警告一次")
+  (only-warn-once "当定义视窗和交互视窗不同步时，仅警告一次")
   
   ; warning message when lockfile is around
   (waiting-for-pref-lock "等待参数设置文件解锁...")
@@ -439,6 +439,7 @@
   (backward "上一个")
   (hide "隐藏")
   (find-case-sensitive "大小写敏感")  ;; the check box in both the docked & undocked search
+  (find-anchor-based "用锚进行搜索")
   
   ;;; multi-file-search
   (mfs-multi-file-search-menu-item "在文件中搜索...")
@@ -545,7 +546,7 @@
   (close-info "关闭当前文件")
   (close-menu-item "关闭(&C)")
   
-  (quit-info "关闭所有窗口")
+  (quit-info "关闭所有视窗")
   (quit-menu-item-windows "退出(&X)")
   (quit-menu-item-others "退出(&Q)")
   
@@ -573,7 +574,7 @@
   (select-all-menu-item "全选(&L)")
   
   (find-menu-item "查找") ;; menu item
-  (find-info "在主窗口和搜索栏之间切换光标位置")
+  (find-info "在主视窗和搜索栏之间切换光标位置")
   
   (find-again-info "跳至该文本的下一个出现")
   (find-again-menu-item "查找下一个")
@@ -737,10 +738,10 @@
   ;;; view menu
   (hide-definitions-menu-item-label "隐藏定义(&D)")
   (show-definitions-menu-item-label "显示定义(&D)")
-  (definitions-menu-item-help-string "显示/隐藏定义窗口")
+  (definitions-menu-item-help-string "显示/隐藏定义视窗")
   (show-interactions-menu-item-label "显示交互(&I)")
   (hide-interactions-menu-item-label "隐藏交互(&I)")
-  (interactions-menu-item-help-string "显示/隐藏交互窗口")
+  (interactions-menu-item-help-string "显示/隐藏交互视窗")
   (toolbar "工具栏")
   (toolbar-on-top "顶置工具栏")
   (toolbar-on-left "左置工具栏")
@@ -772,11 +773,11 @@
   ;;; scheme-menu
   (scheme-menu-name "S&cheme")
   (execute-menu-item-label "运行")
-  (execute-menu-item-help-string "运行定义窗口中的程序")
-  (break-menu-item-label "中断")
-  (break-menu-item-help-string "中断当前计算")
-  (kill-menu-item-label "终止")
-  (kill-menu-item-help-string "终止当前计算")
+  (execute-menu-item-help-string "运行定义视窗中的程序")
+  (ask-quit-menu-item-label "中断")
+  (ask-quit-menu-item-help-string "使用break-thread中止当前计算得主线程")
+  (force-quit-menu-item-label "终止")
+  (force-quit-menu-item-help-string "使用custodian-shutdown-all退出当前计算")
   (limit-memory-menu-item-label "限制内存使用...")
   (limit-memory-msg-1 "内存限制会在下一次运行")
   (limit-memory-msg-2 "时生效。内存限制最低值为100megabytes.")
@@ -804,7 +805,7 @@
   (save-a-mred-distribution "保存为MrEd可发布程序")
   (save-a-mzscheme-distribution "保存为MzScheme可发布程序")
   
-  (definitions-not-saved "当前定义窗口中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。是否继续？")
+  (definitions-not-saved "当前定义视窗中的程序并没有被保存过。将使用最近保存过的版本来生成可执行程序。是否继续？")
   ;; The "-explanatory-label" variants are the labels used for the radio buttons in
   ;;  the "Create Executable..." dialog for the "(module ...)" language.
   (launcher "启动程序")
@@ -938,8 +939,8 @@
   (advanced-student "高级")
   (advanced-one-line-summary "在中级的基础上，增加了lambda和赋值")
   (how-to-design-programs "程序设计方法/How to Design Programs") ;; should agree with MIT Press on this one...
-  (pretty-big-scheme "相当大")
-  (pretty-big-scheme-one-line-summary "增加了HtDP(程序设计方法)语言的语法和函数")
+  (pretty-big-scheme "大")
+  (pretty-big-scheme-one-line-summary "MzScheme/MrEd加HtDP(程序设计方法)语言")
   (r5rs-lang-name "R5RS")
   (r5rs-one-line-summary "Scheme语言标准第5修改稿")
   (expander "Expander")
@@ -950,7 +951,7 @@
   (initial-language-category "初始语言")
   (no-language-chosen "还没有选择语言")
   
-  (module-language-one-line-summary "Run creates a REPL in the context of the module, including the module's declared language")
+  (module-language-one-line-summary "运行程序将提供一个包含该module的REPL")
   
   ;;; from the `not a language language' used initially in drscheme.
   (must-choose-language "在继续操作之前，你必须为DrScheme选择一种语言。")
@@ -1006,7 +1007,7 @@
   (profiling-hide-profile "隐藏Profile")
   (profiling-unknown-src "<< 未知 >>")
   (profiling-no-information-available "没有可用的profiling信息。请确定你（在语言设置中）启用了profiling，并且运行了当前程序。")
-  (profiling-clear? "改变定义窗口的内容将导致profiling信息失效。是否继续？")
+  (profiling-clear? "改变定义视窗的内容将导致profiling信息失效。是否继续？")
   
   ;;The Test engine tool
   ;;
@@ -1019,7 +1020,7 @@
   (test-engine-disable-tests "停用测试功能")
   
   ;; test coverage
-  (test-coverage-clear? "改变定义窗口将导致测试覆盖信息失效。是否继续？")
+  (test-coverage-clear? "改变定义视窗将导致测试覆盖信息失效。是否继续？")
   (test-coverage-clear-and-do-not-ask-again "是，并且不再询问")
   (test-coverage-ask? "询问清除测试覆盖")
   
@@ -1134,13 +1135,13 @@
   (xml-tool-switch-to-scheme "转变成Scheme框")
   (xml-tool-switch-to-scheme-splice "转变成Scheme接合框")
   
-  (show-recent-items-window-menu-item "在单独窗口中显示最近使用的文件")
+  (show-recent-items-window-menu-item "在单独视窗中显示最近使用的文件")
   (show-recent-items-window-label "最近使用的文件")
   (number-of-open-recent-items "最近使用项目的数量")
   (switch-anyway "Switch File Anyway")
   
   (stepper-program-has-changed "注意：程序已改变。")
-  (stepper-program-window-closed "注意：程序窗口已关闭。")
+  (stepper-program-window-closed "注意：程序视窗已关闭。")
   
   (stepper-name "单步执行器")
   (stepper-language-level-message "单步执行不支持语言“~a”。")
@@ -1158,8 +1159,8 @@
   
   ;; warnings about closing a drscheme frame when the program
   ;; might still be doing something interesting
-  (program-is-still-running "定义窗口中的程序还在运行中。强制退出？")
-  (program-has-open-windows "定义窗口中的程序打开了其他窗口。强行关闭这些窗口？")
+  (program-is-still-running "定义视窗中的程序还在运行中。强制退出？")
+  (program-has-open-windows "定义视窗中的程序打开了其他视窗。强行关闭这些视窗？")
   
   ;; Profj
   (profj-insert-java-comment-box "插入Java注释框")
