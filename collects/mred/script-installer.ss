@@ -10,9 +10,10 @@
     (let ([v (findf (lambda (v) (memq v variants)) vs)])
       (when v
         (parameterize ([current-launcher-variant v])
-          (make-mred-launcher '("-z")
-                              (mred-program-launcher-path "mred-text")
-                              '([relative? . #t] [subsystem . console]))))))
+          (make-mred-launcher
+           '("-z")
+           (mred-program-launcher-path "mred-text")
+           '([relative? . #t] [subsystem . console] [single-instance? . #f]))))))
   ;; add a bin/mred script under OS X
   (when (eq? 'macosx (system-type))
     (for ([v variants] #:when (memq v '(script-3m script-cgc)))
