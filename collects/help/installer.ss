@@ -2,7 +2,7 @@
 #lang scheme/base
 
 (provide post-installer)
-(require launcher/launcher)
+(require launcher)
 
 (define (post-installer path)
   (for ([mr? (case (system-type)
