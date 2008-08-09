@@ -7,7 +7,7 @@
 	  	     scheme/gui
                      scheme/pretty
                      scheme/contract
-		     (only-in slideshow/pict text)
+		     (only-in slideshow/pict text dc-for-text-size)
 		     redex))
 
 @(define-syntax (defpattech stx)
@@ -47,34 +47,6 @@
      #'((tech "term") args ...)]
     [x (identifier? #'x) #'(tech "term")]))
 
-@;{
-
-I usually use an `ellipsis' non-terminal to make it more explicit that
-the "..." (the only production of `ellipsis') is literal.
-- Hide quoted text -
-
-At Wed, 30 Jul 2008 12:49:43 -0500, "Robby Findler" wrote:
-> Also, how have you been notating a literal ellipsis in the docs? That
-> is, the "c" below should really be a literal ellipsis (as disctinct
-> from a repetition of "b")?
-
-}
-
-
-@;{
-
-I use `defidform'. See `else' for an example.
-- Hide quoted text -
-
-At Wed, 30 Jul 2008 13:03:07 -0500, "Robby Findler" wrote:
-> One more question: I export --> and fresh from collects/redex/main.ss
-> so that I can signal a syntax error if they are used outside of
-> reduction-relation. But this causes scribble to complain when I don't
-> document them. Is there a standard way to document them?
->
-> Robby
-}
-
 @title{@bold{PLT Redex}: an embedded DSL for debugging operational semantics}
 
 PLT Redex consists of a domain-specific language for specifying
@@ -93,69 +65,6 @@ The module @schememodname[redex/reduction-semantics]
 provides only the non-GUI portions of what is described in
 this manual (everything except the last two sections),
 making it suitable for use with @tt{mzscheme} scripts.
-
-@;{
-  _reduction-semantics.ss_: the core reduction semantics
-  library
-
-  _gui.ss_: a _visualization tool for reduction sequences_.
-
-  _pict.ss_: a library for _generating picts and postscript from semantics_
-
-In addition, the examples subcollection contains several
-small languages to demonstrate various different uses of
-this tool:
-
-  _arithmetic.ss_: an arithmetic language with every
-  possible order of evaluation
-
-  _beginner.ss_: a PLT redex implementation of (much of) the
-  beginning student teaching language.
-
-  _church.ss_: church numerals with call by name
-  normal order evaluation
-
-  _combinators.ss_: fills in the gaps in a proof in
-  Barendregt that i and j (defined in the file) are
-  a combinator basis
-
-  _compatible-closure.ss_: an example use of compatible
-  closure. Also, one of the first examples from Matthias
-  Felleisen and Matthew Flatt's monograph
-
-  _eta.ss_: shows how eta is, in general, unsound.
-
-  _ho-contracts.ss_: computes the mechanical portions of a
-  proof in the Contracts for Higher Order Functions paper
-  (ICFP 2002). Contains a sophisticated example use of an
-  alternative pretty printer.
-
-  iswim.ss : see further below.
-
-  _macro.ss_: models macro expansion as a reduction semantics.
-
-  _letrec.ss_: shows how to model letrec with a store and
-  some infinite looping terms
-
-  _omega.ss_: the call by value lambda calculus with call/cc.
-  Includes omega and two call/cc-based infinite loops, one of
-  which has an ever-expanding term size and one of which has
-  a bounded term size.
-
-  _semaphores.ss_: a simple threaded language with semaphores
-
-  _subject-reduction.ss_: demos traces/pred that type checks
-  the term.
-
-  _threads.ss_: shows how non-deterministic choice can be
-  modeled in a reduction semantics. Contains an example use
-  of a simple alternative pretty printer.
-
-  _types.ss_: shows how the simply-typed lambda calculus's
-  type system can be written as a rewritten system (see
-  Kuan, MacQueen, Findler in ESOP 2007 for more).
-
-}
 
 @table-of-contents[]
 
@@ -1246,26 +1155,98 @@ Be sure to remove the call to dc-for-text-size before you
 generate .ps files, otherwise the font spacing will be wrong
 in the .ps file.
 
-@subsection{Pict & PostScript Generators}
+@subsection{Picts & PostScript}
+
+This section documents two classes of operations, one for direct use
+of creating postscript figures for use in papers:
+@scheme[render-language],
+@scheme[render-reduction-relation], and
+@scheme[render-metafunction], and one
+for use in combination with other libraries that operate on picts
+(like @other-manual['scribblings/slideshow]): 
+@scheme[language->pict],
+@scheme[reduction-relation->pict], and
+@scheme[metafunction->pict].
+The primary difference between these functions is that the former list
+sets @scheme[dc-for-text-size] and the latter does not.
+
+@defthing[render-language (case-> (-> compiled-lang? 
+                                      pict?) 
+                                  (-> compiled-lang?
+                                      (or/c string? pict?)
+                                      void?))]{
+
+This function renders a language. If it receives just a
+single argument, it produces a pict and if it receives two
+arguments, it saves PostScript in the provided filename.
+
+That this function calls @scheme[dc-for-text-size] to set
+the dc to a relevant dc (either a @scheme[bitmap-dc%] or a
+@scheme[ps-dc%] depending if the function is called with one
+or two arguments, respectively). 
+
+See @scheme[language->pict] if you are using slideshow or
+are otherwise setting @scheme[dc-for-text-size].  }
+
+@defproc[(language->pict (lang compiled-lang?)) pict?]{
+This function turns a languages into a picts. It is
+primarily designed to be used with Slideshow, or with
+other tools that combine picts together. It does not
+set @scheme[dc-for-text-size].
+}
+
+@defthing[render-reduction-relation (case-> (-> reduction-relation?
+                                                pict?)
+                                            (-> reduction-relation?
+                                                (or/c string? path?)
+                                                pict?))]{
+
+If provided with one argument, @scheme[render-reduction-relation]
+produces a pict that renders properly in the definitions
+window in DrScheme. If given two argument, it writes
+postscript into the file named by its second argument.
+
+This function sets @scheme[dc-for-text-size]. See also
+@scheme[reduction-relation->pict].
+
+}
+
+@defproc[(reduction-relation->pict (r reduction-relation?)) pict?]{
+  This produces a pict, but without setting @scheme[dc-for-text-size].
+  It is suitable for use in Slideshow or other libraries that combine
+  picts.
+}
 
 @deftogether[[
-@defproc[(language->pict (lang compiled-lang?)
-                         (nts (or/c false/c (cons/c symbol? (listof symbol?))) #f))
-         pict?]{}
-@defproc[(language->ps (lang compiled-lang?)
-                       (filename (or/c path? string?))
-                       (nts (or/c false/c (cons/c symbol? (listof symbol?))) #f))
-         void?]{}]]{
+@defform[(render-metafunction metafunction-name)]{}
+@defform/none[#:literals (render-metafunction)
+              (render-metafunction metafunction-name filename)]{}]]{
 
+If provided with one argument, @scheme[render-metafunction]
+produces a pict that renders properly in the definitions
+window in DrScheme. If given two argument, it writes
+postscript into the file named by @scheme[filename] (which
+may be either a string or bytes).
 
-These two functions turn a languages into picts. The first
-argument is the language, and the second is a list of
-non-terminals that should appear in the pict. It may only
-contain symbols that are in the language's set of
-non-terminals.
+This function sets @scheme[dc-for-text-size]. See also
+@scheme[metafunction->pict].
+}
 
-For @scheme[language->ps], the path argument is a filename for the
-PostScript file.
+@defform[(metafunction->pict metafunction-name)]{
+  This produces a pict, but without setting @scheme[dc-for-text-size].
+  It is suitable for use in Slideshow or other libraries that combine
+  picts.
+}
+
+@subsection{Customization}
+
+@defparam[render-language-nts nts (or/c false/c (listof symbol?))]{
+  The value of this parameter controls which non-terminals
+  @scheme[render-language] and @scheme[language->pict] render. If it
+  is @scheme[#f] (the default), all non-terminals are rendered.
+  If it is a list of symbols, only the listed symbols are rendered.
+
+  See also @scheme[language-nts].
 }
 
 @defparam[extend-language-show-union show? boolean?]{
@@ -1279,37 +1260,14 @@ four-period ellipses, just like in the concrete syntax).
 Defaultly @scheme[#f].
 
 Note that the #t variant can look a little bit strange if
-.... are used and the original version of the language has
+@scheme[....] are used and the original version of the language has
 multi-line right-hand sides.
 }
 
-@deftogether[[
-@defproc[(reduction-relation->pict 
-           (r reduction-relation?)
-           (rules (or/c false/c (listof (union string? symbol?))) #f))
-          pict?]{}
-@defproc[(reduction-relation->ps
-           (r reduction-relation?)
-           (file (or/c string? path?))
-           (rules (or/c false/c (listof (union string? symbol?))) #f))
-          pict?]{}]]{
-
-These two functions turn reduction relations into picts.
-
-The optional lists determine which reduction rules are shown
-in the pict.
+@defparam[render-reduction-relation-rules rules (or/c false/c (listof (or/c symbol? string?)))]{
+  This parameter controls which rules in a reduction relation
+  will be rendered.
 }
-
-@deftogether[[
-@defform[(metafunction->pict metafunction-name)]{}
-@defform[(metafunction->ps metafunction-name filename)]{}]]{
-
-These two syntactic forms turn metafunctions into picts. The second
-accepts a string or a path for @scheme[filename] and saves the
-PostScript in that file.
-}
-
-@subsection{Customization}
 
 @defparam[rule-pict-style style
                (symbols 'vertical 

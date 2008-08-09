@@ -12,11 +12,15 @@
 (require (for-syntax scheme/base))
 
 (provide language->pict
-         language->ps
+         render-language
+         render-language-nts
+         
          reduction-relation->pict
-         reduction-relation->ps
+         render-reduction-relation
+         render-reduction-relation-rules
+         
          metafunction->pict
-         metafunction->ps
+         render-metafunction
          
          basic-text
          
@@ -43,13 +47,40 @@
          extend-language-show-union
          set-arrow-pict!)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;   reduction to pict
-;;
 
-(define reduction-relation->pict
-  (λ (rr [rules #f])
+;                                                                             
+;                                                                             
+;                                                                             
+;                       ;;;;                       ;    ;;                    
+;                       ;;;;                      ;;    ;;                    
+;  ;;; ;;;   ;;;     ;;;;;;; ;;;; ;;;;   ;;;;;  ;;;;;        ;;;;   ;;;; ;;;  
+;  ;;;;;;;  ;;;;;   ;;;;;;;; ;;;; ;;;;  ;;;;;; ;;;;;; ;;;;  ;;;;;;  ;;;;;;;;; 
+;  ;;;; ;; ;;;; ;; ;;;;;;;;; ;;;; ;;;; ;;;;;;;  ;;;;  ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;;    ;;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;; ;;;; ;;; ;;;; ;;;; 
+;  ;;;;    ;;;;;   ;;;;;;;;; ;;;; ;;;; ;;;;;;;  ;;;;; ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;;     ;;;;;;  ;;;;;;;; ;;;;;;;;;  ;;;;;;  ;;;;; ;;;;  ;;;;;;  ;;;; ;;;; 
+;  ;;;;      ;;;;    ;;;;;;;  ;;; ;;;;   ;;;;;   ;;;; ;;;;   ;;;;   ;;;; ;;;; 
+;                                                                             
+;                                                                             
+;                                                                             
+;                                                               
+;                                                               
+;                                                               
+;                  ;;;;              ;    ;;                    
+;                  ;;;;             ;;    ;;                    
+;  ;;; ;;;   ;;;   ;;;; ;;;;;;;   ;;;;;        ;;;;   ;;;; ;;;  
+;  ;;;;;;;  ;;;;;  ;;;; ;;;;;;;; ;;;;;; ;;;;  ;;;;;;  ;;;;;;;;; 
+;  ;;;; ;; ;;;; ;; ;;;;     ;;;;  ;;;;  ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;;    ;;;;;;; ;;;;  ;;;;;;;  ;;;;  ;;;; ;;;; ;;; ;;;; ;;;; 
+;  ;;;;    ;;;;;   ;;;; ;;  ;;;;  ;;;;; ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;;     ;;;;;; ;;;; ;;;;;;;;  ;;;;; ;;;;  ;;;;;;  ;;;; ;;;; 
+;  ;;;;      ;;;;  ;;;;  ;; ;;;;   ;;;; ;;;;   ;;;;   ;;;; ;;;; 
+;                                                               
+;                                                               
+;                                                               
+
+(define (do-reduction-relation->pict what rr)
+  (let ([rules (render-reduction-relation-rules)])
     ((rule-pict-style->proc)
      (map (rr-lws->trees (language-nts (reduction-relation-lang rr)))
           (if rules
@@ -60,16 +91,24 @@
                 (map (lambda (label)
                        (hash-ref ht label
                                  (lambda ()
-                                   (error 'reduction-relation->pict
+                                   (error what
                                           "no rule found for label: ~e"
                                           label))))
                      rules))
               (reduction-relation-lws rr))))))
 
-(define reduction-relation->ps
-  (λ (rr filename [rules #f])
-    (save-as-ps (λ () (reduction-relation->pict rr rules))
-                filename)))
+(define (reduction-relation->pict rr) (do-reduction-relation->pict 'reduction-relation->pict rr))
+
+(define render-reduction-relation-rules (make-parameter #f))
+
+(define render-reduction-relation
+  (case-lambda
+    [(rr)
+     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+       (do-reduction-relation->pict 'render-reduction-relation rr))]
+    [(rr filename)
+     (save-as-ps (λ () (do-reduction-relation->pict 'render-reduction-relation rr))
+                 filename)]))
 
 (define ((rr-lws->trees nts) rp)
   (let ([tp (λ (x) (lw->pict nts x))])
@@ -330,10 +369,23 @@
           [(--<<) (basic-text "\u291b" (default-style))]
           [else (error 'arrow->pict "unknown arrow ~s" arr)]))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  language to pict
-;;
+
+
+;                                                                       
+;                                                                       
+;                                                                       
+;  ;;;;                                                                 
+;  ;;;;                                                                 
+;  ;;;; ;;;;;;;  ;;;; ;;;   ;;;;;;; ;;;; ;;;; ;;;;;;;   ;;;;;;;   ;;;   
+;  ;;;; ;;;;;;;; ;;;;;;;;; ;;;;;;;; ;;;; ;;;; ;;;;;;;; ;;;;;;;;  ;;;;;  
+;  ;;;;     ;;;; ;;;; ;;;; ;;; ;;;; ;;;; ;;;;     ;;;; ;;; ;;;; ;;;; ;; 
+;  ;;;;  ;;;;;;; ;;;; ;;;; ;;;;;;;; ;;;; ;;;;  ;;;;;;; ;;;;;;;; ;;;;;;; 
+;  ;;;; ;;  ;;;; ;;;; ;;;;  ;;;;;;; ;;;; ;;;; ;;  ;;;;  ;;;;;;; ;;;;;   
+;  ;;;; ;;;;;;;; ;;;; ;;;; ;   ;;;; ;;;;;;;;; ;;;;;;;; ;   ;;;;  ;;;;;; 
+;  ;;;;  ;; ;;;; ;;;; ;;;; ;;;;;;;;  ;;; ;;;;  ;; ;;;; ;;;;;;;;   ;;;;  
+;                          ;;;;;;;;                    ;;;;;;;;         
+;                           ;;;;;;                      ;;;;;;          
+;                                                                       
 
 ;; type flattened-language-pict-info =
 ;;   (listof (cons (listof symbol[nt]) (listof loc-wrapper[rhs])))
@@ -341,20 +393,26 @@
 ;;  (union (vector flattened-language-pict-info language-pict-info) 
 ;;         flattened-language-pict-info)
 
-(define (language->ps lang filename [non-terminals #f] #:pict-wrap [pict-wrap (lambda (p) p)])
-  (when non-terminals
-    (check-non-terminals 'language->ps non-terminals lang))
-  (save-as-ps (λ () (pict-wrap (language->pict lang non-terminals)))
-              filename))
+(define render-language 
+  (case-lambda
+    [(lang) 
+     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+       (do-language->pict 'render-language lang))]
+    [(lang filename)
+     (save-as-ps (λ () (do-language->pict 'render-language lang)) filename)]))
 
-(define (language->pict lang [non-terminals #f])
-  (when non-terminals
-    (check-non-terminals 'language->pict non-terminals lang))
-  (let* ([all-non-terminals (hash-map (compiled-lang-ht lang) (λ (x y) x))]
-         [non-terminals (or non-terminals all-non-terminals)])
+(define (language->pict lang) (do-language->pict 'language->pict lang))
+
+(define (do-language->pict what lang)
+  (let ([specd-non-terminals (render-language-nts)]
+        [all-non-terminals (hash-map (compiled-lang-ht lang) (λ (x y) x))])
+    (when specd-non-terminals
+      (check-non-terminals what specd-non-terminals lang))
     (make-grammar-pict (compiled-lang-pict-builder lang) 
-                       non-terminals
+                       (or specd-non-terminals all-non-terminals)
                        all-non-terminals)))
+
+(define render-language-nts (make-parameter #f))
 
 (define (check-non-terminals what nts lang)
   (let ([langs-nts (language-nts lang)])
@@ -555,10 +613,22 @@
                 bar
                 (loop snd (cdr rst))))])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;   metafunction to pict
-;;
+
+;                                                                                                          
+;                                                                                                          
+;                                                                                                          
+;                            ;              ;;;                                 ;    ;;                    
+;                           ;;             ;;;;                                ;;    ;;                    
+;  ;;;;;;; ;;;;    ;;;    ;;;;; ;;;;;;;   ;;;;; ;;;; ;;;; ;;;; ;;;    ;;;;;  ;;;;;        ;;;;   ;;;; ;;;  
+;  ;;;;;;;;;;;;;  ;;;;;  ;;;;;; ;;;;;;;;  ;;;;  ;;;; ;;;; ;;;;;;;;;  ;;;;;; ;;;;;; ;;;;  ;;;;;;  ;;;;;;;;; 
+;  ;;;; ;;; ;;;; ;;;; ;;  ;;;;      ;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;  ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;; ;;; ;;;; ;;;;;;;  ;;;;   ;;;;;;; ;;;;;; ;;;; ;;;; ;;;; ;;;; ;;;;     ;;;;  ;;;; ;;;; ;;; ;;;; ;;;; 
+;  ;;;; ;;; ;;;; ;;;;;    ;;;;; ;;  ;;;;  ;;;;  ;;;; ;;;; ;;;; ;;;; ;;;;;;;  ;;;;; ;;;; ;;;;;;;; ;;;; ;;;; 
+;  ;;;; ;;; ;;;;  ;;;;;;  ;;;;; ;;;;;;;;  ;;;;  ;;;;;;;;; ;;;; ;;;;  ;;;;;;  ;;;;; ;;;;  ;;;;;;  ;;;; ;;;; 
+;  ;;;; ;;; ;;;;   ;;;;    ;;;;  ;; ;;;;  ;;;;   ;;; ;;;; ;;;; ;;;;   ;;;;;   ;;;; ;;;;   ;;;;   ;;;; ;;;; 
+;                                                                                                          
+;                                                                                                          
+;                                                                                                          
 
 (define (make-=) (basic-text " = " (default-style)))
 
@@ -568,11 +638,14 @@
      (identifier? #'name)
      #'(metafunction->pict/proc (metafunction name))]))
 
-(define-syntax (metafunction->ps stx)
+(define-syntax (render-metafunction stx)
   (syntax-case stx ()
+    [(_ name)
+     (identifier? #'name)
+     #'(render-metafunction/proc (metafunction name))]
     [(_ name file)
      (identifier? #'name)
-     #'(metafunction->ps/proc (metafunction name) file)]))
+     #'(render-metafunction/proc (metafunction name) file)]))
 
 (define linebreaks (make-parameter #f))
 
@@ -772,6 +845,12 @@
                                (basic-text "]" (default-style)))])]
     [else x]))
 
-(define (metafunction->ps/proc mf filename)
-  (save-as-ps (λ () (metafunction->pict/proc mf))
-              filename))
+(define render-metafunction/proc
+  (case-lambda 
+    [(mf filename)
+     (save-as-ps (λ () (metafunction->pict/proc mf))
+                 filename)]
+    [(mf)
+     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+       (metafunction->pict/proc mf))]))
+     

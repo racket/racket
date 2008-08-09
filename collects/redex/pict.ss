@@ -9,31 +9,24 @@
          (lib "mrpict.ss" "texpict"))
 
 (provide/contract 
- [reduction-relation->pict 
-  (->* (reduction-relation?)
-       ((or/c false/c (listof (or/c string? symbol?))))
-       pict?)]
- [reduction-relation->ps 
-  (->* (reduction-relation?
-        (or/c string? path?))
-       ((or/c false/c (listof (or/c string? symbol?))))
-       void?)]
- [language->pict
-  (->* (compiled-lang?)
-       ((or/c false/c (cons/c symbol? (listof symbol?))))
-      pict?)]
- [language->ps
-  (->* (compiled-lang?
-        (or/c path? string?))
-       ((or/c false/c (cons/c symbol? (listof symbol?))))
-       void?)]
- [extend-language-show-union (parameter/c boolean?)])
+ [render-reduction-relation
+  (case-> (-> reduction-relation? pict?)
+          (-> reduction-relation? (or/c string? path?) void?))]
+ [reduction-relation->pict (-> reduction-relation? pict?)]
+ [render-reduction-relation-rules (parameter/c (or/c false/c (listof (or/c symbol? string?))))]
+ 
+ [language->pict (-> compiled-lang? pict?)]
+ [render-language
+  (case-> (-> compiled-lang? pict?)
+          (-> compiled-lang? (or/c path? string?) void?))])
 
 ; syntax
 (provide metafunction->pict
-         metafunction->ps)
+         render-metafunction)
 
 (provide/contract
+ [render-language-nts (parameter/c (or/c false/c (listof (or/c string? symbol?))))]
+ [extend-language-show-union (parameter/c boolean?)]
  [current-text (parameter/c (-> string? text-style/c number? pict?))])
 
 (provide/contract

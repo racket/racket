@@ -5,3 +5,4 @@
 (provide (all-from-out "reduction-semantics.ss"
                        "gui.ss" 
                        "pict.ss"))
+(provide render-language)

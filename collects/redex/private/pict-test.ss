@@ -10,32 +10,31 @@
   (require (lib "mrpict.ss" "texpict")
            (lib "mred.ss" "mred")
            (lib "class.ss"))
-  (dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1)))
   
   (define-language empty-language)
   
   (define-language var-ab
     [var (a 
           b)])
-  (language->pict var-ab #f)
+  (render-language var-ab)
   
   (define-language var-not-ab
     [var (variable-except x
                           y)])
-  (language->pict var-not-ab #f)
+  (render-language var-not-ab)
   
   (let ()
     (define-metafunction empty-language [(zero any_in) 0])
-    (metafunction->pict zero))
+    (render-metafunction zero))
 
-  (reduction-relation->pict
+  (render-reduction-relation
    (reduction-relation
     empty-language
     (--> number_const
          ,(term
            (+ number_const 0)))))
   
-  (reduction-relation->pict 
+  (render-reduction-relation 
    (reduction-relation
     empty-language
     (--> a b
@@ -49,6 +48,6 @@
   (define-extended-language x0-10 x1-9
     (x 0 .... 10))
   
-  (language->pict x0-10 #f)
+  (render-language x0-10)
   
   (printf "pict-test.ss passed\n"))

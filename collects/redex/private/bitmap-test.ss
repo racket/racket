@@ -13,13 +13,13 @@
        number)
     (v number (λ (x) e))
     ((x y) variable-not-otherwise-mentioned))
-  (test (language->pict lang #f) "language.png")
+  (test (render-language lang) "language.png")
   
   (define-extended-language lang++ lang
     (e .... number (+ e e))
     (v .... number))
   
-  (test (language->pict lang++ #f) "extended-language.png")
+  (test (render-language lang++) "extended-language.png")
   
   (define red
     (reduction-relation
@@ -27,17 +27,17 @@
      (--> ((λ (x) e) v) (S x v e))))
   
   ;; tests: reduction-relation
-  (test (reduction-relation->pict red)
+  (test (render-reduction-relation red)
         "reduction-relation.png")
 
-  (test (reduction-relation->pict 
+  (test (render-reduction-relation 
          (extend-reduction-relation red lang (--> 1 2)))
         "extended-reduction-relation.png")
   
   (define-metafunction lang
     [(S x v e) e])
   
-  (test (metafunction->pict S)
+  (test (render-metafunction S)
         "metafunction.png")
   
   (printf "bitmap-test.ss: ")
