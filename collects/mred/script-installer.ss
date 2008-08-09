@@ -1,20 +1,22 @@
-;; This installer module just adds a bin/mred script
-;;  under OS X
-(module script-installer mzscheme
-  (provide post-installer)
-  (require launcher)
+#lang scheme/base
 
-  (define post-installer
-    (lambda (path)
-      (when (eq? 'macosx (system-type))	
-	(let ([install
-	       (lambda (variant)
-		 (parameterize ([current-launcher-variant variant])
-		   (make-mred-launcher null 
-				       (mred-program-launcher-path "MrEd")
-				       '((exe-name . "MrEd")
-					 (relative? . #t)))))])
-          (for-each (lambda (v)
-                      (when (memq v '(script-3m script-cgc))
-                        (install v)))
-                    (available-mred-variants)))))))
+(require launcher)
+(provide post-installer)
+
+(define (post-installer path)
+  (define variants (available-mred-variants))
+  ;; add a mred-text executable that uses the -z flag (preferring a script)
+  (for ([vs '((script-3m 3m) (script-cgc cgc))])
+    (let ([v (findf (lambda (v) (memq v variants)) vs)])
+      (when v
+        (parameterize ([current-launcher-variant v])
+          (make-mred-launcher '("-z")
+                              (mred-program-launcher-path "mred-text")
+                              '([relative? . #t] [subsystem . console]))))))
+  ;; add a bin/mred script under OS X
+  (when (eq? 'macosx (system-type))
+    (for ([v variants] #:when (memq v '(script-3m script-cgc)))
+      (parameterize ([current-launcher-variant v])
+        (make-mred-launcher null
+                            (mred-program-launcher-path "MrEd")
+                            '([exe-name . "MrEd"] [relative? . #t]))))))
