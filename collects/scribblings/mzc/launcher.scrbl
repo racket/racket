@@ -54,7 +54,7 @@ the following additional associations apply to launchers:
        @scheme['script-cgc] variant) --- provides the base name for a
        @scheme['3m]-/@scheme['cgc]-variant launcher, which the script
        will call ignoring @scheme[args]. If this name is not provided,
-       the script will goes through the MrEd executable as usual.}
+       the script will go through the MrEd executable as usual.}
 
  @item{@scheme['relative?] (all platforms) --- a boolean, where
         @scheme[#t] means that the generated launcher should find the
