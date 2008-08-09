@@ -116,10 +116,6 @@ additional set of operations:
 
 @itemize{
 
- @item{@schemeidfont{make-}@scheme[structid] : takes a number of
-       arguments equal to the number of fields in the structure type,
-       and creates a new instance of the structure type.}
-
  @item{@schemeidfont{set-}@scheme[structid]@schemeidfont{-}@scheme[fieldid]@schemeidfont{!}
        : takes an instance of the structure and a value, and changes
        the instance's field to the given value.}
