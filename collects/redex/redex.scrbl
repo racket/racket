@@ -1130,40 +1130,19 @@ relations, and metafunction written with plt redex.
 
 Each grammar, reduction relation, and metafunction can be
 saved in a .ps file (as encapsulated postscript), or can be
-turned into a pict. 
-
-Picts are more useful for debugging since DrScheme REPL will
-show you the pict directly (albeit with slightly different
-fonts than you'd see in the .ps file). You can also use the
-picts with Slideshow's pict library to build more complex
-arrangements of the figures and add other picts. See
-Slideshow for details.
-
-If you are only using the picts to experiment in DrScheme's
-REPL, be sure your program is in the GUI library, and
-contains this header:
-
-@schememod[
-scheme/gui
-(require texpict/mrpict)
-(dc-for-text-size
- (make-object bitmap-dc%
-  (make-object bitmap% 1 1)))
-]
-
-Be sure to remove the call to dc-for-text-size before you
-generate .ps files, otherwise the font spacing will be wrong
-in the .ps file.
+turned into a pict for viewing in the REPL or using with
+Slideshow (see 
+@other-manual['(lib "scribblings/slideshow/slideshow.scrbl")]).
 
 @subsection{Picts & PostScript}
 
-This section documents two classes of operations, one for direct use
-of creating postscript figures for use in papers:
+This section documents two classes of operations, one for
+direct use of creating postscript figures for use in papers
+and for use in DrScheme to easily adjust the typesetting:
 @scheme[render-language],
 @scheme[render-reduction-relation], and
 @scheme[render-metafunction], and one
 for use in combination with other libraries that operate on picts
-(like @other-manual['(lib "scribblings/slideshow/slideshow.scrbl")]): 
 @scheme[language->pict],
 @scheme[reduction-relation->pict], and
 @scheme[metafunction->pict].
@@ -1173,7 +1152,7 @@ sets @scheme[dc-for-text-size] and the latter does not.
 @defthing[render-language (case-> (-> compiled-lang? 
                                       pict?) 
                                   (-> compiled-lang?
-                                      (or/c string? pict?)
+                                      (or/c string? path?)
                                       void?))]{
 
 This function renders a language. If it receives just a
@@ -1199,7 +1178,7 @@ set @scheme[dc-for-text-size].
                                                 pict?)
                                             (-> reduction-relation?
                                                 (or/c string? path?)
-                                                pict?))]{
+                                                void?))]{
 
 If provided with one argument, @scheme[render-reduction-relation]
 produces a pict that renders properly in the definitions
