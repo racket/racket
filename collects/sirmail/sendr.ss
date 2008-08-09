@@ -733,23 +733,21 @@
         (let ([re (regexp (format "~a\n" SEPARATOR))])
           (let ([m (regexp-match-positions re message-str)])
             (if m
-                (let ([header (re-encode-fields
-			       '("To" "CC" "BCC" "Subject")
-			       (string-append
-				(string-lf->crlf (substring message-str 0 (caar m)))
-				(build-uptime-field message-count) 
-                                "\r\n"
-				empty-header))]
+                (let ([header (string-append
+                               (string-lf->crlf (substring message-str 0 (caar m)))
+                               (build-uptime-field message-count) 
+                               "\r\n"
+                               empty-header)]
                       [body-lines (regexp-split 
 				   #rx"\n" 
 				   (substring message-str (cdar m) (string-length message-str)))])
 		  (validate-header header)
                   (let* ([to* (sm-extract-addresses (extract-field "To" header))]
-                         [to (map car to*)]
+                         [to (map encode-for-header (map car to*))]
                          [cc* (sm-extract-addresses (extract-field "CC" header))]
-                         [cc (map car cc*)]
+                         [cc (map encode-for-header (map car cc*))]
                          [bcc* (sm-extract-addresses (extract-field "BCC" header))]
-                         [bcc (map car bcc*)]
+                         [bcc (map encode-for-header (map car bcc*))]
                          [from (let ([l (extract-addresses (MAIL-FROM) 'full)])
                                  (unless (= 1 (length l))
                                    (error 'send "bad mail-from configuration: ~a" (MAIL-FROM)))
@@ -758,12 +756,12 @@
                                         (unless (= 1 (length l))
                                           (error 'send "bad mail-from configuration: ~a" (MAIL-FROM)))
                                         (car l))]
-                         [subject (extract-field "Subject" header)]
+                         [subject (encode-for-header (extract-field "Subject" header))]
                          [prop-header (remove-fields '("To" "CC" "BCC" "Subject") header)]
                          [std-header (standard-message-header from to cc bcc subject)]
                          [new-header (append-headers std-header prop-header)]
                          [tos (map cdr (append to* cc* bcc*))])
-                    
+
                     (as-background
                      enable
                      (lambda (break-bad break-ok)
@@ -811,19 +809,6 @@
                 (message-box
                  "Error"
                  (format "Lost \"~a\" separator" SEPARATOR))))))
-
-      (define (re-encode-fields l header)
-	(cond
-	 [(null? l) header]
-	 [(extract-field (car l) header)
-	  => (lambda (v)
-	       (re-encode-fields 
-		(cdr l)
-		(replace-field
-		 (car l)
-		 (encode-for-header v)
-		 header)))]
-	 [else (re-encode-fields (cdr l) header)]))
       
       ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;  Meta-Q Reflowing                                      ;;
