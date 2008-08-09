@@ -30,7 +30,7 @@ direct support for creating launchers.
 
 Creates the launcher @scheme[dest], which starts MrEd with the
 command-line arguments specified as strings in @scheme[args]. Extra
-arguments passed to the launcher at run-time are be appended (modulo
+arguments passed to the launcher at run-time are appended (modulo
 special Unix/X flag handling, as described below) to this list and
 passed on to MrEd. If @scheme[dest] exists already, as either a file
 or directory, it is replaced.
