@@ -24,7 +24,7 @@
                                        (list? (car (fail-type-src fail-type))))
                                   (car (fail-type-src fail-type))
                                   (fail-type-src fail-type))))])
-        (printf "fail-type->message ~a~n" fail-type)
+        #;(printf "fail-type->message ~a~n" fail-type)
         (cond
           [(terminal-fail? fail-type)
            (collapse-message
@@ -233,17 +233,17 @@
               (narrow-opts chance-may-use chance-used-winners)]
              
              [winners (narrow-opts chance chance-may-winners)])
-        (printf "all options: ~a~n" opts-list)
-        (printf "~a ~a ~a ~a ~a~n"
+        #;(printf "all options: ~a~n" opts-list)
+        #;(printf "~a ~a ~a ~a ~a~n"
                   (map fail-type-name opts-list)
                   (map fail-type-chance opts-list)
                   (map fail-type-used opts-list)
                   (map fail-type-may-use opts-list)
                   (map composite opts-list))
-        (printf "composite round: ~a ~a ~n"
+        #;(printf "composite round: ~a ~a ~n"
                   (map fail-type-name composite-winners)
                   (map composite composite-winners))
-        (printf "final sorting: ~a~n" (map fail-type-name winners))
+        #;(printf "final sorting: ~a~n" (map fail-type-name winners))
         winners))
     
     (define (first-n n lst)
