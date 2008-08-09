@@ -1163,7 +1163,7 @@ of creating postscript figures for use in papers:
 @scheme[render-reduction-relation], and
 @scheme[render-metafunction], and one
 for use in combination with other libraries that operate on picts
-(like @other-manual['scribblings/slideshow]): 
+(like @other-manual['(lib "scribblings/slideshow/slideshow.scrbl")]): 
 @scheme[language->pict],
 @scheme[reduction-relation->pict], and
 @scheme[metafunction->pict].
