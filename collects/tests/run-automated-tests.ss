@@ -56,7 +56,7 @@
         (echo "BOOM!") ; used to find errors in nightly builds
         (break)))
     (thread (let ([th (current-thread)])
-              (lambda () (sleep 600) (echo "Timeout!") (break-thread th))))
+              (lambda () (sleep 900) (echo "Timeout!") (break-thread th))))
     (parameterize* ([exit-handler
                      (lambda (n) (abort n "exit with error code ~a" n))]
                     [uncaught-exception-handler
