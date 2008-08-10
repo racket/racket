@@ -1238,7 +1238,8 @@
 (parameterize ((current-namespace (make-base-namespace)))
   (err/rt-test
     (eval '(module m lang/htdp-beginner
-	     (require teachpack/htdp/image) overlay))
+             (require (lib "image.ss" "teachpack/htdp"))
+             overlay))
     (lambda (exn)
       (regexp-match #rx"must be applied to arguments" 
 	(exn-message exn)))))
