@@ -280,18 +280,25 @@ namespace.
       (make-exn:fail:contract
        (string-append (format "~a : " quicksort) (apply format fmt-str x))
        (current-continuation-marks))))
+
+  (define (do-sort l cmp? name)
+    (unless (beginner-list? l) 
+      (qcheck name "first argument must be of type <list>, given ~e" l))
+    (unless (and (procedure? cmp?) (procedure-arity-includes? cmp? 2))
+      (qcheck name "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
+    (sort l (lambda (x y) 
+              (define r (cmp? x y))
+              (unless (boolean? r)
+                (qcheck name "the results of the procedure argument must be of type <boolean>, produced ~e" r))
+              r)))
     
   (define-teach intermediate quicksort
     (lambda (l cmp?)
-      (unless (beginner-list? l) 
-        (qcheck 'quicksort "first argument must be of type <list>, given ~e" l))
-      (unless (and (procedure? cmp?) (procedure-arity-includes? cmp? 2))
-        (qcheck 'quicksort "second argument must be a <procedure> that accepts two arguments, given ~e" cmp?))
-      (quicksort l (lambda (x y) 
-                     (define r (cmp? x y))
-                     (unless (boolean? r)
-                       (qcheck 'quicksort "the results of the procedure argument must be of type <boolean>, produced ~e" r))
-                     r))))
+      (do-sort l cmp? 'quicksort)))
+  (define-teach intermediate sort
+    (lambda (l cmp?)
+      (do-sort l cmp? 'sort)))
+
   (define-teach intermediate foldr
     (lambda (f e l)
       (unless (and (procedure? f) (procedure-arity-includes? f 2))
@@ -356,6 +363,7 @@ namespace.
     beginner-equal~?
     beginner-=~
     intermediate-quicksort
+    intermediate-sort
     intermediate-foldr
     intermediate-foldl
     intermediate-build-string
