@@ -1,4 +1,4 @@
-Version 4.1
+Version 4.1, August 2008
 
 Added auto-resize init argument and method to message%
 Added scroll-editor-to method to editor<%>
