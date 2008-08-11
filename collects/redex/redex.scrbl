@@ -1443,13 +1443,19 @@ explanation of logical-space):
 @subsection{LW}
 
 @deftogether[[
-@defproc[(build-lw [e (or/c string? symbol? pict? (listof lw?))]
+@defproc[(build-lw [e (or/c string?
+                            symbol?
+                            pict? 
+                            (listof (or/c (symbols 'spring) lw?)))]
                    [line exact-positive-integer?]
                    [line-span exact-positive-integer?]
                    [column exact-positive-integer?]
                    [column-span exact-positive-integer?]) 
          lw?]{}
-@defproc[(lw-e (lw lw?)) (or/c string? symbol? pict? (listof lw?))]{}
+@defproc[(lw-e (lw lw?)) (or/c string? 
+                               symbol?
+                               pict?
+                               (listof (or/c (symbols 'spring) lw?)))]{}
 @defproc[(lw-line (lw lw?)) exact-positive-integer?]{}
 @defproc[(lw-line-span (lw lw?)) exact-positive-integer?]{}
 @defproc[(lw-column (lw lw?)) exact-positive-integer?]{}
@@ -1546,10 +1552,25 @@ will be lined up underneath each other, but the relative
 positions of "boys" and "fudge" will be determined by the
 natural size of the words as they rendered in the
 appropriate font.
-}
 
-There are two helper functions that make building
-lws easier:
+When @scheme['spring] appears in the list in the @scheme[e]
+field of a @scheme[lw] struct, then it absorbs all of the
+space around it. It is also used by @scheme[to-lw] when
+constructing the picts for unquoted strings. For example, this expression
+
+@schemeblock[,x]
+
+corresponds to these structs:
+
+@schemeblock[(build-lw (list (build-lw "" 1 0 9 0)
+                             'spring
+                             (build-lw x 1 0 10 1))
+                       1 0 9 2)]
+
+and the @scheme['spring] causes there to be no space between
+the empty string and the @scheme[x] in the typeset output.
+
+}
 
 @deftogether[[
 @defproc[(just-before [stuff (or/c pict? string? symbol?)]
@@ -1559,7 +1580,7 @@ lws easier:
                      [lw lw?])
                     lw?]{}]]{
 
-These functions build new lws whose contents are
+These two helper functions build new lws whose contents are
 the first argument, and whose line and column are based on
 the second argument, making the new loc wrapper be either
 just before or just after that argument. The line-span and
