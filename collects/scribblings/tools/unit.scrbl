@@ -593,7 +593,7 @@ object, but if you change the
 
 Calls result of
 @method[drscheme:unit:frame<%> get-current-tab]'s 
-@method[drscheme:unit:tab<%> get-ints] method.
+@method[drscheme:unit:tab<%> get-defs] method.
 
 
 }
@@ -625,7 +625,7 @@ it will use the extended class to create the canvas.
 
 Calls result of
 @method[drscheme:unit:frame<%> get-current-tab]'s 
-@method[drscheme:unit:tab<%> get-defs] method.
+@method[drscheme:unit:tab<%> get-ints] method.
 
 
 }
