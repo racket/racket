@@ -46,7 +46,7 @@
                       [else (error 'place-children
                                    "alignment spec is unknown ~a~n" spec)])))])
             (map (λ (l) 
-                   (let*-values ([(min-width min-height v-stretch? h-stretch?)
+                   (let*-values ([(min-width min-height h-stretch? v-stretch?)
                                   (apply values l)]
                                  [(x this-width)
                                   (if h-stretch?
