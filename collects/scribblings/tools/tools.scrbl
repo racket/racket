@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(begin
 (require scribble/manual
+         (for-label drscheme/tool-lib)
          (for-label scheme/unit)
          (for-label scheme/base)
          (for-label framework/framework))
