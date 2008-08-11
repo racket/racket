@@ -13,11 +13,15 @@
           (make-mred-launcher
            '("-z")
            (mred-program-launcher-path "mred-text")
-           '([relative? . #t] [subsystem . console] [single-instance? . #f]))))))
+           '([relative? . #t] [subsystem . console] [single-instance? . #f]
+             ;; the following two are required to avoid using a full path,
+             ;; should be removed when `relative?' will imply this
+             [framework-root . #f] [dll-dir . #f]))))))
   ;; add a bin/mred script under OS X
   (when (eq? 'macosx (system-type))
     (for ([v variants] #:when (memq v '(script-3m script-cgc)))
       (parameterize ([current-launcher-variant v])
         (make-mred-launcher null
                             (mred-program-launcher-path "MrEd")
-                            '([exe-name . "MrEd"] [relative? . #t]))))))
+                            '([exe-name . "MrEd"] [relative? . #t]
+                              [framework-root . #f] [dll-dir . #f]))))))
