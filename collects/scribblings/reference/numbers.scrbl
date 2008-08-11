@@ -291,15 +291,17 @@ otherwise.}
 
 
 @defproc[(gcd [n integer?] ...) integer?]{ Returns the
- @as-index{greatest common divisor} of the @scheme[n]s. If no
- arguments are provided, the result is @scheme[0].
+ @as-index{greatest common divisor} (a non-negative number) of the
+ @scheme[n]s. If no arguments are provided, the result is
+ @scheme[0]. If all arguments are zero, the result is zero.
 
 @examples[(gcd 10) (gcd 12 81.0)]}
 
 
-@defproc[(lcm [n integer?] ...) integer?]{ Returns the
- @as-index{least common multiple} of the @scheme[n]s. If no arguments
- are provided, the result is @scheme[1].
+@defproc[(lcm [n integer?] ...) integer?]{ Returns the @as-index{least
+ common multiple} (a non-negative number) of the @scheme[n]s. If no
+ arguments are provided, the result is @scheme[1]. If any argument is
+ zero, the result is zero.
 
 @examples[(lcm 10) (lcm 3 4.0)]}
 

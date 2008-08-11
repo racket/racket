@@ -1086,6 +1086,9 @@ bin_lcm (Scheme_Object *n1, Scheme_Object *n2)
   Scheme_Object *d, *ret;
 
   d = scheme_bin_gcd(n1, n2);
+
+  if (scheme_is_zero(d))
+    return d;
   
   ret = scheme_bin_mult(n1, scheme_bin_quotient(n2, d));
 
