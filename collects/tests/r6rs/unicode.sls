@@ -95,13 +95,10 @@
 
     (test (string-titlecase "kNock KNoCK") "Knock Knock")
     (test (string-titlecase "who's there?") "Who's There?")
-    (test (string-titlecase "r6rs") "R6Rs")
-    (test (string-titlecase "R6RS") "R6Rs")
+    (test (string-titlecase "r6rs") "R6rs") ; this example appears to be wrong in R6RS (Sept 2007 version)
+    (test (string-titlecase "R6RS") "R6rs") ; this one, too
 
     (test (string-downcase "A\x3A3;'x") "a\x3C3;'x") ; ' is a MidLetter
-
-    ;; There should be a test here that fails on PLT Scheme based on word-breaking
-    ;; according to Unicode Annex 29 --- but I can't figure out out.
 
     (test (string-ci<? "a" "Z") #t)
     (test (string-ci<? "A" "z") #t)

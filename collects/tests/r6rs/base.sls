@@ -866,7 +866,7 @@
     (test (expt 5 -3)                  1/125)
     (test (expt 5 0)                   1)
     (test (expt 0 5)                   0)
-    (test (expt 0 5+.0000312i)         0)
+    (test/approx (expt 0 5+.0000312i)  0.0) ; R6RS (Sept 2007) appears to be wrong; also, test that result is inexact?
     (test/unspec-or-exn (expt 0 -5) &implementation-restriction)
     (test/unspec-or-exn (expt 0 -5+.0000312i) &implementation-restriction)
     (test (expt 0 0)                   1)

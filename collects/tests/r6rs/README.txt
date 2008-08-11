@@ -108,7 +108,7 @@ perhaps in the location reported by
               (version) "collects"
               "tests" "r6rs")
 
-Two tests fail; they correspond to documented non-conformance with
+Four tests fail; they correspond to documented non-conformance with
 R6RS.
 
 Ypsilon (version 0.9.6)
