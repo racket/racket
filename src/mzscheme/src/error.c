@@ -2668,6 +2668,7 @@ void update_want_level(Scheme_Logger *logger)
       prev = NULL;
       while (queue) {
         b = SCHEME_CAR(queue);
+        b = SCHEME_CAR(b);
         lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
         if (lr) {
           if (lr->want_level > want_level)
@@ -2834,6 +2835,7 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len
     queue = logger->readers;
     while (queue) {
       b = SCHEME_CAR(queue);
+      b = SCHEME_CAR(b);
       lr = (Scheme_Log_Reader *)SCHEME_BOX_VAL(b);
       if (lr) {
         if (lr->want_level >= level) {
@@ -3062,7 +3064,14 @@ make_log_reader(int argc, Scheme_Object *argv[])
   ch = scheme_make_channel();
   lr->ch = ch;
 
-  q = scheme_make_raw_pair(scheme_make_weak_box((Scheme_Object *)lr), logger->readers);
+  /* Pair a weak reference to the reader with a strong reference to the
+     channel. Channel gets are wrapped to reference the reader. That way,
+     the link is effectively strong while a thread is sync'd on the
+     reader. */
+
+  q = scheme_make_raw_pair(scheme_make_pair(scheme_make_weak_box((Scheme_Object *)lr), 
+                                            ch),
+                           logger->readers);
   logger->readers = q;
   *logger->timestamp += 1;
 
@@ -3075,6 +3084,11 @@ log_reader_p(int argc, Scheme_Object *argv[])
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_log_reader_type)
           ? scheme_true
           : scheme_false);
+}
+
+static Scheme_Object *id_that_preserves_reader(void *data, int argc, Scheme_Object **argv)
+{
+  return argv[0];
 }
 
 static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
@@ -3090,7 +3104,11 @@ static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
     scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 0);
     return 1;
   } else {
-    scheme_set_sync_target(sinfo, lr->ch, NULL, NULL, 0, 0);
+    Scheme_Object *w;
+
+    w = scheme_make_closed_prim(id_that_preserves_reader, lr);
+
+    scheme_set_sync_target(sinfo, lr->ch, w, NULL, 0, 0);
     return 0;
   }
 }

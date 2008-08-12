@@ -2734,7 +2734,7 @@ struct Scheme_Logger {
   int want_level;
   long *timestamp, local_timestamp; /* determines when want_level is up-to-date */
   int syslog_level, stderr_level;
-  Scheme_Object *readers; /* list of weak boxes */
+  Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <channel>) */
 };
 
 typedef struct Scheme_Log_Reader {
