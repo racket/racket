@@ -842,6 +842,8 @@
     (test/approx (log 2.718281828459045) 1.0)
     (test (log +inf.0)                   +inf.0)
     (test (log 0.0)                      -inf.0)
+    (test/approx (log 100 10) 2.0)
+    (test/approx (log 1125899906842624 2) 50.0)
 
     (test/exn (log 0) &assertion)
 

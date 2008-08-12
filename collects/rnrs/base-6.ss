@@ -66,7 +66,7 @@
  numerator denominator
  floor ceiling truncate round
  rationalize
- exp log sin cos tan asin acos atan
+ exp (rename-out [r6rs:log log]) sin cos tan asin acos atan
  sqrt (rename-out [integer-sqrt/remainder exact-integer-sqrt])
  expt
  make-rectangular make-polar real-part imag-part magnitude 
@@ -295,6 +295,11 @@
                                          v))
                          args))
              (apply / args))]))
+
+(define r6rs:log
+  (case-lambda
+   [(n) (log n)]
+   [(n m) (/ (log n) (log m))]))
 
 (define (r6rs:angle n)
   ; because `angle' produces exact 0 for reals:
