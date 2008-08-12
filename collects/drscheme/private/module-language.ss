@@ -566,7 +566,7 @@
                            [filename-end (skip-to-whitespace filename-start)])
                       (and (not (= filename-start end-module))
                            (string-append (get-text filename-start filename-end)
-                                          ".scm")))))))
+                                          ".ss")))))))
       
       
       (define/private (matches start string)
