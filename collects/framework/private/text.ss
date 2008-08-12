@@ -194,12 +194,16 @@ WARNING: printf is rebound in the body of the unit to always
                        [top #f]
                        [right #f]
                        [bottom #f]
-                       [rectangles rectangles])
+                       [rectangles rectangles]
+                       [refresh? #f])
               (cond
                 [(null? rectangles)
                  (when left
                    (let ([width (- right left)]
                          [height (- bottom top)])
+                     (when refresh?
+                       (for-each (λ (canvas) (send canvas refresh))
+                                 canvases))
                      (when (and (> width 0)
                                 (> height 0))
                        (invalidate-bitmap-cache left top width height))))]
@@ -222,12 +226,18 @@ WARNING: printf is rebound in the body of the unit to always
                                   (min this-top top)
                                   (max this-right right)
                                   (max this-bottom bottom)
-                                  (cdr rectangles))
+                                  (cdr rectangles)
+                                  (or refresh? 
+                                      (not (number? (rectangle-left r)))
+                                      (not (number? (rectangle-right r)))))
                             (loop this-left 
                                   this-top
                                   this-right
                                   this-bottom
-                                  (cdr rectangles))))]))))))
+                                  (cdr rectangles)
+                                  (or refresh? 
+                                      (not (number? (rectangle-left r)))
+                                      (not (number? (rectangle-right r)))))))]))))))
     
     (define/private (recompute-range-rectangles)
       (let* ([b1 (box 0)]
@@ -327,7 +337,8 @@ WARNING: printf is rebound in the body of the unit to always
     
     (define/augment (on-reflow)
       (run-after-edit-sequence
-       (λ () (recompute-range-rectangles))
+       (λ () (unless delayed-highlights? 
+               (recompute-range-rectangles)))
        'framework:recompute-range-rectangles)
       (inner void on-reflow))
     
