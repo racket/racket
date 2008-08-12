@@ -2672,6 +2672,7 @@ void update_want_level(Scheme_Logger *logger)
         if (lr) {
           if (lr->want_level > want_level)
             want_level = lr->want_level;
+          prev = queue;
         } else {
           if (prev)
             SCHEME_CDR(prev) = SCHEME_CDR(queue);
