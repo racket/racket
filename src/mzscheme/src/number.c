@@ -1511,6 +1511,7 @@ static Scheme_Object *complex_tan(Scheme_Object *c)
 }
 
 static Scheme_Object *complex_asin(Scheme_Object *c);
+static Scheme_Object *complex_atan(Scheme_Object *c);
 
 static Scheme_Object *complex_asin(Scheme_Object *c)
 {
@@ -1519,29 +1520,32 @@ static Scheme_Object *complex_asin(Scheme_Object *c)
   one_minus_c_sq = scheme_bin_minus(scheme_make_integer(1),
 				    scheme_bin_mult(c, c));
   sqrt_1_minus_c_sq = scheme_sqrt(1, &one_minus_c_sq);
-
-  return scheme_bin_mult(scheme_minus_i,
-			 un_log(scheme_bin_plus(scheme_bin_mult(c, scheme_plus_i), 
-						sqrt_1_minus_c_sq)));
+  return scheme_bin_mult(scheme_make_integer(2),
+                         complex_atan(scheme_bin_div(c,
+                                                     scheme_bin_plus(scheme_make_integer(1),
+                                                                     sqrt_1_minus_c_sq))));
 }
 
 static Scheme_Object *complex_acos(Scheme_Object *c);
 
 static Scheme_Object *complex_acos(Scheme_Object *c)
 {
-  Scheme_Object *one_minus_c_sq, *sqrt_1_minus_c_sq;
-
-  one_minus_c_sq = scheme_bin_minus(scheme_make_integer(1),
-				    scheme_bin_mult(c, c));
-  sqrt_1_minus_c_sq = scheme_sqrt(1, &one_minus_c_sq);
-
-  return scheme_bin_mult(scheme_minus_i,
-			 un_log(scheme_bin_plus(c,
-						scheme_bin_mult(scheme_plus_i,
-								sqrt_1_minus_c_sq))));
+  Scheme_Object *a, *r;
+  a = complex_asin(c);
+  if (scheme_is_zero(_scheme_complex_imaginary_part(c))
+      && (scheme_bin_gt(_scheme_complex_real_part(c), scheme_make_integer(1))
+          || scheme_bin_lt(_scheme_complex_real_part(c), scheme_make_integer(-1)))) {
+    /* Make sure real part is 0 or pi */
+    if (scheme_is_negative(_scheme_complex_real_part(c)))
+      r = scheme_pi;
+    else
+      r = scheme_make_integer(0);
+    return scheme_make_complex(r, scheme_bin_minus(scheme_make_integer(0),
+                                                   _scheme_complex_imaginary_part(a)));
+  } else {
+    return scheme_bin_minus(scheme_half_pi, a);
+  }
 }
-
-static Scheme_Object *complex_atan(Scheme_Object *c);
 
 static Scheme_Object *complex_atan(Scheme_Object *c)
 {
