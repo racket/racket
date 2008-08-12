@@ -27,7 +27,7 @@ make-matrix ;; Nat Nat [Listof X] -> [Matrix X]
 ;; NOTE: make-matrix would consume an optional number of entries, 
 ;; if it were like make-vector  
 
-build-matrix ;; Nat Nat (Nat Nat -> Number) -> Matrix 
+build-matrix ;; Nat Nat (Nat Nat -> X) -> [Matrix X]
 ;; create a matrix from a function 
 
 matrix-ref ;; [Matrix X] Nat Nat -> X

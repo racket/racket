@@ -12,6 +12,7 @@
       (set! current-world new-world)
       (when (C current-world) (render (F current-world))))
 |#
+;; Tue Aug 12 08:54:45 EDT 2008: ke=? changed to key=? 
 ;; Fri Jul  4 10:25:47 EDT 2008: added ke=? and key-event? 
 ;; Mon Jun 16 15:38:14 EDT 2008: removed end-of-time and provided stop-when 
 ;;                               also allow repeated setting of callbacks now
@@ -130,7 +131,7 @@ Matthew
 
 (provide
   key-event? ;; Any -> Boolean
-  ke=? ;; KeyEvent KeyEvent -> Boolean
+  key=? ;; KeyEvent KeyEvent -> Boolean
  )
 
 (provide-higher-order-primitive
@@ -297,9 +298,9 @@ Matthew
 (define (key-event? k)
   (or (char? k) (symbol? k)))
 
-(define (ke=? k m)
-  (check-arg 'ke=? (key-event? k) 'KeyEvent "first" k)
-  (check-arg 'ke=? (key-event? m) 'KeyEvent "first" m)
+(define (key=? k m)
+  (check-arg 'key=? (key-event? k) 'KeyEvent "first" k)
+  (check-arg 'key=? (key-event? m) 'KeyEvent "first" m)
   (eqv? k m))
 
 (define (on-key-event f)

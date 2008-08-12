@@ -23,11 +23,11 @@
 (check-expect (key-event? 0) false)
 (check-expect (key-event? #\a) true)
 
-(check-expect (ke=? 'a 'b) false)
-(check-expect (ke=? 'a #\a) false)
-(check-expect (ke=? 'left 'left) true)
+(check-expect (key=? 'a 'b) false)
+(check-expect (key=? 'a #\a) false)
+(check-expect (key=? 'left 'left) true)
 
-(check-error (ke=? 'a 0) "ke=?: expected <KeyEvent> as first argument, given: 0")
+(check-error (key=? 'a 0) "key=?: expected <KeyEvent> as first argument, given: 0")
 
 
 ;; run world run
