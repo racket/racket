@@ -450,7 +450,7 @@ static void MenuResize(w)
  *
  *****************************************************************************/
 
-static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev);
+static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev, int is_click);
 static void UnhighlightItem(MenuWidget mw, menu_state *ms, menu_item *item);
 static void HighlightItem(MenuWidget mw, menu_state *ms, menu_item *item);
 static void MoveSelection(MenuWidget mw, int direction);
@@ -490,7 +490,7 @@ static void Start(w, ev, params, num_params)
       mw->menu.grabbed = TRUE;
     }
 
-    if (!HandleMotionEvent(mw, &ev->xmotion) && !num_params)
+    if (!HandleMotionEvent(mw, &ev->xmotion, 1))
       DoSelect(w, CurrentTime, 1);
 }
 
@@ -507,7 +507,7 @@ static void Drag(w, event, params, num_params)
     int           y     = ev->y_root;
     int           state = ev->state;
 
-    HandleMotionEvent(mw, ev);
+    HandleMotionEvent(mw, ev, 0);
     XSync(XtDisplay(mw), FALSE);
     /* allow motion events to be generated again */
     if ((!ev->is_hint
@@ -517,7 +517,7 @@ static void Drag(w, event, params, num_params)
 			  &ev->x, &ev->y, &ev->state))
 	&& ev->state == state
 	&& (ev->x_root != x || ev->y_root != y)) {
-      HandleMotionEvent(mw, ev);
+      HandleMotionEvent(mw, ev, 0);
       XSync(XtDisplay(mw), FALSE);
     }
 }
@@ -576,7 +576,10 @@ static void Select(w, event, params, num_params)
 
   mw->menu.moused_out = 0;
 
-  force = !HandleMotionEvent(mw, ev);
+  if (!mw->menu.state || !mw->menu.state->selected)
+    return;
+
+  force = !HandleMotionEvent(mw, ev, 0);
   if (!force)
     force = mw->menu.moused_out;
   
@@ -1478,10 +1481,10 @@ static void timer_callback(XtPointer client_data, XtIntervalId * timer)
 		&ev.x_root, &ev.y_root,
 		&ev.x, &ev.y, &ev.state);
 
-  HandleMotionEvent(mw, &ev);
+  HandleMotionEvent(mw, &ev, 0);
 }
 
-static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev)
+static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev, int is_click)
 {
     menu_state *ms = NULL;
     menu_item  *item = NULL;
@@ -1549,6 +1552,10 @@ static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev)
     if (!foundone)
       mw->menu.moused_out = !in_extra_region;
 
+    if (is_click && ms && (item == ms->selected)) { /* pointer on the same item and a click */
+      return 0;
+    }
+
     if (!item) { /* if pointer not on menu_item unhighlight last selected */
       UnhighlightItem(mw, mw->menu.state, mw->menu.state->selected);
       if (scroll) {
@@ -1580,8 +1587,11 @@ static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev)
       }
       return in_extra_region;
     }
-    if (item == ms->selected) /* pointer on the same item */
+
+    if (item == ms->selected) { /* pointer on the same item (and not a click) */
       return 1;
+    }
+
     /* unhighlight old item on same level (ms!) and highlight new item */
     UnhighlightItem(mw, ms, ms->selected);
     HighlightItem(mw, ms, item);
@@ -1722,7 +1732,7 @@ void Xaw3dPopupMenuAtPos(MenuWidget mw, int x, int y)
     mw->menu.state->y = y+border_width;
     /* init first motion event */
     ev.x_root = x; ev.y_root = y;
-    HandleMotionEvent(mw, (XMotionEvent*)&ev);
+    HandleMotionEvent(mw, (XMotionEvent*)&ev, 0);
 }
 
 int xwMenuIsPoppedUp(Widget w)
