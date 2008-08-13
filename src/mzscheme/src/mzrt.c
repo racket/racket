@@ -111,7 +111,7 @@ END_XFORM_SUSPEND;
 /*                Atomic Ops                                           */
 /***********************************************************************/
 
-MZ_INLINE2 uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value) {
+MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value) {
 #ifdef WIN32
 # if defined(__MINGW32__)
   return InterlockedExchangeAdd((long *)counter, value);
@@ -131,7 +131,7 @@ MZ_INLINE2 uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned 
 }
 
 /* returns the pre-incremented value */
-MZ_INLINE2 uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
+MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
   return mzrt_atomic_add_32(counter, 1);
 }
 

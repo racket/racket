@@ -11,8 +11,8 @@ typedef unsigned int uint32_t;
 # include <stdint.h>
 #endif
 
-MZ_INLINE2 uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value);
-MZ_INLINE2 uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter);
+MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned int value);
+MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter);
 
 
 /****************** SIGNAL HANDLING ***************************************/
