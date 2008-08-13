@@ -43,13 +43,13 @@ Enables the Run button, and the Run menu item and unlocks
            (values (or/c thread? false/c) (or/c custodian? false/c))]{}
 
 @defmethod[(get-defs)
-           (is-a?/c @scheme[drscheme:rep:text%])]{
+           (is-a?/c @scheme[drscheme:unit:definitions-text<%>])]{
 This text is initially the top half of the drscheme window and
 contains the users program.
 
 This text defaults to a @scheme[text%]
 object, but if you change
-@scheme[drscheme:get/extend:extend-interactions-text] procedure, it will use the extended class to create the text.
+@scheme[drscheme:get/extend:extend-definitions-text] procedure, it will use the extended class to create the text.
 
 }
 
@@ -79,7 +79,7 @@ Returns the frame that this tab is inside.
 }
 
 @defmethod[(get-ints)
-           (is-a?/c @scheme[drscheme:unit:definitions-text<%>])]{
+           (is-a?/c @scheme[drscheme:rep:text%])]{
 This text is initially the bottom half of the drscheme window and
 contains the users interactions with the REPL.
 
