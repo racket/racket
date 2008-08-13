@@ -122,7 +122,10 @@ without insetting the code.}
 
 @defform[(schememod lang datum ...)]{Like @scheme[schemeblock], but
 the @scheme[datum] are typeset inside a @schememodfont{#lang}-form
-module whose language is @scheme[lang].}
+module whose language is @scheme[lang]. The source location of
+@scheme[lang] (relative to the body @scheme[datum]s) determines the
+relative positioning of the @schememodfont{#lang} line in the typeset
+output.}
 
 @defform[(scheme datum ...)]{Like @scheme[schemeblock], but typeset on
 a single line and wrapped with its enclosing paragraph, independent of

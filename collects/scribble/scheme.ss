@@ -312,6 +312,12 @@
             (advance c init-line!)]
            [(and (pair? (syntax-e c))
                  (eq? (syntax-e (car (syntax-e c))) 'code:comment))
+            (let ([l (syntax->list c)])
+              (unless (and l (= 2 (length l)))
+                (raise-syntax-error
+                 #f
+                 "does not have a single sub-form"
+                 c)))
             (advance c init-line!)
             (out "; " comment-color)
             (let ([v (syntax->datum (cadr (syntax->list c)))])
