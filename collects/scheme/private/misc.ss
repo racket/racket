@@ -42,7 +42,12 @@
 		      (if (< lo-int hi-int)
 			  (add1 lo-int)
 			  (+ lo-int
-			     (/ (find-between (/ (- hi lo-int)) (/ (- lo lo-int)))))))))])
+			     (/ (find-between (/ (- hi lo-int)) (/ (- lo lo-int)))))))))]
+             [do-find-between
+              (lambda (lo hi)
+                (cond
+                 [(negative? lo) (- (find-between (- hi) (- lo)))]
+                 [else (find-between lo hi)]))])
       (lambda (x within)
 	(check x) (check within)
         (let* ([delta (abs within)]
@@ -56,8 +61,9 @@
            [(equal? delta +inf.0) 0.0]
            [(not (= x x)) +nan.0]
            [(<= lo 0 hi) (if (exact? x) 0 0.0)]
-           [(negative? lo) (- (find-between (- hi) (- lo)))]
-           [else (find-between lo hi)])))))
+           [(or (inexact? lo) (inexact? hi))
+            (exact->inexact (do-find-between (inexact->exact lo) (inexact->exact hi)))]
+           [else (do-find-between lo hi)])))))
 
   ;; -------------------------------------------------------------------------
 
