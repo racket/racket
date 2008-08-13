@@ -601,7 +601,7 @@ all non-GUI portions of Redex) and also exported by
                (extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression ...)
-                       (where tl-pat scheme-expression))
+                       (where tl-pat #, @|tttterm|))
                (fresh-clause var ((var1 ...) (var2 ...))))]{
 
 Defines a reduction relation casewise, one case for each of the
