@@ -28,8 +28,8 @@
 # define SCHEME_NO_GC_PROTO
 #endif
 
-#include "mzrt.h"
 #include "schpriv.h"
+#include "mzrt.h"
 #include <string.h>
 #include <ctype.h>
 #include "schgc.h"

@@ -27,8 +27,8 @@
    envionments, a.k.a. namespaces), and also implements much of the
    initialization sequence (filling the initial namespace). */
 
-#include "mzrt.h"
 #include "schpriv.h"
+#include "mzrt.h"
 #include "schminc.h"
 #include "schmach.h"
 #include "schexpobs.h"
