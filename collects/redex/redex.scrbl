@@ -467,6 +467,9 @@ expressions and checks them against each pattern. The
 function returns the expression behind the first sucessful
 match. If that pattern produces multiple matches, an error
 is signaled. If no patterns match, an error is signaled.
+
+Raises an exception recognized by @scheme[exn:fail:redex?] if
+no clauses match or if one of the clauses matches multiple ways.
 }
 
 @defproc[(plug [context any?] [expression any?]) any]{
@@ -494,6 +497,11 @@ argument.
 
 Does not expect the input symbols to be distinct, but does
 produce variables that are always distinct.
+}
+
+@defproc[(exn:fail:redex? [v any/c]) boolean?]{
+  Returns @scheme[#t] if its argument is a Redex exception record, and
+  @scheme[#f] otherwise.
 }
 
 @section{Languages}
@@ -820,12 +828,16 @@ argument to each side-condition should be a Scheme
 expression, and the pattern variables in the <pattern> are
 bound in that expression.
 
+Raises an exception recognized by @scheme[exn:fail:redex?] if
+no clauses match, if one of the clauses matches multiple ways, or
+if the contract is violated.
+
 As an example, these metafunctions finds the free variables in
 an expression in the lc-lang above:
 
 @schemeblock[
     (define-metafunction lc-lang
-      free-vars : e -> (listof x)
+      free-vars : e -> (x ...)
       [(free-vars (e_1 e_2 ...))
        (∪ (free-vars e_1) (free-vars e_2) ...)]
       [(free-vars x) (x)]

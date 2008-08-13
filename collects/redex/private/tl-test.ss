@@ -409,6 +409,52 @@
     (test (term (f p q)) (term p))
     (test (in-domain? (f p q)) #t))
   
+  (let ()
+    (define-metafunction empty-language
+      [(err number_1 ... number_2 ...) 1])
+    (test (term (err)) 1)
+    (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                          ((λ (x) #t) (λ (x) 'wrong-exn)))
+            (term (err 1 2))
+            'no-exn)
+          'right-exn))
+  
+  (let ()
+    (define-metafunction empty-language
+      err : number ... -> number
+      [(err number ...) 1])
+    (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                          ((λ (x) #t) (λ (x) 'wrong-exn)))
+            (term (err #f #t))
+            'no-exn)
+          'right-exn))
+  
+  (let ()
+    (define-metafunction empty-language
+      err : number ... -> number
+      [(err number ...) #f])
+    (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                          ((λ (x) #t) (λ (x) 'wrong-exn)))
+            (term (err 1 2))
+            'no-exn)
+          'right-exn))
+  
+  (let ()
+    (define-metafunction empty-language
+      err : number ... -> (number number)
+      [(err number ...) (number ...)])
+    (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                          ((λ (x) #t) (λ (x) 'wrong-exn)))
+            (term (err 1 2))
+            'no-exn)
+          'no-exn)
+    (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                          ((λ (x) #t) (λ (x) 'wrong-exn)))
+            (term (err 1 1))
+            'no-exn)
+          'no-exn))
+    
+  
 
 ;                                                                                                                                
 ;                                                                                                                                
@@ -425,6 +471,7 @@
 ;                                                                                                                                
 ;                                                                                                                                
 
+  
   
   (test (apply-reduction-relation
          (reduction-relation 
@@ -869,7 +916,7 @@
   (require (lib "list.ss"))
   (let ()
     (define-metafunction lc-lang
-      free-vars : e -> (listof x)
+      free-vars : e -> (x ...)
       [(free-vars (e_1 e_2 ...))
        (∪ (free-vars e_1) (free-vars e_2) ...)]
       [(free-vars x) (x)]
@@ -938,6 +985,28 @@
          '(x y))
         '(x . y))
   
+
+  (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                        ((λ (x) #t) (λ (x) 'wrong-exn)))
+          ((term-match/single empty-language
+                              [(number_1 ... number_2 ...) 1])
+           '(1 2 3))
+          'no-exn)
+        'right-exn)
+  
+  (test (with-handlers ((exn:fail:redex? (λ (x) 'right-exn))
+                        ((λ (x) #t) (λ (x) 'wrong-exn)))
+          ((term-match/single empty-language
+                              [(number_1 ... number_2 ...) 1])
+           'x)
+          'no-exn)
+        'right-exn)
+  
+  (test ((term-match empty-language
+                     [(number_1 ... number_2 ...) 1])
+         'x)
+        '())
+                             
   (define-language x-is-1-language
     [x 1])
   

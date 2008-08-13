@@ -4,6 +4,7 @@
          "struct.ss"
          "term.ss"
          "loc-wrapper.ss"
+	 "error.ss"
          (lib "list.ss")
          (lib "etc.ss"))
 
@@ -38,13 +39,15 @@
                      (let ([match (match-pattern cp-x exp)])
                        (when match
                          (unless (null? (cdr match))
-                           (error 'term-match "pattern ~s matched term ~e multiple ways"
-                                  'pattern
-                                  exp))
+                           (redex-error
+			    'term-match/single
+			    "pattern ~s matched term ~e multiple ways"
+			    'pattern
+			    exp))
                          (k (term-let ([names/ellipses (lookup-binding (mtch-bindings (car match)) 'names)] ...)
                               rhs))))
                      ...
-                     (error 'term-match/single "no patterns matched ~e" exp))))))))]))
+                     (redex-error 'term-match/single "no patterns matched ~e" exp))))))))]))
 
 (define-syntax (term-match stx)
   (syntax-case stx ()
@@ -946,7 +949,7 @@
                  (when (null? (cdr more))
                    (raise-syntax-error syn-error-name "expected a range contract to follow the arrow" stx (car more)))
                  (let ([doms (reverse dom-pats)]
-                       [codomain (car more)]
+                       [codomain (cadr more)]
                        [clauses (check-clauses stx syn-error-name (cddr more))])
                    (values doms codomain clauses))]
                 [else
@@ -1010,26 +1013,26 @@
                                      "expected a side-condition or where clause"
                                      (car stuff))])]))]))))
 
-(define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat rng-contract-pat name)
+(define (build-metafunction lang patterns rhss old-cps old-rhss wrap dom-contract-pat codom-contract-pat name)
   (let ([compiled-patterns (append old-cps
                                    (map (λ (pat) (compile-pattern lang pat #t)) patterns))]
         [dom-compiled-pattern (and dom-contract-pat (compile-pattern lang dom-contract-pat #f))]
-        [rng-compiled-pattern (compile-pattern lang rng-contract-pat #t)])
+        [codom-compiled-pattern (compile-pattern lang codom-contract-pat #f)])
     (values
      (wrap
       (letrec ([metafunc
                 (λ (exp)
                   (when dom-compiled-pattern
                     (unless (match-pattern dom-compiled-pattern exp)
-                      (error name
-                             "~s is not in my domain"
-                             `(,name ,@exp))))
+                      (redex-error name
+				   "~s is not in my domain"
+				   `(,name ,@exp))))
                   (let loop ([patterns compiled-patterns]
                              [rhss (append old-rhss rhss)]
                              [num (- (length old-cps))])
                     (cond
                       [(null? patterns) 
-                       (error name "no clauses matched for ~s" `(,name . ,exp))]
+                       (redex-error name "no clauses matched for ~s" `(,name . ,exp))]
                       [else
                        (let ([pattern (car patterns)]
                              [rhs (car rhss)])
@@ -1039,14 +1042,17 @@
                                                 (cdr rhss)
                                                 (+ num 1))]
                              [(not (null? (cdr mtchs)))
-                              (error name "~a matched ~s ~a different ways" 
-                                     (if (< num 0)
-                                         "a clause from an extended metafunction"
-                                         (format "clause ~a" num))
-                                     `(,name ,@exp)
-                                     (length mtchs))]
+                              (redex-error name "~a matched ~s ~a different ways" 
+					   (if (< num 0)
+					       "a clause from an extended metafunction"
+					       (format "clause ~a" num))
+					   `(,name ,@exp)
+					   (length mtchs))]
                              [else
-                              (rhs metafunc (mtch-bindings (car mtchs)))])))])))])
+                              (let ([ans (rhs metafunc (mtch-bindings (car mtchs)))])
+                                (unless (match-pattern codom-compiled-pattern ans)
+                                  (redex-error name "codomain test failed for ~s, call was ~s" ans `(,name ,@exp)))
+                                ans)])))])))])
         metafunc)
       compiled-patterns
       rhss)

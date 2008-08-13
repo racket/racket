@@ -4,9 +4,12 @@
 (require "private/reduction-semantics.ss"
          "private/matcher.ss"
          "private/term.ss"
-         "private/rg.ss")
+         "private/rg.ss"
+         "private/error.ss")
 
 #;(provide (all-from-out "private/rg.ss"))
+
+(provide exn:fail:redex?) ;; from error.ss
 
 (provide reduction-relation 
          --> fresh with ;; keywords for reduction-relation

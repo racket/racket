@@ -1307,9 +1307,7 @@ before the pattern compiler is invoked.
     (cond
       [(eq? none s1) s2]
       [(eq? none s2) s1]
-      ;; MF: error message simplified because it is too close to
-      ;; implementation matters. 
-      [(error 'matcher.ss "found two holes" #;s1 #;s2)]))
+      [(error 'matcher.ss "found two holes")]))
   
   ;; reverse-multiples : (listof mtch[to-lists]) -> (listof mtch[to-lists])
   ;; reverses the rhs of each rib in the bindings and reverses the context.
