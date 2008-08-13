@@ -68,7 +68,7 @@
  rationalize
  exp (rename-out [r6rs:log log]) sin cos tan asin acos atan
  sqrt (rename-out [integer-sqrt/remainder exact-integer-sqrt])
- expt
+ (rename-out [r6rs:expt expt])
  make-rectangular make-polar real-part imag-part magnitude 
  (rename-out [r6rs:angle angle]
              [r6rs:number->string number->string]
@@ -276,9 +276,9 @@
             #'(let ([a expr1]
                     [b expr2])
                 (cond
-                 [(and (eq? b 0) (inexact-real? a))
+                 [(and (eq? b 0) (number? a) (inexact? a))
                   (/ a 0.0)]
-                 [(and (eq? a 0) (inexact-real? b))
+                 [(and (eq? a 0) (number? b) (inexact? b))
                   (/ 0.0 b)]
                  [else (/ a b)]))]
            [(_ . args) 
@@ -288,7 +288,7 @@
   (case-lambda
    [(n) (/ n)]
    [(a b) (r6rs:/ a b)]
-   [args (if (ormap inexact-real? args)
+   [args (if (ormap (lambda (x) (and (number? x) (inexact? x))) args)
              (apply /
                     (map (lambda (v) (if (eq? v 0)
                                          0.0
@@ -300,6 +300,14 @@
   (case-lambda
    [(n) (log n)]
    [(n m) (/ (log n) (log m))]))
+
+(define (r6rs:expt base power)
+  (if (and (or (eq? base 0) 
+               (eq? base 1))
+           (number? power) 
+           (inexact? power))
+      (expt (exact->inexact base) power)
+      (expt base power)))
 
 (define (r6rs:angle n)
   ; because `angle' produces exact 0 for reals:
