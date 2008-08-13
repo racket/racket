@@ -34,22 +34,32 @@
         (syntax/loc stx
           (let-values ([(v ...) ve] ...) be ...)))]
      [(letrec-values ([(v ...) ve] ...) be ...)
-      (let ([new-ids (apply append ids (map syntax->list (syntax->list #'((v ...) ...))))])
-        (with-syntax ([((nv ...) ...) (map (compose generate-temporaries syntax->list) (syntax->list #'((v ...) ...)))]
-                      [((nv-box ...) ...) (map (lambda (nvs)
-                                                 (map (lambda (x) (syntax/loc x (#%plain-app box the-undef)))
-                                                      (syntax->list nvs)))
-                                               (syntax->list #`((v ...) ...)))]
-                      [(ve ...) (map (elim-letrec new-ids) (syntax->list #'(ve ...)))]
-                      [(be ...) (map (elim-letrec new-ids) (syntax->list #'(be ...)))])
-          ; XXX Optimize special case of one nv
+      (let ([new-ids (apply append ids (map syntax->list (syntax->list #'((v ...) ...))))]
+            [gfss (map (lambda (vs)
+                        (map (lambda (v)
+                               (define-values (v-def v-ref) (generate-formal (syntax->datum v) v))
+                               (cons v-def v-ref))
+                             (syntax->list vs)))
+                      (syntax->list #'((v ...) ...)))])
+        (with-syntax 
+            ([((nv-def ...) ...) 
+              (map (lambda (gfs) (map car gfs)) gfss)]
+             [((nv-ref ...) ...) 
+              (map (lambda (gfs) (map cdr gfs)) gfss)]              
+             [((nv-box ...) ...) (map (lambda (nvs)
+                                        (map (lambda (x) (syntax/loc x (#%plain-app box the-undef)))
+                                             (syntax->list nvs)))
+                                      (syntax->list #`((v ...) ...)))]
+             [(ve ...) (map (elim-letrec new-ids) (syntax->list #'(ve ...)))]
+             [(be ...) (map (elim-letrec new-ids) (syntax->list #'(be ...)))])
           (syntax/loc stx
             (let-values ([(v ...)
                           (#%plain-app values nv-box ...)] ...)
               (begin (#%plain-app call-with-values
                                   (#%plain-lambda () ve)
-                                  (#%plain-lambda (nv ...)
-                                                  (#%plain-app set-box! v nv) ...))
+                                  (#%plain-lambda 
+                                   (nv-def ...)
+                                   (#%plain-app set-box! v nv-ref) ...))
                      ...
                      be ...)))))]
      [(#%plain-lambda formals be ...)

@@ -21,4 +21,7 @@
      (compose #;(lambda (stx) (values stx empty))
               defun
               elim-callcc
-              (make-anormal-term elim-letrec-term))))))
+              (make-anormal-term elim-letrec-term)
+              #;(make-anormal-term (lambda (x) x))
+              #;elim-letrec-term
+              )))))

@@ -77,68 +77,74 @@
               (#%plain-app current-saved-continuation-marks-and #,ke-prime #,me-prime)
               #,be-prime)))))]    
     [(#%plain-app call/cc w)
-     (let-values ([(cm ref-to-cm) (generate-formal 'current-marks)]
-                  [(x ref-to-x) (generate-formal 'x)])
+     (let-values ([(cm ref-to-cm) (generate-formal 'current-marks stx)]
+                  [(x ref-to-x) (generate-formal 'x stx)])
        (markit 
         (quasisyntax/loc stx
-          (#%plain-app #,(elim-callcc #'w)
-                       (#%plain-app (#%plain-lambda (#,cm)
-                                                    (#%plain-lambda #,x
-                                                                    (#%plain-app abort
-                                                                                 (#%plain-lambda () (#%plain-app resume #,ref-to-cm #,ref-to-x)))))
-                                    (#%plain-app activation-record-list))))))]
+          (#%plain-app 
+           #,(elim-callcc #'w)
+           (#%plain-app 
+            (#%plain-lambda 
+             (#,cm)
+             (#%plain-lambda #,x
+                             (#%plain-app abort
+                                          (#%plain-lambda () (#%plain-app resume #,ref-to-cm #,ref-to-x)))))
+            (#%plain-app activation-record-list))))))]
     [(#%plain-app call-with-values (#%plain-lambda () prod) cons)
-     (let ([cons-prime (datum->syntax #f (gensym 'cons))])
+     (let-values ([(consumer ref-to-consumer) (generate-formal 'consumer stx)])
        (quasisyntax/loc stx
-         (let-values ([(#,cons-prime) #,(mark-lambda-as-safe (elim-callcc #'cons))])
+         (let-values ([(#,consumer) #,(mark-lambda-as-safe (elim-callcc #'cons))])
            #,(markit
               (quasisyntax/loc stx
-                (#%plain-app call-with-values 
-                             #,(mark-lambda-as-safe
-                                (quasisyntax/loc stx
-                                  (#%plain-lambda ()
-                                                  #,(elim-callcc/mark
-                                                     (lambda (x)
-                                                       (quasisyntax/loc stx
-                                                         (with-continuation-mark the-cont-key #,cons-prime #,x)))
-                                                     #'prod))))
-                             #,cons-prime))))))]
+                (#%plain-app 
+                 call-with-values 
+                 #,(mark-lambda-as-safe
+                    (quasisyntax/loc stx
+                      (#%plain-lambda ()
+                                      #,(elim-callcc/mark
+                                         (lambda (x)
+                                           (quasisyntax/loc stx
+                                             (with-continuation-mark the-cont-key #,ref-to-consumer #,x)))
+                                         #'prod))))
+                 #,ref-to-consumer))))))]
     [(#%plain-app w (#%plain-app . stuff))
      (with-syntax ([e #'(#%plain-app . stuff)])
        (syntax-case #'w (#%plain-lambda case-lambda)
          [(#%plain-lambda formals body)
-          (let ([w-prime (datum->syntax #f (gensym 'l))])
+          (let-values ([(w-prime ref-to-w-prime) (generate-formal 'l stx)])
             (quasisyntax/loc stx
               (let-values ([(#,w-prime) #,(elim-callcc #'w)])
                 #,(markit
                    (quasisyntax/loc stx
-                     (#%plain-app #,w-prime
+                     (#%plain-app #,ref-to-w-prime
                                   #,(elim-callcc/mark
                                      (lambda (x)
                                        (quasisyntax/loc stx
-                                         (with-continuation-mark the-cont-key #,w-prime #,x)))
+                                         (with-continuation-mark the-cont-key #,ref-to-w-prime #,x)))
                                      #'e)))))))]
          [(case-lambda [formals body] ...)
-          (let ([w-prime (datum->syntax #f (gensym 'cl))])
+          (let-values ([(w-prime ref-to-w-prime) (generate-formal 'cl stx)])
             (quasisyntax/loc stx
               (let-values ([(#,w-prime) #,(elim-callcc #'w)])
                 #,(markit
                    (quasisyntax/loc stx
-                     (#%plain-app #,w-prime
+                     (#%plain-app #,ref-to-w-prime
                                   #,(elim-callcc/mark
                                      (lambda (x)
                                        (quasisyntax/loc stx
-                                         (with-continuation-mark the-cont-key #,w-prime #,x)))
+                                         (with-continuation-mark the-cont-key #,ref-to-w-prime #,x)))
                                      #'e)))))))]
          [_else
-          (let ([w-prime (elim-callcc #'w)])
-            (markit
-             (quasisyntax/loc stx
-               (#%plain-app #,w-prime
-                            #,(elim-callcc/mark
-                               (lambda (x)
-                                 #`(with-continuation-mark the-cont-key #,w-prime #,x))
-                               #'e)))))]))]
+          (let-values ([(w-prime ref-to-w-prime) (generate-formal 'other stx)])
+            (quasisyntax/loc stx
+              (let ([#,w-prime #,(elim-callcc #'w)])
+                (markit
+                 (quasisyntax/loc stx
+                   (#%plain-app #,ref-to-w-prime
+                                #,(elim-callcc/mark
+                                   (lambda (x)
+                                     #`(with-continuation-mark the-cont-key #,ref-to-w-prime #,x))
+                                   #'e)))))))]))]
     [(#%plain-app w rest ...)
      (markit
       (quasisyntax/loc stx

@@ -38,7 +38,8 @@
    (list* (cons key val)
           (filter (lambda (k*v) (not (equal? key (car k*v))))
           (let-values ([(current)
-                        (continuation-mark-set->list (current-continuation-marks web-prompt) the-save-cm-key)])
+                        (continuation-mark-set->list (current-continuation-marks web-prompt)
+                                                     the-save-cm-key)])
             (if (empty? current)
                 empty
                 (first current)))))))

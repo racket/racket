@@ -1,8 +1,7 @@
 #lang scheme/base
 (require (for-template scheme/base)
          syntax/kerncase
-         #;syntax/free-vars
-         "freevars.ss"
+         syntax/free-vars
          mzlib/list
          mzlib/plt-match
          "util.ss"

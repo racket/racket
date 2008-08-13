@@ -27,12 +27,12 @@
    (lambda (stx)
      (datum->syntax stx 'error))))
 
-(define (generate-formal sym-name)
-  (let ([name (datum->syntax #f (gensym sym-name))])
-    (with-syntax ([(lambda (formal) ref-to-formal)
+(define (generate-formal sym-name [stx-base #f])
+  (let ([name (datum->syntax stx-base (gensym sym-name))])
+    (with-syntax ([(#%plain-lambda (formal) ref-to-formal)
                    (if (syntax-transforming?)
-                       (local-expand #`(lambda (#,name) #,name) 'expression empty)
-                       #`(lambda (#,name) #,name))])
+                       (local-expand #`(#%plain-lambda (#,name) #,name) 'expression empty)
+                       #`(#%plain-lambda (#,name) #,name))])
       (values #'formal #'ref-to-formal))))
 
 (define (formals-list stx)
