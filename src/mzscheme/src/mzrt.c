@@ -119,7 +119,7 @@ MZ_INLINE uint32_t mzrt_atomic_add_32(volatile unsigned int *counter, unsigned i
   return InterlockedExchangeAdd(counter, value);
 # endif
 
-#elif defined (__GNUC__) && (__i386__)
+#elif defined (__GNUC__) && (defined(__i386__) || defined(__x86_64__))
   asm volatile ("lock; xaddl %0,%1"
       : "=r" (value), "=m" (*counter)
       : "0" (value), "m" (*counter)
@@ -139,19 +139,13 @@ MZ_INLINE uint32_t mzrt_atomic_incr_32(volatile unsigned int *counter) {
 /*                Threads                                              */
 /***********************************************************************/
 
-typedef struct {
+struct mz_proc_thread {
 #ifdef WIN32
   HANDLE threadid;
 #else
   pthread_t threadid;
 #endif
-} mz_proc_thread;
-
-#ifdef WIN32
-  typedef DWORD (WINAPI *mz_proc_thread_start)(void*);
-#else
-  typedef void *(mz_proc_thread_start)(void*);
-#endif
+};
 
 mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* data) {
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
@@ -200,9 +194,9 @@ void * mz_proc_thread_wait(mz_proc_thread *thread) {
 START_XFORM_SUSPEND;
 #endif
 
-typedef struct mzrt_rwlock {
+struct mzrt_rwlock {
   pthread_rwlock_t lock;
-} mzrt_rwlock;
+};
 
 int mzrt_rwlock_create(mzrt_rwlock **lock) {
   *lock = malloc(sizeof(mzrt_rwlock));
