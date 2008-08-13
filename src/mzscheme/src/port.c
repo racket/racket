@@ -8098,6 +8098,7 @@ static long ITimer(void)
   while (1) {
     if (WaitForSingleObject(itimer_semaphore, itimer_delay / 1000) == WAIT_TIMEOUT) {
       scheme_fuel_counter = 0;
+      scheme_jit_stack_boundary = (unsigned long)-1;
       WaitForSingleObject(itimer_semaphore, INFINITE);
     }
   }
@@ -8140,7 +8141,8 @@ static void *run_itimer(void *p)
   while (1) {
     usleep(itimer_delay);
     scheme_fuel_counter = 0;
-    
+    scheme_jit_stack_boundary = (unsigned long)-1;
+
     pthread_mutex_lock(&itimer_mutex);
     if (itimer_continue) {
       itimer_continue = 0;

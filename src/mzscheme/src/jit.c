@@ -997,9 +997,9 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 # endif
 # ifdef X86_ALIGN_STACK
    /* Maintain 4-byte stack alignment. */
-#  define mz_prolog(x) (SUBQir(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP))
-#  define mz_epilog_without_jmp() ADDQir((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
-#  define mz_epilog(x) (ADDQir(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
+#  define mz_prolog(x) (ADDQiBr(-(STACK_ALIGN_WORDS * JIT_WORD_SIZE), JIT_SP))
+#  define mz_epilog_without_jmp() ADDQiBr((STACK_ALIGN_WORDS + 1) * JIT_WORD_SIZE, JIT_SP)
+#  define mz_epilog(x) (ADDQiBr(STACK_ALIGN_WORDS * JIT_WORD_SIZE, JIT_SP), RET_())
 #  define LOCAL_FRAME_SIZE 3
 #  define JIT_LOCAL3 -(JIT_WORD_SIZE * 6)
 # else
@@ -1036,9 +1036,13 @@ static void _jit_prolog_again(mz_jit_state *jitter, int n, int ret_addr_reg)
 /* A tiny jump has to be between -128 and 127 bytes. */
 # define __START_TINY_JUMPS__(cond) if (cond) { _jitl.tiny_jumps = 1; }
 # define __END_TINY_JUMPS__(cond) if (cond) { _jitl.tiny_jumps = 0; }
+# define __START_INNER_TINY__(cond) __END_SHORT_JUMPS__(cond); __START_TINY_JUMPS__(1);
+# define __END_INNER_TINY__(cond) __END_TINY_JUMPS__(1); __START_SHORT_JUMPS__(cond); 
 #else
 # define __START_TINY_JUMPS__(cond) __START_SHORT_JUMPS__(cond)
 # define __END_TINY_JUMPS__(cond) __END_SHORT_JUMPS__(cond)
+# define __START_INNER_TINY__(cond) /* empty */
+# define __END_INNER_TINY__(cond) /* empty */
 #endif
 
 #define __START_TINY_OR_SHORT_JUMPS__(tcond, cond) if (tcond) { __START_TINY_JUMPS__(1); } else { __START_SHORT_JUMPS__(cond); }
@@ -1862,7 +1866,10 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
      If num_rands < 0, then argc is in R0, and need to pop runstack before returning.
      If num_rands == -1, skip prolog. */
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5, *ref6, *ref7, *ref8, *ref9;
-  GC_CAN_IGNORE jit_insn *ref10, *ref11, *reftop = NULL;
+  GC_CAN_IGNORE jit_insn *ref10, *reftop = NULL;
+#ifndef FUEL_AUTODECEREMENTS
+  GC_CAN_IGNORE jit_insn *ref11;
+#endif
 
   __START_SHORT_JUMPS__(1);
 
@@ -1893,16 +1900,16 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
 
   /* Before inlined native, check stack depth: */
-  (void)jit_movi_p(JIT_R1, &scheme_stack_boundary);
+  (void)jit_movi_p(JIT_R1, &scheme_jit_stack_boundary); /* assumes USE_STACK_BOUNDARY_VAR */
   jit_ldr_l(JIT_R1, JIT_R1);
-  ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1);
+  ref9 = jit_bltr_ul(jit_forward(), JIT_STACK, JIT_R1); /* assumes down-growing stack */
   CHECK_LIMIT();
 
+#ifndef FUEL_AUTODECEREMENTS
   /* Finally, check for thread swap: */
   (void)jit_movi_p(JIT_R1, &scheme_fuel_counter);
   jit_ldr_i(JIT_R2, JIT_R1);
   ref11 = jit_blei_i(jit_forward(), JIT_R2, 0);
-#ifndef FUEL_AUTODECEREMENTS
   jit_subi_p(JIT_R2, JIT_R2, 0x1);
   jit_str_i(JIT_R1, JIT_R2);
 #endif
@@ -1952,6 +1959,27 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   VALIDATE_RESULT(JIT_R0);
+
+  /* Fast common-case return */
+  if (pop_and_jump) {
+    jit_insn *refc;
+    __START_INNER_TINY__(1);
+    refc = jit_blei_p(jit_forward(), JIT_R0, SCHEME_MULTIPLE_VALUES);
+    __END_INNER_TINY__(1);
+    if (num_rands < 0) { 
+      /* At this point, argc must be in V1 */
+      jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
+      jit_addr_p(JIT_RUNSTACK, JIT_RUNSTACK, JIT_R1);
+    }
+    if (pop_and_jump) {
+      mz_epilog(JIT_V1);
+    }
+    __START_INNER_TINY__(1);
+    mz_patch_branch(refc);
+    __END_INNER_TINY__(1);
+    CHECK_LIMIT();
+  }
+
   if (!multi_ok) {
     jit_insn *refm;
     __END_SHORT_JUMPS__(1);
@@ -2037,7 +2065,9 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   }
   mz_patch_branch(ref4);
   mz_patch_branch(ref9);
+#ifndef FUEL_AUTODECEREMENTS
   mz_patch_branch(ref11);
+#endif
   if (need_set_rs) {
     JIT_UPDATE_THREAD_RSPTR();
   }
@@ -2066,6 +2096,7 @@ static int generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
   if (!direct_native) {
     mz_patch_branch(ref10);
   }
+  /* Note: same return code is above for faster common-case return */
   if (num_rands < 0) { 
     /* At this point, argc must be in V1 */
     jit_lshi_l(JIT_R1, JIT_V1, JIT_LOG_WORD_SIZE);
@@ -3142,15 +3173,19 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
       } else if (arith == 9) {
         /* min */
         jit_insn *refc;
+        __START_INNER_TINY__(branch_short);
         refc = jit_bltr_l(jit_forward(), JIT_R0, JIT_R1);
         jit_movr_l(JIT_R0, JIT_R1);
         mz_patch_branch(refc);
+        __END_INNER_TINY__(branch_short);
       } else if (arith == 10) {
         /* max */
         jit_insn *refc;
+        __START_INNER_TINY__(branch_short);
         refc = jit_bgtr_l(jit_forward(), JIT_R0, JIT_R1);
         jit_movr_l(JIT_R0, JIT_R1);
         mz_patch_branch(refc);
+        __END_INNER_TINY__(branch_short);
       }
     } else {
       /* Non-constant arg is in JIT_R0 */
@@ -3224,19 +3259,25 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 	} else if (arith == 9) {
           /* min */
           jit_insn *refc;
+          __START_INNER_TINY__(branch_short);
           refc = jit_blti_l(jit_forward(), JIT_R0, (long)scheme_make_integer(v));
           jit_movi_l(JIT_R0, (long)scheme_make_integer(v));
           mz_patch_branch(refc);
+          __END_INNER_TINY__(branch_short);
         } else if (arith == 10) {
           /* max */
           jit_insn *refc;
+          __START_INNER_TINY__(branch_short);
           refc = jit_bgti_l(jit_forward(), JIT_R0, (long)scheme_make_integer(v));
           jit_movi_l(JIT_R0, (long)scheme_make_integer(v));
           mz_patch_branch(refc);
+          __END_INNER_TINY__(branch_short);
         } else if (arith == 11) {
           /* abs */
           jit_insn *refc;
+          __START_INNER_TINY__(branch_short);
           refc = jit_bgei_l(jit_forward(), JIT_R0, (long)scheme_make_integer(0));
+          __END_INNER_TINY__(branch_short);
           /* watch out for most negative fixnum! */
           (void)jit_beqi_p(refslow, JIT_R0, (void *)(((long)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
           jit_rshi_l(JIT_R0, JIT_R0, 1);
@@ -3244,7 +3285,9 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
           jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
           jit_lshi_l(JIT_R0, JIT_R0, 1);
           jit_ori_l(JIT_R0, JIT_R0, 0x1);
+          __START_INNER_TINY__(branch_short);
           mz_patch_branch(refc);
+          __END_INNER_TINY__(branch_short);
           CHECK_LIMIT();
         }
       }

@@ -325,6 +325,8 @@ typedef _uc		jit_insn;
 #define ADDQrr(RS, RD)			_qO_Mrm		(0x01		,_b11,_r8(RS),_r8(RD)				)
 #define ADDQir(IM, RD)			_qOs_Mrm_sL	(0x81		,_b11,_b000  ,_r8(RD)			,IM	)
 
+#define ADDQiBr(IM, RD)			_qO_Mrm_B	(0x83		,_b11,_b000  ,_r1(RD)			,_su8(IM))
+
 #define ANDBrr(RS, RD)			_O_Mrm		(0x20		,_b11,_r1(RS),_r1(RD)				)
 #define ANDBmr(MD, MB, MI, MS, RD)	_O_r_X		(0x22		     ,_r1(RD)		,MD,MB,MI,MS		)
 #define ANDBrm(RS, MD, MB, MI, MS)	_O_r_X		(0x20		     ,_r1(RS)		,MD,MB,MI,MS		)

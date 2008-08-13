@@ -248,6 +248,7 @@ typedef void (*DW_PrePost_Proc)(void *);
 
 #ifdef USE_STACK_BOUNDARY_VAR
 unsigned long scheme_stack_boundary;
+unsigned long volatile scheme_jit_stack_boundary;
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -677,6 +678,10 @@ void scheme_init_stack_check()
     }
 # endif
   }
+#endif
+
+#ifdef USE_STACK_BOUNDARY_VAR
+  scheme_jit_stack_boundary = scheme_stack_boundary;
 #endif
 }
 

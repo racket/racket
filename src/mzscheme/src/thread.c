@@ -1870,6 +1870,7 @@ void scheme_schedule_custodian_close(Scheme_Custodian *c)
 
   scheduled_kills = scheme_make_pair((Scheme_Object *)c, scheduled_kills);
   scheme_fuel_counter = 0;
+  scheme_jit_stack_boundary = (unsigned long)-1;
 }
 
 static void check_scheduled_kills()
@@ -3528,6 +3529,7 @@ START_XFORM_SKIP;
 static void timer_expired(int ignored)
 {
   scheme_fuel_counter = 0;
+  scheme_jit_stack_boundary = (unsigned long)-1;
 #  ifdef SIGSET_NEEDS_REINSTALL
   MZ_SIGSET(SIGPROF, timer_expired);
 #  endif
@@ -3787,8 +3789,10 @@ void scheme_break_thread(Scheme_Thread *p)
   p->external_break = 1;
 
   if (p == scheme_current_thread) {
-    if (scheme_can_break(p))
+    if (scheme_can_break(p)) {
       scheme_fuel_counter = 0;
+      scheme_jit_stack_boundary = (unsigned long)-1;
+    }
   }
   scheme_weak_resume_thread(p);
 # if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
@@ -4100,7 +4104,8 @@ void scheme_thread_block(float sleep_time)
   if (do_atomic)
     missed_context_switch = 1;
 
-  MZTHREADELEM(p, fuel_counter) = p->engine_weight;
+  scheme_fuel_counter = p->engine_weight;
+  scheme_jit_stack_boundary = scheme_stack_boundary;
 
 #ifdef USE_ITIMER
   {
@@ -7162,6 +7167,7 @@ static void get_ready_for_GC()
 #endif
 
   scheme_fuel_counter = 0;
+  scheme_jit_stack_boundary = (unsigned long)-1;
 
 #ifdef WINDOWS_PROCESSES
   scheme_suspend_remembered_threads();

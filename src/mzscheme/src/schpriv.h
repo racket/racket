@@ -1172,6 +1172,9 @@ typedef struct Scheme_Overflow {
     || defined(PALM_FIND_STACK_BOUNDS)
 # define USE_STACK_BOUNDARY_VAR
 extern unsigned long scheme_stack_boundary;
+/* Same as scheme_stack_boundary, but set to an extreme value when feul auto-expires,
+   so that JIT-generated code can check just one variable: */
+extern unsigned long volatile scheme_jit_stack_boundary;
 #endif
 
 typedef struct Scheme_Meta_Continuation {
