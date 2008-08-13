@@ -260,6 +260,10 @@
       (printf "exec rm \"$0\"\n")))
   (run "chmod" "+x" uninstaller))
 
+;; we need a namespace to compile the new config, grab it now, before the
+;; collection tree moves (otherwise it won't find the `scheme' collection)
+(define base-ns (make-base-namespace))
+
 (define write-config
   (case-lambda
     [()  (write-config #t (dir: 'collects))]
@@ -277,7 +281,7 @@
             [src-time (ftime src)]
             [zo-time  (ftime zo)])
        (printf "Rewriting configuration file at: ~a...\n" src)
-       (parameterize ([current-namespace (make-base-namespace)] ; to compile
+       (parameterize ([current-namespace base-ns] ; to compile (see above)
                       [current-library-collection-paths ; for configtab.ss
                        (list collectsdir)])
          (with-output-to-file src #:exists 'truncate/replace
