@@ -54,7 +54,7 @@ Scheme_Object *(*scheme_current_break_cell)();
 /*                                threads                                 */
 /*========================================================================*/
 #ifndef LINK_EXTENSIONS_BY_TABLE
-Scheme_Thread *scheme_current_thread;
+THREAD_LOCAL Scheme_Thread;
 volatile int scheme_fuel_counter;
 #else
 Scheme_Thread **scheme_current_thread_ptr;

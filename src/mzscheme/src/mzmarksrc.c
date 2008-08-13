@@ -1074,6 +1074,17 @@ END type;
 
 /**********************************************************************/
 
+START engine;
+
+engine_val {
+ mark:
+  Scheme_Engine *en = (Scheme_Engine *)p;
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Engine));
+}
+
+END engine;
+
 START env;
 
 mark_comp_env {
@@ -1296,6 +1307,19 @@ mark_rb_node {
 }
 
 END hash;
+
+/**********************************************************************/
+
+START places;
+
+place_val {
+ mark:
+  Scheme_Place *pr = (Scheme_Place *)p;
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Place));
+}
+
+END places;
 
 /**********************************************************************/
 

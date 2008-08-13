@@ -2059,7 +2059,7 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
   d = scheme_get_val_as_double(n);
   
   if (size == 4) {
-    float f = d;
+    float f = (float) d;
     memcpy(SCHEME_BYTE_STR_VAL(s) + offset, &f, sizeof(float));
   } else {
     memcpy(SCHEME_BYTE_STR_VAL(s) + offset, &d, sizeof(double));

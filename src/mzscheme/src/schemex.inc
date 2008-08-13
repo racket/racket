@@ -19,7 +19,7 @@
   scheme_extension_table->scheme_inherit_cells = scheme_inherit_cells;
   scheme_extension_table->scheme_current_break_cell = scheme_current_break_cell;
 #ifndef LINK_EXTENSIONS_BY_TABLE
-  scheme_extension_table->scheme_current_thread = scheme_current_thread;
+  scheme_extension_table->Scheme_Thread = Scheme_Thread;
   scheme_extension_table->scheme_fuel_counter = scheme_fuel_counter;
 #else
   scheme_extension_table->scheme_current_thread_ptr = scheme_current_thread_ptr;

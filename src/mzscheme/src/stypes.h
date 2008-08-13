@@ -243,5 +243,8 @@ enum {
   scheme_rt_rb_node,                    /* 221 */
 #endif
 
+  scheme_place_type,                    /* 222 */
+  scheme_engine_type,                   /* 223 */
+
   _scheme_last_type_
 };

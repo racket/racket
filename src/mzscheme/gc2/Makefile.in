@@ -21,7 +21,7 @@ RANLIB = @RANLIB@
 
 CPPFLAGS = @PREFLAGS@ @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ -I$(builddir)/.. -I$(srcdir)/../include
 CFLAGS = @CFLAGS@ $(CPPFLAGS) @COMPFLAGS@ @PROFFLAGS@
-LIBS = @LIBS@
+LIBS = @LIBS@ -lpthread
 
 DEF_COLLECTS_DIR = +D INITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../../collects; pwd`"'"'
 
@@ -50,11 +50,13 @@ OBJS =  salloc.@LTO@ \
 	jit.@LTO@ \
 	list.@LTO@ \
 	module.@LTO@ \
+	mzrt.@LTO@ \
 	network.@LTO@ \
 	numarith.@LTO@ \
 	number.@LTO@ \
 	numcomp.@LTO@ \
 	numstr.@LTO@ \
+	places.@LTO@ \
 	port.@LTO@ \
 	portfun.@LTO@ \
 	print.@LTO@ \
@@ -98,6 +100,7 @@ XSRCS = $(XSRCDIR)/salloc.c \
 	$(XSRCDIR)/numcomp.c \
 	$(XSRCDIR)/number.c \
 	$(XSRCDIR)/numstr.c \
+	$(XSRCDIR)/places.c \
 	$(XSRCDIR)/port.c \
 	$(XSRCDIR)/portfun.c \
 	$(XSRCDIR)/print.c \
@@ -178,6 +181,8 @@ $(XSRCDIR)/numcomp.c: ../src/numcomp.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numcomp.c $(SRCDIR)/numcomp.c
 $(XSRCDIR)/numstr.c: ../src/numstr.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/numstr.c $(SRCDIR)/numstr.c
+$(XSRCDIR)/places.c: ../src/places.@LTO@ $(XFORMDEP)
+	$(XFORM) $(XSRCDIR)/places.c $(SRCDIR)/places.c
 $(XSRCDIR)/port.c: ../src/port.@LTO@ $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/port.c $(SRCDIR)/port.c
 $(XSRCDIR)/portfun.c: ../src/portfun.@LTO@ $(XFORMDEP)
@@ -248,6 +253,8 @@ list.@LTO@: $(XSRCDIR)/list.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/list.c -o list.@LTO@
 module.@LTO@: $(XSRCDIR)/module.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/module.c -o module.@LTO@
+mzrt.@LTO@: $(SRCDIR)/mzrt.c
+	$(CC) $(CFLAGS) -c $(SRCDIR)/mzrt.c -o mzrt.@LTO@
 network.@LTO@: $(XSRCDIR)/network.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/network.c -o network.@LTO@
 numarith.@LTO@: $(XSRCDIR)/numarith.c
@@ -258,6 +265,8 @@ numcomp.@LTO@: $(XSRCDIR)/numcomp.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/numcomp.c -o numcomp.@LTO@
 numstr.@LTO@: $(XSRCDIR)/numstr.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/numstr.c -o numstr.@LTO@
+places.@LTO@: $(XSRCDIR)/places.c
+	$(CC) $(CFLAGS) -c $(XSRCDIR)/places.c -o places.@LTO@
 port.@LTO@: $(XSRCDIR)/port.c
 	$(CC) $(CFLAGS) -c $(XSRCDIR)/port.c -o port.@LTO@
 portfun.@LTO@: $(XSRCDIR)/portfun.c

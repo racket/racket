@@ -1809,8 +1809,8 @@ static void initialize_prompt(Scheme_Thread *p, Scheme_Prompt *prompt, void *sta
 
 typedef Scheme_Object *(*Overflow_K_Proc)(void);
 
-Scheme_Overflow_Jmp *scheme_overflow_jmp;
-void *scheme_overflow_stack_start;
+THREAD_LOCAL Scheme_Overflow_Jmp *scheme_overflow_jmp;
+THREAD_LOCAL void *scheme_overflow_stack_start;
 
 /* private, but declared public to avoid inlining: */
 void scheme_really_create_overflow(void *stack_base)
@@ -1830,7 +1830,7 @@ void scheme_really_create_overflow(void *stack_base)
   scheme_init_jmpup_buf(&jmp->cont);
   if (scheme_setjmpup(&jmp->cont, jmp, stack_base)) {
     /* A jump into here is a request to handle overflow.
-       The way to continue is in scheme_overflow_k.
+       The way to continue is in p->overflow_k.
        When we get back, put the result into
        scheme_overflow_reply. The route to return is
        in the thread's `overflow' field. */
@@ -1850,7 +1850,7 @@ void scheme_really_create_overflow(void *stack_base)
     } else {
       void *p1, *p2, *p3, *p4, *p5;
       long i1, i2, i3, i4;
-      Overflow_K_Proc f = scheme_overflow_k;
+      Overflow_K_Proc f = p->overflow_k;
       Scheme_Object *reply;
 
       p1 = p->ku.k.p1;

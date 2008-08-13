@@ -321,136 +321,31 @@ void scheme_init_module(Scheme_Env *env)
 
   scheme_init_module_resolver();
 
-  scheme_add_global_constant("current-module-name-resolver", 
-			     scheme_register_parameter(current_module_name_resolver, 
-						       "current-module-name-resolver",
-						       MZCONFIG_CURRENT_MODULE_RESOLVER), 
-			     env);
-  scheme_add_global_constant("current-module-declare-name", 
-			     scheme_register_parameter(current_module_name_prefix, 
-						       "current-module-declare-name",
-						       MZCONFIG_CURRENT_MODULE_NAME), 
-			     env);
+  GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
+  GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
 
-  scheme_add_global_constant("dynamic-require", 
-			     scheme_make_prim_w_arity(scheme_dynamic_require,
-						      "dynamic-require",
-						      2, 2),
-			     env);
-  scheme_add_global_constant("dynamic-require-for-syntax", 
-			     scheme_make_prim_w_arity(dynamic_require_for_syntax,
-						      "dynamic-require-for-syntax",
-						      2, 2),
-			     env);
-  scheme_add_global_constant("namespace-require",
-			     scheme_make_prim_w_arity(namespace_require,
-						      "namespace-require",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("namespace-attach-module",
-			     scheme_make_prim_w_arity(namespace_attach_module,
-						      "namespace-attach-module",
-						      2, 3),
-			     env);
-  scheme_add_global_constant("namespace-unprotect-module",
-			     scheme_make_prim_w_arity(namespace_unprotect_module,
-						      "namespace-unprotect-module",
-						      2, 3),
-			     env);
-  scheme_add_global_constant("namespace-require/copy",
-			     scheme_make_prim_w_arity(namespace_require_copy,
-						      "namespace-require/copy",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("namespace-require/constant",
-			     scheme_make_prim_w_arity(namespace_require_constant,
-						      "namespace-require/constant",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("namespace-require/expansion-time",
-			     scheme_make_prim_w_arity(namespace_require_etonly,
-						      "namespace-require/expansion-time",
-						      1, 1),
-			     env);
-  
-
-  scheme_add_global_constant("compiled-module-expression?",
-			     scheme_make_prim_w_arity(module_compiled_p,
-						      "compiled-module-expression?",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("module-compiled-name",
-			     scheme_make_prim_w_arity(module_compiled_name,
-						      "module-compiled-name",
-						       1, 1),
-			     env);
-  scheme_add_global_constant("module-compiled-imports",
-			     scheme_make_prim_w_arity(module_compiled_imports,
-                                                      "module-compiled-imports",
-                                                      1, 1),
-			     env);
-  scheme_add_global_constant("module-compiled-exports",
-			     scheme_make_prim_w_arity2(module_compiled_exports,
-						       "module-compiled-exports",
-						       1, 1,
-						       2, 2),
-			     env);
-
-  scheme_add_global_constant("module-path-index?",
-			     scheme_make_folding_prim(module_path_index_p,
-						      "module-path-index?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("module-path-index-resolve",
-			     scheme_make_prim_w_arity(module_path_index_resolve,
-                                                      "module-path-index-resolve",
-                                                      1, 1),
-			     env);
-  scheme_add_global_constant("module-path-index-split",
-			     scheme_make_prim_w_arity2(module_path_index_split,
-						       "module-path-index-split",
-						       1, 1,
-						       2, 2),
-			     env);
-  scheme_add_global_constant("module-path-index-join",
-			     scheme_make_prim_w_arity(module_path_index_join,
-						      "module-path-index-join",
-						      2, 2),
-			     env);
-
-  scheme_add_global_constant("resolved-module-path?",
-			     scheme_make_folding_prim(resolved_module_path_p,
-						      "resolved-module-path?",
-						      1, 1, 1),
-			     env);
-  scheme_add_global_constant("make-resolved-module-path",
-			     scheme_make_prim_w_arity(make_resolved_module_path,
-						      "make-resolved-module-path",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("resolved-module-path-name",
-			     scheme_make_prim_w_arity(resolved_module_path_name,
-						      "resolved-module-path-name",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("module-provide-protected?", 
-			     scheme_make_prim_w_arity(module_export_protected_p,
-						      "module-provide-protected?",
-						      2, 2),
-			     env);
-
-  scheme_add_global_constant("module->namespace",
-			     scheme_make_prim_w_arity(module_to_namespace,
-						      "module->namespace",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("module-path?",
-			     scheme_make_prim_w_arity(is_module_path,
-						      "module-path?",
-						      1, 1),
-			     env);
+  GLOBAL_PRIM_W_ARITY("dynamic-require",                  scheme_dynamic_require,     2, 2, env);
+  GLOBAL_PRIM_W_ARITY("dynamic-require-for-syntax",       dynamic_require_for_syntax, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("namespace-require",                namespace_require,          1, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-attach-module",          namespace_attach_module,    2, 3, env);
+  GLOBAL_PRIM_W_ARITY("namespace-unprotect-module",       namespace_unprotect_module, 2, 3, env);
+  GLOBAL_PRIM_W_ARITY("namespace-require/copy",           namespace_require_copy,     1, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-require/constant",       namespace_require_constant, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-require/expansion-time", namespace_require_etonly,   1, 1, env);
+  GLOBAL_PRIM_W_ARITY("compiled-module-expression?",      module_compiled_p,          1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module-compiled-name",             module_compiled_name,       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module-compiled-imports",          module_compiled_imports,    1, 1, env);
+  GLOBAL_PRIM_W_ARITY2("module-compiled-exports",         module_compiled_exports,    1, 1, 2, 2, env);
+  GLOBAL_FOLDING_PRIM("module-path-index?",               module_path_index_p,        1, 1, 1, env); 
+  GLOBAL_PRIM_W_ARITY("module-path-index-resolve",        module_path_index_resolve,  1, 1, env); 
+  GLOBAL_PRIM_W_ARITY2("module-path-index-split",         module_path_index_split,    1, 1, 2, 2, env); 
+  GLOBAL_PRIM_W_ARITY("module-path-index-join",           module_path_index_join,     2, 2, env);
+  GLOBAL_FOLDING_PRIM("resolved-module-path?",            resolved_module_path_p,     1, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("make-resolved-module-path",        make_resolved_module_path,  1, 1, env);
+  GLOBAL_PRIM_W_ARITY("resolved-module-path-name",        resolved_module_path_name,  1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module-provide-protected?",        module_export_protected_p,  2, 2, env);
+  GLOBAL_PRIM_W_ARITY("module->namespace",                module_to_namespace,        1, 1, env);
+  GLOBAL_PRIM_W_ARITY("module-path?",                     is_module_path,             1, 1, env);
 }
 
 void scheme_init_module_resolver(void)
@@ -487,8 +382,8 @@ void scheme_finish_kernel(Scheme_Env *env)
 
   insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
   
-  scheme_initial_env->module = kernel;
-  scheme_initial_env->insp = insp;
+  env->module = kernel;
+  env->insp = insp;
 
   kernel->modname = kernel_modname;
   kernel->requires = scheme_null;
@@ -503,9 +398,9 @@ void scheme_finish_kernel(Scheme_Env *env)
   count = 0;
   for (j = 0; j < 2; j++) {
     if (!j)
-      ht = scheme_initial_env->toplevel;
+      ht = env->toplevel;
     else {
-      ht = scheme_initial_env->syntax;
+      ht = env->syntax;
       syntax_start = count;
     }
 
@@ -521,9 +416,9 @@ void scheme_finish_kernel(Scheme_Env *env)
   count = 0;
   for (j = 0; j < 2; j++) {
     if (!j)
-      ht = scheme_initial_env->toplevel;
+      ht = env->toplevel;
     else
-      ht = scheme_initial_env->syntax;
+      ht = env->syntax;
 
     bs = ht->buckets;
     for (i = ht->size; i--; ) {
@@ -550,9 +445,9 @@ void scheme_finish_kernel(Scheme_Env *env)
   kernel->me->rt->num_provides = count;
   kernel->me->rt->num_var_provides = syntax_start;
 
-  scheme_initial_env->running = 1;
-  scheme_initial_env->et_running = 1;
-  scheme_initial_env->attached = 1;
+  env->running = 1;
+  env->et_running = 1;
+  env->attached = 1;
 
   /* Since this is the first module rename, it's registered as
      the kernel module rename: */
@@ -3160,7 +3055,7 @@ static void setup_accessible_table(Scheme_Module *m)
 Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, int rev_mod_phase)
 {
   if ((name == kernel_modname) && !rev_mod_phase)
-    return scheme_initial_env;
+    return scheme_get_kernel_env();
   else {
     Scheme_Object *chain;
     Scheme_Env *menv;
@@ -3244,9 +3139,8 @@ Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object 
 {
   symbol = scheme_tl_id_sym(env, symbol, NULL, 0, NULL);
 
-  if ((env == scheme_initial_env)
-      || ((env->module->primitive
-           && !env->module->provide_protects))
+  if (scheme_is_kernel_env(env)
+      || ((env->module->primitive && !env->module->provide_protects))
       /* For now[?], we're pretending that all definitions exists for
 	 non-0 local phase. */
       || env->mod_phase) {
@@ -3404,8 +3298,10 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name)
 {
   if (modname == kernel_modname) {
+    Scheme_Env *kenv;
+    kenv = scheme_get_kernel_env();
     name = SCHEME_STX_SYM(name);
-    return scheme_lookup_in_table(scheme_initial_env->syntax, (char *)name);
+    return scheme_lookup_in_table(kenv->syntax, (char *)name);
   } else {
     Scheme_Env *menv;
     Scheme_Object *val;
@@ -4491,7 +4387,7 @@ module_execute(Scheme_Object *data)
   env = scheme_environment_from_dummy(m->dummy);
 
   if (SAME_OBJ(m->modname, kernel_modname))
-    old_menv = scheme_initial_env;
+    old_menv = scheme_get_kernel_env();
   else
     old_menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), m->modname);
 

@@ -704,6 +704,7 @@ FRAMEWORK_REL_INSTALL
 FRAMEWORK_PREFIX
 INSTALL_ORIG_TREE
 EXE_SUFFIX
+PLACE_CGC_FLAGS
 MREDLINKER
 LIBSFX
 WXLIBS
@@ -1342,6 +1343,7 @@ Optional Features:
   --enable-lt=<prog>      use <prog> instead of bundled libtool
   --enable-origtree       install with original directory structure
   --enable-foreign        compile foreign support (enabled by default)
+  --enable-places         compile places support
   --enable-cgcdefault     use CGC (Boehm or Senora) as default build
   --enable-sgc            use Senora GC instead of the Boehm GC
   --enable-sgcdebug       use Senora GC for debugging
@@ -1881,6 +1883,12 @@ else
 fi
 
 
+# Check whether --enable-foreign was given.
+if test "${enable_foreign+set}" = set; then
+  enableval=$enable_foreign;
+fi
+
+
 # Check whether --enable-cgcdefault was given.
 if test "${enable_cgcdefault+set}" = set; then
   enableval=$enable_cgcdefault;
@@ -2259,6 +2267,7 @@ ZLIB_INC='$(ZLIB_INC)'
 PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
+PLACE_CGC_FLAGS=""
 
 ar_libtool_no_undefined=""
 LIBMZSCHEME_DEP=""
@@ -5790,6 +5799,7 @@ case $OS in
   Linux)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
+    GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
       ppc)
@@ -5858,6 +5868,8 @@ case $OS in
     # zlib comes with the OS
     ZLIB_A=""
     ZLIB_INC=""
+
+    GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
    gcc_vers_three=`${CC} -v 2>&1 | grep "version [3-9][.]"`
     if test "$gcc_vers_three" = "" ; then
@@ -10470,6 +10482,13 @@ if test "${enable_pthread}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DNO_GC_SIGNALS"
 fi
 
+############### places ###################
+
+if test "${enable_places}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DMZ_USE_PLACES"
+  PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC"
+  LDFLAGS="$LDFLAGS -pthread"
+fi
 
 ################ Xrender ##################
 
@@ -11785,6 +11804,7 @@ LIBS="$LIBS $EXTRALIBS"
 
 
 
+
 mk_needed_dir()
 {
   if test ! -d "$1" ; then
@@ -12659,13 +12679,13 @@ FRAMEWORK_REL_INSTALL!$FRAMEWORK_REL_INSTALL$ac_delim
 FRAMEWORK_PREFIX!$FRAMEWORK_PREFIX$ac_delim
 INSTALL_ORIG_TREE!$INSTALL_ORIG_TREE$ac_delim
 EXE_SUFFIX!$EXE_SUFFIX$ac_delim
+PLACE_CGC_FLAGS!$PLACE_CGC_FLAGS$ac_delim
 MREDLINKER!$MREDLINKER$ac_delim
 LIBSFX!$LIBSFX$ac_delim
 WXLIBS!$WXLIBS$ac_delim
 WXVARIANT!$WXVARIANT$ac_delim
 ICP!$ICP$ac_delim
 MRLIBINSTALL!$MRLIBINSTALL$ac_delim
-LIBFINISH!$LIBFINISH$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -12707,6 +12727,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBFINISH!$LIBFINISH$ac_delim
 MAKE_MRED!$MAKE_MRED$ac_delim
 MAKE_WBUILD!$MAKE_WBUILD$ac_delim
 MAKE_COPYTREE!$MAKE_COPYTREE$ac_delim
@@ -12746,7 +12767,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 37; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 38; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

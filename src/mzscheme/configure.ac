@@ -41,6 +41,8 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 
+AC_ARG_ENABLE(foreign, [  --enable-places         compile places support])
+
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging])
@@ -329,6 +331,7 @@ ZLIB_INC='$(ZLIB_INC)'
 PNG_A='$(PNG_A)'
 
 PREFLAGS="$CPPFLAGS"
+PLACE_CGC_FLAGS=""
 
 ar_libtool_no_undefined=""
 LIBMZSCHEME_DEP=""
@@ -532,6 +535,7 @@ case $OS in
   Linux)
     LIBS="$LIBS -rdynamic"
     DYN_CFLAGS="-fPIC"
+    GC_THREADS_FLAG="-DGC_LINUX_THREADS"
     # PPC: X11 librares are not found
     case `$UNAME -m` in
       ppc)
@@ -600,6 +604,8 @@ case $OS in
     # zlib comes with the OS
     ZLIB_A=""
     ZLIB_INC=""
+
+    GC_THREADS_FLAG="-DGC_DARWIN_THREADS"
 
 [   gcc_vers_three=`${CC} -v 2>&1 | grep "version [3-9][.]"` ]
     if test "$gcc_vers_three" = "" ; then
@@ -1023,6 +1029,13 @@ if test "${enable_pthread}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DNO_GC_SIGNALS"
 fi
 
+############### places ###################
+
+if test "${enable_places}" = "yes" ; then
+  PREFLAGS="$PREFLAGS -DMZ_USE_PLACES"
+  PLACE_CGC_FLAGS="$GC_THREADS_FLAG -DPARALLEL_MARK -DTHREAD_LOCAL_ALLOC"
+  LDFLAGS="$LDFLAGS -pthread"
+fi
 
 ################ Xrender ##################
 
@@ -1300,6 +1313,7 @@ AC_SUBST(FRAMEWORK_REL_INSTALL)
 AC_SUBST(FRAMEWORK_PREFIX)
 AC_SUBST(INSTALL_ORIG_TREE)
 AC_SUBST(EXE_SUFFIX)
+AC_SUBST(PLACE_CGC_FLAGS)
 
 AC_SUBST(MREDLINKER)
 AC_SUBST(LIBSFX)

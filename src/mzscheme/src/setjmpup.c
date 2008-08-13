@@ -185,6 +185,8 @@ static void *make_stack_copy_rec(long size)
   lk = MALLOC_LINK();
   cs->prev = lk;
 
+
+  /* double linked list push */
   *cs->next = *first_copied_stack;
   if (*first_copied_stack)
     *(*first_copied_stack)->prev = cs;
@@ -246,7 +248,7 @@ END_XFORM_SKIP;
 #endif
 
 /* This function must not be inlined! */
-void scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STACK_ARG_DECL)
+void MZ_NO_INLINE scheme_copy_stack(Scheme_Jumpup_Buf *b, void *base, void *start GC_VAR_STACK_ARG_DECL)
 {
   long size, msize;
   void *here;

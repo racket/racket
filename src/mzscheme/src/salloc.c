@@ -44,6 +44,8 @@ static int *dgc_count;
 static int dgc_size;
 
 extern int scheme_num_copied_stacks;
+static unsigned long scheme_primordial_os_thread_stack_base;
+static THREAD_LOCAL unsigned long scheme_os_thread_stack_base;
 
 #if defined(MZ_XFORM) && !defined(MZ_PRECISE_GC)
 void **GC_variable_stack;
@@ -60,7 +62,7 @@ extern MZ_DLLIMPORT void GC_init();
 extern MZ_DLLIMPORT unsigned long GC_get_stack_base();
 #endif
 
-void scheme_set_stack_base(void *base, int no_auto_statics)
+void scheme_set_primordial_stack_base(void *base, int no_auto_statics)
 {
 #ifdef MZ_PRECISE_GC
   GC_init_type_tags(_scheme_last_type_, 
@@ -70,6 +72,10 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
   /* We want to be able to allocate symbols early. */
   scheme_register_traversers();
 #endif
+
+  scheme_primordial_os_thread_stack_base  = (unsigned long) base;
+  scheme_os_thread_stack_base             = (unsigned long) base;
+
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
   GC_set_stack_base(base);
   /* no_auto_statics must always be true! */
@@ -80,12 +86,22 @@ void scheme_set_stack_base(void *base, int no_auto_statics)
     GC_init();
     GC_clear_roots();
   } else {
-# if defined(__APPLE__) && defined(__MACH__)
+# if (defined(__APPLE__) && defined(__MACH__)) || defined(MZ_USE_IRIX_SPROCS)
     GC_init(); /* For Darwin, CGC requires GC_init() always */
 # endif
   }
 #endif
   use_registered_statics = no_auto_statics;
+}
+
+void scheme_set_current_os_thread_stack_base(void *base)
+{
+  scheme_os_thread_stack_base = (unsigned long) base;
+}
+
+unsigned long scheme_get_current_os_thread_stack_base()
+{
+  return scheme_os_thread_stack_base;
 }
 
 typedef struct {
@@ -116,7 +132,7 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   void *stack_start;
   int volatile return_code;
 
-  scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
+  scheme_set_primordial_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
 
   return_code = _main(data);
 
@@ -128,9 +144,9 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
   return return_code;
 }
 
-void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics)
+void scheme_set_primordial_stack_bounds(void *base, void *deepest, int no_auto_statics)
 {
-  scheme_set_stack_base(base, no_auto_statics);
+  scheme_set_primordial_stack_base(base, no_auto_statics);
 
 #ifdef USE_STACK_BOUNDARY_VAR
   if (deepest) {

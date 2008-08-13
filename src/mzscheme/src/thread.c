@@ -142,23 +142,13 @@ extern int scheme_jit_malloced;
 
 static int buffer_init_size = INIT_TB_SIZE;
 
-Scheme_Thread *scheme_current_thread = NULL;
-Scheme_Thread *scheme_main_thread = NULL;
-Scheme_Thread *scheme_first_thread = NULL;
+THREAD_LOCAL Scheme_Thread *scheme_current_thread = NULL;
+THREAD_LOCAL Scheme_Thread *scheme_main_thread = NULL;
+THREAD_LOCAL Scheme_Thread *scheme_first_thread = NULL;
 
 Scheme_Thread *scheme_get_current_thread() { return scheme_current_thread; }
 
-typedef struct Scheme_Thread_Set {
-  Scheme_Object so;
-  struct Scheme_Thread_Set *parent;
-  Scheme_Object *first;
-  Scheme_Object *next;
-  Scheme_Object *prev;
-  Scheme_Object *search_start;
-  Scheme_Object *current;
-} Scheme_Thread_Set;
-
-Scheme_Thread_Set *thread_set_top;
+THREAD_LOCAL Scheme_Thread_Set *scheme_thread_set_top;
 
 static int num_running_threads = 1;
 
@@ -174,10 +164,10 @@ static int did_gc_count;
 static int init_load_on_demand = 1;
 
 #ifdef RUNSTACK_IS_GLOBAL
-Scheme_Object **scheme_current_runstack_start;
-Scheme_Object **scheme_current_runstack;
-MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
-MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
+THREAD_LOCAL Scheme_Object **scheme_current_runstack_start;
+THREAD_LOCAL Scheme_Object **scheme_current_runstack;
+THREAD_LOCAL MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
+THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 #endif
 
 static Scheme_Custodian *main_custodian;
@@ -2076,7 +2066,8 @@ static void unschedule_in_set(Scheme_Object *s, Scheme_Thread_Set *t_set)
 static Scheme_Thread *make_thread(Scheme_Config *config, 
 				  Scheme_Thread_Cell_Table *cells,
 				  Scheme_Object *init_break_cell,
-				  Scheme_Custodian *mgr)
+				  Scheme_Custodian *mgr,
+          void *stack_base)
 {
   Scheme_Thread *process;
   int prefix = 0;
@@ -2120,22 +2111,10 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
     scheme_fuel_counter_ptr = &scheme_fuel_counter;
 #endif
     
-    /* Before a thread can be used stack_start must be set 
-     * this code sets stack_start for the main_thread 
-     * which is created with scheme_make_thread.
-     *
-     * make_subprocess is the only other caller of make_thread
-     * and it sets stack_start */
 #if defined(MZ_PRECISE_GC) || defined(USE_SENORA_GC)
-    {
-      void *ss;
-      ss = (void *)GC_get_stack_base();
-      process->stack_start = ss;
-    }
     GC_get_thread_stack_base = get_current_stack_start;
-#else
-    process->stack_start = GC_stackbottom;
 #endif
+    process->stack_start = stack_base;
 
   } else {
     prefix = 1;
@@ -2178,10 +2157,10 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   }
   
   if (SAME_OBJ(process, scheme_first_thread)) {
-    REGISTER_SO(thread_set_top);
-    thread_set_top = process->t_set_parent;
-    thread_set_top->first = (Scheme_Object *)process;
-    thread_set_top->current = (Scheme_Object *)process;
+    REGISTER_SO(scheme_thread_set_top);
+    scheme_thread_set_top = process->t_set_parent;
+    scheme_thread_set_top->first = (Scheme_Object *)process;
+    scheme_thread_set_top->current = (Scheme_Object *)process;
   } else
     schedule_in_set((Scheme_Object *)process, process->t_set_parent);
     
@@ -2314,10 +2293,10 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
   return process;
 }
 
-Scheme_Thread *scheme_make_thread()
+Scheme_Thread *scheme_make_thread(void *stack_base)
 {
   /* Makes the initial process. */
-  return make_thread(NULL, NULL, NULL, NULL);
+  return make_thread(NULL, NULL, NULL, NULL, stack_base);
 }
 
 static void scheme_check_tail_buffer_size(Scheme_Thread *p)
@@ -2532,7 +2511,7 @@ static void select_thread()
 
   /* Try to pick a next thread to avoid DOS attacks
      through whatever kinds of things call select_thread() */
-  o = (Scheme_Object *)thread_set_top;
+  o = (Scheme_Object *)scheme_thread_set_top;
   while (!SCHEME_THREADP(o)) {
     t_set = (Scheme_Thread_Set *)o;
     o = get_t_set_next(t_set->current);
@@ -2851,7 +2830,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
       maybe_recycle_cell = NULL;
   }
 
-  child = make_thread(config, cells, break_cell, mgr);
+  child = make_thread(config, cells, break_cell, mgr, child_start);
 
   /* Use child_thunk name, if any, for the thread name: */
   {
@@ -3801,15 +3780,154 @@ void scheme_break_thread(Scheme_Thread *p)
 # endif
 }
 
+static void find_next_thread(Scheme_Thread **return_arg) {
+  Scheme_Thread *next;
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *next_in_set;
+  Scheme_Thread_Set *t_set;
+
+  double msecs = 0.0;
+
+  /* Find the next process. Skip processes that are definitely
+     blocked. */
+
+  /* Start from the root */
+  next_in_set = (Scheme_Object *)scheme_thread_set_top;
+  t_set = NULL; /* this will get set at the beginning of the loop */
+
+  /* Each thread may or may not be available. If it's not available,
+     we search thread by thread to find something that is available. */
+  while (1) {
+    /* next_in_set is the thread or set to try... */
+
+    /* While it's a set, go down into the set, choosing the next
+       item after the set's current. For each set, remember where we
+       started searching for something to run, so we'll know when
+       we've tried everything in the set. */
+    while (!SCHEME_THREADP(next_in_set)) {
+      t_set = (Scheme_Thread_Set *)next_in_set;
+      next_in_set = get_t_set_next(t_set->current);
+      if (!next_in_set)
+        next_in_set = t_set->first;
+      t_set->current = next_in_set;
+      t_set->search_start = next_in_set;
+    }
+
+    /* Now `t_set' is the set we're trying, and `next' will be the
+       thread to try: */
+    next = (Scheme_Thread *)next_in_set;
+
+    /* If we get back to the current thread, then
+       no other thread was ready. */
+    if (SAME_PTR(next, p)) {
+      next = NULL;
+      break;
+    }
+
+    /* Check whether `next' is ready... */
+
+    if (next->nestee) {
+      /* Blocked on nestee */
+    } else if (next->running & MZTHREAD_USER_SUSPENDED) {
+      if (next->next || (next->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
+        /* If a non-main thread is still in the queue, 
+           it needs to be swapped in so it can clean up
+           and suspend itself. */
+        break;
+      }
+    } else if (next->running & MZTHREAD_KILLED) {
+      /* This one has been terminated. */
+      if ((next->running & MZTHREAD_NEED_KILL_CLEANUP) 
+          || next->nester
+          || !next->next) {
+        /* The thread needs to clean up. Swap it in so it can die. */
+        break;
+      } else
+        remove_thread(next);
+      break;
+    } else if (next->external_break && scheme_can_break(next)) {
+      break;
+    } else {
+      if (next->block_descriptor == GENERIC_BLOCKED) {
+        if (next->block_check) {
+          Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
+          Scheme_Schedule_Info sinfo;
+          init_schedule_info(&sinfo, next, next->sleep_end);
+          if (f(next->blocker, &sinfo))
+            break;
+          next->sleep_end = sinfo.sleep_end;
+          msecs = 0.0; /* that could have taken a while */
+        }
+      } else if (next->block_descriptor == SLEEP_BLOCKED) {
+        if (!msecs)
+          msecs = scheme_get_inexact_milliseconds();
+        if (next->sleep_end <= msecs)
+          break;
+      } else
+        break;
+    }
+
+    /* Look for the next thread/set in this set */
+    if (next->t_set_next)
+      next_in_set = next->t_set_next;
+    else
+      next_in_set = t_set->first;
+
+    /* If we run out of things to try in this set,
+       go up to find the next set. */
+    if (SAME_OBJ(next_in_set, t_set->search_start)) {
+      /* Loop to go up past exhausted sets, clearing search_start
+         from each exhausted set. */
+      while (1) {
+        t_set->search_start = NULL;
+        t_set = t_set->parent;
+
+        if (t_set) {
+          next_in_set = get_t_set_next(t_set->current);
+          if (!next_in_set)
+            next_in_set = t_set->first;
+
+          if (SAME_OBJ(next_in_set, t_set->search_start)) {
+            t_set->search_start = NULL;
+            /* continue going up */
+          } else {
+            t_set->current = next_in_set;
+            break;
+          }
+        } else
+          break;
+      }
+
+      if (!t_set) {
+        /* We ran out of things to try. If we
+           start again with the top, we should
+           land back at p. */
+        next = NULL;
+        break;
+      }
+    } else {
+      /* Set current... */
+      t_set->current = next_in_set;
+    } 
+    /* As we go back to the top of the loop, we'll check whether
+       next_in_set is a thread or set, etc. */
+  }
+
+  p           = NULL;
+  next_in_set = NULL;
+  t_set       = NULL;
+  *return_arg = next;
+  next        = NULL;
+}
+
 void scheme_thread_block(float sleep_time)
      /* If we're blocked, `sleep_time' is a max sleep time,
 	not a min sleep time. Otherwise, it's a min & max sleep time.
 	This proc auto-resets p's blocking info if an escape occurs. */
 {
   double sleep_end;
-  Scheme_Thread *next, *p = scheme_current_thread;
-  Scheme_Object *next_in_set;
-  Scheme_Thread_Set *t_set;
+  Scheme_Thread *next;
+  Scheme_Thread *p = scheme_current_thread;
 
   if (p->running & MZTHREAD_KILLED) {
     /* This thread is dead! Give up now. */
@@ -3864,142 +3982,19 @@ void scheme_thread_block(float sleep_time)
   check_scheduled_kills();
 
   if (!do_atomic && (sleep_end >= 0.0)) {
-    double msecs = 0.0;
-
-    /* Find the next process. Skip processes that are definitely
-       blocked. */
-    
-    /* Start from the root */
-    next_in_set = (Scheme_Object *)thread_set_top;
-    t_set = NULL; /* this will get set at the beginning of the loop */
-    
-    /* Each thread may or may not be available. If it's not available,
-       we search thread by thread to find something that is available. */
-    while (1) {
-      /* next_in_set is the thread or set to try... */
-
-      /* While it's a set, go down into the set, choosing the next
-	 item after the set's current. For each set, remember where we
-	 started searching for something to run, so we'll know when
-	 we've tried everything in the set. */
-      while (!SCHEME_THREADP(next_in_set)) {
-	t_set = (Scheme_Thread_Set *)next_in_set;
-	next_in_set = get_t_set_next(t_set->current);
-	if (!next_in_set)
-	  next_in_set = t_set->first;
-	t_set->current = next_in_set;
-	t_set->search_start = next_in_set;
-      }
-
-      /* Now `t_set' is the set we're trying, and `next' will be the
-         thread to try: */
-      next = (Scheme_Thread *)next_in_set;
-      
-      /* If we get back to the current thread, then
-	 no other thread was ready. */
-      if (SAME_PTR(next, p)) {
-	next = NULL;
-	break;
-      }
-
-      /* Check whether `next' is ready... */
-
-      if (next->nestee) {
-	/* Blocked on nestee */
-      } else if (next->running & MZTHREAD_USER_SUSPENDED) {
-	if (next->next || (next->running & MZTHREAD_NEED_SUSPEND_CLEANUP)) {
-	  /* If a non-main thread is still in the queue, 
-	     it needs to be swapped in so it can clean up
-	     and suspend itself. */
-	  break;
-	}
-      } else if (next->running & MZTHREAD_KILLED) {
-	/* This one has been terminated. */
-	if ((next->running & MZTHREAD_NEED_KILL_CLEANUP) 
-	    || next->nester
-	    || !next->next) {
-	  /* The thread needs to clean up. Swap it in so it can die. */
-	  break;
-	} else
-	  remove_thread(next);
-	break;
-      } else if (next->external_break && scheme_can_break(next)) {
-	break;
-      } else {
-	if (next->block_descriptor == GENERIC_BLOCKED) {
-	  if (next->block_check) {
-	    Scheme_Ready_Fun_FPC f = (Scheme_Ready_Fun_FPC)next->block_check;
-	    Scheme_Schedule_Info sinfo;
-	    init_schedule_info(&sinfo, next, next->sleep_end);
-	    if (f(next->blocker, &sinfo))
-	      break;
-	    next->sleep_end = sinfo.sleep_end;
-            msecs = 0.0; /* that could have taken a while */
-	  }
-	} else if (next->block_descriptor == SLEEP_BLOCKED) {
-          if (!msecs)
-            msecs = scheme_get_inexact_milliseconds();
-	  if (next->sleep_end <= msecs)
-	    break;
-	} else
-	  break;
-      }
-
-      /* Look for the next thread/set in this set */
-      if (next->t_set_next)
-	next_in_set = next->t_set_next;
-      else
-	next_in_set = t_set->first;
-
-      /* If we run out of things to try in this set,
-	 go up to find the next set. */
-      if (SAME_OBJ(next_in_set, t_set->search_start)) {
-	/* Loop to go up past exhausted sets, clearing search_start
-	   from each exhausted set. */
-	while (1) {
-	  t_set->search_start = NULL;
-	  t_set = t_set->parent;
-
-	  if (t_set) {
-	    next_in_set = get_t_set_next(t_set->current);
-	    if (!next_in_set)
-	      next_in_set = t_set->first;
-
-	    if (SAME_OBJ(next_in_set, t_set->search_start)) {
-	      t_set->search_start = NULL;
-	      /* continue going up */
-	    } else {
-	      t_set->current = next_in_set;
-	      break;
-	    }
-	  } else
-	    break;
-	}
-	
-	if (!t_set) {
-	  /* We ran out of things to try. If we
-	     start again with the top, we should
-	     land back at p. */
-	  next = NULL;
-	  break;
-	}
-      } else {
-	/* Set current... */
-	t_set->current = next_in_set;
-      } 
-      /* As we go back to the top of the loop, we'll check whether
-	 next_in_set is a thread or set, etc. */
-    }
+    find_next_thread(&next);
   } else
     next = NULL;
   
   if (next) {
     /* Clear out search_start fields */
+    Scheme_Thread_Set *t_set;
     t_set = next->t_set_parent;
     while (t_set) {
       t_set->search_start = NULL;
       t_set = t_set->parent;
     }
+    t_set = NULL;
   }
 
   if ((sleep_end > 0.0) && (p->block_descriptor == NOT_BLOCKED)) {
@@ -4032,8 +4027,6 @@ void scheme_thread_block(float sleep_time)
 
   if (next) {
     /* Swap in `next', but first clear references to other threads. */
-    next_in_set = NULL;
-    t_set = NULL;
     swap_target = next;
     next = NULL;
     do_swap_thread();

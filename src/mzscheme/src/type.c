@@ -275,6 +275,8 @@ scheme_init_type (Scheme_Env *env)
 #ifdef MZ_GC_BACKTRACE
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
 #endif
+  set_name(scheme_place_type, "<place>");
+  set_name(scheme_engine_type, "<engine>");
 }
 
 Scheme_Type scheme_make_type(const char *name)

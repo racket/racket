@@ -272,7 +272,7 @@ static int union_check(Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql
   }
 }
 
-static Scheme_Object *equal_k()
+static Scheme_Object *equal_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *v1 = (Scheme_Object *)p->ku.k.p1;

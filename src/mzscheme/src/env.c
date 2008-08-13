@@ -27,52 +27,51 @@
    envionments, a.k.a. namespaces), and also implements much of the
    initialization sequence (filling the initial namespace). */
 
+#include "mzrt.h"
 #include "schpriv.h"
 #include "schminc.h"
 #include "schmach.h"
 #include "schexpobs.h"
 
-#if defined(UNIX_LIMIT_STACK) || defined(UNIX_LIMIT_FDSET_SIZE)
-# include <signal.h>
-# include <sys/time.h>
-# include <sys/resource.h>
-#endif
-
-#ifdef MZ_USE_IRIX_SPROCS
-# include "../gc/gc.h"
-#endif
-
 #define GLOBAL_TABLE_SIZE 500
+#define TABLE_CACHE_MAX_SIZE 2048
 
 /* #define TIME_STARTUP_PROCESS */
 
-/* globals */
+/* global flags */
 int scheme_allow_set_undefined;
-
 void scheme_set_allow_set_undefined(int v) { scheme_allow_set_undefined =  v; }
 int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
-
 int scheme_starting_up;
+
+/* global counters just need to be atomically incremented */
+static int intdef_counter      = 0;
+static int builtin_ref_counter = 0;
+static int env_uid_counter     = 0;
+
+/* globals READ-ONLY SHARED */
+static Scheme_Object *kernel_symbol;
+static Scheme_Env    *kernel_env;
 
 #define MAX_CONST_LOCAL_POS 64
 #define MAX_CONST_LOCAL_TYPES 2
 #define MAX_CONST_LOCAL_FLAG_VAL 2
 #define SCHEME_LOCAL_FLAGS_MASK 0x3
 static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
-
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
 #define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
 static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
-#define TABLE_CACHE_MAX_SIZE 2048
-Scheme_Hash_Table *toplevels_ht;
-Scheme_Hash_Table *locals_ht[2];
+/* globals THREAD_LOCAL 
+ * if locked theses are probably sharable*/
+static Scheme_Hash_Table *toplevels_ht;
+static Scheme_Hash_Table *locals_ht[2];
 
-Scheme_Env *scheme_initial_env;
-
-/* locals */
-static void make_init_env(void);
+/* local functions */
+static void make_kernel_env(void);
+static void init_scheme_local();
+static void init_toplevels();
 
 static Scheme_Env *make_env(Scheme_Env *base, int toplevel_size);
 static Scheme_Env *make_empty_inited_env(int toplevel_size);
@@ -126,22 +125,18 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj);
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj);
 
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data);
-
 int scheme_is_module_begin_env(Scheme_Comp_Env *env);
+
+Scheme_Env *scheme_engine_instance_init();
+Scheme_Env *scheme_place_instance_init();
+static void place_instance_init_pre_kernel();
+static Scheme_Env *place_instance_init_post_kernel();
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
 
 typedef Scheme_Object *(*Lazy_Macro_Fun)(Scheme_Object *, int);
-
-static Scheme_Object *kernel_symbol;
-
-static int intdef_counter = 0;
-
-static int builtin_ref_counter = 0;
-
-static int env_uid_counter;
 
 #define ARBITRARY_USE     0x1
 #define CONSTRAINED_USE   0x2
@@ -201,165 +196,78 @@ static void boot_module_resolver()
   scheme_apply(boot, 0, NULL);
 }
 
+void os_platform_init() {
+#ifdef UNIX_LIMIT_STACK
+  struct rlimit rl;
+
+  getrlimit(RLIMIT_STACK, &rl);
+  if (rl.rlim_cur > UNIX_LIMIT_STACK) {
+    rl.rlim_cur = UNIX_LIMIT_STACK;
+    setrlimit(RLIMIT_STACK, &rl);
+  }
+#endif
+#ifdef UNIX_LIMIT_FDSET_SIZE
+  struct rlimit rl;
+
+  getrlimit(RLIMIT_NOFILE, &rl);
+  if (rl.rlim_cur > FD_SETSIZE) {
+    rl.rlim_cur = FD_SETSIZE;
+    setrlimit(RLIMIT_NOFILE, &rl);
+  }
+#endif
+}
+
+Scheme_Env *scheme_restart_instance() {
+  Scheme_Env *env;
+  void *stack_base;
+  stack_base = (void *) scheme_get_current_os_thread_stack_base();
+
+  /* Reset everything: */
+  scheme_do_close_managed(NULL, skip_certain_things);
+  scheme_main_thread = NULL;
+
+  scheme_reset_finalizations();
+  scheme_init_stack_check();
+#ifndef MZ_PRECISE_GC
+  scheme_init_setjumpup();
+#endif
+  scheme_reset_overflow();
+
+  scheme_make_thread(stack_base);
+  scheme_init_error_escape_proc(NULL);
+  scheme_init_module_resolver();
+
+  env = scheme_make_empty_env();
+  scheme_install_initial_module_set(env);
+  scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
+
+  scheme_init_port_config();
+  scheme_init_port_fun_config();
+  scheme_init_error_config();
+#ifndef NO_SCHEME_EXNS
+  scheme_init_exn_config();
+#endif
+
+  boot_module_resolver();
+
+  return env;
+}
+
 Scheme_Env *scheme_basic_env()
 {
   Scheme_Env *env;
 
   if (scheme_main_thread) {
-    /* Reset everything: */
-    scheme_do_close_managed(NULL, skip_certain_things);
-    scheme_main_thread = NULL;
-
-    scheme_reset_finalizations();
-    scheme_init_stack_check();
-#ifndef MZ_PRECISE_GC
-    scheme_init_setjumpup();
-#endif
-    scheme_reset_overflow();
-
-    scheme_make_thread();
-    scheme_init_error_escape_proc(NULL);
-    scheme_init_module_resolver();
-
-    env = scheme_make_empty_env();
-    scheme_install_initial_module_set(env);
-    scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
-		     (Scheme_Object *)env); 
-
-    scheme_init_port_config();
-    scheme_init_port_fun_config();
-    scheme_init_error_config();
-#ifndef NO_SCHEME_EXNS
-    scheme_init_exn_config();
-#endif
-
-    boot_module_resolver();
-
-    return env;
+    return scheme_restart_instance();
   }
+  
+  env = scheme_engine_instance_init();
+  
+  return env;
+}
 
-#ifdef UNIX_LIMIT_STACK
-  {
-    struct rlimit rl;
-    
-    getrlimit(RLIMIT_STACK, &rl);
-    if (rl.rlim_cur > UNIX_LIMIT_STACK) {
-      rl.rlim_cur = UNIX_LIMIT_STACK;
-      setrlimit(RLIMIT_STACK, &rl);
-    }
-  }
-#endif
-#ifdef UNIX_LIMIT_FDSET_SIZE
-  {
-    struct rlimit rl;
-    
-    getrlimit(RLIMIT_NOFILE, &rl);
-    if (rl.rlim_cur > FD_SETSIZE) {
-      rl.rlim_cur = FD_SETSIZE;
-      setrlimit(RLIMIT_NOFILE, &rl);
-    }
-  }
-#endif
-
-#ifdef MZ_USE_IRIX_SPROCS
-  GC_INIT();
-#endif
-
-  scheme_starting_up = 1;
-
-#ifndef MZ_PRECISE_GC
-  scheme_init_setjumpup();
-  scheme_init_ephemerons();
-#endif
-
-#ifdef TIME_STARTUP_PROCESS
-  printf("#if 0\nbasic @ %ld\n", scheme_get_process_milliseconds());
-#endif
-
-  scheme_init_stack_check();
-  scheme_init_overflow();
-  scheme_init_portable_case();
-
-
-  {
-    int i, k, cor;
-
-#ifndef USE_TAGGED_ALLOCATION
-    GC_CAN_IGNORE Scheme_Local *all;
-
-    all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS);
-# ifdef MEMORY_COUNTING_ON
-    scheme_misc_count += sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS;
-# endif    
-#endif
-
-    for (i = 0; i < MAX_CONST_LOCAL_POS; i++) {
-      for (k = 0; k < 2; k++) {
-        for (cor = 0; cor < 3; cor++) {
-          Scheme_Object *v;
-          
-#ifndef USE_TAGGED_ALLOCATION
-          v = (Scheme_Object *)(all++);
-#else
-          v = (Scheme_Object *)scheme_malloc_eternal_tagged(sizeof(Scheme_Local));
-#endif
-          v->type = k + scheme_local_type;
-          SCHEME_LOCAL_POS(v) = i;
-          SCHEME_LOCAL_FLAGS(v) = cor;
-          
-          scheme_local[i][k][cor] = v;
-        }
-      }
-    }
-  }
-
-  {
-    int i, k, cnst;
-
-#ifndef USE_TAGGED_ALLOCATION
-    GC_CAN_IGNORE Scheme_Toplevel *all;
-
-    all = (Scheme_Toplevel *)scheme_malloc_eternal(sizeof(Scheme_Toplevel) 
-						   * MAX_CONST_TOPLEVEL_DEPTH 
-						   * MAX_CONST_TOPLEVEL_POS
-						   * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
-# ifdef MEMORY_COUNTING_ON
-    scheme_misc_count += (sizeof(Scheme_Toplevel) 
-			  * MAX_CONST_TOPLEVEL_DEPTH 
-			  * MAX_CONST_TOPLEVEL_POS
-			  * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
-# endif
-#endif
-
-    for (i = 0; i < MAX_CONST_TOPLEVEL_DEPTH; i++) {
-      for (k = 0; k < MAX_CONST_TOPLEVEL_POS; k++) {
-	for (cnst = 0; cnst <= SCHEME_TOPLEVEL_FLAGS_MASK; cnst++) {
-	  Scheme_Toplevel *v;
-	
-#ifndef USE_TAGGED_ALLOCATION
-	  v = (all++);
-#else
-	  v = (Scheme_Toplevel *)scheme_malloc_eternal_tagged(sizeof(Scheme_Toplevel));
-#endif
-	  v->iso.so.type = scheme_toplevel_type;
-	  v->depth = i;
-	  v->position = k;
-	  SCHEME_TOPLEVEL_FLAGS(v) = cnst;
-	
-	  toplevels[i][k][cnst] = (Scheme_Object *)v;
-	}
-      }
-    }
-  }
-
-#ifdef MZ_PRECISE_GC
-  scheme_register_traversers();
-  register_traversers();
-  scheme_init_hash_key_procs();
-#endif
-
-  scheme_init_true_false();
-
+static void init_toplevel_local_offsets_hashtable_caches()
+{
   REGISTER_SO(toplevels_ht);
   REGISTER_SO(locals_ht[0]);
   REGISTER_SO(locals_ht[1]);
@@ -372,30 +280,85 @@ Scheme_Env *scheme_basic_env()
     ht = scheme_make_hash_table(SCHEME_hash_ptr);
     locals_ht[1] = ht;
   }
+}
+
+
+/* READ-ONLY GLOBAL structures ONE-TIME initialization */
+Scheme_Env *scheme_engine_instance_init() {
+  Scheme_Env *env;
+  void *stack_base;
+  stack_base = (void *) scheme_get_current_os_thread_stack_base();
+
+  os_platform_init();
 
 #ifdef TIME_STARTUP_PROCESS
-  printf("pre-process @ %ld\n", scheme_get_process_milliseconds());
+  printf("#if 0\nengine_instance_init @ %ld\n", scheme_get_process_milliseconds());
 #endif
+
+  scheme_starting_up = 1;
+ 
+  scheme_init_portable_case();
+  init_scheme_local();
+  init_toplevels();
+
+  scheme_init_true_false();
+
+#ifdef MZ_PRECISE_GC
+  scheme_register_traversers();
+  register_traversers();
+  scheme_init_hash_key_procs();
+#endif
+
+  scheme_init_getenv(); /* checks PLTNOJIT */
 
 #ifdef WINDOWS_PROCESSES
   /* Must be called before first scheme_make_thread() */
   scheme_init_thread_memory();
 #endif
-    
-  scheme_init_getenv(); /* checks PLTNOJIT */
 
-  scheme_make_thread();
+  
+  place_instance_init_pre_kernel(stack_base);
+  make_kernel_env();
+  env = place_instance_init_post_kernel();
+
+  return env;
+}
+
+static void place_instance_init_pre_kernel(void *stack_base) {
+
+#ifdef TIME_STARTUP_PROCESS
+  printf("place_init @ %ld\n", scheme_get_process_milliseconds());
+#endif
+  scheme_set_current_os_thread_stack_base(stack_base);
+
+#ifndef MZ_PRECISE_GC
+  scheme_init_setjumpup();
+  scheme_init_ephemerons();
+#endif
+
+  scheme_init_stack_check();
+  scheme_init_overflow();
+
+  init_toplevel_local_offsets_hashtable_caches();
+
+
+#ifdef TIME_STARTUP_PROCESS
+  printf("pre-process @ %ld\n", scheme_get_process_milliseconds());
+#endif
+
+  scheme_make_thread(stack_base);
 
 #ifdef TIME_STARTUP_PROCESS
   printf("process @ %ld\n", scheme_get_process_milliseconds());
 #endif
+}
 
-  make_init_env();
+static Scheme_Env *place_instance_init_post_kernel() {
+  Scheme_Env *env;
 
   env = scheme_make_empty_env();
 
-  scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
-		   (Scheme_Object *)env); 
+  scheme_set_param(scheme_current_config(), MZCONFIG_ENV, (Scheme_Object *)env); 
   scheme_init_memtrace(env);
 #ifndef NO_TCP_SUPPORT
   scheme_init_network(env);
@@ -428,7 +391,12 @@ Scheme_Env *scheme_basic_env()
   return env;
 }
 
-static void make_init_env(void)
+Scheme_Env *scheme_place_instance_init(void *stack_base) {
+  place_instance_init_pre_kernel(stack_base);
+  return place_instance_init_post_kernel();
+}
+
+static void make_kernel_env(void)
 {
   Scheme_Env *env;
 #ifdef TIME_STARTUP_PROCESS
@@ -440,8 +408,8 @@ static void make_init_env(void)
   scheme_set_param(scheme_current_config(), MZCONFIG_ENV, 
 		   (Scheme_Object *)env);
 
-  REGISTER_SO(scheme_initial_env);
-  scheme_initial_env = env;
+  REGISTER_SO(kernel_env);
+  kernel_env = env;
 
   scheme_defining_primitives = 1;
   builtin_ref_counter = 0;
@@ -495,202 +463,52 @@ static void make_init_env(void)
 #ifndef NO_REGEXP_UTILS
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
 #endif
+#ifdef MZ_USE_PLACES
+  MZTIMEIT(places, scheme_init_place(env));
+#endif
 
   MARK_START_TIME();
 
-  scheme_add_global_constant("namespace-symbol->identifier",
-			     scheme_make_prim_w_arity(namespace_identifier,
-						      "namespace-symbol->identifier",
-						      1, 2),
-			     env);
+  GLOBAL_PRIM_W_ARITY("namespace-symbol->identifier", namespace_identifier, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("namespace-module-identifier", namespace_module_identifier, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-base-phase", namespace_base_phase, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-variable-value", namespace_variable_value, 1, 4, env);
+  GLOBAL_PRIM_W_ARITY("namespace-set-variable-value!", namespace_set_variable_value, 2, 4, env);
+  GLOBAL_PRIM_W_ARITY("namespace-undefine-variable!", namespace_undefine_variable, 1, 2, env);
+  GLOBAL_PRIM_W_ARITY("namespace-mapped-symbols", namespace_mapped_symbols, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("namespace-module-registry", namespace_module_registry, 1, 1, env);
 
-  scheme_add_global_constant("namespace-module-identifier",
-			     scheme_make_prim_w_arity(namespace_module_identifier,
-						      "namespace-module-identifier",
-						      0, 1),
-			     env);
-  scheme_add_global_constant("namespace-base-phase",
-			     scheme_make_prim_w_arity(namespace_base_phase,
-						      "namespace-base-phase",
-						      0, 1),
-			     env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->resolved-module-path", variable_module_path, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->empty-namespace", variable_namespace, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->namespace", variable_top_level_namespace, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("variable-reference->phase", variable_phase, 1, 1, env);
 
+  GLOBAL_PRIM_W_ARITY("syntax-transforming?", now_transforming, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-value", local_exp_time_value, 1, 3, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-name", local_exp_time_name, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-context", local_context, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-phase-level", local_phase_level, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-make-definition-context", local_make_intdef_context, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-certifier", local_certify, 0, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-module-exports", local_module_exports, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-module-defined-identifiers", local_module_definitions, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-module-required-identifiers", local_module_imports, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-transforming-module-provides?", local_module_expanding_provides, 0, 0, env);
 
-  scheme_add_global_constant("namespace-variable-value",
-			     scheme_make_prim_w_arity(namespace_variable_value,
-						      "namespace-variable-value",
-						      1, 4),
-			     env);
+  GLOBAL_PRIM_W_ARITY("make-set!-transformer", make_set_transformer, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("set!-transformer?", set_transformer_p, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("set!-transformer-procedure", set_transformer_proc, 1, 1, env);
 
-  scheme_add_global_constant("namespace-set-variable-value!",
-			     scheme_make_prim_w_arity(namespace_set_variable_value,
-						      "namespace-set-variable-value!",
-						      2, 4),
-			     env);
+  GLOBAL_PRIM_W_ARITY("make-rename-transformer", make_rename_transformer, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("rename-transformer?", rename_transformer_p, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("rename-transformer-target", rename_transformer_target, 1, 1, env);
 
-  scheme_add_global_constant("namespace-undefine-variable!",
-			     scheme_make_prim_w_arity(namespace_undefine_variable,
-						      "namespace-undefine-variable!",
-						      1, 2),
-			     env);
-
-  scheme_add_global_constant("namespace-mapped-symbols",
-			     scheme_make_prim_w_arity(namespace_mapped_symbols,
-						      "namespace-mapped-symbols",
-						      0, 1),
-			     env);
-
-  scheme_add_global_constant("namespace-module-registry",
-			     scheme_make_prim_w_arity(namespace_module_registry,
-						      "namespace-module-registry",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("variable-reference->resolved-module-path",
-			     scheme_make_prim_w_arity(variable_module_path,
-						      "variable-reference->resolved-module-path",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("variable-reference->empty-namespace",
-			     scheme_make_prim_w_arity(variable_namespace,
-						      "variable-reference->empty-namespace",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("variable-reference->namespace",
-			     scheme_make_prim_w_arity(variable_top_level_namespace,
-						      "variable-reference->namespace",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("variable-reference->phase",
-			     scheme_make_prim_w_arity(variable_phase,
-						      "variable-reference->phase",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("syntax-transforming?", 
-			     scheme_make_prim_w_arity(now_transforming,
-						      "syntax-transforming?",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-value", 
-			     scheme_make_prim_w_arity(local_exp_time_value,
-						      "syntax-local-value",
-						      1, 3),
-			     env);
-  scheme_add_global_constant("syntax-local-name", 
-			     scheme_make_prim_w_arity(local_exp_time_name,
-						      "syntax-local-name",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-context", 
-			     scheme_make_prim_w_arity(local_context,
-						      "syntax-local-context",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-phase-level", 
-			     scheme_make_prim_w_arity(local_phase_level,
-						      "syntax-local-phase-level",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-make-definition-context", 
-			     scheme_make_prim_w_arity(local_make_intdef_context,
-						      "syntax-local-make-definition-context",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-get-shadower", 
-			     scheme_make_prim_w_arity(local_get_shadower,
-						      "syntax-local-get-shadower",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("syntax-local-introduce", 
-			     scheme_make_prim_w_arity(local_introduce,
-						      "syntax-local-introduce",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("make-syntax-introducer", 
-			     scheme_make_prim_w_arity(make_introducer,
-						      "make-syntax-introducer",
-						      0, 1),
-			     env);
-  scheme_add_global_constant("syntax-local-certifier", 
-			     scheme_make_prim_w_arity(local_certify,
-						      "syntax-local-certifier",
-						      0, 1),
-			     env);
-
-  scheme_add_global_constant("syntax-local-module-exports", 
-			     scheme_make_prim_w_arity(local_module_exports,
-						      "syntax-local-module-exports",
-						      1, 1),
-			     env);
-  scheme_add_global_constant("syntax-local-module-defined-identifiers", 
-			     scheme_make_prim_w_arity(local_module_definitions,
-						      "syntax-local-module-defined-identifiers",
-						      0, 0),
-			     env);
-  scheme_add_global_constant("syntax-local-module-required-identifiers", 
-			     scheme_make_prim_w_arity(local_module_imports,
-						      "syntax-local-module-required-identifiers",
-						      2, 2),
-			     env);
-  scheme_add_global_constant("syntax-local-transforming-module-provides?", 
-			     scheme_make_prim_w_arity(local_module_expanding_provides,
-						      "syntax-local-transforming-module-provides?",
-						      0, 0),
-			     env);
-
-  scheme_add_global_constant("make-set!-transformer", 
-			     scheme_make_prim_w_arity(make_set_transformer,
-						      "make-set!-transformer",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("set!-transformer?", 
-			     scheme_make_prim_w_arity(set_transformer_p,
-						      "set!-transformer?",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("set!-transformer-procedure", 
-			     scheme_make_prim_w_arity(set_transformer_proc,
-						      "set!-transformer-procedure",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("make-rename-transformer", 
-			     scheme_make_prim_w_arity(make_rename_transformer,
-						      "make-rename-transformer",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("rename-transformer?", 
-			     scheme_make_prim_w_arity(rename_transformer_p,
-						      "rename-transformer?",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("rename-transformer-target", 
-			     scheme_make_prim_w_arity(rename_transformer_target,
-						      "rename-transformer-target",
-						      1, 1),
-			     env);
-
-  scheme_add_global_constant("syntax-local-lift-expression", 
-			     scheme_make_prim_w_arity(local_lift_expr, 
-						      "syntax-local-lift-expression",
-						      1, 1), 
-			     env);
-  scheme_add_global_constant("syntax-local-lift-context", 
-			     scheme_make_prim_w_arity(local_lift_context, 
-						      "syntax-local-lift-context",
-						      0, 0), 
-			     env);
-
-  scheme_add_global_constant("syntax-local-lift-module-end-declaration", 
-			     scheme_make_prim_w_arity(local_lift_end_statement, 
-						      "syntax-local-lift-module-end-declaration",
-						      1, 1), 
-			     env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-expression", local_lift_expr, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-context", local_lift_context, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-module-end-declaration", local_lift_end_statement, 1, 1, env);
 
   {
     Scheme_Object *sym;
@@ -731,6 +549,88 @@ static void make_init_env(void)
    
   scheme_defining_primitives = 0;
 }
+
+int scheme_is_kernel_env(Scheme_Env *env) {
+  return (env == kernel_env);
+}
+
+Scheme_Env *scheme_get_kernel_env() {
+  return kernel_env;
+}
+
+static void init_scheme_local() 
+{
+  int i, k, cor;
+
+#ifndef USE_TAGGED_ALLOCATION
+  GC_CAN_IGNORE Scheme_Local *all;
+
+  all = (Scheme_Local *)scheme_malloc_eternal(sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS);
+# ifdef MEMORY_COUNTING_ON
+  scheme_misc_count += sizeof(Scheme_Local) * 3 * 2 * MAX_CONST_LOCAL_POS;
+# endif    
+#endif
+
+  for (i = 0; i < MAX_CONST_LOCAL_POS; i++) {
+    for (k = 0; k < 2; k++) {
+      for (cor = 0; cor < 3; cor++) {
+        Scheme_Object *v;
+
+#ifndef USE_TAGGED_ALLOCATION
+        v = (Scheme_Object *)(all++);
+#else
+        v = (Scheme_Object *)scheme_malloc_eternal_tagged(sizeof(Scheme_Local));
+#endif
+        v->type = k + scheme_local_type;
+        SCHEME_LOCAL_POS(v) = i;
+        SCHEME_LOCAL_FLAGS(v) = cor;
+
+        scheme_local[i][k][cor] = v;
+      }
+    }
+  }
+}
+
+static void init_toplevels()
+{
+  int i, k, cnst;
+
+#ifndef USE_TAGGED_ALLOCATION
+  GC_CAN_IGNORE Scheme_Toplevel *all;
+
+  all = (Scheme_Toplevel *)scheme_malloc_eternal(sizeof(Scheme_Toplevel) 
+      * MAX_CONST_TOPLEVEL_DEPTH 
+      * MAX_CONST_TOPLEVEL_POS
+      * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
+# ifdef MEMORY_COUNTING_ON
+  scheme_misc_count += (sizeof(Scheme_Toplevel) 
+      * MAX_CONST_TOPLEVEL_DEPTH 
+      * MAX_CONST_TOPLEVEL_POS
+      * (SCHEME_TOPLEVEL_FLAGS_MASK + 1));
+# endif
+#endif
+
+  for (i = 0; i < MAX_CONST_TOPLEVEL_DEPTH; i++) {
+    for (k = 0; k < MAX_CONST_TOPLEVEL_POS; k++) {
+      for (cnst = 0; cnst <= SCHEME_TOPLEVEL_FLAGS_MASK; cnst++) {
+        Scheme_Toplevel *v;
+
+#ifndef USE_TAGGED_ALLOCATION
+        v = (all++);
+#else
+        v = (Scheme_Toplevel *)scheme_malloc_eternal_tagged(sizeof(Scheme_Toplevel));
+#endif
+        v->iso.so.type = scheme_toplevel_type;
+        v->depth = i;
+        v->position = k;
+        SCHEME_TOPLEVEL_FLAGS(v) = cnst;
+
+        toplevels[i][k][cnst] = (Scheme_Object *)v;
+      }
+    }
+  }
+}
+
 
 /* Shutdown procedure for resetting a namespace: */
 static void skip_certain_things(Scheme_Object *o, Scheme_Close_Custodian_Client *f, void *data)
@@ -1238,6 +1138,7 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   Scheme_Bucket_Table *ht;
   Scheme_Object **t;
   Scheme_Bucket **bs;
+  Scheme_Env *kenv;
   long i;
 
   t = MALLOC_N(Scheme_Object *, (builtin_ref_counter + 1));
@@ -1245,7 +1146,9 @@ Scheme_Object **scheme_make_builtin_references_table(void)
   scheme_misc_count += sizeof(Scheme_Object *) * (builtin_ref_counter + 1);
 #endif
 
-  ht = scheme_initial_env->toplevel;
+  kenv = scheme_get_kernel_env();
+
+  ht = kenv->toplevel;
 
   bs = ht->buckets;
 
@@ -1263,9 +1166,12 @@ Scheme_Hash_Table *scheme_map_constants_to_globals(void)
   Scheme_Bucket_Table *ht;
   Scheme_Hash_Table*result;
   Scheme_Bucket **bs;
+  Scheme_Env *kenv;
   long i;
+  
+  kenv = scheme_get_kernel_env();
 
-  ht = scheme_initial_env->toplevel;
+  ht = kenv->toplevel;
   bs = ht->buckets;
 
   result = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -4808,7 +4714,7 @@ static Scheme_Object *read_variable(Scheme_Object *obj)
     varname = SCHEME_CDR(obj);
 
     if (SAME_OBJ(modname, kernel_symbol) && !mod_phase) {
-      return (Scheme_Object *)scheme_global_bucket(varname, scheme_initial_env);
+      return (Scheme_Object *)scheme_global_bucket(varname, scheme_get_kernel_env());
     } else {
       Module_Variable *mv;
       Scheme_Object *insp;

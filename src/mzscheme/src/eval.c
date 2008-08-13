@@ -247,8 +247,8 @@ static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Schem
 typedef void (*DW_PrePost_Proc)(void *);
 
 #ifdef USE_STACK_BOUNDARY_VAR
-unsigned long scheme_stack_boundary;
-unsigned long volatile scheme_jit_stack_boundary;
+THREAD_LOCAL unsigned long scheme_stack_boundary;
+THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -526,22 +526,24 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
   /* "Stack overflow" means running out of C-stack space. The other
      end of this handler (i.e., the target for the longjmp) is
      scheme_top_level_do in fun.c */
-  Scheme_Thread *p = scheme_current_thread;
-  Scheme_Overflow *overflow;
+  Scheme_Thread       *p = scheme_current_thread;
+  Scheme_Overflow     *overflow;
   Scheme_Overflow_Jmp *jmp;
 
   scheme_about_to_move_C_stack();
 
-  scheme_overflow_k = k;
+  p->overflow_k = k;
   scheme_overflow_count++;
-  
+
   overflow = MALLOC_ONE_RT(Scheme_Overflow);
 #ifdef MZTAG_REQUIRED
   overflow->type = scheme_rt_overflow;
 #endif
+  /* push old overflow */
   overflow->prev = scheme_current_thread->overflow;
-  overflow->stack_start = p->stack_start;
   p->overflow = overflow;
+
+  overflow->stack_start = p->stack_start;
 
   jmp = MALLOC_ONE_RT(Scheme_Overflow_Jmp);
 #ifdef MZTAG_REQUIRED
@@ -551,6 +553,7 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 
   scheme_init_jmpup_buf(&overflow->jmp->cont);
   scheme_zero_unneeded_rands(scheme_current_thread); /* for GC */
+
   if (scheme_setjmpup(&overflow->jmp->cont, overflow->jmp, p->stack_start)) {
     p = scheme_current_thread;
     overflow = p->overflow;
@@ -620,7 +623,7 @@ void scheme_init_stack_check()
 #ifdef USE_STACK_BOUNDARY_VAR
   if (!scheme_stack_boundary) {
 # ifdef ASSUME_FIXED_STACK_SIZE
-    scheme_stack_boundary = scheme_get_stack_base();
+    scheme_stack_boundary = scheme_get_current_os_thread_stack_base();
     if (stack_grows_up)
       scheme_stack_boundary += (FIXED_STACK_SIZE - STACK_SAFETY_MARGIN);
     else
@@ -628,7 +631,7 @@ void scheme_init_stack_check()
 # endif
 
 # ifdef WINDOWS_FIND_STACK_BOUNDS
-    scheme_stack_boundary = scheme_get_stack_base();
+    scheme_stack_boundary = scheme_get_current_os_thread_stack_base();
     scheme_stack_boundary += (STACK_SAFETY_MARGIN - 0x100000);
 # endif
 
@@ -661,7 +664,7 @@ void scheme_init_stack_check()
   
     {
       unsigned long bnd, lim;
-      bnd = (unsigned long)scheme_get_stack_base();
+      bnd = (unsigned long)scheme_get_current_os_thread_stack_base();
 
       lim = (unsigned long)rl.rlim_cur;
 #  ifdef UNIX_STACK_MAXIMUM

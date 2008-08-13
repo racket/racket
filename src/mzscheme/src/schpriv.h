@@ -106,7 +106,8 @@ int scheme_num_types(void);
 
 void scheme_reset_finalizations(void);
 
-extern unsigned long scheme_get_stack_base(void);
+extern unsigned long scheme_get_current_os_thread_stack_base(void);
+void scheme_set_current_os_thread_stack_base(void *base);
 
 int scheme_propagate_ephemeron_marks(void);
 void scheme_clear_ephemerons(void);
@@ -120,9 +121,17 @@ void scheme_clear_ephemerons(void);
 #define BITS_PER_MZSHORT (8 * sizeof(mzshort))
 
 #ifndef NO_INLINE_KEYWORD
-# define MZ_INLINE MSC_IZE(inline)
+# define MZ_INLINE MSC_IZE(MSC_IZE(inline))
 #else
 # define MZ_INLINE /* empty */
+#endif
+
+#if _MSC_VER
+# define MZ_NO_INLINE _declspec(noinline)
+#elif defined(__GNUC__)
+# define MZ_NO_INLINE __attribute ((__noinline__))
+#else
+# define MZ_NO_INLINE /* empty */
 #endif
 
 #ifdef MZ_PRECISE_GC
@@ -149,7 +158,7 @@ void scheme_init_overflow(void);
 void scheme_register_traversers(void);
 void scheme_init_hash_key_procs(void);
 #endif
-Scheme_Thread *scheme_make_thread(void);
+Scheme_Thread *scheme_make_thread(void*);
 void scheme_init_true_false(void);
 void scheme_init_symbol_table(void);
 void scheme_init_symbol_type(Scheme_Env *env);
@@ -198,6 +207,7 @@ void scheme_init_getenv(void);
 #ifndef DONT_USE_FOREIGN
 void scheme_init_foreign(Scheme_Env *env);
 #endif
+void scheme_init_place(Scheme_Env *env);
 
 void scheme_free_dynamic_extensions(void);
 
@@ -303,10 +313,10 @@ extern Scheme_Object *scheme_reduced_procedure_struct;
 #define RUNSTACK_IS_GLOBAL
 
 #ifdef RUNSTACK_IS_GLOBAL
-extern Scheme_Object **scheme_current_runstack;
-extern Scheme_Object **scheme_current_runstack_start;
-extern MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
-extern MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
+extern THREAD_LOCAL Scheme_Object **scheme_current_runstack;
+extern THREAD_LOCAL Scheme_Object **scheme_current_runstack_start;
+extern THREAD_LOCAL MZ_MARK_STACK_TYPE scheme_current_cont_mark_stack;
+extern THREAD_LOCAL MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 # define MZ_RUNSTACK scheme_current_runstack
 # define MZ_RUNSTACK_START scheme_current_runstack_start
 # define MZ_CONT_MARK_STACK scheme_current_cont_mark_stack
@@ -320,7 +330,24 @@ extern MZ_MARK_POS_TYPE scheme_current_cont_mark_pos;
 
 extern volatile int scheme_fuel_counter;
 
-extern Scheme_Thread *scheme_main_thread;
+extern THREAD_LOCAL Scheme_Thread *scheme_main_thread;
+
+#ifdef MZ_USE_PLACES
+extern THREAD_LOCAL Scheme_Thread *scheme_current_thread;
+extern THREAD_LOCAL Scheme_Thread *scheme_first_thread;
+#endif
+
+typedef struct Scheme_Thread_Set {
+  Scheme_Object so;
+  struct Scheme_Thread_Set *parent;
+  Scheme_Object *first;
+  Scheme_Object *next;
+  Scheme_Object *prev;
+  Scheme_Object *search_start;
+  Scheme_Object *current;
+} Scheme_Thread_Set;
+
+extern THREAD_LOCAL Scheme_Thread_Set *scheme_thread_set_top;
 
 #define SCHEME_TAIL_COPY_THRESHOLD 5
 
@@ -970,8 +997,8 @@ void scheme_clean_cust_box_list(void);
 
 Scheme_Object *scheme_handle_stack_overflow(Scheme_Object *(*k)(void));
 
-extern struct Scheme_Overflow_Jmp *scheme_overflow_jmp;
-extern void *scheme_overflow_stack_start;
+extern THREAD_LOCAL struct Scheme_Overflow_Jmp *scheme_overflow_jmp;
+extern THREAD_LOCAL void *scheme_overflow_stack_start;
 
 #ifdef MZ_PRECISE_GC
 # define PROMPT_STACK(id) &__gc_var_stack__
@@ -1171,10 +1198,10 @@ typedef struct Scheme_Overflow {
     || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
     || defined(PALM_FIND_STACK_BOUNDS)
 # define USE_STACK_BOUNDARY_VAR
-extern unsigned long scheme_stack_boundary;
+extern THREAD_LOCAL unsigned long scheme_stack_boundary;
 /* Same as scheme_stack_boundary, but set to an extreme value when feul auto-expires,
    so that JIT-generated code can check just one variable: */
-extern unsigned long volatile scheme_jit_stack_boundary;
+extern THREAD_LOCAL unsigned long volatile scheme_jit_stack_boundary;
 #endif
 
 typedef struct Scheme_Meta_Continuation {
@@ -2573,6 +2600,13 @@ void scheme_add_global_keyword_symbol(Scheme_Object *name, Scheme_Object *v, Sch
 void scheme_add_global_constant(const char *name, Scheme_Object *v, Scheme_Env *env);
 void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Scheme_Env *env);
 
+#define GLOBAL_FOLDING_PRIM(name, func, a1, a2, a3, env) scheme_add_global_constant(name, scheme_make_folding_prim(func, name, a1, a2, a3), env);
+#define GLOBAL_IMMED_PRIM(name, func, a1, a2, env) scheme_add_global_constant(name, scheme_make_immed_prim(func, name, a1, a2), env);
+#define GLOBAL_PARAMETER(name, func, constant, env)   scheme_add_global_constant(name, scheme_register_parameter(func, name, constant), env);
+#define GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env) scheme_add_global_constant(name, scheme_make_prim_w_arity(func, name, a1, a2), env);
+#define GLOBAL_PRIM_W_ARITY2(name, func, a1, a2, a3, a4, env) scheme_add_global_constant(name, scheme_make_prim_w_arity2(func, name, a1, a2, a3, a4), env);
+
+
 Scheme_Object *scheme_tl_id_sym(Scheme_Env *env, Scheme_Object *id, Scheme_Object *bdg, int is_def, Scheme_Object *phase);
 int scheme_tl_id_is_sym_used(Scheme_Hash_Table *marked_names, Scheme_Object *sym);
 
@@ -2605,7 +2639,10 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
 					   Scheme_Object *stxsym, Scheme_Object *insp,
 					   int pos, int mod_phase);
 
-extern Scheme_Env *scheme_initial_env;
+
+Scheme_Env *scheme_get_kernel_env();
+int scheme_is_kernel_env();
+
 
 void scheme_install_initial_module_set(Scheme_Env *env);
 Scheme_Bucket_Table *scheme_clone_toplevel(Scheme_Bucket_Table *ht, Scheme_Env *home);
@@ -3019,5 +3056,28 @@ unsigned short * scheme_ucs4_to_utf16(const mzchar *text, int start, int end,
 #define SCHEME_SYM_UNINTERNEDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x1)
 #define SCHEME_SYM_PARALLELP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x2)
 #define SCHEME_SYM_WEIRDP(o) (MZ_OPT_HASH_KEY(&((Scheme_Symbol *)(o))->iso) & 0x3)
+
+
+/*========================================================================*/
+/*                           places                                       */
+/*========================================================================*/
+
+typedef struct Scheme_Place {
+  Scheme_Object so;
+  void *proc_thread;
+} Scheme_Place;
+
+Scheme_Env *scheme_place_instance_init();
+
+
+/*========================================================================*/
+/*                           engine                                       */
+/*========================================================================*/
+
+typedef struct Scheme_Engine {
+  Scheme_Object so;
+} Scheme_Engine;
+
+Scheme_Env *scheme_engine_instance_init();
 
 #endif /* __mzscheme_private__ */

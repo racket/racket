@@ -166,6 +166,16 @@ typedef struct FSSpec mzFSSpec;
 
 #define MZ_EXTERN extern MZ_DLLSPEC
 
+#ifdef MZ_USE_PLACES
+# if _MSC_VER
+#  define THREAD_LOCAL __declspec(thread)
+# else
+#  define THREAD_LOCAL __thread
+# endif
+#else
+# define THREAD_LOCAL /* empty */
+#endif
+
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64)
 # define MZ_USE_JIT
 #endif
@@ -1384,7 +1394,6 @@ typedef void (*Scheme_Invoke_Proc)(Scheme_Env *env, long phase_shift,
 #define scheme_tail_rator (scheme_current_thread->ku.apply.tail_rator)
 #define scheme_tail_num_rands (scheme_current_thread->ku.apply.tail_num_rands)
 #define scheme_tail_rands (scheme_current_thread->ku.apply.tail_rands)
-#define scheme_overflow_k (scheme_current_thread->overflow_k)
 #define scheme_overflow_reply (scheme_current_thread->overflow_reply)
 
 #define scheme_error_buf *(scheme_current_thread->error_buf)
@@ -1648,9 +1657,10 @@ MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
 
-
-MZ_EXTERN Scheme_Thread *scheme_current_thread;
-MZ_EXTERN Scheme_Thread *scheme_first_thread;
+#ifndef MZ_USE_PLACES
+MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_current_thread;
+MZ_EXTERN THREAD_LOCAL Scheme_Thread *scheme_first_thread;
+#endif
 
 /* Set these global hooks (optionally): */
 typedef void (*Scheme_Exit_Proc)(int v);
@@ -1704,8 +1714,8 @@ MZ_EXTERN void scheme_wake_up(void);
 MZ_EXTERN int scheme_get_external_event_fd(void);
 
 /* GC registration: */
-MZ_EXTERN void scheme_set_stack_base(void *base, int no_auto_statics);
-MZ_EXTERN void scheme_set_stack_bounds(void *base, void *deepest, int no_auto_statics);
+MZ_EXTERN void scheme_set_primordial_stack_base(void *base, int no_auto_statics);
+MZ_EXTERN void scheme_set_primordial_stack_bounds(void *base, void *deepest, int no_auto_statics);
 
 /* Stack-preparation start-up: */
 typedef int (*Scheme_Nested_Main)(void *data);
