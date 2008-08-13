@@ -3191,8 +3191,6 @@ static Scheme_Env *setup_basic_env()
   wxREGGLOB(global_env);
   global_env = scheme_basic_env();
 
-  scheme_no_dumps("the graphics library is running");
-
   scheme_set_banner(BANNER);
 
   wxmeExpandFilename = CallSchemeExpand;

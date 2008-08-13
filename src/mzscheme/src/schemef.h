@@ -1063,8 +1063,6 @@ MZ_EXTERN int scheme_check_proc_arity2(const char *where, int a,
 MZ_EXTERN char *scheme_make_provided_string(Scheme_Object *o, int count, int *len);
 MZ_EXTERN char *scheme_make_args_string(char *s, int which, int argc, Scheme_Object **argv, long *len);
 
-MZ_EXTERN void scheme_no_dumps(char *why);
-
 MZ_EXTERN const char *scheme_system_library_subpath();
 
 MZ_EXTERN void scheme_signal_received(void);

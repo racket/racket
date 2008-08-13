@@ -607,7 +607,6 @@
   scheme_extension_table->scheme_check_proc_arity2 = scheme_check_proc_arity2;
   scheme_extension_table->scheme_make_provided_string = scheme_make_provided_string;
   scheme_extension_table->scheme_make_args_string = scheme_make_args_string;
-  scheme_extension_table->scheme_no_dumps = scheme_no_dumps;
   scheme_extension_table->scheme_system_library_subpath = scheme_system_library_subpath;
   scheme_extension_table->scheme_signal_received = scheme_signal_received;
   scheme_extension_table->scheme_char_strlen = scheme_char_strlen;

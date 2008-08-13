@@ -563,7 +563,6 @@ scheme_check_proc_arity
 scheme_check_proc_arity2
 scheme_make_provided_string
 scheme_make_args_string
-scheme_no_dumps
 scheme_system_library_subpath
 scheme_signal_received
 scheme_char_strlen

@@ -54,11 +54,16 @@ int scheme_get_allow_set_undefined() { return scheme_allow_set_undefined; }
 
 int scheme_starting_up;
 
-Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2][3];
+#define MAX_CONST_LOCAL_POS 64
+#define MAX_CONST_LOCAL_TYPES 2
+#define MAX_CONST_LOCAL_FLAG_VAL 2
+#define SCHEME_LOCAL_FLAGS_MASK 0x3
+static Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][MAX_CONST_LOCAL_TYPES][MAX_CONST_LOCAL_FLAG_VAL + 1];
 
 #define MAX_CONST_TOPLEVEL_DEPTH 16
 #define MAX_CONST_TOPLEVEL_POS 16
-Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
+#define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
+static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TOPLEVEL_POS][SCHEME_TOPLEVEL_FLAGS_MASK + 1];
 
 #define TABLE_CACHE_MAX_SIZE 2048
 Scheme_Hash_Table *toplevels_ht;
@@ -1677,11 +1682,10 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
   /* Helper for reading bytecode: make sure flags is a valid value */
   switch (flags) {
   case 0:
-    break;
   case SCHEME_LOCAL_CLEAR_ON_READ:
+  case SCHEME_LOCAL_OTHER_CLEARS:
     break;
   default:
-  case SCHEME_LOCAL_OTHER_CLEARS:
     flags  = SCHEME_LOCAL_OTHER_CLEARS;
     break;
   }

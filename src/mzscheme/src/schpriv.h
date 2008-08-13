@@ -898,7 +898,6 @@ typedef struct Scheme_Toplevel {
 #define SCHEME_TOPLEVEL_MUTATED 0x2
 #define SCHEME_TOPLEVEL_READY   0x2
 /* MUTATED and READY flags are used in different contexts */
-#define SCHEME_TOPLEVEL_FLAGS_MASK 0x3
 
 typedef struct Scheme_Quote_Syntax {
   Scheme_Object so; /* scheme_quote_syntax_type */
@@ -1932,9 +1931,6 @@ typedef struct {
 
 Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *obj, int drop_code, 
 						   Scheme_Native_Closure_Data *case_lam);
-
-#define MAX_CONST_LOCAL_POS 64
-extern Scheme_Object *scheme_local[MAX_CONST_LOCAL_POS][2][3];
 
 #define scheme_new_frame(n) scheme_new_special_frame(n, 0)
 #define scheme_extend_env(f, e) (f->basic.next = e, f)

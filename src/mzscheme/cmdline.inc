@@ -116,13 +116,15 @@ static char *make_embedded_load(const char *start, const char *end)
 }
 #endif
 
-#define mzcmd_EVAL 0
-#define mzcmd_LOAD 1
-#define mzcmd_MAIN 2
-#define mzcmd_REQUIRE_FILE 3
-#define mzcmd_REQUIRE_LIB 4
-#define mzcmd_REQUIRE_PLANET 5
-#define mzcmd_EMBEDDED 6
+enum {
+  mzcmd_EVAL            = 0,
+  mzcmd_LOAD            = 1,
+  mzcmd_MAIN            = 2,
+  mzcmd_REQUIRE_FILE    = 3,
+  mzcmd_REQUIRE_LIB     = 4,
+  mzcmd_REQUIRE_PLANET  = 5,
+  mzcmd_EMBEDDED        = 6,
+};
 
 /* To avoid having to create a specific mark procedure for
    prcise GC, split argument information into purely atomic

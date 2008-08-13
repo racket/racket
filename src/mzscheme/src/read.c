@@ -4913,21 +4913,15 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
     case CPT_SMALL_LOCAL_UNBOX_START:
       {
 	Scheme_Type type;
-	int k;
 
 	if (CPT_BETWEEN(ch, SMALL_LOCAL_UNBOX)) {
-	  k = 1;
 	  type = scheme_local_unbox_type;
 	  ch -= CPT_SMALL_LOCAL_UNBOX_START;
 	} else {
-	  k = 0;
 	  type = scheme_local_type;
 	  ch -= CPT_SMALL_LOCAL_START;
 	}
-	if (ch < MAX_CONST_LOCAL_POS)
-	  v = scheme_local[ch][k][0];
-	else
-	  v = scheme_make_local(type, ch, 0);
+	v = scheme_make_local(type, ch, 0);
       }
       break;
     case CPT_SMALL_MARSHALLED_START:
