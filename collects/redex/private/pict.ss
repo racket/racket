@@ -37,7 +37,7 @@
          linebreaks
          
          just-before
-         just-after
+         just-after         
          
          rule-pict-style
          arrow-space

@@ -1,16 +1,19 @@
+#lang scheme/base
 
-(module core-layout mzscheme
-  (require "loc-wrapper.ss"
-           "matcher.ss"
-           "reduction-semantics.ss"
-           (lib "list.ss")
-           (lib "utils.ss" "texpict")
-           (lib "mrpict.ss" "texpict")
-           (lib "etc.ss")
-           (lib "mred.ss" "mred")
-           (lib "struct.ss"))
+(require "loc-wrapper.ss"
+         "matcher.ss"
+         "reduction-semantics.ss"
+         
+         texpict/utils
+         texpict/mrpict
+         
+         scheme/gui/base
+         scheme/class)
+
+(require (for-syntax scheme/base))
   
   (provide find-enclosing-loc-wrapper
+           render-lw
            lw->pict
            basic-text
            metafunction-text
@@ -36,10 +39,10 @@
            
            ;; for test suite
            build-lines
-           (struct token (column span))
-           (struct string-token (string style))
-           (struct pict-token (pict))
-           (struct spacer-token ())
+           (struct-out token)
+           (struct-out string-token)
+           (struct-out pict-token)
+           (struct-out spacer-token)
            
            current-text)
   
@@ -117,25 +120,29 @@
   
   ;; token = string-token | spacer-token | pict-token | align-token
   
-  (define-struct token (column span) (make-inspector))
+  (define-struct token (column span) #:inspector (make-inspector))
   
   ;; string : string
   ;; style : valid third argument to mrpict.ss's `text' function
-  (define-struct (string-token token) (string style) (make-inspector))
+  (define-struct (string-token token) (string style) #:inspector (make-inspector))
   
   ;; width : number
   ;; pict : pict
-  (define-struct (pict-token token) (pict) (make-inspector))
+  (define-struct (pict-token token) (pict) #:inspector (make-inspector))
   
   ;; spacer : number
-  (define-struct (spacer-token token) () (make-inspector))
+  (define-struct (spacer-token token) () #:inspector (make-inspector))
 
   ;; pict : pict
   ;; this token always appears at the beginning of a line and its width
   ;; is the x-coordinate of the pict inside itself (which must appear on
   ;; an earlier line)
-  (define-struct align-token (pict) (make-inspector))
+  (define-struct align-token (pict) #:inspector (make-inspector))
 
+  (define (render-lw nts lw)
+    (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+      (lw->pict nts lw)))
+  
   (define (lw->pict nts lw)
     (lines->pict 
      (setup-lines 
@@ -156,13 +163,13 @@
                      ((current-unquote-rewriter) w-out-term-let)
                      w-out-term-let)])
            (if (equal? rewritten an-lw)
-               (copy-struct lw
+               (struct-copy lw
                             an-lw
-                            [lw-e (ar/e (lw-e an-lw)
-                                        (lw-line an-lw)
-                                        (lw-line-span an-lw)
-                                        (lw-column an-lw)
-                                        (lw-column-span an-lw))])
+                            [e (ar/e (lw-e an-lw)
+                                     (lw-line an-lw)
+                                     (lw-line-span an-lw)
+                                     (lw-column an-lw)
+                                     (lw-column-span an-lw))])
                (ar/lw rewritten)))]))
     
     (define (remove-term-let an-lw)
@@ -172,9 +179,9 @@
                      (pair? (cdr content))
                      (lw? (cadr content))
                      (equal? 'term-let (lw-e (cadr content))))
-                (copy-struct lw
+                (struct-copy lw
                              an-lw
-                             [lw-e (lw-e (second-to-last content))])
+                             [e (lw-e (second-to-last content))])
                 an-lw))
           an-lw))
     
@@ -756,5 +763,3 @@
     
     (find/e in-lws)
     lws)
-
-  )

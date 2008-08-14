@@ -1152,12 +1152,15 @@ This section documents two classes of operations, one for
 direct use of creating postscript figures for use in papers
 and for use in DrScheme to easily adjust the typesetting:
 @scheme[render-language],
-@scheme[render-reduction-relation], and
-@scheme[render-metafunction], and one
+@scheme[render-reduction-relation], 
+@scheme[render-metafunction], and
+@scheme[render-lw], 
+and one
 for use in combination with other libraries that operate on picts
 @scheme[language->pict],
-@scheme[reduction-relation->pict], and
-@scheme[metafunction->pict].
+@scheme[reduction-relation->pict],
+@scheme[metafunction->pict], and
+@scheme[lw->pict].
 The primary difference between these functions is that the former list
 sets @scheme[dc-for-text-size] and the latter does not.
 
@@ -1620,6 +1623,30 @@ corresponds to these structs:
 and the @scheme['spring] causes there to be no space between
 the empty string and the @scheme[x] in the typeset output.
 
+}
+
+@defproc[(render-lw (language/nts (or/c (listof symbol?) compiled-lang?))
+                    (lw lw?)) pict?]{
+
+  Produces a pict that corresponds to the @scheme[lw] object
+  argument, using @scheme[language/nts] to determine which
+  of the identifiers in the @scheme[lw] argument are
+  non-terminals.
+
+  This function sets @scheme[dc-for-text-size]. See also
+  @scheme[lw->pict].
+}
+
+@defproc[(lw->pict (language/ntw (or/c (listof symbol?) compiled-lang?))
+                   (lw lw?)) pict?]{
+
+  Produces a pict that corresponds to the @scheme[lw] object
+  argument, using @scheme[language/nts] to determine which
+  of the identifiers in the @scheme[lw] argument are
+  non-terminals.
+
+  This does not set the @scheme[dc-for-text-size] parameter. See also
+  @scheme[render-lw].
 }
 
 @deftogether[[

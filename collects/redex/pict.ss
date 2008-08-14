@@ -83,4 +83,6 @@
  [set-arrow-pict! (-> symbol? (-> pict?) void?)]
  
  [lw->pict
+  (-> (or/c (listof symbol?) compiled-lang?) lw? pict?)]
+ [render-lw
   (-> (or/c (listof symbol?) compiled-lang?) lw? pict?)])

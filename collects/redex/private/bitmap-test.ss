@@ -1,7 +1,6 @@
 (module bitmap-test mzscheme
   (require "bitmap-test-util.ss"
-           "../pict.ss"
-           "../reduction-semantics.ss")
+           "../main.ss")
   
   ;; tests: 
   ;;  - language,
@@ -39,6 +38,13 @@
   
   (test (render-metafunction S)
         "metafunction.png")
+  
+  ;; in this test, teh `x' is italic and the 'z' is sf, since 'x' is in the grammar, and 'z' is not.
+  (test (render-lw 
+         lang 
+         (to-lw ((λ (x) (x x))
+                 (λ (z) (z z)))))
+        "lw.png")
   
   (printf "bitmap-test.ss: ")
   (done))
