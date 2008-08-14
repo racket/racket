@@ -2458,7 +2458,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
 	
 	  if (!val) {
 	    scheme_wrong_syntax(scheme_compile_stx_string, NULL, find_id,
-				"variable used out of context");
+				"identifier used out of context");
 	    return NULL;
 	  }
 
@@ -2506,7 +2506,7 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       modidx = NULL;
       modname = NULL;
       genv = env->genv;
-      /* So we can distinguish between unbound variables in a module
+      /* So we can distinguish between unbound identifiers in a module
 	 and references to top-level definitions: */
       module_self_reference = 1;
     } else {
@@ -2535,12 +2535,12 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     modname = NULL;
 
     if (genv->module && genv->disallow_unbound) {
-      /* Free variable. Maybe don't continue. */
+      /* Free identifier. Maybe don't continue. */
       if (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) {
         scheme_wrong_syntax(((flags & SCHEME_SETTING) 
 			     ? scheme_set_stx_string
 			     : scheme_var_ref_string),
-			    NULL, src_find_id, "unbound variable in module");
+			    NULL, src_find_id, "unbound identifier in module");
 	return NULL;
       }
       if (flags & SCHEME_NULL_FOR_UNBOUND)
@@ -2595,18 +2595,18 @@ scheme_lookup_binding(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (modname && (flags & SCHEME_SETTING)) {
     if (SAME_OBJ(src_find_id, find_id) || SAME_OBJ(SCHEME_STX_SYM(src_find_id), find_id))
       find_id = NULL;
-    scheme_wrong_syntax(scheme_set_stx_string, find_id, src_find_id, "cannot mutate module-required variable");
+    scheme_wrong_syntax(scheme_set_stx_string, find_id, src_find_id, "cannot mutate module-required identifier");
     return NULL;
   }
 
   if (!modname && (flags & (SCHEME_SETTING | SCHEME_REFERENCING)) 
       && (genv->module && genv->disallow_unbound)) {
-    /* Check for set! of unbound variable: */    
+    /* Check for set! of unbound identifier: */    
     if (!scheme_lookup_in_table(genv->toplevel, (const char *)find_global_id)) {
       scheme_wrong_syntax(((flags & SCHEME_SETTING) 
 			     ? scheme_set_stx_string
 			     : scheme_var_ref_string), 
-			  NULL, src_find_id, "unbound variable in module");
+			  NULL, src_find_id, "unbound identifier in module");
       return NULL;
     }
   }
