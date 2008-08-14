@@ -88,7 +88,7 @@ end-string
            (substring s 2 (string-length s)))
          (string-tokenize s)))
   
-  (define (get-args which-arg home)
+  (define (get-args which-arg)
     (let ((fp (build-path (find-lib-dir) "buildinfo")))
       (cond
         ((file-exists? fp)
@@ -104,17 +104,15 @@ end-string
                         (loop (read-line i))))))))))
         (else ""))))
 
-  (define (compile-c-to-so file file.c file.so home)
+  (define (compile-c-to-so file file.c file.so)
     (let ((file.o (append-object-suffix file)))
-      (dynext:compile-extension #f 
-                                file.c
-                                file.o
-                                `(,@(parse-includes (get-args "X_CFLAGS" home))
-                                    ,(collection-path "compiler")))
+      (dynext:compile-extension #f file.c file.o
+                                `(,@(parse-includes (get-args "X_CFLAGS"))
+                                  ,(collection-path "compiler")))
       (dynext:link-extension #f (list file.o) file.so)
       (delete/continue file.o)))
 
-  (define (build-helper compile-directory home variant)
+  (define (build-helper compile-directory variant)
     (let* ((file "make-gl-info-helper.ss")
            (c (build-path compile-directory (append-c-suffix file)))
            (so (build-path compile-directory
@@ -125,30 +123,29 @@ end-string
       (with-output-to-file c
         (lambda () (display c-file))
         'replace)
-      (compile-c-to-so file c so home)))
+      (compile-c-to-so file c so)))
 
-  (define (effective-system-type home)
+  (define (effective-system-type)
     (let ([t (system-type)])
-      (if (eq? t 'unix)
-	  ;; Check "buildinfo" for USE_GL flag:
-	  (let ([buildinfo (build-path (find-lib-dir) "buildinfo")])
-	    (if (file-exists? buildinfo)
-		(with-input-from-file buildinfo
-		  (lambda ()
-		    (let loop ()
-		      (let ([l (read-line)])
-			(cond
-			 [(eof-object? l) 'no-gl]
-			 [(regexp-match #rx"-DUSE_GL" l) t]
-			 [else (loop)])))))
-		t))
-	  t)))
-  
-  (define (make-gl-info compile-directory home)
+      (if (not (eq? t 'unix))
+        t
+        ;; Check "buildinfo" for USE_GL flag:
+        (let ([buildinfo (build-path (find-lib-dir) "buildinfo")])
+          (if (not (file-exists? buildinfo))
+            (begin (printf "WARNING: buildinfo file missing: ~a\n" buildinfo)
+                   t)
+            (with-input-from-file buildinfo
+              (lambda ()
+                (if (regexp-match? #rx"-DUSE_GL" (current-input-port))
+                  t
+                  (begin (printf "WARNING: no GL support\n")
+                         'no-gl)))))))))
+
+  (define (make-gl-info compile-directory)
     (let ((zo (build-path compile-directory (append-zo-suffix "gl-info.ss")))
           (mod
            (compile
-            (case (effective-system-type home)
+            (case (effective-system-type)
               ((macosx windows no-gl)
                `(,#'module gl-info mzscheme
                   (provide (all-defined))
@@ -169,7 +166,7 @@ end-string
              (else
               (for-each (lambda (variant)
                           (parameterize ([dynext:link-variant variant])
-                            (build-helper compile-directory home variant)))
+                            (build-helper compile-directory variant)))
                         (available-mzscheme-variants))
               `(,#'module gl-info mzscheme
                  (provide (all-defined))
