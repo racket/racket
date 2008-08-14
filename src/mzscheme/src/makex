@@ -33,6 +33,9 @@ while (<>) {
 		    if ($_ =~ /^MZ_EXTERN /) {
 			$_ = substr($_, 10);
 		    }
+		    if ($_ =~ /^THREAD_LOCAL /) {
+			$_ = substr($_, 13);
+		    }
 
 		    if ($_ =~ /^volatile /) {
 			$_ = substr($_, 9);

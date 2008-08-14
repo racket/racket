@@ -19,7 +19,9 @@
 #define scheme_inherit_cells (scheme_extension_table->scheme_inherit_cells)
 #define scheme_current_break_cell (scheme_extension_table->scheme_current_break_cell)
 #ifndef LINK_EXTENSIONS_BY_TABLE
-#define Scheme_Thread (scheme_extension_table->Scheme_Thread)
+# ifndef MZ_USE_PLACES
+#define scheme_current_thread (scheme_extension_table->scheme_current_thread)
+# endif
 #define scheme_fuel_counter (scheme_extension_table->scheme_fuel_counter)
 #else
 #define scheme_current_thread_ptr (scheme_extension_table->scheme_current_thread_ptr)

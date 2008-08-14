@@ -15,8 +15,10 @@ scheme_set_thread_param
 scheme_get_env
 scheme_inherit_cells
 scheme_current_break_cell
-Scheme_Thread
+scheme_current_thread
 scheme_fuel_counter
+scheme_current_thread_ptr
+scheme_fuel_counter_ptr
 scheme_get_current_thread
 scheme_start_atomic
 scheme_end_atomic

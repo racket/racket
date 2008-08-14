@@ -17,7 +17,10 @@ EXPORTS
  scheme_get_env
  scheme_inherit_cells
  scheme_current_break_cell
+ scheme_current_thread DATA
  scheme_fuel_counter DATA
+ scheme_current_thread_ptr DATA
+ scheme_fuel_counter_ptr DATA
  scheme_get_current_thread
  scheme_start_atomic
  scheme_end_atomic
