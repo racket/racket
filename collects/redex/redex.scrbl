@@ -7,7 +7,7 @@
 	  	     scheme/gui
                      scheme/pretty
                      scheme/contract
-		     (only-in slideshow/pict text dc-for-text-size)
+		     (only-in slideshow/pict pict? text dc-for-text-size)
 		     redex))
 
 @(define-syntax (defpattech stx)
@@ -1164,51 +1164,66 @@ for use in combination with other libraries that operate on picts
 The primary difference between these functions is that the former list
 sets @scheme[dc-for-text-size] and the latter does not.
 
-@defthing[render-language (case-> (-> compiled-lang? 
-                                      pict?) 
-                                  (-> compiled-lang?
-                                      (or/c string? path?)
-                                      void?))]{
+@defproc[(render-language [lang compiled-lang?]
+                          [file (or/c false/c path-string?) #f]
+                          [#:nts nts (or/c false/c (listof (or/c string? symbol?)))
+                           (render-language-nts)])
+         (if file void? pict?)]{
 
-This function renders a language. If it receives just a
-single argument, it produces a pict and if it receives two
-arguments, it saves PostScript in the provided filename.
+Renders a language. If @scheme[file] is @scheme[#f],
+it produces a pict; if @scheme[file] is a path, it saves
+Encapsulated PostScript in the provided filename. See
+@scheme[render-language-nts] for information on the
+@scheme[nts] argument.
 
-That this function calls @scheme[dc-for-text-size] to set
-the dc to a relevant dc (either a @scheme[bitmap-dc%] or a
-@scheme[ps-dc%] depending if the function is called with one
-or two arguments, respectively). 
+This function parameterizes @scheme[dc-for-text-size] to install a
+relevant dc: a @scheme[bitmap-dc%] or a @scheme[post-script-dc%], depending on
+whether @scheme[file] is a path.
 
-See @scheme[language->pict] if you are using slideshow or
+See @scheme[language->pict] if you are using Slideshow or
 are otherwise setting @scheme[dc-for-text-size].  }
 
-@defproc[(language->pict (lang compiled-lang?)) pict?]{
-This function turns a languages into a picts. It is
-primarily designed to be used with Slideshow, or with
-other tools that combine picts together. It does not
-set @scheme[dc-for-text-size].
+@defproc[(language->pict (lang compiled-lang?)
+                         [#:nts nts (or/c false/c (listof (or/c string? symbol?)))
+                          (render-language-nts)])
+         pict?]{
+
+Produce a pict like @scheme[render-language], but without
+adjust @scheme[dc-for-text-size].
+
+This function is
+primarily designed to be used with Slideshow or with
+other tools that combine picts together.
 }
 
-@defthing[render-reduction-relation (case-> (-> reduction-relation?
-                                                pict?)
-                                            (-> reduction-relation?
-                                                (or/c string? path?)
-                                                void?))]{
+@defproc[(render-reduction-relation [rel reduction-relation?]
+                          [file (or/c false/c path-string?) #f]
+                          [#:style style reduction-rule-style/c (rule-pict-style)])
+         (if file void? pict?)]{
 
-If provided with one argument, @scheme[render-reduction-relation]
-produces a pict that renders properly in the definitions
-window in DrScheme. If given two argument, it writes
-postscript into the file named by its second argument.
+Renders a reduction relation. If @scheme[file] is @scheme[#f],
+it produces a pict; if @scheme[file] is a path, it saves
+Encapsulated PostScript in the provided filename. See
+@scheme[rule-pict-style] for information on the
+@scheme[style] argument.
 
-This function sets @scheme[dc-for-text-size]. See also
+This function parameterizes @scheme[dc-for-text-size] to install a
+relevant dc: a @scheme[bitmap-dc%] or a @scheme[post-script-dc%], depending on
+whether @scheme[file] is a path. See also
 @scheme[reduction-relation->pict].
 
 }
 
-@defproc[(reduction-relation->pict (r reduction-relation?)) pict?]{
-  This produces a pict, but without setting @scheme[dc-for-text-size].
-  It is suitable for use in Slideshow or other libraries that combine
-  picts.
+@defproc[(reduction-relation->pict (r reduction-relation?)
+                                   [#:style style reduction-rule-style/c (rule-pict-style)])
+         pict?]{
+
+  Produces a pict like @scheme[render-reduction-relation], but 
+  without setting @scheme[dc-for-text-size].
+
+This function is
+primarily designed to be used with Slideshow or with
+other tools that combine picts together.
 }
 
 @deftogether[[
@@ -1236,7 +1251,7 @@ This function sets @scheme[dc-for-text-size]. See also
 
 @defparam[render-language-nts nts (or/c false/c (listof symbol?))]{
   The value of this parameter controls which non-terminals
-  @scheme[render-language] and @scheme[language->pict] render. If it
+  @scheme[render-language] and @scheme[language->pict] render by default. If it
   is @scheme[#f] (the default), all non-terminals are rendered.
   If it is a list of symbols, only the listed symbols are rendered.
 
@@ -1263,21 +1278,30 @@ multi-line right-hand sides.
   will be rendered.
 }
 
-@defparam[rule-pict-style style
-               (symbols 'vertical 
-                        'compact-vertical
-                        'vertical-overlapping-side-conditions
-                        'horizontal)]{
+@defparam[rule-pict-style style reduction-rule-style/c]{
 
-This parameter controls the style used for the reduction
-relation. It can be either horizontal, where the left and
+This parameter controls the style used by default for the reduction
+relation. It can be @scheme['horizontal], where the left and
 right-hand sides of the reduction rule are beside each other
-or vertical, where the left and right-hand sides of the
-reduction rule are above each other. The vertical mode also
-has a variant where the side-conditions don't contribute to
+or @scheme['vertical], where the left and right-hand sides of the
+reduction rule are above each other. 
+The @scheme['compact-vertical] style moves the reduction arrow
+to the second line and uses less space between lines.
+Finally, in the @scheme['vertical-overlapping-side-conditions] variant, the side-conditions don't contribute to
 the width of the pict, but are just overlaid on the second
 line of each rule.
 }
+
+@defthing[reduction-rule-style/c flat-contract?]{
+
+A contract equivalent to
+
+@schemeblock[
+(symbols 'vertical 
+         'compact-vertical
+         'vertical-overlapping-side-conditions
+         'horizontal)
+]}
 
 @defparam[arrow-space space natural-number/c]{
 

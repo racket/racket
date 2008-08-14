@@ -79,9 +79,9 @@
 ;                                                               
 ;                                                               
 
-(define (do-reduction-relation->pict what rr)
+(define (do-reduction-relation->pict what rr style)
   (let ([rules (render-reduction-relation-rules)])
-    ((rule-pict-style->proc)
+    ((rule-pict-style->proc style)
      (map (rr-lws->trees (language-nts (reduction-relation-lang rr)))
           (if rules
               (let ([ht (make-hash)])
@@ -97,18 +97,18 @@
                      rules))
               (reduction-relation-lws rr))))))
 
-(define (reduction-relation->pict rr) (do-reduction-relation->pict 'reduction-relation->pict rr))
+(define (reduction-relation->pict rr #:style [style (rule-pict-style)]) 
+  (do-reduction-relation->pict 'reduction-relation->pict rr style))
 
 (define render-reduction-relation-rules (make-parameter #f))
 
-(define render-reduction-relation
-  (case-lambda
-    [(rr)
-     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-       (do-reduction-relation->pict 'render-reduction-relation rr))]
-    [(rr filename)
-     (save-as-ps (λ () (do-reduction-relation->pict 'render-reduction-relation rr))
-                 filename)]))
+(define (render-reduction-relation rr [filename #f]
+                                   #:style [style (rule-pict-style)])
+  (if filename
+      (save-as-ps (λ () (do-reduction-relation->pict 'render-reduction-relation rr style))
+                  filename)
+      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+        (do-reduction-relation->pict 'render-reduction-relation rr style))))
 
 (define ((rr-lws->trees nts) rp)
   (let ([tp (λ (x) (lw->pict nts x))])
@@ -318,8 +318,8 @@
 (define (make-horiz-space picts) (blank (pict-width (apply cc-superimpose picts)) 0))
 
 (define rule-pict-style (make-parameter 'vertical))
-(define (rule-pict-style->proc)
-  (case (rule-pict-style)
+(define (rule-pict-style->proc style)
+  (case style
     [(vertical) rule-picts->pict/vertical]
     [(compact-vertical) rule-picts->pict/compact-vertical]
     [(vertical-overlapping-side-conditions)
@@ -393,19 +393,17 @@
 ;;  (union (vector flattened-language-pict-info language-pict-info) 
 ;;         flattened-language-pict-info)
 
-(define render-language 
-  (case-lambda
-    [(lang) 
-     (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-       (do-language->pict 'render-language lang))]
-    [(lang filename)
-     (save-as-ps (λ () (do-language->pict 'render-language lang)) filename)]))
+(define (render-language lang [filename #f] #:nts [nts (render-language-nts)])
+  (if filename
+      (save-as-ps (λ () (do-language->pict 'render-language lang)) filename nts)
+      (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
+        (do-language->pict 'render-language lang nts))))
 
-(define (language->pict lang) (do-language->pict 'language->pict lang))
+(define (language->pict lang #:nts [nts (render-language-nts)])
+  (do-language->pict 'language->pict lang nts))
 
-(define (do-language->pict what lang)
-  (let ([specd-non-terminals (render-language-nts)]
-        [all-non-terminals (hash-map (compiled-lang-ht lang) (λ (x y) x))])
+(define (do-language->pict what lang specd-non-terminals)
+  (let ([all-non-terminals (hash-map (compiled-lang-ht lang) (λ (x y) x))])
     (when specd-non-terminals
       (check-non-terminals what specd-non-terminals lang))
     (make-grammar-pict (compiled-lang-pict-builder lang) 
