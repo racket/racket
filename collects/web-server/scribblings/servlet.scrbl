@@ -103,7 +103,8 @@ related to HTTP request data structures.
  and the content @scheme[content].
 }
 
-@defproc[(bindings-assq [binds (listof binding?)])
+@defproc[(bindings-assq [id bytes?]
+                        [binds (listof binding?)])
          (or/c false/c binding?)]{
  Returns the binding with an id equal to @scheme[id] from @scheme[binds] or @scheme[#f].
 }
