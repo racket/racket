@@ -7,8 +7,10 @@
 
 @subsection{IE ignores my CSS or behaves strange in other ways}
 
+@(require (for-label xml))
+
 In quirks mode, IE does not parse your page as XML, in particular it will not recognize many instances of
-"empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @scheme[(lib "xml.ss" "xml")]
+"empty tag shorthand", e.g. "<img src='...' />", whereas the @web-server uses @schememodname[xml]
 to format XML, which uses empty tag shorthand by default. You can change the default with the @scheme[empty-tag-shorthand]
 parameter: @scheme[(empty-tag-shorthand 'never)].
 
@@ -28,7 +30,9 @@ The essence of the solution to this problem is to use an SSL TCP implementation 
           (for-label web-server/web-config-unit)
           (for-label web-server/configuration/namespace))
 
-@schemeblock[
+@schememod[
+scheme
+
 @code:comment{Load the appropriate libraries to reimplement server}
 (require scheme/unit
          net/ssl-tcp-unit
