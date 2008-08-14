@@ -146,15 +146,21 @@ deployments of the @web-server .
  is called if any continuations are expired, with the number of
  continuations expired.
 }
+                  
+The recommended usage of this manager is codified as the following function:
 
-The recommended use of this manager is to pass, as @scheme[collect?], a
-function that checks the memory usage of the system, through
-@scheme[current-memory-use]. Then, @scheme[collect-interval] should be sufficiently
-large compared to @scheme[check-interval]. This way, if the load on the server
-spikes---as indicated by memory usage---the server will quickly expire
-continuations, until the memory is back under control. If the load
-stays low, it will still efficiently expire old continuations.
-
-With @href-link["http://continue.cs.brown.edu/" "Continue"], we went from needing to restart the server a few times
-a week and having many complaints under load, to not having these complaints
-and not needing to restart the server for performance reasons.
+@defproc[(create-threshold-LRU-manager 
+          [instance-expiration-handler expiration-handler?]
+          [memory-threshold number?])
+         manager?]{
+ This creates an LRU manager with the following behavior:
+ The memory limit is set to @scheme[memory-threshold]. Continuations start with @scheme[24]
+ life points. Life points are deducted at the rate of one every @scheme[10] minutes, or one
+ every @scheme[5] seconds when the memory limit is exceeded. Hence the maximum life time for
+ a continuation is @scheme[4] hours, and the minimum is @scheme[2] minutes.
+ 
+ If the load on the server spikes---as indicated by memory usage---the server will quickly expire
+ continuations, until the memory is back under control. If the load
+ stays low, it will still efficiently expire old continuations.
+}
+ 

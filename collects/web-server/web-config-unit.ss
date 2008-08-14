@@ -103,7 +103,7 @@
      (let ([m (host-table-messages host-table)]
            [conf (paths-conf paths)])
        (make-responders
-        (gen-servlet-responder (build-path-unless-absolute conf (messages-servlet m)))
+        servlet-error-responder
         servlet-loading-responder
         (gen-authentication-responder (build-path-unless-absolute conf (messages-authentication m)))
         (gen-servlets-refreshed (build-path-unless-absolute conf (messages-servlets-refreshed m)))

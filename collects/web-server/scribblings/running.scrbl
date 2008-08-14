@@ -4,10 +4,50 @@
 @title[#:tag "run.ss"
        #:style 'toc]{Running the Web Server}
 
-There are a number of ways to run the Web Server. The two primary ways
-are through a command-line tool or through a function call.
+There are a number of ways to run the Web Server. They are given in order of simplest to most advanced.
 
 @local-table-of-contents[]
+
+@; ------------------------------------------------------------
+@section[#:tag "insta"]{Instant Servlets}
+@(require (for-label (only-in web-server/insta/insta
+                              no-web-browser static-files-path)))
+@defmodulelang[web-server/insta]
+
+The fastest way to get a servlet running in the Web server is to use the 
+"Insta" language in DrScheme. Enter the following into DrScheme:
+
+@schememod[
+web-server/insta
+
+(define (start request)
+  `(html (head (title "Hello world!"))
+         (body (p "Hey out there!"))))
+]
+
+And press @onscreen["Run"]. A Web browser will open up showing your new servlet.
+
+Behind the scenes, DrScheme has used @scheme[serve/servlet] to start a new server
+that uses your @scheme[start] function as the servlet. 
+You are given the entire @schememodname[web-server/servlet] API.
+
+@subsection{Customization API}
+
+@defmodule[web-server/insta/insta]
+
+The following API is provided to customize the server instance:
+
+@defproc[(no-web-browser) void]{
+ Calling this will instruct DrScheme to @emph{not} start a Web browser when you press
+  @onscreen["Run"].
+}
+
+@defproc[(static-files-path [path path?]) void]{
+ This instructs the Web server to serve static files, such as stylesheet and images, from @scheme[path].
+}
+
+@; ------------------------------------------------------------
+@include-section["servlet-env.scrbl"]
 
 @; ------------------------------------------------------------
 @section[#:tag "command-line-tools"]{Command-line Tools}

@@ -1,87 +1,125 @@
+; Derived from plai/web/server, which was based on an older version of this
+; Also derived from planet/untyped/instaservlet
 #lang scheme/base
 (require (prefix-in net: net/sendurl)
-         (for-syntax scheme/base)
-         mzlib/list)
-(require "web-server.ss"
-         "configuration/configuration-table.ss"
-         "private/util.ss"
-         "managers/timeouts.ss"
-         "private/servlet.ss"
-         "configuration/namespace.ss"
-         "private/cache-table.ss"           
-         (prefix-in servlets: "dispatchers/dispatch-servlets.ss"))
-(require "servlet.ss")
-(provide (rename-out [on-web:syntax on-web])
-         send-url
-         (all-from-out "servlet.ss"))
+         scheme/list)
+(require web-server/web-server
+         web-server/managers/lru
+         web-server/private/servlet
+         web-server/configuration/namespace
+         web-server/private/cache-table 
+         web-server/private/util
+         web-server/configuration/responders
+         web-server/dispatchers/dispatch
+         web-server/private/mime-types
+         web-server/configuration/configuration-table
+         (prefix-in lift: web-server/dispatchers/dispatch-lift)
+         (prefix-in fsmap: web-server/dispatchers/filesystem-map)         
+         (prefix-in sequencer: web-server/dispatchers/dispatch-sequencer)
+         (prefix-in files: web-server/dispatchers/dispatch-files)
+         (prefix-in filter: web-server/dispatchers/dispatch-filter)         
+         (prefix-in servlets: web-server/dispatchers/dispatch-servlets))
 
 (define send-url (make-parameter net:send-url))
 
-; XXX Change to setup temporary file and special dispatcher  
-(define-syntax (on-web:syntax stx)
-  (syntax-case stx ()
-    [(on-web:syntax servlet-expr)
-     (syntax
-      (on-web:syntax 8000 servlet-expr))]
-    [(on-web:syntax port servlet-expr)
-     (with-syntax ([initial-request (datum->syntax (syntax servlet-expr) 'initial-request)])
-       (syntax
-        (on-web (lambda (initial-request) servlet-expr)
-                port
-                "servlets/standalone.ss")))]))
+(define (quit-server sema)
+  (lift:make
+   (lambda (request)
+     (thread (lambda () (sleep 2) (semaphore-post sema)))
+     `(html
+       (head
+        (title "Server Stopped")
+        (link ([rel "stylesheet"] [href "/error.css"])))
+       (body
+        (div ([class "section"])
+             (div ([class "title"]) "Server Stopped")
+             (p "Return to DrScheme.")))))))
 
-(define (on-web servlet-expr the-port the-path)
+(provide serve/servlet)
+(define (serve/servlet new-servlet 
+                       #:launch-browser?
+                       [launch-browser? #t]
+                       #:quit?
+                       [quit? #t]
+                       
+                       #:listen-ip
+                       [listen-ip "127.0.0.1"]
+                       #:port
+                       [the-port 8000]
+                       
+                       #:manager
+                       [manager 
+                        (make-threshold-LRU-manager
+                         (lambda (request)
+                           `(html (head (title "Page Has Expired."))
+                                  (body (p "Sorry, this page has expired. Please go back."))))
+                         (* 64 1024 1024))]
+                       
+                       #:servlet-namespace
+                       [servlet-namespace empty]
+                       #:server-root-path 
+                       [server-root-path (directory-part default-configuration-table-path)]
+                       #:extra-files-path 
+                       [extra-files-path (build-path server-root-path "htdocs")]
+                       #:servlets-root
+                       [servlets-root (build-path server-root-path ".")]
+                       #:file-not-found-path
+                       [file-not-found-path (build-path server-root-path "conf" "not-found.html")]
+                       #:mime-types-path
+                       [mime-types-path (build-path server-root-path "mime.types")]
+                       #:servlet-path
+                       [servlet-path "servlets/standalone.ss"])
   (let*-values
       ([(standalone-url)
-        (format "http://localhost:~a/~a" the-port the-path)]
-       [(final-value)
-        (void)]
-       [(final-conn)
-        (void)]
-       [(sema)
-        (make-semaphore 0)]
-       [(make-servlet-namespace) (make-make-servlet-namespace)]
-       [(new-servlet)
-        (lambda (initial-request)
-          (let ([v (servlet-expr initial-request)])
-            (set! final-value v)
-            (semaphore-post sema)
-            (if (response? v)
-                v
-                `(html (head (title "Servlet has ended."))
-                       (body (p "This servlet has ended, please return to the interaction window."))))))]
+        (format "http://localhost:~a/~a" the-port servlet-path)]
+       [(make-servlet-namespace) (make-make-servlet-namespace
+                                  #:to-be-copied-module-specs servlet-namespace)]
        [(the-scripts) (make-cache-table)]
-       [(clear-cache! servlet-dispatch)
-        (servlets:make (box the-scripts)
-                       #:make-servlet-namespace make-servlet-namespace
-                       #:url->path
-                       (lambda _
-                         (values (build-path (directory-part default-configuration-table-path)
-                                             "default-web-root" "."
-                                             the-path)
-                                 empty)))]
+       [(sema) (make-semaphore 0)]
+       [(dispatcher)
+        (sequencer:make
+         (if quit?
+             (filter:make 
+              #rx"^/quit$"
+              (quit-server sema))
+             (lambda _ (next-dispatcher)))
+         (filter:make
+          #rx"\\.ss"
+          (let-values ([(clear-cache! servlet-dispatch)
+                        (servlets:make (box the-scripts)
+                                       #:make-servlet-namespace make-servlet-namespace
+                                       #:url->path
+                                       (lambda _
+                                         (values (build-path servlets-root servlet-path)
+                                                 empty)))])
+            servlet-dispatch))
+         (files:make 
+          #:url->path (fsmap:make-url->path
+                       extra-files-path)
+          #:path->mime-type (make-path->mime-type mime-types-path)
+          #:indices (list "index.html" "index.htm"))         
+         (files:make 
+          #:url->path (fsmap:make-url->path 
+                       (build-path server-root-path "htdocs"))
+          #:path->mime-type (make-path->mime-type (build-path server-root-path "mime.types"))
+          #:indices (list "index.html" "index.htm"))
+         (lift:make (gen-file-not-found-responder file-not-found-path)))]
        [(shutdown-server)
-        (serve #:dispatch servlet-dispatch
+        (serve #:dispatch dispatcher
+               #:listen-ip listen-ip
                #:port the-port)])
     (cache-table-lookup! the-scripts
                          (string->symbol
                           (path->string
-                           (build-path (directory-part default-configuration-table-path)
-                                       "default-web-root" "."
-                                       the-path)))
+                           (build-path servlets-root servlet-path)))
                          (lambda ()
                            (make-servlet (make-custodian)
                                          (make-servlet-namespace)
-                                         (create-timeout-manager
-                                          (lambda (request)
-                                            `(html (head "Return to the interaction window.")
-                                                   (body (p "Return to the interaction window."))))
-                                          30 30)
+                                         manager
                                          new-servlet)))
-    ((send-url) standalone-url #t)
-    ; Wait for final call
+    (when launch-browser?
+      ((send-url) standalone-url #t))
+    (printf "Your web application is running at ~a.~n" standalone-url)
+    (printf "Click 'Stop' at any time to terminate the web server.~n")
     (semaphore-wait sema)
-    ; XXX: Find a way to wait for final HTML to be sent
-    ; Shutdown the server
-    (shutdown-server)
-    final-value))
+    (shutdown-server)))

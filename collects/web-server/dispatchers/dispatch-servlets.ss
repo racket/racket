@@ -34,7 +34,7 @@
               #:url->path url->path
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
               #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
-              #:responders-servlet [responders-servlet (gen-servlet-responder "servlet-error.html")]
+              #:responders-servlet [responders-servlet servlet-error-responder]
               #:timeouts-default-servlet [timeouts-default-servlet 30])
   
   ;; servlet-content-producer: connection request -> void

@@ -212,10 +212,9 @@ as the corresponding fields; with the content of the @scheme[text-file] as the b
 the @scheme[header]s as, you guessed it, headers.
 }
 
-@defproc[(servlet-loading-responder (url url?) (exn any/c))
+@defproc[(servlet-loading-responder (url url?) (exn exn?))
          response?]{
- Prints the @scheme[exn] to standard output and responds with a "Servlet didn't load."
-message.
+ Gives @scheme[exn] to the @scheme[current-error-handler] and response with a stack trace and a "Servlet didn't load" message.
 }
 
 @defproc[(gen-servlet-not-found (file path-string?))
@@ -223,6 +222,11 @@ message.
  Returns a function that generates a standard "Servlet not found." error with content from @scheme[file].
 }
 
+@defproc[(servlet-error-responder (url url?) (exn exn?))
+         response?]{
+ Gives @scheme[exn] to the @scheme[current-error-handler] and response with a stack trace and a "Servlet error" message.
+}
+                                       
 @defproc[(gen-servlet-responder (file path-string?))
          ((url url?) (exn any/c) . -> . response?)]{
  Prints the @scheme[exn] to standard output and responds with a "Servlet error." message with content from @scheme[file].

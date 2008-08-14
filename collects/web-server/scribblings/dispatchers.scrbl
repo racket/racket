@@ -311,12 +311,12 @@ a URL that refreshes the password file, servlet cache, etc.}
                 (make-make-servlet-namespace)]
                [#:responders-servlet-loading
                 responders-servlet-loading
-                ((url url?) (exn any/c) . -> . response?)
+                ((url url?) (exn exn?) . -> . response?)
                 servlet-loading-responder]
                [#:responders-servlet
                 responders-servlet
-                ((url url?) (exn any/c) . -> . response?)
-                (gen-servlet-responder "servlet-error.html")]
+                ((url url?) (exn exn?) . -> . response?)
+                servlet-error-responder]
                [#:timeouts-default-servlet
                 timeouts-default-servlet
                 integer?
@@ -348,8 +348,12 @@ a URL that refreshes the password file, servlet cache, etc.}
                [#:make-servlet-namespace make-servlet-namespace
                                          make-servlet-namespace?
                                          (make-make-servlet-namespace)]
-               [#:responders-servlet-loading responders-servlet-loading servlet-loading-responder]
-               [#:responders-servlet responders-servlet (gen-servlet-responder "servlet-error.html")])
+               [#:responders-servlet-loading responders-servlet-loading 
+                                             ((url url?) (exn exn?) . -> . response?)
+                                             servlet-loading-responder]
+               [#:responders-servlet responders-servlet
+                                     ((url url?) (exn exn?) . -> . response?)
+                                     servlet-error-responder])
          dispatcher?]{
  If the request URL contains a serialized continuation, then it is invoked with the
  request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.

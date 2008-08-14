@@ -5,9 +5,10 @@
          "../servlet/servlet-structs.ss")
 (provide/contract
  [create-LRU-manager (expiration-handler? number? number? (-> boolean?)
-                      #:initial-count number?
-                      #:inform-p (number? . -> . void)
-                      . -> . manager?)])
+                                          #:initial-count number?
+                                          #:inform-p (number? . -> . void)
+                                          . -> . manager?)]
+ [make-threshold-LRU-manager (expiration-handler? number? . -> . manager?)])
 
 ;; Utility
 (define (make-counter)
@@ -15,6 +16,29 @@
   (lambda ()
     (set! i (add1 i))
     i))
+
+; Copied from InstaServlet, which copied from Continue (I believe?)
+(define (make-threshold-LRU-manager instance-expiration-handler
+                                    memory-threshold)
+  (create-LRU-manager
+   ;; Called when an instance has expired.
+   instance-expiration-handler
+   ;; The condition below is checked every 5 seconds
+   5
+   ;; One 'life point' is deducted every 10 minutes
+   (* 10 60)
+   ;; If this condition is true a 'life point' is deducted
+   ;; from the continuation
+   (lambda ()
+     (define memory-use (current-memory-use))
+     (define collect?   (or (>= memory-use memory-threshold)
+                            (< memory-use 0)))
+     collect?)
+   ;; The number of 'life points' an continuation starts with
+   #:initial-count 24
+   ;; Logging done whenever an continuation is collected
+   #:inform-p (lambda args
+                (void))))
 
 (define-struct (LRU-manager manager) (instance-expiration-handler
                                       ; Private

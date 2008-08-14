@@ -5,6 +5,37 @@
 (require "../private/response-structs.ss"
          "../private/request-structs.ss")
 
+(define (format-stack-trace trace)
+  `(pre
+    ,@(for/list ([item (in-list trace)])
+        (format "~a at:~n  ~a~n"
+                (if (car item)
+                    (car item)
+                    "<unknown procedure>")
+                (if (cdr item)
+                    (format "line ~a, column ~a, in file ~a"
+                            (srcloc-line (cdr item))
+                            (srcloc-column (cdr item))
+                            (srcloc-source (cdr item)))
+                    "<unknown location>")))))
+
+(define (pretty-exception-response url exn)
+  `(html
+    (head
+     (title "Servlet Error")
+     (link ([rel "stylesheet"] [href "/error.css"])))
+    (body
+     (div ([class "section"])
+          (div ([class "title"]) "Exception")
+          (p
+           "The application raised an exception with the message:"
+           (pre ,(exn-message exn)))
+          (p
+           "Stack trace:"
+           ,(format-stack-trace
+             (continuation-mark-set->context (exn-continuation-marks exn))))))))
+
+
 ; file-response : nat str str [(cons sym str) ...] -> response
 ; The server should still start without the files there, so the
 ; configuration tool still runs.  (Alternatively, find an work around.)
@@ -18,18 +49,21 @@
 ; This is slightly tricky since the (interesting) content comes from the exception.
 (define (servlet-loading-responder url exn)
   ((error-display-handler)
-   (format "Servlet didn't load:\n~a\n" (exn-message exn))
+   (format "Servlet (@ ~a) didn't load:\n~a\n" (url->string url) (exn-message exn))
    exn)
-  (make-response/full 500 "Servlet didn't load"
-                      (current-seconds)
-                      TEXT/HTML-MIME-TYPE
-                      empty
-                      (list "Servlet didn't load.\n")))
+  (pretty-exception-response url exn))
 
 ; gen-servlet-not-found : str -> url -> response
 (define (gen-servlet-not-found file-not-found-file)
   (lambda (url)
     (file-response 404 "Servlet not found" file-not-found-file)))
+
+; servlet-error-response : url exn -> response
+(define (servlet-error-responder url exn)
+  ((error-display-handler)
+   (format "Servlet (@ ~a) exception:\n~a\n" (url->string url) (exn-message exn))
+   exn)
+  (pretty-exception-response url exn))
 
 ; gen-servlet-responder : str -> url tst -> response
 (define (gen-servlet-responder servlet-error-file)
@@ -77,9 +111,10 @@
 
 (provide/contract
  [file-response ((natural-number/c string? path-string?) (listof header?) . ->* . (response?))]
- [servlet-loading-responder (url? any/c . -> . response?)]
+ [servlet-loading-responder (url? exn? . -> . response?)]
  [gen-servlet-not-found (path-string? . -> . (url? . -> . response?))]
- [gen-servlet-responder (path-string? . -> . (url? any/c . -> . response?))]
+ [servlet-error-responder (url? exn? . -> . response?)]
+ [gen-servlet-responder (path-string? . -> . (url? exn? . -> . response?))]
  [gen-servlets-refreshed (path-string? . -> . (-> response?))]
  [gen-passwords-refreshed (path-string? . -> . (-> response?))]
  [gen-authentication-responder (path-string? . -> . (url? header? . -> . response?))]

@@ -7,7 +7,8 @@
          mzlib/list
          mzlib/pretty
          net/url
-         web-server/servlet-env)
+         web-server/servlet-env
+         web-server/servlet)
 (provide servlet-env-tests)
 
 #;(define (call u bs)
@@ -51,9 +52,10 @@
                        (input ([type "text"] [name "number"] [value ""]))
                        (input ([type "submit"] [name "enter"] [value "Enter"])))))))
 (define (example)
-  (on-web
-   9999
-   `(html (head (title "Sum"))
-          (body ([bgcolor "white"])
-                (p "The sum is "
-                   ,(number->string (+ (request-number "first") (request-number "second"))))))))
+  (serve/servlet
+   (lambda (request)
+     `(html (head (title "Sum"))
+            (body ([bgcolor "white"])
+                  (p "The sum is "
+                     ,(number->string (+ (request-number "first") (request-number "second")))))))
+   #:port 9999))

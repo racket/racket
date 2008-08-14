@@ -27,6 +27,10 @@ provide the following function:
  Called when this servlet is invoked.
  The argument is the HTTP request that initiated the servlet.
 }
+                   
+The only way to run Web language servlets currently is to use the
+functional interface to starting the server and create a dispatcher
+that includes a @scheme[make-lang-dispatcher] dispatcher.
 
 @; ------------------------------------------------------------
 @section[#:tag "considerations"]{Usage Considerations}

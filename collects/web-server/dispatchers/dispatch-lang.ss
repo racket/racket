@@ -31,7 +31,7 @@
 (define (make #:url->path url->path
               #:make-servlet-namespace [make-servlet-namespace (make-make-servlet-namespace)]
               #:responders-servlet-loading [responders-servlet-loading servlet-loading-responder]
-              #:responders-servlet [responders-servlet (gen-servlet-responder "servlet-error.html")])
+              #:responders-servlet [responders-servlet servlet-error-responder])
   
   ;; dispatch : connection request -> void
   (define (dispatch conn req)

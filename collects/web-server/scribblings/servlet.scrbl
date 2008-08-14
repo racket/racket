@@ -4,9 +4,11 @@
 @title[#:tag "servlet"
        #:style 'toc]{Scheme Servlets}
 
+@defmodule[web-server/servlet]
+                    
 The @web-server allows servlets to be written in Scheme. It
 provides the supporting API, described below, for the construction
-of these servlets. This API is provided by @filepath{servlet.ss}.
+of these servlets.
 
 @local-table-of-contents[]
 
@@ -425,5 +427,3 @@ generated. For more information on their semantics, consult the paper
  Binds @scheme[wc] to @scheme[v] in the current frame, shadowing any
  other bindings to @scheme[wc] in the current frame.
 }
-
-@include-section["servlet-env.scrbl"]
