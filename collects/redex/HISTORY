@@ -1,4 +1,10 @@
-PLT v4.1
+v4.2
+
+  - added white-bracket-sizing to control how the brackets
+    are typeset when rendering a metafunction.
+
+v4.1 (this is the first version that was included in the PLT
+      distribution. Before this, Redex was in PLaneT).
 
   EXTENSIONS:
 

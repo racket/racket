@@ -345,10 +345,10 @@
                           (- next-lw-column init-column))])
                  (list* (build-lw to-wrap1 line 0 new-lw-col 0)
                         (build-lw (blank)
-                                           line
-                                           (- next-lw-line line)
-                                           new-lw-col 
-                                           new-lw-col-span)
+                                  line
+                                  (- next-lw-line line)
+                                  new-lw-col 
+                                  new-lw-col-span)
                         (build-lw to-wrap2 next-lw-line 0 (+ new-lw-col new-lw-col-span) 0)
                         (if after-next-lw
                             (cons next-lw (loop after-next-lw next-line next-column))
@@ -673,15 +673,42 @@
   
   (define (open-white-square-bracket) (white-bracket "["))
   (define (close-white-square-bracket) (white-bracket "]"))
+
+  #;"\u301a\u301b" ;; white square brackets
   
+  ;; white-bracket : string -> pict
+  ;; puts two of `str' next to each other to make 
+  ;; a `white' version of the bracket.
   (define (white-bracket str)
-    (let ([inset-amt
-           (case (default-font-size)
-             [(9 10 11 12) -2]
-             [else
-              (- (floor (max 2 (* 2 (/ (default-font-size) 10)))))])])
-      (hbl-append (basic-text str (default-style))
-                  (inset (basic-text str (default-style)) inset-amt 0 0 0))))
+    (let-values ([(left-inset-amt right-inset-amt left-space right-space)
+                  ((white-bracket-sizing) str 
+                                          (default-font-size))])
+      (let ([main-bracket (basic-text str (default-style))])
+        (inset (refocus (cbl-superimpose main-bracket
+                                         (hbl-append (blank left-inset-amt)
+                                                     (basic-text str (default-style))
+                                                     (blank right-inset-amt)))
+                        main-bracket)
+               left-space
+               0
+               right-space
+               0))))
+  
+  (define white-bracket-sizing 
+    (make-parameter
+     (λ (str size)
+       (let ([inset-amt (floor (max 4 (* size 2/5)))])
+         (cond
+           [(equal? str "[")
+            (values inset-amt
+                    0
+                    0
+                    2)]
+           [else
+            (values 0
+                    inset-amt
+                    2
+                    0)])))))
   
   (define (pink-background p)
     (refocus

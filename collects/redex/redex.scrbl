@@ -1368,6 +1368,38 @@ it. The thunk may be invoked multiple times when rendering a
 single reduction relation.
 }
 
+@defparam[white-bracket-sizing proc (-> string? number? (values number? number? number? number?))]{
+
+  This parameter is used when typesetting metafunctions to
+  determine how to create the @"\u301a\u301b"
+  characters. Rather than using those characters directory
+  (since glyphs tend not to be available in PostScript
+  fonts), they are created by combining two ‘[’ characters
+  or two ‘]’ characters together.
+  
+  The procedure accepts a string that is either @scheme["["]
+  or @scheme["]"], and returns four numbers. The first two
+  numbers determine the offset (from the left and from the
+  right respectively) for the second square bracket, and the
+  second two two numbers determine the extra space added (to
+  the left and to the right respectively).
+
+  The default value of the parameter is: @schemeblock[
+     (λ (str size)
+       (let ([inset-amt (floor (max 4 (* size 2/5)))])
+         (cond
+           [(equal? str "[")
+            (values inset-amt
+                    0
+                    0
+                    2)]
+           [else
+            (values 0
+                    inset-amt
+                    2
+                    0)])))]
+}
+
 @deftech{Removing the pink background from PLT Redex rendered picts and ps files}
 
 When reduction rules, a metafunction, or a grammar contains
