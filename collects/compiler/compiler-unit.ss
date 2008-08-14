@@ -10,20 +10,16 @@
 
 #lang scheme/base
 
-(require mzlib/unit
+(require scheme/unit
 
          "sig.ss"
          dynext/file-sig
          dynext/link-sig
          dynext/compile-sig
 
-         make/make-sig
-         make/collection-sig
-
          syntax/toplevel
          syntax/moddep
 
-         mzlib/list
          scheme/file
          mzlib/compile ; gets compile-file
          mzlib/cm
@@ -139,21 +135,6 @@
 
   (define (compile-directory dir info #:verbose [verbose? #t])
     (define info* (or info (lambda (key mk-default) (mk-default))))
-    (define make (c-dynamic-require 'make/make-unit 'make@))
-    (define coll (c-dynamic-require 'make/collection-unit 'make:collection@))
-    (define init (unit (import make^ make:collection^) (export)
-                       (values make-collection make-notify-handler)))
-    (define-values (make-collection make-notify-handler)
-      (invoke-unit
-       (compound-unit
-        (import (DFILE : dynext:file^)
-                (OPTION : compiler:option^)
-                (COMPILER : compiler^))
-        (export)
-        (link [((MAKE : make^)) make]
-              [((COLL : make:collection^)) coll MAKE DFILE OPTION COMPILER]
-              [() init MAKE COLL]))
-       (import dynext:file^ compiler:option^ compiler^)))
     (define nothing (lambda () null))
     (define omit-paths (info* 'compile-omit-paths nothing))
     (define omit-files (info* 'compile-omit-files nothing))
@@ -166,7 +147,6 @@
                                                 (manager-trace-handler))]
                      [manager-compile-notify-handler
                       (lambda (path) ((compile-notify-handler) path))])
-        ;; Compile the collection files via make-collection
         (let* ([sses (append
                       ;; Find all .ss/.scm files:
                       (filter extract-base-filename/ss (directory-list))
