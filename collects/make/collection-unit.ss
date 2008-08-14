@@ -1,52 +1,42 @@
+#lang mzscheme
 
-(module collection-unit mzscheme
-  (require mzlib/unit
-	   mzlib/list
-	   mzlib/file)
+(require mzlib/unit
+         mzlib/list
+         mzlib/file
+         "collection-sig.ss"
+         "make-sig.ss"
+         compiler/sig
+         dynext/file-sig)
 
-  (require "collection-sig.ss")
-  (require "make-sig.ss")
+(provide make:collection@)
 
-  (require compiler/sig
-	   dynext/file-sig)
+(define-unit make:collection@
+  (import make^
+          dynext:file^
+          compiler^)
+  (export make:collection^)
 
-  (provide make:collection@)
-
-  (define-unit make:collection@
-	(import make^
-                dynext:file^
-                compiler^)
-        (export make:collection^)
-
-      (define (make-collection
-	       collection-name
-	       collection-files
-	       argv)
-	(printf "building collection ~a: ~a~n" collection-name collection-files)
-	(let* ([zo-compiler #f]
-	       [src-dir (current-directory)]
-	       [sses (sort collection-files
-                           (lambda (a b) (string-ci<? (path->string a) (path->string b))))]
-	       [bases (map (lambda (src)
-			     (extract-base-filename/ss src 'make-collection-extension))
-			   sses)]
-	       [zos (map 
-		     (lambda (base)
-		       (build-path
-			"compiled"
-			(append-zo-suffix base)))
+  (define (make-collection collection-name collection-files argv)
+    (printf "building collection ~a: ~a~n" collection-name collection-files)
+    (let* ([zo-compiler #f]
+           [src-dir (current-directory)]
+           [sses (sort collection-files
+                       (lambda (a b)
+                         (string-ci<? (path->string a) (path->string b))))]
+           [bases (map (lambda (src)
+                         (extract-base-filename/ss src
+                                                   'make-collection-extension))
+                       sses)]
+           [zos (map (lambda (base)
+                       (build-path "compiled" (append-zo-suffix base)))
 		     bases)]
-	       [ss->zo-list
-		(map (lambda (ss zo)
-		       `(,zo (,ss)
-			     ,(lambda ()
-				(unless zo-compiler
-				  (set! zo-compiler (compile-zos #f)))
-				(zo-compiler (list ss) "compiled"))))
-		     sses zos)])
-	  (unless (directory-exists? "compiled") (make-directory "compiled"))
-	  (make/proc
-	   (append
-	    `(("zo" ,zos))
-	    ss->zo-list)
-	   argv)))))
+           [ss->zo-list
+            (map (lambda (ss zo)
+                   `(,zo (,ss)
+                     ,(lambda ()
+                        (unless zo-compiler
+                          (set! zo-compiler (compile-zos #f)))
+                        (zo-compiler (list ss) "compiled"))))
+                 sses zos)])
+      (unless (directory-exists? "compiled") (make-directory "compiled"))
+      (make/proc (append `(("zo" ,zos)) ss->zo-list) argv))))

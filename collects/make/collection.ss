@@ -1,18 +1,17 @@
+#lang mzscheme
 
-(module collection mzscheme
-  (require mzlib/unit)
+(require mzlib/unit
+         dynext/file-sig
+         dynext/file
+         compiler/sig
+         compiler/compiler
+         compiler/option)
 
-  (require dynext/file-sig
-	  dynext/file
-	  compiler/sig
-	  compiler/compiler
-	  compiler/option)
+(require "make-sig.ss"
+         "make.ss"
+         "collection-sig.ss"
+         "collection-unit.ss")
 
-  (require "make-sig.ss"
-	  "make.ss"
-	  "collection-sig.ss"
-	  "collection-unit.ss")
-  
-  (define-values/invoke-unit/infer make:collection@)
+(define-values/invoke-unit/infer make:collection@)
 
-  (provide-signature-elements make:collection^))
+(provide-signature-elements make:collection^)

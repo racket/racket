@@ -1,9 +1,8 @@
+#lang mzscheme
 
-(module collection-sig mzscheme
-  (require mzlib/unit)
+(require mzlib/unit)
 
-  (provide make:collection^)
+(provide make:collection^)
 
-  (define-signature make:collection^
-    (make-collection)))
-
+(define-signature make:collection^
+  (make-collection))

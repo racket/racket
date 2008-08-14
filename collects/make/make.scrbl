@@ -17,8 +17,8 @@
 @title{@bold{Make}: Dependency Manager}
 
 The @schememodname[make] library provides a Scheme version of the
-standard Unix @exec{make} utility. Its syntax is intended to imitate
-regular Unix make, but in Scheme.
+popular @exec{make} utility.  Its syntax is intended to imitate the
+syntax of @exec{make}, only in Scheme.
 
 @table-of-contents[]
 
@@ -33,18 +33,19 @@ dependency tracking, just use @exec{mzc} as described in
 If you are already familiar with @exec{make}, skip to the precise
 details of the @schememodname[make] library in @secref["make"]. This
 section contains a brief overview of @exec{make} for everyone
-else. The idea is to explain how to generate some project you have
-from a collection of source files that go through several stages of
-processing.
+else.
 
-For example, let's say that you are writing some project that has
-three input files (that you create and maintain) called
-@filepath{a.input}, @filepath{b.input}, and
-@filepath{c.input}. Further, there are two stages of processing: first
-you run a particular tool @exec{make-output} that takes an input file
-and produces and output file, and second you combine the input files
-into a single file using @filepath{output}. Using @exec{make}, you
-might write this:
+When you use @exec{make}, the idea is that you explain how to generate
+files in a project from a collection of source files that go through
+several stages of processing.
+
+For example, say that you are writing a project that has three input
+files (which you create and maintain) called @filepath{a.input},
+@filepath{b.input}, and @filepath{c.input}.  Further, there are two
+stages of processing: first you run a particular tool
+@exec{make-output} that takes an input file and produces an output
+file, and then you combine the input files into a single file using
+@exec{combine-files}.  Using @exec{make}, you might describe this as:
 
 @verbatim[#:indent 2]{
 a.output: a.input
@@ -52,57 +53,84 @@ a.output: a.input
 b.output: b.input
 	make-output b.input b.output
 c.output: c.input
-	make-output c.input c.output 
+	make-output c.input c.output
 total: a.output b.output c.output
-	combine a.output b.output c.output 
+	combine-files a.output b.output c.output
 }
 
-Once you've put those above lines in a file called
-@filepath{Makefile} you can issue the command:
+Once you've put this description in a file called @filepath{Makefile}
+you can issue the command:
 
 @commandline{make total}
 
-that builds your entire project. The @filepath{Makefile} consists of
-several lines that tell @exec{make} how to create each piece. The
-first two lines say that @filepath{a.output} depends on
-@filepath{a.input} and the command for making @filepath{a.output} from
-@filepath{a.input} is
+to build your entire project.  The @filepath{Makefile} consists of
+several rules that tell @exec{make} how to create each piece of your
+project.  For example, the rule that is specified in the first two
+lines say that @filepath{a.output} depends on @filepath{a.input} and
+the command for making @filepath{a.output} from @filepath{a.input} is
 
 @commandline{make-output a.input a.output}
 
-The point of using @exec{make} is that it looks at the file creation
-dates of the various files and only re-builds what is necessary.  
+The main feature of @exec{make} is that it uses the time stamps of
+files to determine when a certain step is necessary.  The @exec{make}
+utility uses existing programs to build your project --- each rule has
+a shell command line.
 
-The @exec{make} utility builds things with shell programs. If, on the
-other hand, you want to build similar things with various Scheme
-programs, you can use the @schememodname[make] library.
+The @schememodname[make] library provides similar functionality,
+except that the description is in Scheme, and the steps that are
+needed to build target files are implemented as Scheme functions.
 
-Here's the equivalent Scheme program: 
+Here's a Scheme program that is equivalent to the above:
 
 @schemeblock[
 (require make)
 
 (define (make-output in out)
-   ....)
+  ....)
 
-(define (combine-total . args)
+(define (combine-files . args)
   ....)
 
 (make
-  (("a.output" ("a.input") (make-output "a.output" "a.input"))
-   ("b.output" ("b.input") (make-output "b.output" "b.input"))
-   ("c.output" ("c.input") (make-output "c.output" "c.input"))
+  (("a.output" ("a.input") (make-output "a.input" "a.output"))
+   ("b.output" ("b.input") (make-output "b.input" "b.output"))
+   ("c.output" ("c.input") (make-output "c.input" "c.output"))
    ("total" ("a.output" "b.output" "c.output")
-            (combine-total "a.output" "b.output" "c.output"))))
+            (combine-files "a.output" "b.output" "c.output"))))
 ]
 
 If you were to fill in the ellipses above with calls to
-@scheme[system], you'd have the exact same thing as the original
-@filepath{Makefile}. In addition, if you use @scheme[make/proc]], you
-can abstract over the various make lines (for example, the
-@filepath{a.output}, @filepath{b.output}, and @filepath{c.output}
-lines are similar, and it would be good to write a program to generate
-those lines).
+@scheme[system], you'd have the exact same functionality as the
+original @filepath{Makefile}.  In addition, you can use
+@scheme[make/proc] to abstract over the various lines.  For example,
+the @filepath{a.output}, @filepath{b.output}, and @filepath{c.output}
+lines are very similar so you can write the code that generates those
+lines:
+
+@schemeblock[
+(require make)
+
+(define (make-output in out)
+  ....)
+
+(define (combine-files . args)
+  ....)
+
+(define files '("a" "b" "c"))
+(define inputs  (map (lambda (f) (string-append f ".input"))))
+(define outputs (map (lambda (f) (string-append f ".output"))))
+
+(define (line file)
+  (let ([i (string-append file ".input")]
+        [o (string-append file ".output")])
+    `(,o (,i) )
+    (list o (list i) (lambda () (make-output o i)))))
+
+(make/proc
+  `(,@(map (lambda (i o) `(o (,i) ,(lambda () (make-output i o))))
+           inputs outputs)
+    ("total" ,outputs ,(lambda () (apply combine-files outputs)))))
+]
 
 @; ----------------------------------------------------------------------
 
@@ -119,9 +147,10 @@ Expands to
 
 @schemeblock[
   (make/proc
-    (list (list target-expr (list depend-expr ...)
-            (lambda () command-expr ...)) ...)
-    argv-expr)
+   (list (list target-expr (list depend-expr ...)
+               (lambda () command-expr ...))
+         ...)
+   argv-expr)
 ]}
 
 @defproc[(make/proc [spec (listof
@@ -129,7 +158,8 @@ Expands to
                                    (cons/c (listof path-string?)
                                            (or/c null?
                                                  (list/c (-> any))))))]
-                    [argv (or/c string? (vectorof string?))]) void?]
+                    [argv (or/c string? (vectorof string?) (listof string?))])
+         void?]
 
 Performs a make according to @scheme[spec] and using @scheme[argv] as
 command-line arguments selecting one or more targets.
@@ -153,10 +183,11 @@ While running a command thunk, @scheme[make/proc] catches exceptions
 and wraps them in an @scheme[exn:fail:make] structure, the raises the
 resulting structure.}
 
-@defstruct[(exn:fail:make exn:fail) ([target (or/c path-string? (listof path-string?))]
-                                     [orig-exn any/c])]{
+@defstruct[(exn:fail:make exn:fail)
+           ([targets (listof path-string?)]
+            [orig-exn any/c])]{
 
-The @scheme[target] field is a list of list of strings naming the
+The @scheme[targets] field is a list of strings naming the
 target(s), and the @scheme[orig-exn] field is the original raised
 value.}
 
@@ -254,7 +285,7 @@ options (see @schememodname[dynext/compile] and
                [unix-libs (listof string?)]
                [windows-libs (listof string?)]
 	       [extra-depends (listof path-string?)]
-               [last-chance-k ((-> any) . > . any)]
+               [last-chance-k ((-> any) . -> . any)]
                [3m-too? any/c #f])
           void?]{
 

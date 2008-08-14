@@ -1,167 +1,117 @@
-
 #lang scheme/unit
 
-  (require "make-sig.ss")
+(require "make-sig.ss")
 
-      (import)
-      (export make^)
+(import)
+(export make^)
 
-      (define-struct (exn:fail:make exn:fail) (target orig-exn))
-      
-      (define make-print-checking (make-parameter #t))
-      (define make-print-dep-no-line (make-parameter #t))
-      (define make-print-reasons (make-parameter #t))
-      (define make-notify-handler (make-parameter void))
+(define make-print-checking    (make-parameter #t))
+(define make-print-dep-no-line (make-parameter #t))
+(define make-print-reasons     (make-parameter #t))
+(define make-notify-handler    (make-parameter void))
 
-      ;(define-type line (list (union path-string (list-of path-string)) (list-of path-string) thunk))
-      ;(define-type spec (list-of line))
+(define-struct line (targets      ; (list-of string)
+                     dependencies ; (list-of string)
+                     command))    ; (union thunk #f)
+(define-struct (exn:fail:make exn:fail) (target orig-exn))
 
-      (define (path-string=? a b)
-	(equal? (if (string? a) (string->path a) a)
-		(if (string? b) (string->path b) b)))
-      (define (path-string->string s)
-	(if (string? s)
-            s 
-            (path->string s)))
+;; check-spec : TST -> (non-empty-list-of line)
+;; throws an error on bad input
+(define (spec->lines spec)
+  (define (->strings xs)
+    (map (lambda (x) (if (path? x) (path->string x) x)) xs))
+  (define (err s p) (error 'make/proc "~a: ~e" s p))
+  (unless (and (list? spec) (pair? spec))
+    (err "specification is not a non-empty list" spec))
+  (for/list ([line spec])
+    (unless (and (list? line) (<= 2 (length line) 3))
+      (err "line is not a list with 2 or 3 parts" line))
+    (let* ([name (car line)]
+           [tgts (if (list? name) name (list name))]
+           [deps (cadr line)]
+           [thunk (and (pair? (cddr line)) (caddr line))])
+      (define (err s p) (error 'make/proc "~a: ~e for line: ~a" s p name))
+      (unless (andmap path-string? tgts)
+        (err "line does not start with a path/string or list of paths/strings"
+             line))
+      (unless (list? deps) (err "second part of line is not a list" deps))
+      (for ([dep deps])
+        (unless (path-string? dep)
+          (err "dependency item is not a path/string" dep)))
+      (unless (or (not thunk)
+                  (and (procedure? thunk) (procedure-arity-includes? thunk 0)))
+        (err "command part of line is not a thunk" thunk))
+      (make-line (->strings tgts) (->strings deps) thunk))))
 
-      ; find-matching-line : path-string spec -> (union line #f)
-      (define (find-matching-line str spec)
-	(let ([match? (lambda (s) (path-string=? s str))])
-	  (let loop ([lines spec])
-	    (cond
-	     [(null? lines) #f]
-	     [else (let* ([line (car lines)]
-			  [names (if (path-string? (car line))
-				     (list (car line))
-				     (car line))])
-		     (if (ormap match? names)
-			 line
-			 (loop (cdr lines))))]))))
+;; (union path-string (vector-of path-string) (list-of path-string))
+;; -> (list-of string)
+;; throws an error on bad input
+(define (argv->args x)
+  (let ([args (cond [(list? x) x]
+                    [(vector? x) (vector->list x)]
+                    [else (list x)])])
+    (map (lambda (a)
+           (cond [(string? a) a]
+                 [(path? a) (path->string a)]
+                 [else (raise-type-error
+                        'make/proc "path/string or path/string vector or list"
+                        x)]))
+         args)))
 
-      ; form-error : TST TST -> a 
-      (define (form-error s p) (error 'make/proc "~a: ~s" s p))
+;; path-date : path-string -> (union integer #f)
+(define (path-date p)
+  (and (or (directory-exists? p) (file-exists? p))
+       (file-or-directory-modify-seconds p)))
 
-      ; line-error : TST TST TST -> a 
-      (define (line-error s p n) (error 'make/proc "~a: ~s for line: ~a" s p n))
-
-      ; check-spec : TST -> #t
-      ; effect : calls error if input is not a spec
-      (define (check-spec spec)
-	(and (or (list? spec) (form-error "specification is not a list" spec))
-	     (or (pair? spec) (form-error "specification is an empty list" spec))
-	     (andmap
-	      (lambda (line)
-		(and (or (and (list? line) (<= 2 (length line) 3))
-			 (form-error "list is not a list with 2 or 3 parts" line))
-		     (or (or (path-string? (car line))
-			     (and (list? (car line))
-				  (andmap path-string? (car line))))
-			 (form-error "line does not start with a path/string or list of paths/strings" line))
-		     (let ([name (car line)])
-		       (or (list? (cadr line))
-			   (line-error "second part of line is not a list" (cadr line) name)
-			   (andmap (lambda (dep)
-				     (or (path-string? dep)
-					 (form-error "dependency item is not a path/string" dep name)))
-				   (cadr line)))
-		       (or (null? (cddr line))
-			   (and (procedure? (caddr line))
-				(procedure-arity-includes? (caddr line) 0))
-			   (line-error "command part of line is not a thunk" (caddr line) name)))))
-	      spec)))
-
-      ; check-spec : TST -> #t
-      ; effect : calls error if input is not a (union path-string (vector-of path-string))
-      (define (check-argv argv)
-	(or (path-string? argv)
-	    (and (vector? argv)
-		 (andmap path-string? (vector->list argv)))
-	    (raise-type-error 'make/proc "path/string or path/string vector" argv)))
-
-      ; make/proc/helper : spec (union path-string (vector-of path-string)) -> void
-      ; effect : make, according to spec and argv. See docs for details
-      (define (make/proc/helper spec argv)
-	(check-spec spec)
-	(check-argv argv)
-
-	(letrec ([made null]
-		 [make-file
-		  (lambda (s indent)
-		    (let ([line (find-matching-line s spec)]
-			  [date (and (or (directory-exists? s)
-					 (file-exists? s))
-				     (file-or-directory-modify-seconds s))])
-
-		      (when (and (make-print-checking)
-				 (or line (make-print-dep-no-line)))
-			(printf "make: ~achecking ~a~n" indent s)
-                        (flush-output))
-
-		      (if line
-                        (let ([deps (cadr line)])
-                          (for-each (let ([new-indent (string-append " " indent)])
-                                      (lambda (d) (make-file d new-indent)))
-                                    deps)
-                          (let ([reason
-                                 (or (not date)
-                                     (ormap (lambda (dep)
-                                              (unless (or (file-exists? dep)
-                                                          (directory-exists? dep))
-                                                (error 'make "dependancy ~a was not made~n" dep))
-                                              (and (> (file-or-directory-modify-seconds dep) date)
-                                                   dep))
-                                            deps))])
-                            (when reason
-                              (let ([l (cddr line)])
-                                (unless (null? l)
-                                  (set! made (cons s made))
-                                  ((make-notify-handler) s)
-                                  (printf "make: ~amaking ~a~a~n"
-                                          (if (make-print-checking) indent "")
-                                          (path-string->string s)
-                                          (if (make-print-reasons)
-                                            (cond
-                                              [(not date)
-                                               (string-append " because " (path-string->string s) " does not exist")]
-                                              [(path-string? reason)
-                                               (string-append " because " (path-string->string reason) " changed")]
-                                              [else
-                                               (string-append 
-                                                (format " because (reason: ~a date: ~a)" 
-                                                        reason date))])
-                                            ""))
-                                  (flush-output)
-                                  (with-handlers ([exn:fail?
-                                                   (lambda (exn)
-                                                     (raise (make-exn:fail:make 
-                                                             (format "make: Failed to make ~a; ~a"
-                                                                     (let ([fst (car line)])
-                                                                       (if (pair? fst)
-                                                                         (map path-string->string fst)
-                                                                         (path-string->string fst)))
-                                                                     (if (exn? exn)
-                                                                       (exn-message exn)
-                                                                       exn))
-                                                             (if (exn? exn)
-                                                               (exn-continuation-marks exn)
-                                                               (current-continuation-marks))
-                                                             (car line)
-                                                             exn)))])
-                                    ((car l))))))))
-                        (unless date
-                          (error 'make "don't know how to make ~a"
-                                 (path-string->string s))))))])
-	  (cond
-            [(path-string? argv) (make-file argv "")]
-            [(equal? argv #()) (make-file (caar spec) "")]
-            [else (for-each (lambda (f) (make-file f "")) (vector->list argv))])
-
-	  (for-each (lambda (item)
-		      (printf "make: made ~a~n" (path-string->string item)))
-		    (reverse made))
-          (flush-output)))
-
-      (define make/proc
-	(case-lambda
-	 [(spec) (make/proc/helper spec #())]
-	 [(spec argv) (make/proc/helper spec argv)]))
+;; make/proc :
+;; spec (union path-string (vector-of path-string) (list-of path-string))
+;; -> void
+;; effect : make, according to spec and argv. See docs for details
+(define (make/proc spec [argv '()])
+  (define made null)
+  (define lines (spec->lines spec))
+  (define args (argv->args argv))
+  (define (make-file s indent)
+    (define line
+      (findf (lambda (line)
+               (ormap (lambda (s1) (string=? s s1)) (line-targets line)))
+             lines))
+    (define date (path-date s))
+    (when (and (make-print-checking) (or line (make-print-dep-no-line)))
+      (printf "make: ~achecking ~a\n" indent s)
+      (flush-output))
+    (if (not line)
+      (unless date (error 'make "don't know how to make ~a" s))
+      (let* ([deps (line-dependencies line)]
+             [command (line-command line)]
+             [indent+ (string-append indent " ")]
+             [dep-dates (for/list ([d deps])
+                          (make-file d indent+)
+                          (or (path-date d)
+                              (error 'make "dependancy ~a was not made\n" d)))]
+             [reason (or (not date)
+                         (ormap (lambda (dep ddate) (and (> ddate date) dep))
+                                deps dep-dates))])
+        (when (and reason command)
+          (set! made (cons s made))
+          ((make-notify-handler) s)
+          (printf "make: ~amaking ~a~a\n"
+                  (if (make-print-checking) indent "")
+                  s
+                  (cond [(not (make-print-reasons)) ""]
+                        [(not date) (format " because ~a does not exist" s)]
+                        [else (format " because ~a changed" reason)]))
+          (flush-output)
+          (with-handlers ([exn:fail?
+                           (lambda (exn)
+                             (raise (make-exn:fail:make
+                                     (format "make: failed to make ~a; ~a"
+                                             s (exn-message exn))
+                                     (exn-continuation-marks exn)
+                                     (line-targets line)
+                                     exn)))])
+            (command))))))
+  (for ([f (if (null? args) (list (car (line-targets (car lines)))) args)])
+    (make-file f ""))
+  (for ([item (reverse made)]) (printf "make: made ~a\n" item))
+  (flush-output))
