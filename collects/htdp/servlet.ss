@@ -1,10 +1,12 @@
 ; Author: Paul Graunke
 #cs(module servlet mzscheme
      (require web-server/servlet-env
+              web-server/servlet
               htdp/error
               xml
               mzlib/etc)
      (provide (all-from web-server/servlet-env)
+              (all-from web-server/servlet)
               (rename wrapped-build-suspender build-suspender))
      
      ; build-suspender : (listof html) (listof html) [(listof (cons sym str))] [(listof (cons sym str))] -> str -> response

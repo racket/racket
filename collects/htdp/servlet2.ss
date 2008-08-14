@@ -4,6 +4,7 @@
         buttons: multiple points of returns: continuation functions 
   |#
 (require (prefix-in servlet: web-server/servlet-env)
+         (prefix-in servlet: web-server/servlet)
          htdp/error
          scheme/tcp
          scheme/bool
@@ -529,7 +530,8 @@
            [th 
             (thread (lambda ()
                       (let ([port (get-next-port)])
-                        (servlet:on-web port (server-loop)))))]
+                        (servlet:serve/servlet (lambda (start) (server-loop))
+                                               #:port port))))]
            [a-server (make-server th req-ch res-ch)])
       (current-server a-server))))
 
