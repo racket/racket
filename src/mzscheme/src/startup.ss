@@ -463,7 +463,8 @@
              (only '#%foreign)  ; so it's attached, but doesn't depend on any exports
              '#%paramz
              '#%network
-             '#%utils))
+             '#%utils
+             (only '#%place)))
 
 ;; ----------------------------------------
 ;; Handlers to install on startup

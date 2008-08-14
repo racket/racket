@@ -391,7 +391,8 @@
 "(only '#%foreign) "
 " '#%paramz"
 " '#%network"
-" '#%utils))"
+" '#%utils"
+"(only '#%place)))"
 );
   EVAL_ONE_STR(
 "(module #%boot '#%kernel"

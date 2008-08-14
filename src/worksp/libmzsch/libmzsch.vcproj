@@ -267,6 +267,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\Mzscheme\Src\mzrt.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\Mzscheme\Src\mzsj86.c"
 				>
 			</File>
@@ -288,6 +292,10 @@
 			</File>
 			<File
 				RelativePath="..\..\Mzscheme\Src\numstr.c"
+				>
+			</File>
+			<File
+				RelativePath="..\..\Mzscheme\Src\places.c"
 				>
 			</File>
 			<File

@@ -3,10 +3,6 @@
 
 #ifdef MZ_USE_PLACES
 
-/************************************************************************/
-/************************************************************************/
-/************************************************************************/
-
 #include "mzrt.h"
 
 Scheme_Object *scheme_place(int argc, Scheme_Object *args[]);
@@ -16,12 +12,29 @@ static Scheme_Object *scheme_place_p(int argc, Scheme_Object *args[]);
 static void load_namespace(char *namespace_name);
 static void load_namespace_utf8(Scheme_Object *namespace_name);
 
-#ifdef MZ_PRECISE_GC
+# ifdef MZ_PRECISE_GC
 static void register_traversers(void);
-#endif
+# endif
 
 static void *place_start_proc(void *arg);
 
+# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, func, a1, a2, env)
+
+#else
+
+# define PLACE_PRIM_W_ARITY(name, func, a1, a2, env) GLOBAL_PRIM_W_ARITY(name, not_implemented, a1, a2, env)
+
+static Scheme_Object *not_implemented(int argc, Scheme_Object **argv)
+{
+  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED, "not supported");
+  return NULL;
+}
+
+# ifdef MZ_PRECISE_GC
+static void register_traversers(void) { }
+# endif
+
+#endif
 
 /*========================================================================*/
 /*                             initialization                             */
@@ -36,19 +49,19 @@ void scheme_init_place(Scheme_Env *env)
   
   plenv = scheme_primitive_module(scheme_intern_symbol("#%place"), env);
 
-  scheme_add_global_constant("place", scheme_make_prim_w_arity(scheme_place, "place", 1, 1), plenv);
-  scheme_add_global_constant("place_sleep", scheme_make_prim_w_arity(scheme_place_sleep, "place_sleep", 1, 1), plenv);
-  scheme_add_global_constant("place_wait", scheme_make_prim_w_arity(scheme_place_wait, "place_wait", 1, 1), plenv);
-  scheme_add_global_constant("place?", scheme_make_prim_w_arity(scheme_place_p, "place?", 1, 1), plenv);
-  scheme_add_global_constant("place6", scheme_make_prim_w_arity(scheme_place, "place6", 1, 1), plenv);
-  scheme_add_global_constant("place5", scheme_make_prim_w_arity(scheme_place, "place5", 1, 1), plenv);
-  scheme_add_global_constant("place4", scheme_make_prim_w_arity(scheme_place, "place4", 1, 1), plenv);
-  scheme_add_global_constant("place3", scheme_make_prim_w_arity(scheme_place, "place3", 1, 1), plenv);
-  scheme_add_global_constant("place2", scheme_make_prim_w_arity(scheme_place, "place2", 1, 1), plenv);
-  scheme_add_global_constant("place1", scheme_make_prim_w_arity(scheme_place, "place1", 1, 1), plenv);
+  PLACE_PRIM_W_ARITY("place", scheme_place, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place_sleep", scheme_place_sleep, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place_wait", scheme_place_wait, 1, 1, plenv);
+  PLACE_PRIM_W_ARITY("place?", scheme_place_p, 1, 1, plenv);
 
   scheme_finish_primitive_module(plenv);
 }
+
+#ifdef MZ_USE_PLACES
+
+/************************************************************************/
+/************************************************************************/
+/************************************************************************/
 
 typedef struct Place_Start_Data {
   Scheme_Object *thunk;

@@ -365,6 +365,7 @@ static Scheme_Env *place_instance_init_post_kernel() {
 #endif
   scheme_init_parameterization(env);
   scheme_init_expand_observe(env);
+  scheme_init_place(env);
 
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign(env);
@@ -462,9 +463,6 @@ static void make_kernel_env(void)
   MZTIMEIT(dynamic-extension, scheme_init_dynamic_extension(env));
 #ifndef NO_REGEXP_UTILS
   MZTIMEIT(regexp, scheme_regexp_initialize(env));
-#endif
-#ifdef MZ_USE_PLACES
-  MZTIMEIT(places, scheme_init_place(env));
 #endif
 
   MARK_START_TIME();
