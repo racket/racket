@@ -13,7 +13,7 @@
                   (- (lw-column lw) min-column)
                   (lw-column-span lw)
                   (lw-unq? lw)
-                  (lw-metafunction-name lw))]
+                  (lw-metafunction? lw))]
         [else lw]))
     (define (normalize/e e)
       (cond

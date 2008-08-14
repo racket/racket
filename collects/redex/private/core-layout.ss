@@ -216,8 +216,8 @@
         [(and (pair? e)
               (pair? (cdr e))
               (lw? (cadr e))
-              (lw-metafunction-name (cadr e)))
-         (map ar/lw (adjust-spacing (rewrite-metafunction-app (lw-metafunction-name (cadr e)) e)
+              (lw-metafunction? (cadr e)))
+         (map ar/lw (adjust-spacing (rewrite-metafunction-app e)
                                     line line-span col col-span 
                                     (lw-e (cadr e))))]
         [else
@@ -237,34 +237,21 @@
                             snd
                             (car l))]))]))
     
-  (define (rewrite-metafunction-app kind lst)
-    (case kind
-      [(single) 
-       (list* (hbl-append
-               (metafunction-text (symbol->string (lw-e (cadr lst))))
-               (open-white-square-bracket))
-              (let loop ([lst (cddr lst)])
-                (cond
-                  [(null? lst) null]
-                  [(null? (cdr lst))
-                   (let ([last (car lst)])
-                     (list (just-before (close-white-square-bracket) last) ""))]
-                  [else (cons (car lst) (loop (cdr lst)))])))]
-      [(multi)
-       (cons (hbl-append 
-              (metafunction-text (symbol->string (lw-e (cadr lst))))
-              (open-white-square-bracket))
-             (let loop ([lst (cddr lst)])
-               (cond
-                 [(null? lst) null]
-                 [(null? (cdr lst))
-                  (let ([last (car lst)])
-                    (list (just-before (close-white-square-bracket) last) ""))]
-                 [(null? (cddr lst))
-                  (cons (car lst) (loop (cdr lst)))]
-                 [else (list* (car lst) 
-                              (basic-text ", " (default-style))
-                              (loop (cdr lst)))])))]))
+  (define (rewrite-metafunction-app lst)
+    (cons (hbl-append 
+           (metafunction-text (symbol->string (lw-e (cadr lst))))
+           (open-white-square-bracket))
+          (let loop ([lst (cddr lst)])
+            (cond
+              [(null? lst) null]
+              [(null? (cdr lst))
+               (let ([last (car lst)])
+                 (list (just-before (close-white-square-bracket) last) ""))]
+              [(null? (cddr lst))
+               (cons (car lst) (loop (cdr lst)))]
+              [else (list* (car lst) 
+                           (basic-text ", " (default-style))
+                           (loop (cdr lst)))]))))
   
   (define (just-before what lw)
     (build-lw (if (symbol? what)
@@ -697,18 +684,24 @@
   (define white-bracket-sizing 
     (make-parameter
      (λ (str size)
-       (let ([inset-amt (floor (max 4 (* size 2/5)))])
+       (let ([inset-amt (floor/even (max 4 (* size 1/2)))])
          (cond
            [(equal? str "[")
             (values inset-amt
                     0
                     0
-                    2)]
+                    (/ inset-amt 2))]
            [else
             (values 0
                     inset-amt
-                    2
+                    (/ inset-amt 2)
                     0)])))))
+
+  (define (floor/even x)
+    (let ([x (floor x)])
+      (if (odd? x)
+          (- x 1)
+          x)))
   
   (define (pink-background p)
     (refocus

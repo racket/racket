@@ -1386,18 +1386,24 @@ single reduction relation.
 
   The default value of the parameter is: @schemeblock[
      (λ (str size)
-       (let ([inset-amt (floor (max 4 (* size 2/5)))])
+       (let ([inset-amt (floor/even (max 4 (* size 1/2)))])
          (cond
            [(equal? str "[")
             (values inset-amt
                     0
                     0
-                    2)]
+                    (/ inset-amt 2))]
            [else
             (values 0
                     inset-amt
-                    2
+                    (/ inset-amt 2)
                     0)])))]
+
+ where @scheme[floor/even] returns the nearest even number
+ below its argument.  This means that for sizes 9, 10, and
+ 11, @scheme[inset-amt] will be 4, and for 12, 13, 14, and
+ 15, @scheme[inset-amt] will be 6.
+
 }
 
 @deftech{Removing the pink background from PLT Redex rendered picts and ps files}

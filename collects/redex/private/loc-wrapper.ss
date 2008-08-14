@@ -14,7 +14,7 @@
   
   ;; e : (union string symbol #f (listof lw))
   ;; line, line-span, column, column-span : number
-  (define-struct lw (e line line-span column column-span unq? metafunction-name) (make-inspector))
+  (define-struct lw (e line line-span column column-span unq? metafunction?) (make-inspector))
   
   ;; build-lw is designed for external consumption
   (define (build-lw e line line-span column column-span)
@@ -95,7 +95,7 @@
             #,(syntax-column stx)
             #f
             #f
-            'multi)]
+            #t)]
         [x 
          (identifier? #'x)
          #`(init-loc-wrapper 
@@ -185,7 +185,7 @@
                (column pnum)
                (column-span pnum)
                (unq? boolean?)
-               (metafunction-name (or/c (symbols 'multi 'single) false/c))))
+               (metafunction? boolean?)))
    [build-lw (-> any/c pnum pnum pnum pnum lw?)])
   
   (provide to-lw

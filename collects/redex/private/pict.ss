@@ -758,7 +758,7 @@
                               (lw-column an-lw)
                               0 
                               #f
-                              'multi)
+                              #t)
                      (cdr (lw-e an-lw)))])
       
       (build-lw
@@ -774,7 +774,7 @@
                  (lw-column an-lw)
                  0
                  #f
-                 'single)
+                 #t)
         an-lw
         (build-lw ")"
                   (+ (lw-line an-lw)

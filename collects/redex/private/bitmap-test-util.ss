@@ -23,10 +23,10 @@
       [(_ test-exp bitmap-filename)
        #`(test/proc
           #,(syntax-line stx)
-          (λ () test-exp)
+          test-exp
           bitmap-filename)]))
   
-  (define (test/proc line-number func raw-bitmap-filename)
+  (define (test/proc line-number pict raw-bitmap-filename)
     (set! tests (+ tests 1))
     (let* ([bitmap-filename (build-path "bmps" raw-bitmap-filename)]
            [old-bitmap (if (file-exists? bitmap-filename)
@@ -37,8 +37,6 @@
                              (send bdc draw-text "does not exist" 0 0)
                              (send bdc set-bitmap #f)
                              bm))]
-           [pict (parameterize ([dc-for-text-size (make-object bitmap-dc% (make-object bitmap% 1 1))])
-                   (func))]
            [new-bitmap (make-object bitmap% 
                          (inexact->exact (pict-width pict)) 
                          (inexact->exact (pict-height pict)))]
