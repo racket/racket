@@ -32,6 +32,7 @@
            with-compound-rewriter
            with-atomic-rewriter
            STIX?
+           white-bracket-sizing
            
            ;; for test suite
            build-lines
