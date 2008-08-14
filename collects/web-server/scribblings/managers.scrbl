@@ -149,7 +149,7 @@ deployments of the @web-server .
                   
 The recommended usage of this manager is codified as the following function:
 
-@defproc[(create-threshold-LRU-manager 
+@defproc[(make-threshold-LRU-manager 
           [instance-expiration-handler expiration-handler?]
           [memory-threshold number?])
          manager?]{
