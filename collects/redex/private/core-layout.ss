@@ -248,7 +248,7 @@
                   [(null? lst) null]
                   [(null? (cdr lst))
                    (let ([last (car lst)])
-                     (list (just-before (close-white-square-bracket) last)))]
+                     (list (just-before (close-white-square-bracket) last) ""))]
                   [else (cons (car lst) (loop (cdr lst)))])))]
       [(multi)
        (cons (hbl-append 
@@ -259,7 +259,7 @@
                  [(null? lst) null]
                  [(null? (cdr lst))
                   (let ([last (car lst)])
-                    (list (just-before (close-white-square-bracket) last)))]
+                    (list (just-before (close-white-square-bracket) last) ""))]
                  [(null? (cddr lst))
                   (cons (car lst) (loop (cdr lst)))]
                  [else (list* (car lst) 

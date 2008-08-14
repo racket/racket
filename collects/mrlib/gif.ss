@@ -17,7 +17,7 @@
         (cons (subbytes b offset (+ offset len))
               (split-bytes b len (+ offset len)))))
   
-  (define (write-gifs bms delay filename one-at-a-time? last-frame-delay)
+  (define (write-gifs bms delay filename one-at-a-time? last-frame-delay loop?)
     (let* ([init (force-bm (car bms))]
            [w (send init get-width)]
            [h (send init get-height)])
@@ -38,7 +38,7 @@
              filename
              (lambda (p)
                (let* ([gif (gif-start p w h 0 #f)])
-                 (when delay
+                 (when loop?
                    (gif-add-loop-control gif 0))
                  (let ([last-argb-thunk (last argb-thunks)])
                    (for-each (lambda (argb-thunk)
@@ -74,11 +74,12 @@
                    (gif-end gif)))))))))
   
   (define (write-gif bm filename)
-    (write-gifs (list bm) #f filename #f #f))
+    (write-gifs (list bm) #f filename #f #f #f))
   
   (define (write-animated-gif bms delay filename 
                               #:one-at-a-time? [one-at-a-time? #f]
-                              #:last-frame-delay [last-frame-delay #f])
-    (write-gifs bms delay filename one-at-a-time? last-frame-delay))
+                              #:last-frame-delay [last-frame-delay #f]
+                              #:loop? [loop? (and delay #t)])
+    (write-gifs bms delay filename one-at-a-time? last-frame-delay loop?))
   
   )
