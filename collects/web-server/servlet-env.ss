@@ -119,7 +119,13 @@
                                          new-servlet)))
     (when launch-browser?
       ((send-url) standalone-url #t))
-    (printf "Your web application is running at ~a.~n" standalone-url)
-    (printf "Click 'Stop' at any time to terminate the web server.~n")
-    (semaphore-wait sema)
+    (printf "Your Web application is running at ~a.~n" standalone-url)
+    (printf "Click 'Stop' at any time to terminate the Web Server.~n")
+    (with-handlers
+        ([exn:break?
+          (lambda (exn)
+            (printf "~nWeb Server stopped.~n")
+            (shutdown-server))])
+      (semaphore-wait/enable-break sema))
+    ; We shouldn't get here, because nothing posts to the semaphore. But just in case...
     (shutdown-server)))
