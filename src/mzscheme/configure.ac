@@ -41,7 +41,7 @@ AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original director
 
 AC_ARG_ENABLE(foreign, [  --enable-foreign        compile foreign support (enabled by default)], , enable_foreign=yes)
 
-AC_ARG_ENABLE(foreign, [  --enable-places         compile places support])
+AC_ARG_ENABLE(places,  [  --enable-places         compile places support])
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC (Boehm or Senora) as default build])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC])

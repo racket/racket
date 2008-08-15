@@ -1883,9 +1883,9 @@ else
 fi
 
 
-# Check whether --enable-foreign was given.
-if test "${enable_foreign+set}" = set; then
-  enableval=$enable_foreign;
+# Check whether --enable-places was given.
+if test "${enable_places+set}" = set; then
+  enableval=$enable_places;
 fi
 
 
