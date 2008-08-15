@@ -16,7 +16,7 @@ interact with the user.
 
 The target audience for this tutorial are students who've gone through
 the design and use of structures in How to Design Programs, as well as
-use of higher-order functions, local, and a minor bit of mutation.
+use of higher-order functions, @scheme[local], and a minor bit of mutation.
 
 @section{Getting Started}
 
@@ -748,7 +748,9 @@ Create a new file called @filepath{model.ss} with the following content.
 @external-file["model.ss"]
 
 This is essentially a cut-and-paste of the lines we identified as our
-model.  There's one additional expression that looks a little odd at first:
+model.  It's written in the @schememodname[scheme] language because
+the model shouldn't need to worry about web-server stuff.  There's one
+additional expression that looks a little odd at first:
 
 @schemeblock[
     (provide (all-defined-out))
@@ -882,7 +884,6 @@ structures from others.  We'll do that here by using a form of
 For example, if we wanted to limit the exposed functions to
 @scheme[blog-insert-post!] and @scheme[post-insert-comment!], we can
 do this:
-
 @schemeblock[
     (provide blog-insert-post!
              post-insert-comment!)
@@ -891,13 +892,14 @@ do this:
 
 Of course, this set of functions is too minimal!  Let's change the
 @scheme[provide] line in the model to:
-
 @schemeblock[
 (provide blog? blog-posts
          post? post-title post-body post-comments
          initialize-blog!
          blog-insert-post! post-insert-comment!)
 ]
+which captures the essential interactions we do with a blog.
+
 
 @centerline{------------}
 
