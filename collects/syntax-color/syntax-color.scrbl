@@ -10,6 +10,8 @@
 
 @title{@bold{Syntax Color}: Utilities}
 
+@author["Scott Owens"]
+
 The @filepath{syntax-color} collection provides the underlying data
 structures and some helpful utilities for the @scheme[color:text%]
 class of the @other-manual['(lib

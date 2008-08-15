@@ -3,6 +3,8 @@
 
 @title{@bold{DrScheme}: PLT Programming Environment}
 
+@author["Robert Bruce Findler" "PLT Scheme"]
+
 DrScheme is a graphical environment for developing programs using the
 PLT Scheme programming languages.
 

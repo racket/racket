@@ -491,3 +491,17 @@ i {
 .noborder img {
   border: 0;
 }
+
+.author {
+  position: relative;
+  float: right;
+  left: 2em;
+  top: -3em;
+  height: 0em;
+  width: 23em; /* very wide to keep author names on separate lines */
+  margin: 0em -23em 0em 0em;
+  font-size: 82%;
+}
+.author:before { 
+  content: "by ";
+}

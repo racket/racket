@@ -4,13 +4,14 @@
           (for-label web-server/servlet)
           "tutorial-util.ss")
 
-@title{@bold{Cont}: Web Applications in PLT Scheme}
+@title{@bold{Continue}: Web Applications in PLT Scheme}
 
-By Danny Yoo (dyoo at cs dot wpi dot edu) & Jay McCarthy (jay at cs dot byu dot edu)
+@author[(author+email "Danny Yoo" "dyoo@cs.wpi.edu")
+        (author+email "Jay McCarthy" "jay@cs.byu.edu")]
 
 How do we make dynamic web applications?  This tutorial will show how we
 can build web applications using PLT Scheme.  As our working example,
-we'll build a simple web journal (a "blog").  We'll cover how to start
+we'll build a simple web journal (a ``blog'').  We'll cover how to start
 up a web server, how to generate dynamic web content, and how to
 interact with the user.
 
@@ -31,8 +32,8 @@ web-server/insta
    (body (h1 "Under construction"))))
 ]
 
-Press the @onscreen{Run} button.  If a web browser comes up with an "Under
-Construction" page, then clap your hands with delight: you've built
+Press the @onscreen{Run} button.  If a web browser comes up with an ``Under
+Construction'' page, then clap your hands with delight: you've built
 your first web application!  It doesn't do much yet, but we will get
 there.  Press the @onscreen{Stop} button to shut the server down for now.
 

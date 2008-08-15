@@ -3,6 +3,8 @@
 
 @title{@bold{GL}: 3-D Graphics}
 
+@author["Scott Owens"]
+
 The @schememodname[sgl] libraries provide access to the rendering
 functions of @as-index{OpenGL} 1.5 and @as-index{GLU} 1.3
 libraries. The @schememodname[sgl] libraries to not address

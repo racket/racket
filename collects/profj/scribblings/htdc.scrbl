@@ -4,6 +4,8 @@
 
 @title{@italic{How to Design Classes} Languages}
 
+@author["Kathryn E. Gray"]
+
 The languages documented in this manual are provided by DrScheme to be
 used with the @italic{How to Design Classes} book.
 

@@ -4,6 +4,8 @@
 
 @title{@bold{Embedded GUI}: Widgets within @scheme[editor<%>]}
 
+@author["Mike T. McHenry"]
+
 @defmodule[embedded-gui]
 
 The @schememodname[embedded-gui] library provides a class hierarchy

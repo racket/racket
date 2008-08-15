@@ -3,6 +3,8 @@
 
 @title{@bold{GUI}: PLT Graphics Toolkit}
 
+@author["Matthew Flatt" "Robert Bruce Findler" "John Clements"]
+
 @declare-exporting[scheme/gui/base scheme/gui #:use-sources (mred)]
 
 This reference manual describes the GUI toolbox that is part of PLT

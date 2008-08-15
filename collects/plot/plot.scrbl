@@ -7,6 +7,8 @@
 
 @title{@bold{PLoT}: Graph Plotting}
 
+@author["Alexander Friedman" "Jamie Raymond"]
+
 PLoT (a.k.a. PLTplot) provides a basic interface for producing common
 types of plots such as line and vector field plots as well as an
 advanced interface for producing customized plot types.  Additionally,

@@ -5,6 +5,8 @@
 
 @title{@bold{Scribble}: PLT Documentation Tool}
 
+@author["Matthew Flatt" "Eli Barzilay"]
+
 Scribble is a collection of tools for creating prose documents,
 especially those that document libraries, and especially for HTML and
 PDF (via LaTeX) output.  More generally, it is useful for cases where

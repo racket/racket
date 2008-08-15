@@ -6,6 +6,8 @@
 
 @title{@exec{mzpp} and @exec{mztext}: Preprocessors}
 
+@author["Eli Barzilay"]
+
 The @filepath{preprocessor} collection defines two Scheme-based
 preprocessors for texts that can have embedded Scheme code.  The two
 processors share a few features, like several command-line flags and

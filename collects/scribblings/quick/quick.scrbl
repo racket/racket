@@ -2,6 +2,8 @@
 
 @title{@bold{Quick}: An Introduction to PLT Scheme with Pictures}
 
+@author["Matthew Flatt"]
+
 @; ----------------------------------------------------------------------
 
 @(require scribble/manual

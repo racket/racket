@@ -14,6 +14,8 @@
 
 @title{@bold{PLaneT}: Automatic Package Distribution}
 
+@author["Jacob Matthews"]
+
 @PLaneT is PLT Scheme's centralized package repository. It consists of
 two parts: , which contains packages contributed by users, and
 the @PLaneT client, which is built in to PLT Scheme.

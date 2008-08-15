@@ -8,11 +8,6 @@
 (define web-server "Web Server")
 
 ; XXX Format better
-(define (author x) 
-  (elem (hspace 4)
-        (bold x)))
-
-; XXX Format better
 (define (warning . x)
   (apply elem "Warning:" x))
 
@@ -26,6 +21,5 @@
                                   scheme/contract
                                   scheme/unit))
          web-server
-         author
          warning
          href-link)

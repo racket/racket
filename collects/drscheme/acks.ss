@@ -41,6 +41,7 @@
      "Guillaume Marceau, "
      "Jacob Matthews, "
      "Jay McCarthy, "
+     "Mike T. McHenry, "
      "Philippe Meunier, "
      "Scott Owens, "
      "Jamie Raymond, "

@@ -17,6 +17,8 @@
 
 @title{@bold{Macro Debugger}}
 
+@author["Ryan Culpepper"]
+
 The macro-debugger collection contains two tools: a stepper for macro
 expansion and a standalone syntax browser. The macro stepper shows the
 programmer the expansion of a program as a sequence of rewriting

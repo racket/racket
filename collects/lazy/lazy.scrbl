@@ -34,6 +34,8 @@
 
 @title{@bold{Lazy Scheme}}
 
+@author["Eli Barzilay"]
+
 @defmodulelang[lazy]
 
 Lazy Scheme is available as both a language level and a module that

@@ -47,7 +47,9 @@
      #'((tech "term") args ...)]
     [x (identifier? #'x) #'(tech "term")]))
 
-@title{@bold{PLT Redex}: an embedded DSL for debugging operational semantics}
+@title{@bold{Redex}: Debugging Operational Semantics}
+
+@author["Robert Bruce Findler"]
 
 PLT Redex consists of a domain-specific language for specifying
 reduction semantics, plus a suite of tools for working with the

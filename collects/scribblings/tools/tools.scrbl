@@ -14,8 +14,10 @@
 )
 
 @title{@bold{Plugins}: Extending DrScheme}
-@(defmodule drscheme/tool-lib)
 
+@author["Robert Bruce Findler"]
+
+@(defmodule drscheme/tool-lib)
 
 This manual describes DrScheme's tools interface. It assumes
 familiarity with 

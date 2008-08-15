@@ -79,6 +79,31 @@
 
 ;; ----------------------------------------
 
+(provide author
+         author+email)
+(define (author . auths)
+  (make-styled-paragraph 
+   (let ([nl (make-element 'newline '("\n"))])
+     (case (length auths)
+       [(1) auths]
+       [(2) (list (car auths) nl "and " (cadr auths))]
+       [else (let ([r (reverse auths)])
+               (append (add-between (reverse (cdr r))
+                                    (make-element #f (list "," nl)))
+                       (list "," nl "and " (car r))))]))
+   "author"))
+(define (author+email name email)
+  (make-element #f
+                (list
+                 name
+                 " <" 
+                 (regexp-replace* #rx"[.]"
+                                  (regexp-replace* #rx"@" email " at ")
+                                  " dot ")
+                 ">")))
+
+;; ----------------------------------------
+
 (provide intern-taglet
          module-path-index->taglet
          module-path-prefix->string)

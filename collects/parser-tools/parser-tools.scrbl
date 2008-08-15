@@ -11,6 +11,8 @@
 
 @title{@bold{Parser Tools}: @exec{lex} and @exec{yacc}-style Parsing}
 
+@author["Scott Owens"]
+
 This documentation assumes familiarity with @exec{lex} and @exec{yacc}
 style lexer and parser generators.
 

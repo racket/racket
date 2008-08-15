@@ -3,7 +3,7 @@
 
 @title[#:tag "web-server-ref"]{@bold{Web Server}: PLT HTTP Server}
 
-By Jay McCarthy (jay@"@"plt-scheme.org)
+@author[(author+email "Jay McCarthy" "jay@plt-scheme.org")]
 
 The @web-server collection provides libraries that can be used to
 develop Web applications in Scheme.

@@ -3,6 +3,8 @@
 
 @title{@bold{FFI}: PLT Scheme Foreign Interface}
 
+@author["Eli Barzilay"]
+
 @defmodule[scheme/foreign]
 
 The @schememodname[scheme/foreign] library enables the direct use of

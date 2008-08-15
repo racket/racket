@@ -12,6 +12,8 @@
 
 @title[#:tag "top"]{@bold{Typed Scheme}: Scheme with Static Types}
 
+@author["Sam Tobin-Hochstadt"]
+
 @(defmodulelang typed-scheme)
 
 Typed Scheme is a Scheme-like language, with a type system that

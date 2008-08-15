@@ -12,6 +12,8 @@
 
 @title[#:tag "frtime"]{@bold{FrTime}: A Language for Reactive Programs}
 
+@author["Greg Cooper"]
+
 The @scheme[frtime.ss] language supports declarative construction of
 reactive systems in a syntax very similar to that of MzScheme.  To
 interact with FrTime, select FrTime from the "Choose Language" menu.

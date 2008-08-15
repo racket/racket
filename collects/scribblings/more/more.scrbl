@@ -40,6 +40,8 @@
 
 @title{@bold{More}: Systems Programming with PLT Scheme}
 
+@author["Matthew Flatt"]
+
 In contrast to the impression that @|quick| may give, PLT Scheme is
 not just another pretty face. Underneath the graphical facade of
 DrScheme lies a sophisticated toolbox for managing threads and
@@ -765,8 +767,16 @@ the server updated, visit @tt{http://localhost:8081/sum2}.
 @; ----------------------------------------------------------------------
 @section{Where to Go From Here}
 
-If you arrived here as part of an introduction to PLT Scheme, then
-your next stop is probably @|guide|.
+The PLT Scheme distribution includes a production-quality web server
+that addresses all of the design points mentioned here and more.
+To learn more, see the tutorial @other-manual['(lib
+"web-server/scribblings/tutorial/tutorial.scrbl")], the documentation
+@other-manual['(lib
+"web-server/scribblings/web-server.scrbl")], or the research paper
+@cite["Krishnamurthi07"].
+
+Otherwise, if you arrived here as part of an introduction to PLT
+Scheme, then your next stop is probably @|guide|.
 
 If the topics covered here are the kind that interest you, see also
 @secref["concurrency" #:doc '(lib
@@ -779,11 +789,6 @@ information can be found in papers written by the authors of PLT
 Scheme, including papers on MrEd @cite["Flatt99"], memory accounting
 @cite["Wick04"], kill-safe abstractions @cite["Flatt04"], and
 delimited continuations @cite["Flatt07"].
-
-The PLT Scheme distribution includes a production-quality web server
-that addresses all of the design points mentioned here and more
-@cite["Krishnamurthi07"]. See @other-manual['(lib
-"web-server/scribblings/web-server.scrbl")].
 
 @; ----------------------------------------------------------------------
 

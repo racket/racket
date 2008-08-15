@@ -11,6 +11,8 @@
 
 @title{@bold{MzCOM}: Scheme as a Windows COM Object}
 
+@author["Paul Steckler"]
+
 @exec{MzCOM.exe} is a Windows COM (i.e., Component Object Model) class
 wrapper for PLT Scheme.
 

@@ -14,6 +14,8 @@
 
 @title{@bold{XML}: Parsing and Writing}
 
+@author["Paul Graunke"]
+
 @defmodule[xml]
 
 The @schememodname[xml] library provides functions for parsing and

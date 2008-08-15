@@ -4,6 +4,8 @@
 @title[#:tag-prefix '(lib "scribblings/inside/inside.scrbl") 
        #:tag "top"]{@bold{Inside}: PLT Scheme C API}
 
+@author["Matthew Flatt"]
+
 This manual describes PLT Scheme's C interface, which allows the
 interpreter to be extended by a dynamically-loaded library, or
 embedded within an arbitrary C/C++ program. The manual assumes
