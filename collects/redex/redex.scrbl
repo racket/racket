@@ -1191,14 +1191,13 @@ are otherwise setting @scheme[dc-for-text-size].  }
 Produce a pict like @scheme[render-language], but without
 adjust @scheme[dc-for-text-size].
 
-This function is
-primarily designed to be used with Slideshow or with
-other tools that combine picts together.
+This function is primarily designed to be used with
+Slideshow or with other tools that combine picts together.
 }
 
 @defproc[(render-reduction-relation [rel reduction-relation?]
-                          [file (or/c false/c path-string?) #f]
-                          [#:style style reduction-rule-style/c (rule-pict-style)])
+                                    [file (or/c false/c path-string?) #f]
+                                    [#:style style reduction-rule-style/c (rule-pict-style)])
          (if file void? pict?)]{
 
 Renders a reduction relation. If @scheme[file] is @scheme[#f],

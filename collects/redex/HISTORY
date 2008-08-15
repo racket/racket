@@ -3,6 +3,9 @@ v4.2
   - added white-bracket-sizing to control how the brackets
     are typeset when rendering a metafunction.
 
+  - added render-* functions that make it easier to experiment
+    with typesetting at the REPL.
+
 v4.1 (this is the first version that was included in the PLT
       distribution. Before this, Redex was in PLaneT).
 

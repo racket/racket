@@ -21,10 +21,9 @@
   (->d ([rel reduction-relation?])
        ([file (or/c false/c path-string?)]
         #:style [style reduction-rule-style/c])
-       [result (lambda (x)
-                 (if (path-string? file)
-                     (void? x)
-                     (pict? x)))])]
+       [result (if (path-string? file)
+                   void?
+                   pict?)])]
  [reduction-relation->pict (->* (reduction-relation?)
                                 (#:style reduction-rule-style/c)
                                 pict?)]
@@ -37,10 +36,9 @@
   (->d ([lang compiled-lang?])
        ([file (or/c false/c path-string?)]
         #:nts [nts (or/c false/c (listof (or/c string? symbol?)))])
-       [result (lambda (x) 
-                 (if (path-string? file)
-                     (void? x)
-                     (pict? x)))])])
+       [result (if (path-string? file)
+                   void?
+                   pict?)])])
 
 ; syntax
 (provide metafunction->pict
