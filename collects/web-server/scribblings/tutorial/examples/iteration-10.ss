@@ -9,7 +9,7 @@
   (render-blog-page 
    (initialize-blog! 
     (build-path (find-system-path 'home-dir)
-                "the-blog-data.db"))
+                "the-blog-data.sqlite"))
    request))
 
 ;; render-blog-page: blog request -> html-response
