@@ -1150,7 +1150,7 @@ Second, add the following at the bottom of your application:
                #:extra-files-path 
                (build-path _path "htdocs")
                #:servlet-path
-               [servlet-path "servlets/APPLICATION.ss"])
+               "servlets/APPLICATION.ss")
 ]
 
 You can change the value of the @scheme[#:port] parameter to use a different port.
