@@ -127,7 +127,7 @@ Returns @scheme[#t] if @scheme[v] is an item produced by
  visible to the enclosing context). Since this form expands to
  @scheme[require], it must be used in a module or top-level context.}
 
-@defproc[(author [author any/c] ...) block?]{
+@defproc[(author [auth any/c] ...) block?]{
 
 Generates a @scheme[styled-paragraph] to show the author(s) of a
 document, where each author is represented by an
