@@ -71,10 +71,11 @@
 (define (post-comments p)
   (local [(define (row->comment a-row)
             (vector-ref a-row 0))
-          (define rows (sqlite:select
-                        (blog-db (post-blog p))
-                        (format "SELECT content FROM comments WHERE pid = '~a'"
-                                (post-id p))))]
+          (define rows 
+            (sqlite:select
+             (blog-db (post-blog p))
+             (format "SELECT content FROM comments WHERE pid = '~a'"
+                     (post-id p))))]
     (cond
       [(empty? rows) empty]
       [else (map row->comment (rest rows))])))

@@ -990,17 +990,17 @@ We can now write the code to initialize a @scheme[blog] structure:
   (define the-blog (make-blog db))
   (with-handlers ([exn? void])
     (sqlite:exec/ignore db
-      (string-append
-       "CREATE TABLE posts"
-       "(id INTEGER PRIMARY KEY,"
-       "title TEXT, body TEXT)"))
-    (blog-insert-post! 
+                        (string-append
+                         "CREATE TABLE posts "
+                         "(id INTEGER PRIMARY KEY,"
+                         "title TEXT, body TEXT)"))
+    (blog-insert-post!
      the-blog "First Post" "This is my first post")
-    (blog-insert-post! 
+    (blog-insert-post!
      the-blog "Second Post" "This is another post")
-    (sqlite:exec/ignore 
+    (sqlite:exec/ignore
      db "CREATE TABLE comments (pid INTEGER, content TEXT)")
-    (post-insert-comment! 
+    (post-insert-comment!
      the-blog (first (blog-posts the-blog))
      "First comment!"))
   the-blog)
