@@ -490,19 +490,17 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
   if ((table->size <= 8)
       || (table->count * FILL_FACTOR > (table->size >> 1))) {
     /* Keep same size */
-    memset(table->vals, 0, sizeof(Scheme_Object *) * table->size);
-    memset(table->keys, 0, sizeof(Scheme_Object *) * table->size);
   } else {
     /* Shrink by one step */
     Scheme_Object **ba;
     table->size >>= 1;
     ba = MALLOC_N(Scheme_Object *, table->size);
-    memcpy(ba, table->vals, sizeof(Scheme_Object *) * table->size);
     table->vals = ba;
     ba = MALLOC_N(Scheme_Object *, table->size);
-    memcpy(ba, table->keys, sizeof(Scheme_Object *) * table->size);
     table->keys = ba;
   }
+  memset(table->vals, 0, sizeof(Scheme_Object *) * table->size);
+  memset(table->keys, 0, sizeof(Scheme_Object *) * table->size);
   table->count = 0;
   table->mcount = 0;
 }
