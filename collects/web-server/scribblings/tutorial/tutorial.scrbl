@@ -953,10 +953,10 @@ Our next task is to employ an SQL database for the blog model. We'll be using SQ
 We now have the following bindings:
 
 @defthing[sqlite:db? (any/c . -> . boolean?)]
-@defthing[sqlite:open (path? . -> . db?)]
-@defthing[sqlite:exec/ignore (db? string? . -> . void)]
-@defthing[sqlite:select (db? string? . -> . (listof vector?))]
-@defthing[sqlite:insert (db? string? . -> . integer?)]
+@defthing[sqlite:open (path? . -> . sqlite:db?)]
+@defthing[sqlite:exec/ignore (sqlite:db? string? . -> . void)]
+@defthing[sqlite:select (sqlite:db? string? . -> . (listof vector?))]
+@defthing[sqlite:insert (sqlite:db? string? . -> . integer?)]
 
 
 The first thing we should do is decide on the relational structure of our model. We will use the following tables:
@@ -976,7 +976,7 @@ By adding a new comments table, we are more in accord with the relational style.
 
 A @scheme[blog] structure will simply be a container for the database handle:
 
-@defstruct[blog ([db db?])]
+@defstruct[blog ([db sqlite:db?])]
 
 @bold{Exercise.} Write the @scheme[blog] structure definition. (It does not need to be mutable or serializable.)
 
@@ -1135,24 +1135,12 @@ scheme
 Second, add the following at the bottom of your application:
 
 @schemeblock[
-(require web-server/servlet-env
-         web-server/managers/lru)
+(require web-server/servlet-env)
 (serve/servlet start 
                #:launch-browser? #f
                #:quit? #f
-
                #:listen-ip #f
-               #:port 8000
-
-               #:manager
-               (make-threshold-LRU-manager
-                (lambda (request)
-                  `(html 
-                    (head (title "Page Has Expired."))
-                    (body (p "Sorry, this page has expired. "
-                             "Please go back."))))
-                (* 64 1024 1024))
- 
+               #:port 8000 
                #:extra-files-path 
                (build-path _path "htdocs")
                #:servlet-path
@@ -1162,9 +1150,6 @@ Second, add the following at the bottom of your application:
 You can change the value of the @scheme[#:port] parameter to use a different port.
 
 @scheme[#:listen-ip] is set to @scheme[#f] so that the server will listen on @emph{all} available IPs.
-
-The number given to the @scheme[make-threshold-LRU-manager] specifies a memory limit for the Web server's
-session data. (In the code above, it is 64 MBs.)
 
 You should change @scheme[_path] to be the path to the parent of your @scheme[htdocs] directory.
 
@@ -1178,8 +1163,8 @@ Third, to run your server, you can either press @onscreen{Run} in DrScheme, or t
 
 @centerline{------------}
 
-There are more advanced ways of starting the Web Server, but you'll have to 
-refer to the PLT Web Server Reference Manual for details.
+@scheme[serve/servlet] takes other options and there are more advanced ways of starting the Web Server,
+but you'll have to refer to the PLT Web Server Reference Manual for details.
 
 @section{Moving Forward}
 
