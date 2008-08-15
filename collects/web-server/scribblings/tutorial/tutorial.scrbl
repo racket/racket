@@ -755,10 +755,8 @@ model.  There's one additional expression that looks a little odd at first:
 ]
 
 which tells PLT Scheme to allow other files to have access to
-everything that's defined in the @filepath{model.ss} file.  There are
-situations where we may want to hide things for the sake of s private
-functions, or the internal representation of structures, in which case
-the pro
+everything that's defined in the @filepath{model.ss} file.
+
 
 We change our web application to use this model.  Going back to our
 web application, we rip out the old model code, and replace it with an
@@ -873,7 +871,27 @@ post structure, rather the structure itself, to better abstract the model interf
 @bold{Exercise.} Write the new definitions of @scheme[blog-insert-post!] and @scheme[post-insert-comment!].
 (Remember to call @scheme[save-blog!].)
 
-We'll change the @scheme[provide] line in the model to:
+
+
+In our last iteration of our model, we used @scheme[(provide
+(all-defined-out))] to expose all of the model's definitions.  But we
+often want to hide things like private functions and internal data
+structures from others.  We'll do that here by using a form of
+@scheme[provide] that explicitly names the exposed definitions.
+
+For example, if we wanted to limit the exposed functions to
+@scheme[blog-insert-post!] and @scheme[post-insert-comment!], we can
+do this:
+
+@schemeblock[
+    (provide blog-insert-post!
+             post-insert-comment!)
+]
+
+
+Of course, this set of functions is too minimal!  Let's change the
+@scheme[provide] line in the model to:
+
 @schemeblock[
 (provide blog? blog-posts
          post? post-title post-body post-comments
