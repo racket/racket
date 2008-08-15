@@ -1063,7 +1063,7 @@ mark_logger {
 mark_log_reader {
  mark:
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
-  gcMARK(lr->ch);
+  gcMARK(lr->sema);
   gcMARK(lr->head);
   gcMARK(lr->tail);
  size:
@@ -1724,6 +1724,7 @@ mark_syncing {
   gcMARK(w->wrapss);
   gcMARK(w->nackss);
   gcMARK(w->reposts);
+  gcMARK(w->accepts);
   gcMARK(w->disable_break);
 
  size:

@@ -2465,7 +2465,7 @@ static int tcp_check_accept_evt(Scheme_Object *ae, Scheme_Schedule_Info *sinfo)
     tcp_accept(1, a);
     a[0] = scheme_current_thread->ku.multiple.array[0];
     a[1] = scheme_current_thread->ku.multiple.array[1];
-    scheme_set_sync_target(sinfo, scheme_build_list(2, a), NULL, NULL, 0, 0);
+    scheme_set_sync_target(sinfo, scheme_build_list(2, a), NULL, NULL, 0, 0, NULL);
     return 1;
   } else
     return 0;
@@ -3359,7 +3359,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
       if (do_udp_recv("udp-receive!-evt", uw->udp, 
 		      uw->str, uw->offset, uw->offset + uw->len, 
 		      0, v)) {
-	scheme_set_sync_target(sinfo, scheme_build_list(3, v), NULL, NULL, 0, 0);
+	scheme_set_sync_target(sinfo, scheme_build_list(3, v), NULL, NULL, 0, 0, NULL);
 	return 1;
       } else
 	return 0;
@@ -3374,7 +3374,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
 			 uw->dest_addr, uw->dest_addr_len,
 			 0);
       if (SCHEME_TRUEP(r)) {
-	scheme_set_sync_target(sinfo, scheme_void, NULL, NULL, 0, 0);
+	scheme_set_sync_target(sinfo, scheme_void, NULL, NULL, 0, 0, NULL);
 	return 1;
       } else
 	return 0;

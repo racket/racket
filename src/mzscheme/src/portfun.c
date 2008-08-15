@@ -1221,7 +1221,7 @@ static long user_read_result(const char *who, Scheme_Input_Port *port,
 	   when the read/peek (at some offset) succeeds. */
 	if (nonblock > 0) {
 	  if (sinfo) {
-	    scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1);
+	    scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1, NULL);
 	    return 0;
 	  } else {
 	    /* Poll: */
@@ -1655,7 +1655,7 @@ int scheme_user_port_write_probably_ready(Scheme_Output_Port *port, Scheme_Sched
 
   val = uop->evt;
 
-  scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, val, (Scheme_Object *)port, NULL, 0, 1, NULL);
   return 0;
 
 }

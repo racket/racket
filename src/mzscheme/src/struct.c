@@ -999,7 +999,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     } else {
       v = (Scheme_Object *)scheme_output_port_record(o);
     }
-    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1);
+    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1, NULL);
     return 0;
   }
 
@@ -1007,7 +1007,7 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     v = ((Scheme_Structure *)o)->slots[SCHEME_INT_VAL(v)];
 
   if (scheme_is_evt(v)) {
-    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1);
+    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 1, NULL);
     return 0;
   }
 
@@ -1026,12 +1026,12 @@ static int evt_struct_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
       if (scheme_is_evt(result)) {
 	SCHEME_USE_FUEL(1); /* Needed beause an apply of a mzc-generated function
 			       might not check for breaks. */
-	scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1);
+	scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1, NULL);
 	return 0;
       }
 
       /* non-evt => ready and result is self */
-      scheme_set_sync_target(sinfo, o, o, NULL, 0, 0);
+      scheme_set_sync_target(sinfo, o, o, NULL, 0, 0, NULL);
 
       return 1;
     }
@@ -2129,7 +2129,7 @@ static int wrapped_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
     wrapper = scheme_box(ww->wrapper);
   }
 
-  scheme_set_sync_target(sinfo, ww->evt, wrapper, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, ww->evt, wrapper, NULL, 0, 1, NULL);
   return 0;
 }
 
@@ -2149,7 +2149,7 @@ static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo
   /* Install the semaphore immediately, so that it's posted on
      exceptions (e.g., breaks) even if they happen while trying
      to run the maker. */
-  scheme_set_sync_target(sinfo, o, NULL, sema, 0, 0);
+  scheme_set_sync_target(sinfo, o, NULL, sema, 0, 0, NULL);
 
   /* Remember both the sema and the current thread's dead evt: */
   nack = scheme_alloc_object();
@@ -2162,7 +2162,7 @@ static int nack_guard_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo
   result = scheme_apply(nw->maker, 1, a);
 
   if (scheme_is_evt(result)) {
-    scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1);
+    scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1, NULL);
     return 0;
   } else
     return 1; /* Non-evt => ready */
@@ -2182,7 +2182,7 @@ static int nack_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   }
 
   /* Redirect to the set, and wrap with void: */
-  scheme_set_sync_target(sinfo, wset, scheme_void, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, wset, scheme_void, NULL, 0, 1, NULL);
 
   return 0;
 }
@@ -2201,7 +2201,7 @@ static int poll_evt_is_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
   result = scheme_apply(nw->maker, 1, a);
 
   if (scheme_is_evt(result)) {
-    scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1);
+    scheme_set_sync_target(sinfo, result, NULL, NULL, 0, 1, NULL);
     return 0;
   } else
     return 1; /* Non-evt => ready */

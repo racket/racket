@@ -2937,7 +2937,7 @@ static int thread_wait_done(Scheme_Object *p, Scheme_Schedule_Info *sinfo)
        the blocking thread can be dequeued: */
     Scheme_Object *evt;
     evt = scheme_get_thread_dead((Scheme_Thread *)p);
-    scheme_set_sync_target(sinfo, evt, p, NULL, 0, 0);
+    scheme_set_sync_target(sinfo, evt, p, NULL, 0, 0, NULL);
     return 0;
   } else
     return 1;
@@ -4978,11 +4978,11 @@ static int resume_suspend_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 
   t = SCHEME_PTR2_VAL(o);
   if (t) {
-    scheme_set_sync_target(sinfo, o, t, NULL, 0, 0);
+    scheme_set_sync_target(sinfo, o, t, NULL, 0, 0, NULL);
     return 1;
   }
 
-  scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, SCHEME_PTR1_VAL(o), o, NULL, 0, 1, NULL);
   return 0;
 }
 
@@ -5015,7 +5015,7 @@ Scheme_Object *scheme_get_thread_dead(Scheme_Thread *p)
 
 static int dead_ready(Scheme_Object *o, Scheme_Schedule_Info *sinfo)
 {
-  scheme_set_sync_target(sinfo, SCHEME_PTR_VAL(o), o, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, SCHEME_PTR_VAL(o), o, NULL, 0, 1, NULL);
   return 0;
 }
 
@@ -5163,7 +5163,7 @@ static void *splice_ptr_array(void **a, int al, void **b, int bl, int i)
 
 static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target, 
 			    Scheme_Object *wrap, Scheme_Object *nack, 
-			    int repost, int retry)
+			    int repost, int retry, Scheme_Accept_Sync accept)
 /* Not ready, deferred to target. */
 {
   Evt_Set *evt_set = syncing->set;
@@ -5200,6 +5200,16 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
       syncing->reposts = s;
     }
     syncing->reposts[i] = 1;
+  }
+
+  if (accept) {
+    if (!syncing->accepts) {
+      Scheme_Accept_Sync *s;
+      s = (Scheme_Accept_Sync *)scheme_malloc_atomic(sizeof(Scheme_Accept_Sync) * evt_set->argc);
+      memset(s, 0, evt_set->argc * sizeof(Scheme_Accept_Sync));
+      syncing->accepts = s;
+    }
+    syncing->accepts[i] = accept;
   }
 
   if (SCHEME_EVTSETP(target) && retry) {
@@ -5257,6 +5267,19 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
 	memcpy(s + i + wts->argc, syncing->reposts + i + 1, evt_set->argc - i - 1);
 	syncing->reposts = s;
       }
+      if (syncing->accepts) {
+	Scheme_Accept_Sync *s;
+	int len;
+	
+	len = evt_set->argc + wts->argc - 1;
+	
+	s = (Scheme_Accept_Sync *)scheme_malloc_atomic(len * sizeof(Scheme_Accept_Sync));
+	memset(s, 0, len * sizeof(Scheme_Accept_Sync));
+	
+	memcpy(s, syncing->accepts, i * sizeof(Scheme_Accept_Sync));
+	memcpy(s + i + wts->argc, syncing->accepts + i + 1, (evt_set->argc - i - 1) * sizeof(Scheme_Accept_Sync));
+	syncing->accepts = s;
+      }
 
       evt_set->argc += (wts->argc - 1);
 
@@ -5280,10 +5303,10 @@ static void set_sync_target(Syncing *syncing, int i, Scheme_Object *target,
 
 void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target, 
 			    Scheme_Object *wrap, Scheme_Object *nack, 
-			    int repost, int retry)
+			    int repost, int retry, Scheme_Accept_Sync accept)
 {
   set_sync_target((Syncing *)sinfo->current_syncing, sinfo->w_i,
-		  target, wrap, nack, repost, retry);
+		  target, wrap, nack, repost, retry, accept);
   if (retry) {
     /* Rewind one step to try new ones (or continue
        if the set was empty). */
@@ -5370,6 +5393,8 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
 	    syncing->disable_break->suspend_break++;
 	  if (syncing->reposts && syncing->reposts[i])
 	    scheme_post_sema(o);
+          if (syncing->accepts && syncing->accepts[i])
+            scheme_accept_sync(syncing, i);
 	  scheme_post_syncing_nacks(syncing);
 	  result = 1;
 	  goto set_sleep_end_and_return;
@@ -5387,7 +5412,7 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
       Scheme_Object *sema;
       
       sema = get_sema(o, &repost);
-      set_sync_target(syncing, i, sema, o, NULL, repost, 1);
+      set_sync_target(syncing, i, sema, o, NULL, repost, 1, NULL);
       j--; /* try again with this sema */
     }
   }
@@ -5423,6 +5448,25 @@ static int syncing_ready(Scheme_Object *s, Scheme_Schedule_Info *sinfo)
     sinfo->sleep_end = syncing->sleep_end;
 
   return result;
+}
+
+void scheme_accept_sync(Syncing *syncing, int i)
+{
+  /* run atomic accept action to revise the wrap */
+  Scheme_Accept_Sync accept;
+  Scheme_Object *v, *pr;
+  
+  accept = syncing->accepts[i];
+  syncing->accepts[i] = NULL;
+  pr = syncing->wrapss[i];
+  
+  v = SCHEME_CAR(pr);
+  pr = SCHEME_CDR(pr);
+  
+  v = accept(v);
+  
+  pr = scheme_make_pair(v, pr);
+  syncing->wrapss[i] = pr;
 }
 
 static void syncing_needs_wakeup(Scheme_Object *s, void *fds)

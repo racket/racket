@@ -2135,7 +2135,7 @@ Scheme_Object *scheme_progress_evt(Scheme_Object *port)
 
 static int progress_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
 {
-  scheme_set_sync_target(sinfo, SCHEME_PTR2_VAL(evt), evt, NULL, 0, 1);
+  scheme_set_sync_target(sinfo, SCHEME_PTR2_VAL(evt), evt, NULL, 0, 1, NULL);
   return 0;
 }
 
@@ -2642,7 +2642,7 @@ static int rw_evt_ready(Scheme_Object *_rww, Scheme_Schedule_Info *sinfo)
 
     v = ws(op, rww->v, 1);
     if (v) {
-      scheme_set_sync_target(sinfo, scheme_true, NULL, NULL, 0, 0);
+      scheme_set_sync_target(sinfo, scheme_true, NULL, NULL, 0, 0, NULL);
       return 1;
     } else	
       return 0;
@@ -2655,7 +2655,7 @@ static int rw_evt_ready(Scheme_Object *_rww, Scheme_Schedule_Info *sinfo)
     else if (!v && rww->size)
       return 0;
     else {
-      scheme_set_sync_target(sinfo, scheme_make_integer(v), NULL, NULL, 0, 0);
+      scheme_set_sync_target(sinfo, scheme_make_integer(v), NULL, NULL, 0, 0, NULL);
       return 1;
     }
   }

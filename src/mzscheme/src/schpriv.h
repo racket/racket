@@ -447,9 +447,13 @@ typedef struct {
   short is_poll;
 } Scheme_Schedule_Info;
 
+typedef Scheme_Object *(*Scheme_Accept_Sync)(Scheme_Object *wrap);
+
 void scheme_set_sync_target(Scheme_Schedule_Info *sinfo, Scheme_Object *target,
 			    Scheme_Object *wrap, Scheme_Object *nack,
-			    int repost, int retry);
+			    int repost, int retry, Scheme_Accept_Sync accept);
+struct Syncing;
+void scheme_accept_sync(struct Syncing *syncing, int i);
 
 typedef int (*Scheme_Ready_Fun_FPC)(Scheme_Object *o, Scheme_Schedule_Info *sinfo);
 
@@ -1327,6 +1331,7 @@ typedef struct Syncing {
   Scheme_Object **wrapss;
   Scheme_Object **nackss;
   char *reposts;
+  Scheme_Accept_Sync *accepts;
 
   Scheme_Thread *disable_break; /* when result is set */
 } Syncing;
@@ -2770,13 +2775,13 @@ struct Scheme_Logger {
   int want_level;
   long *timestamp, local_timestamp; /* determines when want_level is up-to-date */
   int syslog_level, stderr_level;
-  Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <channel>) */
+  Scheme_Object *readers; /* list of (cons (make-weak-box <reader>) <sema>) */
 };
 
 typedef struct Scheme_Log_Reader {
   Scheme_Object so;
   int want_level;
-  Scheme_Object *ch;
+  Scheme_Object *sema;
   Scheme_Object *head, *tail;
 } Scheme_Log_Reader;
 

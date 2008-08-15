@@ -2880,18 +2880,15 @@ void scheme_log_message(Scheme_Logger *logger, int level, char *buffer, long len
             SCHEME_VEC_ELS(msg)[1] = v;
             SCHEME_VEC_ELS(msg)[2] = (data ? data : scheme_false);
           }
-          if (!lr->tail
-              && scheme_try_channel_put(lr->ch, msg)) {
-            /* delivered immediately */
-          } else {
-            /* enqueue */
-            q = scheme_make_raw_pair(msg, NULL);
-            if (lr->tail)
-              SCHEME_CDR(lr->tail) = q;
-            else
-              lr->head = q;
-            lr->tail = q;
-          }
+          
+          /* enqueue */
+          q = scheme_make_raw_pair(msg, NULL);
+          if (lr->tail)
+            SCHEME_CDR(lr->tail) = q;
+          else
+            lr->head = q;
+          lr->tail = q;
+          scheme_post_sema(lr->sema);
         }
       }
       queue = SCHEME_CDR(queue);
@@ -3048,7 +3045,7 @@ make_log_reader(int argc, Scheme_Object *argv[])
 {
   Scheme_Logger *logger;
   Scheme_Log_Reader *lr;
-  Scheme_Object *ch, *q;
+  Scheme_Object *sema, *q;
   int level;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_logger_type))
@@ -3061,8 +3058,8 @@ make_log_reader(int argc, Scheme_Object *argv[])
   lr->so.type = scheme_log_reader_type;
   lr->want_level = level;
 
-  ch = scheme_make_channel();
-  lr->ch = ch;
+  sema = scheme_make_sema(0);
+  lr->sema = sema;
 
   /* Pair a weak reference to the reader with a strong reference to the
      channel. Channel gets are wrapped to reference the reader. That way,
@@ -3070,7 +3067,7 @@ make_log_reader(int argc, Scheme_Object *argv[])
      reader. */
 
   q = scheme_make_raw_pair(scheme_make_pair(scheme_make_weak_box((Scheme_Object *)lr), 
-                                            ch),
+                                            sema),
                            logger->readers);
   logger->readers = q;
   *logger->timestamp += 1;
@@ -3086,12 +3083,7 @@ log_reader_p(int argc, Scheme_Object *argv[])
           : scheme_false);
 }
 
-static Scheme_Object *id_that_preserves_reader(void *data, int argc, Scheme_Object **argv)
-{
-  return argv[0];
-}
-
-static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
+static Scheme_Object *dequeue_log(Scheme_Object *_lr)
 {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)_lr;
 
@@ -3101,16 +3093,18 @@ static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
     lr->head = SCHEME_CDR(lr->head);
     if (!lr->head)
       lr->tail = NULL;
-    scheme_set_sync_target(sinfo, v, NULL, NULL, 0, 0);
-    return 1;
+    return v;
   } else {
-    Scheme_Object *w;
-
-    w = scheme_make_closed_prim(id_that_preserves_reader, lr);
-
-    scheme_set_sync_target(sinfo, lr->ch, w, NULL, 0, 0);
-    return 0;
+    scheme_signal_error("empty log-reader queue!?");
+    return NULL;
   }
+}
+
+static int log_reader_get(Scheme_Object *_lr, Scheme_Schedule_Info *sinfo)
+{
+  Scheme_Log_Reader *lr = (Scheme_Log_Reader *)_lr;
+  scheme_set_sync_target(sinfo, lr->sema, (Scheme_Object *)lr, NULL, 0, 1, dequeue_log);
+  return 0;
 }
 
 /***********************************************************************/

@@ -2677,7 +2677,7 @@ static int mark_log_reader_SIZE(void *p) {
 
 static int mark_log_reader_MARK(void *p) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
-  gcMARK(lr->ch);
+  gcMARK(lr->sema);
   gcMARK(lr->head);
   gcMARK(lr->tail);
   return
@@ -2686,7 +2686,7 @@ static int mark_log_reader_MARK(void *p) {
 
 static int mark_log_reader_FIXUP(void *p) {
   Scheme_Log_Reader *lr = (Scheme_Log_Reader *)p;
-  gcFIXUP(lr->ch);
+  gcFIXUP(lr->sema);
   gcFIXUP(lr->head);
   gcFIXUP(lr->tail);
   return
@@ -4235,6 +4235,7 @@ static int mark_syncing_MARK(void *p) {
   gcMARK(w->wrapss);
   gcMARK(w->nackss);
   gcMARK(w->reposts);
+  gcMARK(w->accepts);
   gcMARK(w->disable_break);
 
   return
@@ -4248,6 +4249,7 @@ static int mark_syncing_FIXUP(void *p) {
   gcFIXUP(w->wrapss);
   gcFIXUP(w->nackss);
   gcFIXUP(w->reposts);
+  gcFIXUP(w->accepts);
   gcFIXUP(w->disable_break);
 
   return
