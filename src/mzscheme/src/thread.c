@@ -815,18 +815,21 @@ void scheme_init_memtrace(Scheme_Env *env)
   scheme_finish_primitive_module(newenv);
 }
 
-void scheme_init_parameterization(Scheme_Env *env)
+void scheme_init_parameterization_readonly_globals()
 {
-  Scheme_Object *v;
-  Scheme_Env *newenv;
-
   REGISTER_SO(scheme_exn_handler_key);
   REGISTER_SO(scheme_parameterization_key);
   REGISTER_SO(scheme_break_enabled_key);
   scheme_exn_handler_key = scheme_make_symbol("exnh");
   scheme_parameterization_key = scheme_make_symbol("paramz");
   scheme_break_enabled_key = scheme_make_symbol("break-on?");
+}
   
+void scheme_init_parameterization(Scheme_Env *env)
+{
+  Scheme_Object *v;
+  Scheme_Env *newenv;
+
   REGISTER_SO(recycle_cell);
   REGISTER_SO(maybe_recycle_cell);
 

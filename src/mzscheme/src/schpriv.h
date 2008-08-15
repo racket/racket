@@ -201,6 +201,7 @@ void scheme_init_dynamic_extension(Scheme_Env *env);
 extern void scheme_regexp_initialize(Scheme_Env *env);
 #endif
 void scheme_init_memtrace(Scheme_Env *env);
+void scheme_init_parameterization_readonly_globals();
 void scheme_init_parameterization(Scheme_Env *env);
 void scheme_init_getenv(void);
 

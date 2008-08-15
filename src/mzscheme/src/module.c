@@ -319,8 +319,6 @@ void scheme_init_module(Scheme_Env *env)
   scheme_install_type_writer(scheme_module_type, write_module);
   scheme_install_type_reader(scheme_module_type, read_module);
 
-  scheme_init_module_resolver();
-
   GLOBAL_PARAMETER("current-module-name-resolver",  current_module_name_resolver, MZCONFIG_CURRENT_MODULE_RESOLVER, env);
   GLOBAL_PARAMETER("current-module-declare-name",   current_module_name_prefix,   MZCONFIG_CURRENT_MODULE_NAME,     env);
 

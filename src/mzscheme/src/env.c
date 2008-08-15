@@ -319,6 +319,7 @@ Scheme_Env *scheme_engine_instance_init() {
   
   place_instance_init_pre_kernel(stack_base);
   make_kernel_env();
+  scheme_init_parameterization_readonly_globals();
   env = place_instance_init_post_kernel();
 
   return env;
@@ -347,6 +348,8 @@ static void place_instance_init_pre_kernel(void *stack_base) {
 #endif
 
   scheme_make_thread(stack_base);
+
+  scheme_init_module_resolver();
 
 #ifdef TIME_STARTUP_PROCESS
   printf("process @ %ld\n", scheme_get_process_milliseconds());
