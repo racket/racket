@@ -12,28 +12,29 @@
 ;; initialize-blog! : path? -> blog
 ;; Reads a blog from a path, if not present, returns default
 (define (initialize-blog! home)
-  (define the-blog
-    (with-handlers 
-        ([exn? (lambda (exn) 
-                 (make-blog
-                  (path->string home)
-                  (list (make-post "First Post" 
-                                   "This is my first post" 
-                                   (list "First comment!"))
-                        (make-post "Second Post" 
-                                   "This is another post"
-                                   (list)))))])
-      (with-input-from-file home
-        read)))
-  (set-blog-home! the-blog (path->string home))
-  the-blog)
+  (local [(define (log-missing-exn-handler exn)
+            (make-blog
+             (path->string home)
+             (list (make-post "First Post"
+                              "This is my first post"
+                              (list "First comment!"))
+                   (make-post "Second Post"
+                              "This is another post"
+                              (list)))))
+          (define the-blog
+            (with-handlers ([exn? log-missing-exn-handler])
+              (with-input-from-file home read)))]
+    (set-blog-home! the-blog (path->string home))
+    the-blog))
 
 ;; save-blog! : blog -> void
 ;; Saves the contents of a blog to its home
 (define (save-blog! a-blog)
-  (with-output-to-file (blog-home a-blog)
-    (lambda () (write a-blog))
-    #:exists 'replace))
+  (local [(define (write-to-blog)
+            (write a-blog))]
+    (with-output-to-file (blog-home a-blog) 
+      write-to-blog
+      #:exists 'replace)))
 
 ;; blog-insert-post!: blog string string -> void
 ;; Consumes a blog and a post, adds the post at the top of the blog.

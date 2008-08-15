@@ -14,13 +14,12 @@
 (define (initialize-blog! home)
   (define db (sqlite:open home))
   (define the-blog (make-blog db))
-  (with-handlers ([exn? (lambda (exn) (void))])
-    (sqlite:exec/ignore
-     db 
-     (string-append
-      "CREATE TABLE posts "
-      "(id INTEGER PRIMARY KEY,"
-      "title TEXT, body TEXT)"))
+  (with-handlers ([exn? void])
+    (sqlite:exec/ignore db
+                        (string-append
+                         "CREATE TABLE posts "
+                         "(id INTEGER PRIMARY KEY,"
+                         "title TEXT, body TEXT)"))
     (blog-insert-post!
      the-blog "First Post" "This is my first post")
     (blog-insert-post!
@@ -35,12 +34,15 @@
 ;; blog-posts : blog -> (listof post?)
 ;; Queries for the post ids
 (define (blog-posts a-blog)
-  (map (compose (lambda (n) (make-post a-blog n))
-                string->number
-                (lambda (v) (vector-ref v 0)))
-       (rest (sqlite:select 
-              (blog-db a-blog)
-              "SELECT id FROM posts"))))
+  (local [(define (row->post a-row)
+            (make-post a-blog (string->number (vector-ref a-row 0))))
+          (define rows (sqlite:select
+                        (blog-db a-blog)
+                        "SELECT id FROM posts"))]
+    (cond [(empty? rows)
+           empty]
+          [else
+           (map row->post (rest rows))])))
 
 ;; post-title : post -> string?
 ;; Queries for the title
@@ -67,14 +69,15 @@
 ;; post-comments : post -> (listof string?)
 ;; Queries for the comments
 (define (post-comments p)
-  (with-handlers ([exn? (lambda _ empty)])
-    (map 
-     (lambda (v) (vector-ref v 0))
-     (rest 
-      (sqlite:select
-       (blog-db (post-blog p))
-       (format "SELECT content FROM comments WHERE pid = '~a'"
-               (post-id p)))))))
+  (local [(define (row->comment a-row)
+            (vector-ref a-row 0))
+          (define rows (sqlite:select
+                        (blog-db (post-blog p))
+                        (format "SELECT content FROM comments WHERE pid = '~a'"
+                                (post-id p))))]
+    (cond
+      [(empty? rows) empty]
+      [else (map row->comment (rest rows))])))
 
 ;; blog-insert-post!: blog? string? string? -> void
 ;; Consumes a blog and a post, adds the post at the top of the blog.

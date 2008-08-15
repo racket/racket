@@ -812,21 +812,20 @@ Then, we'll make a function that allows our application to initialize the blog:
 @code:comment{initialize-blog! : path? -> blog}
 @code:comment{Reads a blog from a path, if not present, returns default}
 (define (initialize-blog! home)
-  (define the-blog
-    (with-handlers 
-        ([exn? (lambda (exn) 
-                 (make-blog
-                  (path->string home)
-                  (list (make-post "First Post" 
-                                   "This is my first post" 
-                                   (list "First comment!"))
-                        (make-post "Second Post" 
-                                   "This is another post"
-                                   (list)))))])
-      (with-input-from-file home
-        read)))
-  (set-blog-home! the-blog (path->string home))
-  the-blog)
+  (local [(define (log-missing-exn-handler exn)
+            (make-blog
+             (path->string home)
+             (list (make-post "First Post"
+                              "This is my first post"
+                              (list "First comment!"))
+                   (make-post "Second Post"
+                              "This is another post"
+                              (list)))))
+          (define the-blog
+            (with-handlers ([exn? log-missing-exn-handler])
+              (with-input-from-file home read)))]
+    (set-blog-home! the-blog (path->string home))
+    the-blog))
 ]
 
 @scheme[initialize-blog!] takes a path and tries to @scheme[read] from it. If the path contains
@@ -846,9 +845,11 @@ Next, we will need to write a function to save the model to the disk.
 @code:comment{save-blog! : blog -> void}
 @code:comment{Saves the contents of a blog to its home}
 (define (save-blog! a-blog)
-  (with-output-to-file (blog-home a-blog)
-    (lambda () (write a-blog))
-    #:exists 'replace))
+  (local [(define (write-to-blog)
+            (write a-blog))]
+    (with-output-to-file (blog-home a-blog) 
+      write-to-blog
+      #:exists 'replace)))
 ]
 
 @scheme[save-blog!] @scheme[write]s the model into its home .
@@ -987,7 +988,7 @@ We can now write the code to initialize a @scheme[blog] structure:
 (define (initialize-blog! home)
   (define db (sqlite:open home))
   (define the-blog (make-blog db))
-  (with-handlers ([exn? (lambda (exn) (void))])
+  (with-handlers ([exn? void])
     (sqlite:exec/ignore db
       (string-append
        "CREATE TABLE posts"
@@ -1059,11 +1060,15 @@ The only function that creates posts is @scheme[blog-posts]:
 @code:comment{blog-posts : blog -> (listof post?)}
 @code:comment{Queries for the post ids}
 (define (blog-posts a-blog)
-  (map (compose (lambda (n) (make-post a-blog n))
-                string->number
-                (lambda (v) (vector-ref v 0)))
-       (rest (sqlite:select (blog-db a-blog)
-                            "SELECT id FROM posts"))))
+  (local [(define (row->post a-row)
+            (make-post a-blog (string->number (vector-ref a-row 0))))
+          (define rows (sqlite:select
+                        (blog-db a-blog)
+                        "SELECT id FROM posts"))]
+    (cond [(empty? rows)
+           empty]
+          [else
+           (map row->post (rest rows))])))
 ]
 
 @scheme[sqlite:select] returns a list of vectors. The first element of the list is the name of the columns.
