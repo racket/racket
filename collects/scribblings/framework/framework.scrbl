@@ -6,7 +6,7 @@
 @title{@bold{Framework}: PLT GUI Application Framework}
 @(defmodule framework)
 
-@author["Robert Bruce Findler"]
+@author["Robert Bruce Findler" "Matthew Flatt"]
 
 The framework provides a number of mixins, classes and
 functions designed to help you build a complete application
