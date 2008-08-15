@@ -419,3 +419,15 @@ needs. They are provided by @filepath{private/util.ss}.
          string?]{
  @scheme[write]s @scheme[v] to a string and returns it.
 }
+
+@subsection{Bytes}
+
+@defproc[(read/bytes [b bytes?])
+         serializable?]{
+ @scheme[read]s a value from @scheme[b] and returns it.
+}
+
+@defproc[(write/bytes [v serializable?])
+         bytes?]{
+ @scheme[write]s @scheme[v] to a bytes and returns it.
+}

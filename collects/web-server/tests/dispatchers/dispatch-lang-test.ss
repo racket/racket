@@ -119,11 +119,7 @@
    
    (test-add-two-numbers
     "add04.ss - s/s/u"
-    (build-path example-servlets "add04.ss"))
-   
-   (test-add-two-numbers
-    "add05.ss - extract-proc/url and embed-proc/url"
-    (build-path example-servlets "add05.ss"))
+    (build-path example-servlets "add04.ss"))  
    
    (test-add-two-numbers
     "add06.ss - send/suspend/dispatch"
@@ -153,7 +149,8 @@
                   (let* ([d (mkd (build-path example-servlets "quiz01.ss"))]
                          [last
                           (foldl (lambda (_ k)
-                                   (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
+                                   (first ((sxpath "//form/@action/text()") 
+                                           (call d k (list (make-binding:form #"answer" #"0"))))))
                                  url0
                                  (build-list 7 (lambda (i) i)))])
                     (first ((sxpath "//h1/text()") (call d last (list (make-binding:form #"answer" #"0"))))))
@@ -163,7 +160,8 @@
                   (let* ([d (mkd (build-path example-servlets "quiz02.ss"))]
                          [last
                           (foldl (lambda (_ k)
-                                   (first ((sxpath "//form/@action/text()") (call d k (list (make-binding:form #"answer" #"0"))))))
+                                   (first ((sxpath "//form/@action/text()")
+                                           (call d k (list (make-binding:form #"answer" #"0"))))))
                                  url0
                                  (build-list 7 (lambda (i) i)))])
                     (first ((sxpath "//h1/text()") (call d last (list (make-binding:form #"answer" #"0"))))))

@@ -16,6 +16,7 @@
  the-undef
  activation-record-list
  current-saved-continuation-marks-and
+ kont-append-fun
  
  ;; "SERVLET" INTERFACE
  send/suspend
@@ -37,12 +38,12 @@
   (reverse
    (list* (cons key val)
           (filter (lambda (k*v) (not (equal? key (car k*v))))
-          (let-values ([(current)
-                        (continuation-mark-set->list (current-continuation-marks web-prompt)
-                                                     the-save-cm-key)])
-            (if (empty? current)
-                empty
-                (first current)))))))
+                  (let-values ([(current)
+                                (continuation-mark-set->list (current-continuation-marks web-prompt)
+                                                             the-save-cm-key)])
+                    (if (empty? current)
+                        empty
+                        (first current)))))))
 
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
@@ -128,6 +129,13 @@
            ; Restoring the web-cells is separate from the continuation
            (restore-web-cell-set! wcs)
            (resume current-marks x))))
+
+(define (kont-append-fun k f)
+  (define-values (wcs current-marks) ((kont-env k)))
+  (make-kont 
+   (lambda ()
+     (values wcs
+             (append current-marks (list (vector f #f)))))))
 
 ;; send/suspend: (continuation -> response) -> request
 ;; produce the current response and wait for the next request

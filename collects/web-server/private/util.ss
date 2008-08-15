@@ -28,7 +28,9 @@
  [exn->string ((or/c exn? any/c) . -> . string?)]
  [build-path-unless-absolute (path-string? path-string? . -> . path?)]
  [read/string (string? . -> . serializable?)]
- [write/string (serializable? . -> . string?)])
+ [write/string (serializable? . -> . string?)]
+ [read/bytes (bytes? . -> . serializable?)]
+ [write/bytes (serializable? . -> . bytes?)])
 
 (define (pretty-print-invalid-xexpr exn xexpr)
   (define code (exn:invalid-xexpr-code exn))
@@ -50,6 +52,13 @@
   (define str (open-output-string))
   (write v str)
   (get-output-string str))
+
+(define (read/bytes bs)
+  (read (open-input-bytes bs)))
+(define (write/bytes v)
+  (define by (open-output-bytes))
+  (write v by)
+  (get-output-bytes by))
 
 ; explode-path* : path? -> (listof path?)
 (define (explode-path* p)

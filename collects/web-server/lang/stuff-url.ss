@@ -1,50 +1,57 @@
-#lang scheme/base
-(require mzlib/contract
-         net/url
-         mzlib/serialize
+#lang scheme
+(require net/url
+         scheme/serialize
+         web-server/private/md5-store
+         web-server/private/gzip
          "../private/util.ss"
          "../private/url-param.ss"
          "../private/mod-map.ss")
 
-; XXX url: first try continuation, then turn into hash
-
-; XXX different ways to hash, different ways to store (maybe cookie?)
-
 (provide/contract
+ [url-too-big? (url? . -> . boolean?)]
  [stuff-url (serializable? url? . -> . url?)]
  [stuffed-url? (url? . -> . boolean?)]
  [unstuff-url (url? . -> . serializable?)])
 
-; XXX Abstract this
-(require mzlib/md5)
-(define (md5-store str)
-  (define hash (md5 (string->bytes/utf-8 str)))
-  (with-output-to-file
-      (build-path (find-system-path 'home-dir) ".urls" (format "~a" hash))
-    (lambda ()
-      (write str))
-    #:exists 'replace)
-  (bytes->string/utf-8 hash))
-(define (md5-lookup hash)
-  (with-input-from-file
-      (build-path (find-system-path 'home-dir) ".urls" (format "~a" hash))
-    (lambda () (read))))
+(define (url-too-big? uri)
+  ((string-length (url->string uri)) . > . 1024))
 
 ;; stuff-url: serial url -> url
 ;; encode in the url
-(define (stuff-url svl uri)
-  (define result-uri
-    (insert-param uri "c" (md5-store (write/string (compress-serial (serialize svl))))))
-  (when (> (string-length (url->string result-uri))
-           1024)
-    (error "the url is too big: " (url->string result-uri)))
-  result-uri)
+(require net/base64)
+(define (stuff-url c uri)
+  (let* ([cb (c->bytes c)]
+         [cb-uri (insert-param uri "c" (bytes->string/utf-8 (base64-encode cb)))])
+    (if (url-too-big? cb-uri)
+        (let* ([cc (gzip/bytes cb)]
+               [cc-uri (insert-param uri "cc" (bytes->string/utf-8 (base64-encode cc)))])
+          (if (url-too-big? cc-uri)
+              (let* ([hc (md5-store cc)]
+                     [hc-uri (insert-param uri "hc" (bytes->string/utf-8 hc))])
+                (if (url-too-big? hc-uri)
+                    (error 'stuff-url "Continuation too big: ~a" c)
+                    hc-uri))
+              cc-uri))
+        cb-uri)))
 
 (define (stuffed-url? uri)
-  (and (extract-param uri "c")
+  (and (or (extract-param uri "c")
+           (extract-param uri "cc")
+           (extract-param uri "hc"))
        #t))
+
+(define (c->bytes c)
+  (write/bytes (compress-serial (serialize c))))
+(define (bytes->c b)
+  (deserialize (decompress-serial (read/bytes b))))
 
 ;; unstuff-url: url -> serial
 ;; decode from the url and reconstruct the serial
-(define (unstuff-url req-url)
-  (deserialize (decompress-serial (read/string (md5-lookup (extract-param req-url "c"))))))
+(define (unstuff-url uri)
+  (cond
+    [(extract-param uri "c") 
+     => (compose bytes->c base64-decode string->bytes/utf-8)]
+    [(extract-param uri "cc")
+     => (compose bytes->c gunzip/bytes base64-decode string->bytes/utf-8)]
+    [(extract-param uri "hc")
+     => (compose bytes->c gunzip/bytes md5-lookup string->bytes/utf-8)]))

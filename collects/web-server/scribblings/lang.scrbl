@@ -134,18 +134,12 @@ by the Web language API.
  Note: The continuation is NOT stuffed.
 }
 
-@defproc[(embed-proc/url [k-url url?]
-                         [proc (request? . -> . any/c)])
-         url?]{
- Serializes and stuffs @scheme[proc] into @scheme[k-url]. For use with
- @scheme[extract-proc/url].
-}
-
-@defproc[(extract-proc/url [req request?])
+@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . response?)])
          any/c]{
- Inspects the URL of @scheme[req] and attempts to extract the procedure
- embedded with @scheme[embed-proc/url]. If successful, it is invoked with
- @scheme[req] as an argument.
+ Calls @scheme[make-response] with a function that, when called with a procedure from
+ @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
+ the function with the @scheme[request?] object and return the result to the caller of
+ @scheme[send/suspend/dispatch].
 }
 
 @; ------------------------------------------------------------
@@ -192,13 +186,11 @@ In the future, we will offer the facilities to:
 
 @defmodule[web-server/lang/web-extras]{The
 @schememodname[web-server/lang/web-extras] library provides
-@scheme[send/suspend/dispatch] and @scheme[redirect/get] as
-@schememodname[web-server/servlet/web], except they use
-@scheme[embed-proc/url] plus @scheme[extract-proc/url] and
-@scheme[send/suspend/url], respectively.}
+@scheme[redirect/get] as
+@schememodname[web-server/servlet/web] except it uses
+@scheme[send/suspend/url].}
 
 @deftogether[(
-@defform[(send/suspend/dispatch response-proc-expr)]
 @defproc[(redirect/get) request?]
 )]{
 

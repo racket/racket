@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang scheme
 (require net/url
          "../private/request-structs.ss"
          "../private/response-structs.ss"
@@ -9,7 +9,7 @@
          "web-param.ss"
          "file-box.ss"
          "web-extras.ss")
-(provide (except-out (all-from-out scheme/base) #%module-begin)
+(provide (except-out (all-from-out scheme) #%module-begin)
          (all-from-out net/url)
          (all-from-out "../private/request-structs.ss")
          (all-from-out "../private/response-structs.ss")
