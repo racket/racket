@@ -15,8 +15,8 @@ up a web server, how to generate dynamic web content, and how to
 interact with the user.
 
 The target audience for this tutorial are students who've gone through
-the design and use of structures in How to Design Programs, as well as
-use of higher-order functions, @scheme[local], and a minor bit of mutation.
+the design and use of structures in @link["http://htdp.org/"]{How to Design Programs}, with some 
+higher-order functions, @scheme[local], and a minor bit of mutation.
 
 @section{Getting Started}
 
@@ -128,7 +128,7 @@ vs:
 
 They both produce the same @scheme[html-response], but the latter is a lot
 easier to type and read.  We've been using the extended list
-abbreviation form described in Section 13 of How to Design Programs:
+abbreviation form described in @link["http://htdp.org/2003-09-26/Book/curriculum-Z-H-17.html#node_chap_13"]{Section 13} of @link["http://htdp.org/"]{How to Design Programs}:
 by using a leading forward quote mark to concisely represent the list
 structure, we can construct static html responses with aplomb.
 
@@ -952,7 +952,7 @@ Our next task is to employ an SQL database for the blog model. We'll be using SQ
 
 We now have the following bindings:
 
-@defthing[db? (any/c . -> . boolean?)]
+@defthing[sqlite:db? (any/c . -> . boolean?)]
 @defthing[sqlite:open (path? . -> . db?)]
 @defthing[sqlite:exec/ignore (db? string? . -> . void)]
 @defthing[sqlite:select (db? string? . -> . (listof vector?))]
