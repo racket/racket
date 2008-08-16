@@ -129,7 +129,7 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
 @defproc[(key-event? [x any]) boolean?]{
    is @scheme[x] a @tech{KeyEvent}}
 
-@defproc[(ke=? [x key-event?][y key-event?]) boolean?]{
+@defproc[(key=? [x key-event?][y key-event?]) boolean?]{
    compares two @tech{KeyEvent} for equality}
 
 @defproc[(on-key-event [change (-> (unsyntax @tech{World}) key-event? (unsyntax @tech{World}))]) true]{
@@ -143,11 +143,11 @@ A @tech{KeyEvent} represents key board events, e.g., keys pressed or
 (schemeblock
 (define (change w a-key-event)
   (cond
-    [(ke=? a-key-event 'left)  (world-go w -DELTA)]
-    [(ke=? a-key-event 'right) (world-go w +DELTA)]
+    [(key=? a-key-event 'left)  (world-go w -DELTA)]
+    [(key=? a-key-event 'right) (world-go w +DELTA)]
     [(char? a-key-event) w] ;; to demonstrate order-free checking 
-    [(ke=? a-key-event 'up)    (world-go w -DELTA)]
-    [(ke=? a-key-event 'down)  (world-go w +DELTA)]
+    [(key=? a-key-event 'up)    (world-go w -DELTA)]
+    [(key=? a-key-event 'down)  (world-go w +DELTA)]
     [else w]))
 ))
 
