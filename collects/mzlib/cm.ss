@@ -1,8 +1,9 @@
 (module cm scheme/base
   (require syntax/modcode
            syntax/modresolve
-	   setup/main-collects
-	   scheme/file)
+           setup/main-collects
+	   scheme/file
+           scheme/list)
 
   (provide make-compilation-manager-load/use-compiled-handler
 	   managed-compile-zo
@@ -83,9 +84,10 @@
 		(close-output-port out)))))))
 
   (define (write-deps code mode path external-deps)
-    (let ((dep-path (path-add-suffix (get-compilation-path mode path) #".dep"))
-          (deps (get-deps code path)))
-      (with-compile-output 
+    (let ([dep-path (path-add-suffix (get-compilation-path mode path) #".dep")]
+          [deps (remove-duplicates (get-deps code path))]
+          [external-deps (remove-duplicates external-deps)])
+      (with-compile-output
        dep-path
        (lambda (op)
 	 (write (cons (version)
