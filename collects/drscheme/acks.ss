@@ -35,6 +35,7 @@
      "Dave Gurnell, "
      "Bruce Hauman, "
      "Dave Herman, "
+     "Geoffrey S. Knauth, "
      "Mark Krentel, "
      "Shriram Krishnamurthi, "
      "Mario Latendresse, "
