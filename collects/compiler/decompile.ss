@@ -75,7 +75,7 @@
                 (if (null? stx-ids) null '(#%stx-array))
                 lift-ids)
                (map (lambda (stx id)
-                      `(define ,id (decode-stx ,(stx-encoded stx))))
+                      `(define ,id (#%decode-syntax ,(stx-encoded stx))))
                     stxs stx-ids)))]
     [else (error 'decompile-prefix "huh?: ~e" a-prefix)]))
 
@@ -174,11 +174,14 @@
     [(struct assign (id rhs undef-ok?))
      `(set! ,(decompile-expr id globs stack)
             ,(decompile-expr rhs globs stack))]
-    [(struct localref (unbox? offset flags))
+    [(struct localref (unbox? offset clear?))
      (let ([id (list-ref/protect stack offset)])
-       (if unbox?
-           `(#%unbox ,id)
-           id))]
+       (let ([e (if unbox?
+                    `(#%unbox ,id)
+                    id)])
+         (if clear?
+             `(#%sfs-clear ,e)
+             e)))]
     [(struct lam (name flags num-params rest? closure-map max-let-depth body))
      (let ([vars (for/list ([i (in-range num-params)]) (gensym 'arg))]
            [rest-vars (if rest? (list (gensym 'rest)) null)])
@@ -240,8 +243,8 @@
                   (decompile-expr rand globs stack))
                 rands)))]
     [(struct apply-values (proc args-expr))
-     `(apply-values ,(decompile-expr proc globs stack) 
-                    ,(decompile-expr args-expr globs stack))]
+     `(#%apply-values ,(decompile-expr proc globs stack) 
+                      ,(decompile-expr args-expr globs stack))]
     [(struct sequence (exprs))
      `(begin ,@(for/list ([expr (in-list exprs)])
                  (decompile-expr expr globs stack)))]
@@ -254,7 +257,7 @@
           ,(decompile-expr val globs stack)
           ,(decompile-expr body globs stack))]
     [(struct closure (lam gen-id))
-     `(CLOSED ,gen-id ,(decompile-expr lam globs stack))]
+     `(#%closed ,gen-id ,(decompile-expr lam globs stack))]
     [(struct indirect (val))
      (if (closure? val)
          (closure-gen-id val)
