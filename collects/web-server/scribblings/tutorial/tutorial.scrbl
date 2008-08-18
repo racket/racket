@@ -1172,6 +1172,95 @@ Third, to run your server, you can either press @onscreen{Run} in DrScheme, or t
 @scheme[serve/servlet] takes other options and there are more advanced ways of starting the Web Server,
 but you'll have to refer to the PLT Web Server Reference Manual for details.
 
+@section{Using HTTPS}
+
+This final task that we'll cover is using the server in HTTPS mode.
+This requires an SSL certificate and private key. This is very platform specific, but we will provide
+the details for using OpenSSL on UNIX:
+
+@commandline{openssl genrsa -des3 -out host.key 1024}
+
+This will generate a new private key, but it will have a passphrase on it. You can remove this via:
+
+@commandline{openssl rsa -in host.key -out host.key}
+@commandline{chmod 400 host.key}
+
+Now, we generate a self-signed certificate:
+
+@commandline{openssl req -new -x509 -nodes -sha1 -days 365 -key host.key > host.cert}
+
+(Each certificate authority has different instructions for generating certificate signing requests.)
+
+If we move these files into our home directory:
+@commandline{mv host.key host.cert ~/}
+
+We can now start the server with the following incantation:
+
+@(require (for-label scheme/unit)
+          (for-label net/ssl-tcp-unit)
+          (for-label net/tcp-sig)
+          (for-label net/tcp-unit)
+          (for-label web-server/web-server)
+          (for-label web-server/web-server-unit)
+          (for-label web-server/web-server-sig)
+          (for-label web-server/web-config-sig)
+          (for-label web-server/web-config-unit)
+          (for-label web-server/configuration/namespace))
+
+@schememod[
+scheme
+
+@code:comment{Load the appropriate libraries to reimplement server}
+(require scheme/unit
+         net/ssl-tcp-unit
+         net/tcp-sig
+         net/tcp-unit
+         web-server/web-server
+         web-server/web-server-unit
+         web-server/web-server-sig
+         web-server/web-config-sig
+         web-server/web-config-unit
+         web-server/configuration/namespace)
+
+@code:comment{Define the necessary parameters.}
+(define port-no 8443)
+(define SSL-path (find-system-path 'home-dir))
+
+@code:comment{Load the standard configuration file, but augment the port.}
+(define configuration
+  (configuration-table-sexpr->web-config@
+   (build-path (collection-path "web-server")
+               "default-web-root"
+               "configuration-table.ss")
+   #:port port-no))
+
+@code:comment{The configuration is a unit and this lets us treat it as one.}
+(define-unit-binding config@ configuration
+  (import) (export web-config^))
+
+@code:comment{This loads the SSL TCP interface with the appropriate keys.}
+(define-unit-binding ssl-tcp@
+  (make-ssl-tcp@ (build-path SSL-path "host.cert")
+                 (build-path SSL-path "host.key")
+                 #f #f #f #f #f)
+  (import) (export tcp^))
+
+@code:comment{Combine the configuration with the TCP interface to get a server!}
+(define-compound-unit/infer ssl-server@
+  (import)
+  (link ssl-tcp@ config@ web-server@)
+  (export web-server^))
+
+@code:comment{Invoke the server to get at what it provides.}
+(define-values/invoke-unit/infer ssl-server@)
+
+@code:comment{Run the server.}
+(serve)
+(do-not-return)
+]
+
+This is, admittedly, not the simplest imaginable way of setting up a server, but it gets the job done. 
+
 @section{Moving Forward}
 
 As you move forward on your own applications, you may find many useful packages on PLaneT. There are interfaces to other
