@@ -35,7 +35,7 @@
 (define-form-struct let-rec (procs body)) ; put `letrec'-bound closures into existing stack slots
 (define-form-struct boxenv (pos body)) ; box existing stack element
 
-(define-form-struct localref (unbox? offset flags)) ; access local via stack
+(define-form-struct localref (unbox? offset clear?)) ; access local via stack
 
 (define-form-struct toplevel (depth pos flags))  ; access binding via prefix array (which is on stack)
 (define-form-struct topsyntax (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
@@ -408,6 +408,10 @@
          [reader (get-reader type)])
     (reader l)))
 
+(define (make-local unbox? pos flags)
+  (define SCHEME_LOCAL_CLEAR_ON_READ #x01)
+  (make-localref unbox? pos (positive? (bitwise-and flags SCHEME_LOCAL_CLEAR_ON_READ))))
+
 (define (a . << . b)
   (arithmetic-shift a b))
 
@@ -482,7 +486,7 @@
                   [flags (if (< p* 0)
                              (read-compact-number cp)
                              0)])
-             (make-localref #t p flags))]
+             (make-local #t p flags))]
           [(path)
            (let* ([p (bytes->path (read-compact-bytes cp (read-compact-number cp)))])
              (if (relative-path? p)
@@ -527,12 +531,12 @@
            (let ([c (read-compact-number cp)]
                  [unbox? (eq? cpt-tag 'local-unbox)])
              (if (negative? c)
-                 (make-localref unbox? (- (add1 c)) (read-compact-number cp))
-                 (make-localref unbox? c 0)))]
+                 (make-local unbox? (- (add1 c)) (read-compact-number cp))
+                 (make-local unbox? c 0)))]
           [(small-local)
-           (make-localref #f (- ch cpt-start) 0)]
+           (make-local #f (- ch cpt-start) 0)]
           [(small-local-unbox)
-           (make-localref #t (- ch cpt-start) 0)]
+           (make-local #t (- ch cpt-start) 0)]
           [(small-symbol)
            (let ([l (- ch cpt-start)])
              (string->symbol (read-compact-chars cp l)))]
