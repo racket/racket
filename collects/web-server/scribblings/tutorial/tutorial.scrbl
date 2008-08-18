@@ -940,8 +940,8 @@ grow, we will have to deal with concurrency issues, the lack of a simply query l
 So, in the next section, we'll talk about how to use an SQL database to store our blog model.
 
 @section{Using an SQL database}
-@declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-10
-                                  web-server/scribblings/tutorial/examples/model-3
+@declare-exporting[#:use-sources (web-server/scribblings/tutorial/examples/iteration-9
+                                  web-server/scribblings/tutorial/examples/model-2
                                   web-server/scribblings/tutorial/dummy-sqlite)]
 @(require (for-label web-server/scribblings/tutorial/dummy-sqlite))
 @;@(require (prefix-in sqlite: (for-label (planet jaymccarthy/sqlite:3/sqlite))))
