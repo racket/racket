@@ -533,7 +533,7 @@ the user add new comments.
 Here's a diagram of a simple page flow of our web application that
 should let us add comments.
 
-@image{scribblings/tutorial/images/Flow1.png}
+@image{scribblings/tutorial/images/flow1.png}
 
 Each point in the diagram corresponds to a request-consuming handler.
 As we might suspect, we'll be using @scheme[send/suspend/dispatch] some more.
@@ -565,7 +565,7 @@ Here's a diagram of a our revised page flow of our web application.
 Maybe we can just add a BACK link from the @scheme[render-post-detail-page]
 that gets us back to viewing the top-level blog.
 
-@image{scribblings/tutorial/images/Flow2.png}
+@image{scribblings/tutorial/images/flow2.png}
 
 @bold{Exercise.} Adjust @scheme[render-post-detail-page] to include another link that goes
 back to @scheme[render-blog-page].
@@ -574,7 +574,7 @@ To make this more interesting, maybe we should enrich the flow a
 bit more.  We can give the user a choice right before committing to
 their comment.  Who knows?  They may have a change of heart.
 
-@image{scribblings/tutorial/images/Flow3.png}
+@image{scribblings/tutorial/images/flow3.png}
 
 Although this seems complicated, the shape of our handlers will look
 more-or-less like what we had before.  After we've added all the
