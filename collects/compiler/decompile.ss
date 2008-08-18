@@ -248,6 +248,11 @@
     [(struct beg0 (exprs))
      `(begin0 ,@(for/list ([expr (in-list exprs)])
                   (decompile-expr expr globs stack)))]
+    [(struct with-cont-mark (key val body))
+     `(with-continuation-mark
+          ,(decompile-expr key globs stack)
+          ,(decompile-expr val globs stack)
+          ,(decompile-expr body globs stack))]
     [(struct closure (lam gen-id))
      `(CLOSED ,gen-id ,(decompile-expr lam globs stack))]
     [(struct indirect (val))
