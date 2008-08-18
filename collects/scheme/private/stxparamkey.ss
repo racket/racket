@@ -34,7 +34,7 @@
 	(syntax-case stx ()
 	  [(set! id _expr) 
 	   (free-identifier=? #'set! set!-stx)
-	   (syntax/loc stx (set! target expr))]
+	   (syntax/loc stx (set! target _expr))]
 	  [(id . rest)
 	   (let ([v (syntax (target . rest))])
 	     (datum->syntax
