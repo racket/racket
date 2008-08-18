@@ -1062,7 +1062,10 @@ The only function that creates posts is @scheme[blog-posts]:
 @code:comment{Queries for the post ids}
 (define (blog-posts a-blog)
   (local [(define (row->post a-row)
-            (make-post a-blog (string->number (vector-ref a-row 0))))
+            (make-post 
+             a-blog
+             (string->number
+              (vector-ref a-row 0))))
           (define rows (sqlite:select
                         (blog-db a-blog)
                         "SELECT id FROM posts"))]
