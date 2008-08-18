@@ -210,6 +210,20 @@ HTTP responses.
  As with @scheme[response/basic], except with @scheme[generator] as a function that is
  called to generate the response body, by being given an @scheme[output-response] function
  that outputs the content it is called with.
+ 
+ Here is a short example:
+ @schemeblock[
+  (make-response/incremental
+    200 "OK" (current-seconds)
+    #"application/octet-stream"
+    (list (make-header #"Content-Disposition"
+                       #"attachement; filename=\"file\""))
+    (lambda (send/bytes)
+      (send/bytes #"Some content")
+      (send/bytes)
+      (send/bytes #"Even" #"more" #"content!")
+      (send/bytes "No we're done")))
+ ]
 }
 
 @defproc[(response? [v any/c])

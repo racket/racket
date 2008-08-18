@@ -65,7 +65,7 @@ Second, if you want to make your own Scheme start-up script, you can write:
 (_start-server)
 ]
 
-@section{How do I set up the server to use HTTPS?}
+@section[#:tag "faq:https"]{How do I set up the server to use HTTPS?}
 
 The essence of the solution to this problem is to use an SSL TCP implementation as provided by @schememodname[net/ssl-tcp-unit]. Many of the functions that start the Web Server are parameterized by a @scheme[tcp@] unit. If you pass an SSL unit, then the server will be serving HTTPS. However, to do this, you must write your own start up script. Here's a simple example:
 

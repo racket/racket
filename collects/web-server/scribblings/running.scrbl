@@ -92,6 +92,8 @@ dispatcher. See @filepath{run.ss} for an example of such a script.
          (-> void)]{
  Constructs an appropriate @scheme[dispatch-config^], invokes the
  @scheme[dispatch-server@], and calls its @scheme[serve] function.
+ 
+ The @scheme[#:tcp@] keyword is provided for building an SSL server. See @secref["faq:https"].
 }
 
 @; XXX Not the right `server' above.
@@ -134,6 +136,7 @@ from a given path:
  Calls @scheme[serve/ports] multiple times, once for each @scheme[ip], and returns
  a function that shuts down all of the server instances.
 }
+                  
 
 @defproc[(do-not-return) void]{
  This function does not return. If you are writing a script to load the @web-server
