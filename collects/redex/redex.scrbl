@@ -607,12 +607,14 @@ all non-GUI portions of Redex) and also exported by
 
 @defform/subs[#:literals (--> fresh side-condition where) 
               (reduction-relation language reduction-case ...)
-              ((reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...))
-               (extras name
+              ([reduction-case (--> #, @|ttpattern| #, @|tttterm| extras ...)]
+               [extras name
                        (fresh fresh-clause ...)
                        (side-condition scheme-expression ...)
-                       (where tl-pat #, @|tttterm|))
-               (fresh-clause var ((var1 ...) (var2 ...))))]{
+                       (where tl-pat #, @|tttterm|)]
+                [fresh-clause var ((var1 ...) (var2 ...))]
+                [tl-pat identifier (tl-pat-ele ...)]
+                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 Defines a reduction relation casewise, one case for each of the
 clauses beginning with @scheme[-->]. Each of the @scheme[pattern]s
@@ -811,10 +813,14 @@ all non-GUI portions of Redex) and also exported by
 @defform/subs[#:literals (: ->)
               (define-metafunction language-exp
                contract
-               [(name #, @|ttpattern| ...) #, @|tttterm| (side-condition scheme-expression) ...] 
+               [(name #, @|ttpattern| ...) #, @|tttterm| extras ...] 
                ...)
                ([contract (code:line) 
-                          (code:line id : #, @|ttpattern| ... -> #, @|ttpattern|)])]{
+                          (code:line id : #, @|ttpattern| ... -> #, @|ttpattern|)]
+                [extras (side-condition scheme-expression)
+                        (where tl-pat #, @|tttterm|)]
+                [tl-pat identifier (tl-pat-ele ...)]
+                [tl-pat-ele tl-pat (code:line tl-pat ... (code:comment "a literal ellipsis"))])]{
 
 The @scheme[define-metafunction] form builds a function on
 sexpressions according to the pattern and right-hand-side

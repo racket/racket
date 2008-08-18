@@ -397,8 +397,16 @@
     (define-metafunction empty-language
       [(f (number_1 number_2))
        number_3
-       (where number_3 (+ (term number_1) (term number_2)))])
+       (where number_3 ,(+ (term number_1) (term number_2)))])
     (test (term (f (11 17))) 28))
+  
+  (let ()
+    (define-metafunction empty-language
+      [(f variable) 
+       (x x)
+       (where x (variable variable))])
+    (test (term (f z)) 
+          (term ((z z) (z z)))))
   
   (let ()
     (define-language x-lang
