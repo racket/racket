@@ -1827,6 +1827,13 @@
               (void)))
         count))
 
+;; Letrec must allocate early, though:
+(test #f 'letrec+call/cc
+      (letrec ((x (call-with-current-continuation list)))
+        (if (pair? x)
+            ((car x) (lambda () x))
+            (pair? (x)))))
+
 (arity-test call/cc 1 2)
 (arity-test call/ec 1 1)
 (err/rt-test (call/cc 4))

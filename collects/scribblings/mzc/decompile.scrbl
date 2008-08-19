@@ -32,8 +32,7 @@ Many forms in the decompiled code, such as @scheme[module],
  variable will be defined before the access.
 
  Uses of core primitives are shown without a leading @litchar{_}, and
- they are never wrapped with @schemeidfont{#%checked}. Applications of
- some primitives are inlined by the JIT compiler.}
+ they are never wrapped with @schemeidfont{#%checked}.}
 
  @item{Local-variable access may be wrapped with
  @schemeidfont{#%sfs-clear}, which indicates that the variable-stack
@@ -69,6 +68,12 @@ Many forms in the decompiled code, such as @scheme[module],
  binding corresponds to a constant closure value that is shared, and
  it may even contain cyclic references to itself or other constant
  closures.}
+
+ @item{Some applications of core primitives are annotated with
+ @schemeidfont{#%in}, which indicates that the JIT compiler will
+ inline the operation. (Inlining information is not part of the
+ bytecode, but is instead based on an enumeration of primitives that
+ the JIT is known to handle specially.)}
 
  @item{A form @scheme[(#%apply-values _proc _expr)] is equivalent to
  @scheme[(call-with-values (lambda () _expr) _proc)], but the run-time
