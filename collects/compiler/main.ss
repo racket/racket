@@ -130,6 +130,9 @@
       [("--expand")
        ,(lambda (f) 'expand)
        ((,(format "Write macro-expanded Scheme source(s) to stdout") ""))]
+      [("--decompile")
+       ,(lambda (f) 'decompile)
+       ((,(format "Write quasi-Scheme for ~a file(s) to stdout" (extract-suffix append-zo-suffix)) ""))]
       [("-z" "--zo")
        ,(lambda (f) 'zo)
        ((,(format "Output ~a file(s) from Scheme source(s)" (extract-suffix append-zo-suffix)) ""))]
@@ -444,6 +447,19 @@
                   (unless (eof-object? e)
                     (pretty-print (syntax->datum (expand e)))
                     (loop))))))))))]
+  [(decompile)
+   (let ([zo-parse (dynamic-require 'compiler/zo-parse 'zo-parse)]
+         [decompile (dynamic-require 'compiler/decompile 'decompile)])
+     (for ([zo-file source-files])
+       (let ([zo-file (path->complete-path zo-file)])
+         (let-values ([(base name dir?) (split-path zo-file)])
+           (parameterize ([current-load-relative-directory base])
+             (pretty-print
+              (decompile
+               (call-with-input-file*
+                zo-file
+                (lambda (in)
+                  (zo-parse in))))))))))]
   [(make-zo)
    (let ([n (make-base-empty-namespace)]
          [mc (dynamic-require 'mzlib/cm 'managed-compile-zo)]

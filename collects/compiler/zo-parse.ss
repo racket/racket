@@ -37,7 +37,7 @@
 
 (define-form-struct localref (unbox? offset clear?)) ; access local via stack
 
-(define-form-struct toplevel (depth pos flags))  ; access binding via prefix array (which is on stack)
+(define-form-struct toplevel (depth pos const? mutated?))  ; access binding via prefix array (which is on stack)
 (define-form-struct topsyntax (depth pos midpt)) ; access syntax object via prefix array (which is on stack)
 
 (define-form-struct application (rator rands)) ; function call
@@ -67,12 +67,15 @@
 ;; Bytecode unmarshalers for various forms
 
 (define (read-toplevel v)
-  (define toplevel-flags-mask 3)
+  (define SCHEME_TOPLEVEL_CONST #x01)
+  (define SCHEME_TOPLEVEL_MUTATED #x02)
   (match v
     [(cons depth (cons pos flags))
-     (make-toplevel depth pos (bitwise-and flags toplevel-flags-mask))]
+     (make-toplevel depth pos 
+                    (positive? (bitwise-and flags SCHEME_TOPLEVEL_CONST))
+                    (positive? (bitwise-and flags SCHEME_TOPLEVEL_MUTATED)))]
     [(cons depth pos)
-     (make-toplevel depth pos 0)]))
+     (make-toplevel depth pos #f #f)]))
 
 (define (read-topsyntax v)
   (match v
@@ -112,13 +115,17 @@
      (let ([rest? (positive? (bitwise-and flags CLOS_HAS_REST))])
        (let-values ([(closure-size closed-over body)
                      (if (zero? (bitwise-and flags CLOS_HAS_REF_ARGS))
-                         (values #f v rest)
+                         (values (vector-length v) v rest)
                          (values v (car rest) (cdr rest)))])
          (make-lam name
                    flags
                    ((if rest? sub1 values) num-params)
                    rest?
-                   closed-over
+                   (if (= closure-size (vector-length closed-over))
+                       closed-over
+                       (let ([v2 (make-vector closure-size)])
+                         (vector-copy! v2 0 closed-over 0 closure-size)
+                         v2))
                    max-let-depth
                    body)))]))
 
@@ -252,6 +259,7 @@
     [(14) 'with-cont-mark-type]
     [(15) 'quote-syntax-type]
     [(24) 'variable-type]
+    [(25) 'module-variable-type]
     [(96) 'case-lambda-sequence-type]
     [(97) 'begin0-sequence-type]
     [(100) 'module-type]
@@ -271,6 +279,7 @@
     (cons 'with-cont-mark-type read-with-cont-mark)
     (cons 'quote-syntax-type read-topsyntax)
     (cons 'variable-type read-variable)
+    (cons 'module-variable-type read-variable)
     (cons 'compilation-top-type read-compilation-top)
     (cons 'case-lambda-sequence-type read-case-lambda)
     (cons 'begin0-sequence-type read-sequence)
@@ -625,7 +634,8 @@
 (define (zo-parse port)
   (begin-with-definitions    
    ;; skip the "#~"
-   (read-bytes 2 port)
+   (unless (equal? #"#~" (read-bytes 2 port))
+     (error 'zo-parse "not a bytecode stream"))
    
    (define version (read-bytes (min 63 (read-byte port)) port))
    

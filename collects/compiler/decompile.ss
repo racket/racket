@@ -33,20 +33,18 @@
   #;
   (if (pos . < . (length l))
       (list-ref l pos)
-      'OUT-OF-BOUNDS))
+      `(OUT-OF-BOUNDS ,pos ,l)))
 
 ;; ----------------------------------------
 
 ;; Main entry:
 (define (decompile top)
   (match top
-    [(struct compilation-top (_ prefix (and (? mod?) mod)))
-     (decompile-module mod)]
     [(struct compilation-top (_ prefix form))
      (let-values ([(globs defns) (decompile-prefix prefix)])
        `(begin
           ,@defns
-          ,(decompile-form form globs '(#%prefix))))]
+          ,(decompile-form form globs '(#%globals))))]
     [else (error 'decompile "unrecognized: ~e" top)]))
 
 (define (decompile-prefix a-prefix)
@@ -59,13 +57,15 @@
        (values (append 
                 (map (lambda (tl)
                        (match tl
-                         [(struct global-bucket (name)) name]
+                         [(? symbol?) '#%linkage]
+                         [(struct global-bucket (name)) 
+                          (string->symbol (format "_~a" name))]
                          [(struct module-variable (modidx sym pos phase))
                           (if (and (module-path-index? modidx)
                                    (let-values ([(n b) (module-path-index-split modidx)])
                                      (and (not n) (not b))))
-                              sym
-                              (string->symbol (format "~s@~s~a" sym (mpi->string modidx) 
+                              (string->symbol (format "_~a" sym))
+                              (string->symbol (format "_~s@~s~a" sym (mpi->string modidx) 
                                                       (if (zero? phase)
                                                           ""
                                                           (format "/~a" phase)))))]
@@ -84,26 +84,29 @@
    [(symbol? modidx) modidx]
    [else (collapse-module-path-index modidx (current-directory))]))
 
-(define (decompile-module mod-form)
+(define (decompile-module mod-form stack)
   (match mod-form
     [(struct mod (name self-modidx prefix provides requires body syntax-body))
-     (let-values ([(globs defns) (decompile-prefix prefix)])
+     (let-values ([(globs defns) (decompile-prefix prefix)]
+                  [(stack) (append '(#%modvars) stack)])
        `(module ,name ....
           ,@defns
           ,@(map (lambda (form)
-                   (decompile-form form globs '(#%prefix)))
+                   (decompile-form form globs stack))
                  syntax-body)
           ,@(map (lambda (form)
-                   (decompile-form form globs '(#%prefix)))
+                   (decompile-form form globs stack))
                  body)))]
     [else (error 'decompile-module "huh?: ~e" mod-form)]))
 
 (define (decompile-form form globs stack)
   (match form
+    [(? mod?)
+     (decompile-module form stack)]
     [(struct def-values (ids rhs))
      `(define-values ,(map (lambda (tl)
                              (match tl
-                               [(struct toplevel (depth pos flags))
+                               [(struct toplevel (depth pos const? mutated?))
                                 (list-ref/protect globs pos)]))
                            ids)
         ,(decompile-expr rhs globs stack))]
@@ -112,13 +115,13 @@
         ,(let-values ([(globs defns) (decompile-prefix prefix)])
            `(let ()
               ,@defns
-              ,(decompile-expr rhs globs '(#%prefix)))))]
+              ,(decompile-expr rhs globs '(#%globals)))))]
     [(struct def-for-syntax (ids rhs prefix max-let-depth))
      `(define-values-for-syntax ,ids
         ,(let-values ([(globs defns) (decompile-prefix prefix)])
            `(let ()
              ,@defns
-             ,(decompile-expr rhs globs '(#%prefix)))))]
+             ,(decompile-expr rhs globs '(#%globals)))))]
     [(struct sequence (forms))
      `(begin ,@(map (lambda (form)
                       (decompile-form form globs stack))
@@ -165,8 +168,11 @@
              
 (define (decompile-expr expr globs stack)
   (match expr
-    [(struct toplevel (depth pos flags))
-     (list-ref/protect globs pos)]
+    [(struct toplevel (depth pos const? mutated?))
+     (let ([id (list-ref/protect globs pos)])
+       (if const?
+           id
+           `(#%checked ,id)))]
     [(struct topsyntax (depth pos midpt))
      (list-ref/protect globs (+ midpt pos))]
     [(struct primitive (id))
@@ -183,19 +189,23 @@
              `(#%sfs-clear ,e)
              e)))]
     [(struct lam (name flags num-params rest? closure-map max-let-depth body))
-     (let ([vars (for/list ([i (in-range num-params)]) (gensym 'arg))]
-           [rest-vars (if rest? (list (gensym 'rest)) null)])
+     (let ([vars (for/list ([i (in-range num-params)]) 
+                   (gensym (format "arg~a-" i)))]
+           [rest-vars (if rest? (list (gensym 'rest)) null)]
+           [captures (map (lambda (v)
+                            (list-ref/protect stack v))
+                          (vector->list closure-map))])
        `(lambda (,@vars . ,(if rest?
                                (car rest-vars)
                                null))
           ,@(if name
                 `(',name)
                 null)
-          ,(decompile-expr body globs (append
-                                       (map (lambda (v)
-                                              (list-ref/protect stack v))
-                                            (vector->list closure-map))
-                                       (append vars rest-vars)))))]
+          ,@(if (null? captures)
+                null
+                `('(captures: ,@captures)))
+          ,(decompile-expr body globs (append captures
+                                              (append vars rest-vars)))))]
     [(struct let-one (rhs body))
      (let ([id (or (extract-id rhs)
                    (gensym 'local))])
