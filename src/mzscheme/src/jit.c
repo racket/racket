@@ -2287,6 +2287,25 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
   return 0;
 }
 
+static int generate_nontail_self_setup(mz_jit_state *jitter)
+{
+  void *pp, **pd;
+  pp = jit_patchable_movi_p(JIT_R2, jit_forward());
+  pd = (void **)scheme_malloc(2 * sizeof(void *));
+  pd[0] = pp;
+  pd[1] = jitter->patch_depth;
+  jitter->patch_depth = pd;
+  (void)jit_patchable_movi_p(JIT_R0, jitter->self_nontail_code);
+#ifdef JIT_PRECISE_GC
+  /* Get this closure's pointer from the run stack */
+  {
+    int depth = jitter->depth + jitter->extra_pushed - 1;
+    jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(depth));
+  }
+#endif
+  return 0;
+}
+
 static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
 			mz_jit_state *jitter, int is_tail, int multi_ok)
 {
@@ -2542,8 +2561,12 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     } else {
       if (direct_prim)
 	generate_direct_prim_non_tail_call(jitter, num_rands, multi_ok, 0);
-      else
+      else {
+        if (nontail_self) {
+          generate_nontail_self_setup(jitter);
+        }
 	generate_non_tail_call(jitter, num_rands, direct_native, jitter->need_set_rs, multi_ok, nontail_self, 0);
+      }
     }
   } else {
     /* Jump to code to implement a tail call for num_rands arguments */
@@ -2579,20 +2602,7 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       code = shared_non_tail_code[dp][num_rands][mo];
 
       if (nontail_self) {
-        void *pp, **pd;
-        pp = jit_patchable_movi_p(JIT_R2, jit_forward());
-        pd = (void **)scheme_malloc(2 * sizeof(void *));
-        pd[0] = pp;
-        pd[1] = jitter->patch_depth;
-        jitter->patch_depth = pd;
-        (void)jit_patchable_movi_p(JIT_R0, jitter->self_nontail_code);
-#ifdef JIT_PRECISE_GC
-        /* Get this closure's pointer from the run stack */
-        {
-          int depth = jitter->depth + jitter->extra_pushed - 1;
-          jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(depth));
-        }
-#endif
+        generate_nontail_self_setup(jitter);
       }
 
       (void)jit_calli(code);
