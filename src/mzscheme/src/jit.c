@@ -6578,7 +6578,7 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
     for (i = 0; i < 3; i++) {
       void *code, *code_end;
       int kind, for_branch;
-      jit_insn *ref, *ref2, *refslow, *bref1, *bref2, *bref3, *bref4, *bref5, *bref6;
+      jit_insn *ref, *ref2, *refslow, *bref1, *bref2, *bref3, *bref4, *bref5, *bref6, *bref8;
 
       code = jit_get_ip().ptr;
 
@@ -6655,16 +6655,22 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       if (kind == 1) {
 	bref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
 	jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+        __START_INNER_TINY__(1);
 	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+        __END_INNER_TINY__(1);
 	bref2 = jit_bnei_i(jit_forward(), JIT_R2, scheme_proc_struct_type);
       } else {
 	(void)jit_bmsi_ul(refslow, JIT_R0, 0x1);
 	jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+        __START_INNER_TINY__(1);
 	ref2 = jit_beqi_i(jit_forward(), JIT_R2, scheme_structure_type);
+        __END_INNER_TINY__(1);
 	(void)jit_bnei_i(refslow, JIT_R2, scheme_proc_struct_type);
 	bref1 = bref2 = NULL;
       }
+      __START_INNER_TINY__(1);
       mz_patch_branch(ref2);
+      __END_INNER_TINY__(1);
       CHECK_LIMIT();
 
       /* Put argument struct type in R2, target struct type in V1 */
@@ -6674,6 +6680,14 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
 	jit_ldxi_p(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->struct_type);
       }
       CHECK_LIMIT();
+
+      /* common case: types are the same */
+      if (kind == 2) {
+        __START_INNER_TINY__(1);
+        bref8 = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1);
+        __END_INNER_TINY__(1);
+      } else
+        bref8 = NULL;
 
       jit_ldxi_i(JIT_R2, JIT_R2, &((Scheme_Struct_Type *)0x0)->name_pos);
       jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Struct_Type *)0x0)->name_pos);
@@ -6740,6 +6754,9 @@ static int do_generate_common(mz_jit_state *jitter, void *_data)
       } else {
 	(void)jit_bner_p(refslow, JIT_R2, JIT_V1);
 	bref4 = NULL;
+        __START_INNER_TINY__(1);
+        mz_patch_branch(bref8);
+        __END_INNER_TINY__(1);
 	/* Extract field */
 	jit_ldxi_p(JIT_V1, JIT_R1, &((Scheme_Primitive_Closure *)0x0)->val);
 	jit_ldxi_i(JIT_V1, JIT_V1, &((Struct_Proc_Info *)0x0)->field);
