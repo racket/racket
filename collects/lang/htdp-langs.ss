@@ -39,7 +39,7 @@
            stepper/private/shared
            
            (only-in test-engine/scheme-gui make-formatter)
-           (only-in test-engine/scheme-tests scheme-test-data test-format test-execute)
+           (only-in test-engine/scheme-tests scheme-test-data scheme-error-handler test-format test-execute)
            (lib "test-engine/test-display.scm")
            )
   
@@ -176,6 +176,7 @@
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
+                 (scheme-error-handler teaching-languages-error-display-handler)
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40))))
                  )))

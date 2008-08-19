@@ -38,14 +38,14 @@
 
 (define-struct check-fail (src))
 
-;; (make-unexpected-error src string)
-(define-struct (unexpected-error check-fail) (expected message))
+;; (make-unexpected-error src string exn)
+(define-struct (unexpected-error check-fail) (expected message exn))
 ;; (make-unequal src scheme-val scheme-val)
 (define-struct (unequal check-fail) (test actual))
 ;; (make-outofrange src scheme-val scheme-val inexact)
 (define-struct (outofrange check-fail) (test actual range))
-;; (make-incorrect-error src string)
-(define-struct (incorrect-error check-fail) (expected message))
+;; (make-incorrect-error src string exn)
+(define-struct (incorrect-error check-fail) (expected message exn))
 ;; (make-expected-error src string scheme-val)
 (define-struct (expected-error check-fail) (message value))
 
@@ -158,13 +158,14 @@
                                  (lambda (e)
                                    (or (equal? (exn-message e) error)
                                        (make-incorrect-error src error
-                                                             (exn-message e))))])
+                                                             (exn-message e) e)))])
                   (let ([test-val (test)])
                     (make-expected-error src error test-val)))])
     (if (check-fail? result)
         (begin
           (send (send test-info get-info) check-failed
-                (check->message result) (check-fail-src result))
+                (check->message result) (check-fail-src result)
+                (and (incorrect-error? result) (incorrect-error-exn result)))
           (list 'check-error-failed 
                 (if (expected-error? result)
                     (expected-error-message result)
@@ -185,16 +186,17 @@
 ;;                (scheme-val scheme-val scheme-val -> check-fail)
 ;;                ( -> scheme-val) scheme-val scheme-val object symbol? -> void
 (define (run-and-check check maker test expect range src test-info kind)
-  (match-let ([(list result result-val)
+  (match-let ([(list result result-val exn?)
                (with-handlers ([exn? (lambda (e)
+                                       #;((error-display-handler) (exn-message e) e)
                                        (list (make-unexpected-error src expect
-                                                                    (exn-message e)) 'error))])
+                                                                    (exn-message e) e) 'error e))])
                  (let ([test-val (test)])
-                   (cond [(check expect test-val range) (list #t test-val)]
+                   (cond [(check expect test-val range) (list #t test-val #f)]
                          [else 
-                          (list (maker src test-val expect range) test-val)])))])
+                          (list (maker src test-val expect range) test-val #f)])))])
     (cond [(check-fail? result)
-           (send (send test-info get-info) check-failed (check->message result) (check-fail-src result))
+           (send (send test-info get-info) check-failed (check->message result) (check-fail-src result) exn?)
            (render-for-stepper/fail result expect range kind)]
           [else 
            ;; I'd like to pass the actual, but I don't have it.
@@ -288,6 +290,7 @@
 (define (insert-test test-info test) (send test-info add-test test))
 
 (define scheme-test-data (make-parameter (list #f #f #f)))
+(define scheme-error-handler (make-parameter (error-display-handler)))
 
 (define scheme-test%
   (class* test-engine% ()
@@ -312,4 +315,4 @@
       (test)
       (inner (void) run-test test))))
 
-(provide scheme-test-data test-format test-execute test-silence)
+(provide scheme-test-data test-format test-execute test-silence scheme-error-handler)

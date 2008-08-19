@@ -170,13 +170,13 @@
       (inner (void) complete-testcase pass?))
     (define/public (get-current-testcase) current-testcase)
 
-    (define/augment (check-failed msg src)
+    (define/augment (check-failed msg src exn)
       (when current-testcase
         (set-tc-stat-checks!
          current-testcase
          (cons (make-failed-check src msg)
                (tc-stat-checks current-testcase))))
-      (inner (void) check-failed msg src))
+      (inner (void) check-failed msg src exn))
 
     (define/public (format-value value)
       (make-java-snip value (make-format-style #t 'field #f)))

@@ -4,8 +4,8 @@
 
 (provide (all-defined-out))
 
-;; (make-failed-check src (listof (U string snip%)))
-(define-struct failed-check (src msg))
+;; (make-failed-check src (listof (U string snip%)) (U #f exn))
+(define-struct failed-check (src msg exn))
 
 (define test-info-base%
   (class* object% ()
@@ -41,11 +41,11 @@
       (set! total-tsts (add1 total-tsts))
       (inner (void) add-test))
 
-    ;; check-failed: (list (U string snip%)) src -> void
-    (define/pubment (check-failed msg src)
+    ;; check-failed: (list (U string snip%)) src (U exn false) -> void
+    (define/pubment (check-failed msg src exn?)
       (set! failed-cks (add1 failed-cks))
-      (set! failures (cons (make-failed-check src msg) failures))
-      (inner (void) check-failed msg src))
+      (set! failures (cons (make-failed-check src msg exn?) failures))
+      (inner (void) check-failed msg src exn?))
 
     (define/pubment (test-failed failed-info)
       (set! failed-tsts (add1 failed-tsts))

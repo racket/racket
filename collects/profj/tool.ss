@@ -845,6 +845,7 @@
                         #f
                         `(parse-java-interactions ,(parse-interactions port name level) ,name)
                         #f)))))))
+          (define/public (front-end/finished-complete-program settings) (void))
           
           (define (get-defn-editor port-name)
             (let* ([dr-frame (and (drscheme:rep:current-rep)
