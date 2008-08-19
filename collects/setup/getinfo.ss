@@ -9,9 +9,9 @@
 
 ;; get-info : (listof path-or-string) -> info/#f
 (define (get-info coll-path)
-  (let ([coll-path (map (lambda (x) (if (path? x) (path->string x) x))
-                        coll-path)])
-    (get-info/full (apply collection-path coll-path))))
+  (get-info/full (apply collection-path
+                        (map (lambda (x) (if (path? x) (path->string x) x))
+                             coll-path))))
 
 ;; get-info/full : path -> info/#f
 (define (get-info/full dir)
