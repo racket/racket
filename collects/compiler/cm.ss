@@ -215,9 +215,12 @@
                   ;; (cons 'ext rel-path) => a non-module file (check date)
                   ;; rel-path => a module file name (check transitive dates)
                   (define ext? (and (pair? p) (eq? 'ext (car p))))
-                  (define d (main-collects-relative->path (if ext? (cdr p) p)))
+                  (define d (let ([p (main-collects-relative->path (if ext? (cdr p) p))])
+                              (if (bytes? p)
+                                  (bytes->path p)
+                                  p)))
                   (define t
-                    (cond [(not (path? d)) #f] ;; (can this happen?)
+                    (cond [(not (path? d)) #f] ;; shouldn't happen
                           [ext? (try-file-time d)]
                           [else (compile-root mode d up-to-date
                                               read-src-syntax)]))
