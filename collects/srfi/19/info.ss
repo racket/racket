@@ -1,3 +1,3 @@
 #lang setup/infotab
 
-(define compile-omit-paths `("tests.ss"))
+(define compile-omit-paths '("tests.ss"))
