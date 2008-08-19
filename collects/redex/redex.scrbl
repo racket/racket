@@ -1138,6 +1138,13 @@ These four parameters control the color of the edges in the graph.
 This is the default value of @scheme[pp] used by @scheme[traces] and
 @scheme[stepper] and it uses
 @scheme[pretty-print].
+
+It sets the @scheme[pretty-print-columns] parameter to
+@scheme[width], and it sets @scheme[pretty-print-size-hook]
+and @scheme[pretty-print-print-hook] to print holes and the
+symbol @scheme['hole] to match the way they are input in a
+@scheme[term] expression.
+
 }
 
 @section{Typesetting}

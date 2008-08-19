@@ -19,10 +19,15 @@
                     (λ (val display? op)
                       (cond
                         [(hole? val) 4]
+                        [(eq? val 'hole) 6]
                         [else #f]))]
                    [pretty-print-print-hook
                     (λ (val display? op)
-                      (display "hole" op))])
+                      (cond
+                        [(hole? val)
+                         (display "hole" op)]
+                        [(eq? val 'hole) 
+                         (display ",'hole" op)]))])
       (pretty-print v port)))
   
   (define reflowing-snip<%>
