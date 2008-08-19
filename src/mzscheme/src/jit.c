@@ -184,7 +184,7 @@ static Native_Check_Arity_Proc check_arity_code;
 static Native_Get_Arity_Proc get_arity_code;
 
 static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends);
-static int generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int multi_ok);
+static int generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int multi_ok, int target);
 static void *generate_lambda_simple_arity_check(int num_params, int has_rest, int is_method, int permanent);
 static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, 
 				 int is_method);
@@ -2182,9 +2182,8 @@ static int generate_self_tail_call(Scheme_Object *rator, mz_jit_state *jitter, i
   }
 
   jit_stxi_p(WORDS_TO_BYTES(num_rands - 1), JIT_RUNSTACK, JIT_R0);
-  generate(rator, jitter, 0, 0);
+  generate(rator, jitter, 0, 0, JIT_V1);
   CHECK_LIMIT();
-  jit_movr_p(JIT_V1, JIT_R0);
 
   (void)jit_jmpi(slow_code);
 
@@ -2516,9 +2515,8 @@ static int generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   }
 
   if (reorder_ok) {
-    generate(rator, jitter, 0, 0);
+    generate(rator, jitter, 0, 0, JIT_V1);
     CHECK_LIMIT();
-    jit_movr_p(JIT_V1, JIT_R0);
   }
 
   END_JIT_DATA(20);
@@ -3543,12 +3541,12 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
 {
   mz_runstack_skipped(jitter, 1);
 
-  generate(rator, jitter, 0, 0);
+  generate(rator, jitter, 0, 0, JIT_R0);
   CHECK_LIMIT();
 
   if (SAME_TYPE(scheme_local_type, SCHEME_TYPE(rand))) {
     jit_movr_p(JIT_R1, JIT_R0);
-    generate(rand, jitter, 0, 0);
+    generate(rand, jitter, 0, 0, JIT_R0);
     mz_runstack_unskipped(jitter, 1);
   } else {
     mz_runstack_unskipped(jitter, 1);
@@ -3931,7 +3929,7 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
       CHECK_LIMIT();
       jit_movr_p(JIT_R1, JIT_R0);
 
-      generate(rand2, jitter, 0, 0);
+      generate(rand2, jitter, 0, 0, JIT_R0);
       CHECK_LIMIT();
 
       if (order_matters) {
@@ -3969,14 +3967,15 @@ static int generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
     mz_runstack_skipped(jitter, 2);
 
     if (simple2) {
-      generate(rand2, jitter, 0, 0);
+      generate(rand2, jitter, 0, 0, JIT_R1);
+      CHECK_LIMIT();
     } else {
       generate_non_tail(rand2, jitter, 0, 1);
+      CHECK_LIMIT();
+      jit_movr_p(JIT_R1, JIT_R0);
     }
-    CHECK_LIMIT();
-    jit_movr_p(JIT_R1, JIT_R0);
 
-    generate(rand1, jitter, 0, 0);
+    generate(rand1, jitter, 0, 0, JIT_R0);
     CHECK_LIMIT();
 
     mz_runstack_unskipped(jitter, 2);
@@ -4715,7 +4714,7 @@ static void ensure_case_closure_native(Scheme_Case_Lambda *c)
   }
 }
 
-static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter)
+static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int target)
 {
   Scheme_Case_Lambda *c = (Scheme_Case_Lambda *)obj;
   Scheme_Native_Closure_Data *ndata;
@@ -4756,7 +4755,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter)
     jit_stxi_p(offset, JIT_R1, JIT_R0);
     CHECK_LIMIT();
   }
-  jit_movr_p(JIT_R0, JIT_R1);
+  jit_movr_p(target, JIT_R1);
   
   return 1;
 }
@@ -4791,7 +4790,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
     /* Simple; doesn't change the stack or set marks: */
     int v;
     FOR_LOG(jitter->log_depth++);
-    v = generate(obj, jitter, 0, multi_ok);
+    v = generate(obj, jitter, 0, multi_ok, JIT_R0);
     FOR_LOG(--jitter->log_depth);
     return v;
   }
@@ -4826,7 +4825,7 @@ static int generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi
     PAUSE_JIT_DATA();
     FOR_LOG(jitter->log_depth++);
 
-    generate(obj, jitter, 0, multi_ok);
+    generate(obj, jitter, 0, multi_ok, JIT_R0);
 
     FOR_LOG(--jitter->log_depth);
     RESUME_JIT_DATA();
@@ -4891,12 +4890,12 @@ static Scheme_Object *generate_k(void)
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
-  v = generate(obj, jitter, p->ku.k.i1, p->ku.k.i2);
+  v = generate(obj, jitter, p->ku.k.i1, p->ku.k.i2, p->ku.k.i3);
 
   return scheme_make_integer(v);
 }
 
-static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int multi_ok)
+static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int multi_ok, int target)
 /* result goes to JIT_R0 */
 {
   Scheme_Type type;
@@ -4918,6 +4917,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
     p->ku.k.p2 = (void *)jitter_copy;
     p->ku.k.i1 = is_tail;
     p->ku.k.i2 = multi_ok;
+    p->ku.k.i3 = target;
 
     ok = scheme_handle_stack_overflow(generate_k);
 
@@ -4942,26 +4942,28 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       pos = SCHEME_TOPLEVEL_POS(obj);
       jit_ldxi_p(JIT_R2, JIT_R2, WORDS_TO_BYTES(pos));
       /* Extract bucket value */
-      jit_ldxi_p(JIT_R0, JIT_R2, &(SCHEME_VAR_BUCKET(0x0)->val));
+      jit_ldxi_p(target, JIT_R2, &(SCHEME_VAR_BUCKET(0x0)->val));
       CHECK_LIMIT();
       if (!(SCHEME_TOPLEVEL_FLAGS(obj) 
 	    & (SCHEME_TOPLEVEL_CONST | SCHEME_TOPLEVEL_READY))) {
 	/* Is it NULL? */
-	(void)jit_beqi_p(unbound_global_code, JIT_R0, 0);
+	(void)jit_beqi_p(unbound_global_code, target, 0);
       }
       END_JIT_DATA(0);
       return 1;
     }
   case scheme_local_type:
     {
-      /* Other parts of the JIT rely on this code modifying R0, only */
+      /* Other parts of the JIT rely on this code modifying the target register, only */
       int pos;
       START_JIT_DATA();
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       LOG_IT(("local %d [%d]\n", pos, SCHEME_LOCAL_FLAGS(obj)));
       if (pos || (mz_CURRENT_STATUS() != mz_RS_R0_HAS_RUNSTACK0)) {
-        jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-        VALIDATE_RESULT(JIT_R0);
+        jit_ldxi_p(target, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+        VALIDATE_RESULT(target);
+      } else if (target != JIT_R0) {
+        jit_movr_p(target, JIT_R0);
       }
       if (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_CLEAR_ON_READ) {
         jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_RUNSTACK);
@@ -4977,12 +4979,12 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
-      jit_ldr_p(JIT_R0, JIT_R0);
+      jit_ldr_p(target, JIT_R0);
       if (SCHEME_LOCAL_FLAGS(obj) & SCHEME_LOCAL_CLEAR_ON_READ) {
         LOG_IT(("clear-on-read\n"));
         jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_RUNSTACK);
       }
-      VALIDATE_RESULT(JIT_R0);
+      VALIDATE_RESULT(target);
 
       END_JIT_DATA(3);
       return 1;
@@ -4997,7 +4999,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  START_JIT_DATA();
 	  LOG_IT(("case-lambda\n"));
 	  /* case-lambda */
-	  generate_case_closure(SCHEME_IPTR_VAL(obj), jitter);
+	  generate_case_closure(SCHEME_IPTR_VAL(obj), jitter, target);
 	  END_JIT_DATA(5);
 	} 
 	break;
@@ -5070,6 +5072,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
 
 	  mz_patch_branch(ref);
+          if (target != JIT_R0)
+            jit_movr_p(target, JIT_R0);
 	  __END_TINY_JUMPS__(1);
 
 	  END_JIT_DATA(6);
@@ -5111,7 +5115,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  CHECK_LIMIT();
 	  (void)mz_finish(call_set_global_bucket);
 	  CHECK_LIMIT();
-	  (void)jit_movi_p(JIT_R0, scheme_void);
+	  (void)jit_movi_p(target, scheme_void);
 	  END_JIT_DATA(7);
 	}
 	break;
@@ -5239,6 +5243,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
             /* non-tail code pops args off runstack for us */
             jitter->need_set_rs = 1;
             mz_patch_ucbranch(ref5);
+            if (target != JIT_R0)
+              jit_movr_p(target, JIT_R0);
           }
           CHECK_LIMIT();
 
@@ -5271,7 +5277,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_stxi_p(WORDS_TO_BYTES(pos), JIT_RUNSTACK, JIT_R0);
 	  CHECK_LIMIT();
 
-	  generate(p, jitter, is_tail, multi_ok);
+	  generate(p, jitter, is_tail, multi_ok, target);
 
 	  END_JIT_DATA(8);
 	}
@@ -5292,8 +5298,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_pusharg_p(JIT_R2);
 	  (void)mz_finish(make_global_ref);
 	  CHECK_LIMIT();
-          jit_retval(JIT_R0);
-          VALIDATE_RESULT(JIT_R0);
+          jit_retval(target);
+          VALIDATE_RESULT(target);
         }
         break;
       case SPLICE_EXPD:
@@ -5311,8 +5317,8 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 	  jit_pusharg_p(JIT_R2);
 	  (void)mz_finish(scheme_syntax_executers[pos]);
 	  CHECK_LIMIT();
-	  jit_retval(JIT_R0);
-          VALIDATE_RESULT(JIT_R0);
+	  jit_retval(target);
+          VALIDATE_RESULT(target);
 	}
       }
       return 1;
@@ -5328,7 +5334,13 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       if (r)
 	return r;
 
-      return generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok);
+      r = generate_app(app, NULL, app->num_args, jitter, is_tail, multi_ok);
+
+      CHECK_LIMIT();
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
+
+      return r;
     }
   case scheme_application2_type:
     {
@@ -5347,7 +5359,13 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       args[0] = app->rator;
       args[1] = app->rand;
       
-      return generate_app(NULL, args, 1, jitter, is_tail, multi_ok);
+      r = generate_app(NULL, args, 1, jitter, is_tail, multi_ok);
+
+      CHECK_LIMIT();
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
+
+      return r;
     }
   case scheme_application3_type:
     {
@@ -5367,7 +5385,13 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       args[1] = app->rand1;
       args[2] = app->rand2;
 
-      return generate_app(NULL, args, 2, jitter, is_tail, multi_ok);
+      r = generate_app(NULL, args, 2, jitter, is_tail, multi_ok);
+
+      CHECK_LIMIT();
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
+
+      return r;
     }
   case scheme_sequence_type:
     {
@@ -5384,7 +5408,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       END_JIT_DATA(11);
 
-      return generate(seq->array[cnt - 1], jitter, is_tail, multi_ok);
+      return generate(seq->array[cnt - 1], jitter, is_tail, multi_ok, target);
     }
   case scheme_branch_type:
     {	
@@ -5433,7 +5457,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       PAUSE_JIT_DATA();
       LOG_IT(("...then...\n"));
       FOR_LOG(++jitter->log_depth);
-      g1 = generate(branch->tbranch, jitter, is_tail, multi_ok);
+      g1 = generate(branch->tbranch, jitter, is_tail, multi_ok, target);
       RESUME_JIT_DATA();
       CHECK_LIMIT();
       amt = mz_runstack_restored(jitter);
@@ -5477,7 +5501,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       FOR_LOG(jitter->log_depth--);
       LOG_IT(("...else\n"));
       FOR_LOG(++jitter->log_depth);
-      g2 = generate(branch->fbranch, jitter, is_tail, multi_ok);
+      g2 = generate(branch->fbranch, jitter, is_tail, multi_ok, target);
       RESUME_JIT_DATA();
       CHECK_LIMIT();
       amt = mz_runstack_restored(jitter);
@@ -5519,6 +5543,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       CHECK_LIMIT();
 
       generate_closure_fill(data, jitter);
+
+      CHECK_LIMIT();
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
 
       END_JIT_DATA(13);
       return 0;
@@ -5606,7 +5634,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 
-      return generate(lv->body, jitter, is_tail, multi_ok);
+      return generate(lv->body, jitter, is_tail, multi_ok, target);
     }
   case scheme_let_void_type:
     {
@@ -5640,7 +5668,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 
-      return generate(lv->body, jitter, is_tail, multi_ok);
+      return generate(lv->body, jitter, is_tail, multi_ok, target);
     }
   case scheme_letrec_type:
     {
@@ -5693,7 +5721,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
         jitter->need_set_rs = nsrs;
       }
 
-      return generate(l->body, jitter, is_tail, multi_ok);
+      return generate(l->body, jitter, is_tail, multi_ok, target);
     }
   case scheme_let_one_type:
     {
@@ -5723,7 +5751,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       mz_RECORD_STATUS(mz_RS_R0_HAS_RUNSTACK0);
 
-      return generate(lv->body, jitter, is_tail, multi_ok);
+      return generate(lv->body, jitter, is_tail, multi_ok, target);
     }
   case scheme_with_cont_mark_type:
     {
@@ -5759,7 +5787,7 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
       LOG_IT(("...in\n"));
 	
-      return generate(wcm->body, jitter, is_tail, multi_ok);
+      return generate(wcm->body, jitter, is_tail, multi_ok, target);
     }
   case scheme_quote_syntax_type:
     {
@@ -5777,6 +5805,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
       jit_movi_i(JIT_R1, WORDS_TO_BYTES(i + p + 1));
       jit_movi_i(JIT_R2, WORDS_TO_BYTES(p));
       (void)jit_calli(quote_syntax_code);
+
+      CHECK_LIMIT();
+      if (target != JIT_R0)
+        jit_movr_p(target, JIT_R0);
       
       END_JIT_DATA(10);
 
@@ -5816,10 +5848,10 @@ static int generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int m
 
 #ifdef JIT_PRECISE_GC
       if (retptr)
-	mz_load_retained(jitter, JIT_R0, retptr);
+	mz_load_retained(jitter, target, retptr);
       else
 #endif
-	(void)jit_patchable_movi_p(JIT_R0, obj); /* !! */
+	(void)jit_patchable_movi_p(target, obj); /* !! */
 
       END_JIT_DATA(19);
       return 1;
@@ -7035,7 +7067,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
-  r = generate(data->code, jitter, 1, 1);
+  r = generate(data->code, jitter, 1, 1, JIT_R0);
   /* Result is in JIT_R0 */
 
   CHECK_LIMIT();
