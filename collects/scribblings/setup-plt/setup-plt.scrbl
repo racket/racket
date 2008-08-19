@@ -1209,9 +1209,10 @@ usually a good idea.
 For historical reasons, @scheme[path] can be a byte string, which is
 converted to a path using @scheme[bytes->path].}
 
-@defproc[(main-collects-relative->path [rel (or/c path? 
-                                                  (cons/c 'collects 
-                                                          (or/c (listof bytes?) bytes?)))])
+@defproc[(main-collects-relative->path
+          [rel (or/c path? path-string?
+                     (cons/c 'collects
+                             (or/c (listof bytes?) bytes?)))])
          path?]{
 
 

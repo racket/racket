@@ -34,16 +34,20 @@
 
   ;; path->main-relative* : path-or-bytes -> datum-containing-bytes-or-path
   (define (path->main-relative* path)
-    (let loop ([exploded (explode-path*
-                          (if (bytes? path) (bytes->path path) path))]
+    (let loop ([exploded
+                (explode-path*
+                 (cond [(bytes? path) (bytes->path path)]
+                       [(path-string? path) path]
+                       [else (raise-type-error
+                              to-rel-name "path, string, or bytes" path)]))]
                [main-exploded (force main-dir/)])
-      (cond
-        [(null? main-exploded) (cons tag (map path-element->bytes exploded))]
-        [(null? exploded) path]
-        [(equal? (normal-case-path (car exploded))
-                 (normal-case-path (car main-exploded)))
-         (loop (cdr exploded) (cdr main-exploded))]
-        [else path])))
+      (cond [(null? main-exploded)
+             (cons tag (map path-element->bytes exploded))]
+            [(null? exploded) path]
+            [(equal? (normal-case-path (car exploded))
+                     (normal-case-path (car main-exploded)))
+             (loop (cdr exploded) (cdr main-exploded))]
+            [else path])))
 
   ;; main-relative->path* : datum-containing-bytes-or-path -> path
   (define (main-relative->path* path)
@@ -63,7 +67,13 @@
                ;; Normal mode:
                (apply build-path dir
                       (map bytes->path-element (cdr path)))))]
-          [else path]))
+          [(path?   path) path]
+          [(bytes?  path) (bytes->path path)]
+          [(string? path) (string->path path)]
+          [else (raise-type-error
+                 from-rel-name
+                 (format "path, string, bytes, or a list beginning with ~a" tag)
+                 path)]))
 
   (values path->main-relative*
           main-relative->path*))
