@@ -9,10 +9,10 @@
       ;; Load the code in a separate thread, so that the dynamic
       ;; extent of this one (likely a phase-sensitive macro expansion)
       ;; doesn't pollute the load:
-      (thread-wait 
+      (thread-wait
        (thread (lambda ()
 		 (set! param
-		       (dynamic-require 'mzlib/private/cm-ctime
+		       (dynamic-require 'compiler/private/cm-ctime
 					'current-external-file-registrar)))))
       ((param) f))))
 

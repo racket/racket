@@ -114,7 +114,7 @@
   (define param
     ;; Avoid using cm while loading cm-ctime:
     (parameterize ([use-compiled-file-paths null])
-      (dynamic-require 'mzlib/private/cm-ctime
+      (dynamic-require 'compiler/private/cm-ctime
                        'current-external-file-registrar)))
   (define external-deps null)
   (define (external-dep! p)
