@@ -6,7 +6,7 @@
 	    "option-sig.ss"
 	    "setup-unit.ss"
 	    "option-unit.ss"
-	    mzlib/cm)
+	    compiler/cm)
 
   (define-values/invoke-unit/infer setup:option@)
 

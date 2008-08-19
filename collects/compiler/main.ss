@@ -462,8 +462,8 @@
                   (zo-parse in))))))))))]
   [(make-zo)
    (let ([n (make-base-empty-namespace)]
-         [mc (dynamic-require 'mzlib/cm 'managed-compile-zo)]
-         [cnh (dynamic-require 'mzlib/cm 'manager-compile-notify-handler)]
+         [mc (dynamic-require 'compiler/cm 'managed-compile-zo)]
+         [cnh (dynamic-require 'compiler/cm 'manager-compile-notify-handler)]
          [did-one? #f])
      (parameterize ([current-namespace n]
                     [cnh (lambda (p)

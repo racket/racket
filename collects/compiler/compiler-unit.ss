@@ -22,7 +22,7 @@
 
          scheme/file
          mzlib/compile ; gets compile-file
-         mzlib/cm
+         compiler/cm
          setup/getinfo
          setup/main-collects)
 

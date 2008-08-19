@@ -4,7 +4,7 @@
 	   mzlib/file
            setup/main-collects)
   (require-for-syntax syntax/path-spec
-		      mzlib/cm-accomplice
+		      compiler/cm-accomplice
                       setup/main-collects)
 
   (provide include-bitmap

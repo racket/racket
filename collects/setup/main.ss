@@ -110,10 +110,10 @@
                                                   (lambda () (loop #t)))))])
 			     ;; Here's the main dynamic load of "cm.ss":
 			     (let ([mk
-				    (dynamic-require 'mzlib/cm
+				    (dynamic-require 'compiler/cm
 						     'make-compilation-manager-load/use-compiled-handler)]
 				   [trust-zos
-				    (dynamic-require 'mzlib/cm 'trust-existing-zos)])
+				    (dynamic-require 'compiler/cm 'trust-existing-zos)])
 			       ;; Return the two extracted functions:
 			       (lambda () (values mk trust-zos)))))))))])
 	(when (on? 'trust-existing-zos values)

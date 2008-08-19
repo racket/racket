@@ -4,13 +4,13 @@
 #lang scheme/base
 
 (require scheme/unit
-         mzlib/cm
          scheme/path
          scheme/file
          scheme/port
          scheme/match
          scheme/system
          scheme/list
+         compiler/cm
          planet/planet-archives
          planet/private/planet-shared
 

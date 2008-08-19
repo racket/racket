@@ -127,8 +127,8 @@
                         (getenv "PLTDRDEBUG"))
                     (parameterize ([current-namespace (make-namespace)])
                       (values
-                       (dynamic-require 'mzlib/cm 'make-compilation-manager-load/use-compiled-handler)
-                       (dynamic-require 'mzlib/cm 'manager-trace-handler)))
+                       (dynamic-require 'compiler/cm 'make-compilation-manager-load/use-compiled-handler)
+                       (dynamic-require 'compiler/cm 'manager-trace-handler)))
                     (values #f #f))])
     
     (current-load

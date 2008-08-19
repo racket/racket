@@ -4,7 +4,7 @@
                      syntax/stx
                      syntax/path-spec
                      mzlib/private/increader
-                     mzlib/cm-accomplice))
+                     compiler/cm-accomplice))
 
 (provide include
          include-at/relative-to
