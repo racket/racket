@@ -2,11 +2,25 @@
         Version 4.1
 ------------------------------
 
-  . get-text-to-search is not a public-final
+  . get-text-to-search is now a public-final
     method. Searching now works by the to-be-searched
     text notifying the frame (instead of the frame asking
     which text should be searched) so probably you can 
     just remove the overridden method.
+
+  . The optional arguments to highlight-range have changed.
+    (If you did not supply any optional arguments you code
+    works as before.)
+
+  . removed edit-menu:find-again (& related) menu items
+    changed edit-menu:replace-and-find-again to edit-menu:replace-and-find
+    added a few edit-menu menu items as well.
+
+  . removed from frame:searchable<%> interface:
+    move-to-search-or-back, replace, toggle-search-focus
+    move-to-search-or-reverse-search, and search-again
+
+  . changed the is-hidden? method of frame:searchable to search-hidden?
 
 ------------------------------
         Version 4.0.2
