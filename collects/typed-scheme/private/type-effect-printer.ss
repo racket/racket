@@ -70,7 +70,7 @@
     [(Univ:) (fp "Any")]
     [(? has-name?) (fp "~a" (has-name? c))]
     ;; names are just the printed as the original syntax
-    [(Name: stx) (fp "[~a]" (syntax-e stx))]
+    [(Name: stx) (fp "~a" (syntax-e stx))]
     [(App: rator rands stx) 
      (fp "~a" (cons rator rands))]
     ;; special cases for lists
