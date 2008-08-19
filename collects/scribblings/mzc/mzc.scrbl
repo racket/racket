@@ -47,6 +47,9 @@ command-line flags:
  @item{@as-index{@DFlag{expand}} : Pretty-prints the macro-expanded
        form of a Scheme program.}
 
+ @item{@as-index{@DFlag{decompile}} : Parses a bytecode file and
+       prints its content as quasi-Scheme. See @secref["decompile"].}
+
  @item{@as-index{@DFlag{zo}}, @as-index{@Flag{z}}, or
        @as-index{@DFlag{collection-zo}} : Compiles Scheme code to
        bytecode, without following transitive imports. See
@@ -64,6 +67,7 @@ command-line flags:
 @include-section["plt.scrbl"]
 @include-section["cc.scrbl"]
 @include-section["c-mods.scrbl"]
+@include-section["decompile.scrbl"]
 @include-section["zo.scrbl"]
 @include-section["ext.scrbl"]
 @include-section["api.scrbl"]

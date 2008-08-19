@@ -46,8 +46,6 @@
 
 @guideintro["pairs"]{pairs and lists}
 
-@local-table-of-contents[]
-
 A @deftech{pair} combines exactly two values. The first value is
 accessed with the @scheme[car] procedure, and the second value is
 accessed with the @scheme[cdr] procedure. Pairs are not mutable (but
