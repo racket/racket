@@ -5532,15 +5532,15 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   scheme_end_atomic_no_swap();
   
   if (v) {
-    delay_info->symtab[which] = v;
-    
     if (*ht) {
       v = resolve_references(v, port, NULL,
                              scheme_make_hash_table(SCHEME_hash_ptr), 
                              scheme_make_hash_table(SCHEME_hash_ptr), 
                              0, 0);
     }
-    
+
+    delay_info->symtab[which] = v;
+        
     return v;
   } else {
     scheme_longjmp(*scheme_current_thread->error_buf, 1);

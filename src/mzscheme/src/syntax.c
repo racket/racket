@@ -3321,7 +3321,7 @@ static int is_closed_reference(Scheme_Object *v)
 {
   /* Look for a converted function (possibly with no new arguments)
      that is accessed directly as a closure, instead of through a
-  top-level reference. */
+     top-level reference. */
   if (SCHEME_RPAIRP(v)) {
     v = SCHEME_CAR(v);
     return SCHEME_PROCP(v);

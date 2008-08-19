@@ -956,6 +956,8 @@ scheme_optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info)
 
   info = scheme_optimize_info_add_frame(info, data->num_params, data->num_params,
 					SCHEME_LAMBDA_FRAME);
+
+  /* For reporting warnings: */
   if (info->context && SCHEME_PAIRP(info->context))
     ctx = scheme_make_pair((Scheme_Object *)data,
                            SCHEME_CDR(info->context));

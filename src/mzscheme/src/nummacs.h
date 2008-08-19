@@ -97,6 +97,8 @@ name (int argc, Scheme_Object *argv[]) \
 #define GEN_BIN_PROT(name) \
 static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2)
 
+#define cx_NO_CHECK(n1, n2) /* empty */
+
 /* This macro is used to implement most all binary math and comparison functions (!): */
 #define GEN_BIN_THING(rettype, name, scheme_name, \
                       iop, fop, fsop, bn_op, rop, cxop, \
@@ -106,7 +108,8 @@ static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2)
                       combinezero, firstzero, sfirstzero, secondzero, ssecondzero, \
                       nanchk, snanchk, nanchk_more, snanchk_more, \
                       complexwrap, noniziwrap, exactzerowrapl, exactzerowrapr, numbertype,\
-                      toi_or_toe) \
+                      toi_or_toe, \
+                      check_exact_zero1, check_exact_one1, check_exact_zero2, check_exact_one2) \
 rettype name (const Scheme_Object *n1, const Scheme_Object *n2); \
 static rettype name ## __wrong_type(const Scheme_Object *v) \
 { \
@@ -117,12 +120,16 @@ static rettype name ## __wrong_type(const Scheme_Object *v) \
 } \
 static MZ_INLINE rettype name ## __int_big(const Scheme_Object *n1, const Scheme_Object *n2) { \
         Small_Bignum sb; \
+        check_exact_zero1(n1, n2); \
+        check_exact_one1(n1, n2); \
         return bn_op((scheme_make_small_bignum(SCHEME_INT_VAL(n1), \
 					       &sb)), \
 		     (n2)); \
 } \
 static MZ_INLINE rettype name ## __int_rat(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Rational sr1; \
+  check_exact_zero1(n1, n2); \
+  check_exact_one1(n1, n2); \
   return rop((scheme_make_small_rational(SCHEME_INT_VAL(n1), \
 					 &sr1)), \
 	     (n2)); \
@@ -130,6 +137,8 @@ static MZ_INLINE rettype name ## __int_rat(const Scheme_Object *n1, const Scheme
 complexwrap( \
 static MZ_INLINE rettype name ## __int_comp(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
+  check_exact_zero1(n1, n2); \
+  check_exact_one1(n1, n2); \
   return cxop((scheme_make_small_complex(n1, &sc)), \
               (n2)); \
 }) \
@@ -185,6 +194,8 @@ static MZ_INLINE rettype name ## __dbl_comp(double d1, const Scheme_Object *n1, 
 }) \
 static MZ_INLINE rettype name ## __big_int(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Bignum sb; \
+  check_exact_zero2(n2, n1); \
+  check_exact_one2(n2, n1); \
   return bn_op((n1), (scheme_make_small_bignum(SCHEME_INT_VAL(n2), &sb))); \
 } \
 FLOATWRAP( \
@@ -217,6 +228,8 @@ static MZ_INLINE rettype name ## __big_comp(const Scheme_Object *n1, const Schem
 } \
 static MZ_INLINE rettype name ## __rat_int(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Rational sr8; \
+  check_exact_zero2(n2, n1); \
+  check_exact_one2(n2, n1); \
   return rop((n1), \
              (scheme_make_small_rational(SCHEME_INT_VAL(n2), \
                                          &sr8))); \
@@ -255,6 +268,8 @@ static MZ_INLINE rettype name ## __rat_comp(const Scheme_Object *n1, const Schem
 complexwrap( \
 static MZ_INLINE rettype name ## __comp_int(const Scheme_Object *n1, const Scheme_Object *n2) { \
   Small_Complex sc; \
+  check_exact_zero2(n2, n1); \
+  check_exact_one2(n2, n1); \
   return cxop((n1), (scheme_make_small_complex(n2, &sc))); \
 }) \
 FLOATWRAP(complexwrap( \
@@ -517,7 +532,7 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
 
 # define NAN_CHECK_0(x) if (MZ_IS_NAN(x)) return 0
 
-#define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop) \
+#define GEN_BIN_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, exzeopl, exzeopr, nanckop, snanckop, c0_1, c1_1, c0_2, c1_2) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
                 iop, fop, fsop, bn_op, rop, cxop, \
                 GEN_OMIT, GEN_FIRST_ONLY, \
@@ -525,9 +540,10 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 0, 0, 0, 0, \
                 GEN_SCHEME_BOOL_APPLY, badfunc, badfunc, badfunc, badfunc, \
                 nanckop, snanckop, nanckop, snanckop, \
-                GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number", GEN_TOI)
+                GEN_IDENT, GEN_IDENT, exzeopl, exzeopr, "number", GEN_TOI, \
+                c0_1, c1_1, c0_2, c1_2)
 
-#define GEN_BIN_DIV_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop) \
+#define GEN_BIN_DIV_OP(name, scheme_name, iop, fop, fsop, bn_op, rop, cxop, c0_1, c1_1, c0_2, c1_2) \
   GEN_BIN_THING(Scheme_Object *, name, scheme_name, \
                 iop, fop, fsop, bn_op, rop, cxop, \
                 GEN_IDENT, GEN_APPLY, \
@@ -535,7 +551,8 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                 GEN_MAKE_NZERO, GEN_MAKE_NSZERO, GEN_MAKE_PZERO, GEN_MAKE_PSZERO, \
                 GEN_APPLY3, GEN_MAKE_ZERO_Z, GEN_MAKE_SZERO_Z, GEN_SAME_INF_Z, GEN_SAME_SINF_Z, \
                 NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, NAN_CHECK_NAN_IF_WEIRD, SNAN_CHECK_NAN_IF_WEIRD, \
-                GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number", GEN_TOI)
+                GEN_IDENT, GEN_IDENT, GEN_RETURN_0, GEN_OMIT, "number", GEN_TOI, \
+                c0_1, c1_1, c0_2, c1_2)
 
 #define GEN_BIN_COMP(name, scheme_name, iop, fop, bn_op, rop, cxop, waybig, waysmall, firstzero, secondzero, complexwrap, noniziwrap, numbertype) \
  GEN_BIN_THING(int, name, scheme_name, \
@@ -545,7 +562,8 @@ name (const Scheme_Object *n1, const Scheme_Object *n2) \
                waybig, waybig, waysmall, waysmall, \
                GEN_SCHEME_BOOL_APPLY, firstzero, firstzero, secondzero, secondzero, \
                NAN_CHECK_0_IF_WEIRD, NAN_CHECK_0_IF_WEIRD, NAN_CHECK_0, NAN_CHECK_0, \
-               complexwrap, noniziwrap, GEN_OMIT, GEN_OMIT, numbertype, GEN_TOE)
+               complexwrap, noniziwrap, GEN_OMIT, GEN_OMIT, numbertype, GEN_TOE, \
+               cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK, cx_NO_CHECK)
 
 #define GEN_BIN_INT_OP(name, scheme_name, op, bigop) \
 static Scheme_Object *name (const Scheme_Object *n1, const Scheme_Object *n2); \
