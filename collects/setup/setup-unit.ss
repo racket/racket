@@ -383,7 +383,7 @@
       cleanup))
 
   (define (sort-collections ccs)
-    (sort ccs (lambda (a b) (string<? (cc-name a) (cc-name b)))))
+    (sort ccs string<? #:key cc-name))
 
   (define collections-to-compile
     (sort-collections
