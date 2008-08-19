@@ -1193,7 +1193,7 @@ An @deftech{unpackable} is one of the following:
 
 @defmodule[setup/main-collects]
 
-@defproc[(path->main-collects-relative [path (or bytes? path-string?)])
+@defproc[(path->main-collects-relative [path (or/c bytes? path-string?)])
          (or/c path? (cons/c 'collects (listof bytes?)))]{
 
 Checks whether @scheme[path] has a prefix that matches the prefix to
@@ -1210,7 +1210,7 @@ For historical reasons, @scheme[path] can be a byte string, which is
 converted to a path using @scheme[bytes->path].}
 
 @defproc[(main-collects-relative->path
-          [rel (or/c path? path-string?
+          [rel (or/c bytes? path-string?
                      (cons/c 'collects
                              (or/c (listof bytes?) bytes?)))])
          path?]{
