@@ -237,10 +237,11 @@
     [(struct application (rator rands))
      (let ([stack (append (for/list ([i (in-list rands)]) (gensym 'rand))
                           stack)])
-       `(,(decompile-expr rator globs stack)
-         ,@(map (lambda (rand)
-                  (decompile-expr rand globs stack))
-                rands)))]
+       (annotate-inline
+        `(,(decompile-expr rator globs stack)
+          ,@(map (lambda (rand)
+                   (decompile-expr rand globs stack))
+                 rands))))]
     [(struct apply-values (proc args-expr))
      `(#%apply-values ,(decompile-expr proc globs stack) 
                       ,(decompile-expr args-expr globs stack))]
@@ -283,6 +284,28 @@
                `('(captures: ,@captures)))
          ,(decompile-expr body globs (append captures
                                              (append vars rest-vars)))))]))
+
+(define (annotate-inline a)
+  (if (and (symbol? (car a))
+           (case (length a)
+             [(2) (memq (car a) '(not null? pair? mpair? symbol?
+                                      syntax? char? boolean?
+                                      number? real? exact-integer?
+                                      fixnum? inexact-real?
+                                      procedure? vector? box? string? bytes? eof-object?
+                                      zero? negative? exact-nonnegative-integer?  
+                                      exact-positive-integer?
+                                      car cdr caar cadr cdar cddr
+                                      mcar mcdr unbox syntax-e
+                                      add1 sub1 - abs bitwise-not))]
+             [(3) (memq (car a) '(eq? = <= < >= >
+                                      bitwise-bit-set? char=?
+                                      + - * / min max bitwise-and bitwise-ior
+                                      arithmetic-shift vector-ref string-ref bytes-ref
+                                      set-mcar! set-mcdr! cons mcons))]
+             [(4) (memq (car a) '(vector-set! string-set! bytes-set!))]))
+      (cons '#%in a)
+      a))
 
 ;; ----------------------------------------
 
