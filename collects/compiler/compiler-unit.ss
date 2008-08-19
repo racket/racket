@@ -24,7 +24,8 @@
          mzlib/compile ; gets compile-file
          compiler/cm
          setup/getinfo
-         setup/main-collects)
+         setup/main-collects
+         setup/private/omitted-paths)
 
 (provide compiler@)
 
@@ -135,9 +136,7 @@
 
   (define (compile-directory dir info #:verbose [verbose? #t])
     (define info* (or info (lambda (key mk-default) (mk-default))))
-    (define nothing (lambda () null))
-    (define omit-paths (info* 'compile-omit-paths nothing))
-    (define omit-files (info* 'compile-omit-files nothing))
+    (define omit-paths (omitted-paths dir))
     (unless (eq? 'all omit-paths)
       (parameterize ([current-directory dir]
                      [current-load-relative-directory dir]
@@ -151,27 +150,16 @@
                       ;; Find all .ss/.scm files:
                       (filter extract-base-filename/ss (directory-list))
                       ;; Add specified doc sources:
-                      (map car (info* 'scribblings nothing)))]
-               [sses (remove* (map string->path omit-paths) sses)]
-               [sses (remove* (map string->path omit-files) sses)])
+                      (map car (info* 'scribblings (lambda () null))))]
+               [sses (remove* omit-paths sses)])
           (for-each (make-caching-managed-compile-zo) sses)))
       (when (compile-subcollections)
         (when (info* 'compile-subcollections (lambda () #f))
           (printf "Warning: ignoring `compile-subcollections' entry in info ~a\n"
                   dir))
         (for ([p (directory-list dir)])
-          (let ([p* (build-path dir p)]
-                [s  (path->string p)])
-            (when (and
-                   (directory-exists? p*)
-                   (not
-                    ;; this is the same check that setup/setup-unit is
-                    ;; doing in `make-cc*'
-                    (or (regexp-match? #rx"^[.]" s)
-                        (equal? "compiled" s)
-                        (and (equal? "doc" s)
-                             (not (pair? (path->main-collects-relative p*))))
-                        (and (pair? omit-paths) (member s omit-paths)))))
+          (let ([p* (build-path dir p)])
+            (when (and (directory-exists? p*) (not (member p omit-paths)))
               (compile-directory p* (get-info/full p*))))))))
 
   (define (compile-collection-zos collection . cp)

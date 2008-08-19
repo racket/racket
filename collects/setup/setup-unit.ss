@@ -22,7 +22,8 @@
          "getinfo.ss"
          "dirs.ss"
          "main-collects.ss"
-         "private/path-utils.ss")
+         "private/path-utils.ss"
+         "private/omitted-paths.ss")
 
 (define-namespace-anchor anchor)
 
@@ -180,22 +181,12 @@
                   "'name' result from collection ~e is not a string: ~e"
                   path x)))))
     (define path-name (path->name path))
-    (define basename
-      (let-values ([(base name dir?) (split-path path)])
-        (if (path? name)
-          (path-element->string name)
-          (error 'make-cc*
-                 "Internal error: cc had invalid info-path: ~e" path))))
     (when (info 'compile-subcollections (lambda () #f))
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
     ;; this check is also done in compiler/compiler-unit, in compile-directory
-    (and (not (or (regexp-match? #rx"^[.]" basename)
-                  (equal? "compiled" basename)
-                  (and (equal? "doc" basename)
-                       (not (pair? (path->main-collects-relative path))))
-                  (eq? 'all (info 'compile-omit-paths void))))
+    (and (not (eq? 'all (omitted-paths path)))
          (make-cc collection path
                   (if name (string-append path-name " (" name ")") path-name)
                   info root-dir info-path shadowing-policy)))
@@ -287,21 +278,17 @@
     (define (get-subs cc)
       (let* ([info (cc-info cc)]
              [ccp (cc-path cc)]
-             ;; note: `compile-omit-paths' can be the symbol `all', if this
-             ;; happens then this collection should not have been included in
-             ;; the first place, but we might jump in if a command-line
-             ;; argument specifies coll/subcoll
-             [omit (call-info info 'compile-omit-paths (lambda () '())
-                              (lambda (x)
-                                (unless (or (eq? 'all x) (list-of string? x))
-                                  (error 'setup-plt
-                                         "expected a list of path strings or 'all for compile-omit-paths, got: ~s"
-                                         x))))]
-             [omit (if (pair? omit) omit '())]
-             [subs (filter (lambda (p)
-                             (and (directory-exists? (build-path ccp p))
-                                  (not (member (path->string p) omit))))
-                           (directory-list ccp))])
+             ;; note: omit can be 'all, if this happens then this
+             ;; collection should not have been included, but we might
+             ;; jump in if a command-line argument specified a
+             ;; coll/subcoll
+             [omit (omitted-paths ccp)]
+             [subs (if (eq? 'all omit)
+                     '()
+                     (filter (lambda (p)
+                               (and (directory-exists? (build-path ccp p))
+                                    (not (member p omit))))
+                             (directory-list ccp)))])
         (filter values (make-subs cc subs))))
     (filter values
             (let loop ([l collections-to-compile])
