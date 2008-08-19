@@ -7172,7 +7172,7 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc)
     void **pd;
     pd = (void **)gdata.patch_depth;
     gdata.patch_depth = pd[1];
-    jit_patch_movi((*pd), (void *)(long)max_depth);
+    jit_patch_movi(((jit_insn *)(*pd)), (void *)(long)max_depth);
   }
 
   ndata->code = code;
