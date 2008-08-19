@@ -82,8 +82,11 @@ This file defines two sorts of primitives. All of them are provided into any mod
 (define-syntax (require/opaque-type stx)
   (syntax-case stx ()
     [(_ ty pred lib)
-     (and (identifier? #'ty) (identifier? #'pred))
      (begin
+       (unless (identifier? #'ty)
+         (raise-syntax-error #f "opaque type name must be an identifier" stx #'ty))
+       (unless (identifier? #'pred)
+         (raise-syntax-error #f "opaque type predicate must be an identifier" stx #'pred))
        (register-type-name #'ty (make-Opaque #'pred (syntax-local-certifier)))
        (quasisyntax/loc stx
          (begin 
