@@ -25,7 +25,7 @@
 (define (get-deps code path)
   (filter-map (lambda (x)
                 (let ([r (resolve-module-path-index x path)])
-                  (and (path? x) (path->bytes x))))
+                  (and (path? r) (path->bytes r))))
               (append-map cdr (module-compiled-imports code))))
 
 (define (get-compilation-dir+name mode path)
