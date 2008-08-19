@@ -235,7 +235,7 @@
       [(0) (read-define-values v)]
       [(1) (read-define-syntax v)]
       [(2) (read-set! v)]
-      [(3) (read-case-lambda v)]
+      [(3) v] ; a case-lam already
       [(4) (read-begin0 v)]
       [(5) (read-boxenv v)]
       [(6) (read-module-wrap v)]

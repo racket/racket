@@ -115,7 +115,7 @@
         ,(let-values ([(globs defns) (decompile-prefix prefix)])
            `(let ()
               ,@defns
-              ,(decompile-expr rhs globs '(#%globals)))))]
+              ,(decompile-form rhs globs '(#%globals)))))]
     [(struct def-for-syntax (ids rhs prefix max-let-depth))
      `(define-values-for-syntax ,ids
         ,(let-values ([(globs defns) (decompile-prefix prefix)])
@@ -188,24 +188,13 @@
          (if clear?
              `(#%sfs-clear ,e)
              e)))]
-    [(struct lam (name flags num-params rest? closure-map max-let-depth body))
-     (let ([vars (for/list ([i (in-range num-params)]) 
-                   (gensym (format "arg~a-" i)))]
-           [rest-vars (if rest? (list (gensym 'rest)) null)]
-           [captures (map (lambda (v)
-                            (list-ref/protect stack v))
-                          (vector->list closure-map))])
-       `(lambda (,@vars . ,(if rest?
-                               (car rest-vars)
-                               null))
-          ,@(if name
-                `(',name)
-                null)
-          ,@(if (null? captures)
-                null
-                `('(captures: ,@captures)))
-          ,(decompile-expr body globs (append captures
-                                              (append vars rest-vars)))))]
+    [(? lam?)
+     `(lambda . ,(decompile-lam expr globs stack))]
+    [(struct case-lam (name lams))
+     `(case-lambda
+       ,@(map (lambda (lam)
+                (decompile-lam lam globs stack))
+              lams))]
     [(struct let-one (rhs body))
      (let ([id (or (extract-id rhs)
                    (gensym 'local))])
@@ -222,12 +211,12 @@
             ,(decompile-expr body globs (append vars stack)))))]
     [(struct let-rec (procs body))
      `(begin
-        (set!-rec-values ,(for/list ([p (in-list procs)]
-                                     [i (in-naturals)])
-                            (list-ref/protect stack i))
-                         ,@(map (lambda (proc)
-                                  (decompile-expr proc globs stack))
-                                procs))
+        (#%set!-rec-values ,(for/list ([p (in-list procs)]
+                                       [i (in-naturals)])
+                              (list-ref/protect stack i))
+                           ,@(map (lambda (proc)
+                                    (decompile-expr proc globs stack))
+                                  procs))
         ,(decompile-expr body globs stack))]
     [(struct install-value (count pos boxes? rhs body))
      `(begin
@@ -273,6 +262,27 @@
          (closure-gen-id val)
          '???)]
     [else `(quote ,expr)]))
+
+(define (decompile-lam expr globs stack)
+  (match expr
+    [(struct lam (name flags num-params rest? closure-map max-let-depth body))
+     (let ([vars (for/list ([i (in-range num-params)]) 
+                   (gensym (format "arg~a-" i)))]
+           [rest-vars (if rest? (list (gensym 'rest)) null)]
+           [captures (map (lambda (v)
+                            (list-ref/protect stack v))
+                          (vector->list closure-map))])
+       `((,@vars . ,(if rest?
+                        (car rest-vars)
+                        null))
+         ,@(if (and name (not (null? name)))
+               `(',name)
+               null)
+         ,@(if (null? captures)
+               null
+               `('(captures: ,@captures)))
+         ,(decompile-expr body globs (append captures
+                                             (append vars rest-vars)))))]))
 
 ;; ----------------------------------------
 
