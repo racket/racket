@@ -1,6 +1,6 @@
 #lang scheme/base
 
-(require scheme/match scheme/contract planet/cachepath)
+(require scheme/match scheme/contract planet/cachepath syntax/modread)
 
 ;; in addition to infodomain/compiled/cache.ss, getinfo will look in this 
 ;; file to find mappings. PLaneT uses this to put info about installed
@@ -29,9 +29,10 @@
                       x)])
       (with-input-from-file file
         (lambda ()
-          (begin0 (read)
-            (unless (eof-object? (read))
-              (err "has multiple expressions")))))))
+          (begin0 
+           (with-module-reading-parameterization read)
+           (unless (eof-object? (read))
+             (err "has multiple expressions")))))))
   (and (file-exists? file)
        (match (contents)
          [(list 'module 'info

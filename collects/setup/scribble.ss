@@ -10,6 +10,7 @@
          scheme/file
          scheme/fasl
          scheme/serialize
+         syntax/modread
          scribble/base-render
          scribble/struct
          scribble/basic
@@ -323,6 +324,9 @@
 (define (read-out-sxref)
   (fasl->s-exp (current-input-port)))
 
+(define (normalized-read)
+  (with-module-reading-parameterization read))
+
 (define (make-sci-cached sci info-out-file setup-printf)
   (when (verbose)
     (fprintf (current-error-port) " [Lazy ~a]\n" info-out-file))
@@ -395,7 +399,7 @@
                                                   auto-user? with-record-error
                                                   setup-printf)
                                     doc))])
-        (let* ([v-in (with-input-from-file info-in-file read)]
+        (let* ([v-in (with-input-from-file info-in-file normalized-read)]
                [v-out (with-input-from-file info-out-file read-out-sxref)])
           (unless (and (equal? (car v-in) (list vers (doc-flags doc)))
                        (equal? (car v-out) (list vers (doc-flags doc))))
