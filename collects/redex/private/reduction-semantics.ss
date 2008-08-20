@@ -1623,8 +1623,8 @@
   (unless (pred arg)
     (inc-failures)
     (print-failed srcinfo)
-    (fprintf (current-error-port) "  ~v\ndid not elicit ~v from ~v\n" 
-             arg #t pred)))
+    (fprintf (current-error-port) "  ~v does not hold for\n  ~v\n" 
+             pred arg)))
 
 (define-syntax (test-equal stx)
   (syntax-case stx ()
