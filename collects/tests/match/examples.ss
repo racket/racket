@@ -564,6 +564,13 @@
    (comp '(1 2)
          (match-let ([(vector a b) (vector 1 2)])
                     (list a b)))
+   
+   (comp '(4 5)
+         (let-values ([(x y)
+                       (match 1
+                         [(or (and x 2) (and x 3) (and x 4)) 3]
+                         [_ (values 4 5)])])
+           (list x y)))
 
 
    ))
