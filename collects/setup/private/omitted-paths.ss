@@ -43,46 +43,45 @@
         (and omit-doc? (equal? "doc" str))
         (regexp-match? #rx"^[.]" str))))
 
+(define (compute-omitted dir accumulated implicit-omit?)
+  (define info (or (get-info/full dir) (lambda _ '())))
+  (define explicit
+    (let ([omit (info 'compile-omit-paths (lambda () '()))])
+      (if (eq? 'all omit)
+        'all
+        (map (lambda (e) (explode-path (simplify-path e #f)))
+             ;; for backward compatibility
+             (append omit (info 'compile-omit-files (lambda () '())))))))
+  (cond
+    [(or (eq? 'all explicit) (memq 'same explicit)) 'all]
+    [(findf (lambda (e)
+              (or (null? e) (not (path? (car e))) (absolute-path? (car e))))
+            explicit)
+     => (lambda (bad)
+          (error 'compile-omit-paths
+                 "bad entry value in info file: ~e" (apply build-path bad)))]
+    [else (append explicit
+                  (map list (filter implicit-omit? (directory-list dir)))
+                  accumulated)]))
+
+(define (accumulate-omitted rsubs root t omit-doc?)
+  (define dir (apply build-path root))
+  (define implicit? (implicit-omit? omit-doc?))
+  (let loop ([rsubs rsubs])
+    (if (null? rsubs)
+      (compute-omitted dir '() implicit?)
+      (with-memo t rsubs
+        (let ([acc (loop (cdr rsubs))])
+          (if (or (eq? 'all acc) (member (list (car rsubs)) acc))
+            'all
+            (compute-omitted (apply build-path dir (reverse rsubs))
+                             (for/list ([up acc]
+                                        #:when (equal? (car up) (car rsubs)))
+                               ;; must have non-null cdr: see `member' check
+                               (cdr up))
+                             implicit?)))))))
+
 (define (omitted-paths* dir)
-  (define (get rsubs root t omit-doc?)
-    (let loop ([rsubs rsubs])
-      (if (null? rsubs)
-        '()
-        (with-memo t rsubs
-          (let ([up (loop (cdr rsubs))])
-            (if (or (eq? 'all up) (member (list (car rsubs)) up))
-              'all
-              (let* ([dir (apply build-path (append root (reverse rsubs)))]
-                     [info (or (get-info/full dir) (lambda _ '()))]
-                     [explicit (info 'compile-omit-paths (lambda () '()))]
-                     [explicit (if (eq? 'all explicit)
-                                 'all
-                                 (map (lambda (e)
-                                        (explode-path (simplify-path e #f)))
-                                      (append explicit
-                                              ;; for backward compatibility
-                                              (info 'compile-omit-files
-                                                    (lambda () '())))))])
-                (cond
-                  [(or (eq? 'all explicit) (memq 'same explicit)) 'all]
-                  [(findf (lambda (e)
-                            (or (null? e)
-                                (not (path? (car e)))
-                                (absolute-path? (car e))))
-                          explicit)
-                   => (lambda (bad)
-                        (error 'compile-omit-paths
-                               "bad entry value in info file: ~e"
-                               (apply build-path bad)))]
-                  [else `(,@explicit
-                          ,@(map list (filter (implicit-omit? omit-doc?)
-                                              (directory-list dir)))
-                          ,@(filter-map (lambda (up)
-                                          (and (equal? (car up) (car rsubs))
-                                               ;; must have non-null cdr, due
-                                               ;; to the above `member' check
-                                               (cdr up)))
-                                        up))]))))))))
   (unless (and (path-string? dir) (complete-path? dir) (directory-exists? dir))
     (raise-type-error 'omitted-paths
                       "complete path to an existing directory" dir))
@@ -91,7 +90,7 @@
                      (let ([r (relative-from dir* (car root+table))])
                        (and r (cons (reverse r) root+table))))
                  roots)]
-         [r (and r (apply get r))])
+         [r (and r (apply accumulate-omitted r))])
     (unless r
       (error 'omitted-paths
              "given directory path is not in any collection root: ~e" dir))
