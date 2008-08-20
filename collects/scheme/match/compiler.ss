@@ -205,27 +205,28 @@
                         #:when (for/and ([seen-var seen])
                                         (not (free-identifier=? bv (car seen-var)))))
                bv)])
-       (with-syntax ([(var ...) vars])
+       (with-syntax ([(success? var ...) (append (generate-temporaries '(success?)) vars)])
          ;; do the or matching, and bind the results to the appropriate
          ;; variables
-         #`(let/ec exit
-             (let ([esc* (lambda () (exit (#,esc)))])
-               (let-values ([(var ...)
-                             #,(compile* (list x)
-                                         (map (lambda (q)
-                                                (make-Row (list q)
-                                                          #'(values var ...)
-                                                          #f
-                                                          seen))
-                                              qs)
-                                         #'esc*)])
-                 ;; then compile the rest of the row
-                 #,(compile* xs
-                             (list (make-Row (cdr pats)
-                                             (Row-rhs row)
-                                             (Row-unmatch row)
-                                             (append (map cons vars vars) seen)))
-                             esc))))))]
+         #`(let ([esc* (lambda () (values #f #,@(for/list ([v vars]) #'#f)))])
+             (let-values ([(success? var ...)
+                           #,(compile* (list x)
+                                       (map (lambda (q)
+                                              (make-Row (list q)
+                                                        #'(values #t var ...)
+                                                        #f
+                                                        seen))
+                                            qs)
+                                       #'esc*)])
+               ;; then compile the rest of the row
+               (if success?
+                   #,(compile* xs
+                               (list (make-Row (cdr pats)
+                                               (Row-rhs row)
+                                               (Row-unmatch row)
+                                               (append (map cons vars vars) seen)))
+                               esc)
+                   (#,esc))))))]
     ;; the App rule
     [(App? first)
      ;; we only handle 1-row Apps atm - this is all the mixture rule should
