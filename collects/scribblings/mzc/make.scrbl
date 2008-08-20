@@ -250,8 +250,8 @@ A parameter for a procedure of one argument that is called to report
 @defproc[(register-external-file [file (and path? complete-path?)]) void?]{
 
 Logs a message (see @scheme[log-message]) at level @scheme['info]. The
-message is @scheme["compilation dependency"], and the data associated
-with the message is @scheme[file].
+message data is a @schemeidfont{file-dependency} prefab structure type
+with one field whose value is @scheme[file].
 
 A compilation manager implemented by @schememodname[compiler/cm] looks
 for such messages to register an external dependency. The compilation

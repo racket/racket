@@ -112,6 +112,7 @@
 
 (define-struct ext-reader-guard (proc prev)
   #:property prop:procedure (struct-field-index proc))
+(define-struct file-dependency (path) #:prefab)
 
 (define (compile-zo* mode path read-src-syntax zo-name)
   ;; External dependencies registered through reader guard and accomplice-logged events:
@@ -136,9 +137,9 @@
                     (cond
                      [(eq? (vector-ref l 2) done-key) 'done]
                      [(and (eq? (vector-ref l 0) 'info)
-                           (equal? "compilation dependency" (vector-ref l 1))
-                           (path? (vector-ref l 2)))
-                      (external-dep! (vector-ref l 2))
+                           (file-dependency? (vector-ref l 2))
+                           (path? (file-dependency-path (vector-ref l 2))))
+                      (external-dep! (file-dependency-path (vector-ref l 2)))
                       (loop)]
                      [else
                       (log-message orig-log (vector-ref l 0) (vector-ref l 1) (vector-ref l 2))
