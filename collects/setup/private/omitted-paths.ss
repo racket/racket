@@ -20,11 +20,31 @@
 ;; main collection tree (it is not used there for documentation, and there is
 ;; at least one place where it contains code: scribble/doc).
 (define roots
-  (map (lambda (p)
-         (list (explode-path p) (make-hash)
-               ;; don't omit "doc" in the main tree
-               (not (equal? (find-collects-dir) p))))
-       (cons (planet:CACHE-DIR) (current-library-collection-paths))))
+  (map
+   (lambda (p)
+     (list (explode-path p) (make-hash)
+           ;; don't omit "doc" in the main tree
+           (not (equal? (find-collects-dir) p))))
+   `(,@(current-library-collection-paths)
+     ,(planet:CACHE-DIR)
+     ;; add planet links, each as a root (if there is a change in
+     ;; the format, this will just ignore these paths, but these
+     ;; collections will throw an error in setup-plt)
+     ,@(with-handlers ([exn? (lambda (e)
+                               (printf "WARNING: bad planet links at ~a:\n ~a"
+                                       (planet:HARD-LINK-FILE) (exn-message e))
+                               '())])
+         (if (not (file-exists? (planet:HARD-LINK-FILE)))
+           '()
+           (with-input-from-file (planet:HARD-LINK-FILE)
+             (lambda ()
+               (let loop ([r '()])
+                 (let ([x (read)])
+                   (if (eof-object? x)
+                     (reverse r)
+                     (let* ([x (and (list? x) (= 7 (length x)) (list-ref x 4))]
+                            [x (and (bytes? x) (bytes->path x))])
+                       (loop (if x (cons x r) r)))))))))))))
 
 ;; if `x' has `y' as a prefix, return the tail,
 ;; eg (relative-from '(1 2 3 4) '(1 2)) => '(3 4)
