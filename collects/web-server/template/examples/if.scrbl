@@ -1,15 +1,22 @@
 #lang web-server/template
-@(monkeys monkey-limit monkey-minimum)
-@(if (monkeys . > . monkey-limit)
+@(if ($monkeys . > . $monkey-limit)
      @t{<p>There are too many monkeys!</p>}
-     @t{@(if (monkeys . < . monkey-minimum)
+     @t{@(if ($monkeys . < . $monkey-minimum)
              @t{<p>There aren't enough monkeys!</p>}
              @t{<p>There are just enough monkeys!</p>})})
 
-@; (template 5 10 1)
-@;"\n<p>There are just enough monkeys!</p>\n"
-@; (template 11 10 1)
-@;"\n<p>There are too many monkeys!</p>\n"
-@; (template 0 10 1)
-@;"\n<p>There aren't enough monkeys!</p>\n"
-@;
+@;{
+> (template #:monkeys 5
+           #:monkey-limit 10
+           #:monkey-minimum 1)
+"<p>There are just enough monkeys!</p>\n\n"
+> (template #:monkeys 0
+           #:monkey-limit 10
+           #:monkey-minimum 1)
+"<p>There aren't enough monkeys!</p>\n\n"
+> (template #:monkeys 11
+           #:monkey-limit 10
+           #:monkey-minimum 1)
+"<p>There are too many monkeys!</p>\n\n"
+> 
+}

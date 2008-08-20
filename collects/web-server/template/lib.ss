@@ -9,8 +9,13 @@
       (for/list (for-clause ...)
         (#%string-append body ...)))]))
 
-(provide (rename-out [#%string-append t]))
+(provide in)
+(define-syntax in
+  (syntax-rules ()
+    [(_ x xs body ...)
+     (for ([x xs]) body ...)]))
 
+(provide (rename-out [#%string-append t]))
 (provide #%string-append)
 (define-syntax (#%string-append stx)
   (syntax-case stx ()
