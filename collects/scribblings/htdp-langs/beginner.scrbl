@@ -169,7 +169,7 @@ evaluates to @scheme[true], it is also an error.}
 This form of @scheme[cond] is similar to the prior one, except that
 the final @scheme[else] clause is always taken if no prior line's test
 expression evaluates to @scheme[true]. In other words, @scheme[else]
-acts like @scheme[true], so there is no possibility to ``fall off them
+acts like @scheme[true], so there is no possibility to ``fall off the
 end'' of the @scheme[cond] form.}
 
 @defidform[else]{
