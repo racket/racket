@@ -675,6 +675,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (when (make-info-domain)
+    (setup-printf #f "--- updating info-domain tables ---")
     ;; Each ht maps a collection root dir to an info-domain table. Even when
     ;; `collections-to-compile' is a subset of all collections, we only care
     ;; about those collections that exist in the same root as the ones in

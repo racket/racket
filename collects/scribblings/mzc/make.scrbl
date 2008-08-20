@@ -249,10 +249,14 @@ A parameter for a procedure of one argument that is called to report
 
 @defproc[(register-external-file [file (and path? complete-path?)]) void?]{
 
-Registers the complete path @scheme[file] with a compilation manager
-implemented by @schememodname[compiler/cm], if one is active. The
-compilation manager then records (in a @filepath{.dep} file) the path
-as contributing to the implementation of the module currently being
+Logs a message (see @scheme[log-message]) at level @scheme['info]. The
+message is @scheme["compilation dependency"], and the data associated
+with the message is @scheme[file].
+
+A compilation manager implemented by @schememodname[compiler/cm] looks
+for such messages to register an external dependency. The compilation
+manager records (in a @filepath{.dep} file) the path as contributing
+to the implementation of the module currently being
 compiled. Afterward, if the registered file is modified, the
 compilation manager will know to recompile the module.
 
