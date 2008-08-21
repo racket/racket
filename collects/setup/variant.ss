@@ -1,35 +1,28 @@
+#lang scheme/base
 
-(module variant mzscheme
-  (require (prefix config: config)
-           setup/dirs)
+(require (prefix-in config: config) setup/dirs scheme/promise)
 
-  (provide variant-suffix)
+(provide variant-suffix)
 
-  (define plain-mz-is-cgc?
-    (delay (let ([dir (find-console-bin-dir)]
-                 [exe (case (system-type)
-                        [(windows) "MzScheme.exe"]
-                        [else "mzscheme"])])
-             (let ([f (build-path dir exe)])
-               (and (file-exists? f)
-                    (with-input-from-file f
-                      (lambda ()
-                        (let ([m (regexp-match #rx#"bINARy tYPe:..(.)" (current-input-port))])
-                          (and m
-                               (equal? (cadr m) #"c"))))))))))
+(define plain-mz-is-cgc?
+  (delay (let* ([dir (find-console-bin-dir)]
+                [exe (cond [(eq? 'windows (system-type)) '("MzScheme.exe")]
+                           [(equal? #".dll" (system-type 'so-suffix))
+                            ;; in cygwin so-suffix is ".dll"
+                            "mzscheme.exe"]
+                           [else "mzscheme"])]
+                [f (build-path dir exe)])
+           (and (file-exists? f)
+                (with-input-from-file f
+                  (lambda ()
+                    (regexp-match? #rx#"bINARy tYPe:..c"
+                                   (current-input-port))))))))
 
-  (define variant-suffix
-    (lambda (variant cased?)
-      (case variant
-        [(3m script-3m) 
-         ((if cased? values string-downcase)
-          (or (force config:3m-suffix) 
-              (if (force plain-mz-is-cgc?)
-                  "3m"
-                  "")))]
-        [(cgc script-cgc)
-         ((if cased? values string-downcase)
-          (or (force config:cgc-suffix)
-              (if (force plain-mz-is-cgc?)
-                  ""
-                  "CGC")))]))))
+(define (variant-suffix variant cased?)
+  (let ([r (case variant
+             [(3m script-3m)   (or (force config:3m-suffix)
+                                   (if (force plain-mz-is-cgc?) "3m" ""))]
+             [(cgc script-cgc) (or (force config:cgc-suffix)
+                                   (if (force plain-mz-is-cgc?) "" "CGC"))]
+             [else (error 'variant-suffix "unknown variant: ~e" variant)])])
+    (if cased? r (string-downcase r))))
