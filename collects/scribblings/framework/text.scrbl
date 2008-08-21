@@ -51,13 +51,13 @@
     See also
     @method[text:basic<%> unhighlight-range].
   }
-  @defmethod*[(((unhighlight-range
+  @defmethod[(unhighlight-range
                    (start exact-nonnegative-integer?)
                    (end exact-nonnegative-integer?)
                    (color (or/c string? (is-a?/c color%)))
                    (caret-space boolean? #f)
                    (style (symbols 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
- void))]{
+               void?]{
     This method removes the highlight from a region of text in
     the buffer. 
 
@@ -426,15 +426,27 @@
   This mixin provides an implementation of the
   @scheme[text:delegate<%>]
   interface.
-  @defmethod*[#:mode override (((highlight-range (start exact-integer) (end exact-integer) (color (instance color%)) (bitmap (union |#f| (instance bitmap%))) (caret-space boolean |#f|) (priority (union (quote high) (quote low)) (quote low))) (-> void)))]{
+  @defmethod*[#:mode override (((highlight-range (start exact-integer)
+                                 (end exact-nonnegative-integer?)
+                                 (color (or/c string? (is-a?/c color%)))
+                                 (caret-space boolean? #f)
+                                 (priority (symbols 'high 'low) 'low)
+                                 (style (symbols 'rectangle 'ellipse 'hollow-ellipse 'dot) 'rectangle))
+                                 (-> void)))]{
 
     In addition to calling the super method,
     @method[text:basic<%> highlight-range], this method forwards the highlighting to
     the delegatee.
   }
-  @defmethod*[#:mode override (((unhighlight-range (start exact-integer) (end exact-integer) (color (instance color%)) (bitmap (union |#f| (instance bitmap%)) |#f|) (caret-space boolean |#f|)) void))]{
-    This method propagates the call to the delegate.
-
+  @defmethod[#:mode override
+             (unhighlight-range
+                   (start exact-nonnegative-integer?)
+                   (end exact-nonnegative-integer?)
+                   (color (or/c string? (is-a?/c color%)))
+                   (caret-space boolean? #f)
+                   (style (symbols 'rectangle 'ellipse 'hollow-ellipse) 'rectangle))
+               void?]{
+    This method propagates the call to the delegate and calls the super method.
   }
   @defmethod*[#:mode override (((on-paint (before? any/c) (dc (is-a?/c dc<%>)) (left real?) (top real?) (right real?) (bottom real?) (dx real?) (dy real?) (draw-caret (one-of/c (quote no-caret) (quote show-inactive-caret) (quote show-caret)))) void))]{
 
