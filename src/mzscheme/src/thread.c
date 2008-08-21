@@ -5503,7 +5503,7 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
   Evt *w, **iws, **ws;
   Evt_Set *evt_set, *subset;
   Scheme_Object **args;
-  int i, j, count = 0;
+  int i, j, count = 0, reuse = 1;
 
   iws = MALLOC_N(Evt*, argc-delta);
   
@@ -5518,7 +5518,11 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
       iws[i] = w;
       count++;
     } else {
-      count += ((Evt_Set *)argv[i+delta])->argc;
+      int n;
+      n = ((Evt_Set *)argv[i+delta])->argc;
+      if (n != 1)
+        reuse = 0;
+      count += n;
     }
   }
 
@@ -5526,7 +5530,7 @@ Evt_Set *make_evt_set(const char *name, int argc, Scheme_Object **argv, int delt
   evt_set->so.type = scheme_evt_set_type;
   evt_set->argc = count;
 
-  if (count == (argc - delta))
+  if (reuse && (count == (argc - delta)))
     ws = iws;
   else
     ws = MALLOC_N(Evt*, count);
