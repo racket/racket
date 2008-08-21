@@ -83,7 +83,7 @@ END_XFORM_ARITH;
 #if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_X86_64)
 # define NEED_LONG_JUMPS
 #endif
-#if defined(MZ_USE_JIT_X86) && !defined(MZ_USE_JIT_X86_64)
+#if defined(MZ_USE_JIT_I386) && !defined(MZ_USE_JIT_X86_64)
 # define USE_TINY_JUMPS
 #endif
 
@@ -2943,7 +2943,7 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
  */
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refd = NULL, *refdt = NULL, *refslow;
-  int skipped, simple_rand, reversed = 0, has_fixnum_fast = 1;
+  int skipped, simple_rand, simple_rand2, reversed = 0, has_fixnum_fast = 1;
 
   LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
 
@@ -2994,17 +2994,23 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
   if (rand2) {
     simple_rand = (ok_to_move_local(rand)
 		   || SCHEME_INTP(rand));
-  } else
+    if (!simple_rand)
+      simple_rand2 = SAME_TYPE(SCHEME_TYPE(rand2), scheme_local_type);
+    else
+      simple_rand2 = 0;
+  } else {
     simple_rand = 0;
+    simple_rand2 = 0;
+  }
 
-  if (rand2 && !simple_rand)
+  if (rand2 && !simple_rand && !simple_rand2)
     skipped = orig_args - 1;    
   else
     skipped = orig_args;
 
   mz_runstack_skipped(jitter, skipped);
 
-  if (rand2 && !simple_rand) {
+  if (rand2 && !simple_rand && !simple_rand2) {
     mz_runstack_skipped(jitter, 1);
     generate_non_tail(rand, jitter, 0, 1);
     CHECK_LIMIT();
@@ -3015,7 +3021,18 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
     jit_str_p(JIT_RUNSTACK, JIT_R0);
   }
 
-  generate_non_tail(rand2 ? rand2 : rand, jitter, 0, 1);
+  if (simple_rand2) {
+    if (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type))
+      generate(rand, jitter, 0, 0, JIT_R1);
+    else {
+      generate_non_tail(rand, jitter, 0, 1);
+      jit_movr_p(JIT_R1, JIT_R0);
+    }
+    CHECK_LIMIT();
+    generate(rand2, jitter, 0, 0, JIT_R0);
+  } else {
+    generate_non_tail(rand2 ? rand2 : rand, jitter, 0, 1);
+  }
   CHECK_LIMIT();
 
   if (arith == 2) {
@@ -3028,15 +3045,17 @@ static int generate_arith(mz_jit_state *jitter, Scheme_Object *rator, Scheme_Obj
 
   /* rand2 in R0, and rand in R1 unless it's simple */
 
-  if (simple_rand) {
+  if (simple_rand || simple_rand2) {
     int pos, va;
 
-    if (SCHEME_INTP(rand)) {
+    if (simple_rand && SCHEME_INTP(rand)) {
       (void)jit_movi_p(JIT_R1, rand);
       va = JIT_R0;
     } else {
-      pos = mz_remap(SCHEME_LOCAL_POS(rand));
-      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      if (simple_rand) {
+        pos = mz_remap(SCHEME_LOCAL_POS(rand));
+        jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+      }
       /* check both fixnum bits at once by ANDing into R2: */
       jit_andr_ul(JIT_R2, JIT_R0, JIT_R1);
       va = JIT_R2;
