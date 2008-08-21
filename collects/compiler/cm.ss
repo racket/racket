@@ -110,12 +110,13 @@
                                     ", which appears to be in the future"
                                     ""))]))
 
-(define-struct ext-reader-guard (proc prev)
+(define-struct ext-reader-guard (proc top)
   #:property prop:procedure (struct-field-index proc))
 (define-struct file-dependency (path) #:prefab)
 
 (define (compile-zo* mode path read-src-syntax zo-name)
-  ;; External dependencies registered through reader guard and accomplice-logged events:
+  ;; External dependencies registered through reader guard and
+  ;; accomplice-logged events:
   (define external-deps null)
   (define deps-sema (make-semaphore 1))
   (define done-key (gensym))
@@ -127,38 +128,35 @@
 
   ;; Set up a logger to receive and filter accomplice events:
   (define accomplice-logger (make-logger))
-  (define accomplice-log-receiver
-    (make-log-receiver accomplice-logger 'info))
   (define log-th
-    (let ([orig-log (current-logger)])
+    (let ([orig-log (current-logger)]
+          [receiver (make-log-receiver accomplice-logger 'info)])
       (thread (lambda ()
                 (let loop ()
-                  (let ([l (sync accomplice-log-receiver)])
-                    (cond
-                     [(eq? (vector-ref l 2) done-key) 'done]
-                     [(and (eq? (vector-ref l 0) 'info)
-                           (file-dependency? (vector-ref l 2))
-                           (path? (file-dependency-path (vector-ref l 2))))
-                      (external-dep! (file-dependency-path (vector-ref l 2)))
-                      (loop)]
-                     [else
-                      (log-message orig-log (vector-ref l 0) (vector-ref l 1) (vector-ref l 2))
-                      (loop)])))))))
+                  (let ([l (sync receiver)])
+                    (unless (eq? (vector-ref l 2) done-key)
+                      (if (and (eq? (vector-ref l 0) 'info)
+                               (file-dependency? (vector-ref l 2))
+                               (path? (file-dependency-path (vector-ref l 2))))
+                        (external-dep! (file-dependency-path (vector-ref l 2)))
+                        (log-message orig-log (vector-ref l 0) (vector-ref l 1)
+                                     (vector-ref l 2)))
+                      (loop))))))))
 
   ;; Compile the code:
   (define code
     (parameterize ([current-reader-guard
-                    (let ([rg (current-reader-guard)])
+                    (let* ([rg (current-reader-guard)]
+                           [rg (if (ext-reader-guard? rg)
+                                 (ext-reader-guard-top rg)
+                                 rg)])
                       (make-ext-reader-guard
                        (lambda (d)
-                         ;; Start by calling the previously installed guard
-                         ;; to transform the module path, but also avoid
-                         ;; redundant dependencies by skipping over cm guards
-                         ;; for files being compiled.
-                         (let ([d (let loop ([rg rg])
-                                    (if (ext-reader-guard? rg)
-                                        (loop (ext-reader-guard-prev rg))
-                                        (rg d)))])
+                         ;; Start by calling the top installed guard to
+                         ;; transform the module path, avoiding redundant
+                         ;; dependencies by avoiding accumulation of these
+                         ;; guards.
+                         (let ([d (rg d)])
                            (when (module-path? d)
                              (let ([p (resolved-module-path-name
                                        (module-path-index-resolve
