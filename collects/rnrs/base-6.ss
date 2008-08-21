@@ -302,12 +302,26 @@
    [(n m) (/ (log n) (log m))]))
 
 (define (r6rs:expt base power)
-  (if (and (or (eq? base 0) 
-               (eq? base 1))
-           (number? power) 
-           (inexact? power))
-      (expt (exact->inexact base) power)
-      (expt base power)))
+  (cond
+   [(and (number? base)
+         (zero? base)
+         (number? power))
+    (if (zero? power)
+        (if (and (eq? base 0)
+                 (exact? power))
+            1
+            1.0)
+        (if (positive? (real-part power))
+            (if (and (eq? base 0)
+                     (exact? power))
+                0
+                0.0)
+            (expt base power)))]
+   [(and (eq? base 1)
+         (number? power) 
+         (inexact? power))
+    (expt (exact->inexact base) power)]
+   [else (expt base power)]))
 
 (define (r6rs:angle n)
   ; because `angle' produces exact 0 for reals:
