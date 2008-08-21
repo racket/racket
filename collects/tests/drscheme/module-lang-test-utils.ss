@@ -19,9 +19,9 @@
     (lambda (file) (path->string (build-path here file)))))
 
 (define tests '())
-(define (test defs ints res [all? #f])
-  (set! tests (cons (make-test (if (string? defs) defs (format "~s" defs))
-                               ints res all?)
+(define (test definitions interactions results [all? #f])
+  (set! tests (cons (make-test (if (string? definitions) definitions (format "~s" definitions))
+                               interactions results all?)
                     tests)))
 
 (define temp-files '())

@@ -23,6 +23,21 @@
    (/ 888 2)
    (provide (except-out (all-from-out scheme/base) #%top-interaction))))
 
+;; this test doesn't pass yet, but the test isn't testing the right thing yet either.
+#;
+(test @t{#lang scheme
+         (define-syntax (f stx)
+           (syntax-case stx ()
+             [(f)
+              (raise (make-exn:fail:syntax "both" (current-continuation-marks) (list #'f stx)))]))}
+      @t{(f)}
+      #<<--
+. . both in:
+  f
+  (f)
+--
+      )
+
 (test @t{}
       #f
       @rx{Module Language: There must be a valid module
@@ -56,6 +71,10 @@
           collection not found
           Interactions disabled}
       #t)
+(test @t{#lang scheme
+         3}
+      #f
+      "3")
 (test @t{(module m mzscheme (provide x) (define x 1))}
       @t{x}
       "1")

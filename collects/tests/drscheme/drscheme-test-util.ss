@@ -200,7 +200,7 @@
   (define (insert-in-interactions frame str)
     (put-in-frame (lambda (x) (send x get-interactions-canvas)) frame str #t))
 
-  (define (put-in-frame get-canvas frame str/sexp paste?)
+  (define (put-in-frame get-canvas frame str/sexp just-insert?)
     (let ([str (if (string? str/sexp)
 		   str/sexp
 		   (let ([port (open-output-string)])
@@ -212,7 +212,7 @@
 	(fw:test:new-window canvas)
 	(let ([editor (send canvas get-editor)])
           (send editor set-caret-owner #f)
-          (if paste? (send editor insert str) (type-string str))))))
+          (if just-insert? (send editor insert str) (type-string str))))))
 
   ;; type-string : string -> void
   ;; to call test:keystroke repeatedly with the characters
