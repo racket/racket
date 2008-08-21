@@ -360,7 +360,7 @@ A @scheme[_struct-option] always starts with a keyword:
     that sets the value of the corresponding field in an instance of
     the structure type.
 
-     @defexamples[(define-struct dot (x y) #:mutable)]
+     @defexamples[(define-struct dot (x y) #:mutable)
                   (define d (make-dot 1 2))
                   (dot-x d)
                   (set-dot-x! d 10)
