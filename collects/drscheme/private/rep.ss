@@ -1106,9 +1106,9 @@ TODO
              (set! in-evaluation? #f)
              (update-running #f)
              (cleanup)
-             (flush-output (get-value-port))
              (when complete-program?
                (send lang front-end/finished-complete-program settings))
+             (flush-output (get-value-port))
              (queue-system-callback/sync
               (get-user-thread)
               (λ () ; =Kernel=, =Handler= 
