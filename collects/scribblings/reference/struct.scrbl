@@ -105,7 +105,7 @@ structures depends on the current inspector.)
 
 Creates a new structure type, unless @scheme[inspector] is
 @scheme['prefab], in which case @scheme[make-struct-type] accesses a
-@techlink{prefab} structre type.  The @scheme[name] argument is used
+@techlink{prefab} structure type.  The @scheme[name] argument is used
 as the type name. If @scheme[super-type] is not @scheme[#f], the
 resulting type is a subtype of the corresponding structure type.
 
@@ -147,7 +147,7 @@ positions. Each element in the list must be unique, otherwise
 @scheme[0] (inclusive) to @scheme[init-field-cnt] (exclusive), otherwise
 @exnraise[exn:fail:contract].
 
-The @scheme[guard] argument is either a procedure of @math{n}
+The @scheme[guard] argument is either a procedure of @math{n+1}
 arguments or @scheme[#f], where @math{n} is the number of arguments
 for the new structure type's constructor (i.e.,
 @scheme[init-field-cnt] plus constructor arguments implied by

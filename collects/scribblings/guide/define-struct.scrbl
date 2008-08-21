@@ -406,13 +406,16 @@ A @scheme[_struct-option] always starts with a keyword:
 @;-- FIXME:
 @;-- Explain when to use guards instead of contracts, and vice-versa
 
- @specspecsubform[(code:line #:guard guard-expr)]{
-  Specifies a @deftech{constructor guard} procedure to be called
-  whenever an instance of the structure type is created. The guard
-  takes as many arguments as non-automatic fields in the structure
-  type, and it should return the same number of values. The guard can
-  raise an exception if one of the given arguments is unacceptable, or
-  it can convert an argument.
+ @specspecsubform[(code:line #:guard guard-expr)]{ Specifies a
+  @deftech{constructor guard} procedure to be called whenever an
+  instance of the structure type is created. The guard takes as many
+  arguments as non-automatic fields in the structure type, plus one
+  more for the name of the instantiated type (in case a sub-type is
+  instantiated, in which case it's best to report an error using the
+  sub-type's name). The guard should return the same number of values
+  as given, minus the name argument. The guard can raise an exception
+  if one of the given arguments is unacceptable, or it can convert an
+  argument.
 
  @defexamples[
    #:eval posn-eval
@@ -421,12 +424,14 @@ A @scheme[_struct-option] always starts with a keyword:
                   #:guard (lambda (name type-name)
                             (cond
                               [(string? name) name]
-                              [(number? name)
-                               (number->string name)]
-                              [else (error "bad name" name)])))
+                              [(symbol? name) (symbol->string name)]
+                              [else (error type-name 
+                                           "bad name: ~e" 
+                                           name)])))
    (make-thing "apple")
+   (make-thing 'apple)
    (make-thing 1/2)
-   (make-thing #f)]
+  ]
 
   The guard is called even when subtype instances are created. In that
   case, only the fields accepted by the constructor are provided to
@@ -439,11 +444,11 @@ A @scheme[_struct-option] always starts with a keyword:
                  #:transparent
                  #:guard (lambda (name age type-name)
                            (if (negative? age)
-                               (error "bad age" age)
+                               (error type-name "bad age: ~e" age)
                                (values name age))))
   (make-person "John" 10)
   (make-person "Mary" -1)
-  (make-person #f 10)]}
+  (make-person 10 10)]}
 
  @specspecsubform[(code:line #:property prop-expr val-expr)]{
    Associates a @deftech{property} and value with the structure type.
