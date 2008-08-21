@@ -31,7 +31,7 @@
 
 
 ;; parse-post: bindings -> post
-;; Consuems a bindings, and produces a post out of the bindings.
+;; Consumes a bindings, and produces a post out of the bindings.
 (define (parse-post bindings)
   (make-post (extract-binding/single 'title bindings)
              (extract-binding/single 'body bindings)))
