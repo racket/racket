@@ -160,8 +160,7 @@
         (when (and src-editor current-rep)
           (send text set-clickback
                 start (send text get-end-position)
-                (lambda (t s e) (parameterize ([error-display-handler (error-handler)])
-                                  (exn)))
+                (lambda (t s e) ((error-handler) exn))
                 #f #f)
           (let ([end (send text get-end-position)]
                 [c (new style-delta%)])

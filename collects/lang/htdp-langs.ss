@@ -168,7 +168,6 @@
                  (namespace-attach-module drs-namespace scheme-test-module-name)
                  (namespace-require scheme-test-module-name)
                  (scheme-test-data (list (drscheme:rep:current-rep) drs-eventspace test-display%))
-                 (error-handler teaching-languages-error-display-handler)
                  (test-execute (get-preference 'tests:enable? (lambda () #t)))
                  (test-format (make-formatter (lambda (v o) (render-value/format v settings o 40))))
                  )))
