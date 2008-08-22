@@ -3063,15 +3063,7 @@ module browser threading seems wrong.
         (define scheme-menu 'scheme-menu-not-yet-init)
         (define insert-menu 'insert-menu-not-yet-init)
         (define/public (get-insert-menu) insert-menu)
-        (define/public (get-special-menu) 
-          (define context (continuation-mark-set->context (current-continuation-marks)))
-          (fprintf (current-error-port) 
-                   "called get-special-menu: ~a\n"
-                   (if (and (pair? context)
-                            (pair? (cdr context)))
-                       (format "~s ~s" (car (cadr context)) (cdr (cadr context)))
-                       "<<unknown caller>>"))
-          insert-menu)
+        (define/public (get-special-menu) insert-menu)
         
         (define/public (choose-language-callback)
           (let ([new-settings (drscheme:language-configuration:language-dialog
