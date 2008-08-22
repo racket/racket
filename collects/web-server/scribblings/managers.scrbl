@@ -15,7 +15,8 @@ pluggable through the manager interface.
 
 @; ------------------------------------------------------------
 @section[#:tag "manager.ss"]{General}
-@(require (for-label web-server/managers/manager))
+@(require (for-label web-server/managers/manager)
+          (for-label web-server/servlet/servlet-structs))
 
 @defmodule[web-server/managers/manager]
 
@@ -73,6 +74,10 @@ the users and implementers of managers.
  You could use it if you know your servlet does not use the continuation
  capturing functions and want the server to not allocate meta-data
  structures for each instance.
+ 
+ If you @emph{do} use a continuation capturing function, the continuation is
+ simply not stored. If the URL is visited, the @scheme[instance-expiration-handler]
+ is called with the request.
 }
 
 If you are considering using this manager, also consider using the
