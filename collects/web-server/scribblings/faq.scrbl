@@ -101,7 +101,7 @@ scheme
 
 @code:comment{Load the standard configuration file, but augment the port.}
 (define configuration
-  (configuration-table-sexpr->web-config@
+  (configuration-table->web-config@
    (build-path (collection-path "web-server")
                "default-web-root"
                "configuration-table.ss")
