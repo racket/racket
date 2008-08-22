@@ -92,7 +92,8 @@
 	 (lambda ()
 	   ((current-text-keymap-initializer) (send e get-keymap)))))
       (inherit alignment stretchable-in-y area-parent
-	       get-min-size set-min-width set-min-height)
+	       get-min-size set-min-width set-min-height
+               spacing)
       (rename [super-place-children place-children])
       (public
 	[command (lambda (e)  ; No entry/exit needed
@@ -148,7 +149,8 @@
 	(unless horiz? (send p alignment 'left 'top))
 	(unless multi? (stretchable-in-y #f))
 	;; For Windows:
-	(wx:set-combo-box-font font))
+	(wx:set-combo-box-font font)
+        (spacing 3))
       (private-field
        [l (and label
 	       (make-object wx-message% #f proxy p label -1 -1 null font))]
