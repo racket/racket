@@ -88,7 +88,7 @@ scheme
          net/ssl-tcp-unit
          net/tcp-sig
          net/tcp-unit
-         web-server/web-server
+         (only-in web-server/web-server do-not-return)
          web-server/web-server-unit
          web-server/web-server-sig
          web-server/web-config-sig
