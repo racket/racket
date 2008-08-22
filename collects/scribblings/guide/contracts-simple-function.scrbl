@@ -227,7 +227,8 @@ scheme
   (code:comment "convert a random number to a string")
   [format-number (-> number? string?)]
   
-  (code:comment "convert an amount into a dollar based string")
+  (code:comment "convert an amount into a string with a decimal")
+  (code:comment "point, as in an amount of US currency")
   [format-nat (-> natural-number/c 
                   (and/c string? has-decimal?))])
 ]
@@ -268,17 +269,35 @@ scheme
 
 (provide/contract
   ...
-  (code:comment "convert a random number to a string")
+  (code:comment "convert a number to a string")
   [format-number (-> number? string?)]
   
   (code:comment "convert an  amount (natural number) of cents")
   (code:comment "into a dollar based string")
   [format-nat (-> natural-number/c 
-                  (lambda (result)
-                    (and (string? result)
-                         (is-decimal-string? result))))])
+                  (and/c string? 
+                         is-decimal-string?))])
 ]
 
+
+@ctc-section{Contracts on Higher-order Functions}
+
+Function contracts are not just restricted to having simple
+predicates on their domains or ranges. Any of the contract
+combinators discussed here, including function contracts
+themselves, can be used as contracts on the arguments and
+results of a function.
+
+For example, 
+@schemeblock[(-> integer? (-> integer? integer?))]
+is a contract that describes a curried function. It matches
+functions that accept one argument and then return another
+function accepting a second argument before finally
+returning an integer.
+
+This contract
+@schemeblock[(-> (-> integer? integer?) integer?)]
+describes functions that accept other functions as inputs.
 
 @ctc-section{The Difference Between @scheme[any] and @scheme[any/c]}
 
@@ -304,7 +323,7 @@ example, this function:
 ]
 meets the first contract, but not the second one.}
 
-@item{Relatedly, this means that a call to a function that
+@item{This also means that a call to a function that
 has the second contract is not a tail call. So, for example,
 the following program is an infinite loop that takes only a constant
 amount of space, but if you replace @scheme[any] with
