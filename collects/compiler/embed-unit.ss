@@ -6,6 +6,7 @@
 	   scheme/port
 	   scheme/promise
            syntax/moddep
+           syntax/modcollapse
            xml/plist
            setup/dirs
            setup/variant
@@ -556,11 +557,17 @@
                                           ,(filter values
                                                    (map (lambda (m)
                                                           (let ([path (mod-mod-path m)])
-                                                            (if (and (pair? path)
-                                                                     (eq? 'lib (car path)))
-                                                                (cons (lib-path->string path)
-                                                                      (mod-full-name m))
-                                                                #f)))
+                                                            (cond
+                                                             [(and (pair? path)
+                                                                   (eq? 'lib (car path)))
+                                                              (cons (lib-path->string path)
+                                                                    (mod-full-name m))]
+                                                             [(and (pair? path)
+                                                                   (eq? 'planet (car path)))
+                                                              ;; Normalize planet path
+                                                              (cons (collapse-module-path path current-directory)
+                                                                    (mod-full-name m))]
+                                                             [else #f])))
                                                         code-l)))])
              (letrec-values ([(embedded-resolver)
                               (case-lambda 
@@ -611,10 +618,79 @@
                                                                                                        (string-append s "/"))
                                                                                                      (cddr name)))
                                                                                          (cadr name)))
-                                                                      #f)
+                                                                      (if (eq? 'planet (car name))
+                                                                          (if (null? (cddr name))
+                                                                              ;; need to normalize:
+                                                                              (let-values ([(s) (if (symbol? (cadr name))
+                                                                                                    (symbol->string (cadr name))
+                                                                                                    (cadr name))])
+                                                                                (letrec-values ([(split)
+                                                                                                 (lambda (s rx suffix?)
+                                                                                                   (let-values ([(m) (regexp-match-positions rx s)])
+                                                                                                     (if m
+                                                                                                         (cons (substring s 0 (caar m))
+                                                                                                               (split (substring s (cdar m))
+                                                                                                                      rx suffix?))
+                                                                                                         (list
+                                                                                                          (if suffix?
+                                                                                                              (if (regexp-match? #rx"[.]" s)
+                                                                                                                  s
+                                                                                                                  (string-append s ".ss"))
+                                                                                                              s)))))]
+                                                                                                [(last-of)
+                                                                                                 (lambda (l)
+                                                                                                   (if (null? (cdr l)) (car l) (last-of (cdr l))))]
+                                                                                                [(not-last)
+                                                                                                 (lambda (l)
+                                                                                                   (if (null? (cdr l))
+                                                                                                       null
+                                                                                                       (cons (car l) (not-last (cdr l)))))])
+                                                                                  (let-values ([(parts) (split s #rx"/" #t)])
+                                                                                    (let-values ([(vparts) (split (cadr parts) #rx":" #f)])
+                                                                                      (cons 'planet
+                                                                                            (cons (if (null? (cddr parts))
+                                                                                                      "main.ss"
+                                                                                                      (last-of parts))
+                                                                                                  (cons
+                                                                                                   (cons (car parts) 
+                                                                                                         (cons (string-append (car vparts) ".plt")
+                                                                                                               ;; FIXME: finish parsing version:
+                                                                                                               (cdddr parts)))
+                                                                                                   (not-last (cddr parts)))))))))
+                                                                              ;; already in long form:
+                                                                              name)
+                                                                          #f))
+                                                                  #f))]
+                                                           [(planet-match?)
+                                                            (lambda (a b)
+                                                              (if (equal? (cons (car a) (cddr a))
+                                                                          (cons (car b) (cddr b)))
+                                                                  (let-values ([(a) (cadr a)]
+                                                                               [(b) (cadr b)])
+                                                                    (if (equal? (car a) (car b))
+                                                                        (if (equal? (cadr a) (cadr b))
+                                                                            ;; Everything matches up to the version...
+                                                                            ;; FIXME: check version. (Since the version isn't checked,
+                                                                            ;; this currently works only when a single version of the
+                                                                            ;; package is used in the executable.)
+                                                                            #t
+                                                                            #f)
+                                                                        #f))
                                                                   #f))])
                                                 ;; A library mapping that we have? 
-                                                (let-values ([(a3) (assoc lname library-table)])
+                                                (let-values ([(a3) (if lname
+                                                                       (if (string? lname)
+                                                                           ;; lib
+                                                                           (assoc lname library-table)
+                                                                           ;; planet
+                                                                           (ormap (lambda (e)
+                                                                                    (if (string? (car e))
+                                                                                        #f
+                                                                                        (if (planet-match? (cdar e) (cdr lname))
+                                                                                            e
+                                                                                            #f)))
+                                                                                  library-table))
+                                                                       #f)])
                                                   (if a3
                                                       ;; Have it:
                                                       (make-resolved-module-path (cdr a3))
