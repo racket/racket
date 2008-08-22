@@ -141,6 +141,7 @@
               [deps (make-hasheq)]
               [known-deps (make-hasheq)]
               [all-main? (memq 'depends-all-main (doc-flags (info-doc info)))])
+          ;; Convert current deps from paths to infos, keeping paths that have no info
           (set-info-deps!
            info
            (map (lambda (d)
@@ -150,17 +151,19 @@
           (for ([d (info-deps info)])
             (let ([i (if (info? d) d (hash-ref src->info d #f))])
               (if i
-                (hash-set! deps i #t)
-                (unless
-                    (or (memq 'depends-all (doc-flags (info-doc info)))
-                        (and (if (info? d)
-                               (doc-under-main? (info-doc d))
-                               (not (path? (path->main-collects-relative d))))
-                             all-main?))
-                  (set! added? #t)
-                  (when (verbose)
-                    (printf " [Removed Dependency: ~a]\n"
-                            (doc-src-file (info-doc info))))))))
+                  ;; Normal case:
+                  (hash-set! deps i #t)
+                  ;; Path has no info; normally keep it as expected, and it gets
+                  ;; removed later.
+                  (unless (or (memq 'depends-all (doc-flags (info-doc info)))
+                              (and (if (info? d)
+                                       (doc-under-main? (info-doc d))
+                                       (not (path? (path->main-collects-relative d))))
+                                   all-main?))
+                    (set! added? #t)
+                    (when (verbose)
+                      (printf " [Removed Dependency: ~a]\n"
+                              (doc-src-file (info-doc info))))))))
           (when (or (memq 'depends-all (doc-flags (info-doc info))) all-main?)
             ;; Add all as expected dependency:
             (when (verbose)
@@ -174,6 +177,7 @@
                          (not (memq 'no-depend-on (doc-flags (info-doc i)))))
                 (set! added? #t)
                 (hash-set! deps i #t))))
+          ;; Add defeinite dependencies based on referenced keys
           (let ([not-found
                  (lambda (k)
                    (unless (or (memq 'depends-all (doc-flags (info-doc info)))
@@ -207,6 +211,7 @@
                 (unless (ormap (lambda (k) (hash-ref ht k #f))
                                (hash-map s-ht (lambda (k v) k)))
                   (not-found s-key)))))
+          ;; If we added anything (expected or known), then mark as needed to run
           (when added?
             (when (verbose)
               (printf " [Added Dependency: ~a]\n"
@@ -215,23 +220,27 @@
             (set-info-known-deps! info (hash-map known-deps (lambda (k v) k)))
             (set-info-need-in-write?! info #t)
             (set-info-need-run?! info #t))))
-      ;; If a dependency changed, then we need a re-run:
+      ;; If any expected dependency changed, then we need a re-run:
       (for ([i infos]
             #:when (not (or (info-need-run? i) (not (info-build? i)))))
         (let ([ch (ormap (lambda (i2)
-                           (or (not (info? i2))
+                           (or (and (not (info? i2))
+                                    i2)
                                (and (>= (info-out-time i2) (info-time i)) i2)))
                          (info-deps i))])
           (when ch
             (when (verbose)
               (printf " [Dependency: ~a\n  <- ~a]\n"
                       (doc-src-file (info-doc i))
-                      (doc-src-file (info-doc ch))))
+                      (if (info? ch)
+                          (doc-src-file (info-doc ch))
+                          ch)))
             (set-info-need-run?! i #t))))
       ;; Iterate, if any need to run:
       (when (and (ormap info-need-run? infos) (iter . < . 30))
         ;; Build again, using dependencies
         (for ([i infos] #:when (info-need-run? i))
+          (set-info-deps! i (filter info? (info-deps i)))
           (set-info-need-run?! i #f)
           (build-again! latex-dest i with-record-error setup-printf))
         ;; If we only build 1, then it reaches it own fixpoint
@@ -336,6 +345,8 @@
         (or v
             (begin
               (when (verbose)
+                (void)
+                #;
                 (fprintf (current-error-port) " [Re-load ~a]\n" info-out-file))
               (let ([v (cadr (with-input-from-file info-out-file read-out-sxref))])
                 (set! b (make-weak-box v))
@@ -521,9 +532,9 @@
          (render-time
           "deserialize"
           (for ([i (info-deps info)])
-            (with-my-namespace
-             (lambda ()
-               (when (info? i)
+            (when (info? i)
+              (with-my-namespace
+               (lambda ()
                  (send renderer deserialize-info ((info-get-sci i)) ci))))))
          (let* ([ri (render-time "resolve" (send renderer resolve (list v) (list dest-dir) ci))]
                 [sci (render-time "serialize" (send renderer serialize-info ri))]
