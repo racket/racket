@@ -125,7 +125,7 @@ arguments: @scheme[char?]. }
 
 We all know that @scheme[+] in Beginner Scheme is a function
   that consumes at least two numbers but, in principle,
-  arbitraily many more. Defining the function is easy:
+  arbitrarily many more. Defining the function is easy:
 @schemeblock[
 (define (plus fst snd . rst)
   (foldr + (+ fst snd) rst))
@@ -159,7 +159,7 @@ rest argument follows @scheme[#:rest]
   Since the remainder of the actual arguments are collected
   in a list for a rest parameter such as @scheme[rst], the
   contract demands a list of values; in this specific
-  examples, these values must be number.
+  examples, these values must be numbers.
 
 @ctc-section[#:tag "keywords"]{Keyword Arguments}
 
@@ -307,21 +307,21 @@ Then, informally, the proper precondition for @scheme[withdraw] is that
 ``the balance of the given account is greater than or equal to the given (withdrawal) amount.''
 The postcondition is similar to the one for
 @ctc-link["flat-named-contracts"]{@scheme[deposit]}:
-``the balance of the resulting account is larger than (or equal to) than the one of the
+``the balance of the resulting account is larger than (or equal to) the one of the
 given account.''
 You could of course also formulate a full-fledged correctness condition, namely,
 that the balance of the resulting account is equal to the balance of the given
-one, plus the given amount. 
+one, plus the given amount.
 
 The following module implements accounts imperatively and specifies the
-conditions we just discussed: 
+conditions we just discussed:
 @schememod[
 scheme
 
 (code:comment "section 1: the contract definitions")
-(define-struct account (balance))
+(define-struct account (balance) #:mutable)
 (define amount natural-number/c)
-  
+
 (define msg> "account a with balance larger than ~a expected")
 (define msg< "account a with balance less than ~a expected")
 
@@ -332,27 +332,27 @@ scheme
   (flat-named-contract (format msg balance0) ctr))
 
 (code:comment "section 2: the exports")
-(provide/contract 
+(provide/contract
  [create   (amount . -> . account?)]
  [balance  (account? . -> . amount)]
- [withdraw (->d ([acc account?] 
+ [withdraw (->d ([acc account?]
                  [amt (and/c amount (<=/c (balance acc)))])
                 ()
                 [result (mk-account-contract acc amt > msg>)])]
- [deposit  (->d ([acc account?] 
+ [deposit  (->d ([acc account?]
                  [amt amount])
                 ()
                 [result (mk-account-contract acc amt < msg<)])])
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
-  
+
 (define (create amt) (make-account amt))
-  
+
 (define (withdraw acc amt)
   (set-account-balance! acc (- (balance acc) amt))
   acc)
-  
+
 (define (deposit acc amt)
   (set-account-balance! acc (+ (balance acc) amt))
   acc)
