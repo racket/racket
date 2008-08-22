@@ -166,6 +166,7 @@
 
 (define test-format (make-parameter (lambda (v) (format "~a" v))))
 (define test-execute (make-parameter #t))
+(define error-handler (make-parameter (error-display-handler)))
 (define test-silence (make-parameter #f))
 
-(provide test-engine% test-display-textual% test-format test-execute test-silence)
+(provide test-engine% test-display-textual% test-format error-handler test-execute test-silence)

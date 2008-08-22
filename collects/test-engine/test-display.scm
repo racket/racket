@@ -5,7 +5,8 @@
          mred
          framework
          string-constants
-         "test-info.scm")
+         "test-info.scm"
+         "test-engine.scm")
 
 (define test-display%
   (class* object% ()
@@ -112,10 +113,16 @@
     (define/public (display-check-failures checks editor test-info src-editor)
       (for ([failed-check (reverse checks)])
         (send editor insert "\t")
-        (make-link editor
-                   (failed-check-msg failed-check)
-                   (failed-check-src failed-check)
-                   src-editor)
+        (if (failed-check-exn? failed-check)
+            (make-error-link editor
+                             (failed-check-msg failed-check)
+                             (failed-check-exn? failed-check)
+                             (failed-check-src failed-check)
+                             src-editor)
+            (make-link editor
+                       (failed-check-msg failed-check)
+                       (failed-check-src failed-check)
+                       src-editor))
         (send editor insert "\n")))
 
     ;next-line: editor% -> void
@@ -144,7 +151,28 @@
                   start end #f)
             (send c set-delta-foreground "royalblue")
             (send text change-style c start end #f)))))
+    
+    ;; make-error-link: text% (listof (U string snip%)) exn src editor -> void
+    (define (make-error-link text msg exn dest src-editor)
+      (make-link text msg dest src-editor)
+      (let ((start (send text get-end-position)))
+        (send text insert "Trace error ")
+        (when (and src-editor current-rep)
+          (send text set-clickback
+                start (send text get-end-position)
+                (lambda (t s e) (parameterize ([error-display-handler (error-handler)])
+                                  (exn)))
+                #f #f)
+          (let ([end (send text get-end-position)]
+                [c (new style-delta%)])
+            (send text insert " ")
+            (send text change-style
+                  (make-object style-delta% 'change-underline #t)
+                  start end #f)
+            (send c set-delta-foreground "red")
+            (send text change-style c start end #f)))))
 
+    ;format-src: src -> string
     (define (format-src src)
       (let ([src-file car]
             [src-line cadr]

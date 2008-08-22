@@ -5,7 +5,7 @@
 (provide (all-defined-out))
 
 ;; (make-failed-check src (listof (U string snip%)) (U #f exn))
-(define-struct failed-check (src msg exn))
+(define-struct failed-check (src msg exn?))
 
 (define test-info-base%
   (class* object% ()
