@@ -665,7 +665,7 @@ TODO
                                                    (srcloc-position srcloc)
                                                    (srcloc-span srcloc))]
                                      [(port-name-matches? (srcloc-source srcloc))
-                                      (hash-set! ht (srcloc-source srcloc) definitions-text)
+                                      (hash-set! ht (srcloc-source srcloc) this)
                                       (make-srcloc this
                                                    (srcloc-line srcloc)
                                                    (srcloc-column srcloc)

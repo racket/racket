@@ -23,25 +23,6 @@
    (/ 888 2)
    (provide (except-out (all-from-out scheme/base) #%top-interaction))))
 
-;; this test doesn't pass yet, but the test isn't testing the right thing yet either.
-(test @t{#lang scheme
-         (define-syntax (f stx)
-           (syntax-case stx ()
-             [(f)
-              (raise (make-exn:fail:syntax "both" (current-continuation-marks) (list #'f stx)))]))}
-      @t{(f)}
-      #<<--
-> (f)
-. . both in:
-  f
-  (f)
---
-      #t
-      #:error-ranges 
-      (λ (defs ints)
-        (list (make-srcloc defs 3 3 107 1)
-              (make-srcloc defs 3 2 106 3))))
-
 (test @t{}
       #f
       @rx{Module Language: There must be a valid module
@@ -255,6 +236,24 @@
          (flush-output)}
       #f
       "4")
+
+(test @t{#lang scheme
+         (define-syntax (f stx)
+           (syntax-case stx ()
+             [(f)
+              (raise (make-exn:fail:syntax "both" (current-continuation-marks) (list #'f stx)))]))}
+      @t{(f)}
+      #<<--
+> (f)
+. . both in:
+  f
+  (f)
+--
+      #t
+      #:error-ranges 
+      (λ (defs ints)
+        (list (make-srcloc ints 3 3 107 1)
+              (make-srcloc ints 3 2 106 3))))
 
 ;; test protection against user-code changing the namespace
 (test @t{#lang scheme/base
