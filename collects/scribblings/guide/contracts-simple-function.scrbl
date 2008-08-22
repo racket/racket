@@ -179,7 +179,7 @@ Lesson: learn about the built-in contracts in @schememodname[scheme/contract].
 
 @ctc-section[#:tag "and-or"]{The @scheme[and/c], @scheme[or/c], and @scheme[listof] Contract Combinators}
 
-Both @scheme[and/c] and @scheme[or/c] ombine contracts and
+Both @scheme[and/c] and @scheme[or/c] combine contracts and
 they do what you expect them to do.
 
 For example, if we didn't have @scheme[natural-number/c], the
