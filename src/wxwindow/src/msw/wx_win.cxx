@@ -743,7 +743,7 @@ void wxWindow::GetTextExtent(const char *string, double *x, double *y,
   wxFont *fontToUse = theFont;
   
   if (!fontToUse)
-    fontToUse = font;
+    fontToUse = GetFont();
 
   if (!measure_dc) {
     wxBitmap *bm;
