@@ -624,12 +624,12 @@ BOOL wxCanvasWnd::NCPaint(WPARAM wParam, LPARAM lParam, LONG *result)
       }
 
       GetWindowRect(hWnd, &wr);
-      
+
       r = DefWindowProc(WM_NCPAINT, wParam, lParam);
       *result = r;
 
       if (control_theme) {    
-	hdc = GetDCEx(hWnd, (HRGN)wParam, DCX_WINDOW|DCX_INTERSECTRGN);
+	hdc = GetDCEx(hWnd, /* wParam */ NULL, DCX_WINDOW /* |DCX_INTERSECTRGN */);
 
 	wr.right -= wr.left;
 	wr.bottom -= wr.top;
