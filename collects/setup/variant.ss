@@ -6,7 +6,7 @@
 
 (define plain-mz-is-cgc?
   (delay (let* ([dir (find-console-bin-dir)]
-                [exe (cond [(eq? 'windows (system-type)) '("MzScheme.exe")]
+                [exe (cond [(eq? 'windows (system-type)) "MzScheme.exe"]
                            [(equal? #".dll" (system-type 'so-suffix))
                             ;; in cygwin so-suffix is ".dll"
                             "mzscheme.exe"]
