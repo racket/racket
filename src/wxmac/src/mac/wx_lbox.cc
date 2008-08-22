@@ -751,7 +751,7 @@ void wxListBox::DoShow(Bool on)
   ALShow(on, cListReference);
   wxWindow::DoShow(on);
 
-  if (!on && cListTitle)
+  if (on && cListTitle)
     cListTitle->DoShow(on);
 
   if (on) {
