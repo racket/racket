@@ -24,7 +24,6 @@
    (provide (except-out (all-from-out scheme/base) #%top-interaction))))
 
 ;; this test doesn't pass yet, but the test isn't testing the right thing yet either.
-#;
 (test @t{#lang scheme
          (define-syntax (f stx)
            (syntax-case stx ()
@@ -32,11 +31,16 @@
               (raise (make-exn:fail:syntax "both" (current-continuation-marks) (list #'f stx)))]))}
       @t{(f)}
       #<<--
+> (f)
 . . both in:
   f
   (f)
 --
-      )
+      #t
+      #:error-ranges 
+      (λ (defs ints)
+        (list (make-srcloc defs 3 3 107 1)
+              (make-srcloc defs 3 2 106 3))))
 
 (test @t{}
       #f
@@ -232,10 +236,7 @@
 (test @t{#lang setup/infotab}
       #f
       ;; test the complete buffer, to make sure that there is no error
-      (regexp (string-append "^Welcome to DrScheme, [^\n]*\n"
-                             "Language: Module[^\n]*\n\n"
-                             "Interactions disabled: setup/infotab does not"
-                             " support a REPL \\(no #%top-interaction\\)\n*$"))
+      "\nInteractions disabled: setup/infotab does not support a REPL (no #%top-interaction)"
       #t)
 
 ;; test scheme/load behavior

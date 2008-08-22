@@ -8,10 +8,16 @@
 (define (rx . strs)
   (regexp (regexp-replace* #rx" *\n *" (string-append* strs) ".*")))
 
-(define-struct test (definitions  ; string
-                     interactions ; (union #f string)
-                     result       ; string
-                     all?)        ; boolean (#t => compare the whole window)
+(define-struct test (definitions   ; string
+                     interactions  ; (union #f string)
+                     result        ; string
+                     all?          ; boolean (#t => compare all of the text between the 3rd and n-1-st line)
+                     error-ranges) ; (or/c 'dont-test
+                                   ;       (-> (is-a?/c text)
+                                   ;           (is-a?/c text)
+                                   ;           (or/c #f (listof ...))))
+                                   ;    fn => called with defs & ints, result must match get-error-ranges method's result
+  
   #:omit-define-syntaxes)
 
 (define in-here
@@ -19,9 +25,14 @@
     (lambda (file) (path->string (build-path here file)))))
 
 (define tests '())
-(define (test definitions interactions results [all? #f])
-  (set! tests (cons (make-test (if (string? definitions) definitions (format "~s" definitions))
-                               interactions results all?)
+(define (test definitions interactions results [all? #f] #:error-ranges [error-ranges 'dont-test])
+  (set! tests (cons (make-test (if (string? definitions) 
+                                   definitions 
+                                   (format "~s" definitions))
+                               interactions 
+                               results 
+                               all? 
+                               error-ranges)
                     tests)))
 
 (define temp-files '())
@@ -37,6 +48,7 @@
 
 (define drs (wait-for-drscheme-frame))
 (define interactions-text (send drs get-interactions-text))
+(define definitions-text (send drs get-definitions-text))
 
 (define (single-test test)
   (let/ec k
@@ -64,25 +76,42 @@
 
       (let* ([text
               (if (test-all? test)
-                (send interactions-text get-text)
-                (let* ([para (- (send interactions-text position-paragraph
-                                      (send interactions-text last-position))
-                                1)])
-                  (send interactions-text
-                        get-text
-                        (send interactions-text paragraph-start-position para)
-                        (send interactions-text paragraph-end-position para))))]
-             [passed? (let ([r (test-result test)])
-                        ((cond [(string? r) string=?]
-                               [(regexp? r) regexp-match?]
-                               [else 'module-lang-test "bad test value: ~e" r])
-                         r text))])
-        (unless passed?
+                  (let* ([para (- (send interactions-text position-paragraph
+                                        (send interactions-text last-position))
+                                  1)])
+                    (send interactions-text
+                          get-text
+                          (send interactions-text paragraph-start-position 2)
+                          (send interactions-text paragraph-end-position para)))
+                  (let* ([para (- (send interactions-text position-paragraph
+                                        (send interactions-text last-position))
+                                  1)])
+                    (send interactions-text
+                          get-text
+                          (send interactions-text paragraph-start-position para)
+                          (send interactions-text paragraph-end-position para))))]
+             [output-passed? (let ([r (test-result test)])
+                               ((cond [(string? r) string=?]
+                                      [(regexp? r) regexp-match?]
+                                      [else 'module-lang-test "bad test value: ~e" r])
+                                r text))])
+        (unless output-passed?
           (printf "FAILED: ~a\n        ~a\n  expected: ~s\n       got: ~s\n"
                   (test-definitions test)
                   (or (test-interactions test) 'no-interactions)
                   (test-result test)
-                  text))))))
+                  text))
+        (cond
+          [(eq? (test-error-ranges test) 'dont-test)
+           (void)]
+          [else
+           (let ([error-ranges-expected
+                  ((test-error-ranges test) definitions-text interactions-text)])
+             (unless (equal? error-ranges-expected (send interactions-text get-error-ranges))
+               (printf "FAILED (ranges): ~a\n  expected: ~s\n       got: ~s\n"
+                       (test-definitions test)
+                       error-ranges-expected
+                       (send interactions-text get-error-ranges))))])))))
 
 (define (run-test)
   (set-language-level! '("Module") #t)
