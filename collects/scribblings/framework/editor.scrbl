@@ -74,7 +74,16 @@
 
   }
   @defmethod*[(((on-close) void))]{
-    This method is called when an editor is closed. See also
+
+    This method is called when an editor is closed.
+    Typically, this method is called when the frame
+    containing the editor is closed, but in some cases an
+    editor is considered ``closed'' before the frame it is
+    in is closed (eg, when a tab in DrScheme is closed), and
+    thus @method[editor:basic<%> on-close] will be called at that point.
+    
+
+    See also
     @method[editor:basic<%> can-close?]
     and
     @method[editor:basic<%> close].
@@ -90,7 +99,7 @@
     the editor (asking if it should be saved, for example).
 
     See also
-    @method[editor:basic<%> on-close]and
+    @method[editor:basic<%> on-close] and
     @method[editor:basic<%> close].
 
 
