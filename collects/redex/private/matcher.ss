@@ -1568,6 +1568,7 @@ before the pattern compiler is invoked.
    (bind-exp (bind? . -> . any/c))
    (compile-language (-> any/c (listof nt?) (listof (listof symbol?)) compiled-lang?))
    (symbol->nt (symbol? . -> . symbol?))
+   (has-underscore? (symbol? . -> . boolean?))
    (split-underscore (symbol? . -> . symbol?)))
   (provide compiled-pattern? 
            print-stats)

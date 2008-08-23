@@ -130,10 +130,15 @@ To do a better job of not generating programs with free variables,
   (error 'generate "unable to generate pattern ~s in ~s attempts" 
          pat generation-retries))
 
+(define ((disjunction . preds) x)
+  (if (null? preds)
+      #f
+      (or ((car preds) x) ((apply disjunction (cdr preds)) x))))
+
 ;; used in generating the `any' pattern
 (define-language sexp (sexp variable string number hole (sexp ...)))
 
-(define (generate* lang nt size attempt [decisions@ random-decisions@])
+(define (generate* lang pat size attempt [decisions@ random-decisions@])
   (define-values/invoke-unit decisions@
     (import) (export decisions^))
   
@@ -141,116 +146,126 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt bound-vars size in-hole)
+  (define (generate-nt nt fvt-id bound-vars size in-hole initial-state)
     (let loop ([nts (compiled-lang-lang lang)])
       (cond
         [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
-        [(eq? (nt-name (car nts)) nt) 
-         (let* ([prods (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))]
-                [rhs ((next-non-terminal-decision) prods bound-vars size)]
-                [size (max 0 (sub1 size))])
-           (generate-pat (rhs-pattern rhs) bound-vars (rhs-var-info rhs) size in-hole))]
+        [(eq? (nt-name (car nts)) nt)
+         (let*-values 
+             ([(rhs) 
+               ((next-non-terminal-decision) 
+                (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))
+                bound-vars size)]
+              [(term post-nt-state) 
+               (((generate-pat 
+                  (append (extract-bound-vars fvt-id initial-state) bound-vars)
+                  (max 0 (sub1 size)))
+                 (rhs-pattern rhs) in-hole) 
+                (make-gen-state
+                 (make-state (map fvt-entry (rhs-var-info rhs)) #hasheq() #hasheq())
+                 (if in-hole initial-state #f)))]
+              [(new-state) (if in-hole (gen-state-hole post-nt-state) initial-state)])
+           (values term (extend-found-vars fvt-id term new-state)))]
         [else (loop (cdr nts))])))
-    
-  (define-struct found-vars (nt source bound-vars found-nt?))
-  (define (generate-pat pat bound-vars var-info size in-hole)
-    (let* ([found-vars-table (map (λ (binds) (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
-                                  var-info)]
-           [matches (make-immutable-hasheq null)]
-           [mismatches (make-immutable-hasheq null)])
-      (let loop ([pat pat] [in-hole in-hole])
-        (define (generate/retry #:gen [gen (λ (p) (loop p in-hole))] success? . subpatterns)
-          (let ([old-fvt found-vars-table] 
-                [old-matches matches]
-                [old-mismatches mismatches])
-            (let retry ([remaining generation-retries])
-              (if (zero? remaining)
-                  (generation-failure pat)
-                  (let ([generated (map gen subpatterns)])
-                    (if (apply success? generated)
-                        (if (= 1 (length generated))
-                            (car generated)
-                            generated)
-                        (begin
-                          (set! found-vars-table old-fvt)
-                          (set! matches old-matches)
-                          (set! mismatches old-mismatches)
-                          (retry (sub1 remaining)))))))))
-        (match pat
-          [`number ((next-number-decision) random-numbers)]
-          [`(variable-except ,vars ...)
-           (generate/retry (λ (var) (not (memq var vars))) 'variable)]
-          [`variable ((next-variable-decision) lang-chars lang-lits bound-vars attempt)]
-          [`variable-not-otherwise-mentioned
-           (generate/retry (λ (var) (not (memq var (compiled-lang-literals lang)))) 'variable)]
-          [`(variable-prefix ,prefix) 
-           (string->symbol (string-append (symbol->string prefix)
-                                          (symbol->string (loop 'variable in-hole))))]
-          [`string ((next-string-decision) lang-chars lang-lits attempt)]
-          [`(side-condition ,pattern ,(? procedure? condition))
-           (define (condition-bindings bindings)
-             (make-bindings (hash-map bindings (λ (name exp) (make-bind name exp)))))
-           (generate/retry (λ _ (condition (condition-bindings matches))) pattern)]
-          [`(name ,(? symbol? id) ,p)
-           (define (generate/record)
-             (let ([term (loop p in-hole)])
-               (set! matches (hash-set matches id term))
-               term))
-           (hash-ref matches id generate/record)]
-          [`hole (if in-hole (in-hole) the-hole)]
-          [`(in-hole ,context ,contractum)
-           (loop context (λ () (loop contractum in-hole)))]
-          [`(hide-hole ,pattern) (loop pattern #f)]
-          [`any
-           (let-values ([(lang nt) ((next-any-decision) lang)])
-             (generate* lang nt size attempt decisions@))]
-          [(and (? symbol?) (? (λ (x) (or (is-nt? lang x) (underscored-built-in? x)))))
-           (define ((generate-nt/underscored decorated) undecorated)
-             (let* ([vars (append (extract-bound-vars decorated found-vars-table) bound-vars)]
-                    [term (if (is-nt? lang undecorated)
-                              (generate-nt undecorated vars size in-hole)
-                              (generate-pat undecorated vars null size in-hole))])
-               (begin
-                 (set! found-vars-table (extend-found-vars decorated term found-vars-table))
-                 term)))
-           (match (symbol->string pat)
-             [(regexp #rx"^([^_]*)_[^_]*$" (list _ undecorated))
-              (hash-ref
-               matches pat
-               (λ ()
-                 (let ([term ((generate-nt/underscored pat) (string->symbol undecorated))])
-                   (set! matches (hash-set matches pat term))
-                   term)))]
-             [(regexp #rx"([^_]*)_!_[^_]*$" (list _ undecorated))
-              (let* ([prior (hash-ref mismatches pat null)]
-                     [term (generate/retry 
-                            (λ (t) (not (member t prior)))
-                            (string->symbol undecorated)
-                            #:gen (generate-nt/underscored pat))])
-                (set! mismatches (hash-set mismatches pat (cons term prior)))
-                term)]
-             [else ((generate-nt/underscored pat) pat)])]
-          [(or (? symbol?) (? number?) (? string?) (? boolean?)) pat]
-          [(? null? pat) '()]
-          [(list-rest seq '... rest)
-           (loop (expand-sequence seq ((next-sequence-decision)) rest) in-hole)]
-          [(list-rest seq (? named-ellipsis? name) rest)
-           (let* ([match-len (hash-ref matches name #f)]
-                  [seq-len 
-                   (if match-len 
-                       match-len
-                       (let ([len ((next-sequence-decision))])
-                         (begin
-                           (set! matches (hash-set matches name len))
-                           len)))])
-             (loop (expand-sequence seq seq-len rest) in-hole))]
-          [(list-rest pat rest)
-           (cons (loop pat in-hole) (loop rest in-hole))]
-          [else
-           (error 'generate "unknown pattern ~s\n" pat)]))))
   
-  (define (extract-bound-vars pat found-vars-table)
-    (let loop ([found-vars-table found-vars-table])
+  (define-struct gen-state (current hole))
+  (define-struct state (fvt matches mismatches))
+  (define (set-current-matches state id term)
+    (make-gen-state
+     (make-state
+      (state-fvt (gen-state-current state))
+      (hash-set (state-matches (gen-state-current state)) id term)
+      (state-mismatches (gen-state-current state)))
+     (gen-state-hole state)))
+  (define (set-current-mismatches state id term)
+    (make-gen-state
+     (make-state
+      (state-fvt (gen-state-current state))
+      (state-matches (gen-state-current state))
+      (hash-set (state-mismatches (gen-state-current state)) id term))
+     (gen-state-hole state)))
+  
+  (define-struct found-vars (nt source bound-vars found-nt?))
+  (define (fvt-entry binds)
+    (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
+  
+  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) state)
+    (define recur (generate-pat bound-vars size))
+    (define (recur/pat pat) ((recur pat in-hole) state))
+    (define (generate/pred pred pat [gen (λ () (recur/pat pat))])
+      (let retry ([remaining generation-retries])
+        (if (zero? remaining)
+            (generation-failure pat)
+            (let-values ([(term state) (gen)])
+              (if (pred term (state-matches (gen-state-current state)))
+                  (values term state)
+                  (retry (sub1 remaining)))))))
+    (match pat
+      [`number (values ((next-number-decision) random-numbers) state)]
+      [`(variable-except ,vars ...)
+       (generate/pred (λ (var _) (not (memq var vars))) 'variable)]
+      [`variable (values ((next-variable-decision) lang-chars lang-lits bound-vars attempt) state)]
+      [`variable-not-otherwise-mentioned
+       (generate/pred (λ (var _) (not (memq var (compiled-lang-literals lang)))) 'variable)]
+      [`(variable-prefix ,prefix) 
+       (define (symbol-append prefix suffix)
+         (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
+       (let-values ([(term state) (recur/pat 'variable)])
+         (values (symbol-append prefix term) state))]
+      [`string (values ((next-string-decision) lang-chars lang-lits attempt) state)]
+      [`(side-condition ,pat ,(? procedure? condition))
+       ;; `matches' includes bindings beyond those bound in `pat',
+       ;; but compiled side-conditions ignore these.
+       (generate/pred (λ (_ matches) (condition (make-bindings (hash-map matches make-bind)))) pat)]
+      [`(name ,(? symbol? id) ,p)
+       (let-values ([(term state) (recur/pat p)])
+         (values term (set-current-matches state id term)))]
+      [`hole
+       (cond [(not in-hole) (values the-hole state)]
+             [(gen-state-hole state)
+              (let-values ([(term hole-state) (in-hole (gen-state-hole state))])
+                (values term (make-gen-state (gen-state-current state) hole-state)))]
+             [else (in-hole state)])]
+      [`(in-hole ,context ,contractum)
+       ((recur context (recur contractum in-hole)) state)]
+      [`(hide-hole ,pattern) ((recur pattern #f) state)]
+      [`any
+       (let-values ([(lang nt) ((next-any-decision) lang)])
+         (values (generate* lang nt size attempt decisions@) state))]
+      [(? (λ (p) (is-nt? lang p)))
+       (generate-nt pat fvt-id bound-vars size in-hole state)]
+      [(and (? symbol?) (app symbol->string (regexp named-nt-rx (list _ nt))))
+       (let* ([undecorated (string->symbol nt)]
+              [none (gensym)]
+              [prior (hash-ref (state-matches (gen-state-current state)) pat none)])
+         (if (eq? prior none)
+             (let-values 
+                 ([(term state) ((recur undecorated in-hole pat) state)])
+               (values term (set-current-matches state pat term)))
+             (values prior state)))]
+      [(and (? symbol?) (app symbol->string (regexp mismatch-nt-rx (list _ nt))))
+       (let*-values 
+           ([(undecorated) (string->symbol nt)]
+            [(prior) (hash-ref (state-mismatches (gen-state-current state)) pat null)]
+            [(generate-mismatch)
+             (λ () ((recur undecorated in-hole pat) state))]
+            [(term state) 
+             (generate/pred (λ (t _) (not (member t prior))) undecorated generate-mismatch)])
+         (values term (set-current-mismatches state pat (cons term prior))))]
+      [(? (disjunction symbol? number? string? boolean? null?)) (values pat state)]
+      [(list-rest pat '... rest)
+       (recur/pat (append (build-list ((next-sequence-decision)) (λ (_) pat)) rest))]
+      [(list-rest pat rest)
+       (let*-values 
+           ([(pat-term state) (recur/pat pat)]
+            [(rest-term state)
+             ((recur rest in-hole) state)])
+         (values (cons pat-term rest-term) state))]
+      [else
+       (error 'generate "unknown pattern ~s\n" pat)]))
+  
+  (define (extract-bound-vars pat state)
+    (let loop ([found-vars-table (state-fvt (gen-state-current state))])
       (cond
         [(null? found-vars-table) '()]
         [else (let ([found-vars (car found-vars-table)])
@@ -258,36 +273,37 @@ To do a better job of not generating programs with free variables,
                     (found-vars-bound-vars found-vars)
                     (loop (cdr found-vars-table))))])))
     
-  (define (extend-found-vars pat res found-vars-table)
-    (map
-     (λ (found-vars)
-       (cond
-         [(eq? (found-vars-source found-vars) pat)
-          (let ([new-found-vars
-                 (make-found-vars (found-vars-nt found-vars)
-                                  (found-vars-source found-vars)
-                                  (cons res (found-vars-bound-vars found-vars))
-                                  #f)])
-            (when (found-vars-found-nt? found-vars)
-              (error 'generate "kludge in #:binds was exposed! #:binds ~s ~s" 
-                     (found-vars-nt found-vars)
-                     (found-vars-source found-vars)))
-            new-found-vars)]
-         [(eq? (found-vars-nt found-vars) pat)
-          (make-found-vars (found-vars-nt found-vars)
-                           (found-vars-source found-vars)
-                           (found-vars-bound-vars found-vars)
-                           #t)]
-         [else found-vars]))
-     found-vars-table))
-  
-  (define (expand-sequence seq-pat seq-len rest-pat)
-    (let loop ([remaining seq-len] [acc-pat rest-pat])
-      (if (zero? remaining) 
-          acc-pat
-          (loop (sub1 remaining) (cons seq-pat acc-pat)))))
-  
-  (generate-pat nt '() '() size #f))
+  (define (extend-found-vars pat res state)
+    (make-gen-state
+     (make-state
+      (map
+       (λ (found-vars)
+         (cond
+           [(eq? (found-vars-source found-vars) pat)
+            (let ([new-found-vars
+                   (make-found-vars (found-vars-nt found-vars)
+                                    (found-vars-source found-vars)
+                                    (cons res (found-vars-bound-vars found-vars))
+                                    #f)])
+              (when (found-vars-found-nt? found-vars)
+                (error 'generate "kludge in #:binds was exposed! #:binds ~s ~s" 
+                       (found-vars-nt found-vars)
+                       (found-vars-source found-vars)))
+              new-found-vars)]
+           [(eq? (found-vars-nt found-vars) pat)
+            (make-found-vars (found-vars-nt found-vars)
+                             (found-vars-source found-vars)
+                             (found-vars-bound-vars found-vars)
+                             #t)]
+           [else found-vars]))
+       (state-fvt (gen-state-current state)))
+      (state-matches (gen-state-current state))
+      (state-mismatches (gen-state-current state)))
+     (gen-state-hole state)))
+
+  (let ([initial-state (make-gen-state (make-state null #hasheq() #hasheq()) #f)])
+    (let-values ([(term _) (((generate-pat null size) pat #f) initial-state)])
+      term)))
 
 ;; find-base-cases : compiled-language -> hash-table
 (define (find-base-cases lang)
@@ -316,8 +332,8 @@ To do a better job of not generating programs with free variables,
       (let loop ([pat pat])
         (match pat
           [(? symbol? pat)
-           (when (is-nt? lang pat)
-             (set! nts (cons pat nts)))]
+           (when (is-nt? lang (symbol->nt pat))
+             (set! nts (cons (symbol->nt pat) nts)))]
           [(or (? number?) (? string?) (? procedure?) (? boolean?)) (void)]
           [`() (void)]
           [`(,a ,'... . ,b) 
@@ -360,22 +376,131 @@ To do a better job of not generating programs with free variables,
     [(a b . c) (max/f a (apply max/f b c))]))
 (define (add1/f a) (if (eq? a 'inf) 'inf (+ a 1)))
 
-;; is-nt? : compiled-lang symbol -> boolean
-(define (is-nt? lang sym)
-  (ormap (λ (nt) (eq? (nt-name nt) (symbol->nt sym)))
-         (compiled-lang-lang lang)))
+;; is-nt? : compiled-lang any -> boolean
+(define (is-nt? lang x)
+  (and (hash-ref (compiled-lang-ht lang) x #f) #t))
 
-;; underscored-built-in? : symbol -> boolean
-(define (underscored-built-in? sym) 
-  (and (memq #\_ (string->list (symbol->string sym)))
-       (memq (symbol->nt sym) underscore-allowed)
-       #t))
+(define named-nt-rx #rx"^([^_]+)_[^_]*$")
+(define mismatch-nt-rx #rx"([^_]+)_!_[^_]*$")
+(define named-ellipsis-rx #rx"^..._[^_]*$")
+(define mismatch-ellipsis-rx #rx"^..._!_[^_]*$")
 
-;; named-ellipsis? : any -> boolean
-(define (named-ellipsis? x)
-  (and (symbol? x)
-       (memq #\_ (string->list (symbol->string x)))
-       (eq? (symbol->nt x) '...)))
+(define-struct ellipsis (name pattern constraints))
+(define-struct (named-ellipsis ellipsis) (src-name))
+(define-struct (mismatch-ellipsis ellipsis) ())
+
+;; parse-pattern : pattern -> parsed-pattern
+;; Turns "pat ..." and "pat ..._id" into named-ellipsis structs
+;; and "pat ..._!_id" into mismatch-ellipsis structs.
+(define parse-pattern
+  (match-lambda
+    [(list-rest pat (and (? symbol?) (app symbol->string (regexp named-ellipsis-rx)) name) rest)
+     (cons (make-named-ellipsis name (parse-pattern pat) null name) (parse-pattern rest))]
+    [(list-rest pat '... rest)
+     (cons (make-named-ellipsis (gensym '..._) (parse-pattern pat) null '...) (parse-pattern rest))]
+    [(list-rest pat (and (? symbol?) (app symbol->string (regexp mismatch-ellipsis-rx)) name) rest)
+     (cons (make-mismatch-ellipsis name (parse-pattern pat) null) (parse-pattern rest))]
+    [(cons first rest) (cons (parse-pattern first) (parse-pattern rest))]
+    [else else]))
+
+(define (hash-cons hash key val)
+  (hash-set hash key (cons val (hash-ref hash key null))))
+
+;; An ellipsis-context (listof ellipsis?) records the ellipses above a
+;; a position in a pattern.
+;;
+;; ellipsis-context-sets : parsed-pattern -> (listof (listof contexts))
+;; Extracts ellipsis-context-sets for each named non-teminal (e.g., x_1).
+(define (ellipsis-context-sets pattern)
+  (hash-map
+   (let recur ([pattern pattern] [under null] [contexts #hasheq()])
+     (match pattern
+       [(and (? symbol?) (app symbol->string (regexp named-nt-rx)))
+        (if (null? under) contexts (hash-cons contexts pattern under))]
+       [(struct ellipsis (_ sub-pattern _))
+        (recur sub-pattern (cons pattern under) contexts)]
+       [(? list?)
+        (foldl (λ (p n) (recur p under n)) contexts pattern)]
+       [_ contexts]))
+   (λ (named-nt contexts) contexts)))
+
+;; representative-context 
+;;   (cons/c ellipsis-context (listof ellipses-context)) -> ellipses-context
+;; Merges a (non-empty) list of ellipsis-contexts of common depth into a 
+;; single "representative" context in which ...
+(define (representative-context contexts)
+  (foldl (λ (current representative)
+           (map (λ (c r) (if (named-ellipsis? c) c r))
+                current representative)) 
+         (car contexts) (cdr contexts)))
+
+;; ellipsis-names-rewrites : parsed-pattern -> hash[sym -o> sym]
+;; Produces a hash mapping ellipsis names to new names, for use in
+;; `rewrite-named-ellipsis'
+(define (ellipsis-names-rewrites pat)
+  ; union-find w/o balancing or path compression (for now)
+  (define (union e f sets)
+    (hash-set sets (find f sets) (find e sets)))
+  (define (find e sets)
+    (let recur ([chd e] [par (hash-ref sets e #f)])
+      (if (and par (not (eq? chd par))) (recur par (hash-ref sets par #f)) chd)))
+  
+  (define (context-set-equivalence contexts classes)
+    (let ([representative (representative-context contexts)])
+      (foldl 
+       (λ (context classes)
+         (foldl 
+          (λ (cur rep classes)
+            (if (or (mismatch-ellipsis? cur) (mismatch-ellipsis? rep))
+                classes
+                (union (ellipsis-name rep) (ellipsis-name cur) classes)))
+          classes context representative))
+       classes contexts)))
+  
+  (let ([classes (foldl context-set-equivalence #hasheq() (ellipsis-context-sets pat))])
+    (make-immutable-hasheq 
+     (hash-map classes (λ (named-ellip _) (cons named-ellip (find named-ellip classes)))))))
+
+(define (rewrite-named-ellipses pat rewrites)
+  (match pat
+    [(struct named-ellipsis (name sub-pat constraints src-name))
+     (let ([rewritten (rewrite-named-ellipses sub-pat rewrites)])
+       (make-named-ellipsis (hash-ref rewrites name name) rewritten constraints src-name))]
+    [(struct mismatch-ellipsis (name sub-pat constraints))
+     (make-mismatch-ellipsis name (rewrite-named-ellipses sub-pat rewrites) constraints)]
+    [(? list?) (map (λ (p) (rewrite-named-ellipses p rewrites)) pat)]
+    [_ pat]))
+
+;; sequence-length-constraints : parsed-pattern -> hash[symbol -> (listof symbol)]
+;; Produces a hash mapping ellipsis names to the names of the ellipses that cannot
+;; have the same sequence length.
+(define (sequence-length-constraints pat)
+  (define empty-set #hasheq())
+  (define (extend member set) (hash-set set member #t))
+  (define (member? element set) (hash-ref set element #f))
+  (define (set->list set) (hash-map set (λ (elem _) elem)))
+  
+  (define (exclude ellip from constraints)
+    (hash-set constraints (ellipsis-name from) 
+              (extend (ellipsis-name ellip)
+                      (hash-ref constraints (ellipsis-name from) empty-set))))
+  
+  (define (context-set-constraints contexts constraints)
+    (let ([representative (representative-context contexts)])
+      (foldl
+       (λ (context constraints)
+         (foldl 
+          (λ (cur rep constraints)
+            (if (or (mismatch-ellipsis? rep) (named-ellipsis? cur))
+                constraints
+                (exclude cur rep (exclude rep cur constraints))))
+          constraints context representative))
+       constraints contexts)))
+  
+  (make-immutable-hash
+   (hash-map
+    (foldl context-set-constraints #hasheq() (ellipsis-context-sets pat))
+    (λ (ellip-name exclusion-set) (cons ellip-name (set->list exclusion-set))))))
 
 (define-syntax check
   (syntax-rules ()
@@ -424,13 +549,11 @@ To do a better job of not generating programs with free variables,
         (define (next-any-decision) pick-any)
         (define (next-string-decision) pick-string)))
 
-(define (sexp? x)
-  (or (not (pair? x)) (and (list? x) (andmap sexp? x))))
-
 (provide pick-from-list pick-var pick-length min-prods decisions^ 
          is-nt? lang-literals pick-char random-string pick-string
-         check pick-nt unique-chars pick-any sexp generate)
+         check pick-nt unique-chars pick-any sexp generate parse-pattern
+         ellipsis-context-sets ellipsis-names-rewrites sequence-length-constraints
+         (struct-out ellipsis) (struct-out named-ellipsis) (struct-out mismatch-ellipsis))
 
 (provide/contract
  [find-base-cases (-> compiled-lang? hash?)])
-

@@ -32,7 +32,7 @@
 (let ()
   (define-language lc
     (a 1 2 3)
-    (b a (a b)))
+    (b a (a_1 b_!_1)))
   (test (to-table (find-base-cases lc))
         '((a . (0 0 0)) (b . (1 2)))))
 
@@ -58,8 +58,7 @@
 
 (let ()
   (define-language lang
-    (a (side-condition "strin_g" #t) 1/2 #t)
-    (b ()))
+    (a (side-condition "strin_g" #t) 1/2 #t))
   (let* ([literals (sort (lang-literals lang) string<=?)]
          [chars (sort (unique-chars literals) char<=?)])
     (test literals '("1/2" "side-condition" "strin_g"))
@@ -268,8 +267,6 @@
 (let ()
   (define-language lang (x variable literal))
   (test (is-nt? lang 'x) #t)
-  (test (is-nt? lang 'x_1) #t)
-  (test (is-nt? lang 'x_!_1) #t)
   (test (is-nt? lang 'y) #f))
 
 (let ()
@@ -283,12 +280,18 @@
                               'number
                               'number)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
-   '(2 3 4 2 3)))
+   '(2 3 4 2 3))
+  ;;FIXME
+  #;(test
+   (generate 
+    lang (variable_1 ...) 5 0
+    (decisions #:seq (list (λ () 2))
+               #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
+   '(x y)))
 
 (let ()
   (define-language lang
-    (e (x x_1 x_1) #:binds x x_1
-       (x variable_1) #:binds x variable_1)
+    (e (x x_1 x_1) #:binds x x_1)
     (x variable))
   (test
    (let/ec k
@@ -298,13 +301,6 @@
                  #:nt (patterns '(x x_1 x_1) 
                                 'variable
                                 'variable))))
-   '(x))
-  (test
-   (let/ec k
-     (generate
-      lang e 5 0
-      (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b)))
-                 #:nt (patterns '(x variable_1) 'variable))))
    '(x)))
 
 (let ()
@@ -387,12 +383,10 @@
     (b 4)
     (c (side-condition (name x d) (zero? (term x))))
     (d 2 1 0)
-    (e ((side-condition (name d_1 d) (zero? (term d_1))) d_1))
-    (f ((side-condition d_1 (zero? (term d_1))) (name d_1 d))))
+    (e ((side-condition (name d_1 d) (zero? (term d_1))) d_1)))
   (test (generate lang a 5 0) 4)
   (test (generate lang c 5 0) 0)
-  (test (generate lang e 5 0) '(0 0))
-  (test (generate lang f 5 0) '(0 0)))
+  (test (generate lang e 5 0) '(0 0)))
 
 (let ()
   (define-language lang
@@ -401,6 +395,9 @@
     (B (6 (hole h)))
     (C hole)
     (d (x (in-hole C y)) #:binds x y)
+    (e ((in-hole (in-hole f (number_1 hole)) number_1) number_1))
+    (f (in-hole C (number_1 hole)))
+    (g (in-hole (side-condition (hole number_1) (zero? (term number_1))) number_2))
     (x variable)
     (y variable))
   (test 
@@ -421,7 +418,11 @@
                   (decisions #:var (list (λ _ 'x) (λ _ 'x) (λ _ 'y) (λ _ 'y) (λ _ 'z))))
         '(x y z))
   (test (let/ec k (generate lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
-        '(x)))
+        '(x))
+  (test (generate lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
+        '((1 (2 2)) 2))
+  (test (generate lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
+        '(1 0)))
 
 (let ()
   (define-language lc
@@ -459,7 +460,7 @@
   (test (generate lang e 5 0) (term (hole 1))))
 
 ;; named ellipses
-(let ()
+#;(let ()
   (define-language empty)
   (test 
    (generate empty (number ..._1 variable ..._2 number ..._1) 5 0
@@ -484,5 +485,79 @@
   (test (check lang ([x d] [y e]) 2 0 #f) "failed after 1 attempts: ((x 5) (y 4))")
   (test (exn:fail-message (check lang ([x d]) 2 0 (error 'pred-raised)))
         #rx"term \\(\\(x 5\\)\\) raises"))
+
+;; parse-pattern
+(let-syntax ([test-match (syntax-rules () [(_ p x) (test (match x [p #t] [_ #f]) #t)])])
+  (test-match 
+   (list (struct named-ellipsis (_ 1 null '...)) 
+         (struct named-ellipsis ('..._1 2 null '..._1)))
+   (parse-pattern '(1 ... 2 ..._1)))
+  (test-match
+   (list 1 (struct mismatch-ellipsis ('..._!_1 2 null)))
+   (parse-pattern '(1 2 ..._!_1))))
+
+;; ellipsis-context-sets
+(test (sort (map (λ (contexts) (map (λ (nesting) (map ellipsis-name nesting)) contexts))
+                 (ellipsis-context-sets (parse-pattern '(x_1 x_1 ..._1 (x_1 x_2 ..._2) ..._3))))
+            (λ (m n) (string<=? (format "~s" m) (format "~s" n))))
+      '(((..._2 ..._3))
+        ((..._3) (..._1))))
+
+(let ()
+  (define-syntax test-ellipsis-names-rewrites
+    (syntax-rules ()
+      [(_ pattern expected)
+       (test (to-table (ellipsis-names-rewrites (parse-pattern pattern))) expected)]))
+  
+  (test-ellipsis-names-rewrites 
+   '(x_1 ..._1 x_2 ..._2 x_2 ..._1)
+   '((..._1 . ..._2) (..._2 . ..._2)))
+  (test-ellipsis-names-rewrites
+   '((x_1 ..._1 x_1 ..._2) (x_2 ..._1 x_2 ..._2) x_3 ..._2)
+   '((..._1 . ..._1) (..._2 . ..._1)))
+  (test-ellipsis-names-rewrites
+   '(x_1 ..._1 x ..._2 x_1 ..._2)
+   '((..._1 . ..._1) (..._2 . ..._1)))
+  (test-ellipsis-names-rewrites
+   '(x_1 ..._1 x_2 ..._2 (x_1 x_2) ..._3)
+   '((..._1 . ..._2) (..._2 . ..._2) (..._3 . ..._2)))
+  (test-ellipsis-names-rewrites
+   '((x_1 ..._1) ..._2 x_2 ..._3 (x_1 ..._4 x_2) ..._5)
+   '((..._1 . ..._1) (..._2 . ..._3) (..._3 . ..._3) (..._4 . ..._1) (..._5 . ..._3)))
+  (test-ellipsis-names-rewrites
+   '((x_1 ..._1) ..._!_2 (x_1 ..._3) ..._4)
+   '((..._1 . ..._1) (..._3 . ..._1) (..._4 . ..._4)))
+  (test-ellipsis-names-rewrites
+   '((x_1 ..._!_1) ..._2 (x_1 ..._3) ..._4 (x_1 ..._5) ..._6)
+   '((..._2 . ..._2) (..._3 . ..._3) (..._4 . ..._2) (..._5 . ..._3) (..._6 . ..._2)))
+  (test-ellipsis-names-rewrites
+   '(x_1 ..._1 x_1 ..._2 x_2 ..._1 x_2 ..._4 x_2 ..._3)
+   '((..._1 . ..._1) (..._2 . ..._1) (..._3 . ..._1) (..._4 . ..._1))))
+
+(let ()
+  (define (make-table constraints)
+    (sort (hash-map constraints cons) (λ (x y) (string<=? (format "~s" x) (format "~s" y)))))
+  
+  (define-syntax test-sequence-constraints
+    (syntax-rules ()
+      [(_ pattern expected)
+       (test (make-table (sequence-length-constraints (parse-pattern pattern)))
+             expected)]))
+  
+  (test-sequence-constraints 
+   '(x_3 ..._3 x_1 ..._!_1 x_2 ..._3 x_2 ..._!_1)
+   '((..._!_1 ..._3) (..._3 ..._!_1)))
+  (test-sequence-constraints
+   '(x_1 ..._!_1 x_2 ..._2 x_2 ..._!_1)
+   '((..._!_1 ..._2) (..._2 ..._!_1)))
+  (test-sequence-constraints
+   '(x_2 ..._2 x_1 ..._!_1 x_2 ..._!_1)
+   '((..._!_1 ..._2) (..._2 ..._!_1)))
+  (test-sequence-constraints 
+   '(x_1 ..._1 x_1 ..._!_1 x_3 ..._!_1 x_2 ..._2 x_2 ..._!_1)
+   '((..._!_1 ..._1 ..._2) (..._1 ..._!_1) (..._2 ..._!_1)))
+  (test-sequence-constraints
+   '((x_1 ..._1 x_2 ..._!_1 x_2 ..._1) ...)
+   '((..._!_1 ..._1) (..._1 ..._!_1))))
 
 (print-tests-passed 'rg-test.ss)
