@@ -1,25 +1,86 @@
 #lang scheme/base
+#|
+
+The on-event method isnt' working right yet.
+
+|#
+
 (require scheme/gui/base
-         scheme/class)
+         scheme/class
+         framework)
 
 (provide first-line-text-mixin)
 
 (define (first-line-text-mixin text%)
   (class text%
-    (inherit get-text paragraph-end-position get-admin invalidate-bitmap-cache position-location)
+    (inherit get-text paragraph-end-position get-admin invalidate-bitmap-cache position-location
+             scroll-to local-to-global get-dc)
     (define bx (box 0))
     (define by (box 0))
     (define bw (box 0))
-    (define fancy-first-line? #t)
     
-    (define/override (scroll-to snip localx localy width height refresh? [bias 'none])
-      (printf "~s\n" (list 'scroll-to snip localx localy width height refresh? bias))
-      (super scroll-to snip localx localy width height refresh? bias))
+    (define first-line #f)
+    (define end-of-first-line #f)
+    
+    (define fancy-first-line? #f)
+    
+    (define/augment (after-insert start len)
+      (when end-of-first-line
+        (when (<= start end-of-first-line)
+          (set! end-of-first-line #f)
+          (set! first-line #f))))
+    (define/augment (after-delete start len)
+      (when end-of-first-line
+        (when (<= start end-of-first-line)
+          (set! end-of-first-line #f)
+          (set! first-line #f))))
+    
+    (define/private (fetch-first-line-height)
+      (unless first-line
+        (set! end-of-first-line (paragraph-end-position 0))
+        (set! first-line (get-text 0 end-of-first-line)))
+      (let-values ([(_1 h _2 _3) (send (get-dc) get-text-extent first-line (get-font))])
+        h))
+    
+    (define/override (scroll-editor-to localx localy width height refresh? bias)
+      (let ([admin (get-admin)])
+        (cond
+          [(not admin)
+           #f]
+          [fancy-first-line? 
+           (let ([h (fetch-first-line-height)])
+             (set-box! by localy)
+             (local-to-global #f by)
+             (cond
+               [(<= (unbox by) h)
+                (send admin scroll-to localx (- localy h) width height refresh? bias)]
+               [else
+                (send admin scroll-to localx localy width height refresh? bias)]))]
+          [else
+           (send admin scroll-to localx localy width height refresh? bias)])))
     
     (define/public (highlight-first-line on?)
-      (set! fancy-first-line? on?)
-      (invalidate-bitmap-cache)
-      (send (send this get-canvas) refresh))
+      (unless (equal? fancy-first-line? on?)
+        (set! fancy-first-line? on?)
+        (invalidate-bitmap-cache)
+        (send (send this get-canvas) refresh)))
+
+    (define/override (on-event event)
+      (let ([y (send event get-y)]
+            [h (fetch-first-line-height)])
+        (cond
+          [(and (< y h)
+                (not (or (send event moving?)
+                         (send event leaving?)
+                         (send event entering?)))
+                (let ([admin (get-admin)])
+                  (and admin 
+                       (begin (send admin get-view #f by #f #f #f)
+                              (= (unbox by) 0)))))
+           (scroll-to #f (send event get-x) 0 0 0 #f)]
+          [else         
+           (super on-event event)])))
+        
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (unless before?
@@ -48,13 +109,12 @@
                         (send dc set-pen "black" 1 'solid)
                         (let loop ([i 10])
                           (unless (zero? i)
-                            (let ([g (+ 200 (* i 5))])
-                              (send dc set-alpha (+ 1/5 (* i -1/50)))
-                              (send dc draw-line 
-                                    line-left
-                                    (+ line-height i)
-                                    line-right
-                                    (+ line-height i)))
+                            (send dc set-alpha (+ 2/5 (* i -1/25)))
+                            (send dc draw-line 
+                                  line-left
+                                  (+ line-height i)
+                                  line-right
+                                  (+ line-height i))
                             (loop (- i 1))))))
                     
                     (send dc set-alpha 1)
@@ -85,9 +145,11 @@
 
 (begin
   (define f (new frame% [label ""] [width 200] [height 200]))
-  (define t (new (first-line-text-mixin text%)))
+  (define t (new (editor:standard-style-list-mixin (first-line-text-mixin text%))))
   (send t insert (apply string-append (map (λ (x) (build-string 100 (λ (i) (if (= i 99) #\newline x))))
                                            (string->list "abcdefghijklnopqrstuvwxyz"))))
   (define c (new editor-canvas% [parent f] [editor t]))
-  (define b (new button% [callback (λ (c dc) (send t highlight-first-line #t))] [label "button"] [parent f]))
+  (define b (new button% [callback (λ (c dc) (send t highlight-first-line #t))] [label "on"] [parent f]))
+  (define b2 (new button% [callback (λ (c dc) (send t highlight-first-line #f))] [label "off"] [parent f]))
+  (send c focus)
   (send f show #t))
