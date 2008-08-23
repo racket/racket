@@ -52,12 +52,20 @@
           [(< n 49) ver]
           ;; old versions (earliest useful is 49, changed at 3.99)
           [(<= 49 n 379)
-           (let-values ([(q r) (quotient/remainder n 100)])
-             ;; put numbers and a possible .N leftover (done for pN too)
-             (format "~a.~a~a" q r
-                     (regexp-replace #rx"^p" (substring ver (cdar m)) ".")))]
+           (let*-values
+               ([(q r) (quotient/remainder n 100)]
+                [(sfx) (substring ver (cdar m))]
+                [(sfx) (cond [(equal? sfx "") ""]
+                             ;; NNNpN -> N.NN.N
+                             [(regexp-match? #rx"^p[0-9]" sfx)
+                              (string-append "." (substring sfx 1))]
+                             ;; NNN.N -> N.NN.0.N (not a release version)
+                             [(regexp-match? #rx"^[.]" sfx)
+                              (string-append ".0" sfx)]
+                             [else #f])])
+             (and sfx (format "~a.~a~a" q r sfx)))]
           ;; bad strings
           [else #f]))
-  (and (valid-version? v)
+  (and v (valid-version? v)
        (foldl (lambda (ver mul acc) (+ ver (* mul acc))) 0
               (version->list v) '(0 100 1000 1000))))
