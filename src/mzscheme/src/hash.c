@@ -1367,16 +1367,15 @@ static long equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
   
   switch(t) {
   case scheme_integer_type:
-    return t;
+    return t - SCHEME_INT_VAL(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
-    return t;
 #endif
   case scheme_double_type:
     {
       double d;
       int e;
-      d = SCHEME_DBL_VAL(o);
+      d = SCHEME_FLOAT_VAL(o);
       if (MZ_IS_NAN(d)
 	  || MZ_IS_POS_INFINITY(d)
 	  || MZ_IS_NEG_INFINITY(d)) {
