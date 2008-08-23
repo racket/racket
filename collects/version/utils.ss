@@ -41,33 +41,23 @@
 
 ;; returns an integer representing the version (XXYYZZZWWW) or #f if invalid
 ;; works for pre v4 versions too
-(define (version->integer v)
-  (cond
-    [(regexp-match-positions #rx"^(?:0|[1-9][0-9]*)" v) ; takes all digits
-     => (lambda (m)
-          (let* (;; translate to a new-style version
-                 [n (string->number (substring v 0 (cdar m)))]
-                 [v (if (< n 49)
-                      v
-                      (let-values ([(q r) (quotient/remainder n 100)])
-                        ;; put numbers and possible .N leftover
-                        (format "~a.~a~a" q r (substring v (cdar m)))))])
-            (and (valid-version? v)
-                 (let ([l (version->list v)])
-                   (let loop ([v (car l)]
-                              [l (cdr l)]
-                              [f '(100 1000 1000)])
-                     (if (null? l)
-                       v
-                       (loop (+ (* v (car f)) (car l)) (cdr l) (cdr f))))))))]
-    [else #f]))
-
-;; general sanity check, performed once when loaded
-(unless (and (< (string->number (car (regexp-match #rx"^[0-9]+" (version)))) 49)
-             (integer? (version->integer (version))))
-  ;; When this happens, we got to numbers that can be confused with old version
-  ;; numbers, and the above code should be modified.  With the current rate of
-  ;; changes, this should happen in more 150 years.  Either programming is
-  ;; probably done with a direct brain link, or this software has nobody to fix
-  ;; it because everybody went back to the trees.
-  (error 'version/utils.ss "this file should be updated"))
+(define (version->integer ver)
+  (define m
+    (regexp-match-positions #rx"^(?:0|[1-9][0-9]*)" ver)) ; takes all digits
+  ;; translate old versions to new-style versions
+  (define n (and m (string->number (substring ver 0 (cdar m)))))
+  (define v
+    (cond [(not n) #f]
+          ;; new versions
+          [(< n 49) ver]
+          ;; old versions (earliest useful is 49, changed at 3.99)
+          [(<= 49 n 379)
+           (let-values ([(q r) (quotient/remainder n 100)])
+             ;; put numbers and a possible .N leftover (done for pN too)
+             (format "~a.~a~a" q r
+                     (regexp-replace #rx"^p" (substring ver (cdar m)) ".")))]
+          ;; bad strings
+          [else #f]))
+  (and (valid-version? v)
+       (foldl (lambda (ver mul acc) (+ ver (* mul acc))) 0
+              (version->list v) '(0 100 1000 1000))))
