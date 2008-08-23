@@ -338,11 +338,11 @@ scheme
  [withdraw (->d ([acc account?]
                  [amt (and/c amount (<=/c (balance acc)))])
                 ()
-                [result (mk-account-contract acc amt > msg>)])]
+                [result (mk-account-contract acc amt >= msg>)])]
  [deposit  (->d ([acc account?]
                  [amt amount])
                 ()
-                [result (mk-account-contract acc amt < msg<)])])
+                [result (mk-account-contract acc amt <= msg<)])])
 
 (code:comment "section 3: the function definitions")
 (define balance account-balance)
