@@ -258,7 +258,8 @@ Like @scheme[defmodulelang*], but without expanding to
 
 
 @defform/subs[(declare-exporting mod-path ... maybe-sources)
-              ([maybe-sources #:use-sources (mod-path ...)])]{
+              ([maybe-sources code:blank
+                              (code:line #:use-sources (mod-path ...))])]{
                                  
 Associates the @scheme[mod-path]s to all bindings defined within the
 enclosing section, except as overridden by other
