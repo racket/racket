@@ -82,7 +82,10 @@
   (manuals)
   @{Returns the list of keywords for the manuals from @scheme[manuals]
             by extracting all of the documented exports of the manuals.  The
-            symbols are meant to be module paths.  If @scheme[manuals] is false,
+            symbols are meant to be module paths, eg the quoted
+            form of the argument to @scheme[require].
+
+  If @scheme[manuals] is false,
             then all of the documented names are used.})
  
  (proc-doc/names
