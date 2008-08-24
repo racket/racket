@@ -3278,10 +3278,10 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
   Scheme_Object *modidx_shift_to = NULL, *modidx_shift_from = NULL;
   Scheme_Object *rename_stack[QUICK_STACK_SIZE];
   int stack_pos = 0, no_lexical = 0;
-  int is_in_module = 0, skip_other_mods = 0;
+  int is_in_module = 0, skip_other_mods = 0, floating_checked = 0;
   Scheme_Lexical_Rib *rib = NULL, *did_rib = NULL;
   Scheme_Object *phase = orig_phase;
-  Scheme_Object *bdg = NULL;
+  Scheme_Object *bdg = NULL, *floating = NULL;
   Scheme_Hash_Table *export_registry = NULL;
 
   EXPLAIN(printf("Resolving %s:\n", SCHEME_SYM_VAL(SCHEME_STX_VAL(a))));
@@ -3377,8 +3377,13 @@ static Scheme_Object *resolve_env(WRAP_POS *_wraps,
 	    /* Resolve based on rest of wraps: */
 	    if (!bdg) {
 	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, skip_ribs);
-              if (SCHEME_FALSEP(bdg))
-                bdg = check_floating_id(a);
+              if (SCHEME_FALSEP(bdg)) {
+                if (!floating_checked) {
+                  floating = check_floating_id(a);
+                  floating_checked = 1;
+                }
+                bdg = floating;
+              }
             }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
@@ -3697,9 +3702,9 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 {
   WRAP_POS wraps;
   Scheme_Object *result, *result_from;
-  int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL;
+  int is_in_module = 0, skip_other_mods = 0, sealed = STX_SEAL_ALL, floating_checked = 0;
   Scheme_Object *phase = orig_phase;
-  Scheme_Object *bdg = NULL;
+  Scheme_Object *bdg = NULL, *floating = NULL;
 
   if (SAME_OBJ(phase, scheme_make_integer(0))
       && ((Scheme_Stx *)a)->u.modinfo_cache)
@@ -3767,8 +3772,13 @@ static Scheme_Object *get_module_src_name(Scheme_Object *a, Scheme_Object *orig_
 	    /* Resolve based on rest of wraps: */
 	    if (!bdg)
 	      bdg = resolve_env(&wraps, a, orig_phase, 0, NULL, NULL);
-            if (SCHEME_FALSEP(bdg))
-              bdg = check_floating_id(a);
+            if (SCHEME_FALSEP(bdg))  {
+              if (!floating_checked) {
+                floating = check_floating_id(a);
+                floating_checked = 1;
+              }
+              bdg = floating;
+            }
 	    /* Remap id based on marks and rest-of-wraps resolution: */
 	    glob_id = scheme_tl_id_sym((Scheme_Env *)mrn->marked_names, a, bdg, 0, NULL);
 	  } else
