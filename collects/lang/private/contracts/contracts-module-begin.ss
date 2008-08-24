@@ -208,12 +208,12 @@
 	      ;; the module-expansion machinery can be used to handle
 	      ;; requires, etc.:
 	      #`(#%plain-module-begin
-		 (#,module-begin-continue-id () (e1 ...) ()))]))
+		 (#,module-begin-continue-id (e1 ...) () ()))]))
 
 	 ;; module-continue (for a specific language:)
 	 (lambda (stx)
 	   (syntax-case stx ()
-	     [(_ (e1 ...) () (defined-id ...))
+	     [(_ () (e1 ...) (defined-id ...))
 	      ;; Local-expanded all body elements, lifted out requires, etc.
 	      ;; Now process the result.
 	      (begin
@@ -239,25 +239,33 @@
 					      language-level-define-data
 					      cnt-list
 					      expr-list)))]
-	     [(frm e1s (e2 . e3s) def-ids)
-	      (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
-		;; Lift out certain forms to make them visible to the module
-		;;  expander:
-		(syntax-case e2 (#%require define-syntaxes define-values-for-syntax define-values begin)
-		  [(#%require . __)
-		   #`(begin #,e2 (frm e1s e3s def-ids))]
-		  [(define-syntaxes (id ...) . _)
-		   #`(begin #,e2 (frm e1s e3s (id ... . def-ids)))]
-		  [(define-values-for-syntax . _)
-		   #`(begin #,e2 (frm e1s e3s def-ids))]
-		  [(begin b1 ...)
-		   (syntax-track-origin #`(frm e1s (b1 ... . e3s) def-ids)
-                                        e2
-                                        (car (syntax-e e2)))]
-		  [(define-values (id ...) . _)
-		   #`(frm (#,e2 . e1s) e3s (id ... . def-ids))]
-		  [_
-		   #`(frm ((print-results #,e2) . e1s) e3s def-ids)]))]))))
+	     [(frm e3s e1s def-ids)
+              (let loop ([e3s #'e3s]
+                         [e1s #'e1s]
+                         [def-ids #'def-ids])
+                (syntax-case e3s ()
+                  [()
+                   #`(frm () #,e1s #,def-ids)]
+                  [(e2 . e3s)
+                   (let ([e2 (local-expand #'e2 'module local-expand-stop-list)])
+                     ;; Lift out certain forms to make them visible to the module
+                     ;;  expander:
+                     (syntax-case e2 (#%require define-syntaxes define-values-for-syntax define-values begin)
+                       [(#%require . __)
+                        #`(begin #,e2 (frm e3s #,e1s #,def-ids))]
+                       [(define-syntaxes (id ...) . _)
+                        #`(begin #,e2 (frm e3s #,e1s (id ... . #,def-ids)))]
+                       [(define-values-for-syntax . _)
+                        #`(begin #,e2 (frm e3s #,e1s #,def-ids))]
+                       [(begin b1 ...)
+                        (syntax-track-origin 
+                         (loop (append (syntax->list #'(b1 ...)) #'e3s) e1s def-ids)
+                         e2
+                         (car (syntax-e e2)))]
+                       [(define-values (id ...) . _)
+                        (loop #'e3s (cons e2 e1s) (append (syntax->list #'(id ...)) def-ids))]
+                       [_
+                        (loop #'e3s (cons #`(print-results #,e2) e1s) def-ids)]))]))]))))
       
       (define-values (parse-beginner-contract/func continue-beginner-contract/func)
         (parse-contracts #'beginner-contract #'beginner-define-data #'beginner-continue))
