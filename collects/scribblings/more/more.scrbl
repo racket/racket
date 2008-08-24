@@ -770,7 +770,7 @@ the server updated, visit @tt{http://localhost:8081/sum2}.
 The PLT Scheme distribution includes a production-quality web server
 that addresses all of the design points mentioned here and more.
 To learn more, see the tutorial @other-manual['(lib
-"web-server/scribblings/tutorial/web-server-tutorial.scrbl")], the
+"web-server/scribblings/tutorial/continue.scrbl")], the
 documentation @other-manual['(lib
 "web-server/scribblings/web-server.scrbl")], or the research paper
 @cite["Krishnamurthi07"].
