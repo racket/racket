@@ -66,20 +66,24 @@ The on-event method isnt' working right yet.
         (send (send this get-canvas) refresh)))
 
     (define/override (on-event event)
-      (let ([y (send event get-y)]
-            [h (fetch-first-line-height)])
-        (cond
-          [(and (< y h)
-                (not (or (send event moving?)
-                         (send event leaving?)
-                         (send event entering?)))
-                (let ([admin (get-admin)])
-                  (and admin 
-                       (begin (send admin get-view #f by #f #f #f)
-                              (= (unbox by) 0)))))
-           (scroll-to #f (send event get-x) 0 0 0 #f)]
-          [else         
-           (super on-event event)])))
+      (cond
+        [(or (send event moving?)
+             (send event leaving?)
+             (send event entering?))
+         (super on-event event)]
+        [else
+         (let ([y (send event get-y)]
+               [h (fetch-first-line-height)]
+               [admin (get-admin)])
+           (unless admin (send admin get-view #f by #f #f #f))
+           (cond
+             [(and (< y h)
+                   admin
+                   (not (= (unbox by) 0)))
+              (send admin scroll-to (send event get-x) 0 0 0 #t)
+              (super on-event event)]
+             [else         
+              (super on-event event)]))]))
         
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
@@ -143,6 +147,7 @@ The on-event method isnt' working right yet.
     
     (super-new)))
 
+#;
 (begin
   (define f (new frame% [label ""] [width 200] [height 200]))
   (define t (new (editor:standard-style-list-mixin (first-line-text-mixin text%))))
