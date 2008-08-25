@@ -181,7 +181,7 @@ separating the substrings.
 (regexp-split #rx" " "pea soup")
 ]
 
-If the first argument match empty strings, then the list of all the
+If the first argument matches empty strings, then the list of all the
 single-character substrings is returned.
 
 @interaction[
@@ -276,7 +276,7 @@ The @tech{metacharacter} @litchar{.} matches @emph{any} character
 (regexp-match #rx"p.t" "pet")
 ]
 
-The above patternalso matches @litchar["pat"], @litchar["pit"],
+The above pattern also matches @litchar["pat"], @litchar["pit"],
 @litchar["pot"], @litchar["put"], and @litchar["p8t"], but not
 @litchar["peat"] or @litchar["pfffft"].
 
