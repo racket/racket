@@ -194,11 +194,35 @@ example, here is a quick implementation of a networked REPL:
 (define e
   (make-module-evaluator '(module m scheme/base)))
 (let-values ([(i o) (tcp-accept (tcp-listen 9999))])
-  (parameterize ([current-input-port i]
+  (parameterize ([current-input-port  i]
                  [current-output-port o]
-                 [current-error-port o]
-                 [current-eval a])
+                 [current-error-port  o]
+                 [current-eval e])
     (read-eval-print-loop)
+    (fprintf o "\nBye...\n")
+    (close-output-port o)))
+]
+
+Note that in this code it is only the REPL interactions that are going
+over the network connection; using I/O operations inside the REPL will
+still use the usual sandbox parameters (defaulting to no I/O).  In
+addition, the code works only from an existing toplevel REPL --- when
+run from a module, the input syntax values will not have a correct
+context.  Here is a variation that uses the networked ports for user
+I/O, and works when used from a module (by using a new namespace):
+
+@schemeblock[
+(let-values ([(i o) (tcp-accept (tcp-listen 9999))])
+  (parameterize ([current-input-port   i]
+                 [current-output-port  o]
+                 [current-error-port   o]
+                 [sandbox-input        i]
+                 [sandbox-output       o]
+                 [sandbox-error-output o])
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [current-eval
+                    (make-module-evaluator '(module m scheme/base))])
+      (read-eval-print-loop))
     (fprintf o "\nBye...\n")
     (close-output-port o)))
 ]
