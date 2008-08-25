@@ -35,21 +35,20 @@
 (define web-prompt (make-continuation-prompt-tag 'web)) 
 
 (define (current-saved-continuation-marks-and key val)
-  (reverse
-   (list* (cons key val)
-          (filter (lambda (k*v) (not (equal? key (car k*v))))
-                  (let-values ([(current)
-                                (continuation-mark-set->list (current-continuation-marks web-prompt)
-                                                             the-save-cm-key)])
-                    (if (empty? current)
-                        empty
-                        (first current)))))))
+  (list* (cons key val)
+         (filter (lambda (k*v) (not (equal? key (car k*v))))
+                 (let-values ([(current)
+                               (continuation-mark-set->list (current-continuation-marks web-prompt)
+                                                            the-save-cm-key)])
+                   (if (empty? current)
+                       empty
+                       (first current))))))
 
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
 (define (activation-record-list)
   (let* ([cm (current-continuation-marks web-prompt)]
-         [sl (reverse (continuation-mark-set->list cm safe-call?))])
+         [sl (continuation-mark-set->list cm safe-call?)])
     (if (andmap (lambda (x)
                   (if (pair? x)
                       (car x)
@@ -66,6 +65,14 @@
   #;(printf "abort ~S~n" thunk)
   (abort-current-continuation web-prompt thunk))
 
+;; with-continuation-marks : (listof (cons any1 any2)) (-> any3) -> any3
+(define (with-continuation-marks cms thnk)
+  (match cms
+    [(list) (thnk)]
+    [(list-rest (cons cm-key cm-val) cms)
+     (with-continuation-mark cm-key cm-val
+       (with-continuation-marks cms thnk))]))
+
 ;; resume: (listof (value -> value)) value -> value
 ;; resume a computation given a value and list of frame procedures
 (define (resume frames val)
@@ -80,18 +87,11 @@
        [(vector f #f)
         (call-with-values (lambda () (with-continuation-mark the-cont-key f (resume fs val)))
                           f)]
-       [(vector #f (list))
-        (resume fs val)]
-       [(vector #f (list-rest (list-rest cm-key cm-val) cms))
-        (with-continuation-mark 
-            the-save-cm-key 
-          (current-saved-continuation-marks-and cm-key cm-val)
-          (with-continuation-mark cm-key cm-val
-            (begin
-              #;(printf "r: w-c-m ~S ~S~n" cm-key cm-val)
-              (resume (list* (vector #f cms) fs) val))))]
-       [(vector f cm)
-        (resume (list* (vector f #f) (vector #f cm) fs) val)])]))
+       [(vector #f cms)
+        (with-continuation-mark the-save-cm-key cms
+          (with-continuation-marks cms (lambda () (resume fs val))))]
+       [(vector f cms)
+        (resume (list* (vector f #f) (vector #f cms) fs) val)])]))
 
 ;; rebuild-cms : frames (-> value) -> value
 (define (rebuild-cms frames thunk)
@@ -103,13 +103,8 @@
      (match f
        [(vector f #f)
         (rebuild-cms fs thunk)]
-       [(vector f (list))
-        (rebuild-cms fs thunk)]
-       [(vector f (list-rest (list-rest cm-key cm-val) cms))
-        (with-continuation-mark cm-key cm-val
-          (begin
-            #;(printf "rcm: w-c-m ~S ~S~n" cm-key cm-val)
-            (rebuild-cms (list* (vector #f cms) fs) thunk)))])]))
+       [(vector f cms)
+        (with-continuation-marks cms (lambda () (rebuild-cms fs thunk)))])]))
 
 (define (abort/cc thunk)
   (call-with-continuation-prompt

@@ -1,5 +1,6 @@
 #lang scheme/base
 (require (planet "test.ss" ("schematics" "schemeunit.plt" 2))
+         "abort-resume-test.ss"
          "anormal-test.ss"
          "defun-test.ss"
          "file-box-test.ss"
@@ -11,6 +12,7 @@
 (define all-lang-tests  
   (test-suite
    "Web Language"
+   abort-resume-tests
    anormal-tests
    defun-tests
    file-box-tests
