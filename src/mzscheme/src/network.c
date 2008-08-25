@@ -1567,7 +1567,7 @@ make_tcp_input_port(void *data, const char *name)
   
   ip = scheme_make_input_port(scheme_tcp_input_port_type,
 			      data,
-			      scheme_make_immutable_sized_utf8_string((char *)name, -1),
+			      scheme_intern_symbol(name),
 			      tcp_get_string,
 			      NULL,
 			      scheme_progress_evt_via_get,
@@ -1589,7 +1589,7 @@ make_tcp_output_port(void *data, const char *name)
 
   op = scheme_make_output_port(scheme_tcp_output_port_type,
 						  data,
-						  scheme_make_immutable_sized_utf8_string((char *)name, -1),
+						  scheme_intern_symbol(name),
 						  scheme_write_evt_via_write,
 						  tcp_write_string,
 						  (Scheme_Out_Ready_Fun)tcp_check_write,
@@ -2220,8 +2220,8 @@ tcp_accept(int argc, Scheme_Object *argv[])
 
     tcp = make_tcp_port_data(s, 2);
 
-    v[0] = make_tcp_input_port(tcp, "[accepted]");
-    v[1] = make_tcp_output_port(tcp, "[accepted]");
+    v[0] = make_tcp_input_port(tcp, "tcp-accepted");
+    v[1] = make_tcp_output_port(tcp, "tcp-accepted");
 
     scheme_file_open_count++;
     REGISTER_SOCKET(s);
