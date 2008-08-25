@@ -377,6 +377,10 @@ Bool wxFrame::Create(wxFrame *frame_parent, char *title,
       }
     }
 
+    /* Let window managers know that the frame can receive the focus
+       (patch from Alexey Voinov): */
+    XtVaSetValues(X->frame, XtNinput, True, NULL);
+
     return TRUE;
 }
 
