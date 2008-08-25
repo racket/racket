@@ -1,8 +1,5 @@
-#lang scheme/base
-(require mzlib/serialize
-         mzlib/list
-         mzlib/plt-match
-         mzlib/contract
+#lang scheme
+(require scheme/serialize
          "../private/closure.ss")
 ;; Implementation: Have a distinguished frame variable that is read and captured by send/suspend, 
 ;; installed on invocations of continuations by the server (and NOT from other continuation invocations)
@@ -11,28 +8,8 @@
 (define-serializable-struct primitive-wc (id))
 (define-serializable-struct frame (env))
 
-;; Environment
-(define empty-env empty)
-(define env-lookup
-  (match-lambda*
-    [(list id (list))
-     (error 'web-cell "Undefined web-cell: ~e" id)]
-    [(list id (list-rest (list-rest a-id a-val) env))
-     (if (eq? id a-id)
-         a-val
-         (env-lookup id env))]))  
-(define env-replace
-  (match-lambda*
-    [(list id val (list))
-     (list (cons id val))]
-    [(list id val (list-rest (list-rest a-id a-val) env))
-     (if (eq? id a-id)
-         (list* (cons id val) env)
-         (list* (cons a-id a-val)
-                (env-replace id val env)))]))
-
 ;; Frames  
-(define *wc-frame* (make-thread-cell (make-frame empty-env) #t))
+(define *wc-frame* (make-thread-cell (make-frame (make-immutable-hasheq empty)) #t))
 (define (current-frame) (thread-cell-ref *wc-frame*))
 (define (update-frame! nf) (thread-cell-set! *wc-frame* nf))
 
@@ -68,14 +45,17 @@
   wc)
 
 (define (web-cell-ref pwc)
-  (env-lookup (primitive-wc-id pwc)
-              (frame-env (current-frame))))
+  (define i (primitive-wc-id pwc))
+  (hash-ref
+   (frame-env (current-frame)) i
+   (lambda ()
+     (error 'web-cell "Undefined web-cell: ~e" i))))
 
 (define (web-cell-shadow wc nv)
   (update-frame!
    (make-frame
-    (env-replace (primitive-wc-id wc) nv
-                 (frame-env (current-frame))))))
+    (hash-set (frame-env (current-frame))
+              (primitive-wc-id wc) nv))))
 
 (provide make-web-cell)
 (provide/contract
