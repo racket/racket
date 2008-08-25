@@ -205,6 +205,3 @@
    ; XXX test dispatch
    
    ))
-
-(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2)))
-(test/graphical-ui abort-resume-tests)
