@@ -303,6 +303,18 @@ several known ways:
        is referenced before it is bound, an exception is not raised;
        instead, the reference produces @|undefined-const|.}
 
+ @item{A custom textual port must represent positions using integers,
+       and the positions must correspond to bytes in a UTF-8 encoding
+       of the port's data. For custom ports (byte or character) that
+       support both input and output, beware that buffered input can
+       create a mismatch between the position implemented by the
+       custom procedures and the port's current position; the result
+       from a custom position procedure is automatically adjusted to
+       account for buffering, and setting the port's position flushes
+       all buffered bytes, but writing after a read does @emph{not}
+       automatically reset the port's position to counteract the
+       effects of buffering.}
+
  @item{The bindings in a namespace produced by @scheme[null-environment]
        or @scheme[scheme-report-environment] correspond to @|r5rs| bindings
        instead of @|r6rs| bindings. In particular, @scheme[=>], @scheme[else],
