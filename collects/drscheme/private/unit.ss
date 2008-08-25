@@ -1,4 +1,4 @@
-
+#lang scheme/base
 #|
 
 closing:
@@ -11,7 +11,6 @@ module browser threading seems wrong.
 
 |#
 
-(module unit scheme/base
   (require scheme/contract
            scheme/unit
            scheme/class
@@ -429,7 +428,7 @@ module browser threading seems wrong.
     (define (make-definitions-text%)
       (let ([definitions-super%
               ((get-program-editor-mixin)
-               (values #;first-line-text-mixin
+               (first-line-text-mixin
                 (drscheme:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
                   (color:text-mixin
@@ -441,7 +440,7 @@ module browser threading seems wrong.
                         (λ (x) x)
                         text:info%))))))))))])
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock while-unlocked #;highlight-first-line)
+          (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -603,11 +602,9 @@ module browser threading seems wrong.
                          (is-a? f -frame<%>))
                 (send f language-changed)))
             
-            #;
             (highlight-first-line
              (is-a? (drscheme:language-configuration:language-settings-language _next-settings)
                     drscheme:module-language:module-language<%>))
-            
             
             (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
                   [sets (drscheme:language-configuration:language-settings-settings next-settings)])
@@ -786,7 +783,9 @@ module browser threading seems wrong.
           
           ;; insert the default-text
           (queue-callback (lambda () (insert-auto-text)))
-          
+          (highlight-first-line
+           (is-a? (drscheme:language-configuration:language-settings-language next-settings)
+                  drscheme:module-language:module-language<%>))
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
     
@@ -3957,4 +3956,4 @@ module browser threading seems wrong.
         (send frame update-toolbar-visibility)
         (send frame show #t)
         (set! first-frame? #f)
-        frame))))
+        frame)))

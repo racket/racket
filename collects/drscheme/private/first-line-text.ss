@@ -11,6 +11,8 @@
   (interface ()
     highlight-first-line))
 
+(define dark-color (make-object color% 50 0 50))
+
 (define first-line-text-mixin
   (mixin ((class->interface text%)) (first-line-text-mixin<%>)
     (inherit get-text paragraph-end-position get-admin invalidate-bitmap-cache position-location
@@ -35,10 +37,12 @@
     
     (define/augment (after-insert start len)
       (when (<= start end-of-first-line)
-        (update-first-line)))
+        (update-first-line))
+      (inner (void) after-insert start len))
     (define/augment (after-delete start len)
       (when (<= start end-of-first-line)
-        (update-first-line)))
+        (update-first-line))
+      (inner (void) after-delete start len))
     
     (define/private (fetch-first-line-height)
       (let-values ([(_1 h _2 _3) (send (get-dc) get-text-extent first-line (get-font))])
@@ -65,7 +69,9 @@
       (unless (equal? fancy-first-line? on?)
         (set! fancy-first-line? on?)
         (invalidate-bitmap-cache)
-        (send (send this get-canvas) refresh)))
+        (let ([canvas (send this get-canvas)])
+          (when canvas
+            (send canvas refresh)))))
     
     (define/override (on-event event)
       (cond
@@ -112,16 +118,19 @@
                       (send dc draw-line line-left line-height line-right line-height)
                       
                       (when (eq? (send dc get-smoothing) 'aligned)
-                        (send dc set-pen "black" 1 'solid)
-                        (let loop ([i 10])
+                        (let ([start 3/10]
+                              [end 0]
+                              [steps 10])
+                        (send dc set-pen dark-color 1 'solid)
+                        (let loop ([i steps])
                           (unless (zero? i)
-                            (send dc set-alpha (+ 2/5 (* i -1/25)))
+                            (send dc set-alpha (+ start (* (- end start) (/ i steps))))
                             (send dc draw-line 
                                   line-left
                                   (+ line-height i)
                                   line-right
                                   (+ line-height i))
-                            (loop (- i 1))))))
+                            (loop (- i 1)))))))
                     
                     (send dc set-alpha 1)
                     (send dc set-pen "gray" 1 'transparent)
@@ -178,7 +187,21 @@
 #;
 (begin
   (define f (new frame% [label ""] [width 200] [height 200]))
-  (define t (new (editor:standard-style-list-mixin (first-line-text-mixin text%))))
+  ;(define t (new (editor:standard-style-list-mixin (first-line-text-mixin text%))))
+  (define t
+    (new
+     (scheme:text-mixin
+      (text:autocomplete-mixin
+       (color:text-mixin
+        (mode:host-text-mixin
+         (values ; text:delegate-mixin
+          (text:foreground-color-mixin
+           (first-line-text-mixin
+            text:info%)))))))))
+  (require scheme/runtime-path)
+  (define-runtime-path here  ".")
+  (send t load-file (build-path (build-path here 'up 'up "framework" "private" "text.ss")))
+  #;
   (send t insert (apply string-append (map (λ (x) (build-string 100 (λ (i) (if (= i 99) #\newline x))))
                                            (string->list "abcdefghijklnopqrstuvwxyz"))))
   (define c (new editor-canvas% [parent f] [editor t]))
