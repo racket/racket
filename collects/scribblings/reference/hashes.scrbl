@@ -133,7 +133,7 @@ any existing mapping for @scheme[key].}
 
 Functionally extends @scheme[hash] by mapping @scheme[key] to
 @scheme[v], overwriting any existing mapping for @scheme[key], and
-returning an extended hash table.}
+returning the extended hash table.}
 
 
 @defproc[(hash-ref [hash hash?]
@@ -168,7 +168,7 @@ Removes any existing mapping for @scheme[key] in @scheme[hash].}
          (and/c hash? immutable?)]{
 
 Functionally removes any existing mapping for @scheme[key] in
-@scheme[hash], returning the updated hash table.}
+@scheme[hash], returning the fresh hash table.}
 
 
 @defproc[(hash-map [hash hash?]
