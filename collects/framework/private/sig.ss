@@ -1,4 +1,5 @@
-(module sig scheme/base
+#lang scheme/base
+  
   (require scheme/unit)
   
   (provide (prefix-out framework: (except-out (all-defined-out) framework^))
@@ -456,5 +457,4 @@
      (open (prefix frame: frame^))
      (open (prefix handler: handler^))
      (open (prefix scheme: scheme^))
-     (open (prefix main: main^)))))
-
+     (open (prefix main: main^))))

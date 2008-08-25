@@ -1,5 +1,4 @@
-
-(module language-configuration mzscheme
+#lang mzscheme
   (require mzlib/unit
            mrlib/hierlist
            mzlib/class
@@ -1786,4 +1785,4 @@
     (define (find-parent-from-snip snip)
       (let* ([admin (send snip get-admin)]
              [ed (send admin get-editor)])
-        (find-parent-from-editor ed)))))
+        (find-parent-from-editor ed))))

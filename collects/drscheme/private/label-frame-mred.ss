@@ -1,4 +1,4 @@
-(module label-frame-mred mzscheme
+#lang mzscheme
   (require mred
            mzlib/class)
   (provide (all-from-except mred frame%)
@@ -25,4 +25,4 @@
       (super-instantiate ())
       (semaphore-wait label-sema)
       (hash-table-put! label-ht this (get-label))
-      (semaphore-post label-sema))))
+      (semaphore-post label-sema)))

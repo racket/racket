@@ -1,9 +1,9 @@
+#lang scheme/unit
 ;; WARNING: printf is rebound in this module to always use the 
 ;;          original stdin/stdout of drscheme, instead of the 
 ;;          user's io ports, to aid any debugging printouts.
 ;;          (esp. useful when debugging the users's io)
 
-#lang scheme/unit
 (require "drsig.ss"
            string-constants
            mzlib/pconvert

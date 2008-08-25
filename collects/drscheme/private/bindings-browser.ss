@@ -1,3 +1,4 @@
+#lang mzscheme
 #|
 
 CODE COPIED (with permission ...) from syntax-browser.ss
@@ -7,7 +8,7 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
                  
 |#
 
-(module bindings-browser mzscheme
+
   (require mzlib/pretty
            mzlib/list
            mzlib/class
@@ -288,7 +289,7 @@ Marshalling (and hence the 'read' method of the snipclass omitted for fast proto
                               (send text last-position)
                               (send text last-position))
                         (- end start))
-                      void)))
+                      void))
 
 ; one trivial test case:
 ;

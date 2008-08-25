@@ -1,5 +1,5 @@
+#lang mzscheme
 
-(module drscheme-normal mzscheme
   (require mred
            mzlib/class
            mzlib/cmdline
@@ -271,4 +271,4 @@
                        (parent f))])
           (send f show #t)))))
 
-  (dynamic-require 'drscheme/tool-lib #f))
+  (dynamic-require 'drscheme/tool-lib #f)

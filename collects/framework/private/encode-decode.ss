@@ -1,4 +1,4 @@
-(module encode-decode mzscheme
+#lang mzscheme
   (require mzlib/deflate
            mzlib/match
            mzlib/pretty)
@@ -103,4 +103,4 @@
              (map (λ (x) (symbol->string (syntax-e x)))
                   (syntax->list (syntax (arg ...)))))))
          
-         (datum->syntax-object stx decoded stx))])))
+         (datum->syntax-object stx decoded stx))]))

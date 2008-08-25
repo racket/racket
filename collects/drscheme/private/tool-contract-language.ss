@@ -1,4 +1,5 @@
-(module tool-contract-language mzscheme
+#lang mzscheme
+
   (provide (rename -#%module-begin #%module-begin)
            (all-from-except mzscheme #%module-begin))
   
@@ -132,4 +133,4 @@
           (λ (str)
             (unless (string? (syntax-object->datum str))
               (raise-syntax-error 'tool-contract-language.ss "expected docs string" stx str)))
-          (apply append (map syntax->list (syntax->list (syntax ((strs ...) ...)))))))])))
+          (apply append (map syntax->list (syntax->list (syntax ((strs ...) ...)))))))]))

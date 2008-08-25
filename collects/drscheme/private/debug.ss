@@ -1,3 +1,5 @@
+#lang scheme/base
+
 #|
 
 profile todo:
@@ -5,8 +7,6 @@ profile todo:
   - sort out various ways of clearing out the profiling information
 
 |#
-
-#lang scheme/base
 
 (require scheme/unit
          errortrace/stacktrace

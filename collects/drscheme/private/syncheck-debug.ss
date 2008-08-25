@@ -1,4 +1,5 @@
-(module syncheck-debug mzscheme
+#lang mzscheme
+
   (require mzlib/pretty
            mzlib/list
            mzlib/class
@@ -161,4 +162,4 @@
                      (send text last-position)
                      (send text last-position))
                (loop))))))
-      out)))
+      out))

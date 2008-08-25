@@ -1,7 +1,8 @@
+#lang scheme/unit
+
 ;; originally by Dan Grossman
 ;; 6/30/95
 
-#lang scheme/unit
 (require string-constants
          scheme/class
          mred/mred-sig

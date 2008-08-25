@@ -1,4 +1,6 @@
-(module bday mzscheme (require framework/private/encode-decode)
+#lang mzscheme
+
+  (require framework/private/encode-decode)
   (decode
                  \5d8f4
               \10ec22010
@@ -36,4 +38,4 @@
            \8f335              \ea955
             \e7e               \2c7
 
-  ||\6||\8||\7||\4||\3||\d||\e||\f||\c||\0||\1))
+  ||\6||\8||\7||\4||\3||\d||\e||\f||\c||\0||\1)

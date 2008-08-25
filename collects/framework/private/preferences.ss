@@ -1,3 +1,4 @@
+#lang scheme/unit
 
 #|
 
@@ -26,7 +27,6 @@ the state transitions / contracts are:
 
 |#
 
-#lang scheme/unit
 
   (require string-constants
 	   mzlib/class

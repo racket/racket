@@ -1,4 +1,4 @@
-(module stick-figures mzscheme
+#lang mzscheme
   (require mzlib/class
            mzlib/pretty
            mred)
@@ -338,4 +338,4 @@
     (send f show #t))
 
   #;(edit-points waiting-points/2)
-  #;(edit-points running-points))
+  #;(edit-points running-points)
