@@ -635,10 +635,15 @@ Matthew
 (define (set-and-show-frame w h animated-gif)
   (define the-play-back-custodian (make-custodian))
   (define frame (create-frame the-play-back-custodian))
+  (set! WIDTH w)
+  (set! HEIGHT h)
   (when animated-gif
     (add-stop-and-image-buttons frame the-play-back-custodian))
   (add-editor-canvas frame visible-world w h)
   (send frame show #t))
+
+(define WIDTH 0) 
+(define HEIGHT 0)
 
 ;; [Box (union false Thread)] -> Frame
 ;; create a frame that shuts down the custodian on close
@@ -902,13 +907,14 @@ Matthew
   (parameterize ([current-eventspace evt-space])
     (queue-callback
      (lambda ()
-       (with-handlers ([exn:break? break-handler][exn? exn-handler])
-         (define x (- (send e get-x) INSET))
-         (define y (- (send e get-y) INSET))
-         (define m (mouse-event->symbol e))
-         (set! the-world (f the-world x y m))
-         (add-event MOUSE x y m)
-         (redraw-callback))))))
+       (define x (- (send e get-x) INSET))
+       (define y (- (send e get-y) INSET))
+       (define m (mouse-event->symbol e))
+       (when (and (<= 0 x WIDTH) (<= 0 y HEIGHT))
+	 (with-handlers ([exn:break? break-handler][exn? exn-handler])
+	   (set! the-world (f the-world x y m))
+	   (add-event MOUSE x y m)
+	   (redraw-callback)))))))
 
 ;; MouseEvent -> MouseEventType
 (define (mouse-event->symbol e)
