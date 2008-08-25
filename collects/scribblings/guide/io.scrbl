@@ -390,7 +390,7 @@ If you want to process individual lines of a file, then you can use
               "Can you hear me, now?")))
 ]
 
-If you want to determine whether ``hello'' appears a file, then you
+If you want to determine whether ``hello'' appears in a file, then you
 could search separate lines, but it's even easier to simply apply a
 regular expression (see @secref["regexp"]) to the stream:
 
