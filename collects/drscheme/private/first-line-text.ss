@@ -1,40 +1,46 @@
 #lang scheme/base
 
-
 (require scheme/gui/base
          scheme/class
          framework)
 
-(provide first-line-text-mixin)
+(provide first-line-text-mixin
+         first-line-text-mixin<%>)
 
-(define (first-line-text-mixin text%)
-  (class text%
+(define first-line-text-mixin<%>
+  (interface ()
+    highlight-first-line))
+
+(define first-line-text-mixin
+  (mixin ((class->interface text%)) (first-line-text-mixin<%>)
     (inherit get-text paragraph-end-position get-admin invalidate-bitmap-cache position-location
              scroll-to local-to-global get-dc)
     (define bx (box 0))
     (define by (box 0))
     (define bw (box 0))
     
-    (define first-line #f)
-    (define end-of-first-line #f)
-    
     (define fancy-first-line? #f)
     
+    (define first-line "")
+    (define end-of-first-line 0)
+    (define first-line-is-lang? #f)
+    
+    (define/private (show-first-line?)
+      (and fancy-first-line? first-line-is-lang?))
+    
+    (define/private (update-first-line)
+      (set! end-of-first-line (paragraph-end-position 0))
+      (set! first-line (get-text 0 end-of-first-line))
+      (set! first-line-is-lang? (is-lang-line? first-line)))
+    
     (define/augment (after-insert start len)
-      (when end-of-first-line
-        (when (<= start end-of-first-line)
-          (set! end-of-first-line #f)
-          (set! first-line #f))))
+      (when (<= start end-of-first-line)
+        (update-first-line)))
     (define/augment (after-delete start len)
-      (when end-of-first-line
-        (when (<= start end-of-first-line)
-          (set! end-of-first-line #f)
-          (set! first-line #f))))
+      (when (<= start end-of-first-line)
+        (update-first-line)))
     
     (define/private (fetch-first-line-height)
-      (unless first-line
-        (set! end-of-first-line (paragraph-end-position 0))
-        (set! first-line (get-text 0 end-of-first-line)))
       (let-values ([(_1 h _2 _3) (send (get-dc) get-text-extent first-line (get-font))])
         h))
     
@@ -43,7 +49,7 @@
         (cond
           [(not admin)
            #f]
-          [fancy-first-line? 
+          [(show-first-line?)
            (let ([h (fetch-first-line-height)])
              (set-box! by localy)
              (local-to-global #f by)
@@ -60,7 +66,7 @@
         (set! fancy-first-line? on?)
         (invalidate-bitmap-cache)
         (send (send this get-canvas) refresh)))
-
+    
     (define/override (on-event event)
       (cond
         [(or (send event moving?)
@@ -80,11 +86,11 @@
               (super on-event event)]
              [else         
               (super on-event event)]))]))
-        
+    
     
     (define/override (on-paint before? dc left top right bottom dx dy draw-caret)
       (unless before?
-        (when fancy-first-line? 
+        (when (show-first-line?) 
           (let ([admin (get-admin)])
             (when admin
               (send admin get-view bx by bw #f #f)
@@ -142,6 +148,32 @@
         (send std get-font)))
     
     (super-new)))
+
+;; is-lang-line? : string -> boolean
+;; given the first line in the editor, this returns #t if it is a #lang line.
+(define (is-lang-line? l)
+  (let ([m (regexp-match #rx"^#(!|(lang ))([-+_/a-zA-Z0-9]+)(.|$)" l)])
+    (and m
+         (let ([lang-name (list-ref m 3)]
+               [last-char (list-ref m 4)])
+           (and (not (char=? #\/ (string-ref lang-name 0)))
+                (not (char=? #\/ (string-ref lang-name (- (string-length lang-name) 1))))
+                (or (string=? "" last-char)
+                    (char-whitespace? (string-ref last-char 0))))))))
+
+;; test cases for is-lang-line?
+#;
+(list (is-lang-line? "#lang x")
+      (is-lang-line? "#lang scheme")
+      (is-lang-line? "#lang scheme ")
+      (not (is-lang-line? "#lang schemeα"))
+      (not (is-lang-line? "#lang scheme/ "))
+      (not (is-lang-line? "#lang /scheme "))
+      (is-lang-line? "#lang sch/eme ")
+      (is-lang-line? "#lang r6rs")
+      (is-lang-line? "#!r6rs")
+      (is-lang-line? "#!r6rs ")
+      (not (is-lang-line? "#!/bin/sh")))
 
 #;
 (begin

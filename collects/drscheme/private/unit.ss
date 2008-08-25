@@ -27,6 +27,7 @@ module browser threading seems wrong.
            "drsig.ss"
            "auto-language.ss"
            "insert-large-letters.ss"
+           "first-line-text.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
 
@@ -428,18 +429,19 @@ module browser threading seems wrong.
     (define (make-definitions-text%)
       (let ([definitions-super%
               ((get-program-editor-mixin)
-               (drscheme:module-language:module-language-put-file-mixin
-                (scheme:text-mixin
-                 (color:text-mixin
-                  (drscheme:rep:drs-bindings-keymap-mixin
-                   (mode:host-text-mixin
-                    (text:delegate-mixin
-                     (text:foreground-color-mixin
-                      (drscheme:rep:drs-autocomplete-mixin
-                       (λ (x) x)
-                       text:info%)))))))))])
+               (values #;first-line-text-mixin
+                (drscheme:module-language:module-language-put-file-mixin
+                 (scheme:text-mixin
+                  (color:text-mixin
+                   (drscheme:rep:drs-bindings-keymap-mixin
+                    (mode:host-text-mixin
+                     (text:delegate-mixin
+                      (text:foreground-color-mixin
+                       (drscheme:rep:drs-autocomplete-mixin
+                        (λ (x) x)
+                        text:info%))))))))))])
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock while-unlocked)
+          (inherit get-top-level-window is-locked? lock while-unlocked #;highlight-first-line)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -588,40 +590,44 @@ module browser threading seems wrong.
           
           
           (define/pubment (get-next-settings) next-settings)
-          (define/pubment set-next-settings
-            (lambda (_next-settings [update-prefs? #t])
-              (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
-                              get-reader-module)
-                        (send (drscheme:language-configuration:language-settings-language next-settings)
-                              get-reader-module))
-                (set-modified #t))
-              (set! next-settings _next-settings)
-              (change-mode-to-match)
-              
-              (let ([f (get-top-level-window)])
-                (when (and f
-                           (is-a? f -frame<%>))
-                  (send f language-changed)))
-              
-              (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
-                    [sets (drscheme:language-configuration:language-settings-settings next-settings)])
-                (preferences:set
-                 'drscheme:recent-language-names
-                 (limit-length
-                  (remove-duplicate-languages
-                   (cons (cons (send lang get-language-name)
-                               (send lang marshall-settings sets))
-                         (preferences:get 'drscheme:recent-language-names)))
-                  10)))
-              
-              (when update-prefs?
-                (preferences:set
-                 drscheme:language-configuration:settings-preferences-symbol
-                 next-settings))
-              
-              (remove-auto-text)
-              (insert-auto-text)
-              (after-set-next-settings _next-settings)))
+          (define/pubment (set-next-settings _next-settings [update-prefs? #t])
+            (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
+                            get-reader-module)
+                      (send (drscheme:language-configuration:language-settings-language next-settings)
+                            get-reader-module))
+              (set-modified #t))
+            (set! next-settings _next-settings)
+            (change-mode-to-match)
+            (let ([f (get-top-level-window)])
+              (when (and f
+                         (is-a? f -frame<%>))
+                (send f language-changed)))
+            
+            #;
+            (highlight-first-line
+             (is-a? (drscheme:language-configuration:language-settings-language _next-settings)
+                    drscheme:module-language:module-language<%>))
+            
+            
+            (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
+                  [sets (drscheme:language-configuration:language-settings-settings next-settings)])
+              (preferences:set
+               'drscheme:recent-language-names
+               (limit-length
+                (remove-duplicate-languages
+                 (cons (cons (send lang get-language-name)
+                             (send lang marshall-settings sets))
+                       (preferences:get 'drscheme:recent-language-names)))
+                10)))
+            
+            (when update-prefs?
+              (preferences:set
+               drscheme:language-configuration:settings-preferences-symbol
+               next-settings))
+            
+            (remove-auto-text)
+            (insert-auto-text)
+            (after-set-next-settings _next-settings))
           
           (define/pubment (after-set-next-settings s)
             (inner (void) after-set-next-settings s))
