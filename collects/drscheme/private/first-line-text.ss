@@ -1,9 +1,5 @@
 #lang scheme/base
-#|
 
-The on-event method isnt' working right yet.
-
-|#
 
 (require scheme/gui/base
          scheme/class
