@@ -206,10 +206,11 @@ example, here is a quick implementation of a networked REPL:
 Note that in this code it is only the REPL interactions that are going
 over the network connection; using I/O operations inside the REPL will
 still use the usual sandbox parameters (defaulting to no I/O).  In
-addition, the code works only from an existing toplevel REPL --- when
-run from a module, the input syntax values will not have a correct
-context.  Here is a variation that uses the networked ports for user
-I/O, and works when used from a module (by using a new namespace):
+addition, the code works only from an existing toplevel REPL ---
+specifically, @scheme[read-eval-print-loop] reads a syntax value and
+gives it the lexical context of the current namespace.  Here is a
+variation that uses the networked ports for user I/O, and works when
+used from a module (by using a new namespace):
 
 @schemeblock[
 (let-values ([(i o) (tcp-accept (tcp-listen 9999))])
@@ -218,10 +219,10 @@ I/O, and works when used from a module (by using a new namespace):
                  [current-error-port   o]
                  [sandbox-input        i]
                  [sandbox-output       o]
-                 [sandbox-error-output o])
-    (parameterize ([current-namespace (make-base-namespace)]
-                   [current-eval
-                    (make-module-evaluator '(module m scheme/base))])
+                 [sandbox-error-output o]
+                 [current-namespace (make-empty-namespace)])
+    (parameterize ([current-eval
+                    (make-evaluator 'scheme/base)])
       (read-eval-print-loop))
     (fprintf o "\nBye...\n")
     (close-output-port o)))
