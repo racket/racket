@@ -809,11 +809,12 @@ sequence must not start or end with @litchar{/}. A sequence
 that the terminating whitespace (if any) is consumed before the
 external reading procedure is called.
 
-Finally, @as-index{@litchar{#!}} followed by alphanumeric ASCII,
-@litchar{+}, @litchar{-}, or @litchar{_} is a synonym for
-@litchar{#lang} followed by a space. Use of this synonym is discourage
-except as needed to construct programs that conform to certain
-grammars, such as that of R@superscript{6}RS @cite["Sperber07"].
+Finally, @as-index{@litchar{#!}} is a synonym for @litchar{#lang}
+followed by a space when @litchar{#!} is followed by alphanumeric
+ASCII, @litchar{+}, @litchar{-}, or @litchar{_}. Use of this synonym
+is discouraged except as needed to construct programs that conform to
+certain grammars, such as that of R@superscript{6}RS
+@cite["Sperber07"].
 
 By convention, @litchar{#lang} normally appears at the beginning of a
 file, possibly after comment forms, to specify the syntax of a module.
