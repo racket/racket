@@ -35,14 +35,12 @@
 (define web-prompt (make-continuation-prompt-tag 'web)) 
 
 (define (current-saved-continuation-marks-and key val)
-  (list* (cons key val)
-         (filter (lambda (k*v) (not (equal? key (car k*v))))
-                 (let-values ([(current)
-                               (continuation-mark-set->list (current-continuation-marks web-prompt)
-                                                            the-save-cm-key)])
-                   (if (empty? current)
-                       empty
-                       (first current))))))
+  (define c
+    (continuation-mark-set->list (current-continuation-marks web-prompt)
+                               the-save-cm-key))
+  (if (empty? c)
+      (make-immutable-hash (list (cons key val)))
+      (hash-set (first c) key val)))
 
 ;; current-continuation-as-list: -> (listof value)
 ;; check the safety marks and return the list of marks representing the continuation
@@ -73,6 +71,11 @@
      (with-continuation-mark cm-key cm-val
        (with-continuation-marks cms thnk))]))
 
+(define (with-continuation-marks/hash cms thnk)
+  (with-continuation-marks 
+   (hash-map cms cons)
+   thnk))
+
 ;; resume: (listof (value -> value)) value -> value
 ;; resume a computation given a value and list of frame procedures
 (define (resume frames val)
@@ -89,7 +92,7 @@
                           f)]
        [(vector #f cms)
         (with-continuation-mark the-save-cm-key cms
-          (with-continuation-marks cms (lambda () (resume fs val))))]
+          (with-continuation-marks/hash cms (lambda () (resume fs val))))]
        [(vector f cms)
         (resume (list* (vector f #f) (vector #f cms) fs) val)])]))
 
@@ -104,7 +107,7 @@
        [(vector f #f)
         (rebuild-cms fs thunk)]
        [(vector f cms)
-        (with-continuation-marks cms (lambda () (rebuild-cms fs thunk)))])]))
+        (with-continuation-marks/hash cms (lambda () (rebuild-cms fs thunk)))])]))
 
 (define (abort/cc thunk)
   (call-with-continuation-prompt

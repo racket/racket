@@ -19,36 +19,42 @@
      "Easy"
      (check-equal? (abort/cc
                     (lambda () (current-saved-continuation-marks-and 'k1 'v1)))
-                   (list (cons 'k1 'v1))))
+                   (make-immutable-hash (list (cons 'k1 'v1)))))
     
     (test-case
      "Preserve"
      (check-equal? (abort/cc
                     (lambda () 
-                      (with-continuation-mark the-save-cm-key (list (cons 'k2 'v2))
+                      (with-continuation-mark the-save-cm-key (make-immutable-hash (list (cons 'k2 'v2)))
                         (current-saved-continuation-marks-and 'k1 'v1))))
-                   (list (cons 'k1 'v1)
-                         (cons 'k2 'v2))))
+                   (make-immutable-hash 
+                    (list (cons 'k1 'v1)
+                         (cons 'k2 'v2)))))
     
     (test-case
      "Update"
      (check-equal? (abort/cc
                     (lambda () 
-                      (with-continuation-mark the-save-cm-key (list (cons 'k2 'v2) (cons 'k1 'v3))
+                      (with-continuation-mark the-save-cm-key 
+                        (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
                         (current-saved-continuation-marks-and 'k1 'v1))))
-                   (list (cons 'k1 'v1)
-                         (cons 'k2 'v2))))
+                   (make-immutable-hash 
+                    (list (cons 'k1 'v1)
+                         (cons 'k2 'v2)))))
     
     (test-case
      "Double"
      (check-equal? (abort/cc
                     (lambda () 
-                      (with-continuation-mark the-save-cm-key (list (cons 'k3 'v1) (cons 'k4 'v0))
+                      (with-continuation-mark the-save-cm-key 
+                        (make-immutable-hash (list (cons 'k3 'v1) (cons 'k4 'v0)))
                         ((lambda (x) x)
-                         (with-continuation-mark the-save-cm-key (list (cons 'k2 'v2) (cons 'k1 'v3))
+                         (with-continuation-mark the-save-cm-key 
+                           (make-immutable-hash (list (cons 'k2 'v2) (cons 'k1 'v3)))
                            (current-saved-continuation-marks-and 'k1 'v1))))))
-                   (list (cons 'k1 'v1)
-                         (cons 'k2 'v2)))))
+                   (make-immutable-hash 
+                    (list (cons 'k1 'v1)
+                         (cons 'k2 'v2))))))
    
    (test-suite 
     "activation-record-list"
@@ -156,9 +162,9 @@
        (check-equal? (abort/cc
                       (lambda ()
                         (let/ec esc 
-                          (resume (list (vector f (list (cons 3 4) (cons 1 2))) 
-                                        (vector g (list (cons 5 6)))
-                                        (vector esc (list (cons 7 8)))
+                          (resume (list (vector f (make-immutable-hash (list (cons 3 4) (cons 1 2)))) 
+                                        (vector g (make-immutable-hash (list (cons 5 6))))
+                                        (vector esc (make-immutable-hash (list (cons 7 8))))
                                         (vector (lambda _
                                                   (continuation-mark-set->list*
                                                    (current-continuation-marks)
@@ -179,14 +185,14 @@
                       (lambda ()
                         (let/ec esc 
                           (set-box! esc-b esc)
-                          (resume (list (vector f (list (cons 3 4) (cons 1 2))) 
-                                        (vector g (list (cons 5 6)))
-                                        (vector esc (list (cons 7 8)))
+                          (resume (list (vector f (make-immutable-hash (list (cons 3 4) (cons 1 2)))) 
+                                        (vector g (make-immutable-hash (list (cons 5 6))))
+                                        (vector esc (make-immutable-hash (list (cons 7 8))))
                                         (vector capture #f))
                                   (list 42)))))
-                     (list (vector f (list (cons 3 4) (cons 1 2))) 
-                           (vector g (list (cons 5 6)))
-                           (vector (unbox esc-b) (list (cons 7 8))))))))
+                     (list (vector f (make-immutable-hash (list (cons 3 4) (cons 1 2)))) 
+                           (vector g (make-immutable-hash (list (cons 5 6))))
+                           (vector (unbox esc-b) (make-immutable-hash (list (cons 7 8)))))))))
    
    ; XXX test kont   
    
@@ -199,3 +205,6 @@
    ; XXX test dispatch
    
    ))
+
+(require (planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2)))
+(test/graphical-ui abort-resume-tests)
