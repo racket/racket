@@ -1,3 +1,4 @@
+#lang scheme/unit
 #|
 
 WARNING: printf is rebound in the body of the unit to always
@@ -5,7 +6,6 @@ WARNING: printf is rebound in the body of the unit to always
 
 |#
 
-#lang scheme/unit
 (require string-constants
          mzlib/class
          mzlib/match
