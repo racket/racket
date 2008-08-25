@@ -38,12 +38,12 @@ documentation will be useful.
 
 @filepath{dispatchers/dispatch.ss} provides a few functions for dispatchers in general.
 
-@defthing[dispatcher? contract?]{
+@defthing[dispatcher/c contract?]{
  Equivalent to @scheme[(connection? request? . -> . void)].
 }
 
-@defproc[(dispatcher-interface-version? (any any/c)) boolean?]{
- Returns @scheme[#t] if @scheme[any] is @scheme['v1]. Returns @scheme[#f] otherwise.
+@defproc[(dispatcher-interface-version/c (any any/c)) boolean?]{
+ Equivalent to @scheme[(symbols 'v1)]
 }
 
 @defstruct[exn:dispatcher ()]{
@@ -55,7 +55,7 @@ documentation will be useful.
  Raises a @scheme[exn:dispatcher]
 }
 
-As the @scheme[dispatcher?] contract suggests, a dispatcher is a function that takes a connection
+As the @scheme[dispatcher/c] contract suggests, a dispatcher is a function that takes a connection
 and request object and does something to them. Mostly likely it will generate
 some response and output it on the connection, but it may do something
 different. For example, it may apply some test to the request object, perhaps
@@ -64,7 +64,7 @@ otherwise.
 
 Consider the following example dispatcher, that captures the essence of URL rewriting:
 @schemeblock[
- (code:comment "(url? -> url?) dispatcher? -> dispatcher?")
+ (code:comment "(url? -> url?) dispatcher/c -> dispatcher/c")
  (lambda (rule inner)
    (lambda (conn req)
      (code:comment "Call the inner dispatcher...")
@@ -84,14 +84,14 @@ Consider the following example dispatcher, that captures the essence of URL rewr
 @filepath{dispatchers/filesystem-map.ss} provides a means of mapping
 URLs to paths on the filesystem.
 
-@defthing[url-path? contract?]{
+@defthing[url-path/c contract?]{
  This contract is equivalent to @scheme[((url?) . ->* . (path? (listof path-element?)))].
  The returned @scheme[path?] is the path on disk. The list is the list of
  path elements that correspond to the path of the URL.}
 
 @defproc[(make-url->path (base path?))
-         url-path?]{
- The @scheme[url-path?] returned by this procedure considers the root
+         url-path/c]{
+ The @scheme[url-path/c] returned by this procedure considers the root
  URL to be @scheme[base]. It ensures that @scheme[".."]s in the URL
  do not escape the @scheme[base] and removes them silently otherwise.}
 
@@ -112,8 +112,8 @@ URLs to paths on the filesystem.
               @elem{defines a dispatcher constructor
                  that invokes a sequence of dispatchers until one applies.}]{
 
-@defproc[(make (dispatcher dispatcher?) ...)
-         dispatcher?]{
+@defproc[(make (dispatcher dispatcher/c) ...)
+         dispatcher/c]{
  Invokes each @scheme[dispatcher], invoking the next if the first
  calls @scheme[next-dispatcher]. If no @scheme[dispatcher] applies,
  then it calls @scheme[next-dispatcher] itself.
@@ -128,7 +128,7 @@ URLs to paths on the filesystem.
                   dispatcher.}]{
 
 @defproc[(make [new-timeout integer?])
-         dispatcher?]{
+         dispatcher/c]{
  Changes the timeout on the connection with @scheme[adjust-connection-timeout!]
  called with @scheme[new-timeout].
 }}
@@ -139,7 +139,7 @@ URLs to paths on the filesystem.
               @elem{defines a dispatcher constructor.}]{
 
 @defproc[(make (proc (request? . -> . response?)))
-         dispatcher?]{
+         dispatcher/c]{
  Constructs a dispatcher that calls @scheme[proc] on the request
  object, and outputs the response to the connection.
 }}
@@ -152,8 +152,8 @@ URLs to paths on the filesystem.
                  that calls an underlying dispatcher
                  with all requests that pass a predicate.}]{
 
-@defproc[(make (regex regexp?) (inner dispatcher?))
-         dispatcher?]{
+@defproc[(make (regex regexp?) (inner dispatcher/c))
+         dispatcher/c]{
  Calls @scheme[inner] if the URL path of the request, converted to
  a string, matches @scheme[regex]. Otherwise, calls @scheme[next-dispatcher].
 }}
@@ -166,7 +166,7 @@ URLs to paths on the filesystem.
                    URL path.}]{
 
 @defproc[(make (path string?) (proc (request? . -> . response?)))
-         dispatcher?]{
+         dispatcher/c]{
  Checks if the request URL path as a string is equal to @scheme[path]
  and if so, calls @scheme[proc] for a response.
 }
@@ -221,7 +221,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 
 @defproc[(make [#:format format format-req/c paren-format]
                [#:log-path log-path path-string? "log"])
-         dispatcher?]{
+         dispatcher/c]{
  Logs requests to @scheme[log-path] by using @scheme[format] to format the requests.
  Then invokes @scheme[next-dispatcher].
 }}
@@ -238,7 +238,7 @@ a URL that refreshes the password file, servlet cache, etc.}
                 ((url url?) (header header?) . -> . response?)
                 (gen-authentication-responder "forbidden.html")])
          (values (-> void)
-                 dispatcher?)]{
+                 dispatcher/c)]{
  The first returned value is a procedure that refreshes the password
  file used by the dispatcher.
 
@@ -267,8 +267,8 @@ a URL that refreshes the password file, servlet cache, etc.}
               @elem{defines a dispatcher constructor
                     that calls a different dispatcher based upon the host requested.}]{
 
-@defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher?)))
-         dispatcher?]{
+@defproc[(make (lookup-dispatcher (symbol? . -> . dispatcher/c)))
+         dispatcher/c]{
  Extracts a host from the URL requested, or the Host HTTP header,
  calls @scheme[lookup-dispatcher] with the host, and invokes the
  returned dispatcher. If no host can be extracted, then @scheme['none]
@@ -284,7 +284,7 @@ a URL that refreshes the password file, servlet cache, etc.}
 @defproc[(make [#:url->path url->path url->path?]
                [#:path->mime-type path->mime-type (path? . -> . bytes?) (lambda (path) TEXT/HTML-MIME-TYPE)]
                [#:indices indices (listof string?) (list "index.html" "index.htm")])
-         dispatcher?]{
+         dispatcher/c]{
  Uses @scheme[url->path] to extract a path from the URL in the request
  object. If this path does not exist, then the dispatcher does not apply and 
  @scheme[next-dispatcher] is invoked.
@@ -322,7 +322,7 @@ a URL that refreshes the password file, servlet cache, etc.}
                 integer?
                 30])
          (values (-> void)
-                 dispatcher?)]{
+                 dispatcher/c)]{
  The first returned value is a procedure that refreshes the servlet
  code cache.
 
@@ -354,7 +354,7 @@ a URL that refreshes the password file, servlet cache, etc.}
                [#:responders-servlet responders-servlet
                                      ((url url?) (exn exn?) . -> . response?)
                                      servlet-error-responder])
-         dispatcher?]{
+         dispatcher/c]{
  If the request URL contains a serialized continuation, then it is invoked with the
  request. Otherwise, @scheme[url->path] is used to resolve the URL to a path.
  The path is evaluated as a module, in a namespace constructed by @scheme[make-servlet-namespace].
@@ -376,6 +376,6 @@ a URL that refreshes the password file, servlet cache, etc.}
 }
                  
 @defproc[(make)
-         dispatcher?]{
+         dispatcher/c]{
  Returns a dispatcher that prints memory usage on every request.
 }}

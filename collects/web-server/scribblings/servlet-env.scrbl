@@ -15,7 +15,7 @@ The @web-server provides a way to quickly configure and start a server instance.
                        [#:listen-ip listen-ip string? "127.0.0.1"]
                        [#:port port number? 8000]
                        [#:manager manager manager? default-threshold-LRU-manager]
-                       [#:servlet-namespace servlet-namespace (listof require-spec?) empty]
+                       [#:servlet-namespace servlet-namespace (listof module-path?) empty]
                        [#:server-root-path server-root-path path? default-server-root-path]
                        [#:extra-files-path extra-files-path path? (build-path server-root-path "htdocs")]
                        [#:servlets-root servlets-root path? (build-path server-root-path ".")]

@@ -1,10 +1,8 @@
-#lang scheme/base
-(require mzlib/list
-         mzlib/contract)
+#lang scheme
 (require "dispatch.ss")
 (provide/contract
- [interface-version dispatcher-interface-version?])
-(provide make)
+ [interface-version dispatcher-interface-version/c]
+ [make (() () #:rest (listof dispatcher/c) . ->* . dispatcher/c)])
 
 (define interface-version 'v1)
 (define ((make . dispatchers) conn req)

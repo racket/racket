@@ -1,10 +1,12 @@
 #lang scheme/base
 (require (for-template scheme/base)
          syntax/kerncase
+         scheme/contract
          "../lang/abort-resume.ss"
          (for-template "../lang/abort-resume.ss")
          "util.ss")
-(provide elim-callcc)
+(provide/contract
+ [elim-callcc (syntax? . -> . syntax?)])
 
 (define (id x) x)
 

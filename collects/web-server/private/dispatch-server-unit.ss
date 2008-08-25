@@ -1,8 +1,6 @@
 #lang scheme/unit
 (require net/tcp-sig
-         mzlib/thread
-         mzlib/contract
-         mzlib/kw)
+         mzlib/thread)
 (require "web-server-structs.ss"
          "connection-manager.ss"
          "dispatch-server-sig.ss")
@@ -56,9 +54,8 @@
 
 ;; handle-connection : input-port output-port (input-port -> string string) -> void
 ;; returns immediately, spawning a thread to handle
-(define/kw (handle-connection ip op
-                              #:optional
-                              [port-addresses tcp-addresses])
+(define (handle-connection ip op
+                           #:port-addresses [port-addresses tcp-addresses])
   (define conn
     (new-connection config:initial-connection-timeout
                     ip op (current-custodian) #f))

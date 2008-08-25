@@ -19,15 +19,15 @@
          "../private/cache-table.ss"
          "../private/util.ss")  
 (provide/contract
- [interface-version dispatcher-interface-version?]
+ [interface-version dispatcher-interface-version/c]
  [make (->* ((box/c cache-table?)
-             #:url->path url-path?)
-            (#:make-servlet-namespace make-servlet-namespace?
+             #:url->path url-path/c)
+            (#:make-servlet-namespace make-servlet-namespace/c
                                       #:responders-servlet-loading (url? any/c . -> . response?)
                                       #:responders-servlet (url? any/c . -> . response?)
                                       #:timeouts-default-servlet number?)
             (values (-> void)
-                    dispatcher?))])
+                    dispatcher/c))])
 
 (define interface-version 'v1)
 (define (make config:scripts 

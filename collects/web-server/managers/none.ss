@@ -3,7 +3,7 @@
 (require "manager.ss")
 (require "../servlet/servlet-structs.ss")
 (provide/contract
- [create-none-manager (expiration-handler? . -> . manager?)])
+ [create-none-manager (expiration-handler/c . -> . manager?)])
 
 (define-struct (none-manager manager) (instance-expiration-handler))
 (define (create-none-manager

@@ -13,14 +13,15 @@
 (define launch-browser? #t)
 
 (provide/contract
- (static-files-path ((or/c string? path?) . -> . void?)))
+ [static-files-path ((or/c string? path?) . -> . void?)])
 (define (static-files-path path)
   (set! extra-files-path 
         (if (path? path) 
             path
             (string->path path))))
 
-(provide no-web-browser)
+(provide/contract
+ [no-web-browser (-> void)])
 (define (no-web-browser)
   (set! launch-browser? false))
 

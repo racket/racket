@@ -5,8 +5,8 @@
          "../private/request-structs.ss"
          "../private/util.ss")
 (provide/contract
- [interface-version dispatcher-interface-version?]
- [make (regexp? dispatcher? . -> . dispatcher?)])
+ [interface-version dispatcher-interface-version/c]
+ [make (regexp? dispatcher/c . -> . dispatcher/c)])
 
 (define interface-version 'v1)
 (define ((make regex inner) conn req)

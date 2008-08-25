@@ -14,14 +14,14 @@
   (->* (path-string?)
        (#:port (or/c false/c number?)
                #:listen-ip (or/c false/c string?)
-               #:make-servlet-namespace make-servlet-namespace?)
+               #:make-servlet-namespace make-servlet-namespace/c)
       unit?)]
  [configuration-table-sexpr->web-config@
   (->* (list?) ; XXX
       (#:web-server-root path-string?
       #:port (or/c false/c number?)
       #:listen-ip (or/c false/c string?)
-      #:make-servlet-namespace make-servlet-namespace?)
+      #:make-servlet-namespace make-servlet-namespace/c)
       unit?)])
 
 ; configuration-table->web-config@ : path -> configuration

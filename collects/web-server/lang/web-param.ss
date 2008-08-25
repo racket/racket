@@ -1,11 +1,12 @@
 #lang scheme/base
 (require (for-syntax scheme/base)
+         scheme/contract
          "../private/closure.ss"
          mzlib/list)
 
-; XXX Add contract
+(provide/contract
+ [web-parameter? (any/c . -> . boolean?)])
 (provide make-web-parameter
-         web-parameter?
          web-parameterize)
 
 (define (web-parameter? any)

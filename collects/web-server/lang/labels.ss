@@ -1,6 +1,7 @@
-#lang scheme/base
+#lang scheme
 (require mzlib/md5)
-(provide make-labeling)
+(provide/contract
+ [make-labeling (bytes? . -> . (-> symbol?))])
 
 ;; REQUIREMENT: The label code must be non-numeric.
 ;; REQUIREMENT: The first numeric character following the label code

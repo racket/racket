@@ -1,6 +1,9 @@
 #lang scheme
 (require net/url
+         scheme/contract
          scheme/serialize
+         web-server/private/request-structs
+         web-server/private/response-structs
          web-server/private/define-closure
          "../private/request-structs.ss"
          "abort-resume.ss"
@@ -8,7 +11,7 @@
          "stuff-url.ss"
          "../private/url-param.ss")
 
-(provide 
+(provide
  ;; Server Interface
  initialize-servlet
  
@@ -16,6 +19,17 @@
  send/suspend/hidden
  send/suspend/url
  send/suspend/dispatch)
+
+; These contracts interfere with the continuation safety marks
+#;(provide/contract
+ ;; Server Interface
+ [initialize-servlet ((request? . -> . response?) . -> . (request? . -> . response?))]
+ 
+ ;; Servlet Interface
+ [send/suspend/hidden ((url? list? . -> . response?) . -> . request?)]
+ [send/suspend/url ((url? . -> . response?) . -> . request?)]
+ [send/suspend/dispatch ((((request? . -> . any/c) . -> . url?) . -> . response?)
+                         . -> . any/c)])
 
 ;; initial-servlet : (request -> response) -> (request -> response?)
 (define (initialize-servlet start)

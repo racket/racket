@@ -10,14 +10,14 @@
          "../servlet/basic-auth.ss"
          "../private/response.ss")  
 (provide/contract
- [interface-version dispatcher-interface-version?]
+ [interface-version dispatcher-interface-version/c]
  [make (->* ()
             (#:password-file path-string?
                              #:authentication-responder 
                              (url? header? . -> . response?))
             (values
              (-> void)
-             dispatcher?))])
+             dispatcher/c))])
 
 (define interface-version 'v1)
 (define (make ; XXX Take authorized? function

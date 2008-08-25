@@ -1,17 +1,17 @@
 #lang scheme/base
-(require mzlib/contract)
+(require scheme/contract)
 (require "../private/connection-manager.ss"
          "../private/request-structs.ss")
 
-(define dispatcher? 
+(define dispatcher/c
   (connection? request? . -> . void))
-(define (dispatcher-interface-version? v)
-  (and (symbol? v) (eq? v 'v1)))
+(define dispatcher-interface-version/c
+  (symbols 'v1))
 (define-struct exn:dispatcher ())
 (define (next-dispatcher) (raise (make-exn:dispatcher)))
 
 (provide/contract
- [dispatcher? contract?]
- [dispatcher-interface-version? (any/c . -> . boolean?)]
+ [dispatcher/c contract?]
+ [dispatcher-interface-version/c contract?]
  [next-dispatcher (-> void)]
  [struct exn:dispatcher ()])

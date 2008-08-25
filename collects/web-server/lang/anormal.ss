@@ -2,9 +2,11 @@
 (require (for-template scheme/base)
          syntax/kerncase
          mzlib/list
+         scheme/contract
          mzlib/plt-match
          "util.ss")
-(provide make-anormal-term)
+(provide/contract
+ [make-anormal-term ((syntax? . -> . syntax?) . -> . (syntax? . -> . syntax?))])
 
 ; A-Normal Form
 (define (id x) x)

@@ -1,27 +1,27 @@
 #lang scheme/base
-(require mzlib/contract)
+(require scheme/contract)
 (require "../private/request-structs.ss"
          "../private/response-structs.ss")  
 
 (define k-url?
   string?)
 
-(define response-generator?
+(define response-generator/c
   (k-url? . -> . response?))
 
-(define url-transform?
+(define url-transform/c
   (k-url? . -> . k-url?))
 
-(define expiration-handler?
+(define expiration-handler/c
   (or/c false/c
         (request? . -> . response?)))
 
-(define embed/url?
-  (((request? . -> . any/c)) (expiration-handler?) . opt-> . string?))
+(define embed/url/c
+  (((request? . -> . any/c)) (expiration-handler/c) . ->* . string?))
 
 (provide/contract
- [response-generator? contract?]
+ [response-generator/c contract?]
  [k-url? (any/c . -> . boolean?)]
- [url-transform? contract?]
- [expiration-handler? contract?]
- [embed/url? contract?])
+ [url-transform/c contract?]
+ [expiration-handler/c contract?]
+ [embed/url/c contract?])

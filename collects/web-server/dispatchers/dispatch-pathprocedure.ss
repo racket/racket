@@ -7,8 +7,8 @@
          "../private/request-structs.ss"
          "../private/response-structs.ss")
 (provide/contract
- [interface-version dispatcher-interface-version?]
- [make (string? (request? . -> . response?) . -> . dispatcher?)])
+ [interface-version dispatcher-interface-version/c]
+ [make (string? (request? . -> . response?) . -> . dispatcher/c)])
 
 (define interface-version 'v1)
 (define ((make the-path procedure) conn req)

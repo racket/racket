@@ -2,9 +2,11 @@
 (require (for-template scheme/base)
          (for-template mzlib/serialize)
          mzlib/list
+         scheme/contract
          mzlib/serialize)
-(provide make-closure-definition-syntax
-         closure->deserialize-name) 
+(provide/contract
+ [closure->deserialize-name (serializable? . -> . symbol?)])
+(provide make-closure-definition-syntax) 
 
 (define (closure->deserialize-name proc)
   (cdr (first (third (serialize proc)))))

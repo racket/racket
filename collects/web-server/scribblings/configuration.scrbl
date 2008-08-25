@@ -162,12 +162,17 @@ This function writes a @scheme[configuration-table] to @scheme[path].
 @scheme[make-servlet-namespace] procedure needed by the @scheme[make] functions
 of @filepath{dispatchers/dispatch-servlets.ss} and @filepath{dispatchers/dispatch-lang.ss}.
 
-@; XXX Define make-servlet-namespace?
-@; XXX Use actual keyword argument syntax
+@defthing[make-servlet-namespace/c contract?]{
+ Equivalent to 
+ @schemeblock[
+(->* ()
+     (#:additional-specs (listof module-path?))
+     namespace?)
+].
+}
 
-@defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-spec?)))
-         (key-> ([additional-specs (listof module-spec?)])
-                namespace?)]{
+@defproc[(make-make-servlet-namespace (#:to-be-copied-module-specs to-be-copied-module-specs (listof module-path?)))
+         make-servlet-namespace/c]{
 This function creates a function that when called will construct a new @scheme[namespace] that
 has all the modules from @scheme[to-be-copied-module-specs] and @scheme[additional-specs], as well
 as @scheme[mzscheme] and @scheme[mred], provided they are already attached

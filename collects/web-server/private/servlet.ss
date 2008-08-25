@@ -1,12 +1,10 @@
 #lang scheme/base
-(require mzlib/contract)
+(require scheme/contract)
 (require "../managers/manager.ss"
          "../private/request-structs.ss"
          "../private/response-structs.ss")
 
 (define servlet-prompt (make-continuation-prompt-tag 'servlet))
-(provide servlet-prompt)
-
 (define-struct (exn:fail:servlet:instance exn:fail) ()
   #:mutable)
 (define-struct servlet (custodian namespace manager handler)
@@ -22,6 +20,7 @@
   (servlet-manager (current-servlet)))
 
 (provide/contract
+ [servlet-prompt continuation-prompt-tag?]
  [struct (exn:fail:servlet:instance exn:fail)
          ([message string?]
           [continuation-marks continuation-mark-set?])]
@@ -32,7 +31,7 @@
           [handler (request? . -> . response?)])]
  [struct execution-context 
          ([request request?])]
- [current-servlet parameter?]
- [current-servlet-instance-id parameter?]
- [current-execution-context parameter?]
+ [current-servlet (parameter/c servlet?)]
+ [current-servlet-instance-id (parameter/c number?)]
+ [current-execution-context (parameter/c execution-context?)]
  [current-servlet-manager (-> manager?)])

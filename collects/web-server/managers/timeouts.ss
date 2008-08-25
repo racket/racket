@@ -5,7 +5,7 @@
 (require "../private/timer.ss"
          "../servlet/servlet-structs.ss")
 (provide/contract
- [create-timeout-manager (expiration-handler? number? number? . -> . manager?)])
+ [create-timeout-manager (expiration-handler/c number? number? . -> . manager?)])
 
 ;; Utility
 (define (make-counter)

@@ -13,15 +13,13 @@
          "../dispatchers/filesystem-map.ss")
 
 (provide/contract
- [interface-version dispatcher-interface-version?]
- [read-range-header (-> (listof header?) (or/c (listof pair?) false/c))])
-
-(provide/contract
+ [interface-version dispatcher-interface-version/c]
+ [read-range-header (-> (listof header?) (or/c (listof pair?) false/c))]
  [make
-  (->* (#:url->path url-path?)
+  (->* (#:url->path url-path/c)
        (#:path->mime-type (path? . -> . bytes?)
                           #:indices (listof path-string?))
-       dispatcher?)])
+       dispatcher/c)])
 
 ;; looks-like-directory : str -> bool
 ;; to determine if is url style path looks like it refers to a directory

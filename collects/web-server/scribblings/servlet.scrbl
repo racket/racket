@@ -61,9 +61,9 @@ for use in servlets.
 
 @defthing[url-transform? contract?]{Equivalent to @scheme[(k-url? . -> . k-url?)].}
 
-@defthing[expiration-handler? contract?]{Equivalent to @scheme[(or/c false/c (request? . -> . response?))].}
+@defthing[expiration-handler/c contract?]{Equivalent to @scheme[(or/c false/c (request? . -> . response?))].}
 
-@defthing[embed/url? contract?]{Equivalent to @scheme[(((request? . -> . any/c)) (expiration-handler?) . opt-> . string?)].}
+@defthing[embed/url/c contract?]{Equivalent to @scheme[(((request? . -> . any/c)) (expiration-handler/c) . opt-> . string?)].}
 
 @; ------------------------------------------------------------
 @section[#:tag "request-structs.ss"]{HTTP Requests}
@@ -254,13 +254,13 @@ functions of interest for the servlet developer.}
  Sends @scheme[response] to the client.
 }
 
-@defthing[current-servlet-continuation-expiration-handler parameter?]{
- Holds the @scheme[expiration-handler?] to be used when a continuation
+@defthing[current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]{
+ Holds the @scheme[expiration-handler/c] to be used when a continuation
  captured in this context is expired, then looked up.
 }
 
 @defproc[(send/suspend [make-response response-generator?]
-                       [exp expiration-handler? (current-servlet-continuation-expiration-handler)])
+                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
          request?]{
  Captures the current continuation, stores it with @scheme[exp] as the expiration
  handler, and binds it to a URL. @scheme[make-response] is called with this URL and
@@ -287,7 +287,7 @@ functions of interest for the servlet developer.}
 }
 
 @defproc[(send/forward [make-response response-generator?]
-                       [exp expiration-handler? (current-servlet-continuation-expiration-handler)])
+                       [exp expiration-handler/c (current-servlet-continuation-expiration-handler)])
          request?]{
  Calls @scheme[clear-continuation-table!], then @scheme[send/suspend].
 }
@@ -297,7 +297,7 @@ functions of interest for the servlet developer.}
  Calls @scheme[clear-continuation-table!], then @scheme[send/back].
 }
 
-@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . response?)])
+@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call
@@ -323,7 +323,7 @@ functions of interest for the servlet developer.}
 }
 
 @; XXX Remove
-@defthing[current-url-transform parameter?]{
+@defthing[current-url-transform (parameter/c url-transform?)]{
  Holds a @scheme[url-transform?] function that is called by
  @scheme[send/suspend] to transform the URLs it generates.
 }

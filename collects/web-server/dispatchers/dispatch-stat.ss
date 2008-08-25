@@ -5,8 +5,8 @@
          "../private/connection-manager.ss")
 (provide/contract
  [make-gc-thread (integer? . -> . thread?)]
- [interface-version dispatcher-interface-version?]
- [make (-> dispatcher?)])
+ [interface-version dispatcher-interface-version/c]
+ [make (-> dispatcher/c)])
 
 (define (bytes->mb b)
   (round (exact->inexact (/ b 1024 1024))))

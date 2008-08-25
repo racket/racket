@@ -2,12 +2,16 @@
 ; Also derived from planet/untyped/instaservlet
 #lang scheme/base
 (require (prefix-in net: net/sendurl)
+         scheme/contract
          scheme/list)
 (require web-server/web-server
          web-server/managers/lru
+         web-server/managers/manager
          web-server/private/servlet
          web-server/configuration/namespace
          web-server/private/cache-table 
+         web-server/private/request-structs
+         web-server/private/response-structs
          web-server/private/util
          web-server/configuration/responders
          web-server/dispatchers/dispatch
@@ -35,7 +39,22 @@
              (div ([class "title"]) "Server Stopped")
              (p "Return to DrScheme.")))))))
 
-(provide serve/servlet)
+(provide/contract
+ [serve/servlet (((request? . -> . response?))
+                 (#:launch-browser? boolean?
+                  #:quit? boolean?
+                  #:listen-ip string?
+                  #:port number?
+                  #:manager manager?
+                  #:servlet-namespace (listof module-path?)
+                  #:server-root-path path?
+                  #:extra-files-path path?
+                  #:servlets-root path?
+                  #:file-not-found-path path?
+                  #:mime-types-path path?
+                  #:servlet-path path?)
+                 . ->* .
+                 void)])
 (define (serve/servlet new-servlet 
                        #:launch-browser?
                        [launch-browser? #t]

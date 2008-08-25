@@ -30,16 +30,14 @@
                         additional-names))
       new-namespace)))
 
-; XXX
-(define module-spec? any/c)
-(define make-servlet-namespace?
+(define make-servlet-namespace/c
   (->* ()
-       (#:additional-specs (listof module-spec?))
+       (#:additional-specs (listof module-path?))
        namespace?))
 
 (provide/contract
- [make-servlet-namespace? contract?]
+ [make-servlet-namespace/c contract?]
  [make-make-servlet-namespace 
   (->* ()
-       (#:to-be-copied-module-specs (listof module-spec?))
-       make-servlet-namespace?)])
+       (#:to-be-copied-module-specs (listof module-path?))
+       make-servlet-namespace/c)])

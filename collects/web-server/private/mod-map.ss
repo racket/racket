@@ -1,6 +1,7 @@
 #lang scheme/base
 (require mzlib/list
          mzlib/plt-match)
+; XXX Contract?
 (provide compress-serial
          decompress-serial)
 

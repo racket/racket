@@ -18,13 +18,13 @@
  [struct manager ([create-instance ((-> void) . -> . number?)]
                   [adjust-timeout! (number? number? . -> . void)]
                   [clear-continuations! (number? . -> . void)]
-                  [continuation-store! (number? any/c expiration-handler? . -> . (list/c number? number?))]
+                  [continuation-store! (number? any/c expiration-handler/c . -> . (list/c number? number?))]
                   [continuation-lookup (number? number? number? . -> . any/c)])]
  [struct (exn:fail:servlet-manager:no-instance exn:fail) 
          ([message string?]
           [continuation-marks continuation-mark-set?]
-          [expiration-handler expiration-handler?])]
+          [expiration-handler expiration-handler/c])]
  [struct (exn:fail:servlet-manager:no-continuation exn:fail)
          ([message string?]
           [continuation-marks continuation-mark-set?]
-          [expiration-handler expiration-handler?])])
+          [expiration-handler expiration-handler/c])])

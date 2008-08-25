@@ -32,6 +32,7 @@
                                            (pre ,(exn->string exn)))))))])
     (thunk)))
 
+; XXX contract
 (provide
  with-errors-to-browser)
 (provide/contract

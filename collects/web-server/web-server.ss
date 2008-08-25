@@ -13,7 +13,7 @@
          (prefix-in http: "private/request.ss"))
 (provide/contract
  [serve
-  (->* (#:dispatch dispatcher?)
+  (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
                #:port number?
                #:listen-ip (or/c false/c string?)
@@ -21,7 +21,7 @@
                #:initial-connection-timeout number?)
        (-> void))]
  [serve/ports
-  (->* (#:dispatch dispatcher?)
+  (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
                #:ports (listof number?)
                #:listen-ip (or/c false/c string?)
@@ -29,7 +29,7 @@
                #:initial-connection-timeout number?)
        (-> void))]
  [serve/ips+ports
-  (->* (#:dispatch dispatcher?)
+  (->* (#:dispatch dispatcher/c)
        (#:tcp@ unit?
                #:ips+ports (listof (cons/c (or/c false/c string?) (listof number?)))
                #:max-waiting number?

@@ -3,9 +3,12 @@
          syntax/kerncase
          mzlib/etc
          mzlib/list
+         scheme/contract
          (for-template "../lang/abort-resume.ss")
          "util.ss")
-(provide (all-defined-out))
+(provide/contract
+ [elim-letrec ((listof syntax?) . -> . (syntax? . -> . syntax?))]
+ [elim-letrec-term (syntax? . -> . syntax?)])
 
 ; elim-letrec : (listof identifier-syntax?)[3] -> syntax?[2] -> syntax?[3]
 ; Eliminates letrec-values from syntax[2] and correctly handles references to 

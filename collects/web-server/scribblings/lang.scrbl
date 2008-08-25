@@ -134,7 +134,7 @@ by the Web language API.
  Note: The continuation is NOT stuffed.
 }
 
-@defproc[(send/suspend/dispatch [make-response (embed/url? . -> . response?)])
+@defproc[(send/suspend/dispatch [make-response (embed/url/c . -> . response?)])
          any/c]{
  Calls @scheme[make-response] with a function that, when called with a procedure from
  @scheme[request?] to @scheme[any/c] will generate a URL, that when invoked will call

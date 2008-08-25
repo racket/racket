@@ -15,11 +15,11 @@
  [paren-format format-req/c]
  [extended-format format-req/c]
  [apache-default-format format-req/c]
- [interface-version dispatcher-interface-version?]
+ [interface-version dispatcher-interface-version/c]
  [make (->* ()
             (#:format format-req/c
                       #:log-path path-string?)
-            dispatcher?)])
+            dispatcher/c)])
 
 (define interface-version 'v1)
 (define (make #:format [format paren-format]

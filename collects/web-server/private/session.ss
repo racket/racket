@@ -1,5 +1,5 @@
 #lang scheme/base
-(require mzlib/contract
+(require scheme/contract
          mzlib/list
          net/url
          "response-structs.ss"
@@ -32,8 +32,8 @@
                   [url url?])]
  [lookup-session ((listof string?) . -> . (or/c session? false/c))]
  [install-session (session? (listof string?) . -> . void)]
- [new-session (custodian? namespace? url? (listof string?) . -> . session?)])
-(provide current-session)  
+ [new-session (custodian? namespace? url? (listof string?) . -> . session?)]
+ [current-session (parameter/c session?)])
 
 (define current-session (make-parameter #f))
 

@@ -2,7 +2,6 @@
 (require mzlib/contract)
 
 (define current-server-custodian (make-parameter #f))
-(provide current-server-custodian) ; parameter
 
 ;; make-servlet-custodian: -> custodian
 ;; create a custodian for the dynamic extent of a servlet continuation
@@ -10,4 +9,5 @@
   (make-custodian (current-server-custodian)))
 
 (provide/contract
+ [current-server-custodian (parameter/c custodian?)]
  [make-servlet-custodian (-> custodian?)])

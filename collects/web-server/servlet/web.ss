@@ -2,7 +2,7 @@
 (require net/url
          mzlib/list
          mzlib/plt-match
-         mzlib/contract
+         scheme/contract
          mzlib/etc)
 (require "../managers/manager.ss"
          "../private/util.ss"
@@ -67,17 +67,17 @@
     in-url)))   
 
 (provide/contract
- [current-url-transform parameter?]
- [current-servlet-continuation-expiration-handler parameter?]
+ [current-url-transform (parameter/c url-transform/c)]
+ [current-servlet-continuation-expiration-handler (parameter/c expiration-handler/c)]
  [redirect/get (-> request?)]
  [redirect/get/forget (-> request?)]
  [adjust-timeout! (number? . -> . void?)]
  [clear-continuation-table! (-> void?)]
  [send/back (response? . -> . void?)]
  [send/finish (response? . -> . void?)]
- [send/suspend ((response-generator?) (expiration-handler?) . opt-> . request?)]
- [send/forward ((response-generator?) (expiration-handler?) . opt-> . request?)]
- [send/suspend/dispatch ((embed/url? . -> . response?) . -> . any/c)])
+ [send/suspend ((response-generator/c) (expiration-handler/c) . ->* . request?)]
+ [send/forward ((response-generator/c) (expiration-handler/c) . ->* . request?)]
+ [send/suspend/dispatch ((embed/url/c . -> . response?) . -> . any/c)])
 
 ;; ************************************************************
 ;; EXPORTS
