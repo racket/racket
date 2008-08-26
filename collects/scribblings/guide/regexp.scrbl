@@ -769,7 +769,7 @@ fruitless.  A nonbacktracking regexp is enclosed in
 (regexp-match #rx"(?>a+)." "aaaa")
 ]
 
-In this call, the subregexp @litchar{?>a*} greedily matches all four
+In this call, the subregexp @litchar{?>a+} greedily matches all four
 @litchar{a}'s, and is denied the opportunity to backtrack.  So, the
 overall match is denied.  The effect of the regexp is therefore to
 match one or more @litchar{a}'s followed by something that is
