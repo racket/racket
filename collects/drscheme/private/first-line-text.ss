@@ -59,7 +59,8 @@
              (local-to-global #f by)
              (cond
                [(<= (unbox by) h)
-                (send admin scroll-to localx (- localy h) width height refresh? bias)]
+                ;; the max is relevant when we're already scrolled to the top.
+                (send admin scroll-to localx (max 0 (- localy h)) width height refresh? bias)]
                [else
                 (send admin scroll-to localx localy width height refresh? bias)]))]
           [else
@@ -85,8 +86,8 @@
                [admin (get-admin)])
            (unless admin (send admin get-view #f by #f #f #f))
            (cond
-             [(and (< y h)
-                   admin
+             [(and admin
+                   (< y h)
                    (not (= (unbox by) 0)))
               (send admin scroll-to (send event get-x) 0 0 0 #t)
               (super on-event event)]
@@ -106,7 +107,8 @@
                       [old-brush (send dc get-brush)]
                       [old-smoothing (send dc get-smoothing)]
                       [old-α (send dc get-alpha)]
-                      [old-font (send dc get-font)])
+                      [old-font (send dc get-font)]
+                      [old-text-foreground (send dc get-text-foreground)])
                   (send dc set-font (get-font))
                   (send dc set-smoothing 'aligned)
                   (let-values ([(tw th _1 _2) (send dc get-text-extent first-line)])
@@ -140,8 +142,10 @@
                           (+ (unbox by) dy)
                           (unbox bw)
                           th)
+                    (send dc set-text-foreground (send the-color-database find-color "black"))
                     (send dc draw-text first-line (+ (unbox bx) dx) (+ (unbox by) dy)))
                   
+                  (send dc set-text-foreground old-text-foreground)
                   (send dc set-font old-font)
                   (send dc set-pen old-pen)
                   (send dc set-brush old-brush)
