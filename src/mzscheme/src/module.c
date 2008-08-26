@@ -3821,6 +3821,16 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 
   menv = instantiate_module(m, env, restart, syntax_idx);
 
+  if (restart) {
+    menv->did_eval_run = 0;
+    menv->did_eval_exp = 0;
+    menv->require_names = NULL;
+    menv->et_require_names = NULL;
+    menv->tt_require_names = NULL;
+    menv->dt_require_names = NULL;
+    menv->other_require_names = NULL;
+  }
+
   show("strt", menv, eval_exp, eval_run);
 
   chain_start_module(menv, env, eval_exp, eval_run, base_phase, cycle_list, syntax_idx);
