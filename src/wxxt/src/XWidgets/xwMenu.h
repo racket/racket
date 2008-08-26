@@ -48,6 +48,7 @@ SOFTWARE.
  hMargin             HMargin            Dimension       1
  horizontal          Horizontal         Boolean         True
  forChoice           ForChoice          Boolean         False
+ forPopup            ForPopup           Boolean         False
  menu                Menu               Pointer         NULL
  onNewItem           Callback           XtCallbackList  NULL
  onSelect            Callback           XtCallbackList  NULL
@@ -75,6 +76,8 @@ SOFTWARE.
 #define XtCHorizontal           "Horizontal"
 #define XtNforChoice            "forChoice"
 #define XtCForChoice            "ForChoice"
+#define XtNforPopup             "forPopup"
+#define XtCForPopup             "ForPopup"
 #define XtNmenu                 "menu"
 #define XtCMenu                 "Menu"
 #define XtNrefresh              "refresh"

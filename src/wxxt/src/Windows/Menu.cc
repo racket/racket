@@ -181,6 +181,7 @@ Bool wxMenu::PopupMenu(Widget in_w, int root_x, int root_y, Bool forChoice, int 
 	 XtNbackground, wxGREY_PIXEL,
 	 XtNhighlightPixel,  wxCTL_HIGHLIGHT_PIXEL,
 	 XtNforChoice,  forChoice,
+	 XtNforPopup,  TRUE,
 	 XtNrequestedWidth, requested_width,
 	 XtNextraTop, top_extra,
 	 NULL);

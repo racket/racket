@@ -130,7 +130,8 @@ static XtResource MenuResources[] =
 	offset(menu.horizontal), XtRImmediate, (XtPointer) True},
     {XtNforChoice, XtCForChoice, XtRBoolean, sizeof(Boolean),
 	offset(menu.forChoice), XtRImmediate, (XtPointer) False},
-
+    {XtNforPopup, XtCForPopup, XtRBoolean, sizeof(Boolean),
+	offset(menu.forPopup), XtRImmediate, (XtPointer) False},
 
     /* menu structure */
     {XtNmenu, XtCMenu, XtRPointer, sizeof(XtPointer),
@@ -490,7 +491,9 @@ static void Start(w, ev, params, num_params)
       mw->menu.grabbed = TRUE;
     }
 
-    if (!HandleMotionEvent(mw, &ev->xmotion, 1))
+    if (!HandleMotionEvent(mw, &ev->xmotion, 1)
+        /* num_params is position when called to start a popup menu */
+        && !num_params)
       DoSelect(w, CurrentTime, 1);
 }
 
@@ -576,7 +579,8 @@ static void Select(w, event, params, num_params)
 
   mw->menu.moused_out = 0;
 
-  if (!mw->menu.state || !mw->menu.state->selected)
+  if (!mw->menu.forPopup 
+      && (!mw->menu.state || !mw->menu.state->selected))
     return;
 
   force = !HandleMotionEvent(mw, ev, 0);
@@ -1552,7 +1556,8 @@ static int HandleMotionEvent(MenuWidget mw, XMotionEvent *ev, int is_click)
     if (!foundone)
       mw->menu.moused_out = !in_extra_region;
 
-    if (is_click && ms && (item == ms->selected)) { /* pointer on the same item and a click */
+    if (!mw->menu.forPopup 
+        && (is_click && ms && (item == ms->selected))) { /* pointer on the same item and a click */
       return 0;
     }
 
