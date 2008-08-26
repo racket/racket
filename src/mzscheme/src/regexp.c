@@ -5069,7 +5069,7 @@ static Scheme_Object *gen_compare(char *name, int pos,
     startp_buffer = NULL;
   } else {
     startp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
-      maybep = NULL;
+    maybep = NULL;
     endp = MALLOC_N_ATOMIC(rxpos, r->nsubexp);
   }
   if ((r->nsubexp > 1) && !maybep)

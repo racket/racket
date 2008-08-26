@@ -745,7 +745,6 @@ Scheme_Object *(*scheme_read_byte_string)(Scheme_Object *port);
 /*========================================================================*/
 Scheme_Object *(*scheme_make_namespace)(int argc, Scheme_Object *argv[]);
 void (*scheme_add_namespace_option)(Scheme_Object *key, void (*f)(Scheme_Env *));
-void (*scheme_require_from_original_env)(Scheme_Env *env, int syntax_only);
 void (*scheme_add_global)(const char *name, Scheme_Object *val, Scheme_Env *env);
 void (*scheme_add_global_symbol)(Scheme_Object *name, Scheme_Object *val,
 			      Scheme_Env *env);
