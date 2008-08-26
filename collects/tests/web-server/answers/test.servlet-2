@@ -1,5 +1,0 @@
-<html><head><title>Testing 1...2...3</title></head><body><p>This is a generated web page.</p><p>Here are the bindings:
-((a . "b") (see . "def"))
-<br />Count = 2<br />Here are the headers:
-((host . #"127.0.0.1"))
-</p></body></html>
