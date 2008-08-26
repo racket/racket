@@ -933,7 +933,7 @@ ensure there @emph{is} a digit other than zero.
 ]
 
 Or we could use negative lookahead to ensure that what's ahead isn't
-composed of {\em only} zeros and dots.
+composed of @emph{only} zeros and dots.
 
 @interaction[
 #:eval ex-eval
