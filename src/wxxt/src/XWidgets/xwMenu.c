@@ -492,8 +492,8 @@ static void Start(w, ev, params, num_params)
     }
 
     if (!HandleMotionEvent(mw, &ev->xmotion, 1)
-        /* num_params is position when called to start a popup menu */
-        && !num_params)
+        /* *num_params is positive when called to start a popup menu */
+        && !*num_params)
       DoSelect(w, CurrentTime, 1);
 }
 
