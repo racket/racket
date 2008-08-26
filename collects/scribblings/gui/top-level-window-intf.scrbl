@@ -11,7 +11,7 @@ A top-level window is either a @scheme[frame%] or @scheme[dialog%]
            boolean?]{
 
 Called just before the window might be closed (e.g., by the window
- manager). If @scheme[#f] is returned, the window is not\/ closed,
+ manager). If @scheme[#f] is returned, the window is not closed,
  otherwise @method[top-level-window<%> on-close] is called and the
  window is closed (i.e., the window is hidden, like calling
  @method[window<%> show] with @scheme[#f]).
