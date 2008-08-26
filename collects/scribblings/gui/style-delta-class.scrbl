@@ -11,9 +11,9 @@ by a delta include:
 @item{changing the font size to a new value}
 @item{enlarging the font by an additive amount}
 @item{enlarging the font by a multiplicative amount, etc.}
-@item{changing the font style (normal, {\it italic}, or {\sl slant})}
+@item{changing the font style (normal, @italic{italic}, or {\sl slant})}
 @item{toggling the font style}
-@item{changing the font to {\it italic} if it is currently {\sl slant}, etc.}
+@item{changing the font to @italic{italic} if it is currently {\sl slant}, etc.}
 @item{changing the font weight, etc.}
 @item{changing the underline, etc.}
 @item{changing the vertical alignment, etc.}
@@ -407,8 +407,8 @@ the possible values are:
 @item{@scheme['change-toggle-underline] --- underline regions that are currently not underlined, and vice-versa}
 @item{@scheme['change-toggle-size-in-pixels] --- interpret sizes in pixels for regions that are currently interpreted in points, and vice-versa}
 @item{@scheme['change-normal-color] --- change the foreground and background to black and white, respectively}
-@item{@scheme['change-italic] --- change the style of the font to {\it italic}}
-@item{@scheme['change-bold] --- change the weight of the font to {\bf bold}}
+@item{@scheme['change-italic] --- change the style of the font to @italic{italic}}
+@item{@scheme['change-bold] --- change the weight of the font to @bold{bold}}
 @item{@scheme['change-family] --- change the font family (@scheme[param] is a family; see
 @scheme[font%]); see also
 @method[style-delta% get-family]} @item{@scheme['change-style] --- change the style of the font (@scheme[param] is a style; see
