@@ -998,6 +998,12 @@ Bool wxMediaEdit::ScrollToPosition(long start, Bool ateol, Bool refresh,
   PositionLocation(start, &topx, &topy, TRUE, ateol, TRUE);
   PositionLocation(end, &botx, &boty, FALSE, ateol, TRUE);
 
+  if (botx < topx) {
+    /* when the end position is to the left of the start position */
+    topx = 0;
+    botx = totalWidth;
+  }
+
   w = botx - topx;
   h = boty - topy;
 
