@@ -184,9 +184,9 @@ section.
 A @deftech{continuation} is a value that encapsulates a piece of an
 expression context. The @scheme[call-with-composable-continuation]
 function captures the @deftech{current continuation} starting outside
-function call an running up to the nearest enclosing prompt. (Keep in
-mind that each @tech{REPL} interaction is implicitly wrapped in a
-prompt.)
+the current function call and running up to the nearest enclosing
+prompt. (Keep in mind that each @tech{REPL} interaction is implicitly
+wrapped in a prompt.)
 
 For example, in
 
