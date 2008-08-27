@@ -42,13 +42,20 @@
          e ...)
        (get-output-string os))]))
 
+; XXX Want to have this instead of every begin, but perhaps should make a list rather than use show directly
 (define-syntax begin/show
   (syntax-rules ()
     [(_ e) e]
     [(_ e ...)
      ; XXX If scribble/text shared "show", then I would use it here
-     (begin (display e) ...)]))
+     (begin (text:show e) ...)]))
 (define t list)
+
+(define-syntax in
+  (syntax-rules ()
+    [(_ x xs e ...)
+     (for/list ([x xs])
+       e ...)]))
 
 ; Examples
 

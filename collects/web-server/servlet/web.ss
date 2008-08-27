@@ -2,8 +2,7 @@
 (require net/url
          mzlib/list
          mzlib/plt-match
-         scheme/contract
-         mzlib/etc)
+         scheme/contract)
 (require "../managers/manager.ss"
          "../private/util.ss"
          "../private/servlet.ss"
@@ -113,8 +112,8 @@
 
 ;; send/suspend: (url -> response) [(request -> response)] -> request
 ;; send a response and apply the continuation to the next request
-(define send/suspend
-  (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
+(define (send/suspend response-generator
+                      [expiration-handler (current-servlet-continuation-expiration-handler)])
     (with-frame-after
      (call-with-composable-continuation
       (lambda (k)
@@ -129,14 +128,14 @@
                         (list* instance-id k-embedding)
                         (request-uri (execution-context-request ctxt)))))
         (send/back (response-generator k-url)))
-      servlet-prompt))))
+      servlet-prompt)))
 
 ;; send/forward: (url -> response) [(request -> response)] -> request
 ;; clear the continuation table, then behave like send/suspend
-(define send/forward
-  (opt-lambda (response-generator [expiration-handler (current-servlet-continuation-expiration-handler)])
+(define (send/forward response-generator
+                      [expiration-handler (current-servlet-continuation-expiration-handler)])
     (clear-continuation-table!)
-    (send/suspend response-generator expiration-handler)))
+    (send/suspend response-generator expiration-handler))
 
 ;; send/suspend/dispatch : ((proc -> url) -> response) [(request -> response)] -> request
 ;; send/back a response generated from a procedure that may convert
@@ -150,10 +149,14 @@
           (lambda (k0)
             (send/back
              (response-generator
-              (opt-lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
+              (lambda (proc [expiration-handler (current-servlet-continuation-expiration-handler)])
                 (let/ec k1 
-                  (let ([new-request (send/suspend k1 expiration-handler)])
-                    (k0 (lambda () (proc new-request)))))))))
+                  ; This makes the second continuation captured by send/suspend smaller
+                  (call-with-continuation-prompt
+                   (lambda ()
+                     (let ([new-request (send/suspend k1 expiration-handler)])
+                       (k0 (lambda () (proc new-request)))))
+                   servlet-prompt))))))
           servlet-prompt)])
     (thunk)))
 

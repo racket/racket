@@ -2,7 +2,7 @@
   <head><title>@title </title></head>
   <body>
     <table>
-      @for/list[([c @clients])]{
+      @in[c @clients]{
        @t{
         <tr>
          <td>@(client-surname c), @(client-firstname c)</td>
