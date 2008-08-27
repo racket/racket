@@ -202,7 +202,7 @@ module browser threading seems wrong.
     (define (find-symbol text pos)
       (send text split-snip pos)
       (send text split-snip (+ pos 1))
-      (let ([snip (send text find-snip pos 'after-or-none)])
+      (let ([snip (send text find-snip pos 'after)])
         (if (is-a? snip string-snip%)
             (let* ([before
                     (let loop ([i (- pos 1)]
