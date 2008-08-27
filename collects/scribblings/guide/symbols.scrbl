@@ -42,7 +42,7 @@ whitespace and the following special characters:
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
   @litchar["{"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
-  @litchar{;} @litchar{#} @litchar["|"] @litchar["\\"]
+  @litchar{;} @litchar{#} @litchar{|} @litchar{\}
 }
 
 Actually, @litchar{#} is disallowed only at the beginning of a symbol,
@@ -50,7 +50,7 @@ and then only if not followed by @litchar{%}; otherwise, @litchar{#} is
 allowed, too. Also, @litchar{.} by itself is not a symbol.
 
 Whitespace or special characters can be included in an identifier by
-quoting them with @litchar["|"] or @litchar["\\"]. These quoting
+quoting them with @litchar{|} or @litchar{\}. These quoting
 mechanisms are used in the printed form of identifiers that contain
 special characters or that might otherwise look like numbers.
 

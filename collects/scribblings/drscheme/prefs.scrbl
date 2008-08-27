@@ -40,7 +40,7 @@ The preferences dialog consists of several panels.
  @item{@onscreen{Square bracket}
 
       This panel controls which keywords DrScheme uses to determine
-      when to rewrite @litchar["["] to @litchar["("]. For
+      when to rewrite @litchar{[} to @litchar{(}. For
       @scheme[cond]-like keywords, the number in parenthesis indicates
       how many sub-expressions are skipped before square brackets are
       started.
@@ -134,10 +134,10 @@ The preferences dialog consists of several panels.
     the blinking caret is next to a parenthesis.}
 
    @item{@PrefItem{Correct parens} --- If checked, the editor
-    automatically converts a typed @litchar[")"] to @litchar["]"] to
-    match @litchar["["], or it converts a typed @litchar["]"] to
-    @litchar[")"] to match @litchar["("]. Also, the editor changes
-    typed @litchar["["] to match the context (as explained in
+    automatically converts a typed @litchar{)} to @litchar{]} to
+    match @litchar{[}, or it converts a typed @litchar{]} to
+    @litchar{)} to match @litchar{(}. Also, the editor changes
+    typed @litchar{[} to match the context (as explained in
     @secref["editor"]).}
 
    @item{@PrefItem{Flash paren match} --- If checked, typing a closing

@@ -119,7 +119,7 @@ window to the interactions window (or the search window, if it is open).}
 @keybinding["M-("]{wrap selection in parentheses}
 @keybinding["M-["]{wrap selection in square brackets}
 @keybinding["M-{"]{wrap selection in curly brackets}
-@keybinding["M-S-L"]{wrap selection in @litchar["(lambda\u20()\u20"]...@litchar{)} 
+@keybinding["M-S-L"]{wrap selection in @litchar{(lambda () }...@litchar{)}
                      and put the insertion point in the arglist of the lambda}
 
 @keybinding["C-c C-o"]{the sexpression following the

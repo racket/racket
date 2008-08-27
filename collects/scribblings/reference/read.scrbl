@@ -114,8 +114,8 @@ producing @scheme['hi] when the input is any one of \litchar{hi},
 affects the way that @scheme[write] prints symbols containing
 uppercase characters; if the parameter's value is @scheme[#f], then
 symbols are printed with uppercase characters quoted by a
-@litchar["\\"] or @litchar["|"]. The parameter's value is overridden by
-quoting @litchar["\\"] or @litchar["|"] vertical-bar quotes and the
+@litchar{\} or @litchar{|}. The parameter's value is overridden by
+quoting @litchar{\} or @litchar{|} vertical-bar quotes and the
 @litchar{#cs} and @litchar{#ci} prefixes; see
 @secref["parse-symbol"] for more information. While a module is
 loaded, the parameter is set to @scheme[#t] (see
@@ -123,7 +123,7 @@ loaded, the parameter is set to @scheme[#t] (see
 
 @defboolparam[read-square-bracket-as-paren on?]{
 
-A parameter that controls whether @litchar["["] and @litchar["]"] 
+A parameter that controls whether @litchar{[} and @litchar{]} 
 are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
@@ -146,7 +146,7 @@ information.}
 
 @defboolparam[read-accept-bar-quote on?]{
 
-A parameter that controls parsing and printing of @litchar["|"] in
+A parameter that controls parsing and printing of @litchar{|} in
 symbols. See @secref["parse-symbol"] and @secref["printing"] for
 more information.}
 

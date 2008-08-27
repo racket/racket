@@ -365,7 +365,7 @@ by @scheme[path]. If @scheme[path] is omitted, a list of files and
 directories in the current directory is returned. Under @|AllUnix|, an
 element of the list can start with @litchar{./~} if it would otherwise
 start with @litchar{~}. Under Windows, an element of the list may
-start with @litchar["\\\\?\\REL\\\\"].}
+start with @litchar{\\?\REL\\}.}
 
 
 @defproc[(filesystem-root-list) (listof path?)]{

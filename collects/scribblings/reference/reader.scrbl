@@ -63,14 +63,14 @@ characters play special roles:
        delimited sequence; its meaning depends on the characters that
        follow; see below.}
 
- @item{@as-index{@litchar["|"]} starts a subsequence of characters to
+ @item{@as-index{@litchar{|}} starts a subsequence of characters to
        be included verbatim in the delimited sequence (i.e,. they are
        never treated as delimiters, and they are not case-folded when
        case-insensitivity is enabled); the subsequence is terminated
-       by another @litchar["|"], and neither the initial nor
-       terminating @litchar["|"] is part of the subsequence.}
+       by another @litchar{|}, and neither the initial nor
+       terminating @litchar{|} is part of the subsequence.}
 
- @item{@as-index{@litchar["\\"]} outside of a @litchar["|"] pair causes
+ @item{@as-index{@litchar{\}} outside of a @litchar{|} pair causes
        the folowing character to be included verbatim in a delimited
        sequence.}
 
@@ -103,26 +103,26 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#[}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@litchar["#{"]]{starts a vector; see @secref["parse-vector"]}
 
-  @dispatch[@litchar["#s("]]{starts a structure literal; see @secref["parse-structure"]}
-  @dispatch[@litchar["#s["]]{starts a structure literal; see @secref["parse-structure"]}
+  @dispatch[@litchar{#s(}]{starts a structure literal; see @secref["parse-structure"]}
+  @dispatch[@litchar{#s[}]{starts a structure literal; see @secref["parse-structure"]}
   @dispatch[@litchar["#s{"]]{starts a structure literal; see @secref["parse-structure"]}
 
-  @dispatch[@litchar["#\\"]]{starts a character; see @secref["parse-character"]}
+  @dispatch[@litchar{#\}]{starts a character; see @secref["parse-character"]}
 
   @dispatch[@litchar{#"}]{starts a byte string; see @secref["parse-string"]}
   @dispatch[@litchar{#%}]{starts a symbol; see @secref["parse-symbol"]}
   @dispatch[@litchar{#:}]{starts a keyword; see @secref["parse-keyword"]}
   @dispatch[@litchar{#&}]{starts a box; see @secref["parse-box"]}
 
-  @dispatch[@litchar["#|"]]{starts a block comment; see @secref["parse-comment"]}
-  @dispatch[@litchar["#;"]]{starts an S-expression comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#|}]{starts a block comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#;}]{starts an S-expression comment; see @secref["parse-comment"]}
   @dispatch[@litchar{#,}]{starts a syntax quote; see @secref["parse-quote"]}
-  @dispatch[@litchar["#! "]]{starts a line comment; see @secref["parse-comment"]}
-  @dispatch[@litchar["#!/"]]{starts a line comment; see @secref["parse-comment"]}
-  @dispatch[@litchar["#!"]]{may start a reader extension; see @secref["parse-reader"]}
+  @dispatch[@litchar{#! }]{starts a line comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#!/}]{starts a line comment; see @secref["parse-comment"]}
+  @dispatch[@litchar{#!}]{may start a reader extension; see @secref["parse-reader"]}
   @dispatch[@litchar{#`}]{starts a syntax quasiquote; see @secref["parse-quote"]}
   @dispatch[@litchar{#,}]{starts an syntax [splicing] unquote; see @secref["parse-quote"]}
-  @dispatch[@litchar["#~"]]{starts compiled code; see @scheme[current-compile]}
+  @dispatch[@litchar{#~}]{starts compiled code; see @scheme[current-compile]}
 
   @dispatch[@cilitchar{#i}]{starts a number; see @secref["parse-number"]}
   @dispatch[@cilitchar{#e}]{starts a number; see @secref["parse-number"]}
@@ -141,12 +141,12 @@ on the next character or characters in the input stream as follows:
 
   @dispatch[@cilitchar["#sx"]]{starts a Scheme expression; see @secref["parse-honu"]}
 
-  @dispatch[@litchar["#hx"]]{starts a Honu expression; see @secref["parse-honu"]}
+  @dispatch[@litchar{#hx}]{starts a Honu expression; see @secref["parse-honu"]}
 
-  @dispatch[@litchar["#hash"]]{starts a hash table; see @secref["parse-hashtable"]}
+  @dispatch[@litchar{#hash}]{starts a hash table; see @secref["parse-hashtable"]}
 
-  @dispatch[@litchar["#reader"]]{starts a reader extension use; see @secref["parse-reader"]}
-  @dispatch[@litchar["#lang"]]{starts a reader extension use; see @secref["parse-reader"]}
+  @dispatch[@litchar{#reader}]{starts a reader extension use; see @secref["parse-reader"]}
+  @dispatch[@litchar{#lang}]{starts a reader extension use; see @secref["parse-reader"]}
 
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a vector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a vector; see @secref["parse-vector"]}
@@ -173,7 +173,7 @@ parse takes precedence over a symbol parse.
 
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
 @scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
-characters in the sequence that are not quoted by @litchar["|"] or
+characters in the sequence that are not quoted by @litchar{|} or
 @litchar{\} are first case-normalized. If the reader encounters
 @as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or
 @litchar{#cI}, then it recursively reads the following datum in
@@ -298,7 +298,7 @@ input syntax for the boolean constant false.
 @section[#:tag "parse-pair"]{Reading Pairs and Lists}
 
 When the reader encounters a @as-index{@litchar{(}},
-@as-index{@litchar["["]}, or @as-index{@litchar["{"]}, it starts
+@as-index{@litchar{[}}, or @as-index{@litchar["{"]}, it starts
 parsing a pair or list; see @secref["pairs"] for information on pairs
 and lists.
 
@@ -306,7 +306,7 @@ To parse the pair or list, the reader recursively reads data
 until a matching @as-index{@litchar{)}}, @as-index{@litchar{]}}, or
 @as-index{@litchar["}"]} (respectively) is found, and it specially handles
 a delimited @litchar{.}.  Pairs @litchar{()}, @litchar{[]}, and
-@litchar["{}"] are treated the same way, so the remainder of this
+@litchar{{}} are treated the same way, so the remainder of this
 section simply uses ``parentheses'' to mean any of these pair.
 
 If the reader finds no delimited @as-index{@litchar{.}} among the elements
@@ -342,7 +342,7 @@ value @scheme[#\{].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
-@litchar{)}, @litchar["]"], or @litchar["}"] that does not end a list
+@litchar{)}, @litchar{]}, or @litchar["}"] that does not end a list
 being parsed, then the @exnraise[exn:fail:read].
 
 @reader-examples[
@@ -379,7 +379,7 @@ exception, instead of the infix conversion.
 When the reader encounters @as-index{@litchar{"}}, it begins parsing
 characters to form a string. The string continues until it is
 terminated by another @litchar{"} (that is not escaped by
-@litchar["\\"]).
+@litchar{\}).
 
 Within a string sequence, the following escape sequences are
  recognized:
@@ -395,11 +395,11 @@ Within a string sequence, the following escape sequences are
  @item{@as-index{@litchar{\r}}: return (ASCII 13)}
  @item{@as-index{@litchar{\e}}: escape (ASCII 27)}
 
- @item{@as-index{@litchar["\\\""]}: double-quotes (without terminating the string)}
- @item{@as-index{@litchar["\\'"]}: quote (i.e., the backslash has no effect)}
- @item{@as-index{@litchar["\\\\"]}: backslash (i.e., the second is not an escaping backslash)}
+ @item{@as-index{@litchar{\"}}: double-quotes (without terminating the string)}
+ @item{@as-index{@litchar{\'}}: quote (i.e., the backslash has no effect)}
+ @item{@as-index{@litchar{\\}}: backslash (i.e., the second is not an escaping backslash)}
 
- @item{@as-index{@litchar["\\"]@kleenerange[1 3]{@nonterm{digit@sub{8}}}}:
+ @item{@as-index{@litchar{\}@kleenerange[1 3]{@nonterm{digit@sub{8}}}}:
        Unicode for the octal number specified by @kleenerange[1
        3]{digit@sub{8}} (i.e., 1 to 3 @nonterm{digit@sub{8}}s) where
        each @nonterm{digit@sub{8}} is @litchar{0}, @litchar{1},
@@ -409,7 +409,7 @@ Within a string sequence, the following escape sequences are
        between 0 and 255 decimal, otherwise the
        @exnraise[exn:fail:read].}
 
- @item{@as-index{@litchar["\\x"]@kleenerange[1
+ @item{@as-index{@litchar{\x}@kleenerange[1
        2]{@nonterm{digit@sub{16}}}}: Unicode for the hexadecimal
        number specified by @kleenerange[1 2]{@nonterm{digit@sub{16}}},
        where each @nonterm{digit@sub{16}} is @litchar{0}, @litchar{1},
@@ -419,21 +419,21 @@ Within a string sequence, the following escape sequences are
        @litchar{e}, or @litchar{f} (case-insensitive). The longer form
        takes precedence over the shorter form.}
 
- @item{@as-index{@litchar["\\u"]@kleenerange[1
-       4]{@nonterm{digit@sub{16}}}}: like @litchar["\\x"], but with up
+ @item{@as-index{@litchar{\u}@kleenerange[1
+       4]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
        to four hexadecimal digits (longer sequences take precedence).
        The resulting hexadecimal number must be a valid argument to
        @scheme[integer->char], otherwise the
        @exnraise[exn:fail:read].}
 
- @item{@as-index{@litchar["\\U"]@kleenerange[1
-       8]{@nonterm{digit@sub{16}}}}: like @litchar["\\x"], but with up
+ @item{@as-index{@litchar{\U}@kleenerange[1
+       8]{@nonterm{digit@sub{16}}}}: like @litchar{\x}, but with up
        to eight hexadecimal digits (longer sequences take precedence).
        The resulting hexadecimal number must be a valid argument to
        @scheme[integer->char], otherwise the
        @exnraise[exn:fail:read].}
 
- @item{@as-index{@litchar["\\"]@nonterm{newline}}: elided, where
+ @item{@as-index{@litchar{\}@nonterm{newline}}: elided, where
        @nonterm{newline} is either a linefeed, carriage return, or
        carriage return--linefeed combination. This convetion allows
        single-line strings to span multiple lines in the source.}
@@ -451,7 +451,7 @@ A string constant preceded by @litchar{#} is parsed as a
 byte-string. (That is, @as-index{@litchar{#"}} starts a byte-string
 literal.) See @secref["bytestrings"] for information on byte
 strings. Byte string constants support the same escape sequences as
-character strings, except @litchar["\\u"] and @litchar["\\U"].
+character strings, except @litchar{\u} and @litchar{\U}.
 
 When the reader encounters @as-index{@litchar{#<<}}, it starts parsing a
 @pidefterm{here string}. The characters following @litchar{#<<} until
@@ -513,10 +513,10 @@ next linefeed (ASCII 10), carriage return (ASCII 13), next-line
 (Unicode @scheme[#x0085]), line-separator (Unicode @scheme[#x2028]),
 or line-separator (Uunicode @scheme[#x2028]) character.
 
-A @as-index{@litchar["#|"]} starts a nestable block comment.  When the
-reader encounters @litchar["#|"], then it skips past all characters
-until a closing @litchar["|#"]. Pairs of matching @litchar["#|"] and
-@litchar["|#"] can be nested.
+A @as-index{@litchar{#|}} starts a nestable block comment.  When the
+reader encounters @litchar{#|}, then it skips past all characters
+until a closing @litchar{|#}. Pairs of matching @litchar{#|} and
+@litchar{|#} can be nested.
 
 A @as-index{@litchar{#;}} starts an S-expression comment. Then the
 reader encounters @litchar{#;}, it recursively reads one datum, and
@@ -525,7 +525,7 @@ result).
 
 A @as-index{@litchar{#! }} (which is @litchar{#!} followed by a space)
 or @as-index{@litchar{#!/}} starts a line comment that can be
-continued to the next line by ending a line with @litchar["\\"]. This
+continued to the next line by ending a line with @litchar{\}. This
 form of comment normally appears at the beginning of a Unix script
 file.
 
@@ -552,7 +552,7 @@ lists (see @secref["parse-pair"]). A delimited @litchar{.} is not
 allowed among the vector elements.
 
 An optional vector length can be specified between the @litchar{#} and
-@litchar["("], @litchar["["], or @litchar["{"]. The size is specified
+@litchar{(}, @litchar{[}, or @litchar["{"]. The size is specified
 using a sequence of decimal digits, and the number of elements
 provided for the vector must be no more than the specified size. If
 fewer elements are provided, the last provided element is used for the
@@ -648,39 +648,39 @@ content is also wraped as a syntax object, and the box is immutable.
 
 @guideintro["characters"]{the syntax of characters}
 
-A @as-index{@litchar["#\\"]} starts a character constant, which has
+A @as-index{@litchar{#\}} starts a character constant, which has
 one of the following forms:
 
 @itemize{
 
- @item{ @litchar["#\\nul"] or @litchar["#\\null"]: NUL (ASCII 0)@nonalpha[]}
- @item{ @litchar["#\\backspace"]: backspace  (ASCII 8)@nonalpha[]}
- @item{ @litchar["#\\tab"]: tab (ASCII 9)@nonalpha[]}
- @item{ @litchar["#\\newline"] or @litchar["#\\linefeed"]: linefeed (ASCII 10)@nonalpha[]}
- @item{ @litchar["#\\vtab"]: vertical tab (ASCII 11)@nonalpha[]}
- @item{ @litchar["#\\page"]: page break (ASCII 12)@nonalpha[]}
- @item{ @litchar["#\\return"]: carriage return (ASCII 13)@nonalpha[]}
- @item{ @litchar["#\\space"]: space (ASCII 32)@nonalpha[]}
- @item{ @litchar["#\\rubout"]: delete (ASCII 127)@nonalpha[]}
+ @item{ @litchar{#\nul} or @litchar{#\null}: NUL (ASCII 0)@nonalpha[]}
+ @item{ @litchar{#\backspace}: backspace  (ASCII 8)@nonalpha[]}
+ @item{ @litchar{#\tab}: tab (ASCII 9)@nonalpha[]}
+ @item{ @litchar{#\newline} or @litchar{#\linefeed}: linefeed (ASCII 10)@nonalpha[]}
+ @item{ @litchar{#\vtab}: vertical tab (ASCII 11)@nonalpha[]}
+ @item{ @litchar{#\page}: page break (ASCII 12)@nonalpha[]}
+ @item{ @litchar{#\return}: carriage return (ASCII 13)@nonalpha[]}
+ @item{ @litchar{#\space}: space (ASCII 32)@nonalpha[]}
+ @item{ @litchar{#\rubout}: delete (ASCII 127)@nonalpha[]}
 
- @item{@litchar["#\\"]@kleenerange[1 3]{@nonterm{digit@sub{8}}}:
+ @item{@litchar{#\}@kleenerange[1 3]{@nonterm{digit@sub{8}}}:
        Unicode for the octal number specified by @kleenerange[1
        3]{@nonterm{digit@sub{8}}}, as in string escapes (see
        @secref["parse-string"]).}
 
- @item{@litchar["#\\x"]@kleenerange[1 2]{@nonterm{digit@sub{16}}}:
+ @item{@litchar{#\x}@kleenerange[1 2]{@nonterm{digit@sub{16}}}:
        Unicode for the hexadecimal number specified by @kleenerange[1
        2]{@nonterm{digit@sub{16}}}, as in string escapes (see
        @secref["parse-string"]).}
 
- @item{@litchar["#\\u"]@kleenerange[1 4]{@nonterm{digit@sub{16}}}:
-       like @litchar["#\\x"], but with up to four hexadecimal digits.}
+ @item{@litchar{#\u}@kleenerange[1 4]{@nonterm{digit@sub{16}}}:
+       like @litchar{#\x}, but with up to four hexadecimal digits.}
 
- @item{@litchar["#\\U"]@kleenerange[1 6]{@nonterm{digit@sub{16}}}:
-       like @litchar["#\\x"], but with up to six hexadecimal digits.}
+ @item{@litchar{#\U}@kleenerange[1 6]{@nonterm{digit@sub{16}}}:
+       like @litchar{#\x}, but with up to six hexadecimal digits.}
 
- @item{@litchar["#\\"]@nonterm{c}: the character @nonterm{c}, as long
-       as @litchar["#\\"]@nonterm{c} and the characters following it
+ @item{@litchar{#\}@nonterm{c}: the character @nonterm{c}, as long
+       as @litchar{#\}@nonterm{c} and the characters following it
        do not match any of the previous cases, and as long as the
        character after @nonterm{c} is not
        @schemelink[char-alphabetic?]{alphabetic}.}
@@ -804,8 +804,8 @@ of alphanumeric ASCII, @litchar{+}, @litchar{-}, @litchar{_}, and/or
 @litchar{/} characters terminated by
 @schemelink[char-whitespace?]{whitespace} or an end-of-file.  The
 sequence must not start or end with @litchar{/}. A sequence
-@litchar["#lang\u20"]@nonterm{name} is equivalent to
-@litchar["#reader\u20"]@nonterm{name}@litchar{/lang/reader}, except
+@litchar{#lang }@nonterm{name} is equivalent to
+@litchar{#reader }@nonterm{name}@litchar{/lang/reader}, except
 that the terminating whitespace (if any) is consumed before the
 external reading procedure is called.
 

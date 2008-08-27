@@ -60,30 +60,30 @@ Under Windows and Mac OS X, a face name is interpreted simply as a
        first available font is used to draw text, and later fonts are
        substituted for missing characters in earlier fonts.}
 
- @item{If the string begins with @litchar["+"], then the remainder of the
+ @item{If the string begins with @litchar{+}, then the remainder of the
        string is interpreted as an X font name. These names are
        usually long, such as
-       @litchar["+-b&h-lucidatypewriter-medium-r-normal-sans-24-240-75-75-m-140-iso8859-1"].
+       @litchar{+-b&h-lucidatypewriter-medium-r-normal-sans-24-240-75-75-m-140-iso8859-1}.
        As usual for X font names, asterisks may appear in the string
        as wildcards. Furthermore, the size of the font can be
-       parameterized by using @litchar["%d"] in the place of a specific
+       parameterized by using @litchar{%d} in the place of a specific
        point size; if an asterisk appears in place of the pixel size,
-       the asterisk and @litchar["%d"] are swapped when the font size is
+       the asterisk and @litchar{%d} are swapped when the font size is
        specified in pixels (otherwise the size is always interpreted
-       as points). For rotated text, @litchar["%d"] will be replaced by
+       as points). For rotated text, @litchar{%d} will be replaced by
        a transformation matrix.}
 
  @item{A string of the form
-       @litchar["-"]@nonterm{provider}@litchar{-}@nonterm{font} is
+       @litchar{-}@nonterm{provider}@litchar{-}@nonterm{font} is
        equivalent to
-       @litchar["+-"]@nonterm{provider}@litchar{-}@nonterm{font}@litchar{-}@nonterm{weight}@litchar{-}@nonterm{style}@litchar{-normal-*-*-%d-*-*-*-*-*-*},
+       @litchar{+-}@nonterm{provider}@litchar{-}@nonterm{font}@litchar{-}@nonterm{weight}@litchar{-}@nonterm{style}@litchar{-normal-*-*-%d-*-*-*-*-*-*},
        where @nonterm{weight} is either @litchar{medium},
        @litchar{light}, or @litchar{bold} (depending on the requested
        weight mapping) and @nonterm{style} is either @litchar{r},
        @litchar{i}, or @litchar{i} (depending on the requested style
        mapping).}
        
- @item{A string of the form @litchar["-"]@nonterm{font} is
+ @item{A string of the form @litchar{-}@nonterm{font} is
        equivalent to @litchar{-*-}@nonterm{font}.}
        
  @item{A string of any other format is interpreted as an X font name,

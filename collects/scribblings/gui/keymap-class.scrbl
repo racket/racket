@@ -192,93 +192,93 @@ If a particular modifier is not mentioned in a state string, it
  pressed.
 
 A key identifier can be either a character on the keyboard (e.g.,
- @litchar["a"], @litchar["2"], @litchar["?"]) or a special name. The
+ @litchar{a}, @litchar{2}, @litchar{?}) or a special name. The
  special names are as follows:
 
 @itemize{
-@item{@litchar["leftbutton"] (button down)}
-@item{@litchar["rightbutton"]}
-@item{@litchar["middlebutton"]}
-@item{@litchar["leftbuttondouble"] (button down for double-click)}
-@item{@litchar["rightbuttondouble"]}
-@item{@litchar["middlebuttondouble"]}
-@item{@litchar["leftbuttontriple"] (button down for triple-click)}
-@item{@litchar["rightbuttontriple"]}
-@item{@litchar["middlebuttontriple"]}
-@item{@litchar["leftbuttonseq"] (all events from button down through button up)}
-@item{@litchar["rightbuttonseq"]}
-@item{@litchar["middlebuttonseq"]}
-@item{@litchar["wheelup"]}
-@item{@litchar["wheeldown"]}
-@item{@litchar["esc"]} 
-@item{@litchar["delete"]}
-@item{@litchar["del"]  (same as @litchar["delete"])}
-@item{@litchar["insert"]}
-@item{@litchar["ins"] (same as @litchar["insert"])}
-@item{@litchar["add"]}
-@item{@litchar["subtract"]}
-@item{@litchar["multiply"]}
-@item{@litchar["divide"]}
-@item{@litchar["backspace"]}
-@item{@litchar["back"]}
-@item{@litchar["return"]}
-@item{@litchar["enter"] (same as @litchar["return"])}
-@item{@litchar["tab"]}
-@item{@litchar["space"]}
-@item{@litchar["right"]}
-@item{@litchar["left"]}
-@item{@litchar["up"]}
-@item{@litchar["down"]}
-@item{@litchar["home"]}
-@item{@litchar["end"]}
-@item{@litchar["pageup"]}
-@item{@litchar["pagedown"]}
-@item{@litchar["semicolon"] (since @litchar{;} separates sequence steps)}
-@item{@litchar["colon"]  (since @litchar{:} separates modifiers)}
-@item{@litchar["numpad0"]}
-@item{@litchar["numpad1"]}
-@item{@litchar["numpad2"]}
-@item{@litchar["numpad3"]}
-@item{@litchar["numpad4"]}
-@item{@litchar["numpad5"]}
-@item{@litchar["numpad6"]}
-@item{@litchar["numpad7"]}
-@item{@litchar["numpad8"]}
-@item{@litchar["numpad9"]}
-@item{@litchar["numpadenter"]}
-@item{@litchar["f1"]}
-@item{@litchar["f2"]}
-@item{@litchar["f3"]}
-@item{@litchar["f4"]}
-@item{@litchar["f5"]}
-@item{@litchar["f6"]}
-@item{@litchar["f7"]}
-@item{@litchar["f8"]}
-@item{@litchar["f9"]}
-@item{@litchar["f10"]}
-@item{@litchar["f11"]}
-@item{@litchar["f12"]}
-@item{@litchar["f13"]}
-@item{@litchar["f14"]}
-@item{@litchar["f15"]}
-@item{@litchar["f16"]}
-@item{@litchar["f17"]}
-@item{@litchar["f18"]}
-@item{@litchar["f19"]}
-@item{@litchar["f20"]}
-@item{@litchar["f21"]}
-@item{@litchar["f22"]}
-@item{@litchar["f23"]}
-@item{@litchar["f24"]}
+@item{@litchar{leftbutton} (button down)}
+@item{@litchar{rightbutton}}
+@item{@litchar{middlebutton}}
+@item{@litchar{leftbuttondouble} (button down for double-click)}
+@item{@litchar{rightbuttondouble}}
+@item{@litchar{middlebuttondouble}}
+@item{@litchar{leftbuttontriple} (button down for triple-click)}
+@item{@litchar{rightbuttontriple}}
+@item{@litchar{middlebuttontriple}}
+@item{@litchar{leftbuttonseq} (all events from button down through button up)}
+@item{@litchar{rightbuttonseq}}
+@item{@litchar{middlebuttonseq}}
+@item{@litchar{wheelup}}
+@item{@litchar{wheeldown}}
+@item{@litchar{esc}}
+@item{@litchar{delete}}
+@item{@litchar{del}  (same as @litchar{delete})}
+@item{@litchar{insert}}
+@item{@litchar{ins} (same as @litchar{insert})}
+@item{@litchar{add}}
+@item{@litchar{subtract}}
+@item{@litchar{multiply}}
+@item{@litchar{divide}}
+@item{@litchar{backspace}}
+@item{@litchar{back}}
+@item{@litchar{return}}
+@item{@litchar{enter} (same as @litchar{return})}
+@item{@litchar{tab}}
+@item{@litchar{space}}
+@item{@litchar{right}}
+@item{@litchar{left}}
+@item{@litchar{up}}
+@item{@litchar{down}}
+@item{@litchar{home}}
+@item{@litchar{end}}
+@item{@litchar{pageup}}
+@item{@litchar{pagedown}}
+@item{@litchar{semicolon} (since @litchar{;} separates sequence steps)}
+@item{@litchar{colon}  (since @litchar{:} separates modifiers)}
+@item{@litchar{numpad0}}
+@item{@litchar{numpad1}}
+@item{@litchar{numpad2}}
+@item{@litchar{numpad3}}
+@item{@litchar{numpad4}}
+@item{@litchar{numpad5}}
+@item{@litchar{numpad6}}
+@item{@litchar{numpad7}}
+@item{@litchar{numpad8}}
+@item{@litchar{numpad9}}
+@item{@litchar{numpadenter}}
+@item{@litchar{f1}}
+@item{@litchar{f2}}
+@item{@litchar{f3}}
+@item{@litchar{f4}}
+@item{@litchar{f5}}
+@item{@litchar{f6}}
+@item{@litchar{f7}}
+@item{@litchar{f8}}
+@item{@litchar{f9}}
+@item{@litchar{f10}}
+@item{@litchar{f11}}
+@item{@litchar{f12}}
+@item{@litchar{f13}}
+@item{@litchar{f14}}
+@item{@litchar{f15}}
+@item{@litchar{f16}}
+@item{@litchar{f17}}
+@item{@litchar{f18}}
+@item{@litchar{f19}}
+@item{@litchar{f20}}
+@item{@litchar{f21}}
+@item{@litchar{f22}}
+@item{@litchar{f23}}
+@item{@litchar{f24}}
 }
 
 For a special keyword, the capitalization does not matter. However,
  capitalization is important for single-letter keynames. Furthermore,
- single-letter ASCII keynames are treated specially: @litchar["A"] and
- @litchar["s:a"] are both treated as @litchar["s:A"].  However, when
- @litchar["c:"] is included under Windows without @litchar["m:"], or when
- @litchar["d:"] is included under Mac OS X, then ASCII letters are not
- upcased with @litchar["s:"], since the upcasing behavior of the Shift key
+ single-letter ASCII keynames are treated specially: @litchar{A} and
+ @litchar{s:a} are both treated as @litchar{s:A}.  However, when
+ @litchar{c:} is included under Windows without @litchar{m:}, or when
+ @litchar{d:} is included under Mac OS X, then ASCII letters are not
+ upcased with @litchar{s:}, since the upcasing behavior of the Shift key
  is cancelled by Control without Alt (under Windows) or by Command
  (under Mac OS X).
 

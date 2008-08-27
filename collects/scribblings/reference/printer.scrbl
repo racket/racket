@@ -31,18 +31,18 @@ stream.
 @section[#:tag "print-symbol"]{Printing Symbols}
 
 Symbols containing spaces or special characters @scheme[write] using
-escaping @litchar["\\"] and quoting @litchar{|}s. When the
+escaping @litchar{\} and quoting @litchar{|}s. When the
 @scheme[read-case-sensitive] parameter is set to @scheme[#f], then
 symbols containing uppercase characters also use escaping escaping
-@litchar["\\"] and quoting @litchar{|}s. In addition, symbols are
-quoted with @litchar{|}s or leading @litchar["\\"] when they would
+@litchar{\} and quoting @litchar{|}s. In addition, symbols are
+quoted with @litchar{|}s or leading @litchar{\} when they would
 otherwise print the same as a numerical constant or as a delimited
 @scheme{.} (when @scheme[read-accept-dot] is @scheme[#t]).
 
 When @scheme[read-accept-bar-quote] is @scheme[#t], @litchar{|}s are
 used in printing when one @litchar{|} at the beginning and one
 @litchar{|} at the end suffices to correctly print the
-symbol. Otherwise, @litchar["\\"]s are always used to escape special
+symbol. Otherwise, @litchar{\}s are always used to escape special
 characters, instead of quoting them with @litchar{|}s.
 
 When @scheme[read-accept-bar-quote] is @scheme[#f], then @litchar{|}
@@ -51,7 +51,7 @@ special characters:
 
 @t{
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
-  @litchar["["] @litchar["]"]
+  @litchar{[} @litchar{]}
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
   @litchar{;} @litchar{\}
 }
@@ -122,15 +122,15 @@ The printed form of a pair is the same in both @scheme[write] and
 
 By default, mutable pairs (as created with @scheme[mcons]) print the
 same as pairs, except that @litchar["{"] and @litchar["}"] are used
-instead of @litchar["("] and @litchar[")"]. Note that the reader
-treats @litchar["{"]...@litchar["}"] and @litchar["("]...@litchar[")"]
+instead of @litchar{(} and @litchar{)}. Note that the reader
+treats @litchar["{"]...@litchar["}"] and @litchar{(}...@litchar{)}
 equivalently on input, creating immutable pairs in both cases.
 
 If the @scheme[print-pair-curly-braces] parameter is set to
 @scheme[#t], then immutable pairs print using @litchar["{"] and
 @litchar["}"].  If the @scheme[print-mpair-curly-braces] parameter is
-set to @scheme[#f], then mutable pairs print using @litchar["("] and
-@litchar[")"].
+set to @scheme[#f], then mutable pairs print using @litchar{(} and
+@litchar{)}.
 
 @section{Printing Strings}
 

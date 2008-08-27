@@ -276,9 +276,9 @@ The @tech{metacharacter} @litchar{.} matches @emph{any} character
 (regexp-match #rx"p.t" "pet")
 ]
 
-The above pattern also matches @litchar["pat"], @litchar["pit"],
-@litchar["pot"], @litchar["put"], and @litchar["p8t"], but not
-@litchar["peat"] or @litchar["pfffft"].
+The above pattern also matches @litchar{pat}, @litchar{pit},
+@litchar{pot}, @litchar{put}, and @litchar{p8t}, but not
+@litchar{peat} or @litchar{pfffft}.
 
 A @deftech{character class} matches any one character from a set of
 characters.  A typical format for this is the @deftech{bracketed
@@ -450,8 +450,8 @@ finer-tuned quantification than is possible with @litchar{*},
 ]
 
 It is evident that @litchar{+} and @litchar{?} are abbreviations for
-@litchar["{1,}"] and @litchar["{0,1}"] respectively, and @litchar{*}
-abbreviates @litchar["{,}"], which is the same as @litchar["{0,}"].
+@litchar{{1,}} and @litchar{{0,1}} respectively, and @litchar{*}
+abbreviates @litchar{{,}}, which is the same as @litchar{{0,}}.
 
 @interaction[
 (regexp-match #px"[aeiou]{3}" "vacuous")

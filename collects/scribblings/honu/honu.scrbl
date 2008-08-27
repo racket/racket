@@ -130,11 +130,11 @@ obvious Scheme character.
 
 @subsection[#:tag "honu:parens"]{Parentheses, Brackets, and Braces}
 
-A H-expression between @litchar{(} and @litchar{)}, @litchar["["] and
-@litchar["]"], or @litchar["{"] and @litchar["}"] is represented by a
+A H-expression between @litchar{(} and @litchar{)}, @litchar{[} and
+@litchar{]}, or @litchar["{"] and @litchar["}"] is represented by a
 Scheme list. The first element of the list is @scheme['#%parens] for a
 @litchar{(}...@litchar{)} sequence, @scheme['#%brackets] for a
-@litchar["["]...@litchar["]"] sequence, or @scheme['#%braces] for a
+@litchar{[}...@litchar{]} sequence, or @scheme['#%braces] for a
 @litchar["{"]...@litchar["}"] sequence. The remaining elements are the
 Scheme representations for the grouped H-expressions in order.
 

@@ -181,7 +181,7 @@ special characters
   @hspace[2] @litchar{(} @litchar{)} @litchar{[} @litchar{]}
   @litchar["{"] @litchar["}"]
   @litchar{"} @litchar{,} @litchar{'} @litchar{`}
-  @litchar{;} @litchar{#} @litchar["|"] @litchar["\\"]
+  @litchar{;} @litchar{#} @litchar{|} @litchar{\}
 }
 
 and except for the sequences of characters that make number constants,

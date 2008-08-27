@@ -21,26 +21,26 @@ Whether a programmer or a user, see @scheme[font-name-directory<%>] for
  an overview of the font mapping system.
 
 To find a font name for a family, MrEd looks for a preference name by
- concatenating @litchar["MrEd:"], a @nonterm{dest}, a @nonterm{type},
+ concatenating @litchar{MrEd:}, a @nonterm{dest}, a @nonterm{type},
  a @nonterm{weight}, and a @nonterm{style}, where
 
 @itemize{
 
-  @item{@nonterm{dest} is either @litchar["Screen"] or @litchar["PostScript"].}
+  @item{@nonterm{dest} is either @litchar{Screen} or @litchar{PostScript}.}
 
-  @item{@nonterm{type} is either @litchar["Default"], @litchar["Decorative"], @litchar["Roman"], @litchar["Script"],
-         @litchar["Swiss"], @litchar["Modern"], @litchar["System"], or @litchar["Symbol"] for a mapping
+  @item{@nonterm{type} is either @litchar{Default}, @litchar{Decorative}, @litchar{Roman}, @litchar{Script},
+         @litchar{Swiss}, @litchar{Modern}, @litchar{System}, or @litchar{Symbol} for a mapping
          defining the default font for a family. Otherwise, it is a
          face name prefixed with @litchar["@"].}
 
-  @item{@nonterm{weight} is either @litchar["Medium"], @litchar["Bold"], or @litchar["Light"].}
+  @item{@nonterm{weight} is either @litchar{Medium}, @litchar{Bold}, or @litchar{Light}.}
 
-  @item{@nonterm{style} is either @litchar["Straight"], @litchar["Italic"], or @litchar["Slant"].}
+  @item{@nonterm{style} is either @litchar{Straight}, @litchar{Italic}, or @litchar{Slant}.}
 
 }
 
 Furthermore, any of the latter three parts can be wildcarded with
- @litchar["_"], as described below. The concatenated string is converted
+ @litchar{_}, as described below. The concatenated string is converted
  to a symbol (preserving case), and the associated preference value
  must be a string.
 
@@ -59,7 +59,7 @@ Building items names by concatenating @nonterm{dest}, @nonterm{type},
  preferences via a wildcarding search.
 
 The @nonterm{type}, @nonterm{weight}, and @nonterm{style} parts of a preference name
- can be wildcarded by using @litchar["_"]. Thus, to set the default font
+ can be wildcarded by using @litchar{_}. Thus, to set the default font
  in X for all types, weights, and styles, use the following preference
  entry:
 
@@ -101,15 +101,15 @@ Suppose we define the mapping for variants of @scheme["Default"], and
 
 but the MrEd font-reading system provides a better syntax for
  referencing another preference entry. When a preference value contains
- @litchar["${x}"], then the @litchar["${x}"] fragment is replaced by the
- preference value of @litchar["x"]. Thus, the above can be re-written:
+ @litchar{${x}}, then the @litchar{${x}} fragment is replaced by the
+ preference value of @litchar{x}. Thus, the above can be re-written:
 
 @schemeblock[
 (|MrEd:ScreenDefault__| "+-*-*-medium-r-normal-*-*-%d-*-*-*-*-*-*")
 (|MrEd:ScreenRoman__| "${ScreenDefault__}")
 ]
 
-A mini-language of @litchar["${x}"] is used within the string (instead
+A mini-language of @litchar{${x}} is used within the string (instead
  of an S-expression format) for historical reasons.
 
 @; ------------------------------------------------------------------------
@@ -118,9 +118,9 @@ A mini-language of @litchar["${x}"] is used within the string (instead
 
 Variables can be used with referencing to configure default values
  based on the weight and style that is needed.  When a preference
- value contains @litchar["$[weight]"], then @litchar["$[weight]"] is
+ value contains @litchar{$[weight]}, then @litchar{$[weight]} is
  replaced with a string for the desired font weight. Similarly,
- @litchar["$[style]"] is replaced with the desired style. Variable
+ @litchar{$[style]} is replaced with the desired style. Variable
  expressions can be embedded within referencing expressions, as in the
  following example:
 
@@ -134,10 +134,10 @@ Variables can be used with referencing to configure default values
 
 Now, when the @Resource{ScreenDefault__} value is used for different
  weights, it will return different values; the
- @litchar["${Def$[weight]}"] expression will turn into
- @litchar["${DefMedium}"] for a medium-weight lookup, or
- @litchar["${DefBold}"] for a bold-weight lookup. These references
- will in turn give either @litchar["medium"] or @litchar["bold"].
+ @litchar{${Def$[weight]}} expression will turn into
+ @litchar{${DefMedium}} for a medium-weight lookup, or
+ @litchar{${DefBold}} for a bold-weight lookup. These references
+ will in turn give either @litchar{medium} or @litchar{bold}.
 
 @; ------------------------------------------------------------------------
 
@@ -163,11 +163,11 @@ The effect of this statement is probably not what was intended; when a
 (|MrEd:ScreenRoman__| "${ScreenDefault$[weight]_}")
 ]
 
-but this does not work either. It works fine for bold @litchar["Roman"],
- now, but medium @litchar["Roman"] will cause a reference to the
+but this does not work either. It works fine for bold @litchar{Roman},
+ now, but medium @litchar{Roman} will cause a reference to the
  @Resource{ScreenDefaultMedium_}, which doesn't exist. The problem is
  that our reference does not use wildcarding like the original medium
- @litchar["Roman"] lookup did.
+ @litchar{Roman} lookup did.
 
 Wildcarding can be specified in a reference by separating each
  wildcardable field with a comma. The following preference specification
@@ -179,9 +179,9 @@ Wildcarding can be specified in a reference by separating each
 (|MrEd:ScreenRoman__| "${ScreenDefault,$[weight],_}")
 ]
 
-Since @litchar["$[weight]"] is between commas, it can be wildcarded if
- no name exactly matching @litchar["SchemeDefault$[weight]_"] is
- found. In this case @litchar["SchemeDefault"] and @litchar["_"] can
+Since @litchar{$[weight]} is between commas, it can be wildcarded if
+ no name exactly matching @litchar{SchemeDefault$[weight]_} is
+ found. In this case @litchar{SchemeDefault} and @litchar{_} can
  also be wildcarded, but this will have no effect.
 
 The wildcarding used in references need not reflect the wildcarding

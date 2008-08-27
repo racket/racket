@@ -117,9 +117,9 @@ widest line.
 Each list within @scheme[element]s is spliced into the sequence of
 string and pict elements. If @scheme[decode?] is true, then strings
 among the @scheme[element]s are decoded by performing the following
-substitutions: @litchar["---"] @d=> @litchar["\u2014"], @litchar["--"]
-@d=> @litchar["\u2013"], @litchar["``"] @d=> @litchar["\u201C"],
-@litchar["''"] @d=> @litchar["\u201D"], @litchar["'"] @d=>
+substitutions: @litchar{---} @d=> @litchar["\u2014"], @litchar{--}
+@d=> @litchar["\u2013"], @litchar{``} @d=> @litchar["\u201C"],
+@litchar{''} @d=> @litchar["\u201D"], @litchar{'} @d=>
 @litchar["\u2019"].
 
 Strings are split at spaces for word-wrapping to fit the page, and a

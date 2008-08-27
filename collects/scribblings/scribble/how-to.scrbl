@@ -96,11 +96,11 @@ one must be present. No spaces are allowed between
 
 @itemize{
 
- @item{@litchar["@"] and @nonterm{cmd}, @litchar["["], or @litchar["{"]}
+ @item{@litchar["@"] and @nonterm{cmd}, @litchar{[}, or @litchar["{"]}
 
- @item{@nonterm{cmd} and @litchar["["] or @litchar["{"]; or}
+ @item{@nonterm{cmd} and @litchar{[} or @litchar["{"]; or}
 
- @item{@litchar["]"] and @litchar["{"].}
+ @item{@litchar{]} and @litchar["{"].}
 
 }
 
@@ -113,7 +113,7 @@ The expansion of @litchar["@"]@nonterm{cmd} into Scheme code is
   #, @nonterm{cmd}
 ]
 
-When either @litchar["["] @litchar["]"] or @litchar["{"] @litchar["}"]
+When either @litchar{[} @litchar{]} or @litchar["{"] @litchar["}"]
 are used, the expansion is
 
 @schemeblock[
@@ -128,8 +128,8 @@ In practice, the @nonterm{cmd} is normally a Scheme identifier that is
 bound to a procedure or syntactic form. If the procedure or form
 expects further text to typeset, then @litchar["{"] @litchar["}"]
 supplies the text. If the form expects other data, typically
-@litchar["["] @litchar["]"] is used to surround Scheme arguments,
-instead. Sometimes, both @litchar["["] @litchar["]"] and @litchar["{"]
+@litchar{[} @litchar{]} is used to surround Scheme arguments,
+instead. Sometimes, both @litchar{[} @litchar{]} and @litchar["{"]
 @litchar["}"] are used, where the former surround Scheme arguments
 that precede text to typeset.
 

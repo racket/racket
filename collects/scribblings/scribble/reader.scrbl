@@ -101,7 +101,7 @@ to @scheme["\n"] expressions.
        blah}
 }===|
 
-Note that spaces are not allowed before a @litchar["["] or a
+Note that spaces are not allowed before a @litchar{[} or a
 @litchar["{"], or they will be part of the following text (or Scheme
 code).  (More on using braces in body texts below.)
 
@@ -150,9 +150,9 @@ wrapping the @italic{whole} expression.
   @`',@foo{blah}
 }===|
 
-When writing Scheme code, this means that @litchar["@`',@foo{blah}"]
-is exactly the same as @litchar["`@',@foo{blah}"] and
-@litchar["`',@@foo{blah}"], but unlike the latter two, the first
+When writing Scheme code, this means that @litchar|{@`',@foo{blah}}|
+is exactly the same as @litchar|{`@',@foo{blah}}| and
+@litchar|{`',@@foo{blah}}|, but unlike the latter two, the first
 construct can appear in body texts with the same meaning, whereas the
 other two would not work (see below).
 
@@ -190,7 +190,7 @@ In the first form, the commented body must still parse correctly; see
 the description of the body syntax below.  In the second form, all
 text from the @litchar["@;"] to the end of the line @italic{and} all
 following spaces (or tabs) are part of the comment (similar to
-@litchar["%"] comments in TeX).
+@litchar{%} comments in TeX).
 
 @scribble-examples|==={
   @foo{bar @; comment
@@ -345,7 +345,7 @@ the opening marker to have the text terminated by a @litchar["}|"].
 }===|
 
 This applies to sub-@"@"-forms too---the @litchar["@"] must be
-prefixed with a @litchar["|"]:
+prefixed with a @litchar{|}:
 
 @scribble-examples|==={
   @foo|{Maze
@@ -354,18 +354,18 @@ prefixed with a @litchar["|"]:
   @t|{In |@i|{sub|@"@"s}| too}|
 }===|
 
-Note that the subform uses its own delimiters, @litchar["{...}"] or
-@litchar["|{...}|"].  This means that you can copy and paste Scribble
+Note that the subform uses its own delimiters, @litchar{{...}} or
+@litchar{|{...}|}.  This means that you can copy and paste Scribble
 text with @"@"-forms freely, just prefix the @litchar["@"] if the
 immediate surrounding text has a prefix.
 
 For even better control, you can add characters in the opening
-delimiter, between the @litchar["|"] and the @litchar["{"].
+delimiter, between the @litchar{|} and the @litchar["{"].
 Characters that are put there (non alphanumeric ASCII characters only,
 excluding @litchar["{"] and @litchar["@"]) should also be used for
 sub-@"@"-forms, and the end-of-body marker should have these characters
-in reverse order with paren-like characters (@litchar["("],
-@litchar["["], @litchar["<"]) mirrored.
+in reverse order with paren-like characters (@litchar{(},
+@litchar{[}, @litchar{<}) mirrored.
 
 @scribble-examples|==={
   @foo|<<<{@x{foo} |@{bar}|.}>>>|
@@ -383,7 +383,7 @@ multi-line body texts.
 In some cases, you may want to use a Scheme identifier (or a number or
 a boolean etc.) in a position that touches the following text; in
 these situations you should surround the escaped Scheme expression by
-a pair of @litchar["|"] characters.  The text inside the bars is
+a pair of @litchar{|} characters.  The text inside the bars is
 parsed as a Scheme expression.
 
 @scribble-examples|==={
@@ -437,9 +437,9 @@ as the Scheme command part of a @"@"-form.  The latter is used in this case
 @;--------------------------------------------------------------------
 @subsubsub*section{Comments}
 
-As noted above, there are two kinds of Scribble comments: @litchar["@;{...}"] is
+As noted above, there are two kinds of Scribble comments: @litchar|{@;{...}}| is
 a (nestable) comment for a whole body of text (following the same
-rules for @"@"-forms), and @litchar["@;..."] is a line-comment.
+rules for @"@"-forms), and @litchar|{@;...}| is a line-comment.
 
 @scribble-examples|==={
   @foo{First line@;{there is still a
@@ -534,7 +534,7 @@ indentation strings are added so the result has the same indentation.
 A indentation string is added to each line according to its distance
 from the leftmost syntax object (except for empty lines).  (Note: if
 you try these examples on a mzscheme REPL, you should be aware that
-the reader does not know about the "@litchar["> "]" prompt.)
+the reader does not know about the ``@litchar{> }'' prompt.)
 
 @scribble-examples|==={
   @foo{
@@ -791,7 +791,7 @@ resulting reader in several ways:
   readtable-to-readtable function that will construct one from the
   @"@"-readtable.  The idea is that you may want to have completely
   different uses for the datum part, for example, introducing a
-  convenient @litchar["key=val"] syntax for attributes.}
+  convenient @litchar{key=val} syntax for attributes.}
 
 @item{@scheme[syntax-post-proc] --- function that is applied on
   each resulting syntax value after it has been parsed (but before it

@@ -84,7 +84,7 @@ of the @web-server in other applications, or loading a custom
 dispatcher. See @filepath{run.ss} for an example of such a script.
 
 @defproc[(serve [#:dispatch dispatch dispatcher?]
-                [#:tcp\@ tcp\@ tcp-unit^ raw:tcp\@]
+                [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                 [#:port port integer? 80]
                 [#:listen-ip listen-ip (or/c string? false/c) #f]
                 [#:max-waiting max-waiting integer? 40]
@@ -106,7 +106,7 @@ from a given path:
 
 @schemeblock[
 (define (start-file-server base)
-  (serve 
+  (serve
    #:dispatch
    (files:make
     #:url->path (make-url->path base)
@@ -114,10 +114,10 @@ from a given path:
     (lambda (path)
       #"application/octet-stream"))
    #:port 8080))
-]            
-                   
+]
+
 @defproc[(serve/ports [#:dispatch dispatch dispatcher?]
-                      [#:tcp\@ tcp\@ tcp-unit^ raw:tcp\@]
+                      [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                       [#:ports ports (listof integer?) (list 80)]
                       [#:listen-ip listen-ip (or/c string? false/c) #f]
                       [#:max-waiting max-waiting integer? 40]
@@ -128,7 +128,7 @@ from a given path:
 }
 
 @defproc[(serve/ips+ports [#:dispatch dispatch dispatcher?]
-                          [#:tcp\@ tcp\@ tcp-unit^ raw:tcp\@]
+                          [#:tcp@ tcp@ tcp-unit^ raw:tcp@]
                           [#:ips+ports ips+ports (listof (cons/c (or/c string? false/c) (listof integer?))) (list (cons #f (list 80)))]
                           [#:max-waiting max-waiting integer? 40]
                           [#:initial-connection-timeout initial-connection-timeout integer? 60])

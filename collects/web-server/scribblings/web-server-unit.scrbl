@@ -29,8 +29,8 @@ The @web-server offers a unit-based approach to running the server.
 
 @defmodule[web-server/web-server-unit]
 
-@defthing[web-server\@ (unit/c (web-config^ tcp^)
-                               (web-server^))]{
+@defthing[web-server@ (unit/c (web-config^ tcp^)
+                              (web-server^))]{
 
 Uses the @scheme[web-config^] to construct a @scheme[dispatcher?]
 function that sets up one virtual host dispatcher, for each virtual

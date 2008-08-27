@@ -44,9 +44,9 @@ characters or 5,000 operators.
 The following syntax specifications describe the content of a string
 that represents a regular expression. The syntax of the corresponding
 string may involve extra escape characters. For example, the regular
-expression @litchar["(.*)\\1"] can be represented with the string
+expression @litchar{(.*)\1} can be represented with the string
 @scheme["(.*)\\1"] or the regexp constant @scheme[#rx"(.*)\\1"]; the
-@litchar["\\"] in the regular expression must be escaped to include it
+@litchar{\} in the regular expression must be escaped to include it
 in a string or regexp constant.
 
 The @scheme[regexp] and @scheme[pregexp] syntaxes share a common core:
@@ -54,15 +54,15 @@ The @scheme[regexp] and @scheme[pregexp] syntaxes share a common core:
 @common-table
 
 The following completes the grammar for @scheme[regexp], which treats
-@litchar["{"] and @litchar["}"] as literals, @litchar["\\"] as a
-literal within ranges, and @litchar["\\"] as a literal producer
+@litchar["{"] and @litchar["}"] as literals, @litchar{\} as a
+literal within ranges, and @litchar{\} as a literal producer
 outside of ranges.
 
 @rx-table
 
 The following completes the grammar for @scheme[pregexp], which uses
 @litchar["{"] and @litchar["}"] bounded repetition and uses
-@litchar["\\"] for meta-characters both inside and outside of ranges.
+@litchar{\} for meta-characters both inside and outside of ranges.
 
 @px-table
 
@@ -89,7 +89,7 @@ matches between @math{n} and @math{m} characters. In the rule for
 @litchar{(}@nonterm{Regexp}@litchar{)}, @math{N} means the number such
 that the opening parenthesis is the @math{N}th opening parenthesis for
 collecting match reports.  Non-emptiness is inferred for a
-backreference pattern, @litchar["\\"]@nonterm{N}, so that a
+backreference pattern, @litchar{\}@nonterm{N}, so that a
 backreference can be used for repetition patterns; in the case of
 mutual dependencies among backreferences, the inference chooses the
 fixpoint that maximizes non-emptiness.  Finiteness is not inferred for
@@ -251,7 +251,7 @@ contains parenthesized sub-expressions (but not when the open
 parenthesis is followed by @litchar{?:}). Matches for the
 sub-expressions are provided in the order of the opening parentheses
 in @scheme[pattern]. When sub-expressions occur in branches of an
-@litchar["|"] ``or'' pattern, in a @litchar{*} ``zero or more''
+@litchar{|} ``or'' pattern, in a @litchar{*} ``zero or more''
 pattern, or other places where the overall pattern can succeed without
 a match for the sub-expression, then a @scheme[#f] is returned for the
 sub-expression if it did not contribute to the final match. When a
@@ -578,31 +578,31 @@ then @scheme[insert] as a string is converted to a byte string,
 @scheme[insert] as a procedure is called with a byte string, and the
 result is a byte string.
 
-If @scheme[insert] contains @litchar["&"], then @litchar["&"]
+If @scheme[insert] contains @litchar{&}, then @litchar{&}
 is replaced with the matching portion of @scheme[input] before it is
 substituted into the match's place.  If @scheme[insert] contains
-@litchar["\\"]@nonterm{n} for some integer @nonterm{n}, then it is
+@litchar{\}@nonterm{n} for some integer @nonterm{n}, then it is
 replaced with the @nonterm{n}th matching sub-expression from
-@scheme[input]. A @litchar{&} and @litchar["\\0"] are synonymous. If
+@scheme[input]. A @litchar{&} and @litchar{\0} are synonymous. If
 the @nonterm{n}th sub-expression was not used in the match, or if
 @nonterm{n} is greater than the number of sub-expressions in
-@scheme[pattern], then @litchar["\\"]@nonterm{n} is replaced with the
+@scheme[pattern], then @litchar{\}@nonterm{n} is replaced with the
 empty string.
 
-To substitute a literal @litchar{&} or @litchar["\\"], use
-@litchar["\\&"] and @litchar["\\\\"], respectively, in
-@scheme[insert]. A @litchar["\\$"] in @scheme[insert] is
+To substitute a literal @litchar{&} or @litchar{\}, use
+@litchar{\&} and @litchar{\\}, respectively, in
+@scheme[insert]. A @litchar{\$} in @scheme[insert] is
 equivalent to an empty sequence; this can be used to terminate a
-number @nonterm{n} following @litchar["\\"]. If a @litchar["\\"] in
+number @nonterm{n} following @litchar{\}. If a @litchar{\} in
 @scheme[insert] is followed by anything other than a digit,
-@litchar{&}, @litchar["\\"], or @litchar{$}, then the @litchar["\\"]
-by itself is treated as @litchar["\\0"].
+@litchar{&}, @litchar{\}, or @litchar{$}, then the @litchar{\}
+by itself is treated as @litchar{\0}.
 
-Note that the @litchar["\\"] described in the previous paragraphs is a
+Note that the @litchar{\} described in the previous paragraphs is a
 character or byte of @scheme[input]. To write such an @scheme[input]
-as a Scheme string literal, an escaping @litchar["\\"] is needed
-before the @litchar["\\"]. For example, the Scheme constant
-@scheme["\\1"] is @litchar["\\1"].
+as a Scheme string literal, an escaping @litchar{\} is needed
+before the @litchar{\}. For example, the Scheme constant
+@scheme["\\1"] is @litchar{\1}.
 
 @examples[
 (regexp-replace "mi" "mi casa" "su")
@@ -645,8 +645,8 @@ recursively. Zero-length matches are treated the same as in
 Produces a string suitable for use as the third argument to
 @scheme[regexp-replace] to insert the literal sequence of characters
 in @scheme[str] or bytes in @scheme[bstr] as a replacement.
-Concretely, every @litchar["\\"] and @litchar{&} in @scheme[str] or
-@scheme[bstr] is protected by a quoting @litchar["\\"].
+Concretely, every @litchar{\} and @litchar{&} in @scheme[str] or
+@scheme[bstr] is protected by a quoting @litchar{\}.
 
 @examples[
 (regexp-replace "UT" "Go UT!" "A&M")

@@ -11,7 +11,7 @@ marshaled to a byte string.
 
 In @scheme[read-syntax], the reader attaches a @scheme['paren-shape]
 property to any pair or vector syntax object generated from parsing a
-pair @litchar["["] and @litchar["]"] or @litchar["{"] and
+pair @litchar{[} and @litchar{]} or @litchar["{"] and
 @litchar["}"]; the property value is @scheme[#\[] in the former case,
 and @scheme[#\{] in the latter case. The @scheme[syntax] form copies
 any @scheme['paren-shape] property from the source of a template to
