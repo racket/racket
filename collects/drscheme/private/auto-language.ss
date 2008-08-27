@@ -1,4 +1,4 @@
-(module auto-language mzscheme
+#lang mzscheme
   (require mred
            mzlib/class)
   
@@ -59,4 +59,4 @@
                  ;; If tp contains a snip, read-line fails.
                  (read-line tp))])
       (and (string? l1)
-           (regexp-match #rx"#lang .*$" l1)))))
+           (regexp-match #rx"#lang .*$" l1))))

@@ -1,5 +1,5 @@
+#lang mzscheme
 
-(module eval mzscheme
   (require mred
            mzlib/unit
            mzlib/port
@@ -218,4 +218,4 @@
           [else
            (let ([port (open-input-file filename)])
              (port-count-lines! port)
-             (values port filename))])))))
+             (values port filename))]))))

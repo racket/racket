@@ -136,55 +136,27 @@
       (define/public (get-auto-text settings)
         (module-language-settings-auto-text settings))
       
-      ;; utility for the front-end methods: return a function that will return
+      ;; utility for the front-end method: return a function that will return
       ;; each of the given syntax values on each call, executing thunks when
-      ;; included; when done with the list, use the given getter thunk.
-      (define (expr-getter getter . exprs/thunks)
+      ;; included; when done with the list, send eof.
+      (define (expr-getter . exprs/thunks)
         (define (loop)
           (if (null? exprs/thunks)
-            (getter)
+            eof
             (let ([x (car exprs/thunks)])
               (set! exprs/thunks (cdr exprs/thunks))
               (if (procedure? x) (begin (x) (loop)) x))))
         loop)
       
       (inherit get-reader)
-      (define hopeless-repl (make-thread-cell #t))
+      (define repl-init-thunk (make-thread-cell #f))
       
-      (define/override (front-end/interaction port settings)
-        (let ([x (thread-cell-ref hopeless-repl)])
-          (cond
-            [(not x) (super front-end/interaction port settings)]
-            [(not (syntax? x)) (raise-hopeless-syntax-error)]
-            ;; this means that there was a problem getting into the
-            ;; module's namespace, and we have a language to try to require
-            [else
-             (let ([default-handler (uncaught-exception-handler)])
-               (expr-getter (super front-end/interaction port settings)
-                #`(current-module-declare-name #f)
-                (λ ()
-                  (uncaught-exception-handler
-                   (λ (e)
-                     (uncaught-exception-handler default-handler)
-                     (raise-hopeless-syntax-error "invalid language" x))))
-                #`(require #,x)
-                (λ ()
-                  (uncaught-exception-handler default-handler)
-                  (unless (memq '#%top-interaction (namespace-mapped-symbols))
-                    (raise-hopeless-syntax-error
-                     "invalid language (existing module, but no language bindings)"
-                     x)))))])))
-      
-      ;; This is used to setup the user environment.  There's a subtle hack
-      ;; here: instead of doing things like (namespace-require ...), construct
-      ;; and return a #'(require ...) syntax: this way when we're not going to
-      ;; run the code (eg, when it's used by the syntax checker or the macro
-      ;; debugger), it won't run.
       (define/override (front-end/complete-program port settings)
         (define (super-thunk) ((get-reader) (object-name port) port))
-        (define path (cond [(get-filename port)
-                            => (compose simplify-path cleanse-path)]
-                           [else #f]))
+        (define path
+          (cond [(get-filename port) => (compose simplify-path cleanse-path)]
+                [else #f]))
+        (define resolved-modpath (and path (make-resolved-module-path path)))
         (define-values (name lang module-expr)
           (let ([expr
                  ;; just reading the definitions might be a syntax error,
@@ -199,31 +171,50 @@
                  "there can only be one expression in the definitions window"
                  more)))
             (transform-module path expr)))
-        (define require-spec
-          (or path
-              ;; "clearing out" the module-name via datum->syntax ensures that
-              ;; check syntax doesn't think the original module name is being
-              ;; used in this require (so it doesn't get turned red)
-              (quasisyntax ''#,(datum->syntax #'here (syntax-e name)))))
-        ;; we have a language, so put it here, so front-end/interaction can
-        ;; require the language if we fail to go into the module -- most
-        ;; commonly due to a syntax error, in attempt to still provide a
-        ;; working repl
-        (thread-cell-set! hopeless-repl lang)
-        (expr-getter (λ () eof)
-         #`(current-module-declare-name
-            (and #,path (make-resolved-module-path '#,path)))
-         module-expr
-         #`(current-module-declare-name #f)
-         (if path
-           #`(#%app (#%app current-module-name-resolver)
-                    (#%app make-resolved-module-path #,path))
-           void)
-         ;; the prompt makes it continue after an error
-         #`(#%app call-with-continuation-prompt
-                  (λ () (#%app dynamic-require #,require-spec #f)))
-         #`(#%app current-namespace (#%app module->namespace #,require-spec))
-         (λ () (thread-cell-set! hopeless-repl #f))))
+        (define modspec (or path `',(syntax-e name)))
+        (define (check-interactive-language)
+          (unless (memq '#%top-interaction (namespace-mapped-symbols))
+            (raise-hopeless-exception
+             #f #f ; no error message, just a suffix
+             (format "~s does not support a REPL (no #%top-interaction)"
+                     (syntax->datum lang)))))
+        ;; We're about to send the module expression to drscheme now, the rest
+        ;; of the setup is done in `front-end/finished-complete-program' below,
+        ;; so use `repl-init-thunk' to store an appropriate continuation for
+        ;; this setup.  Once we send the expression, we'll be called again only
+        ;; if it was evaluated (or expanded) with no errors, so begin with a
+        ;; continuation that deals with an error, and if we're called again,
+        ;; change it to a continuation that initializes the repl for the
+        ;; module.  So the code is split among several thunks that follow.
+        (define (*pre)
+          (thread-cell-set! repl-init-thunk *error)
+          (current-module-declare-name resolved-modpath))
+        (define (*post)
+          (current-module-declare-name #f)
+          (when path ((current-module-name-resolver) resolved-modpath))
+          (thread-cell-set! repl-init-thunk *init))
+        (define (*error)
+          (current-module-declare-name #f)
+          ;; syntax error => try to require the language to get a working repl
+          (with-handlers ([void (λ (e)
+                                  (raise-hopeless-syntax-error
+                                   "invalid language specification"
+                                   lang))])
+            (namespace-require lang))
+          (check-interactive-language))
+        (define (*init)
+          (parameterize ([current-namespace (current-namespace)])
+            ;; the prompt makes it continue after an error
+            (call-with-continuation-prompt
+             (λ () (dynamic-require modspec #f))))
+          (current-namespace (module->namespace modspec))
+          (check-interactive-language))
+        ;; here's where they're all combined with the module expression
+        (expr-getter *pre module-expr *post))
+      
+      (define/override (front-end/finished-complete-program settings)
+        (cond [(thread-cell-ref repl-init-thunk)
+               => (λ (t) (thread-cell-set! repl-init-thunk #f) (t))]))
       
       ;; printer settings are just ignored here.
       (define/override (create-executable setting parent program-filename)
@@ -272,23 +263,31 @@
        [language-position (list "Module")]
        [language-numbers (list -32768)])))
   
-  (define (raise-hopeless-exception exn [prefix #f])
+  ;; can be called with #f to just kill the repl (in case we want to kill it
+  ;; but keep the highlighting of a previous error)
+  (define (raise-hopeless-exception exn [prefix #f] [suffix #f])
     (define rep (drscheme:rep:current-rep))
-    ;; if we don't have the drscheme rep, then we just raise the exception as
-    ;; normal.  (It can happen in some rare cases like having a single empty
-    ;; scheme box in the definitions.)
-    (unless rep (raise exn))
+    ;; Throw an error as usual if we don't have the drscheme rep, then we just
+    ;; raise the exception as normal.  (It can happen in some rare cases like
+    ;; having a single empty scheme box in the definitions.)
+    (unless rep (if exn (raise exn) (error "\nInteractions disabled")))
     (when prefix (fprintf (current-error-port) "Module Language: ~a\n" prefix))
-    ((error-display-handler) (exn-message exn) exn)
+    (when exn ((error-display-handler) (exn-message exn) exn))
+    ;; these are needed, otherwise the warning can appear before the output
+    (flush-output (current-output-port))
+    (flush-output (current-error-port))
     ;; do the rep-related work carefully -- using drscheme's eventspace, and
     ;; wait for it to finish before we continue.
-    (let ([s (make-semaphore 0)])
+    (let ([s (make-semaphore 0)]
+          [msg (string-append "\nInteractions disabled"
+                              (if suffix (string-append ": " suffix) "."))])
       (parameterize ([current-eventspace drscheme:init:system-eventspace])
         (queue-callback
          (λ ()
-           (send* rep (insert-warning "\nInteractions disabled.")
-                      (set-show-no-user-evaluation-message? #f)
-                      (highlight-errors/exn exn))
+           (send rep call-without-reset-highlighting
+             (λ ()
+               (send* rep (insert-warning msg)
+                          (set-show-no-user-evaluation-message? #f))))
            (semaphore-post s))))
       (semaphore-wait s))
     (custodian-shutdown-all (send rep get-user-custodian)))
@@ -476,7 +475,7 @@
        (update-buttons)]))
   
   ;; transform-module : (union #f path) syntax
-  ;;   -> (values syntax[name-of-module] syntax[module])
+  ;;   -> (values syntax[name-of-module] syntax[lang-of-module] syntax[module])
   ;; = User =
   (define (transform-module filename stx)
     (define-values (mod name lang body)
@@ -567,7 +566,7 @@
                            [filename-end (skip-to-whitespace filename-start)])
                       (and (not (= filename-start end-module))
                            (string-append (get-text filename-start filename-end)
-                                          ".scm")))))))
+                                          ".ss")))))))
       
       
       (define/private (matches start string)

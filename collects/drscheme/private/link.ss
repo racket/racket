@@ -1,4 +1,4 @@
-(module link mzscheme
+#lang mzscheme
   (require "modes.ss"
            "font.ss"
            "eval.ss"
@@ -51,5 +51,5 @@
       (prefix drscheme:help-desk: drscheme:help-desk^)
       (prefix drscheme:eval: drscheme:eval^)
       (prefix drscheme:modes: drscheme:modes^))
-     drscheme-unit@)))
+     drscheme-unit@))
 

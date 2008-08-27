@@ -1,4 +1,4 @@
-
+#lang scheme/base
 #|
 
 closing:
@@ -11,7 +11,6 @@ module browser threading seems wrong.
 
 |#
 
-(module unit scheme/base
   (require scheme/contract
            scheme/unit
            scheme/class
@@ -27,6 +26,7 @@ module browser threading seems wrong.
            "drsig.ss"
            "auto-language.ss"
            "insert-large-letters.ss"
+           "first-line-text.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
 
@@ -202,7 +202,7 @@ module browser threading seems wrong.
     (define (find-symbol text pos)
       (send text split-snip pos)
       (send text split-snip (+ pos 1))
-      (let ([snip (send text find-snip pos 'after-or-none)])
+      (let ([snip (send text find-snip pos 'after)])
         (if (is-a? snip string-snip%)
             (let* ([before
                     (let loop ([i (- pos 1)]
@@ -428,18 +428,19 @@ module browser threading seems wrong.
     (define (make-definitions-text%)
       (let ([definitions-super%
               ((get-program-editor-mixin)
-               (drscheme:module-language:module-language-put-file-mixin
-                (scheme:text-mixin
-                 (color:text-mixin
-                  (drscheme:rep:drs-bindings-keymap-mixin
-                   (mode:host-text-mixin
-                    (text:delegate-mixin
-                     (text:foreground-color-mixin
-                      (drscheme:rep:drs-autocomplete-mixin
-                       (λ (x) x)
-                       text:info%)))))))))])
+               (first-line-text-mixin
+                (drscheme:module-language:module-language-put-file-mixin
+                 (scheme:text-mixin
+                  (color:text-mixin
+                   (drscheme:rep:drs-bindings-keymap-mixin
+                    (mode:host-text-mixin
+                     (text:delegate-mixin
+                      (text:foreground-color-mixin
+                       (drscheme:rep:drs-autocomplete-mixin
+                        (λ (x) x)
+                        text:info%))))))))))])
         (class* definitions-super% (definitions-text<%>)
-          (inherit get-top-level-window is-locked? lock while-unlocked)
+          (inherit get-top-level-window is-locked? lock while-unlocked highlight-first-line)
           
           (define interactions-text #f)
           (define/public (set-interactions-text it)
@@ -588,40 +589,42 @@ module browser threading seems wrong.
           
           
           (define/pubment (get-next-settings) next-settings)
-          (define/pubment set-next-settings
-            (lambda (_next-settings [update-prefs? #t])
-              (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
-                              get-reader-module)
-                        (send (drscheme:language-configuration:language-settings-language next-settings)
-                              get-reader-module))
-                (set-modified #t))
-              (set! next-settings _next-settings)
-              (change-mode-to-match)
-              
-              (let ([f (get-top-level-window)])
-                (when (and f
-                           (is-a? f -frame<%>))
-                  (send f language-changed)))
-              
-              (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
-                    [sets (drscheme:language-configuration:language-settings-settings next-settings)])
-                (preferences:set
-                 'drscheme:recent-language-names
-                 (limit-length
-                  (remove-duplicate-languages
-                   (cons (cons (send lang get-language-name)
-                               (send lang marshall-settings sets))
-                         (preferences:get 'drscheme:recent-language-names)))
-                  10)))
-              
-              (when update-prefs?
-                (preferences:set
-                 drscheme:language-configuration:settings-preferences-symbol
-                 next-settings))
-              
-              (remove-auto-text)
-              (insert-auto-text)
-              (after-set-next-settings _next-settings)))
+          (define/pubment (set-next-settings _next-settings [update-prefs? #t])
+            (when (or (send (drscheme:language-configuration:language-settings-language _next-settings)
+                            get-reader-module)
+                      (send (drscheme:language-configuration:language-settings-language next-settings)
+                            get-reader-module))
+              (set-modified #t))
+            (set! next-settings _next-settings)
+            (change-mode-to-match)
+            (let ([f (get-top-level-window)])
+              (when (and f
+                         (is-a? f -frame<%>))
+                (send f language-changed)))
+            
+            (highlight-first-line
+             (is-a? (drscheme:language-configuration:language-settings-language _next-settings)
+                    drscheme:module-language:module-language<%>))
+            
+            (let ([lang (drscheme:language-configuration:language-settings-language next-settings)]
+                  [sets (drscheme:language-configuration:language-settings-settings next-settings)])
+              (preferences:set
+               'drscheme:recent-language-names
+               (limit-length
+                (remove-duplicate-languages
+                 (cons (cons (send lang get-language-name)
+                             (send lang marshall-settings sets))
+                       (preferences:get 'drscheme:recent-language-names)))
+                10)))
+            
+            (when update-prefs?
+              (preferences:set
+               drscheme:language-configuration:settings-preferences-symbol
+               next-settings))
+            
+            (remove-auto-text)
+            (insert-auto-text)
+            (after-set-next-settings _next-settings))
           
           (define/pubment (after-set-next-settings s)
             (inner (void) after-set-next-settings s))
@@ -729,7 +732,7 @@ module browser threading seems wrong.
                         (/ (+ yl yr) 2)))))
 
           (define/public (still-untouched?)
-            (and (= (last-position) 0)
+            (and (or (= (last-position) 0) (not really-modified?))
                  (not (is-modified?))
                  (not (get-filename))))
           ;; inserts the auto-text if any, and executes the text if so
@@ -780,7 +783,9 @@ module browser threading seems wrong.
           
           ;; insert the default-text
           (queue-callback (lambda () (insert-auto-text)))
-          
+          (highlight-first-line
+           (is-a? (drscheme:language-configuration:language-settings-language next-settings)
+                  drscheme:module-language:module-language<%>))
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
     
@@ -3063,15 +3068,7 @@ module browser threading seems wrong.
         (define scheme-menu 'scheme-menu-not-yet-init)
         (define insert-menu 'insert-menu-not-yet-init)
         (define/public (get-insert-menu) insert-menu)
-        (define/public (get-special-menu) 
-          (define context (continuation-mark-set->context (current-continuation-marks)))
-          (fprintf (current-error-port) 
-                   "called get-special-menu: ~a\n"
-                   (if (and (pair? context)
-                            (pair? (cdr context)))
-                       (format "~s ~s" (car (cadr context)) (cdr (cadr context)))
-                       "<<unknown caller>>"))
-          insert-menu)
+        (define/public (get-special-menu) insert-menu)
         
         (define/public (choose-language-callback)
           (let ([new-settings (drscheme:language-configuration:language-dialog
@@ -3959,4 +3956,4 @@ module browser threading seems wrong.
         (send frame update-toolbar-visibility)
         (send frame show #t)
         (set! first-frame? #f)
-        frame))))
+        frame)))

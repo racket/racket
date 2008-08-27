@@ -1,4 +1,4 @@
-(module font mzscheme
+#lang mzscheme
   (require mzlib/unit
            mzlib/class
            "drsig.ss"
@@ -215,4 +215,4 @@
            (send options-panel stretchable-height #f)
            (send options-panel set-alignment 'center 'top)
            (send text lock #t)
-           main))))))
+           main)))))

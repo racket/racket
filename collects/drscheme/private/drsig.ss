@@ -1,5 +1,4 @@
-
-(module drsig scheme/base
+#lang scheme/base
   (require scheme/unit)
   
   (provide drscheme:eval^
@@ -313,5 +312,4 @@
      (open (prefix drscheme:language: drscheme:language^))
      (open (prefix drscheme:help-desk: drscheme:help-desk^))
      (open (prefix drscheme:eval: drscheme:eval^))
-     (open (prefix drscheme:modes: drscheme:modes^)))))
-  
+     (open (prefix drscheme:modes: drscheme:modes^))))

@@ -665,7 +665,7 @@ TODO
                                                    (srcloc-position srcloc)
                                                    (srcloc-span srcloc))]
                                      [(port-name-matches? (srcloc-source srcloc))
-                                      (hash-set! ht (srcloc-source srcloc) definitions-text)
+                                      (hash-set! ht (srcloc-source srcloc) this)
                                       (make-srcloc this
                                                    (srcloc-line srcloc)
                                                    (srcloc-column srcloc)
@@ -733,8 +733,12 @@ TODO
             (when first-loc
               (send first-file set-caret-owner (get-focus-snip) 'global)))))
       
+      (define highlights-can-be-reset (make-parameter #t))
       (define/public (reset-highlighting)
-        (reset-error-ranges))
+        (when (highlights-can-be-reset) (reset-error-ranges)))
+      (define/public (call-without-reset-highlighting thunk)
+        (parameterize ([highlights-can-be-reset #f])
+          (thunk)))
       
       ;; remove-duplicate-error-arrows : (listof X) -> (listof X)
       ;; duplicate arrows point from and to the same place -- only
@@ -1098,6 +1102,16 @@ TODO
                          (loop)))))))
               (default-continuation-prompt-tag)
               (λ args (void)))
+             
+             (when complete-program?
+               (call-with-continuation-prompt
+                (λ ()
+                  (call-with-break-parameterization
+                   user-break-parameterization
+                   (λ ()
+                     (send lang front-end/finished-complete-program settings))))
+                (default-continuation-prompt-tag)
+                (λ args (void))))
              
              (set! in-evaluation? #f)
              (update-running #f)

@@ -1,4 +1,4 @@
-(module key mzscheme
+#lang mzscheme
   (provide break-threads)
   (define super-cust (current-custodian))
   (define first-child (make-custodian))
@@ -16,4 +16,4 @@
                          (break-thread man))
                        (when (custodian? man)
                          (loop current-cust man)))
-                     (custodian-managed-list current-cust super-cust))))))))
+                     (custodian-managed-list current-cust super-cust)))))))

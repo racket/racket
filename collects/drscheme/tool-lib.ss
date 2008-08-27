@@ -140,8 +140,11 @@ all of the names in the tools library, for use defining keybindings
      @scheme[#t].
      
      This function calls
-     @scheme[drscheme:language:language front-end/complete-program<%>]
-     to expand the program.
+     @method[drscheme:language:language<%> front-end/complete-program]
+     to expand the program. Unlike when the @onscreen{Run} is clicked,
+     however, it does not call 
+     @method[drscheme:language:language<%> front-end/finished-complete-program].
+     
      
      The first argument to @scheme[iter] is the expanded program
      (represented as syntax) or eof.
