@@ -24,5 +24,5 @@
 (define (start initial-request)
   `(html (head (title "Sum"))
          (body ([bgcolor "white"])
-               (p "The sum is "
+               (p "The answer is "
                   ,(number->string (+ (request-number "first") (request-number "second")))))))
