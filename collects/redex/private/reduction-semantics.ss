@@ -822,7 +822,7 @@
            (raise-syntax-error syn-error-name "expected an identifier in the language position" orig-stx #'lang))
          (when (null? (syntax-e #'rest))
            (raise-syntax-error syn-error-name "no clauses" orig-stx))
-         (let-values ([(dom-ctcs codom-contract pats)
+         (let-values ([(contract-name dom-ctcs codom-contract pats)
                        (split-out-contract orig-stx syn-error-name #'rest)])
            (with-syntax ([(((name lhs-clauses ...) rhs stuff ...) ...) pats]
                          [(lhs-for-lw ...)
@@ -830,16 +830,24 @@
                             (map (λ (x) (datum->syntax #f (cdr (syntax-e x)) x))
                                  (syntax->list #'(lhs-for-lw ...))))])
              (with-syntax ([(lhs ...) #'((lhs-clauses ...) ...)]
-                           [name (let loop ([name (car (syntax->list #'(name ...)))]
-                                            [names (cdr (syntax->list #'(name ...)))])
+                           [name (let loop ([name (if contract-name
+                                                      contract-name
+                                                      (car (syntax->list #'(name ...))))]
+                                            [names (if contract-name
+                                                       (syntax->list #'(name ...))
+                                                       (cdr (syntax->list #'(name ...))))])
                                    (cond
                                      [(null? names) name]
                                      [else
                                       (unless (eq? (syntax-e name) (syntax-e (car names)))
-                                        (raise-syntax-error 'define-metafunction
-                                                            "expected each clause to use the same name"
-                                                            stx
-                                                            (list name (car names))))
+                                        (raise
+                                         (make-exn:fail:syntax
+                                          (if contract-name
+                                              "define-metafunction: expected each clause and the contract to use the same name"
+                                              "define-metafunction: expected each clause to use the same name")
+                                          (current-continuation-marks)
+                                          (list name
+                                                (car names)))))
                                       (loop name (cdr names))]))])
                
                (with-syntax ([(((tl-side-conds ...) ...) 
@@ -951,7 +959,7 @@
     ;; initial test determines if a contract is specified or not
     (cond
       [(pair? (syntax-e (car (syntax->list rest))))
-       (values #f #'any (check-clauses stx syn-error-name rest))]
+       (values #f #f #'any (check-clauses stx syn-error-name rest))]
       [else
        (syntax-case rest ()
          [(id colon more ...)
@@ -969,7 +977,7 @@
                  (let ([doms (reverse dom-pats)]
                        [codomain (cadr more)]
                        [clauses (check-clauses stx syn-error-name (cddr more))])
-                   (values doms codomain clauses))]
+                   (values #'id doms codomain clauses))]
                 [else
                  (loop (cdr more) (cons (car more) dom-pats))])))]
          [_
