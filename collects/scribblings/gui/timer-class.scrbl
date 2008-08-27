@@ -72,9 +72,9 @@ The timer's alarm expires after @scheme[msec] milliseconds, at which
 point @method[timer% notify] is called (on an event boundary). If
 @scheme[just-once?] is @scheme[#f], the timer expires @italic{every}
 @scheme[msec] milliseconds until the timer is explicitly
-stopped;\footnote{More precisely, the timer expires @scheme[msec]
-milliseconds after @method[timer% notify] returns each time}
-otherwise, the timer expires only once.
+stopped. (More precisely, the timer expires @scheme[msec]
+milliseconds after @method[timer% notify] returns each time.)
+Otherwise, the timer expires only once.
 
 }
 

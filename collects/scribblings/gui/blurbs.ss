@@ -283,5 +283,8 @@ information@|details|, even if the editor currently has delayed refreshing (see
   (define (boxisfillnull which what)
     @elem{The @|which| box is filled with @|what|, unless @|which| is @scheme[#f].})
 
+  (define (slant . s)
+    (make-element "slant" (decode-content s)))
+
   )
 

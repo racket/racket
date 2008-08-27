@@ -11,9 +11,9 @@ by a delta include:
 @item{changing the font size to a new value}
 @item{enlarging the font by an additive amount}
 @item{enlarging the font by a multiplicative amount, etc.}
-@item{changing the font style (normal, @italic{italic}, or {\sl slant})}
+@item{changing the font style (normal, @italic{italic}, or @slant{slant})}
 @item{toggling the font style}
-@item{changing the font to @italic{italic} if it is currently {\sl slant}, etc.}
+@item{changing the font to @italic{italic} if it is currently @slant{slant}, etc.}
 @item{changing the font weight, etc.}
 @item{changing the underline, etc.}
 @item{changing the vertical alignment, etc.}

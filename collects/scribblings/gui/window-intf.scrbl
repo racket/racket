@@ -110,7 +110,7 @@ Returns the window's cursor, or @scheme[#f] if this window's cursor
            exact-integer?]{
 
 Returns an exact integer representing a handle to the window in the
-current platform's GUI toolbox. Cast this number from a C \cpp{long}
+current platform's GUI toolbox. Cast this number from a C @tt{long}
 to a platform-specific C type:
 
 @itemize{
@@ -153,7 +153,7 @@ Gets a window's label, if any. Control windows generally display their
  label can be an icon symbol @scheme['app], @scheme['caution], or
  @scheme['stop].
 
-The label string may contain ampersands (@litchar{&}), which serve as
+The label string may contain @litchar{&}s, which serve as
  keyboard navigation annotations for controls under Windows and X. The
  ampersands are not part of the displayed label of a control; instead,
  ampersands are removed in the displayed label (under all platforms),

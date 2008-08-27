@@ -240,7 +240,7 @@ of @|AllUnix| paths, and see @secref["windowspaths"] for more
 information on the construction of Windows paths.
 
 The following examples assume that the current directory is
-\File{/home/joeuser} for Unix examples and \File{C:\Joe's Files} for
+@filepath{/home/joeuser} for Unix examples and @filepath{C:\Joe's Files} for
 Windows examples.
 
 @schemeblock[

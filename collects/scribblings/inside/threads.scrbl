@@ -230,9 +230,9 @@ request on the blocking file descriptors through
 @cpp{scheme_wakeup_on_input}.
 
 A @cpp{scheme_wakeup_on_input} procedure takes a pointer to an array
-of three @cpp{fd_set}s (sortof\footnote{To ensure maximum portability,
-use @cpp{MZ_FD_XXX} instead of @cpp{FD_XXX}.}) and returns
-@cpp{void}. The @cpp{scheme_wakeup_on_input} does not sleep; it just
+of three @cpp{fd_set}s (use @cpp{MZ_FD_SET} instead of @cpp{FD_SET}, etc.)
+and returns @cpp{void}. The @cpp{scheme_wakeup_on_input}
+function does not sleep immediately; it just
 sets up callbacks on the specified file descriptors.  When input is
 ready on any of those file descriptors, the callbacks are removed and
 @cpp{scheme_wake_up} is called.
@@ -343,8 +343,8 @@ if the @cpp{float} argument is zero.
 The second argument to @cpp{scheme_sleep} is conceptually an array of
 three @cpp{fd_set} records, but always use @cpp{scheme_get_fdset} to
 get anything other than the zeroth element of this array, and
-manipulate each ``@cpp{fd_set}'' with @cpp{MZ_FD_XXX} instead of
-@cpp{FD_XXX}.
+manipulate each ``@cpp{fd_set}'' with @cpp{MZ_FD_SET},
+@cpp{MZ_FD_CLR}, @|etc| instead of @cpp{FD_SET}, @cpp{FD_CLR}, etc.
 
 The following function @cpp{mzsleep} is an appropriate
 @cpp{scheme_sleep} function for most any Unix or Windows application.
@@ -494,8 +494,8 @@ If Scheme decides to sleep, then the @var{fdf} function is called to
  sets bits in @var{fds}, conceptually an array of three
  @cpp{fd_set}s: one or reading, one for writing, and one for
  exceptions. Use @cpp{scheme_get_fdset} to get elements of this
- array, and manipulate an ``@cpp{fd_set}'' with @cpp{MZ_FD_XXX}
- instead of @cpp{FD_XXX}. Under Windows, an ``@cpp{fd_set}'' can
+ array, and manipulate an ``@cpp{fd_set}'' with @cpp{MZ_FD_SET}
+ instead of @cpp{FD_SET}, etc. Under Windows, an ``@cpp{fd_set}'' can
  also accommodate OS-level semaphores or other handles via
  @cpp{scheme_add_fd_handle}.
 

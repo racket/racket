@@ -234,8 +234,8 @@ string.
  Produces a string by decoding the @scheme[start] to @scheme[end] substring
  of @scheme[bstr] as a Latin-1 encoding of Unicode code points; i.e.,
  each byte is translated directly to a character using
- @scheme[integer->char], so the decoding always succeeds. (See also the
- Latin-1 footnote of @secref["encodings"].)  The @scheme[err-char]
+ @scheme[integer->char], so the decoding always succeeds.
+ The @scheme[err-char]
  argument is ignored, but present for consistency with the other
  operations.}
 
@@ -271,8 +271,8 @@ string.
  of @scheme[str] using Latin-1; i.e., each character is translated
  directly to a byte using @scheme[char->integer]. If @scheme[err-byte] is
  not @scheme[#f], it is used for each character in @scheme[str] whose
- value is greater than @scheme[255]. (See also the Latin-1 footnote of
- @secref["encodings"]. If @scheme[err-byte] is @scheme[#f], and if the
+ value is greater than @scheme[255].
+ If @scheme[err-byte] is @scheme[#f], and if the
  @scheme[start] to @scheme[end] substring of @scheme[str] has a character
  with a value greater than @scheme[255], then the
  @exnraise[exn:fail:contract].}

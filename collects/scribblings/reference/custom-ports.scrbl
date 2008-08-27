@@ -534,7 +534,7 @@ The arguments implement the port as follows:
           [done-evt (caddr r)]
           [ch (cadddr r)]
           [nack (cddddr r)])
-      ;; Note: we don't check that k is $\leq$ the sum of
+      ;; Note: we don't check that k is @scheme[<=] the sum of
       ;;  previous peeks, because the entire stream is actually
       ;;  known, but we could send an exception in that case.
       (choice-evt
