@@ -48,7 +48,7 @@
     [(_ e) e]
     [(_ e ...)
      ; XXX If scribble/text shared "show", then I would use it here
-     (begin (text:show e) ...)]))
+     (begin (display e) ...)]))
 (define t list)
 
 (define-syntax in
