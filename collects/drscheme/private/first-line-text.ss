@@ -12,6 +12,7 @@
     highlight-first-line))
 
 (define dark-color (make-object color% 50 0 50))
+(define dark-wob-color (make-object color% 220 150 220))
 
 (define first-line-text-mixin
   (mixin ((class->interface text%)) (first-line-text-mixin<%>)
@@ -116,33 +117,46 @@
                           [line-left (+ (unbox bx) dx)]
                           [line-right (+ (unbox bx) dx (unbox bw))])
                       
-                      (send dc set-pen "black" 1 'solid)
+                      (if (preferences:get 'framework:white-on-black?)
+                          (send dc set-pen "white" 1 'solid)
+                          (send dc set-pen "black" 1 'solid))
                       (send dc draw-line line-left line-height line-right line-height)
                       
                       (when (eq? (send dc get-smoothing) 'aligned)
                         (let ([start 3/10]
                               [end 0]
                               [steps 10])
-                        (send dc set-pen dark-color 1 'solid)
+                        (send dc set-pen
+                              (if (preferences:get 'framework:white-on-black?)
+                                  dark-wob-color
+                                  dark-color) 
+                              1
+                              'solid)
                         (let loop ([i steps])
                           (unless (zero? i)
-                            (send dc set-alpha (+ start (* (- end start) (/ i steps))))
-                            (send dc draw-line 
-                                  line-left
-                                  (+ line-height i)
-                                  line-right
-                                  (+ line-height i))
-                            (loop (- i 1)))))))
+                            (let ([alpha-value (+ start (* (- end start) (/ i steps)))])
+                              (send dc set-alpha alpha-value)
+                              (send dc draw-line 
+                                    line-left
+                                    (+ line-height i)
+                                    line-right
+                                    (+ line-height i))
+                              (loop (- i 1))))))))
                     
                     (send dc set-alpha 1)
                     (send dc set-pen "gray" 1 'transparent)
-                    (send dc set-brush "white" 'solid)
+                    (if (preferences:get 'framework:white-on-black?)
+                        (send dc set-brush "black" 'solid)
+                        (send dc set-brush "white" 'solid))
                     (send dc draw-rectangle 
                           (+ (unbox bx) dx)
                           (+ (unbox by) dy)
                           (unbox bw)
                           th)
-                    (send dc set-text-foreground (send the-color-database find-color "black"))
+                    (send dc set-text-foreground
+                          (if (preferences:get 'framework:white-on-black?)
+                              (send the-color-database find-color "white")
+                              (send the-color-database find-color "black")))
                     (send dc draw-text first-line (+ (unbox bx) dx) (+ (unbox by) dy)))
                   
                   (send dc set-text-foreground old-text-foreground)
