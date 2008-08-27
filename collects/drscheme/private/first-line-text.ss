@@ -12,7 +12,7 @@
     highlight-first-line))
 
 (define dark-color (make-object color% 50 0 50))
-(define dark-wob-color (make-object color% 220 150 220))
+(define dark-wob-color (make-object color% 255 200 255))
 
 (define first-line-text-mixin
   (mixin ((class->interface text%)) (first-line-text-mixin<%>)
@@ -109,7 +109,8 @@
                       [old-smoothing (send dc get-smoothing)]
                       [old-α (send dc get-alpha)]
                       [old-font (send dc get-font)]
-                      [old-text-foreground (send dc get-text-foreground)])
+                      [old-text-foreground (send dc get-text-foreground)]
+                      [w-o-b? (preferences:get 'framework:white-on-black?)])
                   (send dc set-font (get-font))
                   (send dc set-smoothing 'aligned)
                   (let-values ([(tw th _1 _2) (send dc get-text-extent first-line)])
@@ -117,19 +118,17 @@
                           [line-left (+ (unbox bx) dx)]
                           [line-right (+ (unbox bx) dx (unbox bw))])
                       
-                      (if (preferences:get 'framework:white-on-black?)
+                      (if w-o-b?
                           (send dc set-pen "white" 1 'solid)
                           (send dc set-pen "black" 1 'solid))
                       (send dc draw-line line-left line-height line-right line-height)
                       
                       (when (eq? (send dc get-smoothing) 'aligned)
-                        (let ([start 3/10]
+                        (let ([start (if w-o-b? 6/10 3/10)]
                               [end 0]
                               [steps 10])
-                        (send dc set-pen
-                              (if (preferences:get 'framework:white-on-black?)
-                                  dark-wob-color
-                                  dark-color) 
+                        (send dc set-pen 
+                              (if w-o-b? dark-wob-color dark-color) 
                               1
                               'solid)
                         (let loop ([i steps])
@@ -145,18 +144,15 @@
                     
                     (send dc set-alpha 1)
                     (send dc set-pen "gray" 1 'transparent)
-                    (if (preferences:get 'framework:white-on-black?)
-                        (send dc set-brush "black" 'solid)
-                        (send dc set-brush "white" 'solid))
+                    (send dc set-brush (if w-o-b? "black" "white") 'solid)
                     (send dc draw-rectangle 
                           (+ (unbox bx) dx)
                           (+ (unbox by) dy)
                           (unbox bw)
                           th)
                     (send dc set-text-foreground
-                          (if (preferences:get 'framework:white-on-black?)
-                              (send the-color-database find-color "white")
-                              (send the-color-database find-color "black")))
+                          (send the-color-database find-color
+                                (if w-o-b? "white" "black")))
                     (send dc draw-text first-line (+ (unbox bx) dx) (+ (unbox by) dy)))
                   
                   (send dc set-text-foreground old-text-foreground)
