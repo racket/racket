@@ -110,7 +110,7 @@ Returns the window's cursor, or @scheme[#f] if this window's cursor
            exact-integer?]{
 
 Returns an exact integer representing a handle to the window in the
-current platform's GUI toolbox. Cast this number from a C @cpp{long}
+current platform's GUI toolbox. Cast this number from a C \cpp{long}
 to a platform-specific C type:
 
 @itemize{

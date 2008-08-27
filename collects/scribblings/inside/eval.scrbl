@@ -172,7 +172,7 @@ finalizations.}
            [Scheme_Object** argv])]{
 
 Creates and returns a new namespace. This values can be cast to
-@cpp[Scheme_Env *]. It can also be installed in
+@cpp{Scheme_Env *}. It can also be installed in
 a parameterization using @cppi{scheme_set_param} with
 @cppi{MZCONFIG_ENV}.
 
