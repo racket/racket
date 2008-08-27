@@ -14,7 +14,7 @@ There is one @scheme[font-name-directory<%>] object:
  PostScript font name, which encapsulates the style and weight. When
  drawing to a bitmap in X, the rendering information is an X font
  string, which encapsulates the style and weight, parameterized over
- the size (using a ``\%d'' placeholder).
+ the size (using a ``%d'' placeholder).
 
 Programmers rarely need to directly invoke methods of
  @scheme[the-font-name-directory]. It is used automatically when

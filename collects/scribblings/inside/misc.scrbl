@@ -40,12 +40,12 @@ Returns 1 if the Scheme values are @scheme[equal?].}
 @function[(long scheme_equal_hash_key
            [Scheme_Object* obj])]{
 
-Returns the primary @scheme[equal?]-hash key for \var{obj}.}
+Returns the primary @scheme[equal?]-hash key for @var{obj}.}
 
 @function[(long scheme_equal_hash_key2
            [Scheme_Object* obj])]{
 
-Returns the secondary @scheme[equal?]-hash key for \var{obj}.}
+Returns the secondary @scheme[equal?]-hash key for @var{obj}.}
 
 @function[(long scheme_recur_equal_hash_key
            [Scheme_Object* obj]
@@ -55,7 +55,7 @@ Like @cpp{scheme_equal_hash_key}, but accepts an extra value for cycle
 tracking. This procedure is meant to be called by a hasing procedure
 installed with @cpp{scheme_set_type_equality}.}
 
-Returns the primary @scheme[equal?]-hash key for \var{obj}.}
+Returns the primary @scheme[equal?]-hash key for @var{obj}.}
 
 @function[(long scheme_recur_equal_hash_key2
            [Scheme_Object* obj]
@@ -212,7 +212,7 @@ that will be encountered.}
 @function[(Scheme_Hash_Table* scheme_make_hash_table_equal)]{
 
 Like @cpp{scheme_make_hash_table}, except that keys are treated as
-Scheme values and hashed based on @scheme[equal?]\ instead of
+Scheme values and hashed based on @scheme[equal?] instead of
 @scheme[eq?].}
 
 @function[(void scheme_hash_set

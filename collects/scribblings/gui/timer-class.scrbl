@@ -70,7 +70,7 @@ Starts (or restarts) the timer. If the timer is already running, its
 
 The timer's alarm expires after @scheme[msec] milliseconds, at which
 point @method[timer% notify] is called (on an event boundary). If
-@scheme[just-once?]\ is @scheme[#f], the timer expires @italic{every}
+@scheme[just-once?] is @scheme[#f], the timer expires @italic{every}
 @scheme[msec] milliseconds until the timer is explicitly
 stopped;\footnote{More precisely, the timer expires @scheme[msec]
 milliseconds after @method[timer% notify] returns each time}

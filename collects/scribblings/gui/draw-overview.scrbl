@@ -255,7 +255,7 @@ More complex shapes are typically best implemented with
        [parent f]
        [paint-callback
         (lambda (c dc)
-          (send dc #,(:: dc<%> set-background) (make-object color\% 220 200 255))
+          (send dc #,(:: dc<%> set-background) (make-object color% 220 200 255))
           (send dc #,(:: dc<%> clear))
           (send dc #,(:: dc<%> set-smoothing) 'smoothed)
           (send dc #,(:: dc<%> set-origin) 5 5)

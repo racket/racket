@@ -174,7 +174,7 @@ parse takes precedence over a symbol parse.
 @index["case-sensitivity"]{@index["case-insensitive"]{When}} the
 @scheme[read-case-sensitive] @tech{parameter} is set to @scheme[#f],
 characters in the sequence that are not quoted by @litchar["|"] or
-@litchar["\\"] are first case-normalized. If the reader encounters
+@litchar{\} are first case-normalized. If the reader encounters
 @as-index{@litchar{#ci}}, @litchar{#CI}, @litchar{#Ci}, or
 @litchar{#cI}, then it recursively reads the following datum in
 case-insensitive mode. If the reader encounters
@@ -335,7 +335,7 @@ included a single delimited @litchar{.}, then only the innermost pair
 and outtermost pair are wrapped as syntax objects. Whether wrapping a
 pair or list, if the pair or list was formed with @litchar{[} and
 @litchar{]}, then a @indexed-scheme['paren-shape] property is attached
-to the result with the value @scheme[#\[];if the list or pair was
+to the result with the value @scheme[#\[]; if the list or pair was
 formed with @litchar["{"] and @litchar["}"], then a
 @scheme['paren-shape] property is attached to the result with the
 value @scheme[#\{].
@@ -386,14 +386,14 @@ Within a string sequence, the following escape sequences are
 
 @itemize{
 
- @item{@as-index{@litchar["\\a"]}: alarm (ASCII 7)}
- @item{@as-index{@litchar["\\b"]}: backspace (ASCII 8)}
- @item{@as-index{@litchar["\\t"]}: tab (ASCII 9)}
- @item{@as-index{@litchar["\\n"]}: linefeed (ASCII 10)}
- @item{@as-index{@litchar["\\v"]}: vertical tab (ASCII 11)}
- @item{@as-index{@litchar["\\f"]}: formfeed (ASCII 12)}
- @item{@as-index{@litchar["\\r"]}: return (ASCII 13)}
- @item{@as-index{@litchar["\\e"]}: escape (ASCII 27)}
+ @item{@as-index{@litchar{\a}}: alarm (ASCII 7)}
+ @item{@as-index{@litchar{\b}}: backspace (ASCII 8)}
+ @item{@as-index{@litchar{\t}}: tab (ASCII 9)}
+ @item{@as-index{@litchar{\n}}: linefeed (ASCII 10)}
+ @item{@as-index{@litchar{\v}}: vertical tab (ASCII 11)}
+ @item{@as-index{@litchar{\f}}: formfeed (ASCII 12)}
+ @item{@as-index{@litchar{\r}}: return (ASCII 13)}
+ @item{@as-index{@litchar{\e}}: escape (ASCII 27)}
 
  @item{@as-index{@litchar["\\\""]}: double-quotes (without terminating the string)}
  @item{@as-index{@litchar["\\'"]}: quote (i.e., the backslash has no effect)}

@@ -10,10 +10,10 @@
 @defmixin[canvas:basic-mixin (editor-canvas%) (canvas:basic<%>)]{
 }
 @definterface[canvas:color<%> (canvas:basic<%>)]{
-  \index{background color}
+  @index{background color}
   Mixins that implement this interface initialize the
   background color of the canvas to the value of the
-  \index{'framework:basic-canvas-background}
+  @index{'framework:basic-canvas-background}
   @scheme['framework:basic-canvas-background] preference.
   Adds a callback so that when that preference is modified,
   the background color changes.

@@ -219,21 +219,19 @@ scheme
 (define (has-decimal? str)
   (define L (string-length str))
   (and (>= L 3)
-       (char=?
-        #\.
-        (string-ref result (- L 3)))))
+       (char=? #\. (string-ref result (- L 3)))))
 
 (provide/contract
   (code:comment "convert a random number to a string")
   [format-number (-> number? string?)]
-  
+
   (code:comment "convert an amount into a string with a decimal")
   (code:comment "point, as in an amount of US currency")
-  [format-nat (-> natural-number/c 
+  [format-nat (-> natural-number/c
                   (and/c string? has-decimal?))])
 ]
 The contract of the exported function @scheme[format-number] specifies that
-the function consumes a number and produces a string. 
+the function consumes a number and produces a string.
 
 The contract of the exported function @scheme[format-nat] is more
 interesting than the one of @scheme[format-number].  It consumes only
@@ -255,14 +253,12 @@ scheme
 (define (has-decimal? str)
   (define L (string-length str))
   (and (>= L 3)
-       (char=?
-        #\.
-        (string-ref result (- L 3)))))
+       (char=? #\. (string-ref result (- L 3)))))
 
 (define (is-decimal-string? str)
   (define L (string-length str))
   (and (has-decimal? str)
-       (andmap digit-char? 
+       (andmap digit-char?
                (string->list (substring result 0 (- L 3))))
        (andmap digit-char?
                (string->list (substring result (- L 2) L)))))

@@ -190,7 +190,7 @@ If the listener has already been closed, the @exnraise[exn:fail:network].
 The listener's port number may not become immediately available for
 new listeners (with the default @scheme[reuse?] argument of
 @scheme[tcp-listen]). For further information, see Stevens's
-explanation of the @tt{TIME\_WAIT} TCP state.}
+explanation of the @tt{TIME_WAIT} TCP state.}
 
 
 @defproc[(tcp-listener? [v any/c]) boolean?]{

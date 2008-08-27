@@ -134,7 +134,7 @@ Gets the virtual key code for the key event. The virtual key code is
 @item{@indexed-scheme['f24]}
 @item{@indexed-scheme['numlock]}
 @item{@indexed-scheme['scroll]}
-@item{@indexed-scheme['wheel-up] --- \index["wheel on mouse"]{mouse} wheel up one notch}
+@item{@indexed-scheme['wheel-up] --- @index["wheel on mouse"]{mouse} wheel up one notch}
 @item{@indexed-scheme['wheel-down] --- mouse wheel down one notch}
 @item{@indexed-scheme['release] --- indicates a key-release event}
 @item{@indexed-scheme['press] --- indicates a key-press event; usually only from @scheme[get-key-release-code]}

@@ -6,7 +6,7 @@
 See @secref["cont-model"] and @secref["prompt-model"] for general
 information about continuations. PLT Scheme's support for prompts and
 composable continuations most closely resembles Dorai Sitaram's
-@scheme[\%] and @scheme[fcontrol] operator @cite["Sitaram93"].
+@scheme[%] and @scheme[fcontrol] operator @cite["Sitaram93"].
 
 Scheme installs a @defterm{continuation barrier} around evaluation in
 the following contexts, preventing full-continuation jumps across the

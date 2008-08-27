@@ -854,10 +854,10 @@ Produces an integer hash code consistent with
 
  (define-values (fc% key) (fresh-c%))]
 
-(send (new fc%) m) ; {\Is} error: no method @scheme[m]
+(send (new fc%) m)
 (let ()
   (define-member-name p key)
-  (send (new fc%) p)) ; {\Is} \schemeresult{10}
+  (send (new fc%) p))
 ]
 
 

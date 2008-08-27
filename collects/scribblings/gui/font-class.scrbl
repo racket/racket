@@ -11,7 +11,7 @@ A @defterm{font} is an object which determines the appearance of text,
 
  @item{size --- The size of the text, either in points (the default)
                 or logical drawing units, depending on the
-                ``size-in-pixels?''\ property (see below).}
+                ``size-in-pixels?'' property (see below).}
 
  @item{family --- A platform- and device-independent font
                   designation. The families are:

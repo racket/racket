@@ -278,7 +278,7 @@ In a dialog, if @scheme[event] is an Escape key event, the event is
 @item{
 If @scheme[event] is an alphanumeric key event and the current top-level
  window contains a control with a mnemonic matching the key (which is
- installed via a label that contains ``\&''; see
+ installed via a label that contains @litchar{&}; see
  @method[window<%> get-label] for more information), then the
  keyboard focus is moved to the matching control. Furthermore, if the
  matching control is a @scheme[button%], @scheme[check-box%], or

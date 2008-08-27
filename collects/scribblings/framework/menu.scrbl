@@ -18,7 +18,7 @@
 }
 @definterface[menu:can-restore-underscore<%> (labelled-menu-item<%>)]{
   These menus can save and restore the underscores (indicated
-  via the \& characters in the original labels) in their
+  via the @litchar{&} characters in the original labels) in their
   labels.
 
   If the preference @scheme['framework:menu-bindings]

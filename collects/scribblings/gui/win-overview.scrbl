@@ -345,7 +345,7 @@ with the following program:
 
 @schemeblock[
 (code:comment #, @t{Create a dialog})
-(define dialog (instantiate dialog\% ("Example")))
+(define dialog (instantiate dialog% ("Example")))
 
 (code:comment #, @t{Add a text field to the dialog})
 (new text-field% [parent dialog] [label "Your name"])

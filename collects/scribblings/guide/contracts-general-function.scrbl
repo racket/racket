@@ -622,7 +622,7 @@ Here are two uses:
 @schemeblock[
 (code:comment "nat -> nat") 
 (define (f x)
-  (printf "~s \n" x)
+  (printf "~s\n" x)
   (if (= x 0) #f -1))
 (n-step f '(2))
 

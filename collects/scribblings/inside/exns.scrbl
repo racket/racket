@@ -275,7 +275,7 @@ for @cpp{printf}, but with the following format directives:
 
  @item{@FormatD{Z} : a potential platform-specific error value and a
  @cpp{char} string; if the string is non-@cpp{NULL}, then the error
- value is ignored, otherwise the error value is used as for \Format{E}.}
+ value is ignored, otherwise the error value is used as for @FormatD{E}.}
 
  @item{@FormatD{%} : a percent sign}
 

@@ -435,7 +435,7 @@ value.}
            [Scheme_Object* carv]
            [Scheme_Object* cdrv])]{
 
-Makes a \scmi{cons} pair.}
+Makes a @scheme[cons] pair.}
 
 @function[(Scheme_Object* scheme_make_byte_string
            [char* bytes])]{
