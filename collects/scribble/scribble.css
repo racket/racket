@@ -502,6 +502,6 @@ i {
   margin: 0em -23em 0em 0em;
   font-size: 82%;
 }
-.author:before { 
+.author:before {
   content: "by ";
 }

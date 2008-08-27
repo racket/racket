@@ -8,7 +8,7 @@
          scheme/list
          setup/dirs)
 
-(provide main-page script script-ref)
+(provide main-page script script-ref not-on-the-web)
 
 (define page-info
   (let ([links (filter pair? links)])
@@ -21,6 +21,13 @@
 
 (define (script-ref #:noscript [noscript null] path)
   (make-script-element #f noscript "text/javascript" path))
+
+;; this is for content that should not be displayed on the web (this
+;; is done by a class name that is not included in the usual css file,
+;; but for the web version the css is extended with this class as
+;; something that is not displayed)
+(define (not-on-the-web . body)
+  (make-element "hide_when_on_the_web" (decode-content body)))
 
 ;; the second argument specifies installation/user specific, and if
 ;; it's missing, then it's a page with a single version
@@ -36,9 +43,14 @@
     (regexp-replace* #rx"[^/]*/" (regexp-replace #rx"[^/]+$" path "") "../"))
   (define page-title
     (title #:style '(no-toc) title-string
-           (cond [inst-doc? " (installation)"]
+           #;
+           ;; the "(installation)" part shouldn't be visible on the web, but
+           ;; there's no way (currently) to not have it in the window title
+           ;; too.
+           (cond [inst-doc? (not-on-the-web " (installation)")]
                  [user-doc? ""] ; can be " (user)"
-                 [else ""])))
+                 [else ""])
+           ))
   (define toc
     (map (lambda (item)
            (let ([link-id (if (pair? item) (car item) item)])
