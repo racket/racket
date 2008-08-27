@@ -929,7 +929,7 @@ TODO
             (set-custodian-limit new-limit)
             (preferences:set 'drscheme:memory-limit new-limit))
           (set-insertion-point (last-position))
-          (insert-warning "\n[Interactions disabled]")))
+          (insert-warning "\nInteractions disabled")))
       
       (define/private (cleanup-interaction) ; =Kernel=, =Handler=
         (set! need-interaction-cleanup? #f)
