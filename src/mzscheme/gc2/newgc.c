@@ -665,13 +665,16 @@ long GC_compute_alloc_size(long sizeb)
 long GC_initial_word(int sizeb)
 {
   struct objhead _info;
+  long w;
 
   sizeb = ALIGN_BYTES_SIZE(gcWORDS_TO_BYTES(gcBYTES_TO_WORDS(sizeb)) + WORD_SIZE);
   
   memset(&_info, 0, sizeof(_info));
   _info.size = (sizeb >> gcLOG_WORD_SIZE);
 
-  return *(long *)(void *)&_info;
+  memcpy(&w, &_info, sizeof(long));
+
+  return w;
 }
 
 long GC_alloc_alignment()
