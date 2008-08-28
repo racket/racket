@@ -25,7 +25,7 @@ module browser threading seems wrong.
            mrlib/include-bitmap
            "drsig.ss"
            "auto-language.ss"
-           "insert-large-letters.ss"
+           "insert-large-letters-typed.ss"
            "first-line-text.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
