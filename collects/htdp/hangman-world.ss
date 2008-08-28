@@ -4,7 +4,8 @@
    3. compare error messages for word to beginner language 
    4. change messages at end to just display the word 
 |#
-(module hangman-world scheme
+#lang scheme
+
   (require htdp/world
            htdp/error
            lang/prim
@@ -155,5 +156,4 @@
            vip
            was
            zoo)))
-  )
 
