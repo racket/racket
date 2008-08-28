@@ -33,8 +33,8 @@
 #ifndef __lightning_core_common_h
 #define __lightning_core_common_h_
 
-/* jit_code: union of many possible function pointer types.  Returned
- * by jit_get_ip().
+/* jit_code: could be a union of many possible function 
+   pointer types.  Returned by jit_get_ip().
  */
 typedef union jit_code {	
   char		 *ptr;
