@@ -281,7 +281,6 @@
                               'number)
                #:num (list (λ _ 2) (λ _ 3) (λ _ 4))))
    '(2 3 4 2 3))
-  ;;FIXME
   #;(test
    (generate 
     lang (variable_1 ...) 5 0
@@ -309,8 +308,7 @@
   (test
    (generate
     lang e 5 0
-    (decisions #:nt (patterns '(number_!_1 number_!_2 number_!_1 number_!_2))
-               #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2) (λ _ 3))))
+    (decisions #:num (list (λ _ 1) (λ _ 1) (λ _ 1) (λ _ 2) (λ _ 3))))
    '(1 1 2 3)))
 
 (let ()
@@ -392,25 +390,27 @@
   (define-language lang
     (a number (+ a a))
     (A hole (+ a A) (+ A a))
-    (B (6 (hole h)))
     (C hole)
     (d (x (in-hole C y)) #:binds x y)
-    (e ((in-hole (in-hole f (number_1 hole)) number_1) number_1))
+    (e ((in-hole (in-hole f (number_1 hole)) number_1) number_1)) 
     (f (in-hole C (number_1 hole)))
     (g (in-hole (side-condition (hole number_1) (zero? (term number_1))) number_2))
+    (h ((in-hole i number_1) number_1))
+    (i (number_1 (in-hole j (number_1 hole))))
+    (j (in-hole (hole number_1) (number_1 hole)))
     (x variable)
     (y variable))
+  
   (test 
    (generate 
     lang (in-hole A number ) 5 0
     (decisions 
      #:nt (patterns '(+ a A) '(+ a a) 'number 'number '(+ A a) 'hole '(+ a a) 'number 'number)
      #:num (build-list 5 (λ (x) (λ (_) x)))))
-   '(+ (+ 0 1) (+ 2 (+ 3 4))))
+   '(+ (+ 1 2) (+ 0 (+ 3 4))))
   
   (test (generate lang (in-hole (in-hole (1 hole) hole) 5) 5 0) '(1 5))
-  (test (generate lang hole 5 0) (term hole))
-  (test (generate lang (hole h) 5 0) (term (hole h)))
+  (test (generate lang (hole 4) 5 0) (term (hole 4)))
   (test (generate lang (variable_1 (in-hole C variable_1)) 5 0
                   (decisions #:var (list (λ _ 'x) (λ _ 'y) (λ _ 'x))))
         '(x x))
@@ -420,9 +420,11 @@
   (test (let/ec k (generate lang d 5 0 (decisions #:var (list (λ _ 'x) (λ (c l b a) (k b))))))
         '(x))
   (test (generate lang e 5 0 (decisions #:num (list (λ _ 1) (λ _ 2))))
-        '((1 (2 2)) 2))
+        '((2 (1 1)) 1))
   (test (generate lang g 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 1) (λ _ 0))))
-        '(1 0)))
+        '(1 0))
+  (test (generate lang h 5 0 (decisions #:num (list (λ _ 1) (λ _ 2) (λ _ 3))))
+        '((2 ((3 (2 1)) 3)) 1)))
 
 (let ()
   (define-language lc

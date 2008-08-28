@@ -130,11 +130,6 @@ To do a better job of not generating programs with free variables,
   (error 'generate "unable to generate pattern ~s in ~s attempts" 
          pat generation-retries))
 
-(define ((disjunction . preds) x)
-  (if (null? preds)
-      #f
-      (or ((car preds) x) ((apply disjunction (cdr preds)) x))))
-
 ;; used in generating the `any' pattern
 (define-language sexp (sexp variable string number hole (sexp ...)))
 
@@ -146,7 +141,7 @@ To do a better job of not generating programs with free variables,
   (define lang-chars (unique-chars lang-lits))
   (define base-table (find-base-cases lang))
   
-  (define (generate-nt nt fvt-id bound-vars size in-hole initial-state)
+  (define (generate-nt nt fvt-id bound-vars size in-hole env)
     (let loop ([nts (compiled-lang-lang lang)])
       (cond
         [(null? nts) (error 'generate-nt "didn't find non-terminal ~s" nt)]
@@ -156,116 +151,99 @@ To do a better job of not generating programs with free variables,
                ((next-non-terminal-decision) 
                 (if (zero? size) (min-prods (car nts) base-table) (nt-rhs (car nts)))
                 bound-vars size)]
-              [(term post-nt-state) 
+              [(term _) 
                (((generate-pat 
-                  (append (extract-bound-vars fvt-id initial-state) bound-vars)
+                  (append (extract-bound-vars fvt-id env) bound-vars)
                   (max 0 (sub1 size)))
-                 (rhs-pattern rhs) in-hole) 
-                (make-gen-state
-                 (make-state (map fvt-entry (rhs-var-info rhs)) #hasheq() #hasheq())
-                 (if in-hole initial-state #f)))]
-              [(new-state) (if in-hole (gen-state-hole post-nt-state) initial-state)])
-           (values term (extend-found-vars fvt-id term new-state)))]
+                 (rhs-pattern rhs) in-hole)
+                (make-environment (map fvt-entry (rhs-var-info rhs)) #hasheq() #hasheq()))])
+           (values term (extend-found-vars fvt-id term env)))]
         [else (loop (cdr nts))])))
   
-  (define-struct gen-state (current hole))
-  (define-struct state (fvt matches mismatches))
-  (define (set-current-matches state id term)
-    (make-gen-state
-     (make-state
-      (state-fvt (gen-state-current state))
-      (hash-set (state-matches (gen-state-current state)) id term)
-      (state-mismatches (gen-state-current state)))
-     (gen-state-hole state)))
-  (define (set-current-mismatches state id term)
-    (make-gen-state
-     (make-state
-      (state-fvt (gen-state-current state))
-      (state-matches (gen-state-current state))
-      (hash-set (state-mismatches (gen-state-current state)) id term))
-     (gen-state-hole state)))
+  (define-struct environment (fvt matches mismatches))
   
   (define-struct found-vars (nt source bound-vars found-nt?))
   (define (fvt-entry binds)
     (make-found-vars (binds-binds binds) (binds-source binds) '() #f))
-  
-  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) state)
+
+  (define (((generate-pat bound-vars size) pat in-hole [fvt-id pat]) env)
     (define recur (generate-pat bound-vars size))
-    (define (recur/pat pat) ((recur pat in-hole) state))
+    (define (recur/pat pat) ((recur pat in-hole) env))
     (define (generate/pred pred pat [gen (λ () (recur/pat pat))])
       (let retry ([remaining generation-retries])
         (if (zero? remaining)
             (generation-failure pat)
-            (let-values ([(term state) (gen)])
-              (if (pred term (state-matches (gen-state-current state)))
-                  (values term state)
+            (let-values ([(term env) (gen)])
+              (if (pred term (environment-matches env))
+                  (values term env)
                   (retry (sub1 remaining)))))))
     (match pat
-      [`number (values ((next-number-decision) random-numbers) state)]
+      [`number (values ((next-number-decision) random-numbers) env)]
       [`(variable-except ,vars ...)
        (generate/pred (λ (var _) (not (memq var vars))) 'variable)]
-      [`variable (values ((next-variable-decision) lang-chars lang-lits bound-vars attempt) state)]
+      [`variable (values ((next-variable-decision) lang-chars lang-lits bound-vars attempt) env)]
       [`variable-not-otherwise-mentioned
        (generate/pred (λ (var _) (not (memq var (compiled-lang-literals lang)))) 'variable)]
       [`(variable-prefix ,prefix) 
        (define (symbol-append prefix suffix)
          (string->symbol (string-append (symbol->string prefix) (symbol->string suffix))))
-       (let-values ([(term state) (recur/pat 'variable)])
-         (values (symbol-append prefix term) state))]
-      [`string (values ((next-string-decision) lang-chars lang-lits attempt) state)]
+       (let-values ([(term env) (recur/pat 'variable)])
+         (values (symbol-append prefix term) env))]
+      [`string (values ((next-string-decision) lang-chars lang-lits attempt) env)]
       [`(side-condition ,pat ,(? procedure? condition))
        ;; `matches' includes bindings beyond those bound in `pat',
        ;; but compiled side-conditions ignore these.
        (generate/pred (λ (_ matches) (condition (make-bindings (hash-map matches make-bind)))) pat)]
       [`(name ,(? symbol? id) ,p)
-       (let-values ([(term state) (recur/pat p)])
-         (values term (set-current-matches state id term)))]
-      [`hole
-       (cond [(not in-hole) (values the-hole state)]
-             [(gen-state-hole state)
-              (let-values ([(term hole-state) (in-hole (gen-state-hole state))])
-                (values term (make-gen-state (gen-state-current state) hole-state)))]
-             [else (in-hole state)])]
+       (let-values ([(term env) (recur/pat p)])
+         (values term (make-environment (environment-fvt env)
+                                        (hash-set (environment-matches env) id term)
+                                        (environment-mismatches env))))]
+      [`hole (values in-hole env)]
       [`(in-hole ,context ,contractum)
-       ((recur context (recur contractum in-hole)) state)]
-      [`(hide-hole ,pattern) ((recur pattern #f) state)]
+       (let-values ([(term env) (recur/pat contractum)])
+         ((recur context term) env))]
+      [`(hide-hole ,pattern) ((recur pattern the-hole) env)]
       [`any
        (let-values ([(lang nt) ((next-any-decision) lang)])
-         (values (generate* lang nt size attempt decisions@) state))]
+         (values (generate* lang nt size attempt decisions@) env))]
       [(? (λ (p) (is-nt? lang p)))
-       (generate-nt pat fvt-id bound-vars size in-hole state)]
+       (generate-nt pat fvt-id bound-vars size in-hole env)]
       [(and (? symbol?) (app symbol->string (regexp named-nt-rx (list _ nt))))
        (let* ([undecorated (string->symbol nt)]
               [none (gensym)]
-              [prior (hash-ref (state-matches (gen-state-current state)) pat none)])
+              [prior (hash-ref (environment-matches env) pat none)])
          (if (eq? prior none)
              (let-values 
-                 ([(term state) ((recur undecorated in-hole pat) state)])
-               (values term (set-current-matches state pat term)))
-             (values prior state)))]
+                 ([(term env) ((recur undecorated in-hole pat) env)])
+               (values term (make-environment (environment-fvt env)
+                                              (hash-set (environment-matches env) pat term)
+                                              (environment-mismatches env))))
+             (values prior env)))]
       [(and (? symbol?) (app symbol->string (regexp mismatch-nt-rx (list _ nt))))
        (let*-values 
            ([(undecorated) (string->symbol nt)]
-            [(prior) (hash-ref (state-mismatches (gen-state-current state)) pat null)]
+            [(prior) (hash-ref (environment-mismatches env) pat null)]
             [(generate-mismatch)
-             (λ () ((recur undecorated in-hole pat) state))]
-            [(term state) 
+             (λ () ((recur undecorated in-hole pat) env))]
+            [(term env) 
              (generate/pred (λ (t _) (not (member t prior))) undecorated generate-mismatch)])
-         (values term (set-current-mismatches state pat (cons term prior))))]
-      [(? (disjunction symbol? number? string? boolean? null?)) (values pat state)]
+         (values term (make-environment (environment-fvt env)
+                                        (environment-matches env)
+                                        (hash-set (environment-mismatches env) pat (cons term prior)))))]
+      [(or (? symbol?) (? number?) (? string?) (? boolean?) (? null?)) (values pat env)]
       [(list-rest pat '... rest)
        (recur/pat (append (build-list ((next-sequence-decision)) (λ (_) pat)) rest))]
       [(list-rest pat rest)
        (let*-values 
-           ([(pat-term state) (recur/pat pat)]
-            [(rest-term state)
-             ((recur rest in-hole) state)])
-         (values (cons pat-term rest-term) state))]
+           ([(pat-term env) (recur/pat pat)]
+            [(rest-term env) ((recur rest in-hole) env)])
+         (values (cons pat-term rest-term) env))]
       [else
        (error 'generate "unknown pattern ~s\n" pat)]))
   
-  (define (extract-bound-vars pat state)
-    (let loop ([found-vars-table (state-fvt (gen-state-current state))])
+  (define (extract-bound-vars pat env)
+    (let loop ([found-vars-table (environment-fvt env)])
       (cond
         [(null? found-vars-table) '()]
         [else (let ([found-vars (car found-vars-table)])
@@ -273,9 +251,8 @@ To do a better job of not generating programs with free variables,
                     (found-vars-bound-vars found-vars)
                     (loop (cdr found-vars-table))))])))
     
-  (define (extend-found-vars pat res state)
-    (make-gen-state
-     (make-state
+  (define (extend-found-vars pat res env)
+    (make-environment
       (map
        (λ (found-vars)
          (cond
@@ -296,13 +273,12 @@ To do a better job of not generating programs with free variables,
                              (found-vars-bound-vars found-vars)
                              #t)]
            [else found-vars]))
-       (state-fvt (gen-state-current state)))
-      (state-matches (gen-state-current state))
-      (state-mismatches (gen-state-current state)))
-     (gen-state-hole state)))
+       (environment-fvt env))
+      (environment-matches env)
+      (environment-mismatches env)))
 
-  (let ([initial-state (make-gen-state (make-state null #hasheq() #hasheq()) #f)])
-    (let-values ([(term _) (((generate-pat null size) pat #f) initial-state)])
+  (let ([initial-state (make-environment null #hasheq() #hasheq())])
+    (let-values ([(term _) (((generate-pat null size) pat the-hole) initial-state)])
       term)))
 
 ;; find-base-cases : compiled-language -> hash-table
