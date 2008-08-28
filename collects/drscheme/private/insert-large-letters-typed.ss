@@ -18,8 +18,8 @@
                                                              (or (and (pair? x)
                                                                       (string? (car x))
                                                                       (let ([i (cdr x)])
-                                                                        (and (integer? x)
-                                                                             (<= 1 x 255))))
+                                                                        (and (integer? i)
+                                                                             (<= 1 i 255))))
                                                                  (not x))))
 
 (: get-default-font (-> (Instance Font%)))
@@ -50,43 +50,15 @@
                    [parent parent] 
                    [width 700]
                    [label (string-constant large-semicolon-letters)]))  
-  (define info-bar (new horizontal-panel%
-                        [parent dlg]
-                        [stretchable-height #f]))
-  
-  (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
-  (define pane1 (new horizontal-pane% (parent info-bar)))
-  (define dark-msg (new bitmap-message% [parent info-bar]))
-  (define pane2 (new horizontal-pane% (parent info-bar)))
-                                
-                                
-  (define txt (new scheme:text%))
-  (define ec (new editor-canvas% [parent dlg] [editor txt]))
-  (define button-panel (new horizontal-panel%
-                            [parent dlg]
-                            [stretchable-height #f]
-                            [alignment '(right center)]))
-  (define: ok? : Boolean #f)
-  (define-values (ok cancel)
-    (gui-utils:ok/cancel-buttons button-panel
-                                 (λ: ([x : Any] [y : Any]) (set! ok? #t) (send dlg show #f))
-                                 (λ: ([x : Any] [y : Any]) (send dlg show #f))))
-  (define: (update-txt [str : String]) : Any
-    (send txt begin-edit-sequence)
-    (send txt lock #f)
-    (send txt delete 0 (send txt last-position))
-    (let ([bm (render-large-letters comment-prefix comment-character (get-chosen-font) str txt)])
-      (send ec set-line-count (+ 1 (send txt last-paragraph)))
-      (send txt lock #t)
-      (send txt end-edit-sequence)
-      (send count set-label (format columns-string (get-max-line-width txt)))
-      (send dark-msg set-bm bm)))
-  
   (define: text-field : (Instance Text-Field%) 
     (new text-field% 
          [parent dlg] 
          [label (string-constant text-to-insert)]
          [callback (λ: ([x : Any] [y : Any]) (update-txt (send text-field get-value)))]))
+  (: info-bar (Instance Horizontal-Panel%))
+  (define info-bar (new horizontal-panel%
+                        [parent dlg]
+                        [stretchable-height #f]))
   (define: font-choice : (Instance Choice%)
     (new choice%
          [label (string-constant fonts)]
@@ -101,6 +73,46 @@
                                          (cdr old)
                                          (send (get-default-font) get-point-size))))
               (update-txt (send text-field get-value))))]))
+  
+  (: count (Instance Message%))
+  (define count (new message% [label (format columns-string 1000)] [parent info-bar]))
+  (: pane1 (Instance Horizontal-Pane%))
+  (define pane1 (new horizontal-pane% (parent info-bar)))
+  (: dark-msg (Instance Bitmap-Message%))
+  (define dark-msg (new bitmap-message% [parent info-bar]))
+  (: pane2 (Instance Horizontal-Pane%))
+  (define pane2 (new horizontal-pane% (parent info-bar)))
+                                
+  (: txt (Instance Scheme:Text%))
+  (define txt (new scheme:text%))
+  (: ec (Instance Editor-Canvas%))
+  (define ec (new editor-canvas% [parent dlg] [editor txt]))
+  (: button-panel (Instance Horizontal-Panel%))
+  (define button-panel (new horizontal-panel%
+                            [parent dlg]
+                            [stretchable-height #f]
+                            [alignment '(right center)]))
+  (define: ok? : Boolean #f)
+  (: ok Any)
+  (: cancel Any)
+  (define-values (ok cancel)
+    (gui-utils:ok/cancel-buttons button-panel
+                                 (λ: ([x : Any] [y : Any]) (set! ok? #t) (send dlg show #f))
+                                 (λ: ([x : Any] [y : Any]) (send dlg show #f))))
+  (: update-txt (String -> Any))
+  (define (update-txt str)
+    (send txt begin-edit-sequence)
+    (send txt lock #f)
+    (send txt delete 0 (send txt last-position))
+    (let ([bm (render-large-letters comment-prefix comment-character (get-chosen-font) str txt)])
+      (send ec set-line-count (+ 1 (send txt last-paragraph)))
+      (send txt lock #t)
+      (send txt end-edit-sequence)
+      (send count set-label (format columns-string (get-max-line-width txt)))
+      (send dark-msg set-bm bm)))
+  
+  
+  
   
   ;; CHANGE - get-face can return #f
   (let ([face (send (get-chosen-font) get-face)])
@@ -132,21 +144,21 @@
                (max raw-th h)))
   (define tmp-color (make-object color%))
   
-  
+  (: get-char (Number Number -> Char))
+  (define (get-char x y)
+    (send bdc get-pixel x y tmp-color)
+    (let ([red (send tmp-color red)])
+      (if (= red 0)
+          comment-character
+          #\space)))  
   (define bitmap
     (make-object bitmap% 
       (max 1 (inexact->exact tw))
       (inexact->exact th)
       #t))
   
-  (define: (get-char [x : Number] [y : Number]) : Char
-    (send bdc get-pixel x y tmp-color)
-    (let ([red (send tmp-color red)])
-      (if (= red 0)
-          comment-character
-          #\space)))
-  
-  (define: (fetch-line [y : Number]) : String
+  (: fetch-line (Number -> String))
+  (define (fetch-line y)
     (let: loop : String ([x : Number (send bitmap get-width)]
                          [chars : (Listof Char) null])
       (cond

@@ -89,7 +89,7 @@
                [gui-utils:ok/cancel-buttons (Any (Any Any -> Any) (Any Any -> Any) -> (values Any Any))])
 
 (require/typed "prefs-contract.ss"
-               [preferences:get-drscheme:large-letters-font (-> (Pair Symbol Number))])
+               [preferences:get-drscheme:large-letters-font (-> (U #f (Pair String Number)))])
 
 (require (only-in "prefs-contract.ss" preferences:get))
 (provide preferences:get preferences:get-drscheme:large-letters-font)
