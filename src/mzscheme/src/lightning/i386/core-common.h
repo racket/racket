@@ -38,18 +38,6 @@
  */
 typedef union jit_code {	
   char		 *ptr;
-  void		 (*vptr)(void);
-  char		 (*cptr)(void);
-  unsigned char	 (*ucptr)(void);
-  short		 (*sptr)(void);
-  unsigned short (*usptr)(void);
-  int		 (*iptr)(void);
-  unsigned int	 (*uiptr)(void);
-  long		 (*lptr)(void);
-  unsigned long	 (*ulptr)(void);
-  void *	 (*pptr)(void);
-  float		 (*fptr)(void);
-  double	 (*dptr)(void);
 } jit_code;
 
 typedef struct {

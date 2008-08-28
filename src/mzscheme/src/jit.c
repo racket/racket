@@ -1128,12 +1128,11 @@ static void *prepare_retry_alloc(void *p, void *p2)
   return p;
 }
 
-long scheme_read_first_word(void *sp)
-/* Not declared static, to avoid inlining. This procedure
-   helps avoid bugs in C compiler alias analysis, since we are
-   intentially aliasing. */
+static long read_first_word(void *sp)
 {
-  return *(long *)sp;
+  long foo;
+  memcpy(&foo, sp, sizeof(long));
+  return foo;
 }
 
 static long initial_tag_word(Scheme_Type tag)
@@ -1141,7 +1140,7 @@ static long initial_tag_word(Scheme_Type tag)
   GC_CAN_IGNORE Scheme_Small_Object sp;
   memset(&sp, 0, sizeof(Scheme_Small_Object));
   sp.iso.so.type = tag;
-  return scheme_read_first_word((void *)&sp);
+  return read_first_word((void *)&sp);
 }
 
 static int inline_alloc(mz_jit_state *jitter, int amt, Scheme_Type ty, 
@@ -4645,7 +4644,7 @@ static int generate_closure(Scheme_Closure_Data *data,
           (void)mz_finish(GC_malloc_one_small_tagged);
         }
         jit_retval(JIT_R0);
-        init_word = *(long *)(void *)&example_so;
+        memcpy(&init_word, &example_so, sizeof(long));
         jit_movi_l(JIT_R1, init_word);
         jit_str_l(JIT_R0, JIT_R1); 
       }
