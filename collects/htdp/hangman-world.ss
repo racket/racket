@@ -4,9 +4,7 @@
    3. compare error messages for word to beginner language 
    4. change messages at end to just display the word 
 |#
-
-#cs
-(module hangman-world mzscheme
+(module hangman-world scheme
   (require htdp/world
            htdp/error
            lang/prim
@@ -16,7 +14,7 @@
   
   (define (letter? s) (and (symbol? s) (pair? (member s LETTERS))))
   (define LETTERS '(a b c d e f g h i j k l m o p q r s t u v w x y z _))
-
+  
   (define-struct word (one two three))
   
   (provide/contract
@@ -26,11 +24,11 @@
    [word-one (word? . -> . letter?)]
    [word-two (word? . -> . letter?)]
    [word-three (word? . -> . letter?)])
-   
+  
   (provide-higher-order-primitive
    ;; Letter = Symbol
    ;; type Word 
-
+   
    ;; (Letter Letter Letter -> Word) 
    ;; (Word Word Letter -> Word) 
    ;; (Symbol Scene -> Scene)
@@ -50,7 +48,7 @@
                         (rv (apply make-word ch) (apply make-word st) gu)))
                 (list (word-one w) (word-two w) (word-three w)))))
       (hangman-list reveal-list dr)))
-
+  
   (provide-higher-order-primitive
    ;; Word = [Listof Symbol]
    
@@ -63,7 +61,7 @@
   (provide
    ;; [Listof Symbols]
    body-parts)
-
+  
   (define body-parts
     {list 'noose 'head 'right-arm 'left-arm 'body 'right-leg 'left-leg})
   
@@ -72,7 +70,7 @@
     (check-proc 'hangman-list add-next-part 2 'second "2 arguments")
     (local ((define chosen (list-ref WORDS (random (length WORDS))))
             (define status (build-list (length chosen) (lambda (x) '_)))
-            (define world0      (list chosen status body-parts))
+            (define world0 (list chosen status body-parts))
             ;; World KeyEvent -> World 
             (define (click world ke)
               (define pcs (third world))
@@ -80,20 +78,30 @@
               (define sta (second world))
               (define cmp (reveal-list wrd sta (char->symbol ke)))
               (cond
-                [(empty? pcs) 
-                 (end-of-time 
-                  (format "This is the end my friend. The word is ~a." (list-word->string chosen)))]
                 [(symbol? ke) world]
                 [(equal? sta cmp) (list wrd sta (rest pcs))]
-                [(equal? wrd cmp) 
-                 (end-of-time
-                  (format "Congratulations, the word was ~a." (list-word->string chosen)))]
                 [else (list wrd cmp pcs)]))
             ;; World -> Scene
             (define (image world)
+              (define wrd (first world))
+              (define cmp (second world))
               (define pcs (third world))
-              (place-image (text (list-word->string (second world)) 18 'red) 20 100 
-                           (add-up-to body-parts pcs (empty-scene 200 200))))
+              (define scn
+                (place-image (text (list-word->string (second world)) 18 'red) 20 100 
+                             (add-up-to body-parts pcs (empty-scene 200 200))))
+              (cond
+                [(equal? wrd cmp) 
+                 (place-image (text "Congratulations!" 11 'red) 10 10 scn)]
+                [(empty? pcs) 
+                 (place-image
+                  (text (string-append "This is the end, my friend: "
+                                       (list-word->string chosen)) 
+                        11 'red)
+                  10 10 scn)]
+                [else scn]))
+            ;; World -> Boolean 
+            (define (stop? world)
+              (or (empty? (third world)) (equal? (first world) (second world))))
             ;; [Listof Symbol] [Listof Symbol] Scene -> Scene 
             (define (add-up-to parts pcs s)
               (cond 
@@ -104,9 +112,10 @@
       (and 
        (big-bang 200 200 .1 world0)
        (on-redraw image)
-       (on-key-event click))))
+       (on-key-event click)
+       (stop-when stop?))))
   
-    ;; Char -> Symbol 
+  ;; Char -> Symbol 
   (define (char->symbol c) (string->symbol (format "~a" c)))
   
   ;; Symbol -> Char 
@@ -122,29 +131,29 @@
   (define WORDS
     (map word->list
          '(and
-	   are
-	   but
-	   cat
-	   cow
-	   dog
-	   eat
-	   fee
-	   gal
-	   hat
-	   inn
-	   jam
-	   kit
-	   lit
-	   met
-	   now
-	   owl
-	   pet
-	   rat
-	   sea
-	   the
-	   usa
-	   vip
-	   was
-	   zoo))))
-
+           are
+           but
+           cat
+           cow
+           dog
+           eat
+           fee
+           gal
+           hat
+           inn
+           jam
+           kit
+           lit
+           met
+           now
+           owl
+           pet
+           rat
+           sea
+           the
+           usa
+           vip
+           was
+           zoo)))
+  )
 

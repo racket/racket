@@ -12,6 +12,9 @@
       (set! current-world new-world)
       (when (C current-world) (render (F current-world))))
 |#
+;; Thu Aug 28 15:54:23 EDT 2008: big-bang can now be re-run after the world
+;;                               has stopped
+
 ;; Tue Aug 12 08:54:45 EDT 2008: ke=? changed to key=? 
 ;; Fri Jul  4 10:25:47 EDT 2008: added ke=? and key-event? 
 ;; Mon Jun 16 15:38:14 EDT 2008: removed end-of-time and provided stop-when 
@@ -245,7 +248,7 @@ Matthew
    "-- (big-bang <width> <height> <rate> <world0>)\n"
    "-- (big-bang <width> <height> <rate> <world0> <animated-gif>)\n"
    "see Help Desk."))
-
+(define *running?* #f)
 (define big-bang0
   (case-lambda 
     [(w h delta world) (big-bang w h delta world #f)]
@@ -267,7 +270,10 @@ Matthew
                 animated-gif)
      (let ([w (coerce w)]
            [h (coerce h)])
-       (when (vw-init?) (error 'big-bang "big-bang already called once"))
+       (when *running?*  (error 'big-bang "the world is still running"))
+       (set! *running?* #t)
+       (callback-stop!)
+       ;; (when (vw-init?) (error 'big-bang "big-bang already called once"))
        (install-world delta world) ;; call first to establish a visible world
        (set-and-show-frame w h animated-gif) ;; now show it
        (unless animated-gif (set! add-event void)) ;; no recording if image undesired
@@ -846,8 +852,9 @@ Matthew
   (set! timer-callback void)
   (set! mouse-callback void)
   (set! key-callback void)
-  (set! stop-when-callback (lambda (w) #f))
-  (set! redraw-callback void))
+  (set! stop-when-callback (lambda () #f))
+  (set! redraw-callback void)
+  (set! *running?* #f))
 
 ;; Any -> Boolean
 ;; is the callback set to the default value 
@@ -886,7 +893,6 @@ Matthew
   (define tname (if fname fname 'your-redraw-function))
   (check-result fname boolean? "boolean" result)
   result)
-(set-stop-when-callback (lambda (w) #f))
 
 ;; f : [World KeyEvent -> World]
 ;; esp : EventSpace 
