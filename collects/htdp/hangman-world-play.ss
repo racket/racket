@@ -1,8 +1,6 @@
-;; The first three lines of this file were inserted by DrScheme. They record metadata
-;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-intermediate-lambda-reader.ss" "lang")((modname hangman-world-play) (read-case-sensitive #t) (teachpacks ((lib "world.ss" "teachpack" "htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "world.ss" "teachpack" "htdp")))))
-(require (lib "hangman-world.ss" "htdp"))
-(require (lib "world.ss" "htdp"))
+#lang scheme/gui
+
+(require "hangman-world.ss" "world.ss")
 
 #| ------------------------------------------------------------------------
   add-next-part :
@@ -12,27 +10,27 @@
   credit: John Clements 
   |#
 (define (add-next-part body-part s)
-  (cond ((eq? body-part 'body)
-         (scene+line s 100 60 100 130 'black))
-        ((eq? body-part 'right-leg)
-         (scene+line s 100 130 30 170 'black))
-        ((eq? body-part 'left-leg)
-         (scene+line s 100 130 170 170 'black))
-        ((eq? body-part 'right-arm)
-         (scene+line s 100 75 40 65 'black))
-        ((eq? body-part 'left-arm)
-         (scene+line s 100 75 160 65 'black))
-        ((eq? body-part 'head)
-         (place-image (circle 10 'outline 'black) 100 50 s))
-        ((eq? body-part 'noose)
-         (local ((define s1 (scene+line s  100 30 100 10 'black))
+  (cond [(eq? body-part 'body)
+         (scene+line s 100 60 100 130 'black)]
+        [(eq? body-part 'right-leg)
+         (scene+line s 100 130 30 170 'black)]
+        [(eq? body-part 'left-leg)
+         (scene+line s 100 130 170 170 'black)]
+        [(eq? body-part 'right-arm)
+         (scene+line s 100 75 40 65 'black)]
+        [(eq? body-part 'left-arm)
+         (scene+line s 100 75 160 65 'black)]
+        [(eq? body-part 'head)
+         (place-image (circle 10 'outline 'black) 100 50 s)]
+        [(eq? body-part 'noose)
+         (local [(define s1 (scene+line s  100 30 100 10 'black))
                  (define s2 (scene+line s1 100 10   0 10 'black))
                  (define s3 (scene+line s2 115 35 123 43 'black))
                  (define s4 (scene+line s3 123 35 115 43 'black))
                  (define s5 (scene+line s4 131 40 139 48 'black))
-                 (define s6 (scene+line s5 139 40 131 48 'black)))
-           (place-image (circle 30 'outline 'red) 120 50 s6)))
-        (else (error 'ouch))))
+                 (define s6 (scene+line s5 139 40 131 48 'black))]
+           (place-image (circle 30 'outline 'red) 120 50 s6))]
+        [else (error 'ouch)]))
 
 ;; reveal-list : list-of-letters list-of-letters letter -> list-of-letters
 (define (reveal-list l1 l2 gu)
