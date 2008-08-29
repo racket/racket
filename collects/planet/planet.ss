@@ -285,6 +285,6 @@ This command does not unpack or install the named .plt file."
   
   (with-handlers ([exn:fail? 
                    (lambda (e) 
-                     (fprintf (current-error-port) "~a\n" (exn-message e))
+                     ((error-display-handler) (exn-message e) e)
                      (exit 1))])
     (start)))
