@@ -64,11 +64,14 @@
           p))
 
     (define/public (root-relative->path p)
-      (if (and (pair? p)
-               (mobile-root? (car p)))
+      (if (root-relative? p)
           (apply build-path (mobile-root-path (car p))
                  (map bytes->path-element (cdr p)))
           p))
+
+    (define/public (root-relative? p)
+      (and (pair? p)
+           (mobile-root? (car p))))
 
     ;; ----------------------------------------
     ;; marshal info

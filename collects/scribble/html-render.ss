@@ -249,7 +249,8 @@
     ;; ----------------------------------------
 
     (inherit path->root-relative
-             root-relative->path)
+             root-relative->path
+             root-relative?)
 
     (define (path->relative p)
       (let ([p (path->main-doc-relative p)])
@@ -261,14 +262,16 @@
           (intern-taglet p))))
 
     (define (relative->path p)
-      (let ([p (main-doc-relative->path p)])
-        (if (path? p)
-          p
-          (let ([p (main-collects-relative->path p)])
+      (if (root-relative? p)
+          (root-relative->path p)
+          (let ([p (if (or (not (pair? p))
+                           (eq? (car p) 'doc))
+                       (main-doc-relative->path p)
+                       p)])
             (if (path? p)
-              p
-              (root-relative->path p))))))
-
+                p
+                (main-collects-relative->path p)))))
+    
     ;; ----------------------------------------
 
     (define/override (start-collect ds fns ci)
