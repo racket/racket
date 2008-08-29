@@ -80,9 +80,9 @@
 
 (define make-arr*
   (case-lambda [(dom rng) (make-arr* dom rng #f (list) (list))]
-               [(dom rng rest) (make-arr dom rng rest #f (list) (list))]
-               [(dom rng rest eff1 eff2) (make-arr dom rng rest #f eff1 eff2)]
-               [(dom rng rest drest eff1 eff2) (make-arr dom rng rest drest eff1 eff2)]))
+               [(dom rng rest) (make-arr dom rng rest #f null (list) (list))]
+               [(dom rng rest eff1 eff2) (make-arr dom rng rest #f null eff1 eff2)]
+               [(dom rng rest drest eff1 eff2) (make-arr dom rng rest drest null eff1 eff2)]))
 
 (define (make-arr-dots dom rng dty dbound)
   (make-arr* dom rng #f (cons dty dbound) null null))

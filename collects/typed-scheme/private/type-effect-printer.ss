@@ -46,9 +46,11 @@
     (match a
       [(top-arr:)
        (fp "Procedure")]
-      [(arr: dom rng rest drest thn-eff els-eff)
+      [(arr: dom rng rest drest kws thn-eff els-eff)
        (fp "(")
        (for-each (lambda (t) (fp "~a " t)) dom)
+       (for ([kw kws])
+         (fp "~a ~a " (car kw) (cdr kw)))
        (when rest
          (fp "~a* " rest))
        (when drest
@@ -102,7 +104,7 @@
                           (lambda (e) (fp " ") (print-arr e))
                           b)
                          (fp ")")]))]
-    [(arr: _ _ _ _ _ _) (print-arr c)]
+    [(arr: _ _ _ _ _ _ _) (print-arr c)]
     [(Vector: e) (fp "(Vectorof ~a)" e)]
     [(Box: e) (fp "(Box ~a)" e)]
     [(Union: elems) (fp "~a" (cons 'U elems))]

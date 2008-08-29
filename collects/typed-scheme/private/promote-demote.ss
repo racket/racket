@@ -2,7 +2,7 @@
 
 (require "type-effect-convenience.ss" "type-rep.ss" 
          "type-utils.ss" "union.ss" 
-         "signatures.ss" 
+         "signatures.ss" "utils.ss"
          scheme/list)
 
 (import)
@@ -26,7 +26,7 @@
              [#:Param in out
                           (make-Param (var-demote in V)
                                           (vp out))]
-             [#:arr dom rng rest drest thn els
+             [#:arr dom rng rest drest kws thn els
                     (cond
                       [(apply V-in? V (append thn els))
                        (make-arr null (Un) Univ #f null null)]
@@ -35,6 +35,8 @@
                                  (vp rng)
                                  (var-demote (car drest) V)
                                  #f
+                                 (for/list ([(kw kwt) (in-pairs kws)])
+                                   (cons kw (var-demote kwt V)))
                                  thn
                                  els)]
                       [else
@@ -44,6 +46,8 @@
                                  (and drest
                                       (cons (var-demote (car drest) V)
                                             (cdr drest)))
+                                 (for/list ([(kw kwt) (in-pairs kws)])
+                                   (cons kw (var-demote kwt V)))
                                  thn
                                  els)])]))
 
@@ -61,7 +65,7 @@
              [#:Param in out
                           (make-Param (var-promote in V)
                                           (vd out))]
-             [#:arr dom rng rest drest thn els
+             [#:arr dom rng rest drest kws thn els
                     (cond
                       [(apply V-in? V (append thn els))
                        (make-arr null (Un) Univ #f null null)]
@@ -70,6 +74,8 @@
                                  (vd rng)
                                  (var-promote (car drest) V)
                                  #f
+                                 (for/list ([(kw kwt) (in-pairs kws)])
+                                   (cons kw (var-promote kwt V)))
                                  thn
                                  els)]
                       [else
@@ -79,5 +85,7 @@
                                  (and drest
                                       (cons (var-promote (car drest) V)
                                             (cdr drest)))
+                                 (for/list ([(kw kwt) (in-pairs kws)])
+                                   (cons kw (var-promote kwt V)))
                                  thn
                                  els)])]))

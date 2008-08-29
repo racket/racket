@@ -180,7 +180,7 @@
       (let loop ([expected expected])        
         (match expected          
           [(Mu: _ _) (loop (unfold expected))]
-          [(Function: (list (arr: argss rets rests drests _ _) ...)) 
+          [(Function: (list (arr: argss rets rests drests '() _ _) ...)) 
            (for ([args argss] [ret rets] [rest rests] [drest drests])
              (tc/lambda-clause/check (car (syntax->list formals)) (car (syntax->list bodies)) args ret rest drest))
            expected]

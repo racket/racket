@@ -37,7 +37,7 @@
   (if (hash-ref (free-vars* target) name #f)
       (type-case sb target
                  [#:F name* (if (eq? name* name) image target)]
-                 [#:arr dom rng rest drest thn-eff els-eff
+                 [#:arr dom rng rest drest kws thn-eff els-eff
                         (begin
                           (when (and (pair? drest)
                                      (eq? name (cdr drest))
@@ -47,6 +47,8 @@
                                     (sb rng)
                                     (and rest (sb rest))
                                     (and drest (cons (sb (car drest)) (cdr drest)))
+                                    (for/list ([kw kws])
+                                      (cons (car kw) (sb (cdr kw))))
                                     (map (lambda (e) (sub-eff sb e)) thn-eff)
                                     (map (lambda (e) (sub-eff sb e)) els-eff)))]
                  [#:ValuesDots types dty dbound
@@ -70,7 +72,7 @@
                                      (let ([expanded (sb dty)])
                                        (map (lambda (img) (substitute img name expanded)) images))))
                                    (make-ValuesDots (map sb types) (sb dty) dbound))]
-                 [#:arr dom rng rest drest thn-eff els-eff
+                 [#:arr dom rng rest drest kws thn-eff els-eff
                         (if (and (pair? drest)
                                  (eq? name (cdr drest)))                            
                             (make-arr (append 
@@ -81,12 +83,16 @@
                                       (sb rng)
                                       rimage
                                       #f
+                                      (for/list ([kw kws])
+                                        (cons (car kw) (sb (cdr kw))))
                                       (map (lambda (e) (sub-eff sb e)) thn-eff)
                                       (map (lambda (e) (sub-eff sb e)) els-eff))
                             (make-arr (map sb dom)
                                       (sb rng)
                                       (and rest (sb rest))
                                       (and drest (cons (sb (car drest)) (cdr drest)))
+                                      (for/list ([kw kws])
+                                        (cons (car kw) (sb (cdr kw))))
                                       (map (lambda (e) (sub-eff sb e)) thn-eff)
                                       (map (lambda (e) (sub-eff sb e)) els-eff)))])
       target))
@@ -105,13 +111,15 @@
                       (if (eq? name* name)
                           image
                           target)]
-                 [#:arr dom rng rest drest thn-eff els-eff
+                 [#:arr dom rng rest drest kws thn-eff els-eff
                         (make-arr (map sb dom)
                                   (sb rng)
                                   (and rest (sb rest))
                                   (and drest
                                        (cons (sb (car drest))
                                              (if (eq? name (cdr drest)) image-bound (cdr drest))))
+                                  (for/list ([kw kws])
+                                    (cons (car kw) (sb (cdr kw))))
                                   (map (lambda (e) (sub-eff sb e)) thn-eff)
                                   (map (lambda (e) (sub-eff sb e)) els-eff))])
        target))
