@@ -103,8 +103,8 @@
 
 (test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1)) "x.ss" '(planet "y.ss" ("usr" "pkg.plt" 1)))
 (test-cmp '(planet "x.ss" ("usr" "pkg.plt" 1 0)) "x.ss" (lambda () '(planet "y.ss" ("usr" "pkg.plt" 1 0))))
-(test-cmp '(planet "path/x.ss" ("a" "p.plt" 1)) "path/x.ss" '(planet "z.ss" ("a" "p.plt" 1)))
-(test-cmp '(planet "path/qq/x.ss" ("a" "p.plt" 2)) "qq/x.ss" '(planet "path/z.ss" ("a" "p.plt" 2)))
+(test-cmp '(planet "x.ss" ("a" "p.plt" 1) "path") "path/x.ss" '(planet "z.ss" ("a" "p.plt" 1)))
+(test-cmp '(planet "x.ss" ("a" "p.plt" 2) "path" "qq") "qq/x.ss" '(planet "path/z.ss" ("a" "p.plt" 2)))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(planet "o.ss" ("a" "q.plt" 54 3)))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(lib "o.ss" "nonesuch"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) '(file "q.ss"))
@@ -115,9 +115,14 @@
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (+ 5))) '(planet "m/z:2:>=5/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (- 5))) '(planet "m/z:2:<=5/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
 
 (test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6))) 
           "../utils.ss" '(planet "doc/stuff.ss" ("untyped" "unlib.plt" 3 (= 6))))
+(test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6))) 
+          "../utils.ss" '(planet "stuff.ss" ("untyped" "unlib.plt" 3 (= 6)) "doc"))
+(test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6)) "down") 
+          "../down/utils.ss" '(planet "stuff.ss" ("untyped" "unlib.plt" 3 (= 6)) "doc"))
 
 (test-cmp (build-path 'same "x.ss") "x.ss" (build-path 'same))
 

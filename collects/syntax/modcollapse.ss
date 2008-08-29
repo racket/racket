@@ -1,7 +1,8 @@
 
 (module modcollapse mzscheme
-  (require mzlib/list
+  (require (only mzlib/list filter)
            scheme/string
+           scheme/list
            mzlib/contract
            (only scheme/base regexp-split)
            "private/modhelp.ss")
@@ -117,10 +118,16 @@
                             "relative path escapes collection: ~s relative to ~s"
                             elements relto-mp))))))]
          [(eq? (car relto-mp) 'planet)
-         (let ([pathstr (simpler-relpath
-                         (attach-to-relative-path-string
-                          elements (cadr relto-mp)))])
-           (normalize-planet `(planet ,pathstr ,(caddr relto-mp))))]
+          (let ([pathstr (simpler-relpath
+                          (attach-to-relative-path-string
+                           elements 
+                           (apply string-append
+                                  (append
+                                   (map (lambda (s)
+                                          (string-append s "/"))
+                                        (cdddr relto-mp))
+                                   (list (cadr relto-mp))))))])
+            (normalize-planet `(planet ,pathstr ,(caddr relto-mp))))]
         [else (error 'combine-relative-elements
                      "don't know how to deal with: ~s" relto-mp)]))
 
@@ -197,8 +204,27 @@
                            null
                            (reverse (cdr (reverse path)))))))]
        [else 
-        ;; Long form is the normal form:
-        s]))
+        ;; Long form is the normal form, but see if we need to split up the
+        ;; path elements:
+        (let ([base (cadr s)]
+              [rest (cdddr s)]
+              [split? (lambda (s)
+                        (regexp-match? #rx"/" s))])
+          (if (or (split? base)
+                  (ormap split? rest))
+              ;; need to split some paths:
+              (let ([split (lambda (s)
+                             (regexp-split #rx"/" s))])
+                (let ([bases (split base)]
+                      [rests (map split rest)])
+                  (list* (car s)
+                         (last bases)
+                         (caddr s)
+                         (append
+                          (apply append rests)
+                          (drop-right bases 1)))))
+              ;; already in normal form:
+              s))]))
 
     (cond [(string? s)
            ;; Parse Unix-style relative path string
