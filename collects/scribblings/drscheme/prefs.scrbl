@@ -122,10 +122,10 @@ The preferences dialog consists of several panels.
    right of the definitions window. By default, the interactions
    window is below the definitions window.}
 
-@item{@PrefItem{Always show the #lang lin in the Module language} --
-  If checked, the module language always shows the the @tt{#lang}
+@item{@PrefItem{Always show the #lang line in the Module language} --
+  If checked, the module language always shows the the @hash-lang[]
   line (even when it would ordinarily be scrolled off of the page), assuming
-  that the @tt{#lang} line is the first line in the file.
+  that the @hash-lang[] line is the first line in the file.
 }
 
   }}
