@@ -26,18 +26,21 @@
   (make-web-cell 0))
 
 (define (include-counter a-counter)
-  (let/cc k
-    (define (generate)
-      (k
-       (lambda (embed/url)
-         `(div (h3 ,(number->string (web-cell-ref a-counter)))
-               (a ([href ,(embed/url
-                           (lambda _
-                             ; A new frame has been created
-                             (define last (web-cell-ref a-counter))
-                             ; It is a child of the parent frame, so we can inspect the value
-                             (web-cell-shadow a-counter (add1 last))
-                             ; The new frame has been modified
-                             (generate)))])
-                  "+")))))
-    (generate)))
+  ; XXX This shouldn't be necessary (but is for testing, not in production)
+  (call-with-current-continuation
+   (lambda (k)
+     (define (generate)
+       (k
+        (lambda (embed/url)
+          `(div (h3 ,(number->string (web-cell-ref a-counter)))
+                (a ([href ,(embed/url
+                            (lambda _
+                              ; A new frame has been created
+                              (define last (web-cell-ref a-counter))
+                              ; It is a child of the parent frame, so we can inspect the value
+                              (web-cell-shadow a-counter (add1 last))
+                              ; The new frame has been modified
+                              (generate)))])
+                   "+")))))
+     (generate))
+   servlet-prompt))

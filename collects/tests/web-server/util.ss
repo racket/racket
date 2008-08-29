@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang scheme
 (require (for-syntax scheme/base)
          web-server/private/connection-manager
          (only-in (planet "ssax.ss" ("lizorkin" "ssax.plt" 2 0))
@@ -20,15 +20,62 @@
 (define (call d u bs)
   (htxml (collect d (make-request 'get (string->url u) empty bs #"" "127.0.0.1" 80 "127.0.0.1"))))
 (define (htxml bs)
-  (define sx (ssax:xml->sxml (open-input-bytes (second (regexp-match #"^.+\r\n\r\n(.+)$" bs))) empty))
-  (pretty-print sx)
-  sx)
+  (match (regexp-match #"^.+\r\n\r\n(.+)$" bs)
+    [(list _ s)
+     (define sx (ssax:xml->sxml (open-input-bytes s) empty))
+     (pretty-print sx)
+     sx]
+    [_
+     (error 'html "Given ~S~n" bs)]))
 
+; This causes infinite loop. I will try putting it in a thread like on the real server
+#;(define (collect d req)
+    (define-values (c i o) (make-mock-connection #""))
+    (parameterize ([current-server-custodian (current-custodian)])
+      (d c req))
+    (redact (get-output-bytes o)))
+
+; This causes errors because s/s/d tries to jump the barrier, but I have no idea why
 (define (collect d req)
   (define-values (c i o) (make-mock-connection #""))
   (parameterize ([current-server-custodian (current-custodian)])
-    (d c req))
+    (call-with-continuation-barrier
+     (lambda ()
+       (d c req))))
   (redact (get-output-bytes o)))
+
+; This causes a dead lock, even though the log shows that the channel should sync
+(define (channel-put* c v)
+  (printf "+CHAN ~S PUT: ~S~n" c v)
+  (channel-put c v)
+  (printf "-CHAN ~S PUT: ~S~n" c v))
+
+(define (channel-get* c)
+  (printf "+CHAN ~S GET~n" c)
+  (let ([v (channel-get c)])
+    (printf "-CHAN ~S GET: ~S~n" c v)
+    v))
+
+#;(define (collect d req)
+    (define chan (make-channel))
+    (define-values (c i o) (make-mock-connection #""))
+    (parameterize ([current-server-custodian (current-custodian)])
+      (thread 
+       (lambda ()
+         (d c req)
+         (channel-put* chan (get-output-bytes o))
+         )))
+    (redact (channel-get* chan)))
+
+; This causes an error, because the output bytes are #""
+#;(define (collect d req)
+    (define-values (c i o) (make-mock-connection #""))
+    (parameterize ([current-server-custodian (current-custodian)])
+      (thread-wait
+       (thread 
+        (lambda ()
+          (d c req)))))
+    (redact (get-output-bytes o)))
 
 (define (make-mock-connection ib)
   (define ip (open-input-bytes ib))

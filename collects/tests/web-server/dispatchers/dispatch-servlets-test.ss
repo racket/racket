@@ -8,6 +8,7 @@
          web-server/private/web-server-structs
          web-server/configuration/namespace
          (prefix-in servlets: web-server/dispatchers/dispatch-servlets)
+         "servlet-test-util.ss"
          "../util.ss")
 (provide dispatch-servlets-tests)
 
@@ -24,27 +25,9 @@
                    (lambda (u exn)
                      (raise exn))))
   d)
-(define url0 "http://test.com/servlets/example.ss")
-(define url0s (list (build-path "servlets") (build-path "example.ss")))
 
-(define (test-add-two-numbers t p)
-  (let* ([x (random 500)]
-         [xs (string->bytes/utf-8 (number->string x))]
-         [y (random 500)]
-         [ys (string->bytes/utf-8 (number->string y))])
-    (test-equal? 
-     t
-     (let* ([d (mkd p)]
-            [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-            [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
-                                                               (list (make-binding:form #"number" xs)))))]
-            [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
-                                                   (list (make-binding:form #"number" ys)))))])
-       n)
-     (format "The sum is ~a" (+ x y)))))
-
-(define test-servlets (build-path (collection-path "web-server") "tests" "servlets"))
-(define example-servlets (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
+(define example-servlets 
+  (build-path (collection-path "web-server") "default-web-root" "servlets" "examples/"))
 
 (define dispatch-servlets-tests
   (test-suite
@@ -67,11 +50,11 @@
                         [t0 (first ((sxpath "//p/text()") (call d url0 empty)))])
                    t0)
                  "Hello, Web!")
-    (test-add-two-numbers "add.ss - send/suspend"
+    (test-add-two-numbers mkd "add.ss - send/suspend"
                           (build-path example-servlets "add.ss"))
-    (test-add-two-numbers "add-v2.ss - send/suspend, version 2"
+    (test-add-two-numbers mkd "add-v2.ss - send/suspend, version 2"
                           (build-path example-servlets "add-v2.ss"))
-    (test-add-two-numbers "add-ssd.ss - send/suspend/dispatch"
+    (test-add-two-numbers mkd "add-ssd.ss - send/suspend/dispatch"
                           (build-path example-servlets "add-ssd.ss"))
     (test-equal? "count.ss - state"
                  (let* ([d (mkd (build-path example-servlets "count.ss"))]
@@ -112,6 +95,17 @@
                  (list "Expired"
                        "Done."
                        "Expired"))
+    
+    (test-double-counters
+    mkd
+    "wc-fake.ss - no cells"
+    (build-path example-servlets "wc-fake.ss"))
+   
+   (test-double-counters
+    mkd
+    "wc.ss - make-web-cell web-cell-ref web-cell-shadow"
+    (build-path example-servlets "wc.ss"))
+    
     ; XXX Broken
     #;(test-equal? "adjust.ss - adjust-timeout!"
                    (let* ([d (mkd (build-path example-servlets "adjust.ss"))]
@@ -119,3 +113,9 @@
                      (sleep 3)
                      (call d k0 empty))
                    "#"))))
+
+
+; Comment in to run tests
+#;(require #;(planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2))
+         (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
+#;(test/text-ui dispatch-servlets-tests)

@@ -7,6 +7,7 @@
          web-server/private/request-structs
          web-server/configuration/namespace
          (prefix-in lang: web-server/dispatchers/dispatch-lang)
+         "servlet-test-util.ss"
          "../util.ss")
 (provide dispatch-lang-tests)
 
@@ -22,50 +23,8 @@
              (lambda (u exn)
                ((error-display-handler) (exn-message exn) exn)
                (raise exn))))
-(define url0 "http://test.com/servlets/example.ss")
 
 (define example-servlets (build-path (collection-path "web-server") "default-web-root" "htdocs" "lang-servlets/"))
-
-(define (test-add-two-numbers t p)
-  (let* ([x (random 500)]
-         [xs (string->bytes/utf-8 (number->string x))]
-         [y (random 500)]
-         [ys (string->bytes/utf-8 (number->string y))])
-    (test-equal? 
-     t
-     (let* ([d (mkd p)]
-            [k0 (first ((sxpath "//form/@action/text()") (call d url0 empty)))]
-            [k1 (first ((sxpath "//form/@action/text()") (call d (format "~a?number=~a" k0 xs)
-                                                               (list (make-binding:form #"number" xs)))))]
-            [n (first ((sxpath "//p/text()") (call d (format "~a?number=~a" k1 ys)
-                                                   (list (make-binding:form #"number" ys)))))])
-       n)
-     (format "The answer is ~a" (+ x y)))))
-
-(define (test-double-counters t p)
-  (define d (mkd p))
-  (define (invoke u)
-    (define sx (call d u empty))
-    (define ks ((sxpath "//div/div/a/@href/text()") sx))
-    (values ((sxpath "//div/div/h3/text()") sx)
-            (first ks)
-            (second ks)))
-  (test-equal? t
-               (let*-values ([(v0.0 0.0+1 0.0+2) (invoke url0)]
-                             ; One add
-                             [(v1.0 1.0+1 1.0+2) (invoke 0.0+1)]
-                             [(v0.1 0.1+1 0.1+2) (invoke 0.0+2)]
-                             ; Two adds
-                             [(v2.0 2.0+1 2.0+2) (invoke 1.0+1)]
-                             [(v1.1 1.1+1 1.1+2) (invoke 0.1+1)]
-                             [(_v1.1 _1.1+1 _1.1+2) (invoke 1.0+2)]
-                             [(v0.2 0.2+1 0.2+2) (invoke 0.1+2)])
-                 (list v0.0
-                       v1.0 v0.1
-                       v2.0 v1.1 _v1.1 v0.2))
-               (list (list "0" "0")
-                     (list "1" "0") (list "0" "1")
-                     (list "2" "0") (list "1" "1") (list "1" "1") (list "0" "2"))))
 
 (define dispatch-lang-tests
   (test-suite
@@ -86,10 +45,12 @@
         n)))
    
    (test-add-two-numbers
+    mkd
     "add-simple.ss - Web Parameters, s/s/u"
     (build-path example-servlets "add-simple.ss"))
    
    (test-add-two-numbers
+    mkd
     "add.ss - s/s/u"
     (build-path example-servlets "add.ss"))
    
@@ -109,32 +70,39 @@
       (format "The answer is: ~a" (+ x y))))
    
    (test-add-two-numbers
+    mkd
     "add02.ss - s/s/u, uri"
     (build-path example-servlets "add02.ss"))
    
    ; XXX Use kont
    #;(test-add-two-numbers
+      mkd
       "add03.ss - s/s/h"
       (build-path example-servlets "add03.ss"))
    
    (test-add-two-numbers
+    mkd
     "add04.ss - s/s/u"
     (build-path example-servlets "add04.ss"))  
    
    (test-add-two-numbers
+    mkd
     "add06.ss - send/suspend/dispatch"
     (build-path example-servlets "add06.ss"))
    
    ; XXX test something is not d-c
    (test-double-counters
+    mkd
     "wc-fake.ss - no cells"
     (build-path example-servlets "wc-fake.ss"))
    
    (test-double-counters
+    mkd
     "wc.ss - make-web-cell web-cell-ref web-cell-shadow"
     (build-path example-servlets "wc.ss"))
    
    (test-double-counters
+    mkd
     "wc-comp.ss - make-web-cell web-cell-ref web-cell-shadow web-cell-component"
     (build-path example-servlets "wc-comp.ss"))
    
