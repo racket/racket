@@ -26,7 +26,6 @@ module browser threading seems wrong.
            "drsig.ss"
            "auto-language.ss"
            "insert-large-letters-typed.ss"
-           "first-line-text.ss"
            mrlib/switchable-button
            mrlib/cache-image-snip
 
@@ -428,7 +427,7 @@ module browser threading seems wrong.
     (define (make-definitions-text%)
       (let ([definitions-super%
               ((get-program-editor-mixin)
-               (first-line-text-mixin
+               (text:first-line-mixin
                 (drscheme:module-language:module-language-put-file-mixin
                  (scheme:text-mixin
                   (color:text-mixin
@@ -671,6 +670,10 @@ module browser threading seems wrong.
               (set! needs-execution-state (string-constant needs-execute-defns-edited)))
             (inner (void) after-delete x y))
           
+          (define/override (is-special-first-line? l) 
+            (and (preferences:get 'drscheme:module-language-first-line-special?)
+                 (is-lang-line? l)))
+          
           (inherit get-filename)
           (field
            [tmp-date-string #f])
@@ -788,6 +791,32 @@ module browser threading seems wrong.
                   drscheme:module-language:module-language<%>))
           (inherit set-max-undo-history)
           (set-max-undo-history 'forever))))
+    
+    ;; is-lang-line? : string -> boolean
+    ;; given the first line in the editor, this returns #t if it is a #lang line.
+    (define (is-lang-line? l)
+      (let ([m (regexp-match #rx"^#(!|(lang ))([-+_/a-zA-Z0-9]+)(.|$)" l)])
+        (and m
+             (let ([lang-name (list-ref m 3)]
+                   [last-char (list-ref m 4)])
+               (and (not (char=? #\/ (string-ref lang-name 0)))
+                    (not (char=? #\/ (string-ref lang-name (- (string-length lang-name) 1))))
+                    (or (string=? "" last-char)
+                        (char-whitespace? (string-ref last-char 0))))))))
+    
+    ;; test cases for is-lang-line?
+    #;
+    (list (is-lang-line? "#lang x")
+          (is-lang-line? "#lang scheme")
+          (is-lang-line? "#lang scheme ")
+          (not (is-lang-line? "#lang schemeα"))
+          (not (is-lang-line? "#lang scheme/ "))
+          (not (is-lang-line? "#lang /scheme "))
+          (is-lang-line? "#lang sch/eme ")
+          (is-lang-line? "#lang r6rs")
+          (is-lang-line? "#!r6rs")
+          (is-lang-line? "#!r6rs ")
+          (not (is-lang-line? "#!/bin/sh")))
     
     (define (get-module-language/settings)
       (let* ([module-language

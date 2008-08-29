@@ -159,6 +159,7 @@
   
   (define-signature text-class^
     (basic<%>
+     first-line<%>
      foreground-color<%>
      hide-caret/selection<%>
      nbsp->space<%>
@@ -192,6 +193,7 @@
      input-box%
      
      basic-mixin
+     first-line-mixin
      foreground-color-mixin
      hide-caret/selection-mixin
      nbsp->space-mixin

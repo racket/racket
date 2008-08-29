@@ -1263,6 +1263,8 @@ please adhere to these guidelines:
   (ml-cp-remove "Remove")
   (ml-cp-raise "Raise")
   (ml-cp-lower "Lower")
+  
+  (ml-always-show-#lang-line "Always show #lang line in the Module language")
 
   ;; Profj
   (profj-java "Java")

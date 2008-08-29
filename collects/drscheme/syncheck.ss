@@ -223,7 +223,8 @@ If the namespace does not, they are colored the unbound color.
                      get-pos/text position-location
                      get-canvas last-position dc-location-to-editor-location
                      find-position begin-edit-sequence end-edit-sequence
-                     highlight-range unhighlight-range)
+                     highlight-range unhighlight-range
+                     paragraph-end-position first-line-currently-drawn-specially?)
             
             
             
@@ -300,19 +301,6 @@ If the namespace does not, they are colored the unbound color.
             (define cursor-location #f)
             (define cursor-text #f)
             (define cursor-eles #f)
-            (define/private (find-poss text left-pos right-pos)
-              (let ([xlb (box 0)]
-                    [ylb (box 0)]
-                    [xrb (box 0)]
-                    [yrb (box 0)])
-                (send text position-location left-pos xlb ylb #t)
-                (send text position-location right-pos xrb yrb #f)
-                (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
-                              [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
-                              [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
-                              [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
-                  (values (/ (+ xl xr) 2)
-                          (/ (+ yl yr) 2)))))
             
             ;; find-char-box : text number number -> (values number number number number)
             ;; returns the bounding box (left, top, right, bottom) for the text range.
@@ -377,7 +365,20 @@ If the namespace does not, they are colored the unbound color.
                 (set-arrow-start-y! arrow start-y)
                 (set-arrow-end-x! arrow end-x)
                 (set-arrow-end-y! arrow end-y)))
-            
+                       
+            (define/private (find-poss text left-pos right-pos)
+              (let ([xlb (box 0)]
+                    [ylb (box 0)]
+                    [xrb (box 0)]
+                    [yrb (box 0)])
+                (send text position-location left-pos xlb ylb #t)
+                (send text position-location right-pos xrb yrb #f)
+                (let*-values ([(xl-off yl-off) (send text editor-location-to-dc-location (unbox xlb) (unbox ylb))]
+                              [(xl yl) (dc-location-to-editor-location xl-off yl-off)]
+                              [(xr-off yr-off) (send text editor-location-to-dc-location (unbox xrb) (unbox yrb))]
+                              [(xr yr) (dc-location-to-editor-location xr-off yr-off)])
+                  (values (/ (+ xl xr) 2)
+                          (/ (+ yl yr) 2)))))
             
             ;; syncheck:init-arrows : -> void
             (define/public (syncheck:init-arrows)
@@ -522,7 +523,6 @@ If the namespace does not, they are colored the unbound color.
                      (loop (- n 1)))))))
             
             (define/override (on-paint before dc left top right bottom dx dy draw-caret)
-              (super on-paint before dc left top right bottom dx dy draw-caret)
               (when (and arrow-vectors (not before))
                 (let ([draw-arrow2
                        (λ (arrow)
@@ -589,7 +589,11 @@ If the namespace does not, they are colored the unbound color.
                   (send dc set-pen old-pen)
                   (send dc set-font old-font)
                   (send dc set-text-foreground old-text-foreground)
-                  (send dc set-text-mode old-text-mode))))
+                  (send dc set-text-mode old-text-mode)))
+              
+              ;; do the drawing before calling super so that the arrows don't
+              ;; cross the "#lang ..." line, if it is present.
+              (super on-paint before dc left top right bottom dx dy draw-caret))
             
             ;; for-each-tail-arrows : (tail-arrow -> void) tail-arrow -> void
             (define/private (for-each-tail-arrows f tail-arrow)

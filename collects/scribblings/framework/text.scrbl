@@ -167,9 +167,88 @@
 
   }
 }
+
+@definterface[text:first-line<%> (text%)]{
+
+  Objects implementing this interface, when
+  @method[text:first-line<%> highlight-first-line]
+  is invoked with @scheme[#t], always show their
+  first line, even with scrolled (as long as
+  @method[text:first-line<%> first-line-currently-drawn-specially?]
+  returns @scheme[#t]).
+
+  @defmethod[#:mode public-final (highlight-first-line [on? boolean?]) void?]{
+    Call this method to enable special treatment of the first line in the editor.
+  }
+
+  @defmethod[#:mode public-final (first-line-currently-drawn-specially?) boolean?]{
+     Returns @scheme[#t] if @method[text:first-line<%> is-special-first-line?]
+     returned @scheme[#t] for the current first line
+     and if the buffer is scrolled down so that the first
+     line would not (ordinarily) be visible.
+  }
+
+  @defmethod[#:mode public-final (get-first-line-height) number?]{
+   Returns the height, in pixels, of the first line.
+  }
+
+  @defmethod[(is-special-first-line? [line string?]) boolean?]{
+   Override this method to control when the first line is always
+   visible. The argument is the first line, as a string.
+  }
+
+}
+
+@defmixin[text:first-line-mixin (text%) (text:first-line<%>)]{
+  Provides the implementation of @scheme[text:first-line<%>].
+  Does so by just painting the text of the first
+  line over top of what is already there and overriding
+  @method[text:first-line-mixin scroll-editor-to] to patch
+  up scrolling and
+  @method[text:first-line-mixin on-event] to patch up
+  mouse handling.
+
+  @defmethod[#:mode override
+             (on-paint [before? any/c]
+		       [dc (is-a?/c dc<%>)]
+		       [left real?]
+		       [top real?]
+		       [right real?]
+		       [bottom real?]
+		       [dx real?]
+		       [dy real?]
+		       [draw-caret (one-of/c 'no-caret 'show-inactive-caret 'show-caret)])
+	     void?]{
+
+  Based on the various return values of the methods in @scheme[text:first-line],
+  draws the first actual line of the editor over top of the first
+  visible line in the editor.
+  }
+
+  @defmethod[#:mode override
+	     (on-event [event (is-a?/c mouse-event%)])
+	     void?]{
+    Clicks in the first line cause the editor to scroll to the
+    actual first line.
+  }
+	     
+  @defmethod[#:mode override 
+	     (scroll-editor-to [localx real?]
+			       [localy real?]
+			       [width (and/c real? (not/c negative?))]
+			       [height (and/c real? (not/c negative?))]
+			       [refresh? any/c]
+			       [bias (one-of/c 'start 'end 'none)])
+	     void?]{
+   Scrolls a little bit more, when a scroll would be requested
+   that scrolls something so that it is line underneath the first line.
+ }
+}
+
 @definterface[text:foreground-color<%> (text:basic<%> editor:standard-style-list<%>)]{
 
 }
+
 @defmixin[text:foreground-color-mixin (text:basic<%> editor:standard-style-list<%>) (text:foreground-color<%>)]{
   This mixin changes the default text style to have
   the foreground color controlled by

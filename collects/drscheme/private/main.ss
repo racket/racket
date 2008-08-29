@@ -53,6 +53,8 @@
                                (finder:default-filters)))
 (application:current-app-name (string-constant drscheme))
 
+(preferences:set-default 'drscheme:module-language-first-line-special? #t boolean?)
+
 (preferences:set-default 'drscheme:defns-popup-sort-by-name? #f boolean?)
 
 (preferences:set-default 'drscheme:toolbar-state 
@@ -242,6 +244,11 @@
      (make-check-box 'drscheme:defs/ints-horizontal
                      (string-constant interactions-beside-definitions)
                      editor-panel)
+     
+     (make-check-box 'drscheme:module-language-first-line-special?
+                     (string-constant ml-always-show-#lang-line)
+                     editor-panel)
+     
      ;; come back to this one.
      #;
      (letrec ([hp (new horizontal-panel% 
