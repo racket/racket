@@ -1634,7 +1634,8 @@
                   (- (unbox by) (/ ch 2))
                   cw
                   ch
-                  #t)))))
+                  #t)
+            (send d-text set-position pos)))))
     
     (define/public (delegate-moved)
       (let ([startb (box 0)]
