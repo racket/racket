@@ -340,7 +340,8 @@
                (with-handlers ([exn:fail? 
                                 (lambda (e)
                                   (set! critical-errors
-                                        (cons (format "Error generating scribble documentation: ~a" (exn-message e)) critical-errors)))])
+                                        (cons (format "Error generating scribble documentation: ~a" (render-exn e))
+                                              critical-errors)))])
                  (unless (list? scribble-files)
                    (error (format "malformed scribblings field; expected (listof (list string (listof symbol))), received ~e" 
                                   scribble-files)))
@@ -539,11 +540,11 @@
 (define (check-info.ss-sanity dir announce warn fail)
   (with-handlers ([exn:fail:read? 
                    (λ (e) 
-                     (fail (format "Package has an unreadable info.ss file. ~a" (exn-message e))) 
+                     (fail (format "Package has an unreadable info.ss file. ~a" (render-exn e))) 
                      #f)]
                   [exn:fail:syntax? 
                    (λ (e) 
-                     (fail (format "Package's info.ss has an syntactically ill-formed info.ss file: ~a" (exn-message e)))
+                     (fail (format "Package's info.ss has an syntactically ill-formed info.ss file: ~a" (render-exn e)))
                      #f)])
     (let ([i* (get-info/full dir)])
       (cond
@@ -634,6 +635,14 @@
                        string?
                        (announce "Version description: ~a\n" version)]))])
       i*)))
+
+
+(define (render-exn e)
+  (let ([sp (open-output-string)])
+    (parameterize ([current-output-port sp]
+                   [current-error-port sp])
+      ((error-display-handler) (exn-message e) e))
+    (get-output-string sp)))
 
 ;; legal-categories : (listof symbol)
 (define legal-categories
