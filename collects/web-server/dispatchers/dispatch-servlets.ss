@@ -58,38 +58,36 @@
                        (lambda (the-exn) (responders-servlet-loading uri the-exn))])
         (call-with-continuation-prompt
          (lambda ()
-           ; Create the session frame
-           (with-frame
-            (define instance-custodian (make-servlet-custodian))
-            (define-values (servlet-path _)
-              (with-handlers
-                  ([void (lambda (e)
-                           (raise (make-exn:fail:filesystem:exists:servlet
-                                   (exn-message e)
-                                   (exn-continuation-marks e))))])
-                (url->path uri)))
-            (parameterize ([current-directory (directory-part servlet-path)]
-                           [current-custodian instance-custodian]
-                           [exit-handler
-                            (lambda _
-                              (kill-connection! conn)
-                              (custodian-shutdown-all instance-custodian))])
-              ;; any resources (e.g. threads) created when the
-              ;; servlet is loaded should be within the dynamic
-              ;; extent of the servlet custodian
-              (define the-servlet (cached-load servlet-path))
-              (parameterize ([current-servlet the-servlet]
-                             [current-namespace (servlet-namespace the-servlet)])
-                (define manager (servlet-manager the-servlet))
-                (parameterize ([current-execution-context (make-execution-context req)])
-                  (define instance-id ((manager-create-instance manager) (exit-handler)))
-                  (parameterize ([current-servlet-instance-id instance-id])
-                    (with-handlers ([(lambda (x) #t)
-                                     (lambda (exn)
-                                       (responders-servlet
-                                        (request-uri req)
-                                        exn))])
-                      ((servlet-handler the-servlet) req))))))))
+           (define instance-custodian (make-servlet-custodian))
+           (define-values (servlet-path _)
+             (with-handlers
+                 ([void (lambda (e)
+                          (raise (make-exn:fail:filesystem:exists:servlet
+                                  (exn-message e)
+                                  (exn-continuation-marks e))))])
+               (url->path uri)))
+           (parameterize ([current-directory (directory-part servlet-path)]
+                          [current-custodian instance-custodian]
+                          [exit-handler
+                           (lambda _
+                             (kill-connection! conn)
+                             (custodian-shutdown-all instance-custodian))])
+             ;; any resources (e.g. threads) created when the
+             ;; servlet is loaded should be within the dynamic
+             ;; extent of the servlet custodian
+             (define the-servlet (cached-load servlet-path))
+             (parameterize ([current-servlet the-servlet]
+                            [current-namespace (servlet-namespace the-servlet)])
+               (define manager (servlet-manager the-servlet))
+               (parameterize ([current-execution-context (make-execution-context req)])
+                 (define instance-id ((manager-create-instance manager) (exit-handler)))
+                 (parameterize ([current-servlet-instance-id instance-id])
+                   (with-handlers ([(lambda (x) #t)
+                                    (lambda (exn)
+                                      (responders-servlet
+                                       (request-uri req)
+                                       exn))])
+                     ((servlet-handler the-servlet) req)))))))
          servlet-prompt)))
     (output-response conn response))
   

@@ -418,8 +418,6 @@ generated. For more information on their semantics, consult the paper
 @href-link["http://www.cs.brown.edu/~sk/Publications/Papers/Published/mk-int-safe-state-web/"
 "\"Interaction-Safe State for the Web\""].
 
-@; XXX Document with-frame and with-frame-after?
-
 @defproc[(web-cell? [v any/c])
          boolean?]{
  Determines if @scheme[v] is a web-cell.

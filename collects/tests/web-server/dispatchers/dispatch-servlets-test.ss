@@ -97,14 +97,14 @@
                        "Expired"))
     
     (test-double-counters
-    mkd
-    "wc-fake.ss - no cells"
-    (build-path example-servlets "wc-fake.ss"))
-   
-   (test-double-counters
-    mkd
-    "wc.ss - make-web-cell web-cell-ref web-cell-shadow"
-    (build-path example-servlets "wc.ss"))
+     mkd
+     "wc-fake.ss - no cells"
+     (build-path example-servlets "wc-fake.ss"))
+    
+    (test-double-counters
+     mkd
+     "wc.ss - make-web-cell web-cell-ref web-cell-shadow"
+     (build-path example-servlets "wc.ss"))
     
     ; XXX Broken
     #;(test-equal? "adjust.ss - adjust-timeout!"
@@ -117,5 +117,5 @@
 
 ; Comment in to run tests
 #;(require #;(planet "graphical-ui.ss" ("schematics" "schemeunit.plt" 2))
-         (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
+           (planet "text-ui.ss" ("schematics" "schemeunit.plt" 2)))
 #;(test/text-ui dispatch-servlets-tests)
