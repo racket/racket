@@ -68,7 +68,7 @@
               (err-stx e))])
        (reset!)
        (unless (null? stxs)
-         (raise-typecheck-error "Errors encountered" (apply append stxs))))]))
+         (raise-typecheck-error (format "Summary: ~a errors encountered" (length stxs)) (apply append stxs))))]))
 
 (define delay-errors? (make-parameter #t))
 

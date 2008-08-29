@@ -385,13 +385,13 @@
                            "function over ~a")])
        (if (and (andmap null? msg-doms)
                 (null? argtypes))
-           (tc-error/expr #:return (ret (-> (Un)))
+           (tc-error/expr #:return (ret (Un))
                           (string-append 
                            "Could not infer types for applying polymorphic "
                            fcn-string
                            "\n")
                           (stringify msg-vars))
-           (tc-error/expr #:return (ret (->* (list) Univ (Un)))
+           (tc-error/expr #:return (ret (Un))
                           (string-append
                            "Polymorphic " fcn-string " could not be applied to arguments:~n"
                            (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
@@ -443,7 +443,7 @@
            (cond [(null? doms*) 
                   (tc-error/expr 
                    #:return (ret (Un))
-                   (string-append "No function domains matched in function application:"
+                   (string-append "No function domains matched in function application:\n"
                                   (domain-mismatches t doms rests drests argtypes #f #f)))]
                  [(subtypes/varargs argtypes (car doms*) (car rests*)) 
                   (when (car rests*)
