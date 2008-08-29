@@ -118,16 +118,21 @@
                             "relative path escapes collection: ~s relative to ~s"
                             elements relto-mp))))))]
          [(eq? (car relto-mp) 'planet)
-          (let ([pathstr (simpler-relpath
-                          (attach-to-relative-path-string
-                           elements 
-                           (apply string-append
-                                  (append
-                                   (map (lambda (s)
-                                          (string-append s "/"))
-                                        (cdddr relto-mp))
-                                   (list (cadr relto-mp))))))])
-            (normalize-planet `(planet ,pathstr ,(caddr relto-mp))))]
+          (let ([relto-mp
+                 ;; make sure relto-mp is in long form:
+                 (if (null? (cddr relto-mp))
+                     (normalize-planet relto-mp)
+                     relto-mp)])
+            (let ([pathstr (simpler-relpath
+                            (attach-to-relative-path-string
+                             elements 
+                             (apply string-append
+                                    (append
+                                     (map (lambda (s)
+                                            (string-append s "/"))
+                                          (cdddr relto-mp))
+                                     (list (cadr relto-mp))))))])
+              (normalize-planet `(planet ,pathstr ,(caddr relto-mp)))))]
         [else (error 'combine-relative-elements
                      "don't know how to deal with: ~s" relto-mp)]))
 
@@ -188,9 +193,9 @@
                                          [(regexp-match? #rx"<=" vers)
                                           `(- ,(string->number (substring vers 2)))]
                                          [(regexp-match? #rx">=" vers)
-                                          `(+ ,(string->number (substring vers 2)))]
+                                          (string->number (substring vers 2))]
                                          [(regexp-match? #rx"=" vers)
-                                          (string->number (substring vers 1))]
+                                          `(= ,(string->number (substring vers 1)))]
                                          [(regexp-match #rx"(.*)-(.*)" vers)
                                           => (lambda (m)
                                                `(,(string->number (cadr m))

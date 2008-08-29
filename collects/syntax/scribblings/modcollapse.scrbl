@@ -13,7 +13,7 @@
 Returns a ``simplified'' module path by combining
 @scheme[module-path-v] with @scheme[rel-to-module-path-v], where the
 latter must have the form @scheme['(lib ....)] or a symbol,
-@scheme['(file <string>)], @scheme['(path ....)], a @techlink[#:doc
+@scheme['(file <string>)], @scheme['(planet ....)], a @techlink[#:doc
 refman]{path}, or a thunk to generate one of those.
 
 The result can be a path if @scheme[module-path-v] contains a path

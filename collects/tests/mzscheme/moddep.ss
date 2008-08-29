@@ -111,8 +111,8 @@
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "x.ss" ("m" "z.plt" 2)) (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2)) '(planet "m/z:2/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 5)) '(planet "m/z:2:5/x.ss") (build-path "yikes"))
-(test-cmp '(planet "x.ss" ("m" "z.plt" 2 5)) '(planet "m/z:2:=5/x.ss") (build-path "yikes"))
-(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (+ 5))) '(planet "m/z:2:>=5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 (= 5))) '(planet "m/z:2:=5/x.ss") (build-path "yikes"))
+(test-cmp '(planet "x.ss" ("m" "z.plt" 2 5)) '(planet "m/z:2:>=5/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (- 5))) '(planet "m/z:2:<=5/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
 (test-cmp '(planet "x.ss" ("m" "z.plt" 2 (7 99))) '(planet "m/z:2:7-99/x.ss") (build-path "yikes"))
@@ -123,6 +123,8 @@
           "../utils.ss" '(planet "stuff.ss" ("untyped" "unlib.plt" 3 (= 6)) "doc"))
 (test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6)) "down") 
           "../down/utils.ss" '(planet "stuff.ss" ("untyped" "unlib.plt" 3 (= 6)) "doc"))
+(test-cmp '(planet "utils.ss" ("untyped" "unlib.plt" 3 (= 6)) "down") 
+          "../down/utils.ss" '(planet untyped/unlib:3:=6/doc/stuff))
 
 (test-cmp (build-path 'same "x.ss") "x.ss" (build-path 'same))
 
