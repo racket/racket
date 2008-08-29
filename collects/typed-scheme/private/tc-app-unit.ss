@@ -364,7 +364,7 @@
 
 (define-syntax (handle-clauses stx)
   (syntax-case stx ()
-    [(_  (lsts ... rngs) pred infer t argtypes expected)
+    [(_  (lsts ... rngs) f-stx pred infer t argtypes expected)
      (with-syntax ([(vars ... rng) (generate-temporaries #'(lsts ... rngs))])
        (syntax/loc stx
          (or (for/or ([vars lsts] ... [rng rngs]
@@ -374,22 +374,28 @@
                             (log-result substitution)
                             (or expected
                                 (ret (subst-all substitution rng))))))             
-             (poly-fail t argtypes))))]))
+             (poly-fail t argtypes #:name (and (identifier? f-stx) f-stx)))))]))
 
-(define (poly-fail t argtypes)
+(define (poly-fail t argtypes #:name [name #f])
   (match t
     [(or (Poly-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...)))
          (PolyDots-names: msg-vars (Function: (list (arr: msg-doms msg-rngs msg-rests msg-drests _ _) ...))))
-     (if (and (andmap null? msg-doms)
-              (null? argtypes))
-         (tc-error/expr #:return (ret (-> (Un)))
-                        "Could not infer types for applying polymorphic function over ~a~n"
-                        (stringify msg-vars))
-         (tc-error/expr #:return (ret (->* (list) Univ (Un)))
-                        (string-append
-                         "Polymorphic function over ~a could not be applied to arguments:~n"
-                         (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
-                        (stringify msg-vars)))]))
+     (let ([fcn-string (if name
+                           (format "function ~a (over ~~a)" (syntax->datum name))
+                           "function over ~a")])
+       (if (and (andmap null? msg-doms)
+                (null? argtypes))
+           (tc-error/expr #:return (ret (-> (Un)))
+                          (string-append 
+                           "Could not infer types for applying polymorphic "
+                           fcn-string
+                           "\n")
+                          (stringify msg-vars))
+           (tc-error/expr #:return (ret (->* (list) Univ (Un)))
+                          (string-append
+                           "Polymorphic " fcn-string " could not be applied to arguments:~n"
+                           (domain-mismatches t msg-doms msg-rests msg-drests argtypes #f #f))
+                          (stringify msg-vars))))]))
 
 
 (define (tc/funapp f-stx args-stx ftype0 argtys expected)
@@ -450,7 +456,7 @@
                                      (Function: (list (arr: doms rngs (and rests #f) (and drests #f) thn-effs els-effs) ...)))
                               (PolyDots: (list vars ... _)
                                          (Function: (list (arr: doms rngs (and rests #f) (and drests #f) thn-effs els-effs) ...))))))
-         (handle-clauses (doms rngs) 
+         (handle-clauses (doms rngs) f-stx
                          (lambda (dom _) (= (length dom) (length argtypes)))
                          (lambda (dom rng) (infer (fv/list (cons rng dom)) argtypes dom rng (fv rng) expected))
                          t argtypes expected)]
@@ -461,7 +467,7 @@
                               ;; so we can just use "vars" instead of (list fixed-vars ... dotted-var)
                               (PolyDots: vars (Function: (list (arr: doms rngs rests (and drests #f) thn-effs els-effs) ...))))))
          (printf/log "Polymorphic varargs function application (~a)\n" (syntax->datum f-stx))
-         (handle-clauses (doms rests rngs)
+         (handle-clauses (doms rests rngs) f-stx
                          (lambda (dom rest rng) (<= (length dom) (length argtypes)))
                          (lambda (dom rest rng) (infer/vararg vars argtypes dom rest rng (fv rng) expected))
                          t argtypes expected)]
@@ -470,7 +476,7 @@
                              (and vars (list fixed-vars ... dotted-var))
                              (Function: (list (arr: doms rngs (and #f rests) (cons dtys dbounds) thn-effs els-effs) ...)))))
          (printf/log "Polymorphic ... function application (~a)\n" (syntax->datum f-stx))
-         (handle-clauses (doms dtys dbounds rngs)
+         (handle-clauses (doms dtys dbounds rngs) f-stx
                          (lambda (dom dty dbound rng) (and (<= (length dom) (length argtypes))
                                                            (eq? dotted-var dbound)))
                          (lambda (dom dty dbound rng) (infer/dots fixed-vars dotted-var argtypes dom dty rng (fv rng) expected))
