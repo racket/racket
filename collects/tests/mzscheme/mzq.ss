@@ -1,3 +1,3 @@
 
-(define quiet-load "mz.ss")
+(define quiet-load "mz-tests.ss")
 (load-relative "quiet.ss")
