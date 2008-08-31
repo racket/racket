@@ -427,7 +427,7 @@ to specify wrapper arguments that are not sent to the foreign function
 (e.g., an argument that is used for processing the foreign output).}
 
 
-@defform/subs[#:literals (i io io)
+@defform/subs[#:literals (i o io)
               (_ptr mode type-expr)
               ([mode i o io])]{
 
