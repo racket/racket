@@ -928,7 +928,9 @@ please adhere to these guidelines:
  (whole-part "Whole Part")
  (numerator "Numerator")
  (denominator "Denominator")
- (invalid-number "Invalid number: must be an exact, real, non-integral number.")
+ (insert-number/bad-whole-part "The whole part of the number must be an integral number")
+ (insert-number/bad-numerator "The numerator part of the number must be a non-negative, integral number")
+ (insert-number/bad-denominator "The denominator part of the number must be a positive, integral number")
  (insert-fraction-menu-item-label "Insert Fraction...")
 
  ;; number snip popup menu

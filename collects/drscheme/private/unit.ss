@@ -275,25 +275,29 @@ module browser threading seems wrong.
                       [whole-s (if (string=? (send whole get-value) "")
                                    0
                                    (string->number (send whole get-value)))])
-                  (if (and num-s den-s whole-s)
-                      (let ([ans (+ whole-s (/ num-s den-s))])
-                        (if (and (exact? ans)
-                                 (real? ans)
-                                 (not (integer? ans)))
-                            ans
-                            #f))
-                      #f)))]
+                  (cond
+                    [(or (not whole-s) (not (integer? whole-s)))
+                     (string-constant insert-number/bad-whole-part)]
+                    [(or (not num-s) (not (integer? num-s)) (< num-s 0))
+                     (string-constant insert-number/bad-numerator)]
+                    [(or (not den-s) (not (integer? den-s)) (<= den-s 0))
+                     (string-constant insert-number/bad-denominator)]
+                    [else
+                     (if (< whole-s 0)
+                         (- whole-s (/ num-s den-s))
+                         (+ whole-s (/ num-s den-s)))])))]
              [ok-callback
               (λ () 
-                (cond
-                  [(validate-number)
-                   (set! ok? #t)
-                   (send dlg show #f)]
-                  [else 
-                   (message-box
-                    (string-constant drscheme)
-                    (string-constant invalid-number)
-                    dlg)]))]
+                (let ([v (validate-number)])
+                  (cond
+                    [(number? v)
+                     (set! ok? #t)
+                     (send dlg show #f)]
+                    [else 
+                     (message-box
+                      (string-constant drscheme)
+                      v
+                      dlg)])))]
              [cancel-callback 
               (λ () (send dlg show #f))])
         (let-values ([(ok cancel) 
@@ -306,7 +310,10 @@ module browser threading seems wrong.
             (send num-m min-width mw))
           (send bp set-alignment 'right 'center)
           (send dlg show #t)
-          (and ok? (validate-number)))))
+          (and ok?
+               (let ([v (validate-number)])
+                 (and (number? v)
+                      v))))))
     
     ;; create-executable : (instanceof drscheme:unit:frame<%>) -> void
     (define (create-executable frame)
