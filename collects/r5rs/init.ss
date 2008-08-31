@@ -9,8 +9,9 @@
 ;; Printing pairs with curly braces is a bad idea, because
 ;;  syntax errors then use curly braces!
 
-(let-syntax ([out (syntax-rules ()
-                    [(_) (begin
-                           (require "main.ss")
-                           (provide (all-from-out "main.ss")))])])
-  (out))
+(define-syntax out
+  (syntax-rules ()
+    [(_) (begin
+           (require "main.ss")
+           (provide (all-from-out "main.ss")))]))
+(out)
