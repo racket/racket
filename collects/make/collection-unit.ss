@@ -23,13 +23,9 @@
            [sses (sort collection-files
                        (lambda (a b)
                          (string-ci<? (path->string a) (path->string b))))]
-           [bases (map (lambda (src)
-                         (extract-base-filename/ss src
-                                                   'make-collection-extension))
-                       sses)]
-           [zos (map (lambda (base)
-                       (build-path "compiled" (append-zo-suffix base)))
-		     bases)]
+           [zos (map (lambda (ss)
+                       (build-path "compiled" (append-zo-suffix ss)))
+		     sses)]
            [ss->zo-list
             (map (lambda (ss zo)
                    `(,zo (,ss)
