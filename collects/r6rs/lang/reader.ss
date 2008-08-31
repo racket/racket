@@ -1,19 +1,7 @@
-#lang scheme/base
+#lang s-exp syntax/module-reader
 
-(require (only-in syntax/module-reader wrap-read-all)
-         "../private/readtable.ss")
-(provide (rename-out [*read read]
-                     [*read-syntax read-syntax]))
+r6rs
 
-(define (*read in)
-  (wrap in read #f #f #f #f #f))
+#:wrapper1 with-r6rs-reader-parameters
 
-(define (*read-syntax src in modpath line col pos)
-  (wrap in (lambda (in)
-             (read-syntax src in))
-        modpath src line col pos))
-
-(define (wrap in read modpath src line col pos)
-  (with-r6rs-reader-parameters
-   (lambda ()
-     (wrap-read-all 'r6rs in read modpath src line col pos))))
+(require "../private/readtable.ss")
