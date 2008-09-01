@@ -1060,9 +1060,8 @@
               (cond
                 [(eq? tab (send tab get-master))
                  (set! debug? #t)
-                 (send (get-current-tab) prepare-execution debug?)
-                 (set! debug? #f)
-                 (execute-callback)]
+                 (execute-callback)
+                 (set! debug? #f)]
                 [else
                  (already-debugging tab)])))
           
@@ -1070,6 +1069,7 @@
             (let ([tab (get-current-tab)])
               (cond
                 [(eq? tab (send tab get-master))
+                 (send (get-current-tab) prepare-execution debug?)
                  (super execute-callback)]
                 [else
                  (already-debugging tab)])))
