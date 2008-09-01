@@ -121,7 +121,9 @@
        'top-level]
       [else
        ;; note: the directory passed to collapse-module-path-index should be irrelevant
-       (let ([collapsed (collapse-module-path-index mpi (current-directory))])
+       (let ([collapsed 
+              (with-handlers ((exn:fail? (λ (x) 'top-level)))  ;; this with-handlers works around a bug elsewhere
+                (collapse-module-path-index mpi (current-directory)))])
          (cond
            [(path? collapsed)
             (let ([resolved (resolved-module-path-name (module-path-index-resolve mpi))])
