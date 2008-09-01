@@ -177,6 +177,10 @@ ignored):
                         [pos number?])
          any/c]{
 
+[Note: this function is deprecated;
+@schememodname[syntax/module-reader] can be adapted using the various
+keywords to arbitrary readers, please use it instead.]
+
 Repeatedly calls @scheme[read] on @scheme[in] until an end of file,
 collecting the results in order into @scheme[_lst], and derives a
 @scheme[_name-id] from @scheme[(object-name in)].  The last five 
