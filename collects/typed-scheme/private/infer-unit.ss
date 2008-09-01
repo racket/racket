@@ -146,7 +146,7 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f t-thn-eff t-els-eff) s-arr)])
+            [new-cset (cgen/arr V (append vars X) (make-arr (append ts new-tys) t #f #f null t-thn-eff t-els-eff) s-arr)])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f #f                '() t-thn-eff t-els-eff)
       (arr: ss s #f (cons dty dbound) '() s-thn-eff s-els-eff))
@@ -159,7 +159,7 @@
                         (gensym dbound))]
             [new-tys  (for/list ([var vars])
                         (substitute (make-F var) dbound dty))]
-            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f s-thn-eff s-els-eff))])
+            [new-cset (cgen/arr V (append vars X) t-arr (make-arr (append ss new-tys) s #f #f null s-thn-eff s-els-eff))])
        (move-vars-to-dmap new-cset dbound vars))]
     [((arr: ts t #f (cons t-dty dbound) '() t-thn-eff t-els-eff)
       (arr: ss s #f (cons s-dty dbound) '() s-thn-eff s-els-eff))
@@ -205,7 +205,7 @@
                 [new-tys  (for/list ([var vars])
                             (substitute (make-F var) dbound s-dty))]
                 [new-cset (cgen/arr V (append vars X) t-arr 
-                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) s-thn-eff s-els-eff))])
+                                    (make-arr (append ss new-tys) s #f (cons s-dty dbound) null s-thn-eff s-els-eff))])
            (move-vars+rest-to-dmap new-cset dbound vars)))]
     ;; If dotted <: starred is correct, add it below.  Not sure it is.
     [((arr: ts t #f     (cons t-dty dbound) '() t-thn-eff t-els-eff)
