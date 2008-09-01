@@ -1,13 +1,8 @@
-#lang scheme/base
-(require (prefix-in r: "../typed-reader.ss")
-         (only-in syntax/module-reader wrap-read-all))
+#lang s-exp syntax/module-reader
 
-(define (*read in modpath line col pos)
-  (wrap-read-all 'typed-scheme in r:read modpath #f line col pos))
+typed-scheme
 
-(define (*read-syntax src in modpath line col pos)
-  (wrap-read-all
-   'typed-scheme in (lambda (in) (r:read-syntax src in))
-   modpath src line col pos))
+#:read r:read
+#:read-syntax r:read-syntax
 
-(provide (rename-out [*read read] [*read-syntax read-syntax]))
+(require (prefix-in r: "../typed-reader.ss"))
