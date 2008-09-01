@@ -1,23 +1,20 @@
+#lang scheme/base
 
-(module modhelp mzscheme
-  (require mzlib/string)
+(provide explode-relpath-string
+         module-path-v?
+         module-path-v-string?)
 
-  (provide explode-relpath-string
-           module-path-v?
-           module-path-v-string?)
+(define (explode-relpath-string p)
+  (map (lambda (p)
+         (cond [(assoc p '((#"." . same) (#".." . up))) => cdr]
+               [else (bytes->path p)]))
+       (regexp-split #rx#"/+" (string->bytes/utf-8 p))))
 
-  (define (explode-relpath-string p)
-    (map (lambda (p)
-           (cond [(assoc p '((#"." . same) (#".." . up))) => cdr]
-                 [else (bytes->path p)]))
-         (regexp-split #rx#"/+" (string->bytes/utf-8 p))))
+(define (module-path-v-string? v)
+  (and (regexp-match? #rx"^[-a-zA-Z0-9./]+$" v)
+       (not (regexp-match? #rx"^/" v))
+       (not (regexp-match? #rx"/$" v))))
 
-  (define (module-path-v-string? v)
-    (and (regexp-match? #rx"^[-a-zA-Z0-9./]+$" v)
-         (not (regexp-match? #rx"^/" v))
-         (not (regexp-match? #rx"/$" v))))
-
-  (define (module-path-v? v)
-    (or (path? v)
-        (module-path? v))))
-
+(define (module-path-v? v)
+  (or (path? v)
+      (module-path? v)))

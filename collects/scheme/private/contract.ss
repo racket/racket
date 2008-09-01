@@ -89,6 +89,16 @@ improve method arity mismatch contract violation error messages?
                        (string->symbol neg-blame-str)
                        (quote-syntax ident)))])))))
 
+;; id->contract-src-info : identifier -> syntax
+;; constructs the last argument to the -contract, given an identifier
+(define-for-syntax (id->contract-src-info id)
+  #`(list (make-srcloc #,id
+                       #,(syntax-line id)
+                       #,(syntax-column id)
+                       #,(syntax-position id)
+                       #,(syntax-span id))
+          #,(format "~s" (syntax->datum id))))
+  
 (define-for-syntax (make-provide/contract-transformer contract-id id pos-module-source)
   (make-set!-transformer
    (let ([saved-id-table (make-hasheq)])
@@ -106,11 +116,11 @@ improve method arity mismatch contract violation error messages?
                                       [pos-module-source pos-module-source])
                           (syntax-local-introduce
                            (syntax-local-lift-expression
-                            #'(-contract contract-id
+                            #`(-contract contract-id
                                          id
                                          pos-module-source
                                          (module-source-as-symbol #'name)
-                                         (quote-syntax name))))))])
+                                         #,(id->contract-src-info #'id))))))])
                (when key
                  (hash-set! saved-id-table key lifted-id))
                ;; Expand to a use of the lifted expression:
@@ -666,8 +676,8 @@ improve method arity mismatch contract violation error messages?
                                    (provide (rename-out [id-rename external-name]))))])
                   
                   (syntax-local-lift-module-end-declaration
-                   #'(begin 
-                       (-contract contract-id id pos-module-source 'ignored #'id)
+                   #`(begin 
+                       (-contract contract-id id pos-module-source 'ignored #,(id->contract-src-info #'id))
                        (void)))
                   
                   (syntax (code id-rename)))))]))
@@ -733,37 +743,30 @@ improve method arity mismatch contract violation error messages?
 (define-syntax (-contract stx)
   (syntax-case stx ()
     [(_ a-contract to-check pos-blame-e neg-blame-e)
-     (with-syntax ([src-loc (syntax/loc stx here)])
-       (syntax/loc stx
-         (contract/proc a-contract to-check pos-blame-e neg-blame-e (quote-syntax src-loc))))]
+     (let ([s (syntax/loc stx here)])
+       (quasisyntax/loc stx
+         (contract/proc a-contract to-check pos-blame-e neg-blame-e 
+                        (list (make-srcloc (quote-syntax #,s)
+                                           #,(syntax-line s)
+                                           #,(syntax-column s)
+                                           #,(syntax-position s)
+                                           #,(syntax-span s)) 
+                              #f))))]
     [(_ a-contract-e to-check pos-blame-e neg-blame-e src-info-e)
      (syntax/loc stx
        (begin
          (contract/proc a-contract-e to-check pos-blame-e neg-blame-e src-info-e)))]))
 
 (define (contract/proc a-contract-raw name pos-blame neg-blame src-info)
-  (unless (or (contract? a-contract-raw)
-              (and (procedure? a-contract-raw)
-                   (procedure-arity-includes? a-contract-raw 1)))
-    (error 'contract "expected a contract or a procedure of arity 1 as first argument, given: ~e, other args ~e ~e ~e ~e" 
-           a-contract-raw
-           name
-           pos-blame
-           neg-blame
-           src-info))
-  (let ([a-contract (if (contract? a-contract-raw)
-                        a-contract-raw
-                        (flat-contract a-contract-raw))])
-    (unless (and (symbol? neg-blame)
-                 (symbol? pos-blame))
-      (error 'contract
-             "expected symbols as names for assigning blame, given: ~e and ~e, other args ~e ~e ~e"
-             neg-blame pos-blame
-             a-contract-raw 
-             name
-             src-info))
-    (unless (syntax? src-info)
-      (error 'contract "expected syntax as last argument, given: ~e, other args ~e ~e ~e ~e"
+  (let ([a-contract (coerce-contract 'contract a-contract-raw)])
+ 
+    (unless (or (and (list? src-info)
+                     (= 2 (length src-info))
+                     (srcloc? (list-ref src-info 0))
+                     (or (string? (list-ref src-info 1))
+                         (not (list-ref src-info 1))))
+                (syntax? src-info))
+      (error 'contract "expected syntax or a list of two elements (srcloc and string or #f) as last argument, given: ~e, other args ~e ~e ~e ~e"
              src-info
              neg-blame 
              pos-blame

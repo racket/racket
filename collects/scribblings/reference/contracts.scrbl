@@ -1,5 +1,6 @@
 #lang scribble/doc
 @(require "mz.ss")
+@(require (for-label syntax/modcollapse))
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
@@ -662,7 +663,7 @@ that definition.}
                      positive-blame-expr negative-blame-expr)
            (contract contract-expr to-protect-expr 
                      positive-blame-expr negative-blame-expr
-                     contract-source-expr)]]{
+                     contract-source-info)]]{
 
 The primitive mechanism for attaching a contract to a value. The
 purpose of @scheme[contract] is as a target for the expansion of some
@@ -680,12 +681,31 @@ The values of @scheme[positive-blame-expr] and
 blame for positive and negative positions of the contract specified by
 @scheme[contract-expr]. 
 
-If specified, @scheme[contract-source-expr], indicates where the
-contract was assumed. Its value must be a syntax object specifying the
+If specified, @scheme[contract-source-info], indicates where the
+contract was assumed. Its value must be a either:
+@itemize{
+@item{a list of two elements: @scheme[srcloc] struct and
+either a string or @scheme[#f]. The srcloc struct inidates
+where the contract was assumed. Its @tt{source} field
+should be a syntax object, and @scheme[module-path-index-resolve]
+is called on it to extract the path of syntax object.
+
+If the second element of
+the list is not @scheme[#f], it is used as the name of the
+identifier whose contract was assumed.}
+
+@item{a syntax object specifying the
 source location of the location where the contract was assumed. If the
 syntax object wraps a symbol, the symbol is used as the name of the
-primitive whose contract was assumed. If absent, it defaults to the
-source location of the @scheme[contract] expression.}
+primitive whose contract was assumed.}
+}
+
+If absent, it defaults to the source location of the
+@scheme[contract] expression with no identifying name.
+
+The second form above is not recommended, because mzscheme strips
+source location information from compiled files.
+}
 
 @; ------------------------------------------------------------------------
 
@@ -967,20 +987,30 @@ name @scheme[sexp-name] when signaling a contract violation.}
 
 @defparam[contract-violation->string 
           proc 
-          (any/c any/c symbol? symbol? any/c string? . -> . string?)]{
-
+          (-> any/c any/c any/c any/c string? string?)]{
 
 This is a parameter that is used when constructing a
 contract violation error. Its value is procedure that
-accepts six arguments: the value that the contract applies
-to, a syntax object representing the source location where
-the contract was established, the names of the two parties
-to the contract (as symbols) where the first one is the
-guilty one, an sexpression representing the contract, and a
-message indicating the kind of violation. The procedure then
+accepts five arguments: 
+@itemize{
+@item{the value that the contract applies to,}
+@item{a syntax object representing the source location where
+the contract was established, }
+@item{the name of the party that violated the contract, }
+@item{an sexpression representing the contract, and }
+@item{a message indicating the kind of violation.
+}}
+The procedure then
 returns a string that is put into the contract error
 message. Note that the value is often already included in
-the message that indicates the violation.}
+the message that indicates the violation.
+
+If the contract was establised via
+@scheme[provide/contract], the names of the party to the
+contract will be sexpression versions of the module paths
+(as returned by @scheme[collapse-module-path]).
+
+}
 
 
 @defform[(recursive-contract contract-expr)]{

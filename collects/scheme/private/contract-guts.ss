@@ -9,7 +9,7 @@
 (provide raise-contract-error
          guilty-party
          contract-violation->string
-         coerce-contract 
+         coerce-contract
          
          flat-contract/predicate?
          flat-contract?
@@ -176,7 +176,7 @@
         [formatted-contract-sexp
          (let ([one-line (format "~s" contract-sexp)])
            (if (< (string-length one-line) 30)
-               (string-append one-line " ")
+               one-line
                (let ([sp (open-output-string)])
                  (newline sp)
                  (parameterize ([pretty-print-print-line print-contract-liner]
@@ -184,13 +184,24 @@
                    (pretty-print contract-sexp sp))
                  (get-output-string sp))))]
         [specific-blame
-         (let ([datum (syntax->datum src-info)])
-           (if (symbol? datum)
-               (format "on ~a" datum)
-               ""))])
+         (cond
+           [(syntax? src-info)
+            (let ([datum (syntax->datum src-info)])
+              (if (symbol? datum)
+                  (format " on ~a" datum)
+                  ""))]
+           [(pair? src-info)
+            (format " on ~a" (list-ref src-info 1))]
+           [else ""])])
     (string-append (format "~a~a broke the contract ~a~a; "
                            blame-src
-                           to-blame
+                           (cond
+                             [(and (pair? to-blame)
+                                   (pair? (cdr to-blame))
+                                   (null? (cddr to-blame))
+                                   (equal? 'quote (car to-blame)))
+                              (format "'~s" (cadr to-blame))]
+                             [else (format "~s" to-blame)])
                            formatted-contract-sexp
                            specific-blame)
                    msg)))
@@ -207,14 +218,16 @@
                                    contract-sexp 
                                    (apply format fmt args)))
     (current-continuation-marks)
-    (if src-info
-        (list (make-srcloc 
-               (syntax-source src-info)
-               (syntax-line src-info)
-               (syntax-column src-info)
-               (syntax-position src-info)
-               (syntax-span src-info)))
-        '())
+    (cond
+      [(syntax? src-info)
+       (list (make-srcloc 
+              (syntax-source src-info)
+              (syntax-line src-info)
+              (syntax-column src-info)
+              (syntax-position src-info)
+              (syntax-span src-info)))]
+      [(srcloc? src-info) (list src-info)]
+      [else '()])
     blame)))
 
 (define print-contract-liner
@@ -226,9 +239,10 @@
                     2)
              0)))))
 
-;; src-info-as-string : (union syntax #f) -> string
+;; src-info-as-string : (union srcloc syntax #f) -> string
 (define (src-info-as-string src-info)
-  (if (syntax? src-info)
+  (if (or (syntax? src-info)
+          (srcloc? src-info))
       (let ([src-loc-str (build-src-loc-string src-info)])
         (if src-loc-str
             (string-append src-loc-str  ": ")

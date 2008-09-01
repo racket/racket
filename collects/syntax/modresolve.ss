@@ -1,7 +1,6 @@
 
 (module modresolve mzscheme
   (require mzlib/list
-           mzlib/contract
            "private/modhelp.ss")
 
   (define (force-relto relto dir?)
@@ -66,12 +65,16 @@
           [relto relto]
           [else #f]))
 
-  (define rel-to-path-string/thunk/#f
-    (or/c path-string? (-> path-string?) false/c))
-
-  (provide/contract
-   [resolve-module-path (module-path-v? rel-to-path-string/thunk/#f
-                         . -> . (or/c path? symbol?))]
-   [resolve-module-path-index ((or/c symbol? module-path-index?)
-                               rel-to-path-string/thunk/#f
-                               . -> . (or/c path? symbol?))]))
+  (provide resolve-module-path-index
+           resolve-module-path)
+  #;
+  (begin
+    (define rel-to-path-string/thunk/#f
+      (or/c path-string? (-> path-string?) false/c))
+    
+    (provide/contract
+     [resolve-module-path (module-path-v? rel-to-path-string/thunk/#f
+                                          . -> . (or/c path? symbol?))]
+     [resolve-module-path-index ((or/c symbol? module-path-index?)
+                                 rel-to-path-string/thunk/#f
+                                 . -> . (or/c path? symbol?))])))

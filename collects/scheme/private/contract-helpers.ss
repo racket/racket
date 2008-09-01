@@ -9,6 +9,7 @@
          known-good-contract?)
 
 (require setup/main-collects
+         syntax/private/modcollapse-noctc
          (for-template scheme/base))
 
 (define (add-name-prop name stx)
@@ -85,18 +86,28 @@
                                                (cdr r)))
                                    bs)))))
 
-;; build-src-loc-string : syntax -> (union #f string)
+;; build-src-loc-string : (or/c srcloc syntax) -> (union #f string)
 (define (build-src-loc-string stx)
-  (let* ([source (source->name (syntax-source stx))]
-         [line (syntax-line stx)]
-         [col (syntax-column stx)]
-         [pos (syntax-position stx)]
-         [location (cond [(and line col) (format "~a:~a" line col)]
-                         [pos (format "~a" pos)]
-                         [else #f])])
-    (if (and source location)
-        (string-append source ":" location)
-        (or location source))))
+  (let-values ([(source line col pos)
+                (if (syntax? stx)
+                    (values (source->name (syntax-source stx))
+                            (syntax-line stx)
+                            (syntax-column stx)
+                            (syntax-position stx))
+                    (values (source->name 
+                             (resolved-module-path-name 
+                              (module-path-index-resolve 
+                               (syntax-source-module 
+                                (srcloc-source stx)))))
+                            (srcloc-line stx)
+                            (srcloc-column stx)
+                            (srcloc-position stx)))])
+    (let ([location (cond [(and line col) (format "~a:~a" line col)]
+                          [pos (format "~a" pos)]
+                          [else #f])])
+      (if (and source location)
+          (string-append source ":" location)
+          (or location source)))))
 
 (define o (current-output-port))
 
@@ -104,25 +115,21 @@
 ;; constructs a symbol for use in the blame error messages
 ;; when blaming the module where stx's occurs.
 (define (module-source-as-symbol stx)
-  (let ([src-module (syntax-source-module stx)])
+  (let ([mpi (syntax-source-module stx)])
     (cond
-      [(symbol? src-module) src-module]
-      [(module-path-index? src-module) 
-       (let-values ([(path base) (module-path-index-split src-module)])
-         ;; we dont' normalize here, because we don't
-         ;; want to assume that the collection paths
-         ;; are set or the file system can be accessed.
-         (if path
-             (string->symbol
-              (if (and (pair? path)
-                       (eq? (car path) 'quote)
-                       (pair? (cdr path))
-                       (null? (cddr path)))
-                  (format "'~s" (cadr path))
-                  (format "~s" path)))
-             'top-level))]
-      [else 'top-level])))
-
+      [(not mpi) 
+       'top-level]
+      [else
+       ;; note: the directory passed to collapse-module-path-index should be irrelevant
+       (let ([collapsed (collapse-module-path-index mpi (current-directory))])
+         (cond
+           [(path? collapsed)
+            (let ([resolved (resolved-module-path-name (module-path-index-resolve mpi))])
+              (cond
+                [(symbol? resolved) resolved]
+                [else `(file ,(path->string resolved))]))]
+           [else
+            collapsed]))])))
 
 (define build-struct-names
   (lambda (name-stx fields omit-sel? omit-set? srcloc-stx)
